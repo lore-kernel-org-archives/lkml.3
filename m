@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053Ab3FDRBF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:01:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48428 "EHLO
+	id S1758084Ab3FDRBM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:01:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48443 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757178Ab3FDRA6 (ORCPT
+	with ESMTP id S1757178Ab3FDRBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:00:58 -0400
+	Tue, 4 Jun 2013 13:01:07 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Josef Ahmad <josef.ahmad@linux.intel.com>,
-        Wolfram Sang <wsa@the-dreams.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 24/75] i2c: designware: fix RX FIFO overrun
-Date: Tue,  4 Jun 2013 09:55:08 -0700
-Message-Id: <1370364959-9475-25-git-send-email-kamal@canonical.com>
+Cc: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 22/75] USB: Blacklisted Cinterion's PLxx WWAN Interface
+Date: Tue,  4 Jun 2013 09:55:06 -0700
+Message-Id: <1370364959-9475-23-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370364959-9475-1-git-send-email-kamal@canonical.com>
 References: <1370364959-9475-1-git-send-email-kamal@canonical.com>
@@ -27,92 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Ahmad <josef.ahmad@linux.intel.com>
+From: Schemmel Hans-Christoph <Hans-Christoph.Schemmel@gemalto.com>
 
-commit e6f34cea56f5b95498070eaa9f4aa3ba4a9e4f62 upstream.
+commit 8ff10bdb14a52e3f25d4ce09e0582a8684c1a6db upstream.
 
-i2c_dw_xfer_msg() pushes a number of bytes to transmit/receive
-to/from the bus into the TX FIFO.
-For master-rx transactions, the maximum amount of data that can be
-received is calculated depending solely on TX and RX FIFO load.
+/drivers/usb/serial/option.c: Blacklisted Cinterion's PLxx WWAN
+Interface (USB Interface 4), because it will be handled by QMI WWAN
+driver. Product IDs renamed.
 
-This is racy - TX FIFO may contain master-rx data yet to be
-processed, which will eventually land into the RX FIFO. This
-data is not taken into account and the function may request more
-data than the controller is actually capable of storing.
-
-This patch ensures the driver takes into account the outstanding
-master-rx data in TX FIFO to prevent RX FIFO overrun.
-
-Signed-off-by: Josef Ahmad <josef.ahmad@linux.intel.com>
-Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-[ kamal: backport to 3.8 ]
+Signed-off-by: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/i2c/busses/i2c-designware-core.c | 11 ++++++++++-
- drivers/i2c/busses/i2c-designware-core.h |  2 ++
- 2 files changed, 12 insertions(+), 1 deletion(-)
+ drivers/usb/serial/option.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-index f5258c2..9a6aad8 100644
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -414,8 +414,14 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index e632c4e..b63f82e 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -341,8 +341,8 @@ static void option_instat_callback(struct urb *urb);
+ #define CINTERION_PRODUCT_EU3_E			0x0051
+ #define CINTERION_PRODUCT_EU3_P			0x0052
+ #define CINTERION_PRODUCT_PH8			0x0053
+-#define CINTERION_PRODUCT_AH6			0x0055
+-#define CINTERION_PRODUCT_PLS8			0x0060
++#define CINTERION_PRODUCT_AHXX			0x0055
++#define CINTERION_PRODUCT_PLXX			0x0060
  
- 		while (buf_len > 0 && tx_limit > 0 && rx_limit > 0) {
- 			if (msgs[dev->msg_write_idx].flags & I2C_M_RD) {
-+
-+				/* avoid rx buffer overrun */
-+				if (rx_limit - dev->rx_outstanding <= 0)
-+					break;
-+
- 				dw_writel(dev, 0x100, DW_IC_DATA_CMD);
- 				rx_limit--;
-+				dev->rx_outstanding++;
- 			} else
- 				dw_writel(dev, *buf++, DW_IC_DATA_CMD);
- 			tx_limit--; buf_len--;
-@@ -468,8 +474,10 @@ i2c_dw_read(struct dw_i2c_dev *dev)
- 
- 		rx_valid = dw_readl(dev, DW_IC_RXFLR);
- 
--		for (; len > 0 && rx_valid > 0; len--, rx_valid--)
-+		for (; len > 0 && rx_valid > 0; len--, rx_valid--) {
- 			*buf++ = dw_readl(dev, DW_IC_DATA_CMD);
-+			dev->rx_outstanding--;
-+		}
- 
- 		if (len > 0) {
- 			dev->status |= STATUS_READ_IN_PROGRESS;
-@@ -527,6 +535,7 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
- 	dev->msg_err = 0;
- 	dev->status = STATUS_IDLE;
- 	dev->abort_source = 0;
-+	dev->rx_outstanding = 0;
- 
- 	ret = i2c_dw_wait_bus_not_busy(dev);
- 	if (ret < 0)
-diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
-index 9c1840e..e761ad1 100644
---- a/drivers/i2c/busses/i2c-designware-core.h
-+++ b/drivers/i2c/busses/i2c-designware-core.h
-@@ -60,6 +60,7 @@
-  * @adapter: i2c subsystem adapter node
-  * @tx_fifo_depth: depth of the hardware tx fifo
-  * @rx_fifo_depth: depth of the hardware rx fifo
-+ * @rx_outstanding: current master-rx elements in tx fifo
-  */
- struct dw_i2c_dev {
- 	struct device		*dev;
-@@ -88,6 +89,7 @@ struct dw_i2c_dev {
- 	u32			master_cfg;
- 	unsigned int		tx_fifo_depth;
- 	unsigned int		rx_fifo_depth;
-+	int			rx_outstanding;
- };
- 
- #define ACCESS_SWAP		0x00000001
+ /* Olivetti products */
+ #define OLIVETTI_VENDOR_ID			0x0b3c
+@@ -1266,8 +1266,9 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_E) },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_P) },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8) },
+-	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_AH6) },
+-	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLS8) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_AHXX) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLXX),
++		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) }, 
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
+ 	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDM) },
 -- 
 1.8.1.2
 
