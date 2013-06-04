@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755660Ab3FDPPN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 11:15:13 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:50171 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173Ab3FDPPI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 11:15:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] ARM: at91: Fix link breakage when !CONFIG_PHYLIB
-Date: Tue, 04 Jun 2013 17:12:10 +0200
-Message-ID: <1900947.vroxSJEyuA@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <51ADF5C8.80007@free-electrons.com>
-References: <1369651702-9207-1-git-send-email-alexandre.belloni@free-electrons.com> <51ADF04D.3040703@atmel.com> <51ADF5C8.80007@free-electrons.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ksNHQBDPhpdzSrNp31d1Z08usngHY6AcPb90LVtms/m
- fNNT6f57XRDPwlxgjUHkQlqXgy5Cqkyh183bAfxQ8yD2OJL5rP
- k7YbOhHUAXgGnjn2BBTs5OdqMSbaREja9L3O/wfcCZ7q+34xYt
- r7lMmJxKXeuVpPCIh/1F3jYVP7WqqKi/VFyDZB49kit/HsaWTX
- 19eAbE2fNVy8buZ32d2JK1M6pMmspvSjNWKOlvar6v0ldDmnvk
- jAaccaY7CRPWWbrq5L/Z6GATsRIe0b85atRsC8VKsamaaehmZL
- HzQlBfFrf+FVda0GmrLSg1/5R5ZjLg+PfhlJLAV3B/T6EoMZhN
- rOVWh0kY7zCCFghgLPBg=
+	id S1757119Ab3FDPQE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 11:16:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5322 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752009Ab3FDPQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 11:16:01 -0400
+Date: Tue, 4 Jun 2013 11:15:02 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "Stefan (metze) Metzmacher" <metze@samba.org>, viro@zeniv.linux.org.uk,
+        matthew@wil.cx, linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
+        cluster-devel@redhat.com, sage@inktank.com,
+        samba-technical@lists.samba.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
+        dhowells@redhat.com, smfrench@gmail.com, linux-fsdevel@vger.kernel.org,
+        ceph-devel@vger.kernel.org, akpm@linux-foundation.org,
+        swhiteho@redhat.com
+Subject: Re: [PATCH v1 11/11] locks: give the blocked_hash its own spinlock
+Message-ID: <20130604111502.6231d010@corrin.poochiereds.net>
+In-Reply-To: <20130604145322.GH2109@fieldses.org>
+References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
+	<1370056054-25449-12-git-send-email-jlayton@redhat.com>
+	<51ADF789.70906@samba.org>
+	<20130604144640.GA7730@infradead.org>
+	<20130604145322.GH2109@fieldses.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 June 2013 16:12:24 Alexandre Belloni wrote:
-> On 04/06/2013 15:49, Nicolas Ferre wrote:
-> >
-> > ... simply use this "IS_BUILTIN(CONFIG_PHYLIB)" here -----^^^^^^^^^
-> > (and not above as suggested by Arnd).
-> >
-> > Jean-Christophe, Alexandre: do you agree with this conclusion?
-> >
-> > I plan to stack this patch for next at91-fixes batch.
-> >
+On Tue, 4 Jun 2013 10:53:22 -0400
+"J. Bruce Fields" <bfields@fieldses.org> wrote:
+
+> On Tue, Jun 04, 2013 at 07:46:40AM -0700, Christoph Hellwig wrote:
+> > Having RCU for modification mostly workloads never is a good idea, so
+> > I don't think it makes sense to mention it here.
+> > 
+> > If you care about the overhead it's worth trying to use per-cpu lists,
+> > though.
 > 
-> Yeah, I prepared and tested that last week but didn't send it yet. I can
-> do it now if you want but you could probably just edit my patch. I'd
-> like to fix the other platforms too but that probably can wait.
+> Yes.  The lock and unlock could happen on different CPU's--but I think
+> you can make the rule that the lock stays associated with the list it
+> was first put on, and then it's correct in general and hopefully quick
+> in the common case.
 > 
-> I believe we would still have to fix the phy_register_fixup*() works as
-> it is always called from arch/ and is clearly not fool proofed enough.
-> Maybe DT could help ?
-> 
-> Arnd, do you have any input ?
 
-I've replied to the earlier thread now. Using if(IS_ENABLED(CONFIG_NET))
-or if(IS_ENABLED(CONFIG_PHYLIB)) in platform code should be just fine and
-is not a lof of extra effort.
+It's important to distinguish between the blocked_list/hash and the
+file_lock_list. Yes, they use the same embedded list_head or hlist_node
+in the file_lock, but they have very different characteristics and use
+cases.
 
-As I explained in the other mail, I think IS_ENABLED() is better than
-IS_BUILTIN() because the case where the network driver is a loadable
-module would cause a silent run-time error with IS_BUILTIN, but a
-link time error with IS_ENABLED, and we can prevent that error by
-correctly expressing the dependency in Kconfig, e.g.
+In the testing I did, having a hashtable for the blocked locks helped a
+lot more than a percpu list. The trick with deadlock detection is to
+ensure that you don't spend a lot of time walking the lists. Since we
+do deadlock detection frequently, we need to optimize for that case.
 
-config THIS_BOARD
-	select PHYLIB if THIS_BOARDS_NIC
+For the file_lock_list, it might make sense to have percpu hlists with
+an lglock however. The thing to note here is that the file_lock_list is
+almost never read. Only /proc/locks uses it, so anything we can do to
+optimize the list manipulation is probably worth it.
 
-	Arnd
+All that said, I'm leery about changing too much of this code too fast.
+It's pretty old and poorly understood, so I think we need to be
+cautious and take an incremental approach to changing it.
+
+-- 
+Jeff Layton <jlayton@redhat.com>
