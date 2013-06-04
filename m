@@ -1,227 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756402Ab3FDAVR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 20:21:17 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:56003 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754049Ab3FDAU1 (ORCPT
+	id S1758996Ab3FDAXd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 20:23:33 -0400
+Received: from mail-bn1lp0156.outbound.protection.outlook.com ([207.46.163.156]:19812
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757096Ab3FDAXY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 20:20:27 -0400
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-To: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-Cc: Rohit Vaswani <rvaswani@codeaurora.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 3/3] ARM: msm: Add SMP support for 8960
-Date: Mon,  3 Jun 2013 17:19:45 -0700
-Message-Id: <1370305185-6450-4-git-send-email-rvaswani@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <1370305185-6450-1-git-send-email-rvaswani@codeaurora.org>
-References: <1370305185-6450-1-git-send-email-rvaswani@codeaurora.org>
+	Mon, 3 Jun 2013 20:23:24 -0400
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -1
+X-BigFish: PS-1(zz98dI9371I936eI542I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh17ej9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB063;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: James Bottomley <jbottomley@parallels.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH 1/5] Drivers: scsi: storvsc: Make the scsi timeout a
+ module parameter
+Thread-Topic: [PATCH 1/5] Drivers: scsi: storvsc: Make the scsi timeout a
+ module parameter
+Thread-Index: AQHOYKxAJGrjXDxyYEGEh8dfafipzpkkm6WAgAAAcdCAAAvzAIAABjEw
+Date: Tue, 4 Jun 2013 00:21:54 +0000
+Message-ID: <d278530eda3a4bd18f78b9106ea5dd2f@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1370301519-27196-1-git-send-email-kys@microsoft.com>
+	 <1370301688-27286-1-git-send-email-kys@microsoft.com>
+	 <1370300581.2013.14.camel@dabdike.int.hansenpartnership.com>
+	 <154d86b83ab94931a097c32e1c8e4987@SN2PR03MB061.namprd03.prod.outlook.com>
+ <1370303241.2013.21.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1370303241.2013.21.camel@dabdike.int.hansenpartnership.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:0:fff:0:5efe:172.19.16.128]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PR03MB063.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%SUSE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%INFRADEAD.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%PARALLELS.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC101.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC101.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(24454002)(377424003)(377454002)(51704005)(189002)(13464003)(199002)(76786001)(46406003)(47446002)(47776003)(49866001)(47976001)(63696002)(74502001)(76796001)(50986001)(80022001)(76576001)(81542001)(44976003)(74366001)(20776003)(46102001)(54316002)(31966008)(56816002)(51856001)(74662001)(76482001)(69226001)(79102001)(4396001)(47736001)(65816001)(74316001)(33646001)(54356001)(16676001)(6806003)(77982001)(74706001)(59766001)(74876001)(53806001)(56776001)(50466002)(23726002)(81342001)(24736002)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB038;H:TK5EX14HUBC101.redmond.corp.microsoft.com;CLIP:131.107.125.37;RD:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 0867F4F1AA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the cpus bindings and the Krait release sequence
-to make SMP work for MSM8960
 
-Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
----
- Documentation/devicetree/bindings/arm/cpus.txt     |    2 +
- Documentation/devicetree/bindings/arm/msm/kpss.txt |   16 ++++++
- arch/arm/boot/dts/msm8960-cdp.dts                  |   22 ++++++++
- arch/arm/mach-msm/platsmp.c                        |   57 ++++++++++++++++++++
- arch/arm/mach-msm/scm-boot.h                       |    8 ++-
- 5 files changed, 102 insertions(+), 3 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/msm/kpss.txt
 
-diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
-index 327aad2..1132eac 100644
---- a/Documentation/devicetree/bindings/arm/cpus.txt
-+++ b/Documentation/devicetree/bindings/arm/cpus.txt
-@@ -45,11 +45,13 @@ For the ARM architecture every CPU node must contain the following properties:
- 		"marvell,xsc3"
- 		"marvell,xscale"
- 		"qcom,scorpion"
-+		"qcom,krait"
- - enable-method: Specifies the method used to enable or take the secondary cores
- 		 out of reset. This allows different reset sequence for
- 		 different types of cpus.
- 		 This should be one of:
- 		 "qcom,scss"
-+		 "qcom,kpssv1"
- 
- Example:
- 
-diff --git a/Documentation/devicetree/bindings/arm/msm/kpss.txt b/Documentation/devicetree/bindings/arm/msm/kpss.txt
-new file mode 100644
-index 0000000..7272340
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/msm/kpss.txt
-@@ -0,0 +1,16 @@
-+* KPSS - Krait Processor Sub-system
-+
-+Properties
-+
-+- compatible : Should contain "qcom,kpss".
-+
-+- reg: Specifies the base address for the KPSS registers used for
-+       booting up secondary cores.
-+
-+Example:
-+
-+	kpss@2088000 {
-+		compatible = "qcom,kpss";
-+		reg = <0x02088000 0x1000
-+			0x02098000 0x2000>;
-+	};
-diff --git a/arch/arm/boot/dts/msm8960-cdp.dts b/arch/arm/boot/dts/msm8960-cdp.dts
-index 2e4d87a..fd2f3ec 100644
---- a/arch/arm/boot/dts/msm8960-cdp.dts
-+++ b/arch/arm/boot/dts/msm8960-cdp.dts
-@@ -7,6 +7,22 @@
- 	compatible = "qcom,msm8960-cdp", "qcom,msm8960";
- 	interrupt-parent = <&intc>;
- 
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "qcom,krait";
-+		device_type = "cpu";
-+		enable-method = "qcom,kpssv1";
-+
-+		cpu@0 {
-+			reg = <0>;
-+		};
-+
-+		cpu@1 {
-+			reg = <1>;
-+		};
-+	};
-+
- 	intc: interrupt-controller@2000000 {
- 		compatible = "qcom,msm-qgic2";
- 		interrupt-controller;
-@@ -26,6 +42,12 @@
- 		cpu-offset = <0x80000>;
- 	};
- 
-+	kpss@2088000 {
-+		compatible = "qcom,kpss";
-+		reg = <0x02088000 0x1000
-+			0x02098000 0x2000>;
-+	};
-+
- 	serial@19c400000 {
- 		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
- 		reg = <0x16440000 0x1000>,
-diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
-index ccf4168..2e9e0a1 100644
---- a/arch/arm/mach-msm/platsmp.c
-+++ b/arch/arm/mach-msm/platsmp.c
-@@ -88,6 +88,56 @@ static int __cpuinit scorpion_release_secondary(void)
- 	return 0;
- }
- 
-+static int __cpuinit msm8960_release_secondary(unsigned int cpu)
-+{
-+	void __iomem *reg;
-+	struct device_node *dn = NULL;
-+
-+	if (cpu == 0 || cpu >= num_possible_cpus())
-+		return -EINVAL;
-+
-+	dn = of_find_compatible_node(dn, NULL, "qcom,kpss");
-+	if (!dn) {
-+		pr_err("%s : Missing kpss node from device tree\n", __func__);
-+		return -ENXIO;
-+	}
-+
-+	reg = of_iomap(dn, cpu);
-+	if (!reg)
-+		return -ENOMEM;
-+
-+	pr_debug("Starting secondary CPU %d\n", cpu);
-+
-+	/* Turn on CPU Rail */
-+	writel_relaxed(0xA4, reg+0x1014);
-+	mb();
-+	udelay(512);
-+
-+	/* Krait bring-up sequence */
-+	writel_relaxed(0x109, reg+0x04);
-+	writel_relaxed(0x101, reg+0x04);
-+	mb();
-+	ndelay(300);
-+
-+	writel_relaxed(0x121, reg+0x04);
-+	mb();
-+	udelay(2);
-+
-+	writel_relaxed(0x120, reg+0x04);
-+	mb();
-+	udelay(2);
-+
-+	writel_relaxed(0x100, reg+0x04);
-+	mb();
-+	udelay(100);
-+
-+	writel_relaxed(0x180, reg+0x04);
-+	mb();
-+
-+	iounmap(reg);
-+	return 0;
-+}
-+
- static DEFINE_PER_CPU(int, cold_boot_done);
- 
- static __cpuinit void boot_cold_cpu(unsigned int cpu)
-@@ -110,6 +160,11 @@ static __cpuinit void boot_cold_cpu(unsigned int cpu)
- 			scorpion_release_secondary();
- 			per_cpu(cold_boot_done, cpu) = true;
- 		}
-+	} else if (!strcmp(enable_method, "qcom,kpssv1")) {
-+		if (per_cpu(cold_boot_done, cpu) == false) {
-+			msm8960_release_secondary(cpu);
-+			per_cpu(cold_boot_done, cpu) = true;
-+		}
- 	} else {
- 		pr_err("%s: Invalid enable-method property: %s\n",
- 				__func__, enable_method);
-@@ -186,6 +241,8 @@ static void __init msm_smp_init_cpus(void)
- static const int cold_boot_flags[] __initconst = {
- 	0,
- 	SCM_FLAG_COLDBOOT_CPU1,
-+	SCM_FLAG_COLDBOOT_CPU2,
-+	SCM_FLAG_COLDBOOT_CPU3,
- };
- 
- static void __init msm_smp_prepare_cpus(unsigned int max_cpus)
-diff --git a/arch/arm/mach-msm/scm-boot.h b/arch/arm/mach-msm/scm-boot.h
-index 7be32ff..6aabb24 100644
---- a/arch/arm/mach-msm/scm-boot.h
-+++ b/arch/arm/mach-msm/scm-boot.h
-@@ -13,9 +13,11 @@
- #define __MACH_SCM_BOOT_H
- 
- #define SCM_BOOT_ADDR			0x1
--#define SCM_FLAG_COLDBOOT_CPU1		0x1
--#define SCM_FLAG_WARMBOOT_CPU1		0x2
--#define SCM_FLAG_WARMBOOT_CPU0		0x4
-+#define SCM_FLAG_COLDBOOT_CPU1		0x01
-+#define SCM_FLAG_COLDBOOT_CPU2		0x08
-+#define SCM_FLAG_COLDBOOT_CPU3		0x20
-+#define SCM_FLAG_WARMBOOT_CPU0		0x04
-+#define SCM_FLAG_WARMBOOT_CPU1		0x02
- 
- int scm_set_boot_addr(phys_addr_t addr, int flags);
- 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+> -----Original Message-----
+> From: James Bottomley [mailto:jbottomley@parallels.com]
+> Sent: Monday, June 03, 2013 7:47 PM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; ohering@suse.com; hch@infradead.org; linux-
+> scsi@vger.kernel.org
+> Subject: Re: [PATCH 1/5] Drivers: scsi: storvsc: Make the scsi timeout a module
+> parameter
+> 
+> On Mon, 2013-06-03 at 23:25 +0000, KY Srinivasan wrote:
+> >
+> > > -----Original Message-----
+> > > From: James Bottomley [mailto:jbottomley@parallels.com]
+> > > Sent: Monday, June 03, 2013 7:03 PM
+> > > To: KY Srinivasan
+> > > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> > > devel@linuxdriverproject.org; ohering@suse.com; hch@infradead.org; linux-
+> > > scsi@vger.kernel.org
+> > > Subject: Re: [PATCH 1/5] Drivers: scsi: storvsc: Make the scsi timeout a
+> module
+> > > parameter
+> > >
+> > > On Mon, 2013-06-03 at 16:21 -0700, K. Y. Srinivasan wrote:
+> > > > The standard scsi timeout is not appropriate in some of the environments
+> > > where
+> > > > Hyper-V is deployed. Set this timeout appropriately for all devices managed
+> > > > by this driver. Further make this a module parameter.
+> > > >
+> > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > > ---
+> > > >  drivers/scsi/storvsc_drv.c |    9 +++++++++
+> > > >  1 files changed, 9 insertions(+), 0 deletions(-)
+> > > >
+> > > > diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+> > > > index 16a3a0c..8d29a95 100644
+> > > > --- a/drivers/scsi/storvsc_drv.c
+> > > > +++ b/drivers/scsi/storvsc_drv.c
+> > > > @@ -221,6 +221,13 @@ static int storvsc_ringbuffer_size = (20 *
+> PAGE_SIZE);
+> > > >  module_param(storvsc_ringbuffer_size, int, S_IRUGO);
+> > > >  MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
+> > > >
+> > > > +/*
+> > > > + * Timeout in seconds for all devices managed by this driver.
+> > > > + */
+> > > > +static int storvsc_timeout = 180;
+> > > > +module_param(storvsc_timeout, uint, (S_IRUGO | S_IWUSR));
+> > > > +MODULE_PARM_DESC(storvsc_timeout, "Device timeout (seconds)");
+> > > > +
+> > > >  #define STORVSC_MAX_IO_REQUESTS				128
+> > > >
+> > > >  /*
+> > > > @@ -1204,6 +1211,8 @@ static int storvsc_device_configure(struct
+> scsi_device
+> > > *sdevice)
+> > > >
+> > > >  	blk_queue_bounce_limit(sdevice->request_queue, BLK_BOUNCE_ANY);
+> > > >
+> > > > +	blk_queue_rq_timeout(sdevice->request_queue, (storvsc_timeout *
+> > > HZ));
+> > >
+> > > Why does this need to be a module parameter?  It's already a sysfs one
+> > > in the scsi_device class?  Three minutes is also a bit large.  The
+> > > default is 30s with huge cache arrays recommending upping this to
+> > > 60s ... you're three times this.
+> >
+> > James,
+> > This number was arrived at based on some testing that was done on the
+> > cloud. On our cloud, we have a  120 second
+> > timeouts that trigger broader VM level recovery  and in cases where
+> > there is storage access issues
+> > (which is when we would hit this timeout), it will be better to defer
+> > to the fabric level recovery than attempt
+> > Scsi level recovery/retry.  The default value chosen for devices
+> > managed by storvsc should be just fine,
+> 
+> So are you sure you want to set the command timeout to 3 minutes? ...
+> it's an incredibly high value.  The actual complete timeout is this
+> value multiplied by the number of retries, which is 5 for disk devices,
+> so you'll be waiting up to 15 minutes before we signal a failure in some
+> circumstances.  It sounds like you want the actual path length of error
+> recovery to be on average 3 minutes.
+>
+> The value of the timeout should be a compromise between the longest time
+> you want the user to wait for a failure and the longest time a device
+> should take to respond.
+
+This should be fine. Note that all error recovery/retry is happening on the host side and beyond
+a certain delay, we will do a VM level recovery at the fabric level.  On a slightly different note,
+we have the same issue with the SCSI FLUSH timeout. Would you consider changing this.
+> 
+> > I made it a module parameter to have more flexibility.
+> 
+> It's *already* a sysfs parameter ... why do you want an additional
+> module parameter?  Multiple parameters for the same quantity, especially
+> ones which can't be altered at runtime like module parameters, end up
+> confusing users.
+
+Agreed. I can send you a patch that would remove this parameter. Or, if you prefer
+I could resend this set with the change to this patch (removing the module parameter).
+
+Regards,
+
+K. Y
+> 
+> James
+> 
+> 
+
 
