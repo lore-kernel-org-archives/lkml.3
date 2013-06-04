@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758213Ab3FDRBe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:01:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48460 "EHLO
+	id S1758182Ab3FDRBc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:01:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48452 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757178Ab3FDRBa (ORCPT
+	with ESMTP id S1757467Ab3FDRBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:01:30 -0400
+	Tue, 4 Jun 2013 13:01:21 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Andrew Gomella <andrew.gomella@nih.gov>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 75/75] powerpc/pseries: Always enable CONFIG_HOTPLUG_CPU on PSERIES SMP
-Date: Tue,  4 Jun 2013 09:55:59 -0700
-Message-Id: <1370364959-9475-76-git-send-email-kamal@canonical.com>
+Subject: [PATCH 28/75] USB: ftdi_sio: Add support for Newport CONEX motor drivers
+Date: Tue,  4 Jun 2013 09:55:12 -0700
+Message-Id: <1370364959-9475-29-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370364959-9475-1-git-send-email-kamal@canonical.com>
 References: <1370364959-9475-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,52 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+From: "Gomella, Andrew (NIH/NHLBI) [F]" <andrew.gomella@nih.gov>
 
-commit f274ef8747d3be649bba8708696fb31cb00fa75a upstream.
+commit 7138143972b7c293267c783fc99a194f0ceff7f2 upstream.
 
-Adam Lackorzynski reported the following build failure on
-!CONFIG_HOTPLUG_CPU configuration:
+Here are two more devices that use FTDI USB-to-serial chips with new product ID's.
 
-  CC      arch/powerpc/kernel/rtas.o
-arch/powerpc/kernel/rtas.c: In function ‘rtas_cpu_state_change_mask’:
-arch/powerpc/kernel/rtas.c:843:4: error: implicit declaration of function ‘cpu_down’ [-Werror=implicit-function-declaration]
-cc1: all warnings being treated as errors
-make[1]: *** [arch/powerpc/kernel/rtas.o] Error 1
-make: *** [arch/powerpc/kernel] Error 2
+The devices are the Newport Conex-AGP and Conex-CC motor controllers.
+(http://www.newport.com/CONEX-AGP-Integrated-Piezo-Motor-Rotation-Stages-/987623/1033/info.aspx)
+(http://www.newport.com/CONEX-CC-DC-Servo-Controller-Actuators/934114/1033/info.aspx)
 
-The build fails because cpu_down() is defined only under CONFIG_HOTPLUG_CPU.
+usb-devices command yields:
 
-Looking further, the mobility code in pseries is one of the call-sites which
-uses rtas_ibm_suspend_me(), which in turn calls rtas_cpu_state_change_mask().
-And the mobility code is unconditionally compiled-in (it does not fall under
-any Kconfig option). And commit 120496ac (powerpc: Bring all threads online
-prior to migration/hibernation) which introduced this build regression is
-critical for the proper functioning of the migration code. So it appears
-that the only solution to this problem is to enable CONFIG_HOTPLUG_CPU if
-SMP is enabled on PPC_PSERIES platforms. So make that change in the Kconfig.
+P:  Vendor=104d ProdID=3002 Rev=06.00
+S:  Manufacturer=Newport
+S:  Product=CONEX-CC
 
-Reported-by: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+as well as
+
+P:  Vendor=104d ProdID=3006 Rev=06.00
+S:  Manufacturer=Newport
+S:  Product=CONEX-AGP
+
+Signed-off-by: Andrew Gomella <andrew.gomella@nih.gov>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/platforms/pseries/Kconfig | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     | 2 ++
+ drivers/usb/serial/ftdi_sio_ids.h | 2 ++
+ 2 files changed, 4 insertions(+)
 
-diff --git a/arch/powerpc/platforms/pseries/Kconfig b/arch/powerpc/platforms/pseries/Kconfig
-index 837cf49..c7a8425 100644
---- a/arch/powerpc/platforms/pseries/Kconfig
-+++ b/arch/powerpc/platforms/pseries/Kconfig
-@@ -17,6 +17,8 @@ config PPC_PSERIES
- 	select PPC_NATIVE
- 	select PPC_PCI_CHOICE if EXPERT
- 	select ZLIB_DEFLATE
-+	select HOTPLUG if SMP
-+	select HOTPLUG_CPU if SMP
- 	default y
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 77f78ad..86a1892 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -191,6 +191,8 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_BOOST_PID) },
+ 	{ USB_DEVICE(NEWPORT_VID, NEWPORT_AGILIS_PID) },
++	{ USB_DEVICE(NEWPORT_VID, NEWPORT_CONEX_CC_PID) },
++	{ USB_DEVICE(NEWPORT_VID, NEWPORT_CONEX_AGP_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 9852827..6dd7925 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -772,6 +772,8 @@
+  */
+ #define NEWPORT_VID			0x104D
+ #define NEWPORT_AGILIS_PID		0x3000
++#define NEWPORT_CONEX_CC_PID		0x3002
++#define NEWPORT_CONEX_AGP_PID		0x3006
  
- config PPC_SPLPAR
+ /* Interbiometrics USB I/O Board */
+ /* Developed for Interbiometrics by Rudolf Gugler */
 -- 
 1.8.1.2
 
