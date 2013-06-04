@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab3FDRS1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:18:27 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:60675 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752182Ab3FDRSY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:18:24 -0400
-Date: Tue, 4 Jun 2013 19:18:14 +0200 (CEST)
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
-X-X-Sender: sebott@c4eb
-To: Bjorn Helgaas <bhelgaas@google.com>
-cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] pci: add pcibios_release_device
-Message-ID: <alpine.LFD.2.03.1306041911170.1686@linux.vnet.ibm.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
-Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
- =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
+	id S1755373Ab3FDRSd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:18:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53314 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752332Ab3FDRS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 13:18:29 -0400
+Date: Tue, 4 Jun 2013 19:14:35 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        Sergey Dyasly <dserrg@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/4] proc: avoid ->f_pos overflows in
+	proc_task_readdir() paths
+Message-ID: <20130604171435.GA20416@redhat.com>
+References: <20130603190705.GA11517@redhat.com> <877giarg81.fsf@xmission.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060417-5024-0000-0000-0000063C7A2D
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <877giarg81.fsf@xmission.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Bjorn,
+On 06/03, Eric W. Biederman wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> writes:
+>
+> > 1. proc_task_readdir() truncates f_pos to long, this can lead
+> >    to wrong result on 32bit.
+> >
+> This won't compile on some 32bit architectures like x86-32.
+>
+> switch(unsigned long long) requires helpers that the kernel does not
+> included.  Or at least the kernel has not included because such code
+> is a problem.  In fact that is the reason Linus put the case to
+> unsigned long in there.
 
-part of your feedback to the PCI support on s390 was to put some smarts in
-the config space accessors and let the pci core do the scanning of pci
-functions.
-To get there I had to implement pcibios_add_device on s390 to do some arch
-specific device initialization. During removal of the pci function I would
-like to undo these steps. Would it be possible to have a couterpart of
-pcibios_add_device - like the patch below:
+Hmm, ee568b25, suprise... I am wondering if the kernel still supports
+the compilers which needs __cmpdi2 in this case...
 
+But this doesn't matter. The patch should not blindly revert ee568b25,
+thanks!
 
-pci: add pcibios_release_device
+> There is another bug in here as well that we may return really crazy
+> things in the case of seek simultaneous with readdir.
 
-Platforms may want to provide architecture-specific functionality when
-a pci device is released. Add a pcibios_release_device() call that
-architectures can override to do so.
+i_mutex? both vfs_readdir() and default_llseek() take it... Anyway, this
+is another issue.
 
-Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
----
- drivers/pci/pci.c   |   10 ++++++++++
- drivers/pci/probe.c |    1 +
- include/linux/pci.h |    1 +
- 3 files changed, 12 insertions(+)
+> I think we really need to put f_pos
+> in a local variable.
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1335,6 +1335,16 @@ int __weak pcibios_add_device (struct pc
- }
- 
- /**
-+ * pcibios_release_device - provide arch specific hooks when releasing device dev
-+ * @dev: the PCI device being released
-+ *
-+ * Permits the platform to provide architecture specific functionality when
-+ * devices are released. This is the default implementation. Architecture
-+ * implementations can override this.
-+ */
-+void __weak pcibios_release_device(struct pci_dev *dev) {}
-+
-+/**
-  * pcibios_disable_device - disable arch specific PCI resources for device dev
-  * @dev: the PCI device to disable
-  *
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1132,6 +1132,7 @@ static void pci_release_dev(struct devic
- 	pci_dev = to_pci_dev(dev);
- 	pci_release_capabilities(pci_dev);
- 	pci_release_of_node(pci_dev);
-+	pcibios_release_device(pci_dev);
- 	kfree(pci_dev);
- }
- 
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1643,6 +1643,7 @@ void pcibios_set_master(struct pci_dev *
- int pcibios_set_pcie_reset_state(struct pci_dev *dev,
- 				 enum pcie_reset_state state);
- int pcibios_add_device(struct pci_dev *dev);
-+void pcibios_release_device(struct pci_dev *dev);
- 
- #ifdef CONFIG_PCI_MMCONFIG
- void __init pci_mmcfg_early_init(void);
+Heh. I swear, this is what I did initially. But I was afraid you will
+blame this change as "overcomplicated" ;)
+
+OK, I'll redo/resend this one later.
+
+Oleg.
 
