@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755062Ab3FDNBm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 09:01:42 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:64153 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754931Ab3FDNBh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 09:01:37 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>, viresh.kumar@linaro.org,
-        Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH v1 0/4] dw_dmac: move to own folder and split
-Date: Tue, 04 Jun 2013 15:01:36 +0200
-Message-ID: <4298714.mlF8oq2qNQ@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <1370349382-20914-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1370349382-20914-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1754939Ab3FDNJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 09:09:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21892 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751733Ab3FDNJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 09:09:23 -0400
+Message-ID: <51ADE6F1.90709@redhat.com>
+Date: Tue, 04 Jun 2013 15:09:05 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:r01cW2VtCP0HNntXaUn6t40tRqUCsddJp+vRfshLrJL
- srupQf3mKim2JsJ3nKOm4hEdHw+Z9EPR9UOzuGYMfXAYBjy2dq
- VTsZ2u87/M882TpPy1VVMxU5i58paPabQbdDogsYJg6OhrYXEh
- HSttqMOGvmAstgKtGQWUe+mau1YHrn2o1cCxhLpNSBD/DGWJZS
- 23tD/pqoy18xnbLm9R7McnzIAJXkHlmdfIeQLaXvsgzUwtZUkc
- 8WELVDMe6g9mxYfr01nGlwhbXzuiv7QVhpwjVVYXNOTAAX8sbq
- sps0x8RPH1yuhzF5Q10jJfRmSvPWOKOKu4y78IqQoCpwQzFHUO
- DggZFRyqOOfq77p2fC6Y=
+To: Jiang Liu <liuj97@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v1 1/8] zram: simplify and optimize zram_to_dev()
+References: <1370274140-26420-1-git-send-email-jiang.liu@huawei.com> <1370274140-26420-2-git-send-email-jiang.liu@huawei.com>
+In-Reply-To: <1370274140-26420-2-git-send-email-jiang.liu@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 June 2013 15:36:18 Andy Shevchenko wrote:
-> This is second attempt to do split as suggested by Arnd et al [1,2].
-> There are three most important patches:
->  2/4 moves driver to its own folder
->  3/4 does the actual split
->  4/4 introduces PCI part of the driver
+Hi,
+
+Please write a commit message, no matter how straightforward a patch may
+seem to you.
+Also the subject suffers from dyslexia: it's dev_to_zram, not zram_to_dev.
+
+Thanks,
+Jerome
+
+On 06/03/2013 05:42 PM, Jiang Liu wrote:
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> ---
+>  drivers/staging/zram/zram_sysfs.c | 13 ++-----------
+>  1 file changed, 2 insertions(+), 11 deletions(-)
 > 
-> During this files are renamed: mostly means that dw_dmac prefix is eliminated.
-> I hope to get it ready to be included in v3.11.
+> diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
+> index e6a929d..8cb7822 100644
+> --- a/drivers/staging/zram/zram_sysfs.c
+> +++ b/drivers/staging/zram/zram_sysfs.c
+> @@ -30,18 +30,9 @@ static u64 zram_stat64_read(struct zram *zram, u64 *v)
+>  	return val;
+>  }
+>  
+> -static struct zram *dev_to_zram(struct device *dev)
+> +static inline struct zram *dev_to_zram(struct device *dev)
+>  {
+> -	int i;
+> -	struct zram *zram = NULL;
+> -
+> -	for (i = 0; i < zram_get_num_devices(); i++) {
+> -		zram = &zram_devices[i];
+> -		if (disk_to_dev(zram->disk) == dev)
+> -			break;
+> -	}
+> -
+> -	return zram;
+> +	return (struct zram *)dev_to_disk(dev)->private_data;
+>  }
+>  
+>  static ssize_t disksize_show(struct device *dev,
 > 
-> [1] http://www.spinics.net/lists/kernel/msg1408174.html
-> [2] http://www.spinics.net/lists/kernel/msg1408495.html
 
-Whole series
-
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-
-provided you make it work with !CONFIG_PM.
-
-	Arnd
