@@ -1,104 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab3FDRnJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:43:09 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:7601 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752706Ab3FDRnH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:43:07 -0400
-X-Greylist: delayed 1871 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Jun 2013 13:43:07 EDT
-From: Dan Williams <djbw@fb.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Jon Mason <jon.mason@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jiang <dave.jiang@intel.com>, Vinod Koul <vinod.koul@intel.com>
-Subject: Re: [PATCH] dmatest: add ability to disable pq and xor
-Thread-Topic: [PATCH] dmatest: add ability to disable pq and xor
-Thread-Index: AQHOUyeQns6rsZMc00mjsAAclKAowZkffu0AgAW0jgCAAITbAIAALpCA
-Date: Tue, 4 Jun 2013 17:11:51 +0000
-Message-ID: <84A937D219C2B44EB8EA44831ACA1E491725F227@PRN-MBX01-3.TheFacebook.com>
-In-Reply-To: <CAHp75VdgKDx8vhTcUD5sBLd7aB=39SFxi-ayioZqE6o_AtZkxA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.3.4.130416
-x-originating-ip: [192.168.16.4]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <2027EFD21CFD0F42A37253EC3145C91A@fb.com>
-Content-Transfer-Encoding: 8BIT
+	id S1755720Ab3FDRpp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:45:45 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:50121 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415Ab3FDRpn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 13:45:43 -0400
 MIME-Version: 1.0
-X-Proofpoint-Spam-Reason: safe
-X-FB-Internal: Safe
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8626,1.0.431,0.0.0000
- definitions=2013-06-04_06:2013-06-04,2013-06-04,1970-01-01 signatures=0
+In-Reply-To: <51AE1FBB.1070806@codeaurora.org>
+References: <1370281990-15090-1-git-send-email-mturquette@linaro.org>
+	<1370281990-15090-4-git-send-email-mturquette@linaro.org>
+	<51AE1FBB.1070806@codeaurora.org>
+Date: Tue, 4 Jun 2013 12:39:53 -0500
+Message-ID: <CAHCPf3tZAbdVZPuKOjxJbCOAE76Pa6wMVHjnBRPhSpj0aMBMHg@mail.gmail.com>
+Subject: Re: [PATCH RFC 3/3] clk: dt: binding for basic divider clock
+From: Matt Sealey <neko@bakuhatsu.net>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 6/4/13 12:25 AM, "Andy Shevchenko" <andy.shevchenko@gmail.com> wrote:
-
->On Tue, Jun 4, 2013 at 2:29 AM, Jon Mason <jon.mason@intel.com> wrote:
->> On Fri, May 31, 2013 at 11:22:10AM +0300, Andy Shevchenko wrote:
->>> On Fri, May 17, 2013 at 8:54 PM, Jon Mason <jon.mason@intel.com> wrote:
->>> > dmatest would create a thread to stress XOR and PQ, if the
->>>capability is
->>> > present in the hardware.  Add the ability to disable XOR and PQ by
->>> > disabling it if *_sources are set to zero.
->>>
->>> Sorry, didn't comment this earlier.
->>>
->>> Those threads are independent including MEMCPY stuff.
->>> I think it's better to have one additional parameter let's say
->>> type_of_test where you can set
->>> 1 for MEMCPY
->>> 2 for XOR
->>> 4 for PQ
->>>
->>> Share this parameter via debugfs and use 0x07 as default value.
->>> I doubt we need this as a module parameter.
->>
->> This is using the existing module parameter, so there is nothing new
->> added.
+On Tue, Jun 4, 2013 at 12:11 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> On 06/03/13 10:53, Mike Turquette wrote:
+>> +Required properties:
+>> +- compatible : shall be "divider-clock".
+>> +- #clock-cells : from common clock binding; shall be set to 0.
+>> +- clocks : link to phandle of parent clock
+>> +- reg : base address for register controlling adjustable divider
+>> +- mask : arbitrary bitmask for programming the adjustable divider
+>> +
+>> +Optional properties:
+>> +- clock-output-names : From common clock binding.
+>> +- table : array of integer pairs defining divisors & bitfield values
+>> +- shift : number of bits to shift the mask, defaults to 0 if not present
+>> +- index_one : valid divisor programming starts at 1, not zero
+>> +- index_power_of_two : valid divisor programming must be a power of two
+>> +- allow_zero : implies index_one, and programming zero results in
+>> +  divide-by-one
 >
->That's why it's a bit confusing. User can more easily forget the
->'magic' numbers. And I see no reason to prevent user to enter 0 as a
->number of sources.
+> It's preferred that property names have dashes instead of underscores.
 
-Well, source counts less than 2 are invalid for these operations, but that
-is besides the point.
+I think I have a suggestion or two here..
 
->Moreover, your patch doesn't cover the case when user doesn't want to
->run MEMCPY thread.
+I mailed one to Mike earlier, I have had some mailing list problems
+which I think are solved now..
 
-Yes, this is what I wanted to point out.  If we're adding per operation
-type selection, might as well enable memcpy to be controlled too.
-Especially if we just use a bitmap_and() with the dma_cap_mask() to pick
-which tests to run.  Might also encourage some slave-op test types to be
-added as well.
+If you provide a mask for programming the divider, surely the "shift"
+property is therefore redundant. Unless some device has a completely
+strange way of doing things and uses two seperated bitfields for
+programming in the same register, the shift value is simply a function
+of ffs() on the mask, isn't it? It is nice to put the information
+specifically in the device tree, but where a shift is not specified
+it'd probably be a good idea to go about deriving that value that way
+anyway, right, and if we're doing that.. why specify it?
 
->
->>  Since the testing is started immediately upon module
->> insertion,
->
->It used to be so, but nowadays it's true only when dmatest is compiled in.
->If someone wants to compile in that module they probably want to run
->stress tests, where XOR and PQ might be useful.
+Also it may be much simpler to simply define the default clock setup
+as being an integer divider that follows the form 2^n - I am not sure
+I can think off the top of my head of any clock dividers doing the
+rounds that have divide-by-non-power-of-two and if they exist out
+there (please correct me) they would be the rare ones. I think
+properties that modify behavior should err on the side of being rarely
+used and to define unusual behavior, not confirm the status quo.
 
-...and they would want the test selection to be specified on the kernel
-command line.  At least that's how I used compiled in dmatest in the past.
+Just to be sure, though, someone would need to go visit a bunch of
+current clock handlers already implemented or read a lot of docs to
+see how they're expecting their dividers. Maybe some of the Samsung,
+Qualcomm, TI, Freescale guys can comment on what is the most common
+case inside their SoCs.
 
->
->> there needs to be a way to prevent it from ever starting.
->
->My opinion I already shared, new node under debugfs. There is might be
->a good reason to add a new module parameter as well.
+In any case, once you figure out that, rather than specifying a full
+table of <0 1>, <1 2>, <2, 4> and creating a big list, you could just
+give the lower and upper limits and let the driver figure out what is
+in between with two values. If there were gaps, a full table would be
+necessary. The allow zero property might be better served by the very
+same range property.
 
-I'm not seeing why debugfs is helpful here.  Just make it a module
-parameter that calls a routine to setup the bit mask.
+I would also say.. bit-mask rather than mask, divider-table rather
+than table, divider-range (modifying the idea above). While we're
+inside a particular namespace in the binding I think naming properties
+with their intent (i.e. what table is it?) is good behavior.
 
 --
-Dan
-
+Matt Sealey <matt@genesi-usa.com>
