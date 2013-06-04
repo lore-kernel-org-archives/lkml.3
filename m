@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055Ab3FDJZS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 05:25:18 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:19266 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751992Ab3FDJZO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 05:25:14 -0400
-X-IronPort-AV: E=Sophos;i="4.87,798,1363132800"; 
-   d="scan'208";a="5292412"
-Message-ID: <1370337912.24512.91.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH v2 4/5] arm64/xen: use XEN_IO_PROTO_ABI_ARM on ARM64
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xensource.com>, <will.deacon@arm.com>,
-        <catalin.marinas@arm.com>, <konrad.wilk@oracle.com>
-Date: Tue, 4 Jun 2013 10:25:12 +0100
-In-Reply-To: <1370273624-26976-4-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <alpine.DEB.2.02.1306031157020.4589@kaball.uk.xensource.com>
-	 <1370273624-26976-4-git-send-email-stefano.stabellini@eu.citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	id S1752317Ab3FDJab (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 05:30:31 -0400
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:5269 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750738Ab3FDJa3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 05:30:29 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Will Deacon'" <will.deacon@arm.com>
+CC: "'richard -rw- weinberger'" <richard.weinberger@gmail.com>,
+        "'linux-arch@vger.kernel.org'" <linux-arch@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 4 Jun 2013 17:30:04 +0800
+Subject: RE: A bug about system call on ARM
+Thread-Topic: A bug about system call on ARM
+Thread-Index: Ac5hAHOO7jTH3KtSQiqTdjXo/WWMfQABXi2w
+Message-ID: <35FD53F367049845BC99AC72306C23D1610991B88F@CNBJMBX05.corpusers.net>
+References: <20130530114112.GH7483@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B86D@CNBJMBX05.corpusers.net>
+ <20130531084638.GB4928@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B874@CNBJMBX05.corpusers.net>
+ <20130531111305.GI4928@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B876@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D1610991B87B@CNBJMBX05.corpusers.net>
+ <20130603095425.GA32242@mudshark.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D1610991B87E@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D1610991B883@CNBJMBX05.corpusers.net>
+ <20130604084832.GA27516@mudshark.cambridge.arm.com>
+In-Reply-To: <20130604084832.GA27516@mudshark.cambridge.arm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-03 at 16:33 +0100, Stefano Stabellini wrote:
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Hi Will,
 
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Thanks for your reply,
+I see your meaning ,
+But it seems my apply for joining into 'linux-arm-kernel@lists.infradead.org'
+Is not approved ,  
+How to join in this mail-list ?
 
-> ---
->  include/xen/interface/io/protocols.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+Thanks for your help .
+
+-----Original Message-----
+From: Will Deacon [mailto:will.deacon@arm.com] 
+Sent: Tuesday, June 04, 2013 4:49 PM
+To: Wang, Yalin
+Cc: 'richard -rw- weinberger'; 'linux-arch@vger.kernel.org'; 'linux-kernel@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'
+Subject: Re: A bug about system call on ARM
+
+On Tue, Jun 04, 2013 at 06:33:20AM +0100, Wang, Yalin wrote:
+> Hi  Will,
+
+Hello,
+
+> Could I know  what's your git branch is  mainly used for ?
 > 
-> diff --git a/include/xen/interface/io/protocols.h b/include/xen/interface/io/protocols.h
-> index 0eafaf2..056744b 100644
-> --- a/include/xen/interface/io/protocols.h
-> +++ b/include/xen/interface/io/protocols.h
-> @@ -15,7 +15,7 @@
->  # define XEN_IO_PROTO_ABI_NATIVE XEN_IO_PROTO_ABI_IA64
->  #elif defined(__powerpc64__)
->  # define XEN_IO_PROTO_ABI_NATIVE XEN_IO_PROTO_ABI_POWERPC64
-> -#elif defined(__arm__)
-> +#elif defined(__arm__) || defined(__aarch64__)
->  # define XEN_IO_PROTO_ABI_NATIVE XEN_IO_PROTO_ABI_ARM
->  #else
->  # error arch fixup needed here
+> https://git.kernel.org/cgit/linux/kernel/git/will/linux.git
+> 
+> 
+> I mean if the branch is used for ARM arch maintenance ?
 
+I send most of my patches via Russell, and the tree above is where I keep my patches whilst they're not yet in mainline.
 
+> If yes, I think I can send future bugs about ARM to you directly, And 
+> do not need ping-pang in the mail list .
+
+Quite the opposite! Having discussions on the mailing list is key to how the kernel is developed, so please continue to send questions, bug reports and patches there. As has been pointed out previously in this thread, you need to choose the right list in the first place, rather than just sending to LKML.
+
+Of course, you can always CC me on arm/arm64 patches if you like.
+
+Cheers,
+
+Will
