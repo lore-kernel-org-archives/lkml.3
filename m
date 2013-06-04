@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461Ab3FDOHu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:07:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46650 "EHLO
+	id S1757342Ab3FDOZe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:25:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46641 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755166Ab3FDOHn (ORCPT
+	with ESMTP id S1755020Ab3FDOHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:07:43 -0400
+	Tue, 4 Jun 2013 10:07:40 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Heiko Abraham <abrahamh@web.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 09/70] Input: egalax_ts - ABS_MT_POSITION_Y not reported well
-Date: Tue,  4 Jun 2013 15:06:25 +0100
-Message-Id: <1370354846-14213-10-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 07/70] avr32: fix relocation check for signed 18-bit offset
+Date: Tue,  4 Jun 2013 15:06:23 +0100
+Message-Id: <1370354846-14213-8-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
 References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
@@ -28,34 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Abraham <abrahamh@web.de>
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 
-commit 3c9cfa782e075cc2348b949ba139911aac02c7cb upstream.
+commit e68c636d88db3fda74e664ecb1a213ae0d50a7d8 upstream.
 
-The egalax_ts touchscreen modul not report ABS_MT_POSITION_Y proper.
-As result it may be, that upper software levels only receive x coordinates well.
+Caught by static code analysis by David.
 
-Signed-off-by: Heiko Abraham <abrahamh@web.de>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-[ luis: adjust context ]
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/input/touchscreen/egalax_ts.c | 2 +-
+ arch/avr32/kernel/module.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/input/touchscreen/egalax_ts.c b/drivers/input/touchscreen/egalax_ts.c
-index 70524dd..be2a271 100644
---- a/drivers/input/touchscreen/egalax_ts.c
-+++ b/drivers/input/touchscreen/egalax_ts.c
-@@ -203,7 +203,7 @@ static int __devinit egalax_ts_probe(struct i2c_client *client,
- 	input_set_abs_params(input_dev,
- 			     ABS_MT_POSITION_X, 0, EGALAX_MAX_X, 0, 0);
- 	input_set_abs_params(input_dev,
--			     ABS_MT_POSITION_X, 0, EGALAX_MAX_Y, 0, 0);
-+			     ABS_MT_POSITION_Y, 0, EGALAX_MAX_Y, 0, 0);
- 	input_mt_init_slots(input_dev, MAX_SUPPORT_POINTS);
- 
- 	input_set_drvdata(input_dev, ts);
+diff --git a/arch/avr32/kernel/module.c b/arch/avr32/kernel/module.c
+index 596f730..2c94129 100644
+--- a/arch/avr32/kernel/module.c
++++ b/arch/avr32/kernel/module.c
+@@ -264,7 +264,7 @@ int apply_relocate_add(Elf32_Shdr *sechdrs, const char *strtab,
+ 			break;
+ 		case R_AVR32_GOT18SW:
+ 			if ((relocation & 0xfffe0003) != 0
+-			    && (relocation & 0xfffc0003) != 0xffff0000)
++			    && (relocation & 0xfffc0000) != 0xfffc0000)
+ 				return reloc_overflow(module, "R_AVR32_GOT18SW",
+ 						     relocation);
+ 			relocation >>= 2;
 -- 
 1.8.1.2
 
