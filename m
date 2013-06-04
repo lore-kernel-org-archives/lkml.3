@@ -1,133 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450Ab3FDVlV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 17:41:21 -0400
-Received: from mga02.intel.com ([134.134.136.20]:59003 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751186Ab3FDVlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 17:41:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,802,1363158000"; 
-   d="scan'208";a="348153887"
-Message-ID: <1370382051.8432.16.camel@ideak-mobl>
-Subject: Re: [PATCH] wait: fix false timeouts when using wait_event_timeout()
-From: Imre Deak <imre.deak@intel.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Jones <davej@redhat.com>,
-        David Howells <dhowells@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Lukas Czerner <lczerner@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 05 Jun 2013 00:40:51 +0300
-In-Reply-To: <1370381717.8432.14.camel@ideak-mobl>
-References: <20130604192818.GA31316@redhat.com>
-	 <1370381717.8432.14.camel@ideak-mobl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751480Ab3FDVm6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 17:42:58 -0400
+Received: from mail-gg0-f201.google.com ([209.85.161.201]:45650 "EHLO
+	mail-gg0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333Ab3FDVmz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 17:42:55 -0400
+From: Paul Taysom <taysom@chromium.org>
+To: Chris Ball <cjb@laptop.org>
+Cc: Namjae Jeon <linkinjeon@gmail.com>, Seungwon Jeon <tgih.jun@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Konstantin Dorfman <kdorfman@codeaurora.org>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sonny@chromium.org, olofj@chromium.org, taysom@chromium.org
+Subject: [PATCH] drivers: mmc: reordered shutdown sequence in mmc_bld_remove_req
+Date: Tue,  4 Jun 2013 14:42:40 -0700
+Message-Id: <1370382160-7576-1-git-send-email-taysom@chromium.org>
+X-Mailer: git-send-email 1.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-05 at 00:35 +0300, Imre Deak wrote:
-> On Tue, 2013-06-04 at 21:28 +0200, Oleg Nesterov wrote:
-> > Hello,
-> > 
-> > Just noticed this commit...
-> > 
-> > commit 4c663cfc523a88d97a8309b04a089c27dc57fd7e
-> > Author: Imre Deak <imre.deak@intel.com>
-> > Date:   Fri May 24 15:55:09 2013 -0700
-> > 
-> >     Many callers of the wait_event_timeout() and
-> >     wait_event_interruptible_timeout() expect that the return value will be
-> >     positive if the specified condition becomes true before the timeout
-> >     elapses.  However, at the moment this isn't guaranteed.  If the wake-up
-> >     handler is delayed enough, the time remaining until timeout will be
-> >     calculated as 0 - and passed back as a return value - even if the
-> >     condition became true before the timeout has passed.
-> > 
-> > OK, agreed.
-> > 
-> > 	--- a/include/linux/wait.h
-> > 	+++ b/include/linux/wait.h
-> > 	@@ -217,6 +217,8 @@ do {						\
-> > 			if (!ret)						\
-> > 				break;						\
-> > 		}								\
-> > 	+	if (!ret && (condition))					\
-> > 	+		ret = 1;						\
-> > 		finish_wait(&wq, &__wait);					\
-> > 	 } while (0)
-> > 
-> > Well, this evaluates "condition" twice, perhaps it would be more
-> > clean to do, say,
-> > 
-> > 	#define __wait_event_timeout(wq, condition, ret)			\
-> > 	do {									\
-> > 		DEFINE_WAIT(__wait);						\
-> > 										\
-> > 		for (;;) {							\
-> > 			prepare_to_wait(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
-> > 			if (condition) {					\
-> > 				if (!ret)					\
-> > 					ret = 1;				\
-> > 				break;						\
-> > 			} else if (!ret)					\
-> > 				break;						\
-> > 			ret = schedule_timeout(ret);				\
-> > 		}								\
-> > 		finish_wait(&wq, &__wait);					\
-> > 	} while (0)
-> > 
-> > but this is minor.
-> > 
-> > 	@@ -233,8 +235,9 @@ do {						\
-> > 	  * wake_up() has to be called after changing any variable that could
-> > 	  * change the result of the wait condition.
-> > 	  *
-> > 	- * The function returns 0 if the @timeout elapsed, and the remaining
-> > 	- * jiffies if the condition evaluated to true before the timeout elapsed.
-> > 	+ * The function returns 0 if the @timeout elapsed, or the remaining
-> > 	+ * jiffies (at least 1) if the @condition evaluated to %true before
-> > 	+ * the @timeout elapsed.
-> > 
-> > This is still not true if timeout == 0.
-> > 
-> > Shouldn't we also change wait_event_timeout() ? Say,
-> > 
-> > 	#define wait_event_timeout(wq, condition, timeout)			\
-> > 	({									\
-> > 		long __ret = timeout;						\
-> > 		if (!(condition))						\
-> > 			__wait_event_timeout(wq, condition, __ret);		\
-> > 		else if (!__ret)						\
-> > 			__ret = 1;						\
-> > 		__ret;								\
-> > 	})
-> > 
-> > Or wait_event_timeout(timeout => 0) is not legal in a non-void context?
-> > 
-> > To me the code like
-> > 
-> > 	long wait_for_something(bool nonblock)
-> > 	{
-> > 		timeout = nonblock ? 0 : DEFAULT_TIMEOUT;
-> > 		return wait_event_timeout(..., timeout);
-> > 	}
-> > 
-> > looks reasonable and correct. But it is not?
-> 
-> I don't see why it would be not legal. Note though that in the above
-> form wait_event_timeout(cond, 0) would still schedule() if cond is
-> false, which is not what I'd expect from a non-blocking function.
+We had a multi-partition SD-Card with two ext2 file systems. The partition
+table was getting overwritten by a race between the card removal and
+the unmount of the 2nd ext2 partition.
 
-Ah sorry, if you also rewrite __wait_event_timeout() then timeout=>0
-wouldn't schedule(), so things would work as expected.
+What was observed:
+1. Suspend/resume would call to remove the device. The clearing
+   of the device information is done asynchronously.
+2. A request is made to unmount the file system (this is called
+   after the removal has started).
+3. The remapping table was cleared by the asynchronous part of
+   the device removal.
+4. A write request to the super block (block 0 of the partition)
+   was sent down and instead of being remapped to the partition
+   offset, it was remapped to block 0 of the device which is where
+   the partition table is located.
+5. Write was queued and written resulting in the overwriting
+   of the partition table with the ext2 super block.
+6. The mmc_queue is cleaned up.
 
---Imre
+The mmc card device driver used to access SD cards, was calling del_gendisk
+before calling mmc_cleanup-queue. The comment in the mmc_blk_remove_req
+code indicated that it expected del_gendisk to block all further requests
+from being queued but it doesn't. The mmc driver uses the presences of the
+mmc_queue to determine if the request should be queued.
 
+The fix was to clean up the mmc_queue before the rest of the
+the delete partition code is called.
+
+This prevents the overwriting of the partition table.
+
+However, the umount gets an error trying to write the super block.
+The umount should be issued before the device is removed but that
+is not always possible. The umount is still needed to cleanup other
+data structures.
+
+Addresses the problem described in http://crbug.com/240815
+
+Signed-off-by: Paul Taysom <taysom@chromium.org>
+---
+ drivers/mmc/card/block.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+index dd27b07..a79f113 100644
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -2158,6 +2158,14 @@ static void mmc_blk_remove_req(struct mmc_blk_data *md)
+ 	struct mmc_card *card;
+ 
+ 	if (md) {
++		/*
++		 * Flush remaining requests and free queues. It
++		 * is freeing the queue that stops new requests
++		 * from being accepted.
++		 */
++		mmc_cleanup_queue(&md->queue);
++		if (md->flags & MMC_BLK_PACKED_CMD)
++			mmc_packed_clean(&md->queue);
+ 		card = md->queue.card;
+ 		if (md->disk->flags & GENHD_FL_UP) {
+ 			device_remove_file(disk_to_dev(md->disk), &md->force_ro);
+@@ -2166,14 +2174,8 @@ static void mmc_blk_remove_req(struct mmc_blk_data *md)
+ 				device_remove_file(disk_to_dev(md->disk),
+ 					&md->power_ro_lock);
+ 
+-			/* Stop new requests from getting into the queue */
+ 			del_gendisk(md->disk);
+ 		}
+-
+-		/* Then flush out any already in there */
+-		mmc_cleanup_queue(&md->queue);
+-		if (md->flags & MMC_BLK_PACKED_CMD)
+-			mmc_packed_clean(&md->queue);
+ 		mmc_blk_put(md);
+ 	}
+ }
+-- 
+1.8.3
 
