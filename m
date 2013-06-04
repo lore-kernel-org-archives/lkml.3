@@ -1,113 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734Ab3FDRhf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:37:35 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:42405 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab3FDRhd (ORCPT
+	id S1756079Ab3FDRhz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:37:55 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53572 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754464Ab3FDRhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:37:33 -0400
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: Grygorii Strashko <grygorii.strashko@ti.com>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: [PATCH] i2c: Let users disable "Probe an I2C bus for certain devices"
-Date: Tue, 4 Jun 2013 20:33:42 +0300
-Message-ID: <1370367222-19353-1-git-send-email-grygorii.strashko@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 4 Jun 2013 13:37:53 -0400
+Date: Tue, 4 Jun 2013 18:37:49 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
+        Peter Crosthwaite <pcrost@xilinx.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        spi-devel-general@lists.sourceforge.net
+Message-ID: <20130604173749.GN31367@sirena.org.uk>
+References: <041d7ca272ef9499fab630294e3395110b3e31ac.1370354549.git.michal.simek@xilinx.com>
+ <85e2cc9ef188d475c531780d9ee338705a1df673.1370354549.git.michal.simek@xilinx.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i6ZTfQE1Row3TVml"
+Content-Disposition: inline
+In-Reply-To: <85e2cc9ef188d475c531780d9ee338705a1df673.1370354549.git.michal.simek@xilinx.com>
+X-Cookie: Are you a turtle?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/3] spi: spi-xilinx: Add run run-time endian detection
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the I2C devices instantiation Method 3 "Probe an I2C bus for
-certain devices" (see Documentation/i2c/instantiating-devices) is always
-enabled for all platforms (boards) and can't be disabled.
-This feature introduces a system boot time delay for boards,
-where I2C devices topology is explicitly defined in DT or platform code
-(Method 1 and Method 2 are used only) and especially when i2c-gpio is used.
 
-For example:
-When CONFIG_SENSORS_LM75 option was enabled for omap4-sdp board -
-it introduces 5-6 ms boot delay.
+--i6ZTfQE1Row3TVml
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-When CONFIG_SENSORS_LM75 option was enabled for omap5-uevm board,
-where i2c-gpio is used for HDMI edid reading - it introduces up to 5 sec boot
-delay.
+On Tue, Jun 04, 2013 at 04:02:36PM +0200, Michal Simek wrote:
+> Do not load endian value from platform data
+> and rather autodetect it.
 
-Hence, introduce CONFIG_I2C_DISABLE_DEVICE_DETECTION configuration option
-to allow disabling of I2C devices instantiation Method 3 "Probe an I2C bus
-for certain devices" if it's not needed (usually for embedded systems).
+Applied, thanks.
 
-CC: linux-i2c@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-CC: linux-omap@vger.kernel.org
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
----
- drivers/i2c/Kconfig    |   10 ++++++++++
- drivers/i2c/i2c-core.c |    6 ++++++
- 2 files changed, 16 insertions(+)
+--i6ZTfQE1Row3TVml
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/drivers/i2c/Kconfig b/drivers/i2c/Kconfig
-index e380c6e..f7b220b 100644
---- a/drivers/i2c/Kconfig
-+++ b/drivers/i2c/Kconfig
-@@ -124,4 +124,14 @@ config I2C_DEBUG_BUS
- 	  a problem with I2C support and want to see more of what is going
- 	  on.
- 
-+config I2C_DISABLE_DEVICE_DETECTION
-+	bool "I2C Disable device detection"
-+	default n
-+	help
-+	  Say Y here, if you have explicitly defined I2C device topology in DT
-+	  or platform code and don't need to detect presence of supported I2C
-+	  devices automatically (Documentation/i2c/instantiating-devices -
-+	  Method 1 and Method 2 are used only). Enabling this option allows to
-+	  reduce system boot time, especially in case when i2c-gpio driver is used.
-+
- endif # I2C
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 48e31ed..d5ab7a3 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -54,7 +54,9 @@ static DEFINE_MUTEX(core_lock);
- static DEFINE_IDR(i2c_adapter_idr);
- 
- static struct device_type i2c_client_type;
-+#ifndef CONFIG_I2C_DISABLE_DEVICE_DETECTION
- static int i2c_detect(struct i2c_adapter *adapter, struct i2c_driver *driver);
-+#endif
- 
- /* ------------------------------------------------------------------------- */
- 
-@@ -958,7 +960,9 @@ static int i2c_do_add_adapter(struct i2c_driver *driver,
- 			      struct i2c_adapter *adap)
- {
- 	/* Detect supported devices on that bus, and instantiate them */
-+#ifndef CONFIG_I2C_DISABLE_DEVICE_DETECTION
- 	i2c_detect(adap, driver);
-+#endif
- 
- 	/* Let legacy drivers scan this bus for matching devices */
- 	if (driver->attach_adapter) {
-@@ -1672,6 +1676,7 @@ static int i2c_default_probe(struct i2c_adapter *adap, unsigned short addr)
- 	return err >= 0;
- }
- 
-+#ifndef CONFIG_I2C_DISABLE_DEVICE_DETECTION
- static int i2c_detect_address(struct i2c_client *temp_client,
- 			      struct i2c_driver *driver)
- {
-@@ -1760,6 +1765,7 @@ static int i2c_detect(struct i2c_adapter *adapter, struct i2c_driver *driver)
- 	kfree(temp_client);
- 	return err;
- }
-+#endif
- 
- int i2c_probe_func_quick_read(struct i2c_adapter *adap, unsigned short addr)
- {
--- 
-1.7.9.5
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
+iQIcBAEBAgAGBQJRriXqAAoJELSic+t+oim9drQP/0PYdm0lZnLnnS8NqfgAWuuT
+Lvit7fiNGEjF5AvAj5FtF2MOZazBZGMmIV1TrmtLfupgde0ezoITZexaQFIQYxas
+XAjCvp6kVRYVvlfeG6igGo7+d9Sh9/yUWm5plrnPG7XK74dffhof72YfIueLPVqa
+zcz+6hnTyauzhKWevVCtIkCvO+9h4qIi2lHwMqCYZd06CqFDLn5bo45KJLR08PSy
+70zrw6rNVbxOCedHxurLnELmba5XiTBOSHlDppt0SANV8Jh/MF0BTVCElqYj3omW
+UFUXoVwbfS9ePUDVRHnP7SYhCkJZv/+sJPv9Zw8PoajEY3vLPwYCxAfUfS17e3Ev
+mRLv7kp12Nje+rKEtDg0IbnFhBOY9QQ4yyC34B7K4FipX36Avp3m2kdD4pbGN5Me
+/eHVL9b1cfkcvrokq5j9yVOfe0LRwGKuW2UugUPvIGai5jnUPS0nBhPP4bmlAUcH
+S3WxV3FmW+PbCZee9Qp3cvX+BEPyvxopuwwqOPpL7NS84u5Lsr2XfYvfda0H3Hhf
+xS2HfdhRbPb4H+Pqz3/p3MsMGFMFW+04YbZ7DRvnHV8zzASnUS384QXv2CXwr8XJ
+XfVrRp3TAVaHxRyl+WtuomhZz833i2Juoza+joMj2Njg8kfO2AdLAPSN7IJMGP0a
+fhLenXAFpZ9jleItdJbZ
+=y3NL
+-----END PGP SIGNATURE-----
+
+--i6ZTfQE1Row3TVml--
