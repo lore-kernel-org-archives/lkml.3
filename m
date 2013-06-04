@@ -1,174 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758996Ab3FDAXd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 20:23:33 -0400
-Received: from mail-bn1lp0156.outbound.protection.outlook.com ([207.46.163.156]:19812
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757096Ab3FDAXY convert rfc822-to-8bit (ORCPT
+	id S1758630Ab3FDAnp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 20:43:45 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50018 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756101Ab3FDAnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 20:23:24 -0400
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -1
-X-BigFish: PS-1(zz98dI9371I936eI542I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh17ej9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB063;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: James Bottomley <jbottomley@parallels.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: [PATCH 1/5] Drivers: scsi: storvsc: Make the scsi timeout a
- module parameter
-Thread-Topic: [PATCH 1/5] Drivers: scsi: storvsc: Make the scsi timeout a
- module parameter
-Thread-Index: AQHOYKxAJGrjXDxyYEGEh8dfafipzpkkm6WAgAAAcdCAAAvzAIAABjEw
-Date: Tue, 4 Jun 2013 00:21:54 +0000
-Message-ID: <d278530eda3a4bd18f78b9106ea5dd2f@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1370301519-27196-1-git-send-email-kys@microsoft.com>
-	 <1370301688-27286-1-git-send-email-kys@microsoft.com>
-	 <1370300581.2013.14.camel@dabdike.int.hansenpartnership.com>
-	 <154d86b83ab94931a097c32e1c8e4987@SN2PR03MB061.namprd03.prod.outlook.com>
- <1370303241.2013.21.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1370303241.2013.21.camel@dabdike.int.hansenpartnership.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:4898:0:fff:0:5efe:172.19.16.128]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PR03MB063.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%SUSE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%INFRADEAD.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%PARALLELS.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC101.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC101.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(24454002)(377424003)(377454002)(51704005)(189002)(13464003)(199002)(76786001)(46406003)(47446002)(47776003)(49866001)(47976001)(63696002)(74502001)(76796001)(50986001)(80022001)(76576001)(81542001)(44976003)(74366001)(20776003)(46102001)(54316002)(31966008)(56816002)(51856001)(74662001)(76482001)(69226001)(79102001)(4396001)(47736001)(65816001)(74316001)(33646001)(54356001)(16676001)(6806003)(77982001)(74706001)(59766001)(74876001)(53806001)(56776001)(50466002)(23726002)(81342001)(24736002)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB038;H:TK5EX14HUBC101.redmond.corp.microsoft.com;CLIP:131.107.125.37;RD:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 0867F4F1AA
+	Mon, 3 Jun 2013 20:43:43 -0400
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
+To: konrad.wilk@oracle.com
+Cc: Xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] PVH: vcpu info placement, load selectors, and remove debug printk.
+Date: Mon,  3 Jun 2013 17:43:32 -0700
+Message-Id: <1370306612-12984-1-git-send-email-mukesh.rathor@oracle.com>
+X-Mailer: git-send-email 1.7.2.3
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch addresses 3 things:
+   - Resolve vcpu info placement fixme.
+   - Load DS/SS/CS selectors for PVH after switching to new gdt.
+   - Remove printk in case of failure to map pnfs in p2m. This because qemu
+     has lot of benign failures when mapping HVM pages.
 
+Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+---
+ arch/x86/xen/enlighten.c |   22 ++++++++++++++++++----
+ arch/x86/xen/mmu.c       |    3 ---
+ 2 files changed, 18 insertions(+), 7 deletions(-)
 
-> -----Original Message-----
-> From: James Bottomley [mailto:jbottomley@parallels.com]
-> Sent: Monday, June 03, 2013 7:47 PM
-> To: KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; ohering@suse.com; hch@infradead.org; linux-
-> scsi@vger.kernel.org
-> Subject: Re: [PATCH 1/5] Drivers: scsi: storvsc: Make the scsi timeout a module
-> parameter
-> 
-> On Mon, 2013-06-03 at 23:25 +0000, KY Srinivasan wrote:
-> >
-> > > -----Original Message-----
-> > > From: James Bottomley [mailto:jbottomley@parallels.com]
-> > > Sent: Monday, June 03, 2013 7:03 PM
-> > > To: KY Srinivasan
-> > > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> > > devel@linuxdriverproject.org; ohering@suse.com; hch@infradead.org; linux-
-> > > scsi@vger.kernel.org
-> > > Subject: Re: [PATCH 1/5] Drivers: scsi: storvsc: Make the scsi timeout a
-> module
-> > > parameter
-> > >
-> > > On Mon, 2013-06-03 at 16:21 -0700, K. Y. Srinivasan wrote:
-> > > > The standard scsi timeout is not appropriate in some of the environments
-> > > where
-> > > > Hyper-V is deployed. Set this timeout appropriately for all devices managed
-> > > > by this driver. Further make this a module parameter.
-> > > >
-> > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > > > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > > > ---
-> > > >  drivers/scsi/storvsc_drv.c |    9 +++++++++
-> > > >  1 files changed, 9 insertions(+), 0 deletions(-)
-> > > >
-> > > > diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-> > > > index 16a3a0c..8d29a95 100644
-> > > > --- a/drivers/scsi/storvsc_drv.c
-> > > > +++ b/drivers/scsi/storvsc_drv.c
-> > > > @@ -221,6 +221,13 @@ static int storvsc_ringbuffer_size = (20 *
-> PAGE_SIZE);
-> > > >  module_param(storvsc_ringbuffer_size, int, S_IRUGO);
-> > > >  MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
-> > > >
-> > > > +/*
-> > > > + * Timeout in seconds for all devices managed by this driver.
-> > > > + */
-> > > > +static int storvsc_timeout = 180;
-> > > > +module_param(storvsc_timeout, uint, (S_IRUGO | S_IWUSR));
-> > > > +MODULE_PARM_DESC(storvsc_timeout, "Device timeout (seconds)");
-> > > > +
-> > > >  #define STORVSC_MAX_IO_REQUESTS				128
-> > > >
-> > > >  /*
-> > > > @@ -1204,6 +1211,8 @@ static int storvsc_device_configure(struct
-> scsi_device
-> > > *sdevice)
-> > > >
-> > > >  	blk_queue_bounce_limit(sdevice->request_queue, BLK_BOUNCE_ANY);
-> > > >
-> > > > +	blk_queue_rq_timeout(sdevice->request_queue, (storvsc_timeout *
-> > > HZ));
-> > >
-> > > Why does this need to be a module parameter?  It's already a sysfs one
-> > > in the scsi_device class?  Three minutes is also a bit large.  The
-> > > default is 30s with huge cache arrays recommending upping this to
-> > > 60s ... you're three times this.
-> >
-> > James,
-> > This number was arrived at based on some testing that was done on the
-> > cloud. On our cloud, we have a  120 second
-> > timeouts that trigger broader VM level recovery  and in cases where
-> > there is storage access issues
-> > (which is when we would hit this timeout), it will be better to defer
-> > to the fabric level recovery than attempt
-> > Scsi level recovery/retry.  The default value chosen for devices
-> > managed by storvsc should be just fine,
-> 
-> So are you sure you want to set the command timeout to 3 minutes? ...
-> it's an incredibly high value.  The actual complete timeout is this
-> value multiplied by the number of retries, which is 5 for disk devices,
-> so you'll be waiting up to 15 minutes before we signal a failure in some
-> circumstances.  It sounds like you want the actual path length of error
-> recovery to be on average 3 minutes.
->
-> The value of the timeout should be a compromise between the longest time
-> you want the user to wait for a failure and the longest time a device
-> should take to respond.
-
-This should be fine. Note that all error recovery/retry is happening on the host side and beyond
-a certain delay, we will do a VM level recovery at the fabric level.  On a slightly different note,
-we have the same issue with the SCSI FLUSH timeout. Would you consider changing this.
-> 
-> > I made it a module parameter to have more flexibility.
-> 
-> It's *already* a sysfs parameter ... why do you want an additional
-> module parameter?  Multiple parameters for the same quantity, especially
-> ones which can't be altered at runtime like module parameters, end up
-> confusing users.
-
-Agreed. I can send you a patch that would remove this parameter. Or, if you prefer
-I could resend this set with the change to this patch (removing the module parameter).
-
-Regards,
-
-K. Y
-> 
-> James
-> 
-> 
-
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index a7ee39f..6ff30d8 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1083,14 +1083,12 @@ void xen_setup_shared_info(void)
+ 		HYPERVISOR_shared_info =
+ 			(struct shared_info *)__va(xen_start_info->shared_info);
+ 
+-	/* PVH TBD/FIXME: vcpu info placement in phase 2 */
+-	if (xen_pvh_domain())
+-		return;
+-
+ #ifndef CONFIG_SMP
+ 	/* In UP this is as good a place as any to set up shared info */
+ 	xen_setup_vcpu_info_placement();
+ #endif
++	if (xen_pvh_domain())
++		return;
+ 
+ 	xen_setup_mfn_list_list();
+ }
+@@ -1103,6 +1101,10 @@ void xen_setup_vcpu_info_placement(void)
+ 	for_each_possible_cpu(cpu)
+ 		xen_vcpu_setup(cpu);
+ 
++	/* PVH always uses native IRQ ops */
++	if (xen_pvh_domain())
++		return;
++
+ 	/* xen_vcpu_setup managed to place the vcpu_info within the
+ 	   percpu area for all cpus, so make use of it */
+ 	if (have_vcpu_info_placement) {
+@@ -1327,6 +1329,18 @@ static void __init xen_setup_stackprotector(void)
+ 	/* PVH TBD/FIXME: investigate setup_stack_canary_segment */
+ 	if (xen_feature(XENFEAT_auto_translated_physmap)) {
+ 		switch_to_new_gdt(0);
++
++		/* xen started us with null selectors. load them now */
++		__asm__ __volatile__ (
++			"movl %0,%%ds\n"
++			"movl %0,%%ss\n"
++			"pushq %%rax\n"
++			"leaq 1f(%%rip),%%rax\n"
++			"pushq %%rax\n"
++			"retfq\n"
++			"1:\n"
++			: : "r" (__KERNEL_DS), "a" (__KERNEL_CS) : "memory");
++
+ 		return;
+ 	}
+ 	pv_cpu_ops.write_gdt_entry = xen_write_gdt_entry_boot;
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 31cc1ef..c104895 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2527,9 +2527,6 @@ static int pvh_add_to_xen_p2m(unsigned long lpfn, unsigned long fgmfn,
+ 	set_xen_guest_handle(xatp.errs, &err);
+ 
+ 	rc = HYPERVISOR_memory_op(XENMEM_add_to_physmap_range, &xatp);
+-	if (rc || err)
+-		pr_warn("d0: Failed to map pfn (0x%lx) to mfn (0x%lx) rc:%d:%d\n",
+-			lpfn, fgmfn, rc, err);
+ 	return rc;
+ }
+ 
+-- 
+1.7.2.3
 
