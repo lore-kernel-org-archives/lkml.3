@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab3FDXLN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:11:13 -0400
-Received: from 1wt.eu ([62.212.114.60]:35494 "EHLO 1wt.eu"
+	id S1754245Ab3FDXLL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:11:11 -0400
+Received: from 1wt.eu ([62.212.114.60]:35495 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753092Ab3FDWma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753100Ab3FDWma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 18:42:30 -0400
-Message-Id: <20130604172133.538760934@1wt.eu>
+Message-Id: <20130604172133.042602242@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:22:48 +0200
+Date: Tue, 04 Jun 2013 19:22:36 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Paolo Bonzini <pbonzini@redhat.com>,
-        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
-        Ben Hutchings <ben@decadent.org.uk>, Thomas Bork <tom@eisfair.net>,
+Cc: Marcin Jurkowski <marcin1j@gmail.com>, Evgeniy Polyakov <zbr@ioremap.net>,
+        Josh Boyer <jwboyer@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 078/184] scsi: Silence unnecessary warnings about ioctl to
+Subject: [ 066/184] w1: fix oops when w1_search is called from netlink
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +24,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- partition
+ connector
 
-From: Jan Kara <jack@suse.cz>
+From: Marcin Jurkowski <marcin1j@gmail.com>
 
-commit 6d9359280753d2955f86d6411047516a9431eb51 upstream.
+commit 9d1817cab2f030f6af360e961cc69bb1da8ad765 upstream.
 
-Sometimes, warnings about ioctls to partition happen often enough that they
-form majority of the warnings in the kernel log and users complain. In some
-cases warnings are about ioctls such as SG_IO so it's not good to get rid of
-the warnings completely as they can ease debugging of userspace problems
-when ioctl is refused.
+On Sat, Mar 02, 2013 at 10:45:10AM +0100, Sven Geggus wrote:
+> This is the bad commit I found doing git bisect:
+> 04f482faf50535229a5a5c8d629cf963899f857c is the first bad commit
+> commit 04f482faf50535229a5a5c8d629cf963899f857c
+> Author: Patrick McHardy <kaber@trash.net>
+> Date:   Mon Mar 28 08:39:36 2011 +0000
 
-Since I have seen warnings from lots of commands, including some proprietary
-userspace applications, I don't think disallowing the ioctls for processes
-with CAP_SYS_RAWIO will happen in the near future if ever. So lets just
-stop warning for processes with CAP_SYS_RAWIO for which ioctl is allowed.
+Good job. I was too lazy to bisect for bad commit;)
 
-CC: Paolo Bonzini <pbonzini@redhat.com>
-CC: James Bottomley <JBottomley@parallels.com>
-CC: linux-scsi@vger.kernel.org
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-[bwh: Backported to 3.2: use ENOTTY, not ENOIOCTLCMD]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-(cherry picked from commit f45c9a6eec20cd712421c442785e7a4e9215a230)
-Cc: Thomas Bork <tom@eisfair.net>
+Reading the code I found problematic kthread_should_stop call from netlink
+connector which causes the oops. After applying a patch, I've been testing
+owfs+w1 setup for nearly two days and it seems to work very reliable (no
+hangs, no memleaks etc).
+More detailed description and possible fix is given below:
+
+Function w1_search can be called from either kthread or netlink callback.
+While the former works fine, the latter causes oops due to kthread_should_stop
+invocation.
+
+This patch adds a check if w1_search is serving netlink command, skipping
+kthread_should_stop invocation if so.
+
+Signed-off-by: Marcin Jurkowski <marcin1j@gmail.com>
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: Josh Boyer <jwboyer@gmail.com>
+Tested-by: Sven Geggus <lists@fuchsschwanzdomain.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- block/scsi_ioctl.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/w1/w1.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index 2be0a97..123eb17 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -720,11 +720,14 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
- 		break;
- 	}
+diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
+index acc7e3b..74284bd 100644
+--- a/drivers/w1/w1.c
++++ b/drivers/w1/w1.c
+@@ -918,7 +918,8 @@ void w1_search(struct w1_master *dev, u8 search_type, w1_slave_found_callback cb
+ 			tmp64 = (triplet_ret >> 2);
+ 			rn |= (tmp64 << i);
  
-+	if (capable(CAP_SYS_RAWIO))
-+		return 0;
-+
- 	/* In particular, rule out all resets and host-specific ioctls.  */
- 	printk_ratelimited(KERN_WARNING
- 			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
- 
--	return capable(CAP_SYS_RAWIO) ? 0 : -ENOTTY;
-+	return -ENOTTY;
- }
- EXPORT_SYMBOL(scsi_verify_blk_ioctl);
- 
+-			if (kthread_should_stop()) {
++			/* ensure we're called from kthread and not by netlink callback */
++			if (!dev->priv && kthread_should_stop()) {
+ 				dev_dbg(&dev->dev, "Abort w1_search\n");
+ 				return;
+ 			}
 -- 
 1.7.12.2.21.g234cd45.dirty
 
