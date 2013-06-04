@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab3FDLDa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 07:03:30 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51398 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674Ab3FDLD2 (ORCPT
+	id S1752993Ab3FDLDk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 07:03:40 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:57274 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751793Ab3FDLDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 07:03:28 -0400
-Date: Tue, 4 Jun 2013 13:03:14 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: Mischa Jonker <Mischa.Jonker@synopsys.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        James Hogan <james.hogan@imgtec.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf: add const qualifier to perf_pmu_register's 'name'
- arg
-Message-ID: <20130604110314.GN8923@twins.programming.kicks-ass.net>
-References: <1370339148-5566-1-git-send-email-mjonker@synopsys.com>
- <20130604095801.GM8923@twins.programming.kicks-ass.net>
- <51ADBB1D.9060805@synopsys.com>
+	Tue, 4 Jun 2013 07:03:35 -0400
+Date: Tue, 4 Jun 2013 13:03:31 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Paul E. McKenney" <paulmck@us.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC][PATCH] ftrace: Use schedule_on_each_cpu() as a heavy
+ synchronize_sched()
+Message-ID: <20130604110329.GA14973@somewhere>
+References: <1369785676.15552.55.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51ADBB1D.9060805@synopsys.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1369785676.15552.55.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 04, 2013 at 03:32:05PM +0530, Vineet Gupta wrote:
-> On 06/04/2013 03:28 PM, Peter Zijlstra wrote:
-> > On Tue, Jun 04, 2013 at 11:45:48AM +0200, Mischa Jonker wrote:
-> >> This allows us to use pdev->name for registering a PMU device.
-> >> IMO the name is not supposed to be changed anyway.
-> >>
-> > Indeed, and thanks! 
-> >
-> > PS. WTH is a metag?
+On Tue, May 28, 2013 at 08:01:16PM -0400, Steven Rostedt wrote:
+> The function tracer uses preempt_disable/enable_notrace() for
+> synchronization between reading registered ftrace_ops and unregistering
+> them.
 > 
-> It's the cpu core from Imagination Tech - their port got merged in 3.9 (along with
-> ARC from Synopsys).
+> Most of the ftrace_ops are global permanent structures that do not
+> require this synchronization. That is, ops may be added and removed from
+> the hlist but are never freed, and wont hurt if a synchronization is
+> missed.
+> 
+> But this is not true for dynamically created ftrace_ops or control_ops,
+> which are used by the perf function tracing.
+> 
+> The problem here is that the function tracer can be used to trace
+> kernel/user context switches as well as going to and from idle.
+> Basically, it can be used to trace blind spots of the RCU subsystem.
+> This means that even though preempt_disable() is done, a
+> synchronize_sched() will ignore CPUs that haven't made it out of user
+> space or idle. These can include functions that are being traced just
+> before entering or exiting the kernel sections.
+> 
+> To implement the RCU synchronization, instead of using
+> synchronize_sched() the use of schedule_on_each_cpu() is performed. This
+> means that when a dynamically allocated ftrace_ops, or a control ops is
+> being unregistered, all CPUs must be touched and execute a ftrace_sync()
+> stub function via the work queues. This will rip CPUs out from idle or
+> in dynamic tick mode. This only happens when a user disables perf
+> function tracing or other dynamically allocated function tracers, but it
+> allows us to continue to debug RCU and context tracking with function
+> tracing.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-So its Meta-G, not me-tag :-) Google gave me the below, its not exactly
-clear what kind of animal it is or what the G stands for. Too much
-marketing speak, too little useful information.
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-http://www.imgtec.com/meta/meta-technology.asp
+If ftrace were to use rcu_dereference_sched() instead of rcu_dereference_raw(), I guess
+the issue would have been detected before. But I guess we want to avoid that for
+tracing recursion?
 
-Simlar 'complaint' for the ARC stuff really, only marketing speak :-)
-
-
+Thanks.
