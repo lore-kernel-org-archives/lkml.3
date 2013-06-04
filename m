@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759368Ab3FDGJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 02:09:59 -0400
-Received: from www.sr71.net ([198.145.64.142]:35650 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756480Ab3FDGJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 02:09:55 -0400
-Message-ID: <51AD84BA.4090106@sr71.net>
-Date: Mon, 03 Jun 2013 23:10:02 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756480Ab3FDGPX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 02:15:23 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:50953 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab3FDGPU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 02:15:20 -0400
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mgorman@suse.de, tim.c.chen@linux.intel.com
-Subject: Re: [v5][PATCH 5/6] mm: vmscan: batch shrink_page_list() locking
- operations
-References: <20130603200202.7F5FDE07@viggo.jf.intel.com> <20130603200208.6F71D31F@viggo.jf.intel.com> <20130604050103.GC14719@blaptop>
-In-Reply-To: <20130604050103.GC14719@blaptop>
+In-Reply-To: <201306032339.39176.heiko@sntech.de>
+References: <1370281990-15090-1-git-send-email-mturquette@linaro.org>
+ <20130603200722.6077.85426@quantum> <201306032215.45983.heiko@sntech.de> <201306032339.39176.heiko@sntech.de>
+From: Mike Turquette <mturquette@linaro.org>
+Date: Mon, 3 Jun 2013 23:14:58 -0700
+Message-ID: <CAPtuhTitiDVBTLF==je9_Ydks5OCqM1cDv-UwPsGkkgwEj6VWQ@mail.gmail.com>
+Subject: Re: [PATCH RFC 2/3] clk: dt: binding for basic multiplexor clock
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2013 10:01 PM, Minchan Kim wrote:
->> > +static int __remove_mapping_batch(struct list_head *remove_list,
->> > +				  struct list_head *ret_pages,
->> > +				  struct list_head *free_pages)
->> > +{
->> > +	int nr_reclaimed = 0;
->> > +	struct address_space *mapping;
->> > +	struct page *page;
->> > +	LIST_HEAD(need_free_mapping);
->> > +
->> > +	while (!list_empty(remove_list)) {
-...
->> > +		if (!__remove_mapping(mapping, page)) {
->> > +			unlock_page(page);
->> > +			list_add(&page->lru, ret_pages);
->> > +			continue;
->> > +		}
->> > +		list_add(&page->lru, &need_free_mapping);
-...
-> +	spin_unlock_irq(&mapping->tree_lock);
-> +	while (!list_empty(&need_free_mapping)) {...
-> +		list_move(&page->list, free_pages);
-> +		mapping_release_page(mapping, page);
-> +	}
-> Why do we need new lru list instead of using @free_pages?
+On Mon, Jun 3, 2013 at 2:39 PM, Heiko Stübner <heiko@sntech.de> wrote:
+> Am Montag, 3. Juni 2013, 22:15:45 schrieb Heiko Stübner:
+>> Am Montag, 3. Juni 2013, 22:07:22 schrieb Mike Turquette:
+>> > Quoting Heiko Stübner (2013-06-03 12:33:19)
+>> >
+>> > > Hi Mike,
+>> > >
+>> > > I think it's a multiplexEr clock in the patch title, and see below
+>> >
+>> > Doh, you are right.  But "xor" is so much cooler looking than "xer"...
+>> >
+>> > > Am Montag, 3. Juni 2013, 19:53:09 schrieb Mike Turquette:
+>> > > > Device Tree binding for the basic clock multiplexor, plus the setup
+>> > > > function to register the clock.  Based on the existing fixed-clock
+>> > > > binding.
+>> > > >
+>> > > > Also relocate declaration of of_fixed_factor_clk_setup to keep things
+>> > > > tidy.
+>> > > >
+>> > > > Signed-off-by: Mike Turquette <mturquette@linaro.org>
+>> > >
+>> > > [...]
+>> > >
+>> > > > +
+>> > > > +     reg = of_iomap(node, 0);
+>> > > > +     pr_err("%s: reg is 0x%p\n", __func__, reg);
+>> > > > +
+>> > > > +     if (of_property_read_u32(node, "mask", &mask)) {
+>> > > > +             pr_err("%s: missing mask property for %s\n", __func__,
+>> > > > node->name); +             return;
+>> > > > +     }
+>> > > > +
+>> > > > +     if (of_property_read_u32(node, "shift", &shift))
+>> > > > +             pr_debug("%s: missing shift property defaults to zero
+>> > > > for %s\n", +                             __func__, node->name);
+>> > > > +
+>> > > > +     if (of_property_read_bool(node, "index_one"))
+>> > > > +             clk_mux_flags |= CLK_MUX_INDEX_ONE;
+>> > > > +
+>> > > > +     clk = clk_register_mux_table(NULL, clk_name, parent_names,
+>> > > > num_parents, +                     0, reg, 0, mask, clk_mux_flags,
+>> > > >
+>> > >                       ^- should probably be shift
+>> > >
+>> > > Otherwise looks cool and I'm currently trying it with my Rockchip code.
+>> >
+>> > Right again.  My test platform seems to not shift the mask at all so
+>> > this did not cause a visible bug for me.
+>>
+>> I'm currently converting my rockchip stuff to it, as it would solve a lot
+>> of problems with the numerous clock types I'm defining just to put the
+>> shift and mask values somewhere.
+>>
+>> So lets see if anything more turns up ;-)
+>
+> yep ... of_mux_clk_setup is quite talkative ... there are quite some (debug-?)
+> pr_errs in it ;-)
+>
 
-I actually tried using @free_pages at first.  The problem is that we
-need to call mapping_release_page() without the radix tree lock held so
-we can not do it in the first while() loop.
+Yes I realized that after sending.  Hopefully not too many curse words
+in the trace messages.  Will remove for v2.
 
-'free_pages' is a list created up in shrink_page_list().  There can be
-several calls to __remove_mapping_batch() for each call to
-shrink_page_list().
+Regards,
+Mike
 
-'need_free_mapping' lets us temporarily differentiate the pages that we
-need to call mapping_release_page()/unlock_page() on versus the ones on
-'free_pages' which have already had that done.
-
-We could theoretically delay _all_ of the
-release_mapping_page()/unlock_page() operations until the _entire_
-shrink_page_list() operation is done, but doing this really helps with
-lock_page() latency.
-
-Does that make sense?
+>
+> Heiko
