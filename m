@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757480Ab3FDOqs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:46:48 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:20635 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754464Ab3FDOqn (ORCPT
+	id S1757504Ab3FDOq7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:46:59 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:34311 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754464Ab3FDOq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:46:43 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/BTSwCKWyLMAH0kM17P6oO
-Date: Tue, 4 Jun 2013 07:46:33 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Hebbar Gururaja <gururaja.hebbar@ti.com>
-Cc: khilman@linaro.org, grant.likely@linaro.org, linus.walleij@linaro.org,
-        rob.herring@calxeda.com,
-        davinci-linux-open-source@linux.davincidsp.com, sudhakar.raj@ti.com,
-        linux@arm.linux.org.uk, Balaji T K <balajitk@ti.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vaibhav.bedia@ti.com,
-        linux-omap@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 09/11] mmc: omap_hsmmc: enhance pinctrl support
-Message-ID: <20130604144632.GI3331@atomide.com>
-References: <1369995191-20855-1-git-send-email-gururaja.hebbar@ti.com>
- <1369995191-20855-10-git-send-email-gururaja.hebbar@ti.com>
+	Tue, 4 Jun 2013 10:46:56 -0400
+Date: Tue, 4 Jun 2013 07:46:40 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: "Stefan (metze) Metzmacher" <metze@samba.org>
+Cc: Jeff Layton <jlayton@redhat.com>, viro@zeniv.linux.org.uk, matthew@wil.cx,
+        bfields@fieldses.org, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, cluster-devel@redhat.com, sage@inktank.com,
+        samba-technical@lists.samba.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
+        dhowells@redhat.com, smfrench@gmail.com, linux-fsdevel@vger.kernel.org,
+        ceph-devel@vger.kernel.org, akpm@linux-foundation.org,
+        swhiteho@redhat.com
+Subject: Re: [PATCH v1 11/11] locks: give the blocked_hash its own spinlock
+Message-ID: <20130604144640.GA7730@infradead.org>
+References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
+ <1370056054-25449-12-git-send-email-jlayton@redhat.com>
+ <51ADF789.70906@samba.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1369995191-20855-10-git-send-email-gururaja.hebbar@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <51ADF789.70906@samba.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Hebbar Gururaja <gururaja.hebbar@ti.com> [130531 03:19]:
-> Amend the hsmmc controller to optionally take a pin control handle and
-> set the state of the pins to:
-> 
-> - "default" on boot, resume and before performing a mmc transfer
-> - "idle" after initial default, after resume default, and after each
-> mmc/sd card access
-> - "sleep" on suspend()
-> 
-> By optionally putting the pins into sleep state in the suspend callback
-> we can accomplish two things.
-> - One is to minimize current leakage from pins and thus save power,
-> - second, we can prevent the IP from driving pins output in an
-> uncontrolled manner, which may happen if the power domain drops the
-> domain regulator.
-> 
-> If any of the above pin states are missing in dt, a warning message
-> about the missing state is displayed.
-> If certain pin-states are not available, to remove this warning message
-> pass respective state name with null phandler.
+Having RCU for modification mostly workloads never is a good idea, so
+I don't think it makes sense to mention it here.
 
-There's a similar patch in the "[RESEND PATCH v2 1/3] mmc: omap_hsmmc:
-Enable SDIO IRQ using a GPIO in idle mode" thread. It also makes the
-SDIO interrupts to work, so we need to consider that too.
+If you care about the overhead it's worth trying to use per-cpu lists,
+though.
 
-We can merge the dynamic pinmuxing parts separately, but they should
-be in a separate function like I posted later on in the thread above.
-
-Regards,
-
-Tony 
