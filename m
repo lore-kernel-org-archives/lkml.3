@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065Ab3FDOUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:20:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46776 "EHLO
+	id S1755822Ab3FDOIH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:08:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46715 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755879Ab3FDOIK (ORCPT
+	with ESMTP id S1755458Ab3FDOH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:08:10 -0400
+	Tue, 4 Jun 2013 10:07:56 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christian Gmeiner <christian.gmeiner@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Martin Michlmayr <tbm@cyrius.com>, Jason Cooper <jason@lakedaemon.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 33/70] drivers/leds/leds-ot200.c: fix error caused by shifted mask
-Date: Tue,  4 Jun 2013 15:06:49 +0100
-Message-Id: <1370354846-14213-34-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 21/70] Kirkwood: Enable PCIe port 1 on QNAP TS-11x/TS-21x
+Date: Tue,  4 Jun 2013 15:06:37 +0100
+Message-Id: <1370354846-14213-22-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
 References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
@@ -31,76 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
+From: Martin Michlmayr <tbm@cyrius.com>
 
-commit 4b949b8af12e24b8a48fa5bb775a13b558d9f4da upstream.
+commit 99e11334dcb846f9b76fb808196c7f47aa83abb3 upstream.
 
-During the development of this driver an in-house register documentation
-was used.  The last week some integration tests were done and this
-problem was found.  It turned out that the released register
-documentation is wrong.
+Enable KW_PCIE1 on QNAP TS-11x/TS-21x devices as newer revisions
+(rev 1.3) have a USB 3.0 chip from Etron on PCIe port 1.  Thanks
+to Marek Vasut for identifying this issue!
 
-The fix is very simple: shift all masks by one.
-
-Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
-Cc: Bryan Wu <cooloney@gmail.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Martin Michlmayr <tbm@cyrius.com>
+Tested-by: Marek Vasut <marex@denx.de>
+Acked-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/leds/leds-ot200.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ arch/arm/mach-kirkwood/ts219-setup.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
-index c464682..676e729 100644
---- a/drivers/leds/leds-ot200.c
-+++ b/drivers/leds/leds-ot200.c
-@@ -47,37 +47,37 @@ static struct ot200_led leds[] = {
- 	{
- 		.name = "led_1",
- 		.port = 0x49,
--		.mask = BIT(7),
-+		.mask = BIT(6),
- 	},
- 	{
- 		.name = "led_2",
- 		.port = 0x49,
--		.mask = BIT(6),
-+		.mask = BIT(5),
- 	},
- 	{
- 		.name = "led_3",
- 		.port = 0x49,
--		.mask = BIT(5),
-+		.mask = BIT(4),
- 	},
- 	{
- 		.name = "led_4",
- 		.port = 0x49,
--		.mask = BIT(4),
-+		.mask = BIT(3),
- 	},
- 	{
- 		.name = "led_5",
- 		.port = 0x49,
--		.mask = BIT(3),
-+		.mask = BIT(2),
- 	},
- 	{
- 		.name = "led_6",
- 		.port = 0x49,
--		.mask = BIT(2),
-+		.mask = BIT(1),
- 	},
- 	{
- 		.name = "led_7",
- 		.port = 0x49,
--		.mask = BIT(1),
-+		.mask = BIT(0),
- 	}
- };
+diff --git a/arch/arm/mach-kirkwood/ts219-setup.c b/arch/arm/mach-kirkwood/ts219-setup.c
+index 73e2b6c..3a73fc7 100644
+--- a/arch/arm/mach-kirkwood/ts219-setup.c
++++ b/arch/arm/mach-kirkwood/ts219-setup.c
+@@ -124,7 +124,7 @@ static void __init qnap_ts219_init(void)
+ static int __init ts219_pci_init(void)
+ {
+ 	if (machine_is_ts219())
+-		kirkwood_pcie_init(KW_PCIE0);
++		kirkwood_pcie_init(KW_PCIE1 | KW_PCIE0);
  
+ 	return 0;
+ }
 -- 
 1.8.1.2
 
