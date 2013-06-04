@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758744Ab3FDRDc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:03:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48603 "EHLO
+	id S1758481Ab3FDRD2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:03:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48613 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758603Ab3FDRDQ (ORCPT
+	with ESMTP id S1756455Ab3FDRDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:03:16 -0400
+	Tue, 4 Jun 2013 13:03:19 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Martin <dave.martin@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 38/75] ARM: 7626/1: arm/crypto: Make asm SHA-1 and AES code Thumb-2 compatible
-Date: Tue,  4 Jun 2013 09:55:22 -0700
-Message-Id: <1370364959-9475-39-git-send-email-kamal@canonical.com>
+Subject: [PATCH 36/75] drm/i915: Adding more reserved PCI IDs for Haswell.
+Date: Tue,  4 Jun 2013 09:55:20 -0700
+Message-Id: <1370364959-9475-37-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370364959-9475-1-git-send-email-kamal@canonical.com>
 References: <1370364959-9475-1-git-send-email-kamal@canonical.com>
@@ -28,275 +30,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Martin <dave.martin@linaro.org>
+From: Rodrigo Vivi <rodrigo.vivi@gmail.com>
 
-commit 638591cd7b601d403ed703d55062b48c32ea8cfb upstream.
+commit 1c98b4871cca4b7ce07e19f92f934d47cf7210b0 upstream.
 
-This patch fixes aes-armv4.S and sha1-armv4-large.S to work
-natively in Thumb.  This allows ARM/Thumb interworking workarounds
-to be removed.
+At DDX commit Chris mentioned the tendency we have of finding out more
+PCI IDs only when users report. So Let's add all new reserved Haswell IDs.
 
-I also take the opportunity to convert some explicit assembler
-directives for exported functions to the standard
-ENTRY()/ENDPROC().
+This patch also fix GT3 names. I'no not sending in separated patche because
+names are only in few comments and not in variable names.
 
-For the code itself:
+v2: Fix some mobile ids (by Paulo)
 
-  * In sha1_block_data_order, use of TEQ with sp is deprecated in
-    ARMv7 and not supported in Thumb.  For the branches back to
-    .L_00_15 and .L_40_59, the TEQ is converted to a CMP, under the
-    assumption that clobbering the C flag here will not cause
-    incorrect behaviour.
-
-    For the first branch back to .L_20_39_or_60_79 the C flag is
-    important, so sp is moved temporarily into another register so
-    that TEQ can be used for the comparison.
-
-  * In the AES code, most forms of register-indexed addressing with
-    shifts and rotates are not permitted for loads and stores in
-    Thumb, so the address calculation is done using a separate
-    instruction for the Thumb case.
-
-The resulting code is unlikely to be optimally scheduled, but it
-should not have a large impact given the overall size of the code.
-I haven't run any benchmarks.
-
-Signed-off-by: Dave Martin <dave.martin@linaro.org>
-Tested-by: David McCullough <ucdevel@gmail.com> (ARM only)
-Acked-by: David McCullough <ucdevel@gmail.com>
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+References: http://bugs.freedesktop.org/show_bug.cgi?id=63701
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/crypto/aes-armv4.S        | 64 ++++++++++++--------------------------
- arch/arm/crypto/sha1-armv4-large.S | 24 ++++++--------
- 2 files changed, 29 insertions(+), 59 deletions(-)
+ drivers/gpu/drm/i915/i915_drv.c | 46 +++++++++++++++++++++++++++++++----------
+ 1 file changed, 35 insertions(+), 11 deletions(-)
 
-diff --git a/arch/arm/crypto/aes-armv4.S b/arch/arm/crypto/aes-armv4.S
-index e59b1d5..19d6cd6 100644
---- a/arch/arm/crypto/aes-armv4.S
-+++ b/arch/arm/crypto/aes-armv4.S
-@@ -34,8 +34,9 @@
- @ A little glue here to select the correct code below for the ARM CPU
- @ that is being targetted.
- 
-+#include <linux/linkage.h>
-+
- .text
--.code	32
- 
- .type	AES_Te,%object
- .align	5
-@@ -145,10 +146,8 @@ AES_Te:
- 
- @ void AES_encrypt(const unsigned char *in, unsigned char *out,
- @ 		 const AES_KEY *key) {
--.global AES_encrypt
--.type   AES_encrypt,%function
- .align	5
--AES_encrypt:
-+ENTRY(AES_encrypt)
- 	sub	r3,pc,#8		@ AES_encrypt
- 	stmdb   sp!,{r1,r4-r12,lr}
- 	mov	r12,r0		@ inp
-@@ -239,15 +238,8 @@ AES_encrypt:
- 	strb	r6,[r12,#14]
- 	strb	r3,[r12,#15]
- #endif
--#if __ARM_ARCH__>=5
- 	ldmia	sp!,{r4-r12,pc}
--#else
--	ldmia   sp!,{r4-r12,lr}
--	tst	lr,#1
--	moveq	pc,lr			@ be binary compatible with V4, yet
--	.word	0xe12fff1e			@ interoperable with Thumb ISA:-)
--#endif
--.size	AES_encrypt,.-AES_encrypt
-+ENDPROC(AES_encrypt)
- 
- .type   _armv4_AES_encrypt,%function
- .align	2
-@@ -386,10 +378,8 @@ _armv4_AES_encrypt:
- 	ldr	pc,[sp],#4		@ pop and return
- .size	_armv4_AES_encrypt,.-_armv4_AES_encrypt
- 
--.global private_AES_set_encrypt_key
--.type   private_AES_set_encrypt_key,%function
- .align	5
--private_AES_set_encrypt_key:
-+ENTRY(private_AES_set_encrypt_key)
- _armv4_AES_set_encrypt_key:
- 	sub	r3,pc,#8		@ AES_set_encrypt_key
- 	teq	r0,#0
-@@ -658,15 +648,11 @@ _armv4_AES_set_encrypt_key:
- 
- .Ldone:	mov	r0,#0
- 	ldmia   sp!,{r4-r12,lr}
--.Labrt:	tst	lr,#1
--	moveq	pc,lr			@ be binary compatible with V4, yet
--	.word	0xe12fff1e			@ interoperable with Thumb ISA:-)
--.size	private_AES_set_encrypt_key,.-private_AES_set_encrypt_key
-+.Labrt:	mov	pc,lr
-+ENDPROC(private_AES_set_encrypt_key)
- 
--.global private_AES_set_decrypt_key
--.type   private_AES_set_decrypt_key,%function
- .align	5
--private_AES_set_decrypt_key:
-+ENTRY(private_AES_set_decrypt_key)
- 	str	lr,[sp,#-4]!            @ push lr
- #if 0
- 	@ kernel does both of these in setkey so optimise this bit out by
-@@ -748,15 +734,8 @@ private_AES_set_decrypt_key:
- 	bne	.Lmix
- 
- 	mov	r0,#0
--#if __ARM_ARCH__>=5
- 	ldmia	sp!,{r4-r12,pc}
--#else
--	ldmia   sp!,{r4-r12,lr}
--	tst	lr,#1
--	moveq	pc,lr			@ be binary compatible with V4, yet
--	.word	0xe12fff1e			@ interoperable with Thumb ISA:-)
--#endif
--.size	private_AES_set_decrypt_key,.-private_AES_set_decrypt_key
-+ENDPROC(private_AES_set_decrypt_key)
- 
- .type	AES_Td,%object
- .align	5
-@@ -862,10 +841,8 @@ AES_Td:
- 
- @ void AES_decrypt(const unsigned char *in, unsigned char *out,
- @ 		 const AES_KEY *key) {
--.global AES_decrypt
--.type   AES_decrypt,%function
- .align	5
--AES_decrypt:
-+ENTRY(AES_decrypt)
- 	sub	r3,pc,#8		@ AES_decrypt
- 	stmdb   sp!,{r1,r4-r12,lr}
- 	mov	r12,r0		@ inp
-@@ -956,15 +933,8 @@ AES_decrypt:
- 	strb	r6,[r12,#14]
- 	strb	r3,[r12,#15]
- #endif
--#if __ARM_ARCH__>=5
- 	ldmia	sp!,{r4-r12,pc}
--#else
--	ldmia   sp!,{r4-r12,lr}
--	tst	lr,#1
--	moveq	pc,lr			@ be binary compatible with V4, yet
--	.word	0xe12fff1e			@ interoperable with Thumb ISA:-)
--#endif
--.size	AES_decrypt,.-AES_decrypt
-+ENDPROC(AES_decrypt)
- 
- .type   _armv4_AES_decrypt,%function
- .align	2
-@@ -1064,7 +1034,9 @@ _armv4_AES_decrypt:
- 	and	r9,lr,r1,lsr#8
- 
- 	ldrb	r7,[r10,r7]		@ Td4[s1>>0]
--	ldrb	r1,[r10,r1,lsr#24]	@ Td4[s1>>24]
-+ ARM(	ldrb	r1,[r10,r1,lsr#24]  )	@ Td4[s1>>24]
-+ THUMB(	add	r1,r10,r1,lsr#24    ) 	@ Td4[s1>>24]
-+ THUMB(	ldrb	r1,[r1]		    )
- 	ldrb	r8,[r10,r8]		@ Td4[s1>>16]
- 	eor	r0,r7,r0,lsl#24
- 	ldrb	r9,[r10,r9]		@ Td4[s1>>8]
-@@ -1077,7 +1049,9 @@ _armv4_AES_decrypt:
- 	ldrb	r8,[r10,r8]		@ Td4[s2>>0]
- 	and	r9,lr,r2,lsr#16
- 
--	ldrb	r2,[r10,r2,lsr#24]	@ Td4[s2>>24]
-+ ARM(	ldrb	r2,[r10,r2,lsr#24]  )	@ Td4[s2>>24]
-+ THUMB(	add	r2,r10,r2,lsr#24    )	@ Td4[s2>>24]
-+ THUMB(	ldrb	r2,[r2]		    )
- 	eor	r0,r0,r7,lsl#8
- 	ldrb	r9,[r10,r9]		@ Td4[s2>>16]
- 	eor	r1,r8,r1,lsl#16
-@@ -1090,7 +1064,9 @@ _armv4_AES_decrypt:
- 	and	r9,lr,r3		@ i2
- 
- 	ldrb	r9,[r10,r9]		@ Td4[s3>>0]
--	ldrb	r3,[r10,r3,lsr#24]	@ Td4[s3>>24]
-+ ARM(	ldrb	r3,[r10,r3,lsr#24]  )	@ Td4[s3>>24]
-+ THUMB(	add	r3,r10,r3,lsr#24    )	@ Td4[s3>>24]
-+ THUMB(	ldrb	r3,[r3]		    )
- 	eor	r0,r0,r7,lsl#16
- 	ldr	r7,[r11,#0]
- 	eor	r1,r1,r8,lsl#8
-diff --git a/arch/arm/crypto/sha1-armv4-large.S b/arch/arm/crypto/sha1-armv4-large.S
-index 7050ab1..92c6eed 100644
---- a/arch/arm/crypto/sha1-armv4-large.S
-+++ b/arch/arm/crypto/sha1-armv4-large.S
-@@ -51,13 +51,12 @@
- @ Profiler-assisted and platform-specific optimization resulted in 10%
- @ improvement on Cortex A8 core and 12.2 cycles per byte.
- 
--.text
-+#include <linux/linkage.h>
- 
--.global	sha1_block_data_order
--.type	sha1_block_data_order,%function
-+.text
- 
- .align	2
--sha1_block_data_order:
-+ENTRY(sha1_block_data_order)
- 	stmdb	sp!,{r4-r12,lr}
- 	add	r2,r1,r2,lsl#6	@ r2 to point at the end of r1
- 	ldmia	r0,{r3,r4,r5,r6,r7}
-@@ -194,7 +193,7 @@ sha1_block_data_order:
- 	eor	r10,r10,r7,ror#2		@ F_00_19(B,C,D)
- 	str	r9,[r14,#-4]!
- 	add	r3,r3,r10			@ E+=F_00_19(B,C,D)
--	teq	r14,sp
-+	cmp	r14,sp
- 	bne	.L_00_15		@ [((11+4)*5+2)*3]
- #if __ARM_ARCH__<7
- 	ldrb	r10,[r1,#2]
-@@ -374,7 +373,9 @@ sha1_block_data_order:
- 						@ F_xx_xx
- 	add	r3,r3,r9			@ E+=X[i]
- 	add	r3,r3,r10			@ E+=F_20_39(B,C,D)
--	teq	r14,sp			@ preserve carry
-+ ARM(	teq	r14,sp		)	@ preserve carry
-+ THUMB(	mov	r11,sp		)
-+ THUMB(	teq	r14,r11		)	@ preserve carry
- 	bne	.L_20_39_or_60_79	@ [+((12+3)*5+2)*4]
- 	bcs	.L_done			@ [+((12+3)*5+2)*4], spare 300 bytes
- 
-@@ -466,7 +467,7 @@ sha1_block_data_order:
- 	add	r3,r3,r9			@ E+=X[i]
- 	add	r3,r3,r10			@ E+=F_40_59(B,C,D)
- 	add	r3,r3,r11,ror#2
--	teq	r14,sp
-+	cmp	r14,sp
- 	bne	.L_40_59		@ [+((12+5)*5+2)*4]
- 
- 	ldr	r8,.LK_60_79
-@@ -485,19 +486,12 @@ sha1_block_data_order:
- 	teq	r1,r2
- 	bne	.Lloop			@ [+18], total 1307
- 
--#if __ARM_ARCH__>=5
- 	ldmia	sp!,{r4-r12,pc}
--#else
--	ldmia	sp!,{r4-r12,lr}
--	tst	lr,#1
--	moveq	pc,lr			@ be binary compatible with V4, yet
--	.word	0xe12fff1e			@ interoperable with Thumb ISA:-)
--#endif
- .align	2
- .LK_00_19:	.word	0x5a827999
- .LK_20_39:	.word	0x6ed9eba1
- .LK_40_59:	.word	0x8f1bbcdc
- .LK_60_79:	.word	0xca62c1d6
--.size	sha1_block_data_order,.-sha1_block_data_order
-+ENDPROC(sha1_block_data_order)
- .asciz	"SHA1 block transform for ARMv4, CRYPTOGAMS by <appro@openssl.org>"
- .align	2
+diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
+index 4bc789e..41e02dc 100644
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -352,40 +352,64 @@ static const struct pci_device_id pciidlist[] = {		/* aka */
+ 	INTEL_VGA_DEVICE(0x016a, &intel_ivybridge_d_info), /* GT2 server */
+ 	INTEL_VGA_DEVICE(0x0402, &intel_haswell_d_info), /* GT1 desktop */
+ 	INTEL_VGA_DEVICE(0x0412, &intel_haswell_d_info), /* GT2 desktop */
+-	INTEL_VGA_DEVICE(0x0422, &intel_haswell_d_info), /* GT2 desktop */
++	INTEL_VGA_DEVICE(0x0422, &intel_haswell_d_info), /* GT3 desktop */
+ 	INTEL_VGA_DEVICE(0x040a, &intel_haswell_d_info), /* GT1 server */
+ 	INTEL_VGA_DEVICE(0x041a, &intel_haswell_d_info), /* GT2 server */
+-	INTEL_VGA_DEVICE(0x042a, &intel_haswell_d_info), /* GT2 server */
++	INTEL_VGA_DEVICE(0x042a, &intel_haswell_d_info), /* GT3 server */
+ 	INTEL_VGA_DEVICE(0x0406, &intel_haswell_m_info), /* GT1 mobile */
+ 	INTEL_VGA_DEVICE(0x0416, &intel_haswell_m_info), /* GT2 mobile */
+ 	INTEL_VGA_DEVICE(0x0426, &intel_haswell_m_info), /* GT2 mobile */
++	INTEL_VGA_DEVICE(0x040B, &intel_haswell_d_info), /* GT1 reserved */
++	INTEL_VGA_DEVICE(0x041B, &intel_haswell_d_info), /* GT2 reserved */
++	INTEL_VGA_DEVICE(0x042B, &intel_haswell_d_info), /* GT3 reserved */
++	INTEL_VGA_DEVICE(0x040E, &intel_haswell_d_info), /* GT1 reserved */
++	INTEL_VGA_DEVICE(0x041E, &intel_haswell_d_info), /* GT2 reserved */
++	INTEL_VGA_DEVICE(0x042E, &intel_haswell_d_info), /* GT3 reserved */
+ 	INTEL_VGA_DEVICE(0x0C02, &intel_haswell_d_info), /* SDV GT1 desktop */
+ 	INTEL_VGA_DEVICE(0x0C12, &intel_haswell_d_info), /* SDV GT2 desktop */
+-	INTEL_VGA_DEVICE(0x0C22, &intel_haswell_d_info), /* SDV GT2 desktop */
++	INTEL_VGA_DEVICE(0x0C22, &intel_haswell_d_info), /* SDV GT3 desktop */
+ 	INTEL_VGA_DEVICE(0x0C0A, &intel_haswell_d_info), /* SDV GT1 server */
+ 	INTEL_VGA_DEVICE(0x0C1A, &intel_haswell_d_info), /* SDV GT2 server */
+-	INTEL_VGA_DEVICE(0x0C2A, &intel_haswell_d_info), /* SDV GT2 server */
++	INTEL_VGA_DEVICE(0x0C2A, &intel_haswell_d_info), /* SDV GT3 server */
+ 	INTEL_VGA_DEVICE(0x0C06, &intel_haswell_m_info), /* SDV GT1 mobile */
+ 	INTEL_VGA_DEVICE(0x0C16, &intel_haswell_m_info), /* SDV GT2 mobile */
+-	INTEL_VGA_DEVICE(0x0C26, &intel_haswell_m_info), /* SDV GT2 mobile */
++	INTEL_VGA_DEVICE(0x0C26, &intel_haswell_m_info), /* SDV GT3 mobile */
++	INTEL_VGA_DEVICE(0x0C0B, &intel_haswell_d_info), /* SDV GT1 reserved */
++	INTEL_VGA_DEVICE(0x0C1B, &intel_haswell_d_info), /* SDV GT2 reserved */
++	INTEL_VGA_DEVICE(0x0C2B, &intel_haswell_d_info), /* SDV GT3 reserved */
++	INTEL_VGA_DEVICE(0x0C0E, &intel_haswell_d_info), /* SDV GT1 reserved */
++	INTEL_VGA_DEVICE(0x0C1E, &intel_haswell_d_info), /* SDV GT2 reserved */
++	INTEL_VGA_DEVICE(0x0C2E, &intel_haswell_d_info), /* SDV GT3 reserved */
+ 	INTEL_VGA_DEVICE(0x0A02, &intel_haswell_d_info), /* ULT GT1 desktop */
+ 	INTEL_VGA_DEVICE(0x0A12, &intel_haswell_d_info), /* ULT GT2 desktop */
+-	INTEL_VGA_DEVICE(0x0A22, &intel_haswell_d_info), /* ULT GT2 desktop */
++	INTEL_VGA_DEVICE(0x0A22, &intel_haswell_d_info), /* ULT GT3 desktop */
+ 	INTEL_VGA_DEVICE(0x0A0A, &intel_haswell_d_info), /* ULT GT1 server */
+ 	INTEL_VGA_DEVICE(0x0A1A, &intel_haswell_d_info), /* ULT GT2 server */
+-	INTEL_VGA_DEVICE(0x0A2A, &intel_haswell_d_info), /* ULT GT2 server */
++	INTEL_VGA_DEVICE(0x0A2A, &intel_haswell_d_info), /* ULT GT3 server */
+ 	INTEL_VGA_DEVICE(0x0A06, &intel_haswell_m_info), /* ULT GT1 mobile */
+ 	INTEL_VGA_DEVICE(0x0A16, &intel_haswell_m_info), /* ULT GT2 mobile */
+-	INTEL_VGA_DEVICE(0x0A26, &intel_haswell_m_info), /* ULT GT2 mobile */
++	INTEL_VGA_DEVICE(0x0A26, &intel_haswell_m_info), /* ULT GT3 mobile */
++	INTEL_VGA_DEVICE(0x0A0B, &intel_haswell_d_info), /* ULT GT1 reserved */
++	INTEL_VGA_DEVICE(0x0A1B, &intel_haswell_d_info), /* ULT GT2 reserved */
++	INTEL_VGA_DEVICE(0x0A2B, &intel_haswell_d_info), /* ULT GT3 reserved */
++	INTEL_VGA_DEVICE(0x0A0E, &intel_haswell_m_info), /* ULT GT1 reserved */
++	INTEL_VGA_DEVICE(0x0A1E, &intel_haswell_m_info), /* ULT GT2 reserved */
++	INTEL_VGA_DEVICE(0x0A2E, &intel_haswell_m_info), /* ULT GT3 reserved */
+ 	INTEL_VGA_DEVICE(0x0D02, &intel_haswell_d_info), /* CRW GT1 desktop */
+ 	INTEL_VGA_DEVICE(0x0D12, &intel_haswell_d_info), /* CRW GT2 desktop */
+-	INTEL_VGA_DEVICE(0x0D22, &intel_haswell_d_info), /* CRW GT2 desktop */
++	INTEL_VGA_DEVICE(0x0D22, &intel_haswell_d_info), /* CRW GT3 desktop */
+ 	INTEL_VGA_DEVICE(0x0D0A, &intel_haswell_d_info), /* CRW GT1 server */
+ 	INTEL_VGA_DEVICE(0x0D1A, &intel_haswell_d_info), /* CRW GT2 server */
+-	INTEL_VGA_DEVICE(0x0D2A, &intel_haswell_d_info), /* CRW GT2 server */
++	INTEL_VGA_DEVICE(0x0D2A, &intel_haswell_d_info), /* CRW GT3 server */
+ 	INTEL_VGA_DEVICE(0x0D06, &intel_haswell_m_info), /* CRW GT1 mobile */
+ 	INTEL_VGA_DEVICE(0x0D16, &intel_haswell_m_info), /* CRW GT2 mobile */
+-	INTEL_VGA_DEVICE(0x0D26, &intel_haswell_m_info), /* CRW GT2 mobile */
++	INTEL_VGA_DEVICE(0x0D26, &intel_haswell_m_info), /* CRW GT3 mobile */
++	INTEL_VGA_DEVICE(0x0D0B, &intel_haswell_d_info), /* CRW GT1 reserved */
++	INTEL_VGA_DEVICE(0x0D1B, &intel_haswell_d_info), /* CRW GT2 reserved */
++	INTEL_VGA_DEVICE(0x0D2B, &intel_haswell_d_info), /* CRW GT3 reserved */
++	INTEL_VGA_DEVICE(0x0D0E, &intel_haswell_d_info), /* CRW GT1 reserved */
++	INTEL_VGA_DEVICE(0x0D1E, &intel_haswell_d_info), /* CRW GT2 reserved */
++	INTEL_VGA_DEVICE(0x0D2E, &intel_haswell_d_info), /* CRW GT3 reserved */
+ 	INTEL_VGA_DEVICE(0x0f30, &intel_valleyview_m_info),
+ 	INTEL_VGA_DEVICE(0x0f31, &intel_valleyview_m_info),
+ 	INTEL_VGA_DEVICE(0x0f32, &intel_valleyview_m_info),
 -- 
 1.8.1.2
 
