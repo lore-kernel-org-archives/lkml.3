@@ -1,43 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964Ab3FDJtV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 05:49:21 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46888 "EHLO bear.ext.ti.com"
+	id S1753077Ab3FDJvf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 05:51:35 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54071 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751151Ab3FDJtU convert rfc822-to-8bit (ORCPT
+	id S1751235Ab3FDJvd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 05:49:20 -0400
+	Tue, 4 Jun 2013 05:51:33 -0400
 From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
 To: Kevin Hilman <khilman@linaro.org>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "zonque@gmail.com" <zonque@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+CC: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
         "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
         "davinci-linux-open-source@linux.davincidsp.com" 
 	<davinci-linux-open-source@linux.davincidsp.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "Bedia, Vaibhav" <vaibhav.bedia@ti.com>,
-        "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>
-Subject: RE: [PATCH 1/2] rtc: omap: add option to indicate wakeup support
- through DT
-Thread-Topic: [PATCH 1/2] rtc: omap: add option to indicate wakeup support
- through DT
-Thread-Index: AQHOXib/BNPfWUFEYEK7eB5cu8HcGZklUozg
-Date: Tue, 4 Jun 2013 09:48:25 +0000
-Message-ID: <1BAFE6F6C881BF42822005164F1491C33EC22315@DBDE04.ent.ti.com>
-References: <1369982005-8572-1-git-send-email-gururaja.hebbar@ti.com>
-	<1369982005-8572-2-git-send-email-gururaja.hebbar@ti.com>
- <87wqqf11nw.fsf@linaro.org>
-In-Reply-To: <87wqqf11nw.fsf@linaro.org>
+        "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: RE: [PATCH 11/11] i2c: omap: enhance pinctrl support
+Thread-Topic: [PATCH 11/11] i2c: omap: enhance pinctrl support
+Thread-Index: AQHOXimmVxfgXGT07Eyasoe5jzaNzZklVYTg
+Date: Tue, 4 Jun 2013 09:50:49 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EC22349@DBDE04.ent.ti.com>
+References: <1369995191-20855-1-git-send-email-gururaja.hebbar@ti.com>
+	<1369995191-20855-12-git-send-email-gururaja.hebbar@ti.com>
+ <87bo7r10s9.fsf@linaro.org>
+In-Reply-To: <87bo7r10s9.fsf@linaro.org>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -50,62 +47,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 23:18:03, Kevin Hilman wrote:
+On Fri, May 31, 2013 at 23:37:02, Kevin Hilman wrote:
+> +Linus Walleij (pinctrl maintainer)
+> 
 > Hebbar Gururaja <gururaja.hebbar@ti.com> writes:
 > 
-> > Even though RTC-IP is wakeup capable, Not all Boards support it.
+> > Amend the I2C omap pin controller to optionally take a pin control
+> > handle and set the state of the pins to:
 > >
-> > For example
-> > The rtc alarm wakeup is available in rtc-ip since omap1 days but alarm
-> > was not wired properly in previous ompa1 boards.
+> > - "default" on boot, resume and before performing an i2c transfer
+> > - "idle" after initial default, after resume default, and after each
+> > i2c xfer
+> > - "sleep" on suspend()
 > >
-> > 	commit fa5b07820fe3a0fc06ac368516e71f10a59b9539
-> > 	Author: Sekhar Nori <nsekhar@ti.com>
-> > 	Date:   Wed Oct 27 15:33:05 2010 -0700
+> > By optionally putting the pins into sleep state in the suspend callback
+> > we can accomplish two things.
+> > - One is to minimize current leakage from pins and thus save power,
+> > - second, we can prevent the IP from driving pins output in an
+> > uncontrolled manner, which may happen if the power domain drops the
+> > domain regulator.
 > >
-> > 	rtc: omap: let device wakeup capability be configured from chip
-> > 	init logic
+> > Note:
+> > A .suspend & .resume callback is added which simply puts the pins to sleep
+> > state upon suspend & are moved to default & idle state upon resume.
 > >
-> > 	The rtc-omap driver currently hardcodes the RTC wakeup
-> > 	capability to be "not capable".  While this seems to be true for
-> > 	existing OMAP1 boards which are not wired for this, the
-> > 	DA850/OMAP-L138 SoC, the RTC can always be wake up source from
-> > 	its "deep sleep" mode.
+> > If any of the above pin states are missing in dt, a warning message
+> > about the missing state is displayed.
+> > If certain pin-states are not available, to remove this warning message
+> > pass respective state name with null phandler.
 > >
-> > Current rtc-omap driver expects the rtc module wake-up capabilities to
-> > be set up by board specific code. However, in case of DT, this is not
-> > possible.
+> > (Changes based on i2c-nomadik.c)
 > >
-> > So, add a DT property "ti,wakeup_capable" to indicate that the module is
-> > wake-up capable.
+> > Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
+> > Cc: Tony Lindgren <tony@atomide.com>
+> > Cc: Wolfram Sang <wsa@the-dreams.de>
+> > Cc: linux-omap@vger.kernel.org
+> > Cc: linux-i2c@vger.kernel.org
 > 
-> Why is this a TI-specific property?  
-
-May be I am wrong but isn't this driver used only be TI SoC (Davinci, OMAP ...)
-
+> [...]
 > 
-> Also, I think we can do this without a new DT property.Did you see this
-> patch from Tony which is already queued for v3.11:
+> > @@ -1123,14 +1138,47 @@ omap_i2c_probe(struct platform_device *pdev)
+> >  		dev->set_mpu_wkup_lat = pdata->set_mpu_wkup_lat;
+> >  	}
+> >  
+> > -	dev->pins = devm_pinctrl_get_select_default(&pdev->dev);
+> > -	if (IS_ERR(dev->pins)) {
+> > -		if (PTR_ERR(dev->pins) == -EPROBE_DEFER)
+> > +	dev->pinctrl = devm_pinctrl_get(&pdev->dev);
+> > +	if (!IS_ERR(dev->pinctrl)) {
+> > +		dev->pins_default = pinctrl_lookup_state(dev->pinctrl,
+> > +							 PINCTRL_STATE_DEFAULT);
 > 
->     http://marc.info/?l=linux-omap&m=136917244530612&w=2
-
-AFAIK, all boards that use twl rtc IP by default support rtc wakeup.
-
-However, as mentioned in the commit message not all boards that uses
-OMAP rtc IP supports rtc wake up (due to somoe wiring issue).
-Hence I am adding a new DT property for this.
-
+> This part is already done by probe in driver core, why does it need to
+> be done again.  dev->pins->default_state should already have this.
+> (c.f. pinctrl_bind_pins() in drivers/base/pinctrl.c)
 > 
-> I think this is the right way to go.  Platforms that don't want/need
-> wakeup support can disable it from userspace via:
+> But that brings up a bigger question about whether or not we should be
+> doing the rest of this (idle/sleep) pin management in the drivers or in
+> the driver core as well.  I would much prefer it be handled by the
+> driver core.
 > 
->     echo disabled > /sys/devices/.../power/wakeup
+> In fact, since these are all PM related events, it should probably be
+> handled by the PM core and seems pretty straight forward to do so.
 
-Hmmm. Debatable. Let me get some more info about this and come back
+Let me pull out some info about these and come back
 
 > 
 > Kevin
-> 
 > 
 
 
