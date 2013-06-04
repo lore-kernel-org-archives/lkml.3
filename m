@@ -1,56 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759219Ab3FDGYS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 02:24:18 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:57313 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755826Ab3FDGYQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 02:24:16 -0400
-Message-ID: <51AD8808.7020608@linux.vnet.ibm.com>
-Date: Tue, 04 Jun 2013 14:24:08 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1759203Ab3FDGZY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 02:25:24 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:35829 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755438Ab3FDGZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 02:25:21 -0400
+From: "J, KEERTHY" <j-keerthy@ti.com>
+To: Stephen Warren <swarren@wwwdotorg.org>, Lee Jones <lee.jones@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "wim@iguana.be" <wim@iguana.be>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "Kristo, Tero" <t-kristo@ti.com>, Ian Lartey <ian@slimlogic.co.uk>
+Subject: RE: [PATCH] mfd: DT bindings for the palmas family MFD
+Thread-Topic: [PATCH] mfd: DT bindings for the palmas family MFD
+Thread-Index: AQHOYFQdmRK78L3sG0+rK4Xnj9z9npkjg8WAgABqGACAASl9YA==
+Date: Tue, 4 Jun 2013 06:24:45 +0000
+Message-ID: <DC88CAD03C0052499C1907B327FC63229E8AFE@DBDE04.ent.ti.com>
+References: <1370261333-5121-1-git-send-email-j-keerthy@ti.com>
+ <20130603141851.GG3370@gmail.com> <51ACFECA.10209@wwwdotorg.org>
+In-Reply-To: <51ACFECA.10209@wwwdotorg.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3/3] sched: remove the useless declaration in kernel/sched/fair.c
-References: <51AD87A8.6080608@linux.vnet.ibm.com>
-In-Reply-To: <51AD87A8.6080608@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060406-3864-0000-0000-0000087122C3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r546PUYZ013733
 
-default_cfs_period(), do_sched_cfs_period_timer(), do_sched_cfs_slack_timer()
-already defined previously, no need to declare again.
 
-CC: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
----
- kernel/sched/fair.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index c61a614..73cad33 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2599,10 +2599,6 @@ static void check_cfs_rq_runtime(struct cfs_rq *cfs_rq)
- 	throttle_cfs_rq(cfs_rq);
- }
- 
--static inline u64 default_cfs_period(void);
--static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun);
--static void do_sched_cfs_slack_timer(struct cfs_bandwidth *cfs_b);
--
- static enum hrtimer_restart sched_cfs_slack_timer(struct hrtimer *timer)
- {
- 	struct cfs_bandwidth *cfs_b =
--- 
-1.7.4.1
+> -----Original Message-----
+> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> Sent: Tuesday, June 04, 2013 2:09 AM
+> To: Lee Jones
+> Cc: J, KEERTHY; linux-kernel@vger.kernel.org; linux-
+> doc@vger.kernel.org; devicetree-discuss@lists.ozlabs.org;
+> broonie@opensource.wolfsonmicro.com; rob.herring@calxeda.com;
+> rob@landley.net; mturquette@linaro.org; sameo@linux.intel.com;
+> wim@iguana.be; lgirdwood@gmail.com; gg@slimlogic.co.uk; Kristo, Tero;
+> Ian Lartey
+> Subject: Re: [PATCH] mfd: DT bindings for the palmas family MFD
+> 
+> On 06/03/2013 08:18 AM, Lee Jones wrote:
+> > On Mon, 03 Jun 2013, J Keerthy wrote:
+> >> Add the various binding files for the palmas family of chips. There
+> >> is a top level MFD binding then a seperate binding for regulators IP
+> blocks on chips.
+> 
+> >> diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt
+> >> b/Documentation/devicetree/bindings/mfd/palmas.txt
+> 
+> >> +Example:
+> >> +
+> >> +palmas {
+> >
+> > Should this be 'palmas@48 {', as it has an address?
+> 
+> It's common to only include the unit-address (@48) if it's needed to
+> make the node name unique (i.e. if you had multiple palmas devices).
 
+Yeah. We generally have one Palmas device.
+
+> 
+> >> diff --git
+> >> a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+> >> b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+> 
+> > See: Documentation/devicetree/bindings/regulator/gpio-regulator.txt
+> >
+> >> +	       ti,sleep-mode - mode to adopt in pmic sleep 0 - off, 1 -
+> auto,
+> >> +	       2 - eco, 3 - forced pwm
+> >
+> > I've seen lots of sleep-mode properties, can't we define a generic
+> > one?
+> 
+> Isn't it HW-specific?
+
+Yeah. Hence it is ti,sleep-mode.
+
+Regards,
+Keerthy
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
