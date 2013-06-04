@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758467Ab3FDFVk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 01:21:40 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:42115 "EHLO
+	id S1758575Ab3FDFVn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 01:21:43 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56528 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755698Ab3FDFUi (ORCPT
+	with ESMTP id S1755578Ab3FDFUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 01:20:38 -0400
-X-AuditID: 9c930179-b7c07ae000000e33-3a-51ad79220252
+X-AuditID: 9c930179-b7c07ae000000e33-37-51ad79227434
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 13/16] perf util: Move latency_format variable to builtin-script.c
-Date: Tue,  4 Jun 2013 14:20:28 +0900
-Message-Id: <1370323231-14022-14-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 11/16] perf util: Parse header_page to get proper long size
+Date: Tue,  4 Jun 2013 14:20:26 +0900
+Message-Id: <1370323231-14022-12-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1370323231-14022-1-git-send-email-namhyung@kernel.org>
 References: <1370323231-14022-1-git-send-email-namhyung@kernel.org>
@@ -29,52 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-It's the only user of the variable, so move it.
+The header_page file describes the format of the ring buffer page
+which is used by ftrace (not perf).  And size of "commit" field (I
+guess it's older name was 'size') represents the real size of long
+type used for kernel.  So update the pevent's long size.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-script.c         | 1 +
- tools/perf/util/trace-event-parse.c | 2 --
- tools/perf/util/trace-event.h       | 1 -
- 3 files changed, 1 insertion(+), 3 deletions(-)
+ tools/perf/util/trace-event-read.c | 22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 92d4658f56fb..3de8979fe87d 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -24,6 +24,7 @@ static u64			last_timestamp;
- static u64			nr_unordered;
- extern const struct option	record_options[];
- static bool			no_callchain;
-+static bool			latency_format;
- static bool			system_wide;
- static const char		*cpu_list;
- static DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
-diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
-index 0deae885c7ba..fe7a27d67d2b 100644
---- a/tools/perf/util/trace-event-parse.c
-+++ b/tools/perf/util/trace-event-parse.c
-@@ -28,8 +28,6 @@
- #include "util.h"
- #include "trace-event.h"
- 
--bool latency_format;
--
- struct pevent *read_trace_init(int file_bigendian, int host_bigendian)
+diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
+index fa45fca2a2d3..f2112270c663 100644
+--- a/tools/perf/util/trace-event-read.c
++++ b/tools/perf/util/trace-event-read.c
+@@ -212,6 +212,7 @@ static int read_ftrace_printk(struct pevent *pevent)
+ static int read_header_files(struct pevent *pevent)
  {
- 	struct pevent *pevent = pevent_alloc();
-diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
-index 10d6e7b202c5..96ad22f98726 100644
---- a/tools/perf/util/trace-event.h
-+++ b/tools/perf/util/trace-event.h
-@@ -10,7 +10,6 @@ struct perf_sample;
- union perf_event;
- struct perf_tool;
+ 	unsigned long long size;
++	char *header_page;
+ 	char buf[BUFSIZ];
+ 	int ret = 0;
  
--extern bool latency_format;
- extern struct pevent *perf_pevent;
+@@ -224,7 +225,26 @@ static int read_header_files(struct pevent *pevent)
+ 	}
  
- enum {
+ 	size = read8(pevent);
+-	skip(size);
++
++	header_page = malloc(size);
++	if (header_page == NULL)
++		return -1;
++
++	if (do_read(header_page, size) < 0) {
++		pr_debug("did not read header page");
++		free(header_page);
++		return -1;
++	}
++
++	if (!pevent_parse_header_page(pevent, header_page, size,
++				      pevent_get_long_size(pevent))) {
++		/*
++		 * The commit field in the page is of type long,
++		 * use that instead, since it represents the kernel.
++		 */
++		pevent_set_long_size(pevent, pevent->header_page_size_size);
++	}
++	free(header_page);
+ 
+ 	if (do_read(buf, 13) < 0)
+ 		return -1;
 -- 
 1.7.11.7
 
