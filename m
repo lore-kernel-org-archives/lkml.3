@@ -1,49 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751351Ab3FDS33 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 14:29:29 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:41245
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750764Ab3FDS31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 14:29:27 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, ohering@suse.com,
-        jbottomley@parallels.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH V3 0/5] Drivers: scsi: storvsc 
-Date: Tue,  4 Jun 2013 12:04:34 -0700
-Message-Id: <1370372674-10046-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1751410Ab3FDS3m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 14:29:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59905 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764Ab3FDS3h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 14:29:37 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "Ben Dooks \(embedded platforms\)" <ben-linux@fluff.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] i2c: omap: convert to module_platform_driver()
+References: <1366723151-23209-1-git-send-email-grygorii.strashko@ti.com>
+	<1366723151-23209-2-git-send-email-grygorii.strashko@ti.com>
+	<87fvwylxl8.fsf@linaro.org> <51ADD06B.3000201@ti.com>
+Date: Tue, 04 Jun 2013 11:29:34 -0700
+In-Reply-To: <51ADD06B.3000201@ti.com> (Grygorii Strashko's message of "Tue, 4
+	Jun 2013 14:32:59 +0300")
+Message-ID: <87zjv5zq41.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This set adds multi-channel support as well synthetic Fibre Channel support
-to storvsc. The multi-channel support depends on infrastructure in the VMBUS
-driver. Greg has already checked in the relevant patches to VMBUS.
+Grygorii Strashko <grygorii.strashko@ti.com> writes:
 
-I had posted an earlier version of this patch-set that included the VMBUS
-related changes. I have since separated the VMBUS chages and these have already been
-checked in.
+> Hi Kevin,
+> On 06/03/2013 11:59 PM, Kevin Hilman wrote:
+>> Grygorii Strashko <grygorii.strashko@ti.com> writes:
+>>
+>>> The OMAP I2C driver has a relation to pinctrl-single driver. As result,
+>>> its probe will be deferred during system boot until late init time,
+>>> because the pinctrl-single is initizalized as moudle/device init time.
+>>> This, in turn, will delay initialization of all I2C devices (like mfd,
+>>> I2C regulators and etc.) and cause boot delay (more over, it can broken
+>>> initialization of drivers which are not ready to use deferred probe
+>>> mechanism yet, for example DSS).
+>>>
+>>> There are no sense to keep OMAP I2C initialization on subsys init layer
+>>> any more, hence shift it to module/device layer where the i2c <-->
+>>> pinctrl-single dependency is resolved in drivers/Makefile now.
+>>>
+>>> Cc: Wolfram Sang <wsa@the-dreams.de>
+>>> Cc: "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>
+>>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>> Cc: linux-omap@vger.kernel.org
+>>> Cc: linux-i2c@vger.kernel.org
+>>> Cc: linux-kernel@vger.kernel.org
+>>>
+>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>> Testing this patch with PATCH 1/2, the twl_rtc driver fails to correctly
+>> initialize on OMAP3:
+>>
+>>           twl_rtc rtc.22: hctosys: invalid date/time
+>>
+>> instead of the expected result:
+>>
+>>            twl_rtc rtc.22: setting system clock to 2000-01-01 00:00:00 UTC (946684800)
+>>
+>> so something is still not right for the init sequence.
+>>
+>> Kevin
+> I think, the root cause of the problem isn't this patch - it's just
+> yet another side effect
+> of using deferred probes :). I've taken a look on twl-rtc code and
+> found possible error place
+> static int __init twl_rtc_init(void)
+> {
+>     if (twl_class_is_4030()) <------ here,
+>         rtc_reg_map = (u8 *) twl4030_rtc_reg_map;
+>     else
+>         rtc_reg_map = (u8 *) twl6030_rtc_reg_map;
+>
+>     return platform_driver_register(&twl4030rtc_driver);
+> }
+> In drivers/Makefile:
+> obj-$(CONFIG_RTC_LIB)        += rtc/  <------ RTC is placed before I2C
+> obj-y                += i2c/ media/ <----- and only here I2C bus
+> instantiates TWL-core device
+> and configures twl_priv->twl_id
+>
+> Thats why it's working on my OMAP4/twl6030 board. Could you check if
+> below fix will work on OMAP3:
 
-In this version, based on comments from James, the timeout is no longer a module
-parameter.
+Yes, your fix works.  Thanks for digging into it.
 
-K. Y. Srinivasan (5):
-  Drivers: scsi: storvsc: Increase the value of scsi timeout for
-    storvsc devices
-  Drivers: scsi: storvsc: Update the storage protocol to win8 level
-  Drivers: scsi: storvsc: Implement multi-channel support
-  Drivers: scsi: storvsc: Support FC devices
-  Drivers: scsi: storvsc: Increase the value of STORVSC_MAX_IO_REQUESTS
+Care to send a proper patch?  Please be sure to send to Andrew Morton
+also, since he'll be the one to queue the RTC patch.
 
- drivers/scsi/storvsc_drv.c |  347 +++++++++++++++++++++++++++++++++++++++-----
- 1 files changed, 308 insertions(+), 39 deletions(-)
+> diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
+> index 8751a52..aaa5015 100644
+> --- a/drivers/rtc/rtc-twl.c
+> +++ b/drivers/rtc/rtc-twl.c
+> @@ -469,6 +469,11 @@ static int twl_rtc_probe(struct platform_device *pdev)
+>         if (irq <= 0)
+>                 goto out1;
+>
+> +       if (twl_class_is_4030())
+> +               rtc_reg_map = (u8 *) twl4030_rtc_reg_map;
+> +       else
+> +               rtc_reg_map = (u8 *) twl6030_rtc_reg_map;
+> +
+>         ret = twl_rtc_read_u8(&rd_reg, REG_RTC_STATUS_REG);
+>         if (ret < 0)
+>                 goto out1;
+> @@ -610,11 +615,6 @@ static struct platform_driver twl4030rtc_driver = {
+>
+>  static int __init twl_rtc_init(void)
+>  {
+> -       if (twl_class_is_4030())
+> -               rtc_reg_map = (u8 *) twl4030_rtc_reg_map;
+> -       else
+> -               rtc_reg_map = (u8 *) twl6030_rtc_reg_map;
+> -
+>         return platform_driver_register(&twl4030rtc_driver);
+>  }
+>  module_init(twl_rtc_init);
+>
+> Unfortunately, I have no OMAP3 HW and can't check it.
 
--- 
-1.7.4.1
+I suggest you find a Beagle or Gumstix/Overo type board someplace.
+There is an abundance of cheap OMAP3 hardware available.
+
+Kevin
 
