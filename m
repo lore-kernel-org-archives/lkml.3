@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759052Ab3FDGGp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 02:06:45 -0400
-Received: from mga14.intel.com ([143.182.124.37]:42296 "EHLO mga14.intel.com"
+	id S1759368Ab3FDGJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 02:09:59 -0400
+Received: from www.sr71.net ([198.145.64.142]:35650 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751507Ab3FDGGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 02:06:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,798,1363158000"; 
-   d="scan'208";a="344387513"
-Date: Tue, 4 Jun 2013 14:06:24 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [bisect done] [    0.000000] WARNING: at mm/nobootmem.c:215
- ___alloc_bootmem_nopanic.constprop.5()
-Message-ID: <20130604060624.GA26167@localhost>
-References: <20130603105754.GA6595@localhost>
- <20130604052240.GC11597@linux.vnet.ibm.com>
+	id S1756480Ab3FDGJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 02:09:55 -0400
+Message-ID: <51AD84BA.4090106@sr71.net>
+Date: Mon, 03 Jun 2013 23:10:02 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130604052240.GC11597@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Minchan Kim <minchan@kernel.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mgorman@suse.de, tim.c.chen@linux.intel.com
+Subject: Re: [v5][PATCH 5/6] mm: vmscan: batch shrink_page_list() locking
+ operations
+References: <20130603200202.7F5FDE07@viggo.jf.intel.com> <20130603200208.6F71D31F@viggo.jf.intel.com> <20130604050103.GC14719@blaptop>
+In-Reply-To: <20130604050103.GC14719@blaptop>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 10:22:40PM -0700, Paul E. McKenney wrote:
-> On Mon, Jun 03, 2013 at 06:57:54PM +0800, Fengguang Wu wrote:
-> > Greetings,
-> > 
-> > I got the below dmesg and the first bad commit is
-> > 
-> > commit 911af505ef407c2511106c224dd640f882f0f590
-> > Author: Paul E. McKenney <paul.mckenney@linaro.org>
-> > Date:   Mon Feb 11 10:23:27 2013 -0800
-> 
-> Hello, Fengguang,
-> 
-> This is now in mainline, as is the fix for this bug:
-> 
-> 615ee544 (rcu: Don't allocate bootmem from rcu_init())
+On 06/03/2013 10:01 PM, Minchan Kim wrote:
+>> > +static int __remove_mapping_batch(struct list_head *remove_list,
+>> > +				  struct list_head *ret_pages,
+>> > +				  struct list_head *free_pages)
+>> > +{
+>> > +	int nr_reclaimed = 0;
+>> > +	struct address_space *mapping;
+>> > +	struct page *page;
+>> > +	LIST_HEAD(need_free_mapping);
+>> > +
+>> > +	while (!list_empty(remove_list)) {
+...
+>> > +		if (!__remove_mapping(mapping, page)) {
+>> > +			unlock_page(page);
+>> > +			list_add(&page->lru, ret_pages);
+>> > +			continue;
+>> > +		}
+>> > +		list_add(&page->lru, &need_free_mapping);
+...
+> +	spin_unlock_irq(&mapping->tree_lock);
+> +	while (!list_empty(&need_free_mapping)) {...
+> +		list_move(&page->list, free_pages);
+> +		mapping_release_page(mapping, page);
+> +	}
+> Why do we need new lru list instead of using @free_pages?
 
-Hi Paul,
+I actually tried using @free_pages at first.  The problem is that we
+need to call mapping_release_page() without the radix tree lock held so
+we can not do it in the first while() loop.
 
-Got it, thanks!
+'free_pages' is a list created up in shrink_page_list().  There can be
+several calls to __remove_mapping_batch() for each call to
+shrink_page_list().
 
-Thanks,
-Fengguang
+'need_free_mapping' lets us temporarily differentiate the pages that we
+need to call mapping_release_page()/unlock_page() on versus the ones on
+'free_pages' which have already had that done.
+
+We could theoretically delay _all_ of the
+release_mapping_page()/unlock_page() operations until the _entire_
+shrink_page_list() operation is done, but doing this really helps with
+lock_page() latency.
+
+Does that make sense?
