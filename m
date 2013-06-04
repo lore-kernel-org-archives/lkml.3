@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522Ab3FDUNt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 16:13:49 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59374 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085Ab3FDUNo (ORCPT
+	id S1751480Ab3FDUSQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 16:18:16 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:58116 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750907Ab3FDUSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 16:13:44 -0400
-Date: Tue, 4 Jun 2013 14:44:35 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Arne Jansen <sensille@gmx.net>
-Cc: Chris Mason <clmason@fusionio.com>, Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: [PATCH 0/2] introduce list_for_each_entry_del
-Message-ID: <20130604184435.GA23436@logfs.org>
-References: <1370280485-10047-1-git-send-email-joern@logfs.org>
- <20130603204930.GA28299@infradead.org>
- <20130603193647.GB10200@logfs.org>
- <20130603195555.GC10200@logfs.org>
- <20130604144856.GA12302@infradead.org>
- <20130604145322.4088.78915@localhost.localdomain>
- <51AE4969.8050709@gmx.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51AE4969.8050709@gmx.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 4 Jun 2013 16:18:14 -0400
+Date: Tue, 04 Jun 2013 13:18:13 -0700 (PDT)
+Message-Id: <20130604.131813.134898245916084893.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2013-06-03
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130603184817.GD2727@tuxdriver.com>
+References: <20130603184817.GD2727@tuxdriver.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 June 2013 22:09:13 +0200, Arne Jansen wrote:
-> On 06/04/13 16:53, Chris Mason wrote:
-> > Quoting Christoph Hellwig (2013-06-04 10:48:56)
-> >> On Mon, Jun 03, 2013 at 03:55:55PM -0400, J??rn Engel wrote:
-> >>> Actually, when I compare the two invocations, I prefer the
-> >>> list_for_each_entry_del() variant over list_pop_entry().
-> >>>
-> >>>         while ((ref = list_pop_entry(&prefs, struct __prelim_ref, list))) {
-> >>>         list_for_each_entry_del(ref, &prefs, list) {
-> >>>
-> >>> Christoph?
-> >>
-> >> I really don't like something that looks like an iterator (*for_each*)
-> >> to modify a list.  Maybe it's just me, so I'd love to hear others chime
-> >> in.
-> > 
-> > Have to agree with Christoph.  I just couldn't put my finger on why I
-> > didn't like it until I saw the list_pop_entry suggestion.
-> 
-> list_pop_each_entry?
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Mon, 3 Jun 2013 14:48:17 -0400
 
-Or while_list_drain?
+> Please let me know if there are problems!
 
-I agree the *for_each* cover didn't exactly match the content.  But if
-we find a better name and you are not opposed to the concept, ...
+Sorry, the broadcom brcmfmac changes need to go.
 
-Jörn
+Some of those commits are cleanups, and some of them have the worst
+commit log messages ever, the last one for example:
 
---
-tglx1 thinks that joern should get a (TM) for "Thinking Is Hard"
--- Thomas Gleixner
+0017-brcmsmac-fix-regression-observed-in-3.10-rc1.patch
+
+has no explanation whatsoever of what the actual problem or regression
+is, what aspect of the logic in that function is causing the problem,
+and no explanation why making this function always return 'false' is a
+reasonable fix.
+
+That entire series is of very low quality, and even if it was in good
+shape, at least half the changes are not appropriate at all this late
+in the -rc series.
