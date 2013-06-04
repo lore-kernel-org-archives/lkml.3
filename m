@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754124Ab3FDM1q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 08:27:46 -0400
-Received: from mail-bn1lp0157.outbound.protection.outlook.com ([207.46.163.157]:16553
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752908Ab3FDM1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 08:27:42 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Matt Fleming <matt.fleming@intel.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] UEFI: Don't pass boot services regions to
- SetVirtualAddressMap()
-Thread-Topic: [PATCH] UEFI: Don't pass boot services regions to
- SetVirtualAddressMap()
-Thread-Index: AQHOX95QV2ajzPqiAkOZ2NQHahADkpklIiEAgABb7gA=
-Date: Tue, 4 Jun 2013 12:27:40 +0000
-Message-ID: <1370348858.6315.19.camel@x230.lan>
-References: <1370211145-7273-1-git-send-email-matthew.garrett@nebula.com>
-	 <51AD901C.30607@intel.com>
-In-Reply-To: <51AD901C.30607@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.84.4]
-x-forefront-antispam-report: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:BL2PR05MB211;H:BL2PR05MB211.namprd05.prod.outlook.com;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <697A63B60EA1AF4899149BDFCDBF1A60@namprd05.prod.outlook.com>
+	id S1754173Ab3FDM2R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 08:28:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60609 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750738Ab3FDM2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 08:28:13 -0400
+Date: Tue, 4 Jun 2013 15:28:09 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [GIT PULL] KVM fixes for 3.10-rc4
+Message-ID: <20130604122809.GA8416@redhat.com>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r54CRrxb016421
 
-On Tue, 2013-06-04 at 07:58 +0100, Matt Fleming wrote:
 
-> Is there any point in calling efi_ioremap() for non-runtime regions in
-> this case? In other words, why not the following patch?
+Linus,
 
-Yeah, we need the boottime services regions to be mapped while we make
-this call.
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Please pull from
+
+git://git.kernel.org/pub/scm/virt/kvm/kvm.git fixes
+
+To receive KVM bug fixes. The bulk of the fixes is in MIPS KVM
+kernel<->userspace ABI. MIPS KVM is new for 3.10 and some problems were
+found with current ABI. It is better to fix them now and do not have
+a kernel with broken one.
+
+
+Andre Przywara (1):
+      ARM: KVM: prevent NULL pointer dereferences with KVM VCPU ioctl
+
+David Daney (6):
+      mips/kvm: Fix ABI for use of FPU.
+      mips/kvm: Fix ABI for use of 64-bit registers.
+      mips/kvm: Fix name of gpr field in struct kvm_regs.
+      mips/kvm: Use ARRAY_SIZE() instead of hardcoded constants in kvm_arch_vcpu_ioctl_{s,g}et_regs
+      mips/kvm: Fix ABI by moving manipulation of CP0 registers to KVM_{G,S}ET_ONE_REG
+      mips/kvm: Use ENOIOCTLCMD to indicate unimplemented ioctls.
+
+Gleb Natapov (1):
+      KVM: Fix race in apic->pending_events processing
+
+Marc Zyngier (1):
+      ARM: KVM: be more thorough when invalidating TLBs
+
+Paolo Bonzini (2):
+      KVM: Emulate multibyte NOP
+      KVM: fix sil/dil/bpl/spl in the mod/rm fields
+
+ arch/arm/kvm/arm.c               |   15 +-
+ arch/arm/kvm/mmu.c               |   41 ++++--
+ arch/mips/include/asm/kvm_host.h |    4 -
+ arch/mips/include/uapi/asm/kvm.h |  137 +++++++++++++++----
+ arch/mips/kvm/kvm_mips.c         |  280 +++++++++++++++++++++++++++++++++++---
+ arch/mips/kvm/kvm_trap_emul.c    |   50 -------
+ arch/x86/kvm/emulate.c           |    9 +-
+ arch/x86/kvm/lapic.c             |    9 +-
+ 8 files changed, 421 insertions(+), 124 deletions(-)
+
+--
+			Gleb.
