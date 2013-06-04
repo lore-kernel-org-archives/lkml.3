@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295Ab3FDWmn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:42:43 -0400
-Received: from 1wt.eu ([62.212.114.60]:35501 "EHLO 1wt.eu"
+	id S1752889Ab3FDWmI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:42:08 -0400
+Received: from 1wt.eu ([62.212.114.60]:35360 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753120Ab3FDWmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:42:32 -0400
-Message-Id: <20130604172134.911364563@1wt.eu>
+	id S1752839Ab3FDWmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:42:04 -0400
+Message-Id: <20130604172130.843687185@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:23:21 +0200
+Date: Tue, 04 Jun 2013 19:21:43 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Oliver Neukum <oliver@neukum.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 111/184] USB: cdc-wdm: fix buffer overflow
+Subject: [ 013/184] kmod: introduce call_modprobe() helper
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,91 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit c0f5ecee4e741667b2493c742b60b6218d40b3aa upstream.
+commit 3e63a93b987685f02421e18b2aa452d20553a88b upstream
 
-The buffer for responses must not overflow.
-If this would happen, set a flag, drop the data and return
-an error after user space has read all remaining data.
+No functional changes.  Move the call_usermodehelper code from
+__request_module() into the new simple helper, call_modprobe().
 
-Signed-off-by: Oliver Neukum <oliver@neukum.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 2.6.32: adjust context]
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[dannf: backported to Debian's 2.6.32]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/usb/class/cdc-wdm.c | 23 ++++++++++++++++++++---
- 1 file changed, 20 insertions(+), 3 deletions(-)
+ kernel/kmod.c | 21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/usb/class/cdc-wdm.c b/drivers/usb/class/cdc-wdm.c
-index 37f2899..01ae519 100644
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -52,6 +52,7 @@ MODULE_DEVICE_TABLE (usb, wdm_ids);
- #define WDM_READ		4
- #define WDM_INT_STALL		5
- #define WDM_POLL_RUNNING	6
-+#define WDM_OVERFLOW		10
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index f12d883..1088a8f 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -53,6 +53,18 @@ static DECLARE_RWSEM(umhelper_sem);
+ */
+ char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe";
  
- 
- #define WDM_MAX			16
-@@ -115,6 +116,7 @@ static void wdm_in_callback(struct urb *urb)
- {
- 	struct wdm_device *desc = urb->context;
- 	int status = urb->status;
-+	int length = urb->actual_length;
- 
- 	spin_lock(&desc->iuspin);
- 
-@@ -144,9 +146,17 @@ static void wdm_in_callback(struct urb *urb)
- 	}
- 
- 	desc->rerr = status;
--	desc->reslength = urb->actual_length;
--	memmove(desc->ubuf + desc->length, desc->inbuf, desc->reslength);
--	desc->length += desc->reslength;
-+	if (length + desc->length > desc->wMaxCommand) {
-+		/* The buffer would overflow */
-+		set_bit(WDM_OVERFLOW, &desc->flags);
-+	} else {
-+		/* we may already be in overflow */
-+		if (!test_bit(WDM_OVERFLOW, &desc->flags)) {
-+			memmove(desc->ubuf + desc->length, desc->inbuf, length);
-+			desc->length += length;
-+			desc->reslength = length;
-+		}
-+	}
- 	wake_up(&desc->wait);
- 
- 	set_bit(WDM_READ, &desc->flags);
-@@ -398,6 +408,11 @@ retry:
- 			rv = -ENODEV;
- 			goto err;
- 		}
-+		if (test_bit(WDM_OVERFLOW, &desc->flags)) {
-+			clear_bit(WDM_OVERFLOW, &desc->flags);
-+			rv = -ENOBUFS;
-+			goto err;
-+		}
- 		i++;
- 		if (file->f_flags & O_NONBLOCK) {
- 			if (!test_bit(WDM_READ, &desc->flags)) {
-@@ -440,6 +455,7 @@ retry:
- 			spin_unlock_irq(&desc->iuspin);
- 			goto retry;
- 		}
++static int call_modprobe(char *module_name, int wait)
++{
++	static char *envp[] = { "HOME=/",
++				"TERM=linux",
++				"PATH=/sbin:/usr/sbin:/bin:/usr/bin",
++				NULL };
 +
- 		if (!desc->reslength) { /* zero length read */
- 			dev_dbg(&desc->intf->dev, "%s: zero length - clearing WDM_READ\n", __func__);
- 			clear_bit(WDM_READ, &desc->flags);
-@@ -844,6 +860,7 @@ static int wdm_post_reset(struct usb_interface *intf)
- 	struct wdm_device *desc = usb_get_intfdata(intf);
- 	int rv;
++	char *argv[] = { modprobe_path, "-q", "--", module_name, NULL };
++
++	return call_usermodehelper(modprobe_path, argv, envp, wait);
++}
++
+ /**
+  * __request_module - try to load a kernel module
+  * @wait: wait (or not) for the operation to complete
+@@ -74,11 +86,6 @@ int __request_module(bool wait, const char *fmt, ...)
+ 	char module_name[MODULE_NAME_LEN];
+ 	unsigned int max_modprobes;
+ 	int ret;
+-	char *argv[] = { modprobe_path, "-q", "--", module_name, NULL };
+-	static char *envp[] = { "HOME=/",
+-				"TERM=linux",
+-				"PATH=/sbin:/usr/sbin:/bin:/usr/bin",
+-				NULL };
+ 	static atomic_t kmod_concurrent = ATOMIC_INIT(0);
+ #define MAX_KMOD_CONCURRENT 50	/* Completely arbitrary value - KAO */
+ 	static int kmod_loop_msg;
+@@ -121,8 +128,8 @@ int __request_module(bool wait, const char *fmt, ...)
  
-+	clear_bit(WDM_OVERFLOW, &desc->flags);
- 	rv = recover_from_urb_loss(desc);
- 	mutex_unlock(&desc->plock);
- 	return 0;
+ 	trace_module_request(module_name, wait, _RET_IP_);
+ 
+-	ret = call_usermodehelper(modprobe_path, argv, envp,
+-			wait ? UMH_WAIT_PROC : UMH_WAIT_EXEC);
++	ret = call_modprobe(module_name, wait ? UMH_WAIT_PROC : UMH_WAIT_EXEC);
++
+ 	atomic_dec(&kmod_concurrent);
+ 	return ret;
+ }
 -- 
 1.7.12.2.21.g234cd45.dirty
 
