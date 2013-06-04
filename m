@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab3FDWoi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:44:38 -0400
-Received: from 1wt.eu ([62.212.114.60]:35911 "EHLO 1wt.eu"
+	id S1754690Ab3FDWoq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:44:46 -0400
+Received: from 1wt.eu ([62.212.114.60]:35916 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754508Ab3FDWoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:44:32 -0400
-Message-Id: <20130604172135.695967415@1wt.eu>
+	id S1754615Ab3FDWol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:44:41 -0400
+Message-Id: <20130604172136.807153289@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:23:40 +0200
+Date: Tue, 04 Jun 2013 19:24:07 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Willy Tarreau <w@1wt.eu>
-Subject: [ 130/184] CVE-2012-4508 kernel: ext4: AIO vs fallocate stale
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 157/184] inet: add RCU protection to inet->opt
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -21,150 +23,1141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- data exposure
 
-From: Jamie Iles <jamie.iles@oracle.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-CVE-2012-4508 kernel: ext4: AIO vs fallocate stale data exposure
-[dannf: backported to Debian's 2.6.32]
+commit f6d8bd051c391c1c0458a30b2a7abcd939329259 upstream.
 
+We lack proper synchronization to manipulate inet->opt ip_options
+
+Problem is ip_make_skb() calls ip_setup_cork() and
+ip_setup_cork() possibly makes a copy of ipc->opt (struct ip_options),
+without any protection against another thread manipulating inet->opt.
+
+Another thread can change inet->opt pointer and free old one under us.
+
+Use RCU to protect inet->opt (changed to inet->inet_opt).
+
+Instead of handling atomic refcounts, just copy ip_options when
+necessary, to avoid cache line dirtying.
+
+We cant insert an rcu_head in struct ip_options since its included in
+skb->cb[], so this patch is large because I had to introduce a new
+ip_options_rcu structure.
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[dannf/bwh: backported to Debian's 2.6.32]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/ext4/extents.c | 67 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 66 insertions(+), 1 deletion(-)
+ include/net/inet_sock.h         |  14 +++--
+ include/net/ip.h                |  11 ++--
+ net/dccp/ipv4.c                 |  15 +++---
+ net/dccp/ipv6.c                 |   2 +-
+ net/ipv4/af_inet.c              |  16 ++++--
+ net/ipv4/cipso_ipv4.c           | 113 ++++++++++++++++++++++------------------
+ net/ipv4/icmp.c                 |  23 ++++----
+ net/ipv4/inet_connection_sock.c |   8 +--
+ net/ipv4/ip_options.c           |  38 +++++++-------
+ net/ipv4/ip_output.c            |  50 +++++++++---------
+ net/ipv4/ip_sockglue.c          |  33 ++++++++----
+ net/ipv4/raw.c                  |  19 +++++--
+ net/ipv4/syncookies.c           |   4 +-
+ net/ipv4/tcp_ipv4.c             |  33 +++++++-----
+ net/ipv4/udp.c                  |  21 ++++++--
+ net/ipv6/tcp_ipv6.c             |   2 +-
+ 16 files changed, 235 insertions(+), 167 deletions(-)
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index f4b471d..3f022ea 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -62,6 +62,7 @@ ext4_fsblk_t ext_pblock(struct ext4_extent *ex)
-  * idx_pblock:
-  * combine low and high parts of a leaf physical block number into ext4_fsblk_t
-  */
-+#define EXT4_EXT_DATA_VALID	0x8  /* extent contains valid data */
- ext4_fsblk_t idx_pblock(struct ext4_extent_idx *ix)
- {
- 	ext4_fsblk_t block;
-@@ -2933,6 +2934,30 @@ static int ext4_split_unwritten_extents(handle_t *handle,
- 		ext4_ext_mark_uninitialized(ex3);
- 		err = ext4_ext_insert_extent(handle, inode, path, ex3, flags);
- 		if (err == -ENOSPC && may_zeroout) {
-+			/*
-+			 * This is different from the upstream, because we
-+			 * need only a flag to say that the extent contains
-+			 * the actual data.
-+			 *
-+			 * If the extent contains valid data, which can only
-+			 * happen if AIO races with fallocate, then we got
-+			 * here from ext4_convert_unwritten_extents_dio().
-+			 * So we have to be careful not to zeroout valid data
-+			 * in the extent.
-+			 *
-+			 * To avoid it, we only zeroout the ex3 and extend the
-+			 * extent which is going to become initialized to cover
-+			 * ex3 as well. and continue as we would if only
-+			 * split in two was required.
-+			 */
-+			if (flags & EXT4_EXT_DATA_VALID) {
-+				err =  ext4_ext_zeroout(inode, ex3);
-+				if (err)
-+					goto fix_extent_len;
-+				max_blocks = allocated;
-+				ex2->ee_len = cpu_to_le16(max_blocks);
-+				goto skip;
-+			}
- 			err =  ext4_ext_zeroout(inode, &orig_ex);
- 			if (err)
- 				goto fix_extent_len;
-@@ -2978,6 +3003,7 @@ static int ext4_split_unwritten_extents(handle_t *handle,
+diff --git a/include/net/inet_sock.h b/include/net/inet_sock.h
+index 47004f3..cf65e77 100644
+--- a/include/net/inet_sock.h
++++ b/include/net/inet_sock.h
+@@ -56,7 +56,15 @@ struct ip_options {
+ 	unsigned char	__data[0];
+ };
  
- 		allocated = max_blocks;
- 	}
-+skip:
- 	/*
- 	 * If there was a change of depth as part of the
- 	 * insertion of ex3 above, we need to update the length
-@@ -3030,11 +3056,16 @@ fix_extent_len:
- 	ext4_ext_dirty(handle, inode, path + depth);
- 	return err;
- }
+-#define optlength(opt) (sizeof(struct ip_options) + opt->optlen)
++struct ip_options_rcu {
++	struct rcu_head rcu;
++	struct ip_options opt;
++};
 +
- static int ext4_convert_unwritten_extents_dio(handle_t *handle,
- 					      struct inode *inode,
-+					      ext4_lblk_t iblock,
-+					      unsigned int max_blocks,
- 					      struct ext4_ext_path *path)
++struct ip_options_data {
++	struct ip_options_rcu	opt;
++	char			data[40];
++};
+ 
+ struct inet_request_sock {
+ 	struct request_sock	req;
+@@ -77,7 +85,7 @@ struct inet_request_sock {
+ 				acked	   : 1,
+ 				no_srccheck: 1;
+ 	kmemcheck_bitfield_end(flags);
+-	struct ip_options	*opt;
++	struct ip_options_rcu	*opt;
+ };
+ 
+ static inline struct inet_request_sock *inet_rsk(const struct request_sock *sk)
+@@ -122,7 +130,7 @@ struct inet_sock {
+ 	__be32			saddr;
+ 	__s16			uc_ttl;
+ 	__u16			cmsg_flags;
+-	struct ip_options	*opt;
++	struct ip_options_rcu	*inet_opt;
+ 	__be16			sport;
+ 	__u16			id;
+ 	__u8			tos;
+diff --git a/include/net/ip.h b/include/net/ip.h
+index 69db943..a7d4675 100644
+--- a/include/net/ip.h
++++ b/include/net/ip.h
+@@ -54,7 +54,7 @@ struct ipcm_cookie
  {
- 	struct ext4_extent *ex;
-+	ext4_lblk_t ee_block;
-+	unsigned int ee_len;
- 	struct ext4_extent_header *eh;
- 	int depth;
- 	int err = 0;
-@@ -3043,6 +3074,30 @@ static int ext4_convert_unwritten_extents_dio(handle_t *handle,
- 	depth = ext_depth(inode);
- 	eh = path[depth].p_hdr;
- 	ex = path[depth].p_ext;
-+	ee_block = le32_to_cpu(ex->ee_block);
-+	ee_len = ext4_ext_get_actual_len(ex);
+ 	__be32			addr;
+ 	int			oif;
+-	struct ip_options	*opt;
++	struct ip_options_rcu	*opt;
+ 	union skb_shared_tx	shtx;
+ };
+ 
+@@ -92,7 +92,7 @@ extern int		igmp_mc_proc_init(void);
+ 
+ extern int		ip_build_and_send_pkt(struct sk_buff *skb, struct sock *sk,
+ 					      __be32 saddr, __be32 daddr,
+-					      struct ip_options *opt);
++					      struct ip_options_rcu *opt);
+ extern int		ip_rcv(struct sk_buff *skb, struct net_device *dev,
+ 			       struct packet_type *pt, struct net_device *orig_dev);
+ extern int		ip_local_deliver(struct sk_buff *skb);
+@@ -362,14 +362,15 @@ extern int ip_forward(struct sk_buff *skb);
+  *	Functions provided by ip_options.c
+  */
+  
+-extern void ip_options_build(struct sk_buff *skb, struct ip_options *opt, __be32 daddr, struct rtable *rt, int is_frag);
++extern void ip_options_build(struct sk_buff *skb, struct ip_options *opt,
++			     __be32 daddr, struct rtable *rt, int is_frag);
+ extern int ip_options_echo(struct ip_options *dopt, struct sk_buff *skb);
+ extern void ip_options_fragment(struct sk_buff *skb);
+ extern int ip_options_compile(struct net *net,
+ 			      struct ip_options *opt, struct sk_buff *skb);
+-extern int ip_options_get(struct net *net, struct ip_options **optp,
++extern int ip_options_get(struct net *net, struct ip_options_rcu **optp,
+ 			  unsigned char *data, int optlen);
+-extern int ip_options_get_from_user(struct net *net, struct ip_options **optp,
++extern int ip_options_get_from_user(struct net *net, struct ip_options_rcu **optp,
+ 				    unsigned char __user *data, int optlen);
+ extern void ip_options_undo(struct ip_options * opt);
+ extern void ip_forward_options(struct sk_buff *skb);
+diff --git a/net/dccp/ipv4.c b/net/dccp/ipv4.c
+index d14c0a3..cef3656 100644
+--- a/net/dccp/ipv4.c
++++ b/net/dccp/ipv4.c
+@@ -47,6 +47,7 @@ int dccp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
+ 	__be32 daddr, nexthop;
+ 	int tmp;
+ 	int err;
++	struct ip_options_rcu *inet_opt;
+ 
+ 	dp->dccps_role = DCCP_ROLE_CLIENT;
+ 
+@@ -57,10 +58,12 @@ int dccp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
+ 		return -EAFNOSUPPORT;
+ 
+ 	nexthop = daddr = usin->sin_addr.s_addr;
+-	if (inet->opt != NULL && inet->opt->srr) {
 +
-+	ext_debug("ext4_convert_unwritten_extents_endio: inode %lu, logical"
-+		  "block %llu, max_blocks %u\n", inode->i_ino,
-+		  (unsigned long long)ee_block, ee_len);
++	inet_opt = inet->inet_opt;
++	if (inet_opt != NULL && inet_opt->opt.srr) {
+ 		if (daddr == 0)
+ 			return -EINVAL;
+-		nexthop = inet->opt->faddr;
++		nexthop = inet_opt->opt.faddr;
+ 	}
+ 
+ 	tmp = ip_route_connect(&rt, nexthop, inet->saddr,
+@@ -75,7 +78,7 @@ int dccp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
+ 		return -ENETUNREACH;
+ 	}
+ 
+-	if (inet->opt == NULL || !inet->opt->srr)
++	if (inet_opt == NULL || !inet_opt->opt.srr)
+ 		daddr = rt->rt_dst;
+ 
+ 	if (inet->saddr == 0)
+@@ -86,8 +89,8 @@ int dccp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
+ 	inet->daddr = daddr;
+ 
+ 	inet_csk(sk)->icsk_ext_hdr_len = 0;
+-	if (inet->opt != NULL)
+-		inet_csk(sk)->icsk_ext_hdr_len = inet->opt->optlen;
++	if (inet_opt)
++		inet_csk(sk)->icsk_ext_hdr_len = inet_opt->opt.optlen;
+ 	/*
+ 	 * Socket identity is still unknown (sport may be zero).
+ 	 * However we set state to DCCP_REQUESTING and not releasing socket
+@@ -397,7 +400,7 @@ struct sock *dccp_v4_request_recv_sock(struct sock *sk, struct sk_buff *skb,
+ 	newinet->daddr	   = ireq->rmt_addr;
+ 	newinet->rcv_saddr = ireq->loc_addr;
+ 	newinet->saddr	   = ireq->loc_addr;
+-	newinet->opt	   = ireq->opt;
++	newinet->inet_opt	= ireq->opt;
+ 	ireq->opt	   = NULL;
+ 	newinet->mc_index  = inet_iif(skb);
+ 	newinet->mc_ttl	   = ip_hdr(skb)->ttl;
+diff --git a/net/dccp/ipv6.c b/net/dccp/ipv6.c
+index 9ed1962..2f11de7 100644
+--- a/net/dccp/ipv6.c
++++ b/net/dccp/ipv6.c
+@@ -600,7 +600,7 @@ static struct sock *dccp_v6_request_recv_sock(struct sock *sk,
+ 
+ 	   First: no IPv4 options.
+ 	 */
+-	newinet->opt = NULL;
++	newinet->inet_opt = NULL;
+ 
+ 	/* Clone RX bits */
+ 	newnp->rxopt.all = np->rxopt.all;
+diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
+index a289878..d1992a4 100644
+--- a/net/ipv4/af_inet.c
++++ b/net/ipv4/af_inet.c
+@@ -152,7 +152,7 @@ void inet_sock_destruct(struct sock *sk)
+ 	WARN_ON(sk->sk_wmem_queued);
+ 	WARN_ON(sk->sk_forward_alloc);
+ 
+-	kfree(inet->opt);
++	kfree(inet->inet_opt);
+ 	dst_release(sk->sk_dst_cache);
+ 	sk_refcnt_debug_dec(sk);
+ }
+@@ -1065,9 +1065,11 @@ static int inet_sk_reselect_saddr(struct sock *sk)
+ 	__be32 old_saddr = inet->saddr;
+ 	__be32 new_saddr;
+ 	__be32 daddr = inet->daddr;
++	struct ip_options_rcu *inet_opt;
+ 
+-	if (inet->opt && inet->opt->srr)
+-		daddr = inet->opt->faddr;
++	inet_opt = inet->inet_opt;
++	if (inet_opt && inet_opt->opt.srr)
++		daddr = inet_opt->opt.faddr;
+ 
+ 	/* Query new route. */
+ 	err = ip_route_connect(&rt, daddr, 0,
+@@ -1109,6 +1111,7 @@ int inet_sk_rebuild_header(struct sock *sk)
+ 	struct inet_sock *inet = inet_sk(sk);
+ 	struct rtable *rt = (struct rtable *)__sk_dst_check(sk, 0);
+ 	__be32 daddr;
++	struct ip_options_rcu *inet_opt;
+ 	int err;
+ 
+ 	/* Route is OK, nothing to do. */
+@@ -1116,9 +1119,12 @@ int inet_sk_rebuild_header(struct sock *sk)
+ 		return 0;
+ 
+ 	/* Reroute. */
++	rcu_read_lock();
++	inet_opt = rcu_dereference(inet->inet_opt);
+ 	daddr = inet->daddr;
+-	if (inet->opt && inet->opt->srr)
+-		daddr = inet->opt->faddr;
++	if (inet_opt && inet_opt->opt.srr)
++		daddr = inet_opt->opt.faddr;
++	rcu_read_unlock();
+ {
+ 	struct flowi fl = {
+ 		.oif = sk->sk_bound_dev_if,
+diff --git a/net/ipv4/cipso_ipv4.c b/net/ipv4/cipso_ipv4.c
+index 10f8f8d..b6d06d6 100644
+--- a/net/ipv4/cipso_ipv4.c
++++ b/net/ipv4/cipso_ipv4.c
+@@ -1860,6 +1860,11 @@ static int cipso_v4_genopt(unsigned char *buf, u32 buf_len,
+ 	return CIPSO_V4_HDR_LEN + ret_val;
+ }
+ 
++static void opt_kfree_rcu(struct rcu_head *head)
++{
++	kfree(container_of(head, struct ip_options_rcu, rcu));
++}
 +
-+	/* If extent is larger than requested then split is required */
+ /**
+  * cipso_v4_sock_setattr - Add a CIPSO option to a socket
+  * @sk: the socket
+@@ -1882,7 +1887,7 @@ int cipso_v4_sock_setattr(struct sock *sk,
+ 	unsigned char *buf = NULL;
+ 	u32 buf_len;
+ 	u32 opt_len;
+-	struct ip_options *opt = NULL;
++	struct ip_options_rcu *old, *opt = NULL;
+ 	struct inet_sock *sk_inet;
+ 	struct inet_connection_sock *sk_conn;
+ 
+@@ -1918,22 +1923,25 @@ int cipso_v4_sock_setattr(struct sock *sk,
+ 		ret_val = -ENOMEM;
+ 		goto socket_setattr_failure;
+ 	}
+-	memcpy(opt->__data, buf, buf_len);
+-	opt->optlen = opt_len;
+-	opt->cipso = sizeof(struct iphdr);
++	memcpy(opt->opt.__data, buf, buf_len);
++	opt->opt.optlen = opt_len;
++	opt->opt.cipso = sizeof(struct iphdr);
+ 	kfree(buf);
+ 	buf = NULL;
+ 
+ 	sk_inet = inet_sk(sk);
 +
-+	if (ee_block != iblock || ee_len > max_blocks) {
-+		err = ext4_split_unwritten_extents(handle, inode, path,
-+					iblock, max_blocks,
-+					EXT4_EXT_DATA_VALID);
-+		if (err < 0)
-+			goto out;
-+		ext4_ext_drop_refs(path);
-+		path = ext4_ext_find_extent(inode, iblock, path);
-+		if (IS_ERR(path)) {
-+			err = PTR_ERR(path);
-+			goto out;
++	old = sk_inet->inet_opt;
+ 	if (sk_inet->is_icsk) {
+ 		sk_conn = inet_csk(sk);
+-		if (sk_inet->opt)
+-			sk_conn->icsk_ext_hdr_len -= sk_inet->opt->optlen;
+-		sk_conn->icsk_ext_hdr_len += opt->optlen;
++		if (old)
++			sk_conn->icsk_ext_hdr_len -= old->opt.optlen;
++		sk_conn->icsk_ext_hdr_len += opt->opt.optlen;
+ 		sk_conn->icsk_sync_mss(sk, sk_conn->icsk_pmtu_cookie);
+ 	}
+-	opt = xchg(&sk_inet->opt, opt);
+-	kfree(opt);
++	rcu_assign_pointer(sk_inet->inet_opt, opt);
++	if (old)
++		call_rcu(&old->rcu, opt_kfree_rcu);
+ 
+ 	return 0;
+ 
+@@ -1963,7 +1971,7 @@ int cipso_v4_req_setattr(struct request_sock *req,
+ 	unsigned char *buf = NULL;
+ 	u32 buf_len;
+ 	u32 opt_len;
+-	struct ip_options *opt = NULL;
++	struct ip_options_rcu *opt = NULL;
+ 	struct inet_request_sock *req_inet;
+ 
+ 	/* We allocate the maximum CIPSO option size here so we are probably
+@@ -1991,15 +1999,16 @@ int cipso_v4_req_setattr(struct request_sock *req,
+ 		ret_val = -ENOMEM;
+ 		goto req_setattr_failure;
+ 	}
+-	memcpy(opt->__data, buf, buf_len);
+-	opt->optlen = opt_len;
+-	opt->cipso = sizeof(struct iphdr);
++	memcpy(opt->opt.__data, buf, buf_len);
++	opt->opt.optlen = opt_len;
++	opt->opt.cipso = sizeof(struct iphdr);
+ 	kfree(buf);
+ 	buf = NULL;
+ 
+ 	req_inet = inet_rsk(req);
+ 	opt = xchg(&req_inet->opt, opt);
+-	kfree(opt);
++	if (opt)
++		call_rcu(&opt->rcu, opt_kfree_rcu);
+ 
+ 	return 0;
+ 
+@@ -2019,34 +2028,34 @@ req_setattr_failure:
+  * values on failure.
+  *
+  */
+-int cipso_v4_delopt(struct ip_options **opt_ptr)
++int cipso_v4_delopt(struct ip_options_rcu **opt_ptr)
+ {
+ 	int hdr_delta = 0;
+-	struct ip_options *opt = *opt_ptr;
++	struct ip_options_rcu *opt = *opt_ptr;
+ 
+-	if (opt->srr || opt->rr || opt->ts || opt->router_alert) {
++	if (opt->opt.srr || opt->opt.rr || opt->opt.ts || opt->opt.router_alert) {
+ 		u8 cipso_len;
+ 		u8 cipso_off;
+ 		unsigned char *cipso_ptr;
+ 		int iter;
+ 		int optlen_new;
+ 
+-		cipso_off = opt->cipso - sizeof(struct iphdr);
+-		cipso_ptr = &opt->__data[cipso_off];
++		cipso_off = opt->opt.cipso - sizeof(struct iphdr);
++		cipso_ptr = &opt->opt.__data[cipso_off];
+ 		cipso_len = cipso_ptr[1];
+ 
+-		if (opt->srr > opt->cipso)
+-			opt->srr -= cipso_len;
+-		if (opt->rr > opt->cipso)
+-			opt->rr -= cipso_len;
+-		if (opt->ts > opt->cipso)
+-			opt->ts -= cipso_len;
+-		if (opt->router_alert > opt->cipso)
+-			opt->router_alert -= cipso_len;
+-		opt->cipso = 0;
++		if (opt->opt.srr > opt->opt.cipso)
++			opt->opt.srr -= cipso_len;
++		if (opt->opt.rr > opt->opt.cipso)
++			opt->opt.rr -= cipso_len;
++		if (opt->opt.ts > opt->opt.cipso)
++			opt->opt.ts -= cipso_len;
++		if (opt->opt.router_alert > opt->opt.cipso)
++			opt->opt.router_alert -= cipso_len;
++		opt->opt.cipso = 0;
+ 
+ 		memmove(cipso_ptr, cipso_ptr + cipso_len,
+-			opt->optlen - cipso_off - cipso_len);
++			opt->opt.optlen - cipso_off - cipso_len);
+ 
+ 		/* determining the new total option length is tricky because of
+ 		 * the padding necessary, the only thing i can think to do at
+@@ -2055,21 +2064,21 @@ int cipso_v4_delopt(struct ip_options **opt_ptr)
+ 		 * from there we can determine the new total option length */
+ 		iter = 0;
+ 		optlen_new = 0;
+-		while (iter < opt->optlen)
+-			if (opt->__data[iter] != IPOPT_NOP) {
+-				iter += opt->__data[iter + 1];
++		while (iter < opt->opt.optlen)
++			if (opt->opt.__data[iter] != IPOPT_NOP) {
++				iter += opt->opt.__data[iter + 1];
+ 				optlen_new = iter;
+ 			} else
+ 				iter++;
+-		hdr_delta = opt->optlen;
+-		opt->optlen = (optlen_new + 3) & ~3;
+-		hdr_delta -= opt->optlen;
++		hdr_delta = opt->opt.optlen;
++		opt->opt.optlen = (optlen_new + 3) & ~3;
++		hdr_delta -= opt->opt.optlen;
+ 	} else {
+ 		/* only the cipso option was present on the socket so we can
+ 		 * remove the entire option struct */
+ 		*opt_ptr = NULL;
+-		hdr_delta = opt->optlen;
+-		kfree(opt);
++		hdr_delta = opt->opt.optlen;
++		call_rcu(&opt->rcu, opt_kfree_rcu);
+ 	}
+ 
+ 	return hdr_delta;
+@@ -2086,15 +2095,15 @@ int cipso_v4_delopt(struct ip_options **opt_ptr)
+ void cipso_v4_sock_delattr(struct sock *sk)
+ {
+ 	int hdr_delta;
+-	struct ip_options *opt;
++	struct ip_options_rcu *opt;
+ 	struct inet_sock *sk_inet;
+ 
+ 	sk_inet = inet_sk(sk);
+-	opt = sk_inet->opt;
+-	if (opt == NULL || opt->cipso == 0)
++	opt = sk_inet->inet_opt;
++	if (opt == NULL || opt->opt.cipso == 0)
+ 		return;
+ 
+-	hdr_delta = cipso_v4_delopt(&sk_inet->opt);
++	hdr_delta = cipso_v4_delopt(&sk_inet->inet_opt);
+ 	if (sk_inet->is_icsk && hdr_delta > 0) {
+ 		struct inet_connection_sock *sk_conn = inet_csk(sk);
+ 		sk_conn->icsk_ext_hdr_len -= hdr_delta;
+@@ -2112,12 +2121,12 @@ void cipso_v4_sock_delattr(struct sock *sk)
+  */
+ void cipso_v4_req_delattr(struct request_sock *req)
+ {
+-	struct ip_options *opt;
++	struct ip_options_rcu *opt;
+ 	struct inet_request_sock *req_inet;
+ 
+ 	req_inet = inet_rsk(req);
+ 	opt = req_inet->opt;
+-	if (opt == NULL || opt->cipso == 0)
++	if (opt == NULL || opt->opt.cipso == 0)
+ 		return;
+ 
+ 	cipso_v4_delopt(&req_inet->opt);
+@@ -2187,14 +2196,18 @@ getattr_return:
+  */
+ int cipso_v4_sock_getattr(struct sock *sk, struct netlbl_lsm_secattr *secattr)
+ {
+-	struct ip_options *opt;
++	struct ip_options_rcu *opt;
++	int res = -ENOMSG;
+ 
+-	opt = inet_sk(sk)->opt;
+-	if (opt == NULL || opt->cipso == 0)
+-		return -ENOMSG;
+-
+-	return cipso_v4_getattr(opt->__data + opt->cipso - sizeof(struct iphdr),
+-				secattr);
++	rcu_read_lock();
++	opt = rcu_dereference(inet_sk(sk)->inet_opt);
++	if (opt && opt->opt.cipso)
++		res = cipso_v4_getattr(opt->opt.__data +
++						opt->opt.cipso -
++						sizeof(struct iphdr),
++				       secattr);
++	rcu_read_unlock();
++	return res;
+ }
+ 
+ /**
+diff --git a/net/ipv4/icmp.c b/net/ipv4/icmp.c
+index 5bc13fe..859d781 100644
+--- a/net/ipv4/icmp.c
++++ b/net/ipv4/icmp.c
+@@ -107,8 +107,7 @@ struct icmp_bxm {
+ 		__be32	       times[3];
+ 	} data;
+ 	int head_len;
+-	struct ip_options replyopts;
+-	unsigned char  optbuf[40];
++	struct ip_options_data replyopts;
+ };
+ 
+ /* An array of errno for error messages from dest unreach. */
+@@ -362,7 +361,7 @@ static void icmp_reply(struct icmp_bxm *icmp_param, struct sk_buff *skb)
+ 	struct inet_sock *inet;
+ 	__be32 daddr;
+ 
+-	if (ip_options_echo(&icmp_param->replyopts, skb))
++	if (ip_options_echo(&icmp_param->replyopts.opt.opt, skb))
+ 		return;
+ 
+ 	sk = icmp_xmit_lock(net);
+@@ -376,10 +375,10 @@ static void icmp_reply(struct icmp_bxm *icmp_param, struct sk_buff *skb)
+ 	daddr = ipc.addr = rt->rt_src;
+ 	ipc.opt = NULL;
+ 	ipc.shtx.flags = 0;
+-	if (icmp_param->replyopts.optlen) {
+-		ipc.opt = &icmp_param->replyopts;
+-		if (ipc.opt->srr)
+-			daddr = icmp_param->replyopts.faddr;
++	if (icmp_param->replyopts.opt.opt.optlen) {
++		ipc.opt = &icmp_param->replyopts.opt;
++		if (ipc.opt->opt.srr)
++			daddr = icmp_param->replyopts.opt.opt.faddr;
+ 	}
+ 	{
+ 		struct flowi fl = { .nl_u = { .ip4_u =
+@@ -516,7 +515,7 @@ void icmp_send(struct sk_buff *skb_in, int type, int code, __be32 info)
+ 					   IPTOS_PREC_INTERNETCONTROL) :
+ 					  iph->tos;
+ 
+-	if (ip_options_echo(&icmp_param.replyopts, skb_in))
++	if (ip_options_echo(&icmp_param.replyopts.opt.opt, skb_in))
+ 		goto out_unlock;
+ 
+ 
+@@ -532,15 +531,15 @@ void icmp_send(struct sk_buff *skb_in, int type, int code, __be32 info)
+ 	icmp_param.offset = skb_network_offset(skb_in);
+ 	inet_sk(sk)->tos = tos;
+ 	ipc.addr = iph->saddr;
+-	ipc.opt = &icmp_param.replyopts;
++	ipc.opt = &icmp_param.replyopts.opt;
+ 	ipc.shtx.flags = 0;
+ 
+ 	{
+ 		struct flowi fl = {
+ 			.nl_u = {
+ 				.ip4_u = {
+-					.daddr = icmp_param.replyopts.srr ?
+-						icmp_param.replyopts.faddr :
++					.daddr = icmp_param.replyopts.opt.opt.srr ?
++						icmp_param.replyopts.opt.opt.faddr :
+ 						iph->saddr,
+ 					.saddr = saddr,
+ 					.tos = RT_TOS(tos)
+@@ -629,7 +628,7 @@ route_done:
+ 	room = dst_mtu(&rt->u.dst);
+ 	if (room > 576)
+ 		room = 576;
+-	room -= sizeof(struct iphdr) + icmp_param.replyopts.optlen;
++	room -= sizeof(struct iphdr) + icmp_param.replyopts.opt.opt.optlen;
+ 	room -= sizeof(struct icmphdr);
+ 
+ 	icmp_param.data_len = skb_in->len - icmp_param.offset;
+diff --git a/net/ipv4/inet_connection_sock.c b/net/ipv4/inet_connection_sock.c
+index 537731b..a3bf986 100644
+--- a/net/ipv4/inet_connection_sock.c
++++ b/net/ipv4/inet_connection_sock.c
+@@ -356,11 +356,11 @@ struct dst_entry *inet_csk_route_req(struct sock *sk,
+ {
+ 	struct rtable *rt;
+ 	const struct inet_request_sock *ireq = inet_rsk(req);
+-	struct ip_options *opt = inet_rsk(req)->opt;
++	struct ip_options_rcu *opt = inet_rsk(req)->opt;
+ 	struct flowi fl = { .oif = sk->sk_bound_dev_if,
+ 			    .nl_u = { .ip4_u =
+-				      { .daddr = ((opt && opt->srr) ?
+-						  opt->faddr :
++				      { .daddr = ((opt && opt->opt.srr) ?
++						  opt->opt.faddr :
+ 						  ireq->rmt_addr),
+ 					.saddr = ireq->loc_addr,
+ 					.tos = RT_CONN_FLAGS(sk) } },
+@@ -374,7 +374,7 @@ struct dst_entry *inet_csk_route_req(struct sock *sk,
+ 	security_req_classify_flow(req, &fl);
+ 	if (ip_route_output_flow(net, &rt, &fl, sk, 0))
+ 		goto no_route;
+-	if (opt && opt->is_strictroute && rt->rt_dst != rt->rt_gateway)
++	if (opt && opt->opt.is_strictroute && rt->rt_dst != rt->rt_gateway)
+ 		goto route_err;
+ 	return &rt->u.dst;
+ 
+diff --git a/net/ipv4/ip_options.c b/net/ipv4/ip_options.c
+index 94bf105..8a95972 100644
+--- a/net/ipv4/ip_options.c
++++ b/net/ipv4/ip_options.c
+@@ -35,7 +35,7 @@
+  * saddr is address of outgoing interface.
+  */
+ 
+-void ip_options_build(struct sk_buff * skb, struct ip_options * opt,
++void ip_options_build(struct sk_buff *skb, struct ip_options *opt,
+ 			    __be32 daddr, struct rtable *rt, int is_frag)
+ {
+ 	unsigned char *iph = skb_network_header(skb);
+@@ -82,9 +82,9 @@ void ip_options_build(struct sk_buff * skb, struct ip_options * opt,
+  * NOTE: dopt cannot point to skb.
+  */
+ 
+-int ip_options_echo(struct ip_options * dopt, struct sk_buff * skb)
++int ip_options_echo(struct ip_options *dopt, struct sk_buff *skb)
+ {
+-	struct ip_options *sopt;
++	const struct ip_options *sopt;
+ 	unsigned char *sptr, *dptr;
+ 	int soffset, doffset;
+ 	int	optlen;
+@@ -94,10 +94,8 @@ int ip_options_echo(struct ip_options * dopt, struct sk_buff * skb)
+ 
+ 	sopt = &(IPCB(skb)->opt);
+ 
+-	if (sopt->optlen == 0) {
+-		dopt->optlen = 0;
++	if (sopt->optlen == 0)
+ 		return 0;
+-	}
+ 
+ 	sptr = skb_network_header(skb);
+ 	dptr = dopt->__data;
+@@ -156,7 +154,7 @@ int ip_options_echo(struct ip_options * dopt, struct sk_buff * skb)
+ 		dopt->optlen += optlen;
+ 	}
+ 	if (sopt->srr) {
+-		unsigned char * start = sptr+sopt->srr;
++		unsigned char *start = sptr+sopt->srr;
+ 		__be32 faddr;
+ 
+ 		optlen  = start[1];
+@@ -499,19 +497,19 @@ void ip_options_undo(struct ip_options * opt)
+ 	}
+ }
+ 
+-static struct ip_options *ip_options_get_alloc(const int optlen)
++static struct ip_options_rcu *ip_options_get_alloc(const int optlen)
+ {
+-	return kzalloc(sizeof(struct ip_options) + ((optlen + 3) & ~3),
++	return kzalloc(sizeof(struct ip_options_rcu) + ((optlen + 3) & ~3),
+ 		       GFP_KERNEL);
+ }
+ 
+-static int ip_options_get_finish(struct net *net, struct ip_options **optp,
+-				 struct ip_options *opt, int optlen)
++static int ip_options_get_finish(struct net *net, struct ip_options_rcu **optp,
++				 struct ip_options_rcu *opt, int optlen)
+ {
+ 	while (optlen & 3)
+-		opt->__data[optlen++] = IPOPT_END;
+-	opt->optlen = optlen;
+-	if (optlen && ip_options_compile(net, opt, NULL)) {
++		opt->opt.__data[optlen++] = IPOPT_END;
++	opt->opt.optlen = optlen;
++	if (optlen && ip_options_compile(net, &opt->opt, NULL)) {
+ 		kfree(opt);
+ 		return -EINVAL;
+ 	}
+@@ -520,29 +518,29 @@ static int ip_options_get_finish(struct net *net, struct ip_options **optp,
+ 	return 0;
+ }
+ 
+-int ip_options_get_from_user(struct net *net, struct ip_options **optp,
++int ip_options_get_from_user(struct net *net, struct ip_options_rcu **optp,
+ 			     unsigned char __user *data, int optlen)
+ {
+-	struct ip_options *opt = ip_options_get_alloc(optlen);
++	struct ip_options_rcu *opt = ip_options_get_alloc(optlen);
+ 
+ 	if (!opt)
+ 		return -ENOMEM;
+-	if (optlen && copy_from_user(opt->__data, data, optlen)) {
++	if (optlen && copy_from_user(opt->opt.__data, data, optlen)) {
+ 		kfree(opt);
+ 		return -EFAULT;
+ 	}
+ 	return ip_options_get_finish(net, optp, opt, optlen);
+ }
+ 
+-int ip_options_get(struct net *net, struct ip_options **optp,
++int ip_options_get(struct net *net, struct ip_options_rcu **optp,
+ 		   unsigned char *data, int optlen)
+ {
+-	struct ip_options *opt = ip_options_get_alloc(optlen);
++	struct ip_options_rcu *opt = ip_options_get_alloc(optlen);
+ 
+ 	if (!opt)
+ 		return -ENOMEM;
+ 	if (optlen)
+-		memcpy(opt->__data, data, optlen);
++		memcpy(opt->opt.__data, data, optlen);
+ 	return ip_options_get_finish(net, optp, opt, optlen);
+ }
+ 
+diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
+index 44b7910..7dde039 100644
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -137,14 +137,14 @@ static inline int ip_select_ttl(struct inet_sock *inet, struct dst_entry *dst)
+  *
+  */
+ int ip_build_and_send_pkt(struct sk_buff *skb, struct sock *sk,
+-			  __be32 saddr, __be32 daddr, struct ip_options *opt)
++			  __be32 saddr, __be32 daddr, struct ip_options_rcu *opt)
+ {
+ 	struct inet_sock *inet = inet_sk(sk);
+ 	struct rtable *rt = skb_rtable(skb);
+ 	struct iphdr *iph;
+ 
+ 	/* Build the IP header. */
+-	skb_push(skb, sizeof(struct iphdr) + (opt ? opt->optlen : 0));
++	skb_push(skb, sizeof(struct iphdr) + (opt ? opt->opt.optlen : 0));
+ 	skb_reset_network_header(skb);
+ 	iph = ip_hdr(skb);
+ 	iph->version  = 4;
+@@ -160,9 +160,9 @@ int ip_build_and_send_pkt(struct sk_buff *skb, struct sock *sk,
+ 	iph->protocol = sk->sk_protocol;
+ 	ip_select_ident(iph, &rt->u.dst, sk);
+ 
+-	if (opt && opt->optlen) {
+-		iph->ihl += opt->optlen>>2;
+-		ip_options_build(skb, opt, daddr, rt, 0);
++	if (opt && opt->opt.optlen) {
++		iph->ihl += opt->opt.optlen>>2;
++		ip_options_build(skb, &opt->opt, daddr, rt, 0);
+ 	}
+ 
+ 	skb->priority = sk->sk_priority;
+@@ -312,9 +312,10 @@ int ip_queue_xmit(struct sk_buff *skb, int ipfragok)
+ {
+ 	struct sock *sk = skb->sk;
+ 	struct inet_sock *inet = inet_sk(sk);
+-	struct ip_options *opt = inet->opt;
++	struct ip_options_rcu *inet_opt = NULL;
+ 	struct rtable *rt;
+ 	struct iphdr *iph;
++	int res;
+ 
+ 	/* Skip all of this if the packet is already routed,
+ 	 * f.e. by something like SCTP.
+@@ -325,13 +326,15 @@ int ip_queue_xmit(struct sk_buff *skb, int ipfragok)
+ 
+ 	/* Make sure we can route this packet. */
+ 	rt = (struct rtable *)__sk_dst_check(sk, 0);
++	rcu_read_lock();
++	inet_opt = rcu_dereference(inet->inet_opt);
+ 	if (rt == NULL) {
+ 		__be32 daddr;
+ 
+ 		/* Use correct destination address if we have options. */
+ 		daddr = inet->daddr;
+-		if(opt && opt->srr)
+-			daddr = opt->faddr;
++		if (inet_opt && inet_opt->opt.srr)
++			daddr = inet_opt->opt.faddr;
+ 
+ 		{
+ 			struct flowi fl = { .oif = sk->sk_bound_dev_if,
+@@ -359,11 +362,11 @@ int ip_queue_xmit(struct sk_buff *skb, int ipfragok)
+ 	skb_dst_set(skb, dst_clone(&rt->u.dst));
+ 
+ packet_routed:
+-	if (opt && opt->is_strictroute && rt->rt_dst != rt->rt_gateway)
++	if (inet_opt && inet_opt->opt.is_strictroute && rt->rt_dst != rt->rt_gateway)
+ 		goto no_route;
+ 
+ 	/* OK, we know where to send it, allocate and build IP header. */
+-	skb_push(skb, sizeof(struct iphdr) + (opt ? opt->optlen : 0));
++	skb_push(skb, sizeof(struct iphdr) + (inet_opt ? inet_opt->opt.optlen : 0));
+ 	skb_reset_network_header(skb);
+ 	iph = ip_hdr(skb);
+ 	*((__be16 *)iph) = htons((4 << 12) | (5 << 8) | (inet->tos & 0xff));
+@@ -377,9 +380,9 @@ packet_routed:
+ 	iph->daddr    = rt->rt_dst;
+ 	/* Transport layer set skb->h.foo itself. */
+ 
+-	if (opt && opt->optlen) {
+-		iph->ihl += opt->optlen >> 2;
+-		ip_options_build(skb, opt, inet->daddr, rt, 0);
++	if (inet_opt && inet_opt->opt.optlen) {
++		iph->ihl += inet_opt->opt.optlen >> 2;
++		ip_options_build(skb, &inet_opt->opt, inet->daddr, rt, 0);
+ 	}
+ 
+ 	ip_select_ident_more(iph, &rt->u.dst, sk,
+@@ -387,10 +390,12 @@ packet_routed:
+ 
+ 	skb->priority = sk->sk_priority;
+ 	skb->mark = sk->sk_mark;
+-
+-	return ip_local_out(skb);
++	res = ip_local_out(skb);
++	rcu_read_unlock();
++	return res;
+ 
+ no_route:
++	rcu_read_unlock();
+ 	IP_INC_STATS(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
+ 	kfree_skb(skb);
+ 	return -EHOSTUNREACH;
+@@ -809,7 +814,7 @@ int ip_append_data(struct sock *sk,
+ 		/*
+ 		 * setup for corking.
+ 		 */
+-		opt = ipc->opt;
++		opt = ipc->opt ? &ipc->opt->opt : NULL;
+ 		if (opt) {
+ 			if (inet->cork.opt == NULL) {
+ 				inet->cork.opt = kmalloc(sizeof(struct ip_options) + 40, sk->sk_allocation);
+@@ -1367,26 +1372,23 @@ void ip_send_reply(struct sock *sk, struct sk_buff *skb, struct ip_reply_arg *ar
+ 		   unsigned int len)
+ {
+ 	struct inet_sock *inet = inet_sk(sk);
+-	struct {
+-		struct ip_options	opt;
+-		char			data[40];
+-	} replyopts;
++	struct ip_options_data replyopts;
+ 	struct ipcm_cookie ipc;
+ 	__be32 daddr;
+ 	struct rtable *rt = skb_rtable(skb);
+ 
+-	if (ip_options_echo(&replyopts.opt, skb))
++	if (ip_options_echo(&replyopts.opt.opt, skb))
+ 		return;
+ 
+ 	daddr = ipc.addr = rt->rt_src;
+ 	ipc.opt = NULL;
+ 	ipc.shtx.flags = 0;
+ 
+-	if (replyopts.opt.optlen) {
++	if (replyopts.opt.opt.optlen) {
+ 		ipc.opt = &replyopts.opt;
+ 
+-		if (ipc.opt->srr)
+-			daddr = replyopts.opt.faddr;
++		if (replyopts.opt.opt.srr)
++			daddr = replyopts.opt.opt.faddr;
+ 	}
+ 
+ 	{
+diff --git a/net/ipv4/ip_sockglue.c b/net/ipv4/ip_sockglue.c
+index 184a7ad..099e6c3 100644
+--- a/net/ipv4/ip_sockglue.c
++++ b/net/ipv4/ip_sockglue.c
+@@ -434,6 +434,11 @@ out:
+ }
+ 
+ 
++static void opt_kfree_rcu(struct rcu_head *head)
++{
++	kfree(container_of(head, struct ip_options_rcu, rcu));
++}
++
+ /*
+  *	Socket option code for IP. This is the end of the line after any
+  *	TCP,UDP etc options on an IP socket.
+@@ -479,13 +484,15 @@ static int do_ip_setsockopt(struct sock *sk, int level,
+ 	switch (optname) {
+ 	case IP_OPTIONS:
+ 	{
+-		struct ip_options *opt = NULL;
++		struct ip_options_rcu *old, *opt = NULL;
++
+ 		if (optlen > 40 || optlen < 0)
+ 			goto e_inval;
+ 		err = ip_options_get_from_user(sock_net(sk), &opt,
+ 					       optval, optlen);
+ 		if (err)
+ 			break;
++		old = inet->inet_opt;
+ 		if (inet->is_icsk) {
+ 			struct inet_connection_sock *icsk = inet_csk(sk);
+ #if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+@@ -494,17 +501,18 @@ static int do_ip_setsockopt(struct sock *sk, int level,
+ 			       (TCPF_LISTEN | TCPF_CLOSE)) &&
+ 			     inet->daddr != LOOPBACK4_IPV6)) {
+ #endif
+-				if (inet->opt)
+-					icsk->icsk_ext_hdr_len -= inet->opt->optlen;
++				if (old)
++					icsk->icsk_ext_hdr_len -= old->opt.optlen;
+ 				if (opt)
+-					icsk->icsk_ext_hdr_len += opt->optlen;
++					icsk->icsk_ext_hdr_len += opt->opt.optlen;
+ 				icsk->icsk_sync_mss(sk, icsk->icsk_pmtu_cookie);
+ #if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+ 			}
+ #endif
+ 		}
+-		opt = xchg(&inet->opt, opt);
+-		kfree(opt);
++		rcu_assign_pointer(inet->inet_opt, opt);
++		if (old)
++			call_rcu(&old->rcu, opt_kfree_rcu);
+ 		break;
+ 	}
+ 	case IP_PKTINFO:
+@@ -1032,12 +1040,15 @@ static int do_ip_getsockopt(struct sock *sk, int level, int optname,
+ 	case IP_OPTIONS:
+ 	{
+ 		unsigned char optbuf[sizeof(struct ip_options)+40];
+-		struct ip_options * opt = (struct ip_options *)optbuf;
++		struct ip_options *opt = (struct ip_options *)optbuf;
++		struct ip_options_rcu *inet_opt;
++
++		inet_opt = inet->inet_opt;
+ 		opt->optlen = 0;
+-		if (inet->opt)
+-			memcpy(optbuf, inet->opt,
+-			       sizeof(struct ip_options)+
+-			       inet->opt->optlen);
++		if (inet_opt)
++			memcpy(optbuf, &inet_opt->opt,
++			       sizeof(struct ip_options) +
++			       inet_opt->opt.optlen);
+ 		release_sock(sk);
+ 
+ 		if (opt->optlen == 0)
+diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
+index ab996f9..07ab583 100644
+--- a/net/ipv4/raw.c
++++ b/net/ipv4/raw.c
+@@ -459,6 +459,7 @@ static int raw_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 	__be32 saddr;
+ 	u8  tos;
+ 	int err;
++	struct ip_options_data opt_copy;
+ 
+ 	err = -EMSGSIZE;
+ 	if (len > 0xFFFF)
+@@ -519,8 +520,18 @@ static int raw_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 	saddr = ipc.addr;
+ 	ipc.addr = daddr;
+ 
+-	if (!ipc.opt)
+-		ipc.opt = inet->opt;
++	if (!ipc.opt) {
++		struct ip_options_rcu *inet_opt;
++
++		rcu_read_lock();
++		inet_opt = rcu_dereference(inet->inet_opt);
++		if (inet_opt) {
++			memcpy(&opt_copy, inet_opt,
++			       sizeof(*inet_opt) + inet_opt->opt.optlen);
++			ipc.opt = &opt_copy.opt;
 +		}
-+		depth = ext_depth(inode);
-+		ex = path[depth].p_ext;
++		rcu_read_unlock();
 +	}
  
- 	err = ext4_ext_get_access(handle, inode, path + depth);
- 	if (err)
-@@ -3129,7 +3184,8 @@ ext4_ext_handle_uninitialized_extents(handle_t *handle, struct inode *inode,
- 	/* async DIO end_io complete, convert the filled extent to written */
- 	if (flags == EXT4_GET_BLOCKS_DIO_CONVERT_EXT) {
- 		ret = ext4_convert_unwritten_extents_dio(handle, inode,
--							path);
-+							 iblock, max_blocks,
-+							 path);
- 		if (ret >= 0)
- 			ext4_update_inode_fsync_trans(handle, inode, 1);
- 		goto out2;
-@@ -3498,6 +3554,12 @@ void ext4_ext_truncate(struct inode *inode)
- 	int err = 0;
- 
- 	/*
-+	 * finish any pending end_io work so we won't run the risk of
-+	 * converting any truncated blocks to initialized later
-+	 */
-+	flush_aio_dio_completed_IO(inode);
-+
-+	/*
- 	 * probably first extent we're gonna free will be last in block
- 	 */
- 	err = ext4_writepage_trans_blocks(inode);
-@@ -3630,6 +3692,9 @@ long ext4_fallocate(struct inode *inode, int mode, loff_t offset, loff_t len)
- 		mutex_unlock(&inode->i_mutex);
- 		return ret;
+ 	if (ipc.opt) {
+ 		err = -EINVAL;
+@@ -529,10 +540,10 @@ static int raw_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 		 */
+ 		if (inet->hdrincl)
+ 			goto done;
+-		if (ipc.opt->srr) {
++		if (ipc.opt->opt.srr) {
+ 			if (!daddr)
+ 				goto done;
+-			daddr = ipc.opt->faddr;
++			daddr = ipc.opt->opt.faddr;
+ 		}
  	}
+ 	tos = RT_CONN_FLAGS(sk);
+diff --git a/net/ipv4/syncookies.c b/net/ipv4/syncookies.c
+index a6e0e07..0a94b64 100644
+--- a/net/ipv4/syncookies.c
++++ b/net/ipv4/syncookies.c
+@@ -309,10 +309,10 @@ struct sock *cookie_v4_check(struct sock *sk, struct sk_buff *skb,
+ 	 * the ACK carries the same options again (see RFC1122 4.2.3.8)
+ 	 */
+ 	if (opt && opt->optlen) {
+-		int opt_size = sizeof(struct ip_options) + opt->optlen;
++		int opt_size = sizeof(struct ip_options_rcu) + opt->optlen;
+ 
+ 		ireq->opt = kmalloc(opt_size, GFP_ATOMIC);
+-		if (ireq->opt != NULL && ip_options_echo(ireq->opt, skb)) {
++		if (ireq->opt != NULL && ip_options_echo(&ireq->opt->opt, skb)) {
+ 			kfree(ireq->opt);
+ 			ireq->opt = NULL;
+ 		}
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index 6a4e832..d746d3b3 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -152,6 +152,7 @@ int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
+ 	__be32 daddr, nexthop;
+ 	int tmp;
+ 	int err;
++	struct ip_options_rcu *inet_opt;
+ 
+ 	if (addr_len < sizeof(struct sockaddr_in))
+ 		return -EINVAL;
+@@ -160,10 +161,11 @@ int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
+ 		return -EAFNOSUPPORT;
+ 
+ 	nexthop = daddr = usin->sin_addr.s_addr;
+-	if (inet->opt && inet->opt->srr) {
++	inet_opt = inet->inet_opt;
++	if (inet_opt && inet_opt->opt.srr) {
+ 		if (!daddr)
+ 			return -EINVAL;
+-		nexthop = inet->opt->faddr;
++		nexthop = inet_opt->opt.faddr;
+ 	}
+ 
+ 	tmp = ip_route_connect(&rt, nexthop, inet->saddr,
+@@ -181,7 +183,7 @@ int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
+ 		return -ENETUNREACH;
+ 	}
+ 
+-	if (!inet->opt || !inet->opt->srr)
++	if (!inet_opt || !inet_opt->opt.srr)
+ 		daddr = rt->rt_dst;
+ 
+ 	if (!inet->saddr)
+@@ -215,8 +217,8 @@ int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
+ 	inet->daddr = daddr;
+ 
+ 	inet_csk(sk)->icsk_ext_hdr_len = 0;
+-	if (inet->opt)
+-		inet_csk(sk)->icsk_ext_hdr_len = inet->opt->optlen;
++	if (inet_opt)
++		inet_csk(sk)->icsk_ext_hdr_len = inet_opt->opt.optlen;
+ 
+ 	tp->rx_opt.mss_clamp = 536;
+ 
+@@ -802,17 +804,18 @@ static void syn_flood_warning(struct sk_buff *skb)
+ /*
+  * Save and compile IPv4 options into the request_sock if needed.
+  */
+-static struct ip_options *tcp_v4_save_options(struct sock *sk,
+-					      struct sk_buff *skb)
++static struct ip_options_rcu *tcp_v4_save_options(struct sock *sk,
++						  struct sk_buff *skb)
+ {
+-	struct ip_options *opt = &(IPCB(skb)->opt);
+-	struct ip_options *dopt = NULL;
++	const struct ip_options *opt = &(IPCB(skb)->opt);
++	struct ip_options_rcu *dopt = NULL;
+ 
+ 	if (opt && opt->optlen) {
+-		int opt_size = optlength(opt);
++		int opt_size = sizeof(*dopt) + opt->optlen;
 +
-+	/* Prevent race condition between unwritten */
-+	flush_aio_dio_completed_IO(inode);
- retry:
- 	while (ret >= 0 && ret < max_blocks) {
- 		block = block + ret;
+ 		dopt = kmalloc(opt_size, GFP_ATOMIC);
+ 		if (dopt) {
+-			if (ip_options_echo(dopt, skb)) {
++			if (ip_options_echo(&dopt->opt, skb)) {
+ 				kfree(dopt);
+ 				dopt = NULL;
+ 			}
+@@ -1362,6 +1365,7 @@ struct sock *tcp_v4_syn_recv_sock(struct sock *sk, struct sk_buff *skb,
+ #ifdef CONFIG_TCP_MD5SIG
+ 	struct tcp_md5sig_key *key;
+ #endif
++	struct ip_options_rcu *inet_opt;
+ 
+ 	if (sk_acceptq_is_full(sk))
+ 		goto exit_overflow;
+@@ -1382,13 +1386,14 @@ struct sock *tcp_v4_syn_recv_sock(struct sock *sk, struct sk_buff *skb,
+ 	newinet->daddr	      = ireq->rmt_addr;
+ 	newinet->rcv_saddr    = ireq->loc_addr;
+ 	newinet->saddr	      = ireq->loc_addr;
+-	newinet->opt	      = ireq->opt;
++	inet_opt	      = ireq->opt;
++	rcu_assign_pointer(newinet->inet_opt, inet_opt);
+ 	ireq->opt	      = NULL;
+ 	newinet->mc_index     = inet_iif(skb);
+ 	newinet->mc_ttl	      = ip_hdr(skb)->ttl;
+ 	inet_csk(newsk)->icsk_ext_hdr_len = 0;
+-	if (newinet->opt)
+-		inet_csk(newsk)->icsk_ext_hdr_len = newinet->opt->optlen;
++	if (inet_opt)
++		inet_csk(newsk)->icsk_ext_hdr_len = inet_opt->opt.optlen;
+ 	newinet->id = newtp->write_seq ^ jiffies;
+ 
+ 	tcp_mtup_init(newsk);
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index 8e28770..af559e0 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -592,6 +592,7 @@ int udp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 	int err, is_udplite = IS_UDPLITE(sk);
+ 	int corkreq = up->corkflag || msg->msg_flags&MSG_MORE;
+ 	int (*getfrag)(void *, char *, int, int, int, struct sk_buff *);
++	struct ip_options_data opt_copy;
+ 
+ 	if (len > 0xFFFF)
+ 		return -EMSGSIZE;
+@@ -663,22 +664,32 @@ int udp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 			free = 1;
+ 		connected = 0;
+ 	}
+-	if (!ipc.opt)
+-		ipc.opt = inet->opt;
++	if (!ipc.opt) {
++		struct ip_options_rcu *inet_opt;
++
++		rcu_read_lock();
++		inet_opt = rcu_dereference(inet->inet_opt);
++		if (inet_opt) {
++			memcpy(&opt_copy, inet_opt,
++			       sizeof(*inet_opt) + inet_opt->opt.optlen);
++			ipc.opt = &opt_copy.opt;
++		}
++		rcu_read_unlock();
++	}
+ 
+ 	saddr = ipc.addr;
+ 	ipc.addr = faddr = daddr;
+ 
+-	if (ipc.opt && ipc.opt->srr) {
++	if (ipc.opt && ipc.opt->opt.srr) {
+ 		if (!daddr)
+ 			return -EINVAL;
+-		faddr = ipc.opt->faddr;
++		faddr = ipc.opt->opt.faddr;
+ 		connected = 0;
+ 	}
+ 	tos = RT_TOS(inet->tos);
+ 	if (sock_flag(sk, SOCK_LOCALROUTE) ||
+ 	    (msg->msg_flags & MSG_DONTROUTE) ||
+-	    (ipc.opt && ipc.opt->is_strictroute)) {
++	    (ipc.opt && ipc.opt->opt.is_strictroute)) {
+ 		tos |= RTO_ONLINK;
+ 		connected = 0;
+ 	}
+diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
+index faae6df..1b25191 100644
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -1391,7 +1391,7 @@ static struct sock * tcp_v6_syn_recv_sock(struct sock *sk, struct sk_buff *skb,
+ 
+ 	   First: no IPv4 options.
+ 	 */
+-	newinet->opt = NULL;
++	newinet->inet_opt = NULL;
+ 	newnp->ipv6_fl_list = NULL;
+ 
+ 	/* Clone RX bits */
 -- 
 1.7.12.2.21.g234cd45.dirty
 
