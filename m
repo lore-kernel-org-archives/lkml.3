@@ -1,116 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476Ab3FDOkT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:40:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39607 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751712Ab3FDOkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:40:16 -0400
-Date: Tue, 4 Jun 2013 10:39:35 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: "Stefan (metze) Metzmacher" <metze@samba.org>
-Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        cluster-devel@redhat.com, sage@inktank.com,
-        samba-technical@lists.samba.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
-        dhowells@redhat.com, smfrench@gmail.com, linux-fsdevel@vger.kernel.org,
-        ceph-devel@vger.kernel.org, akpm@linux-foundation.org,
-        swhiteho@redhat.com
-Subject: Re: [PATCH v1 11/11] locks: give the blocked_hash its own spinlock
-Message-ID: <20130604103935.2a6afb29@corrin.poochiereds.net>
-In-Reply-To: <51ADF789.70906@samba.org>
-References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
-	<1370056054-25449-12-git-send-email-jlayton@redhat.com>
-	<51ADF789.70906@samba.org>
+	id S1755657Ab3FDOmY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:42:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31390 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754414Ab3FDOmW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 10:42:22 -0400
+X-Authority-Analysis: v=2.0 cv=Et5QXFgA c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=pOOK0n4x9skA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=U0Jj00tbnlYA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=_Elu6U7uDwz5ZpqZ7YIA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1370356941.26799.120.camel@gandalf.local.home>
+Subject: Re: [07/65] dm bufio: avoid a possible __vmalloc deadlock
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org, stable@kernel.org,
+        Alasdair G Kergon <agk@redhat.com>
+Date: Tue, 04 Jun 2013 10:42:21 -0400
+In-Reply-To: <Pine.LNX.4.64.1306040858060.22591@file.rdu.redhat.com>
+References: <20130603221016.243553628@goodmis.org>
+	 <20130603221153.315507011@goodmis.org>
+	 <Pine.LNX.4.64.1306040858060.22591@file.rdu.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/e2QNgN_ZjCXlXB6Bdx9hIy+"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/e2QNgN_ZjCXlXB6Bdx9hIy+
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2013-06-04 at 08:59 -0400, Mikulas Patocka wrote:
+> 
+> On Mon, 3 Jun 2013, Steven Rostedt wrote:
+> 
+> > 3.6.11.5 stable review patch.
+> > If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Mikulas Patocka <mpatocka@redhat.com>
+> > 
+> > [ Upstream commit 502624bdad3dba45dfaacaf36b7d83e39e74b2d2 ]
+> > 
+> > This patch uses memalloc_noio_save to avoid a possible deadlock in
+> > dm-bufio.  (it could happen only with large block size, at most
+> > PAGE_SIZE << MAX_ORDER (typically 8MiB).
+> > 
+> > __vmalloc doesn't fully respect gfp flags. The specified gfp flags are
+> > used for allocation of requested pages, structures vmap_area, vmap_block
+> > and vm_struct and the radix tree nodes.
+> > 
+> > However, the kernel pagetables are allocated always with GFP_KERNEL.
+> > Thus the allocation of pagetables can recurse back to the I/O layer and
+> > cause a deadlock.
+> > 
+> > This patch uses the function memalloc_noio_save to set per-process
+> > PF_MEMALLOC_NOIO flag and the function memalloc_noio_restore to restore
+> > it. When this flag is set, all allocations in the process are done with
+> > implied GFP_NOIO flag, thus the deadlock can't happen.
+> > 
+> > This should be backported to stable kernels, but they don't have the
+> > PF_MEMALLOC_NOIO flag and memalloc_noio_save/memalloc_noio_restore
+> > functions. So, PF_MEMALLOC should be set and restored instead.
+> > 
+> > Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+> > Cc: stable@kernel.org
+> > Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+> > [ Set and clear PF_MEMALLOC manually - SR ]
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > ---
+> >  drivers/md/dm-bufio.c |   26 +++++++++++++++++++++++++-
+> >  1 file changed, 25 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
+> > index c0fc827..a1f2487 100644
+> > --- a/drivers/md/dm-bufio.c
+> > +++ b/drivers/md/dm-bufio.c
+> > @@ -321,6 +321,9 @@ static void __cache_size_refresh(void)
+> >  static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
+> >  			       enum data_mode *data_mode)
+> >  {
+> > +	unsigned noio_flag;
+> > +	void *ptr;
+> > +
+> >  	if (c->block_size <= DM_BUFIO_BLOCK_SIZE_SLAB_LIMIT) {
+> >  		*data_mode = DATA_MODE_SLAB;
+> >  		return kmem_cache_alloc(DM_BUFIO_CACHE(c), gfp_mask);
+> > @@ -334,7 +337,28 @@ static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
+> >  	}
+> >  
+> >  	*data_mode = DATA_MODE_VMALLOC;
+> > -	return __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
+> > +
+> > +	/*
+> > +	 * __vmalloc allocates the data pages and auxiliary structures with
+> > +	 * gfp_flags that were specified, but pagetables are always allocated
+> > +	 * with GFP_KERNEL, no matter what was specified as gfp_mask.
+> > +	 *
+> > +	 * Consequently, we must set per-process flag PF_MEMALLOC_NOIO so that
+> > +	 * all allocations done by this process (including pagetables) are done
+> > +	 * as if GFP_NOIO was specified.
+> > +	 */
+> > +
+> > +	if (gfp_mask & __GFP_NORETRY) {
+> > +		noio_flag = current->flags;
+> 
+> There should be noio_flag = current->flags & PF_MEMALLOC; because we don't 
+> want to restore other flags.
 
-On Tue, 04 Jun 2013 16:19:53 +0200
-"Stefan (metze) Metzmacher" <metze@samba.org> wrote:
+Thanks for the review. Will fix.
 
-> Hi Jeff,
->=20
-> > There's no reason we have to protect the blocked_hash and file_lock_list
-> > with the same spinlock. With the tests I have, breaking it in two gives
-> > a barely measurable performance benefit, but it seems reasonable to make
-> > this locking as granular as possible.
->=20
-> as file_lock_{list,lock} is only used for debugging (/proc/locks) after t=
-his
-> change, I guess it would be possible to use RCU instead of a spinlock.
->=20
-> @others: this was the related discussion on IRC
-> (http://irclog.samba.org/) about this:
->=20
-> 16:02 < metze> jlayton: do you have time to discuss your file_lock_lock
-> changes?
-> 16:02 < jlayton> metze: sure, what's up?
-> 16:03 < jlayton> metze: note that it won't help vl's thundering herd
-> problems...
-> 16:03 < metze> is it correct that after your last patch file_lock_lock
-> is only used for /proc/locks?
-> 16:03 < jlayton> well, it's only used to protect the list that is used
-> for /proc/locks
-> 16:04 < jlayton> it still gets taken whenever a lock is acquired or
-> released in order to manipulate that list
-> 16:04 < metze> would it be a good idea to use rcu instead of a spin lock?
-> 16:04 < jlayton> I tried using RCU, but it turned out to slow everything
-> down
-> 16:04 < jlayton> this is not a read-mostly workload unfortunately
-> 16:04 < jlayton> so doing it with mutual exclusion turns out to be faster
-> 16:04 < metze> ok
-> 16:05 < jlayton> I might play around with it again sometime, but I don't
-> think it really helps. What we need to ensure is
->                  that we optimize the code that manipulates that list,
-> and RCU list manipulations have larger overhead
-> 16:06 < jlayton> metze: that's a good question though so if you want to
-> ask it on the list, please do
-> 16:06 < jlayton> others will probably be wondering the same thing
-> 16:08 < metze> maybe it's worth a comment in commit message and the code
+-- Steve
+
+> 
+> > +		current->flags |= PF_MEMALLOC;
+> > +	}
+> > +
+> > +	ptr = __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
+> > +
+> > +	if (gfp_mask & __GFP_NORETRY)
+> > +		current->flags = (current->flags & ~PF_MEMALLOC) | noio_flag;
+> > +
+> > +	return ptr;
+> >  }
+> >  
+> >  /*
+> > -- 
+> > 1.7.10.4
+> 
+> Mikulas
 
 
-I'm not sure it's worth commenting about RCU in the code. In the future
-it may be possible to do this -- who knows. It does seem to have been
-consistently slower in my testing here though.
-
-> 16:08 < metze> btw, why don't you remove the ' /* Protects the
-> file_lock_list and the blocked_hash */' comment?
->=20
-
-Removed in my git tree -- thanks for pointing that out.
-
---=20
-Jeff Layton <jlayton@redhat.com>
-
---Sig_/e2QNgN_ZjCXlXB6Bdx9hIy+
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRrfwuAAoJEAAOaEEZVoIVYlsP/0suyZxDnd28BxQxkQHllqG5
-bxXk07dLel27h/VoWr9UUXVuGmWRx/+Ue0omtVewfMiSeBrpkUXBkYKI7dHMpoD8
-SH7qQNvUDP+A1Y1Eup/+UQlXVX8ykSFzMzn283wvPaqXtUrhCVflGQQZjXW062RG
-C7aodjNQspdcBh5+5J8XQO2s7jQA6xy/mxEvvBrlV1Rjq1/3iW8xQr59dOjGiLID
-mlMqitLPpz8Os9kX5ONp+hyffVLK+OuaA8hLaInHMiYbDH3NV08WerfhHzy7wySt
-G/hlzs7P2zub9rT77PNTXYa5Aj9UOzAYihYUFcKH9RzWqfdD2XKPsIj7JGr5KCLA
-pmEemZdmBVFqn5nKzggGrZBssju2c97mKumII51oJr62wV/M8ISS89rsPtFxdlTW
-Qs+gSi1fH+PuzUTsFJw/hC9QM0bsAo1AmB2mmT4ijbynxqmgjB7bDAe1soGp6CNI
-m/diYluiPh5gBa6WxoFpjMyJPWRrTvIv8XsUUS3NaSDiCdKWrXiN7/fYdy0q8Tkm
-Ve6w/vPuN7/2rmsqh3sJkV8S7kQHQwD2/lxcFKkD/CqGy+AyC4YCwIqxYLLwh127
-vxKCdU9Ng97qhTQUIiq4s1EZAgTC7Jpe3hdwbAxfoA1r0xgl2kfdEYKmdZ3HsYCX
-0jwGrRwaGKkUpR/ILxVq
-=qRHI
------END PGP SIGNATURE-----
-
---Sig_/e2QNgN_ZjCXlXB6Bdx9hIy+--
