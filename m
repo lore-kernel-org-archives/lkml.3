@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab3FDWn5 (ORCPT <rfc822;w@1wt.eu>);
+	id S1754927Ab3FDWxF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:53:05 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41238 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754255Ab3FDWn5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 18:43:57 -0400
-Received: from 1wt.eu ([62.212.114.60]:35785 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753890Ab3FDWnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:43:45 -0400
-Message-Id: <20130604172137.181045987@1wt.eu>
-User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:24:16 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Daniel Borkmann <dborkman@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 166/184] net: sctp: sctp_auth_key_put: use kzfree instead of
-In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
+X-Sasl-enc: j/UeW2GC5ErhGGX8wXBnwo367GOpVSCIjGsOij5piD1V 1370385835
+Date: Tue, 4 Jun 2013 15:44:24 -0700
+From: Greg KH <greg@kroah.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, devel@linuxdriverproject.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [hv] BUG: kernel freezes after [   13.356381] PCI: CLS 0 bytes,
+ default 64
+Message-ID: <20130604224424.GB533@kroah.com>
+References: <20130604141536.GA13324@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130604141536.GA13324@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+On Tue, Jun 04, 2013 at 10:15:36PM +0800, Fengguang Wu wrote:
+> Greetings,
+> 
+> I got the below dmesg (kernel freezes at the end of it) and the first bad commit is
+> 
+> commit cf6a2eacbcb2593b5b91d0817915c4f0464bb534
+> Author: K. Y. Srinivasan <kys@microsoft.com>
+> Date:   Thu Dec 1 09:59:34 2011 -0800
+> 
+>     drivers: hv: Don't OOPS when you cannot init vmbus
+>     
+>     The hv vmbus driver was causing an OOPS since it was trying to register drivers
+>     on top of the bus even if initialization of the bus has failed for some
+>     reason (such as the odd chance someone would run a hv enabled kernel in a
+>     non-hv environment).
+>     
+>     Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+>     Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+>     Cc: stable <stable@vger.kernel.org>
+>     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> [   13.356381] PCI: CLS 0 bytes, default 64
 
-------------------
- kfree
+Ick, not good.  K.Y., any reason why I shouldn't just revert this?
 
-From: Daniel Borkmann <dborkman@redhat.com>
+thanks,
 
-[ Upstream commit 586c31f3bf04c290dc0a0de7fc91d20aa9a5ee53 ]
-
-For sensitive data like keying material, it is common practice to zero
-out keys before returning the memory back to the allocator. Thus, use
-kzfree instead of kfree.
-
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
----
- net/sctp/auth.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/sctp/auth.c b/net/sctp/auth.c
-index 914c419..7363b9f 100644
---- a/net/sctp/auth.c
-+++ b/net/sctp/auth.c
-@@ -70,7 +70,7 @@ void sctp_auth_key_put(struct sctp_auth_bytes *key)
- 		return;
- 
- 	if (atomic_dec_and_test(&key->refcnt)) {
--		kfree(key);
-+		kzfree(key);
- 		SCTP_DBG_OBJCNT_DEC(keys);
- 	}
- }
--- 
-1.7.12.2.21.g234cd45.dirty
-
-
-
+greg k-h
