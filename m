@@ -1,140 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760047Ab3FDHYk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 03:24:40 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:54655 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759303Ab3FDHYi (ORCPT
+	id S1760068Ab3FDHZG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 03:25:06 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:47745 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759966Ab3FDHZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 03:24:38 -0400
-Message-ID: <51AD972E.6060305@linux.vnet.ibm.com>
-Date: Tue, 04 Jun 2013 12:58:46 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Tue, 4 Jun 2013 03:25:03 -0400
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: gleb@redhat.com, mingo@redhat.com, jeremy@goop.org, x86@kernel.org,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V9 19/19] kvm hypervisor: Add directed yield in vcpu
- block path
-References: <20130601192125.5966.35563.sendpatchset@codeblue> <20130601192645.5966.42685.sendpatchset@codeblue> <20130603160540.GI4224@phenom.dumpdata.com>
-In-Reply-To: <20130603160540.GI4224@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060407-1618-0000-0000-00000403572C
+In-Reply-To: <20130531170437.GA17591@core.coreip.homeip.net>
+References: <1369995191-20855-1-git-send-email-gururaja.hebbar@ti.com>
+	<20130531170437.GA17591@core.coreip.homeip.net>
+Date: Tue, 4 Jun 2013 09:25:02 +0200
+Message-ID: <CACRpkdYnhjpFp1CM=P_hddBe4qVigtE0c+CN9NKvk3nFgJS-ig@mail.gmail.com>
+Subject: Re: [PATCH 00/11] drivers: Add Pinctrl PM support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Hebbar Gururaja <gururaja.hebbar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vaibhav Bedia <vaibhav.bedia@ti.com>, sudhakar.raj@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2013 09:35 PM, Konrad Rzeszutek Wilk wrote:
-> On Sun, Jun 02, 2013 at 12:56:45AM +0530, Raghavendra K T wrote:
->> kvm hypervisor: Add directed yield in vcpu block path
->>
->> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
->>
->> We use the improved PLE handler logic in vcpu block patch for
->> scheduling rather than plain schedule, so that we can make
->> intelligent decisions
->
-> You are missing '.' there, and
->
+On Fri, May 31, 2013 at 7:04 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
 
-Yep.
+> As with the original introduction of pinctrl states my question is: "Can
+> all of this be handled in the driver/bus core instead of adding a lot
+> of boilerplate code to the individual drivers".
 
->>
->> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
->> ---
->>   arch/ia64/include/asm/kvm_host.h    |    5 +++++
->>   arch/powerpc/include/asm/kvm_host.h |    5 +++++
->>   arch/s390/include/asm/kvm_host.h    |    5 +++++
->>   arch/x86/include/asm/kvm_host.h     |    2 +-
->>   arch/x86/kvm/x86.c                  |    8 ++++++++
->>   include/linux/kvm_host.h            |    2 +-
->>   virt/kvm/kvm_main.c                 |    6 ++++--
->>   7 files changed, 29 insertions(+), 4 deletions(-)
->>
->> diff --git a/arch/ia64/include/asm/kvm_host.h b/arch/ia64/include/asm/kvm_host.h
->> index 989dd3f..999ab15 100644
->> --- a/arch/ia64/include/asm/kvm_host.h
->> +++ b/arch/ia64/include/asm/kvm_host.h
->> @@ -595,6 +595,11 @@ int kvm_emulate_halt(struct kvm_vcpu *vcpu);
->>   int kvm_pal_emul(struct kvm_vcpu *vcpu, struct kvm_run *kvm_run);
->>   void kvm_sal_emul(struct kvm_vcpu *vcpu);
->>
->> +static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
->> +{
->> +	schedule();
->> +}
->> +
->>   #define __KVM_HAVE_ARCH_VM_ALLOC 1
->>   struct kvm *kvm_arch_alloc_vm(void);
->>   void kvm_arch_free_vm(struct kvm *kvm);
->> diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
->> index af326cd..1aeecc0 100644
->> --- a/arch/powerpc/include/asm/kvm_host.h
->> +++ b/arch/powerpc/include/asm/kvm_host.h
->> @@ -628,4 +628,9 @@ struct kvm_vcpu_arch {
->>   #define __KVM_HAVE_ARCH_WQP
->>   #define __KVM_HAVE_CREATE_DEVICE
->>
->> +static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
->> +{
->> +	schedule();
->> +}
->> +
->>   #endif /* __POWERPC_KVM_HOST_H__ */
->> diff --git a/arch/s390/include/asm/kvm_host.h b/arch/s390/include/asm/kvm_host.h
->> index 16bd5d1..db09a56 100644
->> --- a/arch/s390/include/asm/kvm_host.h
->> +++ b/arch/s390/include/asm/kvm_host.h
->> @@ -266,4 +266,9 @@ struct kvm_arch{
->>   };
->>
->>   extern int sie64a(struct kvm_s390_sie_block *, u64 *);
->> +static inline void kvm_do_schedule(struct kvm_vcpu *vcpu)
->> +{
->> +	schedule();
->> +}
->> +
->>   #endif
->> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
->> index 95702de..72ff791 100644
->> --- a/arch/x86/include/asm/kvm_host.h
->> +++ b/arch/x86/include/asm/kvm_host.h
->> @@ -1042,5 +1042,5 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info);
->>   int kvm_pmu_read_pmc(struct kvm_vcpu *vcpu, unsigned pmc, u64 *data);
->>   void kvm_handle_pmu_event(struct kvm_vcpu *vcpu);
->>   void kvm_deliver_pmi(struct kvm_vcpu *vcpu);
->> -
->> +void kvm_do_schedule(struct kvm_vcpu *vcpu);
->>   #endif /* _ASM_X86_KVM_HOST_H */
->> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->> index b963c86..d26c4be 100644
->> --- a/arch/x86/kvm/x86.c
->> +++ b/arch/x86/kvm/x86.c
->> @@ -7281,6 +7281,14 @@ bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu)
->>   			kvm_x86_ops->interrupt_allowed(vcpu);
->>   }
->>
->> +void kvm_do_schedule(struct kvm_vcpu *vcpu)
->> +{
->> +	/* We try to yield to a kikced vcpu else do a schedule */
->
-> s/kikced/kicked/
+It can. Per the suggestion in 2/11:
 
-:(.  Thanks .. will change that.
+- Adding pins_sleep and pins_idle to struct dev_pin_info
+  in include/linux/pinctrl/devinfo.h
 
->
-[...]
+- Modify drivers/base/pinctrl.c to optionally look up
+  sleep and idle states, you can make that code
+  #ifdef CONFIG_PM I think.
 
+- Add something like static inline functions to
+  include/linux/pinctrl/consumer.h
+  with names like pinctrl_select_pm_idle(struct device *)
+  pinctrl_select_pm_sleep(struct device *) to switch states
+  using the device core containers, and includes
+  checking IS_ERR() on the handles etc.
+
+I think this will save a *lot* of identical code in all the
+drivers, that will just have to call
+pinctrl_select_pm_sleep(), pinctrl_select_pm_default()
+pinctrl_select_pm_idle() instead of all the complex code.
+
+This is what I planned to do but never got around to.
+
+Yours,
+Linus Walleij
