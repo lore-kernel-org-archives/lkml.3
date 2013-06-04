@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab3FDWll (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:41:41 -0400
-Received: from 1wt.eu ([62.212.114.60]:35273 "EHLO 1wt.eu"
+	id S1752375Ab3FDWlR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:41:17 -0400
+Received: from 1wt.eu ([62.212.114.60]:35166 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752098Ab3FDWlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:41:36 -0400
-Message-Id: <20130604172130.969405668@1wt.eu>
+	id S1751811Ab3FDWku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:40:50 -0400
+Message-Id: <20130604172131.053503073@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:21:46 +0200
+Date: Tue, 04 Jun 2013 19:21:48 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, halfdog <me@halfdog.net>,
-        P J P <ppandit@redhat.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 016/184] exec: use -ELOOP for max recursion depth
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>,
+        Colin King <colin.king@canonical.com>,
+        Tim Gardner <tim.gardner@canonical.com>, Willy Tarreau <w@1wt.eu>
+Subject: [ 018/184] ptrace: ptrace_resume() shouldnt wake up
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,150 +24,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
+ !TASK_TRACED thread
 
-From: Kees Cook <keescook@chromium.org>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit d740269867021faf4ce38a449353d2b986c34a67 upstream
+ptrace: ptrace_resume() shouldn't wake up !TASK_TRACED thread
 
-To avoid an explosion of request_module calls on a chain of abusive
-scripts, fail maximum recursion with -ELOOP instead of -ENOEXEC. As soon
-as maximum recursion depth is hit, the error will fail all the way back
-up the chain, aborting immediately.
+CVE-2013-0871
 
-This also has the side-effect of stopping the user's shell from attempting
-to reexecute the top-level file as a shell script. As seen in the
-dash source:
+BugLink: http://bugs.launchpad.net/bugs/1129192
 
-        if (cmd != path_bshell && errno == ENOEXEC) {
-                *argv-- = cmd;
-                *argv = cmd = path_bshell;
-                goto repeat;
-        }
+It is not clear why ptrace_resume() does wake_up_process(). Unless the
+caller is PTRACE_KILL the tracee should be TASK_TRACED so we can use
+wake_up_state(__TASK_TRACED). If sys_ptrace() races with SIGKILL we do
+not need the extra and potentionally spurious wakeup.
 
-The above logic was designed for running scripts automatically that lacked
-the "#!" header, not to re-try failed recursion. On a legitimate -ENOEXEC,
-things continue to behave as the shell expects.
+If the caller is PTRACE_KILL, wake_up_process() is even more wrong.
+The tracee can sleep in any state in any place, and if we have a buggy
+code which doesn't handle a spurious wakeup correctly PTRACE_KILL can
+be used to exploit it. For example:
 
-Additionally, when tracking recursion, the binfmt handlers should not be
-involved. The recursion being tracked is the depth of calls through
-search_binary_handler(), so that function should be exclusively responsible
-for tracking the depth.
+	int main(void)
+	{
+		int child, status;
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: halfdog <me@halfdog.net>
-Cc: P J P <ppandit@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[dannf: backported to Debian's 2.6.32]
+		child = fork();
+		if (!child) {
+			int ret;
+
+			assert(ptrace(PTRACE_TRACEME, 0,0,0) == 0);
+
+			ret = pause();
+			printf("pause: %d %m\n", ret);
+
+			return 0x23;
+		}
+
+		sleep(1);
+		assert(ptrace(PTRACE_KILL, child, 0,0) == 0);
+
+		assert(child == wait(&status));
+		printf("wait: %x\n", status);
+
+		return 0;
+	}
+
+prints "pause: -1 Unknown error 514", -ERESTARTNOHAND leaks to the
+userland. In this case sys_pause() is buggy as well and should be
+fixed.
+
+I do not know what was the original rationality behind PTRACE_KILL.
+The man page is simply wrong and afaics it was always wrong. Imho
+it should be deprecated, or may be it should do send_sig(SIGKILL)
+as Denys suggests, but in any case I do not think that the current
+behaviour was intentional.
+
+Note: there is another problem, ptrace_resume() changes ->exit_code
+and this can race with SIGKILL too. Eventually we should change ptrace
+to not use ->exit_code.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+(cherry picked from commit 0666fb51b1483f27506e212cc7f7b2645b5c7acc)
+
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Acked-by: Colin King <colin.king@canonical.com>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/binfmt_em86.c        |  1 -
- fs/binfmt_misc.c        |  6 ------
- fs/binfmt_script.c      |  4 +---
- fs/exec.c               | 10 +++++-----
- include/linux/binfmts.h |  2 --
- 5 files changed, 6 insertions(+), 17 deletions(-)
+ kernel/ptrace.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/binfmt_em86.c b/fs/binfmt_em86.c
-index 32fb00b..416dcae 100644
---- a/fs/binfmt_em86.c
-+++ b/fs/binfmt_em86.c
-@@ -43,7 +43,6 @@ static int load_em86(struct linux_binprm *bprm,struct pt_regs *regs)
- 			return -ENOEXEC;
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index 05625f6..d8184b5 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -506,7 +506,7 @@ static int ptrace_resume(struct task_struct *child, long request, long data)
  	}
  
--	bprm->recursion_depth++; /* Well, the bang-shell is implicit... */
- 	allow_write_access(bprm->file);
- 	fput(bprm->file);
- 	bprm->file = NULL;
-diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
-index fb93997..258c5ca 100644
---- a/fs/binfmt_misc.c
-+++ b/fs/binfmt_misc.c
-@@ -116,10 +116,6 @@ static int load_misc_binary(struct linux_binprm *bprm, struct pt_regs *regs)
- 	if (!enabled)
- 		goto _ret;
+ 	child->exit_code = data;
+-	wake_up_process(child);
++	wake_up_state(child, __TASK_TRACED);
  
--	retval = -ENOEXEC;
--	if (bprm->recursion_depth > BINPRM_MAX_RECURSION)
--		goto _ret;
--
- 	/* to keep locking time low, we copy the interpreter string */
- 	read_lock(&entries_lock);
- 	fmt = check_file(bprm);
-@@ -200,8 +196,6 @@ static int load_misc_binary(struct linux_binprm *bprm, struct pt_regs *regs)
- 	if (retval < 0)
- 		goto _error;
- 
--	bprm->recursion_depth++;
--
- 	retval = search_binary_handler (bprm, regs);
- 	if (retval < 0)
- 		goto _error;
-diff --git a/fs/binfmt_script.c b/fs/binfmt_script.c
-index 356568c..4fe6b8a 100644
---- a/fs/binfmt_script.c
-+++ b/fs/binfmt_script.c
-@@ -22,15 +22,13 @@ static int load_script(struct linux_binprm *bprm,struct pt_regs *regs)
- 	char interp[BINPRM_BUF_SIZE];
- 	int retval;
- 
--	if ((bprm->buf[0] != '#') || (bprm->buf[1] != '!') ||
--	    (bprm->recursion_depth > BINPRM_MAX_RECURSION))
-+	if ((bprm->buf[0] != '#') || (bprm->buf[1] != '!'))
- 		return -ENOEXEC;
- 	/*
- 	 * This section does the #! interpretation.
- 	 * Sorta complicated, but hopefully it will work.  -TYT
- 	 */
- 
--	bprm->recursion_depth++;
- 	allow_write_access(bprm->file);
- 	fput(bprm->file);
- 	bprm->file = NULL;
-diff --git a/fs/exec.c b/fs/exec.c
-index f9f1b11..feb2435 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1285,6 +1285,10 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
- 	int try,retval;
- 	struct linux_binfmt *fmt;
- 
-+	/* This allows 4 levels of binfmt rewrites before failing hard. */
-+	if (depth > 5)
-+		return -ELOOP;
-+
- 	retval = security_bprm_check(bprm);
- 	if (retval)
- 		return retval;
-@@ -1306,12 +1310,8 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
- 			if (!try_module_get(fmt->module))
- 				continue;
- 			read_unlock(&binfmt_lock);
-+			bprm->recursion_depth = depth + 1;
- 			retval = fn(bprm, regs);
--			/*
--			 * Restore the depth counter to its starting value
--			 * in this call, so we don't have to rely on every
--			 * load_binary function to restore it on return.
--			 */
- 			bprm->recursion_depth = depth;
- 			if (retval >= 0) {
- 				if (depth == 0)
-diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
-index d06c3a4..9ffffec 100644
---- a/include/linux/binfmts.h
-+++ b/include/linux/binfmts.h
-@@ -71,8 +71,6 @@ extern struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
- #define BINPRM_FLAGS_EXECFD_BIT 1
- #define BINPRM_FLAGS_EXECFD (1 << BINPRM_FLAGS_EXECFD_BIT)
- 
--#define BINPRM_MAX_RECURSION 4
--
- /*
-  * This structure defines the functions that are used to load the binary formats that
-  * linux accepts.
+ 	return 0;
+ }
 -- 
 1.7.12.2.21.g234cd45.dirty
 
