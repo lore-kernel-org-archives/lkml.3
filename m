@@ -1,96 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138Ab3FDX0k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:26:40 -0400
-Received: from 1wt.eu ([62.212.114.60]:35184 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751862Ab3FDWky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:40:54 -0400
-Message-Id: <20130604172131.347714149@1wt.eu>
-User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:21:55 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Oleg Nesterov <oleg@redhat.com>, Denys Vlasenko <vda.linux@googlemail.com>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 025/184] coredump: prevent double-free on an error path in
-In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
+	id S1751458Ab3FDXaJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:30:09 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:57316 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958Ab3FDXaF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 19:30:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.03.1306041911170.1686@linux.vnet.ibm.com>
+References: <alpine.LFD.2.03.1306041911170.1686@linux.vnet.ibm.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 4 Jun 2013 17:29:44 -0600
+Message-ID: <CAErSpo41t6QDHJwoZcwp5pH7kzuLPb8xboHc3W6YixDad2BotA@mail.gmail.com>
+Subject: Re: [PATCH] pci: add pcibios_release_device
+To: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+On Tue, Jun 4, 2013 at 11:18 AM, Sebastian Ott
+<sebott@linux.vnet.ibm.com> wrote:
+> Hello Bjorn,
+>
+> part of your feedback to the PCI support on s390 was to put some smarts in
+> the config space accessors and let the pci core do the scanning of pci
+> functions.
+> To get there I had to implement pcibios_add_device on s390 to do some arch
+> specific device initialization. During removal of the pci function I would
+> like to undo these steps. Would it be possible to have a couterpart of
+> pcibios_add_device - like the patch below:
+>
+>
+> pci: add pcibios_release_device
+>
+> Platforms may want to provide architecture-specific functionality when
+> a pci device is released. Add a pcibios_release_device() call that
+> architectures can override to do so.
+>
+> Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
 
-------------------
- core dumper
+Applied to pci/misc for v3.11.  Thanks!
 
-From: Denys Vlasenko <vda.linux@googlemail.com>
-
-commit f34f9d186df35e5c39163444c43b4fc6255e39c5 upstream.
-
-In !CORE_DUMP_USE_REGSET case, if elf_note_info_init fails to allocate
-memory for info->fields, it frees already allocated stuff and returns
-error to its caller, fill_note_info.  Which in turn returns error to its
-caller, elf_core_dump.  Which jumps to cleanup label and calls
-free_note_info, which will happily try to free all info->fields again.
-BOOM.
-
-This is the fix.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Venu Byravarasu <vbyravarasu@nvidia.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
----
- fs/binfmt_elf.c | 19 ++++---------------
- 1 file changed, 4 insertions(+), 15 deletions(-)
-
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index a64fde6..c564293 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -1699,30 +1699,19 @@ static int elf_note_info_init(struct elf_note_info *info)
- 		return 0;
- 	info->psinfo = kmalloc(sizeof(*info->psinfo), GFP_KERNEL);
- 	if (!info->psinfo)
--		goto notes_free;
-+		return 0;
- 	info->prstatus = kmalloc(sizeof(*info->prstatus), GFP_KERNEL);
- 	if (!info->prstatus)
--		goto psinfo_free;
-+		return 0;
- 	info->fpu = kmalloc(sizeof(*info->fpu), GFP_KERNEL);
- 	if (!info->fpu)
--		goto prstatus_free;
-+		return 0;
- #ifdef ELF_CORE_COPY_XFPREGS
- 	info->xfpu = kmalloc(sizeof(*info->xfpu), GFP_KERNEL);
- 	if (!info->xfpu)
--		goto fpu_free;
-+		return 0;
- #endif
- 	return 1;
--#ifdef ELF_CORE_COPY_XFPREGS
-- fpu_free:
--	kfree(info->fpu);
--#endif
-- prstatus_free:
--	kfree(info->prstatus);
-- psinfo_free:
--	kfree(info->psinfo);
-- notes_free:
--	kfree(info->notes);
--	return 0;
- }
- 
- static int fill_note_info(struct elfhdr *elf, int phdrs,
--- 
-1.7.12.2.21.g234cd45.dirty
-
-
-
+> ---
+>  drivers/pci/pci.c   |   10 ++++++++++
+>  drivers/pci/probe.c |    1 +
+>  include/linux/pci.h |    1 +
+>  3 files changed, 12 insertions(+)
+>
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -1335,6 +1335,16 @@ int __weak pcibios_add_device (struct pc
+>  }
+>
+>  /**
+> + * pcibios_release_device - provide arch specific hooks when releasing device dev
+> + * @dev: the PCI device being released
+> + *
+> + * Permits the platform to provide architecture specific functionality when
+> + * devices are released. This is the default implementation. Architecture
+> + * implementations can override this.
+> + */
+> +void __weak pcibios_release_device(struct pci_dev *dev) {}
+> +
+> +/**
+>   * pcibios_disable_device - disable arch specific PCI resources for device dev
+>   * @dev: the PCI device to disable
+>   *
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -1132,6 +1132,7 @@ static void pci_release_dev(struct devic
+>         pci_dev = to_pci_dev(dev);
+>         pci_release_capabilities(pci_dev);
+>         pci_release_of_node(pci_dev);
+> +       pcibios_release_device(pci_dev);
+>         kfree(pci_dev);
+>  }
+>
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -1643,6 +1643,7 @@ void pcibios_set_master(struct pci_dev *
+>  int pcibios_set_pcie_reset_state(struct pci_dev *dev,
+>                                  enum pcie_reset_state state);
+>  int pcibios_add_device(struct pci_dev *dev);
+> +void pcibios_release_device(struct pci_dev *dev);
+>
+>  #ifdef CONFIG_PCI_MMCONFIG
+>  void __init pci_mmcfg_early_init(void);
+>
