@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab3FDXVs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:21:48 -0400
-Received: from 1wt.eu ([62.212.114.60]:35281 "EHLO 1wt.eu"
+	id S1752767Ab3FDXWR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:22:17 -0400
+Received: from 1wt.eu ([62.212.114.60]:35249 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752595Ab3FDWli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:41:38 -0400
-Message-Id: <20130604172132.466530925@1wt.eu>
+	id S1752463Ab3FDWl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:41:27 -0400
+Message-Id: <20130604172130.885441884@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:22:22 +0200
+Date: Tue, 04 Jun 2013 19:21:44 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Samu Kallio <samu.kallio@aberdeencloud.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Oleg Nesterov <oleg@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 052/184] x86, mm, paravirt: Fix vmalloc_fault oops during
+Subject: [ 014/184] kmod: make __request_module() killable
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,93 +25,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- lazy MMU updates
 
-From: Samu Kallio <samu.kallio@aberdeencloud.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 1160c2779b826c6f5c08e5cc542de58fd1f667d5 upstream.
+commit 1cc684ab75123efe7ff446eb821d44375ba8fa30 upstream
 
-In paravirtualized x86_64 kernels, vmalloc_fault may cause an oops
-when lazy MMU updates are enabled, because set_pgd effects are being
-deferred.
+As Tetsuo Handa pointed out, request_module() can stress the system
+while the oom-killed caller sleeps in TASK_UNINTERRUPTIBLE.
 
-One instance of this problem is during process mm cleanup with memory
-cgroups enabled. The chain of events is as follows:
+The task T uses "almost all" memory, then it does something which
+triggers request_module().  Say, it can simply call sys_socket().  This
+in turn needs more memory and leads to OOM.  oom-killer correctly
+chooses T and kills it, but this can't help because it sleeps in
+TASK_UNINTERRUPTIBLE and after that oom-killer becomes "disabled" by the
+TIF_MEMDIE task T.
 
-- zap_pte_range enables lazy MMU updates
-- zap_pte_range eventually calls mem_cgroup_charge_statistics,
-  which accesses the vmalloc'd mem_cgroup per-cpu stat area
-- vmalloc_fault is triggered which tries to sync the corresponding
-  PGD entry with set_pgd, but the update is deferred
-- vmalloc_fault oopses due to a mismatch in the PUD entries
+Make __request_module() killable.  The only necessary change is that
+call_modprobe() should kmalloc argv and module_name, they can't live in
+the stack if we use UMH_KILLABLE.  This memory is freed via
+call_usermodehelper_freeinfo()->cleanup.
 
-The OOPs usually looks as so:
-
-------------[ cut here ]------------
-kernel BUG at arch/x86/mm/fault.c:396!
-invalid opcode: 0000 [#1] SMP
-.. snip ..
-CPU 1
-Pid: 10866, comm: httpd Not tainted 3.6.10-4.fc18.x86_64 #1
-RIP: e030:[<ffffffff816271bf>]  [<ffffffff816271bf>] vmalloc_fault+0x11f/0x208
-.. snip ..
-Call Trace:
- [<ffffffff81627759>] do_page_fault+0x399/0x4b0
- [<ffffffff81004f4c>] ? xen_mc_extend_args+0xec/0x110
- [<ffffffff81624065>] page_fault+0x25/0x30
- [<ffffffff81184d03>] ? mem_cgroup_charge_statistics.isra.13+0x13/0x50
- [<ffffffff81186f78>] __mem_cgroup_uncharge_common+0xd8/0x350
- [<ffffffff8118aac7>] mem_cgroup_uncharge_page+0x57/0x60
- [<ffffffff8115fbc0>] page_remove_rmap+0xe0/0x150
- [<ffffffff8115311a>] ? vm_normal_page+0x1a/0x80
- [<ffffffff81153e61>] unmap_single_vma+0x531/0x870
- [<ffffffff81154962>] unmap_vmas+0x52/0xa0
- [<ffffffff81007442>] ? pte_mfn_to_pfn+0x72/0x100
- [<ffffffff8115c8f8>] exit_mmap+0x98/0x170
- [<ffffffff810050d9>] ? __raw_callee_save_xen_pmd_val+0x11/0x1e
- [<ffffffff81059ce3>] mmput+0x83/0xf0
- [<ffffffff810624c4>] exit_mm+0x104/0x130
- [<ffffffff8106264a>] do_exit+0x15a/0x8c0
- [<ffffffff810630ff>] do_group_exit+0x3f/0xa0
- [<ffffffff81063177>] sys_exit_group+0x17/0x20
- [<ffffffff8162bae9>] system_call_fastpath+0x16/0x1b
-
-Calling arch_flush_lazy_mmu_mode immediately after set_pgd makes the
-changes visible to the consistency checks.
-
-RedHat-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=914737
-Tested-by: Josh Boyer <jwboyer@redhat.com>
-Reported-and-Tested-by: Krishna Raman <kraman@redhat.com>
-Signed-off-by: Samu Kallio <samu.kallio@aberdeencloud.com>
-Link: http://lkml.kernel.org/r/1364045796-10720-1-git-send-email-konrad.wilk@oracle.com
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[dannf, bwh: backported to Debian's 2.6.32]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/x86/mm/fault.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ kernel/kmod.c | 36 ++++++++++++++++++++++++++++++++++--
+ 1 file changed, 34 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 249ad57..df87450 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -376,10 +376,12 @@ static noinline int vmalloc_fault(unsigned long address)
- 	if (pgd_none(*pgd_ref))
- 		return -1;
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index 1088a8f..8ecc509 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -53,16 +53,48 @@ static DECLARE_RWSEM(umhelper_sem);
+ */
+ char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe";
  
--	if (pgd_none(*pgd))
-+	if (pgd_none(*pgd)) {
- 		set_pgd(pgd, *pgd_ref);
--	else
-+		arch_flush_lazy_mmu_mode();
-+	} else {
- 		BUG_ON(pgd_page_vaddr(*pgd) != pgd_page_vaddr(*pgd_ref));
-+	}
++static void free_modprobe_argv(char **argv, char **envp)
++{
++	kfree(argv[3]); /* check call_modprobe() */
++	kfree(argv);
++}
++
+ static int call_modprobe(char *module_name, int wait)
+ {
+ 	static char *envp[] = { "HOME=/",
+ 				"TERM=linux",
+ 				"PATH=/sbin:/usr/sbin:/bin:/usr/bin",
+ 				NULL };
++	struct subprocess_info *info;
++
++	char **argv = kmalloc(sizeof(char *[5]), GFP_KERNEL);
++	if (!argv)
++		goto out;
  
- 	/*
- 	 * Below here mismatches are bugs because these lower tables
+-	char *argv[] = { modprobe_path, "-q", "--", module_name, NULL };
++	module_name = kstrdup(module_name, GFP_KERNEL);
++	if (!module_name)
++		goto free_argv;
+ 
+-	return call_usermodehelper(modprobe_path, argv, envp, wait);
++	argv[0] = modprobe_path;
++	argv[1] = "-q";
++	argv[2] = "--";
++	argv[3] = module_name;	/* check free_modprobe_argv() */
++	argv[4] = NULL;
++
++	info = call_usermodehelper_setup(argv[0], argv, envp, GFP_ATOMIC);
++	if (!info)
++		goto free_module_name;
++
++	call_usermodehelper_setcleanup(info, free_modprobe_argv);
++
++	return call_usermodehelper_exec(info, wait | UMH_KILLABLE);
++
++free_module_name:
++	kfree(module_name);
++free_argv:
++	kfree(argv);
++out:
++	return -ENOMEM;
+ }
+ 
+ /**
 -- 
 1.7.12.2.21.g234cd45.dirty
 
