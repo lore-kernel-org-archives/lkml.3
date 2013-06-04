@@ -1,52 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078Ab3FDOoW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:44:22 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:33792 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754414Ab3FDOoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:44:20 -0400
-From: Joe Perches <joe@perches.com>
-To: Laurent Vivier <laurent@lvivier.info>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] swim: Release memory region after incorrect return/goto
-Date: Tue,  4 Jun 2013 07:44:17 -0700
-Message-Id: <60123fd3175b7cceadf6c335b12e58b797e18f65.1370356776.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+	id S1756439Ab3FDOob (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:44:31 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:58083 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754825Ab3FDOo2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 10:44:28 -0400
+MIME-Version: 1.0
+Date: Tue, 4 Jun 2013 22:44:27 +0800
+Message-ID: <CAPgLHd9eC=4Q45OKuh0mjUwkpQgLZnaoNCw0NhyVvo9mb43dXw@mail.gmail.com>
+Subject: [PATCH] pch_phub: fix error return code in pch_phub_probe()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: arnd@arndb.de, gregkh@linuxfoundation.org
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code uses
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-	return foo;
-	goto err_type;
+Error code had been assigned to retval in some error handling case
+but never use it, 0 is always returned in those case, this patch
+fix them to return a negative error code.
 
-when instead the form should have been
-
-	ret = foo;
-	goto err_type;
-
-Here this causes a useful release_mem_region to be skipped.
-
-Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/block/swim.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/misc/pch_phub.c | 36 +++++++++++++++++-------------------
+ 1 file changed, 17 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/block/swim.c b/drivers/block/swim.c
-index 2f445b7..8ed6ccb 100644
---- a/drivers/block/swim.c
-+++ b/drivers/block/swim.c
-@@ -893,7 +893,7 @@ static int swim_probe(struct platform_device *dev)
+diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
+index 931e635..6888450 100644
+--- a/drivers/misc/pch_phub.c
++++ b/drivers/misc/pch_phub.c
+@@ -669,8 +669,6 @@ static struct bin_attribute pch_bin_attr = {
+ static int pch_phub_probe(struct pci_dev *pdev,
+ 				    const struct pci_device_id *id)
+ {
+-	int retval;
+-
+ 	int ret;
+ 	struct pch_phub_reg *chip;
  
- 	swim_base = ioremap(res->start, resource_size(res));
- 	if (!swim_base) {
--		return -ENOMEM;
-+		ret = -ENOMEM;
- 		goto out_release_io;
- 	}
+@@ -713,13 +711,13 @@ static int pch_phub_probe(struct pci_dev *pdev,
+ 	if (id->driver_data == 1) { /* EG20T PCH */
+ 		const char *board_name;
  
--- 
-1.8.1.2.459.gbcd45b4.dirty
+-		retval = sysfs_create_file(&pdev->dev.kobj,
+-					   &dev_attr_pch_mac.attr);
+-		if (retval)
++		ret = sysfs_create_file(&pdev->dev.kobj,
++					&dev_attr_pch_mac.attr);
++		if (ret)
+ 			goto err_sysfs_create;
+ 
+-		retval = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
+-		if (retval)
++		ret = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
++		if (ret)
+ 			goto exit_bin_attr;
+ 
+ 		pch_phub_read_modify_write_reg(chip,
+@@ -743,8 +741,8 @@ static int pch_phub_probe(struct pci_dev *pdev,
+ 		chip->pch_opt_rom_start_address = PCH_PHUB_ROM_START_ADDR_EG20T;
+ 		chip->pch_mac_start_address = PCH_PHUB_MAC_START_ADDR_EG20T;
+ 	} else if (id->driver_data == 2) { /* ML7213 IOH */
+-		retval = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
+-		if (retval)
++		ret = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
++		if (ret)
+ 			goto err_sysfs_create;
+ 		/* set the prefech value
+ 		 * Device2(USB OHCI #1/ USB EHCI #1/ USB Device):a
+@@ -766,12 +764,12 @@ static int pch_phub_probe(struct pci_dev *pdev,
+ 						 PCH_PHUB_ROM_START_ADDR_ML7223;
+ 		chip->pch_mac_start_address = PCH_PHUB_MAC_START_ADDR_ML7223;
+ 	} else if (id->driver_data == 4) { /* ML7223 IOH Bus-n*/
+-		retval = sysfs_create_file(&pdev->dev.kobj,
+-					   &dev_attr_pch_mac.attr);
+-		if (retval)
++		ret = sysfs_create_file(&pdev->dev.kobj,
++					&dev_attr_pch_mac.attr);
++		if (ret)
+ 			goto err_sysfs_create;
+-		retval = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
+-		if (retval)
++		ret = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
++		if (ret)
+ 			goto exit_bin_attr;
+ 		/* set the prefech value
+ 		 * Device2(USB OHCI #0,1,2,3/ USB EHCI #0):a
+@@ -783,13 +781,13 @@ static int pch_phub_probe(struct pci_dev *pdev,
+ 						 PCH_PHUB_ROM_START_ADDR_ML7223;
+ 		chip->pch_mac_start_address = PCH_PHUB_MAC_START_ADDR_ML7223;
+ 	} else if (id->driver_data == 5) { /* ML7831 */
+-		retval = sysfs_create_file(&pdev->dev.kobj,
+-					   &dev_attr_pch_mac.attr);
+-		if (retval)
++		ret = sysfs_create_file(&pdev->dev.kobj,
++					&dev_attr_pch_mac.attr);
++		if (ret)
+ 			goto err_sysfs_create;
+ 
+-		retval = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
+-		if (retval)
++		ret = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
++		if (ret)
+ 			goto exit_bin_attr;
+ 
+ 		/* set the prefech value */
 
