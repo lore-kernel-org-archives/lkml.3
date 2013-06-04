@@ -1,103 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755744Ab3FDQii (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 12:38:38 -0400
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:35155 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802Ab3FDQid (ORCPT
+	id S1756015Ab3FDQl4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 12:41:56 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:64857 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755373Ab3FDQlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 12:38:33 -0400
-Date: Tue, 4 Jun 2013 18:38:28 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Balbir Singh <bsingharora@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [patch v4] Soft limit rework
-Message-ID: <20130604163828.GA9321@dhcp22.suse.cz>
-References: <1370254735-13012-1-git-send-email-mhocko@suse.cz>
- <CAKTCnz=CMbhhROPV4iC6_XPuu_8J53ZMTdXtY_bevPjG+B-+mw@mail.gmail.com>
+	Tue, 4 Jun 2013 12:41:52 -0400
+Date: Tue, 4 Jun 2013 09:41:48 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.10-rc4
+Message-ID: <20130604164148.GA26400@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FCuugMFkClbJLl1L"
 Content-Disposition: inline
-In-Reply-To: <CAKTCnz=CMbhhROPV4iC6_XPuu_8J53ZMTdXtY_bevPjG+B-+mw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 04-06-13 21:57:56, Balbir Singh wrote:
-> On Mon, Jun 3, 2013 at 3:48 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> > Hi,
-> >
-> > This is the fourth version of the patchset.
-> >
-> > Summary of versions:
-> > The first version has been posted here: http://permalink.gmane.org/gmane.linux.kernel.mm/97973
-> > (lkml wasn't CCed at the time so I cannot find it in lwn.net
-> > archives). There were no major objections. The second version
-> > has been posted here http://lwn.net/Articles/548191/ as a part
-> > of a longer and spicier thread which started after LSF here:
-> > https://lwn.net/Articles/548192/
-> > Version number 3 has been posted here http://lwn.net/Articles/550409/
-> > Johannes was worried about setups with thousands of memcgs and the
-> > tree walk overhead for the soft reclaim pass without anybody in excess.
-> >
-> > Changes between RFC (aka V1) -> V2
-> > As there were no major objections there were only some minor cleanups
-> > since the last version and I have moved "memcg: Ignore soft limit until
-> > it is explicitly specified" to the end of the series.
-> >
-> > Changes between V2 -> V3
-> > No changes in the code since the last version. I have just rebased the
-> > series on top of the current mmotm tree. The most controversial part
-> > has been dropped (the last patch "memcg: Ignore soft limit until it is
-> > explicitly specified") so there are no semantical changes to the soft
-> > limit behavior. This makes this work mostly a code clean up and code
-> > reorganization. Nevertheless, this is enough to make the soft limit work
-> > more efficiently according to my testing and groups above the soft limit
-> > are reclaimed much less as a result.
-> >
-> > Changes between V3->V4
-> > Added some Reviewed-bys but the biggest change comes from Johannes
-> > concern about the tree traversal overhead with a huge number of memcgs
-> > (http://thread.gmane.org/gmane.linux.kernel.cgroups/7307/focus=100326)
-> > and this version addresses this problem by augmenting the memcg tree
-> > with the number of over soft limit children at each level of the
-> > hierarchy. See more bellow.
-> >
-> > The basic idea is quite simple. Pull soft reclaim into shrink_zone in
-> > the first step and get rid of the previous soft reclaim infrastructure.
-> > shrink_zone is done in two passes now. First it tries to do the soft
-> > limit reclaim and it falls back to reclaim-all mode if no group is over
-> > the limit or no pages have been scanned. The second pass happens at the
-> > same priority so the only time we waste is the memcg tree walk which
-> > has been updated in the third step to have only negligible overhead.
-> >
-> 
-> Hi, Michal
-> 
-> I've just looked at this (I am yet to review the series), but the
-> intention of the changes do not read out clearly. Or may be I quite
-> outdated on the subject :)
 
-OK, let me summarize. The primary intention is to get rid of the current
-soft reclaim infrastructure which basically bypasses the standard
-reclaim and tight it directly into shrink_zone code. This also means
-that the soft reclaim doesn't reclaim at priority 0 and that it is
-active also for the targeted (aka limit) reclaim.
+--FCuugMFkClbJLl1L
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Does this help?
- 
-> Balbir
+Hi Linus,
 
--- 
-Michal Hocko
-SUSE Labs
+Please pull from:
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+
+to receive updates for the input subsystem: just a 2 small driver
+fixups here.
+
+Changelog:
+---------
+
+Eric Miao (1):
+      Input: synaptics - fix sync lost after resume on some laptops
+
+Ping Cheng (1):
+      Input: wacom - fix a typo for Cintiq 22HDT
+
+
+Diffstat:
+--------
+
+ drivers/input/mouse/synaptics.c  | 2 ++
+ drivers/input/tablet/wacom_wac.c | 8 +++++---
+ 2 files changed, 7 insertions(+), 3 deletions(-)
+
+--=20
+Dmitry
+
+
+--FCuugMFkClbJLl1L
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRrhjMAAoJEH70+W8r6ZYqGcYQAKyHvdGxaOEXojTDxus49blq
+4+ntd8OBxYt/tDG1AMFIj4mkPsg7gFj+66kQCzWxL9bTHKbCpxMlOYachZ+EPYD7
+hObidSPnA7DFuBiqmEYWMpoqTzC1Bs7DTyEIzq6NcCQngcw9xXczRdl3hTvD89e7
+fnrqwqU2jIc/udrH3VX0CwQhPJ7cDgxsxHKL/1gZwtCKWcaQdYZp6zgmaXBPwu+5
+oNCpupe0EA+bataJ27jNU2V59OE1u2dxGKk4MYzLE46L+gLmsH0fnxvS7vlMwdD8
+alGN5fJ51Zb5lrKEYJGYAgPKvOfJlUTAt3ue6wMFpntQFJ+gDvPtG2M9cs/s9GiI
+wlDVbX+fhYrbptr2dDFBNmvRNIFcYYDrwAA6KMGCm/bhuAvHI6P4scpJ+Z1+HuwS
+HIsIXCBg+0J7eF6P056v7M+J1r1Msy4rvRR7qk9ys3/siLVCYxxC+lZiF2JnPGqo
+r2QpqljdzYl9pETb67lx80/iH+Dsn6aVvIoIj/Z06yYPc8ePqXxmOtddWEsb3pLP
+E5rtZP2qhZzMWXVVxYAnyBVAOMqt6gIx5sMW77SRpXW5cmdBZPWPgl+kGI635V6/
+TxEj2u+IgSC/f994ixlmhMxrjr7mUzAsIRJ3J3eRfkKx5d1VUEcdIG9YOyDbFe0P
+yvcmRJNGmDlaPq0kUkxK
+=JWT9
+-----END PGP SIGNATURE-----
+
+--FCuugMFkClbJLl1L--
