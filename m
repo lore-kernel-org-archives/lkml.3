@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757335Ab3FDO5o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:57:44 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:54031 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756008Ab3FDO5l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:57:41 -0400
-Message-ID: <51AE0053.6010806@gmail.com>
-Date: Tue, 04 Jun 2013 22:57:23 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, devel@driverdev.osuosl.org,
-        Jiang Liu <jiang.liu@huawei.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v1 4/8] zram: destroy all devices on error recovery
- path in zram_init()
-References: <1370274140-26420-1-git-send-email-jiang.liu@huawei.com> <1370274140-26420-5-git-send-email-jiang.liu@huawei.com> <20130604084916.GM28112@mwanda>
-In-Reply-To: <20130604084916.GM28112@mwanda>
-Content-Type: text/plain; charset=UTF-8
+	id S1757443Ab3FDO6B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:58:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4522 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752908Ab3FDO5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 10:57:55 -0400
+Date: Tue, 4 Jun 2013 10:56:56 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "Stefan (metze) Metzmacher" <metze@samba.org>, viro@zeniv.linux.org.uk,
+        matthew@wil.cx, bfields@fieldses.org, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, cluster-devel@redhat.com, sage@inktank.com,
+        samba-technical@lists.samba.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
+        dhowells@redhat.com, smfrench@gmail.com, linux-fsdevel@vger.kernel.org,
+        ceph-devel@vger.kernel.org, akpm@linux-foundation.org,
+        swhiteho@redhat.com
+Subject: Re: [PATCH v1 11/11] locks: give the blocked_hash its own spinlock
+Message-ID: <20130604105656.18663efa@corrin.poochiereds.net>
+In-Reply-To: <20130604144640.GA7730@infradead.org>
+References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
+	<1370056054-25449-12-git-send-email-jlayton@redhat.com>
+	<51ADF789.70906@samba.org>
+	<20130604144640.GA7730@infradead.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 04 Jun 2013 04:49:16 PM CST, Dan Carpenter wrote:
-> Everyone stop putting RFC on their bugfixes!  :P  No one wants to
-> pre-review patches.
->
-> On Mon, Jun 03, 2013 at 11:42:16PM +0800, Jiang Liu wrote:
->> On error recovery path of zram_init(), it leaks the zram device object
->> causing the failure.
->>
->
-> This is a real bug but the fix isn't right.  The object causing the
-> failure has only been partially set up.  And in some cases it has
-> been partially cleaned up, for example we could end up releasing
-> ->queue twice.
->
-> The better way is to make create_device() clean up after itself
-> completely instead of only partly and sometimes.
->
-> regards,
-> dan carpenter
->
-Hi Dan,
-     Thanks for your review, will fix it in next version.
-Regards!
-Gerry
+On Tue, 4 Jun 2013 07:46:40 -0700
+Christoph Hellwig <hch@infradead.org> wrote:
 
+> Having RCU for modification mostly workloads never is a good idea, so
+> I don't think it makes sense to mention it here.
+> 
+> If you care about the overhead it's worth trying to use per-cpu lists,
+> though.
+> 
+
+Yeah, I looked at those too in an earlier set and it did help some.
+Moving to a hashtable for the blocked_list really seemed to help the
+most there, but percpu lists with lglocks or something might help a lot
+on the file_lock_list.
+
+-- 
+Jeff Layton <jlayton@redhat.com>
