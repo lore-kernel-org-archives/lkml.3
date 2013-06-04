@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab3FDMVC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 08:21:02 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:64208 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752044Ab3FDMU7 (ORCPT
+	id S1754625Ab3FDMVQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 08:21:16 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:52160 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210Ab3FDMVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 08:20:59 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH] tty: serial: Enable uartlite for ARM zynq
-Date: Tue,  4 Jun 2013 14:20:43 +0200
-Message-Id: <26d21aaa1f4a5b3bcae1d82f1524ea53ce9a36bd.1370348438.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-13300-1370348443-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Tue, 4 Jun 2013 08:21:11 -0400
+MIME-Version: 1.0
+Date: Tue, 4 Jun 2013 14:21:10 +0200
+Message-ID: <CACRpkdZLQa9_2m6WUYWaBty0F4a13zJA+tnPJZrWYBOeZ=vfrg@mail.gmail.com>
+Subject: [GIT PULL 1/5]: ux500 core changes for v3.11
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "arm@kernel.org" <arm@kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+Hi ARM SoC folks,
 
---=_mimegpg-monstr-desktop-13300-1370348443-0001
+this is the ux500 core changes for v3.11. See the signed
+tag for details.
 
-Enable it in Kconfig.
+The following changes since commit e4aa937ec75df0eea0bee03bffa3303ad36c986b:
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
- drivers/tty/serial/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+  Linux 3.10-rc3 (2013-05-26 16:00:47 -0700)
 
-diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-index 7e7006f..64250b1 100644
---- a/drivers/tty/serial/Kconfig
-+++ b/drivers/tty/serial/Kconfig
-@@ -576,7 +576,7 @@ config SERIAL_IMX_CONSOLE
+are available in the git repository at:
 
- config SERIAL_UARTLITE
- 	tristate "Xilinx uartlite serial port support"
--	depends on PPC32 || MICROBLAZE || MFD_TIMBERDALE
-+	depends on PPC32 || MICROBLAZE || MFD_TIMBERDALE || ARCH_ZYNQ
- 	select SERIAL_CORE
- 	help
- 	  Say Y here if you want to use the Xilinx uartlite serial controller.
---
-1.8.2.3
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-stericsson.git
+tags/ux500-core-for-arm-soc
 
+for you to fetch changes up to 080e0435e54298992dfc03dc04ca53cfe3de36ba:
 
---=_mimegpg-monstr-desktop-13300-1370348443-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
+  ARM: ux500: avoid warning in ux500_read_asicid (2013-06-04 11:21:58 +0200)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+----------------------------------------------------------------
+Ux500 core changes:
+- Fixes for size and location of PRCMU TCDM
+- SD/MMC/SDIO caps updates to boardfiles
+- Misc fixes
 
-iEYEABECAAYFAlGt25wACgkQykllyylKDCH3rQCeN61WmWg4aPcOXEBqJCv0uwV0
-QFIAoJW5lP2ESEfZ70v/Wy/GKaeEEs51
-=lMXc
------END PGP SIGNATURE-----
+----------------------------------------------------------------
+Arnd Bergmann (1):
+      ARM: ux500: avoid warning in ux500_read_asicid
 
---=_mimegpg-monstr-desktop-13300-1370348443-0001--
+Lee Jones (3):
+      ARM: ux500: Increase the size of the PRCMU's TCPM size
+      ARM: ux500: Remove incorrect DB9540 PRCMU TCDM base location
+      ARM: ux500: regulators: Remove misleading comment
+
+Ulf Hansson (6):
+      ARM: ux500: Enable 100MHz for SD/SDIO/MMC devices
+      ARM: ux500: Don't set plf ocr mask for SD/MMC device
+      ARM: ux500: Enable support for RPMB and Reliable Write for eMMC
+      ARM: ux500: Enable support for discard for MMC/SD
+      ARM: ux500: Set eMMC and WLAN card slot as non-removable
+      ARM: ux500: Enable support for UHS-I SD-cards
+
+ arch/arm/mach-ux500/board-mop500-regulators.c |  1 -
+ arch/arm/mach-ux500/board-mop500-sdi.c        | 34 +++++++++++++++++----------
+ arch/arm/mach-ux500/db8500-regs.h             |  3 +--
+ arch/arm/mach-ux500/devices-db8500.c          |  2 +-
+ arch/arm/mach-ux500/id.c                      |  6 ++---
+ 5 files changed, 27 insertions(+), 19 deletions(-)
