@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab3FDQ17 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 12:27:59 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:64569 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755720Ab3FDQ15 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 12:27:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <1370254735-13012-1-git-send-email-mhocko@suse.cz>
-References: <1370254735-13012-1-git-send-email-mhocko@suse.cz>
-Date: Tue, 4 Jun 2013 21:57:56 +0530
-Message-ID: <CAKTCnz=CMbhhROPV4iC6_XPuu_8J53ZMTdXtY_bevPjG+B-+mw@mail.gmail.com>
-Subject: Re: [patch v4] Soft limit rework
-From: Balbir Singh <bsingharora@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756331Ab3FDQ2X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 12:28:23 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:38978 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755270Ab3FDQ2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 12:28:20 -0400
+Message-ID: <1370363289.2385.41.camel@joe-AO722>
+Subject: Re: [PATCH] jfs: Convert jfs_error to jfs_sb_err
+From: Joe Perches <joe@perches.com>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: jfs-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Date: Tue, 04 Jun 2013 09:28:09 -0700
+In-Reply-To: <51AE0F37.3020104@oracle.com>
+References: <76a131f2845ec3f75dd80be6808e513ae3ea4255.1370323137.git.joe@perches.com>
+	 <51AE0F37.3020104@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 3, 2013 at 3:48 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> Hi,
->
-> This is the fourth version of the patchset.
->
-> Summary of versions:
-> The first version has been posted here: http://permalink.gmane.org/gmane.linux.kernel.mm/97973
-> (lkml wasn't CCed at the time so I cannot find it in lwn.net
-> archives). There were no major objections. The second version
-> has been posted here http://lwn.net/Articles/548191/ as a part
-> of a longer and spicier thread which started after LSF here:
-> https://lwn.net/Articles/548192/
-> Version number 3 has been posted here http://lwn.net/Articles/550409/
-> Johannes was worried about setups with thousands of memcgs and the
-> tree walk overhead for the soft reclaim pass without anybody in excess.
->
-> Changes between RFC (aka V1) -> V2
-> As there were no major objections there were only some minor cleanups
-> since the last version and I have moved "memcg: Ignore soft limit until
-> it is explicitly specified" to the end of the series.
->
-> Changes between V2 -> V3
-> No changes in the code since the last version. I have just rebased the
-> series on top of the current mmotm tree. The most controversial part
-> has been dropped (the last patch "memcg: Ignore soft limit until it is
-> explicitly specified") so there are no semantical changes to the soft
-> limit behavior. This makes this work mostly a code clean up and code
-> reorganization. Nevertheless, this is enough to make the soft limit work
-> more efficiently according to my testing and groups above the soft limit
-> are reclaimed much less as a result.
->
-> Changes between V3->V4
-> Added some Reviewed-bys but the biggest change comes from Johannes
-> concern about the tree traversal overhead with a huge number of memcgs
-> (http://thread.gmane.org/gmane.linux.kernel.cgroups/7307/focus=100326)
-> and this version addresses this problem by augmenting the memcg tree
-> with the number of over soft limit children at each level of the
-> hierarchy. See more bellow.
->
-> The basic idea is quite simple. Pull soft reclaim into shrink_zone in
-> the first step and get rid of the previous soft reclaim infrastructure.
-> shrink_zone is done in two passes now. First it tries to do the soft
-> limit reclaim and it falls back to reclaim-all mode if no group is over
-> the limit or no pages have been scanned. The second pass happens at the
-> same priority so the only time we waste is the memcg tree walk which
-> has been updated in the third step to have only negligible overhead.
->
+On Tue, 2013-06-04 at 11:00 -0500, Dave Kleikamp wrote:
+> I generally like this cleanup except for one thing.
+> 
+> On 06/04/2013 12:22 AM, Joe Perches wrote:
+> > Use a more current logging style.
+> > 
+> > Rename function jfs_error to jfs_sb_err.
+> 
+> Why the rename? If you're going to rename it, the new name should be
+> more descriptive, such as jfs_report_and_handle_error(), but I don't
+> like that because it's too long. jfs_error() is similiar to ext4_error()
+> or btrfs_error(). I don't understand the name change.
 
-Hi, Michal
+Pick a name.  I don't much care what it is really.
 
-I've just looked at this (I am yet to review the series), but the
-intention of the changes do not read out clearly. Or may be I quite
-outdated on the subject :)
+This one takes a super_block * and emits a logging message
+so I chose jfs_sb_err to try to describe the sb * bit.
 
-Balbir
+I like the _err suffix is a bit better than the
+_error suffix as it's a bit more name consistent
+with other kernel logging mechanisms like dev_err,
+pr_err, etc, but if you want to remain consistent
+with other fs/,,, fine by me.
+
+I think the other fs _error names are sub-optimal.
+
+These functions are a bit overloaded too when
+CONFIG_PRINTK is not enabled.  The format and args
+still exist in code and I believe can not be
+optimized away by the compiler
+
+I think using macro or an in-place expansion to
+separate the 2 parts of the reporting and then the
+handling of of the error would be better as it
+would allow smaller embedded use.
+
+> > Add __printf format and argument verification.
+> 
+> good
+
+I submitted a patch a few years ago to do that too.
+Dunno what happened to it,
+
+> > Remove embedded function names from formats.
+> > Add %pf, __builtin_return_address(0) to jfs_sb_err.
+> 
+> I like this.
+
+It also reduces stack needs a bit by removing that
+256 byte temp buffer.
+
+
