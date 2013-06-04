@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751626Ab3FDJfI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 05:35:08 -0400
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:33553 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab3FDJfE convert rfc822-to-8bit (ORCPT
+	id S1752550Ab3FDJfP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 05:35:15 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:59435 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752285Ab3FDJfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 05:35:04 -0400
+	Tue, 4 Jun 2013 05:35:11 -0400
+Message-ID: <51ADB484.3060404@huawei.com>
+Date: Tue, 4 Jun 2013 17:33:56 +0800
+From: Libo Chen <libo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1370262068-16658-1-git-send-email-emilgoode@gmail.com>
-References: <1370262068-16658-1-git-send-email-emilgoode@gmail.com>
-From: Lorenzo Colitti <lorenzo@google.com>
-Date: Tue, 4 Jun 2013 18:34:42 +0900
-Message-ID: <CAKD1Yr06MX0KOsiYVLnum0HhGN-g826qsTwnD3svu2p5Cxum5g@mail.gmail.com>
-Subject: Re: [PATCH] net: ipv6: Fix incompatible pointer type warning
-To: Emil Goode <emilgoode@gmail.com>
-Cc: David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
-        jmorris@namei.org, YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        kaber@trash.net, "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: <megaraidlinux@lsi.com>, <JBottomley@parallels.com>
+CC: Libo Chen <chenlibo.3@gmail.com>, <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, <kashyap.desai@lsi.com>,
+        <aradford@gmail.com>, Li Zefan <lizefan@huawei.com>,
+        Santosh Y <santoshsy@gmail.com>, Tomas Henzl <thenzl@redhat.com>
+Subject: Re: [PATCH v2] scsi: megaraid: check kzalloc
+References: <519ECEF1.9060804@huawei.com> <519F3592.4090207@huawei.com>
+In-Reply-To: <519F3592.4090207@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 3, 2013 at 9:21 PM, Emil Goode <emilgoode@gmail.com> wrote:
-> This fixes the sparse warning below about assignment from
-> incompatible pointer type.
->
-> In the following commit the third argument in function ipv6_chk_addr
-> was changed to const and struct nf_ipv6_ops was introduced with
-> the third argument of .chk_addr beeing const.
->
-> 2a7851bffb008ff4882eee673da74718997b4265
-> ("netfilter: add nf_ipv6_ops hook to fix xt_addrtype with IPv6")
->
-> The below commit introduced the warning as the third argument of
-> dummy_ipv6_chk_addr and .ipv6_chk_addr in struct pingv6_ops is
-> missing a const.
->
-> 6d0bfe22611602f36617bc7aa2ffa1bbb2f54c67
-> ("net: ipv6: Add IPv6 support to the ping socket.")
->
-> Sparse output:
->
-> net/ipv6/ping.c: In function ‘pingv6_init’:
-> net/ipv6/ping.c:87:27: warning:
->         assignment from incompatible pointer type [enabled by default]
->
-> Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> ---
->  include/net/ping.h |    2 +-
->  net/ipv6/ping.c    |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/include/net/ping.h b/include/net/ping.h
-> index 9242fa0..2db4860 100644
-> --- a/include/net/ping.h
-> +++ b/include/net/ping.h
-> @@ -38,7 +38,7 @@ struct pingv6_ops {
->         void (*ipv6_icmp_error)(struct sock *sk, struct sk_buff *skb, int err,
->                                 __be16 port, u32 info, u8 *payload);
->         int (*ipv6_chk_addr)(struct net *net, const struct in6_addr *addr,
-> -                            struct net_device *dev, int strict);
-> +                            const struct net_device *dev, int strict);
->  };
->
->  struct ping_table {
-> diff --git a/net/ipv6/ping.c b/net/ipv6/ping.c
-> index a6462d6..c2e9669 100644
-> --- a/net/ipv6/ping.c
-> +++ b/net/ipv6/ping.c
-> @@ -73,7 +73,7 @@ int dummy_icmpv6_err_convert(u8 type, u8 code, int *err)
->  void dummy_ipv6_icmp_error(struct sock *sk, struct sk_buff *skb, int err,
->                             __be16 port, u32 info, u8 *payload) {}
->  int dummy_ipv6_chk_addr(struct net *net, const struct in6_addr *addr,
-> -                       struct net_device *dev, int strict)
-> +                       const struct net_device *dev, int strict)
->  {
->         return 0;
->  }
-> --
-> 1.7.10.4
->
 
-Acked-by: Lorenzo Colitti <lorenzo@google.com>
+we should check kzalloc, avoid to hit oops
+
+Change from v1:
+- put kzalloc outside of mutex
+
+Signed-off-by: Libo Chen <libo.chen@huawei.com>
+---
+ drivers/scsi/megaraid.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/scsi/megaraid.c b/drivers/scsi/megaraid.c
+index 846f475..cc599cc 100644
+--- a/drivers/scsi/megaraid.c
++++ b/drivers/scsi/megaraid.c
+@@ -4150,6 +4150,12 @@ mega_internal_command(adapter_t *adapter, megacmd_t *mc, mega_passthru *pthru)
+ 	if (!scmd)
+ 		return -ENOMEM;
+
++	sdev = kzalloc(sizeof(struct scsi_device), GFP_KERNEL);
++	if (!sdev) {
++		scsi_free_command(GFP_KERNEL, scmd);
++		return -ENOMEM;
++	}
++
+ 	/*
+ 	 * The internal commands share one command id and hence are
+ 	 * serialized. This is so because we want to reserve maximum number of
+@@ -4160,7 +4166,6 @@ mega_internal_command(adapter_t *adapter, megacmd_t *mc, mega_passthru *pthru)
+ 	scb = &adapter->int_scb;
+ 	memset(scb, 0, sizeof(scb_t));
+
+-	sdev = kzalloc(sizeof(struct scsi_device), GFP_KERNEL);
+ 	scmd->device = sdev;
+
+ 	memset(adapter->int_cdb, 0, sizeof(adapter->int_cdb));
+-- 
+1.7.1
+
+
