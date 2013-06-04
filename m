@@ -1,100 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759850Ab3FDG7e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 02:59:34 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59297 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759809Ab3FDG7c (ORCPT
+	id S1759799Ab3FDHAK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 03:00:10 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:41571 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759581Ab3FDHAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 02:59:32 -0400
-X-AuditID: 9c930179-b7c07ae000000e33-07-51ad905390e7
-Date: Tue, 4 Jun 2013 15:59:30 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mgorman@suse.de, tim.c.chen@linux.intel.com
-Subject: Re: [v5][PATCH 5/6] mm: vmscan: batch shrink_page_list() locking
- operations
-Message-ID: <20130604065930.GA26129@blaptop>
-References: <20130603200202.7F5FDE07@viggo.jf.intel.com>
- <20130603200208.6F71D31F@viggo.jf.intel.com>
- <20130604050103.GC14719@blaptop>
- <51AD84BA.4090106@sr71.net>
+	Tue, 4 Jun 2013 03:00:07 -0400
+Date: Tue, 4 Jun 2013 08:59:56 +0200
+From: Tobias Waldekranz <tobias@waldekranz.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] timekeeping: handle epoch roll-over (2038) on 32-bit
+ systems
+Message-ID: <20130604065947.GA10895@gmail.com>
+References: <CAFaRD2FP0rrQstV1GszP_URO+cZZuQdyRxOYUEmA+5BvopUAvQ@mail.gmail.com>
+ <alpine.LFD.2.02.1306031622520.2905@ionos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51AD84BA.4090106@sr71.net>
+In-Reply-To: <alpine.LFD.2.02.1306031622520.2905@ionos>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 11:10:02PM -0700, Dave Hansen wrote:
-> On 06/03/2013 10:01 PM, Minchan Kim wrote:
-> >> > +static int __remove_mapping_batch(struct list_head *remove_list,
-> >> > +				  struct list_head *ret_pages,
-> >> > +				  struct list_head *free_pages)
-> >> > +{
-> >> > +	int nr_reclaimed = 0;
-> >> > +	struct address_space *mapping;
-> >> > +	struct page *page;
-> >> > +	LIST_HEAD(need_free_mapping);
-> >> > +
-> >> > +	while (!list_empty(remove_list)) {
-> ...
-> >> > +		if (!__remove_mapping(mapping, page)) {
-> >> > +			unlock_page(page);
-> >> > +			list_add(&page->lru, ret_pages);
-> >> > +			continue;
-> >> > +		}
-> >> > +		list_add(&page->lru, &need_free_mapping);
-> ...
-> > +	spin_unlock_irq(&mapping->tree_lock);
-> > +	while (!list_empty(&need_free_mapping)) {...
-> > +		list_move(&page->list, free_pages);
-> > +		mapping_release_page(mapping, page);
-> > +	}
-> > Why do we need new lru list instead of using @free_pages?
+On Mon, Jun 03, 2013 at 04:34:25PM +0200, Thomas Gleixner wrote:
+> B1;2601;0cOn Mon, 3 Jun 2013, Tobias Waldekranz wrote:
+> > In ktime_get_update_offsets, calculate the current time in the same
+> > way as in ktime_get.
+> > 
+> > On 32-bit systems, the current time is truncated via the call to
+> > ktime_set, the following subtraction of offs_real will result in an
+> > inaccurate time when the current number of seconds since epoch can no
+> > longer fit in 31-bits (2038-01-19 03:14:07 UTC). This will send
+> > hrtimer_interrupt into an infinite loop on some architectures (arm),
+> > or emit an oops on others(x86).
 > 
-> I actually tried using @free_pages at first.  The problem is that we
-> need to call mapping_release_page() without the radix tree lock held so
-> we can not do it in the first while() loop.
+> If we really want to survive 2038, then we need to get rid of the
+> timespec based representation of time in the kernel alltogether and
+> switch all related code over to a scalar nsec 64bit storage.
 > 
-> 'free_pages' is a list created up in shrink_page_list().  There can be
-> several calls to __remove_mapping_batch() for each call to
-> shrink_page_list().
+Agreed.
 
-I missed that point.
-
+> Just "fixing" some random parts of the code in a "make it work
+> somehow" way is a pointless exercise IMO.
 > 
-> 'need_free_mapping' lets us temporarily differentiate the pages that we
-> need to call mapping_release_page()/unlock_page() on versus the ones on
-> 'free_pages' which have already had that done.
+Now hold on, it is hardly random. On an ARM system, the kernel will
+completely hang. I would think that many users would like to avoid
+that. In addition this behavior is rather new, hrtimer_interrupt used
+to source its time from ktime_get which avoids this issue. The change
+was introduced in:
+
+5baefd6d84163443215f4a99f6a20f054ef11236
+
+I understand that you would like a solution to the broader issue. But
+for some users (embedded especially) having a system that continues to
+operate 25 years from now is an issue today.
+
+As for "make it work somehow", modifying the current time calculation
+to work in the same way as in ktime_get does seem to be a reasonable
+way to go IMO.
+ 
+> We already had long discussions about how the timekeeping code should
+> be restructured to address that and other problems at least on the
+> kernel side and switching everything to scalar storage is definitely
+> the way to go.
 > 
-
-Right.
-
-> We could theoretically delay _all_ of the
-> release_mapping_page()/unlock_page() operations until the _entire_
-> shrink_page_list() operation is done, but doing this really helps with
-
-                                        maybe you mean
-                                        but doing this doesn't really helps
-> lock_page() latency.
+> Though even if we fix that we still need to twist our brains around
+> the timespec/timeval based user space interfaces. That's going to be
+> the way more interesting challenge.
 > 
-> Does that make sense?
-
-If so, It does make sense.
-Thanks for pointing me out.
-
+> Thanks,
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 	tglx
 
--- 
-Kind regards,
-Minchan Kim
+Thanks,
+	wkz
