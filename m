@@ -1,67 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758312Ab3FDFny (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 01:43:54 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58578 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab3FDFnv (ORCPT
+	id S1758852Ab3FDFq2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 01:46:28 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:63861 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753279Ab3FDFq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 01:43:51 -0400
-Date: Tue, 4 Jun 2013 15:43:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kent Overstreet <koverstreet@google.com>, Tejun Heo <tj@kernel.org>
-Subject: linux-next: manual merge of the akpm tree with the percpu tree
-Message-Id: <20130604154341.f7afbe1cf405ec6205d14dc8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__4_Jun_2013_15_43_41_+1000_jt=SyV2ECNcNa24C"
+	Tue, 4 Jun 2013 01:46:26 -0400
+X-AuditID: 9c93017d-b7c04ae00000207d-44-51ad7f300f76
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: [PATCH RESEND] perf sched: Move struct perf_sched definition out of cmd_sched()
+Date: Tue,  4 Jun 2013 14:46:19 +0900
+Message-Id: <1370324779-16921-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__4_Jun_2013_15_43_41_+1000_jt=SyV2ECNcNa24C
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Hi Andrew,
+For some reason it consumed quite amount of compile time when declared
+as local variable, and it disappeared when moved out of the function.
+Moving other variables/tables didn't help.
 
-Today's linux-next merge of the akpm tree got conflicts in
-include/linux/percpu-refcount.h and lib/percpu-refcount.c between commit
-215e262f2aeb ("percpu: implement generic percpu refcounting") from the
-percpu tree and commit "generic dynamic per cpu refcounting" from the
-akpm tree.
+On my system this single-file-change build time reduced from 11s to 3s.
 
-I just dropped the patch from the akpm tree.  The percpu tree patch looks
-like it may be a later version.
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-sched.c | 41 +++++++++++++++++++++--------------------
+ 1 file changed, 21 insertions(+), 20 deletions(-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index 2da2a6ca22bf..2eddd71baa94 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -1663,28 +1663,29 @@ static int __cmd_record(int argc, const char **argv)
+ 	return cmd_record(i, rec_argv, NULL);
+ }
+ 
++static const char default_sort_order[] = "avg, max, switch, runtime";
++static struct perf_sched sched = {
++	.tool = {
++		.sample		 = perf_sched__process_tracepoint_sample,
++		.comm		 = perf_event__process_comm,
++		.lost		 = perf_event__process_lost,
++		.fork		 = perf_event__process_fork,
++		.ordered_samples = true,
++	},
++	.cmp_pid	      = LIST_HEAD_INIT(sched.cmp_pid),
++	.sort_list	      = LIST_HEAD_INIT(sched.sort_list),
++	.start_work_mutex     = PTHREAD_MUTEX_INITIALIZER,
++	.work_done_wait_mutex = PTHREAD_MUTEX_INITIALIZER,
++	.curr_pid	      = { [0 ... MAX_CPUS - 1] = -1 },
++	.sort_order	      = default_sort_order,
++	.replay_repeat	      = 10,
++	.profile_cpu	      = -1,
++	.next_shortname1      = 'A',
++	.next_shortname2      = '0',
++};
++
+ int cmd_sched(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+-	const char default_sort_order[] = "avg, max, switch, runtime";
+-	struct perf_sched sched = {
+-		.tool = {
+-			.sample		 = perf_sched__process_tracepoint_sample,
+-			.comm		 = perf_event__process_comm,
+-			.lost		 = perf_event__process_lost,
+-			.fork		 = perf_event__process_fork,
+-			.ordered_samples = true,
+-		},
+-		.cmp_pid	      = LIST_HEAD_INIT(sched.cmp_pid),
+-		.sort_list	      = LIST_HEAD_INIT(sched.sort_list),
+-		.start_work_mutex     = PTHREAD_MUTEX_INITIALIZER,
+-		.work_done_wait_mutex = PTHREAD_MUTEX_INITIALIZER,
+-		.curr_pid	      = { [0 ... MAX_CPUS - 1] = -1 },
+-		.sort_order	      = default_sort_order,
+-		.replay_repeat	      = 10,
+-		.profile_cpu	      = -1,
+-		.next_shortname1      = 'A',
+-		.next_shortname2      = '0',
+-	};
+ 	const struct option latency_options[] = {
+ 	OPT_STRING('s', "sort", &sched.sort_order, "key[,key2...]",
+ 		   "sort by key(s): runtime, switch, avg, max"),
+-- 
+1.7.11.7
 
---Signature=_Tue__4_Jun_2013_15_43_41_+1000_jt=SyV2ECNcNa24C
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRrX6SAAoJEECxmPOUX5FEsOQP/i/sAzho44VoT8kUy/zrZoQy
-/nObp2DvQ9eHLDseiaoQkOgoU30U50sM5N8idG50li7QYKjEgdx/kpe3oFE/AZ4O
-uwaX1Zc6pZQwpL4cHLHInVDOLJ3MWfVYxfVm4F46QmoCjng7BPBPdTFQEnsDK+5l
-anEOql/47gsJT62d5bcZjBVWok6QYpyIEPf1TTIycAOI7pxJwDFgkX7xHR41vSH2
-xa/qVxCdEvMi/IJZiTSiWrM2/hqgLZMRJ4MhvKIf+Bf3n8d8RacRXsvvbKK2lZZY
-YOHCiLDkZ61gcnbMwpOfuLTHfd8piyJak1ESlEagVXR3/kXQFZzvx3u0vhT1x5Sh
-AVCsnnSW/YQM3B+zCT5YVxPXthTd9avRTacMSASKcv2FIAwIsGdP+SKUHxXM3V7m
-OQrxmYPGpK8XWc4UeuLmGG6AZDvy3EDLBsOKCU4EHJSsZi95xibUm1ZIcDKvqBGN
-aMNERLnNGxLv5k2YUTBBWwKHoEJyctn2fZHyXoVaKCD9kZ6tJve4lVmZ0fyY4g64
-hTGMFtso4TEHY1pZix0UbDtnr398xKAXwkBqdIolbrJrlaNZXMAR29aZ6n/sf/6t
-GfuP7krZyvZGnFra+Y7J1bTJ54cEnd6V8sba27XhlkHzi7CNe68RxbOs/HI8nVa8
-FXm8GPyGzoBBB0noNeeL
-=t+Ok
------END PGP SIGNATURE-----
-
---Signature=_Tue__4_Jun_2013_15_43_41_+1000_jt=SyV2ECNcNa24C--
