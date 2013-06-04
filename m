@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123Ab3FDWyZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:54:25 -0400
-Received: from 1wt.eu ([62.212.114.60]:35778 "EHLO 1wt.eu"
+	id S1755082Ab3FDWyX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:54:23 -0400
+Received: from 1wt.eu ([62.212.114.60]:35780 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754056Ab3FDWns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754061Ab3FDWns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 18:43:48 -0400
-Message-Id: <20130604172136.933976596@1wt.eu>
+Message-Id: <20130604172134.165569548@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:24:10 +0200
+Date: Tue, 04 Jun 2013 19:23:03 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Eric Dumazet <edumazet@google.com>, Yuchung Cheng <ycheng@google.com>,
-        Van Jacobson <vanj@google.com>, Neal Cardwell <ncardwell@google.com>,
-        Nandita Dukkipati <nanditad@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 160/184] tcp: preserve ACK clocking in TSO
+Subject: [ 093/184] b43legacy: Fix crash on unload when firmware not
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,91 +24,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
+ available
 
-From: Eric Dumazet <edumazet@google.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-[ Upstream commit f4541d60a449afd40448b06496dcd510f505928e ]
+commit 2d838bb608e2d1f6cb4280e76748cb812dc822e7 upstream.
 
-A long standing problem with TSO is the fact that tcp_tso_should_defer()
-rearms the deferred timer, while it should not.
+When b43legacy is loaded without the firmware being available, a following
+unload generates a kernel NULL pointer dereference BUG as follows:
 
-Current code leads to following bad bursty behavior :
+[  214.330789] BUG: unable to handle kernel NULL pointer dereference at 0000004c
+[  214.330997] IP: [<c104c395>] drain_workqueue+0x15/0x170
+[  214.331179] *pde = 00000000
+[  214.331311] Oops: 0000 [#1] SMP
+[  214.331471] Modules linked in: b43legacy(-) ssb pcmcia mac80211 cfg80211 af_packet mperf arc4 ppdev sr_mod cdrom sg shpchp yenta_socket pcmcia_rsrc pci_hotplug pcmcia_core battery parport_pc parport floppy container ac button edd autofs4 ohci_hcd ehci_hcd usbcore usb_common thermal processor scsi_dh_rdac scsi_dh_hp_sw scsi_dh_emc scsi_dh_alua scsi_dh fan thermal_sys hwmon ata_generic pata_ali libata [last unloaded: cfg80211]
+[  214.333421] Pid: 3639, comm: modprobe Not tainted 3.6.0-rc6-wl+ #163 Source Technology VIC 9921/ALI Based Notebook
+[  214.333580] EIP: 0060:[<c104c395>] EFLAGS: 00010246 CPU: 0
+[  214.333687] EIP is at drain_workqueue+0x15/0x170
+[  214.333788] EAX: c162ac40 EBX: cdfb8360 ECX: 0000002a EDX: 00002a2a
+[  214.333890] ESI: 00000000 EDI: 00000000 EBP: cd767e7c ESP: cd767e5c
+[  214.333957]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[  214.333957] CR0: 8005003b CR2: 0000004c CR3: 0c96a000 CR4: 00000090
+[  214.333957] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[  214.333957] DR6: ffff0ff0 DR7: 00000400
+[  214.333957] Process modprobe (pid: 3639, ti=cd766000 task=cf802e90 task.ti=cd766000)
+[  214.333957] Stack:
+[  214.333957]  00000292 cd767e74 c12c5e09 00000296 00000296 cdfb8360 cdfb9220 00000000
+[  214.333957]  cd767e90 c104c4fd cdfb8360 cdfb9220 cd682800 cd767ea4 d0c10184 cd682800
+[  214.333957]  cd767ea4 cba31064 cd767eb8 d0867908 cba31064 d087e09c cd96f034 cd767ec4
+[  214.333957] Call Trace:
+[  214.333957]  [<c12c5e09>] ? skb_dequeue+0x49/0x60
+[  214.333957]  [<c104c4fd>] destroy_workqueue+0xd/0x150
+[  214.333957]  [<d0c10184>] ieee80211_unregister_hw+0xc4/0x100 [mac80211]
+[  214.333957]  [<d0867908>] b43legacy_remove+0x78/0x80 [b43legacy]
+[  214.333957]  [<d083654d>] ssb_device_remove+0x1d/0x30 [ssb]
+[  214.333957]  [<c126f15a>] __device_release_driver+0x5a/0xb0
+[  214.333957]  [<c126fb07>] driver_detach+0x87/0x90
+[  214.333957]  [<c126ef4c>] bus_remove_driver+0x6c/0xe0
+[  214.333957]  [<c1270120>] driver_unregister+0x40/0x70
+[  214.333957]  [<d083686b>] ssb_driver_unregister+0xb/0x10 [ssb]
+[  214.333957]  [<d087c488>] b43legacy_exit+0xd/0xf [b43legacy]
+[  214.333957]  [<c1089dde>] sys_delete_module+0x14e/0x2b0
+[  214.333957]  [<c110a4a7>] ? vfs_write+0xf7/0x150
+[  214.333957]  [<c1240050>] ? tty_write_lock+0x50/0x50
+[  214.333957]  [<c110a6f8>] ? sys_write+0x38/0x70
+[  214.333957]  [<c1397c55>] syscall_call+0x7/0xb
+[  214.333957] Code: bc 27 00 00 00 00 a1 74 61 56 c1 55 89 e5 e8 a3 fc ff ff 5d c3 90 55 89 e5 57 56 89 c6 53 b8 40 ac 62 c1 83 ec 14 e8 bb b7 34 00 <8b> 46 4c 8d 50 01 85 c0 89 56 4c 75 03 83 0e 40 80 05 40 ac 62
+[  214.333957] EIP: [<c104c395>] drain_workqueue+0x15/0x170 SS:ESP 0068:cd767e5c
+[  214.333957] CR2: 000000000000004c
+[  214.341110] ---[ end trace c7e90ec026d875a6 ]---Index: wireless-testing/drivers/net/wireless/b43legacy/main.c
 
-20:11:24.484333 IP A > B: . 297161:316921(19760) ack 1 win 119
-20:11:24.484337 IP B > A: . ack 263721 win 1117
-20:11:24.485086 IP B > A: . ack 265241 win 1117
-20:11:24.485925 IP B > A: . ack 266761 win 1117
-20:11:24.486759 IP B > A: . ack 268281 win 1117
-20:11:24.487594 IP B > A: . ack 269801 win 1117
-20:11:24.488430 IP B > A: . ack 271321 win 1117
-20:11:24.489267 IP B > A: . ack 272841 win 1117
-20:11:24.490104 IP B > A: . ack 274361 win 1117
-20:11:24.490939 IP B > A: . ack 275881 win 1117
-20:11:24.491775 IP B > A: . ack 277401 win 1117
-20:11:24.491784 IP A > B: . 316921:332881(15960) ack 1 win 119
-20:11:24.492620 IP B > A: . ack 278921 win 1117
-20:11:24.493448 IP B > A: . ack 280441 win 1117
-20:11:24.494286 IP B > A: . ack 281961 win 1117
-20:11:24.495122 IP B > A: . ack 283481 win 1117
-20:11:24.495958 IP B > A: . ack 285001 win 1117
-20:11:24.496791 IP B > A: . ack 286521 win 1117
-20:11:24.497628 IP B > A: . ack 288041 win 1117
-20:11:24.498459 IP B > A: . ack 289561 win 1117
-20:11:24.499296 IP B > A: . ack 291081 win 1117
-20:11:24.500133 IP B > A: . ack 292601 win 1117
-20:11:24.500970 IP B > A: . ack 294121 win 1117
-20:11:24.501388 IP B > A: . ack 295641 win 1117
-20:11:24.501398 IP A > B: . 332881:351881(19000) ack 1 win 119
+The problem is fixed by making certain that the ucode pointer is not NULL
+before deregistering the driver in mac80211.
 
-While the expected behavior is more like :
-
-20:19:49.259620 IP A > B: . 197601:202161(4560) ack 1 win 119
-20:19:49.260446 IP B > A: . ack 154281 win 1212
-20:19:49.261282 IP B > A: . ack 155801 win 1212
-20:19:49.262125 IP B > A: . ack 157321 win 1212
-20:19:49.262136 IP A > B: . 202161:206721(4560) ack 1 win 119
-20:19:49.262958 IP B > A: . ack 158841 win 1212
-20:19:49.263795 IP B > A: . ack 160361 win 1212
-20:19:49.264628 IP B > A: . ack 161881 win 1212
-20:19:49.264637 IP A > B: . 206721:211281(4560) ack 1 win 119
-20:19:49.265465 IP B > A: . ack 163401 win 1212
-20:19:49.265886 IP B > A: . ack 164921 win 1212
-20:19:49.266722 IP B > A: . ack 166441 win 1212
-20:19:49.266732 IP A > B: . 211281:215841(4560) ack 1 win 119
-20:19:49.267559 IP B > A: . ack 167961 win 1212
-20:19:49.268394 IP B > A: . ack 169481 win 1212
-20:19:49.269232 IP B > A: . ack 171001 win 1212
-20:19:49.269241 IP A > B: . 215841:221161(5320) ack 1 win 119
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Van Jacobson <vanj@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Nandita Dukkipati <nanditad@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/ipv4/tcp_output.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/net/wireless/b43legacy/main.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index af83bdf..38a23e4 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1391,8 +1391,11 @@ static int tcp_tso_should_defer(struct sock *sk, struct sk_buff *skb)
- 			goto send_now;
- 	}
+diff --git a/drivers/net/wireless/b43legacy/main.c b/drivers/net/wireless/b43legacy/main.c
+index c3968fad..fc0fc85 100644
+--- a/drivers/net/wireless/b43legacy/main.c
++++ b/drivers/net/wireless/b43legacy/main.c
+@@ -3870,6 +3870,8 @@ static void b43legacy_remove(struct ssb_device *dev)
+ 	cancel_work_sync(&wldev->restart_work);
  
--	/* Ok, it looks like it is advisable to defer.  */
--	tp->tso_deferred = 1 | (jiffies << 1);
-+	/* Ok, it looks like it is advisable to defer.
-+	 * Do not rearm the timer if already set to not break TCP ACK clocking.
-+	 */
-+	if (!tp->tso_deferred)
-+		tp->tso_deferred = 1 | (jiffies << 1);
- 
- 	return 1;
+ 	B43legacy_WARN_ON(!wl);
++	if (!wldev->fw.ucode)
++		return;			/* NULL if fw never loaded */
+ 	if (wl->current_dev == wldev)
+ 		ieee80211_unregister_hw(wl->hw);
  
 -- 
 1.7.12.2.21.g234cd45.dirty
