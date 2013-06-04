@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767Ab3FDXWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:22:17 -0400
-Received: from 1wt.eu ([62.212.114.60]:35249 "EHLO 1wt.eu"
+	id S1752366Ab3FDWl0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:41:26 -0400
+Received: from 1wt.eu ([62.212.114.60]:35202 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752463Ab3FDWl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:41:27 -0400
-Message-Id: <20130604172130.885441884@1wt.eu>
+	id S1752035Ab3FDWlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:41:04 -0400
+Message-Id: <20130604172131.802192901@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:21:44 +0200
+Date: Tue, 04 Jun 2013 19:22:06 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Oleg Nesterov <oleg@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>,
+Cc: Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 014/184] kmod: make __request_module() killable
+Subject: [ 036/184] mm: fix vma_resv_map() NULL pointer
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,93 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Dave Hansen <dave@linux.vnet.ibm.com>
 
-commit 1cc684ab75123efe7ff446eb821d44375ba8fa30 upstream
+commit 4523e1458566a0e8ecfaff90f380dd23acc44d27 upstream
 
-As Tetsuo Handa pointed out, request_module() can stress the system
-while the oom-killed caller sleeps in TASK_UNINTERRUPTIBLE.
+hugetlb_reserve_pages() can be used for either normal file-backed
+hugetlbfs mappings, or MAP_HUGETLB.  In the MAP_HUGETLB, semi-anonymous
+mode, there is not a VMA around.  The new call to resv_map_put() assumed
+that there was, and resulted in a NULL pointer dereference:
 
-The task T uses "almost all" memory, then it does something which
-triggers request_module().  Say, it can simply call sys_socket().  This
-in turn needs more memory and leads to OOM.  oom-killer correctly
-chooses T and kills it, but this can't help because it sleeps in
-TASK_UNINTERRUPTIBLE and after that oom-killer becomes "disabled" by the
-TIF_MEMDIE task T.
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
+  IP: vma_resv_map+0x9/0x30
+  PGD 141453067 PUD 1421e1067 PMD 0
+  Oops: 0000 [#1] PREEMPT SMP
+  ...
+  Pid: 14006, comm: trinity-child6 Not tainted 3.4.0+ #36
+  RIP: vma_resv_map+0x9/0x30
+  ...
+  Process trinity-child6 (pid: 14006, threadinfo ffff8801414e0000, task ffff8801414f26b0)
+  Call Trace:
+    resv_map_put+0xe/0x40
+    hugetlb_reserve_pages+0xa6/0x1d0
+    hugetlb_file_setup+0x102/0x2c0
+    newseg+0x115/0x360
+    ipcget+0x1ce/0x310
+    sys_shmget+0x5a/0x60
+    system_call_fastpath+0x16/0x1b
 
-Make __request_module() killable.  The only necessary change is that
-call_modprobe() should kmalloc argv and module_name, they can't live in
-the stack if we use UMH_KILLABLE.  This memory is freed via
-call_usermodehelper_freeinfo()->cleanup.
+This was reported by Dave Jones, but was reproducible with the
+libhugetlbfs test cases, so shame on me for not running them in the
+first place.
 
-Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+With this, the oops is gone, and the output of libhugetlbfs's
+run_tests.py is identical to plain 3.4 again.
+
+[ Marked for stable, since this was introduced by commit c50ac050811d
+  ("hugetlb: fix resv_map leak in error path") which was also marked for
+  stable ]
+
+Reported-by: Dave Jones <davej@redhat.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: <stable@vger.kernel.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[dannf, bwh: backported to Debian's 2.6.32]
+[dannf: backported to Debian's 2.6.32]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- kernel/kmod.c | 36 ++++++++++++++++++++++++++++++++++--
- 1 file changed, 34 insertions(+), 2 deletions(-)
+ mm/hugetlb.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/kmod.c b/kernel/kmod.c
-index 1088a8f..8ecc509 100644
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -53,16 +53,48 @@ static DECLARE_RWSEM(umhelper_sem);
- */
- char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe";
- 
-+static void free_modprobe_argv(char **argv, char **envp)
-+{
-+	kfree(argv[3]); /* check call_modprobe() */
-+	kfree(argv);
-+}
-+
- static int call_modprobe(char *module_name, int wait)
- {
- 	static char *envp[] = { "HOME=/",
- 				"TERM=linux",
- 				"PATH=/sbin:/usr/sbin:/bin:/usr/bin",
- 				NULL };
-+	struct subprocess_info *info;
-+
-+	char **argv = kmalloc(sizeof(char *[5]), GFP_KERNEL);
-+	if (!argv)
-+		goto out;
- 
--	char *argv[] = { modprobe_path, "-q", "--", module_name, NULL };
-+	module_name = kstrdup(module_name, GFP_KERNEL);
-+	if (!module_name)
-+		goto free_argv;
- 
--	return call_usermodehelper(modprobe_path, argv, envp, wait);
-+	argv[0] = modprobe_path;
-+	argv[1] = "-q";
-+	argv[2] = "--";
-+	argv[3] = module_name;	/* check free_modprobe_argv() */
-+	argv[4] = NULL;
-+
-+	info = call_usermodehelper_setup(argv[0], argv, envp, GFP_ATOMIC);
-+	if (!info)
-+		goto free_module_name;
-+
-+	call_usermodehelper_setcleanup(info, free_modprobe_argv);
-+
-+	return call_usermodehelper_exec(info, wait | UMH_KILLABLE);
-+
-+free_module_name:
-+	kfree(module_name);
-+free_argv:
-+	kfree(argv);
-+out:
-+	return -ENOMEM;
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 3d61035..b435d1f 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2517,7 +2517,8 @@ int hugetlb_reserve_pages(struct inode *inode,
+ 		region_add(&inode->i_mapping->private_list, from, to);
+ 	return 0;
+ out_err:
+-	resv_map_put(vma);
++	if (vma)
++		resv_map_put(vma);
+ 	return ret;
  }
  
- /**
 -- 
 1.7.12.2.21.g234cd45.dirty
 
