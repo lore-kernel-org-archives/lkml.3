@@ -1,46 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480Ab3FDUSQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 16:18:16 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:58116 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907Ab3FDUSO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 16:18:14 -0400
-Date: Tue, 04 Jun 2013 13:18:13 -0700 (PDT)
-Message-Id: <20130604.131813.134898245916084893.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2013-06-03
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130603184817.GD2727@tuxdriver.com>
-References: <20130603184817.GD2727@tuxdriver.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1751628Ab3FDUSW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 16:18:22 -0400
+Received: from fieldses.org ([174.143.236.118]:46205 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750907Ab3FDUSR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 16:18:17 -0400
+Date: Tue, 4 Jun 2013 16:17:43 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
+        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
+        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, cluster-devel@redhat.com,
+        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        piastryyy@gmail.com
+Subject: Re: [PATCH v1 04/11] locks: make "added" in __posix_lock_file a bool
+Message-ID: <20130604201743.GA15594@fieldses.org>
+References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
+ <1370056054-25449-5-git-send-email-jlayton@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370056054-25449-5-git-send-email-jlayton@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Mon, 3 Jun 2013 14:48:17 -0400
+On Fri, May 31, 2013 at 11:07:27PM -0400, Jeff Layton wrote:
+> ...save 3 bytes of stack space.
+> 
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
 
-> Please let me know if there are problems!
+ACK.--b.
 
-Sorry, the broadcom brcmfmac changes need to go.
-
-Some of those commits are cleanups, and some of them have the worst
-commit log messages ever, the last one for example:
-
-0017-brcmsmac-fix-regression-observed-in-3.10-rc1.patch
-
-has no explanation whatsoever of what the actual problem or regression
-is, what aspect of the logic in that function is causing the problem,
-and no explanation why making this function always return 'false' is a
-reasonable fix.
-
-That entire series is of very low quality, and even if it was in good
-shape, at least half the changes are not appropriate at all this late
-in the -rc series.
+> ---
+>  fs/locks.c |    9 +++++----
+>  1 files changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/locks.c b/fs/locks.c
+> index a7d2253..cef0e04 100644
+> --- a/fs/locks.c
+> +++ b/fs/locks.c
+> @@ -800,7 +800,8 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+>  	struct file_lock *left = NULL;
+>  	struct file_lock *right = NULL;
+>  	struct file_lock **before;
+> -	int error, added = 0;
+> +	int error;
+> +	bool added = false;
+>  
+>  	/*
+>  	 * We may need two file_lock structures for this operation,
+> @@ -894,7 +895,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+>  				continue;
+>  			}
+>  			request = fl;
+> -			added = 1;
+> +			added = true;
+>  		}
+>  		else {
+>  			/* Processing for different lock types is a bit
+> @@ -905,7 +906,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+>  			if (fl->fl_start > request->fl_end)
+>  				break;
+>  			if (request->fl_type == F_UNLCK)
+> -				added = 1;
+> +				added = true;
+>  			if (fl->fl_start < request->fl_start)
+>  				left = fl;
+>  			/* If the next lock in the list has a higher end
+> @@ -935,7 +936,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+>  				locks_release_private(fl);
+>  				locks_copy_private(fl, request);
+>  				request = fl;
+> -				added = 1;
+> +				added = true;
+>  			}
+>  		}
+>  		/* Go on to next lock.
+> -- 
+> 1.7.1
+> 
