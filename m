@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab3FDPg6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 11:36:58 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:43715 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861Ab3FDPgz (ORCPT
+	id S1755592Ab3FDPhT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 11:37:19 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:39418 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753092Ab3FDPg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 11:36:55 -0400
+	Tue, 4 Jun 2013 11:36:57 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 1/2] ARM: ux500: Silence compiler warnings due to missing ux500_read_asicid() __init
-Date: Tue,  4 Jun 2013 16:36:47 +0100
-Message-Id: <1370360208-6500-1-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 2/2] ARM: ux500: Silence compiler warnings due to missing __cpuinitdata
+Date: Tue,  4 Jun 2013 16:36:48 +0100
+Message-Id: <1370360208-6500-2-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1370360208-6500-1-git-send-email-lee.jones@linaro.org>
+References: <1370360208-6500-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WARNING: vmlinux.o(.text.unlikely+0x1e8): Section mismatch in reference from\
- the function ux500_read_asicid() to the function .init.text:iotable_init()
-The function ux500_read_asicid() references
-the function __init iotable_init().
-This is often because ux500_read_asicid lacks a __init
+WARNING: vmlinux.o(.text.unlikely+0x25c): Section mismatch in reference \
+  from the function write_pen_release() to the variable                 \
+  .cpuinit.data:pen_release
+The function write_pen_release() references
+the variable __cpuinitdata pen_release.
+This is often because write_pen_release lacks a __cpuinitdata
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/id.c |    2 +-
+ arch/arm/mach-ux500/platsmp.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-ux500/id.c b/arch/arm/mach-ux500/id.c
-index 0d33d1a..b16e7c1 100644
---- a/arch/arm/mach-ux500/id.c
-+++ b/arch/arm/mach-ux500/id.c
-@@ -21,7 +21,7 @@
- 
- struct dbx500_asic_id dbx500_id;
- 
--static unsigned int ux500_read_asicid(phys_addr_t addr)
-+static unsigned int __init ux500_read_asicid(phys_addr_t addr)
+diff --git a/arch/arm/mach-ux500/platsmp.c b/arch/arm/mach-ux500/platsmp.c
+index 14d9046..3a455d5 100644
+--- a/arch/arm/mach-ux500/platsmp.c
++++ b/arch/arm/mach-ux500/platsmp.c
+@@ -34,7 +34,7 @@ extern void u8500_secondary_startup(void);
+  * observers, irrespective of whether they're taking part in coherency
+  * or not.  This is necessary for the hotplug code to work reliably.
+  */
+-static void write_pen_release(int val)
++static void __cpuinitdata write_pen_release(int val)
  {
- 	phys_addr_t base = addr & ~0xfff;
- 	struct map_desc desc = {
+ 	pen_release = val;
+ 	smp_wmb();
 -- 
 1.7.10.4
 
