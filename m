@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756572Ab3FDOTt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:19:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46801 "EHLO
+	id S1755915Ab3FDOIN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:08:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46785 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755902Ab3FDOIO (ORCPT
+	with ESMTP id S1755902Ab3FDOIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:08:14 -0400
+	Tue, 4 Jun 2013 10:08:10 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Kosina <jkosina@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
-        Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
+Cc: Imre Deak <imre.deak@intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 36/70] random: fix accounting race condition with lockless irq entropy_count update
-Date: Tue,  4 Jun 2013 15:06:52 +0100
-Message-Id: <1370354846-14213-37-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 29/70] wait: fix false timeouts when using wait_event_timeout()
+Date: Tue,  4 Jun 2013 15:06:45 +0100
+Message-Id: <1370354846-14213-30-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
 References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
@@ -29,74 +31,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Imre Deak <imre.deak@intel.com>
 
-commit 10b3a32d292c21ea5b3ad5ca5975e88bb20b8d68 upstream.
+commit 4c663cfc523a88d97a8309b04a089c27dc57fd7e upstream.
 
-Commit 902c098a3663 ("random: use lockless techniques in the interrupt
-path") turned IRQ path from being spinlock protected into lockless
-cmpxchg-retry update.
+Many callers of the wait_event_timeout() and
+wait_event_interruptible_timeout() expect that the return value will be
+positive if the specified condition becomes true before the timeout
+elapses.  However, at the moment this isn't guaranteed.  If the wake-up
+handler is delayed enough, the time remaining until timeout will be
+calculated as 0 - and passed back as a return value - even if the
+condition became true before the timeout has passed.
 
-That commit removed r->lock serialization between crediting entropy bits
-from IRQ context and accounting when extracting entropy on userspace
-read path, but didn't turn the r->entropy_count reads/updates in
-account() to use cmpxchg as well.
+Fix this by returning at least 1 if the condition becomes true.  This
+semantic is in line with what wait_for_condition_timeout() does; see
+commit bb10ed09 ("sched: fix wait_for_completion_timeout() spurious
+failure under heavy load").
 
-It has been observed, that under certain circumstances this leads to
-read() on /dev/urandom to return 0 (EOF), as r->entropy_count gets
-corrupted and becomes negative, which in turn results in propagating 0
-all the way from account() to the actual read() call.
+Daniel said "We have 3 instances of this bug in drm/i915.  One case even
+where we switch between the interruptible and not interruptible
+wait_event_timeout variants, foolishly presuming they have the same
+semantics.  I very much like this."
 
-Convert the accounting code to be the proper lockless counterpart of
-what has been partially done by 902c098a3663.
+One such bug is reported at
+  https://bugs.freedesktop.org/show_bug.cgi?id=64133
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Cc: Theodore Ts'o <tytso@mit.edu>
-Cc: Greg KH <greg@kroah.com>
+Signed-off-by: Imre Deak <imre.deak@intel.com>
+Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Acked-by: David Howells <dhowells@redhat.com>
+Acked-by: Jens Axboe <axboe@kernel.dk>
+Cc: "Paul E.  McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Lukas Czerner <lczerner@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/char/random.c | 24 ++++++++++++++++--------
- 1 file changed, 16 insertions(+), 8 deletions(-)
+ include/linux/wait.h | 16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 91abbc4..395d2e8 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -868,16 +868,24 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
- 	if (r->entropy_count / 8 < min + reserved) {
- 		nbytes = 0;
- 	} else {
-+		int entropy_count, orig;
-+retry:
-+		entropy_count = orig = ACCESS_ONCE(r->entropy_count);
- 		/* If limited, never pull more than available */
--		if (r->limit && nbytes + reserved >= r->entropy_count / 8)
--			nbytes = r->entropy_count/8 - reserved;
--
--		if (r->entropy_count / 8 >= nbytes + reserved)
--			r->entropy_count -= nbytes*8;
--		else
--			r->entropy_count = reserved;
-+		if (r->limit && nbytes + reserved >= entropy_count / 8)
-+			nbytes = entropy_count/8 - reserved;
-+
-+		if (entropy_count / 8 >= nbytes + reserved) {
-+			entropy_count -= nbytes*8;
-+			if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
-+				goto retry;
-+		} else {
-+			entropy_count = reserved;
-+			if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
-+				goto retry;
-+		}
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 1dee81c..6c6c20e 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -233,6 +233,8 @@ do {									\
+ 		if (!ret)						\
+ 			break;						\
+ 	}								\
++	if (!ret && (condition))					\
++		ret = 1;						\
+ 	finish_wait(&wq, &__wait);					\
+ } while (0)
  
--		if (r->entropy_count < random_write_wakeup_thresh)
-+		if (entropy_count < random_write_wakeup_thresh)
- 			wakeup_write = 1;
- 	}
+@@ -249,8 +251,9 @@ do {									\
+  * wake_up() has to be called after changing any variable that could
+  * change the result of the wait condition.
+  *
+- * The function returns 0 if the @timeout elapsed, and the remaining
+- * jiffies if the condition evaluated to true before the timeout elapsed.
++ * The function returns 0 if the @timeout elapsed, or the remaining
++ * jiffies (at least 1) if the @condition evaluated to %true before
++ * the @timeout elapsed.
+  */
+ #define wait_event_timeout(wq, condition, timeout)			\
+ ({									\
+@@ -318,6 +321,8 @@ do {									\
+ 		ret = -ERESTARTSYS;					\
+ 		break;							\
+ 	}								\
++	if (!ret && (condition))					\
++		ret = 1;						\
+ 	finish_wait(&wq, &__wait);					\
+ } while (0)
  
+@@ -334,9 +339,10 @@ do {									\
+  * wake_up() has to be called after changing any variable that could
+  * change the result of the wait condition.
+  *
+- * The function returns 0 if the @timeout elapsed, -ERESTARTSYS if it
+- * was interrupted by a signal, and the remaining jiffies otherwise
+- * if the condition evaluated to true before the timeout elapsed.
++ * Returns:
++ * 0 if the @timeout elapsed, -%ERESTARTSYS if it was interrupted by
++ * a signal, or the remaining jiffies (at least 1) if the @condition
++ * evaluated to %true before the @timeout elapsed.
+  */
+ #define wait_event_interruptible_timeout(wq, condition, timeout)	\
+ ({									\
 -- 
 1.8.1.2
 
