@@ -1,57 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab3FDRSG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:18:06 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:59492 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451Ab3FDRSE (ORCPT
+	id S1754213Ab3FDRS1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:18:27 -0400
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:60675 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752182Ab3FDRSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:18:04 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Florian Fainelli <florian@openwrt.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "alexandre.belloni" <alexandre.belloni@free-electrons.com>,
-        kernel <kernel@pengutronix.de>, "shawn.guo" <shawn.guo@linaro.org>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [PATCHv2 1/3] net: phy: prevent linking breakage
-Date: Tue, 04 Jun 2013 19:17:59 +0200
-Message-ID: <10306449.AbS8Q0UukT@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <CAGVrzcZcVB5+NqLop+ALrX4Jx_SyNatczLt4oNzXr7bjgKMXhg@mail.gmail.com>
-References: <1369741403-25315-2-git-send-email-alexandre.belloni@free-electrons.com> <1394174.ONngHnHYKL@wuerfel> <CAGVrzcZcVB5+NqLop+ALrX4Jx_SyNatczLt4oNzXr7bjgKMXhg@mail.gmail.com>
+	Tue, 4 Jun 2013 13:18:24 -0400
+Date: Tue, 4 Jun 2013 19:18:14 +0200 (CEST)
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+X-X-Sender: sebott@c4eb
+To: Bjorn Helgaas <bhelgaas@google.com>
+cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] pci: add pcibios_release_device
+Message-ID: <alpine.LFD.2.03.1306041911170.1686@linux.vnet.ibm.com>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
+ =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:25YlME2cP+DEMIHgnpV3Jv+s1OiSo0wbChZzj4kCIp7
- 729cQ2aDdpx5x1Eh5tbCWTF8J1ffYZz37P9tBR5azo3J7JiYHS
- o7MApKXZFUKUR36C4ZAAulHZa4HadnAsqBrn208IE3CXndurH6
- 2friQ5Vz3rdwoGtNj+aX+hH5C0C/Jrb9dY0RoskoT93MyXtZVd
- q/cjo1kBpWbt/K8ktUXNuty4CQX2GHfE0ozXp197qi41qUP6J6
- OJMoDM5RYQ9OGb0+ehDP2a/BEQ9yiB2xBUZAacxCqItJSWztiB
- gb2P0H2BxTityh8utICdqw4jan3Bx2psPolv7Q8K69Ltb2FaDn
- g0IF75XY2L29mAKdmQT0=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060417-5024-0000-0000-0000063C7A2D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 June 2013 17:09:26 Florian Fainelli wrote:
-> You would just need to define a stub for your arch_foo_phy_fixup()
-> which has a different definition depending on whether CONFIG_PHYLIB is
-> defined or not.
+Hello Bjorn,
 
-Yes, same thing. For a function that is called in only one place,
-I would always prefer if(IS_ENABLED()) over a stub though.
+part of your feedback to the PCI support on s390 was to put some smarts in
+the config space accessors and let the pci core do the scanning of pci
+functions.
+To get there I had to implement pcibios_add_device on s390 to do some arch
+specific device initialization. During removal of the pci function I would
+like to undo these steps. Would it be possible to have a couterpart of
+pcibios_add_device - like the patch below:
 
-> This would be just one function, instead of the whole bunch of stubs
-> needed for phylib. Right now its probably 1 vs 3, so it does not make
-> that much of a difference but who knows, if we had more phylib stubs
-> and forget to update the stubs? (which tends to happen pretty often).
-> 
-> The size savings are exactly the same in both approaches anyway.
 
-So should we just stick to the current method then and use
-if (IS_ENABLED(CONFIG_NET)) for calling the function?
+pci: add pcibios_release_device
 
-	Arnd
+Platforms may want to provide architecture-specific functionality when
+a pci device is released. Add a pcibios_release_device() call that
+architectures can override to do so.
+
+Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
+---
+ drivers/pci/pci.c   |   10 ++++++++++
+ drivers/pci/probe.c |    1 +
+ include/linux/pci.h |    1 +
+ 3 files changed, 12 insertions(+)
+
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -1335,6 +1335,16 @@ int __weak pcibios_add_device (struct pc
+ }
+ 
+ /**
++ * pcibios_release_device - provide arch specific hooks when releasing device dev
++ * @dev: the PCI device being released
++ *
++ * Permits the platform to provide architecture specific functionality when
++ * devices are released. This is the default implementation. Architecture
++ * implementations can override this.
++ */
++void __weak pcibios_release_device(struct pci_dev *dev) {}
++
++/**
+  * pcibios_disable_device - disable arch specific PCI resources for device dev
+  * @dev: the PCI device to disable
+  *
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1132,6 +1132,7 @@ static void pci_release_dev(struct devic
+ 	pci_dev = to_pci_dev(dev);
+ 	pci_release_capabilities(pci_dev);
+ 	pci_release_of_node(pci_dev);
++	pcibios_release_device(pci_dev);
+ 	kfree(pci_dev);
+ }
+ 
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1643,6 +1643,7 @@ void pcibios_set_master(struct pci_dev *
+ int pcibios_set_pcie_reset_state(struct pci_dev *dev,
+ 				 enum pcie_reset_state state);
+ int pcibios_add_device(struct pci_dev *dev);
++void pcibios_release_device(struct pci_dev *dev);
+ 
+ #ifdef CONFIG_PCI_MMCONFIG
+ void __init pci_mmcfg_early_init(void);
+
