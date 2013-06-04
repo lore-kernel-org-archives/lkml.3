@@ -1,112 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754285Ab3FDNtI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 09:49:08 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:48112 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752966Ab3FDNtH (ORCPT
+	id S1753732Ab3FDN7Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 09:59:24 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35067 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751672Ab3FDN7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 09:49:07 -0400
-Message-ID: <51ADF04D.3040703@atmel.com>
-Date: Tue, 4 Jun 2013 15:49:01 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 4 Jun 2013 09:59:19 -0400
+Date: Tue, 4 Jun 2013 14:58:57 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/5] arm/xen: define xen_remap as ioremap_cached
+Message-ID: <20130604135857.GV18614@n2100.arm.linux.org.uk>
+References: <alpine.DEB.2.02.1306031157020.4589@kaball.uk.xensource.com> <1370273624-26976-1-git-send-email-stefano.stabellini@eu.citrix.com> <1370337650.24512.88.camel@zakaz.uk.xensource.com> <20130604112834.GA3234@MacBook-Pro.local>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] ARM: at91: Fix link breakage when !CONFIG_PHYLIB
-References: <1369651702-9207-1-git-send-email-alexandre.belloni@free-electrons.com> <51A34BF9.5000905@atmel.com> <6343931.uK9ItNlUFg@wuerfel>
-In-Reply-To: <6343931.uK9ItNlUFg@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130604112834.GA3234@MacBook-Pro.local>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/05/2013 14:42, Arnd Bergmann :
-> On Monday 27 May 2013 14:05:13 Nicolas Ferre wrote:
->> On 27/05/2013 12:48, Alexandre Belloni :
->> A v3 is not needed simply for this. Thanks, anyway!
->>
->> One question though: why not just add
->>
->>           select PHYLIB
->>
->> In Kconfig entry:
->>
->>    config MACH_SAMA5_DT
->>
->> ?
->>
->> (note that I like to play with everybody's nerves ;-))
->
-> That would make it impossible to build a sama5 kernel without networking
-> support, which is probably not what you want.
->
-> Jean-Christophe's suggestion to add the inline helper is best.
+On Tue, Jun 04, 2013 at 12:28:34PM +0100, Catalin Marinas wrote:
+> PROT_PTE_DEVICE and PROT_SECT_DEVICE above don't contain any memory type
+> information, just attributes/permission - present, young, dirty and XN:
+> 
+> #define PROT_PTE_DEVICE		L_PTE_PRESENT|L_PTE_YOUNG|L_PTE_DIRTY|L_PTE_XN
+> #define PROT_SECT_DEVICE	PMD_TYPE_SECT|PMD_SECT_AP_WRITE
+> 
+> The memory type is given by the L_PTE_MT_DEV_CACHED and PMD_SECT_WB
+> macros. Let's take prot_sect first as it's simpler. For MT_DEVICE_CACHED
+> we have:
+> 
+> .prot_sect = PMD_TYPE_SECT | PMD_SECT_AP_WRITE | PMD_SECT_WB
+> 
+> For MT_MEMORY we have:
+> 
+> .prot_sect = PMD_TYPE_SECT | PMD_SECT_AP_WRITE
+> 
+> The cache policy is added later to MT_MEMORY which is either WB or WBWA
+> (based on SMP, no particular reason as these are just processor hints;
+> for some historical reasons we enabled WBWA for ARM11MPCore but we could
+> leave it on all the time).
 
-It seems that it has been clearly rejected by David. So the best 
-solution remains to...
+They may be reported to be just hints, but SMP, particularly ARM11MPCore,
+the SMP guys at ARM Ltd were very particular about _requiring_ and stating
+that it is required that WBWA must be used in the page tables for SMP,
+and not WB.  That suggests while the ARM ARM may say that they're hints,
+there's slightly more to it when it comes to SMP, and WBWA is a hard
+requirement there.
 
-> Aside from
-> that, please note that
->
->>> diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
->>> index 705305e..e9ce541 100644
->>> --- a/arch/arm/mach-at91/board-dt-sama5.c
->>> +++ b/arch/arm/mach-at91/board-dt-sama5.c
->>> @@ -47,22 +47,24 @@ static int ksz9021rn_phy_fixup(struct phy_device *phy)
->>>    #define GMII_ERCR	11
->>>    #define GMII_ERDWR	12
->>>
->>> -	/* Set delay values */
->>> -	value = GMII_RCCPSR | 0x8000;
->>> -	phy_write(phy, GMII_ERCR, value);
->>> -	value = 0xF2F4;
->>> -	phy_write(phy, GMII_ERDWR, value);
->>> -	value = GMII_RRDPSR | 0x8000;
->>> -	phy_write(phy, GMII_ERCR, value);
->>> -	value = 0x2222;
->>> -	phy_write(phy, GMII_ERDWR, value);
->>> +	if (IS_BUILTIN(CONFIG_PHYLIB)) {
->>> +		/* Set delay values */
->>> +		value = GMII_RCCPSR | 0x8000;
->>> +		phy_write(phy, GMII_ERCR, value);
->>> +		value = 0xF2F4;
->>> +		phy_write(phy, GMII_ERDWR, value);
->>> +		value = GMII_RRDPSR | 0x8000;
->>> +		phy_write(phy, GMII_ERCR, value);
->>> +		value = 0x2222;
->>> +		phy_write(phy, GMII_ERDWR, value);
->>> +	}
->>>
->>>    	return 0;
->>>    }
->
-> This part of the patch is not actually needed if you
->
->>>    static void __init sama5_dt_device_init(void)
->>>    {
->>> -	if (of_machine_is_compatible("atmel,sama5d3xcm"))
->>> +	if (of_machine_is_compatible("atmel,sama5d3xcm") && IS_BUILTIN(CONFIG_PHYLIB))
->>>    		phy_register_fixup_for_uid(PHY_ID_KSZ9021, MICREL_PHY_ID_MASK,
->>>    			ksz9021rn_phy_fixup);
->
-> do this change, or the inline helper.
+Indeed, that's something we enforce in the kernel because of the statements
+from the SMP development group.
 
-... simply use this "IS_BUILTIN(CONFIG_PHYLIB)" here -----^^^^^^^^^ (and 
-not above as suggested by Arnd).
+> Similarly for prot_pte, present, young, dirty are the same.
+> 
+> Regarding the type, on ARMv7 (with or without LPAE) we use TEX remapping
+> and L_PTE_MT_DEVICE has the same index (3-bit TEX[0], C, B for NMRR/PRRR
+> or TEX[2:0] for MAIR0/MAIR1 registers) as Normal Cacheable Writeback
+> memory (there is no such thing as Device memory with cacheability
+> attributes, only Normal Cacheable memory).
 
-Jean-Christophe, Alexandre: do you agree with this conclusion?
+You don't mean L_PTE_MT_DEVICE there. Thankfully, L_PTE_MT_DEVICE doesn't
+exist, so it's not that confusing.  What you mean is L_PTE_MT_DEV_CACHED,
+which _does_ map to "normal cacheable writeback memory" irrespective of
+the mappings which the kernel uses for RAM.
 
-I plan to stack this patch for next at91-fixes batch.
-
-Bye,
--- 
-Nicolas Ferre
+However, that mapping type (which is used for MT_DEVICE_CACHED) should
+not be used if you really do want normal memory.  And using MT_* definitions
+_not_ in asm/io.h with ioremap() is really... silly.  It's not something
+that is intended, nor is it something which I intend to be supportable
+into the future on ARM.  That's why the definitions are separate - see
+the comments in asm/io.h about "types 4 onwards are undefined for
+ioremap" - I'm not sure how more explicit to make that statement.  And
+as I _have_ made the statement, if I see people violating it, I won't
+care about their code if/when I decide to change the ioremap() behaviour.
