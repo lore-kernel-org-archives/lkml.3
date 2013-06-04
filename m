@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237Ab3FDXEt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:04:49 -0400
-Received: from 1wt.eu ([62.212.114.60]:35606 "EHLO 1wt.eu"
+	id S1755200Ab3FDXEr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:04:47 -0400
+Received: from 1wt.eu ([62.212.114.60]:35610 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753444Ab3FDWmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:42:54 -0400
-Message-Id: <20130604172135.902744046@1wt.eu>
+	id S1753463Ab3FDWmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:42:55 -0400
+Message-Id: <20130604172137.602316042@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:23:45 +0200
+Date: Tue, 04 Jun 2013 19:24:26 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Jan Kara <jack@suse.cz>, Jim Trigg <jtrigg@spamcop.net>,
+Cc: Mathias Krause <minipli@googlemail.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 135/184] udf: Fix bitmap overflow on large filesystems with
+Subject: [ 176/184] ax25: fix info leak via msg_name in ax25_recvmsg()
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,43 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- small block size
 
-From: Jan Kara <jack@suse.cz>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 89b1f39eb4189de745fae554b0d614d87c8d5c63 upstream.
+[ Upstream commit ef3313e84acbf349caecae942ab3ab731471f1a1 ]
 
-For large UDF filesystems with 512-byte blocks the number of necessary
-bitmap blocks is larger than 2^16 so s_nr_groups in udf_bitmap overflows
-(the number will overflow for filesystems larger than 128 GB with
-512-byte blocks). That results in ENOSPC errors despite the filesystem
-has plenty of free space.
+When msg_namelen is non-zero the sockaddr info gets filled out, as
+requested, but the code fails to initialize the padding bytes of struct
+sockaddr_ax25 inserted by the compiler for alignment. Additionally the
+msg_namelen value is updated to sizeof(struct full_sockaddr_ax25) but is
+not always filled up to this size.
 
-Fix the problem by changing s_nr_groups' type to 'int'. That is enough
-even for filesystems 2^32 blocks (UDF maximum) and 512-byte blocksize.
+Both issues lead to the fact that the code will leak uninitialized
+kernel stack bytes in net/socket.c.
 
-Reported-and-tested-by: v10lator@myway.de
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Jim Trigg <jtrigg@spamcop.net>
+Fix both issues by initializing the memory with memset(0).
+
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/udf/udf_sb.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ax25/af_ax25.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/udf/udf_sb.h b/fs/udf/udf_sb.h
-index d113b72..efa82c9 100644
---- a/fs/udf/udf_sb.h
-+++ b/fs/udf/udf_sb.h
-@@ -78,7 +78,7 @@ struct udf_virtual_data {
- struct udf_bitmap {
- 	__u32			s_extLength;
- 	__u32			s_extPosition;
--	__u16			s_nr_groups;
-+	int			s_nr_groups;
- 	struct buffer_head 	**s_block_bitmap;
- };
+diff --git a/net/ax25/af_ax25.c b/net/ax25/af_ax25.c
+index 1e9f3e42..8613bd1 100644
+--- a/net/ax25/af_ax25.c
++++ b/net/ax25/af_ax25.c
+@@ -1654,6 +1654,7 @@ static int ax25_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 		ax25_address src;
+ 		const unsigned char *mac = skb_mac_header(skb);
  
++		memset(sax, 0, sizeof(struct full_sockaddr_ax25));
+ 		ax25_addr_parse(mac + 1, skb->data - mac - 1, &src, NULL,
+ 				&digi, NULL, NULL);
+ 		sax->sax25_family = AF_AX25;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
