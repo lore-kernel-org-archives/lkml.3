@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab3FDWuN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:50:13 -0400
-Received: from 1wt.eu ([62.212.114.60]:35843 "EHLO 1wt.eu"
+	id S1754931Ab3FDWuT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:50:19 -0400
+Received: from 1wt.eu ([62.212.114.60]:35855 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754333Ab3FDWoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:44:04 -0400
-Message-Id: <20130604172136.066346020@1wt.eu>
+	id S1754367Ab3FDWoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:44:06 -0400
+Message-Id: <20130604172134.706628267@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:23:49 +0200
+Date: Tue, 04 Jun 2013 19:23:16 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Willy Tarreau <w@1wt.eu>
-Subject: [ 139/184] NLS: improve UTF8 -> UTF16 string conversion routine
+Cc: Len Sorensen <lsorense@csclub.uwaterloo.ca>,
+        Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 106/184] USB: serial: Fix memory leak in sierra_release()
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,144 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
 
-commit 0720a06a7518c9d0c0125bd5d1f3b6264c55c3dd upstream.
+commit f7bc5051667b74c3861f79eed98c60d5c3b883f7 upstream.
 
-The utf8s_to_utf16s conversion routine needs to be improved.  Unlike
-its utf16s_to_utf8s sibling, it doesn't accept arguments specifying
-the maximum length of the output buffer or the endianness of its
-16-bit output.
+I found a memory leak in sierra_release() (well sierra_probe() I guess)
+that looses 8 bytes each time the driver releases a device.
 
-This patch (as1501) adds the two missing arguments, and adjusts the
-only two places in the kernel where the function is called.  A
-follow-on patch will add a third caller that does utilize the new
-capabilities.
-
-The two conversion routines are still annoyingly inconsistent in the
-way they handle invalid byte combinations.  But that's a subject for a
-different patch.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-[bwh: Bakckported to 2.6.32: drop Hyper-V change]
+Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
+Acked-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/fat/namei_vfat.c |  3 ++-
- fs/nls/nls_base.c   | 43 +++++++++++++++++++++++++++++++++----------
- include/linux/nls.h |  5 +++--
- 3 files changed, 38 insertions(+), 13 deletions(-)
+ drivers/usb/serial/sierra.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/fat/namei_vfat.c b/fs/fat/namei_vfat.c
-index 67b3df1..4251f35 100644
---- a/fs/fat/namei_vfat.c
-+++ b/fs/fat/namei_vfat.c
-@@ -499,7 +499,8 @@ xlate_to_uni(const unsigned char *name, int len, unsigned char *outname,
- 	int charlen;
- 
- 	if (utf8) {
--		*outlen = utf8s_to_utf16s(name, len, (wchar_t *)outname);
-+		*outlen = utf8s_to_utf16s(name, len, UTF16_HOST_ENDIAN,
-+				(wchar_t *) outname, FAT_LFN_LEN + 2);
- 		if (*outlen < 0)
- 			return *outlen;
- 		else if (*outlen > FAT_LFN_LEN)
-diff --git a/fs/nls/nls_base.c b/fs/nls/nls_base.c
-index 44a88a9..0eb059e 100644
---- a/fs/nls/nls_base.c
-+++ b/fs/nls/nls_base.c
-@@ -114,34 +114,57 @@ int utf32_to_utf8(unicode_t u, u8 *s, int maxlen)
- }
- EXPORT_SYMBOL(utf32_to_utf8);
- 
--int utf8s_to_utf16s(const u8 *s, int len, wchar_t *pwcs)
-+static inline void put_utf16(wchar_t *s, unsigned c, enum utf16_endian endian)
-+{
-+	switch (endian) {
-+	default:
-+		*s = (wchar_t) c;
-+		break;
-+	case UTF16_LITTLE_ENDIAN:
-+		*s = __cpu_to_le16(c);
-+		break;
-+	case UTF16_BIG_ENDIAN:
-+		*s = __cpu_to_be16(c);
-+		break;
-+	}
-+}
-+
-+int utf8s_to_utf16s(const u8 *s, int len, enum utf16_endian endian,
-+		wchar_t *pwcs, int maxlen)
- {
- 	u16 *op;
- 	int size;
- 	unicode_t u;
- 
- 	op = pwcs;
--	while (*s && len > 0) {
-+	while (len > 0 && maxlen > 0 && *s) {
- 		if (*s & 0x80) {
- 			size = utf8_to_utf32(s, len, &u);
- 			if (size < 0)
- 				return -EINVAL;
-+			s += size;
-+			len -= size;
- 
- 			if (u >= PLANE_SIZE) {
-+				if (maxlen < 2)
-+					break;
- 				u -= PLANE_SIZE;
--				*op++ = (wchar_t) (SURROGATE_PAIR |
--						((u >> 10) & SURROGATE_BITS));
--				*op++ = (wchar_t) (SURROGATE_PAIR |
-+				put_utf16(op++, SURROGATE_PAIR |
-+						((u >> 10) & SURROGATE_BITS),
-+						endian);
-+				put_utf16(op++, SURROGATE_PAIR |
- 						SURROGATE_LOW |
--						(u & SURROGATE_BITS));
-+						(u & SURROGATE_BITS),
-+						endian);
-+				maxlen -= 2;
- 			} else {
--				*op++ = (wchar_t) u;
-+				put_utf16(op++, u, endian);
-+				maxlen--;
- 			}
--			s += size;
--			len -= size;
- 		} else {
--			*op++ = *s++;
-+			put_utf16(op++, *s++, endian);
- 			len--;
-+			maxlen--;
- 		}
+diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
+index 1b5c9f8..0cbf847 100644
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -925,6 +925,7 @@ static void sierra_release(struct usb_serial *serial)
+ 			continue;
+ 		kfree(portdata);
  	}
- 	return op - pwcs;
-diff --git a/include/linux/nls.h b/include/linux/nls.h
-index d47beef..5dc635f 100644
---- a/include/linux/nls.h
-+++ b/include/linux/nls.h
-@@ -43,7 +43,7 @@ enum utf16_endian {
- 	UTF16_BIG_ENDIAN
- };
++	kfree(serial->private);
+ }
  
--/* nls.c */
-+/* nls_base.c */
- extern int register_nls(struct nls_table *);
- extern int unregister_nls(struct nls_table *);
- extern struct nls_table *load_nls(char *);
-@@ -52,7 +52,8 @@ extern struct nls_table *load_nls_default(void);
- 
- extern int utf8_to_utf32(const u8 *s, int len, unicode_t *pu);
- extern int utf32_to_utf8(unicode_t u, u8 *s, int maxlen);
--extern int utf8s_to_utf16s(const u8 *s, int len, wchar_t *pwcs);
-+extern int utf8s_to_utf16s(const u8 *s, int len,
-+		enum utf16_endian endian, wchar_t *pwcs, int maxlen);
- extern int utf16s_to_utf8s(const wchar_t *pwcs, int len,
- 		enum utf16_endian endian, u8 *s, int maxlen);
- 
+ #ifdef CONFIG_PM
 -- 
 1.7.12.2.21.g234cd45.dirty
 
