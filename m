@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752951Ab3FDWnM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:43:12 -0400
-Received: from 1wt.eu ([62.212.114.60]:35646 "EHLO 1wt.eu"
+	id S1753399Ab3FDWmu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:42:50 -0400
+Received: from 1wt.eu ([62.212.114.60]:35557 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753543Ab3FDWnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:43:04 -0400
-Message-Id: <20130604172135.325390178@1wt.eu>
+	id S1753120Ab3FDWmp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:42:45 -0400
+Message-Id: <20130604172134.829188793@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:23:31 +0200
+Date: Tue, 04 Jun 2013 19:23:19 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Allison Henderson <achender@us.ibm.com>, "Theodore Tso" <tytso@mit.edu>,
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 121/184] ext4: dont dereference null pointer when
+Subject: [ 109/184] USB: garmin_gps: fix memory leak on disconnect
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,44 +23,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- make_indexed_dir() fails
 
-From: Allison Henderson <achender@linux.vnet.ibm.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-Fix for a null pointer bug found while running punch hole tests
+commit 618aa1068df29c37a58045fe940f9106664153fd upstream.
 
-Signed-off-by: Allison Henderson <achender@us.ibm.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-(cherry picked from commit 6976a6f2acde2b0443cd64f1d08af90630e4ce81)
+Remove bogus disconnect test introduced by 95bef012e ("USB: more serial
+drivers writing after disconnect") which prevented queued data from
+being freed on disconnect.
+
+The possible IO it was supposed to prevent is long gone.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/ext4/namei.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/usb/serial/garmin_gps.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index afe3148..902f69b 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -1457,6 +1457,10 @@ static int make_indexed_dir(handle_t *handle, struct dentry *dentry,
- 	frame->at = entries;
- 	frame->bh = bh;
- 	bh = bh2;
-+
-+	ext4_handle_dirty_metadata(handle, dir, frame->bh);
-+	ext4_handle_dirty_metadata(handle, dir, bh);
-+
- 	de = do_split(handle,dir, &bh, frame, &hinfo, &retval);
- 	if (!de) {
- 		/*
-@@ -1465,8 +1469,6 @@ static int make_indexed_dir(handle_t *handle, struct dentry *dentry,
- 		 * with corrupted filesystem.
- 		 */
- 		ext4_mark_inode_dirty(handle, dir);
--		ext4_handle_dirty_metadata(handle, dir, frame->bh);
--		ext4_handle_dirty_metadata(handle, dir, bh);
- 		dx_release(frames);
- 		return retval;
- 	}
+diff --git a/drivers/usb/serial/garmin_gps.c b/drivers/usb/serial/garmin_gps.c
+index 867d97b..7c3ac7b 100644
+--- a/drivers/usb/serial/garmin_gps.c
++++ b/drivers/usb/serial/garmin_gps.c
+@@ -974,10 +974,7 @@ static void garmin_close(struct usb_serial_port *port)
+ 	if (!serial)
+ 		return;
+ 
+-	mutex_lock(&port->serial->disc_mutex);
+-
+-	if (!port->serial->disconnected)
+-		garmin_clear(garmin_data_p);
++	garmin_clear(garmin_data_p);
+ 
+ 	/* shutdown our urbs */
+ 	usb_kill_urb(port->read_urb);
+@@ -986,8 +983,6 @@ static void garmin_close(struct usb_serial_port *port)
+ 	/* keep reset state so we know that we must start a new session */
+ 	if (garmin_data_p->state != STATE_RESET)
+ 		garmin_data_p->state = STATE_DISCONNECTED;
+-
+-	mutex_unlock(&port->serial->disc_mutex);
+ }
+ 
+ 
 -- 
 1.7.12.2.21.g234cd45.dirty
 
