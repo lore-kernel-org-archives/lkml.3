@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757076Ab3FDOYw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:24:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46689 "EHLO
+	id S1755461Ab3FDOHu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:07:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46650 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755166Ab3FDOHv (ORCPT
+	with ESMTP id S1755166Ab3FDOHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:07:51 -0400
+	Tue, 4 Jun 2013 10:07:43 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Williams <dcbw@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Heiko Abraham <abrahamh@web.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 16/70] USB: option: add device IDs for Dell 5804 (Novatel E371) WWAN card
-Date: Tue,  4 Jun 2013 15:06:32 +0100
-Message-Id: <1370354846-14213-17-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 09/70] Input: egalax_ts - ABS_MT_POSITION_Y not reported well
+Date: Tue,  4 Jun 2013 15:06:25 +0100
+Message-Id: <1370354846-14213-10-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
 References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
@@ -28,39 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Heiko Abraham <abrahamh@web.de>
 
-commit 49c6e370dd6400b84897c4100095089b5c13a061 upstream.
+commit 3c9cfa782e075cc2348b949ba139911aac02c7cb upstream.
 
-A rebranded Novatel E371 for AT&T's LTE bands.
+The egalax_ts touchscreen modul not report ABS_MT_POSITION_Y proper.
+As result it may be, that upper software levels only receive x coordinates well.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Heiko Abraham <abrahamh@web.de>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/option.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/input/touchscreen/egalax_ts.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 3e211a8..38ea4b7 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -196,6 +196,7 @@ static void option_instat_callback(struct urb *urb);
+diff --git a/drivers/input/touchscreen/egalax_ts.c b/drivers/input/touchscreen/egalax_ts.c
+index 70524dd..be2a271 100644
+--- a/drivers/input/touchscreen/egalax_ts.c
++++ b/drivers/input/touchscreen/egalax_ts.c
+@@ -203,7 +203,7 @@ static int __devinit egalax_ts_probe(struct i2c_client *client,
+ 	input_set_abs_params(input_dev,
+ 			     ABS_MT_POSITION_X, 0, EGALAX_MAX_X, 0, 0);
+ 	input_set_abs_params(input_dev,
+-			     ABS_MT_POSITION_X, 0, EGALAX_MAX_Y, 0, 0);
++			     ABS_MT_POSITION_Y, 0, EGALAX_MAX_Y, 0, 0);
+ 	input_mt_init_slots(input_dev, MAX_SUPPORT_POINTS);
  
- #define DELL_PRODUCT_5800_MINICARD_VZW		0x8195  /* Novatel E362 */
- #define DELL_PRODUCT_5800_V2_MINICARD_VZW	0x8196  /* Novatel E362 */
-+#define DELL_PRODUCT_5804_MINICARD_ATT		0x819b  /* Novatel E371 */
- 
- #define KYOCERA_VENDOR_ID			0x0c88
- #define KYOCERA_PRODUCT_KPC650			0x17da
-@@ -771,6 +772,7 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_VZW) }, 	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_MINICARD_VZW, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_V2_MINICARD_VZW, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5804_MINICARD_ATT, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_E100A) },	/* ADU-E100, ADU-310 */
- 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_500A) },
- 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_620UW) },
+ 	input_set_drvdata(input_dev, ts);
 -- 
 1.8.1.2
 
