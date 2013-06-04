@@ -1,40 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756285Ab3FDRju (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:39:50 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59376 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755495Ab3FDRjt (ORCPT
+	id S1756339Ab3FDRkl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:40:41 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:57362 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752783Ab3FDRkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:39:49 -0400
-Date: Tue, 4 Jun 2013 18:39:17 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Sergey Dyasly <dserrg@gmail.com>,
+	Tue, 4 Jun 2013 13:40:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH, RFC 2/2] USB: host: make USB_ARCH_HAS_?HCI obsolete
+Date: Tue, 4 Jun 2013 19:40:00 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-usb@vger.kernel.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] proc: avoid ->f_pos overflows in
- proc_task_readdir() paths
-Message-ID: <20130604173917.GB13110@ZenIV.linux.org.uk>
-References: <20130603190705.GA11517@redhat.com>
- <877giarg81.fsf@xmission.com>
- <20130604171435.GA20416@redhat.com>
+References: <Pine.LNX.4.44L0.1306041257250.1093-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1306041257250.1093-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130604171435.GA20416@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306041940.00979.arnd@arndb.de>
+X-Provags-ID: V02:K0:tSaYAUeAj4Jnu19bunF9UajSHeTfMxVlYW2Cgjs4j9N
+ bcGIja5qY69x7goaVum7JvTI9QM/ZZ+aEW5X37JzX1MF6fylEz
+ 2P2VKg/HXpEmx5lwzuBLUdfBbvwzLkgct0Na+mRtZ+LZ3d4VmP
+ iVL1ToTmIoJvH8/+PfuLgMROuDA/T2o6+TkdCs1Jv1N2iymC29
+ h+bCuw4DaUpAuHWWS7eNtBrzmpjw+VLS6XZ3tqQmi8oh2M/+Fo
+ rG6i5XYhZykHAG2Pw4IxAJHrqLF1N/XFcObVs9jRx/KDgKb0n+
+ PpQSJLKZ/J+kXtE2TgcJStzajKAUZDj3NN+aD3+b76sdUonkeZ
+ yNCSd/Cc9ixw0UahNIqw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 04, 2013 at 07:14:35PM +0200, Oleg Nesterov wrote:
-> > There is another bug in here as well that we may return really crazy
-> > things in the case of seek simultaneous with readdir.
+On Tuesday 04 June 2013, Alan Stern wrote:
+> On Tue, 4 Jun 2013, Arnd Bergmann wrote:
+> > so that would create a circular dependency unless we change all of them
+> > at once. I did that when creating this patch, but then decided to
+> > revert it for now and do smaller steps.
 > 
-> i_mutex? both vfs_readdir() and default_llseek() take it... Anyway, this
-> is another issue.
+> Okay.  Changing those 24 should be the next step.
 
-That's part of the reasons for the series I've mentioned (vfs.git#experimental);
-seriously, check that up.
+Yes, and we can remove the various 'select USB_ARCH_HAS_*' from arch
+code at the same time. Since there is no hurry, I would suggest doing
+that after 3.11-rc1 so we don't have to worry about dependencies.
+ 
+> > We could do
+> > 
+> > config USB_ARCH_HAS_HCD
+> > 	def_bool USB_SUPPORT
+> > 
+> > or
+> > 
+> > config USB_ARCH_HAS_HCD
+> > 	def_bool y
+> > 
+> > which would both have the exact same behavior as 'def_bool HAS_IOMEM'.
+> 
+> I'm in favor of "def_bool y".
+
+Ok. And I'll use 'bool' for the 'USB_ARCH_HAS_?HCI' symbols since we
+don't care about the value any more.
+
+	Arnd
