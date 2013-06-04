@@ -1,128 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751763Ab3FDUSc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 16:18:32 -0400
-Received: from fieldses.org ([174.143.236.118]:46209 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750907Ab3FDUSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 16:18:25 -0400
-Date: Tue, 4 Jun 2013 16:17:59 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
-        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
-        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, cluster-devel@redhat.com,
-        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        piastryyy@gmail.com
-Subject: Re: [PATCH v1 05/11] locks: encapsulate the fl_link list handling
-Message-ID: <20130604201759.GB15594@fieldses.org>
-References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
- <1370056054-25449-6-git-send-email-jlayton@redhat.com>
+	id S1751540Ab3FDUVw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 16:21:52 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:36487 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808Ab3FDUVt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 16:21:49 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Steven Rostedt <rostedt@goodmis.org>, "H. Peter Anvin" <hpa@zytor.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>, "bp@alien8.de" <bp@alien8.de>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+Subject: RE: [PATCH v13 3/3] trace,x86: Add irq vector tracepoints
+Thread-Topic: [PATCH v13 3/3] trace,x86: Add irq vector tracepoints
+Thread-Index: AQHOYJD5t4s5mkVepkqNMD/e2H+1XZkk7OKAgAE0KoCAAAStgP//2pQQ
+Date: Tue, 4 Jun 2013 20:20:35 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41B011681@USINDEM103.corp.hds.com>
+References: <51ACEDBB.6040706@hds.com> <51ACEEB4.1010302@hds.com>
+	 <1370303581.26799.109.camel@gandalf.local.home>
+	 <51AE2EDF.3000505@zytor.com> <1370370763.9844.6.camel@gandalf.local.home>
+In-Reply-To: <1370370763.9844.6.camel@gandalf.local.home>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370056054-25449-6-git-send-email-jlayton@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8626,1.0.431,0.0.0000
+ definitions=2013-06-04_07:2013-06-04,2013-06-04,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 ipscore=0
+ suspectscore=0 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
+ adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1306040200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r54KM0NO020679
 
-On Fri, May 31, 2013 at 11:07:28PM -0400, Jeff Layton wrote:
-> Move the fl_link list handling routines into a separate set of helpers.
-> Also move the global list handling out of locks_insert_block, and into
-> the caller that ends up triggering it as that allows us to eliminate the
-> IS_POSIX check there.
-
-ACK.--b.
+Steven,
 
 > 
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> ---
->  fs/locks.c |   34 +++++++++++++++++++++++++++++-----
->  1 files changed, 29 insertions(+), 5 deletions(-)
+> Hmm, maybe we can do it. Have two counters, a debug_idt_ctr and a
+> trace_idt_ctr, then have a function that basically does this:
 > 
-> diff --git a/fs/locks.c b/fs/locks.c
-> index cef0e04..caca466 100644
-> --- a/fs/locks.c
-> +++ b/fs/locks.c
-> @@ -494,13 +494,38 @@ static int posix_same_owner(struct file_lock *fl1, struct file_lock *fl2)
->  	return fl1->fl_owner == fl2->fl_owner;
->  }
->  
-> +/* Remove a blocker or lock from one of the global lists */
-> +static inline void
-> +locks_insert_global_blocked(struct file_lock *waiter)
-> +{
-> +	list_add(&waiter->fl_link, &blocked_list);
-> +}
-> +
-> +static inline void
-> +locks_delete_global_blocked(struct file_lock *waiter)
-> +{
-> +	list_del_init(&waiter->fl_link);
-> +}
-> +
-> +static inline void
-> +locks_insert_global_locks(struct file_lock *waiter)
-> +{
-> +	list_add_tail(&waiter->fl_link, &file_lock_list);
-> +}
-> +
-> +static inline void
-> +locks_delete_global_locks(struct file_lock *waiter)
-> +{
-> +	list_del_init(&waiter->fl_link);
-> +}
-> +
->  /* Remove waiter from blocker's block list.
->   * When blocker ends up pointing to itself then the list is empty.
->   */
->  static void __locks_delete_block(struct file_lock *waiter)
->  {
->  	list_del_init(&waiter->fl_block);
-> -	list_del_init(&waiter->fl_link);
-> +	locks_delete_global_blocked(waiter);
->  	waiter->fl_next = NULL;
->  }
->  
-> @@ -524,8 +549,6 @@ static void locks_insert_block(struct file_lock *blocker,
->  	BUG_ON(!list_empty(&waiter->fl_block));
->  	list_add_tail(&waiter->fl_block, &blocker->fl_block);
->  	waiter->fl_next = blocker;
-> -	if (IS_POSIX(blocker))
-> -		list_add(&waiter->fl_link, &blocked_list);
->  }
->  
->  /* Wake up processes blocked waiting for blocker.
-> @@ -552,7 +575,7 @@ static void locks_wake_up_blocks(struct file_lock *blocker)
->   */
->  static void locks_insert_lock(struct file_lock **pos, struct file_lock *fl)
->  {
-> -	list_add(&fl->fl_link, &file_lock_list);
-> +	locks_insert_global_locks(fl);
->  
->  	fl->fl_nspid = get_pid(task_tgid(current));
->  
-> @@ -573,7 +596,7 @@ static void locks_delete_lock(struct file_lock **thisfl_p)
->  
->  	*thisfl_p = fl->fl_next;
->  	fl->fl_next = NULL;
-> -	list_del_init(&fl->fl_link);
-> +	locks_delete_global_locks(fl);
->  
->  	if (fl->fl_nspid) {
->  		put_pid(fl->fl_nspid);
-> @@ -839,6 +862,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
->  				goto out;
->  			error = FILE_LOCK_DEFERRED;
->  			locks_insert_block(fl, request);
-> +			locks_insert_global_blocked(request);
->  			goto out;
->    		}
->    	}
-> -- 
-> 1.7.1
-> 
+> 	if (this_cpu_read(debug_idt_ctr))
+
+I think we can use "debug_stack_use_ctr"  for the checking.
+Is it correct?
+Or, do I need to introduce a new debug_idt_ctr?
+
+Seiji
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
