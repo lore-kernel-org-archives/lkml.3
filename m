@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756803Ab3FDONw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:13:52 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:35274 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755898Ab3FDONs (ORCPT
+	id S1756902Ab3FDOOf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:14:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46886 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756261Ab3FDOIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:13:48 -0400
-Date: Tue, 4 Jun 2013 10:13:47 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Greg KH <greg@kroah.com>
-cc: Tobias Winter <tobias@linuxdingsda.de>,
-        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        Rob Landley <rob@landley.net>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] raise the maximum number of usb-serial devices to 512
-In-Reply-To: <20130604024959.GA10697@kroah.com>
-Message-ID: <Pine.LNX.4.44L0.1306041007410.1093-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 4 Jun 2013 10:08:30 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Libin <huawei.libin@huawei.com>, <jiang.liu@huawei.com>,
+        <guohanjun@huawei.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 48/70] sched/debug: Fix sd->*_idx limit range avoiding overflow
+Date: Tue,  4 Jun 2013 15:07:04 +0100
+Message-Id: <1370354846-14213-49-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
+References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Jun 2013, Greg KH wrote:
+3.5.7.14 -stable review patch.  If anyone has any objections, please let me know.
 
-> On Mon, May 27, 2013 at 02:28:51PM +0200, Bjørn Mork wrote:
-> > But, IMHO, a nicer approach would be to make the allocation completely
-> > dynamic, using e.g. the idr subsystem. Static tables are always feel
-> > like straight jackets to me, no matter how big they are :)
-> 
-> You are right, I didn't change the code to use idr (it predates idr by
-> about a decade or so), because I thought we needed the "rage" logic that
-> the usb-serial minor reservation does.
-> 
-> But I'm not so sure anymore, so here's a patch to change to use the idr
-> code, and should remove all minor number limitations (well 65k is the
-> limit the tty core should be setting I think.)
-> 
-> Tobias, can you test this patch out?  Note, I only compiled it, did not
-> get the chance to actually run it, so it might not work at all.
-> 
-> thanks,
-> 
-> greg k-h
+------------------
 
+From: libin <huawei.libin@huawei.com>
 
-> @@ -61,59 +62,52 @@ static LIST_HEAD(usb_serial_driver_list);
->  struct usb_serial *usb_serial_get_by_index(unsigned index)
->  {
->  	struct usb_serial *serial;
-> +	struct usb_serial_port *port;
->  
->  	mutex_lock(&table_lock);
-> -	serial = serial_table[index];
-> -
-> -	if (serial) {
-> -		mutex_lock(&serial->disc_mutex);
-> -		if (serial->disconnected) {
-> -			mutex_unlock(&serial->disc_mutex);
-> -			serial = NULL;
-> -		} else {
-> -			kref_get(&serial->kref);
-> -		}
-> -	}
-> +	port = idr_find(&serial_minors, index);
->  	mutex_unlock(&table_lock);
-> +	if (!port)
-> +		return NULL;
-> +
-> +	serial = port->serial;
-> +	kref_get(&serial->kref);
->  	return serial;
->  }
+commit fd9b86d37a600488dbd80fe60cca46b822bff1cd upstream.
 
-The test for serial->disconnected got lost.  And the locking isn't 
-right; the routine is documented to return with serial->disc_mutex held 
-(in the case where the device hasn't been disconnected).
+Commit 201c373e8e ("sched/debug: Limit sd->*_idx range on
+sysctl") was an incomplete bug fix.
 
-Also, the kref_get() needs to occur within the scope of the table_lock.
+This patch fixes sd->*_idx limit range to [0 ~ CPU_LOAD_IDX_MAX-1]
+avoiding array overflow caused by setting sd->*_idx to CPU_LOAD_IDX_MAX
+on sysctl.
 
-I didn't check the rest of the patch for similar errors.  Finding three 
-in the first function seemed like enough.  :-)
+Signed-off-by: Libin <huawei.libin@huawei.com>
+Cc: <jiang.liu@huawei.com>
+Cc: <guohanjun@huawei.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/51626610.2040607@huawei.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ kernel/sched/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Alan Stern
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index e22a1f0..89e8c2c 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5435,7 +5435,7 @@ static void sd_free_ctl_entry(struct ctl_table **tablep)
+ }
+ 
+ static int min_load_idx = 0;
+-static int max_load_idx = CPU_LOAD_IDX_MAX;
++static int max_load_idx = CPU_LOAD_IDX_MAX-1;
+ 
+ static void
+ set_table_entry(struct ctl_table *entry,
+-- 
+1.8.1.2
 
