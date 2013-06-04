@@ -1,93 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458Ab3FDXaJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:30:09 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:57316 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958Ab3FDXaF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 19:30:05 -0400
+	id S1751557Ab3FDXbS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:31:18 -0400
+Received: from www.sr71.net ([198.145.64.142]:44362 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750958Ab3FDXbQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 19:31:16 -0400
+Message-ID: <51AE78C3.1040500@sr71.net>
+Date: Tue, 04 Jun 2013 16:31:15 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.03.1306041911170.1686@linux.vnet.ibm.com>
-References: <alpine.LFD.2.03.1306041911170.1686@linux.vnet.ibm.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 4 Jun 2013 17:29:44 -0600
-Message-ID: <CAErSpo41t6QDHJwoZcwp5pH7kzuLPb8xboHc3W6YixDad2BotA@mail.gmail.com>
-Subject: Re: [PATCH] pci: add pcibios_release_device
-To: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Minchan Kim <minchan@kernel.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mgorman@suse.de, tim.c.chen@linux.intel.com
+Subject: Re: [v5][PATCH 6/6] mm: vmscan: drain batch list during long operations
+References: <20130603200202.7F5FDE07@viggo.jf.intel.com> <20130603200210.259954C3@viggo.jf.intel.com> <20130604060553.GF14719@blaptop> <51AE06B6.3030009@sr71.net> <20130604232315.GA31006@blaptop>
+In-Reply-To: <20130604232315.GA31006@blaptop>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 4, 2013 at 11:18 AM, Sebastian Ott
-<sebott@linux.vnet.ibm.com> wrote:
-> Hello Bjorn,
->
-> part of your feedback to the PCI support on s390 was to put some smarts in
-> the config space accessors and let the pci core do the scanning of pci
-> functions.
-> To get there I had to implement pcibios_add_device on s390 to do some arch
-> specific device initialization. During removal of the pci function I would
-> like to undo these steps. Would it be possible to have a couterpart of
-> pcibios_add_device - like the patch below:
->
->
-> pci: add pcibios_release_device
->
-> Platforms may want to provide architecture-specific functionality when
-> a pci device is released. Add a pcibios_release_device() call that
-> architectures can override to do so.
->
-> Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
+On 06/04/2013 04:23 PM, Minchan Kim wrote:
+> On Tue, Jun 04, 2013 at 08:24:38AM -0700, Dave Hansen wrote:
+>> On 06/03/2013 11:05 PM, Minchan Kim wrote:
+>>>>> This ensures that we drain the batch if we are about to perform a
+>>>>> pageout() or congestion_wait(), either of which will take some
+>>>>> time.  We expect this to help mitigate the worst of the latency
+>>>>> increase that the batching could cause.
+>>> Nice idea but I could see drain before pageout but congestion_wait?
+>>
+>> That comment managed to bitrot a bit :(
+>>
+>> The first version of these had the drain before pageout() only.  Then,
+>> Mel added a congestion_wait() call, and I modified the series to also
+>> drain there.  But, some other patches took the congestion_wait() back
+>> out, so I took that drain back out.
+> 
+> I am looking next-20130530 and it has still a congestion_wait.
+> I'm confusing. :(
+> 
+> 
+>                 if (PageWriteback(page)) {
+> 			/* Case 1 above */
+> 			if (current_is_kswapd() &&
+> 			    PageReclaim(page) &&
+> 			    zone_is_reclaim_writeback(zone)) {
+> 				congestion_wait(BLK_RW_ASYNC, HZ/10);
+> 				zone_clear_flag(zone, ZONE_WRITEBACK);
+>>
+>> I _believe_ the only congestion_wait() left in there is a cgroup-related
+>> one that we didn't think would cause very much harm.
+> 
+> The congestion_wait I am seeing is not cgroup-related one.
 
-Applied to pci/misc for v3.11.  Thanks!
+Yeah, sorry for the confusion.  There's been a whole lot of activity in
+there.  My set is also done on top of a couple of fixes that Mel posted
+later on, including this one:
 
-> ---
->  drivers/pci/pci.c   |   10 ++++++++++
->  drivers/pci/probe.c |    1 +
->  include/linux/pci.h |    1 +
->  3 files changed, 12 insertions(+)
->
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -1335,6 +1335,16 @@ int __weak pcibios_add_device (struct pc
->  }
->
->  /**
-> + * pcibios_release_device - provide arch specific hooks when releasing device dev
-> + * @dev: the PCI device being released
-> + *
-> + * Permits the platform to provide architecture specific functionality when
-> + * devices are released. This is the default implementation. Architecture
-> + * implementations can override this.
-> + */
-> +void __weak pcibios_release_device(struct pci_dev *dev) {}
-> +
-> +/**
->   * pcibios_disable_device - disable arch specific PCI resources for device dev
->   * @dev: the PCI device to disable
->   *
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -1132,6 +1132,7 @@ static void pci_release_dev(struct devic
->         pci_dev = to_pci_dev(dev);
->         pci_release_capabilities(pci_dev);
->         pci_release_of_node(pci_dev);
-> +       pcibios_release_device(pci_dev);
->         kfree(pci_dev);
->  }
->
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -1643,6 +1643,7 @@ void pcibios_set_master(struct pci_dev *
->  int pcibios_set_pcie_reset_state(struct pci_dev *dev,
->                                  enum pcie_reset_state state);
->  int pcibios_add_device(struct pci_dev *dev);
-> +void pcibios_release_device(struct pci_dev *dev);
->
->  #ifdef CONFIG_PCI_MMCONFIG
->  void __init pci_mmcfg_early_init(void);
->
+	https://patchwork.kernel.org/patch/2619901/
+
+*That* one removes the congestion_wait() you noticed.
