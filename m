@@ -1,127 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751272Ab3FDVgH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 17:36:07 -0400
-Received: from mga14.intel.com ([143.182.124.37]:18213 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750819Ab3FDVgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 17:36:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,802,1363158000"; 
-   d="scan'208";a="250653904"
-Message-ID: <1370381717.8432.14.camel@ideak-mobl>
-Subject: Re: [PATCH] wait: fix false timeouts when using wait_event_timeout()
-From: Imre Deak <imre.deak@intel.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Jones <davej@redhat.com>,
-        David Howells <dhowells@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Lukas Czerner <lczerner@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 05 Jun 2013 00:35:17 +0300
-In-Reply-To: <20130604192818.GA31316@redhat.com>
-References: <20130604192818.GA31316@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751403Ab3FDVgS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 17:36:18 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:43522
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750819Ab3FDVgK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 17:36:10 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz17326ah8275bh8275dhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1155h)
+X-WSS-ID: 0MNW1C2-02-7IN-02
+X-M-MSG: 
+Date: Tue, 4 Jun 2013 16:36:00 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/microcode] x86, microcode, amd: Fix warnings and errors
+ on with CONFIG_MICROCODE=m
+Message-ID: <20130604213600.GA5021@jshin-Toonie>
+References: <20130531150241.GA12006@jshin-Toonie>
+ <tip-6b3389ac21b5e557b957f1497d0ff22bf733e8c3@git.kernel.org>
+ <CAE9FiQUJOfcoU8c_Xwhosb1=9=dyaH6mXkERX-zxCUmEXjeNUg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQUJOfcoU8c_Xwhosb1=9=dyaH6mXkERX-zxCUmEXjeNUg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-04 at 21:28 +0200, Oleg Nesterov wrote:
-> Hello,
+On Tue, Jun 04, 2013 at 02:02:43PM -0700, Yinghai Lu wrote:
+> On Fri, May 31, 2013 at 2:59 PM, tip-bot for Jacob Shin
+> <tipbot@zytor.com> wrote:
+> > Commit-ID:  6b3389ac21b5e557b957f1497d0ff22bf733e8c3
+> > Gitweb:     http://git.kernel.org/tip/6b3389ac21b5e557b957f1497d0ff22bf733e8c3
+> > Author:     Jacob Shin <jacob.shin@amd.com>
+> > AuthorDate: Fri, 31 May 2013 01:53:24 -0500
+> > Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> > CommitDate: Fri, 31 May 2013 13:56:58 -0700
+> >
+> > x86, microcode, amd: Fix warnings and errors on with CONFIG_MICROCODE=m
+> >
+> > Fix section mismatch warnings on microcode_amd_early.
+> > Compile error occurs when CONFIG_MICROCODE=m, change so that early
+> > loading depends on microcode_core.
+> >
+> > Reported-by: Yinghai Lu <yinghai@kernel.org>
+> > Reported-by: Borislav Petkov <bp@alien8.de>
+> > Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+> > Link: http://lkml.kernel.org/r/20130531150241.GA12006@jshin-Toonie
+> > Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> > ---
+> >  arch/x86/Kconfig                      | 2 +-
+> >  arch/x86/include/asm/microcode_amd.h  | 2 +-
+> >  arch/x86/kernel/microcode_amd_early.c | 8 ++++----
+> >  3 files changed, 6 insertions(+), 6 deletions(-)
+> >
+> > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> > index 28dba52..2705532 100644
+> > --- a/arch/x86/Kconfig
+> > +++ b/arch/x86/Kconfig
+> > @@ -1065,7 +1065,7 @@ config MICROCODE_AMD_EARLY
+> >
+> >  config MICROCODE_EARLY
+> >         bool "Early load microcode"
+> > -       depends on (MICROCODE_INTEL || MICROCODE_AMD) && BLK_DEV_INITRD
+> > +       depends on MICROCODE=y && BLK_DEV_INITRD
+> >         select MICROCODE_INTEL_EARLY if MICROCODE_INTEL
+> >         select MICROCODE_AMD_EARLY if MICROCODE_AMD
+> >         default y
+> > diff --git a/arch/x86/include/asm/microcode_amd.h b/arch/x86/include/asm/microcode_amd.h
+> > index 24254aa..c6b043f 100644
+> > --- a/arch/x86/include/asm/microcode_amd.h
+> > +++ b/arch/x86/include/asm/microcode_amd.h
+> > @@ -64,7 +64,7 @@ extern enum ucode_state load_microcode_amd(int cpu, const u8 *data, size_t size)
+> >  #ifdef CONFIG_MICROCODE_AMD_EARLY
+> >  #ifdef CONFIG_X86_32
+> >  #define MPB_MAX_SIZE PAGE_SIZE
+> > -extern u8 __cpuinitdata amd_bsp_mpb[MPB_MAX_SIZE];
+> > +extern u8 amd_bsp_mpb[MPB_MAX_SIZE];
+> >  #endif
+> >  extern void __init load_ucode_amd_bsp(void);
+> >  extern void __cpuinit load_ucode_amd_ap(void);
+> > diff --git a/arch/x86/kernel/microcode_amd_early.c b/arch/x86/kernel/microcode_amd_early.c
+> > index 7e54d97..9618805 100644
+> > --- a/arch/x86/kernel/microcode_amd_early.c
+> > +++ b/arch/x86/kernel/microcode_amd_early.c
+> > @@ -21,9 +21,9 @@ static u32 ucode_new_rev;
+> >   * Microcode patch container file is prepended to the initrd in cpio format.
+> >   * See Documentation/x86/early-microcode.txt
+> >   */
+> > -static __initdata char ucode_path[] = "kernel/x86/microcode/AuthenticAMD.bin";
+> > +static __cpuinitdata char ucode_path[] = "kernel/x86/microcode/AuthenticAMD.bin";
+> >
+> > -static struct cpio_data __init find_ucode_in_initrd(void)
+> > +static struct cpio_data __cpuinit find_ucode_in_initrd(void)
+> >  {
+> >         long offset = 0;
+> >         struct cpio_data cd;
 > 
-> Just noticed this commit...
+> does not like right fix.
 > 
-> commit 4c663cfc523a88d97a8309b04a089c27dc57fd7e
-> Author: Imre Deak <imre.deak@intel.com>
-> Date:   Fri May 24 15:55:09 2013 -0700
+> find_ucode_in_initrd should be __init.
 > 
->     Many callers of the wait_event_timeout() and
->     wait_event_interruptible_timeout() expect that the return value will be
->     positive if the specified condition becomes true before the timeout
->     elapses.  However, at the moment this isn't guaranteed.  If the wake-up
->     handler is delayed enough, the time remaining until timeout will be
->     calculated as 0 - and passed back as a return value - even if the
->     condition became true before the timeout has passed.
+> > @@ -62,7 +62,7 @@ static struct cpio_data __init find_ucode_in_initrd(void)
+> >   * load_microcode_amd() to save equivalent cpu table and microcode patches in
+> >   * kernel heap memory.
+> >   */
+> > -static void __init apply_ucode_in_initrd(void)
+> > +static void __cpuinit apply_ucode_in_initrd(void)
+> >  {
+> >         struct cpio_data cd;
+> >         struct equiv_cpu_entry *eq;
 > 
-> OK, agreed.
-> 
-> 	--- a/include/linux/wait.h
-> 	+++ b/include/linux/wait.h
-> 	@@ -217,6 +217,8 @@ do {						\
-> 			if (!ret)						\
-> 				break;						\
-> 		}								\
-> 	+	if (!ret && (condition))					\
-> 	+		ret = 1;						\
-> 		finish_wait(&wq, &__wait);					\
-> 	 } while (0)
-> 
-> Well, this evaluates "condition" twice, perhaps it would be more
-> clean to do, say,
-> 
-> 	#define __wait_event_timeout(wq, condition, ret)			\
-> 	do {									\
-> 		DEFINE_WAIT(__wait);						\
-> 										\
-> 		for (;;) {							\
-> 			prepare_to_wait(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
-> 			if (condition) {					\
-> 				if (!ret)					\
-> 					ret = 1;				\
-> 				break;						\
-> 			} else if (!ret)					\
-> 				break;						\
-> 			ret = schedule_timeout(ret);				\
-> 		}								\
-> 		finish_wait(&wq, &__wait);					\
-> 	} while (0)
-> 
-> but this is minor.
-> 
-> 	@@ -233,8 +235,9 @@ do {						\
-> 	  * wake_up() has to be called after changing any variable that could
-> 	  * change the result of the wait condition.
-> 	  *
-> 	- * The function returns 0 if the @timeout elapsed, and the remaining
-> 	- * jiffies if the condition evaluated to true before the timeout elapsed.
-> 	+ * The function returns 0 if the @timeout elapsed, or the remaining
-> 	+ * jiffies (at least 1) if the @condition evaluated to %true before
-> 	+ * the @timeout elapsed.
-> 
-> This is still not true if timeout == 0.
-> 
-> Shouldn't we also change wait_event_timeout() ? Say,
-> 
-> 	#define wait_event_timeout(wq, condition, timeout)			\
-> 	({									\
-> 		long __ret = timeout;						\
-> 		if (!(condition))						\
-> 			__wait_event_timeout(wq, condition, __ret);		\
-> 		else if (!__ret)						\
-> 			__ret = 1;						\
-> 		__ret;								\
-> 	})
-> 
-> Or wait_event_timeout(timeout => 0) is not legal in a non-void context?
-> 
-> To me the code like
-> 
-> 	long wait_for_something(bool nonblock)
-> 	{
-> 		timeout = nonblock ? 0 : DEFAULT_TIMEOUT;
-> 		return wait_event_timeout(..., timeout);
-> 	}
-> 
-> looks reasonable and correct. But it is not?
+> it should not call find_ucode_in_initrd or
+> it should be __init.
 
-I don't see why it would be not legal. Note though that in the above
-form wait_event_timeout(cond, 0) would still schedule() if cond is
-false, which is not what I'd expect from a non-blocking function.
+It's because the load_ucode_amd_ap() (which is __cpuinit because it
+can be called during CPU hotplug on).
 
---Imre
+Hm.. but yes, I do agree with you, I'm waiting for feedback on this
+follow up patch to allow multiple concatanated microcode files:
+
+  https://lkml.org/lkml/2013/5/31/664
+
+I'll submit multi-patch patchset to address your feedback as well.
+
+Thank you,
 
