@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755750Ab3FDRiz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:38:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50829 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754464Ab3FDRix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:38:53 -0400
-Date: Tue, 4 Jun 2013 19:35:00 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Michal Hocko <mhocko@suse.cz>, Sergey Dyasly <dserrg@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] proc: avoid ->f_pos overflows in
-	proc_task_readdir() paths
-Message-ID: <20130604173500.GB22223@redhat.com>
-References: <20130603190640.GA11481@redhat.com> <20130603190705.GA11517@redhat.com> <20130604005853.GA13110@ZenIV.linux.org.uk>
+	id S1756207Ab3FDRjZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:39:25 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:54907 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755319Ab3FDRjV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 13:39:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130604005853.GA13110@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1370294292.20051.41.camel@ejdallLaptop>
+References: <1369924769-17183-1-git-send-email-betty.dall@hp.com>
+ <1369924769-17183-2-git-send-email-betty.dall@hp.com> <CAErSpo6KV28p3QRoz-Xx=xMjsFaY7sCho8HN2W_M-DntrNk+Ag@mail.gmail.com>
+ <1370294292.20051.41.camel@ejdallLaptop>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 4 Jun 2013 11:39:00 -0600
+Message-ID: <CAErSpo6e_3Xy3F0z2L0LCdQoShc=VkLTsS6+icYkhsexiqgQMQ@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] PCI/AER: Fix incorrect return from aer_hest_parse()
+To: Betty Dall <betty.dall@hp.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Huang Ying <ying.huang@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "Moore, Robert" <robert.moore@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04, Al Viro wrote:
+On Mon, Jun 3, 2013 at 3:18 PM, Betty Dall <betty.dall@hp.com> wrote:
+> On Sat, 2013-06-01 at 18:38 -0600, Bjorn Helgaas wrote:
+>> [+cc Bob for ACPI HEST spec questions]
+>>
+>> On Thu, May 30, 2013 at 8:39 AM, Betty Dall <betty.dall@hp.com> wrote:
+>> > The function aer_hest_parse() is called to determine if the given
+>> > PCI device is firmware first or not. The code loops through each
+>> > section of the HEST table to look for a match. The bug is that
+>> > the function always returns whether the last HEST section is firmware
+>> > first. The fix stops the iteration once the info.firmware_first
+>> > variable is set.  This is similar to how the function aer_hest_parse_aff()
+>> > stops the iteration.
+>> >
+>> > Signed-off-by: Betty Dall <betty.dall@hp.com>
+>> > ---
+>> >
+>> >  drivers/pci/pcie/aer/aerdrv_acpi.c |    3 +++
+>> >  1 files changed, 3 insertions(+), 0 deletions(-)
+>> >
+>> >
+>> > diff --git a/drivers/pci/pcie/aer/aerdrv_acpi.c b/drivers/pci/pcie/aer/aerdrv_acpi.c
+>> > index 5194a7d..39b8671 100644
+>> > --- a/drivers/pci/pcie/aer/aerdrv_acpi.c
+>> > +++ b/drivers/pci/pcie/aer/aerdrv_acpi.c
+>> > @@ -42,6 +42,9 @@ static int aer_hest_parse(struct acpi_hest_header *hest_hdr, void *data)
+>> >         u8 bridge = 0;
+>> >         int ff = 0;
+>> >
+>> > +       if (info->firmware_first)
+>> > +               return 0;
+>> > +
+>> >         switch (hest_hdr->type) {
+>> >         case ACPI_HEST_TYPE_AER_ROOT_PORT:
+>> >                 pcie_type = PCI_EXP_TYPE_ROOT_PORT;
+>>
+>> Not related directly to your patch, Betty, but I can't figure out why
+>> the ACPI spec defines the HEST structures for PCIe as it does.  I'm
+>> looking at ACPI 5.0, sec 18.3.2.3 - 18.3.2.5.
 >
-> On Mon, Jun 03, 2013 at 09:07:05PM +0200, Oleg Nesterov wrote:
-> > 1. proc_task_readdir() truncates f_pos to long, this can lead
-> >    to wrong result on 32bit.
-> >
-> > 2. first_tid() truncates f_pos to int, this is wrong even on
-> >    64bit.
-> >
-> >    We could check that f_pos < PID_MAX or even INT_MAX in
-> >    proc_task_readdir(), but this patch simply checks the
-> >    potential overflow in first_tid(), this check is nop on
-> >    64bit. We do not care if it was negative and the new
-> >    unsigned value is huge, all we need to ensure is that we
-> >    never wrongly return !NULL.
-> >
-> > 3. Remove the 2nd "nr != 0" check before get_nr_threads(),
-> >    nr_threads == 0 is not distinguishable from !pid_task()
-> >    above.
->
-> Oleg, please take a look at the series in vfs.git#experimental; at the very
-> least, we don't want to access file->f_pos in any foo_readdir() - it's too
-> messy and race-prone.  It's pretty much independent from the issues you
-> are dealing with, but let's avoid creating pointless conflicts...
+>> 1) The PCIe Root Port, PCIe Device, and PCIe/PCI-X Bridge structures
+>> all include Bus, Device, and Function fields.  But there's no Segment.
+>>  The current Linux code (hest_match_pci()) assumes HEST records can
+>> only apply to PCI domain 0.  Is Linux missing something, or is the
+>> HEST really this limited?
+> You are right that the HEST table does not have the Segment for the PCIe
+> sources. The Linux code uses the Generic Source type that points to a
+> UEFI CPER record. Those do have the Segment. The code in
+> acpi/apei/ghes.c that parses the HEST and invokes the
+> aer_recover_queue() is using the segment from the CPER record.
 
-Yes, thanks.
+My question has nothing to do with CPER.  Drivers can enable error
+reporting for their devices with pci_enable_pcie_error_reporting().
+If the device is marked "firmware-first" in the HEST, this call fails
+without enabling reporting.  The HEST can only mark devices in domain
+0 as "firmware-first."  Therefore pci_enable_pcie_error_reporting()
+will enable reporting for:
 
-Sadly, 3/4 conflicts with 08c35e10 too. I'll rediff/resend this
-cleanup later then.
+  - domain 0 devices not marked "firmware-first" and
+  - all devices in other domains.
 
-Oleg.
+This inconsistency seems like a hole in the spec, but maybe I'm
+missing something.
 
+Bjorn
