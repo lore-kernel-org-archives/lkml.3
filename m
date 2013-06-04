@@ -1,42 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab3FDNkl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 09:40:41 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:57660 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753337Ab3FDNkh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 09:40:37 -0400
-Date: Tue, 4 Jun 2013 15:40:34 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stefan Roese <sr@denx.de>, Richard Genoud <richard.genoud@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH] net: sun4i-emac: remove erroneous assignment
-Message-ID: <20130604134034.GE3283@lukather>
-References: <3298610.K0DeJZEM4E@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3298610.K0DeJZEM4E@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754995Ab3FDNky (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 09:40:54 -0400
+Received: from victor.provo.novell.com ([137.65.250.26]:57171 "EHLO
+	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754809Ab3FDNkt (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Tue, 4 Jun 2013 09:40:49 -0400
+From: "Cho, Yu-Chen" <acho@suse.com>
+To: marcel@holtmann.org, gustavo@padovan.org, johan.hedberg@gmail.com,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: oneukum@suse.com, acho@suse.com, jlee@suse.com, jay.hung@mediatek.com
+Subject: [PATCH] Bluetooth: Add support for Mediatek Bluetooth device [0e8d:763f]
+Date: Tue,  4 Jun 2013 21:40:26 +0800
+Message-Id: <1370353226-11058-1-git-send-email-acho@suse.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+From: "Cho, Yu-Chen" <acho@suse.com>
 
-On Mon, Jun 03, 2013 at 11:36:50PM +0200, Arnd Bergmann wrote:
-> The newly added sun4i-emac driver causes a build error when
-> CONFIG_NET_POLL_CONTROLLER is set, because it attempts to
-> assign a pointer to netdev->poll_controller, which has
-> been replaced with ops->ndo_poll_controller in 2.6.31!
-> 
-> The correct assignment is present as well, so we just need
-> to remove the wrong one.
+This patch adds support for Mediatek Bluetooth device
 
-Thanks for fixing this,
-Acked-by: Maxime Ripard <maxime.ripard@anandra.org>
+T:  Bus=02 Lev=01 Prnt=01 Port=03 Cnt=01 Dev#=  2 Spd=480  MxCh= 0
+D:  Ver= 2.01 Cls=ef(misc ) Sub=02 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0e8d ProdID=763f Rev= 1.00
+S:  Manufacturer=MediaTek
+S:  Product=BT
+S:  SerialNumber=1.0
+C:* #Ifs= 2 Cfg#= 1 Atr=a0 MxPwr=450mA
+A:  FirstIf#= 0 IfCount= 2 Cls=ff(vend.) Sub=ff Prot=ff
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=125us
+E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=125us
+E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+I:  If#= 1 Alt= 6 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  63 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  63 Ivl=1ms
 
-Maxime
+Signed-off-by: Cho, Yu-Chen <acho@suse.com>
+---
+ drivers/bluetooth/btusb.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index 7a7e5f8..81f1275 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -57,6 +57,9 @@ static struct usb_device_id btusb_table[] = {
+ 	/* Apple-specific (Broadcom) devices */
+ 	{ USB_VENDOR_AND_INTERFACE_INFO(0x05ac, 0xff, 0x01, 0x01) },
+ 
++	/* MediaTek MT76x0E */
++	{ USB_DEVICE(0x0e8d, 0x763f) },
++
+ 	/* Broadcom SoftSailing reporting vendor specific */
+ 	{ USB_DEVICE(0x0a5c, 0x21e1) },
+ 
+-- 
+1.8.1.4
+
