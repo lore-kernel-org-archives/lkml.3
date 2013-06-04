@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753759Ab3FDLVA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 07:21:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63667 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753114Ab3FDLU7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 07:20:59 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: mingo@redhat.com, peterz@infradead.org
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 2/2] sched: Remove unused params of build_sched_domain()
-Date: Tue,  4 Jun 2013 16:50:19 +0530
-Message-Id: <c959237aded3ae102740d4ecd6299fad5bee3dbe.1370344689.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <d226c91fed3dfa2dca644d14c88b1d1ff9d2e722.1370344689.git.viresh.kumar@linaro.org>
-References: <d226c91fed3dfa2dca644d14c88b1d1ff9d2e722.1370344689.git.viresh.kumar@linaro.org>
-In-Reply-To: <d226c91fed3dfa2dca644d14c88b1d1ff9d2e722.1370344689.git.viresh.kumar@linaro.org>
-References: <d226c91fed3dfa2dca644d14c88b1d1ff9d2e722.1370344689.git.viresh.kumar@linaro.org>
+	id S1753862Ab3FDLVz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 07:21:55 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:57829 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752064Ab3FDLVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 07:21:52 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Michael Karcher <Michael.Karcher@fu-berlin.de>
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>, linux-pm@vger.kernel.org,
+        Len Brown <len.brown@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: power management regression in linux 3.10? (related to CONFIG_NO_HZ_FULL)
+Date: Tue, 04 Jun 2013 13:30:54 +0200
+Message-ID: <1906476.HVJCZCXmXX@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1370308128.6305.3.camel@localhost>
+References: <1370282175.18020.4.camel@localhost> <51ACF071.702@gmail.com> <1370308128.6305.3.camel@localhost>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-build_sched_domain() never uses parameter struct s_data *d and so passing it is
-useless.
+On Tuesday, June 04, 2013 03:08:48 AM Michael Karcher wrote:
+> Am Montag, den 03.06.2013, 12:37 -0700 schrieb Dirk Brandewie:
+> > On 06/03/2013 12:34 PM, Rafael J. Wysocki wrote:
+> > > On Monday, June 03, 2013 07:56:15 PM Michael Karcher wrote:
+> > >> Hello,
+> > > Yes, please try with CONFIG_NO_HZ_IDLE and see if you can reproduce the
+> > > problem.
+> Instead of doing that, I successfully applied Dirk's suggestion. Is
+> CONFIG_NO_HZ + CONFIG_NO_HZ_IDLE worth testing?
 
-Remove it.
+Yes, it is.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- kernel/sched/core.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+> > > Does your system use intel_idle?  You've set that in .config, but can you check
+> > > what dmesg says, please?
+> No, intel_idle complains it doesn't support my CPU family.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 638f6cb..4210c54 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6490,9 +6490,8 @@ static void __sdt_free(const struct cpumask *cpu_map)
- }
- 
- struct sched_domain *build_sched_domain(struct sched_domain_topology_level *tl,
--		struct s_data *d, const struct cpumask *cpu_map,
--		struct sched_domain_attr *attr, struct sched_domain *child,
--		int cpu)
-+		const struct cpumask *cpu_map, struct sched_domain_attr *attr,
-+		struct sched_domain *child, int cpu)
- {
- 	struct sched_domain *sd = tl->init(tl, cpu);
- 	if (!sd)
-@@ -6532,7 +6531,7 @@ static int build_sched_domains(const struct cpumask *cpu_map,
- 
- 		sd = NULL;
- 		for (tl = sched_domain_topology; tl->init; tl++) {
--			sd = build_sched_domain(tl, &d, cpu_map, attr, sd, i);
-+			sd = build_sched_domain(tl, cpu_map, attr, sd, i);
- 			if (!*per_cpu_ptr(d.sd, i))
- 				*per_cpu_ptr(d.sd, i) = sd;
- 			if (tl->flags & SDTL_OVERLAP || sched_feat(FORCE_SD_OVERLAP))
+I thought so.  It is using the ACPI idle driver, then, so I think cpuidle in
+general is affected.
+
+That seems to be a time accounting problem of some sort (adding CCs to Ingo and
+Thomas).
+
+Thanks,
+Rafael
+
+
 -- 
-1.7.12.rc2.18.g61b472e
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
