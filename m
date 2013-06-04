@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab3FDXPA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:15:00 -0400
-Received: from 1wt.eu ([62.212.114.60]:35413 "EHLO 1wt.eu"
+	id S1755485Ab3FDXO6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:14:58 -0400
+Received: from 1wt.eu ([62.212.114.60]:35415 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752805Ab3FDWmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752923Ab3FDWmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 18:42:16 -0400
-Message-Id: <20130604172133.166370388@1wt.eu>
+Message-Id: <20130604172133.455994743@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:22:39 +0200
+Date: Tue, 04 Jun 2013 19:22:46 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Ian Abbott <abbotti@mev.co.uk>,
+Cc: Malcolm Priestley <tvboxspy@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 069/184] staging: comedi: comedi_test: fix race when
+Subject: [ 076/184] staging: vt6656: [BUG] out of bound array reference
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,50 +23,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- cancelling command
+ in RFbSetPower.
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit c0729eeefdcd76db338f635162bf0739fd2c5f6f upstream.
+commit ab1dd9963137a1e122004d5378a581bf16ae9bc8 upstream.
 
-Éric Piel reported a kernel oops in the "comedi_test" module.  It was a
-NULL pointer dereference within `waveform_ai_interrupt()` (actually a
-timer function) that sometimes occurred when a running asynchronous
-command is cancelled (either by the `COMEDI_CANCEL` ioctl or by closing
-the device file).
+Calling RFbSetPower with uCH zero value will cause out of bound array reference.
 
-This seems to be a race between the caller of `waveform_ai_cancel()`
-which on return from that function goes and tears down the running
-command, and the timer function which uses the command.  In particular,
-`async->cmd.chanlist` gets freed (and the pointer set to NULL) by
-`do_become_nonbusy()` in "comedi_fops.c" but a previously scheduled
-`waveform_ai_interrupt()` timer function will dereference that pointer
-regardless, leading to the oops.
+This causes 64 bit kernels to oops on boot.
 
-Fix it by replacing the `del_timer()` call in `waveform_ai_cancel()`
-with `del_timer_sync()`.
+Note: Driver does not function on 64 bit kernels and should be
+blacklisted on them.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Reported-by: Éric Piel <piel@delmic.com>
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/staging/comedi/drivers/comedi_test.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/vt6656/rf.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/staging/comedi/drivers/comedi_test.c b/drivers/staging/comedi/drivers/comedi_test.c
-index ef83a1a..7a1e2e8 100644
---- a/drivers/staging/comedi/drivers/comedi_test.c
-+++ b/drivers/staging/comedi/drivers/comedi_test.c
-@@ -450,7 +450,7 @@ static int waveform_ai_cancel(struct comedi_device *dev,
- 			      struct comedi_subdevice *s)
- {
- 	devpriv->timer_running = 0;
--	del_timer(&devpriv->timer);
-+	del_timer_sync(&devpriv->timer);
- 	return 0;
- }
+diff --git a/drivers/staging/vt6656/rf.c b/drivers/staging/vt6656/rf.c
+index 405c4f7..9d059de 100644
+--- a/drivers/staging/vt6656/rf.c
++++ b/drivers/staging/vt6656/rf.c
+@@ -769,6 +769,9 @@ BYTE    byPwr = pDevice->byCCKPwr;
+         return TRUE;
+     }
  
++	if (uCH == 0)
++		return -EINVAL;
++
+     switch (uRATE) {
+     case RATE_1M:
+     case RATE_2M:
 -- 
 1.7.12.2.21.g234cd45.dirty
 
