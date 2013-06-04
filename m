@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab3FDMaV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 08:30:21 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:39334 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752044Ab3FDMaR (ORCPT
+	id S1753751Ab3FDMcW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 08:32:22 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:56430 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314Ab3FDMcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 08:30:17 -0400
-Date: Tue, 4 Jun 2013 14:30:14 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Paul E. McKenney" <paulmck@us.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC][PATCH] ftrace: Use schedule_on_each_cpu() as a heavy
- synchronize_sched()
-Message-ID: <20130604123011.GG14973@somewhere>
-References: <1369785676.15552.55.camel@gandalf.local.home>
- <20130604110329.GA14973@somewhere>
- <1370347881.26799.114.camel@gandalf.local.home>
+	Tue, 4 Jun 2013 08:32:19 -0400
+Message-ID: <51ADDE51.6040701@linaro.org>
+Date: Tue, 04 Jun 2013 14:32:17 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370347881.26799.114.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Simek <michal.simek@xilinx.com>
+CC: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hans Verkuil <hans.verkuil@cisco.com>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v4] arm: zynq: Add cpuidle support
+References: <360abe7d7e8b8a0f785ec846c24fa5cb6658b956.1370330248.git.michal.simek@xilinx.com>
+In-Reply-To: <360abe7d7e8b8a0f785ec846c24fa5cb6658b956.1370330248.git.michal.simek@xilinx.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 04, 2013 at 08:11:21AM -0400, Steven Rostedt wrote:
-> On Tue, 2013-06-04 at 13:03 +0200, Frederic Weisbecker wrote:
+On 06/04/2013 09:17 AM, Michal Simek wrote:
+> Add support for cpuidle.
 > 
-> > If ftrace were to use rcu_dereference_sched() instead of rcu_dereference_raw(), I guess
-> > the issue would have been detected before. But I guess we want to avoid that for
-> > tracing recursion?
-> 
-> It's been detected before, just ignored as most of ftrace function
-> tracing has permanent objects and the synchronization doesn't really
-> matter for them. But for perf and SystemTap that uses dynamically
-> created ftrace_ops and needs to free them, it does make a difference.
-> Something I knew needed to be fixed but never got around to it as the
-> race is extremely tight (and requires root user trying to trigger it). I
-> haven't been ably to trigger the race, but in theory it's there.
-> 
-> Note the checks that rcu_dereference_sched() has to test for these kinds
-> of things would cause ftrace to live lock the system if it had used it.
-> In fact, I had to make a rcu_dereference_raw_notrace() to prevent ftrace
-> locking up the system when full rcu debugging is enabled.
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> ---
 
-I see.
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-Thanks!
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
