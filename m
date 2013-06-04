@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab3FDJoF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 05:44:05 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:49032 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067Ab3FDJoA convert rfc822-to-8bit (ORCPT
+	id S1752221Ab3FDJo6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 05:44:58 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:53802 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279Ab3FDJo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 05:44:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <201306041029.39053.heiko@sntech.de>
-References: <201306030055.15413.heiko@sntech.de>
-	<201306030056.03522.heiko@sntech.de>
-	<CACRpkdYAvUQ+aymJm1Fw1bE1aGdO7RUqLR9byvoT7ECTk4tkpw@mail.gmail.com>
-	<201306041029.39053.heiko@sntech.de>
-Date: Tue, 4 Jun 2013 11:43:59 +0200
-Message-ID: <CACRpkdYXhsTRVaqi-KKLsuJut1Eq2kzSbSYzaZT=5FpMHSsouA@mail.gmail.com>
-Subject: Re: [PATCH 01/10] clocksource: dw_apb_timer_of: use the clocksource
- as sched clock if necessary
-From: Linus Walleij <linus.walleij@linaro.org>
-To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Tue, 4 Jun 2013 05:44:56 -0400
+From: Alexander Holler <holler@ahsoftware.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
         John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Alexander Holler <holler@ahsoftware.de>
+Subject: [PATCH] rtc: rtc-hid-sensor-time: fix possible bug on driver_remove
+Date: Tue,  4 Jun 2013 11:38:42 +0200
+Message-Id: <1370338722-3646-1-git-send-email-holler@ahsoftware.de>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1367752887-2927-4-git-send-email-holler@ahsoftware.de>
+References: <1367752887-2927-4-git-send-email-holler@ahsoftware.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 4, 2013 at 10:29 AM, Heiko Stübner <heiko@sntech.de> wrote:
+The work we schedule on register deletes himself. Therefor we cannot
+use cancel_work_sync() because that calls flush_work() but still uses
+the pointer to the (now deleted) work afterwards (for clear_work_data)
+which ends up in a bug.
+Replacing cancel_work_sync() with flush_work() fixes that.
 
-> How about:
->
-> Currently the dw_apb_timer always expects a separate special timer to be
-> availbable for the sched_clock. Some devices using dw_apb_timers do not
-> have this sptimer but can use the clocksource as sched_clock instead.
->
-> Therefore enable the driver to distiguish between devices with and without
-> sptimer based on the devicetree data and select the correct timer as
-> sched_clock.
+Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+---
 
-Allright, Acked-by: Linus Walleij <linus.walleij@linaro.org>
+ This patch applies on top of PATCH 3/4 or 4/4 of the small series of 4 patches
+ for rtc-hid-sensor-time, which was already merged into the -mm tree.
 
-Yours,
-Linus Walleij
+ drivers/rtc/rtc-hid-sensor-time.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/rtc/rtc-hid-sensor-time.c b/drivers/rtc/rtc-hid-sensor-time.c
+index 4aca12d..acb2bc2 100644
+--- a/drivers/rtc/rtc-hid-sensor-time.c
++++ b/drivers/rtc/rtc-hid-sensor-time.c
+@@ -414,9 +414,8 @@ static int hid_time_remove(struct platform_device *pdev)
+ 	struct hid_time_state *time_state = platform_get_drvdata(pdev);
+ 
+ 	if (time_state->workts) {
+-		cancel_work_sync(&time_state->workts->work);
+-		kfree(time_state->workts);
+-		time_state->workts = NULL;
++		flush_work(&time_state->workts->work);
++		BUG_ON(time_state->workts != NULL);
+ 	}
+ 	sensor_hub_remove_callback(hsdev, HID_USAGE_SENSOR_TIME);
+ 
+-- 
+1.8.1.5
+
