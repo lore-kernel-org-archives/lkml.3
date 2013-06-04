@@ -1,70 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760073Ab3FDHZR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 03:25:17 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:43899 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759456Ab3FDHZN (ORCPT
+	id S1760077Ab3FDHZn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 03:25:43 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:52266 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759644Ab3FDHZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 03:25:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130603232941.GC18220@jonmason-lab>
-References: <1368813243-29547-1-git-send-email-jon.mason@intel.com>
-	<CAHp75VfABzMAg7Ue+Mj_wsnXWsCzJrNH1HR-nbAQq5A2i9ncyw@mail.gmail.com>
-	<20130603232941.GC18220@jonmason-lab>
-Date: Tue, 4 Jun 2013 10:25:12 +0300
-Message-ID: <CAHp75VdgKDx8vhTcUD5sBLd7aB=39SFxi-ayioZqE6o_AtZkxA@mail.gmail.com>
-Subject: Re: [PATCH] dmatest: add ability to disable pq and xor
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Jon Mason <jon.mason@intel.com>
-Cc: Dan Williams <djbw@fb.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jiang <dave.jiang@intel.com>, Vinod Koul <vinod.koul@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Jun 2013 03:25:39 -0400
+Message-ID: <1370330732.8307.3.camel@BR9GV9YG.de.ibm.com>
+Subject: Re: [PATCH] clean up scary strncpy(dst, src, strlen(src)) uses
+From: Ursula Braun <ubraun@linux.vnet.ibm.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, devel@driverdev.osuosl.org,
+        user-mode-linux-devel@lists.sourceforge.net
+Date: Tue, 04 Jun 2013 09:25:32 +0200
+In-Reply-To: <OF1F22772E.CA553233-ONC1257B80.002841B9-C1257B80.00284FD3@de.ibm.com>
+References: <OF1F22772E.CA553233-ONC1257B80.002841B9-C1257B80.00284FD3@de.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060407-1948-0000-0000-000005549DC8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 4, 2013 at 2:29 AM, Jon Mason <jon.mason@intel.com> wrote:
-> On Fri, May 31, 2013 at 11:22:10AM +0300, Andy Shevchenko wrote:
->> On Fri, May 17, 2013 at 8:54 PM, Jon Mason <jon.mason@intel.com> wrote:
->> > dmatest would create a thread to stress XOR and PQ, if the capability is
->> > present in the hardware.  Add the ability to disable XOR and PQ by
->> > disabling it if *_sources are set to zero.
->>
->> Sorry, didn't comment this earlier.
->>
->> Those threads are independent including MEMCPY stuff.
->> I think it's better to have one additional parameter let's say
->> type_of_test where you can set
->> 1 for MEMCPY
->> 2 for XOR
->> 4 for PQ
->>
->> Share this parameter via debugfs and use 0x07 as default value.
->> I doubt we need this as a module parameter.
->
-> This is using the existing module parameter, so there is nothing new
-> added.
+On Friday, May 31, 2013 09:18:07 AM Kees Cook wrote:
+> Fix various weird constructions of strncpy(dst, src, strlen(src)).
+> Length
+> limits should be about the space available in the destination, not
+> repurposed as a method to either always include or always exclude
+> a trailing NULL byte. Either the NULL should always be copied
+> (using strlcpy), or it should not be copied (using something like
+> memcpy). Readable code should not depend on the weird behavior of
+> strncpy
+> when it hits the length limit. Better to avoid the anti-pattern
+> entirely.
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-That's why it's a bit confusing. User can more easily forget the
-'magic' numbers. And I see no reason to prevent user to enter 0 as a
-number of sources.
-Moreover, your patch doesn't cover the case when user doesn't want to
-run MEMCPY thread.
+For the s390-part:
 
->  Since the testing is started immediately upon module
-> insertion,
+Acked-by: Ursula Braun <ursula.braun@de.ibm.com>
 
-It used to be so, but nowadays it's true only when dmatest is compiled in.
-If someone wants to compile in that module they probably want to run
-stress tests, where XOR and PQ might be useful.
+> ---
+> This is a follow-up to the anti-pattern being fixed in iscsi-target,
+> which was exploitable:
+> "iscsi-target: fix heap buffer overflow on error"
+> http://git.kernel.org/cgit/linux/kernel/git/nab/target-pending.git/commit/?id=cea4dcfdad926a27a18e188720efe0f2c9403456
+> ---
+> Documentation/accounting/getdelays.c             |    3 ++-
+> drivers/acpi/sysfs.c                             |    3 +--
+> drivers/s390/net/qeth_l3_sys.c                   |    6 ++----
+> drivers/staging/tidspbridge/rmgr/drv_interface.c |    3 +--
+> fs/hppfs/hppfs.c                                 |   11 ++++++-----
+> 5 files changed, 12 insertions(+), 14 deletions(-)
+> 
+> diff --git a/Documentation/accounting/getdelays.c
+> b/Documentation/accounting/getdelays.c
+> index f8ebcde..5e4773d 100644
+> --- a/Documentation/accounting/getdelays.c
+> +++ b/Documentation/accounting/getdelays.c
+> @@ -23,6 +23,7 @@
+> #include <sys/socket.h>
+> #include <sys/wait.h>
+> #include <signal.h>
+> +#include <bsd/string.h>
+> 
+> #include <linux/genetlink.h>
+> #include <linux/taskstats.h>
+> @@ -299,7 +300,7 @@ int main(int argc, char *argv[])
+>                                                    break;
+>                                   case 'C':
+>                                                    containerset = 1;
+> -
+> strncpy(containerpath, optarg, strlen(optarg) + 1);
+> +
+> strlcpy(containerpath, optarg, sizeof(containerpath));
+>                                                    break;
+>                                   case 'w':
+>                                                    logfile =
+> strdup(optarg);
+> diff --git a/drivers/acpi/sysfs.c b/drivers/acpi/sysfs.c
+> index fcae5fa..193745d 100644
+> --- a/drivers/acpi/sysfs.c
+> +++ b/drivers/acpi/sysfs.c
+> @@ -677,10 +677,9 @@ void acpi_irq_stats_init(void)
+>                                   else
+>                                                    sprintf(buffer,
+> "bug%02X", i);
+> 
+> -                                  name = kzalloc(strlen(buffer) + 1,
+> GFP_KERNEL);
+> +                                  name = kstrdup(buffer, GFP_KERNEL);
+>                                   if (name == NULL)
+>                                                    goto fail;
+> -                                  strncpy(name, buffer,
+> strlen(buffer) + 1);
+> 
+> 
+> sysfs_attr_init(&counter_attrs[i].attr);
+>                                   counter_attrs[i].attr.name = name;
+> diff --git a/drivers/s390/net/qeth_l3_sys.c
+> b/drivers/s390/net/qeth_l3_sys.c
+> index e70af24..d1c8025 100644
+> --- a/drivers/s390/net/qeth_l3_sys.c
+> +++ b/drivers/s390/net/qeth_l3_sys.c
+> @@ -315,10 +315,8 @@ static ssize_t qeth_l3_dev_hsuid_store(struct
+> device *dev,
+>                  if (qeth_configure_cq(card, QETH_CQ_ENABLED))
+>                                   return -EPERM;
+> 
+> -                 for (i = 0; i < 8; i++)
+> -                                  card->options.hsuid[i] = ' ';
+> -                 card->options.hsuid[8] = '\0';
+> -                 strncpy(card->options.hsuid, tmp, strlen(tmp));
+> +                 snprintf(card->options.hsuid,
+> sizeof(card->options.hsuid),
+> +                                   "%-8s", tmp);
+>                  ASCEBC(card->options.hsuid, 8);
+>                  if (card->dev)
+>                                   memcpy(card->dev->perm_addr,
+> card->options.hsuid, 9);
+> diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c
+> b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+> index df0f37e..c4d632c 100644
+> --- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
+> +++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+> @@ -421,12 +421,11 @@ static int omap3_bridge_startup(struct
+> platform_device *pdev)
+>                  drv_datap->tc_wordswapon = tc_wordswapon;
+> 
+>                  if (base_img) {
+> -                                  drv_datap->base_img =
+> kmalloc(strlen(base_img) + 1, GFP_KERNEL);
+> +                                  drv_datap->base_img =
+> kstrdup(base_img, GFP_KERNEL);
+>                                   if (!drv_datap->base_img) {
+>                                                    err = -ENOMEM;
+>                                                    goto err2;
+>                                   }
+> -                                  strncpy(drv_datap->base_img,
+> base_img, strlen(base_img) + 1);
+>                  }
+> 
+>                  dev_set_drvdata(bridge, drv_datap);
+> diff --git a/fs/hppfs/hppfs.c b/fs/hppfs/hppfs.c
+> index cd3e389..d619b83 100644
+> --- a/fs/hppfs/hppfs.c
+> +++ b/fs/hppfs/hppfs.c
+> @@ -69,7 +69,7 @@ static char *dentry_name(struct dentry *dentry, int
+> extra)
+>                  struct dentry *parent;
+>                  char *root, *name;
+>                  const char *seg_name;
+> -                 int len, seg_len;
+> +                 int len, seg_len, root_len;
+> 
+>                  len = 0;
+>                  parent = dentry;
+> @@ -81,7 +81,8 @@ static char *dentry_name(struct dentry *dentry, int
+> extra)
+>                  }
+> 
+>                  root = "proc";
+> -                 len += strlen(root);
+> +                 root_len = strlen(root);
+> +                 len += root_len;
+>                  name = kmalloc(len + extra + 1, GFP_KERNEL);
+>                  if (name == NULL)
+>                                   return NULL;
+> @@ -91,7 +92,7 @@ static char *dentry_name(struct dentry *dentry, int
+> extra)
+>                  while (parent->d_parent != parent) {
+>                                   if (is_pid(parent)) {
+>                                                    seg_name = "pid";
+> -                                                   seg_len =
+> strlen("pid");
+> +                                                   seg_len =
+> strlen(seg_name);
+>                                   }
+>                                   else {
+>                                                    seg_name =
+> parent->d_name.name;
+> @@ -100,10 +101,10 @@ static char *dentry_name(struct dentry *dentry,
+> int extra)
+> 
+>                                   len -= seg_len + 1;
+>                                   name[len] = '/';
+> -                                  strncpy(&name[len + 1], seg_name,
+> seg_len);
+> +                                  memcpy(&name[len + 1], seg_name,
+> seg_len);
+>                                   parent = parent->d_parent;
+>                  }
+> -                 strncpy(name, root, strlen(root));
+> +                 memcpy(name, root, root_len);
+>                  return name;
+> }
+> 
+> -- 
+> 1.7.9.5
+> 
+> 
 
-> there needs to be a way to prevent it from ever starting.
 
-My opinion I already shared, new node under debugfs. There is might be
-a good reason to add a new module parameter as well.
-
---
-With Best Regards,
-Andy Shevchenko
