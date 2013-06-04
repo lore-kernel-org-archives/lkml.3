@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab3FDW4I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:56:08 -0400
-Received: from 1wt.eu ([62.212.114.60]:35777 "EHLO 1wt.eu"
+	id S1754035Ab3FDWnk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:43:40 -0400
+Received: from 1wt.eu ([62.212.114.60]:35737 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753835Ab3FDWnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:43:42 -0400
-Message-Id: <20130604172135.984849121@1wt.eu>
+	id S1753835Ab3FDWn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:43:28 -0400
+Message-Id: <20130604172134.419170494@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:23:47 +0200
+Date: Tue, 04 Jun 2013 19:23:09 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mathias Krause <minipli@googlemail.com>, Jan Kara <jack@suse.cz>,
-        Ben Hutchings <ben@decadent.org.uk>,
+Cc: Mathias Krause <minipli@googlemail.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 137/184] isofs: avoid info leak on export
+Subject: [ 099/184] Bluetooth: RFCOMM - Fix info leak via getsockname()
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,32 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathias Krause <minipli@googlemail.com>
 
-commit fe685aabf7c8c9f138e5ea900954d295bf229175 upstream.
+[ Upstream commit 9344a972961d1a6d2c04d9008b13617bcb6ec2ef ]
 
-For type 1 the parent_offset member in struct isofs_fid gets copied
-uninitialized to userland. Fix this by initializing it to 0.
+The RFCOMM code fails to initialize the trailing padding byte of struct
+sockaddr_rc added for alignment. It that for leaks one byte kernel stack
+via the getsockname() syscall. Add an explicit memset(0) before filling
+the structure to avoid the info leak.
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: Marcel Holtmann <marcel@holtmann.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>
+Cc: Johan Hedberg <johan.hedberg@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/isofs/export.c | 1 +
+ net/bluetooth/rfcomm/sock.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/fs/isofs/export.c b/fs/isofs/export.c
-index e81a305..caec670 100644
---- a/fs/isofs/export.c
-+++ b/fs/isofs/export.c
-@@ -131,6 +131,7 @@ isofs_export_encode_fh(struct dentry *dentry,
- 	len = 3;
- 	fh32[0] = ei->i_iget5_block;
-  	fh16[2] = (__u16)ei->i_iget5_offset;  /* fh16 [sic] */
-+	fh16[3] = 0;  /* avoid leaking uninitialized data */
- 	fh32[2] = inode->i_generation;
- 	if (connectable && !S_ISDIR(inode->i_mode)) {
- 		struct inode *parent;
+diff --git a/net/bluetooth/rfcomm/sock.c b/net/bluetooth/rfcomm/sock.c
+index 1ae3f80..c47b7c4 100644
+--- a/net/bluetooth/rfcomm/sock.c
++++ b/net/bluetooth/rfcomm/sock.c
+@@ -543,6 +543,7 @@ static int rfcomm_sock_getname(struct socket *sock, struct sockaddr *addr, int *
+ 
+ 	BT_DBG("sock %p, sk %p", sock, sk);
+ 
++	memset(sa, 0, sizeof(*sa));
+ 	sa->rc_family  = AF_BLUETOOTH;
+ 	sa->rc_channel = rfcomm_pi(sk)->channel;
+ 	if (peer)
 -- 
 1.7.12.2.21.g234cd45.dirty
 
