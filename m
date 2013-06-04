@@ -1,135 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756263Ab3FDQyd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 12:54:33 -0400
-Received: from mailhub.stratus.com ([134.111.1.17]:43749 "EHLO
-	mailhub4.stratus.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802Ab3FDQyb (ORCPT
+	id S1756401Ab3FDQ4R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 12:56:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48198 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752783Ab3FDQ4O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 12:54:31 -0400
-Date: Tue, 4 Jun 2013 12:50:31 -0400 (EDT)
-From: Joe Lawrence <joe.lawrence@stratus.com>
-X-X-Sender: jlaw@jlaw-desktop.mno.stratus.com
-To: Joe Lawrence <joe.lawrence@stratus.com>
-cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Ben Greear <greearb@candelatech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
-Subject: Re: Please add to stable:  module: don't unlink the module until
- we've removed all exposure.
-In-Reply-To: <20130604100744.7cdf8777@jlaw-desktop.mno.stratus.com>
-Message-ID: <alpine.DEB.2.02.1306041243320.19072@jlaw-desktop.mno.stratus.com>
-References: <51A8E884.1080009@candelatech.com> <87ehclumhr.fsf@rustcorp.com.au> <alpine.DEB.2.02.1306022212200.10003@jlaw-desktop.mno.stratus.com> <alpine.DEB.2.02.1306030724230.19647@jlaw-desktop.mno.stratus.com> <alpine.DEB.2.02.1306031012460.22652@jlaw-desktop.mno.stratus.com>
- <51ACBD6A.1030304@candelatech.com> <51ACC60B.8090504@candelatech.com> <87d2s2to4z.fsf@rustcorp.com.au> <20130604100744.7cdf8777@jlaw-desktop.mno.stratus.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-OriginalArrivalTime: 04 Jun 2013 16:54:10.0954 (UTC) FILETIME=[22C836A0:01CE6144]
+	Tue, 4 Jun 2013 12:56:14 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Kamal Mostafa <kamal@canonical.com>
+Subject: [ 3.8.y.z extended stable ] Linux 3.8.13.2 stable review
+Date: Tue,  4 Jun 2013 09:54:44 -0700
+Message-Id: <1370364959-9475-1-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Jun 2013, Joe Lawrence wrote:
+This is the start of the review cycle for the Linux 3.8.13.2 stable kernel.
 
-> Hi Rusty,
-> 
-> See my 3.9 stack traces below, which may or may not be what Ben had
-> been seeing.  If you like, I can try a similar loop as the one you were
-> testing in the other email.  
+This version contains 75 new patches, summarized below.  The new patches are
+posted as replies to this message and also available in this git branch:
 
-With a modified version of your module load/unload loop (only needed 
-insmod as the module initialization routine returns -EINVAL to mimic 
-mgag200 with incorrect modeset value).  This crashed right out of the 
-chute on 3.9.4 ... still running OK with 3.9 + commit 944a1fa "module: 
-don't unlink the module until we've removed all exposure".
+http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=linux-3.8.y-review;a=shortlog
 
--- Joe
+git://kernel.ubuntu.com/ubuntu/linux.git  linux-3.8.y-review
 
-test_mod.c :
+The review period for version 3.8.13.2 will be open for the next three days.
+To report a problem, please reply to the relevant follow-up patch message.
 
-#include <linux/module.h>
-#include <linux/delay.h>
+For more information about the Linux 3.8.y.z extended stable kernel version,
+see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable .
 
-MODULE_LICENSE("GPL");
+ -Kamal
 
-static int test_mod_init(void) { return -EINVAL; }
-static void test_mod_exit(void) {}
+--
+ arch/arm/boot/dts/at91sam9260.dtsi                |  2 +-
+ arch/arm/boot/dts/at91sam9g25ek.dts               |  9 +++
+ arch/arm/boot/dts/at91sam9g35ek.dts               |  9 +++
+ arch/arm/boot/dts/at91sam9x25ek.dts               | 16 +++-
+ arch/arm/boot/dts/at91sam9x35ek.dts               |  9 +++
+ arch/arm/boot/dts/at91sam9x5ek.dtsi               |  5 --
+ arch/arm/crypto/aes-armv4.S                       | 64 +++++-----------
+ arch/arm/crypto/sha1-armv4-large.S                | 26 +++----
+ arch/arm64/kernel/traps.c                         | 12 ++-
+ arch/avr32/kernel/module.c                        |  2 +-
+ arch/m68k/kernel/head.S                           | 29 ++++---
+ arch/powerpc/kernel/entry_32.S                    |  2 +-
+ arch/powerpc/platforms/pseries/Kconfig            |  2 +
+ arch/x86/kernel/i387.c                            | 14 ++--
+ drivers/acpi/video_detect.c                       |  8 ++
+ drivers/ata/ata_piix.c                            | 15 ++++
+ drivers/ata/libata-core.c                         |  6 ++
+ drivers/block/brd.c                               |  4 +-
+ drivers/block/drbd/drbd_main.c                    |  1 +
+ drivers/block/drbd/drbd_receiver.c                |  5 +-
+ drivers/char/random.c                             | 54 +++++++------
+ drivers/crypto/caam/caamalg.c                     |  4 +-
+ drivers/gpu/drm/i915/i915_drv.c                   | 49 +++++++++---
+ drivers/gpu/drm/nouveau/core/subdev/bios/init.c   |  4 +-
+ drivers/gpu/drm/nouveau/core/subdev/device/nvc0.c |  2 -
+ drivers/gpu/drm/radeon/evergreen.c                |  4 +-
+ drivers/gpu/drm/radeon/radeon_device.c            | 19 +++--
+ drivers/gpu/drm/radeon/radeon_ttm.c               |  2 +-
+ drivers/gpu/drm/radeon/si.c                       |  6 +-
+ drivers/hwmon/abituguru.c                         | 16 ++--
+ drivers/i2c/busses/i2c-designware-core.c          | 14 +++-
+ drivers/i2c/busses/i2c-designware-core.h          |  2 +
+ drivers/infiniband/ulp/srpt/ib_srpt.c             | 32 ++++++--
+ drivers/infiniband/ulp/srpt/ib_srpt.h             |  1 +
+ drivers/input/touchscreen/egalax_ts.c             |  2 +-
+ drivers/leds/leds-ot200.c                         | 14 ++--
+ drivers/net/wireless/ath/ath9k/ar9003_calib.c     | 92 +++++++++++++----------
+ drivers/net/wireless/ath/ath9k/ar9485_initvals.h  |  2 +-
+ drivers/net/wireless/ath/ath9k/hw.h               |  1 +
+ drivers/rapidio/devices/tsi721.c                  | 12 +++
+ drivers/staging/vt6656/hostap.c                   |  2 +-
+ drivers/staging/vt6656/iwctl.c                    |  6 ++
+ drivers/target/iscsi/iscsi_target_parameters.c    |  8 +-
+ drivers/target/iscsi/iscsi_target_parameters.h    |  4 +-
+ drivers/tty/n_tty.c                               |  8 ++
+ drivers/usb/atm/cxacru.c                          |  3 +-
+ drivers/usb/chipidea/Kconfig                      |  2 +-
+ drivers/usb/core/quirks.c                         |  3 +
+ drivers/usb/host/ohci-hcd.c                       | 34 +++++----
+ drivers/usb/host/uhci-hub.c                       |  3 +-
+ drivers/usb/host/uhci-q.c                         |  2 +-
+ drivers/usb/host/xhci-mem.c                       | 17 +++--
+ drivers/usb/serial/ftdi_sio.c                     |  2 +
+ drivers/usb/serial/ftdi_sio_ids.h                 |  2 +
+ drivers/usb/serial/option.c                       | 13 +++-
+ fs/cifs/cifs_dfs_ref.c                            |  4 +-
+ fs/cifs/inode.c                                   |  3 +-
+ fs/fat/inode.c                                    | 15 +++-
+ fs/nfs/nfs4proc.c                                 |  2 +-
+ fs/nilfs2/inode.c                                 | 27 ++++++-
+ fs/ocfs2/extent_map.c                             |  2 +-
+ fs/xfs/xfs_iops.c                                 | 47 ++++++++----
+ include/linux/cgroup.h                            |  2 +-
+ include/linux/huge_mm.h                           |  2 +-
+ include/linux/rmap.h                              |  2 +-
+ include/linux/wait.h                              | 16 ++--
+ include/uapi/linux/virtio_console.h               |  2 +-
+ kernel/cgroup.c                                   |  9 +--
+ mm/huge_memory.c                                  | 13 +++-
+ mm/memcontrol.c                                   | 14 +++-
+ mm/migrate.c                                      |  2 +-
+ mm/mmap.c                                         |  4 +-
+ mm/mmu_notifier.c                                 | 80 ++++++++++----------
+ mm/mremap.c                                       |  2 +-
+ mm/pagewalk.c                                     | 70 ++++++++---------
+ mm/rmap.c                                         |  6 +-
+ net/mac80211/rx.c                                 |  3 +
+ net/sunrpc/sched.c                                |  8 +-
+ net/wireless/core.c                               | 16 ++--
+ sound/soc/codecs/cs42l52.c                        |  2 +-
+ sound/soc/codecs/wm5110.c                         |  2 +-
+ tools/perf/scripts/python/net_dropmonitor.py      |  8 +-
+ 82 files changed, 652 insertions(+), 392 deletions(-)
 
-module_init(test_mod_init);
-module_exit(test_mod_exit);
+Alan Stern (4):
+      USB: xHCI: override bogus bulk wMaxPacketSize values
+      USB: UHCI: fix for suspend of virtual HP controller
+      USB: fix latency in uhci-hcd and ohci-hcd
+      USB: OHCI: fix logic for scheduling isochronous URBs
 
+Alex Deucher (2):
+      drm/radeon: fix typo in cu_per_sh on verde
+      drm/radeon: fix card_posted check for newer asics
 
-from the console log :
+Alexandre Bounine (1):
+      rapidio/tsi721: fix bug in MSI interrupt handling
 
-test_mod: module verification failed: signature and/or required key missing - tainting kernel
-------------[ cut here ]------------
-WARNING: at fs/sysfs/dir.c:536 sysfs_add_one+0xd4/0x100()
-Hardware name: ftServer 6400
-sysfs: cannot create duplicate filename '/module/test_mod'
-Modules linked in: test_mod(OF+) ebtable_nat nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 bonding xt_conntrack nf_conntrack ib_iser rdma_cm ebtable_filter ib_addr ebtables iw_cm ib_cm ib_sa ib_mad ip6table_filter ib_core ip6_tables iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi dm_multipath coretemp crc32c_intel ghash_clmulni_intel pcspkr ixgbe joydev mdio igb ptp pps_core dca vhost_net tun macvtap macvlan uinput raid1 sd_mod i2c_algo_bit drm_kms_helper ttm drm usb_storage mpt2sas raid_class scsi_transport_sas i2c_core
-Pid: 8466, comm: insmod Tainted: GF          O 3.9.4 #1
-Call Trace:
- [<ffffffff8106159f>] warn_slowpath_common+0x7f/0xc0
- [<ffffffff81061696>] warn_slowpath_fmt+0x46/0x50
- [<ffffffff81319895>] ? strlcat+0x65/0x90
- [<ffffffff81222784>] sysfs_add_one+0xd4/0x100
- [<ffffffff812229a8>] create_dir+0x78/0xd0
- [<ffffffff81222cf6>] sysfs_create_dir+0x86/0xe0
- [<ffffffff813135a8>] kobject_add_internal+0xa8/0x270
- [<ffffffff81313ad3>] kobject_init_and_add+0x63/0x90
- [<ffffffff810c9f9d>] load_module+0x12dd/0x2890
- [<ffffffff81331690>] ? ddebug_proc_open+0xc0/0xc0
- [<ffffffff810cb63a>] sys_init_module+0xea/0x140
- [<ffffffff81681119>] system_call_fastpath+0x16/0x1b
----[ end trace 54bd469258bec620 ]---
-------------[ cut here ]------------
-WARNING: at lib/kobject.c:196 kobject_add_internal+0x204/0x270()
-Hardware name: ftServer 6400
-kobject_add_internal failed for test_mod with -EEXIST, don't try to register things with the same name in the same directory.
-Modules linked in: test_mod(OF+) ebtable_nat nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 bonding xt_conntrack nf_conntrack ib_iser rdma_cm ebtable_filter ib_addr ebtables iw_cm ib_cm ib_sa ib_mad ip6table_filter ib_core ip6_tables iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi dm_multipath coretemp crc32c_intel ghash_clmulni_intel pcspkr ixgbe joydev mdio igb ptp pps_core dca vhost_net tun macvtap macvlan uinput raid1 sd_mod i2c_algo_bit drm_kms_helper ttm drm usb_storage mpt2sas raid_class scsi_transport_sas i2c_core
-Pid: 8466, comm: insmod Tainted: GF       W  O 3.9.4 #1
-Call Trace:
- [<ffffffff8106159f>] warn_slowpath_common+0x7f/0xc0
- [<ffffffff81061696>] warn_slowpath_fmt+0x46/0x50
- [<ffffffff81313704>] kobject_add_internal+0x204/0x270
- [<ffffffff81313ad3>] kobject_init_and_add+0x63/0x90
- [<ffffffff810c9f9d>] load_module+0x12dd/0x2890
- [<ffffffff81331690>] ? ddebug_proc_open+0xc0/0xc0
- [<ffffffff810cb63a>] sys_init_module+0xea/0x140
- [<ffffffff81681119>] system_call_fastpath+0x16/0x1b
----[ end trace 54bd469258bec621 ]---
-test_mod: module is already loaded
-test_mod: module is already loaded
-BUG: unable to handle kernel paging request at ffffffffa02ed08c
-IP: [<ffffffff81313491>] kobject_put+0x11/0x60
-PGD 1c0f067 PUD 1c10063 PMD 84dd68067 PTE 0
-Oops: 0000 [#1] SMP 
-Modules linked in: test_mod(OF+) ebtable_nat nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 bonding xt_conntrack nf_conntrack ib_iser rdma_cm ebtable_filter ib_addr ebtables iw_cm ib_cm ib_sa ib_mad ip6table_filter ib_core ip6_tables iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi dm_multipath coretemp crc32c_intel ghash_clmulni_intel pcspkr ixgbe joydev mdio igb ptp pps_core dca vhost_net tun macvtap macvlan uinput raid1 sd_mod i2c_algo_bit drm_kms_helper ttm drm usb_storage mpt2sas raid_class scsi_transport_sas i2c_core
-CPU 25 
-Pid: 8551, comm: insmod Tainted: GF       W  O 3.9.4 #1 Stratus ftServer 6400/G7LAZ
-RIP: 0010:[<ffffffff81313491>]  [<ffffffff81313491>] kobject_put+0x11/0x60
-RSP: 0018:ffff881050b95d58  EFLAGS: 00010286
-RAX: 0000000000000022 RBX: ffffffffa02ed050 RCX: ffff88107fd2fba8
-RDX: 0000000000000000 RSI: ffff88107fd2df58 RDI: ffffffffa02ed050
-RBP: ffff881050b95d68 R08: ffffffff81ce2080 R09: 00000000000007c6
-R10: 0000000000000000 R11: 00000000000007c5 R12: ffffffffa02ed050
-R13: ffffffffffffffea R14: ffffffffa035c000 R15: ffffffffa035c018
-FS:  00007fd0768a3740(0000) GS:ffff88107fd20000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: ffffffffa02ed08c CR3: 0000001050bd7000 CR4: 00000000000407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process insmod (pid: 8551, threadinfo ffff881050b94000, task ffff88105169c9e0)
-Stack:
- 00000000ffff8000 ffff881050b95ee8 ffff881050b95ed8 ffffffff810cb541
- ffffffff81331690 ffffc90017037fff ffffc90017038000 ffffffff00000002
- ffffc900170220e0 ffffc90000000003 ffffffffa02c1270 00000000000002a0
-Call Trace:
- [<ffffffff810cb541>] load_module+0x2881/0x2890
- [<ffffffff81331690>] ? ddebug_proc_open+0xc0/0xc0
- [<ffffffff810cb63a>] sys_init_module+0xea/0x140
- [<ffffffff81681119>] system_call_fastpath+0x16/0x1b
-Code: 01 00 e9 10 ff ff ff 0f 1f 00 55 48 83 ef 38 48 89 e5 e8 43 fe ff ff 5d c3 90 55 48 89 e5 53 48 89 fb 48 83 ec 08 48 85 ff 74 1a <f6> 47 3c 01 74 21 f0 83 6b 38 01 0f 94 c0 84 c0 74 08 48 89 df 
-RIP  [<ffffffff81313491>] kobject_put+0x11/0x60
- RSP <ffff881050b95d58>
-CR2: ffffffffa02ed08c
+Aneesh Kumar K.V (1):
+      mm/THP: use pmd_populate() to update the pmd with pgtable_t pointer
+
+Ard Biesheuvel (1):
+      ARM: 7723/1: crypto: sha1-armv4-large.S: fix SP handling
+
+Bastian Triller (1):
+      ACPI / video: Add "Asus UL30A" to ACPI video detect blacklist
+
+Ben Hutchings (2):
+      perf: net_dropmonitor: Fix trace parameter order
+      perf: net_dropmonitor: Fix symbol-relative addresses
+
+Ben Skeggs (2):
+      drm/nouveau/bios: fix thinko in ZM_MASK_ADD opcode
+      drm/nvc0/ce: disable ce1 on a number of chipsets
+
+Boris BREZILLON (1):
+      ARM: at91/dt: fix macb pinctrl_macb_rmii_mii_alt definition
+
+Brian Behlendorf (1):
+      drivers/block/brd.c: fix brd_lookup_page() race
+
+Charles Keepax (1):
+      ASoC: wm5110: Correct DSP4R Mixer control name
+
+Chew, Chiau Ee (1):
+      ata_piix: add PCI IDs for Intel BayTail
+
+Christian Gmeiner (1):
+      drivers/leds/leds-ot200.c: fix error caused by shifted mask
+
+Cliff Wickman (1):
+      mm/pagewalk.c: walk_page_range should avoid VM_PFNMAP areas
+
+Dan Carpenter (1):
+      USB: cxacru: potential underflow in cxacru_cm_get_array()
+
+Dan Williams (1):
+      USB: option: add device IDs for Dell 5804 (Novatel E371) WWAN card
+
+Dave Chinner (1):
+      xfs: kill suid/sgid through the truncate path.
+
+Dave Martin (1):
+      ARM: 7626/1: arm/crypto: Make asm SHA-1 and AES code Thumb-2 compatible
+
+David Rientjes (1):
+      usb, chipidea: fix link error when USB_EHCI_HCD is a module
+
+Finn Thain (1):
+      m68k/mac: Fix unexpected interrupt with CONFIG_EARLY_PRINTK
+
+Gomella, Andrew (NIH/NHLBI) [F] (1):
+      USB: ftdi_sio: Add support for Newport CONEX motor drivers
+
+Hans-Christian Egtvedt (1):
+      avr32: fix relocation check for signed 18-bit offset
+
+Heiko Abraham (1):
+      Input: egalax_ts - ABS_MT_POSITION_Y not reported well
+
+Hema Prathaban (1):
+      staging: vt6656: use free_netdev instead of kfree
+
+Horia Geanta (1):
+      crypto: caam - fix inconsistent assoc dma mapping direction
+
+Imre Deak (1):
+      wait: fix false timeouts when using wait_event_timeout()
+
+Jarod Wilson (1):
+      drivers/char/random.c: fix priming of last_data
+
+Jean-Christophe PLAGNIOL-VILLARD (1):
+      ARM: at91/trivial: fix model name for SAM9X25-EK
+
+Jeff Layton (2):
+      cifs: only set ops for inodes in I_NEW state
+      cifs: fix potential buffer overrun when composing a new options string
+
+Jesse Barnes (1):
+      drm/i915: add more VLV IDs
+
+Jiri Kosina (1):
+      random: fix accounting race condition with lockless irq entropy_count update
+
+Johannes Berg (2):
+      cfg80211: fix wiphy_register error path
+      mac80211: fix AP-mode frame matching
+
+Johannes Weiner (1):
+      mm: memcg: remove incorrect VM_BUG_ON for swap cache pages in uncharge
+
+Josef Ahmad (1):
+      i2c: designware: fix RX FIFO overrun
+
+Joseph Qi (1):
+      ocfs2: goto out_unlock if ocfs2_get_clusters_nocache() failed in ocfs2_fiemap()
+
+Kees Cook (1):
+      iscsi-target: fix heap buffer overflow on error
+
+Konstantin Khlebnikov (1):
+      mm/rmap: rename anon_vma_unlock() => anon_vma_unlock_write()
+
+Lars Ellenberg (1):
+      drbd: fix memory leak
+
+Leonid Yegoshin (1):
+      mm compaction: fix of improper cache flush in migration code
+
+Malcolm Priestley (1):
+      staging: vt6656: [bug] Fix missing spin lock in iwctl_siwpower.
+
+Mark Rutland (1):
+      arm64: don't kill the kernel on a bad esr from el0
+
+Michael S. Tsirkin (1):
+      virtio_console: fix uapi header
+
+Mika Westerberg (1):
+      i2c: designware: always clear interrupts before enabling them
+
+Nicholas Bellinger (1):
+      ib_srpt: Call target_sess_cmd_list_set_waiting during shutdown_session
+
+Nicolas Ferre (1):
+      ARM: at91/dt: fix macb node declaration
+
+Nicolas Schichan (1):
+      ASoC: cs42l52: fix default value for MASTERA_VOL.
+
+Niels Ole Salscheider (1):
+      drm/radeon: Fix VRAM size calculation for VRAM >= 4GB
+
+OGAWA Hirofumi (1):
+      fat: fix possible overflow for fat_clusters
+
+Oliver Neukum (1):
+      USB: reset resume quirk needed by a hub
+
+Pekka Riikonen (1):
+      x86: Allow FPU to be used at interrupt time even with eagerfpu
+
+Philipp Reisner (2):
+      drbd: Fix build error when CONFIG_CRYPTO_HMAC is not set
+      drbd: fix for deadlock when using automatic split-brain-recovery
+
+Priyanka Jain (1):
+      powerpc/32bit:Store temporary result in r0 instead of r8
+
+Rodrigo Vivi (1):
+      drm/i915: Adding more reserved PCI IDs for Haswell.
+
+Ryusuke Konishi (1):
+      nilfs2: fix issue of nilfs_set_page_dirty() for page at EOF boundary
+
+Schemmel Hans-Christoph (1):
+      USB: Blacklisted Cinterion's PLxx WWAN Interface
+
+Srivatsa S. Bhat (1):
+      powerpc/pseries: Always enable CONFIG_HOTPLUG_CPU on PSERIES SMP
+
+Sujith Manoharan (2):
+      ath9k_hw: Use helper routines to simplify ar9003_hw_init_cal()
+      ath9k_hw: Enable manual peak calibration for AR9485
+
+Tejun Heo (1):
+      cgroup: fix a subtle bug in descendant pre-order walk
+
+Teppo Kotilainen (1):
+      usb: option: Add Telewell TW-LTE 4G
+
+Trond Myklebust (2):
+      SUNRPC: Prevent an rpc_task wakeup race
+      NFSv4: Fix a thinko in nfs4_try_open_cached
+
+Vincent Pelletier (1):
+      libata: make ata_exec_internal_sg honor DMADIR
+
+Wang YanQing (1):
+      TTY: Fix tty miss restart after we turn off flow-control
+
+Wei Yongjun (1):
+      hwmon: fix error return code in abituguru_probe()
+
+Xiao Guangrong (1):
+      mm: mmu_notifier: re-fix freed page still mapped in secondary MMU
