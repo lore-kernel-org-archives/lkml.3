@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371Ab3FDP0j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 11:26:39 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:59668
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751173Ab3FDP0g convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 11:26:36 -0400
-X-Forefront-Antispam-Report: CIP:66.35.236.232;KIP:(null);UIP:(null);IPV:NLI;H:SJ-ITEXEDGE02.altera.priv.altera.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zz98dIc89bh936eI1432I4015Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2fh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-Message-ID: <1370359730.16167.4.camel@linux-builds1>
-Subject: Re: [PATCH v2 0/4] dw_apb_timer: osc as sched_clock, clocks and
- clocksource_of support
-From: Dinh Nguyen <dinguyen@altera.com>
-To: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-CC: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Baruch Siach <baruch@tkos.co.il>
-Date: Tue, 4 Jun 2013 10:28:50 -0500
-In-Reply-To: <201306041136.09566.heiko@sntech.de>
-References: <201306041136.09566.heiko@sntech.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1755349Ab3FDP3W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 11:29:22 -0400
+Received: from www.sr71.net ([198.145.64.142]:39869 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752333Ab3FDP3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 11:29:19 -0400
+Message-ID: <51AE07CE.9040304@sr71.net>
+Date: Tue, 04 Jun 2013 08:29:18 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: altera.com
+To: Minchan Kim <minchan@kernel.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mgorman@suse.de, tim.c.chen@linux.intel.com
+Subject: Re: [v5][PATCH 5/6] mm: vmscan: batch shrink_page_list() locking
+ operations
+References: <20130603200202.7F5FDE07@viggo.jf.intel.com> <20130603200208.6F71D31F@viggo.jf.intel.com> <20130604050103.GC14719@blaptop> <20130604060224.GE14719@blaptop>
+In-Reply-To: <20130604060224.GE14719@blaptop>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heiko,
-
-On Tue, 2013-06-04 at 11:36 +0200, Heiko Stübner wrote:
-> This is split off of my Rockchip support series from yesterday. It's now
-> a patch more than before, as the third patch enables the timer to be used
-> thru clocksource_of_init and moves picoxcell and socfpga to it.
+On 06/03/2013 11:02 PM, Minchan Kim wrote:
+>> > Why do we need new lru list instead of using @free_pages?
+> I got your point that @free_pages could have freed page by
+> put_page_testzero of shrink_page_list and they don't have
+> valid mapping so __remove_mapping_batch's mapping_release_page
+> would access NULL pointer.
 > 
-> changes since v1:
-> - hopefully improve the patch description of patch 1
->   after a suggestion by Linus Walleij
-> - move the selection of DW_APB_TIMER and CLKSRC_OF into DW_APB_TIMER_OF
->   after a suggestion by Baruch Siach
-> 
-> Heiko Stuebner (4):
->   clocksource: dw_apb_timer_of: enable the use the clocksource as sched clock
->   clocksource: dw_apb_timer_of: add clock-handling
->   clocksource: dw_apb_timer_of: select DW_APB_TIMER
->   clocksource: dw_apb_timer_of: use clocksource_of_init
-> 
->  Documentation/devicetree/bindings/rtc/dw-apb.txt |   19 +++++
->  arch/arm/mach-picoxcell/Kconfig                  |    1 -
->  arch/arm/mach-picoxcell/common.c                 |    2 -
->  arch/arm/mach-socfpga/Kconfig                    |    1 -
->  arch/arm/mach-socfpga/socfpga.c                  |    2 -
->  drivers/clocksource/Kconfig                      |    2 +
->  drivers/clocksource/dw_apb_timer_of.c            |   95 ++++++++++++++-------
->  include/linux/dw_apb_timer.h                     |    1 -
->  8 files changed, 84 insertions(+), 39 deletions(-)
-> 
+> I think it would be better to mention it in comment. :(
+> Otherwise, I suggest we can declare another new LIST_HEAD to
+> accumulate pages freed by put_page_testzero in shrink_page_list
+> so __remove_mapping_batch don't have to declare temporal LRU list
+> and can remove unnecessary list_move operation.
 
-For all the mach-socfpga parts:
+If I respin them again, I'll add a comment.
 
-Acked-by: Dinh Nguyen <dinguyen@altera.com>
-
-Thanks,
-Dinh
-
+I guess we could splice the whole list over at once instead of moving
+the pages individually.  But, what are we trying to optimize here?
+Saving a list_head worth of space on the stack?
 
