@@ -1,133 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410Ab3FDS3m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 14:29:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59905 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764Ab3FDS3h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 14:29:37 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "Ben Dooks \(embedded platforms\)" <ben-linux@fluff.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] i2c: omap: convert to module_platform_driver()
-References: <1366723151-23209-1-git-send-email-grygorii.strashko@ti.com>
-	<1366723151-23209-2-git-send-email-grygorii.strashko@ti.com>
-	<87fvwylxl8.fsf@linaro.org> <51ADD06B.3000201@ti.com>
-Date: Tue, 04 Jun 2013 11:29:34 -0700
-In-Reply-To: <51ADD06B.3000201@ti.com> (Grygorii Strashko's message of "Tue, 4
-	Jun 2013 14:32:59 +0300")
-Message-ID: <87zjv5zq41.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751704Ab3FDSaO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 14:30:14 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:60198
+	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751207Ab3FDSaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 14:30:03 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, ohering@suse.com,
+        jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 3/5] Drivers: scsi: storvsc: Implement multi-channel support
+Date: Tue,  4 Jun 2013 12:05:07 -0700
+Message-Id: <1370372709-10098-3-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1370372709-10098-1-git-send-email-kys@microsoft.com>
+References: <1370372674-10046-1-git-send-email-kys@microsoft.com>
+ <1370372709-10098-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grygorii Strashko <grygorii.strashko@ti.com> writes:
+Implement multi-channel support for the storage devices.
 
-> Hi Kevin,
-> On 06/03/2013 11:59 PM, Kevin Hilman wrote:
->> Grygorii Strashko <grygorii.strashko@ti.com> writes:
->>
->>> The OMAP I2C driver has a relation to pinctrl-single driver. As result,
->>> its probe will be deferred during system boot until late init time,
->>> because the pinctrl-single is initizalized as moudle/device init time.
->>> This, in turn, will delay initialization of all I2C devices (like mfd,
->>> I2C regulators and etc.) and cause boot delay (more over, it can broken
->>> initialization of drivers which are not ready to use deferred probe
->>> mechanism yet, for example DSS).
->>>
->>> There are no sense to keep OMAP I2C initialization on subsys init layer
->>> any more, hence shift it to module/device layer where the i2c <-->
->>> pinctrl-single dependency is resolved in drivers/Makefile now.
->>>
->>> Cc: Wolfram Sang <wsa@the-dreams.de>
->>> Cc: "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>
->>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>> Cc: linux-omap@vger.kernel.org
->>> Cc: linux-i2c@vger.kernel.org
->>> Cc: linux-kernel@vger.kernel.org
->>>
->>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->> Testing this patch with PATCH 1/2, the twl_rtc driver fails to correctly
->> initialize on OMAP3:
->>
->>           twl_rtc rtc.22: hctosys: invalid date/time
->>
->> instead of the expected result:
->>
->>            twl_rtc rtc.22: setting system clock to 2000-01-01 00:00:00 UTC (946684800)
->>
->> so something is still not right for the init sequence.
->>
->> Kevin
-> I think, the root cause of the problem isn't this patch - it's just
-> yet another side effect
-> of using deferred probes :). I've taken a look on twl-rtc code and
-> found possible error place
-> static int __init twl_rtc_init(void)
-> {
->     if (twl_class_is_4030()) <------ here,
->         rtc_reg_map = (u8 *) twl4030_rtc_reg_map;
->     else
->         rtc_reg_map = (u8 *) twl6030_rtc_reg_map;
->
->     return platform_driver_register(&twl4030rtc_driver);
-> }
-> In drivers/Makefile:
-> obj-$(CONFIG_RTC_LIB)        += rtc/  <------ RTC is placed before I2C
-> obj-y                += i2c/ media/ <----- and only here I2C bus
-> instantiates TWL-core device
-> and configures twl_priv->twl_id
->
-> Thats why it's working on my OMAP4/twl6030 board. Could you check if
-> below fix will work on OMAP3:
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/scsi/storvsc_drv.c |  131 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 127 insertions(+), 4 deletions(-)
 
-Yes, your fix works.  Thanks for digging into it.
-
-Care to send a proper patch?  Please be sure to send to Andrew Morton
-also, since he'll be the one to queue the RTC patch.
-
-> diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
-> index 8751a52..aaa5015 100644
-> --- a/drivers/rtc/rtc-twl.c
-> +++ b/drivers/rtc/rtc-twl.c
-> @@ -469,6 +469,11 @@ static int twl_rtc_probe(struct platform_device *pdev)
->         if (irq <= 0)
->                 goto out1;
->
-> +       if (twl_class_is_4030())
-> +               rtc_reg_map = (u8 *) twl4030_rtc_reg_map;
-> +       else
-> +               rtc_reg_map = (u8 *) twl6030_rtc_reg_map;
-> +
->         ret = twl_rtc_read_u8(&rd_reg, REG_RTC_STATUS_REG);
->         if (ret < 0)
->                 goto out1;
-> @@ -610,11 +615,6 @@ static struct platform_driver twl4030rtc_driver = {
->
->  static int __init twl_rtc_init(void)
->  {
-> -       if (twl_class_is_4030())
-> -               rtc_reg_map = (u8 *) twl4030_rtc_reg_map;
-> -       else
-> -               rtc_reg_map = (u8 *) twl6030_rtc_reg_map;
-> -
->         return platform_driver_register(&twl4030rtc_driver);
->  }
->  module_init(twl_rtc_init);
->
-> Unfortunately, I have no OMAP3 HW and can't check it.
-
-I suggest you find a Beagle or Gumstix/Overo type board someplace.
-There is an abundance of cheap OMAP3 hardware available.
-
-Kevin
+diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+index 9451989..1d4d425 100644
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -328,6 +328,8 @@ static int storvsc_timeout = 180;
+ 
+ #define STORVSC_MAX_IO_REQUESTS				128
+ 
++static void storvsc_on_channel_callback(void *context);
++
+ /*
+  * In Hyper-V, each port/path/target maps to 1 scsi host adapter.  In
+  * reality, the path/target is not used (ie always set to 0) so our
+@@ -364,6 +366,7 @@ struct storvsc_device {
+ 
+ 	bool	 destroy;
+ 	bool	 drain_notify;
++	bool	 open_sub_channel;
+ 	atomic_t num_outstanding_req;
+ 	struct Scsi_Host *host;
+ 
+@@ -755,12 +758,104 @@ static unsigned int copy_to_bounce_buffer(struct scatterlist *orig_sgl,
+ 	return total_copied;
+ }
+ 
++static void handle_sc_creation(struct vmbus_channel *new_sc)
++{
++	struct hv_device *device = new_sc->primary_channel->device_obj;
++	struct storvsc_device *stor_device;
++	struct vmstorage_channel_properties props;
++
++	stor_device = get_out_stor_device(device);
++	if (!stor_device)
++		return;
++
++	if (stor_device->open_sub_channel == false)
++		return;
++
++	memset(&props, 0, sizeof(struct vmstorage_channel_properties));
++
++	vmbus_open(new_sc,
++		   storvsc_ringbuffer_size,
++		   storvsc_ringbuffer_size,
++		   (void *)&props,
++		   sizeof(struct vmstorage_channel_properties),
++		   storvsc_on_channel_callback, new_sc);
++}
++
++static void  handle_multichannel_storage(struct hv_device *device, int max_chns)
++{
++	struct storvsc_device *stor_device;
++	int num_cpus = num_online_cpus();
++	int num_sc;
++	struct storvsc_cmd_request *request;
++	struct vstor_packet *vstor_packet;
++	int ret, t;
++
++	num_sc = ((max_chns > num_cpus) ? num_cpus : max_chns);
++	stor_device = get_out_stor_device(device);
++	if (!stor_device)
++		return;
++
++	request = &stor_device->init_request;
++	vstor_packet = &request->vstor_packet;
++
++	stor_device->open_sub_channel = true;
++	/*
++	 * Establish a handler for dealing with subchannels.
++	 */
++	vmbus_set_sc_create_callback(device->channel, handle_sc_creation);
++
++	/*
++	 * Check to see if sub-channels have already been created. This
++	 * can happen when this driver is re-loaded after unloading.
++	 */
++
++	if (vmbus_are_subchannels_present(device->channel))
++		return;
++
++	stor_device->open_sub_channel = false;
++	/*
++	 * Request the host to create sub-channels.
++	 */
++	memset(request, 0, sizeof(struct storvsc_cmd_request));
++	init_completion(&request->wait_event);
++	vstor_packet->operation = VSTOR_OPERATION_CREATE_SUB_CHANNELS;
++	vstor_packet->flags = REQUEST_COMPLETION_FLAG;
++	vstor_packet->sub_channel_count = num_sc;
++
++	ret = vmbus_sendpacket(device->channel, vstor_packet,
++			       (sizeof(struct vstor_packet) -
++			       vmscsi_size_delta),
++			       (unsigned long)request,
++			       VM_PKT_DATA_INBAND,
++			       VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
++
++	if (ret != 0)
++		return;
++
++	t = wait_for_completion_timeout(&request->wait_event, 10*HZ);
++	if (t == 0)
++		return;
++
++	if (vstor_packet->operation != VSTOR_OPERATION_COMPLETE_IO ||
++	    vstor_packet->status != 0)
++		return;
++
++	/*
++	 * Now that we created the sub-channels, invoke the check; this
++	 * may trigger the callback.
++	 */
++	stor_device->open_sub_channel = true;
++	vmbus_are_subchannels_present(device->channel);
++}
++
+ static int storvsc_channel_init(struct hv_device *device)
+ {
+ 	struct storvsc_device *stor_device;
+ 	struct storvsc_cmd_request *request;
+ 	struct vstor_packet *vstor_packet;
+ 	int ret, t;
++	int max_chns;
++	bool process_sub_channels = false;
+ 
+ 	stor_device = get_out_stor_device(device);
+ 	if (!stor_device)
+@@ -855,6 +950,19 @@ static int storvsc_channel_init(struct hv_device *device)
+ 	    vstor_packet->status != 0)
+ 		goto cleanup;
+ 
++	/*
++	 * Check to see if multi-channel support is there.
++	 * Hosts that implement protocol version of 5.1 and above
++	 * support multi-channel.
++	 */
++	max_chns = vstor_packet->storage_channel_properties.max_channel_cnt;
++	if ((vmbus_proto_version != VERSION_WIN7) &&
++	   (vmbus_proto_version != VERSION_WS2008))  {
++		if (vstor_packet->storage_channel_properties.flags &
++		    STORAGE_CHANNEL_SUPPORTS_MULTI_CHANNEL)
++			process_sub_channels = true;
++	}
++
+ 	memset(vstor_packet, 0, sizeof(struct vstor_packet));
+ 	vstor_packet->operation = VSTOR_OPERATION_END_INITIALIZATION;
+ 	vstor_packet->flags = REQUEST_COMPLETION_FLAG;
+@@ -879,6 +987,9 @@ static int storvsc_channel_init(struct hv_device *device)
+ 	    vstor_packet->status != 0)
+ 		goto cleanup;
+ 
++	if (process_sub_channels)
++		handle_multichannel_storage(device, max_chns);
++
+ 
+ cleanup:
+ 	return ret;
+@@ -1100,7 +1211,8 @@ static void storvsc_on_receive(struct hv_device *device,
+ 
+ static void storvsc_on_channel_callback(void *context)
+ {
+-	struct hv_device *device = (struct hv_device *)context;
++	struct vmbus_channel *channel = (struct vmbus_channel *)context;
++	struct hv_device *device;
+ 	struct storvsc_device *stor_device;
+ 	u32 bytes_recvd;
+ 	u64 request_id;
+@@ -1108,13 +1220,17 @@ static void storvsc_on_channel_callback(void *context)
+ 	struct storvsc_cmd_request *request;
+ 	int ret;
+ 
++	if (channel->primary_channel != NULL)
++		device = channel->primary_channel->device_obj;
++	else
++		device = channel->device_obj;
+ 
+ 	stor_device = get_in_stor_device(device);
+ 	if (!stor_device)
+ 		return;
+ 
+ 	do {
+-		ret = vmbus_recvpacket(device->channel, packet,
++		ret = vmbus_recvpacket(channel, packet,
+ 				       ALIGN((sizeof(struct vstor_packet) -
+ 					     vmscsi_size_delta), 8),
+ 				       &bytes_recvd, &request_id);
+@@ -1155,7 +1271,7 @@ static int storvsc_connect_to_vsp(struct hv_device *device, u32 ring_size)
+ 			 ring_size,
+ 			 (void *)&props,
+ 			 sizeof(struct vmstorage_channel_properties),
+-			 storvsc_on_channel_callback, device);
++			 storvsc_on_channel_callback, device->channel);
+ 
+ 	if (ret != 0)
+ 		return ret;
+@@ -1207,6 +1323,7 @@ static int storvsc_do_io(struct hv_device *device,
+ {
+ 	struct storvsc_device *stor_device;
+ 	struct vstor_packet *vstor_packet;
++	struct vmbus_channel *outgoing_channel;
+ 	int ret = 0;
+ 
+ 	vstor_packet = &request->vstor_packet;
+@@ -1217,6 +1334,11 @@ static int storvsc_do_io(struct hv_device *device,
+ 
+ 
+ 	request->device  = device;
++	/*
++	 * Select an an appropriate channel to send the request out.
++	 */
++
++	outgoing_channel = vmbus_get_outgoing_channel(device->channel);
+ 
+ 
+ 	vstor_packet->flags |= REQUEST_COMPLETION_FLAG;
+@@ -1234,7 +1356,7 @@ static int storvsc_do_io(struct hv_device *device,
+ 	vstor_packet->operation = VSTOR_OPERATION_EXECUTE_SRB;
+ 
+ 	if (request->data_buffer.len) {
+-		ret = vmbus_sendpacket_multipagebuffer(device->channel,
++		ret = vmbus_sendpacket_multipagebuffer(outgoing_channel,
+ 				&request->data_buffer,
+ 				vstor_packet,
+ 				(sizeof(struct vstor_packet) -
+@@ -1643,6 +1765,7 @@ static int storvsc_probe(struct hv_device *device,
+ 	}
+ 
+ 	stor_device->destroy = false;
++	stor_device->open_sub_channel = false;
+ 	init_waitqueue_head(&stor_device->waiting_to_drain);
+ 	stor_device->device = device;
+ 	stor_device->host = host;
+-- 
+1.7.4.1
 
