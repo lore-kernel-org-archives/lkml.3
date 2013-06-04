@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757114Ab3FDQ7g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 12:59:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48314 "EHLO
+	id S1757542Ab3FDQ7n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 12:59:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48320 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756570Ab3FDQ7a (ORCPT
+	with ESMTP id S1757207Ab3FDQ7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 12:59:30 -0400
+	Tue, 4 Jun 2013 12:59:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Joern Engel <joern@logfs.org>, Roland Dreier <roland@kernel.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Priyanka Jain <Priyanka.Jain@freescale.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 68/75] ib_srpt: Call target_sess_cmd_list_set_waiting during shutdown_session
-Date: Tue,  4 Jun 2013 09:55:52 -0700
-Message-Id: <1370364959-9475-69-git-send-email-kamal@canonical.com>
+Subject: [PATCH 74/75] powerpc/32bit:Store temporary result in r0 instead of r8
+Date: Tue,  4 Jun 2013 09:55:58 -0700
+Message-Id: <1370364959-9475-75-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370364959-9475-1-git-send-email-kamal@canonical.com>
 References: <1370364959-9475-1-git-send-email-kamal@canonical.com>
@@ -28,98 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Priyanka Jain <Priyanka.Jain@freescale.com>
 
-commit 1d19f7800d643b270b28d0a969c5eca455d54397 upstream.
+commit f7b3367774f92a688d39ed767f0ae9b93af7873a upstream.
 
-Given that srpt_release_channel_work() calls target_wait_for_sess_cmds()
-to allow outstanding se_cmd_t->cmd_kref a change to complete, the call
-to perform target_sess_cmd_list_set_waiting() needs to happen in
-srpt_shutdown_session()
+Commit a9c4e541ea9b22944da356f2a9258b4eddcc953b
+"powerpc/kprobe: Complete kprobe and migrate exception frame"
+introduced a regression:
 
-Also, this patch adds an explicit call to srpt_shutdown_session() within
-srpt_drain_channel() so that target_sess_cmd_list_set_waiting() will be
-called in the cases where TFO->shutdown_session() is not triggered
-directly by TCM.
+While returning from exception handling in case of PREEMPT enabled,
+_TIF_NEED_RESCHED bit is checked in TI_FLAGS (thread_info flag) of current
+task. Only if this bit is set, it should continue with the process of
+calling preempt_schedule_irq() to schedule highest priority task if
+available.
 
-Cc: Joern Engel <joern@logfs.org>
-Cc: Roland Dreier <roland@kernel.org>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Current code assumes that r8 contains TI_FLAGS and check this for
+_TIF_NEED_RESCHED, but as r8 is modified in the code which executes before
+this check, r8 no longer contains the expected TI_FLAGS information.
+
+As a result check for comparison with _TIF_NEED_RESCHED was failing even if
+NEED_RESCHED bit is set in the current thread_info flag. Due to this,
+preempt_schedule_irq() and in turn scheduler was not getting called even if
+highest priority task is ready for execution.
+
+So, store temporary results in r0 instead of r8 to prevent r8 from getting
+modified as subsequent code is dependent on its value.
+
+Signed-off-by: Priyanka Jain <Priyanka.Jain@freescale.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/infiniband/ulp/srpt/ib_srpt.c | 32 ++++++++++++++++++++++++--------
- drivers/infiniband/ulp/srpt/ib_srpt.h |  1 +
- 2 files changed, 25 insertions(+), 8 deletions(-)
+ arch/powerpc/kernel/entry_32.S | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.c b/drivers/infiniband/ulp/srpt/ib_srpt.c
-index c09d41b..b4a76d1 100644
---- a/drivers/infiniband/ulp/srpt/ib_srpt.c
-+++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
-@@ -2227,6 +2227,27 @@ static void srpt_close_ch(struct srpt_rdma_ch *ch)
- }
+diff --git a/arch/powerpc/kernel/entry_32.S b/arch/powerpc/kernel/entry_32.S
+index e514de5..4498467 100644
+--- a/arch/powerpc/kernel/entry_32.S
++++ b/arch/powerpc/kernel/entry_32.S
+@@ -851,7 +851,7 @@ resume_kernel:
+ 	/* check current_thread_info, _TIF_EMULATE_STACK_STORE */
+ 	CURRENT_THREAD_INFO(r9, r1)
+ 	lwz	r8,TI_FLAGS(r9)
+-	andis.	r8,r8,_TIF_EMULATE_STACK_STORE@h
++	andis.	r0,r8,_TIF_EMULATE_STACK_STORE@h
+ 	beq+	1f
  
- /**
-+ * srpt_shutdown_session() - Whether or not a session may be shut down.
-+ */
-+static int srpt_shutdown_session(struct se_session *se_sess)
-+{
-+	struct srpt_rdma_ch *ch = se_sess->fabric_sess_ptr;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&ch->spinlock, flags);
-+	if (ch->in_shutdown) {
-+		spin_unlock_irqrestore(&ch->spinlock, flags);
-+		return true;
-+	}
-+
-+	ch->in_shutdown = true;
-+	target_sess_cmd_list_set_waiting(se_sess);
-+	spin_unlock_irqrestore(&ch->spinlock, flags);
-+
-+	return true;
-+}
-+
-+/**
-  * srpt_drain_channel() - Drain a channel by resetting the IB queue pair.
-  * @cm_id: Pointer to the CM ID of the channel to be drained.
-  *
-@@ -2264,6 +2285,9 @@ static void srpt_drain_channel(struct ib_cm_id *cm_id)
- 	spin_unlock_irq(&sdev->spinlock);
- 
- 	if (do_reset) {
-+		if (ch->sess)
-+			srpt_shutdown_session(ch->sess);
-+
- 		ret = srpt_ch_qp_err(ch);
- 		if (ret < 0)
- 			printk(KERN_ERR "Setting queue pair in error state"
-@@ -3467,14 +3491,6 @@ static void srpt_release_cmd(struct se_cmd *se_cmd)
- }
- 
- /**
-- * srpt_shutdown_session() - Whether or not a session may be shut down.
-- */
--static int srpt_shutdown_session(struct se_session *se_sess)
--{
--	return true;
--}
--
--/**
-  * srpt_close_session() - Forcibly close a session.
-  *
-  * Callback function invoked by the TCM core to clean up sessions associated
-diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.h b/drivers/infiniband/ulp/srpt/ib_srpt.h
-index 4caf55c..3dae156 100644
---- a/drivers/infiniband/ulp/srpt/ib_srpt.h
-+++ b/drivers/infiniband/ulp/srpt/ib_srpt.h
-@@ -325,6 +325,7 @@ struct srpt_rdma_ch {
- 	u8			sess_name[36];
- 	struct work_struct	release_work;
- 	struct completion	*release_done;
-+	bool			in_shutdown;
- };
- 
- /**
+ 	addi	r8,r1,INT_FRAME_SIZE	/* Get the kprobed function entry */
 -- 
 1.8.1.2
 
