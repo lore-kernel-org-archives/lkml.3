@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755387Ab3FDXP7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:15:59 -0400
-Received: from 1wt.eu ([62.212.114.60]:35412 "EHLO 1wt.eu"
+	id S1755499Ab3FDXQx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:16:53 -0400
+Received: from 1wt.eu ([62.212.114.60]:35374 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752907Ab3FDWmP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:42:15 -0400
-Message-Id: <20130604172133.083450535@1wt.eu>
+	id S1751236Ab3FDWmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:42:07 -0400
+Message-Id: <20130604172131.136042108@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:22:37 +0200
+Date: Tue, 04 Jun 2013 19:21:50 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Ian Abbott <abbotti@mev.co.uk>, Willy Tarreau <w@1wt.eu>
-Subject: [ 067/184] staging: comedi: ni_labpc: correct differential
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>,
+        Colin King <colin.king@canonical.com>,
+        Tim Gardner <tim.gardner@canonical.com>, Willy Tarreau <w@1wt.eu>
+Subject: [ 020/184] ptrace: ensure arch_ptrace/ptrace_request can never
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -21,55 +25,178 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- channel sequence for AI commands
+ race with SIGKILL
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Oleg Nesterov <oleg@redhat.com>
 
-Commit 4c4bc25d0fa6beaf054c0b4c3b324487f266c820 upstream.
+ptrace: ensure arch_ptrace/ptrace_request can never race with SIGKILL
 
-Tuomas <tvainikk _at_ gmail _dot_ com> reported problems getting
-meaningful output from a Lab-PC+ in differential mode for AI cmds, but
-AI insn reads gave correct readings.  He tracked it down to two
-problems, one of which is addressed by this patch.
+CVE-2013-0871
 
-It seems the setting of the channel bits for particular scanning modes
-was incorrect for differential mode.  (Only half the number of channels
-are available in differential mode; comedi refers to them as channels 0,
-1, 2 and 3, but the hardware documentation refers to them as channels 0,
-2, 4 and 6.)  In differential mode, the setting of the channel enable
-bits in the command1 register should depend on whether the scan enable
-bit is set.  Effectively, we need to double the comedi channel number
-when the scan enable bit is not set in differential mode.  The scan
-enable bit gets set when the AI scan mode is `MODE_MULT_CHAN_UP` or
-`MODE_MULT_CHAN_DOWN`, and gets cleared when the AI scan mode is
-`MODE_SINGLE_CHAN` or `MODE_SINGLE_CHAN_INTERVAL`.  The existing test
-for whether the comedi channel number needs to be doubled in
-differential mode is incorrect in `labpc_ai_cmd()`.  This patch corrects
-the test.
+BugLink: http://bugs.launchpad.net/bugs/1129192
 
-Thanks to Tuomas for suggesting the fix.
+putreg() assumes that the tracee is not running and pt_regs_access() can
+safely play with its stack.  However a killed tracee can return from
+ptrace_stop() to the low-level asm code and do RESTORE_REST, this means
+that debugger can actually read/modify the kernel stack until the tracee
+does SAVE_REST again.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+set_task_blockstep() can race with SIGKILL too and in some sense this
+race is even worse, the very fact the tracee can be woken up breaks the
+logic.
+
+As Linus suggested we can clear TASK_WAKEKILL around the arch_ptrace()
+call, this ensures that nobody can ever wakeup the tracee while the
+debugger looks at it.  Not only this fixes the mentioned problems, we
+can do some cleanups/simplifications in arch_ptrace() paths.
+
+Probably ptrace_unfreeze_traced() needs more callers, for example it
+makes sense to make the tracee killable for oom-killer before
+access_process_vm().
+
+While at it, add the comment into may_ptrace_stop() to explain why
+ptrace_stop() still can't rely on SIGKILL and signal_pending_state().
+
+Reported-by: Salman Qazi <sqazi@google.com>
+Reported-by: Suleiman Souhlal <suleiman@google.com>
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+(backported from commit 9899d11f654474d2d54ea52ceaa2a1f4db3abd68)
+
+Conflicts:
+	arch/x86/kernel/step.c
+	kernel/ptrace.c
+	kernel/signal.c
+
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Acked-by: Colin King <colin.king@canonical.com>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- drivers/staging/comedi/drivers/ni_labpc.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ kernel/ptrace.c | 63 ++++++++++++++++++++++++++++++++++++++++++++++-----------
+ kernel/signal.c |  4 ++++
+ 2 files changed, 55 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/ni_labpc.c b/drivers/staging/comedi/drivers/ni_labpc.c
-index 4ac745a..eada2ce 100644
---- a/drivers/staging/comedi/drivers/ni_labpc.c
-+++ b/drivers/staging/comedi/drivers/ni_labpc.c
-@@ -1178,7 +1178,9 @@ static int labpc_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 	else
- 		channel = CR_CHAN(cmd->chanlist[0]);
- 	/*  munge channel bits for differential / scan disabled mode */
--	if (labpc_ai_scan_mode(cmd) != MODE_SINGLE_CHAN && aref == AREF_DIFF)
-+	if ((labpc_ai_scan_mode(cmd) == MODE_SINGLE_CHAN ||
-+	     labpc_ai_scan_mode(cmd) == MODE_SINGLE_CHAN_INTERVAL) &&
-+	    aref == AREF_DIFF)
- 		channel *= 2;
- 	devpriv->command1_bits |= ADC_CHAN_BITS(channel);
- 	devpriv->command1_bits |= thisboard->ai_range_code[range];
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index 37850f9..d0036f0 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -80,6 +80,36 @@ void __ptrace_unlink(struct task_struct *child)
+ 		ptrace_untrace(child);
+ }
+ 
++/* Ensure that nothing can wake it up, even SIGKILL */
++static bool ptrace_freeze_traced(struct task_struct *task)
++{
++	bool ret = false;
++
++	spin_lock_irq(&task->sighand->siglock);
++	if (task_is_traced(task) && !__fatal_signal_pending(task)) {
++		task->state = __TASK_TRACED;
++		ret = true;
++	}
++	spin_unlock_irq(&task->sighand->siglock);
++
++	return ret;
++}
++
++static void ptrace_unfreeze_traced(struct task_struct *task)
++{
++	if (task->state != __TASK_TRACED)
++		return;
++
++	WARN_ON(!task->ptrace || task->parent != current);
++
++	spin_lock_irq(&task->sighand->siglock);
++	if (__fatal_signal_pending(task))
++		wake_up_state(task, __TASK_TRACED);
++	else
++		task->state = TASK_TRACED;
++	spin_unlock_irq(&task->sighand->siglock);
++}
++
+ /*
+  * Check that we have indeed attached to the thing..
+  */
+@@ -95,25 +125,29 @@ int ptrace_check_attach(struct task_struct *child, int kill)
+ 	 * be changed by us so it's not changing right after this.
+ 	 */
+ 	read_lock(&tasklist_lock);
+-	if ((child->ptrace & PT_PTRACED) && child->parent == current) {
+-		ret = 0;
++	if (child->ptrace && child->parent == current) {
++		WARN_ON(child->state == __TASK_TRACED);
+ 		/*
+ 		 * child->sighand can't be NULL, release_task()
+ 		 * does ptrace_unlink() before __exit_signal().
+ 		 */
+-		spin_lock_irq(&child->sighand->siglock);
+-		if (task_is_stopped(child))
+-			child->state = TASK_TRACED;
+-		else if (!task_is_traced(child) && !kill)
+-			ret = -ESRCH;
+-		spin_unlock_irq(&child->sighand->siglock);
++		if (kill || ptrace_freeze_traced(child))
++			ret = 0;
+ 	}
+ 	read_unlock(&tasklist_lock);
+ 
+-	if (!ret && !kill)
+-		ret = wait_task_inactive(child, TASK_TRACED) ? 0 : -ESRCH;
++	if (!ret && !kill) {
++		if (!wait_task_inactive(child, __TASK_TRACED)) {
++			/*
++			 * This can only happen if may_ptrace_stop() fails and
++			 * ptrace_stop() changes ->state back to TASK_RUNNING,
++			 * so we should not worry about leaking __TASK_TRACED.
++			 */
++			WARN_ON(child->state == __TASK_TRACED);
++			ret = -ESRCH;
++		}
++	}
+ 
+-	/* All systems go.. */
+ 	return ret;
+ }
+ 
+@@ -637,6 +671,8 @@ SYSCALL_DEFINE4(ptrace, long, request, long, pid, long, addr, long, data)
+ 		goto out_put_task_struct;
+ 
+ 	ret = arch_ptrace(child, request, addr, data);
++	if (ret || request != PTRACE_DETACH)
++		ptrace_unfreeze_traced(child);
+ 
+  out_put_task_struct:
+ 	put_task_struct(child);
+@@ -752,8 +788,11 @@ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
+ 	}
+ 
+ 	ret = ptrace_check_attach(child, request == PTRACE_KILL);
+-	if (!ret)
++	if (!ret) {
+ 		ret = compat_arch_ptrace(child, request, addr, data);
++		if (ret || request != PTRACE_DETACH)
++			ptrace_unfreeze_traced(child);
++	}
+ 
+  out_put_task_struct:
+ 	put_task_struct(child);
+diff --git a/kernel/signal.c b/kernel/signal.c
+index b40f4f0..1929014 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -1527,6 +1527,10 @@ static inline int may_ptrace_stop(void)
+ 	 * If SIGKILL was already sent before the caller unlocked
+ 	 * ->siglock we must see ->core_state != NULL. Otherwise it
+ 	 * is safe to enter schedule().
++	 *
++	 * This is almost outdated, a task with the pending SIGKILL can't
++	 * block in TASK_TRACED. But PTRACE_EVENT_EXIT can be reported
++	 * after SIGKILL was already dequeued.
+ 	 */
+ 	if (unlikely(current->mm->core_state) &&
+ 	    unlikely(current->mm == current->parent->mm))
 -- 
 1.7.12.2.21.g234cd45.dirty
 
