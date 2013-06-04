@@ -1,104 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab3FDOVd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:21:33 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:44502 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755807Ab3FDOVZ (ORCPT
+	id S1756103Ab3FDOV1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:21:27 -0400
+Received: from mo-p05-ob.rzone.de ([81.169.146.181]:63085 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755080Ab3FDOVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:21:25 -0400
-Date: Tue, 4 Jun 2013 15:21:20 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jamie Iles <jamie@jamieiles.com>, Dinh Nguyen <dinguyen@altera.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Baruch Siach <baruch@tkos.co.il>
-Subject: Re: [PATCH v2 4/4] clocksource: dw_apb_timer_of: use
- clocksource_of_init
-Message-ID: <20130604142120.GD5308@maple>
-References: <201306041136.09566.heiko@sntech.de>
- <201306041138.42639.heiko@sntech.de>
+	Tue, 4 Jun 2013 10:21:17 -0400
+X-RZG-AUTH: :IWkQb0WIdvqIIwNfJfyiKBgoQwjwJ7eL6yL6M6h2IziqwDGkR4lBo2mGrr2y5FyCzLwlNjAe1OItNaxi0pbuxdvlhZ/a
+X-RZG-CLASS-ID: mo05
+Message-ID: <51ADF789.70906@samba.org>
+Date: Tue, 04 Jun 2013 16:19:53 +0200
+From: "Stefan (metze) Metzmacher" <metze@samba.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201306041138.42639.heiko@sntech.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jeff Layton <jlayton@redhat.com>
+CC: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org,
+        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
+        cluster-devel@redhat.com, sage@inktank.com,
+        samba-technical@lists.samba.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
+        dhowells@redhat.com, smfrench@gmail.com, linux-fsdevel@vger.kernel.org,
+        ceph-devel@vger.kernel.org, akpm@linux-foundation.org,
+        swhiteho@redhat.com
+Subject: Re: [PATCH v1 11/11] locks: give the blocked_hash its own spinlock
+References: <1370056054-25449-1-git-send-email-jlayton@redhat.com> <1370056054-25449-12-git-send-email-jlayton@redhat.com>
+In-Reply-To: <1370056054-25449-12-git-send-email-jlayton@redhat.com>
+X-Enigmail-Version: 1.4.6
+OpenPGP: id=0E53083F
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigDC06D3B97CE85A15870C7A9B"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heiko,
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigDC06D3B97CE85A15870C7A9B
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jun 04, 2013 at 11:38:42AM +0200, Heiko Stübner wrote:
-> dw_apb_timer_init used to search the devicetree for matching timer
-> devices, making calls to it from board files necessary.
-> 
-> Change the dw_apb_timer_init to work with CLOCKSOURCE_OF_DECLARE.
-> With this change the function gets called once for each timer node
-> and tracks these number of calls to attach clockevent and clocksource
-> devices to the nodes.
-> 
-> Also remove the calls to dw_apb_timer_init from all previous users, as
-> clocksource_of_init is the default for init_time now.
-> 
-> Tested on the upcoming rk3066 code.
-> 
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> Acked-by: Rob Herring <rob.herring@calxeda.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> ---
-...
-> -void __init dw_apb_timer_init(void)
-> +static int num_called;
-> +static void __init dw_apb_timer_init(struct device_node *timer)
->  {
-> -	struct device_node *event_timer, *source_timer;
-> -
-> -	event_timer = of_find_matching_node(NULL, osctimer_ids);
-> -	if (!event_timer)
-> -		panic("No timer for clockevent");
-> -	add_clockevent(event_timer);
-> -
-> -	source_timer = of_find_matching_node(event_timer, osctimer_ids);
-> -	if (!source_timer)
-> -		panic("No timer for clocksource");
-> -	add_clocksource(source_timer);
-> -
-> -	of_node_put(source_timer);
-> +	switch (num_called) {
-> +	case 0:
-> +		pr_debug("%s: found clockevent timer\n", __func__);
-> +		add_clockevent(timer);
-> +		of_node_put(timer);
-> +		break;
-> +	case 1:
-> +		pr_debug("%s: found clocksource timer\n", __func__);
-> +		add_clocksource(timer);
-> +		of_node_put(timer);
-> +		init_sched_clock();
-> +		break;
-> +	default:
-> +		break;
-> +	}
->  
-> -	init_sched_clock();
-> +	num_called++;
->  }
-> +CLOCKSOURCE_OF_DECLARE(pc3x2_timer, "picochip,pc3x2-timer", dw_apb_timer_init);
-> +CLOCKSOURCE_OF_DECLARE(apb_timer, "snps,dw-apb-timer-osc", dw_apb_timer_init);
+Hi Jeff,
 
-I think maybe we also want CLOCKSOURCE_OF_DECLARE() instances for the 
-contents of sptimer_ids for completeness, otherwise looks good.
+> There's no reason we have to protect the blocked_hash and file_lock_lis=
+t
+> with the same spinlock. With the tests I have, breaking it in two gives=
 
-Acked-by: Jamie Iles <jamie@jamieiles.com>
+> a barely measurable performance benefit, but it seems reasonable to mak=
+e
+> this locking as granular as possible.
 
-Thanks,
+as file_lock_{list,lock} is only used for debugging (/proc/locks) after t=
+his
+change, I guess it would be possible to use RCU instead of a spinlock.
 
-Jamie
+@others: this was the related discussion on IRC
+(http://irclog.samba.org/) about this:
+
+16:02 < metze> jlayton: do you have time to discuss your file_lock_lock
+changes?
+16:02 < jlayton> metze: sure, what's up?
+16:03 < jlayton> metze: note that it won't help vl's thundering herd
+problems...
+16:03 < metze> is it correct that after your last patch file_lock_lock
+is only used for /proc/locks?
+16:03 < jlayton> well, it's only used to protect the list that is used
+for /proc/locks
+16:04 < jlayton> it still gets taken whenever a lock is acquired or
+released in order to manipulate that list
+16:04 < metze> would it be a good idea to use rcu instead of a spin lock?=
+
+16:04 < jlayton> I tried using RCU, but it turned out to slow everything
+down
+16:04 < jlayton> this is not a read-mostly workload unfortunately
+16:04 < jlayton> so doing it with mutual exclusion turns out to be faster=
+
+16:04 < metze> ok
+16:05 < jlayton> I might play around with it again sometime, but I don't
+think it really helps. What we need to ensure is
+                 that we optimize the code that manipulates that list,
+and RCU list manipulations have larger overhead
+16:06 < jlayton> metze: that's a good question though so if you want to
+ask it on the list, please do
+16:06 < jlayton> others will probably be wondering the same thing
+16:08 < metze> maybe it's worth a comment in commit message and the code
+16:08 < metze> btw, why don't you remove the ' /* Protects the
+file_lock_list and the blocked_hash */' comment?
+
+metze
+
+
+--------------enigDC06D3B97CE85A15870C7A9B
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with undefined - http://www.enigmail.net/
+
+iEYEARECAAYFAlGt95EACgkQm70gjA5TCD9rgACdFM0jvnKV/2vYwljAJGQjabIq
+YwgAoJeaqln0qY27+IkCDBaB/2+fGAtT
+=T0cN
+-----END PGP SIGNATURE-----
+
+--------------enigDC06D3B97CE85A15870C7A9B--
