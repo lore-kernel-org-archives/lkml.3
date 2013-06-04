@@ -1,85 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751578Ab3FDUv2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 16:51:28 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:57265 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab3FDUv1 (ORCPT
+	id S1751626Ab3FDUwg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 16:52:36 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:62483 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178Ab3FDUwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 16:51:27 -0400
-Date: Tue, 4 Jun 2013 22:51:20 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Frederic Riss <frederic.riss@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mount + pid namespacing broken ?
-Message-ID: <20130604225120.34e11ac4@neptune.home>
-In-Reply-To: <CAKk_3s_P18a3ZUb835ysa-MS3c-_TBT20MVsJLvPrsYKETS_-w@mail.gmail.com>
-References: <CAKk_3s_P18a3ZUb835ysa-MS3c-_TBT20MVsJLvPrsYKETS_-w@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 4 Jun 2013 16:52:35 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 21/21] clk: ux500: Supply provider look-up functionality to support Device Tree
+Date: Tue, 4 Jun 2013 22:52:03 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+References: <1370266965-7901-1-git-send-email-lee.jones@linaro.org> <1370266965-7901-22-git-send-email-lee.jones@linaro.org> <CACRpkdaNMR=6JT+pi+9aqOJXW3gK9Yb4hztx3rOiY3c+f3UTRA@mail.gmail.com>
+In-Reply-To: <CACRpkdaNMR=6JT+pi+9aqOJXW3gK9Yb4hztx3rOiY3c+f3UTRA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201306042252.03340.arnd@arndb.de>
+X-Provags-ID: V02:K0:8/SUhxtDMqsuX9seDVT8+ANMBDKlwvZRjqcL+k3rdTG
+ mYIEmqdO8iwi+U0p3ZgCDnt5Liep20XbBIEDDbSPV3uRom4OW8
+ puXr6Bldc4xkV1pMYBqpWlltN/nJlxKx+IMLGHJxGRgIwVNEzT
+ eRE2MtDa+q6TlNwEYZEQnR1QGrzHf5IQqlweFH0C1ExSkMMQce
+ VJsUBlt8ymV1OyU72vwtpk/EiGWgcmXEa3t0J0Y3FfciZwU4Os
+ UFeG5UdCK6y7l9ui5BRV/Wa/KfUGgeFjsvCZWpCR+dZ4xfXoWZ
+ p8bz6YZ7vtNzy/UihwEc4QjILpeP3ne1Fmre0EPu9gPBp7xzHB
+ lWPhd7HTVojK0GhRZvRY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tuesday 04 June 2013, Linus Walleij wrote:
+> The whole thing is very different from other DT clock things
+> I've seen, usually you add a compatible node for each
+> clock type, and a node for each physical gate. But there
+> may be several ways to skin this cat...
+> 
 
-On Sat, 01 June 2013 Frederic Riss <frederic.riss@gmail.com> wrote:
-> I had a little application making use of pid and mount namespaces to
-> isolate some processes on some machines. This all worked well on 3.7
-> boxes. A coworker upgraded his machine and noticed that things weren't
-> working anymore on 3.8. The symptom he noticed is that remounting
-> /proc inside the namespaced process broke the /proc of the original
-> namespace. (Remounting /proc is necessary for the pid namespace to be
-> really effective)
-> 
-> There is a simple way to reproduce the issue if you have a new enough
-> util-linux where the unshare utility accepts the --pid option. Try
-> that:
-> 
-> bash-4.2$ unshare --pid --mount
-> -bash-4.2$ sudo mount -t proc /proc /proc
-> [sudo] password for friss:
-> sudo: unable to send audit message: Operation not permitted
-> -bash-4.2$
-> 
-> [ The audit failure is already a sign of something going wrong more on
-> that bellow. ]
-> Then in another terminal running in the root namesapce:
-> 
-> bash-4.2$ ls -l /proc/self
-> ls: cannot read symbolic link /proc/self: No such file or directory
-> lrwxrwxrwx 1 root root 0 Jun  1 23:37 /proc/self
-> 
-> As you see, remounting /proc in the private namespace broke the root /proc...
+Based on the IRC discussion we had, I would think that the "prcc" clocks
+would best be represented using multiple clock-cells since you can describe
+them easily a tuple of register index, bit number some way to distinguish
+the two types.
 
-If your coworker updated more than the kernel it might just be that
-your filesystem is `mount / --make-rshared` on the root mount namespace.
-E.g. the systmed started doing that some time ago (about a year or so)
+The "prcmu" clocks are harder, and we probably need either a more verbose
+representation using one node per clock there, or have a single node
+for the entire prcmu and not bother to describe them in DT but hardcode
+everything in the source. The current patch does the latter, which is
+easier now but means we cannot simplify the code much in the future
+when we remove ATAGS boot support.
 
-With `mount --make-rprivate` inside the new namespace before doing
-anything else mount+pid+ipc+uts(+net) is working fine for me (though
-I'm changing namespaces using them clone() rather than unshare())
+I hope Mike can give some better insight to what his preferences are.
 
-Bruno
-
-> Now the namespace isn't functional anyway even if /proc doesn't get remounted:
-> 
-> bash-4.2$ unshare --pid --mount
-> -bash-4.2$ id
-> uid=1001(friss) gid=1001(friss) groups=1001(friss),10(wheel)
-> -bash-4.2$ id
-> -bash: fork: Cannot allocate memory
-> -bash-4.2$
-> 
-> It's able to run one process, but every following invocation will
-> fail. I suppose the audit issue mentioned above is just another
-> symptom.
-> 
-> All of this was working fine on 3.7 kernels. I tried it on latest 3.8
-> and 3.9 and it fails on both. My application didn't make use of
-> unshare, but instead forked a new process with the namespacing flags.
-> The symptoms are identical in both cases.
-> 
-> Fred.
+	Arnd
