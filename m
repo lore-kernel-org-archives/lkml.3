@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758422Ab3FDATz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 20:19:55 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:47432 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754049Ab3FDATu (ORCPT
+	id S1758861Ab3FDAUb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 20:20:31 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:55971 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758548Ab3FDAUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 20:19:50 -0400
-Message-ID: <51AD32A4.5070609@linaro.org>
-Date: Mon, 03 Jun 2013 17:19:48 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, arm@kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCHv2 0/6] Make ARM's sched_clock generic + 64 bit friendly
-References: <1370155183-31421-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1370155183-31421-1-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Jun 2013 20:20:12 -0400
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+To: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 0/3] Add SMP support for MSM8660 and MSM8960
+Date: Mon,  3 Jun 2013 17:19:42 -0700
+Message-Id: <1370305185-6450-1-git-send-email-rvaswani@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2013 11:39 PM, Stephen Boyd wrote:
-> This is mostly a resend of a patch series I sent a little over a month
-> ago. I've reordered the patches so that John can pick up the first three
-> and get a generic sched_clock layer without having to take the 64 bit
-> patches. The last three patches add 64 bit support and move the architected
-> timers on ARM64 and ARM to use it.
+This series re-organizes the platsmp.c and adds SMP support for
+MSM8660 and MSM8960. We convert to using the cpus property in
+device tree and add a "enable-method" property for arm32.
 
+Rohit Vaswani (3):
+  msm: platsmp: Consolidate write to pen_release
+  ARM: msm: Re-organize platsmp to make it extensible
+  ARM: msm: Add SMP support for 8960
 
-Yea, so from the initial look over it, I think I'm happy with queuing 
-the first three patches, although I'd like to get some acks from arm 
-folks on at least the first two, just so no one is surprised with it 
-going through the -tip tree.
+ Documentation/devicetree/bindings/arm/cpus.txt     |    8 +
+ Documentation/devicetree/bindings/arm/msm/kpss.txt |   16 ++
+ Documentation/devicetree/bindings/arm/msm/scss.txt |   15 ++
+ arch/arm/boot/dts/msm8660-surf.dts                 |   21 +++
+ arch/arm/boot/dts/msm8960-cdp.dts                  |   22 +++
+ arch/arm/mach-msm/platsmp.c                        |  165 ++++++++++++++++---
+ arch/arm/mach-msm/scm-boot.h                       |    8 +-
+ 7 files changed, 226 insertions(+), 29 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/msm/kpss.txt
+ create mode 100644 Documentation/devicetree/bindings/arm/msm/scss.txt
 
-It looks like the arm64 bit stuff needs a few more iterations w/ 
-Russell, so I'll not touch those.
-
-We still have a ways to go to consolidate x86 into this (need to handle 
-pv hooks), but it should provide a base to get some of the simpler 
-arches sharing the same infrastructure.
-
-Also I suspect we can maybe further combine this with the 
-kernel/sched/clock.c code, but I think this is a good start for now.
-
-thanks
--john
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
