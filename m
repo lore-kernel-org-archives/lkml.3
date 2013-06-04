@@ -1,117 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540Ab3FDWYx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 18:24:53 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:59971 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868Ab3FDWYw (ORCPT
+	id S1751520Ab3FDWZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:25:56 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:22419 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791Ab3FDWZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:24:52 -0400
+	Tue, 4 Jun 2013 18:25:54 -0400
+Message-ID: <51AE6964.1090002@oracle.com>
+Date: Tue, 04 Jun 2013 17:25:40 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <201306041951.00447.arnd@arndb.de>
-References: <1370038972-2318779-1-git-send-email-arnd@arndb.de>
-	<201306012257.02327.arnd@arndb.de>
-	<CAL_JsqKMOy4CM=FXbsy7mQ1f0DLyK6n_cuZ92uhsSM2Mq-3B1g@mail.gmail.com>
-	<201306041951.00447.arnd@arndb.de>
-Date: Tue, 4 Jun 2013 17:24:51 -0500
-Message-ID: <CAL_JsqLRJ1cEWBfAdHEyngJHQKauJ6XzWH2JwXh1qDusMkzUGA@mail.gmail.com>
-Subject: Re: [PATCH 15/15] OF: remove #ifdef from linux/of_platform.h
-From: Rob Herring <robherring2@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, patches@lists.linaro.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Joe Perches <joe@perches.com>
+CC: jfs-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] jfs: Convert jfs_error to jfs_sb_err
+References: <76a131f2845ec3f75dd80be6808e513ae3ea4255.1370323137.git.joe@perches.com>  <51AE0F37.3020104@oracle.com> <1370363289.2385.41.camel@joe-AO722>
+In-Reply-To: <1370363289.2385.41.camel@joe-AO722>
+X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 4, 2013 at 12:51 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 04 June 2013, Rob Herring wrote:
->> On Sat, Jun 1, 2013 at 3:57 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> > On Saturday 01 June 2013, Rob Herring wrote:
->> >> No, we still need empty functions. Here is what of_device.h looks like:
->> >>
->> >> http://tinyurl.com/l2azz5m
->> >>
->> >> BTW, it has your ack.
->> >>
->> >
->> > Could you add a patch on top that only puts the function declarations
->> > inside of #ifdef that don't have an inline wrapper?
+On 06/04/2013 11:28 AM, Joe Perches wrote:
+> On Tue, 2013-06-04 at 11:00 -0500, Dave Kleikamp wrote:
+>> I generally like this cleanup except for one thing.
 >>
->> I'm confused. You mean that DO have an inline? Like this:
+>> On 06/04/2013 12:22 AM, Joe Perches wrote:
+>>> Use a more current logging style.
+>>>
+>>> Rename function jfs_error to jfs_sb_err.
 >>
->> void foo(void);
+>> Why the rename? If you're going to rename it, the new name should be
+>> more descriptive, such as jfs_report_and_handle_error(), but I don't
+>> like that because it's too long. jfs_error() is similiar to ext4_error()
+>> or btrfs_error(). I don't understand the name change.
+> 
+> Pick a name.  I don't much care what it is really.
+
+I'm just going to stick with jfs_error, since I'm not convinced changing
+the name has any benefit.
+
+> This one takes a super_block * and emits a logging message
+> so I chose jfs_sb_err to try to describe the sb * bit.
+> 
+> I like the _err suffix is a bit better than the
+> _error suffix as it's a bit more name consistent
+> with other kernel logging mechanisms like dev_err,
+> pr_err, etc, but if you want to remain consistent
+> with other fs/,,, fine by me.
+
+It's more than a logging mechanism. It will also make the file-system
+read-only, or panic (or do nothing else) depending on the errors= mount
+option.
+
+> I think the other fs _error names are sub-optimal.
+
+They perform a similar function, so I'm going to leave it as is. Even if
+the names are imperfect, it's good to have some similarities in the
+names of the functions between file systems.
+
+> These functions are a bit overloaded too when
+> CONFIG_PRINTK is not enabled.  The format and args
+> still exist in code and I believe can not be
+> optimized away by the compiler
+> 
+> I think using macro or an in-place expansion to
+> separate the 2 parts of the reporting and then the
+> handling of of the error would be better as it
+> would allow smaller embedded use.
+
+I can hold off on this a little while if you want to explore that idea
+as an alternate.
+
+>>> Add __printf format and argument verification.
 >>
->> #ifdef CONFIG_OF
->> void bar(void);
->> #else
->> static inline void bar(void) {}
->> #endif
->
-> Yes, sorry. That's what I meant.
->
->> > It's really annoying to have to change the header file every time one
->> > needs to call a function from a driver in the DT-only case.
+>> good
+> 
+> I submitted a patch a few years ago to do that too.
+> Dunno what happened to it,
+
+I might have put it off and then forgot about it. I don't remember it
+specifically.
+
+> 
+>>> Remove embedded function names from formats.
+>>> Add %pf, __builtin_return_address(0) to jfs_sb_err.
 >>
->> The functions without inlines are ones that drivers should not call
->> and should only be called from OF enabled code. That's why we have not
->> done a complete pass of adding inlines for everything.
->
-> The problem is that it's a bad default. The convention in kernel code
-> is not to hide declarations in #ifdef, for multiple reasons:
->
-> * It avoids unnecessary code rebuilds when the symbol changes between
->   two 'make' runs.
->
-> * It lets drivers and platform code call the function from dead code
->   without causing a build error, thus improving compile coverage.
->
-> * It's much nicer to read when can write your code like
->
-> void __init exynos_init_io(struct map_desc *mach_desc, int size)
-> {
->         if (IS_ENABLED_(CONFIG_OF) && initial_boot_params)
->                 of_scan_flat_dt(exynos_fdt_map_chipid, NULL);
->         else
->                 iotable_init(exynos_iodesc, ARRAY_SIZE(exynos_iodesc));
->         ...
-> }
->
-> instead of
->
-> void __init exynos_init_io(struct map_desc *mach_desc, int size)
-> {
-> #ifdef CONFIG_OF
->         if (initial_boot_params)
->                 of_scan_flat_dt(exynos_fdt_map_chipid, NULL);
->         else
-> #endif
->                 iotable_init(exynos_iodesc, ARRAY_SIZE(exynos_iodesc));
->         ...
-> }
->
-> The first one looks like actual C code, the second is really ugly,
-> and an inline wrapper wouldn't even do the right thing here.
+>> I like this.
+> 
+> It also reduces stack needs a bit by removing that
+> 256 byte temp buffer.
 
-Right. I get all that. You still have to go add inlines if you want to make:
-
-if (IS_ENABLED(CONFIG_OF))
-    of_foo();
-
-just be:
-
-of_foo();
-
-There are situations for both and only inlines cover both cases. I
-don't see a reason we would want to allow the first case and not allow
-the second case. I am tired of taking patches adding the inlines 1 by
-1, so perhaps we need to refactor the OF headers to better separate
-core infrastructure includes vs. driver only includes if that is
-really a concern.
-
-Rob
