@@ -1,196 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276Ab3FDKDp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 06:03:45 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:52414 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913Ab3FDKDn (ORCPT
+	id S1753048Ab3FDKFj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 06:05:39 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49187 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab3FDKFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 06:03:43 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
-        Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        netdev@vger.kernel.org
-Subject: [PATCH] net: emaclite: Use platform resource table
-Date: Tue,  4 Jun 2013 12:03:27 +0200
-Message-Id: <6ece0a9ee777b987ca777a338cc146ed67897529.1370340196.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-1278-1370340207-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Tue, 4 Jun 2013 06:05:37 -0400
+Date: Tue, 4 Jun 2013 11:05:11 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
+        "balbi@ti.com" <balbi@ti.com>
+Message-ID: <20130604100511.GA31367@sirena.org.uk>
+References: <1369911393-25747-1-git-send-email-kishon@ti.com>
+ <20130530113247.GI5180@sirena.org.uk>
+ <51A74D70.5060303@nvidia.com>
+ <20130601184511.GC16790@sirena.org.uk>
+ <51AA456E.3030307@nvidia.com>
+ <20130601210511.GT16790@sirena.org.uk>
+ <51ADAE78.4050900@ti.com>
+ <20130604093816.GY31367@sirena.org.uk>
+ <51ADB6BF.6020205@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="b9dEYEwnDXkv9lSy"
+Content-Disposition: inline
+In-Reply-To: <51ADB6BF.6020205@ti.com>
+X-Cookie: Are you a turtle?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC PATCH] regulator: palmas: enable all modes for SMPS10
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-1278-1370340207-0001
+--b9dEYEwnDXkv9lSy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Read data directly from platform recource table
-and do not use of_irq_to_resource().
-Also use devm_request_and_ioremap() for probe
-functions simplification.
+On Tue, Jun 04, 2013 at 03:13:27PM +0530, Kishon Vijay Abraham I wrote:
+> On Tuesday 04 June 2013 03:08 PM, Mark Brown wrote:
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
-Based on my discussion with Arnd
-"[PATCH] net: emaclite: include linux/of_irq.h"
+> >No.  A boost regulator is still a voltage regulator, it just happens to
+> >raise rather than lower the voltage but it's otherwise a normal
+> >regulator.  I'm not sure what you mean by "SWITCH" - from the name it'd
+> >just be a bypass?
 
----
- drivers/net/ethernet/xilinx/xilinx_emaclite.c | 67 +++++++++------------------
- 1 file changed, 22 insertions(+), 45 deletions(-)
+> Copy-pasting Laxman's explanation
 
-diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-index aa14d8a..f87d11c 100644
---- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-+++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-@@ -1074,13 +1074,14 @@ static int xemaclite_send(struct sk_buff *orig_skb, struct net_device *dev)
-  * This function un maps the IO region of the Emaclite device and frees the net
-  * device.
-  */
--static void xemaclite_remove_ndev(struct net_device *ndev)
-+static void xemaclite_remove_ndev(struct net_device *ndev,
-+				  struct platform_device *pdev)
- {
- 	if (ndev) {
- 		struct net_local *lp = netdev_priv(ndev);
+That doesn't clarify anything at all.
 
- 		if (lp->base_addr)
--			iounmap((void __iomem __force *) (lp->base_addr));
-+			devm_iounmap(&pdev->dev, lp->base_addr);
- 		free_netdev(ndev);
- 	}
- }
-@@ -1126,8 +1127,7 @@ static struct net_device_ops xemaclite_netdev_ops;
-  */
- static int xemaclite_of_probe(struct platform_device *ofdev)
- {
--	struct resource r_irq; /* Interrupt resources */
--	struct resource r_mem; /* IO mem resources */
-+	struct resource *res;
- 	struct net_device *ndev = NULL;
- 	struct net_local *lp = NULL;
- 	struct device *dev = &ofdev->dev;
-@@ -1137,20 +1137,6 @@ static int xemaclite_of_probe(struct platform_device *ofdev)
-
- 	dev_info(dev, "Device Tree Probing\n");
-
--	/* Get iospace for the device */
--	rc = of_address_to_resource(ofdev->dev.of_node, 0, &r_mem);
--	if (rc) {
--		dev_err(dev, "invalid address\n");
--		return rc;
--	}
--
--	/* Get IRQ for the device */
--	rc = of_irq_to_resource(ofdev->dev.of_node, 0, &r_irq);
--	if (!rc) {
--		dev_err(dev, "no IRQ found\n");
--		return rc;
--	}
--
- 	/* Create an ethernet device instance */
- 	ndev = alloc_etherdev(sizeof(struct net_local));
- 	if (!ndev)
-@@ -1159,29 +1145,25 @@ static int xemaclite_of_probe(struct platform_device *ofdev)
- 	dev_set_drvdata(dev, ndev);
- 	SET_NETDEV_DEV(ndev, &ofdev->dev);
-
--	ndev->irq = r_irq.start;
--	ndev->mem_start = r_mem.start;
--	ndev->mem_end = r_mem.end;
--
- 	lp = netdev_priv(ndev);
- 	lp->ndev = ndev;
-
--	if (!request_mem_region(ndev->mem_start,
--				ndev->mem_end - ndev->mem_start + 1,
--				DRIVER_NAME)) {
--		dev_err(dev, "Couldn't lock memory region at %p\n",
--			(void *)ndev->mem_start);
--		rc = -EBUSY;
--		goto error2;
-+	/* Get IRQ for the device */
-+	res = platform_get_resource(ofdev, IORESOURCE_IRQ, 0);
-+	if (!res) {
-+		dev_err(dev, "no IRQ found\n");
-+		goto error;
- 	}
-
--	/* Get the virtual base address for the device */
--	lp->base_addr = ioremap(r_mem.start, resource_size(&r_mem));
--	if (NULL == lp->base_addr) {
--		dev_err(dev, "EmacLite: Could not allocate iomem\n");
--		rc = -EIO;
--		goto error1;
--	}
-+	ndev->irq = res->start;
-+
-+	res = platform_get_resource(ofdev, IORESOURCE_MEM, 0);
-+	lp->base_addr = devm_request_and_ioremap(&ofdev->dev, res);
-+	if (!lp->base_addr)
-+		goto error;
-+
-+	ndev->mem_start = res->start;
-+	ndev->mem_end = res->end;
-
- 	spin_lock_init(&lp->reset_lock);
- 	lp->next_tx_buf_to_use = 0x0;
-@@ -1219,7 +1201,7 @@ static int xemaclite_of_probe(struct platform_device *ofdev)
- 	if (rc) {
- 		dev_err(dev,
- 			"Cannot register network device, aborting\n");
--		goto error1;
-+		goto error;
- 	}
-
- 	dev_info(dev,
-@@ -1228,11 +1210,8 @@ static int xemaclite_of_probe(struct platform_device *ofdev)
- 		 (unsigned int __force)lp->base_addr, ndev->irq);
- 	return 0;
-
--error1:
--	release_mem_region(ndev->mem_start, resource_size(&r_mem));
--
--error2:
--	xemaclite_remove_ndev(ndev);
-+error:
-+	xemaclite_remove_ndev(ndev, ofdev);
- 	return rc;
- }
-
-@@ -1267,9 +1246,7 @@ static int xemaclite_of_remove(struct platform_device *of_dev)
- 		of_node_put(lp->phy_node);
- 	lp->phy_node = NULL;
-
--	release_mem_region(ndev->mem_start, ndev->mem_end-ndev->mem_start + 1);
--
--	xemaclite_remove_ndev(ndev);
-+	xemaclite_remove_ndev(ndev, of_dev);
- 	dev_set_drvdata(dev, NULL);
-
- 	return 0;
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-1278-1370340207-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
+--b9dEYEwnDXkv9lSy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-iEYEABECAAYFAlGtu28ACgkQykllyylKDCGkZgCeMwrc6Xt4Br8Wc1MXwJ1Itgix
-BVwAn0MvjvKvtDqU9wUQUAalPYt8FA8P
-=BTIY
+iQIcBAEBAgAGBQJRrbvUAAoJELSic+t+oim9cdUP+gNcD+EkgPegn/GRl2/2UIQ0
+Tp/OqLnqMaewq+qlyxELOCBCc0pCPqA4hD5e+LV+lDh5YrUG8kAY9UhMLBx+sfRs
+p4q1TExKnogPh5u5+CMbUGDKjI8vEUahwuwtfpp0qpxO2ffX8OV3AWGmY5tpS7Zp
+xbGq0tZkYJypQo+8BxoZRbY9gp0/o9mKNYRmO1s87TgmB/9lfbr915n0FQIAnNvl
+L5Z2KllBZuw92DyIgzZHKgkwqGabfWP/2790iuqOf3G1ocThIBEQA0x7wg3CY9jl
+jJ8gSZ+Qtdh24rlfojvzUMkt3gF4OuKBF6IsJ00Vt0DuV9OlfRG7HAAES2E/s6AR
+H84WpCpLM4Vus08oz7P32HAvla+ADQuqbTf0im/LMeWj744qV7lQLrqsOk0urduR
+eoMRUXCpRjCRGJMMlf0mbjVY4IRpbmMNQk+9ORCPhEmhKL5YvShmCeD/0HzPPFrt
+DhNUWU53SmCrFjbP964z+R1Vo6sRxG1ywSSMnTN3VazrYowWXa29cCCUKVlYNjhN
+UBS4N/caJltxkWS402+QFt6MSRC+cX9PNuIxdZNzqPyr9VMs5qlp+YD5Zz8VS2IM
+EOQXrIJljiW+WyMqdflYTOaz0GjdH4sUMECzzFU8IOtZ7D0F+Iy0JRBai+MoEFvq
+XT0RghPaU0Ju4wT9prNH
+=eU8h
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-1278-1370340207-0001--
+--b9dEYEwnDXkv9lSy--
