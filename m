@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107Ab3FDJFZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 05:05:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62120 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751813Ab3FDJFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 05:05:21 -0400
-Date: Tue, 4 Jun 2013 12:05:08 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 1/1] KVM: add kvm_para_available to asm-generic/kvm_para.h
-Message-ID: <20130604090508.GL4725@redhat.com>
-References: <1369222162-4857-1-git-send-email-james.hogan@imgtec.com>
+	id S1752194Ab3FDJGR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 05:06:17 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:55103 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391Ab3FDJGP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 05:06:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369222162-4857-1-git-send-email-james.hogan@imgtec.com>
+In-Reply-To: <20130530145323.GB1915@gmail.com>
+References: <1369920465-13905-1-git-send-email-fabio.baltieri@linaro.org>
+	<20130530145323.GB1915@gmail.com>
+Date: Tue, 4 Jun 2013 11:06:14 +0200
+Message-ID: <CACRpkdYfrQfvk0v7TmbtAOuYQpN5UuA0V3wL=0sT_SaOFcg_OA@mail.gmail.com>
+Subject: Re: [PATCH 0/5] Various DT fixes related to ux500 ASoC driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Ola Lilja <ola.o.lilja@stericsson.com>,
+        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 12:29:22PM +0100, James Hogan wrote:
-> According to include/uapi/linux/kvm_para.h architectures should define
-> kvm_para_available, so add an implementation to asm-generic/kvm_para.h
-> which just returns false.
-> 
-What is this fixing? The only user of kvm_para_available() that can
-benefit from this is in sound/pci/intel8x0.c, but I do not see follow up
-patch to use it there.
+On Thu, May 30, 2013 at 4:53 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: Marcelo Tosatti <mtosatti@redhat.com>
-> Cc: Gleb Natapov <gleb@redhat.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> ---
->  include/asm-generic/kvm_para.h | 5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/include/asm-generic/kvm_para.h b/include/asm-generic/kvm_para.h
-> index 9d96605..fa25bec 100644
-> --- a/include/asm-generic/kvm_para.h
-> +++ b/include/asm-generic/kvm_para.h
-> @@ -18,4 +18,9 @@ static inline unsigned int kvm_arch_para_features(void)
->  	return 0;
->  }
->  
-> +static inline bool kvm_para_available(void)
-> +{
-> +	return false;
-> +}
-> +
->  #endif
-> -- 
-> 1.8.1.2
-> 
+> All look good to me.
+>
+> For patches 1-4:
+>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
 
---
-			Gleb.
+OK added this.
+
+> For patch 5:
+> Applied thanks.
+
+Thanks!
+
+Yours,
+Linus Walleij
