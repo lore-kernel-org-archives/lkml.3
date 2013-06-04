@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751295Ab3FDSZl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 14:25:41 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:58255 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab3FDSZi (ORCPT
+	id S1751311Ab3FDS2d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 14:28:33 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:33300 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764Ab3FDS2b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 14:25:38 -0400
-Message-ID: <51AE311F.5060900@lvivier.info>
-Date: Tue, 04 Jun 2013 20:25:35 +0200
-From: Laurent Vivier <Laurent@lvivier.info>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 4 Jun 2013 14:28:31 -0400
+Date: Tue, 4 Jun 2013 20:28:30 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        OndrejZary <linux@rainbow-software.org>,
+        Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH] usbnet: improve/fix status interrupt endpoint interval
+Message-ID: <20130604182830.GA13186@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] swim: Release memory region after incorrect return/goto
-References: <60123fd3175b7cceadf6c335b12e58b797e18f65.1370356776.git.joe@perches.com>
-In-Reply-To: <60123fd3175b7cceadf6c335b12e58b797e18f65.1370356776.git.joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V02:K0:0lxmM15TK+emNWheD8/pkRE+aT3YOFyA0tS9WZcWjn/
- CqPzSkVUEVxDn9l1K6imLdLn4ZMPfFFWIveNuz+oZFBfXxIxJV
- v6iQj9oF5o5dgiuAeKN1upRQx+gdXl308WdAe8aY4NqWq8wBqv
- FRo2EkpHwPR5X99lm7J2MPtRxy3rXlg5OO1GqMP+fVRnkp7doN
- anh6+R4gAuV5EPveLixOLOMfGs5THHqvytqmQ5d1tRNvxZlZRY
- irtUpporwEexDxsHoZB++RwMDlpYTugDtErVVevP0bM5txaIeD
- pr5Zv1Wnrtht72K/V8QW8HS6pl8Lh2/R7XXNktGTo+YzoyHJ42
- JfhXRP1jBRsooXOwuJH4=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 04/06/2013 16:44, Joe Perches a écrit :
-> The code uses
->
-> 	return foo;
-> 	goto err_type;
->
-> when instead the form should have been
->
-> 	ret = foo;
-> 	goto err_type;
->
-> Here this causes a useful release_mem_region to be skipped.
->
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->   drivers/block/swim.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/block/swim.c b/drivers/block/swim.c
-> index 2f445b7..8ed6ccb 100644
-> --- a/drivers/block/swim.c
-> +++ b/drivers/block/swim.c
-> @@ -893,7 +893,7 @@ static int swim_probe(struct platform_device *dev)
->   
->   	swim_base = ioremap(res->start, resource_size(res));
->   	if (!swim_base) {
-> -		return -ENOMEM;
-> +		ret = -ENOMEM;
->   		goto out_release_io;
->   	}
->   
 
-Reviewed-by: Laurent Vivier <Laurent@Vivier.EU>
+>From 307685fe8e6dfc8181e30167b9c31479332cb22f Mon Sep 17 00:00:00 2001
+From: Andreas Mohr <andim2@users.sourceforge.net>
+Date: Sun, 2 Jun 2013 20:37:05 +0200
+Subject: [PATCH] usbnet: improve/fix status interrupt endpoint interval
+ tweaking.
+
+- failed to take super-speed into account
+- <= full-speed seems to have wrong value (specified as frames [ms],
+  thus 3 is not suitable to achieve 8ms)
+  Value 8 now managed to reduce powertop wakeups from ~ 540 to ~ 155
+- add detailed docs and question marks about current practice
+---
+ drivers/net/usb/usbnet.c |   17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
+
+
+Found this with MCS7830 on a full-speed USB 1.1 port (Inspiron 8000).
+Good to have a rusty notebook with noisy PSU coils, else it would
+have taken a lot longer to nail it ;)
+Tested on -rc4, checkpath.pl:d.
+
+Signed-off-by: Andreas Mohr <andim2@users.sourceforge.net>
+
+
+diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+index 06ee82f..b6e9569 100644
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -231,8 +231,23 @@ static int init_status (struct usbnet *dev, struct usb_interface *intf)
+ 	maxp = usb_maxpacket (dev->udev, pipe, 0);
+ 
+ 	/* avoid 1 msec chatter:  min 8 msec poll rate */
++	/* High/SuperSpeed expresses intervals in microframes
++	 * (in logarithmic encoding, PRIOR to encoding in URB)
++	 * rather than frames.
++	 * Thus, for >= HighSpeed: == X [microframes] * 125us [-> 8ms],
++	 * <= FullSpeed: == X [ms] [-> 8ms].
++	 * Finally, it's questionable whether we'll even get away unscathed
++	 * with doing such rate tweaking at all:
++	 * bInterval value is declared as being a hard demand by a device
++	 * in order to guarantee having its I/O needs serviced properly...
++	 * if we don't do this, then... [overruns], [fire], [apocalypse]?
++	 * If this turns out to be problematic, such policy should be moved
++	 * to individual drivers (indicate flag to [dis]allow rate tweaking
++	 * as tolerated by specific devices).
++	 */
+ 	period = max ((int) dev->status->desc.bInterval,
+-		(dev->udev->speed == USB_SPEED_HIGH) ? 7 : 3);
++		((dev->udev->speed == USB_SPEED_HIGH) ||
++		 (dev->udev->speed == USB_SPEED_SUPER)) ? 7 : 8);
+ 
+ 	buf = kmalloc (maxp, GFP_KERNEL);
+ 	if (buf) {
+-- 
+1.7.10.4
+
