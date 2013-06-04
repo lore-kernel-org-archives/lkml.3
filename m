@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757008Ab3FDOXM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:23:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46724 "EHLO
+	id S1755598Ab3FDOHz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:07:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46687 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755640Ab3FDOH6 (ORCPT
+	with ESMTP id S1755458Ab3FDOHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:07:58 -0400
+	Tue, 4 Jun 2013 10:07:50 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
+Cc: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 23/70] ARM: plat-orion: Fix num_resources and id for ge10 and ge11
-Date: Tue,  4 Jun 2013 15:06:39 +0100
-Message-Id: <1370354846-14213-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 15/70] USB: Blacklisted Cinterion's PLxx WWAN Interface
+Date: Tue,  4 Jun 2013 15:06:31 +0100
+Message-Id: <1370354846-14213-16-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
 References: <1370354846-14213-1-git-send-email-luis.henriques@canonical.com>
@@ -28,68 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+From: Schemmel Hans-Christoph <Hans-Christoph.Schemmel@gemalto.com>
 
-commit 2b8b2797142c7951e635c6eec5d1705ee9bc45c5 upstream.
+commit 8ff10bdb14a52e3f25d4ce09e0582a8684c1a6db upstream.
 
-When platform data were moved from arch/arm/mach-mv78xx0/common.c to
-arch/arm/plat-orion/common.c with the commit "7e3819d ARM: orion:
-Consolidate ethernet platform data", there were few typo made on
-gigabit Ethernet interface ge10 and ge11. This commit writes back
-their initial value, which allows to use this interfaces again.
+/drivers/usb/serial/option.c: Blacklisted Cinterion's PLxx WWAN
+Interface (USB Interface 4), because it will be handled by QMI WWAN
+driver. Product IDs renamed.
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Acked-by: Andrew Lunn <andrew@lunn.ch>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/plat-orion/common.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/usb/serial/option.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/plat-orion/common.c b/arch/arm/plat-orion/common.c
-index c179378..895cdaf 100644
---- a/arch/arm/plat-orion/common.c
-+++ b/arch/arm/plat-orion/common.c
-@@ -368,7 +368,7 @@ static struct resource orion_ge10_shared_resources[] = {
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 7271025..3e211a8 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -341,8 +341,8 @@ static void option_instat_callback(struct urb *urb);
+ #define CINTERION_PRODUCT_EU3_E			0x0051
+ #define CINTERION_PRODUCT_EU3_P			0x0052
+ #define CINTERION_PRODUCT_PH8			0x0053
+-#define CINTERION_PRODUCT_AH6			0x0055
+-#define CINTERION_PRODUCT_PLS8			0x0060
++#define CINTERION_PRODUCT_AHXX			0x0055
++#define CINTERION_PRODUCT_PLXX			0x0060
  
- static struct platform_device orion_ge10_shared = {
- 	.name		= MV643XX_ETH_SHARED_NAME,
--	.id		= 1,
-+	.id		= 2,
- 	.dev		= {
- 		.platform_data	= &orion_ge10_shared_data,
- 	},
-@@ -383,8 +383,8 @@ static struct resource orion_ge10_resources[] = {
- 
- static struct platform_device orion_ge10 = {
- 	.name		= MV643XX_ETH_NAME,
--	.id		= 1,
--	.num_resources	= 2,
-+	.id		= 2,
-+	.num_resources	= 1,
- 	.resource	= orion_ge10_resources,
- 	.dev		= {
- 		.coherent_dma_mask	= DMA_BIT_MASK(32),
-@@ -420,7 +420,7 @@ static struct resource orion_ge11_shared_resources[] = {
- 
- static struct platform_device orion_ge11_shared = {
- 	.name		= MV643XX_ETH_SHARED_NAME,
--	.id		= 1,
-+	.id		= 3,
- 	.dev		= {
- 		.platform_data	= &orion_ge11_shared_data,
- 	},
-@@ -435,8 +435,8 @@ static struct resource orion_ge11_resources[] = {
- 
- static struct platform_device orion_ge11 = {
- 	.name		= MV643XX_ETH_NAME,
--	.id		= 1,
--	.num_resources	= 2,
-+	.id		= 3,
-+	.num_resources	= 1,
- 	.resource	= orion_ge11_resources,
- 	.dev		= {
- 		.coherent_dma_mask	= DMA_BIT_MASK(32),
+ /* Olivetti products */
+ #define OLIVETTI_VENDOR_ID			0x0b3c
+@@ -1266,8 +1266,9 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_E) },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_P) },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8) },
+-	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_AH6) },
+-	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLS8) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_AHXX) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLXX),
++		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) }, 
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
+ 	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDM) },
 -- 
 1.8.1.2
 
