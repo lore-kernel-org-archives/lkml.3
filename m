@@ -1,95 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756480Ab3FDGPX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 02:15:23 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:50953 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab3FDGPU convert rfc822-to-8bit (ORCPT
+	id S1759228Ab3FDGQA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 02:16:00 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:43149 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751383Ab3FDGP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 02:15:20 -0400
+	Tue, 4 Jun 2013 02:15:58 -0400
+Message-ID: <51AD8611.8070102@monstr.eu>
+Date: Tue, 04 Jun 2013 08:15:45 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <201306032339.39176.heiko@sntech.de>
-References: <1370281990-15090-1-git-send-email-mturquette@linaro.org>
- <20130603200722.6077.85426@quantum> <201306032215.45983.heiko@sntech.de> <201306032339.39176.heiko@sntech.de>
-From: Mike Turquette <mturquette@linaro.org>
-Date: Mon, 3 Jun 2013 23:14:58 -0700
-Message-ID: <CAPtuhTitiDVBTLF==je9_Ydks5OCqM1cDv-UwPsGkkgwEj6VWQ@mail.gmail.com>
-Subject: Re: [PATCH RFC 2/3] clk: dt: binding for basic multiplexor clock
-To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: Hein Tibosch <hein_tibosch@yahoo.es>, netdev@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, michal.simek@xilinx.com,
+        linux-kernel@vger.kernel.org,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        s.trumtrar@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        =?ISO-8859-1?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
+Subject: Re: [PATCH] net/macb: fix ISR clear-on-write behavior only for some
+ SoC
+References: <1368461105-23128-1-git-send-email-nicolas.ferre@atmel.com> <FE065E51-1EAA-47ED-8C7B-0F2E6418F349@jcrosoft.com> <51918C23.7040106@yahoo.es> <20130514055256.GD22508@game.jcrosoft.org>
+In-Reply-To: <20130514055256.GD22508@game.jcrosoft.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2PRQTPGOBTCJVGUUXBFXF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 3, 2013 at 2:39 PM, Heiko Stübner <heiko@sntech.de> wrote:
-> Am Montag, 3. Juni 2013, 22:15:45 schrieb Heiko Stübner:
->> Am Montag, 3. Juni 2013, 22:07:22 schrieb Mike Turquette:
->> > Quoting Heiko Stübner (2013-06-03 12:33:19)
->> >
->> > > Hi Mike,
->> > >
->> > > I think it's a multiplexEr clock in the patch title, and see below
->> >
->> > Doh, you are right.  But "xor" is so much cooler looking than "xer"...
->> >
->> > > Am Montag, 3. Juni 2013, 19:53:09 schrieb Mike Turquette:
->> > > > Device Tree binding for the basic clock multiplexor, plus the setup
->> > > > function to register the clock.  Based on the existing fixed-clock
->> > > > binding.
->> > > >
->> > > > Also relocate declaration of of_fixed_factor_clk_setup to keep things
->> > > > tidy.
->> > > >
->> > > > Signed-off-by: Mike Turquette <mturquette@linaro.org>
->> > >
->> > > [...]
->> > >
->> > > > +
->> > > > +     reg = of_iomap(node, 0);
->> > > > +     pr_err("%s: reg is 0x%p\n", __func__, reg);
->> > > > +
->> > > > +     if (of_property_read_u32(node, "mask", &mask)) {
->> > > > +             pr_err("%s: missing mask property for %s\n", __func__,
->> > > > node->name); +             return;
->> > > > +     }
->> > > > +
->> > > > +     if (of_property_read_u32(node, "shift", &shift))
->> > > > +             pr_debug("%s: missing shift property defaults to zero
->> > > > for %s\n", +                             __func__, node->name);
->> > > > +
->> > > > +     if (of_property_read_bool(node, "index_one"))
->> > > > +             clk_mux_flags |= CLK_MUX_INDEX_ONE;
->> > > > +
->> > > > +     clk = clk_register_mux_table(NULL, clk_name, parent_names,
->> > > > num_parents, +                     0, reg, 0, mask, clk_mux_flags,
->> > > >
->> > >                       ^- should probably be shift
->> > >
->> > > Otherwise looks cool and I'm currently trying it with my Rockchip code.
->> >
->> > Right again.  My test platform seems to not shift the mask at all so
->> > this did not cause a visible bug for me.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2PRQTPGOBTCJVGUUXBFXF
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On 05/14/2013 07:52 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> On 08:58 Tue 14 May     , Hein Tibosch wrote:
+>> On 5/14/2013 12:05 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>>> On May 14, 2013, at 12:05 AM, Nicolas Ferre <nicolas.ferre@atmel.com>=
+ wrote:
+>>>
+>>>> Commit 749a2b6 (net/macb: clear tx/rx completion flags in ISR)
+>>>> introduces clear-on-write on ISR register. This behavior is not alwa=
+ys
+>>>> implemented when using Cadence MACB/GEM and is breaking other platfo=
+rms.
+>>>> We are using a new Device Tree compatibility string and a capability=
+
+>>>> property to actually activate this clear-on-write behavior on ISR.
+>>>>
+>>>> Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
+>>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>> can we detect it via the IP?
 >>
->> I'm currently converting my rockchip stuff to it, as it would solve a lot
->> of problems with the numerous clock types I'm defining just to put the
->> shift and mask values somewhere.
+>> This was my first proposal, have it based on the value of MACB's
+>> register 'MID' (offset 0x00fc, lower 16 bits).
+>> On avr32 it reads: 0x0000010D, on Zynq it reports 0x00000119
 >>
->> So lets see if anything more turns up ;-)
->
-> yep ... of_mux_clk_setup is quite talkative ... there are quite some (debug-?)
-> pr_errs in it ;-)
->
+>> So for the moment, CAPS_ISR_CLEAR_ON_WRITE could be set if the revisio=
+n
+>> equals to 0x00000119?
+> so no it will not work
+>=20
+> as the gem on sama5 is 00020119
+>=20
+> so version 0x119 too
+>=20
+> nico=20
+> Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-Yes I realized that after sending.  Hopefully not too many curse words
-in the trace messages.  Will remove for v2.
+Was this added to any queue or branch?
+I would like to enable macb for zynq and not sure if "cdns,zynq-7000-gem"=
 
-Regards,
-Mike
+compatible string goes to mainline.
 
->
-> Heiko
+Thanks,
+Michal
+
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+------enig2PRQTPGOBTCJVGUUXBFXF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlGthhEACgkQykllyylKDCG2bgCgmrB4vIP6i/yt0ExEIzxBW6Mb
+yLwAn2LxfEeW8ypXD9wW/T13WW+jmEyZ
+=AzeM
+-----END PGP SIGNATURE-----
+
+------enig2PRQTPGOBTCJVGUUXBFXF--
