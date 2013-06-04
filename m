@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758290Ab3FDRCg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:02:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48494 "EHLO
+	id S1758398Ab3FDRHu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:07:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48514 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755936Ab3FDRC3 (ORCPT
+	with ESMTP id S1758270Ab3FDRCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:02:29 -0400
+	Tue, 4 Jun 2013 13:02:35 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Brian Behlendorf <behlendorf1@llnl.gov>, Jens Axboe <axboe@kernel.dk>,
+Cc: Christian Gmeiner <christian.gmeiner@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 54/75] drivers/block/brd.c: fix brd_lookup_page() race
-Date: Tue,  4 Jun 2013 09:55:38 -0700
-Message-Id: <1370364959-9475-55-git-send-email-kamal@canonical.com>
+Subject: [PATCH 53/75] drivers/leds/leds-ot200.c: fix error caused by shifted mask
+Date: Tue,  4 Jun 2013 09:55:37 -0700
+Message-Id: <1370364959-9475-54-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370364959-9475-1-git-send-email-kamal@canonical.com>
 References: <1370364959-9475-1-git-send-email-kamal@canonical.com>
@@ -29,45 +31,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Behlendorf <behlendorf1@llnl.gov>
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
 
-commit dfd20b2b174d3a9b258ea3b7a35ead33576587b1 upstream.
+commit 4b949b8af12e24b8a48fa5bb775a13b558d9f4da upstream.
 
-The index on the page must be set before it is inserted in the radix
-tree.  Otherwise there is a small race which can occur during lookup
-where the page can be found with the incorrect index.  This will trigger
-the BUG_ON() in brd_lookup_page().
+During the development of this driver an in-house register documentation
+was used.  The last week some integration tests were done and this
+problem was found.  It turned out that the released register
+documentation is wrong.
 
-Signed-off-by: Brian Behlendorf <behlendorf1@llnl.gov>
-Reported-by: Chris Wedgwood <cw@f00f.org>
-Cc: Jens Axboe <axboe@kernel.dk>
+The fix is very simple: shift all masks by one.
+
+Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+Cc: Bryan Wu <cooloney@gmail.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/block/brd.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/leds/leds-ot200.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-index 531ceb3..4e8213a 100644
---- a/drivers/block/brd.c
-+++ b/drivers/block/brd.c
-@@ -117,13 +117,13 @@ static struct page *brd_insert_page(struct brd_device *brd, sector_t sector)
+diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
+index ee14662..98cae52 100644
+--- a/drivers/leds/leds-ot200.c
++++ b/drivers/leds/leds-ot200.c
+@@ -47,37 +47,37 @@ static struct ot200_led leds[] = {
+ 	{
+ 		.name = "led_1",
+ 		.port = 0x49,
+-		.mask = BIT(7),
++		.mask = BIT(6),
+ 	},
+ 	{
+ 		.name = "led_2",
+ 		.port = 0x49,
+-		.mask = BIT(6),
++		.mask = BIT(5),
+ 	},
+ 	{
+ 		.name = "led_3",
+ 		.port = 0x49,
+-		.mask = BIT(5),
++		.mask = BIT(4),
+ 	},
+ 	{
+ 		.name = "led_4",
+ 		.port = 0x49,
+-		.mask = BIT(4),
++		.mask = BIT(3),
+ 	},
+ 	{
+ 		.name = "led_5",
+ 		.port = 0x49,
+-		.mask = BIT(3),
++		.mask = BIT(2),
+ 	},
+ 	{
+ 		.name = "led_6",
+ 		.port = 0x49,
+-		.mask = BIT(2),
++		.mask = BIT(1),
+ 	},
+ 	{
+ 		.name = "led_7",
+ 		.port = 0x49,
+-		.mask = BIT(1),
++		.mask = BIT(0),
+ 	}
+ };
  
- 	spin_lock(&brd->brd_lock);
- 	idx = sector >> PAGE_SECTORS_SHIFT;
-+	page->index = idx;
- 	if (radix_tree_insert(&brd->brd_pages, idx, page)) {
- 		__free_page(page);
- 		page = radix_tree_lookup(&brd->brd_pages, idx);
- 		BUG_ON(!page);
- 		BUG_ON(page->index != idx);
--	} else
--		page->index = idx;
-+	}
- 	spin_unlock(&brd->brd_lock);
- 
- 	radix_tree_preload_end();
 -- 
 1.8.1.2
 
