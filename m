@@ -1,101 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758630Ab3FDAnp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Jun 2013 20:43:45 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:50018 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756101Ab3FDAnn (ORCPT
+	id S1758711Ab3FDA7H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Jun 2013 20:59:07 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57835 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757267Ab3FDA7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Jun 2013 20:43:43 -0400
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: konrad.wilk@oracle.com
-Cc: Xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] PVH: vcpu info placement, load selectors, and remove debug printk.
-Date: Mon,  3 Jun 2013 17:43:32 -0700
-Message-Id: <1370306612-12984-1-git-send-email-mukesh.rathor@oracle.com>
-X-Mailer: git-send-email 1.7.2.3
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Mon, 3 Jun 2013 20:59:06 -0400
+Date: Tue, 4 Jun 2013 01:58:53 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Michal Hocko <mhocko@suse.cz>, Sergey Dyasly <dserrg@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/4] proc: avoid ->f_pos overflows in
+ proc_task_readdir() paths
+Message-ID: <20130604005853.GA13110@ZenIV.linux.org.uk>
+References: <20130603190640.GA11481@redhat.com>
+ <20130603190705.GA11517@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130603190705.GA11517@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch addresses 3 things:
-   - Resolve vcpu info placement fixme.
-   - Load DS/SS/CS selectors for PVH after switching to new gdt.
-   - Remove printk in case of failure to map pnfs in p2m. This because qemu
-     has lot of benign failures when mapping HVM pages.
+On Mon, Jun 03, 2013 at 09:07:05PM +0200, Oleg Nesterov wrote:
+> 1. proc_task_readdir() truncates f_pos to long, this can lead
+>    to wrong result on 32bit.
+> 
+> 2. first_tid() truncates f_pos to int, this is wrong even on
+>    64bit.
+> 
+>    We could check that f_pos < PID_MAX or even INT_MAX in
+>    proc_task_readdir(), but this patch simply checks the
+>    potential overflow in first_tid(), this check is nop on
+>    64bit. We do not care if it was negative and the new
+>    unsigned value is huge, all we need to ensure is that we
+>    never wrongly return !NULL.
+> 
+> 3. Remove the 2nd "nr != 0" check before get_nr_threads(),
+>    nr_threads == 0 is not distinguishable from !pid_task()
+>    above.
 
-Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
----
- arch/x86/xen/enlighten.c |   22 ++++++++++++++++++----
- arch/x86/xen/mmu.c       |    3 ---
- 2 files changed, 18 insertions(+), 7 deletions(-)
-
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index a7ee39f..6ff30d8 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1083,14 +1083,12 @@ void xen_setup_shared_info(void)
- 		HYPERVISOR_shared_info =
- 			(struct shared_info *)__va(xen_start_info->shared_info);
- 
--	/* PVH TBD/FIXME: vcpu info placement in phase 2 */
--	if (xen_pvh_domain())
--		return;
--
- #ifndef CONFIG_SMP
- 	/* In UP this is as good a place as any to set up shared info */
- 	xen_setup_vcpu_info_placement();
- #endif
-+	if (xen_pvh_domain())
-+		return;
- 
- 	xen_setup_mfn_list_list();
- }
-@@ -1103,6 +1101,10 @@ void xen_setup_vcpu_info_placement(void)
- 	for_each_possible_cpu(cpu)
- 		xen_vcpu_setup(cpu);
- 
-+	/* PVH always uses native IRQ ops */
-+	if (xen_pvh_domain())
-+		return;
-+
- 	/* xen_vcpu_setup managed to place the vcpu_info within the
- 	   percpu area for all cpus, so make use of it */
- 	if (have_vcpu_info_placement) {
-@@ -1327,6 +1329,18 @@ static void __init xen_setup_stackprotector(void)
- 	/* PVH TBD/FIXME: investigate setup_stack_canary_segment */
- 	if (xen_feature(XENFEAT_auto_translated_physmap)) {
- 		switch_to_new_gdt(0);
-+
-+		/* xen started us with null selectors. load them now */
-+		__asm__ __volatile__ (
-+			"movl %0,%%ds\n"
-+			"movl %0,%%ss\n"
-+			"pushq %%rax\n"
-+			"leaq 1f(%%rip),%%rax\n"
-+			"pushq %%rax\n"
-+			"retfq\n"
-+			"1:\n"
-+			: : "r" (__KERNEL_DS), "a" (__KERNEL_CS) : "memory");
-+
- 		return;
- 	}
- 	pv_cpu_ops.write_gdt_entry = xen_write_gdt_entry_boot;
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 31cc1ef..c104895 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -2527,9 +2527,6 @@ static int pvh_add_to_xen_p2m(unsigned long lpfn, unsigned long fgmfn,
- 	set_xen_guest_handle(xatp.errs, &err);
- 
- 	rc = HYPERVISOR_memory_op(XENMEM_add_to_physmap_range, &xatp);
--	if (rc || err)
--		pr_warn("d0: Failed to map pfn (0x%lx) to mfn (0x%lx) rc:%d:%d\n",
--			lpfn, fgmfn, rc, err);
- 	return rc;
- }
- 
--- 
-1.7.2.3
-
+Oleg, please take a look at the series in vfs.git#experimental; at the very
+least, we don't want to access file->f_pos in any foo_readdir() - it's too
+messy and race-prone.  It's pretty much independent from the issues you
+are dealing with, but let's avoid creating pointless conflicts...
