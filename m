@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab3FDKyT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 06:54:19 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:59644 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab3FDKyR (ORCPT
+	id S1752665Ab3FDKyj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 06:54:39 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:33223 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375Ab3FDKyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 06:54:17 -0400
+	Tue, 4 Jun 2013 06:54:36 -0400
+Message-ID: <51ADC859.6060507@linux.vnet.ibm.com>
+Date: Tue, 04 Jun 2013 16:28:33 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <1350069843.7065.65.camel@rhapsody>
-References: <cover.1348652044.git.lv.zheng@intel.com> <09ee0e9c79c57da2fc9d0af1c2daeaacdc0bb234.1349838218.git.lv.zheng@intel.com>
- <20121010174406.GA13861@srcf.ucam.org> <1350069843.7065.65.camel@rhapsody>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 4 Jun 2013 11:53:56 +0100
-X-Google-Sender-Auth: NelevAu5TPejcfrm6Ulz_qdAOUc
-Message-ID: <CACxGe6tC+=98uD=Oc=u-=NHzVKgG9r_3eg+-sG-DQYUnCGw0sA@mail.gmail.com>
-Subject: Re: [PATCH v6 1/2] ACPI: Add early console framework for DBGP/DBG2.
-To: Khalid Aziz <khalid@gonehiking.org>
-Cc: Matthew Garrett <mjg@redhat.com>, Lv Zheng <lv.zheng@intel.com>,
-        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Feng Tang <feng.tang@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>, x86@kernel.org,
-        platform-driver-x86@vger.kernel.org, Al Stone <al.stone@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andi Kleen <andi@firstfloor.org>
+CC: gleb@redhat.com, mingo@redhat.com, jeremy@goop.org, x86@kernel.org,
+        konrad.wilk@oracle.com, hpa@zytor.com, pbonzini@redhat.com,
+        linux-doc@vger.kernel.org, habanero@linux.vnet.ibm.com,
+        xen-devel@lists.xensource.com, peterz@infradead.org,
+        mtosatti@redhat.com, stefano.stabellini@eu.citrix.com,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V9 0/19] Paravirtualized ticket spinlocks
+References: <20130601082145.22955.33596.sendpatchset@codeblue> <20130601201442.GP6123@two.firstfloor.org>
+In-Reply-To: <20130601201442.GP6123@two.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060410-7014-0000-0000-0000031D8C67
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 12, 2012 at 8:24 PM, Khalid Aziz <khalid@gonehiking.org> wrote:
-> On Wed, 2012-10-10 at 18:44 +0100, Matthew Garrett wrote:
->> On Wed, Oct 10, 2012 at 11:23:01AM +0800, Lv Zheng wrote:
->> > Microsoft Debug Port Table (DBGP or DBG2) is used by the Windows SoC
->> > platforms to describe their debugging facilities.
->> > DBGP: http://msdn.microsoft.com/en-us/windows/hardware/hh134821
->> > DBG2: http://msdn.microsoft.com/en-us/library/windows/hardware/hh673515
->>
->> The license for these specifications only covers BIOS implementations,
->> not OS implementations. Has this had appropriate legal review?
->>
+On 06/02/2013 01:44 AM, Andi Kleen wrote:
 >
-> I agree with Matthew. There are potential legal issues with using
-> DBGP/DBGP2 tables in Linux. I had added support for SPCR and DBGP tables
-> many years ago (in early 2.6 kernel timeframe) before Microsoft added
-> this new license. I pulled the code out (in 2.6.14, I think) after
-> Microsoft added the new license to these tables. I agree with Matthew's
-> interpretation that the license is clear only about BIOS vendors being
-> allowed to use these tables. PCDP table in DIG64 spec was introduced to
-> get around the legal issues with using SPCR and DBGP in Linux.
+> FWIW I use the paravirt spinlock ops for adding lock elision
+> to the spinlocks.
 >
-> License for DBGP/DBGP2 needs some legal review before this patch can go
-> into Linux.
+> This needs to be done at the top level (so the level you're removing)
+>
+> However I don't like the pv mechanism very much and would
+> be fine with using an static key hook in the main path
+> like I do for all the other lock types.
+>
+> It also uses interrupt ops patching, for that it would
+> be still needed though.
+>
 
-Matthew, can you point me at the license Microsoft is using for the
-DBG2 table? I can download the document from Microsoft's site without
-seeing any reference to it being licensed only for BIOS implementers.
-All I see is a "this document is provided 'as-is', blah blah blah"
-blurb at the beginning of the document. It may be that Microsoft has
-changed the license on this document in the last 6 months.
+Hi Andi, IIUC, you are okay with the current approach overall right?
 
-I asked some of my contacts at Microsoft about this and was told that
-the DBG2 spec was supposed to be freed up; but I wasn't able to get
-anything absolutely confirmed or in writing.
-
-g.
