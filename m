@@ -1,67 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496Ab3FDI3x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 04:29:53 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:56805 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750982Ab3FDI3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 04:29:50 -0400
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 01/10] clocksource: dw_apb_timer_of: use the clocksource as sched clock if necessary
-Date: Tue, 4 Jun 2013 10:29:38 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>
-References: <201306030055.15413.heiko@sntech.de> <201306030056.03522.heiko@sntech.de> <CACRpkdYAvUQ+aymJm1Fw1bE1aGdO7RUqLR9byvoT7ECTk4tkpw@mail.gmail.com>
-In-Reply-To: <CACRpkdYAvUQ+aymJm1Fw1bE1aGdO7RUqLR9byvoT7ECTk4tkpw@mail.gmail.com>
+	id S1751690Ab3FDIga (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 04:36:30 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:44586 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279Ab3FDIgW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 04:36:22 -0400
+X-AuditID: 85900ec0-d1ac5b900000151e-25-51ada701b64d
+Subject: [PATCH V2 0/1] kvm/vmx: Output TSC offset
+To: linux-kernel@vger.kernel.org
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Gleb Natapov <gleb@redhat.com>,
+        David Sharp <dhsharp@google.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 04 Jun 2013 17:36:17 +0900
+Message-ID: <20130604083616.22713.24922.stgit@yunodevel>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201306041029.39053.heiko@sntech.de>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 4. Juni 2013, 08:34:44 schrieb Linus Walleij:
-> On Mon, Jun 3, 2013 at 12:56 AM, Heiko Stübner <heiko@sntech.de> wrote:
-> > Currently the dw_apb_timer always expects a separate special timer to be
-> > availbable for the sched_clock. Some devices using dw_apb_timers do not
-> > have the sptimer but can use the clocksource as sched_clock.
-> > Therefore this patch adds using the clocksource timer as
-> > a fallback if no usable sched timer is found.
-> > 
-> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> 
-> Is this really what the patch does? I mean "ass the clocksourse as
-> fallback", it seems more like that is controlled from the device tree,
-> this looks more like some more careful handling of the device tree
-> input making the sched_timer optional, it doesn't really "add"
-> anything, does it?
+Hi All,
 
-Right, the commit message is probably based a bit to much on the before-state 
-of the driver, always expecting the "sptimer" and panicing if not found.
+I'd like to propose a patch which adds a tracepoint at write_tsc_offset for
+tracing guests TSC offset changes. It is required for sorting the trace data of
+a guest and the host in chronological order.
 
-How about:
+In a virtualization environment, it is difficult to analyze performance
+problems, such as a delay of I/O request on a guest. This is because multiple
+guests operate on the host. One of approaches for solving such kind of problems
+is to sort trace data of guests and the host in chronological order.
 
-Currently the dw_apb_timer always expects a separate special timer to be
-availbable for the sched_clock. Some devices using dw_apb_timers do not
-have this sptimer but can use the clocksource as sched_clock instead.
+Raw TSC can be chosen as a timestamp of ftrace. I think TSC is useful for
+merging trace data in chronological order by two reasons. One of the reasons is 
+that guests can directly read raw TSC from the CPU using rdtsc operation. This
+means that raw TSC value is not software clock like sched_clock, so we don't
+need to consider about how the timestamp is calculated. The other is that TSC
+of recent x86 CPUs is constantly incremented. This means that we don't need to
+worry about pace of the timestamp. Therefore, choosing TSC as a timestamp for
+tracing is reasonable to integrate trace data of guests and a host.
 
-Therefore enable the driver to distiguish between devices with and without
-sptimer based on the devicetree data and select the correct timer as
-sched_clock.
+Here, we need to consider about just one matter for using TSC on guests. TSC
+value on a guest is always the host TSC plus the guest's "TSC offset". In other
+words, to merge trace data using TSC as timestamp in chronological order, we
+need to consider TSC offset of the guest.
+
+However, only the host kernel can read the TSC offset from VMCS and TSC offset
+is not output in anywhere now. In other words, tools in userland cannot get
+the TSC offset value, so we cannot merge trace data of guest and the host in
+chronological order. Therefore, I think the TSC offset should be exported for
+userland tools.
+
+In this patch, TSC offset is exported by the tracepoint kvm_write_tsc_offset
+on the host. TSC offset events will be very rare event because guests may
+seldom execute write_tsc. So if we enable this event for a normal buffer of
+ftrace, the events will be overwritten by other events. For a recent linux
+kernel, a multiple buffer function is available. So, I recommend to enable
+this event for a sub buffer of ftrace.
+
+<Example>
+We assume that wakeup-latency for a command is big on a guest. Normally
+we will use ftrace's wakeup-latency tracer or event tracer on the guest, but we
+may not be able to solve this problem. This is because guests often exit to
+the host for several reasons. In the next, we will use TSC as ftrace's timestamp
+and record the trace data on the guest and the host. Then, we get following
+data:
+
+ /* guest data */
+            comm-3826  [000] d...49836825726903: sched_wakeup: [detail]
+            comm-3826  [000] d...49836832225344: sched_switch: [detail]
+ /* host data */
+        qemu-kvm-2687  [003] d...50550079203669: kvm_exit: [detail]
+        qemu-kvm-2687  [003] d...50550079206816: kvm_entry: [detail]
+        qemu-kvm-2687  [003] d...50550079240656: kvm_exit: [detail]
+        qemu-kvm-2687  [003] d...50550079243467: kvm_entry: [detail]
+        qemu-kvm-2687  [003] d...50550079256103: kvm_exit: [detail]
+        qemu-kvm-2687  [003] d...50550079268391: kvm_entry: [detail]
+        qemu-kvm-2687  [003] d...50550079280829: kvm_exit: [detail]
+        qemu-kvm-2687  [003] d...50550079286028: kvm_entry: [detail]
+
+Since TSC offset is not considered, these data cannot be merged. If this trace
+data is shown like as follows, we will be able to understand the reason:
+
+        qemu-kvm-2687  [003] d...50550079203669: kvm_exit: [detail]
+        qemu-kvm-2687  [003] d...50550079206816: kvm_entry: [detail]
+            comm-3826  [000] d.h.49836825726903: sched_wakeup: [detail] <=
+        qemu-kvm-2687  [003] d...50550079240656: kvm_exit: [detail]
+        qemu-kvm-2687  [003] d...50550079243467: kvm_entry: [detail]
+        qemu-kvm-2687  [003] d...50550079256103: kvm_exit: [detail]
+        qemu-kvm-2687  [003] d...50550079268391: kvm_entry: [detail]
+            comm-3826  [000] d...49836832225344: sched_switch: [detail] <=
+        qemu-kvm-2687  [003] d...50550079280829: kvm_exit: [detail]
+        qemu-kvm-2687  [003] d...50550079286028: kvm_entry: [detail]
+
+In this case, we can understand wakeup-latency was big due to exit to host
+twice. Getting this data sorted in chronological order is our goal.
+
+To merge the data like previous pattern, we apply this patch. Then, we can
+get TSC offset of the guest as follows:
+
+# cat /sys/kernel/debug/tracing/instances/tsc_offset/trace
+.. d...4300151845072: kvm_write_tsc_offset: previous 0 next 18446739773557710924
+                                                     ^      ^^^^^^^^^^^^^^^^^^^^
+
+We use this TSC offset value to a merge script and obtain the following data:
+
+$ ./trace-merge.pl -g guest_data -h host_data -t 18446739773557710924
+
+h        qemu-kvm-2687  [003] d...50550079203669: kvm_exit: [detail]
+h        qemu-kvm-2687  [003] d...50550079206816: kvm_entry: [detail]
+g            comm-3826  [000] d.h.50550079226331: sched_wakeup: [detail] <=
+h        qemu-kvm-2687  [003] d...50550079240656: kvm_exit: [detail]
+h        qemu-kvm-2687  [003] d...50550079243467: kvm_entry: [detail]
+h        qemu-kvm-2687  [003] d...50550079256103: kvm_exit: [detail]
+h        qemu-kvm-2687  [003] d...50550079268391: kvm_entry: [detail]
+g            comm-3826  [000] d...50550079279266: sched_switch: [detail] <=
+h        qemu-kvm-2687  [003] d...50550079280829: kvm_exit: [detail]
+h        qemu-kvm-2687  [003] d...50550079286028: kvm_entry: [detail]
+|
+\----guest/host
+
+In this summary, I suggest the patch which TSC offset for each guest can be
+output on the host.
+
+As one example, I will send a merge tool. This tool is not considered
+executing write_tsc on a guest yet.
+
+Changes in V2:
+- Use tracepoint for outputting TSC offset value instead of printk() [1/1]
+
+Thanks!
+
+---
+
+Yoshihiro YUNOMAE (1):
+      kvm/vmx: Add a tracepoint write_tsc_offset
+
+
+ arch/x86/kvm/trace.h |   18 ++++++++++++++++++
+ arch/x86/kvm/vmx.c   |    3 +++
+ arch/x86/kvm/x86.c   |    1 +
+ 3 files changed, 22 insertions(+)
+
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
