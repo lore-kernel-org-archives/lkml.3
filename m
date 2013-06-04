@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114Ab3FDXDZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:03:25 -0400
-Received: from 1wt.eu ([62.212.114.60]:35634 "EHLO 1wt.eu"
+	id S1755022Ab3FDXDX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:03:23 -0400
+Received: from 1wt.eu ([62.212.114.60]:35635 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753414Ab3FDWnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753516Ab3FDWnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 18:43:01 -0400
-Message-Id: <20130604172135.613514601@1wt.eu>
+Message-Id: <20130604172137.519858074@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:23:38 +0200
+Date: Tue, 04 Jun 2013 19:24:24 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Niu Yawei <yawei.niu@intel.com>, "Theodore Tso" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 128/184] ext4: fix race in ext4_mb_add_n_trim()
+Cc: Mathias Krause <minipli@googlemail.com>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+Subject: [ 174/184] atm: fix info leak via getsockname()
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,49 +23,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Niu Yawei <yawei.niu@gmail.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit f1167009711032b0d747ec89a632a626c901a1ad upstream.
+commit 3c0c5cfdcd4d69ffc4b9c0907cec99039f30a50a upstream.
 
-In ext4_mb_add_n_trim(), lg_prealloc_lock should be taken when
-changing the lg_prealloc_list.
+The ATM code fails to initialize the two padding bytes of struct
+sockaddr_atmpvc inserted for alignment. Add an explicit memset(0)
+before filling the structure to avoid the info leak.
 
-Signed-off-by: Niu Yawei <yawei.niu@intel.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[bwh: Backported to 2.6.32: adjust context]
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- fs/ext4/mballoc.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/atm/pvc.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 42bac1b..c7e8bdb 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -4163,7 +4163,7 @@ static void ext4_mb_add_n_trim(struct ext4_allocation_context *ac)
- 		/* The max size of hash table is PREALLOC_TB_SIZE */
- 		order = PREALLOC_TB_SIZE - 1;
- 	/* Add the prealloc space to lg */
--	rcu_read_lock();
-+	spin_lock(&lg->lg_prealloc_lock);
- 	list_for_each_entry_rcu(tmp_pa, &lg->lg_prealloc_list[order],
- 						pa_inode_list) {
- 		spin_lock(&tmp_pa->pa_lock);
-@@ -4187,12 +4187,12 @@ static void ext4_mb_add_n_trim(struct ext4_allocation_context *ac)
- 	if (!added)
- 		list_add_tail_rcu(&pa->pa_inode_list,
- 					&lg->lg_prealloc_list[order]);
--	rcu_read_unlock();
-+	spin_unlock(&lg->lg_prealloc_lock);
- 
- 	/* Now trim the list to be not more than 8 elements */
- 	if (lg_prealloc_count > 8) {
- 		ext4_mb_discard_lg_preallocations(sb, lg,
--						order, lg_prealloc_count);
-+						  order, lg_prealloc_count);
- 		return;
- 	}
- 	return ;
+diff --git a/net/atm/pvc.c b/net/atm/pvc.c
+index d4c0245..523c21a 100644
+--- a/net/atm/pvc.c
++++ b/net/atm/pvc.c
+@@ -93,6 +93,7 @@ static int pvc_getname(struct socket *sock,struct sockaddr *sockaddr,
+ 	if (!vcc->dev || !test_bit(ATM_VF_ADDR,&vcc->flags)) return -ENOTCONN;
+ 	*sockaddr_len = sizeof(struct sockaddr_atmpvc);
+ 	addr = (struct sockaddr_atmpvc *) sockaddr;
++	memset(addr, 0, sizeof(*addr));
+ 	addr->sap_family = AF_ATMPVC;
+ 	addr->sap_addr.itf = vcc->dev->number;
+ 	addr->sap_addr.vpi = vcc->vpi;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
