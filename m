@@ -1,74 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755120Ab3FDNoc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 09:44:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46481 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753337Ab3FDNob (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 09:44:31 -0400
+	id S1754026Ab3FDNp3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 09:45:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60594 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752718Ab3FDNp1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 09:45:27 -0400
+Date: Tue, 4 Jun 2013 15:45:23 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Michel Lespinasse <walken@google.com>,
+        Greg Thelen <gthelen@google.com>, Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [patch -v4 4/8] memcg: enhance memcg iterator to support
+ predicates
+Message-ID: <20130604134523.GH31242@dhcp22.suse.cz>
+References: <1370254735-13012-1-git-send-email-mhocko@suse.cz>
+ <1370254735-13012-5-git-send-email-mhocko@suse.cz>
+ <20130604010737.GF29989@mtj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <1563703.RysIHVehbx@wuerfel>
-References: <1563703.RysIHVehbx@wuerfel>
-Date: Tue, 4 Jun 2013 21:44:29 +0800
-Message-ID: <CACVXFVMcVfec7tTLsxFDCav-cB7cc74s-XkN=4a1toDBJC_e0w@mail.gmail.com>
-Subject: Re: [PATCH] driver core: firmware loader: fix build error
-From: Ming Lei <ming.lei@canonical.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130604010737.GF29989@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Mon 03-06-13 18:07:37, Tejun Heo wrote:
+> On Mon, Jun 03, 2013 at 12:18:51PM +0200, Michal Hocko wrote:
+> > The caller of the iterator might know that some nodes or even subtrees
+> > should be skipped but there is no way to tell iterators about that so
+> > the only choice left is to let iterators to visit each node and do the
+> > selection outside of the iterating code. This, however, doesn't scale
+> > well with hierarchies with many groups where only few groups are
+> > interesting.
+> > 
+> > This patch adds mem_cgroup_iter_cond variant of the iterator with a
+> > callback which gets called for every visited node. There are three
+> > possible ways how the callback can influence the walk. Either the node
+> > is visited, it is skipped but the tree walk continues down the tree or
+> > the whole subtree of the current group is skipped.
+> > 
+> > TODO is it correct to reclaim + cond together? What if the cache simply
+> > skips interesting nodes which another predicate would find interesting?
+> 
+> I don't know.  Maybe it's just taste but it looks pretty ugly to me.
+> Why does everything have to be folded into the iteration function?
 
-Thanks for the fix.
+There are basically 2 options. Factor out skipping logic into something
+like memcg_cgroup_iter_skip_node and memcg_cgroup_iter_skip_tree or
+bundle the generic predicate into iterators.
+I find the in-iterator version more convenient to use because the caller
+doesn't have to handle skip cases explicitly. All the users would have
+to do the same thing (which is now hidden in the iterator) anyway.
 
-On Tue, Jun 4, 2013 at 7:53 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> Patch af5bc11e9 "driver core: firmware loader: kill FW_ACTION_NOHOTPLUG
-> requests before suspend" caused a regression for the case where
-> CONFIG_FW_LOADER_USER_HELPER is not enabled, because it adds
-> references to code that is not available in that configuration:
->
-> drivers/base/firmware_class.c: In function 'kill_requests_without_uevent':
-> drivers/base/firmware_class.c:1424:49: error: 'struct firmware_buf' has no member named 'pending_list'
->   list_for_each_entry_safe(buf, next, &pending_fw_head, pending_list) {
-> drivers/base/firmware_class.c:1426:5: error: implicit declaration of function 'fw_load_abort' [-Werror=implicit-function-declaration]
->
-> This fixes the build error by making the new code conditional
-> as well. Found using ARM ape6evm_defconfig on today's linux-next.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Ming Lei <ming.lei@canonical.com>
-> Cc: Takashi Iwai <tiwai@suse.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->
-> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> index c415043..6cca468 100644
-> --- a/drivers/base/firmware_class.c
-> +++ b/drivers/base/firmware_class.c
-> @@ -1417,6 +1417,7 @@ static void __device_uncache_fw_images(void)
->  /* kill pending requests without uevent to avoid blocking suspend */
->  static void kill_requests_without_uevent(void)
->  {
-> +#ifdef CONFIG_FW_LOADER_USER_HELPER
->         struct firmware_buf *buf;
->         struct firmware_buf *next;
->
-> @@ -1426,6 +1427,7 @@ static void kill_requests_without_uevent(void)
->                          fw_load_abort(buf);
->         }
->         mutex_unlock(&fw_lock);
-> +#endif
+Besides that it helps reducing the memcg code in vmscan (which we try to
+keep at minimum). I already feel guilty for the code this patch set
+adds.
 
-Fenggang's kbuild robot captured the build failure, and a similar fix patch
-has been posted out:
+Is this something that you find serious enough to block this series?
+I do not want to push hard but I would like to settle with something
+finally. This is taking way longer than I would like.
 
-      http://marc.info/?l=linux-kernel&m=137031139632564&w=2
+> The iteration only depends on the current position.  Can't you factor
+> out skipping part outside the function rather than rolling into this
+> monstery thing with predicate callback?  Just test the condition
+> outside and call a function to skip whatever is necessary?
+> 
+> Also, cgroup_rightmost_descendant() can be pretty expensive depending
+> on how your tree looks like. 
 
-Thanks,
---
-Ming Lei
+I have no problem using something else. This was just the easiest to
+use and it behaves more-or-less good for hierarchies which are more or
+less balanced. If this turns out to be a problem we can introduce a
+new cgroup_skip_subtree which would get to last->sibling or go up the
+parent chain until there is non-NULL sibling. But what would be the next
+selling point here if we made it perfect right now? ;)
+
+> It travels to the rightmost child at
+> each level until it can't.  In extreme cases, you can travel the whole
+> subtree.  This usually isn't a problem for its usecases but yours may
+> be different, I'm not sure.
+
+But that would be the case only if the hierarchy would be right wing
+prevailing (aka politically incorrect for some :P)
+-- 
+Michal Hocko
+SUSE Labs
