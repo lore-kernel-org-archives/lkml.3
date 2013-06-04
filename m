@@ -1,107 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab3FDOpA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 10:45:00 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:37408 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757107Ab3FDOo4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 10:44:56 -0400
-Date: Tue, 4 Jun 2013 16:44:53 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] sched: fix clear NOHZ_BALANCE_KICK
-Message-ID: <20130604144451.GJ14973@somewhere>
-References: <1369927385-7801-1-git-send-email-vincent.guittot@linaro.org>
- <20130603224836.GA9388@somewhere>
- <CAKfTPtCB_ftNWjgAM9s79dX_tuS4yevjdD0YxvKfKS4dxz=LLQ@mail.gmail.com>
- <20130604093611.GJ8923@twins.programming.kicks-ass.net>
- <20130604102620.GB14012@somewhere>
- <CAKfTPtCLYnhQH3Mcx5dhRi9+9_679fdrhm8iZBSpgyu8VmevYw@mail.gmail.com>
- <20130604111900.GB14973@somewhere>
- <CAKfTPtCSr-M3ZLNF0NoHuSQTC1sP8wWo-m+hRttL3nZ1iCOHgA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKfTPtCSr-M3ZLNF0NoHuSQTC1sP8wWo-m+hRttL3nZ1iCOHgA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757422Ab3FDOpO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 10:45:14 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:34725 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755311Ab3FDOpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 10:45:10 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: Solomon Peachy <pizza@shaftnet.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH 4/4] cw1200: hwio: Remove an unnecessary goto
+Date: Tue,  4 Jun 2013 07:44:50 -0700
+Message-Id: <fd299c9ef87fe50c12af871d6bfcc92d7f6ef3dc.1370356776.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <60123fd3175b7cceadf6c335b12e58b797e18f65.1370356776.git.joe@perches.com>
+References: <60123fd3175b7cceadf6c335b12e58b797e18f65.1370356776.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 04, 2013 at 01:48:47PM +0200, Vincent Guittot wrote:
-> On 4 June 2013 13:19, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > On Tue, Jun 04, 2013 at 01:11:47PM +0200, Vincent Guittot wrote:
-> >> On 4 June 2013 12:26, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >> > On Tue, Jun 04, 2013 at 11:36:11AM +0200, Peter Zijlstra wrote:
-> >> >>
-> >> >> The best I can seem to come up with is something like the below; but I think
-> >> >> its ghastly. Surely we can do something saner with that bit.
-> >> >>
-> >> >> Having to clear it at 3 different places is just wrong.
-> >> >
-> >> > We could clear the flag early in scheduler_ipi() and set some
-> >> > specific value in rq->idle_balance that tells we want nohz idle
-> >> > balancing from the softirq, something like this untested:
-> >>
-> >> I'm not sure that we can have less than 2 places to clear it: cancel
-> >> place or acknowledge place otherwise we can face a situation where
-> >> idle load balance will be triggered 2 consecutive times because
-> >> NOHZ_BALANCE_KICK will be cleared before the idle load balance has
-> >> been done and had a chance to migrate tasks.
-> >
-> > I guess it depends what is the minimum value of rq->next_balance, it seems
-> > to be large enough to avoid this kind of incident. Although I don't
-> > know well the whole logic with rq->next_balance and ilb trigger so I must
-> > defer to you.
-> 
-> In the trace that was showing the issue, i can see that both CPU0 and
-> CPU1 were trying to trig ILB almost simultaneously and the
-> test_and_set NOHZ_BALANCE_KICK filters one request so i would say that
-> clearing the bit before the end of the idle load balance sequence can
-> generate such sequence
+goto after return is wrong.
 
-I see.
+The other code in this block needs to set an
+error value then goto an error release block.
 
-> 
-> In the sequence below, i have minimized the clear of NOHZ_BALANCE_KICK
-> in 2 places : acknowledge and cancel. I have reused part of the
-> proposal from peter which clears the bit if the condition doesn't
-> match but i have reordered the tests to done that only if all other
-> condition are matching
-> 
->  static inline bool got_nohz_idle_kick(void)
->  {
-> - int cpu = smp_processor_id();
-> - return idle_cpu(cpu) && test_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu));
-> + bool nohz_kick = test_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu));
-> +
-> +       if (!nohz_kick)
-> +               return false;
-> +
-> +       if (idle_cpu(cpu) && !need_resched())
-> +               return true;
-> +
-> +       clear_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu));
-> +       return false;
->  }
-> 
->  #else /* CONFIG_NO_HZ_COMMON */
-> @@ -1393,8 +1401,9 @@ static void sched_ttwu_pending(void)
-> 
->  void scheduler_ipi(void)
->  {
-> - if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick()
-> -    && !tick_nohz_full_cpu(smp_processor_id()))
-> + if (llist_empty(&this_rq()->wake_list)
-> + && !tick_nohz_full_cpu(smp_processor_id())
-> + && !got_nohz_idle_kick())
->   return;
+This one doesn't need to release anything and
+was likely a copy/paste remainder.
 
-But we still need got_nohz_idle_kick() to be the first check, don't we? Otherwise
-if we run an "idle -> quick task slice -> idle" sequence we may keep the flag
-but lose the notifying IPI in between.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/wireless/cw1200/hwio.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/net/wireless/cw1200/hwio.c b/drivers/net/wireless/cw1200/hwio.c
+index 142f45ef..dad3fb3 100644
+--- a/drivers/net/wireless/cw1200/hwio.c
++++ b/drivers/net/wireless/cw1200/hwio.c
+@@ -178,7 +178,6 @@ int cw1200_indirect_read(struct cw1200_common *priv, u32 addr, void *buf,
+ 	if ((buf_len / 2) >= 0x1000) {
+ 		pr_err("Can't read more than 0xfff words.\n");
+ 		return -EINVAL;
+-		goto out;
+ 	}
+ 
+ 	priv->hwbus_ops->lock(priv->hwbus_priv);
+-- 
+1.8.1.2.459.gbcd45b4.dirty
+
