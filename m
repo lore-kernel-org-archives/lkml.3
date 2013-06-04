@@ -1,85 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757524Ab3FDPH7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 11:07:59 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:64029 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757467Ab3FDPH5 (ORCPT
+	id S1757621Ab3FDPJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 11:09:28 -0400
+Received: from 162-17-110-37-static.hfc.comcastbusiness.net ([162.17.110.37]:42593
+	"EHLO stuffed.shaftnet.org" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1755963Ab3FDPJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 11:07:57 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: David Miller <davem@davemloft.net>
-Cc: alexandre.belloni@free-electrons.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, shawn.guo@linaro.org, kernel@pengutronix.de
-Subject: Re: [PATCHv2 1/3] net: phy: prevent linking breakage
-Date: Tue, 04 Jun 2013 17:07:39 +0200
-Message-ID: <6466898.RnYOe3jpGG@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <20130530.024201.1913984663902628192.davem@davemloft.net>
-References: <1369741403-25315-2-git-send-email-alexandre.belloni@free-electrons.com> <51A5BA86.3070609@free-electrons.com> <20130530.024201.1913984663902628192.davem@davemloft.net>
+	Tue, 4 Jun 2013 11:09:26 -0400
+Date: Tue, 4 Jun 2013 11:09:10 -0400
+From: Solomon Peachy <pizza@shaftnet.org>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 4/4] cw1200: hwio: Remove an unnecessary goto
+Message-ID: <20130604150910.GA13278@shaftnet.org>
+Mail-Followup-To: Joe Perches <joe@perches.com>,
+	linux-kernel@vger.kernel.org,
+	"John W. Linville" <linville@tuxdriver.com>,
+	linux-wireless@vger.kernel.org, netdev@vger.kernel.org
+References: <60123fd3175b7cceadf6c335b12e58b797e18f65.1370356776.git.joe@perches.com>
+ <fd299c9ef87fe50c12af871d6bfcc92d7f6ef3dc.1370356776.git.joe@perches.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:PsDmfPjut8mesU2EHhcVkv3JErgwhmYF9qaSTeG9aUL
- mrsU5rlKdohDO0WxgYoLTjlPGTEJXeR7CNA9sHygg0TPeJLhWj
- p6iTGeWvbkKQ2VEFVuNm2TIv1PWQdVZfhe2f99Tc3EPLGP/LF/
- M9WIgJJI52OTj24g6EMzc+0/LFzNNh3bO9lu4BsVQBfiF9gAtm
- peTx+b5Fa0BqUfoc4gnPr4uaSy7DdXPxBbNpmUb/2tSxZBFaW/
- 6Ui/4+wSuZVw5kgXIYPAY/CMDH6qTDZNmUpy+sbXh41ksaU294
- vuuyopoilhRGPi+P1H4CGR1WEpwxpsm5REIQa9mbmTOKbtVz5S
- JcBfxCzjstPp7Jqzw6DY=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gBBFr7Ir9EOA20Yy"
+Content-Disposition: inline
+In-Reply-To: <fd299c9ef87fe50c12af871d6bfcc92d7f6ef3dc.1370356776.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 30 May 2013 02:42:01 David Miller wrote:
-> From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> > On 28/05/2013 22:09, David Miller wrote:
-> > But that is making it impossible to compile a kernel without any network
-> > stack for those platforms or we are going back to either enclosing the
-> > calls to phy_register_fixup{,_for_uid,_for_id} with #ifdef CONFIG_PHYLIB
-> > or if(IS_BUILTIN(CONFIG_PHYLIB)). And as you can see, it is quite error
-> > prone and is done only done for 2 platforms on a total of 6. I believe
-> > fixing that in phy.h is more foolproof.
-> 
-> Or you properly segregate the networking bits of the platform code so
-> that it can be built only when the necessary networking portions are
-> enabled.
-> 
-> Sometimes having dummy stubs makes sense, but not in this situation.
 
-Currently most users of this function are doing something like
+--gBBFr7Ir9EOA20Yy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-static int foo_phy_fixup(struct phy_device *phydev)
-{
-	...
-}
+On Tue, Jun 04, 2013 at 07:44:50AM -0700, Joe Perches wrote:
+> goto after return is wrong.
+>=20
+> The other code in this block needs to set an
+> error value then goto an error release block.
+>=20
+> This one doesn't need to release anything and
+> was likely a copy/paste remainder.
+>=20
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-static int __init boo_board_init(void)
-{
-	 if (IS_BUILTIN(CONFIG_PHYLIB))
-		phy_register_fixup_for_uid(phy_id, foo_phy_fixup);
-}
+Acked-By: Solomon Peachy <pizza@shaftnet.org>
 
-which is practically the same as having a dummy stub. It leads to
-the foo_phy_fixup() function always getting compiled and then discarded
-by gcc when CONFIG_PHYLIB is disabled.
+> ---
+>  drivers/net/wireless/cw1200/hwio.c | 1 -
+>  1 file changed, 1 deletion(-)
+>=20
+> diff --git a/drivers/net/wireless/cw1200/hwio.c b/drivers/net/wireless/cw=
+1200/hwio.c
+> index 142f45ef..dad3fb3 100644
+> --- a/drivers/net/wireless/cw1200/hwio.c
+> +++ b/drivers/net/wireless/cw1200/hwio.c
+> @@ -178,7 +178,6 @@ int cw1200_indirect_read(struct cw1200_common *priv, =
+u32 addr, void *buf,
+>  	if ((buf_len / 2) >=3D 0x1000) {
+>  		pr_err("Can't read more than 0xfff words.\n");
+>  		return -EINVAL;
+> -		goto out;
+>  	}
+> =20
+>  	priv->hwbus_ops->lock(priv->hwbus_priv);
+> --=20
+> 1.8.1.2.459.gbcd45b4.dirty
+>=20
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless"=
+ in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-The method is currently broken when network drivers are enabled as
-modules, because we are missing the fixup then.
+--=20
+Solomon Peachy        		       pizza at shaftnet dot org	=20
+Delray Beach, FL                          ^^ (email/xmpp) ^^
+Quidquid latine dictum sit, altum viditur.
 
-I think we should use IS_ENABLED() here to force a build error
-in that case, and have something like
+--gBBFr7Ir9EOA20Yy
+Content-Type: application/pgp-signature
 
-config ARCH_FOO
-	bool "support for the foo platform"
-	select PHYLIB if NET
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
 
-in the platform Kconfig file, to ensure PHYLIB is always built-in.
+iD8DBQFRrgMWPuLgii2759ARAlkLAKC9y/w/jHAkjnhViOUZS6AG6Kc89ACgvlIB
+tiLsCF7ClA23jyUZYw5ibjs=
+=Zt6e
+-----END PGP SIGNATURE-----
 
-I still think the inline alternatives would be helpful, but using
-if (IS_ENABLED(CONFIG_PHYLIB)) in the platform code would also
-work.
-
-	Arnd
+--gBBFr7Ir9EOA20Yy--
