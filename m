@@ -1,79 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab3FDXXW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:23:22 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51745 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365Ab3FDXXR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 19:23:17 -0400
-X-AuditID: 9c930179-b7c1dae000003992-07-51ae76e31a0e
-Date: Wed, 5 Jun 2013 08:23:15 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mgorman@suse.de, tim.c.chen@linux.intel.com
-Subject: Re: [v5][PATCH 6/6] mm: vmscan: drain batch list during long
- operations
-Message-ID: <20130604232315.GA31006@blaptop>
-References: <20130603200202.7F5FDE07@viggo.jf.intel.com>
- <20130603200210.259954C3@viggo.jf.intel.com>
- <20130604060553.GF14719@blaptop>
- <51AE06B6.3030009@sr71.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51AE06B6.3030009@sr71.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	id S1752315Ab3FDWlP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 18:41:15 -0400
+Received: from 1wt.eu ([62.212.114.60]:35158 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751803Ab3FDWkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:40:49 -0400
+Message-Id: <20130604172131.011412905@1wt.eu>
+User-Agent: quilt/0.48-1
+Date: Tue, 04 Jun 2013 19:21:47 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>, Emese Revfy <re.emese@gmail.com>,
+        PaX Team <pageexec@freemail.hu>, Al Viro <viro@zeniv.linux.org.uk>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Julien Tinnes <jln@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Subject: [ 017/184] signal: always clear sa_restorer on execve
+In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dave,
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
-On Tue, Jun 04, 2013 at 08:24:38AM -0700, Dave Hansen wrote:
-> On 06/03/2013 11:05 PM, Minchan Kim wrote:
-> >> > This ensures that we drain the batch if we are about to perform a
-> >> > pageout() or congestion_wait(), either of which will take some
-> >> > time.  We expect this to help mitigate the worst of the latency
-> >> > increase that the batching could cause.
-> > Nice idea but I could see drain before pageout but congestion_wait?
-> 
-> That comment managed to bitrot a bit :(
-> 
-> The first version of these had the drain before pageout() only.  Then,
-> Mel added a congestion_wait() call, and I modified the series to also
-> drain there.  But, some other patches took the congestion_wait() back
-> out, so I took that drain back out.
+------------------
 
-I am looking next-20130530 and it has still a congestion_wait.
-I'm confusing. :(
+From: Kees Cook <keescook@chromium.org>
 
+commit 2ca39528c01a933f6689cd6505ce65bd6d68a530 upstream.
 
-                if (PageWriteback(page)) {
-			/* Case 1 above */
-			if (current_is_kswapd() &&
-			    PageReclaim(page) &&
-			    zone_is_reclaim_writeback(zone)) {
-				congestion_wait(BLK_RW_ASYNC, HZ/10);
-				zone_clear_flag(zone, ZONE_WRITEBACK);
-> 
-> I _believe_ the only congestion_wait() left in there is a cgroup-related
-> one that we didn't think would cause very much harm.
+When the new signal handlers are set up, the location of sa_restorer is
+not cleared, leaking a parent process's address space location to
+children.  This allows for a potential bypass of the parent's ASLR by
+examining the sa_restorer value returned when calling sigaction().
 
-The congestion_wait I am seeing is not cgroup-related one.
+Based on what should be considered "secret" about addresses, it only
+matters across the exec not the fork (since the VMAs haven't changed
+until the exec).  But since exec sets SIG_DFL and keeps sa_restorer,
+this is where it should be fixed.
 
-I'd like to clear this confusing.
-Thanks.
+Given the few uses of sa_restorer, a "set" function was not written
+since this would be the only use.  Instead, we use
+__ARCH_HAS_SA_RESTORER, as already done in other places.
 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Example of the leak before applying this patch:
 
+  $ cat /proc/$$/maps
+  ...
+  7fb9f3083000-7fb9f3238000 r-xp 00000000 fd:01 404469 .../libc-2.15.so
+  ...
+  $ ./leak
+  ...
+  7f278bc74000-7f278be29000 r-xp 00000000 fd:01 404469 .../libc-2.15.so
+  ...
+  1 0 (nil) 0x7fb9f30b94a0
+  2 4000000 (nil) 0x7f278bcaa4a0
+  3 4000000 (nil) 0x7f278bcaa4a0
+  4 0 (nil) 0x7fb9f30b94a0
+  ...
+
+[akpm@linux-foundation.org: use SA_RESTORER for backportability]
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: Emese Revfy <re.emese@gmail.com>
+Cc: Emese Revfy <re.emese@gmail.com>
+Cc: PaX Team <pageexec@freemail.hu>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Julien Tinnes <jln@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+---
+ kernel/signal.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 2494827..df993fd 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -320,6 +320,9 @@ flush_signal_handlers(struct task_struct *t, int force_default)
+ 		if (force_default || ka->sa.sa_handler != SIG_IGN)
+ 			ka->sa.sa_handler = SIG_DFL;
+ 		ka->sa.sa_flags = 0;
++#ifdef SA_RESTORER
++		ka->sa.sa_restorer = NULL;
++#endif
+ 		sigemptyset(&ka->sa.sa_mask);
+ 		ka++;
+ 	}
 -- 
-Kind regards,
-Minchan Kim
+1.7.12.2.21.g234cd45.dirty
+
+
+
