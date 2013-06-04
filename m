@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210Ab3FDXGb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 19:06:31 -0400
-Received: from 1wt.eu ([62.212.114.60]:35590 "EHLO 1wt.eu"
+	id S1755222Ab3FDXGw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 19:06:52 -0400
+Received: from 1wt.eu ([62.212.114.60]:35571 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753120Ab3FDWmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 18:42:52 -0400
-Message-Id: <20130604172137.140310447@1wt.eu>
+	id S1753359Ab3FDWms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 18:42:48 -0400
+Message-Id: <20130604172136.272782194@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 04 Jun 2013 19:24:15 +0200
+Date: Tue, 04 Jun 2013 19:23:54 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Daniel Borkmann <dborkman@redhat.com>, Vlad Yasevich <vyasevic@redhat.com>,
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
         "David S. Miller" <davem@davemloft.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 165/184] net: sctp: sctp_endpoint_free: zero out secret key
+Subject: [ 144/184] net/core: Fix potential memory leak in
 In-Reply-To: <58df134a4b98edf5b0073e2e1e988fe6@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,48 +24,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
- data
+ dev_set_alias()
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-[ Upstream commit b5c37fe6e24eec194bb29d22fdd55d73bcc709bf ]
+[ Upstream commit 7364e445f62825758fa61195d237a5b8ecdd06ec ]
 
-On sctp_endpoint_destroy, previously used sensitive keying material
-should be zeroed out before the memory is returned, as we already do
-with e.g. auth keys when released.
+Do not leak memory by updating pointer with potentially NULL realloc return value.
 
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Vlad Yasevich <vyasevic@redhat.com>
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- net/sctp/endpointola.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ net/core/dev.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/net/sctp/endpointola.c b/net/sctp/endpointola.c
-index 905fda5..ca48660 100644
---- a/net/sctp/endpointola.c
-+++ b/net/sctp/endpointola.c
-@@ -249,6 +249,8 @@ void sctp_endpoint_free(struct sctp_endpoint *ep)
- /* Final destructor for endpoint.  */
- static void sctp_endpoint_destroy(struct sctp_endpoint *ep)
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 46e2a29..f4a6e14 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -967,6 +967,8 @@ rollback:
+  */
+ int dev_set_alias(struct net_device *dev, const char *alias, size_t len)
  {
-+	int i;
++	char *new_ifalias;
 +
- 	SCTP_ASSERT(ep->base.dead, "Endpoint is not dead", return);
+ 	ASSERT_RTNL();
  
- 	/* Free up the HMAC transform. */
-@@ -271,6 +273,9 @@ static void sctp_endpoint_destroy(struct sctp_endpoint *ep)
- 	sctp_inq_free(&ep->base.inqueue);
- 	sctp_bind_addr_free(&ep->base.bind_addr);
+ 	if (len >= IFALIASZ)
+@@ -980,9 +982,10 @@ int dev_set_alias(struct net_device *dev, const char *alias, size_t len)
+ 		return 0;
+ 	}
  
-+	for (i = 0; i < SCTP_HOW_MANY_SECRETS; ++i)
-+		memset(&ep->secret_key[i], 0, SCTP_SECRET_SIZE);
-+
- 	/* Remove and free the port */
- 	if (sctp_sk(ep->base.sk)->bind_hash)
- 		sctp_put_port(ep->base.sk);
+-	dev->ifalias = krealloc(dev->ifalias, len + 1, GFP_KERNEL);
+-	if (!dev->ifalias)
++	new_ifalias = krealloc(dev->ifalias, len + 1, GFP_KERNEL);
++	if (!new_ifalias)
+ 		return -ENOMEM;
++	dev->ifalias = new_ifalias;
+ 
+ 	strlcpy(dev->ifalias, alias, len+1);
+ 	return len;
 -- 
 1.7.12.2.21.g234cd45.dirty
 
