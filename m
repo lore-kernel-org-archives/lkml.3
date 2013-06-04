@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757880Ab3FDRPi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:15:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48256 "EHLO
+	id S1758121Ab3FDRPm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:15:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48248 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756661Ab3FDQ5P (ORCPT
+	with ESMTP id S1756652Ab3FDQ5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Jun 2013 12:57:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hema Prathaban <hemaklnce@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 06/75] staging: vt6656: use free_netdev instead of kfree
-Date: Tue,  4 Jun 2013 09:54:50 -0700
-Message-Id: <1370364959-9475-7-git-send-email-kamal@canonical.com>
+Cc: Philipp Reisner <philipp.reisner@linbit.com>,
+        Lars Ellenberg <lars.ellenberg@linbit.com>,
+        Jens Axboe <axboe@kernel.dk>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 01/75] drbd: fix memory leak
+Date: Tue,  4 Jun 2013 09:54:45 -0700
+Message-Id: <1370364959-9475-2-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370364959-9475-1-git-send-email-kamal@canonical.com>
 References: <1370364959-9475-1-git-send-email-kamal@canonical.com>
@@ -28,33 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hema Prathaban <hemaklnce@gmail.com>
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-commit 0a438d5b381e2bdfd5e02d653bf46fcc878356e3 upstream.
+commit 94ad0a101415978be04945b2787be1e8e8a874db upstream.
 
-use free_netdev() instead of kfree(pDevice->apdev)
+We forgot to free the disk_conf,
+so for each attach/detach cycle we leaked 336 bytes.
 
-Signed-off-by: Hema Prathaban <hemaklnce@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ kamal: backport to 3.8 ]
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/vt6656/hostap.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/block/drbd/drbd_main.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/staging/vt6656/hostap.c b/drivers/staging/vt6656/hostap.c
-index 26a7d0e..f52db1c 100644
---- a/drivers/staging/vt6656/hostap.c
-+++ b/drivers/staging/vt6656/hostap.c
-@@ -133,7 +133,7 @@ static int hostap_disable_hostapd(PSDevice pDevice, int rtnl_locked)
-             DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "%s: Netdevice %s unregistered\n",
- 		       pDevice->dev->name, pDevice->apdev->name);
- 	}
--	kfree(pDevice->apdev);
-+	free_netdev(pDevice->apdev);
- 	pDevice->apdev = NULL;
-     pDevice->bEnable8021x = FALSE;
-     pDevice->bEnableHostWEP = FALSE;
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index 8c13eeb..f68fb74 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -2798,6 +2798,7 @@ void drbd_free_bc(struct drbd_backing_dev *ldev)
+ 	blkdev_put(ldev->backing_bdev, FMODE_READ | FMODE_WRITE | FMODE_EXCL);
+ 	blkdev_put(ldev->md_bdev, FMODE_READ | FMODE_WRITE | FMODE_EXCL);
+ 
++	kfree(ldev->disk_conf);
+ 	kfree(ldev);
+ }
+ 
 -- 
 1.8.1.2
 
