@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370Ab3FDRga (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 13:36:30 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:56073 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab3FDRg1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 13:36:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Subject: Re: [PATCH] net: core: move mac_pton() to lib/net_utils.c
-Date: Tue, 4 Jun 2013 19:36:20 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1370364386-5034-1-git-send-email-andy.shevchenko@gmail.com>
-In-Reply-To: <1370364386-5034-1-git-send-email-andy.shevchenko@gmail.com>
+	id S1755651Ab3FDRgt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 13:36:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2585 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753284Ab3FDRgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 13:36:46 -0400
+Date: Tue, 4 Jun 2013 19:32:52 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Michal Hocko <mhocko@suse.cz>,
+        Sergey Dyasly <dserrg@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/4] proc: first_tid() fix/cleanup
+Message-ID: <20130604173252.GA22223@redhat.com>
+References: <20130603190640.GA11481@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306041936.21055.arnd@arndb.de>
-X-Provags-ID: V02:K0:l0qF+NAX9t0w35gi+ZVdYhRQyFUFx+iBWHBLMLeWKMy
- dc7SnbXpAJgoGr6NW645Kol002NGf8yJ+58gTZUXP81T7ekRvp
- VV9unGmhwrJdEw9NqGVdU/fHlL7J6Ees1k7rwanSU4FLl3qbfO
- En/voGoj6lCrZAnu66x/Brx7H8WvTGKxkjCOw5YMpVCjyhpNNL
- rb/0VgBdF74RU7aJHGWnH6geVu/NUpQe4Wiu+6eFng5qON0eox
- ayRCb7cpEKdpAOcDL2cFOUuRZo9FXmo6bIyh3kPAdZNNChmg0w
- Wf4mZ81qf8uDdSihakQLp2voPzoRTCxSbhPDcnV+CYir22RcaC
- aF1dmDvymgG1kV6QNwbo=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130603190640.GA11481@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 June 2013, Andy Shevchenko wrote:
-> 
-> Since we have at least one user of this function outside of CONFIG_NET
-> scope, we have to provide this function independently. The proposed
-> solution is to move it under lib/net_utils.c with corresponding
-> configuration variable and select wherever it is needed.
-> 
-> Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
-> Reported-by: Arnd Bergmann <arnd@arndb.de>
+Andrew,
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+On 06/03, Oleg Nesterov wrote:
+>
+> next_thread() should be avoided, probably next_tid() is the
+> only "valid" user.
+>
+> But now we have another reason to avoid (and probably even kill)
+> it, we are going to replace or fix while_each_thread(), almost
+> every lockless usage is wrong.
+>
+> Changes:
+>
+> 	1/4: Update the changelog, do not move the comment.
+>
+> 	2/4: No changes.
 
-Thanks for providing a fix so quickly!
+So these two are fine, but please ignore 3 and 4.
+
+> 	3/4: Update the comment following the explanations from
+> 	     Eric.
+>
+> 	     Eric pointed that get_proc_task() without rcu lock
+> 	     can trigger the (bogus) warning. Extract the similar
+> 	     check from pid_delete_dentry() into the new helper
+> 	     and use it instead.
+>
+> 	     I didn't dare to preserve his ack, but the only change
+> 	     is the new proc_inode_is_dead() helper and
+>
+> 		- if (pid_task(proc_pid(inode))
+> 		+ if (proc_inode_is_dead(inode))
+>
+> 	     in proc_task_readdir().
+
+Looks like a good cleanup and it was acked, but conflicts (textually)
+with viro/vfs.git#experimental.
+
+> 	4/4: New.
+
+Should be updated and conflicts too.
+
+Oleg.
+
