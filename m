@@ -1,49 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab3FELVX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 07:21:23 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:52064 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978Ab3FELVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 07:21:22 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: Re: [PATCHv2 1/3] net: phy: prevent linking breakage
-Date: Wed, 5 Jun 2013 13:21:00 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Florian Fainelli <florian@openwrt.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel <kernel@pengutronix.de>,
-        "shawn.guo" <shawn.guo@linaro.org>, David Miller <davem@davemloft.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-References: <1369741403-25315-2-git-send-email-alexandre.belloni@free-electrons.com> <CAGVrzcZcVB5+NqLop+ALrX4Jx_SyNatczLt4oNzXr7bjgKMXhg@mail.gmail.com> <51AF03AF.3080106@free-electrons.com>
-In-Reply-To: <51AF03AF.3080106@free-electrons.com>
+	id S1754491Ab3FELXk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 07:23:40 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:37289 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752664Ab3FELXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 07:23:38 -0400
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+To: <rtc-linux@googlegroups.com>, Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [PATCH] rtc: rtc-twl: fix initialization sequence
+Date: Wed, 5 Jun 2013 14:19:22 +0300
+Message-ID: <1370431162-24185-1-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306051321.00264.arnd@arndb.de>
-X-Provags-ID: V02:K0:jElz1htTD5pBAx5KxUZj8noMf8YDij+rK+xvsgNXHdy
- iNWSjVg5f4q9tFMqZWv4bINOk4FMZa9h4HYpAUDbnL0uskuNQu
- yJbJyucYpX58NopH3I15rlZqO9LwKQiganQRUXgLZEln1r11Rw
- SONYrH8NOrIJnwQlxow4NL9C8rl9iYq+acTiZPzF8zwTx3jyYL
- 1wdd6NBjjjo/HhQPC/c5RE5475CykU172w28/rbwGDCQhl9zDO
- Z3TJ3MXdciUrcoE/U87zA1Y7zCL5JSxjZzf2tngkXXT2dstDYn
- eJtkuedg/vXXAxmgTRZADB+Y1k5XBD3mYISIvKmP5KRye9Mvtn
- 4gncEJP+Dlp1rVwPVY3M=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 June 2013, Alexandre Belloni wrote:
-> However, it is becoming urgent for Atmel to get the fix in 3.10 so that
-> they never get a kernel compilation that breaks.
+The twl-rtc has the following dependencies from other drivers during the boot:
+pinctrl
+|-i2c-omap
+  |- twl-core
+     |- twl-rtc
 
-I don't think it's urgent since this is only about rare configurations,
-and not a regression. We can queue the patch "ARM: at91: Fix link
-breakage when !CONFIG_PHYLIB" you just sent to fix this, but I
-would not consider it a serious problem to have it only in 3.11.
+The i2c-omap probe may be deferred because pinctrl iss not ready yet. As result,
+i2c-omap will be probed at late init time. Which, in turn, will delay twl-core
+initialization till late init time too.
 
-	Arnd
+But, the twl-rtc driver is registered from finction twl_rtc_init() at
+module(device) init time and contains part of its initialization code within it.
+Unfortunatelly, this code depends on twl-core which may be not ready at that
+moment and, as result, wrong register map will be selected
+(on OMAP3 twl6030_rtc_reg_map will be selected instead of twl4030_rtc_reg_map).
+
+static int __init twl_rtc_init(void)
+{
+    if (twl_class_is_4030()) <--- twl-core might be not ready here
+                             <--- and twl_class_is_4030() will return 0
+        rtc_reg_map = (u8 *) twl4030_rtc_reg_map;
+    else
+        rtc_reg_map = (u8 *) twl6030_rtc_reg_map;
+
+    return platform_driver_register(&twl4030rtc_driver);
+}
+
+Hence, move register map selection code in twl_rtc_probe() to solve this issue.
+
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+---
+ drivers/rtc/rtc-twl.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
+index bbda0fd..1698115 100644
+--- a/drivers/rtc/rtc-twl.c
++++ b/drivers/rtc/rtc-twl.c
+@@ -481,6 +481,11 @@ static int twl_rtc_probe(struct platform_device *pdev)
+ 	if (irq <= 0)
+ 		goto out1;
+ 
++	if (twl_class_is_4030())
++		rtc_reg_map = (u8 *) twl4030_rtc_reg_map;
++	else
++		rtc_reg_map = (u8 *) twl6030_rtc_reg_map;
++
+ 	ret = twl_rtc_read_u8(&rd_reg, REG_RTC_STATUS_REG);
+ 	if (ret < 0)
+ 		goto out1;
+@@ -622,11 +627,6 @@ static struct platform_driver twl4030rtc_driver = {
+ 
+ static int __init twl_rtc_init(void)
+ {
+-	if (twl_class_is_4030())
+-		rtc_reg_map = (u8 *) twl4030_rtc_reg_map;
+-	else
+-		rtc_reg_map = (u8 *) twl6030_rtc_reg_map;
+-
+ 	return platform_driver_register(&twl4030rtc_driver);
+ }
+ module_init(twl_rtc_init);
+-- 
+1.7.9.5
+
