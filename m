@@ -1,49 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab3FEJdF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 05:33:05 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:36550 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab3FEJdC (ORCPT
+	id S1752807Ab3FEJfb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 05:35:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53082 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969Ab3FEJf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 05:33:02 -0400
-USER-AGENT: Mutt/1.5.21 (2010-09-15)
+	Wed, 5 Jun 2013 05:35:29 -0400
 MIME-Version: 1.0
-Message-ID: <20130605093206.GQ28112@mwanda>
-Date: Wed, 5 Jun 2013 02:32:07 -0700 (PDT)
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Johannes Schilling <of82ecuq@cip.cs.fau.de>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Kurt Kanzenbach <shifty91@gmail.com>, linux-kernel@i4.cs.fau.de,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Al Cho <acho@novell.com>,
-        Amarjargal Gundjalam <amarjargal16@gmail.com>,
-        Laura Lawniczak <laura.lawniczak@googlemail.com>
-Subject: Re: [PATCH 3/6] keucr: migrate printk to dev_dbg/info/warn/err
-References: <1370422206-14961-1-git-send-email-of82ecuq@cip.cs.fau.de>
- <1370422206-14961-4-git-send-email-of82ecuq@cip.cs.fau.de>
-In-Reply-To: <1370422206-14961-4-git-send-email-of82ecuq@cip.cs.fau.de>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <s5hbo7lrq2a.wl%tiwai@suse.de>
+References: <1370410969-15328-1-git-send-email-ming.lei@canonical.com>
+	<1370410969-15328-4-git-send-email-ming.lei@canonical.com>
+	<s5hbo7lrq2a.wl%tiwai@suse.de>
+Date: Wed, 5 Jun 2013 17:35:26 +0800
+Message-ID: <CACVXFVNpH2H0wxfmbeVY--Q+1UnNT1rq_Rwr-3ou3Nddq2EWXw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] firmware loader: allow distribution to choose default
+ search paths
+From: Ming Lei <ming.lei@canonical.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 10:50:03AM +0200, Johannes Schilling wrote:
-> diff --git a/drivers/staging/keucr/init.c b/drivers/staging/keucr/init.c
-> index a0fdffd..0e8ced1 100644
-> --- a/drivers/staging/keucr/init.c
-> +++ b/drivers/staging/keucr/init.c
-> @@ -19,13 +19,13 @@ int ENE_InitMedia(struct us_data *us)
->  	int	result;
->  	BYTE	MiscReg03 = 0;
->  
-> -	printk(KERN_INFO "--- Init Media ---\n");
-> +	dev_info("--- Init Media ---\n");
+On Wed, Jun 5, 2013 at 3:10 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Wed,  5 Jun 2013 13:42:49 +0800,
+> Ming Lei wrote:
+>>
+>> For some distributions(e.g. android), firmware images aren't put
+>> under kernel built-in search paths, so introduce one Kconfig
+>> option to allow distributions or users to choose its specific default
+>> search paths, which are always tried before searching from kernel
+>> built-in paths in direct loading.
+>>
+>> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+>> Cc: Takashi Iwai <tiwai@suse.de>
+>> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+>> ---
+>>  drivers/base/Kconfig          |   12 +++++++
+>>  drivers/base/firmware_class.c |   76 ++++++++++++++++++++++++++++++++++++-----
+>>  2 files changed, 80 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+>> index 07abd9d..5b0c909 100644
+>> --- a/drivers/base/Kconfig
+>> +++ b/drivers/base/Kconfig
+>> @@ -156,6 +156,18 @@ config FW_LOADER_USER_HELPER
+>>         no longer required unless you have a special firmware file that
+>>         resides in a non-standard path.
+>>
+>> +config FW_CUSTOMIZED_PATH
+>> +     string "default firmware search paths for direct loading"
+>> +     help
+>> +       On some distribution(e.g. android), firmware images aren't
+>> +       put under kernel built-in search paths, so provide this option
+>> +       for distributions to choose a distribution specific firmware
+>> +       search path. The option allows to choose more than one path,
+>> +       and paths are seperated with semicolon(e.g. on android, the
+>> +       option might look as "/etc/firmware;/vendor/firmware").
+>> +
+>> +       If you are unsure about this, don't choose here.
+>> +
+>>  config DEBUG_DRIVER
+>>       bool "Driver Core verbose debug messages"
+>>       depends on DEBUG_KERNEL
+>> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+>> index c743409..50b5913 100644
+>> --- a/drivers/base/firmware_class.c
+>> +++ b/drivers/base/firmware_class.c
+>> @@ -267,6 +267,9 @@ static void fw_free_buf(struct firmware_buf *buf)
+>>  static char fw_path_para[256];
+>>  static const char * const fw_path[] = {
+>>       fw_path_para,
+>> +#ifdef CONFIG_FW_CUSTOMIZED_PATH
+>> +     CONFIG_FW_CUSTOMIZED_PATH,
+>> +#endif
+>>       "/lib/firmware/updates/" UTS_RELEASE,
+>>       "/lib/firmware/updates",
+>>       "/lib/firmware/" UTS_RELEASE,
+>> @@ -314,6 +317,59 @@ static bool fw_read_file_contents(struct file *file, struct firmware_buf *fw_buf
+>>       return true;
+>>  }
+>>
+>> +static bool fw_get_file_firmware(const char *path,
+>> +                              struct firmware_buf *buf)
+>> +{
+>> +     struct file *file;
+>> +     bool success;
+>> +
+>> +     file = filp_open(path, O_RDONLY, 0);
+>> +     if (IS_ERR(file))
+>> +             return false;
+>> +     success = fw_read_file_contents(file, buf);
+>> +     fput(file);
+>> +
+>> +     return success;
+>> +}
+>> +
+>> +#ifdef CONFIG_FW_CUSTOMIZED_PATH
+>> +/* The path in @paths is seperated by ';' */
+>> +static bool fw_get_fw_file_from_paths(const char *paths, char *path,
+>> +                                   struct firmware_buf *buf)
+>> +{
+>> +     int len, start, end;
+>> +     char *pos;
+>> +
+>> +     end = -1;
+>> +     do {
+>> +             start = end + 1;
+>> +             pos = strchr(&paths[start], ';');
+>> +             if (pos) {
+>> +                     end = (int)(pos - paths);
+>> +                     len = end - start;
+>> +             } else {
+>> +                     len = strlen(&paths[start]);
+>> +             }
+>> +
+>> +             if (PATH_MAX < len + strlen(buf->fw_id))
+>> +                     continue;
+>> +             strncpy(path, &paths[start], len);
+>> +             snprintf(&path[len], PATH_MAX - len, "/%s", buf->fw_id);
+>> +
+>> +             if (fw_get_file_firmware(path, buf))
+>> +                     return true;
+>> +     } while (pos && end < strlen(paths) - 1);
+>> +
+>> +     return false;
+>> +}
+>> +#else
+>> +static bool fw_get_fw_file_from_paths(const char *paths, char *path,
+>> +                                   struct firmware_buf *buf)
+>> +{
+>> +     return false;
+>> +}
+>> +#endif
+>> +
+>>  static bool fw_get_filesystem_firmware(struct device *device,
+>>                                      struct firmware_buf *buf)
+>>  {
+>> @@ -322,19 +378,23 @@ static bool fw_get_filesystem_firmware(struct device *device,
+>>       char *path = __getname();
+>>
+>>       for (i = 0; i < ARRAY_SIZE(fw_path); i++) {
+>> -             struct file *file;
+>>
+>>               /* skip the unset customized path */
+>>               if (!fw_path[i][0])
+>>                       continue;
+>>
+>> -             snprintf(path, PATH_MAX, "%s/%s", fw_path[i], buf->fw_id);
+>> -
+>> -             file = filp_open(path, O_RDONLY, 0);
+>> -             if (IS_ERR(file))
+>> -                     continue;
+>> -             success = fw_read_file_contents(file, buf);
+>> -             fput(file);
+>> +             /*
+>> +              * If CONFIG_FW_CUSTOMIZED_PATH is set, search from
+>> +              * these paths first
+>> +              */
+>> +             if (i == 1 && ARRAY_SIZE(fw_path) > 5) {
+>> +                     success = fw_get_fw_file_from_paths(fw_path[1],
+>> +                                                         path, buf);
+>> +             } else {
+>> +                     snprintf(path, PATH_MAX, "%s/%s", fw_path[i],
+>> +                              buf->fw_id);
+>> +                     success = fw_get_file_firmware(path, buf);
+>
+> Shouldn't fw_get_fw_file_from_paths() be applied unconditionally?
+> It'll be benefit for the customized path passed via module option,
+> too.  The only drawback is a slight code growth, but the code can be
+> reduced a bit with strcspn() or such.
 
-Come on people, what's going on here?  This won't compile at all. :/
+You mean that both the 1st two items should be covered by
+fw_get_fw_file_from_paths()? If so, the function may become
+a bit ugly since two strings are required to pass in, and we can't
+merge one runtime string and one ro string created in compiling.
 
-regards,
-dan carpenter
+Looks we can let fw_get_fw_file_from_paths() handle all
+predefined paths(CONFIG_FW_CUSTOMIZED_PATH and
+kernel built-in paths), then fw_get_filesystem_firmware()
+may become simple, just check fw_path_para and all
+other paths by fw_get_fw_file_from_paths(). How about the
+idea?
 
+>
+> BTW, I now wonder what happens if you pass a relative path.
+> Did you already test it?
+
+I tested absolute paths, and not test relative paths. Do you mean
+it may cause security problem? If so, we can check and ignore them,
+but it should be OK since the paths are provided by kernel builder.
+>From view of function, I don't think there are much difference with
+absolute paths.
+
+
+Thanks,
+--
+Ming Lei
