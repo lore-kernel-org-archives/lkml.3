@@ -1,135 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757495Ab3FERyP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 13:54:15 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:23138 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757126Ab3FERsP (ORCPT
+	id S1757502Ab3FERya (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 13:54:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34138 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756869Ab3FERy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 13:48:15 -0400
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
-Cc: Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 47/53] Input: atmel_mxt_ts - Release touch state during suspend
-Date: Wed,  5 Jun 2013 18:37:40 +0100
-Message-Id: <1370453866-16534-48-git-send-email-nick.dyer@itdev.co.uk>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
-References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
+	Wed, 5 Jun 2013 13:54:27 -0400
+Date: Wed, 5 Jun 2013 10:54:26 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tobias Winter <tobias@linuxdingsda.de>,
+        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        Rob Landley <rob@landley.net>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] Increase the number of USB to serial devices we can
+ support at once
+Message-ID: <20130605175426.GA13461@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If fingers are down as the MXT chip goes into suspend it does not send a lift
-message. In addition, it may not complete its final measurement cycle
-immediately, which means touch messages may be received by the interrupt
-handler after mxt_stop() has completed.
+Here are 3 patches that I've tested out on my system with only a small
+number of devices, but it seems to work, so why not let others try it
+out...
 
-So:
-- disable irq during suspend
-- flush any messages created after suspend
-- tell app layer that slots were released at suspend
+These patches make the USB to serial core have the ability to support up
+to 3000 devices at once now.  We do this in the following steps:
+	- adding the minor number to the usb_serial_port structure
+	- removing the static array of ports, and use idr instead
+	- increasing the number
 
-Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
-Acked-by: Benson Leung <bleung@chromium.org>
----
- drivers/input/touchscreen/atmel_mxt_ts.c |   46 ++++++++++++++++++++++++++++++
- 1 file changed, 46 insertions(+)
+Now, if you pay attention, we end up taking up more runtime memory than
+before, because we are asking the tty layer to reserve a bunch more tty
+devices for us, negating the potential savings of getting rid of our
+original static array.  I'll work on fixing up the tty layer calls to
+properly allocate the tty devices only when we need them, much like the
+pty layer does.  When that's done, we can bump the number of usb to
+serial devices up to 16k with no memory problems.
 
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index cd8f3e0..724a95d 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -251,6 +251,9 @@ struct mxt_data {
- 
- 	/* Enable reporting of input events */
- 	bool enable_reporting;
-+
-+	/* Indicates whether device is in suspend */
-+	bool suspended;
- };
- 
- static inline size_t mxt_obj_size(const struct mxt_object *obj)
-@@ -2028,6 +2031,11 @@ static int mxt_load_fw(struct device *dev, const char *fn)
- 	if (ret)
- 		goto release_firmware;
- 
-+	if (data->suspended) {
-+		enable_irq(data->irq);
-+		data->suspended = false;
-+	}
-+
- 	if (!data->in_bootloader) {
- 		/* Change to the bootloader mode */
- 		data->in_bootloader = true;
-@@ -2140,6 +2148,8 @@ static ssize_t mxt_update_fw_store(struct device *dev,
- 	} else {
- 		dev_info(dev, "The firmware update succeeded\n");
- 
-+		data->suspended = false;
-+
- 		error = mxt_initialize(data);
- 		if (error)
- 			return error;
-@@ -2245,17 +2255,53 @@ static const struct attribute_group mxt_attr_group = {
- 	.attrs = mxt_attrs,
- };
- 
-+static void mxt_reset_slots(struct mxt_data *data)
-+{
-+	struct input_dev *input_dev = data->input_dev;
-+	unsigned int num_mt_slots;
-+	int id;
-+
-+	num_mt_slots = data->num_touchids + data->num_stylusids;
-+
-+	for (id = 0; id < num_mt_slots; id++) {
-+		input_mt_slot(input_dev, id);
-+		input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, 0);
-+	}
-+
-+	mxt_input_sync(input_dev);
-+}
-+
- static void mxt_start(struct mxt_data *data)
- {
-+	if (!data->suspended || data->in_bootloader)
-+		return;
-+
-+	/* Discard any touch messages still in message buffer from before chip
-+	 * went to sleep */
-+	mxt_process_messages_until_invalid(data);
-+
- 	mxt_set_t7_power_cfg(data, MXT_POWER_CFG_RUN);
- 
- 	/* Recalibrate since chip has been in deep sleep */
- 	mxt_t6_command(data, MXT_COMMAND_CALIBRATE, 1, false);
-+
-+	mxt_acquire_irq(data);
-+	data->enable_reporting = true;
-+	data->suspended = false;
- }
- 
- static void mxt_stop(struct mxt_data *data)
- {
-+	if (data->suspended || data->in_bootloader)
-+		return;
-+
-+	data->enable_reporting = false;
-+	disable_irq(data->irq);
-+
- 	mxt_set_t7_power_cfg(data, MXT_POWER_CFG_DEEPSLEEP);
-+
-+	mxt_reset_slots(data);
-+	data->suspended = true;
- }
- 
- static int mxt_input_open(struct input_dev *dev)
--- 
-1.7.10.4
+This series is based on my usb-linus branch on my usb.git tree on
+git.kernel.org, as I needed some of the usb-serial fixes that are in
+that branch already.
 
+Testing / review is most welcome.
+
+thanks,
+
+greg k-h
