@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932952Ab3FEV5e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:57:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37841 "EHLO
+	id S932887Ab3FEV5v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:57:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37815 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932814Ab3FEVff (ORCPT
+	with ESMTP id S932809Ab3FEVff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Jun 2013 17:35:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pekka Riikonen <priikone@iki.fi>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 057/127] x86: Allow FPU to be used at interrupt time even with eagerfpu
-Date: Wed,  5 Jun 2013 14:33:44 -0700
-Message-Id: <20130605213224.520257595@linuxfoundation.org>
+        Wen Xiong <wenxiong@linux.vnet.ibm.com>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 056/127] SCSI: ipr: Need to reset adapter after the 6th EEH error
+Date: Wed,  5 Jun 2013 14:33:43 -0700
+Message-Id: <20130605213224.389767185@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -27,88 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pekka Riikonen <priikone@iki.fi>
+From: "wenxiong@linux.vnet.ibm.com" <wenxiong@linux.vnet.ibm.com>
 
-commit 5187b28ff08249ab8a162e802209ed04e271ca02 upstream.
+commit 96b04db9f2c16e77c31ef0e17e143da1e0cbfd78 upstream.
 
-With the addition of eagerfpu the irq_fpu_usable() now returns false
-negatives especially in the case of ksoftirqd and interrupted idle task,
-two common cases for FPU use for example in networking/crypto.  With
-eagerfpu=off FPU use is possible in those contexts.  This is because of
-the eagerfpu check in interrupted_kernel_fpu_idle():
+Add reset adapter after the 6th EEH errors in ipr driver. This triggers
+the adapter reset via the PCI config space even when the slot is frozen.
 
-...
-  * For now, with eagerfpu we will return interrupted kernel FPU
-  * state as not-idle. TBD: Ideally we can change the return value
-  * to something like __thread_has_fpu(current). But we need to
-  * be careful of doing __thread_clear_has_fpu() before saving
-  * the FPU etc for supporting nested uses etc. For now, take
-  * the simple route!
-...
- 	if (use_eager_fpu())
- 		return 0;
-
-As eagerfpu is automatically "on" on those CPUs that also have the
-features like AES-NI this patch changes the eagerfpu check to return 1 in
-case the kernel_fpu_begin() has not been said yet.  Once it has been the
-__thread_has_fpu() will start returning 0.
-
-Notice that with eagerfpu the __thread_has_fpu is always true initially.
-FPU use is thus always possible no matter what task is under us, unless
-the state has already been saved with kernel_fpu_begin().
-
-[ hpa: this is a performance regression, not a correctness regression,
-  but since it can be quite serious on CPUs which need encryption at
-  interrupt time I am marking this for urgent/stable. ]
-
-Signed-off-by: Pekka Riikonen <priikone@iki.fi>
-Link: http://lkml.kernel.org/r/alpine.GSO.2.00.1305131356320.18@git.silcnet.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Wen Xiong <wenxiong@linux.vnet.ibm.com>
+Acked-by: Brian King <brking@linux.vnet.ibm.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/i387.c |   14 +++++---------
- 1 file changed, 5 insertions(+), 9 deletions(-)
+ drivers/scsi/ipr.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -22,23 +22,19 @@
- /*
-  * Were we in an interrupt that interrupted kernel mode?
-  *
-- * For now, with eagerfpu we will return interrupted kernel FPU
-- * state as not-idle. TBD: Ideally we can change the return value
-- * to something like __thread_has_fpu(current). But we need to
-- * be careful of doing __thread_clear_has_fpu() before saving
-- * the FPU etc for supporting nested uses etc. For now, take
-- * the simple route!
-- *
-  * On others, we can do a kernel_fpu_begin/end() pair *ONLY* if that
-  * pair does nothing at all: the thread must not have fpu (so
-  * that we don't try to save the FPU state), and TS must
-  * be set (so that the clts/stts pair does nothing that is
-  * visible in the interrupted kernel thread).
-+ *
-+ * Except for the eagerfpu case when we return 1 unless we've already
-+ * been eager and saved the state in kernel_fpu_begin().
-  */
- static inline bool interrupted_kernel_fpu_idle(void)
+--- a/drivers/scsi/ipr.c
++++ b/drivers/scsi/ipr.c
+@@ -4777,7 +4777,7 @@ static int ipr_eh_host_reset(struct scsi
+ 	ioa_cfg = (struct ipr_ioa_cfg *) cmd->device->host->hostdata;
+ 	spin_lock_irqsave(ioa_cfg->host->host_lock, lock_flags);
+ 
+-	if (!ioa_cfg->in_reset_reload) {
++	if (!ioa_cfg->in_reset_reload && !ioa_cfg->hrrq[IPR_INIT_HRRQ].ioa_is_dead) {
+ 		ipr_initiate_ioa_reset(ioa_cfg, IPR_SHUTDOWN_ABBREV);
+ 		dev_err(&ioa_cfg->pdev->dev,
+ 			"Adapter being reset as a result of error recovery.\n");
+@@ -6739,6 +6739,7 @@ static int ipr_invalid_adapter(struct ip
+ static int ipr_ioa_bringdown_done(struct ipr_cmnd *ipr_cmd)
  {
- 	if (use_eager_fpu())
--		return 0;
-+		return __thread_has_fpu(current);
+ 	struct ipr_ioa_cfg *ioa_cfg = ipr_cmd->ioa_cfg;
++	int i;
  
- 	return !__thread_has_fpu(current) &&
- 		(read_cr0() & X86_CR0_TS);
-@@ -78,8 +74,8 @@ void __kernel_fpu_begin(void)
- 	struct task_struct *me = current;
+ 	ENTER;
+ 	if (!ioa_cfg->hrrq[IPR_INIT_HRRQ].removing_ioa) {
+@@ -6750,6 +6751,13 @@ static int ipr_ioa_bringdown_done(struct
  
- 	if (__thread_has_fpu(me)) {
--		__save_init_fpu(me);
- 		__thread_clear_has_fpu(me);
-+		__save_init_fpu(me);
- 		/* We do 'stts()' in __kernel_fpu_end() */
- 	} else if (!use_eager_fpu()) {
- 		this_cpu_write(fpu_owner_task, NULL);
+ 	ioa_cfg->in_reset_reload = 0;
+ 	ioa_cfg->reset_retries = 0;
++	for (i = 0; i < ioa_cfg->hrrq_num; i++) {
++		spin_lock(&ioa_cfg->hrrq[i]._lock);
++		ioa_cfg->hrrq[i].ioa_is_dead = 1;
++		spin_unlock(&ioa_cfg->hrrq[i]._lock);
++	}
++	wmb();
++
+ 	list_add_tail(&ipr_cmd->queue, &ipr_cmd->hrrq->hrrq_free_q);
+ 	wake_up_all(&ioa_cfg->reset_wait_q);
+ 	LEAVE;
+@@ -8651,7 +8659,7 @@ static void ipr_pci_perm_failure(struct
+ 	spin_lock_irqsave(ioa_cfg->host->host_lock, flags);
+ 	if (ioa_cfg->sdt_state == WAIT_FOR_DUMP)
+ 		ioa_cfg->sdt_state = ABORT_DUMP;
+-	ioa_cfg->reset_retries = IPR_NUM_RESET_RELOAD_RETRIES;
++	ioa_cfg->reset_retries = IPR_NUM_RESET_RELOAD_RETRIES - 1;
+ 	ioa_cfg->in_ioa_bringdown = 1;
+ 	for (i = 0; i < ioa_cfg->hrrq_num; i++) {
+ 		spin_lock(&ioa_cfg->hrrq[i]._lock);
 
 
