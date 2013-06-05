@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757987Ab3FEWLA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 18:11:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37629 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757873Ab3FEVfC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:02 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [ 010/127] ARM: at91/dt: fix macb pinctrl_macb_rmii_mii_alt definition
-Date: Wed,  5 Jun 2013 14:32:57 -0700
-Message-Id: <20130605213219.208003537@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
-References: <20130605213217.966891866@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1757964Ab3FEWK7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 18:10:59 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:54574 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757879Ab3FEWK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 18:10:56 -0400
+Date: Thu, 6 Jun 2013 00:10:42 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        Fenghua Yu <fenghua.yu@intel.com>, Joe Perches <joe@perches.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 4/4] microcode/x86/amd: early microcode patch loading
+ support for AMD
+Message-ID: <20130605221042.GE29856@pd.tnic>
+References: <1369940959-2077-1-git-send-email-jacob.shin@amd.com>
+ <1369940959-2077-5-git-send-email-jacob.shin@amd.com>
+ <20130531042649.GA4488@khazad-dum.debian.net>
+ <20130531193200.GA8346@alberich>
+ <20130531213039.GA13307@khazad-dum.debian.net>
+ <20130601011512.GA8532@jshin-Toonie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130601011512.GA8532@jshin-Toonie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+On Fri, May 31, 2013 at 08:15:12PM -0500, Jacob Shin wrote:
+> Any thoughts on this Boris?
 
-------------------
+Looks ok to me - I'm assuming you're testing all this new code on all
+families...?
 
-From: Boris BREZILLON <b.brezillon@overkiz.com>
+Thanks.
 
-commit f6d35d67d0a5c159f767a20f4fcc1d295a7314b1 upstream.
+-- 
+Regards/Gruss,
+    Boris.
 
-The PA24 pin is wrongly assigned to peripheral B.
-In the current config there is 2 ETX3 pins (PA11 and PA24) and
-no ETXER pin (PA22).
-
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm/boot/dts/at91sam9260.dtsi |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/arm/boot/dts/at91sam9260.dtsi
-+++ b/arch/arm/boot/dts/at91sam9260.dtsi
-@@ -264,7 +264,7 @@
- 						atmel,pins =
- 							<0 10 0x2 0x0	/* PA10 periph B */
- 							 0 11 0x2 0x0	/* PA11 periph B */
--							 0 24 0x2 0x0	/* PA24 periph B */
-+							 0 22 0x2 0x0	/* PA22 periph B */
- 							 0 25 0x2 0x0	/* PA25 periph B */
- 							 0 26 0x2 0x0	/* PA26 periph B */
- 							 0 27 0x2 0x0	/* PA27 periph B */
-
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
