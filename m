@@ -1,20 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932760Ab3FEVf3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:35:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37734 "EHLO
+	id S932856Ab3FEWAD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 18:00:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37783 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932591Ab3FEVfX (ORCPT
+	with ESMTP id S932752Ab3FEVf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:23 -0400
+	Wed, 5 Jun 2013 17:35:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 039/127] perf: net_dropmonitor: Fix trace parameter order
-Date: Wed,  5 Jun 2013 14:33:26 -0700
-Message-Id: <20130605213222.408763909@linuxfoundation.org>
+        Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
+        Leonid Yegoshin <yegoshin@mips.com>, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Russell King <rmk@arm.linux.org.uk>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 047/127] mm compaction: fix of improper cache flush in migration code
+Date: Wed,  5 Jun 2013 14:33:34 -0700
+Message-Id: <20130605213223.322672469@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -27,30 +33,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
 
-commit 140c3c6a2bcd2c31e2f7f5a8d59689724776c8e5 upstream.
+commit c2cc499c5bcf9040a738f49e8051b42078205748 upstream.
 
-This works much better if we don't treat protocol numbers as addresses.
+Page 'new' during MIGRATION can't be flushed with flush_cache_page().
+Using flush_cache_page(vma, addr, pfn) is justified only if the page is
+already placed in process page table, and that is done right after
+flush_cache_page().  But without it the arch function has no knowledge
+of process PTE and does nothing.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Besides that, flush_cache_page() flushes an application cache page, but
+the kernel has a different page virtual address and dirtied it.
+
+Replace it with flush_dcache_page(new) which is the proper usage.
+
+The old page is flushed in try_to_unmap_one() before migration.
+
+This bug takes place in Sead3 board with M14Kc MIPS CPU without cache
+aliasing (but Harvard arch - separate I and D cache) in tight memory
+environment (128MB) each 1-3days on SOAK test.  It fails in cc1 during
+kernel build (SIGILL, SIGBUS, SIGSEG) if CONFIG_COMPACTION is switched
+ON.
+
+Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+Cc: Leonid Yegoshin <yegoshin@mips.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Russell King <rmk@arm.linux.org.uk>
+Cc: David Miller <davem@davemloft.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/scripts/python/net_dropmonitor.py |    2 +-
+ mm/migrate.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/tools/perf/scripts/python/net_dropmonitor.py
-+++ b/tools/perf/scripts/python/net_dropmonitor.py
-@@ -64,7 +64,7 @@ def trace_end():
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -165,7 +165,7 @@ static int remove_migration_pte(struct p
+ 		pte = arch_make_huge_pte(pte, vma, new, 0);
+ 	}
+ #endif
+-	flush_cache_page(vma, addr, pte_pfn(pte));
++	flush_dcache_page(new);
+ 	set_pte_at(mm, addr, ptep, pte);
  
- # called from perf, when it finds a correspoinding event
- def skb__kfree_skb(name, context, cpu, sec, nsec, pid, comm,
--			skbaddr, protocol, location):
-+		   skbaddr, location, protocol):
- 	slocation = str(location)
- 	try:
- 		drop_log[slocation] = drop_log[slocation] + 1
+ 	if (PageHuge(new)) {
 
 
