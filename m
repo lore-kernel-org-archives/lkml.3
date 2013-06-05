@@ -1,85 +1,428 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906Ab3FENfm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 09:35:42 -0400
-Received: from mail.skitlab.ru ([217.65.220.135]:44612 "EHLO mail.skitlab.ru"
+	id S1755423Ab3FENgE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 09:36:04 -0400
+Received: from mail.skitlab.ru ([217.65.220.135]:44621 "EHLO mail.skitlab.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752718Ab3FENfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 09:35:39 -0400
+	id S1754457Ab3FENgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 09:36:02 -0400
 From: Aida Mynzhasova <aida.mynzhasova@skitlab.ru>
 To: linux-omap@vger.kernel.org
 Cc: tony@atomide.com, linux@arm.linux.org.uk,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Broken DM816x support in Linux 3.10-rc4
-Date: Wed,  5 Jun 2013 17:34:50 +0400
-Message-Id: <1370439295-9160-1-git-send-email-aida.mynzhasova@skitlab.ru>
+Subject: [PATCH 4/5] ARM: OMAP: DM816x: add clock domain support for DM816x
+Date: Wed,  5 Jun 2013 17:34:54 +0400
+Message-Id: <1370439295-9160-5-git-send-email-aida.mynzhasova@skitlab.ru>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1370439295-9160-1-git-send-email-aida.mynzhasova@skitlab.ru>
+References: <1370439295-9160-1-git-send-email-aida.mynzhasova@skitlab.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not so long ago I tried to boot Linux 3.10-rc4 kernel on DM816x EVM
-board. Unfortunately, my attempts were failed by reason of poor
-support of DM81xx-based devices in new kernels.
+This patch adds required definitions and structures for clockdomain
+initialization:
 
-Actually, on Linux 3.10-rc4 kernel early initialization of board
-is failed when it tries to initialize power domains:
+1. register offsets for DM81xx and DM816x clock domain modules;
+2. clock domain register bits;
+3. additional OMAP2/3 common clock domains: prm_clkdm and cm_clkdm;
+4. clockdomain structure definitions for DM816x.
 
-[    0.000000] Unhandled fault: external abort on non-linefetch (0x1028) 
-at 0xfa17f8e4
-[    0.000000] Internal error: : 1028 [#1] SMP ARM
-[    0.000000] Modules linked in:
-[    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 
-3.10.0-rc3-00001-g0e5443c-dirty #12
-[    0.000000] task: c076fc50 ti: c0764000 task.ti: c0764000
-[    0.000000] PC is at omap2_pwrdm_wait_transition+0x1c/0xac
-[    0.000000] LR is at pwrdm_register_pwrdms+0x15c/0x1ac
-[    0.000000] pc : [<c0031698>]    lr : [<c0036010>]    psr: 60000193
-[    0.000000] sp : c0765f28  ip : c07bebe0  fp : 00000001
-[    0.000000] r10: c07e6a90  r9 : 00000000  r8 : c07e6944
-[    0.000000] r7 : c0754a50  r6 : c064f264  r5 : c0775298  r4 : c0773e9c
-[    0.000000] r3 : fffff8e4  r2 : fa17f8e4  r1 : 00000004  r0 : c0775298
-[    0.000000] Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM 
-Segment kernel
-[    0.000000] Control: 10c5387d  Table: 80004019  DAC: 00000017
-[    0.000000] Process swapper (pid: 0, stack limit = 0xc0764240)
-[    0.000000] Stack: (0xc0765f28 to 0xc0766000)
-[    0.000000] 5f20:                   c0773e9c c0775298 c064f264 
-c0754a50 c0773ee4 c0036010
-[    0.000000] 5f40: 35170034 81600134 c05125a8 fa180000 80000200 
-c0771348 c07b1b48 c07475ac
-[    0.000000] 5f60: c0771348 c07191fc c0647c40 c0711598 16c00000 
-c0d24fb4 c06450ac c070c148
-[    0.000000] 5f80: c0765f98 c0765f90 c0771134 c0765fdc 00000000 
-00000000 00000000 00000000
-[    0.000000] 5fa0: c0643878 00000001 00000000 c0748774 c0771134 
-c076c880 413fc082 00000000
-[    0.000000] 5fc0: 00000000 c07086fc 00000000 00000000 00000000 
-00000000 00000000 c0748778
-[    0.000000] 5fe0: 10c53c7d c076c910 c0748774 c0771134 80004059 
-80008074 00000000 00000000
-[    0.000000] [<c0031698>] (omap2_pwrdm_wait_transition+0x1c/0xac) from 
-[<c0036010>] (pwrdm_register_pwrdms+0x15c/0x1ac)
-[    0.000000] [<c0036010>] (pwrdm_register_pwrdms+0x15c/0x1ac) from 
-[<c07191fc>] (omap3xxx_powerdomains_init+0x50/0x144)
-[    0.000000] [<c07191fc>] (omap3xxx_powerdomains_init+0x50/0x144) from 
-[<c0711598>] (ti81xx_init_early+0xcc/0x178)
-[    0.000000] [<c0711598>] (ti81xx_init_early+0xcc/0x178) from 
-[<c070c148>] (setup_arch+0x5ac/0x800)
-[    0.000000] [<c070c148>] (setup_arch+0x5ac/0x800) from [<c07086fc>] 
-(start_kernel+0x7c/0x330)
-[    0.000000] [<c07086fc>] (start_kernel+0x7c/0x330) from [<80008074>] 
-(0x80008074)
-[    0.000000] Code: e1d030f8 e5982000 e28330e4 e0822003 (e5921000)
-[    0.000000] ---[ end trace 1b75b31a2719ed1c ]---
+Also, omap3xxx_clockdomains_init() was substituted by new
+dm81xx_clockdomains_init().
 
-So, I suggest you this patch series, which fixes that kernel crush and
-adds new functions/structures, required for early initialization on
-DM816x (power and clock domains, hwmods). After applying these patches
-the kernel is able to successfully continue booting till clock
-initialization (will be added later).
+Signed-off-by: Aida Mynzhasova <aida.mynzhasova@skitlab.ru>
+---
+ arch/arm/mach-omap2/Makefile                     |    2 +
+ arch/arm/mach-omap2/clockdomain.h                |    3 +
+ arch/arm/mach-omap2/clockdomains2xxx_3xxx_data.c |   10 +
+ arch/arm/mach-omap2/clockdomains_dm81xx_data.c   |  213 ++++++++++++++++++++++
+ arch/arm/mach-omap2/cm-regbits-dm81xx.h          |   22 +++
+ arch/arm/mach-omap2/cm_dm81xx.h                  |   61 +++++++
+ arch/arm/mach-omap2/io.c                         |    2 +-
+ 7 files changed, 312 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/mach-omap2/clockdomains_dm81xx_data.c
+ create mode 100644 arch/arm/mach-omap2/cm-regbits-dm81xx.h
+ create mode 100644 arch/arm/mach-omap2/cm_dm81xx.h
 
-Thanks,
-
-Aida
+diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+index 03121cc..132a1e2 100644
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@ -158,6 +158,8 @@ obj-$(CONFIG_ARCH_OMAP4)		+= $(clockdomain-common)
+ obj-$(CONFIG_ARCH_OMAP4)		+= clockdomains44xx_data.o
+ obj-$(CONFIG_SOC_AM33XX)		+= $(clockdomain-common)
+ obj-$(CONFIG_SOC_AM33XX)		+= clockdomains_am33xx_data.o
++obj-$(CONFIG_SOC_DM81XX)		+= $(clockdomain-common)
++obj-$(CONFIG_SOC_DM81XX)		+= clockdomains_dm81xx_data.o
+ obj-$(CONFIG_SOC_OMAP5)			+= $(clockdomain-common)
+ 
+ # Clock framework
+diff --git a/arch/arm/mach-omap2/clockdomain.h b/arch/arm/mach-omap2/clockdomain.h
+index 2da3765..0a9d4fc 100644
+--- a/arch/arm/mach-omap2/clockdomain.h
++++ b/arch/arm/mach-omap2/clockdomain.h
+@@ -215,6 +215,7 @@ extern void __init omap242x_clockdomains_init(void);
+ extern void __init omap243x_clockdomains_init(void);
+ extern void __init omap3xxx_clockdomains_init(void);
+ extern void __init am33xx_clockdomains_init(void);
++extern void __init dm81xx_clockdomains_init(void);
+ extern void __init omap44xx_clockdomains_init(void);
+ 
+ extern void clkdm_add_autodeps(struct clockdomain *clkdm);
+@@ -228,5 +229,7 @@ extern struct clkdm_ops am33xx_clkdm_operations;
+ extern struct clkdm_dep gfx_24xx_wkdeps[];
+ extern struct clkdm_dep dsp_24xx_wkdeps[];
+ extern struct clockdomain wkup_common_clkdm;
++extern struct clockdomain cm_common_clkdm;
++extern struct clockdomain prm_common_clkdm;
+ 
+ #endif
+diff --git a/arch/arm/mach-omap2/clockdomains2xxx_3xxx_data.c b/arch/arm/mach-omap2/clockdomains2xxx_3xxx_data.c
+index 49722196..8a62c7f 100644
+--- a/arch/arm/mach-omap2/clockdomains2xxx_3xxx_data.c
++++ b/arch/arm/mach-omap2/clockdomains2xxx_3xxx_data.c
+@@ -90,3 +90,13 @@ struct clockdomain wkup_common_clkdm = {
+ 	.dep_bit	= OMAP_EN_WKUP_SHIFT,
+ 	.flags		= CLKDM_ACTIVE_WITH_MPU,
+ };
++
++struct clockdomain prm_common_clkdm = {
++	.name		= "prm_clkdm",
++	.pwrdm		= { .name = "wkup_pwrdm" },
++};
++
++struct clockdomain cm_common_clkdm = {
++	.name		= "cm_clkdm",
++	.pwrdm		= { .name = "core_pwrdm" },
++};
+diff --git a/arch/arm/mach-omap2/clockdomains_dm81xx_data.c b/arch/arm/mach-omap2/clockdomains_dm81xx_data.c
+new file mode 100644
+index 0000000..daf390f
+--- /dev/null
++++ b/arch/arm/mach-omap2/clockdomains_dm81xx_data.c
+@@ -0,0 +1,213 @@
++/*
++ * DM81XX Clock Domain data.
++ *
++ * Copyright (C) 2010 Texas Instruments, Inc. - http://www.ti.com/
++ * Copyright (C) 2013 SKTB SKiT, http://www.skitlab.ru/
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __ARCH_ARM_MACH_OMAP2_CLOCKDOMAINS_DM81XX_H
++#define __ARCH_ARM_MACH_OMAP2_CLOCKDOMAINS_DM81XX_H
++
++#include <linux/kernel.h>
++#include <linux/io.h>
++
++#include "clockdomain.h"
++
++#include "cm_dm81xx.h"
++#include "cm-regbits-dm81xx.h"
++
++/*
++ * TODO:
++ * - Add other domains as required
++ * - Fill up associated powerdomans (especially ALWON powerdomains are NULL at
++ *   the moment
++ * - Consider dependencies across domains (probably not applicable till now)
++ */
++
++/* Common DM81XX */
++static struct clockdomain alwon_l3_slow_dm81xx_clkdm = {
++	.name		= "alwon_l3_slow_clkdm",
++	.pwrdm		= { .name = "alwon_pwrdm" },
++	.cm_inst	= DM81XX_CM_ALWON_MOD,
++	.clkdm_offs	= DM81XX_CM_ALWON_L3_SLOW_CLKDM,
++	.clktrctrl_mask	= DM81XX_CLKTRCTRL_MASK,
++	.flags		= CLKDM_CAN_HWSUP_SWSUP,
++};
++
++static struct clockdomain alwon_l3_med_dm81xx_clkdm = {
++	.name		= "alwon_l3_med_clkdm",
++	.pwrdm		= { .name = "alwon_pwrdm" },
++	.cm_inst	= DM81XX_CM_ALWON_MOD,
++	.clkdm_offs	= DM81XX_CM_ALWON_L3_MED_CLKDM,
++	.clktrctrl_mask	= DM81XX_CLKTRCTRL_MASK,
++	.flags		= CLKDM_CAN_HWSUP_SWSUP,
++};
++
++static struct clockdomain alwon_l3_fast_dm81xx_clkdm = {
++	.name		= "alwon_l3_fast_clkdm",
++	.pwrdm		= { .name = "alwon_pwrdm" },
++	.cm_inst	= DM81XX_CM_ALWON_MOD,
++	.clkdm_offs	= DM81XX_CM_ALWON_L3_FAST_CLKDM,
++	.clktrctrl_mask	= DM81XX_CLKTRCTRL_MASK,
++	.flags		= CLKDM_CAN_HWSUP_SWSUP,
++};
++
++static struct clockdomain alwon_ethernet_dm81xx_clkdm = {
++	.name		= "alwon_ethernet_clkdm",
++	.pwrdm		= { .name = "alwon_pwrdm" },
++	.cm_inst	= DM81XX_CM_ALWON_MOD,
++	.clkdm_offs	= DM81XX_CM_ETHERNET_CLKDM,
++	.clktrctrl_mask	= DM81XX_CLKTRCTRL_MASK,
++	.flags		= CLKDM_CAN_HWSUP_SWSUP,
++};
++
++/* OCMC clock domain */
++static struct clockdomain mmu_dm81xx_clkdm = {
++	.name		= "mmu_clkdm",
++	.pwrdm		= { .name = "alwon_pwrdm" },
++	.cm_inst	= DM81XX_CM_ALWON_MOD,
++	.clkdm_offs	= DM81XX_CM_MMU_CLKDM,
++	.clktrctrl_mask	= DM81XX_CLKTRCTRL_MASK,
++	.flags		= CLKDM_CAN_HWSUP_SWSUP,
++};
++
++static struct clockdomain mmu_cfg_dm81xx_clkdm = {
++	.name		= "mmu_cfg_clkdm",
++	.pwrdm		= { .name = "alwon_pwrdm" },
++	.cm_inst	= DM81XX_CM_ALWON_MOD,
++	.clkdm_offs	= DM81XX_CM_MMUCFG_CLKDM,
++	.clktrctrl_mask	= DM81XX_CLKTRCTRL_MASK,
++	.flags		= CLKDM_CAN_HWSUP_SWSUP,
++};
++
++/* DM816X only */
++static struct clockdomain alwon_mpu_dm816x_clkdm = {
++	.name		= "alwon_mpu_clkdm",
++	.pwrdm		= { .name = "alwon_pwrdm" },
++	.cm_inst	= DM81XX_CM_ALWON_MOD,
++	.clkdm_offs	= DM81XX_CM_ALWON_MPU_CLKDM,
++	.clktrctrl_mask	= DM81XX_CLKTRCTRL_MASK,
++	.flags		= CLKDM_CAN_HWSUP_SWSUP,
++};
++
++static struct clockdomain active_gem_dm816x_clkdm = {
++	.name		= "active_gem_clkdm",
++	.pwrdm		= { .name = "active_pwrdm" },
++	.cm_inst	= DM816X_CM_ACTIVE_MOD,
++	.clkdm_offs	= DM816X_CM_ACTIVE_GEM_CLKDM,
++	.clktrctrl_mask	= DM81XX_CLKTRCTRL_MASK,
++	.flags		= CLKDM_CAN_HWSUP_SWSUP,
++};
++
++static struct clockdomain ivahd0_dm816x_clkdm = {
++	.name		= "ivahd0_clkdm",
++	.pwrdm		= { .name = "ivahd0_pwrdm" },
++	.cm_inst	= DM816X_CM_IVAHD0_MOD,
++	.clkdm_offs	= DM816X_CM_IVAHD0_CLKDM,
++	.clktrctrl_mask	= DM81XX_CLKTRCTRL_MASK,
++	.flags		= CLKDM_CAN_HWSUP_SWSUP,
++};
++
++static struct clockdomain ivahd1_dm816x_clkdm = {
++	.name		= "ivahd1_clkdm",
++	.pwrdm		= { .name = "ivahd1_pwrdm" },
++	.cm_inst	= DM816X_CM_IVAHD1_MOD,
++	.clkdm_offs	= DM816X_CM_IVAHD1_CLKDM,
++	.clktrctrl_mask	= DM81XX_CLKTRCTRL_MASK,
++	.flags		= CLKDM_CAN_HWSUP_SWSUP,
++};
++
++static struct clockdomain ivahd2_dm816x_clkdm = {
++	.name		= "ivahd2_clkdm",
++	.pwrdm		= { .name = "ivahd2_pwrdm" },
++	.cm_inst	= DM816X_CM_IVAHD2_MOD,
++	.clkdm_offs	= DM816X_CM_IVAHD2_CLKDM,
++	.clktrctrl_mask	= DM81XX_CLKTRCTRL_MASK,
++	.flags		= CLKDM_CAN_HWSUP_SWSUP,
++};
++
++static struct clockdomain sgx_dm816x_clkdm = {
++	.name		= "sgx_clkdm",
++	.pwrdm		= { .name = "sgx_pwrdm" },
++	.cm_inst	= DM816X_CM_SGX_MOD,
++	.clkdm_offs	= DM816X_CM_SGX_CLKDM,
++	.clktrctrl_mask	= DM81XX_CLKTRCTRL_MASK,
++	.flags		= CLKDM_CAN_HWSUP_SWSUP,
++};
++
++static struct clockdomain default_l3_med_dm816x_clkdm = {
++	.name		= "default_l3_med_clkdm",
++	.pwrdm		= { .name = "default_pwrdm" },
++	.cm_inst	= DM816X_CM_DEFAULT_MOD,
++	.clkdm_offs	= DM816X_CM_DEFAULT_L3_MED_CLKDM,
++	.clktrctrl_mask	= DM81XX_CLKTRCTRL_MASK,
++	.flags		= CLKDM_CAN_HWSUP_SWSUP,
++};
++
++static struct clockdomain default_ducati_dm816x_clkdm = {
++	.name		= "default_ducati_clkdm",
++	.pwrdm		= { .name = "default_pwrdm" },
++	.cm_inst	= DM816X_CM_DEFAULT_MOD,
++	.clkdm_offs	= DM816X_CM_DEFAULT_DUCATI_CLKDM,
++	.clktrctrl_mask	= DM81XX_CLKTRCTRL_MASK,
++	.flags		= CLKDM_CAN_HWSUP_SWSUP,
++};
++
++static struct clockdomain default_pcie_dm816x_clkdm = {
++	.name		= "default_pcie_clkdm",
++	.pwrdm		= { .name = "default_pwrdm" },
++	.cm_inst	= DM816X_CM_DEFAULT_MOD,
++	.clkdm_offs	= DM816X_CM_DEFAULT_PCI_CLKDM,
++	.clktrctrl_mask	= DM81XX_CLKTRCTRL_MASK,
++	.flags		= CLKDM_CAN_HWSUP_SWSUP,
++};
++
++static struct clockdomain default_usb_dm816x_clkdm = {
++	.name		= "default_usb_clkdm",
++	.pwrdm		= { .name = "default_pwrdm" },
++	.cm_inst	= DM816X_CM_DEFAULT_MOD,
++	.clkdm_offs	= DM816X_CM_DEFAULT_L3_SLOW_CLKDM,
++	.clktrctrl_mask	= DM81XX_CLKTRCTRL_MASK,
++	.flags		= CLKDM_CAN_HWSUP_SWSUP,
++};
++
++static struct clockdomain *clockdomains_dm81xx[] __initdata = {
++	&wkup_common_clkdm,
++	&cm_common_clkdm,
++	&prm_common_clkdm,
++
++	&alwon_mpu_dm816x_clkdm,
++	&alwon_l3_slow_dm81xx_clkdm,
++	&alwon_l3_med_dm81xx_clkdm,
++	&alwon_l3_fast_dm81xx_clkdm,
++	&alwon_ethernet_dm81xx_clkdm,
++	&mmu_dm81xx_clkdm,
++	&mmu_cfg_dm81xx_clkdm,
++	&active_gem_dm816x_clkdm,
++	&ivahd0_dm816x_clkdm,
++	&ivahd1_dm816x_clkdm,
++	&ivahd2_dm816x_clkdm,
++	&sgx_dm816x_clkdm,
++	&default_l3_med_dm816x_clkdm,
++	&default_ducati_dm816x_clkdm,
++	&default_pcie_dm816x_clkdm,
++	&default_usb_dm816x_clkdm,
++	NULL,
++};
++
++void __init dm81xx_clockdomains_init(void)
++{
++	clkdm_register_platform_funcs(&omap3_clkdm_operations);
++	clkdm_register_clkdms(clockdomains_dm81xx);
++	clkdm_complete_init();
++}
++#endif
+diff --git a/arch/arm/mach-omap2/cm-regbits-dm81xx.h b/arch/arm/mach-omap2/cm-regbits-dm81xx.h
+new file mode 100644
+index 0000000..536e19a
+--- /dev/null
++++ b/arch/arm/mach-omap2/cm-regbits-dm81xx.h
+@@ -0,0 +1,22 @@
++/*
++ * Clock Domain register bits for DM81xx.
++ *
++ * Copyright (C) 2010 Texas Instruments, Inc. - http://www.ti.com/
++ * Copyright (C) 2013 SKTB SKiT, http://www.skitlab.ru/
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __ARCH_ARM_MACH_OMAP2_CM_REGBITS_DM81XX_H
++#define __ARCH_ARM_MACH_OMAP2_CM_REGBITS_DM81XX_H
++
++#define DM81XX_CLKTRCTRL_MASK				(3 << 0)
++
++#endif
+diff --git a/arch/arm/mach-omap2/cm_dm81xx.h b/arch/arm/mach-omap2/cm_dm81xx.h
+new file mode 100644
+index 0000000..f8988da
+--- /dev/null
++++ b/arch/arm/mach-omap2/cm_dm81xx.h
+@@ -0,0 +1,61 @@
++/*
++ * Clock domain register offsets for DM81xx.
++ *
++ * Copyright (C) 2010 Texas Instruments, Inc. - http://www.ti.com/
++ * Copyright (C) 2013 SKTB SKiT, http://www.skitlab.ru/
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __ARCH_ARM_MACH_OMAP2_CM_DM81XX_H
++#define __ARCH_ARM_MACH_OMAP2_CM_DM81XX_H
++
++/* DM81XX common CM module offsets */
++#define DM81XX_CM_ALWON_MOD				0x1400	/* 1KB */
++
++/* DM816X CM module offsets */
++#define DM816X_CM_ACTIVE_MOD			0x0400	/* 256B */
++#define DM816X_CM_DEFAULT_MOD			0x0500	/* 256B */
++#define DM816X_CM_IVAHD0_MOD			0x0600	/* 256B */
++#define DM816X_CM_IVAHD1_MOD			0x0700	/* 256B */
++#define DM816X_CM_IVAHD2_MOD			0x0800	/* 256B */
++#define DM816X_CM_SGX_MOD				0x0900	/* 256B */
++
++/* ALWON */
++#define DM81XX_CM_ALWON_MPU_CLKDM		0x001C
++#define DM81XX_CM_ALWON_L3_SLOW_CLKDM	0x0000
++#define DM81XX_CM_ALWON_L3_MED_CLKDM	0x0004
++#define DM81XX_CM_ALWON_L3_FAST_CLKDM	0x0030
++#define DM81XX_CM_ETHERNET_CLKDM		0x0004
++#define DM81XX_CM_MMU_CLKDM				0x000C
++#define DM81XX_CM_MMUCFG_CLKDM			0x0010
++
++/* ACTIVE */
++#define DM816X_CM_ACTIVE_GEM_CLKDM		0x0000
++
++/* IVAHD0 */
++#define DM816X_CM_IVAHD0_CLKDM			0x0000
++
++/* IVAHD1 */
++#define DM816X_CM_IVAHD1_CLKDM			0x0000
++
++/* IVAHD2 */
++#define DM816X_CM_IVAHD2_CLKDM			0x0000
++
++/* SGX */
++#define DM816X_CM_SGX_CLKDM				0x0000
++
++/* DEFAULT */
++#define DM816X_CM_DEFAULT_L3_MED_CLKDM	0x0004
++#define DM816X_CM_DEFAULT_DUCATI_CLKDM	0x0018
++#define DM816X_CM_DEFAULT_PCI_CLKDM		0x0010
++#define DM816X_CM_DEFAULT_L3_SLOW_CLKDM	0x0014
++
++#endif
+diff --git a/arch/arm/mach-omap2/io.c b/arch/arm/mach-omap2/io.c
+index 2a9e5b3..f3808ce 100644
+--- a/arch/arm/mach-omap2/io.c
++++ b/arch/arm/mach-omap2/io.c
+@@ -517,7 +517,7 @@ void __init dm81xx_init_early(void)
+ 	dm81xx_check_features();
+ 	omap3xxx_voltagedomains_init();
+ 	dm81xx_powerdomains_init();
+-	omap3xxx_clockdomains_init();
++	dm81xx_clockdomains_init();
+ 	omap3xxx_hwmod_init();
+ 	omap_hwmod_init_postsetup();
+ 	omap_clk_init = omap3xxx_clk_init;
+-- 
+1.7.10.4
 
