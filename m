@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933339Ab3FEVxv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:53:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37894 "EHLO
+	id S933344Ab3FEVyI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:54:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37889 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932784Ab3FEVfo (ORCPT
+	with ESMTP id S932890Ab3FEVfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:44 -0400
+	Wed, 5 Jun 2013 17:35:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Finn Thain <fthain@telegraphics.com.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [ 078/127] m68k/mac: Fix unexpected interrupt with CONFIG_EARLY_PRINTK
-Date: Wed,  5 Jun 2013 14:34:05 -0700
-Message-Id: <20130605213226.811660599@linuxfoundation.org>
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 059/127] x86, range: fix missing merge during add range
+Date: Wed,  5 Jun 2013 14:33:46 -0700
+Message-Id: <20130605213224.734296307@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,112 +31,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Finn Thain <fthain@telegraphics.com.au>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit df66834a43c461de2565c45d815288ba1c0def37 upstream.
+commit fbe06b7bae7c9cf6ab05168fce5ee93b2f4bae7c upstream.
 
-The present code does not wait for the SCC to finish resetting itself
-before trying to initialise the device. The result is that the SCC
-interrupt sources become enabled (if they weren't already). This leads to
-an early boot crash (unexpected interrupt) given CONFIG_EARLY_PRINTK. Fix
-this by adding a delay. A successful reset disables the interrupt sources.
+Christian found v3.9 does not work with E350 with EFI is enabled.
 
-Also, after the reset for channel A setup, the SCC then gets a second
-reset for channel B setup which leaves channel A uninitialised again. Fix
-this by performing the reset only once.
+[    1.658832] Trying to unpack rootfs image as initramfs...
+[    1.679935] BUG: unable to handle kernel paging request at ffff88006e3fd000
+[    1.686940] IP: [<ffffffff813661df>] memset+0x1f/0xb0
+[    1.692010] PGD 1f77067 PUD 1f7a067 PMD 61420067 PTE 0
 
-Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+but early memtest report all memory could be accessed without problem.
+
+early page table is set in following sequence:
+[    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
+[    0.000000] init_memory_mapping: [mem 0x6e600000-0x6e7fffff]
+[    0.000000] init_memory_mapping: [mem 0x6c000000-0x6e5fffff]
+[    0.000000] init_memory_mapping: [mem 0x00100000-0x6bffffff]
+[    0.000000] init_memory_mapping: [mem 0x6e800000-0x6ea07fff]
+but later efi_enter_virtual_mode try set mapping again wrongly.
+[    0.010644] pid_max: default: 32768 minimum: 301
+[    0.015302] init_memory_mapping: [mem 0x640c5000-0x6e3fcfff]
+that means it fails with pfn_range_is_mapped.
+
+It turns out that we have a bug in add_range_with_merge and it does not
+merge range properly when new add one fill the hole between two exsiting
+ranges. In the case when [mem 0x00100000-0x6bffffff] is the hole between
+[mem 0x00000000-0x000fffff] and [mem 0x6c000000-0x6e7fffff].
+
+Fix the add_range_with_merge by calling itself recursively.
+
+Reported-by: "Christian König" <christian.koenig@amd.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/CAE9FiQVofGoSk7q5-0irjkBxemqK729cND4hov-1QCBJDhxpgQ@mail.gmail.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/m68k/kernel/head.S |   29 +++++++++++++++++++----------
- 1 file changed, 19 insertions(+), 10 deletions(-)
+ kernel/range.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/arch/m68k/kernel/head.S
-+++ b/arch/m68k/kernel/head.S
-@@ -2752,11 +2752,9 @@ func_return	get_new_page
- #ifdef CONFIG_MAC
+--- a/kernel/range.c
++++ b/kernel/range.c
+@@ -48,9 +48,11 @@ int add_range_with_merge(struct range *r
+ 		final_start = min(range[i].start, start);
+ 		final_end = max(range[i].end, end);
  
- L(scc_initable_mac):
--	.byte	9,12		/* Reset */
- 	.byte	4,0x44		/* x16, 1 stopbit, no parity */
- 	.byte	3,0xc0		/* receiver: 8 bpc */
- 	.byte	5,0xe2		/* transmitter: 8 bpc, assert dtr/rts */
--	.byte	9,0		/* no interrupts */
- 	.byte	10,0		/* NRZ */
- 	.byte	11,0x50		/* use baud rate generator */
- 	.byte	12,1,13,0	/* 38400 baud */
-@@ -2899,6 +2897,7 @@ func_start	serial_init,%d0/%d1/%a0/%a1
- 	is_not_mac(L(serial_init_not_mac))
+-		range[i].start = final_start;
+-		range[i].end =  final_end;
+-		return nr_range;
++		/* clear it and add it back for further merge */
++		range[i].start = 0;
++		range[i].end =  0;
++		return add_range_with_merge(range, az, nr_range,
++			final_start, final_end);
+ 	}
  
- #ifdef SERIAL_DEBUG
-+
- /* You may define either or both of these. */
- #define MAC_USE_SCC_A /* Modem port */
- #define MAC_USE_SCC_B /* Printer port */
-@@ -2908,9 +2907,21 @@ func_start	serial_init,%d0/%d1/%a0/%a1
- #define mac_scc_cha_b_data_offset	0x4
- #define mac_scc_cha_a_data_offset	0x6
- 
-+#if defined(MAC_USE_SCC_A) || defined(MAC_USE_SCC_B)
-+	movel	%pc@(L(mac_sccbase)),%a0
-+	/* Reset SCC device */
-+	moveb	#9,%a0@(mac_scc_cha_a_ctrl_offset)
-+	moveb	#0xc0,%a0@(mac_scc_cha_a_ctrl_offset)
-+	/* Wait for 5 PCLK cycles, which is about 68 CPU cycles */
-+	/* 5 / 3.6864 MHz = approx. 1.36 us = 68 / 50 MHz */
-+	movel	#35,%d0
-+5:
-+	subq	#1,%d0
-+	jne	5b
-+#endif
-+
- #ifdef MAC_USE_SCC_A
- 	/* Initialize channel A */
--	movel	%pc@(L(mac_sccbase)),%a0
- 	lea	%pc@(L(scc_initable_mac)),%a1
- 5:	moveb	%a1@+,%d0
- 	jmi	6f
-@@ -2922,9 +2933,6 @@ func_start	serial_init,%d0/%d1/%a0/%a1
- 
- #ifdef MAC_USE_SCC_B
- 	/* Initialize channel B */
--#ifndef MAC_USE_SCC_A	/* Load mac_sccbase only if needed */
--	movel	%pc@(L(mac_sccbase)),%a0
--#endif	/* MAC_USE_SCC_A */
- 	lea	%pc@(L(scc_initable_mac)),%a1
- 7:	moveb	%a1@+,%d0
- 	jmi	8f
-@@ -2933,6 +2941,7 @@ func_start	serial_init,%d0/%d1/%a0/%a1
- 	jra	7b
- 8:
- #endif	/* MAC_USE_SCC_B */
-+
- #endif	/* SERIAL_DEBUG */
- 
- 	jra	L(serial_init_done)
-@@ -3006,17 +3015,17 @@ func_start	serial_putc,%d0/%d1/%a0/%a1
- 
- #ifdef SERIAL_DEBUG
- 
--#ifdef MAC_USE_SCC_A
-+#if defined(MAC_USE_SCC_A) || defined(MAC_USE_SCC_B)
- 	movel	%pc@(L(mac_sccbase)),%a1
-+#endif
-+
-+#ifdef MAC_USE_SCC_A
- 3:	btst	#2,%a1@(mac_scc_cha_a_ctrl_offset)
- 	jeq	3b
- 	moveb	%d0,%a1@(mac_scc_cha_a_data_offset)
- #endif	/* MAC_USE_SCC_A */
- 
- #ifdef MAC_USE_SCC_B
--#ifndef MAC_USE_SCC_A	/* Load mac_sccbase only if needed */
--	movel	%pc@(L(mac_sccbase)),%a1
--#endif	/* MAC_USE_SCC_A */
- 4:	btst	#2,%a1@(mac_scc_cha_b_ctrl_offset)
- 	jeq	4b
- 	moveb	%d0,%a1@(mac_scc_cha_b_data_offset)
+ 	/* Need to add it: */
 
 
