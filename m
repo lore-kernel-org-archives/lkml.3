@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006Ab3FEDcX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 23:32:23 -0400
-Received: from [205.204.113.251] ([205.204.113.251]:32878 "HELO
-	us-alimail-mta2.hst.scl.en.alidc.net." rhost-flags-FAIL-FAIL-FAIL-FAIL)
-	by vger.kernel.org with SMTP id S1750808Ab3FEDcU (ORCPT
+	id S1752448Ab3FEDc5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 23:32:57 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59379 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab3FEDcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 23:32:20 -0400
-X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Jun 2013 23:32:19 EDT
-Message-ID: <51AEAFF8.8030704@taobao.com>
-Date: Wed, 05 Jun 2013 11:26:48 +0800
-From: sanbai <sanbai@taobao.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 4 Jun 2013 23:32:53 -0400
+Date: Tue, 4 Jun 2013 22:03:41 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Arne Jansen <sensille@gmx.net>
+Cc: Chris Mason <clmason@fusionio.com>, Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Subject: [PATCH 1/2] list: add while_list_drain_entry
+Message-ID: <20130605020341.GA27240@logfs.org>
+References: <1370280485-10047-1-git-send-email-joern@logfs.org>
+ <20130603204930.GA28299@infradead.org>
+ <20130603193647.GB10200@logfs.org>
+ <20130603195555.GC10200@logfs.org>
+ <20130604144856.GA12302@infradead.org>
+ <20130604145322.4088.78915@localhost.localdomain>
+ <51AE4969.8050709@gmx.net>
+ <20130604184435.GA23436@logfs.org>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, Zhu Yanhai <gaoyang.zyh@taobao.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Tao Ma <taoma.tm@gmail.com>, kent.overstreet@gmail.com
-Subject: Re: [RFC v1] add new io-scheduler to use cgroup on high-speed device
-References: <1370398171-25173-1-git-send-email-sanbai@taobao.com> <20130605030337.GO14916@htj.dyndns.org>
-In-Reply-To: <20130605030337.GO14916@htj.dyndns.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130604184435.GA23436@logfs.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年06月05日 11:03, Tejun Heo wrote:
-> (cc'ing Kent.  Original posting at
->   http://thread.gmane.org/gmane.linux.kernel/1502484 )
->
-> Hello,
->
-> On Wed, Jun 05, 2013 at 10:09:31AM +0800, Robin Dong wrote:
->> We want to use blkio.cgroup on high-speed device (like fusionio) for our mysql clusters.
->> After testing different io-scheduler, we found that  cfq is too slow and deadline can't run on cgroup.
->> So we developed a new io-scheduler: tpps (Tiny Parallel Proportion Scheduler).It dispatch requests
->> only by using their individual weight and total weight (proportion) therefore it's simply and efficient.
->>
->> Test case: fusionio card, 4 cgroups, iodepth-512
-> So, while I understand the intention behind it, I'm not sure a
-> separate io-sched for this is what we want.  Kent and Jens have been
-> thinking about this lately so they'll probably chime in.  From my POV,
-> I see a few largish issues.
->
-> * It has to be scalable with relatively large scale SMP / NUMA
->    configurations.  It better integrate with blk-mq support currently
->    being brewed.
-Ok, I will go on to look Jens's blk-mq branch.
+I have seen a lot of boilerplate code that either follows the pattern of
+	while (!list_empty(head)) {
+		pos = list_entry(head->next, struct foo, list);
+		list_del(pos->list);
+		...
+	}
+or some variant thereof.
 
->
-> * It definitely has to support hierarchy.  Nothing which doesn't
->    support full hierarchy can be added to cgroup at this point.
-Thanks for your note, hierarchy supporting will be added in my next 
-version patch.
->
-> * We already have separate implementations in blk-throtl and
->    cfq-iosched.  Maybe it's too late and too different for cfq-iosched
->    given that it's primarily targeted at disks, but I wonder whether we
->    can make blk-throtl generic and scalable enough to cover all other
->    use cases.
-I have the same feeling. Let's wait other person's response.
->
-> Thanks.
->
+With this patch in, people can use
+	while_list_drain_entry(pos, head, list) {
+		...
+	}
 
+The patch also adds a while_list_drain variant, even though I have
+only found a single user for that one so far.
 
+Signed-off-by: Joern Engel <joern@logfs.org>
+---
+ include/linux/list.h |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/include/linux/list.h b/include/linux/list.h
+index 6a1f8df..ab39c7d 100644
+--- a/include/linux/list.h
++++ b/include/linux/list.h
+@@ -557,6 +557,24 @@ static inline void list_splice_tail_init(struct list_head *list,
+ #define list_safe_reset_next(pos, n, member)				\
+ 	n = list_entry(pos->member.next, typeof(*pos), member)
+ 
++/**
++ * while_list_drain - removes an entry from the list until it is empty
++ * @pos:	the &struct list_head to use as a loop cursor.
++ * @head:	the head of your list.
++ */
++#define while_list_drain(pos, head) \
++	while (list_empty(head) ? 0 : (pos = (head)->next, list_del(pos), 1))
++
++/**
++ * while_list_drain_entry - removes an entry from the list until it is empty
++ * @pos:	the type * to use as loop cursor.
++ * @head:	the head of your list.
++ * @member:	the name of the list_struct within the struct
++ */
++#define while_list_drain_entry(pos, head, member) \
++	while (list_empty(head) && (pos = list_first_entry((head), \
++		typeof(*pos), member), list_del((head)->next), 1))
++
+ /*
+  * Double linked lists with a single pointer list head.
+  * Mostly useful for hash tables where the two pointer list head is
 -- 
-
-Robin Dong
-董昊（花名：三百）
-阿里巴巴 集团 核心系统部 内核组
-分机：72370
-手机：13520865473
-email：sanbai@taobao.com
+1.7.10.4
 
