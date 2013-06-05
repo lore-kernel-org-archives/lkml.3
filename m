@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757635Ab3FEUxR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 16:53:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36220 "EHLO
+	id S932302Ab3FEVCF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:02:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36225 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757317Ab3FEUxN (ORCPT
+	with ESMTP id S1757629Ab3FEUxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 16:53:13 -0400
+	Wed, 5 Jun 2013 16:53:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Binderman <dcb314@hotmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Subject: [ 01/33] avr32: fix relocation check for signed 18-bit offset
-Date: Wed,  5 Jun 2013 13:52:39 -0700
-Message-Id: <20130605204702.648944391@linuxfoundation.org>
+        Andrew Gomella <andrew.gomella@nih.gov>
+Subject: [ 06/33] USB: ftdi_sio: Add support for Newport CONEX motor drivers
+Date: Wed,  5 Jun 2013 13:52:44 -0700
+Message-Id: <20130605204704.012634802@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605204702.359510786@linuxfoundation.org>
 References: <20130605204702.359510786@linuxfoundation.org>
@@ -27,30 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+From: "Gomella, Andrew (NIH/NHLBI) [F]" <andrew.gomella@nih.gov>
 
-commit e68c636d88db3fda74e664ecb1a213ae0d50a7d8 upstream.
+commit 7138143972b7c293267c783fc99a194f0ceff7f2 upstream.
 
-Caught by static code analysis by David.
+Here are two more devices that use FTDI USB-to-serial chips with new product ID's.
 
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+The devices are the Newport Conex-AGP and Conex-CC motor controllers.
+(http://www.newport.com/CONEX-AGP-Integrated-Piezo-Motor-Rotation-Stages-/987623/1033/info.aspx)
+(http://www.newport.com/CONEX-CC-DC-Servo-Controller-Actuators/934114/1033/info.aspx)
+
+usb-devices command yields:
+
+P:  Vendor=104d ProdID=3002 Rev=06.00
+S:  Manufacturer=Newport
+S:  Product=CONEX-CC
+
+as well as
+
+P:  Vendor=104d ProdID=3006 Rev=06.00
+S:  Manufacturer=Newport
+S:  Product=CONEX-AGP
+
+Signed-off-by: Andrew Gomella <andrew.gomella@nih.gov>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/avr32/kernel/module.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    2 ++
+ 2 files changed, 4 insertions(+)
 
---- a/arch/avr32/kernel/module.c
-+++ b/arch/avr32/kernel/module.c
-@@ -271,7 +271,7 @@ int apply_relocate_add(Elf32_Shdr *sechd
- 			break;
- 		case R_AVR32_GOT18SW:
- 			if ((relocation & 0xfffe0003) != 0
--			    && (relocation & 0xfffc0003) != 0xffff0000)
-+			    && (relocation & 0xfffc0000) != 0xfffc0000)
- 				return reloc_overflow(module, "R_AVR32_GOT18SW",
- 						     relocation);
- 			relocation >>= 2;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -197,6 +197,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_BOOST_PID) },
+ 	{ USB_DEVICE(NEWPORT_VID, NEWPORT_AGILIS_PID) },
++	{ USB_DEVICE(NEWPORT_VID, NEWPORT_CONEX_CC_PID) },
++	{ USB_DEVICE(NEWPORT_VID, NEWPORT_CONEX_AGP_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -772,6 +772,8 @@
+  */
+ #define NEWPORT_VID			0x104D
+ #define NEWPORT_AGILIS_PID		0x3000
++#define NEWPORT_CONEX_CC_PID		0x3002
++#define NEWPORT_CONEX_AGP_PID		0x3006
+ 
+ /* Interbiometrics USB I/O Board */
+ /* Developed for Interbiometrics by Rudolf Gugler */
 
 
