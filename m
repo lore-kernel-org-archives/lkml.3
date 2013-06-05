@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933352Ab3FEVyx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:54:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37879 "EHLO
+	id S932960Ab3FEVzL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:55:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37876 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932835Ab3FEVfm (ORCPT
+	with ESMTP id S932865Ab3FEVfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:42 -0400
+	Wed, 5 Jun 2013 17:35:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Julian Sikorski <belegdol@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 066/127] svcrpc: fix failures to handle -1 uids and gids
-Date: Wed,  5 Jun 2013 14:33:53 -0700
-Message-Id: <20130605213225.442658787@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 065/127] SUNRPC: Prevent an rpc_task wakeup race
+Date: Wed,  5 Jun 2013 14:33:52 -0700
+Message-Id: <20130605213225.338654243@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -28,57 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit afe3c3fd5392b2f0066930abc5dbd3f4b14a0f13 upstream.
+commit a3c3cac5d31879cd9ae2de7874dc6544ca704aec upstream.
 
-As of f025adf191924e3a75ce80e130afcd2485b53bb8 "sunrpc: Properly decode
-kuids and kgids in RPC_AUTH_UNIX credentials" any rpc containing a -1
-(0xffff) uid or gid would fail with a badcred error.
+The lockless RPC_IS_QUEUED() test in __rpc_execute means that we need to
+be careful about ordering the calls to rpc_test_and_set_running(task) and
+rpc_clear_queued(task). If we get the order wrong, then we may end up
+testing the RPC_TASK_RUNNING flag after __rpc_execute() has looped
+and changed the state of the rpc_task.
 
-Reported symptoms were xmbc clients failing on upgrade of the NFS
-server; examination of the network trace showed them sending -1 as the
-gid.
-
-Reported-by: Julian Sikorski <belegdol@gmail.com>
-Tested-by: Julian Sikorski <belegdol@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/svcauth_unix.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ net/sunrpc/sched.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/net/sunrpc/svcauth_unix.c
-+++ b/net/sunrpc/svcauth_unix.c
-@@ -810,11 +810,15 @@ svcauth_unix_accept(struct svc_rqst *rqs
- 		goto badcred;
- 	argv->iov_base = (void*)((__be32*)argv->iov_base + slen);	/* skip machname */
- 	argv->iov_len -= slen*4;
--
-+	/*
-+	 * Note: we skip uid_valid()/gid_valid() checks here for
-+	 * backwards compatibility with clients that use -1 id's.
-+	 * Instead, -1 uid or gid is later mapped to the
-+	 * (export-specific) anonymous id by nfsd_setuser.
-+	 * Supplementary gid's will be left alone.
-+	 */
- 	cred->cr_uid = make_kuid(&init_user_ns, svc_getnl(argv)); /* uid */
- 	cred->cr_gid = make_kgid(&init_user_ns, svc_getnl(argv)); /* gid */
--	if (!uid_valid(cred->cr_uid) || !gid_valid(cred->cr_gid))
--		goto badcred;
- 	slen = svc_getnl(argv);			/* gids length */
- 	if (slen > 16 || (len -= (slen + 2)*4) < 0)
- 		goto badcred;
-@@ -823,8 +827,6 @@ svcauth_unix_accept(struct svc_rqst *rqs
- 		return SVC_CLOSE;
- 	for (i = 0; i < slen; i++) {
- 		kgid_t kgid = make_kgid(&init_user_ns, svc_getnl(argv));
--		if (!gid_valid(kgid))
--			goto badcred;
- 		GROUP_AT(cred->cr_group_info, i) = kgid;
- 	}
- 	if (svc_getu32(argv) != htonl(RPC_AUTH_NULL) || svc_getu32(argv) != 0) {
+--- a/net/sunrpc/sched.c
++++ b/net/sunrpc/sched.c
+@@ -324,11 +324,17 @@ EXPORT_SYMBOL_GPL(__rpc_wait_for_complet
+  * Note: If the task is ASYNC, and is being made runnable after sitting on an
+  * rpc_wait_queue, this must be called with the queue spinlock held to protect
+  * the wait queue operation.
++ * Note the ordering of rpc_test_and_set_running() and rpc_clear_queued(),
++ * which is needed to ensure that __rpc_execute() doesn't loop (due to the
++ * lockless RPC_IS_QUEUED() test) before we've had a chance to test
++ * the RPC_TASK_RUNNING flag.
+  */
+ static void rpc_make_runnable(struct rpc_task *task)
+ {
++	bool need_wakeup = !rpc_test_and_set_running(task);
++
+ 	rpc_clear_queued(task);
+-	if (rpc_test_and_set_running(task))
++	if (!need_wakeup)
+ 		return;
+ 	if (RPC_IS_ASYNC(task)) {
+ 		INIT_WORK(&task->u.tk_work, rpc_async_schedule);
 
 
