@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933005Ab3FEVf5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:35:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37915 "EHLO
+	id S933090Ab3FEVgL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:36:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38030 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932690Ab3FEVfr (ORCPT
+	with ESMTP id S933070Ab3FEVgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:47 -0400
+	Wed, 5 Jun 2013 17:36:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: [ 073/127] cifs: fix potential buffer overrun when composing a new options string
-Date: Wed,  5 Jun 2013 14:34:00 -0700
-Message-Id: <20130605213226.232074043@linuxfoundation.org>
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
+        Joerg Roedel <joro@8bytes.org>
+Subject: [ 102/127] iommu/amd: Workaround for ERBT1312
+Date: Wed,  5 Jun 2013 14:34:29 -0700
+Message-Id: <20130605213229.581763580@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -26,42 +27,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Joerg Roedel <joro@8bytes.org>
 
-commit 166faf21bd14bc5c5295a44874bf7f3930c30b20 upstream.
+commit d3263bc29706e42f74d8800807c2dedf320d77f1 upstream.
 
-Consider the case where we have a very short ip= string in the original
-mount options, and when we chase a referral we end up with a very long
-IPv6 address. Be sure to allow for that possibility when estimating the
-size of the string to allocate.
+Work around an IOMMU  hardware bug where clearing the
+EVT_INT or PPR_INT bit in the status register may race with
+the hardware trying to set it again. When not handled the
+bit might not be cleared and we lose all future event or ppr
+interrupts.
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Reported-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/cifs_dfs_ref.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/iommu/amd_iommu.c |   34 ++++++++++++++++++++++++++--------
+ 1 file changed, 26 insertions(+), 8 deletions(-)
 
---- a/fs/cifs/cifs_dfs_ref.c
-+++ b/fs/cifs/cifs_dfs_ref.c
-@@ -18,6 +18,7 @@
- #include <linux/slab.h>
- #include <linux/vfs.h>
- #include <linux/fs.h>
-+#include <linux/inet.h>
- #include "cifsglob.h"
- #include "cifsproto.h"
- #include "cifsfs.h"
-@@ -150,7 +151,8 @@ char *cifs_compose_mount_options(const c
- 	 * assuming that we have 'unc=' and 'ip=' in
- 	 * the original sb_mountdata
- 	 */
--	md_len = strlen(sb_mountdata) + rc + strlen(ref->node_name) + 12;
-+	md_len = strlen(sb_mountdata) + rc + strlen(ref->node_name) + 12 +
-+			INET6_ADDRSTRLEN;
- 	mountdata = kzalloc(md_len+1, GFP_KERNEL);
- 	if (mountdata == NULL) {
- 		rc = -ENOMEM;
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -700,14 +700,23 @@ retry:
+ 
+ static void iommu_poll_events(struct amd_iommu *iommu)
+ {
+-	u32 head, tail;
++	u32 head, tail, status;
+ 	unsigned long flags;
+ 
+-	/* enable event interrupts again */
+-	writel(MMIO_STATUS_EVT_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
+-
+ 	spin_lock_irqsave(&iommu->lock, flags);
+ 
++	/* enable event interrupts again */
++	do {
++		/*
++		 * Workaround for Erratum ERBT1312
++		 * Clearing the EVT_INT bit may race in the hardware, so read
++		 * it again and make sure it was really cleared
++		 */
++		status = readl(iommu->mmio_base + MMIO_STATUS_OFFSET);
++		writel(MMIO_STATUS_EVT_INT_MASK,
++		       iommu->mmio_base + MMIO_STATUS_OFFSET);
++	} while (status & MMIO_STATUS_EVT_INT_MASK);
++
+ 	head = readl(iommu->mmio_base + MMIO_EVT_HEAD_OFFSET);
+ 	tail = readl(iommu->mmio_base + MMIO_EVT_TAIL_OFFSET);
+ 
+@@ -744,16 +753,25 @@ static void iommu_handle_ppr_entry(struc
+ static void iommu_poll_ppr_log(struct amd_iommu *iommu)
+ {
+ 	unsigned long flags;
+-	u32 head, tail;
++	u32 head, tail, status;
+ 
+ 	if (iommu->ppr_log == NULL)
+ 		return;
+ 
+-	/* enable ppr interrupts again */
+-	writel(MMIO_STATUS_PPR_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
+-
+ 	spin_lock_irqsave(&iommu->lock, flags);
+ 
++	/* enable ppr interrupts again */
++	do {
++		/*
++		 * Workaround for Erratum ERBT1312
++		 * Clearing the PPR_INT bit may race in the hardware, so read
++		 * it again and make sure it was really cleared
++		 */
++		status = readl(iommu->mmio_base + MMIO_STATUS_OFFSET);
++		writel(MMIO_STATUS_PPR_INT_MASK,
++		       iommu->mmio_base + MMIO_STATUS_OFFSET);
++	} while (status & MMIO_STATUS_PPR_INT_MASK);
++
+ 	head = readl(iommu->mmio_base + MMIO_PPR_HEAD_OFFSET);
+ 	tail = readl(iommu->mmio_base + MMIO_PPR_TAIL_OFFSET);
+ 
 
 
