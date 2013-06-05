@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933334Ab3FEVwu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:52:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37907 "EHLO
+	id S933331Ab3FEVxH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:53:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37903 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932916Ab3FEVfq (ORCPT
+	with ESMTP id S932910Ab3FEVfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:46 -0400
+	Wed, 5 Jun 2013 17:35:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 071/127] drm/radeon: fix card_posted check for newer asics
-Date: Wed,  5 Jun 2013 14:33:58 -0700
-Message-Id: <20130605213226.024034781@linuxfoundation.org>
+Subject: [ 070/127] drm/radeon: fix typo in cu_per_sh on verde
+Date: Wed,  5 Jun 2013 14:33:57 -0700
+Message-Id: <20130605213225.920789526@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,50 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 09fb8bd1a63b0f9f15e655c4fe8d047e5d2bf67a upstream.
+commit 468ef1a58c9268ac9709350bf95eaf1c22a69f29 upstream.
 
-Newer asics have variable numbers of crtcs.  Use that
-rather than the asic family to determine which crtcs
-to check.  This avoids checking non-existent crtcs or
-missing crtcs on certain asics.
+Should be 5 rather than 2.
 
-Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+Noticed by sroland and glisse on IRC.
+
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_device.c |   19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+ drivers/gpu/drm/radeon/si.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -435,18 +435,17 @@ bool radeon_card_posted(struct radeon_de
- 		return false;
- 
- 	/* first check CRTCs */
--	if (ASIC_IS_DCE41(rdev)) {
-+	if (ASIC_IS_DCE4(rdev)) {
- 		reg = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET) |
- 			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET);
--		if (reg & EVERGREEN_CRTC_MASTER_EN)
--			return true;
--	} else if (ASIC_IS_DCE4(rdev)) {
--		reg = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET) |
--			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET) |
--			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET) |
--			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET) |
--			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET) |
--			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET);
-+			if (rdev->num_crtc >= 4) {
-+				reg |= RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET) |
-+					RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET);
-+			}
-+			if (rdev->num_crtc >= 6) {
-+				reg |= RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET) |
-+					RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET);
-+			}
- 		if (reg & EVERGREEN_CRTC_MASTER_EN)
- 			return true;
- 	} else if (ASIC_IS_AVIVO(rdev)) {
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -1645,7 +1645,7 @@ static void si_gpu_init(struct radeon_de
+ 	default:
+ 		rdev->config.si.max_shader_engines = 1;
+ 		rdev->config.si.max_tile_pipes = 4;
+-		rdev->config.si.max_cu_per_sh = 2;
++		rdev->config.si.max_cu_per_sh = 5;
+ 		rdev->config.si.max_sh_per_se = 2;
+ 		rdev->config.si.max_backends_per_se = 4;
+ 		rdev->config.si.max_texture_channel_caches = 4;
 
 
