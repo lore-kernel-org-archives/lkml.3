@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932584Ab3FEVXZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:23:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36824 "EHLO
+	id S932485Ab3FEVMv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:12:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36785 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932492Ab3FEVMx (ORCPT
+	with ESMTP id S932445Ab3FEVMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:12:53 -0400
+	Wed, 5 Jun 2013 17:12:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Krzysztof Strasburger <strasbur@chkw386.ch.pwr.wroc.pl>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 14/44] fat: fix possible overflow for fat_clusters
-Date: Wed,  5 Jun 2013 14:12:12 -0700
-Message-Id: <20130605211223.355779383@linuxfoundation.org>
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>
+Subject: [ 02/44] ARM: plat-orion: Fix num_resources and id for ge10 and ge11
+Date: Wed,  5 Jun 2013 14:12:00 -0700
+Message-Id: <20130605211222.144667621@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605211221.858177087@linuxfoundation.org>
 References: <20130605211221.858177087@linuxfoundation.org>
@@ -29,52 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-commit 7b92d03c3239f43e5b86c9cc9630f026d36ee995 upstream.
+commit 2b8b2797142c7951e635c6eec5d1705ee9bc45c5 upstream.
 
-Intermediate value of fat_clusters can be overflowed on 32bits arch.
+When platform data were moved from arch/arm/mach-mv78xx0/common.c to
+arch/arm/plat-orion/common.c with the commit "7e3819d ARM: orion:
+Consolidate ethernet platform data", there were few typo made on
+gigabit Ethernet interface ge10 and ge11. This commit writes back
+their initial value, which allows to use this interfaces again.
 
-Reported-by: Krzysztof Strasburger <strasbur@chkw386.ch.pwr.wroc.pl>
-Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Acked-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fat/inode.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ arch/arm/plat-orion/common.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/fs/fat/inode.c
-+++ b/fs/fat/inode.c
-@@ -1237,6 +1237,19 @@ static int fat_read_root(struct inode *i
- 	return 0;
- }
+--- a/arch/arm/plat-orion/common.c
++++ b/arch/arm/plat-orion/common.c
+@@ -340,7 +340,7 @@ static struct resource orion_ge10_shared
  
-+static unsigned long calc_fat_clusters(struct super_block *sb)
-+{
-+	struct msdos_sb_info *sbi = MSDOS_SB(sb);
-+
-+	/* Divide first to avoid overflow */
-+	if (sbi->fat_bits != 12) {
-+		unsigned long ent_per_sec = sb->s_blocksize * 8 / sbi->fat_bits;
-+		return ent_per_sec * sbi->fat_length;
-+	}
-+
-+	return sbi->fat_length * sb->s_blocksize * 8 / sbi->fat_bits;
-+}
-+
- /*
-  * Read the super block of an MS-DOS FS.
-  */
-@@ -1433,7 +1446,7 @@ int fat_fill_super(struct super_block *s
- 		sbi->fat_bits = (total_clusters > MAX_FAT12) ? 16 : 12;
+ static struct platform_device orion_ge10_shared = {
+ 	.name		= MV643XX_ETH_SHARED_NAME,
+-	.id		= 1,
++	.id		= 2,
+ 	.dev		= {
+ 		.platform_data	= &orion_ge10_shared_data,
+ 	},
+@@ -355,8 +355,8 @@ static struct resource orion_ge10_resour
  
- 	/* check that FAT table does not overflow */
--	fat_clusters = sbi->fat_length * sb->s_blocksize * 8 / sbi->fat_bits;
-+	fat_clusters = calc_fat_clusters(sb);
- 	total_clusters = min(total_clusters, fat_clusters - FAT_START_ENT);
- 	if (total_clusters > MAX_FAT(sb)) {
- 		if (!silent)
+ static struct platform_device orion_ge10 = {
+ 	.name		= MV643XX_ETH_NAME,
+-	.id		= 1,
+-	.num_resources	= 2,
++	.id		= 2,
++	.num_resources	= 1,
+ 	.resource	= orion_ge10_resources,
+ 	.dev		= {
+ 		.coherent_dma_mask	= DMA_BIT_MASK(32),
+@@ -393,7 +393,7 @@ static struct resource orion_ge11_shared
+ 
+ static struct platform_device orion_ge11_shared = {
+ 	.name		= MV643XX_ETH_SHARED_NAME,
+-	.id		= 1,
++	.id		= 3,
+ 	.dev		= {
+ 		.platform_data	= &orion_ge11_shared_data,
+ 	},
+@@ -408,8 +408,8 @@ static struct resource orion_ge11_resour
+ 
+ static struct platform_device orion_ge11 = {
+ 	.name		= MV643XX_ETH_NAME,
+-	.id		= 1,
+-	.num_resources	= 2,
++	.id		= 3,
++	.num_resources	= 1,
+ 	.resource	= orion_ge11_resources,
+ 	.dev		= {
+ 		.coherent_dma_mask	= DMA_BIT_MASK(32),
 
 
