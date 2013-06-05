@@ -1,85 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab3FENop (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 09:44:45 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:48035 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754035Ab3FENon (ORCPT
+	id S1755631Ab3FENqg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 09:46:36 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:39717 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754267Ab3FENqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 09:44:43 -0400
-Message-ID: <51AF40CB.5030101@cogentembedded.com>
-Date: Wed, 05 Jun 2013 17:44:43 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Wed, 5 Jun 2013 09:46:35 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Hebbar Gururaja <gururaja.hebbar@ti.com>,
+        Mark Brown <broonie@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH 1/3] drivers: pinctrl sleep and idle states in the core
+Date: Wed, 5 Jun 2013 15:44:31 +0200
+Message-ID: <1370439873-30053-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>
-CC: mst@redhat.com, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vhost_net: clear msg.control for non-zerocopy case during
- tx
-References: <1370418046-11851-1-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1370418046-11851-1-git-send-email-jasowang@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+From: Linus Walleij <linus.walleij@linaro.org>
 
-On 05-06-2013 11:40, Jason Wang wrote:
+If a device have sleep and idle states in addition to the
+default state, look up these in the core and stash them in
+the pinctrl state container.
 
-> When we decide not use zero-copy, msg.control should be set to NULL otherwise
-> macvtap/tap may set zerocopy callbacks which may decrease the kref of ubufs
-> wrongly.
+Add accessor functions for pinctrl consumers to put the pins
+into "default", "sleep" and "idle" states passing nothing but
+the struct device * affected.
 
-> Bug were introduced by commit cedb9bdce099206290a2bdd02ce47a7b253b6a84
-> (vhost-net: skip head management if no outstanding).
+Solution suggested by Kevin Hilman, Mark Brown and Dmitry
+Torokhov in response to a patch series from Hebbar
+Gururaja.
 
-> This solves the following warnings:
+Cc: Hebbar Gururaja <gururaja.hebbar@ti.com>
+Cc: Mark Brown <broonie@kernel.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+I'm seeking Gregs ACK on this in the end, so we can take this
+in through the pinctrl tree. But first let's review!
+---
+ drivers/base/pinctrl.c           | 19 +++++++++++++
+ drivers/pinctrl/core.c           | 61 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/pinctrl/consumer.h | 34 ++++++++++++++++++++++
+ include/linux/pinctrl/devinfo.h  |  4 +++
+ 4 files changed, 118 insertions(+)
 
-> WARNING: at include/linux/kref.h:47 handle_tx+0x477/0x4b0 [vhost_net]()
-> Modules linked in: vhost_net macvtap macvlan tun nfsd exportfs bridge stp llc openvswitch kvm_amd kvm bnx2 megaraid_sas [last unloaded: tun]
-> CPU: 5 PID: 8670 Comm: vhost-8668 Not tainted 3.10.0-rc2+ #1566
-> Hardware name: Dell Inc. PowerEdge R715/00XHKG, BIOS 1.5.2 04/19/2011
-> ffffffffa0198323 ffff88007c9ebd08 ffffffff81796b73 ffff88007c9ebd48
-> ffffffff8103d66b 000000007b773e20 ffff8800779f0000 ffff8800779f43f0
-> ffff8800779f8418 000000000000015c 0000000000000062 ffff88007c9ebd58
-> Call Trace:
-> [<ffffffff81796b73>] dump_stack+0x19/0x1e
-> [<ffffffff8103d66b>] warn_slowpath_common+0x6b/0xa0
-> [<ffffffff8103d6b5>] warn_slowpath_null+0x15/0x20
-> [<ffffffffa0197627>] handle_tx+0x477/0x4b0 [vhost_net]
-> [<ffffffffa0197690>] handle_tx_kick+0x10/0x20 [vhost_net]
-> [<ffffffffa019541e>] vhost_worker+0xfe/0x1a0 [vhost_net]
-> [<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
-> [<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
-> [<ffffffff81061f46>] kthread+0xc6/0xd0
-> [<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
-> [<ffffffff817a1aec>] ret_from_fork+0x7c/0xb0
-> [<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
-
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->   drivers/vhost/net.c |    3 ++-
->   1 files changed, 2 insertions(+), 1 deletions(-)
-
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index 2b51e23..b07d96b 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -436,7 +436,8 @@ static void handle_tx(struct vhost_net *net)
->   				kref_get(&ubufs->kref);
->   			}
->   			nvq->upend_idx = (nvq->upend_idx + 1) % UIO_MAXIOV;
-> -		}
-> +		} else
-
-    You have to use {} on the *else* branch if you have it of the *if* 
-branch (and vice versa), according to Documentation/CodingStyle.
-
-> +			msg.msg_control = NULL;
-
-WBR, Sergei
+diff --git a/drivers/base/pinctrl.c b/drivers/base/pinctrl.c
+index 67a274e..5fb74b4 100644
+--- a/drivers/base/pinctrl.c
++++ b/drivers/base/pinctrl.c
+@@ -48,6 +48,25 @@ int pinctrl_bind_pins(struct device *dev)
+ 		goto cleanup_get;
+ 	}
+ 
++#ifdef CONFIG_PM
++	/*
++	 * If power management is enabled, we also look for the optional
++	 * sleep and idle pin states, with semantics as defined in
++	 * <linux/pinctrl/pinctrl-state.h>
++	 */
++	dev->pins->sleep_state = pinctrl_lookup_state(dev->pins->p,
++					PINCTRL_STATE_SLEEP);
++	if (IS_ERR(dev->pins->sleep_state))
++		/* Not supplying this state is perfectly legal */
++		dev_dbg(dev, "no sleep pinctrl state\n");
++
++	dev->pins->idle_state = pinctrl_lookup_state(dev->pins->p,
++					PINCTRL_STATE_IDLE);
++	if (IS_ERR(dev->pins->idle_state))
++		/* Not supplying this state is perfectly legal */
++		dev_dbg(dev, "no idle pinctrl state\n");
++#endif
++
+ 	return 0;
+ 
+ 	/*
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 1f9608b..90fa17a 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -1196,6 +1196,67 @@ int pinctrl_force_default(struct pinctrl_dev *pctldev)
+ }
+ EXPORT_SYMBOL_GPL(pinctrl_force_default);
+ 
++#ifdef CONFIG_PM
++
++/**
++ * pinctrl_pm_select_default_state() - select default pinctrl state for PM
++ * @dev: device to select default state for
++ */
++int pinctrl_pm_select_default_state(struct device *dev)
++{
++	struct dev_pin_info *pins = dev->pins;
++	int ret;
++
++	if (!pins)
++		return 0;
++	if (IS_ERR(pins->default_state))
++		return 0; /* No default state */
++	ret = pinctrl_select_state(pins->p, pins->default_state);
++	if (ret)
++		dev_err(dev, "failed to activate default pinctrl state\n");
++	return ret;
++}
++
++/**
++ * pinctrl_pm_select_sleep_state() - select sleep pinctrl state for PM
++ * @dev: device to select sleep state for
++ */
++int pinctrl_pm_select_sleep_state(struct device *dev)
++{
++	struct dev_pin_info *pins = dev->pins;
++	int ret;
++
++	if (!pins)
++		return 0;
++	if (IS_ERR(pins->sleep_state))
++		return 0; /* No default state */
++	ret = pinctrl_select_state(pins->p, pins->sleep_state);
++	if (ret)
++		dev_err(dev, "failed to activate sleep pinctrl state\n");
++	return ret;
++}
++
++/**
++ * pinctrl_pm_select_idle_state() - select idle pinctrl state for PM
++ * @dev: device to select idle state for
++ */
++int pinctrl_pm_select_idle_state(struct device *dev)
++{
++	struct dev_pin_info *pins = dev->pins;
++	int ret;
++
++	if (!pins)
++		return 0;
++	if (IS_ERR(pins->idle_state))
++		return 0; /* No default state */
++	ret = pinctrl_select_state(pins->p, pins->idle_state);
++	if (ret)
++		dev_err(dev, "failed to activate idle pinctrl state\n");
++	return ret;
++}
++
++#endif
++
+ #ifdef CONFIG_DEBUG_FS
+ 
+ static int pinctrl_pins_show(struct seq_file *s, void *what)
+diff --git a/include/linux/pinctrl/consumer.h b/include/linux/pinctrl/consumer.h
+index 4aad3ce..0f32f10 100644
+--- a/include/linux/pinctrl/consumer.h
++++ b/include/linux/pinctrl/consumer.h
+@@ -40,6 +40,25 @@ extern int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *s);
+ extern struct pinctrl * __must_check devm_pinctrl_get(struct device *dev);
+ extern void devm_pinctrl_put(struct pinctrl *p);
+ 
++#ifdef CONFIG_PM
++extern int pinctrl_pm_select_default_state(struct device *dev);
++extern int pinctrl_pm_select_sleep_state(struct device *dev);
++extern int pinctrl_pm_select_idle_state(struct device *dev);
++#else
++static inline int pinctrl_pm_select_default_state(struct device *dev)
++{
++	return 0;
++}
++static inline int pinctrl_pm_select_sleep_state(struct device *dev)
++{
++	return 0;
++}
++static inline int pinctrl_pm_select_idle_state(struct device *dev)
++{
++	return 0;
++}
++#endif
++
+ #else /* !CONFIG_PINCTRL */
+ 
+ static inline int pinctrl_request_gpio(unsigned gpio)
+@@ -199,6 +218,21 @@ static inline int pin_config_group_set(const char *dev_name,
+ 	return 0;
+ }
+ 
++static inline int pinctrl_pm_select_default_state(struct device *dev)
++{
++	return 0;
++}
++
++static inline int pinctrl_pm_select_sleep_state(struct device *dev)
++{
++	return 0;
++}
++
++static inline int pinctrl_pm_select_idle_state(struct device *dev)
++{
++	return 0;
++}
++
+ #endif
+ 
+ #endif /* __LINUX_PINCTRL_CONSUMER_H */
+diff --git a/include/linux/pinctrl/devinfo.h b/include/linux/pinctrl/devinfo.h
+index 6e5f8a9..281cb91 100644
+--- a/include/linux/pinctrl/devinfo.h
++++ b/include/linux/pinctrl/devinfo.h
+@@ -28,6 +28,10 @@
+ struct dev_pin_info {
+ 	struct pinctrl *p;
+ 	struct pinctrl_state *default_state;
++#ifdef CONFIG_PM
++	struct pinctrl_state *sleep_state;
++	struct pinctrl_state *idle_state;
++#endif
+ };
+ 
+ extern int pinctrl_bind_pins(struct device *dev);
+-- 
+1.7.11.3
 
