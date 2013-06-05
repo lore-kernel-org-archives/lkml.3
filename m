@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933153Ab3FEVoH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:44:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38041 "EHLO
+	id S933169Ab3FEVo0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:44:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38036 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933076Ab3FEVgK (ORCPT
+	with ESMTP id S932690Ab3FEVgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:36:10 -0400
+	Wed, 5 Jun 2013 17:36:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Skeggs <bskeggs@redhat.com>, Lingzhu Xiang <lxiang@redhat.com>
-Subject: [ 105/127] drm/nvc0/ce: disable ce1 on a number of chipsets
-Date: Wed,  5 Jun 2013 14:34:32 -0700
-Message-Id: <20130605213229.973288702@linuxfoundation.org>
+        Bastian Triller <bastian.triller@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 104/127] ACPI / video: Add "Asus UL30A" to ACPI video detect blacklist
+Date: Wed,  5 Jun 2013 14:34:31 -0700
+Message-Id: <20130605213229.839829965@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -26,40 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: Bastian Triller <bastian.triller@gmail.com>
 
-commit 6d5f83834dc2b064b8c1202ea281820286b675a8 upstream.
+commit c8f6d8351ba8c89d5cd4c562552ec7ec29274e31 upstream.
 
-The falcon is present, but the rest of the copy engine doesn't appear to
-be...  PUNITS doesn't report disabled (maybe the bits for the copy engines
-got added later?), so we end up trying to use a non-functional CE1, and
-bust all sorts of things.. Most notably, suspend/resume..
+Like on UL30VT, the ACPI video driver can't control backlight correctly on
+Asus UL30A.  Vendor driver (asus-laptop) can work.  This patch is to
+add "Asus UL30A" to ACPI video detect blacklist in order to use
+asus-laptop for video control on the "Asus UL30A" rather than ACPI
+video driver.
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
+Signed-off-by: Bastian Triller <bastian.triller@gmail.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/core/subdev/device/nvc0.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/acpi/video_detect.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/gpu/drm/nouveau/core/subdev/device/nvc0.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/device/nvc0.c
-@@ -138,7 +138,6 @@ nvc0_identify(struct nouveau_device *dev
- 		device->oclass[NVDEV_ENGINE_BSP    ] = &nvc0_bsp_oclass;
- 		device->oclass[NVDEV_ENGINE_PPP    ] = &nvc0_ppp_oclass;
- 		device->oclass[NVDEV_ENGINE_COPY0  ] = &nvc0_copy0_oclass;
--		device->oclass[NVDEV_ENGINE_COPY1  ] = &nvc0_copy1_oclass;
- 		device->oclass[NVDEV_ENGINE_DISP   ] = &nva3_disp_oclass;
- 		break;
- 	case 0xce:
-@@ -225,7 +224,6 @@ nvc0_identify(struct nouveau_device *dev
- 		device->oclass[NVDEV_ENGINE_BSP    ] = &nvc0_bsp_oclass;
- 		device->oclass[NVDEV_ENGINE_PPP    ] = &nvc0_ppp_oclass;
- 		device->oclass[NVDEV_ENGINE_COPY0  ] = &nvc0_copy0_oclass;
--		device->oclass[NVDEV_ENGINE_COPY1  ] = &nvc0_copy1_oclass;
- 		device->oclass[NVDEV_ENGINE_DISP   ] = &nva3_disp_oclass;
- 		break;
- 	case 0xc8:
+--- a/drivers/acpi/video_detect.c
++++ b/drivers/acpi/video_detect.c
+@@ -164,6 +164,14 @@ static struct dmi_system_id video_detect
+ 		DMI_MATCH(DMI_PRODUCT_NAME, "UL30VT"),
+ 		},
+ 	},
++	{
++	.callback = video_detect_force_vendor,
++	.ident = "Asus UL30A",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
++		DMI_MATCH(DMI_PRODUCT_NAME, "UL30A"),
++		},
++	},
+ 	{ },
+ };
+ 
 
 
