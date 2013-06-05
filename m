@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933067Ab3FEVgH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:36:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38007 "EHLO
+	id S933318Ab3FEVpH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:45:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38012 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932690Ab3FEVgE (ORCPT
+	with ESMTP id S933047Ab3FEVgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:36:04 -0400
+	Wed, 5 Jun 2013 17:36:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>,
         Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 096/127] reiserfs: fix problems with chowning setuid file w/ xattrs
-Date: Wed,  5 Jun 2013 14:34:23 -0700
-Message-Id: <20130605213228.887663732@linuxfoundation.org>
+Subject: [ 097/127] reiserfs: fix spurious multiple-fill in reiserfs_readdir_dentry
+Date: Wed,  5 Jun 2013 14:34:24 -0700
+Message-Id: <20130605213229.010043462@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -27,25 +27,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Jeff Mahoney <jeffm@jeffreymahoney.com>
 
-commit 4a8570112b76a63ad21cfcbe2783f98f7fd5ba1b upstream.
+commit 0bdc7acba56a7ca4232f15f37b16f7ec079385ab upstream.
 
-reiserfs_chown_xattrs() takes the iattr struct passed into ->setattr
-and uses it to iterate over all the attrs associated with a file to change
-ownership of xattrs (and transfer quota associated with the xattr files).
+After sleeping for filldir(), we check to see if the file system has
+changed and research. The next_pos pointer is updated but its value
+isn't pushed into the key used for the search itself. As a result,
+the search returns the same item that the last cycle of the loop did
+and filldir() is called multiple times with the same data.
 
-When the setuid bit is cleared during chown, ATTR_MODE and iattr->ia_mode
-are passed to all the xattrs as well. This means that the xattr directory
-will have S_IFREG added to its mode bits.
+The end result is that the buffer can contain the same name multiple
+times. This can be returned to userspace or used internally in the
+xattr code where it can manifest with the following warning:
 
-This has been prevented in practice by a missing IS_PRIVATE check
-in reiserfs_acl_chmod, which caused a double-lock to occur while holding
-the write lock. Since the file system was completely locked up, the
-writeout of the corrupted mode never happened.
+jdm-20004 reiserfs_delete_xattrs: Couldn't delete all xattrs (-2)
 
-This patch temporarily clears everything but ATTR_UID|ATTR_GID for the
-calls to reiserfs_setattr and adds the missing IS_PRIVATE check.
+reiserfs_for_each_xattr uses reiserfs_readdir_dentry to iterate over
+the xattr names and ends up trying to unlink the same name twice. The
+second attempt fails with -ENOENT and the error is returned. At some
+point I'll need to add support into reiserfsck to remove the orphaned
+directories left behind when this occurs.
+
+The fix is to push the value into the key before researching.
 
 Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Jan Kara <jack@suse.cz>
@@ -53,44 +57,19 @@ Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/reiserfs/xattr.c     |   14 +++++++++++++-
- fs/reiserfs/xattr_acl.c |    3 +++
- 2 files changed, 16 insertions(+), 1 deletion(-)
+ fs/reiserfs/dir.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/reiserfs/xattr.c
-+++ b/fs/reiserfs/xattr.c
-@@ -318,7 +318,19 @@ static int delete_one_xattr(struct dentr
- static int chown_one_xattr(struct dentry *dentry, void *data)
- {
- 	struct iattr *attrs = data;
--	return reiserfs_setattr(dentry, attrs);
-+	int ia_valid = attrs->ia_valid;
-+	int err;
-+
-+	/*
-+	 * We only want the ownership bits. Otherwise, we'll do
-+	 * things like change a directory to a regular file if
-+	 * ATTR_MODE is set.
-+	 */
-+	attrs->ia_valid &= (ATTR_UID|ATTR_GID);
-+	err = reiserfs_setattr(dentry, attrs);
-+	attrs->ia_valid = ia_valid;
-+
-+	return err;
- }
+--- a/fs/reiserfs/dir.c
++++ b/fs/reiserfs/dir.c
+@@ -204,6 +204,8 @@ int reiserfs_readdir_dentry(struct dentr
+ 				next_pos = deh_offset(deh) + 1;
  
- /* No i_mutex, but the inode is unconnected. */
---- a/fs/reiserfs/xattr_acl.c
-+++ b/fs/reiserfs/xattr_acl.c
-@@ -443,6 +443,9 @@ int reiserfs_acl_chmod(struct inode *ino
- 	int depth;
- 	int error;
- 
-+	if (IS_PRIVATE(inode))
-+		return 0;
-+
- 	if (S_ISLNK(inode->i_mode))
- 		return -EOPNOTSUPP;
- 
+ 				if (item_moved(&tmp_ih, &path_to_entry)) {
++					set_cpu_key_k_offset(&pos_key,
++							     next_pos);
+ 					goto research;
+ 				}
+ 			}	/* for */
 
 
