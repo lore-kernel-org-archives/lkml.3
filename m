@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696Ab3FEVQa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:16:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36947 "EHLO
+	id S932681Ab3FEVQv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:16:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36941 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932608Ab3FEVNJ (ORCPT
+	with ESMTP id S932604Ab3FEVNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:13:09 -0400
+	Wed, 5 Jun 2013 17:13:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Michael L. Semon" <mlsemon35@gmail.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [ 38/44] jfs: fix a couple races
-Date: Wed,  5 Jun 2013 14:12:36 -0700
-Message-Id: <20130605211225.827453790@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Keir Fraser <keir.fraser@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 37/44] xen/events: Handle VIRQ_TIMER before any other hardirq in event loop.
+Date: Wed,  5 Jun 2013 14:12:35 -0700
+Message-Id: <20130605211225.711463237@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605211221.858177087@linuxfoundation.org>
 References: <20130605211221.858177087@linuxfoundation.org>
@@ -27,54 +28,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+From: Keir Fraser <keir.fraser@citrix.com>
 
-commit 73aaa22d5ffb2630456bac2f9a4ed9b81d0d7271 upstream.
+commit bee980d9e9642e96351fa3ca9077b853ecf62f57 upstream.
 
-This patch fixes races uncovered by xfstests testcase 068.
+This avoids any other hardirq handler seeing a very stale jiffies
+value immediately after wakeup from a long idle period. The one
+observable symptom of this was a USB keyboard, with software keyboard
+repeat, which would always repeat a key immediately that it was
+pressed. This is due to the key press waking the guest, the key
+handler immediately runs, sees an old jiffies value, and then that
+jiffies value significantly updated, before the key is unpressed.
 
-One race is the result of jfs_sync() trying to write a sync point to the
-journal after it has been frozen (or possibly in the process). Since
-freezing sync's the journal, there is no need to write a sync point so
-we simply want to return.
-
-The second involves jfs_write_inode() being called on a deleted inode.
-It calls jfs_flush_journal which is held up by the jfs_commit thread
-doing the final iput on the same deleted inode, which itself is
-waiting for the I_SYNC flag to be cleared. jfs_write_inode need not
-do anything when i_nlink is zero, which is the easy fix.
-
-Reported-by: Michael L. Semon <mlsemon35@gmail.com>
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Keir Fraser <keir.fraser@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jfs/inode.c      |    2 +-
- fs/jfs/jfs_logmgr.c |    3 ++-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/xen/events.c |   19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
 
---- a/fs/jfs/inode.c
-+++ b/fs/jfs/inode.c
-@@ -125,7 +125,7 @@ int jfs_write_inode(struct inode *inode,
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -1258,7 +1258,7 @@ static void __xen_evtchn_do_upcall(void)
  {
- 	int wait = wbc->sync_mode == WB_SYNC_ALL;
+ 	int start_word_idx, start_bit_idx;
+ 	int word_idx, bit_idx;
+-	int i;
++	int i, irq;
+ 	int cpu = get_cpu();
+ 	struct shared_info *s = HYPERVISOR_shared_info;
+ 	struct vcpu_info *vcpu_info = __this_cpu_read(xen_vcpu);
+@@ -1266,6 +1266,8 @@ static void __xen_evtchn_do_upcall(void)
  
--	if (test_cflag(COMMIT_Nolink, inode))
-+	if (inode->i_nlink == 0)
- 		return 0;
- 	/*
- 	 * If COMMIT_DIRTY is not set, the inode isn't really dirty.
---- a/fs/jfs/jfs_logmgr.c
-+++ b/fs/jfs/jfs_logmgr.c
-@@ -1058,7 +1058,8 @@ static int lmLogSync(struct jfs_log * lo
-  */
- void jfs_syncpt(struct jfs_log *log, int hard_sync)
- {	LOG_LOCK(log);
--	lmLogSync(log, hard_sync);
-+	if (!test_bit(log_QUIESCE, &log->flag))
-+		lmLogSync(log, hard_sync);
- 	LOG_UNLOCK(log);
- }
+ 	do {
+ 		unsigned long pending_words;
++		unsigned long pending_bits;
++		struct irq_desc *desc;
+ 
+ 		vcpu_info->evtchn_upcall_pending = 0;
+ 
+@@ -1276,6 +1278,17 @@ static void __xen_evtchn_do_upcall(void)
+ 		/* Clear master flag /before/ clearing selector flag. */
+ 		wmb();
+ #endif
++		if ((irq = per_cpu(virq_to_irq, cpu)[VIRQ_TIMER]) != -1) {
++			int evtchn = evtchn_from_irq(irq);
++			word_idx = evtchn / BITS_PER_LONG;
++			pending_bits = evtchn % BITS_PER_LONG;
++			if (active_evtchns(cpu, s, word_idx) & (1ULL << pending_bits)) {
++				desc = irq_to_desc(irq);
++				if (desc)
++					generic_handle_irq_desc(irq, desc);
++			}
++		}
++
+ 		pending_words = xchg(&vcpu_info->evtchn_pending_sel, 0);
+ 
+ 		start_word_idx = __this_cpu_read(current_word_idx);
+@@ -1284,7 +1297,6 @@ static void __xen_evtchn_do_upcall(void)
+ 		word_idx = start_word_idx;
+ 
+ 		for (i = 0; pending_words != 0; i++) {
+-			unsigned long pending_bits;
+ 			unsigned long words;
+ 
+ 			words = MASK_LSBS(pending_words, word_idx);
+@@ -1313,8 +1325,7 @@ static void __xen_evtchn_do_upcall(void)
+ 
+ 			do {
+ 				unsigned long bits;
+-				int port, irq;
+-				struct irq_desc *desc;
++				int port;
+ 
+ 				bits = MASK_LSBS(pending_bits, bit_idx);
  
 
 
