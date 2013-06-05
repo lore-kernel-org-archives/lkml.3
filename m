@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933165Ab3FEVti (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:49:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37949 "EHLO
+	id S932988Ab3FEVfy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:35:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37918 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932991Ab3FEVfz (ORCPT
+	with ESMTP id S932937Ab3FEVfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:55 -0400
+	Wed, 5 Jun 2013 17:35:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 084/127] powerpc/tm: Update cause codes documentation
-Date: Wed,  5 Jun 2013 14:34:11 -0700
-Message-Id: <20130605213227.472380618@linuxfoundation.org>
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [ 074/127] sata_rcar: clear STOP bit in bmdma_start() method
+Date: Wed,  5 Jun 2013 14:34:01 -0700
+Message-Id: <20130605213226.358880887@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -27,27 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-commit 24b92375dc4ec8a15262e8aaaab60b7404d4b1e7 upstream.
+commit df7e131f6359f20ed8f0a37db039c4f6420a18c2 upstream.
 
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Iff bmdma_setup() has to stop a DMA transfer before starting a new
+one, then the STOP bit in the ATAPI_CONTROL1 register will remain set
+(it's only cleared when setting the START bit to 1) and then
+bmdma_start() method will set both START and STOP bits simultaneously
+which should abort the transfer being just started.  Avoid that by
+explicitly clearing the STOP bit in bmdma_start() method (in this case
+it will be ignored on write).
+
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/powerpc/transactional_memory.txt |    1 +
+ drivers/ata/sata_rcar.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/Documentation/powerpc/transactional_memory.txt
-+++ b/Documentation/powerpc/transactional_memory.txt
-@@ -155,6 +155,7 @@ These are defined in <asm/reg.h>, and di
- kernel aborted a transaction:
+--- a/drivers/ata/sata_rcar.c
++++ b/drivers/ata/sata_rcar.c
+@@ -548,6 +548,7 @@ static void sata_rcar_bmdma_start(struct
  
-  TM_CAUSE_RESCHED       Thread was rescheduled.
-+ TM_CAUSE_TLBI          Software TLB invalide.
-  TM_CAUSE_FAC_UNAV      FP/VEC/VSX unavailable trap.
-  TM_CAUSE_SYSCALL       Currently unused; future syscalls that must abort
-                         transactions for consistency will use this.
+ 	/* start host DMA transaction */
+ 	dmactl = ioread32(priv->base + ATAPI_CONTROL1_REG);
++	dmactl &= ~ATAPI_CONTROL1_STOP;
+ 	dmactl |= ATAPI_CONTROL1_START;
+ 	iowrite32(dmactl, priv->base + ATAPI_CONTROL1_REG);
+ }
 
 
