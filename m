@@ -1,109 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab3FEJBK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 05:01:10 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:33565 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753392Ab3FEJBH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 05:01:07 -0400
-X-Greylist: delayed 605 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Jun 2013 05:01:07 EDT
-From: Johannes Schilling <of82ecuq@cip.cs.fau.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-kernel@i4.cs.fau.de, Al Cho <acho@novell.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Amarjargal Gundjalam <amarjargal16@gmail.com>,
-        Kurt Kanzenbach <shifty91@gmail.com>, devel@driverdev.osuosl.org,
-        Johannes Schilling <of82ecuq@cip.cs.fau.de>,
-        Laura Lawniczak <laura.lawniczak@googlemail.com>
-Subject: [PATCH 4/6] keucr: make error messages less aggressive
-Date: Wed,  5 Jun 2013 10:50:04 +0200
-Message-Id: <1370422206-14961-5-git-send-email-of82ecuq@cip.cs.fau.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1370422206-14961-1-git-send-email-of82ecuq@cip.cs.fau.de>
-References: <1370422206-14961-1-git-send-email-of82ecuq@cip.cs.fau.de>
+	id S1753648Ab3FEJCY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 05:02:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53838 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752875Ab3FEJCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 05:02:21 -0400
+Date: Wed, 5 Jun 2013 12:02:52 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vhost_net: clear msg.control for non-zerocopy case
+ during tx
+Message-ID: <20130605090252.GA31830@redhat.com>
+References: <1370418046-11851-1-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370418046-11851-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-here's a flower: ⚘. have a very happy day ☺
+On Wed, Jun 05, 2013 at 03:40:46PM +0800, Jason Wang wrote:
+> When we decide not use zero-copy, msg.control should be set to NULL otherwise
+> macvtap/tap may set zerocopy callbacks which may decrease the kref of ubufs
+> wrongly.
+> 
+> Bug were introduced by commit cedb9bdce099206290a2bdd02ce47a7b253b6a84
+> (vhost-net: skip head management if no outstanding).
+> 
+> This solves the following warnings:
+> 
+> WARNING: at include/linux/kref.h:47 handle_tx+0x477/0x4b0 [vhost_net]()
+> Modules linked in: vhost_net macvtap macvlan tun nfsd exportfs bridge stp llc openvswitch kvm_amd kvm bnx2 megaraid_sas [last unloaded: tun]
+> CPU: 5 PID: 8670 Comm: vhost-8668 Not tainted 3.10.0-rc2+ #1566
+> Hardware name: Dell Inc. PowerEdge R715/00XHKG, BIOS 1.5.2 04/19/2011
+> ffffffffa0198323 ffff88007c9ebd08 ffffffff81796b73 ffff88007c9ebd48
+> ffffffff8103d66b 000000007b773e20 ffff8800779f0000 ffff8800779f43f0
+> ffff8800779f8418 000000000000015c 0000000000000062 ffff88007c9ebd58
+> Call Trace:
+> [<ffffffff81796b73>] dump_stack+0x19/0x1e
+> [<ffffffff8103d66b>] warn_slowpath_common+0x6b/0xa0
+> [<ffffffff8103d6b5>] warn_slowpath_null+0x15/0x20
+> [<ffffffffa0197627>] handle_tx+0x477/0x4b0 [vhost_net]
+> [<ffffffffa0197690>] handle_tx_kick+0x10/0x20 [vhost_net]
+> [<ffffffffa019541e>] vhost_worker+0xfe/0x1a0 [vhost_net]
+> [<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
+> [<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
+> [<ffffffff81061f46>] kthread+0xc6/0xd0
+> [<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
+> [<ffffffff817a1aec>] ret_from_fork+0x7c/0xb0
+> [<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-Signed-off-by: Laura Lawniczak <laura.lawniczak@googlemail.com>
-Signed-off-by: Johannes Schilling <of82ecuq@cip.cs.fau.de>
----
- drivers/staging/keucr/smilsub.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+Good catch.
 
-diff --git a/drivers/staging/keucr/smilsub.c b/drivers/staging/keucr/smilsub.c
-index d5e289b..c5f034d 100644
---- a/drivers/staging/keucr/smilsub.c
-+++ b/drivers/staging/keucr/smilsub.c
-@@ -214,7 +214,7 @@ int Ssfdc_D_ReadSect(struct us_data *us, BYTE *buf, BYTE *redundant)
- 
- 	result = ENE_LoadBinCode(us, SM_RW_PATTERN);
- 	if (result != USB_STOR_XFER_GOOD) {
--		dev_err("Load SM RW Code Fail !!\n");
-+		dev_err("Failed to load SM RW code\n");
- 		return USB_STOR_TRANSPORT_ERROR;
- 	}
- 
-@@ -266,7 +266,7 @@ int Ssfdc_D_ReadBlock(struct us_data *us, WORD count, BYTE *buf,
- 
- 	result = ENE_LoadBinCode(us, SM_RW_PATTERN);
- 	if (result != USB_STOR_XFER_GOOD) {
--		dev_err("Load SM RW Code Fail !!\n");
-+		dev_err("Failed to load SM RW code\n");
- 		return USB_STOR_TRANSPORT_ERROR;
- 	}
- 
-@@ -319,7 +319,7 @@ int Ssfdc_D_CopyBlock(struct us_data *us, WORD count, BYTE *buf,
- 
- 	result = ENE_LoadBinCode(us, SM_RW_PATTERN);
- 	if (result != USB_STOR_XFER_GOOD) {
--		dev_err("Load SM RW Code Fail !!\n");
-+		dev_err("Failed to load SM RW code\n");
- 		return USB_STOR_TRANSPORT_ERROR;
- 	}
- 
-@@ -365,7 +365,7 @@ int Ssfdc_D_WriteSectForCopy(struct us_data *us, BYTE *buf, BYTE *redundant)
- 
- 	result = ENE_LoadBinCode(us, SM_RW_PATTERN);
- 	if (result != USB_STOR_XFER_GOOD) {
--		dev_err("Load SM RW Code Fail !!\n");
-+		dev_err("Failed to load SM RW code\n");
- 		return USB_STOR_TRANSPORT_ERROR;
- 	}
- 
-@@ -403,7 +403,7 @@ int Ssfdc_D_EraseBlock(struct us_data *us)
- 
- 	result = ENE_LoadBinCode(us, SM_RW_PATTERN);
- 	if (result != USB_STOR_XFER_GOOD) {
--		dev_err("Load SM RW Code Fail !!\n");
-+		dev_err("Failed to load SM RW code\n");
- 		return USB_STOR_TRANSPORT_ERROR;
- 	}
- 
-@@ -438,7 +438,7 @@ int Ssfdc_D_ReadRedtData(struct us_data *us, BYTE *redundant)
- 
- 	result = ENE_LoadBinCode(us, SM_RW_PATTERN);
- 	if (result != USB_STOR_XFER_GOOD) {
--		dev_err("Load SM RW Code Fail !!\n");
-+		dev_err("Failed to load SM RW code\n");
- 		return USB_STOR_TRANSPORT_ERROR;
- 	}
- 
-@@ -477,7 +477,7 @@ int Ssfdc_D_WriteRedtData(struct us_data *us, BYTE *redundant)
- 
- 	result = ENE_LoadBinCode(us, SM_RW_PATTERN);
- 	if (result != USB_STOR_XFER_GOOD) {
--		dev_err("Load SM RW Code Fail !!\n");
-+		dev_err("Failed to load SM RW code\n");
- 		return USB_STOR_TRANSPORT_ERROR;
- 	}
- 
--- 
-1.7.10.4
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 
+This needs to go into stable as well.
+
+> ---
+>  drivers/vhost/net.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index 2b51e23..b07d96b 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -436,7 +436,8 @@ static void handle_tx(struct vhost_net *net)
+>  				kref_get(&ubufs->kref);
+>  			}
+>  			nvq->upend_idx = (nvq->upend_idx + 1) % UIO_MAXIOV;
+> -		}
+> +		} else
+> +			msg.msg_control = NULL;
+>  		/* TODO: Check specific error and bomb out unless ENOBUFS? */
+>  		err = sock->ops->sendmsg(NULL, sock, &msg, len);
+>  		if (unlikely(err < 0)) {
+> -- 
+> 1.7.1
