@@ -1,70 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753743Ab3FEJvD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 05:51:03 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:34379 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753336Ab3FEJvB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 05:51:01 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv4] ARM: at91: Fix link breakage when !CONFIG_PHYLIB
-Date: Wed,  5 Jun 2013 11:50:43 +0200
-Message-Id: <1370425843-6802-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1753887Ab3FEJvw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 05:51:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35361 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753417Ab3FEJvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 05:51:50 -0400
+Date: Wed, 5 Jun 2013 12:51:46 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, avi.kivity@gmail.com,
+        pbonzini@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v8 00/11] KVM: MMU: fast zap all shadow pages
+Message-ID: <20130605095146.GT4725@redhat.com>
+References: <1369960590-14138-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20130605012601.GA2518@amt.cnet>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130605012601.GA2518@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes:
-arch/arm/mach-at91/built-in.o: In function `ksz9021rn_phy_fixup':
-:(.text+0x1174): undefined reference to `mdiobus_write'
-:(.text+0x1188): undefined reference to `mdiobus_write'
-:(.text+0x119c): undefined reference to `mdiobus_write'
-:(.text+0x11b0): undefined reference to `mdiobus_write'
-arch/arm/mach-at91/built-in.o: In function `sama5_dt_device_init':
-:(.init.text+0x1e34): undefined reference to `phy_register_fixup_for_uid'
+On Tue, Jun 04, 2013 at 10:26:01PM -0300, Marcelo Tosatti wrote:
+> On Fri, May 31, 2013 at 08:36:19AM +0800, Xiao Guangrong wrote:
+> > Hi Gleb, Paolo, Marcelo,
+> > 
+> > I have putted the potential controversial patches to the latter that are
+> > patch 8 ~ 10, patch 11 depends on patch 9. Other patches are fully reviewed,
+> > I think its are ready for being merged. If not luck enough, further discussion
+> > is needed, could you please apply that patches first? :)
+> > 
+> > Thank you in advance!
+> 
+> <snip>
+> 
+> Looks good to me.
+I'll take it as Reviewed-by for the entire series :)
 
-when CONFIG_PHYLIB is not selected.
-
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/mach-at91/Kconfig          | 1 +
- arch/arm/mach-at91/board-dt-sama5.c | 3 ++-
- 2 files changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index 0280238..699b71e 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -163,6 +163,7 @@ config MACH_SAMA5_DT
- 	bool "Atmel SAMA5 Evaluation Kits with device-tree support"
- 	depends on SOC_SAMA5
- 	select USE_OF
-+	select PHYLIB if NETDEVICES
- 	help
- 	  Select this if you want to experiment device-tree with
- 	  an Atmel Evaluation Kit.
-diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
-index 705305e..ad95f6a 100644
---- a/arch/arm/mach-at91/board-dt-sama5.c
-+++ b/arch/arm/mach-at91/board-dt-sama5.c
-@@ -62,7 +62,8 @@ static int ksz9021rn_phy_fixup(struct phy_device *phy)
- 
- static void __init sama5_dt_device_init(void)
- {
--	if (of_machine_is_compatible("atmel,sama5d3xcm"))
-+	if (of_machine_is_compatible("atmel,sama5d3xcm") &&
-+	    IS_ENABLED(CONFIG_PHYLIB))
- 		phy_register_fixup_for_uid(PHY_ID_KSZ9021, MICREL_PHY_ID_MASK,
- 			ksz9021rn_phy_fixup);
- 
--- 
-1.8.1.2
-
+--
+			Gleb.
