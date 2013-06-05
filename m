@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669Ab3FEHvR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 03:51:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46060 "EHLO mx1.redhat.com"
+	id S1752699Ab3FEHxf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 03:53:35 -0400
+Received: from mga09.intel.com ([134.134.136.24]:62131 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752162Ab3FEHvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 03:51:16 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: mst@redhat.com, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: [PATCH] vhost_net: clear msg.control for non-zerocopy case during tx
-Date: Wed,  5 Jun 2013 15:40:46 +0800
-Message-Id: <1370418046-11851-1-git-send-email-jasowang@redhat.com>
+	id S1752162Ab3FEHxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 03:53:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,804,1363158000"; 
+   d="scan'208";a="345029698"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc 3.10] mei: me: clear interrupts on the resume path
+Date: Wed,  5 Jun 2013 10:51:13 +0300
+Message-Id: <1370418673-20112-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we decide not use zero-copy, msg.control should be set to NULL otherwise
-macvtap/tap may set zerocopy callbacks which may decrease the kref of ubufs
-wrongly.
+We need to clear pending interrupts on the resume
+path. This brings the device into defined state
+before starting the reset flow
 
-Bug were introduced by commit cedb9bdce099206290a2bdd02ce47a7b253b6a84
-(vhost-net: skip head management if no outstanding).
+This should solve suspend/resume issues:
 
-This solves the following warnings:
+mei_me : wait hw ready failed. status = 0x0
+mei_me : version message write failed
 
-WARNING: at include/linux/kref.h:47 handle_tx+0x477/0x4b0 [vhost_net]()
-Modules linked in: vhost_net macvtap macvlan tun nfsd exportfs bridge stp llc openvswitch kvm_amd kvm bnx2 megaraid_sas [last unloaded: tun]
-CPU: 5 PID: 8670 Comm: vhost-8668 Not tainted 3.10.0-rc2+ #1566
-Hardware name: Dell Inc. PowerEdge R715/00XHKG, BIOS 1.5.2 04/19/2011
-ffffffffa0198323 ffff88007c9ebd08 ffffffff81796b73 ffff88007c9ebd48
-ffffffff8103d66b 000000007b773e20 ffff8800779f0000 ffff8800779f43f0
-ffff8800779f8418 000000000000015c 0000000000000062 ffff88007c9ebd58
-Call Trace:
-[<ffffffff81796b73>] dump_stack+0x19/0x1e
-[<ffffffff8103d66b>] warn_slowpath_common+0x6b/0xa0
-[<ffffffff8103d6b5>] warn_slowpath_null+0x15/0x20
-[<ffffffffa0197627>] handle_tx+0x477/0x4b0 [vhost_net]
-[<ffffffffa0197690>] handle_tx_kick+0x10/0x20 [vhost_net]
-[<ffffffffa019541e>] vhost_worker+0xfe/0x1a0 [vhost_net]
-[<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
-[<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
-[<ffffffff81061f46>] kthread+0xc6/0xd0
-[<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
-[<ffffffff817a1aec>] ret_from_fork+0x7c/0xb0
-[<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
-
-Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/vhost/net.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/misc/mei/pci-me.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 2b51e23..b07d96b 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -436,7 +436,8 @@ static void handle_tx(struct vhost_net *net)
- 				kref_get(&ubufs->kref);
- 			}
- 			nvq->upend_idx = (nvq->upend_idx + 1) % UIO_MAXIOV;
--		}
-+		} else
-+			msg.msg_control = NULL;
- 		/* TODO: Check specific error and bomb out unless ENOBUFS? */
- 		err = sock->ops->sendmsg(NULL, sock, &msg, len);
- 		if (unlikely(err < 0)) {
+diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
+index a2f5520f..1b3844e 100644
+--- a/drivers/misc/mei/pci-me.c
++++ b/drivers/misc/mei/pci-me.c
+@@ -306,6 +306,7 @@ static int mei_me_pci_resume(struct device *device)
+ 
+ 	mutex_lock(&dev->device_lock);
+ 	dev->dev_state = MEI_DEV_POWER_UP;
++	mei_clear_interrupts(dev);
+ 	mei_reset(dev, 1);
+ 	mutex_unlock(&dev->device_lock);
+ 
 -- 
-1.7.1
+1.8.1.2
 
