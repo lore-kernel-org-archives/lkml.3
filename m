@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932887Ab3FEV5v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:57:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37815 "EHLO
+	id S932806Ab3FEVfd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:35:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37725 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932809Ab3FEVff (ORCPT
+	with ESMTP id S932582Ab3FEVfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:35 -0400
+	Wed, 5 Jun 2013 17:35:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wen Xiong <wenxiong@linux.vnet.ibm.com>,
-        Brian King <brking@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 056/127] SCSI: ipr: Need to reset adapter after the 6th EEH error
-Date: Wed,  5 Jun 2013 14:33:43 -0700
-Message-Id: <20130605213224.389767185@linuxfoundation.org>
+        Michael Chan <mchan@broadcom.com>,
+        Nithin Nayak Sujir <nsujir@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 037/127] tg3: Skip powering down function 0 on certain serdes devices
+Date: Wed,  5 Jun 2013 14:33:24 -0700
+Message-Id: <20130605213222.153856336@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -28,63 +28,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "wenxiong@linux.vnet.ibm.com" <wenxiong@linux.vnet.ibm.com>
+From: Nithin Sujir <nsujir@broadcom.com>
 
-commit 96b04db9f2c16e77c31ef0e17e143da1e0cbfd78 upstream.
+commit 44f3b503c16425c8e9db4bbaa2fc9cd0c9d0ba91 upstream.
 
-Add reset adapter after the 6th EEH errors in ipr driver. This triggers
-the adapter reset via the PCI config space even when the slot is frozen.
+On the 5718, 5719 and 5720 serdes devices, powering down function 0
+results in all the other ports being powered down. Add code to skip
+function 0 power down.
 
-Signed-off-by: Wen Xiong <wenxiong@linux.vnet.ibm.com>
-Acked-by: Brian King <brking@linux.vnet.ibm.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+v2:
+ - Modify tg3_phy_power_bug() function to use a switch instead of a
+   complicated if statement. Suggested by Joe Perches.
+
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/ipr.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c |   32 ++++++++++++++++++++++++++------
+ 1 file changed, 26 insertions(+), 6 deletions(-)
 
---- a/drivers/scsi/ipr.c
-+++ b/drivers/scsi/ipr.c
-@@ -4777,7 +4777,7 @@ static int ipr_eh_host_reset(struct scsi
- 	ioa_cfg = (struct ipr_ioa_cfg *) cmd->device->host->hostdata;
- 	spin_lock_irqsave(ioa_cfg->host->host_lock, lock_flags);
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -2921,6 +2921,31 @@ static int tg3_5700_link_polarity(struct
+ 	return 0;
+ }
  
--	if (!ioa_cfg->in_reset_reload) {
-+	if (!ioa_cfg->in_reset_reload && !ioa_cfg->hrrq[IPR_INIT_HRRQ].ioa_is_dead) {
- 		ipr_initiate_ioa_reset(ioa_cfg, IPR_SHUTDOWN_ABBREV);
- 		dev_err(&ioa_cfg->pdev->dev,
- 			"Adapter being reset as a result of error recovery.\n");
-@@ -6739,6 +6739,7 @@ static int ipr_invalid_adapter(struct ip
- static int ipr_ioa_bringdown_done(struct ipr_cmnd *ipr_cmd)
- {
- 	struct ipr_ioa_cfg *ioa_cfg = ipr_cmd->ioa_cfg;
-+	int i;
- 
- 	ENTER;
- 	if (!ioa_cfg->hrrq[IPR_INIT_HRRQ].removing_ioa) {
-@@ -6750,6 +6751,13 @@ static int ipr_ioa_bringdown_done(struct
- 
- 	ioa_cfg->in_reset_reload = 0;
- 	ioa_cfg->reset_retries = 0;
-+	for (i = 0; i < ioa_cfg->hrrq_num; i++) {
-+		spin_lock(&ioa_cfg->hrrq[i]._lock);
-+		ioa_cfg->hrrq[i].ioa_is_dead = 1;
-+		spin_unlock(&ioa_cfg->hrrq[i]._lock);
++static bool tg3_phy_power_bug(struct tg3 *tp)
++{
++	switch (tg3_asic_rev(tp)) {
++	case ASIC_REV_5700:
++	case ASIC_REV_5704:
++		return true;
++	case ASIC_REV_5780:
++		if (tp->phy_flags & TG3_PHYFLG_MII_SERDES)
++			return true;
++		return false;
++	case ASIC_REV_5717:
++		if (!tp->pci_fn)
++			return true;
++		return false;
++	case ASIC_REV_5719:
++	case ASIC_REV_5720:
++		if ((tp->phy_flags & TG3_PHYFLG_PHY_SERDES) &&
++		    !tp->pci_fn)
++			return true;
++		return false;
 +	}
-+	wmb();
 +
- 	list_add_tail(&ipr_cmd->queue, &ipr_cmd->hrrq->hrrq_free_q);
- 	wake_up_all(&ioa_cfg->reset_wait_q);
- 	LEAVE;
-@@ -8651,7 +8659,7 @@ static void ipr_pci_perm_failure(struct
- 	spin_lock_irqsave(ioa_cfg->host->host_lock, flags);
- 	if (ioa_cfg->sdt_state == WAIT_FOR_DUMP)
- 		ioa_cfg->sdt_state = ABORT_DUMP;
--	ioa_cfg->reset_retries = IPR_NUM_RESET_RELOAD_RETRIES;
-+	ioa_cfg->reset_retries = IPR_NUM_RESET_RELOAD_RETRIES - 1;
- 	ioa_cfg->in_ioa_bringdown = 1;
- 	for (i = 0; i < ioa_cfg->hrrq_num; i++) {
- 		spin_lock(&ioa_cfg->hrrq[i]._lock);
++	return false;
++}
++
+ static void tg3_power_down_phy(struct tg3 *tp, bool do_low_power)
+ {
+ 	u32 val;
+@@ -2977,12 +3002,7 @@ static void tg3_power_down_phy(struct tg
+ 	/* The PHY should not be powered down on some chips because
+ 	 * of bugs.
+ 	 */
+-	if (tg3_asic_rev(tp) == ASIC_REV_5700 ||
+-	    tg3_asic_rev(tp) == ASIC_REV_5704 ||
+-	    (tg3_asic_rev(tp) == ASIC_REV_5780 &&
+-	     (tp->phy_flags & TG3_PHYFLG_MII_SERDES)) ||
+-	    (tg3_asic_rev(tp) == ASIC_REV_5717 &&
+-	     !tp->pci_fn))
++	if (tg3_phy_power_bug(tp))
+ 		return;
+ 
+ 	if (tg3_chip_rev(tp) == CHIPREV_5784_AX ||
 
 
