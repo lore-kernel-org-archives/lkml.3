@@ -1,45 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756768Ab3FEPzx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 11:55:53 -0400
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:51337 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756511Ab3FEPzv (ORCPT
+	id S1756686Ab3FEPyr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 11:54:47 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:26722 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756432Ab3FEPyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 11:55:51 -0400
-Date: Wed, 5 Jun 2013 11:54:52 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Vince Weaver <vincent.weaver@maine.edu>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: Re: OOPS in perf_mmap_close()
-In-Reply-To: <20130603192505.GH8923@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.10.1306051151570.6484@vincent-weaver-1.um.maine.edu>
-References: <20130523152611.GE23650@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1305231936210.2452@vincent-weaver-1.um.maine.edu> <20130528085548.GA12193@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1305281217370.19080@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305281418120.19080@vincent-weaver-1.um.maine.edu> <20130529074433.GB12193@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1305291516310.2609@vincent-weaver-1.um.maine.edu> <20130530072532.GF4341@laptop>
- <alpine.DEB.2.10.1305300842040.11264@vincent-weaver-1.um.maine.edu> <20130603132645.GC8923@twins.programming.kicks-ass.net> <20130603192505.GH8923@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 5 Jun 2013 11:54:45 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 1/9] xen/smp: Coalesce the free_irq calls in one function.
+Date: Wed,  5 Jun 2013 11:54:30 -0400
+Message-Id: <1370447678-22367-2-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1370447678-22367-1-git-send-email-konrad.wilk@oracle.com>
+References: <1370447678-22367-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Jun 2013, Peter Zijlstra wrote:
+There are two functions that do a bunch of 'free_irq' on
+the per_cpu IRQ. Instead of having duplicate code just move
+it to one function.
 
-> Seems to cure it... I'm going to let it run over night.
+This is just code movement.
 
-[sorry for the delay in testing, was at the hospital waiting for
- a new baby, and the free wi-fi had the ssh port blocked]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/smp.c | 40 +++++++++++++++++++---------------------
+ 1 file changed, 19 insertions(+), 21 deletions(-)
 
-I'm running 3.10-rc4 with your patch plus the 3-line fixup applied and my 
-various tests are solid so far.
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index fb44426..19fc9f3 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -98,6 +98,23 @@ static void __cpuinit cpu_bringup_and_idle(void)
+ 	cpu_startup_entry(CPUHP_ONLINE);
+ }
+ 
++static void xen_smp_intr_free(unsigned int cpu)
++{
++	if (per_cpu(xen_resched_irq, cpu) >= 0)
++		unbind_from_irqhandler(per_cpu(xen_resched_irq, cpu), NULL);
++	if (per_cpu(xen_callfunc_irq, cpu) >= 0)
++		unbind_from_irqhandler(per_cpu(xen_callfunc_irq, cpu), NULL);
++	if (per_cpu(xen_debug_irq, cpu) >= 0)
++		unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
++	if (per_cpu(xen_callfuncsingle_irq, cpu) >= 0)
++		unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu),
++				       NULL);
++	if (xen_hvm_domain())
++		return;
++
++	if (per_cpu(xen_irq_work, cpu) >= 0)
++		unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
++};
+ static int xen_smp_intr_init(unsigned int cpu)
+ {
+ 	int rc;
+@@ -165,21 +182,7 @@ static int xen_smp_intr_init(unsigned int cpu)
+ 	return 0;
+ 
+  fail:
+-	if (per_cpu(xen_resched_irq, cpu) >= 0)
+-		unbind_from_irqhandler(per_cpu(xen_resched_irq, cpu), NULL);
+-	if (per_cpu(xen_callfunc_irq, cpu) >= 0)
+-		unbind_from_irqhandler(per_cpu(xen_callfunc_irq, cpu), NULL);
+-	if (per_cpu(xen_debug_irq, cpu) >= 0)
+-		unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
+-	if (per_cpu(xen_callfuncsingle_irq, cpu) >= 0)
+-		unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu),
+-				       NULL);
+-	if (xen_hvm_domain())
+-		return rc;
+-
+-	if (per_cpu(xen_irq_work, cpu) >= 0)
+-		unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
+-
++	xen_smp_intr_free(cpu);
+ 	return rc;
+ }
+ 
+@@ -432,12 +435,7 @@ static void xen_cpu_die(unsigned int cpu)
+ 		current->state = TASK_UNINTERRUPTIBLE;
+ 		schedule_timeout(HZ/10);
+ 	}
+-	unbind_from_irqhandler(per_cpu(xen_resched_irq, cpu), NULL);
+-	unbind_from_irqhandler(per_cpu(xen_callfunc_irq, cpu), NULL);
+-	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
+-	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
+-	if (!xen_hvm_domain())
+-		unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
++	xen_smp_intr_free(cpu);
+ 	xen_uninit_lock_cpu(cpu);
+ 	xen_teardown_timer(cpu);
+ }
+-- 
+1.8.1.4
 
-It would be nice to get this applied, without the patch it's trivial to 
-oops/lock any kernel going back to 3.2 and probably earlier (I haven't 
-tested older than 3.2 yet).
-
-Vince
