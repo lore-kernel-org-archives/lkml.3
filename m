@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101Ab3FED2h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 23:28:37 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:49086 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910Ab3FED2c (ORCPT
+	id S1752006Ab3FEDcX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 23:32:23 -0400
+Received: from [205.204.113.251] ([205.204.113.251]:32878 "HELO
+	us-alimail-mta2.hst.scl.en.alidc.net." rhost-flags-FAIL-FAIL-FAIL-FAIL)
+	by vger.kernel.org with SMTP id S1750808Ab3FEDcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 23:28:32 -0400
-X-Spam-Score: -100.8
-Message-ID: <51AE89DE.60106@asianux.com>
-Date: Wed, 05 Jun 2013 08:44:14 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 4 Jun 2013 23:32:20 -0400
+X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Jun 2013 23:32:19 EDT
+Message-ID: <51AEAFF8.8030704@taobao.com>
+Date: Wed, 05 Jun 2013 11:26:48 +0800
+From: sanbai <sanbai@taobao.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: David Laight <David.Laight@ACULAB.COM>
-CC: Andy Shevchenko <andy.shevchenko@gmail.com>, edumazet@google.com,
-        Pravin Shelar <pshelar@nicira.com>, mgorman@suse.de,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: Re: [PATCH v2] include/linux/skbuff.h: using '(u16) ~0U' instead
- of '~0U'
-References: <51A6EBC5.7040601@asianux.com> <CAHp75VfWvXkaoYQ_40idSsLYUA=YqaswnV2y-hODHjt7JMHQvQ@mail.gmail.com> <51AC60AA.8010107@asianux.com> <CAHp75Vc19Kii7_TF+9aF4ZeKAa4_92DCVL+u1duZDTu38o2qsw@mail.gmail.com> <51AC7546.4010002@asianux.com> <51AC7CD4.2060801@asianux.com> <AE90C24D6B3A694183C094C60CF0A2F6026B7262@saturn3.aculab.com> <AE90C24D6B3A694183C094C60CF0A2F6026B7263@saturn3.aculab.com>
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7263@saturn3.aculab.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org, Zhu Yanhai <gaoyang.zyh@taobao.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Tao Ma <taoma.tm@gmail.com>, kent.overstreet@gmail.com
+Subject: Re: [RFC v1] add new io-scheduler to use cgroup on high-speed device
+References: <1370398171-25173-1-git-send-email-sanbai@taobao.com> <20130605030337.GO14916@htj.dyndns.org>
+In-Reply-To: <20130605030337.GO14916@htj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2013 08:47 PM, David Laight wrote:
->>> +#define SKB_HEADER_UNSET_16	((unsigned short) ~0U)
->>> > > +
->> > 
->> > The _16 part isn't really correct, the type could be changed
->> > and then it would be wrong.
->> > 
->> > I think I might have used SKB_HEADER_OFFSET.
-> I meant SKB_HEADER_UNSET_OFFSET or SKB_HEADER_OFFSET_UNSET
-> 
+On 2013年06月05日 11:03, Tejun Heo wrote:
+> (cc'ing Kent.  Original posting at
+>   http://thread.gmane.org/gmane.linux.kernel/1502484 )
+>
+> Hello,
+>
+> On Wed, Jun 05, 2013 at 10:09:31AM +0800, Robin Dong wrote:
+>> We want to use blkio.cgroup on high-speed device (like fusionio) for our mysql clusters.
+>> After testing different io-scheduler, we found that  cfq is too slow and deadline can't run on cgroup.
+>> So we developed a new io-scheduler: tpps (Tiny Parallel Proportion Scheduler).It dispatch requests
+>> only by using their individual weight and total weight (proportion) therefore it's simply and efficient.
+>>
+>> Test case: fusionio card, 4 cgroups, iodepth-512
+> So, while I understand the intention behind it, I'm not sure a
+> separate io-sched for this is what we want.  Kent and Jens have been
+> thinking about this lately so they'll probably chime in.  From my POV,
+> I see a few largish issues.
+>
+> * It has to be scalable with relatively large scale SMP / NUMA
+>    configurations.  It better integrate with blk-mq support currently
+>    being brewed.
+Ok, I will go on to look Jens's blk-mq branch.
 
-It sound good, I choose the 2nd: 'SKB_HEADER_OFFSET_UNSET', for it may
-be a 'noun', not a 'sentence'.
+>
+> * It definitely has to support hierarchy.  Nothing which doesn't
+>    support full hierarchy can be added to cgroup at this point.
+Thanks for your note, hierarchy supporting will be added in my next 
+version patch.
+>
+> * We already have separate implementations in blk-throtl and
+>    cfq-iosched.  Maybe it's too late and too different for cfq-iosched
+>    given that it's primarily targeted at disks, but I wonder whether we
+>    can make blk-throtl generic and scalable enough to cover all other
+>    use cases.
+I have the same feeling. Let's wait other person's response.
+>
+> Thanks.
+>
 
-I will send patch v3 (also use '__u16' instead of 'unsigned short')
 
-
-Thanks.
 -- 
-Chen Gang
 
-Asianux Corporation
+Robin Dong
+董昊（花名：三百）
+阿里巴巴 集团 核心系统部 内核组
+分机：72370
+手机：13520865473
+email：sanbai@taobao.com
+
