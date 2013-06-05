@@ -1,46 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab3FEOyH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 10:54:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54196 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755974Ab3FEOyD (ORCPT
+	id S1756200Ab3FEOyd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 10:54:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27215 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755694Ab3FEOya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 10:54:03 -0400
-Date: Wed, 5 Jun 2013 16:53:13 +0200
-From: Jens Axboe <axboe@kernel.dk>
-To: hari krishnan <p.harikrishnan22@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Bug found in block/scsi_ioctl.c
-Message-ID: <20130605145313.GC32665@kernel.dk>
-References: <CANk961ZtHzC0cyzGc9WxC9mvqmHpixRKsavuMGMzeuLe+QA5TQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANk961ZtHzC0cyzGc9WxC9mvqmHpixRKsavuMGMzeuLe+QA5TQ@mail.gmail.com>
+	Wed, 5 Jun 2013 10:54:30 -0400
+X-Authority-Analysis: v=2.0 cv=Et5QXFgA c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=pOOK0n4x9skA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=U0Jj00tbnlYA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=J8b0nuACsjpp0o9fA58A:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1370444067.9844.21.camel@gandalf.local.home>
+Subject: Re: [07/65] dm bufio: avoid a possible __vmalloc deadlock
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org, stable@kernel.org,
+        Alasdair G Kergon <agk@redhat.com>
+Date: Wed, 05 Jun 2013 10:54:27 -0400
+In-Reply-To: <Pine.LNX.4.64.1306040858060.22591@file.rdu.redhat.com>
+References: <20130603221016.243553628@goodmis.org>
+	 <20130603221153.315507011@goodmis.org>
+	 <Pine.LNX.4.64.1306040858060.22591@file.rdu.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05 2013, hari krishnan wrote:
-> I got a kernel crash, and dump is pointing to "IP: [<ffffffff81260e86>]
-> sg_scsi_ioctl+0x166/0x3b0".
+On Tue, 2013-06-04 at 08:59 -0400, Mikulas Patocka wrote:
+> > +	 */
+> > +
+> > +	if (gfp_mask & __GFP_NORETRY) {
+> > +		noio_flag = current->flags;
 > 
-> Test case:  *I was just deleting few NPIV port to which some of LUN's where
-> exported, after sometime I was running parted on some devices"*
+> There should be noio_flag = current->flags & PF_MEMALLOC; because we don't 
+> want to restore other flags.
 > 
-> The crash is in sg_scsi_ioctl of block/scsi_ioctl.c.
-> From code and dump it seems sg_scsi_ioctl is allocating request by calling
-> blk_get_request and assuming it will never fail, but it will fail if device
-> is dead, here in this case some of SCSI devices are dead.
 
-It's a known bug, Joe Lawrence has posted a patch to fix it up that will
-be muscled into 3.10.
+Here's the updated version:
 
-Can you give it a go?
+Thanks,
 
-http://www.spinics.net/lists/linux-scsi/msg66294.html
+-- Steve
 
+
+>From e265a702cb479f58f451ec4458a26dd2bebeedab Mon Sep 17 00:00:00 2001
+From: Mikulas Patocka <mpatocka@redhat.com>
+Date: Fri, 10 May 2013 14:37:15 +0100
+Subject: [PATCH] dm bufio: avoid a possible __vmalloc deadlock
+
+[ Upstream commit 502624bdad3dba45dfaacaf36b7d83e39e74b2d2 ]
+
+This patch uses memalloc_noio_save to avoid a possible deadlock in
+dm-bufio.  (it could happen only with large block size, at most
+PAGE_SIZE << MAX_ORDER (typically 8MiB).
+
+__vmalloc doesn't fully respect gfp flags. The specified gfp flags are
+used for allocation of requested pages, structures vmap_area, vmap_block
+and vm_struct and the radix tree nodes.
+
+However, the kernel pagetables are allocated always with GFP_KERNEL.
+Thus the allocation of pagetables can recurse back to the I/O layer and
+cause a deadlock.
+
+This patch uses the function memalloc_noio_save to set per-process
+PF_MEMALLOC_NOIO flag and the function memalloc_noio_restore to restore
+it. When this flag is set, all allocations in the process are done with
+implied GFP_NOIO flag, thus the deadlock can't happen.
+
+This should be backported to stable kernels, but they don't have the
+PF_MEMALLOC_NOIO flag and memalloc_noio_save/memalloc_noio_restore
+functions. So, PF_MEMALLOC should be set and restored instead.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: stable@kernel.org
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+[ Set and clear PF_MEMALLOC manually - SR ]
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/md/dm-bufio.c |   26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
+index c0fc827..e9097af 100644
+--- a/drivers/md/dm-bufio.c
++++ b/drivers/md/dm-bufio.c
+@@ -321,6 +321,9 @@ static void __cache_size_refresh(void)
+ static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
+ 			       enum data_mode *data_mode)
+ {
++	unsigned noio_flag;
++	void *ptr;
++
+ 	if (c->block_size <= DM_BUFIO_BLOCK_SIZE_SLAB_LIMIT) {
+ 		*data_mode = DATA_MODE_SLAB;
+ 		return kmem_cache_alloc(DM_BUFIO_CACHE(c), gfp_mask);
+@@ -334,7 +337,28 @@ static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
+ 	}
+ 
+ 	*data_mode = DATA_MODE_VMALLOC;
+-	return __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
++
++	/*
++	 * __vmalloc allocates the data pages and auxiliary structures with
++	 * gfp_flags that were specified, but pagetables are always allocated
++	 * with GFP_KERNEL, no matter what was specified as gfp_mask.
++	 *
++	 * Consequently, we must set per-process flag PF_MEMALLOC_NOIO so that
++	 * all allocations done by this process (including pagetables) are done
++	 * as if GFP_NOIO was specified.
++	 */
++
++	if (gfp_mask & __GFP_NORETRY) {
++		noio_flag = current->flags & PF_MEMALLOC;
++		current->flags |= PF_MEMALLOC;
++	}
++
++	ptr = __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
++
++	if (gfp_mask & __GFP_NORETRY)
++		current->flags = (current->flags & ~PF_MEMALLOC) | noio_flag;
++
++	return ptr;
+ }
+ 
+ /*
 -- 
-Jens Axboe
+1.7.10.4
+
+
 
