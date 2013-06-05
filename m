@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751243Ab3FEEm4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 00:42:56 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:34331 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab3FEEmy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 00:42:54 -0400
-Message-ID: <51AEC1C3.1040804@linux.vnet.ibm.com>
-Date: Wed, 05 Jun 2013 12:42:43 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1751297Ab3FEEqb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 00:46:31 -0400
+Received: from ozlabs.org ([203.10.76.45]:60896 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750919Ab3FEEq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 00:46:26 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Ben Greear <greearb@candelatech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>
+Subject: Re: 3.9.x:  Possible race related to stop_machine leads to lockup.
+In-Reply-To: <51AE667F.6030702@candelatech.com>
+References: <51AE5998.2060204@candelatech.com> <51AE667F.6030702@candelatech.com>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Wed, 05 Jun 2013 14:11:39 +0930
+Message-ID: <87mwr5rwxo.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: mingo@redhat.com, peterz@infradead.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com
-Subject: Re: [PATCH 1/2] sched: Optimize build_sched_domains() for saving
- first SD node for a cpu
-References: <d226c91fed3dfa2dca644d14c88b1d1ff9d2e722.1370344689.git.viresh.kumar@linaro.org>
-In-Reply-To: <d226c91fed3dfa2dca644d14c88b1d1ff9d2e722.1370344689.git.viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060504-3864-0000-0000-00000875C817
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Viresh
+Ben Greear <greearb@candelatech.com> writes:
+> On 06/04/2013 02:18 PM, Ben Greear wrote:
+>> I've been trying to figure out why I see the migration/* processes
+>> hang in a busy loop....
+>>
+>> While reading the stop_machine.c file, I think I might have an
+>> answer.
+>>
+>> The set_state() method sets the thread_ack to the current number
+>> of threads.  Each thread's state machine then decrements it down to
+>> zero where it bumps the state to the next level.  This lets each
+>> cpu stop in lock-step it seems.
+>>
+>> But, from what I can tell, the __stop_machine() method can
+>> (re)set the state to STOPMACHINE_PREPARE while the migration
+>> processes are in their loop.  That would explain why they sometimes
+>> loop forever.
+>>
+>> Does this make sense?
+>
+> Err, no..that doesn't make sense.  'smdata' is on the stack.
+>
+> More printk debugging makes it look like one thread just
+> never notices that smdata->state has been updated by another
+> thread.
+>
+> There is this comment..maybe cpu_relax only does the chill out part
+> and we need something else to make sure smdata->state is freshly
+> read from the other CPU's cache?
+>
+> 		/* Chill out and ensure we re-read stopmachine_state. */
+> 		cpu_relax();
+> 		if (smdata->state != curstate) {
+>
+> Gah..way out of my league :P
 
-On 06/04/2013 07:20 PM, Viresh Kumar wrote:
-[snip]
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 58453b8..638f6cb 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -6533,16 +6533,13 @@ static int build_sched_domains(const struct cpumask *cpu_map,
->  		sd = NULL;
->  		for (tl = sched_domain_topology; tl->init; tl++) {
->  			sd = build_sched_domain(tl, &d, cpu_map, attr, sd, i);
-> +			if (!*per_cpu_ptr(d.sd, i))
+What architecture?  Maybe someone didn't get the memo; cpu_relax()
+should be a read barrier.
 
-What about:
-			if (tl == sched_domain_topology)
-
-It cost less than per_cpu_ptr(), isn't it?
-
-Regards,
-Michael Wang
-
-> +				*per_cpu_ptr(d.sd, i) = sd;
->  			if (tl->flags & SDTL_OVERLAP || sched_feat(FORCE_SD_OVERLAP))
->  				sd->flags |= SD_OVERLAP;
->  			if (cpumask_equal(cpu_map, sched_domain_span(sd)))
->  				break;
->  		}
-> -
-> -		while (sd->child)
-> -			sd = sd->child;
-> -
-> -		*per_cpu_ptr(d.sd, i) = sd;
->  	}
-> 
->  	/* Build the groups for the domains */
-> 
-
+Cheers,
+Rusty.
