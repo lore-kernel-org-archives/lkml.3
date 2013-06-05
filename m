@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757403Ab3FEUAA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 16:00:00 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:49790 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757276Ab3FET76 (ORCPT
+	id S1757478Ab3FEUFB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 16:05:01 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:54524 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757286Ab3FEUE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 15:59:58 -0400
-Date: Wed, 5 Jun 2013 20:59:53 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: "Fleming, Matt" <matt.fleming@intel.com>, joeyli <jlee@suse.com>,
-        "rja@sgi.com" <rja@sgi.com>, "mingo@kernel.org" <mingo@kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "bp@alien8.de" <bp@alien8.de>, "jkosina@suse.cz" <jkosina@suse.cz>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "oneukum@suse.de" <oneukum@suse.de>
-Subject: Re: [PATCH] Modify UEFI anti-bricking code
-Message-ID: <20130605195953.GD30420@console-pimps.org>
-References: <1370117180-1712-1-git-send-email-matthew.garrett@nebula.com>
- <1370276021.30695.4.camel@linux-s257.site>
- <1370277079.6315.14.camel@x230.lan>
- <1370316933.30695.7.camel@linux-s257.site>
- <CAL01qptzxe5L6Vq+nBZLq+bQNxbe_i_2OdKMNJGZQDfMihaHOw@mail.gmail.com>
- <1370444007.6315.32.camel@x230.lan>
- <20130605155904.GC30420@console-pimps.org>
- <1370448519.6315.36.camel@x230.lan>
+	Wed, 5 Jun 2013 16:04:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370448519.6315.36.camel@x230.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1369489718-25869-5-git-send-email-jiang.liu@huawei.com>
+References: <1369489718-25869-1-git-send-email-jiang.liu@huawei.com> <1369489718-25869-5-git-send-email-jiang.liu@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 5 Jun 2013 14:04:36 -0600
+Message-ID: <CAErSpo5bysp-s-twUWgZEyJD01skjW=vXkcQBYkn_TALP83r1g@mail.gmail.com>
+Subject: Re: [PATCH v3, part1 04/10] PCI: mark pci_scan_bus_parented() as __deprecated
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        xen-devel <xen-devel@lists.xensource.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 05 Jun, at 04:08:39PM, Matthew Garrett wrote:
-> On Wed, 2013-06-05 at 16:59 +0100, Matt Fleming wrote:
-> 
-> > +	/* clean DUMMY object */
-> > +	efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID, 0, 0, NULL);
-> 
-> Hm. Actually, is that going to work? From the spec:
-> 
-> If a preexisting variable is rewritten with different attributes,
-> SetVariable()shall not modify the variable and shall return
-> EFI_INVALID_PARAMETER. 
-> 
-> So I think we probably need to fix the attributes to NV|RT|BS for both
-> this call and the one in query_variable_store. We should probably also
-> only do the workaround if the NV bit is set in the original query.
+[+cc Konrad, Jeremy, xen-devel (users of interface you're deprecating)]
 
-Yeah, that looks wrong.
+On Sat, May 25, 2013 at 7:48 AM, Jiang Liu <liuj97@gmail.com> wrote:
+> Mark pci_scan_bus_parented() as __deprecated and clean up outdated
+> comments.
+>
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Thierry Reding <thierry.reding@avionic-design.de>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  arch/tile/kernel/pci.c | 3 ---
+>  include/linux/pci.h    | 4 ++--
+>  2 files changed, 2 insertions(+), 5 deletions(-)
+>
+> diff --git a/arch/tile/kernel/pci.c b/arch/tile/kernel/pci.c
+> index 67237d3..936e087 100644
+> --- a/arch/tile/kernel/pci.c
+> +++ b/arch/tile/kernel/pci.c
+> @@ -309,9 +309,6 @@ int __init pcibios_init(void)
+>                          *
+>                          * It reads the PCI tree for this bus into the Linux
+>                          * data structures.
+> -                        *
+> -                        * This is inlined in linux/pci.h and calls into
+> -                        * pci_scan_bus_parented() in probe.c.
+>                          */
+>                         pci_add_resource(&resources, &ioport_resource);
+>                         pci_add_resource(&resources, &iomem_resource);
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index b0f4a82..7b23fa0 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -720,8 +720,8 @@ void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
+>  void pcibios_scan_specific_bus(int busn);
+>  struct pci_bus *pci_find_bus(int domain, int busnr);
+>  void pci_bus_add_devices(const struct pci_bus *bus);
+> -struct pci_bus *pci_scan_bus_parented(struct device *parent, int bus,
+> -                                     struct pci_ops *ops, void *sysdata);
+> +struct pci_bus * __deprecated pci_scan_bus_parented(struct device *parent,
+> +                       int bus, struct pci_ops *ops, void *sysdata);
+>  struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops, void *sysdata);
+>  struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+>                                     struct pci_ops *ops, void *sysdata,
 
-Joey, care to resend an updated patch?
+I think this patch is a good idea, but I think we need to change the
+only existing user of pci_scan_bus_parented() (pcifront_scan_root() in
+drivers/pci/xen-pcifront.c) at the same time, so xen doesn't start
+getting build warnings.  The deprecation warnings are really intended
+for out-of-tree users that we aren't able to fix ourselves.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+I'm getting this series queued up in
+http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/jiang-bus-lock-v3,
+so if you want to send a patch just for xen, I can fold that in.
+
+Bjorn
