@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933344Ab3FEVyI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:54:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37889 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932890Ab3FEVfn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932892Ab3FEVfn (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 5 Jun 2013 17:35:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37847 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932845Ab3FEVfi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 17:35:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 059/127] x86, range: fix missing merge during add range
-Date: Wed,  5 Jun 2013 14:33:46 -0700
-Message-Id: <20130605213224.734296307@linuxfoundation.org>
+        Veaceslav Falico <vfalico@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Ben Greear <greearb@candelatech.com>
+Subject: [ 061/127] module: dont unlink the module until weve removed all exposure.
+Date: Wed,  5 Jun 2013 14:33:48 -0700
+Message-Id: <20130605213224.923715222@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,63 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Rusty Russell <rusty@rustcorp.com.au>
 
-commit fbe06b7bae7c9cf6ab05168fce5ee93b2f4bae7c upstream.
+commit 944a1fa01266aa9ace607f29551b73c41e9440e9 upstream.
 
-Christian found v3.9 does not work with E350 with EFI is enabled.
+Otherwise we get a race between unload and reload of the same module:
+the new module doesn't see the old one in the list, but then fails because
+it can't register over the still-extant entries in sysfs:
 
-[    1.658832] Trying to unpack rootfs image as initramfs...
-[    1.679935] BUG: unable to handle kernel paging request at ffff88006e3fd000
-[    1.686940] IP: [<ffffffff813661df>] memset+0x1f/0xb0
-[    1.692010] PGD 1f77067 PUD 1f7a067 PMD 61420067 PTE 0
+ [  103.981925] ------------[ cut here ]------------
+ [  103.986902] WARNING: at fs/sysfs/dir.c:536 sysfs_add_one+0xab/0xd0()
+ [  103.993606] Hardware name: CrownBay Platform
+ [  103.998075] sysfs: cannot create duplicate filename '/module/pch_gbe'
+ [  104.004784] Modules linked in: pch_gbe(+) [last unloaded: pch_gbe]
+ [  104.011362] Pid: 3021, comm: modprobe Tainted: G        W    3.9.0-rc5+ #5
+ [  104.018662] Call Trace:
+ [  104.021286]  [<c103599d>] warn_slowpath_common+0x6d/0xa0
+ [  104.026933]  [<c1168c8b>] ? sysfs_add_one+0xab/0xd0
+ [  104.031986]  [<c1168c8b>] ? sysfs_add_one+0xab/0xd0
+ [  104.037000]  [<c1035a4e>] warn_slowpath_fmt+0x2e/0x30
+ [  104.042188]  [<c1168c8b>] sysfs_add_one+0xab/0xd0
+ [  104.046982]  [<c1168dbe>] create_dir+0x5e/0xa0
+ [  104.051633]  [<c1168e78>] sysfs_create_dir+0x78/0xd0
+ [  104.056774]  [<c1262bc3>] kobject_add_internal+0x83/0x1f0
+ [  104.062351]  [<c126daf6>] ? kvasprintf+0x46/0x60
+ [  104.067231]  [<c1262ebd>] kobject_add_varg+0x2d/0x50
+ [  104.072450]  [<c1262f07>] kobject_init_and_add+0x27/0x30
+ [  104.078075]  [<c1089240>] mod_sysfs_setup+0x80/0x540
+ [  104.083207]  [<c1260851>] ? module_bug_finalize+0x51/0xc0
+ [  104.088720]  [<c108ab29>] load_module+0x1429/0x18b0
 
-but early memtest report all memory could be accessed without problem.
+We can teardown sysfs first, then to be sure, put the state in
+MODULE_STATE_UNFORMED so it's ignored while we deconstruct it.
 
-early page table is set in following sequence:
-[    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
-[    0.000000] init_memory_mapping: [mem 0x6e600000-0x6e7fffff]
-[    0.000000] init_memory_mapping: [mem 0x6c000000-0x6e5fffff]
-[    0.000000] init_memory_mapping: [mem 0x00100000-0x6bffffff]
-[    0.000000] init_memory_mapping: [mem 0x6e800000-0x6ea07fff]
-but later efi_enter_virtual_mode try set mapping again wrongly.
-[    0.010644] pid_max: default: 32768 minimum: 301
-[    0.015302] init_memory_mapping: [mem 0x640c5000-0x6e3fcfff]
-that means it fails with pfn_range_is_mapped.
-
-It turns out that we have a bug in add_range_with_merge and it does not
-merge range properly when new add one fill the hole between two exsiting
-ranges. In the case when [mem 0x00100000-0x6bffffff] is the hole between
-[mem 0x00000000-0x000fffff] and [mem 0x6c000000-0x6e7fffff].
-
-Fix the add_range_with_merge by calling itself recursively.
-
-Reported-by: "Christian König" <christian.koenig@amd.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/CAE9FiQVofGoSk7q5-0irjkBxemqK729cND4hov-1QCBJDhxpgQ@mail.gmail.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Reported-by: Veaceslav Falico <vfalico@redhat.com>
+Tested-by: Veaceslav Falico <vfalico@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Ben Greear <greearb@candelatech.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/range.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ kernel/module.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/kernel/range.c
-+++ b/kernel/range.c
-@@ -48,9 +48,11 @@ int add_range_with_merge(struct range *r
- 		final_start = min(range[i].start, start);
- 		final_end = max(range[i].end, end);
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -1861,12 +1861,12 @@ static void free_module(struct module *m
+ {
+ 	trace_module_free(mod);
  
--		range[i].start = final_start;
--		range[i].end =  final_end;
--		return nr_range;
-+		/* clear it and add it back for further merge */
-+		range[i].start = 0;
-+		range[i].end =  0;
-+		return add_range_with_merge(range, az, nr_range,
-+			final_start, final_end);
- 	}
+-	/* Delete from various lists */
+-	mutex_lock(&module_mutex);
+-	stop_machine(__unlink_module, mod, NULL);
+-	mutex_unlock(&module_mutex);
+ 	mod_sysfs_teardown(mod);
  
- 	/* Need to add it: */
++	/* We leave it in list to prevent duplicate loads, but make sure
++	 * that noone uses it while it's being deconstructed. */
++	mod->state = MODULE_STATE_UNFORMED;
++
+ 	/* Remove dynamic debug info */
+ 	ddebug_remove_module(mod->name);
+ 
+@@ -1879,6 +1879,11 @@ static void free_module(struct module *m
+ 	/* Free any allocated parameters. */
+ 	destroy_params(mod->kp, mod->num_kp);
+ 
++	/* Now we can delete it from the lists */
++	mutex_lock(&module_mutex);
++	stop_machine(__unlink_module, mod, NULL);
++	mutex_unlock(&module_mutex);
++
+ 	/* This may be NULL, but that's OK */
+ 	unset_module_init_ro_nx(mod);
+ 	module_free(mod, mod->module_init);
 
 
