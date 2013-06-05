@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734Ab3FEHQd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 03:16:33 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:44007 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752098Ab3FEHQc (ORCPT
+	id S1752542Ab3FEHR7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 03:17:59 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:60988 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751908Ab3FEHR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 03:16:32 -0400
-Message-ID: <51AEE574.8040602@linux.vnet.ibm.com>
-Date: Wed, 05 Jun 2013 15:15:00 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] workqueue: code refine/clean for workqueue
+	Wed, 5 Jun 2013 03:17:58 -0400
+Date: Wed, 5 Jun 2013 00:17:54 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] workqueue: add a check point in
+ pwq_activate_delayed_work()
+Message-ID: <20130605071754.GA7303@mtj.dyndns.org>
 References: <51AEE452.8080605@linux.vnet.ibm.com>
-In-Reply-To: <51AEE452.8080605@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060507-5490-0000-0000-0000039673D0
+ <51AEE4A7.6050808@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51AEE4A7.6050808@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2013 03:10 PM, Michael Wang wrote:
-> Code refine/clean patch set for workqueue.
+On Wed, Jun 05, 2013 at 03:11:35PM +0800, Michael Wang wrote:
+> get_work_pwq() is possible to return NULL, add a check point for that in
+> the context inside pwq_activate_delayed_work().
 > 
-> Michael Wang (3):
-> 	[PATCH 1/3] workqueue: move the internal helper from .h to .c
-> 	[PATCH 2/3] workqueue: remove the unused helper in .h
-> 	[PATCH 3/3] workqueue: add a check point in pwq_activate_delayed_work()
-	[PATCH 4/3] workqueue: code refine in wqattrs_equal()
-
-Lost one...
-
-Regards,
-Michael Wang
-
-> 
+> CC: Tejun Heo <tj@kernel.org>
+> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
 > ---
->  b/include/linux/workqueue.h |    5 -----
->  b/kernel/workqueue.c        |    5 +++++
->  include/linux/workqueue.h   |   27 ---------------------------
->  kernel/workqueue.c          |    6 +++---
->  4 files changed, 8 insertions(+), 35 deletions(-)
+>  kernel/workqueue.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index ee8e29a..ea2ec38 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -1072,6 +1072,7 @@ static void put_pwq_unlocked(struct pool_workqueue *pwq)
+>  static void pwq_activate_delayed_work(struct work_struct *work)
+>  {
+>  	struct pool_workqueue *pwq = get_work_pwq(work);
+> +	BUG_ON(!pwq);
 
+pwq deref right below is gonna crash anyway and it's not like that
+crash is gonna difficult to identify.  How is this an improvement?
+
+Thanks.
+
+-- 
+tejun
