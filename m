@@ -1,206 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035Ab3FECzM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 22:55:12 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:37358 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750905Ab3FECzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 22:55:09 -0400
-From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-embedded@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-Subject: [PATCH] ext4: Reduce object size when !CONFIG_PRINTK
-Date: Tue,  4 Jun 2013 19:55:05 -0700
-Message-Id: <a629c1c6359886419e24179dbb04484a88e6b0f2.1370400427.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+	id S1752604Ab3FECzS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 22:55:18 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:28605 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044Ab3FECzN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 22:55:13 -0400
+X-Spam-Score: -99.9
+Message-ID: <51AE8FEF.1020809@asianux.com>
+Date: Wed, 05 Jun 2013 09:10:07 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: [PATCH] arch/*/asm/include/bitops.h: api issue, find_*_bit() defination
+ are different with each other
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduce the object size ~10% could be useful for embedded
-systems.
 
-Add #ifdef CONFIG_PRINTK #else #endif blocks
-to hold formats and arguments, passing " " to
-functions when !CONFIG_PRINTK and still verifying
-format and arguments with no_printk.
+For arm and m68k, they customize find_*_bit(), but the API is different
+with 'generic'.
 
-$ size fs/ext4/built-in.o*
-   text	   data	    bss	    dec	    hex	filename
- 239375	    610	    888	 240873	  3ace9	fs/ext4/built-in.o.new
- 264167	    738	    888	 265793	  40e41	fs/ext4/built-in.o.old
+avr32, s390, and unicore32 also customize find_*_bit(), but the API is
+the same with 'generic', and the left architectures all use 'generic'.
 
-    $ grep -E "CONFIG_EXT4|CONFIG_PRINTK" .config
-    # CONFIG_PRINTK is not set
-    CONFIG_EXT4_FS=y
-    CONFIG_EXT4_USE_FOR_EXT23=y
-    CONFIG_EXT4_FS_POSIX_ACL=y
-    # CONFIG_EXT4_FS_SECURITY is not set
-    # CONFIG_EXT4_DEBUG is not set
+So need change arm and m68k related API to match the 'generic', then
+all another modules can face same public API for various architectures.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+Also beautify code and comments to pass "./scripts/checkpatch.pl"
+
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 ---
- fs/ext4/ext4.h  | 80 +++++++++++++++++++++++++++++++++++++++++++++++----------
- fs/ext4/super.c | 15 ++++++-----
- 2 files changed, 75 insertions(+), 20 deletions(-)
+ arch/arm/include/asm/bitops.h  |   26 ++++++++++++++++++--------
+ arch/arm/lib/findbit.S         |   14 ++++++++++----
+ arch/m68k/include/asm/bitops.h |   25 ++++++++++++++-----------
+ 3 files changed, 42 insertions(+), 23 deletions(-)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 019db3c..f4baeb06 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2164,42 +2164,96 @@ extern int ext4_alloc_flex_bg_array(struct super_block *sb,
- 				    ext4_group_t ngroup);
- extern const char *ext4_decode_error(struct super_block *sb, int errno,
- 				     char nbuf[16]);
-+
- extern __printf(4, 5)
- void __ext4_error(struct super_block *, const char *, unsigned int,
- 		  const char *, ...);
--#define ext4_error(sb, message...)	__ext4_error(sb, __func__,	\
--						     __LINE__, ## message)
- extern __printf(5, 6)
--void ext4_error_inode(struct inode *, const char *, unsigned int, ext4_fsblk_t,
-+void __ext4_error_inode(struct inode *, const char *, unsigned int, ext4_fsblk_t,
- 		      const char *, ...);
- extern __printf(5, 6)
--void ext4_error_file(struct file *, const char *, unsigned int, ext4_fsblk_t,
-+void __ext4_error_file(struct file *, const char *, unsigned int, ext4_fsblk_t,
- 		     const char *, ...);
- extern void __ext4_std_error(struct super_block *, const char *,
- 			     unsigned int, int);
- extern __printf(4, 5)
- void __ext4_abort(struct super_block *, const char *, unsigned int,
- 		  const char *, ...);
--#define ext4_abort(sb, message...)	__ext4_abort(sb, __func__, \
--						       __LINE__, ## message)
- extern __printf(4, 5)
- void __ext4_warning(struct super_block *, const char *, unsigned int,
- 		    const char *, ...);
--#define ext4_warning(sb, message...)	__ext4_warning(sb, __func__, \
--						       __LINE__, ## message)
- extern __printf(3, 4)
--void ext4_msg(struct super_block *, const char *, const char *, ...);
-+void __ext4_msg(struct super_block *, const char *, const char *, ...);
- extern void __dump_mmp_msg(struct super_block *, struct mmp_struct *mmp,
- 			   const char *, unsigned int, const char *);
--#define dump_mmp_msg(sb, mmp, msg)	__dump_mmp_msg(sb, mmp, __func__, \
--						       __LINE__, msg)
- extern __printf(7, 8)
- void __ext4_grp_locked_error(const char *, unsigned int,
- 			     struct super_block *, ext4_group_t,
- 			     unsigned long, ext4_fsblk_t,
- 			     const char *, ...);
--#define ext4_grp_locked_error(sb, grp, message...) \
--	__ext4_grp_locked_error(__func__, __LINE__, (sb), (grp), ## message)
-+
-+#ifdef CONFIG_PRINTK
-+
-+#define ext4_error_inode(inode, func, line, block, fmt, ...)		\
-+	__ext4_error_inode(inode, func, line, block, fmt, ##__VA_ARGS__)
-+#define ext4_error_file(file, func, line, block, fmt, ...)		\
-+	__ext4_error_file(file, func, line, block, fmt, ##__VA_ARGS__)
-+#define ext4_error(sb, fmt, ...)					\
-+	__ext4_error(sb, __func__, __LINE__, fmt, ##__VA_ARGS__)
-+#define ext4_abort(sb, fmt, ...)					\
-+	__ext4_abort(sb, __func__, __LINE__, fmt, ##__VA_ARGS__)
-+#define ext4_warning(sb, fmt, ...)					\
-+	__ext4_warning(sb, __func__, __LINE__, fmt, ##__VA_ARGS__)
-+#define ext4_msg(sb, level, fmt, ...)				\
-+	__ext4_msg(sb, level, fmt, ##__VA_ARGS__)
-+#define dump_mmp_msg(sb, mmp, msg)					\
-+	__dump_mmp_msg(sb, mmp, __func__, __LINE__, msg)
-+#define ext4_grp_locked_error(sb, grp, ino, block, fmt, ...)		\
-+	__ext4_grp_locked_error(__func__, __LINE__, sb, grp, ino, block, \
-+				fmt, ##__VA_ARGS__)
-+
-+#else
-+
-+#define ext4_error_inode(inode, func, line, block, fmt, ...)		\
-+do {									\
-+	no_printk(fmt, ##__VA_ARGS__);					\
-+	__ext4_error_inode(inode, "", 0, block, " ");			\
-+} while (0)
-+#define ext4_error_file(file, func, line, block, fmt, ...)		\
-+do {									\
-+	no_printk(fmt, ##__VA_ARGS__);					\
-+	__ext4_error_file(file, "", 0, block, " ");			\
-+} while (0)
-+#define ext4_error(sb, fmt, ...)					\
-+do {									\
-+	no_printk(fmt, ##__VA_ARGS__);					\
-+	__ext4_error(sb, "", 0, " ");					\
-+} while (0)
-+#define ext4_abort(sb, fmt, ...)					\
-+do {									\
-+	no_printk(fmt, ##__VA_ARGS__);					\
-+	__ext4_abort(sb, "", 0, " ");					\
-+} while (0)
-+#define ext4_warning(sb, fmt, ...)					\
-+do {									\
-+	no_printk(fmt, ##__VA_ARGS__);					\
-+	__ext4_warning(sb, "", 0, " ");					\
-+} while (0)
-+#define ext4_msg(sb, level, fmt, ...)					\
-+do {									\
-+	no_printk(fmt, ##__VA_ARGS__);					\
-+	__ext4_msg(sb, "", " ");					\
-+} while (0)
-+#define dump_mmp_msg(sb, mmp, msg)					\
-+	__dump_mmp_msg(sb, mmp, "", 0, "")
-+#define ext4_grp_locked_error(sb, grp, ino, block, fmt, ...)		\
-+do {									\
-+	no_printk(fmt, ##__VA_ARGS__);				\
-+	__ext4_grp_locked_error("", 0, sb, grp, ino, block, " ");	\
-+} while (0)
-+
-+#endif
-+
- extern void ext4_update_dynamic_rev(struct super_block *sb);
- extern int ext4_update_compat_feature(handle_t *handle, struct super_block *sb,
- 					__u32 compat);
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index a9c1438..2e2825b 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -422,9 +422,9 @@ void __ext4_error(struct super_block *sb, const char *function,
- 	ext4_handle_error(sb);
- }
- 
--void ext4_error_inode(struct inode *inode, const char *function,
--		      unsigned int line, ext4_fsblk_t block,
--		      const char *fmt, ...)
-+void __ext4_error_inode(struct inode *inode, const char *function,
-+			unsigned int line, ext4_fsblk_t block,
-+			const char *fmt, ...)
+diff --git a/arch/arm/include/asm/bitops.h b/arch/arm/include/asm/bitops.h
+index e691ec9..10566c8 100644
+--- a/arch/arm/include/asm/bitops.h
++++ b/arch/arm/include/asm/bitops.h
+@@ -161,18 +161,28 @@ extern int _test_and_change_bit(int nr, volatile
+unsigned long * p);
+ /*
+  * Little endian assembly bitops.  nr = 0 -> byte 0 bit 0.
+  */
+-extern int _find_first_zero_bit_le(const void * p, unsigned size);
+-extern int _find_next_zero_bit_le(const void * p, int size, int offset);
+-extern int _find_first_bit_le(const unsigned long *p, unsigned size);
+-extern int _find_next_bit_le(const unsigned long *p, int size, int offset);
++extern unsigned long  _find_first_zero_bit_le(const void *p,
++						unsigned long size);
++extern unsigned long _find_next_zero_bit_le(const void *p, unsigned
+long size,
++						unsigned long offset);
++extern unsigned long _find_first_bit_le(const unsigned long *p,
++						unsigned long size);
++extern unsigned long _find_next_bit_le(const unsigned long *p,
++						unsigned long size,
++						unsigned long offset);
+
+ /*
+  * Big endian assembly bitops.  nr = 0 -> byte 3 bit 0.
+  */
+-extern int _find_first_zero_bit_be(const void * p, unsigned size);
+-extern int _find_next_zero_bit_be(const void * p, int size, int offset);
+-extern int _find_first_bit_be(const unsigned long *p, unsigned size);
+-extern int _find_next_bit_be(const unsigned long *p, int size, int offset);
++extern unsigned long _find_first_zero_bit_be(const void *p,
++						unsigned long size);
++extern unsigned long _find_next_zero_bit_be(const void *p, unsigned
+long size,
++						unsigned long offset);
++extern unsigned long _find_first_bit_be(const unsigned long *p,
++						unsigned long size);
++extern unsigned long _find_next_bit_be(const unsigned long *p,
++						unsigned long size,
++						unsigned long offset);
+
+ #ifndef CONFIG_SMP
+ /*
+diff --git a/arch/arm/lib/findbit.S b/arch/arm/lib/findbit.S
+index 64f6bc1..9e3263a 100644
+--- a/arch/arm/lib/findbit.S
++++ b/arch/arm/lib/findbit.S
+@@ -19,7 +19,8 @@
+
+ /*
+  * Purpose  : Find a 'zero' bit
+- * Prototype: int find_first_zero_bit(void *addr, unsigned int maxbit);
++ * Prototype: unsigned long  find_first_zero_bit(const void *p,
++ *						unsigned long size);
+  */
+ ENTRY(_find_first_zero_bit_le)
+ 		teq	r1, #0	
+@@ -40,7 +41,9 @@ ENDPROC(_find_first_zero_bit_le)
+
+ /*
+  * Purpose  : Find next 'zero' bit
+- * Prototype: int find_next_zero_bit(void *addr, unsigned int maxbit,
+int offset)
++ * Prototype: unsigned long find_next_zero_bit(const void *p,
++ *						unsigned long size,
++ *						unsigned long offset);
+  */
+ ENTRY(_find_next_zero_bit_le)
+ 		teq	r1, #0
+@@ -60,7 +63,8 @@ ENDPROC(_find_next_zero_bit_le)
+
+ /*
+  * Purpose  : Find a 'one' bit
+- * Prototype: int find_first_bit(const unsigned long *addr, unsigned
+int maxbit);
++ * Prototype: unsigned long find_first_bit(const unsigned long *p,
++ *					unsigned long size);
+  */
+ ENTRY(_find_first_bit_le)
+ 		teq	r1, #0	
+@@ -81,7 +85,9 @@ ENDPROC(_find_first_bit_le)
+
+ /*
+  * Purpose  : Find next 'one' bit
+- * Prototype: int find_next_zero_bit(void *addr, unsigned int maxbit,
+int offset)
++ * Prototype: unsigned long find_next_bit(const unsigned long *p,
++ *					unsigned long size,
++ *					unsigned long offset);
+  */
+ ENTRY(_find_next_bit_le)
+ 		teq	r1, #0
+diff --git a/arch/m68k/include/asm/bitops.h b/arch/m68k/include/asm/bitops.h
+index c6baa91..b1d8752 100644
+--- a/arch/m68k/include/asm/bitops.h
++++ b/arch/m68k/include/asm/bitops.h
+@@ -320,11 +320,11 @@ static inline int
+bfchg_mem_test_and_change_bit(int nr,
+ #include <asm-generic/bitops/ffz.h>
+ #else
+
+-static inline int find_first_zero_bit(const unsigned long *vaddr,
+-				      unsigned size)
++static inline unsigned long find_first_zero_bit(const unsigned long *vaddr,
++				      unsigned long size)
  {
- 	va_list args;
- 	struct va_format vaf;
-@@ -451,9 +451,9 @@ void ext4_error_inode(struct inode *inode, const char *function,
- 	ext4_handle_error(inode->i_sb);
+ 	const unsigned long *p = vaddr;
+-	int res = 32;
++	unsigned int res = 32;
+ 	unsigned int words;
+ 	unsigned long num;
+
+@@ -346,11 +346,12 @@ out:
  }
- 
--void ext4_error_file(struct file *file, const char *function,
--		     unsigned int line, ext4_fsblk_t block,
--		     const char *fmt, ...)
-+void __ext4_error_file(struct file *file, const char *function,
-+		       unsigned int line, ext4_fsblk_t block,
-+		       const char *fmt, ...)
+ #define find_first_zero_bit find_first_zero_bit
+
+-static inline int find_next_zero_bit(const unsigned long *vaddr, int size,
+-				     int offset)
++static inline unsigned long find_next_zero_bit(const unsigned long *vaddr,
++						unsigned long size,
++						unsigned long offset)
  {
- 	va_list args;
- 	struct va_format vaf;
-@@ -580,7 +580,8 @@ void __ext4_abort(struct super_block *sb, const char *function,
- 		panic("EXT4-fs panic from previous error\n");
+ 	const unsigned long *p = vaddr + (offset >> 5);
+-	int bit = offset & 31UL, res;
++	unsigned int bit = offset & 31UL, res;
+
+ 	if (offset >= size)
+ 		return size;
+@@ -376,10 +377,11 @@ static inline int find_next_zero_bit(const
+unsigned long *vaddr, int size,
  }
- 
--void ext4_msg(struct super_block *sb, const char *prefix, const char *fmt, ...)
-+void __ext4_msg(struct super_block *sb,
-+		const char *prefix, const char *fmt, ...)
+ #define find_next_zero_bit find_next_zero_bit
+
+-static inline int find_first_bit(const unsigned long *vaddr, unsigned size)
++static inline unsigned long find_first_bit(const unsigned long *vaddr,
++						unsigned long size)
  {
- 	struct va_format vaf;
- 	va_list args;
+ 	const unsigned long *p = vaddr;
+-	int res = 32;
++	unsigned int res = 32;
+ 	unsigned int words;
+ 	unsigned long num;
+
+@@ -401,11 +403,12 @@ out:
+ }
+ #define find_first_bit find_first_bit
+
+-static inline int find_next_bit(const unsigned long *vaddr, int size,
+-				int offset)
++static inline unsigned long find_next_bit(const unsigned long *vaddr,
++						unsigned long size,
++						unsigned long offset)
+ {
+ 	const unsigned long *p = vaddr + (offset >> 5);
+-	int bit = offset & 31UL, res;
++	unsigned int bit = offset & 31UL, res;
+
+ 	if (offset >= size)
+ 		return size;
 -- 
-1.8.1.2.459.gbcd45b4.dirty
-
+1.7.7.6
