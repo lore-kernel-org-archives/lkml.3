@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756022Ab3FEOHI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 10:07:08 -0400
-Received: from mail-qe0-f46.google.com ([209.85.128.46]:43918 "EHLO
-	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755902Ab3FEOHG (ORCPT
+	id S1755942Ab3FEOJX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 10:09:23 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:18468 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751476Ab3FEOJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 10:07:06 -0400
-Date: Wed, 5 Jun 2013 10:07:03 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <pawel.moll@arm.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Jon Medhurst <tixy@linaro.org>, Achin Gupta <achin.gupta@arm.com>,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-Subject: Re: [RFC PATCH v2 2/2] drivers: mfd: vexpress: add Serial Power
- Controller (SPC) support
-In-Reply-To: <1370432767-6620-3-git-send-email-lorenzo.pieralisi@arm.com>
-Message-ID: <alpine.LFD.2.03.1306050956081.1200@syhkavp.arg>
-References: <1370432767-6620-1-git-send-email-lorenzo.pieralisi@arm.com> <1370432767-6620-3-git-send-email-lorenzo.pieralisi@arm.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	Wed, 5 Jun 2013 10:09:22 -0400
+Date: Wed, 5 Jun 2013 14:09:21 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: JoonSoo Kim <js1304@gmail.com>
+cc: Steven Rostedt <rostedt@goodmis.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <clark@redhat.com>, Pekka Enberg <penberg@kernel.org>
+Subject: Re: [RT LATENCY] 249 microsecond latency caused by slub's
+ unfreeze_partials() code.
+In-Reply-To: <CAAmzW4MakOx_SA6eA=BYP4rq76np4yOS6RANpNObQP6dDDqYQg@mail.gmail.com>
+Message-ID: <0000013f14aba791-b53199dd-c805-4644-9777-3916950e83e4-000000@email.amazonses.com>
+References: <1364010673.6345.156.camel@gandalf.local.home> <0000013da2ace21a-9e87fe8a-75c2-4b7c-b5e1-37ad196ce012-000000@email.amazonses.com> <1364234613.6345.184.camel@gandalf.local.home> <0000013da2ce20f8-0e3a64ef-67ed-4ab4-9f20-b77980c876c3-000000@email.amazonses.com>
+ <1364236355.6345.185.camel@gandalf.local.home> <20130327025957.GA17125@lge.com> <1364355032.6345.200.camel@gandalf.local.home> <20130327061351.GB17125@lge.com> <alpine.DEB.2.02.1303281227520.16200@gentwo.org> <0000013db20ca149-0064fbb8-2f81-4323-9095-a38f6abb79c5-000000@email.amazonses.com>
+ <1369751967.15552.12.camel@gandalf.local.home> <alpine.DEB.2.02.1305281121420.1627@gentwo.org> <0000013eec62261a-77052f34-f1cb-41b2-ae90-7575a2d0472c-000000@email.amazonses.com> <CAAmzW4M8rX9WGo_FYeyBQ8=Ht-mRnQz1TGhLfbFuKhm3r8grGA@mail.gmail.com>
+ <0000013f0b7b993c-35844ed2-81be-4146-ab3c-6c803006576b-000000@email.amazonses.com> <CAAmzW4MakOx_SA6eA=BYP4rq76np4yOS6RANpNObQP6dDDqYQg@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Jun 2013, Lorenzo Pieralisi wrote:
+On Wed, 5 Jun 2013, JoonSoo Kim wrote:
 
-> The TC2 versatile express core tile integrates a logic block that provides the
-> interface between the dual cluster test-chip and the M3 microcontroller that
-> carries out power management. The logic block, called Serial Power Controller
-> (SPC), contains several memory mapped registers to control among other things
-> low-power states, operating points and reset control.
-> 
-> This patch provides a driver that enables run-time control of features
-> implemented by the SPC control logic.
-> 
-> The driver also provides a bridge interface through the vexpress config
-> infrastructure. Operations allowing to read/write operating points are
-> made to go via the same interface as configuration transactions so that
-> all requests to M3 are serialized.
-> 
-> Device tree bindings documentation for the SPC component is provided with
-> the patchset.
-> 
+> @@ -2495,7 +2495,8 @@ static void __slab_free(struct kmem_cache *s,
+> struct page *page,
+>                 new.inuse--;
+>                 if ((!new.inuse || !prior) && !was_frozen) {
+>
+> -                       if (!kmem_cache_debug(s) && !prior)
+> +                       if (!kmem_cache_debug(s) && !prior &&
+> +                               node_match(page,
+> cpu_to_node(smp_processor_id())))
+>
 
-[...]
-
-> +/*
-> + * Versatile Express Serial Power Controller (SPC) support
-> + *
-> + * Copyright (C) 2013 ARM Ltd.
-> + *
-> + * Author(s): Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-> + *            Achin Gupta           <achin.gupta@arm.com>
-> + *            Lorenzo Pieralisi     <lorenzo.pieralisi@arm.com>
-
-I imagine "author(s)" can be written as "authors" without a doubt.  :-)
-
-> +EXPORT_SYMBOL_GPL(vexpress_spc_write_resume_reg);
-> +EXPORT_SYMBOL_GPL(vexpress_spc_set_global_wakeup_intr);
-> +EXPORT_SYMBOL_GPL(vexpress_spc_set_cpu_wakeup_irq);
-> +EXPORT_SYMBOL_GPL(vexpress_spc_powerdown_enable);
-
-I don't think anything that could possibly be made into modules should 
-ever have a need for those particular calls.  So I'd suggest not 
-exporting them.
-
-Other than that, you may add...
-
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
-
-
-Nicolas
+Would increase the overhead of the free path. cpu_to_node? Use
+numa_node_id().
