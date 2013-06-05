@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552Ab3FEH23 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 03:28:29 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:37053 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914Ab3FEH22 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 03:28:28 -0400
+	id S1752305Ab3FEHhd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 03:37:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40702 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752079Ab3FEHha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 03:37:30 -0400
+Date: Wed, 5 Jun 2013 09:37:28 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Michel Lespinasse <walken@google.com>,
+        Greg Thelen <gthelen@google.com>, Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [patch -v4 4/8] memcg: enhance memcg iterator to support
+ predicates
+Message-ID: <20130605073728.GC15997@dhcp22.suse.cz>
+References: <1370254735-13012-1-git-send-email-mhocko@suse.cz>
+ <1370254735-13012-5-git-send-email-mhocko@suse.cz>
+ <20130604010737.GF29989@mtj.dyndns.org>
+ <20130604134523.GH31242@dhcp22.suse.cz>
+ <20130604193619.GA14916@htj.dyndns.org>
+ <20130604204807.GA13231@dhcp22.suse.cz>
+ <20130604205426.GI14916@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <20130604050744.GD14719@blaptop>
-References: <20130603200202.7F5FDE07@viggo.jf.intel.com>
-	<20130603200208.6F71D31F@viggo.jf.intel.com>
-	<CAJd=RBC563c64usU2oK40b62c7N0R15KD_4ihFExeT021wUTcw@mail.gmail.com>
-	<20130604050744.GD14719@blaptop>
-Date: Wed, 5 Jun 2013 15:28:27 +0800
-Message-ID: <CAJd=RBAt9eSx3_FB79J93e19bv15sFry-mU6hkUYH80isULszw@mail.gmail.com>
-Subject: Re: [v5][PATCH 5/6] mm: vmscan: batch shrink_page_list() locking operations
-From: Hillf Danton <dhillf@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Dave Hansen <dave@sr71.net>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mgorman@suse.de, tim.c.chen@linux.intel.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130604205426.GI14916@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 4, 2013 at 1:07 PM, Minchan Kim <minchan@kernel.org> wrote:
-> On Tue, Jun 04, 2013 at 09:17:26AM +0800, Hillf Danton wrote:
->> On Tue, Jun 4, 2013 at 4:02 AM, Dave Hansen <dave@sr71.net> wrote:
->> > +/*
->> > + * pages come in here (via remove_list) locked and leave unlocked
->> > + * (on either ret_pages or free_pages)
->> > + *
->> > + * We do this batching so that we free batches of pages with a
->> > + * single mapping->tree_lock acquisition/release.  This optimization
->> > + * only makes sense when the pages on remove_list all share a
->> > + * page_mapping().  If this is violated you will BUG_ON().
->> > + */
->> > +static int __remove_mapping_batch(struct list_head *remove_list,
->> > +                                 struct list_head *ret_pages,
->> > +                                 struct list_head *free_pages)
->> > +{
->> > +       int nr_reclaimed = 0;
->> > +       struct address_space *mapping;
->> > +       struct page *page;
->> > +       LIST_HEAD(need_free_mapping);
->> > +
->> > +       if (list_empty(remove_list))
->> > +               return 0;
->> > +
->> > +       mapping = page_mapping(lru_to_page(remove_list));
->> > +       spin_lock_irq(&mapping->tree_lock);
->> > +       while (!list_empty(remove_list)) {
->> > +               page = lru_to_page(remove_list);
->> > +               BUG_ON(!PageLocked(page));
->> > +               BUG_ON(page_mapping(page) != mapping);
->> > +               list_del(&page->lru);
->> > +
->> > +               if (!__remove_mapping(mapping, page)) {
->> > +                       unlock_page(page);
->> > +                       list_add(&page->lru, ret_pages);
->> > +                       continue;
->> > +               }
->> > +               list_add(&page->lru, &need_free_mapping);
->> > +       }
->> > +       spin_unlock_irq(&mapping->tree_lock);
->> > +
->> While reclaiming pages, can we open ears upon IRQ controller,
->> if the page list length is over 10, or even 20?
->
-> At the moment, it implicitly could be bounded by SWAP_CLUSTER_MAX and
+On Tue 04-06-13 13:54:26, Tejun Heo wrote:
+> Hey,
+> 
+> On Tue, Jun 04, 2013 at 10:48:07PM +0200, Michal Hocko wrote:
+> > > I really don't think memcg can afford to add more mess than there
+> > > already is.  Let's try to get things right with each change, please.
+> > 
+> > Is this really about inside vs. outside skipping? I think this is a
+> > general improvement to the code. I really prefer not duplicating common
+> > code and skipping handling is such a code (we have a visitor which can
+> > control the walk). With a side bonus that it doesn't have to pollute
+> > vmscan more than necessary.
+> > 
+> > Please be more specific about _what_ is so ugly about this interface so
+> > that it matters so much.
+> 
+> Can you please try the other approach and see how it looks? 
 
-Could we reclaim a THP currently?
+Tejun, I do not have infinite amount of time and this is barely a
+priority for the patchset. The core part is to be able to skip
+nodes/subtrees which are not worth reclaiming, remember?
 
-> it's the value used by isolate_migratepages_ranges to enable IRQ.
-> I have no idea it's proper value to give a chace to IRQ but at least,
-> Dave's code doesn't break the rule.
-> If we need a tune for that, it could be a another patch to investigate
-> all of places on vmscan.c in near future.
->
+I have already expressed my priorities for inside skipping
+decisions. You are just throwing "let's try a different way" handwavy
+suggestions. I have no problem to pull the skip logic outside of
+iterators if more people think that this is _really_ important. But
+until then I take it as a really low priority that shouldn't delay the
+patchset without a good reason.
+
+So please try to focus on the technical parts of the patchset if you
+want to help with the review. I really appreciate suggestions but please
+do not get down to bike scheding.
+
+-- 
+Michal Hocko
+SUSE Labs
