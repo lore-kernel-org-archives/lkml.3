@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756742Ab3FEPzR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 11:55:17 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:38267 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755902Ab3FEPzN (ORCPT
+	id S1756768Ab3FEPzx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 11:55:53 -0400
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:51337 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756511Ab3FEPzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 11:55:13 -0400
+	Wed, 5 Jun 2013 11:55:51 -0400
+Date: Wed, 5 Jun 2013 11:54:52 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Vince Weaver <vincent.weaver@maine.edu>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org
+Subject: Re: OOPS in perf_mmap_close()
+In-Reply-To: <20130603192505.GH8923@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1306051151570.6484@vincent-weaver-1.um.maine.edu>
+References: <20130523152611.GE23650@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1305231936210.2452@vincent-weaver-1.um.maine.edu> <20130528085548.GA12193@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1305281217370.19080@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1305281418120.19080@vincent-weaver-1.um.maine.edu> <20130529074433.GB12193@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1305291516310.2609@vincent-weaver-1.um.maine.edu> <20130530072532.GF4341@laptop>
+ <alpine.DEB.2.10.1305300842040.11264@vincent-weaver-1.um.maine.edu> <20130603132645.GC8923@twins.programming.kicks-ass.net> <20130603192505.GH8923@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Message-ID: <1370447678-22367-9-git-send-email-konrad.wilk@oracle.com>
-Date: Wed, 5 Jun 2013 08:54:37 -0700 (PDT)
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 8/9] xen/time: Check that the per_cpu data structure has data
- before freeing.
-References: <1370447678-22367-1-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1370447678-22367-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.8.1.4
-Content-Type: text/plain; charset=ascii
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't check whether the per_cpu data structure has actually
-been freed in the past. This checks it and if it has been freed
-in the past then just continues on without double-freeing.
+On Mon, 3 Jun 2013, Peter Zijlstra wrote:
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/time.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+> Seems to cure it... I'm going to let it run over night.
 
-diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index 011f1bf..6a56ae0 100644
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -434,10 +434,13 @@ void xen_teardown_timer(int cpu)
- 	struct clock_event_device *evt;
- 	BUG_ON(cpu == 0);
- 	evt = &per_cpu(xen_clock_events, cpu).evt;
--	unbind_from_irqhandler(evt->irq, NULL);
--	evt->irq = -1;
--	kfree(per_cpu(xen_clock_events, cpu).name);
--	per_cpu(xen_clock_events, cpu).name = NULL;
-+
-+	if (evt->irq >= 0) {
-+		unbind_from_irqhandler(evt->irq, NULL);
-+		evt->irq = -1;
-+		kfree(per_cpu(xen_clock_events, cpu).name);
-+		per_cpu(xen_clock_events, cpu).name = NULL;
-+	}
- }
- 
- void xen_setup_cpu_clockevents(void)
--- 
-1.8.1.4
+[sorry for the delay in testing, was at the hospital waiting for
+ a new baby, and the free wi-fi had the ssh port blocked]
 
+I'm running 3.10-rc4 with your patch plus the 3-line fixup applied and my 
+various tests are solid so far.
+
+It would be nice to get this applied, without the patch it's trivial to 
+oops/lock any kernel going back to 3.2 and probably earlier (I haven't 
+tested older than 3.2 yet).
+
+Vince
