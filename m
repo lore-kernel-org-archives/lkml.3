@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932804Ab3FEWEm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 18:04:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37693 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757646Ab3FEVfQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932420Ab3FEVfQ (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 5 Jun 2013 17:35:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37670 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757929Ab3FEVfK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 17:35:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Teppo Kotilainen <qubit303@gmail.com>
-Subject: [ 021/127] usb: option: Add Telewell TW-LTE 4G
-Date: Wed,  5 Jun 2013 14:33:08 -0700
-Message-Id: <20130605213220.422606466@linuxfoundation.org>
+        Dan Williams <dcbw@redhat.com>
+Subject: [ 022/127] USB: option: add device IDs for Dell 5804 (Novatel E371) WWAN card
+Date: Wed,  5 Jun 2013 14:33:09 -0700
+Message-Id: <20130605213220.528795402@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -26,19 +26,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Teppo Kotilainen <qubit303@gmail.com>
+From: Dan Williams <dcbw@redhat.com>
 
-commit 73c042df6e1bc50544842a04b777b36bbe3630e6 upstream.
+commit 49c6e370dd6400b84897c4100095089b5c13a061 upstream.
 
-Information from driver description files:
+A rebranded Novatel E371 for AT&T's LTE bands.
 
-  diag:  VID_19D2&PID_0412&MI_00
-  nmea:  VID_19D2&PID_0412&MI_01
-  at:    VID_19D2&PID_0412&MI_02
-  modem: VID_19D2&PID_0412&MI_03
-  net:   VID_19D2&PID_0412&MI_04
-
-Signed-off-by: Teppo Kotilainen <qubit303@gmail.com>
+Signed-off-by: Dan Williams <dcbw@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
@@ -47,14 +41,21 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/drivers/usb/serial/option.c
 +++ b/drivers/usb/serial/option.c
-@@ -966,6 +966,8 @@ static const struct usb_device_id option
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0330, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0395, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0412, 0xff, 0xff, 0xff), /* Telewell TW-LTE 4G */
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0414, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0417, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1008, 0xff, 0xff, 0xff),
+@@ -196,6 +196,7 @@ static void option_instat_callback(struc
+ 
+ #define DELL_PRODUCT_5800_MINICARD_VZW		0x8195  /* Novatel E362 */
+ #define DELL_PRODUCT_5800_V2_MINICARD_VZW	0x8196  /* Novatel E362 */
++#define DELL_PRODUCT_5804_MINICARD_ATT		0x819b  /* Novatel E371 */
+ 
+ #define KYOCERA_VENDOR_ID			0x0c88
+ #define KYOCERA_PRODUCT_KPC650			0x17da
+@@ -771,6 +772,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_VZW) }, 	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_MINICARD_VZW, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_V2_MINICARD_VZW, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5804_MINICARD_ATT, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_E100A) },	/* ADU-E100, ADU-310 */
+ 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_500A) },
+ 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_620UW) },
 
 
