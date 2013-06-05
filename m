@@ -1,191 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130Ab3FEMrs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 08:47:48 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:44704 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753002Ab3FEMrr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 08:47:47 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: JBeulich@suse.com, roger.pau@citrix.com, david.vrabel@citrix.com,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, stable@vger.kernel.org
-Subject: [PATCH] xen/blkback: Check for insane amounts of request on the ring.
-Date: Tue,  4 Jun 2013 15:57:06 -0400
-Message-Id: <1370375826-7311-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.8.1.4
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S1753897Ab3FEMux (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 08:50:53 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:58374 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753329Ab3FEMuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 08:50:51 -0400
+X-IronPort-AV: E=Sophos;i="4.87,806,1363132800"; 
+   d="scan'208";a="29371140"
+Date: Wed, 5 Jun 2013 13:50:45 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Feng Jin <joe.jin@oracle.com>, Yuval Shaia <yuval.shaia@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chien Yen <chien.yen@oracle.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] [PATCH] xen: reuse the same pirq allocated when
+ driver load first time
+In-Reply-To: <51AECC3A.7060803@oracle.com>
+Message-ID: <alpine.DEB.2.02.1306051349380.4589@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1305131753070.4799@kaball.uk.xensource.com> <20130513182055.GC14177@phenom.dumpdata.com> <alpine.DEB.2.02.1305141440500.4799@kaball.uk.xensource.com> <20130514142013.GA10173@konrad-lan.dumpdata.com>
+ <alpine.DEB.2.02.1305151037100.4799@kaball.uk.xensource.com> <5195944A.3050608@oracle.com> <alpine.DEB.2.02.1305201121370.4799@kaball.uk.xensource.com> <20130520175706.GA27973@phenom.dumpdata.com> <20130520203855.GA30616@phenom.dumpdata.com>
+ <519B474E.4000202@citrix.com> <20130521134059.GE492@phenom.dumpdata.com> <alpine.DEB.2.02.1305211748030.4799@kaball.uk.xensource.com> <alpine.DEB.2.02.1305291850030.4799@kaball.uk.xensource.com> <51AECC3A.7060803@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check that the ring does not have an insane amount of requests
-(more than there could fit on the ring).
+On Wed, 5 Jun 2013, Zhenzhong Duan wrote:
+> Stefano Stabellini wrote:
+> 
+> On Tue, 21 May 2013, Stefano Stabellini wrote:
+>   
+> 
+> On Tue, 21 May 2013, Konrad Rzeszutek Wilk wrote:
+>     
+> 
+> Looking at the hypervisor code I couldn't see anything obviously wrong.
+>         
+> 
+> I think the culprit is "physdev_unmap_pirq":
+> 
+>    if ( is_hvm_domain(d) )                                                     
+>     {                                                                           
+>         spin_lock(&d->event_lock);                                              
+>         gdprintk(XENLOG_WARNING,"d%d, pirq: %d is %x %s, irq: %d\n",            
+>             d->domain_id, pirq, domain_pirq_to_emuirq(d, pirq),                 
+>             domain_pirq_to_emuirq(d, pirq) == IRQ_UNBOUND ? "unbound" : "",        
+>             domain_pirq_to_irq(d, pirq));                                       
+>                                                                                 
+>         if ( domain_pirq_to_emuirq(d, pirq) != IRQ_UNBOUND )                    
+>             ret = unmap_domain_pirq_emuirq(d, pirq);                            
+>         spin_unlock(&d->event_lock);                                            
+>         if ( domid == DOMID_SELF || ret )                                       
+>             goto free_domain;                                             
+> 
+> It always tells me unbound:
+> 
+> (XEN) physdev.c:237:d14 14, pirq: 54 is ffffffff
+> (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> (XEN) physdev.c:237:d14 14, pirq: 53 is ffffffff
+> (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> (XEN) physdev.c:237:d14 14, pirq: 52 is ffffffff
+> (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> (XEN) physdev.c:237:d14 14, pirq: 51 is ffffffff
+> (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> (XEN) physdev.c:237:d14 14, pirq: 50 is ffffffff
+> (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> (a bit older debug code, so the 'unbound' does not show up here).
+> 
+> Which means that the call to unmap_domain_pirq_emuirq does not happen.
+> The checks in unmap_domain_pirq_emuirq also look to be depend
+> on the code being IRQ_UNBOUND.
+> 
+> In other words, all of that code looks to only clear things when
+> they are !IRQ_UNBOUND.
+> 
+> But the other logic (IRQ_UNBOUND) looks to be missing a removal
+> in the radix tree:
+> 
+>   if ( emuirq != IRQ_PT )                                                     
+>         radix_tree_delete(&d->arch.hvm_domain.emuirq_pirq, emuirq);             
+>                                                                         
+> And I think that is what is causing the leak - the radix tree
+> needs to be pruned? Or perhaps the allocate_pirq should check
+> the radix tree for IRQ_UNBOUND ones and re-use them?
+>       
+> 
+> I think that you are looking in the wrong place.
+> The issue is that QEMU doesn't call pt_msi_disable in
+> pt_msgctrl_reg_write if (!val & PCI_MSI_FLAGS_ENABLE).
+> 
+> The code above is correct as is because it is trying to handle emulated
+> IRQs and MSIs, not real passthrough MSIs. They latter are not added to
+> that radix tree, see physdev_hvm_map_pirq and physdev_map_pirq.
+>     
+> 
+> 
+> This patch fixes the issue, I have only tested MSI (MSI-X completely
+> untested).
+> 
+> 
+> diff --git a/hw/pass-through.c b/hw/pass-through.c
+> index 304c438..079e465 100644
+> --- a/hw/pass-through.c
+> +++ b/hw/pass-through.c
+> @@ -3866,7 +3866,11 @@ static int pt_msgctrl_reg_write(struct pt_dev *ptdev,
+>          ptdev->msi->flags |= PCI_MSI_FLAGS_ENABLE;
+>      }
+>      else
+> -        ptdev->msi->flags &= ~PCI_MSI_FLAGS_ENABLE;
+> +    {
+> +        if (ptdev->msi->flags & PT_MSI_MAPPED) {
+> +            pt_msi_disable(ptdev);
+> +        }
+> +    }
+>  
+>      /* pass through MSI_ENABLE bit when no MSI-INTx translation */
+>      if (!ptdev->msi_trans_en) {
+> @@ -4013,6 +4017,8 @@ static int pt_msixctrl_reg_write(struct pt_dev *ptdev,
+>              pt_disable_msi_translate(ptdev);
+>          }
+>          pt_msix_update(ptdev);
+> +    } else if (!(*value & PCI_MSIX_ENABLE) && ptdev->msix->enabled) {
+> +        pt_msix_delete(ptdev);
+>   
+> 
+> Hi Stefano,
+> I made a test with this patch, os reboot when driver reload. If use pt_msix_disable
+> instead of pt_msix_delete, driver could be reloaded.
+> But I still see some error in qemu.log and xen console. Seems four IRQs are not freed
+> when unmap.
+> --------------first load---------------------------
+> pt_msix_update_one: pt_msix_update_one requested pirq = 103
+> pt_msix_update_one: Update msix entry 0 with pirq 67 gvec 0
+> pt_msix_update_one: pt_msix_update_one requested pirq = 102
+> pt_msix_update_one: Update msix entry 1 with pirq 66 gvec 0
+> pt_msix_update_one: pt_msix_update_one requested pirq = 101
+> pt_msix_update_one: Update msix entry 2 with pirq 65 gvec 0
+> pt_msix_update_one: pt_msix_update_one requested pirq = 100
+> pt_msix_update_one: Update msix entry 3 with pirq 64 gvec 0
+> ------------- first unload---------------------------
+> pt_msix_disable: Unbind msix with pirq 67, gvec 0
+> pt_msix_disable: Unmap msix with pirq 67
+> pt_msix_disable: Error: Unmapping of MSI-X failed. [00:04.0]
+> pt_msix_disable: Unbind msix with pirq 66, gvec 0
+> pt_msix_disable: Unmap msix with pirq 66
+> pt_msix_disable: Error: Unmapping of MSI-X failed. [00:04.0]
+> pt_msix_disable: Unbind msix with pirq 65, gvec 0
+> pt_msix_disable: Unmap msix with pirq 65
+> pt_msix_disable: Error: Unmapping of MSI-X failed. [00:04.0]
+> pt_msix_disable: Unbind msix with pirq 64, gvec 0
+> pt_msix_disable: Unmap msix with pirq 64
+> pt_msix_disable: Error: Unmapping of MSI-X failed. [00:04.0]
 
-If we detect this case we will stop processing the requests
-and wait until the XenBus disconnects the ring.
-
-Looking at the code, one would expect that the existing check
-RING_REQUEST_CONS_OVERFLOW which checks for how many responses we
-have created in the past (rsp_prod_pvt) vs requests consumed (req_cons)
-and that difference between is greater or equal to the size of the
-ring. If that condition is satisfied that means we should not be
-processing more requests as we still have a backlog of responses
-to finish. Note that both of those values (rsp_prod_pvt and req_cons)
-are not exposed on the shared ring.
-
-To understand this problem a mini crash course in ring protocol
-response/request updates.
-
-There are four entries: req_prod and rsp_prod; req_event and rsp_event.
-We are only concerned about the first two - which set the tone of
-this bug.
-
-The req_prod is a value incremented by frontend for each request put
-on the ring. Conversely the rsp_prod is a value incremented by the backend
-for each response put on the ring (rsp_prod gets set by rsp_prod_pvt when
-pushing the responses on the ring).  Both values can
-wrap and are modulo the size of the ring (in block case that is 32).
-Please see RING_GET_REQUEST and RING_GET_RESPONSE for the more details.
-
-The culprit here is that if the difference between the
-req_prod and req_cons is greater than the ring size we have a problem.
-Fortunately for us, the '__do_block_io_op' loop:
-
-	rc = blk_rings->common.req_cons;
-	rp = blk_rings->common.sring->req_prod;
-
-	while (rc != rp) {
-
-		..
-		blk_rings->common.req_cons = ++rc; /* before make_response() */
-
-	}
-
-will loop up to the point when rc == rp. The macros inside of the
-loop (RING_GET_REQUEST) is smart and is indexing based on the modulo
-of the ring size. If the frontend has provided a bogus req_prod value
-we will loop until the 'rc == rp' - which means we could be processing
-already processed requests (or responses) often.
-
-The reason the RING_REQUEST_CONS_OVERFLOW is not helping here is
-b/c it only tracks how many responses we have internally produced
-and whether we would should process more. The astute reader will
-notice that the macro RING_REQUEST_CONS_OVERFLOW provides two
-arguments - more on this later.
-
-For example, if we were to enter this function with these values:
-
-       	blk_rings->common.sring->req_prod =  X+31415 (X is the value from
-		the last time __do_block_io_op was called).
-        blk_rings->common.req_cons = X
-        blk_rings->common.rsp_prod_pvt = X
-
-The RING_REQUEST_CONS_OVERFLOW(&blk_rings->common, blk_rings->common.req_cons)
-is doing:
-
-	req_cons - sring->rsp_prod_pvt >= 32
-
-Which is,
-	X - X >= 32 or 0 >= 32
-
-And that is false, so we continue on looping (this bug).
-
-If we re-use said macro RING_REQUEST_CONS_OVERFLOW and pass in the rp
-instead (sring->req_prod) of rc, the this macro can do the check:
-
-     req_prod - sring->rsp_prov_pvt >= 32
-
-Which is,
-       X + 31415 - X >= 32 , or 31415 >= 32
-
-which is true, so we can error out and break out of the function.
-
-Cc: stable@vger.kernel.org
-[v1: Move the check outside the loop]
-[v2: Add a pr_warn as suggested by David]
-[v3: Use RING_REQUEST_CONS_OVERFLOW as suggested by Jan]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/block/xen-blkback/blkback.c | 14 ++++++++++++--
- drivers/block/xen-blkback/common.h  |  2 ++
- drivers/block/xen-blkback/xenbus.c  |  2 ++
- 3 files changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index d81dfca..c4b23be 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -397,7 +397,7 @@ int xen_blkif_schedule(void *arg)
- {
- 	struct xen_blkif *blkif = arg;
- 	struct xen_vbd *vbd = &blkif->vbd;
--
-+	int rc = 0;
- 	xen_blkif_get(blkif);
- 
- 	while (!kthread_should_stop()) {
-@@ -417,8 +417,12 @@ int xen_blkif_schedule(void *arg)
- 		blkif->waiting_reqs = 0;
- 		smp_mb(); /* clear flag *before* checking for work */
- 
--		if (do_block_io_op(blkif))
-+		rc = do_block_io_op(blkif);
-+		if (rc > 0)
- 			blkif->waiting_reqs = 1;
-+		if (rc == -EACCES)
-+			wait_event_interruptible(blkif->shutdown_wq,
-+						 kthread_should_stop());
- 
- 		if (log_stats && time_after(jiffies, blkif->st_print))
- 			print_stats(blkif);
-@@ -778,6 +782,12 @@ __do_block_io_op(struct xen_blkif *blkif)
- 	rp = blk_rings->common.sring->req_prod;
- 	rmb(); /* Ensure we see queued requests up to 'rp'. */
- 
-+	/* N.B. 'rp', not 'rc'. */
-+	if (RING_REQUEST_CONS_OVERFLOW(&blk_rings->common, rp)) {
-+		pr_warn(DRV_PFX "Frontend provided bogus ring requests (%d - %d = %d). Halting ring processing on dev=%04x\n",
-+			rp, rc, rp - rc, blkif->vbd.pdevice);
-+		return -EACCES;
-+	}
- 	while (rc != rp) {
- 
- 		if (RING_REQUEST_CONS_OVERFLOW(&blk_rings->common, rc))
-diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
-index 60103e2..43ef7f2 100644
---- a/drivers/block/xen-blkback/common.h
-+++ b/drivers/block/xen-blkback/common.h
-@@ -231,6 +231,8 @@ struct xen_blkif {
- 	unsigned long long			st_wr_sect;
- 
- 	wait_queue_head_t	waiting_to_free;
-+	/* Thread shutdown wait queue. */
-+	wait_queue_head_t	shutdown_wq;
- };
- 
- 
-diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
-index 8bfd1bc..00f2573 100644
---- a/drivers/block/xen-blkback/xenbus.c
-+++ b/drivers/block/xen-blkback/xenbus.c
-@@ -118,6 +118,7 @@ static struct xen_blkif *xen_blkif_alloc(domid_t domid)
- 	blkif->st_print = jiffies;
- 	init_waitqueue_head(&blkif->waiting_to_free);
- 	blkif->persistent_gnts.rb_node = NULL;
-+	init_waitqueue_head(&blkif->shutdown_wq);
- 
- 	return blkif;
- }
-@@ -177,6 +178,7 @@ static int xen_blkif_map(struct xen_blkif *blkif, unsigned long shared_page,
- static void xen_blkif_disconnect(struct xen_blkif *blkif)
- {
- 	if (blkif->xenblkd) {
-+		wake_up(&blkif->shutdown_wq);
- 		kthread_stop(blkif->xenblkd);
- 		blkif->xenblkd = NULL;
- 	}
--- 
-1.8.1.4
+Can you add some printks in Xen (the hypercall name is
+PHYSDEVOP_unmap_pirq) to figure out exactly why they are failing?
 
