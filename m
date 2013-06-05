@@ -1,95 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab3FEQds (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 12:33:48 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:56701 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756568Ab3FEQdp (ORCPT
+	id S1756640Ab3FEQe3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 12:34:29 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:54625 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755566Ab3FEQe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 12:33:45 -0400
+	Wed, 5 Jun 2013 12:34:28 -0400
+Date: Wed, 5 Jun 2013 18:34:26 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Andreas Mohr <andi@lisas.de>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        OndrejZary <linux@rainbow-software.org>
+Subject: Re: [PATCH] usbnet: improve/fix status interrupt endpoint interval
+Message-ID: <20130605163426.GA18818@rhlx01.hs-esslingen.de>
+References: <20130604182830.GA13186@rhlx01.hs-esslingen.de>
+ <CACVXFVOYMGjGLmyGy=pQwkcuFshLmdNcLZKfqUDazge45GMBPA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <519B1B4D.3090307@linux.vnet.ibm.com>
-References: <1369065716-22801-1-git-send-email-fweisbec@gmail.com>
-	<1369065716-22801-7-git-send-email-fweisbec@gmail.com>
-	<519B1B4D.3090307@linux.vnet.ibm.com>
-Date: Wed, 5 Jun 2013 18:33:44 +0200
-Message-ID: <CAFTL4hxo6NGTxHFQ54u0q-HzENa_Rx8H=8bJX_9gic=xFHX7fA@mail.gmail.com>
-Subject: Re: [RFC PATCH 6/8] kthread: Enable parking requests from setup() and
- unpark() callbacks
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Don Zickus <dzickus@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVOYMGjGLmyGy=pQwkcuFshLmdNcLZKfqUDazge45GMBPA@mail.gmail.com>
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/21 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>:
-> On 05/20/2013 09:31 PM, Frederic Weisbecker wrote:
->> When the watchdog code is boot-disabled by the user, for example
->> through the 'nmi_watchdog=0' boot option, the setup() callback of
->> the watchdog kthread requests to park the task, and that until the
->> user later re-enables the watchdog through sysctl or procfs.
->>
->> However the parking request is not well handled when done from
->> the setup() callback. After ->setup() is called, the generic smpboot
->> kthread loop directly tries to call the thread function or wait
->> for some event if ->thread_should_run() is false.
->>
->> In the case of the watchdog kthread, ->thread_should_run() returns
->> false and the kthread goes to sleep and wait for the watchdog timer
->> to wake it up. But the timer is not enabled since the user requested
->> to disable the watchdog. We want the kthread to park instead of waiting
->> for events that can't happen.
->>
->> As a result, later unpark requests after sysctl write through
->> 'sysctl -w kernel.watchdog=1' won't wake up/unpark the task as
->> expected, since it's not parked anyway, leaving the value modified
->> without triggering any action.
->>
->> We could workaround some solution in the watchdog code like forcing
->> one pass to the thread function and immediately return to park.
->>
->> But supporting parking requests from ->setup() or ->unpark()
->
-> unpark() can already do a proper park, because immediately after
-> coming out of the parked state, the 'continue' statement helps
-> re-evaluate the stop/park condition.
+Hi,
 
-Right.
+On Wed, Jun 05, 2013 at 09:22:25AM +0800, Ming Lei wrote:
+> On Wed, Jun 5, 2013 at 2:28 AM, Andreas Mohr <andi@lisas.de> wrote:
+> >
+> > From 307685fe8e6dfc8181e30167b9c31479332cb22f Mon Sep 17 00:00:00 2001
+> > From: Andreas Mohr <andim2@users.sourceforge.net>
+> > Date: Sun, 2 Jun 2013 20:37:05 +0200
+> > Subject: [PATCH] usbnet: improve/fix status interrupt endpoint interval
+> >  tweaking.
+> >
+> > - failed to take super-speed into account
+> > - <= full-speed seems to have wrong value (specified as frames [ms],
+> >   thus 3 is not suitable to achieve 8ms)
+> 
+> The above change is correct.
+> 
+> >   Value 8 now managed to reduce powertop wakeups from ~ 540 to ~ 155
+> 
+> It means that your device only returns current link status instead of link
+> change. IMO, it isn't a good behaviour for the device.
 
->
-> So this fix is only for the ->setup() case.
->
->> callbacks look like proper way to implement cancellation in
->> general. So let's fix it that way.
->>
->
-> Sounds good to me.
->
-> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->
-> But I wonder what nmi_watchdog=0 should actually mean, semantically..
-> The current code works as if the user asked us not to run the watchdog
-> threads, but it could as well be interpreted as if the user does not
-> want to run *any* watchdog-related *code*. In that case, ideally we
-> should *unregister* the watchdog threads, instead of just parking them.
-> And when the user enables them again via sysctl/procfs, we should
-> register the watchdog threads with the smpboot infrastructure.
->
-> I'm not saying that the current semantics is wrong, but if we really
-> implement it the other way I proposed above, then we won't have to deal
-> with weird issues like ->setup() code wanting to park, and watchdog
-> threads unparking and parking themselves on every CPU hotplug operation,
-> despite the fact that the user specified nmi_watchdog=0 on the kernel
-> command line.
+I don't quite understand that.
+The way I see it is that there's the "20 times same value" averaging,
+and once that was successful, a link change gets communicated
+(usbnet_link_change()). Thus that merely results in a *delay*
+in signalling the link change...
 
-That's an interesting point. It seems that using smpboot
-register/unregister operations for sysctl control would be more
-appropriate and less complicated. I'm going to give it a try.
+> In fact, you still can increase the period only for your device, for example,
+> 128ms/256ms/512ms should be accepted.
+
+Possibly.
+
+> > - add detailed docs and question marks about current practice
+> 
+> But the doc need to be fixed.
+
+Hmm.
+
+> >         /* avoid 1 msec chatter:  min 8 msec poll rate */
+> > +       /* High/SuperSpeed expresses intervals in microframes
+> > +        * (in logarithmic encoding, PRIOR to encoding in URB)
+> > +        * rather than frames.
+> > +        * Thus, for >= HighSpeed: == X [microframes] * 125us [-> 8ms],
+> > +        * <= FullSpeed: == X [ms] [-> 8ms].
+> > +        * Finally, it's questionable whether we'll even get away unscathed
+> > +        * with doing such rate tweaking at all:
+> > +        * bInterval value is declared as being a hard demand by a device
+> 
+> It isn't a hard demand, which only means the poll interval by which HC
+> sends IN token to device.
+
+I believe this number is meant to be a hard demand by the *device*,
+since a device is the authoritative party to know best about its
+own servicing requirements.
+Or, IOW, the thing that is a USB descriptor is to be seen as a *protocol*
+where a device signals its requirements (hopefully accurately, though!).
+And if it indicates a 1ms bInterval (which is "the requested maximum(!!)
+number of milliseconds between transaction attempts" [lvr usbfaq]),
+then one could argue that the servicing party (the kernel) damn well
+ought to follow through (unless it reliably knows that it can violate
+some parts of these demands without getting caught).
+
+> > +        * in order to guarantee having its I/O needs serviced properly...
+> > +        * if we don't do this, then... [overruns], [fire], [apocalypse]?
+> 
+> Not so serious, if one packet is ready, the late poll from HC may still
+> get the packet since device can buffer the packet, but if it is too late,
+> the successor packet might be missed by device.
+
+Is proper damage-less (overflows...) handling here a promise/guarantee
+that's made by the USB specs?
+Otherwise I wouldn't be so confident that a device is acting this way ;)
+
+> For usbnet, generally speaking, the interrupt pipe is for polling the
+> link change, which is a very low frequency event, so you don't need to
+> worry about missing events if the interval is increased.
+
+Yeah, but then those status bits also contain other error info for every packet
+processed, thus it's also very useful to achieve polling that's frequent
+enough to properly grab info for all transferred ether frames, rather
+than merely concentrating on link change info.
+
+> > +        * If this turns out to be problematic, such policy should be moved
+> > +        * to individual drivers (indicate flag to [dis]allow rate tweaking
+> > +        * as tolerated by specific devices).
+> 
+> Yes, we can add quirk for such kind device by increasing polling
+> interval.
+
+Sure, but that handling seems a bit static. An ideal service level would be
+getting notified of all link changes in a sufficiently slow way,
+*and* always catching status flags of *all* frames, too.
+
+> > +        */
+> >         period = max ((int) dev->status->desc.bInterval,
+> > -               (dev->udev->speed == USB_SPEED_HIGH) ? 7 : 3);
+> > +               ((dev->udev->speed == USB_SPEED_HIGH) ||
+> > +                (dev->udev->speed == USB_SPEED_SUPER)) ? 7 : 8);
+> 
+> For the above change, please feel free to add my ack:
+> 
+>               Acked-by: Ming Lei <ming.lei@canonical.com>
 
 Thanks!
+
+
+I'm still unsure how/whether to reword my documentation part, though.
+If you happen to have some ideas about some updates,
+that would be great.
+
+Thanks!
+
+Andreas Mohr
