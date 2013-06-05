@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932861Ab3FEV7J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:59:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37797 "EHLO
+	id S933375Ab3FEV7f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:59:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37786 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932772Ab3FEVfa (ORCPT
+	with ESMTP id S932764Ab3FEVf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:30 -0400
+	Wed, 5 Jun 2013 17:35:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 040/127] perf: net_dropmonitor: Fix symbol-relative addresses
-Date: Wed,  5 Jun 2013 14:33:27 -0700
-Message-Id: <20130605213222.512637692@linuxfoundation.org>
+        "wang, biao" <biao.wang@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [ 048/127] klist: del waiter from klist_remove_waiters before wakeup waitting process
+Date: Wed,  5 Jun 2013 14:33:35 -0700
+Message-Id: <20130605213223.440225169@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -27,37 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: "wang, biao" <biao.wang@intel.com>
 
-commit 5a1e99dd2028e00998d42029be86835d8ef4a46e upstream.
+commit ac5a2962b02f57dea76d314ef2521a2170b28ab6 upstream.
 
-The comparison between traced and symbol addresses is backwards: if
-the traced address doesn't exactly match a symbol (which we don't
-expect it to), we'll show the next symbol and the offset to it,
-whereas we should show the previous symbol and the offset from it.
+There is a race between klist_remove and klist_release. klist_remove
+uses a local var waiter saved on stack. When klist_release calls
+wake_up_process(waiter->process) to wake up the waiter, waiter might run
+immediately and reuse the stack. Then, klist_release calls
+list_del(&waiter->list) to change previous
+wait data and cause prior waiter thread corrupt.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The patch fixes it against kernel 3.9.
+
+Signed-off-by: wang, biao <biao.wang@intel.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/scripts/python/net_dropmonitor.py |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ lib/klist.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/tools/perf/scripts/python/net_dropmonitor.py
-+++ b/tools/perf/scripts/python/net_dropmonitor.py
-@@ -40,9 +40,9 @@ def get_kallsyms_table():
+--- a/lib/klist.c
++++ b/lib/klist.c
+@@ -193,10 +193,10 @@ static void klist_release(struct kref *k
+ 		if (waiter->node != n)
+ 			continue;
  
- def get_sym(sloc):
- 	loc = int(sloc)
--	for i in kallsyms:
--		if (i['loc'] >= loc):
--			return (i['name'], i['loc']-loc)
-+	for i in kallsyms[::-1]:
-+		if loc >= i['loc']:
-+			return (i['name'], loc - i['loc'])
- 	return (None, 0)
- 
- def print_drop_table():
++		list_del(&waiter->list);
+ 		waiter->woken = 1;
+ 		mb();
+ 		wake_up_process(waiter->process);
+-		list_del(&waiter->list);
+ 	}
+ 	spin_unlock(&klist_remove_lock);
+ 	knode_set_klist(n, NULL);
 
 
