@@ -1,115 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab3FEI4m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 04:56:42 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:18130 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752369Ab3FEI4g (ORCPT
+	id S1752996Ab3FEI5V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 04:57:21 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:50030 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752369Ab3FEI5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 04:56:36 -0400
-From: Frank Mehnert <frank.mehnert@oracle.com>
-Organization: Oracle Corporation
-To: Michal Hocko <mhocko@suse.cz>
-Subject: Re: Handling NUMA page migration
-Date: Wed, 5 Jun 2013 10:56:22 +0200
-User-Agent: KMail/1.13.7 (Linux/3.9.4; KDE/4.8.4; x86_64; ; )
-Cc: Robin Holt <holt@sgi.com>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>
-References: <201306040922.10235.frank.mehnert@oracle.com> <20130605075454.GD15997@dhcp22.suse.cz> <201306051034.19959.frank.mehnert@oracle.com>
-In-Reply-To: <201306051034.19959.frank.mehnert@oracle.com>
+	Wed, 5 Jun 2013 04:57:17 -0400
+Message-ID: <51AEFD65.6030306@gmail.com>
+Date: Wed, 05 Jun 2013 10:57:09 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart25383825.ZHbH6Qegqm";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: Orion: Hoist bridge interrupt handling out of the
+ timer
+References: <20121207225507.GB29262@obsidianresearch.com> <20121208112624.GD25315@lunn.ch> <20121209025748.GA10405@obsidianresearch.com> <20121209083046.GA25466@lunn.ch> <50C48CE8.9070400@gmail.com> <20130604172638.GB13745@obsidianresearch.com>
+In-Reply-To: <20130604172638.GB13745@obsidianresearch.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306051056.22716.frank.mehnert@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart25383825.ZHbH6Qegqm
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+On 06/04/13 19:26, Jason Gunthorpe wrote:
+> On Sun, Dec 09, 2012 at 02:06:48PM +0100, Sebastian Hesselbarth wrote:
+>> The main irq controller will be required for sure, but for the secondary
+>> irq controller we had a discussion long ago. IIRC Gregory proposed to have
+>> shared irqs handled by timer and watchdog, I was proposing chained irqs.
+>
+> +1 on decoded IRQs for bridge. I've been running that configuration
+> now since this patch set was first posted.
+>
+> There is too much HW variance, the timer, watchdog, etc drivers should
+> not have to poke into SOC specific registers just to get an interrupt.
+>
+> The bridge decode can either be via a chained handler, or by incorporating
+> the bridge decode into the main kirkwood handler - the latter having
+> lower overhead for timer ticks.
 
-On Wednesday 05 June 2013 10:34:13 Frank Mehnert wrote:
-> On Wednesday 05 June 2013 09:54:54 Michal Hocko wrote:
-> > On Tue 04-06-13 23:54:45, Frank Mehnert wrote:
-> > > On Tuesday 04 June 2013 20:17:02 Frank Mehnert wrote:
-> > > > On Tuesday 04 June 2013 16:02:30 Michal Hocko wrote:
-> > > > > On Tue 04-06-13 14:14:45, Frank Mehnert wrote:
-> > > > > > On Tuesday 04 June 2013 13:58:07 Robin Holt wrote:
-> > > > > > > This is probably more appropriate to be directed at the
-> > > > > > > linux-mm mailing list.
-> > > > > > >=20
-> > > > > > > On Tue, Jun 04, 2013 at 09:22:10AM +0200, Frank Mehnert wrote:
-> > > > > > > > Hi,
-> > > > > > > >=20
-> > > > > > > > our memory management on Linux hosts conflicts with NUMA pa=
-ge
-> > > > > > > > migration. I assume this problem existed for a longer time
-> > > > > > > > but Linux 3.8 introduced automatic NUMA page balancing which
-> > > > > > > > makes the problem visible on multi-node hosts leading to
-> > > > > > > > kernel oopses.
-> > > > > > > >=20
-> > > > > > > > NUMA page migration means that the physical address of a pa=
-ge
-> > > > > > > > changes. This is fatal if the application assumes that this
-> > > > > > > > never happens for that page as it was supposed to be pinned.
-> > > > > > > >=20
-> > > > > > > > We have two kind of pinned memory:
+Jason,
 
-Just to repeat it for reference:
+I have irqchip and clocksource drivers done for Orion, just need to
+find some time to rebase them.
 
-A) 1. allocate memory in userland with mmap()
-   2. madvise(MADV_DONTFORK)
-   3. pin with get_user_pages().
-   4. flush dcache_page()
-   5. vm_flags |=3D (VM_DONTCOPY | VM_LOCKED)
-      (resulting flags are VM_MIXEDMAP | VM_DONTDUMP | VM_DONTEXPAND |
-       VM_DONTCOPY | VM_LOCKED | 0xff)
+>> For mvebu archs, IIRC, we have wrt to timer-related irqs:
+>> - Armada 370/XP with different irq handler and timer irq handling within
+>>    timer registers.
+>> - Orion SoCs with Bridge irq registers for timer related stuff (timer0/1)
+>> - Kirkwood and Dove with watchdog timers (both with wdt irq in bridge irqs)
+>> - RTC in bridge irqs, but Dove with RTC connected to PMU irqs
+>
+>> I think we should have patches for irqchip-orion first and then rethink
+>> if we want a standalone timer-orion or merge it with timer-mvebu. Having
+>> watchdog using irqs is kind of independent from this.
 
-B) 1. allocate memory with alloc_pages()
-   2. SetPageReserved()
-   3. vm_mmap() to allocate a userspace mapping
-   4. vm_insert_page()
-   5. vm_flags |=3D (VM_DONTEXPAND | VM_DONTDUMP)
-      (resulting flags are VM_MIXEDMAP | VM_DONTDUMP | VM_DONTEXPAND | 0xff)
+I suggest not to merge clocksource for Orion and Armada 370/XP. They
+are different enough to justify separate drivers. IIRC Armada 370/XP
+acks timer interrupts by clearing timer register bits that are not
+implemented in Orion SoCs.
 
-The frequent case is B.
+> I would think the logical progression is:
+> - irq-chip orion combined with work to keep the existing timer working
+> - Patch to add the bridge irq-chip
+> - Patches to support orion/kirkwood/dove/etc in the existing timer drivers
+> - Patch to update the DT to switch to the bridge and updated timer
+> - Patch to remove the old timer
 
-I've just disabled CONFIG_TRANSPARENT_HUGEPAGE for testing purposes and
-the Oops is still triggered when running my testcase.
+I'd rather have irqchip and clocksource mainlined and enable both
+drivers when they have surfaced. I try to sent patches by end of this week.
 
-Thanks,
+> When I last looked briefly, it seems like merging with timer-mvebu was
+> fairly straightforward..
+>
+>> Back in the days when Gregory, Thomas, and I were looking into merged timer
+>> we agreed not to have an extra check on 25MHz support. If you put the
+>> property in the node, it will try to set the timer to fixed 25MHz. If you
+>> use the property on Orion timer, it will just break timer handling.
+>
+> As for the mveth case we should have a compatible tag for each SOC,
+> the driver can ignore it, but it should be in the DT for future use..
 
-=46rank
-=2D-=20
-Dr.-Ing. Frank Mehnert | Software Development Director, VirtualBox
-ORACLE Deutschland B.V. & Co. KG | Werkstr. 24 | 71384 Weinstadt, Germany
+We could have a single clocksource driver but as said above,
+clocksource is a tiny driver compared to others. Separate drivers will
+save us from checking SoC on every timer event or have a callback for 
+Armada 370/XP clearing timer irqs.
 
-Hauptverwaltung: Riesstr. 25, D-80992 M=FCnchen
-Registergericht: Amtsgericht M=FCnchen, HRA 95603
-Gesch=E4ftsf=FChrer: J=FCrgen Kunz
-
-Komplement=E4rin: ORACLE Deutschland Verwaltung B.V.
-Hertogswetering 163/167, 3543 AS Utrecht, Niederlande
-Handelsregister der Handelskammer Midden-Niederlande, Nr. 30143697
-Gesch=E4ftsf=FChrer: Alexander van der Ven, Astrid Kepper, Val Maher
-
---nextPart25383825.ZHbH6Qegqm
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iEYEABECAAYFAlGu/TYACgkQ6z8pigLf3EfSHQCfegpVhzfJlHNzLka5jaPxcyQ8
-snsAn3m5QLi6aQ2TC61723ktVN4NqGWJ
-=G1tK
------END PGP SIGNATURE-----
-
---nextPart25383825.ZHbH6Qegqm--
+Sebastian
