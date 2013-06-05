@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757490Ab3FERy7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 13:54:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34143 "EHLO
+	id S1757500Ab3FERzP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 13:55:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34148 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757298Ab3FERy4 (ORCPT
+	with ESMTP id S1757125Ab3FERzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 13:54:56 -0400
-Date: Wed, 5 Jun 2013 10:54:55 -0700
+	Wed, 5 Jun 2013 13:55:13 -0400
+Date: Wed, 5 Jun 2013 10:55:12 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Tobias Winter <tobias@linuxdingsda.de>,
         =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
         Rob Landley <rob@landley.net>
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] USB: serial: make minor allocation dynamic
-Message-ID: <20130605175455.GB13461@kroah.com>
+Subject: [PATCH 3/3] USB: serial: increase the number of devices we support
+Message-ID: <20130605175512.GC13461@kroah.com>
 References: <20130605175426.GA13461@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,207 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-This moves the allocation of minor device numbers from a static array to
-be dynamic, using the idr interface.  This means that you could
-potentially get "gaps" in a minor number range for a single USB serial
-device with multiple ports, but all should still work properly.
-
-Note, we still have the limitation of 255 USB to serial devices in the
-system, as that is all we are registering with the TTY layer at this
-point in time.
+We had the limit of 255 USB to serial devices on one system for almost
+15 years, with no complaints.  But now it's time to move on from these
+tiny "baby" systems, and bump the number up to 3000, which should last
+us a few more years.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb-serial.c |   97 ++++++++++++++++++++--------------------
- include/linux/usb/serial.h      |    4 -
- 2 files changed, 51 insertions(+), 50 deletions(-)
+ drivers/usb/serial/usb-serial.c |    8 ++++++--
+ include/linux/usb/serial.h      |    4 ----
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
 --- a/drivers/usb/serial/usb-serial.c
 +++ b/drivers/usb/serial/usb-serial.c
-@@ -37,6 +37,7 @@
- #include <linux/usb.h>
- #include <linux/usb/serial.h>
- #include <linux/kfifo.h>
-+#include <linux/idr.h>
- #include "pl2303.h"
- 
+@@ -43,6 +43,10 @@
  #define DRIVER_AUTHOR "Greg Kroah-Hartman <gregkh@linuxfoundation.org>"
-@@ -49,7 +50,7 @@
-    drivers depend on it.
- */
+ #define DRIVER_DESC "USB Serial Driver core"
  
--static struct usb_serial *serial_table[SERIAL_TTY_MINORS];
-+static DEFINE_IDR(serial_minors);
- static DEFINE_MUTEX(table_lock);
- static LIST_HEAD(usb_serial_driver_list);
- 
-@@ -60,61 +61,65 @@ static LIST_HEAD(usb_serial_driver_list)
-  */
- struct usb_serial *usb_serial_get_by_index(unsigned index)
- {
--	struct usb_serial *serial;
-+	struct usb_serial *serial = NULL;
-+	struct usb_serial_port *port;
- 
- 	mutex_lock(&table_lock);
--	serial = serial_table[index];
-+	port = idr_find(&serial_minors, index);
-+	if (!port)
-+		goto exit;
- 
--	if (serial) {
--		mutex_lock(&serial->disc_mutex);
--		if (serial->disconnected) {
--			mutex_unlock(&serial->disc_mutex);
--			serial = NULL;
--		} else {
--			kref_get(&serial->kref);
--		}
-+	serial = port->serial;
-+	mutex_lock(&serial->disc_mutex);
-+	if (serial->disconnected) {
-+		mutex_unlock(&serial->disc_mutex);
-+		serial = NULL;
-+	} else {
-+		kref_get(&serial->kref);
- 	}
-+exit:
- 	mutex_unlock(&table_lock);
- 	return serial;
- }
- 
--static struct usb_serial *get_free_serial(struct usb_serial *serial,
--					int num_ports, unsigned int *minor)
-+static int get_free_port(struct usb_serial_port *port)
- {
--	unsigned int i, j;
--	int good_spot;
--
--	dev_dbg(&serial->interface->dev, "%s %d\n", __func__, num_ports);
-+	int i;
- 
--	*minor = 0;
- 	mutex_lock(&table_lock);
--	for (i = 0; i < SERIAL_TTY_MINORS; ++i) {
--		if (serial_table[i])
--			continue;
-+	i = idr_alloc(&serial_minors, port, 0, 0, GFP_KERNEL);
-+	if (i < 0)
-+		goto exit;
-+	port->minor = i;
-+exit:
-+	mutex_unlock(&table_lock);
-+	return i;
-+}
- 
--		good_spot = 1;
--		for (j = 1; j <= num_ports-1; ++j)
--			if ((i+j >= SERIAL_TTY_MINORS) || (serial_table[i+j])) {
--				good_spot = 0;
--				i += j;
--				break;
--			}
--		if (good_spot == 0)
--			continue;
-+static int get_free_serial(struct usb_serial *serial, int num_ports,
-+			   unsigned int *minor)
-+{
-+	unsigned int i;
-+	unsigned int j;
-+	int x;
- 
--		*minor = i;
--		j = 0;
--		dev_dbg(&serial->interface->dev, "%s - minor base = %d\n", __func__, *minor);
--		for (i = *minor; (i < (*minor + num_ports)) && (i < SERIAL_TTY_MINORS); ++i, ++j) {
--			serial_table[i] = serial;
--			serial->port[j]->minor = i;
--			serial->port[j]->port_number = i - *minor;
--		}
--		mutex_unlock(&table_lock);
--		return serial;
-+	dev_dbg(&serial->interface->dev, "%s %d\n", __func__, num_ports);
++#define SERIAL_TTY_MAJOR	188
++#define SERIAL_TTY_MINORS	3000	/* should be enough for a while */
++#define SERIAL_TTY_NO_MINOR	(SERIAL_TTY_MINORS + 1)
 +
-+	*minor = 0xffffffff;
-+	for (i = 0; i < num_ports; ++i) {
-+		x = get_free_port(serial->port[i]);
-+		if (x < 0)
-+			goto error;
-+		if (*minor == 0xffffffff)
-+			*minor = x;
-+		serial->port[i]->port_number = i;
+ /* There is no MODULE_DEVICE_TABLE for usbserial.c.  Instead
+    the MODULE_DEVICE_TABLE declarations in each serial driver
+    cause the "hotplug" program to pull in whatever module is necessary
+@@ -105,12 +109,12 @@ static int get_free_serial(struct usb_se
+ 
+ 	dev_dbg(&serial->interface->dev, "%s %d\n", __func__, num_ports);
+ 
+-	*minor = 0xffffffff;
++	*minor = SERIAL_TTY_NO_MINOR;
+ 	for (i = 0; i < num_ports; ++i) {
+ 		x = get_free_port(serial->port[i]);
+ 		if (x < 0)
+ 			goto error;
+-		if (*minor == 0xffffffff)
++		if (*minor == SERIAL_TTY_NO_MINOR)
+ 			*minor = x;
+ 		serial->port[i]->port_number = i;
  	}
--	mutex_unlock(&table_lock);
--	return NULL;
-+	return 0;
-+error:
-+	/* unwind the already allocated minors */
-+	for (j = 0; j < i; ++j)
-+		idr_remove(&serial_minors, serial->port[j]->minor);
-+	return x;
- }
- 
- static void return_serial(struct usb_serial *serial)
-@@ -123,7 +128,7 @@ static void return_serial(struct usb_ser
- 
- 	mutex_lock(&table_lock);
- 	for (i = 0; i < serial->num_ports; ++i)
--		serial_table[serial->minor + i] = NULL;
-+		idr_remove(&serial_minors, serial->port[i]->minor);
- 	mutex_unlock(&table_lock);
- }
- 
-@@ -1040,7 +1045,7 @@ static int usb_serial_probe(struct usb_i
- 	 */
- 	serial->disconnected = 1;
- 
--	if (get_free_serial(serial, num_ports, &minor) == NULL) {
-+	if (get_free_serial(serial, num_ports, &minor)) {
- 		dev_err(ddev, "No more free serial devices\n");
- 		goto probe_error;
- 	}
-@@ -1224,7 +1229,6 @@ static struct usb_driver usb_serial_driv
- 
- static int __init usb_serial_init(void)
- {
--	int i;
- 	int result;
- 
- 	usb_serial_tty_driver = alloc_tty_driver(SERIAL_TTY_MINORS);
-@@ -1232,9 +1236,6 @@ static int __init usb_serial_init(void)
- 		return -ENOMEM;
- 
- 	/* Initialize our global data */
--	for (i = 0; i < SERIAL_TTY_MINORS; ++i)
--		serial_table[i] = NULL;
--
- 	result = bus_register(&usb_serial_bus_type);
- 	if (result) {
- 		pr_err("%s - registering bus driver failed\n", __func__);
 --- a/include/linux/usb/serial.h
 +++ b/include/linux/usb/serial.h
-@@ -21,7 +21,7 @@
+@@ -19,10 +19,6 @@
+ #include <linux/sysrq.h>
+ #include <linux/kfifo.h>
  
- #define SERIAL_TTY_MAJOR	188	/* Nice legal number now */
- #define SERIAL_TTY_MINORS	254	/* loads of devices :) */
--#define SERIAL_TTY_NO_MINOR	255	/* No minor was assigned */
-+#define SERIAL_TTY_NO_MINOR	0xffffffff	/* No minor was assigned */
- 
+-#define SERIAL_TTY_MAJOR	188	/* Nice legal number now */
+-#define SERIAL_TTY_MINORS	254	/* loads of devices :) */
+-#define SERIAL_TTY_NO_MINOR	0xffffffff	/* No minor was assigned */
+-
  /* The maximum number of ports one device can grab at once */
  #define MAX_NUM_PORTS		8
-@@ -161,13 +161,13 @@ struct usb_serial {
- 	unsigned char			disconnected:1;
- 	unsigned char			suspending:1;
- 	unsigned char			attached:1;
--	unsigned char			minor;
- 	unsigned char			num_ports;
- 	unsigned char			num_port_pointers;
- 	char				num_interrupt_in;
- 	char				num_interrupt_out;
- 	char				num_bulk_in;
- 	char				num_bulk_out;
-+	u32				minor;
- 	struct usb_serial_port		*port[MAX_NUM_PORTS];
- 	struct kref			kref;
- 	struct mutex			disc_mutex;
+ 
