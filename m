@@ -1,43 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756258Ab3FEPj7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 11:39:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33048 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754930Ab3FEPj6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 11:39:58 -0400
-Date: Wed, 5 Jun 2013 08:39:57 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org,
-        sarah.a.sharp@intel.com, linux-kernel@vger.kernel.org,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: Re: [RFC PATCH v3 0/4] Add usb2 link powermanagement BESL support
-Message-ID: <20130605153957.GA22808@kroah.com>
-References: <20130604230534.GB6289@xanatos>
- <Pine.LNX.4.44L0.1306051051130.1078-100000@iolanthe.rowland.org>
+	id S1756423Ab3FEPpK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 11:45:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20028 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756214Ab3FEPpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 11:45:09 -0400
+Date: Wed, 5 Jun 2013 17:40:52 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        John Johansen <john.johansen@canonical.com>
+Subject: Re: [ 020/184] ptrace: ensure arch_ptrace/ptrace_request can never
+Message-ID: <20130605154051.GA23025@redhat.com>
+References: <20130604172131.136042108@1wt.eu> <87sj0wucft.fsf@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1306051051130.1078-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87sj0wucft.fsf@canonical.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 10:51:38AM -0400, Alan Stern wrote:
-> On Tue, 4 Jun 2013, Sarah Sharp wrote:
-> 
-> > Alan, Greg, any more comments on this patchset?
-> > 
-> > It looks fine to me, and we've been testing it internally within Intel,
-> > so I'll queue it up for 3.11 if you don't have any more objections.
-> 
-> No objections to any of the parts touching the USB core.
+On 06/05, Luis Henriques wrote:
+>
+> Willy Tarreau <w@1wt.eu> writes:
+>
+> > 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+> >
+> > ------------------
+> >  race with SIGKILL
+> >
+> > From: Oleg Nesterov <oleg@redhat.com>
+> >
+> > ptrace: ensure arch_ptrace/ptrace_request can never race with SIGKILL
+> >
+>
+> This patch actually introduce a regression in the Ubuntu kernel.  You
+> may want to include the fix below.
 
-None from me either.
+Yes, 2.6.32 should also take care of TASK_STOPPED.
 
-thanks,
+> --- a/kernel/ptrace.c
+> +++ b/kernel/ptrace.c
+> @@ -81,14 +81,18 @@ void __ptrace_unlink(struct task_struct *child)
+>  }
+>  
+>  /* Ensure that nothing can wake it up, even SIGKILL */
+> -static bool ptrace_freeze_traced(struct task_struct *task)
+> +static bool ptrace_freeze_traced(struct task_struct *task, int kill)
+>  {
+> -	bool ret = false;
+> +	bool ret = true;
+>  
+>  	spin_lock_irq(&task->sighand->siglock);
+> -	if (task_is_traced(task) && !__fatal_signal_pending(task)) {
+> +	if (task_is_stopped(task) && !__fatal_signal_pending(task))
+>  		task->state = __TASK_TRACED;
+> -		ret = true;
+> +	else if (!kill) {
+> +		if (task_is_traced(task) && !__fatal_signal_pending(task))
+> +			task->state = __TASK_TRACED;
+> +		else
+> +			ret = false;
+>  	}
+>  	spin_unlock_irq(&task->sighand->siglock);
+>  
+> @@ -131,7 +135,7 @@ int ptrace_check_attach(struct task_struct *child, int kill)
+>  		 * child->sighand can't be NULL, release_task()
+>  		 * does ptrace_unlink() before __exit_signal().
+>  		 */
+> -		if (kill || ptrace_freeze_traced(child))
+> +		if (ptrace_freeze_traced(child, kill))
+>  			ret = 0;
 
-greg k-h
+I can't apply this patch, probably I misread it...
+
+But it looks very wrong. It seems that ptrace_freeze_traced(kill => true)
+always succeeds? Even if task is TASK_RUNNING/UNINTERRUPTIBLE/etc ?
+
+Note: I can make a _much_ simpler patch for 2.6.32, please let me know
+if you need it.
+
+We can rely on sys_ptrace()->lock_kernel() and simply do lock/unlock
+if fatal_signal_pending() in ptrace_stop/do_signal_stop. This is not
+the same, this doesn't prevent wakeup(), but this should be enough.
+
+Oleg.
+
