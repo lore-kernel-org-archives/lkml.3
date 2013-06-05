@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932827Ab3FEVfh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:35:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37829 "EHLO
+	id S933346Ab3FEV5O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:57:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37843 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932582Ab3FEVfd (ORCPT
+	with ESMTP id S932821Ab3FEVfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:33 -0400
+	Wed, 5 Jun 2013 17:35:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cliff Wickman <cpw@sgi.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, David Sterba <dsterba@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 054/127] mm/pagewalk.c: walk_page_range should avoid VM_PFNMAP areas
-Date: Wed,  5 Jun 2013 14:33:41 -0700
-Message-Id: <20130605213224.176771238@linuxfoundation.org>
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 058/127] x86-64, init: Fix a possible wraparound bug in switchover in head_64.S
+Date: Wed,  5 Jun 2013 14:33:45 -0700
+Message-Id: <20130605213224.640471005@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -34,151 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cliff Wickman <cpw@sgi.com>
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-commit a9ff785e4437c83d2179161e012f5bdfbd6381f0 upstream.
+commit e9d0626ed43a41a3fc526d1df06122b0d4eac174 upstream.
 
-A panic can be caused by simply cat'ing /proc/<pid>/smaps while an
-application has a VM_PFNMAP range.  It happened in-house when a
-benchmarker was trying to decipher the memory layout of his program.
+In head_64.S, a switchover has been used to handle kernel crossing
+1G, 512G boundaries.
 
-/proc/<pid>/smaps and similar walks through a user page table should not
-be looking at VM_PFNMAP areas.
+And commit 8170e6bed465b4b0c7687f93e9948aca4358a33b
+    x86, 64bit: Use a #PF handler to materialize early mappings on demand
+said:
+    During the switchover in head_64.S, before #PF handler is available,
+    we use three pages to handle kernel crossing 1G, 512G boundaries with
+    sharing page by playing games with page aliasing: the same page is
+    mapped twice in the higher-level tables with appropriate wraparound.
 
-Certain tests in walk_page_range() (specifically split_huge_page_pmd())
-assume that all the mapped PFN's are backed with page structures.  And
-this is not usually true for VM_PFNMAP areas.  This can result in panics
-on kernel page faults when attempting to address those page structures.
+But from the switchover code, when we set up the PUD table:
+114         addq    $4096, %rdx
+115         movq    %rdi, %rax
+116         shrq    $PUD_SHIFT, %rax
+117         andl    $(PTRS_PER_PUD-1), %eax
+118         movq    %rdx, (4096+0)(%rbx,%rax,8)
+119         movq    %rdx, (4096+8)(%rbx,%rax,8)
 
-There are a half dozen callers of walk_page_range() that walk through a
-task's entire page table (as N.  Horiguchi pointed out).  So rather than
-change all of them, this patch changes just walk_page_range() to ignore
-VM_PFNMAP areas.
+It seems line 119 has a potential bug there. For example,
+if the kernel is loaded at physical address 511G+1008M, that is
+    000000000 111111111 111111000 000000000000000000000
+and the kernel _end is 512G+2M, that is
+    000000001 000000000 000000001 000000000000000000000
+So in this example, when using the 2nd page to setup PUD (line 114~119),
+rax is 511.
+In line 118, we put rdx which is the address of the PMD page (the 3rd page)
+into entry 511 of the PUD table. But in line 119, the entry we calculate from
+(4096+8)(%rbx,%rax,8) has exceeded the PUD page. IMO, the entry in line
+119 should be wraparound into entry 0 of the PUD table.
 
-The logic of hugetlb_vma() is moved back into walk_page_range(), as we
-want to test any vma in the range.
+The patch fixes the bug.
 
-VM_PFNMAP areas are used by:
-- graphics memory manager   gpu/drm/drm_gem.c
-- global reference unit     sgi-gru/grufile.c
-- sgi special memory        char/mspec.c
-- and probably several out-of-tree modules
-
-[akpm@linux-foundation.org: remove now-unused hugetlb_vma() stub]
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Dave Hansen <dave.hansen@intel.com>
-Cc: David Sterba <dsterba@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Link: http://lkml.kernel.org/r/5191DE5A.3020302@cn.fujitsu.com
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/pagewalk.c |   70 +++++++++++++++++++++++++++++-----------------------------
- 1 file changed, 36 insertions(+), 34 deletions(-)
+ arch/x86/kernel/head_64.S |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/mm/pagewalk.c
-+++ b/mm/pagewalk.c
-@@ -127,28 +127,7 @@ static int walk_hugetlb_range(struct vm_
- 	return 0;
- }
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -115,8 +115,10 @@ startup_64:
+ 	movq	%rdi, %rax
+ 	shrq	$PUD_SHIFT, %rax
+ 	andl	$(PTRS_PER_PUD-1), %eax
+-	movq	%rdx, (4096+0)(%rbx,%rax,8)
+-	movq	%rdx, (4096+8)(%rbx,%rax,8)
++	movq	%rdx, 4096(%rbx,%rax,8)
++	incl	%eax
++	andl	$(PTRS_PER_PUD-1), %eax
++	movq	%rdx, 4096(%rbx,%rax,8)
  
--static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
--{
--	struct vm_area_struct *vma;
--
--	/* We don't need vma lookup at all. */
--	if (!walk->hugetlb_entry)
--		return NULL;
--
--	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
--	vma = find_vma(walk->mm, addr);
--	if (vma && vma->vm_start <= addr && is_vm_hugetlb_page(vma))
--		return vma;
--
--	return NULL;
--}
--
- #else /* CONFIG_HUGETLB_PAGE */
--static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
--{
--	return NULL;
--}
--
- static int walk_hugetlb_range(struct vm_area_struct *vma,
- 			      unsigned long addr, unsigned long end,
- 			      struct mm_walk *walk)
-@@ -198,30 +177,53 @@ int walk_page_range(unsigned long addr,
- 	if (!walk->mm)
- 		return -EINVAL;
- 
-+	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
-+
- 	pgd = pgd_offset(walk->mm, addr);
- 	do {
--		struct vm_area_struct *vma;
-+		struct vm_area_struct *vma = NULL;
- 
- 		next = pgd_addr_end(addr, end);
- 
- 		/*
--		 * handle hugetlb vma individually because pagetable walk for
--		 * the hugetlb page is dependent on the architecture and
--		 * we can't handled it in the same manner as non-huge pages.
-+		 * This function was not intended to be vma based.
-+		 * But there are vma special cases to be handled:
-+		 * - hugetlb vma's
-+		 * - VM_PFNMAP vma's
- 		 */
--		vma = hugetlb_vma(addr, walk);
-+		vma = find_vma(walk->mm, addr);
- 		if (vma) {
--			if (vma->vm_end < next)
-+			/*
-+			 * There are no page structures backing a VM_PFNMAP
-+			 * range, so do not allow split_huge_page_pmd().
-+			 */
-+			if ((vma->vm_start <= addr) &&
-+			    (vma->vm_flags & VM_PFNMAP)) {
- 				next = vma->vm_end;
-+				pgd = pgd_offset(walk->mm, next);
-+				continue;
-+			}
- 			/*
--			 * Hugepage is very tightly coupled with vma, so
--			 * walk through hugetlb entries within a given vma.
-+			 * Handle hugetlb vma individually because pagetable
-+			 * walk for the hugetlb page is dependent on the
-+			 * architecture and we can't handled it in the same
-+			 * manner as non-huge pages.
- 			 */
--			err = walk_hugetlb_range(vma, addr, next, walk);
--			if (err)
--				break;
--			pgd = pgd_offset(walk->mm, next);
--			continue;
-+			if (walk->hugetlb_entry && (vma->vm_start <= addr) &&
-+			    is_vm_hugetlb_page(vma)) {
-+				if (vma->vm_end < next)
-+					next = vma->vm_end;
-+				/*
-+				 * Hugepage is very tightly coupled with vma,
-+				 * so walk through hugetlb entries within a
-+				 * given vma.
-+				 */
-+				err = walk_hugetlb_range(vma, addr, next, walk);
-+				if (err)
-+					break;
-+				pgd = pgd_offset(walk->mm, next);
-+				continue;
-+			}
- 		}
- 
- 		if (pgd_none_or_clear_bad(pgd)) {
+ 	addq	$8192, %rbx
+ 	movq	%rdi, %rax
 
 
