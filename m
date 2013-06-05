@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932608Ab3FEVVd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:21:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36858 "EHLO
+	id S932520Ab3FEVM4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:12:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36778 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932526Ab3FEVM5 (ORCPT
+	with ESMTP id S932405Ab3FEVMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:12:57 -0400
+	Wed, 5 Jun 2013 17:12:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Chinner <dchinner@redhat.com>, Brian Foster <bfoster@redhat.com>,
-        Ben Myers <bpm@sgi.com>
-Subject: [ 30/44] xfs: kill suid/sgid through the truncate path.
-Date: Wed,  5 Jun 2013 14:12:28 -0700
-Message-Id: <20130605211225.006701190@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 11/44] USB: xHCI: override bogus bulk wMaxPacketSize values
+Date: Wed,  5 Jun 2013 14:12:09 -0700
+Message-Id: <20130605211223.047765917@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605211221.858177087@linuxfoundation.org>
 References: <20130605211221.858177087@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,101 +29,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 2962f5a5dcc56f69cbf62121a7be67cc15d6940b upstream.
+commit e4f47e3675e6f1f40906b785b934ce963e9f2eb3 upstream.
 
-XFS has failed to kill suid/sgid bits correctly when truncating
-files of non-zero size since commit c4ed4243 ("xfs: split
-xfs_setattr") introduced in the 3.1 kernel. Fix it.
+This patch shortens the logic in xhci_endpoint_init() by moving common
+calculations involving max_packet and max_burst outside the switch
+statement, rather than repeating the same code in multiple
+case-specific statements.  It also replaces two usages of max_packet
+which were clearly intended to be max_burst all along.
 
-Fix it.
+More importantly, it compensates for a common bug in high-speed bulk
+endpoint descriptors.  In many devices there is a bulk endpoint having
+a wMaxPacketSize value smaller than 512, which is forbidden by the USB
+spec.  Some xHCI controllers can't handle this and refuse to accept
+the endpoint.  This patch changes the max_packet value to 512, which
+allows the controller to use the endpoint properly.
 
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Brian Foster <bfoster@redhat.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
+In practice the bogus maxpacket size doesn't matter, because none of
+the transfers sent via these endpoints are longer than the maxpacket
+value anyway.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: "Aurélien Leblond" <blablack@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_iops.c |   47 ++++++++++++++++++++++++++++++++---------------
- 1 file changed, 32 insertions(+), 15 deletions(-)
+ drivers/usb/host/xhci-mem.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
---- a/fs/xfs/xfs_iops.c
-+++ b/fs/xfs/xfs_iops.c
-@@ -457,6 +457,28 @@ xfs_vn_getattr(
- 	return 0;
- }
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1443,15 +1443,17 @@ int xhci_endpoint_init(struct xhci_hcd *
+ 	ep_ctx->ep_info2 |= cpu_to_le32(xhci_get_endpoint_type(udev, ep));
  
-+static void
-+xfs_setattr_mode(
-+	struct xfs_trans	*tp,
-+	struct xfs_inode	*ip,
-+	struct iattr		*iattr)
-+{
-+	struct inode	*inode = VFS_I(ip);
-+	umode_t		mode = iattr->ia_mode;
-+
-+	ASSERT(tp);
-+	ASSERT(xfs_isilocked(ip, XFS_ILOCK_EXCL));
-+
-+	if (!in_group_p(inode->i_gid) && !capable(CAP_FSETID))
-+		mode &= ~S_ISGID;
-+
-+	ip->i_d.di_mode &= S_IFMT;
-+	ip->i_d.di_mode |= mode & ~S_IFMT;
-+
-+	inode->i_mode &= S_IFMT;
-+	inode->i_mode |= mode & ~S_IFMT;
-+}
-+
- int
- xfs_setattr_nonsize(
- 	struct xfs_inode	*ip,
-@@ -608,18 +630,8 @@ xfs_setattr_nonsize(
- 	/*
- 	 * Change file access modes.
- 	 */
--	if (mask & ATTR_MODE) {
--		umode_t mode = iattr->ia_mode;
--
--		if (!in_group_p(inode->i_gid) && !capable(CAP_FSETID))
--			mode &= ~S_ISGID;
--
--		ip->i_d.di_mode &= S_IFMT;
--		ip->i_d.di_mode |= mode & ~S_IFMT;
--
--		inode->i_mode &= S_IFMT;
--		inode->i_mode |= mode & ~S_IFMT;
--	}
-+	if (mask & ATTR_MODE)
-+		xfs_setattr_mode(tp, ip, iattr);
- 
- 	/*
- 	 * Change file access or modified times.
-@@ -716,9 +728,8 @@ xfs_setattr_size(
- 		return XFS_ERROR(error);
- 
- 	ASSERT(S_ISREG(ip->i_d.di_mode));
--	ASSERT((mask & (ATTR_MODE|ATTR_UID|ATTR_GID|ATTR_ATIME|ATTR_ATIME_SET|
--			ATTR_MTIME_SET|ATTR_KILL_SUID|ATTR_KILL_SGID|
--			ATTR_KILL_PRIV|ATTR_TIMES_SET)) == 0);
-+	ASSERT((mask & (ATTR_UID|ATTR_GID|ATTR_ATIME|ATTR_ATIME_SET|
-+			ATTR_MTIME_SET|ATTR_KILL_PRIV|ATTR_TIMES_SET)) == 0);
- 
- 	lock_flags = XFS_ILOCK_EXCL;
- 	if (!(flags & XFS_ATTR_NOLOCK))
-@@ -861,6 +872,12 @@ xfs_setattr_size(
- 		xfs_iflags_set(ip, XFS_ITRUNCATED);
+ 	/* Set the max packet size and max burst */
++	max_packet = GET_MAX_PACKET(usb_endpoint_maxp(&ep->desc));
++	max_burst = 0;
+ 	switch (udev->speed) {
+ 	case USB_SPEED_SUPER:
+-		max_packet = usb_endpoint_maxp(&ep->desc);
+-		ep_ctx->ep_info2 |= cpu_to_le32(MAX_PACKET(max_packet));
+ 		/* dig out max burst from ep companion desc */
+-		max_packet = ep->ss_ep_comp.bMaxBurst;
+-		ep_ctx->ep_info2 |= cpu_to_le32(MAX_BURST(max_packet));
++		max_burst = ep->ss_ep_comp.bMaxBurst;
+ 		break;
+ 	case USB_SPEED_HIGH:
++		/* Some devices get this wrong */
++		if (usb_endpoint_xfer_bulk(&ep->desc))
++			max_packet = 512;
+ 		/* bits 11:12 specify the number of additional transaction
+ 		 * opportunities per microframe (USB 2.0, section 9.6.6)
+ 		 */
+@@ -1459,17 +1461,16 @@ int xhci_endpoint_init(struct xhci_hcd *
+ 				usb_endpoint_xfer_int(&ep->desc)) {
+ 			max_burst = (usb_endpoint_maxp(&ep->desc)
+ 				     & 0x1800) >> 11;
+-			ep_ctx->ep_info2 |= cpu_to_le32(MAX_BURST(max_burst));
+ 		}
+-		/* Fall through */
++		break;
+ 	case USB_SPEED_FULL:
+ 	case USB_SPEED_LOW:
+-		max_packet = GET_MAX_PACKET(usb_endpoint_maxp(&ep->desc));
+-		ep_ctx->ep_info2 |= cpu_to_le32(MAX_PACKET(max_packet));
+ 		break;
+ 	default:
+ 		BUG();
  	}
++	ep_ctx->ep_info2 |= cpu_to_le32(MAX_PACKET(max_packet) |
++			MAX_BURST(max_burst));
+ 	max_esit_payload = xhci_get_max_esit_payload(xhci, udev, ep);
+ 	ep_ctx->tx_info = cpu_to_le32(MAX_ESIT_PAYLOAD_FOR_EP(max_esit_payload));
  
-+	/*
-+	 * Change file access modes.
-+	 */
-+	if (mask & ATTR_MODE)
-+		xfs_setattr_mode(tp, ip, iattr);
-+
- 	if (mask & ATTR_CTIME) {
- 		inode->i_ctime = iattr->ia_ctime;
- 		ip->i_d.di_ctime.t_sec = iattr->ia_ctime.tv_sec;
 
 
