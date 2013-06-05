@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933378Ab3FEWBE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 18:01:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37765 "EHLO
+	id S932705Ab3FEVf0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:35:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37737 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932592Ab3FEVf1 (ORCPT
+	with ESMTP id S932592Ab3FEVfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:27 -0400
+	Wed, 5 Jun 2013 17:35:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Gmeiner <christian.gmeiner@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 045/127] drivers/leds/leds-ot200.c: fix error caused by shifted mask
-Date: Wed,  5 Jun 2013 14:33:32 -0700
-Message-Id: <20130605213223.116537319@linuxfoundation.org>
+        Heiko Abraham <abrahamh@web.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [ 030/127] Input: egalax_ts - ABS_MT_POSITION_Y not reported well
+Date: Wed,  5 Jun 2013 14:33:17 -0700
+Message-Id: <20130605213221.397742214@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -30,74 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
+From: Heiko Abraham <abrahamh@web.de>
 
-commit 4b949b8af12e24b8a48fa5bb775a13b558d9f4da upstream.
+commit 3c9cfa782e075cc2348b949ba139911aac02c7cb upstream.
 
-During the development of this driver an in-house register documentation
-was used.  The last week some integration tests were done and this
-problem was found.  It turned out that the released register
-documentation is wrong.
+The egalax_ts touchscreen modul not report ABS_MT_POSITION_Y proper.
+As result it may be, that upper software levels only receive x coordinates well.
 
-The fix is very simple: shift all masks by one.
-
-Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
-Cc: Bryan Wu <cooloney@gmail.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Heiko Abraham <abrahamh@web.de>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/leds/leds-ot200.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/input/touchscreen/egalax_ts.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/leds/leds-ot200.c
-+++ b/drivers/leds/leds-ot200.c
-@@ -47,37 +47,37 @@ static struct ot200_led leds[] = {
- 	{
- 		.name = "led_1",
- 		.port = 0x49,
--		.mask = BIT(7),
-+		.mask = BIT(6),
- 	},
- 	{
- 		.name = "led_2",
- 		.port = 0x49,
--		.mask = BIT(6),
-+		.mask = BIT(5),
- 	},
- 	{
- 		.name = "led_3",
- 		.port = 0x49,
--		.mask = BIT(5),
-+		.mask = BIT(4),
- 	},
- 	{
- 		.name = "led_4",
- 		.port = 0x49,
--		.mask = BIT(4),
-+		.mask = BIT(3),
- 	},
- 	{
- 		.name = "led_5",
- 		.port = 0x49,
--		.mask = BIT(3),
-+		.mask = BIT(2),
- 	},
- 	{
- 		.name = "led_6",
- 		.port = 0x49,
--		.mask = BIT(2),
-+		.mask = BIT(1),
- 	},
- 	{
- 		.name = "led_7",
- 		.port = 0x49,
--		.mask = BIT(1),
-+		.mask = BIT(0),
- 	}
- };
+--- a/drivers/input/touchscreen/egalax_ts.c
++++ b/drivers/input/touchscreen/egalax_ts.c
+@@ -216,7 +216,7 @@ static int egalax_ts_probe(struct i2c_cl
+ 	input_set_abs_params(input_dev,
+ 			     ABS_MT_POSITION_X, 0, EGALAX_MAX_X, 0, 0);
+ 	input_set_abs_params(input_dev,
+-			     ABS_MT_POSITION_X, 0, EGALAX_MAX_Y, 0, 0);
++			     ABS_MT_POSITION_Y, 0, EGALAX_MAX_Y, 0, 0);
+ 	input_mt_init_slots(input_dev, MAX_SUPPORT_POINTS, 0);
  
+ 	input_set_drvdata(input_dev, ts);
 
 
