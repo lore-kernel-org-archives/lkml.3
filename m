@@ -1,71 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab3FEMlb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 08:41:31 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:65324 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601Ab3FEMla (ORCPT
+	id S1753039Ab3FEMmR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 08:42:17 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:64606 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752996Ab3FEMmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 08:41:30 -0400
+	Wed, 5 Jun 2013 08:42:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <87k3m92148.fsf@linaro.org>
-References: <1369995191-20855-1-git-send-email-gururaja.hebbar@ti.com>
-	<20130531170437.GA17591@core.coreip.homeip.net>
-	<CACRpkdYnhjpFp1CM=P_hddBe4qVigtE0c+CN9NKvk3nFgJS-ig@mail.gmail.com>
-	<87k3m92148.fsf@linaro.org>
-Date: Wed, 5 Jun 2013 14:41:29 +0200
-Message-ID: <CACRpkdbtVnieRZC+WVNrWZfe2X5SEdcq2ZbOj3kaTm3TLcHmHg@mail.gmail.com>
-Subject: Re: [PATCH 00/11] drivers: Add Pinctrl PM support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hebbar Gururaja <gururaja.hebbar@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vaibhav Bedia <vaibhav.bedia@ti.com>, sudhakar.raj@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130605110434.GY8923@twins.programming.kicks-ass.net>
+References: <d226c91fed3dfa2dca644d14c88b1d1ff9d2e722.1370344689.git.viresh.kumar@linaro.org>
+	<51AEC1C3.1040804@linux.vnet.ibm.com>
+	<CAKohpokGrgFOtOT6Y3e4MOJBUQWT4FG4Mk-F6_M0V-pEEf3KYw@mail.gmail.com>
+	<20130605110434.GY8923@twins.programming.kicks-ass.net>
+Date: Wed, 5 Jun 2013 18:12:15 +0530
+Message-ID: <CAKohpomJOGKoX9+HWkiGshUwTG9yKbn=M25xJvEYVZGnmj9Bkg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] sched: Optimize build_sched_domains() for saving
+ first SD node for a cpu
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Michael Wang <wangyun@linux.vnet.ibm.com>, mingo@redhat.com,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com
+Content-Type: multipart/mixed; boundary=e89a8ff2560e0caffe04de6787c2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 4, 2013 at 8:15 PM, Kevin Hilman <khilman@linaro.org> wrote:
-> [Me]
->> I think this will save a *lot* of identical code in all the
->> drivers, that will just have to call
->> pinctrl_select_pm_sleep(), pinctrl_select_pm_default()
->> pinctrl_select_pm_idle() instead of all the complex code.
->>
->> This is what I planned to do but never got around to.
->
-> What about taking it one tiny step further, and having it done by the PM
-> core itself?
+--e89a8ff2560e0caffe04de6787c2
+Content-Type: text/plain; charset=ISO-8859-1
 
-Maybe so, but atleast currently we cannot do it
-exclusively in the PM core.
+On 5 June 2013 16:34, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, Jun 05, 2013 at 10:37:29AM +0530, Viresh Kumar wrote:
 
-We have things like what you find in
-drivers/tty/serial/amba-pl011.c
-where pl011_shutdown() puts the pins into sleep mode
-on unused TTYs.
+>> See if below one looks better (Attached too in case gmail screws up
+>> my mail)..
 
-The same applies to any unused ports like that, we're
-thinking of a way to sleep pins for unused I2C hosts
-for example.
+> Applying patch
+> patches/viresh_kumar-_patch__sched-optimize_build_sched_domains_for_saving_first_sd.patch
+> patching file kernel/sched/core.c
+> patch: **** malformed patch at line 56: cpumask *cpu_map,
 
-And that works fine also on systems that does not
-enable CONFIG_PM (so the pin control subsystem
-is completely orthogonal). But maybe that is
-complicating things? I was just thinking it was a bit
-thick to require everything and its dog to make a
-complete transition to (runtime)PM.
+You tried to apply patch from mail or attachment? I requested to
+pick attachment as gmail's copy-paste screws up patches.
 
-Yours,
-Linus Walleij
+I rebased it over tip/master now:
+
+2bf6874 Merge branch 'x86/cleanups'
+
+Patches are attached now.
+
+--e89a8ff2560e0caffe04de6787c2
+Content-Type: application/octet-stream; 
+	name="0001-sched-Remove-unused-params-of-build_sched_domain.patch"
+Content-Disposition: attachment; 
+	filename="0001-sched-Remove-unused-params-of-build_sched_domain.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hhkiacri0
+
+RnJvbSA1NDVlMGI0NTM2MTY2YTE1YjQ0NzVhYmNhZmU1ZWQwZGI0YWQ0YTJjIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8NTQ1ZTBiNDUzNjE2NmExNWI0NDc1YWJjYWZlNWVk
+MGRiNGFkNGEyYy4xMzcwNDM2MTIwLmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRnJvbTog
+VmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRGF0ZTogVHVlLCA0IEp1biAy
+MDEzIDE2OjEyOjQzICswNTMwClN1YmplY3Q6IFtQQVRDSCAxLzJdIHNjaGVkOiBSZW1vdmUgdW51
+c2VkIHBhcmFtcyBvZiBidWlsZF9zY2hlZF9kb21haW4oKQoKYnVpbGRfc2NoZWRfZG9tYWluKCkg
+bmV2ZXIgdXNlcyBwYXJhbWV0ZXIgc3RydWN0IHNfZGF0YSAqZCBhbmQgc28gcGFzc2luZyBpdCBp
+cwp1c2VsZXNzLgoKUmVtb3ZlIGl0LgoKU2lnbmVkLW9mZi1ieTogVmlyZXNoIEt1bWFyIDx2aXJl
+c2gua3VtYXJAbGluYXJvLm9yZz4KLS0tCiBrZXJuZWwvc2NoZWQvY29yZS5jIHwgNyArKystLS0t
+CiAxIGZpbGUgY2hhbmdlZCwgMyBpbnNlcnRpb25zKCspLCA0IGRlbGV0aW9ucygtKQoKZGlmZiAt
+LWdpdCBhL2tlcm5lbC9zY2hlZC9jb3JlLmMgYi9rZXJuZWwvc2NoZWQvY29yZS5jCmluZGV4IDUy
+YTE3NjAuLjA2MjM3MDMgMTAwNjQ0Ci0tLSBhL2tlcm5lbC9zY2hlZC9jb3JlLmMKKysrIGIva2Vy
+bmVsL3NjaGVkL2NvcmUuYwpAQCAtNTkzMCw5ICs1OTMwLDggQEAgc3RhdGljIHZvaWQgX19zZHRf
+ZnJlZShjb25zdCBzdHJ1Y3QgY3B1bWFzayAqY3B1X21hcCkKIH0KIAogc3RydWN0IHNjaGVkX2Rv
+bWFpbiAqYnVpbGRfc2NoZWRfZG9tYWluKHN0cnVjdCBzY2hlZF9kb21haW5fdG9wb2xvZ3lfbGV2
+ZWwgKnRsLAotCQlzdHJ1Y3Qgc19kYXRhICpkLCBjb25zdCBzdHJ1Y3QgY3B1bWFzayAqY3B1X21h
+cCwKLQkJc3RydWN0IHNjaGVkX2RvbWFpbl9hdHRyICphdHRyLCBzdHJ1Y3Qgc2NoZWRfZG9tYWlu
+ICpjaGlsZCwKLQkJaW50IGNwdSkKKwkJY29uc3Qgc3RydWN0IGNwdW1hc2sgKmNwdV9tYXAsIHN0
+cnVjdCBzY2hlZF9kb21haW5fYXR0ciAqYXR0ciwKKwkJc3RydWN0IHNjaGVkX2RvbWFpbiAqY2hp
+bGQsIGludCBjcHUpCiB7CiAJc3RydWN0IHNjaGVkX2RvbWFpbiAqc2QgPSB0bC0+aW5pdCh0bCwg
+Y3B1KTsKIAlpZiAoIXNkKQpAQCAtNTk3Miw3ICs1OTcxLDcgQEAgc3RhdGljIGludCBidWlsZF9z
+Y2hlZF9kb21haW5zKGNvbnN0IHN0cnVjdCBjcHVtYXNrICpjcHVfbWFwLAogCiAJCXNkID0gTlVM
+TDsKIAkJZm9yICh0bCA9IHNjaGVkX2RvbWFpbl90b3BvbG9neTsgdGwtPmluaXQ7IHRsKyspIHsK
+LQkJCXNkID0gYnVpbGRfc2NoZWRfZG9tYWluKHRsLCAmZCwgY3B1X21hcCwgYXR0ciwgc2QsIGkp
+OworCQkJc2QgPSBidWlsZF9zY2hlZF9kb21haW4odGwsIGNwdV9tYXAsIGF0dHIsIHNkLCBpKTsK
+IAkJCWlmICh0bCA9PSBzY2hlZF9kb21haW5fdG9wb2xvZ3kpCiAJCQkJKnBlcl9jcHVfcHRyKGQu
+c2QsIGkpID0gc2Q7CiAJCQlpZiAodGwtPmZsYWdzICYgU0RUTF9PVkVSTEFQIHx8IHNjaGVkX2Zl
+YXQoRk9SQ0VfU0RfT1ZFUkxBUCkpCi0tIAoxLjcuMTIucmMyLjE4Lmc2MWI0NzJlCgo=
+--e89a8ff2560e0caffe04de6787c2
+Content-Type: application/octet-stream; 
+	name="0002-sched-Optimize-build_sched_domains-for-saving-first-.patch"
+Content-Disposition: attachment; 
+	filename="0002-sched-Optimize-build_sched_domains-for-saving-first-.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hhkiacrm1
+
+RnJvbSBmYzQ3MzUyN2NiYzRkZmEwYjhlZWVmMmE1OWRiNzQ2ODRlYjU5YTgzIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8ZmM0NzM1MjdjYmM0ZGZhMGI4ZWVlZjJhNTlkYjc0
+Njg0ZWI1OWE4My4xMzcwNDM2MTIwLmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KSW4tUmVw
+bHktVG86IDw1NDVlMGI0NTM2MTY2YTE1YjQ0NzVhYmNhZmU1ZWQwZGI0YWQ0YTJjLjEzNzA0MzYx
+MjAuZ2l0LnZpcmVzaC5rdW1hckBsaW5hcm8ub3JnPgpSZWZlcmVuY2VzOiA8NTQ1ZTBiNDUzNjE2
+NmExNWI0NDc1YWJjYWZlNWVkMGRiNGFkNGEyYy4xMzcwNDM2MTIwLmdpdC52aXJlc2gua3VtYXJA
+bGluYXJvLm9yZz4KRnJvbTogVmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4K
+RGF0ZTogVHVlLCA0IEp1biAyMDEzIDE1OjQxOjE1ICswNTMwClN1YmplY3Q6IFtQQVRDSCAyLzJd
+IHNjaGVkOiBPcHRpbWl6ZSBidWlsZF9zY2hlZF9kb21haW5zKCkgZm9yIHNhdmluZyBmaXJzdAog
+U0Qgbm9kZSBmb3IgYSBjcHUKCldlIGFyZSBzYXZpbmcgZmlyc3Qgc2NoZWR1bGluZyBkb21haW4g
+Zm9yIGEgY3B1IGluIGJ1aWxkX3NjaGVkX2RvbWFpbnMoKSBieQppdGVyYXRpbmcgb3ZlciB0aGUg
+bmVzdGVkIHNkLT5jaGlsZCBsaXN0LiBXZSBkb24ndCBhY3R1YWxseSBuZWVkIHRvIGRvIGl0IHRo
+aXMKd2F5LgoKdGwgd2lsbCBiZSBlcXVhbCB0byBzY2hlZF9kb21haW5fdG9wb2xvZ3kgZm9yIHRo
+ZSBmaXJzdCBpdGVyYXRpb24gYW5kIHNvIHdlIGNhbgpzZXQgKnBlcl9jcHVfcHRyKGQuc2QsIGkp
+IGJhc2VkIG9uIHRoYXQuICBTbywgc2F2ZSBwb2ludGVyIHRvIGZpcnN0IFNEIHdoaWxlCnJ1bm5p
+bmcgdGhlIGl0ZXJhdGlvbiBsb29wIG92ZXIgdGwncy4KClNpZ25lZC1vZmYtYnk6IFZpcmVzaCBL
+dW1hciA8dmlyZXNoLmt1bWFyQGxpbmFyby5vcmc+Ci0tLQoga2VybmVsL3NjaGVkL2NvcmUuYyB8
+IDcgKystLS0tLQogMSBmaWxlIGNoYW5nZWQsIDIgaW5zZXJ0aW9ucygrKSwgNSBkZWxldGlvbnMo
+LSkKCmRpZmYgLS1naXQgYS9rZXJuZWwvc2NoZWQvY29yZS5jIGIva2VybmVsL3NjaGVkL2NvcmUu
+YwppbmRleCAxNDJjNjgyZi4uNTJhMTc2MCAxMDA2NDQKLS0tIGEva2VybmVsL3NjaGVkL2NvcmUu
+YworKysgYi9rZXJuZWwvc2NoZWQvY29yZS5jCkBAIC01OTczLDE2ICs1OTczLDEzIEBAIHN0YXRp
+YyBpbnQgYnVpbGRfc2NoZWRfZG9tYWlucyhjb25zdCBzdHJ1Y3QgY3B1bWFzayAqY3B1X21hcCwK
+IAkJc2QgPSBOVUxMOwogCQlmb3IgKHRsID0gc2NoZWRfZG9tYWluX3RvcG9sb2d5OyB0bC0+aW5p
+dDsgdGwrKykgewogCQkJc2QgPSBidWlsZF9zY2hlZF9kb21haW4odGwsICZkLCBjcHVfbWFwLCBh
+dHRyLCBzZCwgaSk7CisJCQlpZiAodGwgPT0gc2NoZWRfZG9tYWluX3RvcG9sb2d5KQorCQkJCSpw
+ZXJfY3B1X3B0cihkLnNkLCBpKSA9IHNkOwogCQkJaWYgKHRsLT5mbGFncyAmIFNEVExfT1ZFUkxB
+UCB8fCBzY2hlZF9mZWF0KEZPUkNFX1NEX09WRVJMQVApKQogCQkJCXNkLT5mbGFncyB8PSBTRF9P
+VkVSTEFQOwogCQkJaWYgKGNwdW1hc2tfZXF1YWwoY3B1X21hcCwgc2NoZWRfZG9tYWluX3NwYW4o
+c2QpKSkKIAkJCQlicmVhazsKIAkJfQotCi0JCXdoaWxlIChzZC0+Y2hpbGQpCi0JCQlzZCA9IHNk
+LT5jaGlsZDsKLQotCQkqcGVyX2NwdV9wdHIoZC5zZCwgaSkgPSBzZDsKIAl9CiAKIAkvKiBCdWls
+ZCB0aGUgZ3JvdXBzIGZvciB0aGUgZG9tYWlucyAqLwotLSAKMS43LjEyLnJjMi4xOC5nNjFiNDcy
+ZQoK
+--e89a8ff2560e0caffe04de6787c2--
