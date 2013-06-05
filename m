@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756124Ab3FEOYi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 10:24:38 -0400
-Received: from www.sr71.net ([198.145.64.142]:49717 "EHLO blackbird.sr71.net"
+	id S1756156Ab3FEOZw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 10:25:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37752 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755594Ab3FEOYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 10:24:37 -0400
-Message-ID: <51AF4A24.2020606@sr71.net>
-Date: Wed, 05 Jun 2013 07:24:36 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756080Ab3FEOZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 10:25:50 -0400
+Date: Wed, 5 Jun 2013 16:25:46 +0200
+From: David Sterba <dsterba@suse.cz>
+To: Arne Jansen <sensille@gmx.net>
+Cc: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+        Chris Mason <clmason@fusionio.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Subject: Re: [PATCH 0/2] introduce list_for_each_entry_del
+Message-ID: <20130605142545.GB18160@twin.jikos.cz>
+Reply-To: dsterba@suse.cz
+Mail-Followup-To: dsterba@suse.cz, Arne Jansen <sensille@gmx.net>,
+	=?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+	Chris Mason <clmason@fusionio.com>,
+	Christoph Hellwig <hch@infradead.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+References: <1370280485-10047-1-git-send-email-joern@logfs.org>
+ <20130603204930.GA28299@infradead.org>
+ <20130603193647.GB10200@logfs.org>
+ <20130603195555.GC10200@logfs.org>
+ <20130604144856.GA12302@infradead.org>
+ <20130604145322.4088.78915@localhost.localdomain>
+ <51AE4969.8050709@gmx.net>
+ <20130604184435.GA23436@logfs.org>
+ <20130605020939.GC27240@logfs.org>
+ <51AEE07E.6070301@gmx.net>
 MIME-Version: 1.0
-To: Hillf Danton <dhillf@gmail.com>
-CC: Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mgorman@suse.de, tim.c.chen@linux.intel.com
-Subject: Re: [v5][PATCH 5/6] mm: vmscan: batch shrink_page_list() locking
- operations
-References: <20130603200202.7F5FDE07@viggo.jf.intel.com> <20130603200208.6F71D31F@viggo.jf.intel.com> <CAJd=RBC563c64usU2oK40b62c7N0R15KD_4ihFExeT021wUTcw@mail.gmail.com> <20130604050744.GD14719@blaptop> <CAJd=RBAt9eSx3_FB79J93e19bv15sFry-mU6hkUYH80isULszw@mail.gmail.com>
-In-Reply-To: <CAJd=RBAt9eSx3_FB79J93e19bv15sFry-mU6hkUYH80isULszw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51AEE07E.6070301@gmx.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2013 12:28 AM, Hillf Danton wrote:
->>>> >> > +       mapping = page_mapping(lru_to_page(remove_list));
->>>> >> > +       spin_lock_irq(&mapping->tree_lock);
->>>> >> > +       while (!list_empty(remove_list)) {
->>>> >> > +               page = lru_to_page(remove_list);
->>>> >> > +               BUG_ON(!PageLocked(page));
->>>> >> > +               BUG_ON(page_mapping(page) != mapping);
->>>> >> > +               list_del(&page->lru);
->>>> >> > +
->>>> >> > +               if (!__remove_mapping(mapping, page)) {
->>>> >> > +                       unlock_page(page);
->>>> >> > +                       list_add(&page->lru, ret_pages);
->>>> >> > +                       continue;
->>>> >> > +               }
->>>> >> > +               list_add(&page->lru, &need_free_mapping);
->>>> >> > +       }
->>>> >> > +       spin_unlock_irq(&mapping->tree_lock);
->>>> >> > +
->>> >> While reclaiming pages, can we open ears upon IRQ controller,
->>> >> if the page list length is over 10, or even 20?
->> >
->> > At the moment, it implicitly could be bounded by SWAP_CLUSTER_MAX and
-> Could we reclaim a THP currently?
+On Wed, Jun 05, 2013 at 08:53:50AM +0200, Arne Jansen wrote:
+> On 05.06.2013 04:09, Jörn Engel wrote:
+> > On Tue, 4 June 2013 14:44:35 -0400, Jörn Engel wrote:
+> >>
+> >> Or while_list_drain?
+> 
+> I'm fine with while_list_drain, although a name starting with list_
+> like all other list macros would be nice. How about just list_drain?
 
-No, it would be split first.
+The list_ prefix makes it imho more readable, we know that list_* are
+macros, but 'while_list_drain' does not fit to the group. I'd go for
 
+list_drain or list_drain_entry
+
+
+david
