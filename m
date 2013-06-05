@@ -1,100 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab3FEQOY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 12:14:24 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:50694 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756481Ab3FEQOW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 12:14:22 -0400
-Message-ID: <51AF646D.7030903@oracle.com>
-Date: Thu, 06 Jun 2013 00:16:45 +0800
-From: vaughan <vaughan.cao@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1755798Ab3FEQRW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 12:17:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43814 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753783Ab3FEQRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 12:17:20 -0400
+Date: Wed, 5 Jun 2013 18:17:03 +0200
+From: Borislav Petkov <bp@suse.de>
+To: Stratos Karafotis <stratosk@semaphore.gr>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of
+ target frequency
+Message-ID: <20130605161703.GA29958@pd.tnic>
+References: <51AF60D5.3080605@semaphore.gr>
 MIME-Version: 1.0
-To: =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>
-CC: dgilbert@interlog.com, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sg: atomize check and set sdp->exclude in sg_open
-References: <51AF0269.9070900@oracle.com> <20130605132746.GA1690@logfs.org>
-In-Reply-To: <20130605132746.GA1690@logfs.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <51AF60D5.3080605@semaphore.gr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年06月05日 21:27, Jörn Engel 写道:
-> On Wed, 5 June 2013 17:18:33 +0800, vaughan wrote:
->>
->> Check and set sdp->exclude should be atomic when set in sg_open().
->
-> The patch is line-wrapped.  More importantly, it doesn't seem to do
-It's shorter than the original line, so I just leave it like this...
+On Wed, Jun 05, 2013 at 07:01:25PM +0300, Stratos Karafotis wrote:
+> Ondemand calculates load in terms of frequency and increases it only
+> if the load_freq is greater than up_threshold multiplied by current
+> or average frequency. This seems to produce oscillations of frequency
+> between min and max because, for example, a relatively small load can
+> easily saturate minimum frequency and lead the CPU to max. Then, the
+> CPU will decrease back to min due to a small load_freq.
 
-> what your description indicates it should do.  And lastly, does this
-> fix a bug, possibly even one you have a testcase for, or was it found
-> by code inspection?
-I found it by code inspection. A race condition may happen with the old 
-code if two threads are both trying to open the same sg with O_EXCL 
-simultaneously. It's possible that they both find fsds list is empty and 
-get_exclude(sdp) returns 0, then they both call set_exclude() and break 
-out from wait_event_interruptible and resume open. So it's necessary to 
-check again with sg_open_exclusive_lock held to ensure only one can set 
-sdp->exclude and return >0 to break out from wait_event loop.
+Right, and I think this is how we want it, no?
 
->
->> Signed-off-by: Vaughan Cao <vaughan.cao@oracle.com>
->> ---
->>   drivers/scsi/sg.c | 17 ++++++++++++++++-
->>   1 file changed, 16 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
->> index 25b5455..0ede08f 100644
->> --- a/drivers/scsi/sg.c
->> +++ b/drivers/scsi/sg.c
->> @@ -245,6 +245,21 @@ static int set_exclude(Sg_device *sdp, char val)
->>       return val;
->>   }
->>
->> +/* Check if we can set exclude and then set, return 1 if success */
->> +static int try_set_exclude(Sg_device *sdp)
->> +{
->> +    unsigned long flags;
->> +
->> +    spin_lock_irqsave(&sg_open_exclusive_lock, flags);
->> +    if (sdp->exclude) {
->> +        spin_unlock_irqrestore(&sg_open_exclusive_lock, flags);
->> +        return 0;
->> +    }
->> +    sdp->exclude = 1;
->> +    spin_unlock_irqrestore(&sg_open_exclusive_lock, flags);
->> +    return 1;
->> +}
->> +
->>   static int sfds_list_empty(Sg_device *sdp)
->>   {
->>       unsigned long flags;
->> @@ -303,7 +318,7 @@ sg_open(struct inode *inode, struct file *filp)
->>               goto error_out;
->>           }
->>           res = wait_event_interruptible(sdp->o_excl_wait,
->> -                       ((!sfds_list_empty(sdp) || get_exclude(sdp))
->> ? 0 : set_exclude(sdp, 1)));
->> +            ((!sfds_list_empty(sdp) || get_exclude(sdp)) ? 0 :
->> try_set_exclude(sdp)));
->>           if (res) {
->>               retval = res;    /* -ERESTARTSYS because signal hit process */
->>               goto error_out;
->> --
->> 1.7.11.7
->>
->
-> Jörn
->
-> --
-> Fantasy is more important than knowledge. Knowledge is limited,
-> while fantasy embraces the whole world.
-> -- Albert Einstein
->
+The thing is, the faster you finish your work, the faster you can become
+idle and save power.
+
+If you switch frequencies in a staircase-like manner, you're going to
+take longer to finish, in certain cases, and burn more power while doing
+so.
+
+Btw, racing to idle is also a good example for why you want boosting:
+you want to go max out the core but stay within power limits so that you
+can finish sooner.
+
+> This patch changes the calculation method of load and target frequency
+> considering 2 points:
+> - Load computation should be independent from current or average
+> measured frequency. For example an absolute load 80% at 100MHz is not
+> necessarily equivalent to 8% at 1000MHz in the next sampling interval.
+> - Target frequency should be increased to any value of frequency table
+> proportional to absolute load, instead to only the max. Thus:
+> 
+> Target frequency = C * load
+> 
+> where C = policy->cpuinfo.max_freq / 100
+> 
+> Tested on Intel i7-3770 CPU @ 3.40GHz and on Quad core 1500MHz Krait.
+> Phoronix benchmark of Linux Kernel Compilation 3.1 test shows an
+> increase ~1.5% in performance. cpufreq_stats (time_in_state) shows
+> that middle frequencies are used more, with this patch. Highest
+> and lowest frequencies were used less by ~9%
+
+I read this as "the workload takes longer to complete" which means
+higher power consumption and longer execution times which means less
+time spent in idle. And I don't think we want that.
+
+Yes, no?
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
