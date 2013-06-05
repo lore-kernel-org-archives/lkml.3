@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757672Ab3FEUxU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 16:53:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36239 "EHLO
+	id S932314Ab3FEVB2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:01:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36248 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757317Ab3FEUxR (ORCPT
+	with ESMTP id S1757658Ab3FEUxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 16:53:17 -0400
+	Wed, 5 Jun 2013 16:53:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wang YanQing <udknight@gmail.com>
-Subject: [ 08/33] TTY: Fix tty miss restart after we turn off flow-control
-Date: Wed,  5 Jun 2013 13:52:46 -0700
-Message-Id: <20130605204704.420271012@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 11/33] USB: UHCI: fix for suspend of virtual HP controller
+Date: Wed,  5 Jun 2013 13:52:49 -0700
+Message-Id: <20130605204705.008708414@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605204702.359510786@linuxfoundation.org>
 References: <20130605204702.359510786@linuxfoundation.org>
@@ -26,51 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wang YanQing <udknight@gmail.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit dab73b4eb9ef924a2b90dab84e539076d82b256f upstream.
+commit 997ff893603c6455da4c5e26ba1d0f81adfecdfc upstream.
 
-I meet emacs hang in start if I do the operation below:
-  1: echo 3 > /proc/sys/vm/drop_caches
-  2: emacs BigFile
-  3: Press CTRL-S follow 2 immediately
+HP's virtual UHCI host controller takes a long time to suspend
+(several hundred microseconds), even when no devices are attached.
+This provokes a warning message from uhci-hcd in the auto-stop case.
 
-Then emacs hang on, CTRL-Q can't resume, the terminal
-hang on, you can do nothing with this terminal except
-close it.
+To prevent this from happening, this patch adds a test to avoid
+performing an auto-stop when the wait_for_hp quirk flag is set.  The
+controller will still suspend through the normal runtime PM mechanism.
+And since that pathway includes a 1-ms delay, the slowness of the
+virtual hardware won't matter.
 
-The reason is before emacs takeover control the tty,
-we use CTRL-S to XOFF it. Then when emacs takeover the
-control, it may don't use the flow-control, so emacs hang.
-This patch fix it.
-
-This patch will fix a kind of strange tty relation hang problem,
-I believe I meet it with vim in ssh, and also see below bug report:
-http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=465823
-
-Signed-off-by: Wang YanQing <udknight@gmail.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: ZhenHua <zhen-hual@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_tty.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/host/uhci-hub.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -1531,6 +1531,14 @@ static void n_tty_set_termios(struct tty
- 			tty->real_raw = 0;
- 	}
- 	n_tty_set_room(tty);
-+	/*
-+	 * Fix tty hang when I_IXON(tty) is cleared, but the tty
-+	 * been stopped by STOP_CHAR(tty) before it.
-+	 */
-+	if (!I_IXON(tty) && old && (old->c_iflag & IXON) && !tty->flow_stopped) {
-+		start_tty(tty);
-+	}
-+
- 	/* The termios change make the tty ready for I/O */
- 	wake_up_interruptible(&tty->write_wait);
- 	wake_up_interruptible(&tty->read_wait);
+--- a/drivers/usb/host/uhci-hub.c
++++ b/drivers/usb/host/uhci-hub.c
+@@ -221,7 +221,8 @@ static int uhci_hub_status_data(struct u
+ 		/* auto-stop if nothing connected for 1 second */
+ 		if (any_ports_active(uhci))
+ 			uhci->rh_state = UHCI_RH_RUNNING;
+-		else if (time_after_eq(jiffies, uhci->auto_stop_time))
++		else if (time_after_eq(jiffies, uhci->auto_stop_time) &&
++				!uhci->wait_for_hp)
+ 			suspend_rh(uhci, UHCI_RH_AUTO_STOPPED);
+ 		break;
+ 
 
 
