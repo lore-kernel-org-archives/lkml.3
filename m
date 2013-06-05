@@ -1,38 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab3FEB0W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 21:26:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41835 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751117Ab3FEB0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 21:26:18 -0400
-Date: Tue, 4 Jun 2013 22:26:01 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: gleb@redhat.com, avi.kivity@gmail.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v8 00/11] KVM: MMU: fast zap all shadow pages
-Message-ID: <20130605012601.GA2518@amt.cnet>
-References: <1369960590-14138-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+	id S1752209Ab3FEB2D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 21:28:03 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:51562 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117Ab3FEB2A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 21:28:00 -0400
+Message-ID: <51AE9406.7080102@huawei.com>
+Date: Wed, 5 Jun 2013 09:27:34 +0800
+From: Libo Chen <libo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369960590-14138-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tomas Henzl <thenzl@redhat.com>
+CC: <megaraidlinux@lsi.com>, <JBottomley@parallels.com>,
+        Libo Chen <chenlibo.3@gmail.com>, <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, <kashyap.desai@lsi.com>,
+        <aradford@gmail.com>, Li Zefan <lizefan@huawei.com>,
+        Santosh Y <santoshsy@gmail.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Subject: Re: [PATCH v2] scsi: megaraid: check kzalloc
+References: <519ECEF1.9060804@huawei.com> <519F3592.4090207@huawei.com> <51ADB484.3060404@huawei.com> <51ADDA24.7050609@redhat.com>
+In-Reply-To: <51ADDA24.7050609@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 31, 2013 at 08:36:19AM +0800, Xiao Guangrong wrote:
-> Hi Gleb, Paolo, Marcelo,
+On 2013/6/4 20:14, Tomas Henzl wrote:
+> On 06/04/2013 11:33 AM, Libo Chen wrote:
+>> we should check kzalloc, avoid to hit oops
+>>
+>> Change from v1:
+>> - put kzalloc outside of mutex
+>>
+>> Signed-off-by: Libo Chen <libo.chen@huawei.com>
 > 
-> I have putted the potential controversial patches to the latter that are
-> patch 8 ~ 10, patch 11 depends on patch 9. Other patches are fully reviewed,
-> I think its are ready for being merged. If not luck enough, further discussion
-> is needed, could you please apply that patches first? :)
+> Your patch looks fine to me:
+> Acked-by: Tomas Henzl <thenzl@redhat.com>
 > 
-> Thank you in advance!
 
-<snip>
+your ack is very helpfull for me.
 
-Looks good to me.
+Thanks,
+
+Libo
+
+> Cheers,
+> Tomas
+> 
+> 
+> .
+> 
+
+
