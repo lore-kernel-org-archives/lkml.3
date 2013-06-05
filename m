@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237Ab3FEMQx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 08:16:53 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:36442 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754416Ab3FEMPn (ORCPT
+	id S1754700Ab3FEMXi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 08:23:38 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:63857 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752819Ab3FEMXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 08:15:43 -0400
+	Wed, 5 Jun 2013 08:23:37 -0400
 X-IronPort-AV: E=Sophos;i="4.87,806,1363132800"; 
-   d="scan'208";a="27976487"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
-        <Stefano.Stabellini@eu.citrix.com>, <will.deacon@arm.com>,
-        <catalin.marinas@arm.com>, <Ian.Campbell@citrix.com>,
-        <konrad.wilk@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v3 4/6] arm64/xen: use XEN_IO_PROTO_ABI_ARM on ARM64
-Date: Wed, 5 Jun 2013 13:15:28 +0100
-Message-ID: <1370434530-22428-4-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1306041712100.4589@kaball.uk.xensource.com>
+   d="scan'208";a="5350946"
+Message-ID: <1370435014.24512.190.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCH v3 5/6] arm64/xen: introduce CONFIG_XEN and hypercall.S
+ on ARM64
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xensource.com>, <will.deacon@arm.com>,
+        <catalin.marinas@arm.com>, <konrad.wilk@oracle.com>
+Date: Wed, 5 Jun 2013 13:23:34 +0100
+In-Reply-To: <1370434530-22428-5-git-send-email-stefano.stabellini@eu.citrix.com>
 References: <alpine.DEB.2.02.1306041712100.4589@kaball.uk.xensource.com>
+	 <1370434530-22428-5-git-send-email-stefano.stabellini@eu.citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.203.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
----
- include/xen/interface/io/protocols.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Wed, 2013-06-05 at 13:15 +0100, Stefano Stabellini wrote:
+> Introduce CONFIG_XEN and the implementation of hypercall.S (that is
+> the only ARMv8 specific code in Xen support for ARM).
+> 
+> Compile enlighten.c and grant_table.c from arch/arm.
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-diff --git a/include/xen/interface/io/protocols.h b/include/xen/interface/io/protocols.h
-index 0eafaf2..056744b 100644
---- a/include/xen/interface/io/protocols.h
-+++ b/include/xen/interface/io/protocols.h
-@@ -15,7 +15,7 @@
- # define XEN_IO_PROTO_ABI_NATIVE XEN_IO_PROTO_ABI_IA64
- #elif defined(__powerpc64__)
- # define XEN_IO_PROTO_ABI_NATIVE XEN_IO_PROTO_ABI_POWERPC64
--#elif defined(__arm__)
-+#elif defined(__arm__) || defined(__aarch64__)
- # define XEN_IO_PROTO_ABI_NATIVE XEN_IO_PROTO_ABI_ARM
- #else
- # error arch fixup needed here
--- 
-1.7.2.5
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+
+> [....]
+> +#define HYPERCALL_SIMPLE(hypercall)		\
+> +ENTRY(HYPERVISOR_##hypercall)			\
+> +	mov x16, #__HYPERVISOR_##hypercall;	\
+> +	hvc XEN_IMM;						\
+> +	ret;								\
+
+Not sure if this is corruption due to whitespace/email etc but it'd be
+nice to align those \'s.
+
+Ian.
+
 
