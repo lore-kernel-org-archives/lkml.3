@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932302Ab3FEVCF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:02:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36225 "EHLO
+	id S932332Ab3FEVC0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:02:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36233 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757629Ab3FEUxQ (ORCPT
+	with ESMTP id S1757621Ab3FEUxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 16:53:16 -0400
+	Wed, 5 Jun 2013 16:53:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Gomella <andrew.gomella@nih.gov>
-Subject: [ 06/33] USB: ftdi_sio: Add support for Newport CONEX motor drivers
-Date: Wed,  5 Jun 2013 13:52:44 -0700
-Message-Id: <20130605204704.012634802@linuxfoundation.org>
+        Dan Williams <dcbw@redhat.com>
+Subject: [ 05/33] USB: option: add device IDs for Dell 5804 (Novatel E371) WWAN card
+Date: Wed,  5 Jun 2013 13:52:43 -0700
+Message-Id: <20130605204703.758697215@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605204702.359510786@linuxfoundation.org>
 References: <20130605204702.359510786@linuxfoundation.org>
@@ -26,57 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Gomella, Andrew (NIH/NHLBI) [F]" <andrew.gomella@nih.gov>
+From: Dan Williams <dcbw@redhat.com>
 
-commit 7138143972b7c293267c783fc99a194f0ceff7f2 upstream.
+commit 49c6e370dd6400b84897c4100095089b5c13a061 upstream.
 
-Here are two more devices that use FTDI USB-to-serial chips with new product ID's.
+A rebranded Novatel E371 for AT&T's LTE bands.
 
-The devices are the Newport Conex-AGP and Conex-CC motor controllers.
-(http://www.newport.com/CONEX-AGP-Integrated-Piezo-Motor-Rotation-Stages-/987623/1033/info.aspx)
-(http://www.newport.com/CONEX-CC-DC-Servo-Controller-Actuators/934114/1033/info.aspx)
-
-usb-devices command yields:
-
-P:  Vendor=104d ProdID=3002 Rev=06.00
-S:  Manufacturer=Newport
-S:  Product=CONEX-CC
-
-as well as
-
-P:  Vendor=104d ProdID=3006 Rev=06.00
-S:  Manufacturer=Newport
-S:  Product=CONEX-AGP
-
-Signed-off-by: Andrew Gomella <andrew.gomella@nih.gov>
+Signed-off-by: Dan Williams <dcbw@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    2 ++
- 2 files changed, 4 insertions(+)
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -197,6 +197,8 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_BOOST_PID) },
- 	{ USB_DEVICE(NEWPORT_VID, NEWPORT_AGILIS_PID) },
-+	{ USB_DEVICE(NEWPORT_VID, NEWPORT_CONEX_CC_PID) },
-+	{ USB_DEVICE(NEWPORT_VID, NEWPORT_CONEX_AGP_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -772,6 +772,8 @@
-  */
- #define NEWPORT_VID			0x104D
- #define NEWPORT_AGILIS_PID		0x3000
-+#define NEWPORT_CONEX_CC_PID		0x3002
-+#define NEWPORT_CONEX_AGP_PID		0x3006
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -196,6 +196,7 @@ static void option_instat_callback(struc
  
- /* Interbiometrics USB I/O Board */
- /* Developed for Interbiometrics by Rudolf Gugler */
+ #define DELL_PRODUCT_5800_MINICARD_VZW		0x8195  /* Novatel E362 */
+ #define DELL_PRODUCT_5800_V2_MINICARD_VZW	0x8196  /* Novatel E362 */
++#define DELL_PRODUCT_5804_MINICARD_ATT		0x819b  /* Novatel E371 */
+ 
+ #define KYOCERA_VENDOR_ID			0x0c88
+ #define KYOCERA_PRODUCT_KPC650			0x17da
+@@ -771,6 +772,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_VZW) }, 	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_MINICARD_VZW, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_V2_MINICARD_VZW, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5804_MINICARD_ATT, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_E100A) },	/* ADU-E100, ADU-310 */
+ 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_500A) },
+ 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_620UW) },
 
 
