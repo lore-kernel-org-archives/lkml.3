@@ -1,114 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757939Ab3FEWMc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 18:12:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37616 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757843Ab3FEVfA (ORCPT
+	id S1757995Ab3FEWMl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 18:12:41 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36830 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757843Ab3FEWMg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:00 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean-Philippe Fran=C3=A7ois <jp.francois@cynove.com>,
-        Kevin Hilman <khilman@linaro.org>, Tony Lindgren <tony@atomide.com>
-Subject: [ 005/127] ARM: OMAP: fix __init section mismatch for _enable_preprogram
-Date: Wed,  5 Jun 2013 14:32:52 -0700
-Message-Id: <20130605213218.626312722@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
-References: <20130605213217.966891866@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Wed, 5 Jun 2013 18:12:36 -0400
+Date: Wed, 5 Jun 2013 23:10:34 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+Cc: Luke Kenneth Casson Leighton <lkcl@lkcl.net>,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>,
+        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
+        debian-kernel@lists.debian.org
+Subject: Re: getting allwinner SoC support upstream (was Re: Uploading
+	linux (3.9.4-1))
+Message-ID: <20130605221034.GK18614@n2100.arm.linux.org.uk>
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com> <CAKON4OxDD5orX2w-_+d5kawTGXbE3KKj2QLERo9m7=NiUSXhgQ@mail.gmail.com> <51AFA6DD.3000202@wwwdotorg.org> <CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com> <20130605213845.GX11182@csclub.uwaterloo.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130605213845.GX11182@csclub.uwaterloo.ca>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Jun 05, 2013 at 05:38:45PM -0400, Lennart Sorensen wrote:
+> I haven't personally dealt with any nvidia arm devices, so I have no
+> idea how those are turning out, nor have I looked much at the marvell
+> ones yet (even though I have a cubox sitting on my desk I intend to play
+> around with).
 
-------------------
+Cubox is Dove, which dates from way before DT on ARM, and there's
+relatively few people working on Dove support, so progress towards
+DT support is rather slow there.  I believe it to be at the point
+where it's possible to boot the Cubox using DT, but not all features
+are supported.
 
-From: jean-philippe francois <jp.francois@cynove.com>
-
-commit 0f497039276fa2ca2ca324236848bb15c8c775dc upstream.
-
-_enable_preprogram is marked as __init, but is called from _enable
-which is not. Without this patch, the board oopses after init. Tested
-on custom hardware and on beagle board xM. Otherwise we can get:
-
-Unable to handle kernel paging request at virtual address 000b0012
-pgd = cf968000
-*pgd=8fb06831, *pte=00000000, *ppte=00000000
-PREEMPT ARM
-Modules linked in:
-CPU: 0    Not tainted  (3.9.0 #2)
-PC is at _enable_preprogram+0x1c/0x24
-LR is at omap_hwmod_enable+0x34/0x60
-   psr: 80000093
-sp : cf95de08  ip : 00002de5  fp : bec33d4c
-r10: 00000000  r9 : 00000002  r8 : b6dd2c78
-r7 : 00000004  r6 : 00000000  r5 : a0000013  r4 : cf95c000
-r3 : 00000000  r2 : b6dd2c7c  r1 : 00000000  r0 : 000b0012
-Flags: Nzcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 10c5387d  Table: 8f968019  DAC: 00000015
-Process otpcmd (pid: 607, stack limit = 0xcf95c230)
-Stack: (0xcf95de08 to 0xcf95e000)
-de00:                   00000001 cf91f840 00000000 c001d6fc 00000002 cf91f840
-de20: cf8f7e10 c001de54 cf8f7e10 c001de78 c001de68 c01d5e80 00000000 cf8f7e10
-de40: cf8f7e10 c01d5f28 cf8f7e10 c0530d30 00000000 c01d6f28 00000000 c0088664
-de60: b6ea1000 cfb05284 cf95c000 00000001 cf95c000 60000013 00000001 cf95dee4
-de80: cf870050 c01d7308 cf870010 cf870050 00000001 c0278b14 c0526f28 00000000
-dea0: cf870050 ffff8e18 00000001 cf95dee4 00000000 c0274f7c cf870050 00000001
-dec0: cf95dee4 cf1d8484 000000e0 c0276464 00000008 cf9c0000 00000007 c0276980
-dee0: cf9c0000 00000064 00000008 cf1d8404 cf1d8400 c01cc05c 0000270a cf1d8504
-df00: 00000023 cf1d8484 00000007 c01cc670 00000bdd 00000001 00000000 cf449e60
-df20: cf1dde70 cf1d8400 bec33d18 cf1d8504 c0246f00 00000003 cf95c000 00000000
-df40: bec33d4c c01cd078 00000003 cf1d8504 00000081 c01cbcb8 bec33d18 00000003
-df60: bec33d18 c00a9034 00002000 c00a9c68 cf92fe00 00000003 c0246f00 cf92fe00
-df80: 00000000 c00a9cb0 00000003 00000000 00008e70 00000000 b6f17000 00000036
-dfa0: c000e484 c000e300 00008e70 00000000 00000003 c0246f00 bec33d18 bec33d18
-dfc0: 00008e70 00000000 b6f17000 00000036 00000000 00000000 b6f6d000 bec33d4c
-dfe0: b6ea1bd0 bec33d0c 00008c9c b6ea1bdc 60000010 00000003 00000000 00000000
-(_omap_device_enable_hwmods+0x20/0x34)
-(omap_device_enable+0x3c/0x50)
-(_od_runtime_resume+0x10/0x1c)
-(__rpm_callback+0x54/0x98)
-(rpm_callback+0x64/0x7c)
-(rpm_resume+0x434/0x554)
-(__pm_runtime_resume+0x48/0x74)
-(omap_i2c_xfer+0x28/0xe8)
-(__i2c_transfer+0x3c/0x78)
-(i2c_transfer+0x6c/0xc0)
-(i2c_master_send+0x38/0x48)
-(sha204p_send_command+0x60/0x9c)
-(sha204c_send_and_receive+0x5c/0x1e0)
-(sha204m_read+0x94/0xa0)
-(otp_do_read+0x50/0xa4)
-(vfs_ioctl+0x24/0x40)
-(do_vfs_ioctl+0x1b0/0x1c0)
-(sys_ioctl+0x38/0x54)
-(ret_fast_syscall+0x0/0x30)
-Code: e1a08002 ea000009 e598003c e592c05c (e7904003)
-
-Signed-off-by: Jean-Philippe Fran=C3=A7ois <jp.francois@cynove.com>
-Acked-by: Kevin Hilman <khilman@linaro.org>
-[tony@atomide.com: updated description with oops]
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm/mach-omap2/omap_hwmod.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/arm/mach-omap2/omap_hwmod.c
-+++ b/arch/arm/mach-omap2/omap_hwmod.c
-@@ -2066,7 +2066,7 @@ static int _omap4_get_context_lost(struc
-  * do so is present in the hwmod data, then call it and pass along the
-  * return value; otherwise, return 0.
-  */
--static int __init _enable_preprogram(struct omap_hwmod *oh)
-+static int _enable_preprogram(struct omap_hwmod *oh)
- {
- 	if (!oh->class->enable_preprogram)
- 		return 0;
-
-
+But then, not all features of the Dove SoC are supported in mainline
+either; the port essentially stopped after a little more than basic
+support was merged.  Eg, no hardware monitoring driver, no video
+drivers, etc...
