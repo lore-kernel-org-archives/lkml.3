@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933286Ab3FEVmm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:42:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38063 "EHLO
+	id S933106Ab3FEVgN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:36:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38026 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933109Ab3FEVgO (ORCPT
+	with ESMTP id S933066Ab3FEVgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:36:14 -0400
+	Wed, 5 Jun 2013 17:36:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gabor Juhos <juhosg@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 111/127] ath9k: use correct OTP register offsets for AR9550
-Date: Wed,  5 Jun 2013 14:34:38 -0700
-Message-Id: <20130605213230.632355021@linuxfoundation.org>
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
+        Joerg Roedel <joro@8bytes.org>
+Subject: [ 101/127] iommu/amd: Re-enable IOMMU event log interrupt after handling.
+Date: Wed,  5 Jun 2013 14:34:28 -0700
+Message-Id: <20130605213229.480678681@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -27,95 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gabor Juhos <juhosg@openwrt.org>
+From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
 
-commit add295a4afbdf5852d004c754c552d692b0fcac8 upstream.
+commit 925fe08bce38d1ff052fe2209b9e2b8d5fbb7f98 upstream.
 
-Accessing the OTP memory on AR9950 causes a data bus
-like this:
+Current driver does not clear the IOMMU event log interrupt bit
+in the IOMMU status register after processing an interrupt.
+This causes the IOMMU hardware to generate event log interrupt only once.
+This has been observed in both IOMMU v1 and V2 hardware.
+This patch clears the bit by writing 1 to bit 1 of the IOMMU
+status register (MMIO Offset 2020h)
 
-  Data bus error, epc == 801f7774, ra == 801f7774
-  Oops[#1]:
-  CPU: 0 PID: 1 Comm: swapper Not tainted 3.10.0-rc3 #592
-  task: 87c28000 ti: 87c22000 task.ti: 87c22000
-  $ 0   : 00000000 00000061 deadc0de 00000000
-  $ 4   : b8115f18 00015f18 00000007 00000004
-  $ 8   : 00000001 7c7c3c7c 7c7c7c7c 7c7c7c7c
-  $12   : 7c7c3c7c 80320a68 00000000 7c7c7c3c
-  $16   : 87cd8010 00015f18 00000007 00000000
-  $20   : 00000064 00000004 87c23c7c 8035210c
-  $24   : 00000000 801f3674
-  $28   : 87c22000 87c23b48 00000001 801f7774
-  Hi    : 00000000
-  Lo    : 00000064
-  epc   : 801f7774 ath9k_hw_wait+0x58/0xb0
-      Not tainted
-  ra    : 801f7774 ath9k_hw_wait+0x58/0xb0
-  Status: 1000cc03 KERNEL EXL IE
-  Cause : 4080801c
-  PrId  : 00019750 (MIPS 74Kc)
-  Modules linked in:
-  Process swapper (pid: 1, threadinfo=87c22000, task=87c28000, ts=00000000)
-  Stack : 0000000f 00000061 00002710 8006240c 00000001 87cd8010 87c23bb0 87cd8010
-          00000000 00000004 00000003 80210c7c 000000b3 67fa8000 0000032a 000006fe
-          000003e8 00000002 00000028 87c23bf0 000003ff 80210d24 803e5630 80210e28
-          00000000 00000007 87cd8010 00007044 00000004 00000061 000003ff 000001ff
-          87c26000 87cd8010 00000220 87cd8bb8 80210000 8020fcf4 87c22000 87c23c08
-          ...
-  Call Trace:
-  [<801f7774>] ath9k_hw_wait+0x58/0xb0
-  [<80210c7c>] ar9300_otp_read_word+0x80/0xd4
-  [<80210d24>] ar9300_read_otp+0x54/0xb0
-  [<8020fcf4>] ar9300_check_eeprom_header+0x1c/0x40
-  [<80210fe4>] ath9k_hw_ar9300_fill_eeprom+0x118/0x39c
-  [<80206650>] ath9k_hw_eeprom_init+0x74/0xb4
-  [<801f96d0>] ath9k_hw_init+0x7ec/0x96c
-  [<801e65ec>] ath9k_init_device+0x340/0x758
-  [<801f35d0>] ath_ahb_probe+0x21c/0x2c0
-  [<801c041c>] driver_probe_device+0xc0/0x1e4
-  [<801c05ac>] __driver_attach+0x6c/0xa4
-  [<801bea08>] bus_for_each_dev+0x64/0xa8
-  [<801bfa40>] bus_add_driver+0xcc/0x24c
-  [<801c0954>] driver_register+0xbc/0x17c
-  [<803f8fc0>] ath9k_init+0x5c/0x88
-  [<800608fc>] do_one_initcall+0xec/0x1a0
-  [<803e6a68>] kernel_init_freeable+0x13c/0x200
-  [<80309cdc>] kernel_init+0x1c/0xe4
-  [<80062450>] ret_from_kernel_thread+0x10/0x18
-
-On the AR9550, the OTP registers are located at
-the same address as on the AR9340. Use the correct
-values to avoid the error.
-
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_eeprom.h |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/iommu/amd_iommu.c       |    3 +++
+ drivers/iommu/amd_iommu_types.h |    1 +
+ 2 files changed, 4 insertions(+)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h
-@@ -68,13 +68,16 @@
- #define AR9300_BASE_ADDR 0x3ff
- #define AR9300_BASE_ADDR_512 0x1ff
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -703,6 +703,9 @@ static void iommu_poll_events(struct amd
+ 	u32 head, tail;
+ 	unsigned long flags;
  
--#define AR9300_OTP_BASE			(AR_SREV_9340(ah) ? 0x30000 : 0x14000)
--#define AR9300_OTP_STATUS		(AR_SREV_9340(ah) ? 0x30018 : 0x15f18)
-+#define AR9300_OTP_BASE \
-+		((AR_SREV_9340(ah) || AR_SREV_9550(ah)) ? 0x30000 : 0x14000)
-+#define AR9300_OTP_STATUS \
-+		((AR_SREV_9340(ah) || AR_SREV_9550(ah)) ? 0x30018 : 0x15f18)
- #define AR9300_OTP_STATUS_TYPE		0x7
- #define AR9300_OTP_STATUS_VALID		0x4
- #define AR9300_OTP_STATUS_ACCESS_BUSY	0x2
- #define AR9300_OTP_STATUS_SM_BUSY	0x1
--#define AR9300_OTP_READ_DATA		(AR_SREV_9340(ah) ? 0x3001c : 0x15f1c)
-+#define AR9300_OTP_READ_DATA \
-+		((AR_SREV_9340(ah) || AR_SREV_9550(ah)) ? 0x3001c : 0x15f1c)
++	/* enable event interrupts again */
++	writel(MMIO_STATUS_EVT_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
++
+ 	spin_lock_irqsave(&iommu->lock, flags);
  
- enum targetPowerHTRates {
- 	HT_TARGET_RATE_0_8_16,
+ 	head = readl(iommu->mmio_base + MMIO_EVT_HEAD_OFFSET);
+--- a/drivers/iommu/amd_iommu_types.h
++++ b/drivers/iommu/amd_iommu_types.h
+@@ -99,6 +99,7 @@
+ #define PASID_MASK		0x000fffff
+ 
+ /* MMIO status bits */
++#define MMIO_STATUS_EVT_INT_MASK	(1 << 1)
+ #define MMIO_STATUS_COM_WAIT_INT_MASK	(1 << 2)
+ #define MMIO_STATUS_PPR_INT_MASK	(1 << 6)
+ 
 
 
