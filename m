@@ -1,74 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305Ab3FEHhd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 03:37:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40702 "EHLO mx2.suse.de"
+	id S1752711Ab3FEHia (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 03:38:30 -0400
+Received: from ozlabs.org ([203.10.76.45]:54693 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752079Ab3FEHha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 03:37:30 -0400
-Date: Wed, 5 Jun 2013 09:37:28 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>, Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [patch -v4 4/8] memcg: enhance memcg iterator to support
- predicates
-Message-ID: <20130605073728.GC15997@dhcp22.suse.cz>
-References: <1370254735-13012-1-git-send-email-mhocko@suse.cz>
- <1370254735-13012-5-git-send-email-mhocko@suse.cz>
- <20130604010737.GF29989@mtj.dyndns.org>
- <20130604134523.GH31242@dhcp22.suse.cz>
- <20130604193619.GA14916@htj.dyndns.org>
- <20130604204807.GA13231@dhcp22.suse.cz>
- <20130604205426.GI14916@htj.dyndns.org>
+	id S1752370Ab3FEHi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 03:38:27 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Greg KH <gregkh@linuxfoundation.org>,
+        Joe Lawrence <joe.lawrence@stratus.com>
+Cc: Ben Greear <greearb@candelatech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org
+Subject: Re: Please add to stable:  module: don't unlink the module until we've removed all exposure.
+In-Reply-To: <20130605050719.GC10475@kroah.com>
+References: <51A8E884.1080009@candelatech.com> <87ehclumhr.fsf@rustcorp.com.au> <alpine.DEB.2.02.1306022212200.10003@jlaw-desktop.mno.stratus.com> <alpine.DEB.2.02.1306030724230.19647@jlaw-desktop.mno.stratus.com> <alpine.DEB.2.02.1306031012460.22652@jlaw-desktop.mno.stratus.com> <20130605050719.GC10475@kroah.com>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Wed, 05 Jun 2013 16:43:14 +0930
+Message-ID: <87k3m9rpx1.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130604205426.GI14916@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 04-06-13 13:54:26, Tejun Heo wrote:
-> Hey,
-> 
-> On Tue, Jun 04, 2013 at 10:48:07PM +0200, Michal Hocko wrote:
-> > > I really don't think memcg can afford to add more mess than there
-> > > already is.  Let's try to get things right with each change, please.
-> > 
-> > Is this really about inside vs. outside skipping? I think this is a
-> > general improvement to the code. I really prefer not duplicating common
-> > code and skipping handling is such a code (we have a visitor which can
-> > control the walk). With a side bonus that it doesn't have to pollute
-> > vmscan more than necessary.
-> > 
-> > Please be more specific about _what_ is so ugly about this interface so
-> > that it matters so much.
-> 
-> Can you please try the other approach and see how it looks? 
+Greg KH <gregkh@linuxfoundation.org> writes:
+> On Mon, Jun 03, 2013 at 10:17:17AM -0400, Joe Lawrence wrote:
+>> [Cc: stable@vger.kernel.org]
+>> 
+>> Third time is a charm?  The stable address was incorrect from the first 
+>> msg in this thread, but the relevant bits remain quoted below...
+>
+> Really?  I'm totally confused...
+>
+>> On Mon, 3 Jun 2013, Joe Lawrence wrote:
+>> 
+>> > [fixing Cc: stable@kernel.org address]
+>> > 
+>> > On Sun, 2 Jun 2013, Joe Lawrence wrote:
+>> > 
+>> > > On Sun, 2 Jun 2013, Rusty Russell wrote:
+>> > > 
+>> > > > Ben Greear <greearb@candelatech.com> writes:
+>> > > > 
+>> > > > > It turns out, the bug I spent yesterday chasing in various 3.9 kernels is apparently
+>> > > > > fixed by the commit in the title (c9c390bb5535380d40614571894ef0c00bc026ff).
+>> > > > 
+>> > > > Apparently being the operative word.
+>> > > > 
+>> > > > This commit avoids the entire "module insert failed due to sysfs race"
+>> > > > path in the common case, it doesn't fix any actual problem.
+>> > > > 
+>> > > > I think the real commit you want is Linus' kobject fix
+>> > > > a49b7e82cab0f9b41f483359be83f44fbb6b4979 "kobject: fix kset_find_obj()
+>> > > > race with concurrent last kobject_put()".
+>> > > > 
+>> > > > Or is that already in stable?
+>> > > 
+>> > > Hi Rusty,
+>> > >  
+>> > > I had pointed Ben (offlist) to that bugzilla entry without realizing
+>> > > there were other earlier related fixes in this space.  Re-viewing bz-
+>> > > 58011, it looks like it was opened against 3.8.12, while Ben and myself
+>> > > had encountered module loading problems in versions 3.9 and
+>> > > 3.9.[1-3].  I can update the bugzilla entry to add a comment noting commit
+>> > > a49b7e82 "kobject: fix kset_find_obj() race with concurrent last
+>> > > kobject_put()".
+>> > > 
+>> > > That said, it doesn't appear that commit 944a1fa "module: don't unlink the
+>> > > module until we've removed all exposure" has not made it into any stable  
+>> > > kernel.  On my system, applying this on top of 3.9 resolved a module
+>> > > unload/load race that would occasionally occur on boot (two video adapters
+>> > > of the same make, the module unloads for whatever reason and I see "module
+>> > > is already loaded" and "sysfs: cannot create duplicate filename
+>> > > '/module/mgag200'" messages every 5-10% instances.)  I have logs if you
+>> > > were interested in these warnings/crashes.
+>> > > 
+>> > > Hope this clarifies things.
+>
+> After this whole thread, what should I be doing for the 3.9-stable tree?
+> Add commit 944a1fa?  Or something else?
 
-Tejun, I do not have infinite amount of time and this is barely a
-priority for the patchset. The core part is to be able to skip
-nodes/subtrees which are not worth reclaiming, remember?
+Yes.  It does fix an Oops unrelated to what it was intended to fix, so
+it's the lowest pain path.
 
-I have already expressed my priorities for inside skipping
-decisions. You are just throwing "let's try a different way" handwavy
-suggestions. I have no problem to pull the skip logic outside of
-iterators if more people think that this is _really_ important. But
-until then I take it as a really low priority that shouldn't delay the
-patchset without a good reason.
+There may be other ways of triggering a similar oops, but do far the
+obvious attempt has failed (holding a sysfs file open while a module
+fails its init).  I might patch it anyway, because it makes me
+uncomfortable, but that's separate.
 
-So please try to focus on the technical parts of the patchset if you
-want to help with the review. I really appreciate suggestions but please
-do not get down to bike scheding.
-
--- 
-Michal Hocko
-SUSE Labs
+Thanks,
+Rusty.
