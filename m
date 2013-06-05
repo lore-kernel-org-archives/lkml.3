@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932284Ab3FEUxu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 16:53:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36367 "EHLO
+	id S932294Ab3FEUyG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 16:54:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36364 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932233Ab3FEUxg (ORCPT
+	with ESMTP id S932254Ab3FEUxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 16:53:36 -0400
+	Wed, 5 Jun 2013 16:53:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Michael L. Semon" <mlsemon35@gmail.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [ 29/33] jfs: fix a couple races
-Date: Wed,  5 Jun 2013 13:53:07 -0700
-Message-Id: <20130605204709.146654126@linuxfoundation.org>
+        Manoj Iyer <manoj.iyer@canonical.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Shuduo Sang <shuduo.sang@canonical.com>
+Subject: [ 33/33] thinkpad-acpi: recognize latest V-Series using DMI_BIOS_VENDOR
+Date: Wed,  5 Jun 2013 13:53:11 -0700
+Message-Id: <20130605204709.935191420@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605204702.359510786@linuxfoundation.org>
 References: <20130605204702.359510786@linuxfoundation.org>
@@ -27,54 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+From: Manoj Iyer <manoj.iyer@canonical.com>
 
-commit 73aaa22d5ffb2630456bac2f9a4ed9b81d0d7271 upstream.
+commit a4f46bb9fa84642e356898ee44b670989622f8bb upstream.
 
-This patch fixes races uncovered by xfstests testcase 068.
+In the latest V-series bios DMI_PRODUCT_VERSION does not contain
+the string Lenovo or Thinkpad, but is set to the model number, this
+causes the thinkpad_acpi module to fail to load. Recognize laptop
+as Lenovo using DMI_BIOS_VENDOR instead, which is set to Lenovo.
 
-One race is the result of jfs_sync() trying to write a sync point to the
-journal after it has been frozen (or possibly in the process). Since
-freezing sync's the journal, there is no need to write a sync point so
-we simply want to return.
+Test on V490u
+=============
+== After the patch ==
 
-The second involves jfs_write_inode() being called on a deleted inode.
-It calls jfs_flush_journal which is held up by the jfs_commit thread
-doing the final iput on the same deleted inode, which itself is
-waiting for the I_SYNC flag to be cleared. jfs_write_inode need not
-do anything when i_nlink is zero, which is the easy fix.
+[ 1350.295757] thinkpad_acpi: ThinkPad ACPI Extras v0.24
+[ 1350.295760] thinkpad_acpi: http://ibm-acpi.sf.net/
+[ 1350.295761] thinkpad_acpi: ThinkPad BIOS H7ET21WW (1.00 ), EC unknown
+[ 1350.295763] thinkpad_acpi: Lenovo LENOVO, model LV5DXXX
+[ 1350.296086] thinkpad_acpi: detected a 8-level brightness capable ThinkPad
+[ 1350.296694] thinkpad_acpi: radio switch found; radios are enabled
+[ 1350.296703] thinkpad_acpi: possible tablet mode switch found; ThinkPad in laptop mode
+[ 1350.306466] thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is unblocked
+[ 1350.307082] Registered led device: tpacpi::thinklight
+[ 1350.307215] Registered led device: tpacpi::power
+[ 1350.307255] Registered led device: tpacpi::standby
+[ 1350.307294] Registered led device: tpacpi::thinkvantage
+[ 1350.308160] thinkpad_acpi: Standard ACPI backlight interface available, not loading native one
+[ 1350.308333] thinkpad_acpi: Console audio control enabled, mode: monitor (read only)
+[ 1350.312287] input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input14
 
-Reported-by: Michael L. Semon <mlsemon35@gmail.com>
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+== Before the patch ==
+sudo modprobe thinkpad_acpi
+FATAL: Error inserting thinkpad_acpi (/lib/modules/3.2.0-27-generic/kernel/drivers/platform/x86/thinkpad_acpi.ko): No such device
+
+Test on B485
+=============
+This patch was also test in a B485 where the thinkpad_acpi module does not
+have any issues loading. But, I tested it to make sure this patch does not
+break on already functioning models of Lenovo products.
+
+[13486.746359] thinkpad_acpi: ThinkPad ACPI Extras v0.24
+[13486.746364] thinkpad_acpi: http://ibm-acpi.sf.net/
+[13486.746368] thinkpad_acpi: ThinkPad BIOS HJET15WW(1.01), EC unknown
+[13486.746373] thinkpad_acpi: Lenovo Lenovo LB485, model 814TR01
+[13486.747300] thinkpad_acpi: detected a 8-level brightness capable ThinkPad
+[13486.752435] thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is unblocked
+[13486.752883] Registered led device: tpacpi::thinklight
+[13486.752915] thinkpad_acpi: Standard ACPI backlight interface available, not loading native one
+[13486.753216] thinkpad_acpi: Console audio control enabled, mode: monitor (read only)
+[13486.757147] input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input15
+
+Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Cc: Shuduo Sang <shuduo.sang@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jfs/inode.c      |    2 +-
- fs/jfs/jfs_logmgr.c |    3 ++-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/platform/x86/thinkpad_acpi.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/fs/jfs/inode.c
-+++ b/fs/jfs/inode.c
-@@ -125,7 +125,7 @@ int jfs_write_inode(struct inode *inode,
- {
- 	int wait = wbc->sync_mode == WB_SYNC_ALL;
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -8656,6 +8656,13 @@ static int __must_check __init get_think
+ 		tp->model_str = kstrdup(s, GFP_KERNEL);
+ 		if (!tp->model_str)
+ 			return -ENOMEM;
++	} else {
++		s = dmi_get_system_info(DMI_BIOS_VENDOR);
++		if (s && !(strnicmp(s, "Lenovo", 6))) {
++			tp->model_str = kstrdup(s, GFP_KERNEL);
++			if (!tp->model_str)
++				return -ENOMEM;
++		}
+ 	}
  
--	if (test_cflag(COMMIT_Nolink, inode))
-+	if (inode->i_nlink == 0)
- 		return 0;
- 	/*
- 	 * If COMMIT_DIRTY is not set, the inode isn't really dirty.
---- a/fs/jfs/jfs_logmgr.c
-+++ b/fs/jfs/jfs_logmgr.c
-@@ -1057,7 +1057,8 @@ static int lmLogSync(struct jfs_log * lo
-  */
- void jfs_syncpt(struct jfs_log *log, int hard_sync)
- {	LOG_LOCK(log);
--	lmLogSync(log, hard_sync);
-+	if (!test_bit(log_QUIESCE, &log->flag))
-+		lmLogSync(log, hard_sync);
- 	LOG_UNLOCK(log);
- }
- 
+ 	s = dmi_get_system_info(DMI_PRODUCT_NAME);
 
 
