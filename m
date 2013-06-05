@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933100Ab3FEVuq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:50:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37944 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932559Ab3FEVfw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932963Ab3FEVfw (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 5 Jun 2013 17:35:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37922 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932559Ab3FEVft (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 17:35:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>
-Subject: [ 081/127] cgroup: fix a subtle bug in descendant pre-order walk
-Date: Wed,  5 Jun 2013 14:34:08 -0700
-Message-Id: <20130605213227.149125525@linuxfoundation.org>
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [ 075/127] sata_rcar: fix interrupt handling
+Date: Wed,  5 Jun 2013 14:34:02 -0700
+Message-Id: <20130605213226.451713988@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -26,76 +27,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-commit 7805d000db30a3787a4c969bab6ae4d8a5fd8ce6 upstream.
+commit 52a2a1087b5924de00484f35ef5e2a73f61dbd22 upstream.
 
-When cgroup_next_descendant_pre() initiates a walk, it checks whether
-the subtree root doesn't have any children and if not returns NULL.
-Later code assumes that the subtree isn't empty.  This is broken
-because the subtree may become empty inbetween, which can lead to the
-traversal escaping the subtree by walking to the sibling of the
-subtree root.
+The driver's interrupt handling code is too picky in deciding whether it should
+handle an interrupt or not which causes completely unneeded spurious interrupts.
+Thus make sata_rcar_{ata|serr}_interrupt() *void*; add ATA status register read
+to sata_rcar_ata_interrupt() to clear an unexpected ATA interrupt -- it doesn't
+get cleared by writing to the SATAINTSTAT register in the interrupt mode we use.
 
-There's no reason to have the early exit path.  Remove it along with
-the later assumption that the subtree isn't empty.  This simplifies
-the code a bit and fixes the subtle bug.
+Also, in sata_rcar_ata_interrupt() we should check SATAINTSTAT register only for
+enabled interrupts and we should clear  only those interrupts  that we have read
+as active first time around, because else we have  a  race and risk clearing  an
+interrupt that  can  occur between read  and write of the  SATAINTSTAT  register
+and never registering it...
 
-While at it, fix the comment of cgroup_for_each_descendant_pre() which
-was incorrectly referring to ->css_offline() instead of
-->css_online().
-
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/cgroup.h |    2 +-
- kernel/cgroup.c        |    9 +++------
- 2 files changed, 4 insertions(+), 7 deletions(-)
+ drivers/ata/sata_rcar.c |   23 +++++++++++------------
+ 1 file changed, 11 insertions(+), 12 deletions(-)
 
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -570,7 +570,7 @@ struct cgroup *cgroup_rightmost_descenda
-  *
-  * If a subsystem synchronizes against the parent in its ->css_online() and
-  * before starting iterating, and synchronizes against @pos on each
-- * iteration, any descendant cgroup which finished ->css_offline() is
-+ * iteration, any descendant cgroup which finished ->css_online() is
-  * guaranteed to be visible in the future iterations.
-  *
-  * In other words, the following guarantees that a descendant can't escape
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -3000,11 +3000,8 @@ struct cgroup *cgroup_next_descendant_pr
- 	WARN_ON_ONCE(!rcu_read_lock_held());
+--- a/drivers/ata/sata_rcar.c
++++ b/drivers/ata/sata_rcar.c
+@@ -618,17 +618,16 @@ static struct ata_port_operations sata_r
+ 	.bmdma_status		= sata_rcar_bmdma_status,
+ };
  
- 	/* if first iteration, pretend we just visited @cgroup */
--	if (!pos) {
--		if (list_empty(&cgroup->children))
--			return NULL;
-+	if (!pos)
- 		pos = cgroup;
--	}
+-static int sata_rcar_serr_interrupt(struct ata_port *ap)
++static void sata_rcar_serr_interrupt(struct ata_port *ap)
+ {
+ 	struct sata_rcar_priv *priv = ap->host->private_data;
+ 	struct ata_eh_info *ehi = &ap->link.eh_info;
+ 	int freeze = 0;
+-	int handled = 0;
+ 	u32 serror;
  
- 	/* visit the first child if exists */
- 	next = list_first_or_null_rcu(&pos->children, struct cgroup, sibling);
-@@ -3012,14 +3009,14 @@ struct cgroup *cgroup_next_descendant_pr
- 		return next;
+ 	serror = ioread32(priv->base + SCRSERR_REG);
+ 	if (!serror)
+-		return 0;
++		return;
  
- 	/* no child, visit my or the closest ancestor's next sibling */
--	do {
-+	while (pos != cgroup) {
- 		next = list_entry_rcu(pos->sibling.next, struct cgroup,
- 				      sibling);
- 		if (&next->sibling != &pos->parent->children)
- 			return next;
+ 	DPRINTK("SError @host_intr: 0x%x\n", serror);
  
- 		pos = pos->parent;
--	} while (pos != cgroup);
-+	}
+@@ -641,7 +640,6 @@ static int sata_rcar_serr_interrupt(stru
+ 		ata_ehi_push_desc(ehi, "%s", "hotplug");
  
- 	return NULL;
+ 		freeze = serror & SERR_COMM_WAKE ? 0 : 1;
+-		handled = 1;
+ 	}
+ 
+ 	/* freeze or abort */
+@@ -649,11 +647,9 @@ static int sata_rcar_serr_interrupt(stru
+ 		ata_port_freeze(ap);
+ 	else
+ 		ata_port_abort(ap);
+-
+-	return handled;
  }
+ 
+-static int sata_rcar_ata_interrupt(struct ata_port *ap)
++static void sata_rcar_ata_interrupt(struct ata_port *ap)
+ {
+ 	struct ata_queued_cmd *qc;
+ 	int handled = 0;
+@@ -662,7 +658,9 @@ static int sata_rcar_ata_interrupt(struc
+ 	if (qc)
+ 		handled |= ata_bmdma_port_intr(ap, qc);
+ 
+-	return handled;
++	/* be sure to clear ATA interrupt */
++	if (!handled)
++		sata_rcar_check_status(ap);
+ }
+ 
+ static irqreturn_t sata_rcar_interrupt(int irq, void *dev_instance)
+@@ -677,20 +675,21 @@ static irqreturn_t sata_rcar_interrupt(i
+ 	spin_lock_irqsave(&host->lock, flags);
+ 
+ 	sataintstat = ioread32(priv->base + SATAINTSTAT_REG);
++	sataintstat &= SATA_RCAR_INT_MASK;
+ 	if (!sataintstat)
+ 		goto done;
+ 	/* ack */
+-	iowrite32(sataintstat & ~SATA_RCAR_INT_MASK,
+-		 priv->base + SATAINTSTAT_REG);
++	iowrite32(~sataintstat & 0x7ff, priv->base + SATAINTSTAT_REG);
+ 
+ 	ap = host->ports[0];
+ 
+ 	if (sataintstat & SATAINTSTAT_ATA)
+-		handled |= sata_rcar_ata_interrupt(ap);
++		sata_rcar_ata_interrupt(ap);
+ 
+ 	if (sataintstat & SATAINTSTAT_SERR)
+-		handled |= sata_rcar_serr_interrupt(ap);
++		sata_rcar_serr_interrupt(ap);
+ 
++	handled = 1;
+ done:
+ 	spin_unlock_irqrestore(&host->lock, flags);
+ 
 
 
