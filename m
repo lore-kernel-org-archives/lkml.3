@@ -1,79 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610Ab3FEPyK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 11:54:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17653 "EHLO mx1.redhat.com"
+	id S1756644Ab3FEPyS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 11:54:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42840 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756375Ab3FEPyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 11:54:07 -0400
-Date: Wed, 5 Jun 2013 17:49:51 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Colin King <colin.king@canonical.com>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        John Johansen <john.johansen@canonical.com>
-Subject: Re: [ 020/184] ptrace: ensure arch_ptrace/ptrace_request can never
-Message-ID: <20130605154950.GA23647@redhat.com>
-References: <20130604172131.136042108@1wt.eu> <87sj0wucft.fsf@canonical.com> <20130605154051.GA23025@redhat.com>
+	id S1756511Ab3FEPyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 11:54:14 -0400
+Message-ID: <51AF5F1F.6010903@suse.com>
+Date: Wed, 05 Jun 2013 11:54:07 -0400
+From: Jeff Mahoney <jeffm@suse.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130605154051.GA23025@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Paul Mackerras <paulus@au.ibm.com>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] powerpc: add missing include to book3s_xics.c
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05, Oleg Nesterov wrote:
->
-> Note: I can make a _much_ simpler patch for 2.6.32, please let me know
-> if you need it.
->
-> We can rely on sys_ptrace()->lock_kernel() and simply do lock/unlock
-> if fatal_signal_pending() in ptrace_stop/do_signal_stop. This is not
-> the same, this doesn't prevent wakeup(), but this should be enough.
+This fixes the following build failure:
+arch/powerpc/kvm/book3s_xics.c:812: error: implicit declaration of function 'get_tb'
 
-Something like below. Untested/uncompiled. I think it should close the
-security problems.
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+---
+ arch/powerpc/kvm/book3s_xics.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Oleg.
-
-
---- x/kernel/signal.c
-+++ x/kernel/signal.c
-@@ -1545,6 +1545,14 @@ static int sigkill_pending(struct task_s
- 		sigismember(&tsk->signal->shared_pending.signal, SIGKILL);
- }
+--- a/arch/powerpc/kvm/book3s_xics.c
++++ b/arch/powerpc/kvm/book3s_xics.c
+@@ -19,6 +19,7 @@
+ #include <asm/hvcall.h>
+ #include <asm/xics.h>
+ #include <asm/debug.h>
++#include <asm/time.h>
  
-+static void ptrace_sync(void)
-+{
-+	if (fatal_signal_pending(current)) {
-+		lock_kernel();
-+		unlock_kernel();
-+	}
-+}
-+
- /*
-  * This must be called with current->sighand->siglock held.
-  *
-@@ -1603,6 +1611,7 @@ static void ptrace_stop(int exit_code, i
- 		read_unlock(&tasklist_lock);
- 		preempt_enable_no_resched();
- 		schedule();
-+		ptrace_sync();
- 	} else {
- 		/*
- 		 * By the time we got the lock, our tracer went away.
-@@ -1722,6 +1731,9 @@ static int do_signal_stop(int signr)
- 		schedule();
- 	} while (try_to_freeze());
- 
-+	if (current->ptrace)
-+		ptrace_sync();
-+
- 	tracehook_finish_jctl();
- 	current->exit_code = 0;
- 
+ #include <linux/debugfs.h>
+ #include <linux/seq_file.h>
 
+
+-- 
+Jeff Mahoney
+SUSE Labs
