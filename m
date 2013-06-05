@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752503Ab3FEHKx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 03:10:53 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:47150 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751959Ab3FEHKw (ORCPT
+	id S1752627Ab3FEHL0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 03:11:26 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:33375 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752589Ab3FEHLX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 03:10:52 -0400
-Message-ID: <51AEE473.6020402@linux.vnet.ibm.com>
-Date: Wed, 05 Jun 2013 15:10:43 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/3] workqueue: move the internal helper from .h to .c
-References: <51AEE452.8080605@linux.vnet.ibm.com>
-In-Reply-To: <51AEE452.8080605@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060507-1396-0000-0000-000003119F80
+	Wed, 5 Jun 2013 03:11:23 -0400
+Date: Wed, 5 Jun 2013 09:11:19 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Heiko =?UTF-8?B?U3TDvGJuZXI=?= <heiko@sntech.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>, linux-mmc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [PATCH 10/10] arm: add basic support for Rockchip RK3066a
+ boards
+Message-ID: <20130605091119.18432af4@skate>
+In-Reply-To: <201306030102.20890.heiko@sntech.de>
+References: <201306030055.15413.heiko@sntech.de>
+	<201306030102.20890.heiko@sntech.de>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-alloc_workqueue_attrs(), free_workqueue_attrs() and apply_workqueue_attrs()
-are only used internally, move them to .c and make them static.
+Dear Heiko Stübner,
 
-CC: Tejun Heo <tj@kernel.org>
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
----
- include/linux/workqueue.h |    5 -----
- kernel/workqueue.c        |    5 +++++
- 2 files changed, 5 insertions(+), 5 deletions(-)
+On Mon, 3 Jun 2013 01:02:20 +0200, Heiko Stübner wrote:
+> index 0000000..a2d8c70
+> --- /dev/null
+> +++ b/arch/arm/mach-rockchip/Makefile.boot
+> @@ -0,0 +1,3 @@
+> +zreladdr-$(CONFIG_ARCH_ROCKCHIP)	:= 0x60408000
+> +params_phys-$(CONFIG_ARCH_ROCKCHIP)	:= 0x60088000
+> +initrd_phys-$(CONFIG_ARCH_ROCKCHIP)	:= 0x60800000
 
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index 623488f..de40c8f 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -418,11 +418,6 @@ __alloc_workqueue_key(const char *fmt, unsigned int flags, int max_active,
- 
- extern void destroy_workqueue(struct workqueue_struct *wq);
- 
--struct workqueue_attrs *alloc_workqueue_attrs(gfp_t gfp_mask);
--void free_workqueue_attrs(struct workqueue_attrs *attrs);
--int apply_workqueue_attrs(struct workqueue_struct *wq,
--			  const struct workqueue_attrs *attrs);
--
- extern bool queue_work_on(int cpu, struct workqueue_struct *wq,
- 			struct work_struct *work);
- extern bool queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index ee8e29a..7c2fa6b 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3137,6 +3137,11 @@ static ssize_t wq_nice_show(struct device *dev, struct device_attribute *attr,
- 	return written;
- }
- 
-+static struct workqueue_attrs *alloc_workqueue_attrs(gfp_t gfp_mask);
-+static void free_workqueue_attrs(struct workqueue_attrs *attrs);
-+static int apply_workqueue_attrs(struct workqueue_struct *wq,
-+			  const struct workqueue_attrs *attrs);
-+
- /* prepare workqueue_attrs for sysfs store operations */
- static struct workqueue_attrs *wq_sysfs_prep_attrs(struct workqueue_struct *wq)
- {
+Thanks to the AUTO_ZRELADDR thing that you're using as part of the
+MULTIPLATFORM support, this Makefile.boot file is no longer useful. See
+mach-socfpga, mach-mvebu, mach-bcm2835, mach-bcm, mach-highbank, etc.
+
+Cc'ing Maxime Ripard, since I see that mach-sunxi does have a
+Makefile.boot, even though I believe it is not needed.
+
+Best regards,
+
+Thomas
 -- 
-1.7.4.1
-
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
