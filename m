@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442Ab3FERxO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 13:53:14 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:6586 "EHLO
+	id S1757393Ab3FERxM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 13:53:12 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:53346 "EHLO
 	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757133Ab3FERxH (ORCPT
+	with ESMTP id S1757303Ab3FERxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Jun 2013 13:53:07 -0400
 From: Nick Dyer <nick.dyer@itdev.co.uk>
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
 Cc: Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 52/53] Input: atmel_mxt_ts - Handle cfg filename via pdata/sysfs
-Date: Wed,  5 Jun 2013 18:37:45 +0100
-Message-Id: <1370453866-16534-53-git-send-email-nick.dyer@itdev.co.uk>
+Subject: [PATCH 51/53] Input: atmel_mxt_ts - Allow specification of firmware file name
+Date: Wed,  5 Jun 2013 18:37:44 +0100
+Message-Id: <1370453866-16534-52-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -25,249 +25,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There may be multiple maXTouch chips on a single device which will require
-different configuration files. Add a platform data value for the configuration
-filename.
+On platforms which have multiple device instances using this driver, the
+firmware may be different on each device. This patch makes the user give the
+name of the firmware file when flashing.
 
-Add sysfs entry to write configuration file if the platform data is not set.
-
-Split out the object initialisation code from mxt_initialize() into
-mxt_configure_objects() to allow this.
+This also prevents accidental triggering of the firmware load process.
 
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
+Acked-by: Benson Leung <bleung@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |  104 ++++++++++++++++++++++++------
- include/linux/i2c/atmel_mxt_ts.h         |    1 +
- 2 files changed, 86 insertions(+), 19 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   45 ++++++++++++++++++++++++++----
+ 1 file changed, 39 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 3a74371..0474cb9 100644
+index 2b5d876..3a74371 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -28,7 +28,6 @@
+@@ -27,8 +27,7 @@
+ #include <linux/regulator/consumer.h>
  #include <linux/gpio.h>
  
- /* Configuration file */
--#define MXT_CFG_NAME		"maxtouch.cfg"
+-/* Firmware files */
+-#define MXT_FW_NAME		"maxtouch.fw"
++/* Configuration file */
+ #define MXT_CFG_NAME		"maxtouch.cfg"
  #define MXT_CFG_MAGIC		"OBP_RAW V1"
  
- /* Registers */
 @@ -248,6 +247,7 @@ struct mxt_data {
+ 	bool use_regulator;
  	struct regulator *reg_vdd;
  	struct regulator *reg_avdd;
- 	char *fw_name;
-+	char *cfg_name;
++	char *fw_name;
  
  	/* Cached parameters from object table */
  	u16 T5_address;
-@@ -1376,10 +1376,15 @@ static int mxt_check_reg_init(struct mxt_data *data)
- 	u8 val;
- 	u16 reg;
+@@ -2369,7 +2369,7 @@ static int mxt_check_firmware_format(struct device *dev,
+ 	return -1;
+ }
  
--	ret = request_firmware(&cfg, MXT_CFG_NAME, dev);
-+	if (!data->cfg_name) {
-+		dev_dbg(dev, "Skipping cfg download\n");
-+		return 0;
-+	}
-+
-+	ret = request_firmware(&cfg, data->cfg_name, dev);
- 	if (ret < 0) {
- 		dev_err(dev, "Failure to request config file %s\n",
--			MXT_CFG_NAME);
-+			data->cfg_name);
- 		return 0;
+-static int mxt_load_fw(struct device *dev, const char *fn)
++static int mxt_load_fw(struct device *dev)
+ {
+ 	struct mxt_data *data = dev_get_drvdata(dev);
+ 	const struct firmware *fw = NULL;
+@@ -2379,9 +2379,9 @@ static int mxt_load_fw(struct device *dev, const char *fn)
+ 	unsigned int frame = 0;
+ 	int ret;
+ 
+-	ret = request_firmware(&fw, fn, dev);
++	ret = request_firmware(&fw, data->fw_name, dev);
+ 	if (ret) {
+-		dev_err(dev, "Unable to open firmware %s\n", fn);
++		dev_err(dev, "Unable to open firmware %s\n", data->fw_name);
+ 		return ret;
  	}
  
-@@ -1677,6 +1682,14 @@ static int mxt_acquire_irq(struct mxt_data *data)
- 	return 0;
+@@ -2496,6 +2496,35 @@ release_firmware:
+ 	return ret;
  }
  
-+static void mxt_free_input_device(struct mxt_data *data)
++static int mxt_update_file_name(struct device *dev, char **file_name,
++				const char *buf, size_t count)
 +{
-+	if (data->input_dev) {
-+		input_unregister_device(data->input_dev);
-+		data->input_dev = NULL;
++	char *file_name_tmp;
++
++	/* Simple sanity check */
++	if (count > 64) {
++		dev_warn(dev, "File name too long\n");
++		return -EINVAL;
 +	}
-+}
 +
- static void mxt_free_object_table(struct mxt_data *data)
- {
- 	kfree(data->raw_info_block);
-@@ -1686,10 +1699,7 @@ static void mxt_free_object_table(struct mxt_data *data)
- 	kfree(data->msg_buf);
- 	data->msg_buf = NULL;
- 
--	if (data->input_dev) {
--		input_unregister_device(data->input_dev);
--		data->input_dev = NULL;
--	}
-+	mxt_free_input_device(data);
- 
- 	data->enable_reporting = false;
- 	data->T5_address = 0;
-@@ -2184,6 +2194,7 @@ err_free_mem:
- }
- 
- static int mxt_initialize_t9_input_device(struct mxt_data *data);
-+static int mxt_configure_objects(struct mxt_data *data);
- 
- static int mxt_initialize(struct mxt_data *data)
- {
-@@ -2227,16 +2238,28 @@ retry_bootloader:
- 
- 	error = mxt_check_retrigen(data);
- 	if (error)
--		goto err_free_object_table;
-+		return error;
- 
- 	error = mxt_acquire_irq(data);
- 	if (error)
--		goto err_free_object_table;
-+		return error;
++	file_name_tmp = krealloc(*file_name, count + 1, GFP_KERNEL);
++	if (!file_name_tmp) {
++		dev_warn(dev, "no memory\n");
++		return -ENOMEM;
++	}
 +
-+	error = mxt_configure_objects(data);
-+	if (error)
-+		return error;
++	*file_name = file_name_tmp;
++	memcpy(*file_name, buf, count);
++
++	/* Echo into the sysfs entry may append newline at the end of buf */
++	if (buf[count - 1] == '\n')
++		(*file_name)[count - 1] = '\0';
++	else
++		(*file_name)[count] = '\0';
 +
 +	return 0;
 +}
 +
-+static int mxt_configure_objects(struct mxt_data *data)
-+{
-+	struct i2c_client *client = data->client;
-+	int error;
+ static ssize_t mxt_update_fw_store(struct device *dev,
+ 					struct device_attribute *attr,
+ 					const char *buf, size_t count)
+@@ -2503,7 +2532,11 @@ static ssize_t mxt_update_fw_store(struct device *dev,
+ 	struct mxt_data *data = dev_get_drvdata(dev);
+ 	int error;
  
- 	error = mxt_init_t7_power_cfg(data);
- 	if (error) {
- 		dev_err(&client->dev, "Failed to initialize power cfg\n");
--		goto err_free_object_table;
+-	error = mxt_load_fw(dev, MXT_FW_NAME);
++	error = mxt_update_file_name(dev, &data->fw_name, buf, count);
++	if (error)
 +		return error;
- 	}
- 
- 	/* Check register init values */
-@@ -2244,28 +2267,23 @@ retry_bootloader:
++
++	error = mxt_load_fw(dev);
  	if (error) {
- 		dev_err(&client->dev, "Error %d initialising configuration\n",
- 			error);
--		goto err_free_object_table;
-+		return error;
- 	}
- 
- 	if (data->T9_reportid_min) {
- 		error = mxt_initialize_t9_input_device(data);
- 		if (error)
--			goto err_free_object_table;
-+			return error;
- 	} else if (data->T100_reportid_min) {
- 		error = mxt_initialize_t100_input_device(data);
- 		if (error)
--			goto err_free_object_table;
-+			return error;
- 	} else {
- 		dev_warn(&client->dev, "No touch object detected\n");
- 	}
- 
- 	data->enable_reporting = true;
--
- 	return 0;
--
--err_free_object_table:
--	mxt_free_object_table(data);
--	return error;
- }
- 
- /* Firmware Version is returned as Major.Minor.Build */
-@@ -2553,6 +2571,45 @@ static ssize_t mxt_update_fw_store(struct device *dev,
- 	return count;
- }
- 
-+static ssize_t mxt_update_cfg_store(struct device *dev,
-+		struct device_attribute *attr,
-+		const char *buf, size_t count)
-+{
-+	struct mxt_data *data = dev_get_drvdata(dev);
-+	int ret;
-+
-+	if (data->in_bootloader) {
-+		dev_err(dev, "Not in appmode\n");
-+		return -EINVAL;
-+	}
-+
-+	ret = mxt_update_file_name(dev, &data->cfg_name, buf, count);
-+	if (ret)
-+		return ret;
-+
-+	data->enable_reporting = false;
-+	mxt_free_input_device(data);
-+
-+	if (data->suspended) {
-+		if (data->use_regulator)
-+			mxt_regulator_enable(data);
-+		else
-+			mxt_set_t7_power_cfg(data, MXT_POWER_CFG_RUN);
-+
-+		mxt_acquire_irq(data);
-+
-+		data->suspended = false;
-+	}
-+
-+	ret = mxt_configure_objects(data);
-+	if (ret)
-+		goto out;
-+
-+	ret = count;
-+out:
-+	return ret;
-+}
-+
- static ssize_t mxt_debug_enable_show(struct device *dev,
- 	struct device_attribute *attr, char *buf)
- {
-@@ -2634,6 +2691,7 @@ static DEVICE_ATTR(fw_version, S_IRUGO, mxt_fw_version_show, NULL);
- static DEVICE_ATTR(hw_version, S_IRUGO, mxt_hw_version_show, NULL);
- static DEVICE_ATTR(object, S_IRUGO, mxt_object_show, NULL);
- static DEVICE_ATTR(update_fw, S_IWUSR, NULL, mxt_update_fw_store);
-+static DEVICE_ATTR(update_cfg, S_IWUSR, NULL, mxt_update_cfg_store);
- static DEVICE_ATTR(debug_enable, S_IWUSR | S_IRUSR, mxt_debug_enable_show,
- 		   mxt_debug_enable_store);
- 
-@@ -2642,6 +2700,7 @@ static struct attribute *mxt_attrs[] = {
- 	&dev_attr_hw_version.attr,
- 	&dev_attr_object.attr,
- 	&dev_attr_update_fw.attr,
-+	&dev_attr_update_cfg.attr,
- 	&dev_attr_debug_enable.attr,
- 	NULL
- };
-@@ -2727,8 +2786,15 @@ static int mxt_handle_pdata(struct mxt_data *data)
- 	data->pdata = dev_get_platdata(&data->client->dev);
- 
- 	/* Use provided platform data if present */
--	if (data->pdata)
-+	if (data->pdata) {
-+		if (data->pdata->cfg_name)
-+			mxt_update_file_name(&data->client->dev,
-+					     &data->cfg_name,
-+					     data->pdata->cfg_name,
-+					     strlen(data->pdata->cfg_name));
-+
- 		return 0;
-+	}
- 
- 	data->pdata = kzalloc(sizeof(*data->pdata), GFP_KERNEL);
- 	if (!data->pdata) {
-diff --git a/include/linux/i2c/atmel_mxt_ts.h b/include/linux/i2c/atmel_mxt_ts.h
-index a01f2e8..3422bd0 100644
---- a/include/linux/i2c/atmel_mxt_ts.h
-+++ b/include/linux/i2c/atmel_mxt_ts.h
-@@ -23,6 +23,7 @@ struct mxt_platform_data {
- 	int t15_num_keys;
- 	const unsigned int *t15_keymap;
- 	unsigned long gpio_reset;
-+	const char *cfg_name;
- };
- 
- #endif /* __LINUX_ATMEL_MXT_TS_H */
+ 		dev_err(dev, "The firmware update failed(%d)\n", error);
+ 		count = error;
 -- 
 1.7.10.4
 
