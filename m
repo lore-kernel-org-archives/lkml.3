@@ -1,99 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757572Ab3FESB4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 14:01:56 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:46526 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757061Ab3FESBy convert rfc822-to-8bit (ORCPT
+	id S1757485Ab3FESBn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 14:01:43 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:17485 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757062Ab3FERsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 14:01:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <51AD9140.90500@freescale.com>
-References: <1370310406-413-1-git-send-email-computersforpeace@gmail.com>
-	<1370310406-413-3-git-send-email-computersforpeace@gmail.com>
-	<51AD9140.90500@freescale.com>
-Date: Wed, 5 Jun 2013 11:01:53 -0700
-Message-ID: <CAN8TOE9UDGuQd9AbE-4UVcAiqCFpqhY=fX+LbrDybdgr16THdQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] mtd: cfi_cmdset_0002: increase do_write_buffer() timeout
-From: Brian Norris <computersforpeace@gmail.com>
-To: Huang Shijie <b32955@freescale.com>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Kevin Cernekee <cernekee@gmail.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+	Wed, 5 Jun 2013 13:48:10 -0400
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
+Cc: Nick Dyer <nick.dyer@itdev.co.uk>
+Subject: [PATCH 38/53] Input: atmel_mxt_ts - Output status from T42 Touch Suppression
+Date: Wed,  5 Jun 2013 18:37:31 +0100
+Message-Id: <1370453866-16534-39-git-send-email-nick.dyer@itdev.co.uk>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
+References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 4, 2013 at 12:03 AM, Huang Shijie <b32955@freescale.com> wrote:
-> 于 2013年06月04日 09:46, Brian Norris 写道:
->> After various tests, it seems simply that the timeout is not long enough
->> for my system; increasing it by a few jiffies prevented all failures
->> (testing for 12+ hours). There is no harm in increasing the timeout, but
->> there is harm in having it too short, as evidenced here.
->>
-> I like the patch1 and patch 2.
->
-> But extending the timeout from 1ms to 10ms is like a workaround. :)
+Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
+Acked-by: Benson Leung <bleung@chromium.org>
+---
+ drivers/input/touchscreen/atmel_mxt_ts.c |   25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-I was afraid you might say that; that's why I stuck the first two
-patches first ;)
+diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+index 5291471..27a2425 100644
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -187,6 +187,9 @@ struct t9_range {
+ #define MXT_RESET_VALUE		0x01
+ #define MXT_BACKUP_VALUE	0x55
+ 
++/* Define for MXT_PROCI_TOUCHSUPPRESSION_T42 */
++#define MXT_T42_MSG_TCHSUP	(1 << 0)
++
+ /* Delay times */
+ #define MXT_BACKUP_TIME		50	/* msec */
+ #define MXT_RESET_TIME		200	/* msec */
+@@ -268,6 +271,8 @@ struct mxt_data {
+ 	u8 T9_reportid_min;
+ 	u8 T9_reportid_max;
+ 	u8 T19_reportid;
++	u8 T42_reportid_min;
++	u8 T42_reportid_max;
+ 	u16 T44_address;
+ 	u8 T48_reportid;
+ 
+@@ -771,6 +776,17 @@ static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
+ 	data->update_input = true;
+ }
+ 
++static void mxt_proc_t42_messages(struct mxt_data *data, u8 *msg)
++{
++	struct device *dev = &data->client->dev;
++	u8 status = msg[1];
++
++	if (status & MXT_T42_MSG_TCHSUP)
++		dev_info(dev, "T42 suppress\n");
++	else
++		dev_info(dev, "T42 normal\n");
++}
++
+ static int mxt_proc_t48_messages(struct mxt_data *data, u8 *msg)
+ {
+ 	struct device *dev = &data->client->dev;
+@@ -807,6 +823,9 @@ static int mxt_proc_message(struct mxt_data *data, u8 *message)
+ 	} else if (report_id == data->T19_reportid) {
+ 		mxt_input_button(data, message);
+ 		data->update_input = true;
++	} else if (report_id >= data->T42_reportid_min
++		   && report_id <= data->T42_reportid_max) {
++		mxt_proc_t42_messages(data, message);
+ 	} else if (report_id == data->T48_reportid) {
+ 		mxt_proc_t48_messages(data, message);
+ 	} else {
+@@ -1448,6 +1467,8 @@ static void mxt_free_object_table(struct mxt_data *data)
+ 	data->T9_reportid_min = 0;
+ 	data->T9_reportid_max = 0;
+ 	data->T19_reportid = 0;
++	data->T42_reportid_min = 0;
++	data->T42_reportid_max = 0;
+ 	data->T44_address = 0;
+ 	data->T48_reportid = 0;
+ 	data->max_reportid = 0;
+@@ -1517,6 +1538,10 @@ static int mxt_get_object_table(struct mxt_data *data)
+ 			data->num_touchids = object->num_report_ids
+ 						* mxt_obj_instances(object);
+ 			break;
++		case MXT_PROCI_TOUCHSUPPRESSION_T42:
++			data->T42_reportid_min = min_id;
++			data->T42_reportid_max = max_id;
++			break;
+ 		case MXT_SPT_MESSAGECOUNT_T44:
+ 			data->T44_address = object->start_address;
+ 			break;
+-- 
+1.7.10.4
 
-> From the NOR's spec, even the maximum write-to-buffer only costs several
-> hundreds us,
-> such as 200us.
->
-> I GUESS your problem is caused by the timer system, not the MTD code. I
-> ever met this type of bug.
-
-I suspected similarly, but I didn't (until now) believe that's the
-case here. See below.
-
-> The bug is in the kernel 3.5.7, but the latest kernel has fixed it with
-> NO_HZ_IDLE/NO_HZ_COMMON features.
-
-Did you track your bug down to a particular commit? 3.5.7 is the
-stable kernel; do you know what mainline rev it showed up in? I'm not
-quite interested in backporting all of the new 3.10 features!
-
-> I do not meet the issue the latest linux-next tree.
->
-> I try to describe the jiffies bug with my poor english:
->
-> [1] background:
-> CONFIG_HZ=100, CONFIG_NO_HZ=y
->
-> [2] call nand_wait() when we write a nand page.
->
-> [3] The jiffies was not updated at a _even_ speed.
->
-> In the nand_wait(), you wait for 20ms(2 jiffies) for a page write,
-> and the timeout occurs during the page write. Of course, you think that
-> we have already waited for 20ms.
-> But in actually, we only waited for 1ms or less!
-> How do i know this? I use the gettimeofday to check the real time when
-> the timeout occur.
-
-I suspected this very type of thing, since this has come up in a few
-different contexts. And for some time, with a number of different
-checks, it appeared that this *wasn't* the case. But while writing
-this very email, I had the bright idea that my time checkpoint was in
-slightly the wrong place; so sure enough, I found that I was timing
-out after only 72519 ns! (That is, 72 us, or well below the max write
-buffer time.)
-
-I'm testing on MIPS with a 3.3 kernel, by the way, but I believe this
-sort of bug has been around a while.
-
-> [4] if i disable the local timer, the bug disappears.
->
-> So, could you check the real time when the timeout occurs?
->
->
->
-> Btw: My NOR's timeout is proved to be a silicon bug by Micron.
-
-Interesting.
-
-Brian
