@@ -1,107 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589Ab3FEMji (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 08:39:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32654 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752211Ab3FEMjf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 08:39:35 -0400
-Date: Wed, 5 Jun 2013 08:38:59 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
-        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
-        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, cluster-devel@redhat.com,
-        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        piastryyy@gmail.com
-Subject: Re: [PATCH v1 07/11] locks: only pull entries off of blocked_list
- when they are really unblocked
-Message-ID: <20130605083859.72c855cd@corrin.poochiereds.net>
-In-Reply-To: <20130605122432.GA24193@fieldses.org>
-References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
-	<1370056054-25449-8-git-send-email-jlayton@redhat.com>
-	<20130604215839.GD15594@fieldses.org>
-	<20130605073822.4d67c57c@corrin.poochiereds.net>
-	<20130605122432.GA24193@fieldses.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753503Ab3FEMlb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 08:41:31 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:65324 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752601Ab3FEMla (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 08:41:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <87k3m92148.fsf@linaro.org>
+References: <1369995191-20855-1-git-send-email-gururaja.hebbar@ti.com>
+	<20130531170437.GA17591@core.coreip.homeip.net>
+	<CACRpkdYnhjpFp1CM=P_hddBe4qVigtE0c+CN9NKvk3nFgJS-ig@mail.gmail.com>
+	<87k3m92148.fsf@linaro.org>
+Date: Wed, 5 Jun 2013 14:41:29 +0200
+Message-ID: <CACRpkdbtVnieRZC+WVNrWZfe2X5SEdcq2ZbOj3kaTm3TLcHmHg@mail.gmail.com>
+Subject: Re: [PATCH 00/11] drivers: Add Pinctrl PM support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Hebbar Gururaja <gururaja.hebbar@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vaibhav Bedia <vaibhav.bedia@ti.com>, sudhakar.raj@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Jun 2013 08:24:32 -0400
-"J. Bruce Fields" <bfields@fieldses.org> wrote:
+On Tue, Jun 4, 2013 at 8:15 PM, Kevin Hilman <khilman@linaro.org> wrote:
+> [Me]
+>> I think this will save a *lot* of identical code in all the
+>> drivers, that will just have to call
+>> pinctrl_select_pm_sleep(), pinctrl_select_pm_default()
+>> pinctrl_select_pm_idle() instead of all the complex code.
+>>
+>> This is what I planned to do but never got around to.
+>
+> What about taking it one tiny step further, and having it done by the PM
+> core itself?
 
-> On Wed, Jun 05, 2013 at 07:38:22AM -0400, Jeff Layton wrote:
-> > On Tue, 4 Jun 2013 17:58:39 -0400
-> > "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> > 
-> > > On Fri, May 31, 2013 at 11:07:30PM -0400, Jeff Layton wrote:
-> > > > Currently, when there is a lot of lock contention the kernel spends an
-> > > > inordinate amount of time taking blocked locks off of the global
-> > > > blocked_list and then putting them right back on again. When all of this
-> > > > code was protected by a single lock, then it didn't matter much, but now
-> > > > it means a lot of file_lock_lock thrashing.
-> > > > 
-> > > > Optimize this a bit by deferring the removal from the blocked_list until
-> > > > we're either applying or cancelling the lock. By doing this, and using a
-> > > > lockless list_empty check, we can avoid taking the file_lock_lock in
-> > > > many cases.
-> > > > 
-> > > > Because the fl_link check is lockless, we must ensure that only the task
-> > > > that "owns" the request manipulates the fl_link. Also, with this change,
-> > > > it's possible that we'll see an entry on the blocked_list that has a
-> > > > NULL fl_next pointer. In that event, just ignore it and continue walking
-> > > > the list.
-> > > 
-> > > OK, that sounds safe as in it shouldn't crash, but does the deadlock
-> > > detection still work, or can it miss loops?
-> > > 
-> > > Those locks that are temporarily NULL would previously not have been on
-> > > the list at all, OK, but...  I'm having trouble reasoning about how this
-> > > works now.
-> > > 
-> > > Previously a single lock was held interrupted across
-> > > posix_locks_deadlock and locks_insert_block() which guaranteed we
-> > > shouldn't be adding a loop, is that still true?
-> > > 
-> > > --b.
-> > > 
-> > 
-> > I had thought it was when I originally looked at this, but now that I
-> > consider it again I think you may be correct and that there are possible
-> > races here. Since we might end up reblocking behind a different lock
-> > without taking the global spinlock we could flip to blocking behind a
-> > different lock such that a loop is created if you had a complex (>2)
-> > chain of locks.
-> > 
-> > I think I'm going to have to drop this approach and instead make it so
-> > that the deadlock detection and insertion into the global blocker
-> > list/hash are atomic.
-> 
-> Right.  Once you drop the lock you can no longer be sure that what you
-> learned about the file-lock graph stays true.
-> 
-> > Ditto for locks_wake_up_blocks on posix locks and
-> > taking the entries off the list/hash.
-> 
-> Here I'm not sure what you mean.
-> 
+Maybe so, but atleast currently we cannot do it
+exclusively in the PM core.
 
-Basically, I mean that rather than setting the fl_next pointer to NULL
-while holding only the inode lock and then ignoring those locks in the
-deadlock detection code, we should additionally take the global lock in
-locks_wake_up_blocks too and take the blocked locks off the global list
-and the i_flock list at the same time.
+We have things like what you find in
+drivers/tty/serial/amba-pl011.c
+where pl011_shutdown() puts the pins into sleep mode
+on unused TTYs.
 
-That actually might not be completely necessary, but it'll make the
-logic clearer and easier to understand and probably won't hurt
-performance too much. Again, I'll need to do some perf testing to be
-sure.
+The same applies to any unused ports like that, we're
+thinking of a way to sleep pins for unused I2C hosts
+for example.
 
--- 
-Jeff Layton <jlayton@redhat.com>
+And that works fine also on systems that does not
+enable CONFIG_PM (so the pin control subsystem
+is completely orthogonal). But maybe that is
+complicating things? I was just thinking it was a bit
+thick to require everything and its dog to make a
+complete transition to (runtime)PM.
+
+Yours,
+Linus Walleij
