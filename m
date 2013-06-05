@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932265Ab3FEUzx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 16:55:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36332 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932211Ab3FEUxa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932213Ab3FEUxa (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 5 Jun 2013 16:53:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36301 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757609Ab3FEUx0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 16:53:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wolfgang Frisch <wfpub@roembden.net>, Johan Hovold <jhovold@gmail.com>
-Subject: [ 26/33] USB: io_ti: Fix NULL dereference in chase_port()
-Date: Wed,  5 Jun 2013 13:53:04 -0700
-Message-Id: <20130605204708.469990919@linuxfoundation.org>
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        Anthony Doggett <Anthony2486@interfaces.org.uk>,
+        Vyacheslav Dubeyko <slava@dubeyko.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 19/33] nilfs2: fix issue of nilfs_set_page_dirty() for page at EOF boundary
+Date: Wed,  5 Jun 2013 13:52:57 -0700
+Message-Id: <20130605204706.836625177@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605204702.359510786@linuxfoundation.org>
 References: <20130605204702.359510786@linuxfoundation.org>
@@ -26,102 +30,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfgang Frisch <wfpub@roembden.net>
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 
-commit 1ee0a224bc9aad1de496c795f96bc6ba2c394811 upstream.
+commit 136e8770cd5d1fe38b3c613100dd6dc4db6d4fa6 upstream.
 
-The tty is NULL when the port is hanging up.
-chase_port() needs to check for this.
+nilfs2: fix issue of nilfs_set_page_dirty for page at EOF boundary
 
-This patch is intended for stable series.
-The behavior was observed and tested in Linux 3.2 and 3.7.1.
+DESCRIPTION:
+ There are use-cases when NILFS2 file system (formatted with block size
+lesser than 4 KB) can be remounted in RO mode because of encountering of
+"broken bmap" issue.
 
-Johan Hovold submitted a more elaborate patch for the mainline kernel.
+The issue was reported by Anthony Doggett <Anthony2486@interfaces.org.uk>:
+ "The machine I've been trialling nilfs on is running Debian Testing,
+  Linux version 3.2.0-4-686-pae (debian-kernel@lists.debian.org) (gcc
+  version 4.6.3 (Debian 4.6.3-14) ) #1 SMP Debian 3.2.35-2), but I've
+  also reproduced it (identically) with Debian Unstable amd64 and Debian
+  Experimental (using the 3.8-trunk kernel).  The problematic partitions
+  were formatted with "mkfs.nilfs2 -b 1024 -B 8192"."
 
-[   56.277883] usb 1-1: edge_bulk_in_callback - nonzero read bulk status received: -84
-[   56.278811] usb 1-1: USB disconnect, device number 3
-[   56.278856] usb 1-1: edge_bulk_in_callback - stopping read!
-[   56.279562] BUG: unable to handle kernel NULL pointer dereference at 00000000000001c8
-[   56.280536] IP: [<ffffffff8144e62a>] _raw_spin_lock_irqsave+0x19/0x35
-[   56.281212] PGD 1dc1b067 PUD 1e0f7067 PMD 0
-[   56.282085] Oops: 0002 [#1] SMP
-[   56.282744] Modules linked in:
-[   56.283512] CPU 1
-[   56.283512] Pid: 25, comm: khubd Not tainted 3.7.1 #1 innotek GmbH VirtualBox/VirtualBox
-[   56.283512] RIP: 0010:[<ffffffff8144e62a>]  [<ffffffff8144e62a>] _raw_spin_lock_irqsave+0x19/0x35
-[   56.283512] RSP: 0018:ffff88001fa99ab0  EFLAGS: 00010046
-[   56.283512] RAX: 0000000000000046 RBX: 00000000000001c8 RCX: 0000000000640064
-[   56.283512] RDX: 0000000000010000 RSI: ffff88001fa99b20 RDI: 00000000000001c8
-[   56.283512] RBP: ffff88001fa99b20 R08: 0000000000000000 R09: 0000000000000000
-[   56.283512] R10: 0000000000000000 R11: ffffffff812fcb4c R12: ffff88001ddf53c0
-[   56.283512] R13: 0000000000000000 R14: 00000000000001c8 R15: ffff88001e19b9f4
-[   56.283512] FS:  0000000000000000(0000) GS:ffff88001fd00000(0000) knlGS:0000000000000000
-[   56.283512] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   56.283512] CR2: 00000000000001c8 CR3: 000000001dc51000 CR4: 00000000000006e0
-[   56.283512] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   56.283512] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   56.283512] Process khubd (pid: 25, threadinfo ffff88001fa98000, task ffff88001fa94f80)
-[   56.283512] Stack:
-[   56.283512]  0000000000000046 00000000000001c8 ffffffff810578ec ffffffff812fcb4c
-[   56.283512]  ffff88001e19b980 0000000000002710 ffffffff812ffe81 0000000000000001
-[   56.283512]  ffff88001fa94f80 0000000000000202 ffffffff00000001 0000000000000296
-[   56.283512] Call Trace:
-[   56.283512]  [<ffffffff810578ec>] ? add_wait_queue+0x12/0x3c
-[   56.283512]  [<ffffffff812fcb4c>] ? usb_serial_port_work+0x28/0x28
-[   56.283512]  [<ffffffff812ffe81>] ? chase_port+0x84/0x2d6
-[   56.283512]  [<ffffffff81063f27>] ? try_to_wake_up+0x199/0x199
-[   56.283512]  [<ffffffff81263a5c>] ? tty_ldisc_hangup+0x222/0x298
-[   56.283512]  [<ffffffff81300171>] ? edge_close+0x64/0x129
-[   56.283512]  [<ffffffff810612f7>] ? __wake_up+0x35/0x46
-[   56.283512]  [<ffffffff8106135b>] ? should_resched+0x5/0x23
-[   56.283512]  [<ffffffff81264916>] ? tty_port_shutdown+0x39/0x44
-[   56.283512]  [<ffffffff812fcb4c>] ? usb_serial_port_work+0x28/0x28
-[   56.283512]  [<ffffffff8125d38c>] ? __tty_hangup+0x307/0x351
-[   56.283512]  [<ffffffff812e6ddc>] ? usb_hcd_flush_endpoint+0xde/0xed
-[   56.283512]  [<ffffffff8144e625>] ? _raw_spin_lock_irqsave+0x14/0x35
-[   56.283512]  [<ffffffff812fd361>] ? usb_serial_disconnect+0x57/0xc2
-[   56.283512]  [<ffffffff812ea99b>] ? usb_unbind_interface+0x5c/0x131
-[   56.283512]  [<ffffffff8128d738>] ? __device_release_driver+0x7f/0xd5
-[   56.283512]  [<ffffffff8128d9cd>] ? device_release_driver+0x1a/0x25
-[   56.283512]  [<ffffffff8128d393>] ? bus_remove_device+0xd2/0xe7
-[   56.283512]  [<ffffffff8128b7a3>] ? device_del+0x119/0x167
-[   56.283512]  [<ffffffff812e8d9d>] ? usb_disable_device+0x6a/0x180
-[   56.283512]  [<ffffffff812e2ae0>] ? usb_disconnect+0x81/0xe6
-[   56.283512]  [<ffffffff812e4435>] ? hub_thread+0x577/0xe82
-[   56.283512]  [<ffffffff8144daa7>] ? __schedule+0x490/0x4be
-[   56.283512]  [<ffffffff8105798f>] ? abort_exclusive_wait+0x79/0x79
-[   56.283512]  [<ffffffff812e3ebe>] ? usb_remote_wakeup+0x2f/0x2f
-[   56.283512]  [<ffffffff812e3ebe>] ? usb_remote_wakeup+0x2f/0x2f
-[   56.283512]  [<ffffffff810570b4>] ? kthread+0x81/0x89
-[   56.283512]  [<ffffffff81057033>] ? __kthread_parkme+0x5c/0x5c
-[   56.283512]  [<ffffffff8145387c>] ? ret_from_fork+0x7c/0xb0
-[   56.283512]  [<ffffffff81057033>] ? __kthread_parkme+0x5c/0x5c
-[   56.283512] Code: 8b 7c 24 08 e8 17 0b c3 ff 48 8b 04 24 48 83 c4 10 c3 53 48 89 fb 41 50 e8 e0 0a c3 ff 48 89 04 24 e8 e7 0a c3 ff ba 00 00 01 00
-<f0> 0f c1 13 48 8b 04 24 89 d1 c1 ea 10 66 39 d1 74 07 f3 90 66
-[   56.283512] RIP  [<ffffffff8144e62a>] _raw_spin_lock_irqsave+0x19/0x35
-[   56.283512]  RSP <ffff88001fa99ab0>
-[   56.283512] CR2: 00000000000001c8
-[   56.283512] ---[ end trace 49714df27e1679ce ]---
+SYMPTOMS:
+(1) System log contains error messages likewise:
 
-Signed-off-by: Wolfgang Frisch <wfpub@roembden.net>
-Cc: Johan Hovold <jhovold@gmail.com>
+    [63102.496756] nilfs_direct_assign: invalid pointer: 0
+    [63102.496786] NILFS error (device dm-17): nilfs_bmap_assign: broken bmap (inode number=28)
+    [63102.496798]
+    [63102.524403] Remounting filesystem read-only
+
+(2) The NILFS2 file system is remounted in RO mode.
+
+REPRODUSING PATH:
+(1) Create volume group with name "unencrypted" by means of vgcreate utility.
+(2) Run script (prepared by Anthony Doggett <Anthony2486@interfaces.org.uk>):
+
+----------------[BEGIN SCRIPT]--------------------
+
+VG=unencrypted
+lvcreate --size 2G --name ntest $VG
+mkfs.nilfs2 -b 1024 -B 8192 /dev/mapper/$VG-ntest
+mkdir /var/tmp/n
+mkdir /var/tmp/n/ntest
+mount /dev/mapper/$VG-ntest /var/tmp/n/ntest
+mkdir /var/tmp/n/ntest/thedir
+cd /var/tmp/n/ntest/thedir
+sleep 2
+date
+darcs init
+sleep 2
+dmesg|tail -n 5
+date
+darcs whatsnew || true
+date
+sleep 2
+dmesg|tail -n 5
+----------------[END SCRIPT]--------------------
+
+REPRODUCIBILITY: 100%
+
+INVESTIGATION:
+As it was discovered, the issue takes place during segment
+construction after executing such sequence of user-space operations:
+
+  open("_darcs/index", O_RDWR|O_CREAT|O_NOCTTY, 0666) = 7
+  fstat(7, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
+  ftruncate(7, 60)
+
+The error message "NILFS error (device dm-17): nilfs_bmap_assign: broken
+bmap (inode number=28)" takes place because of trying to get block
+number for third block of the file with logical offset #3072 bytes.  As
+it is possible to see from above output, the file has 60 bytes of the
+whole size.  So, it is enough one block (1 KB in size) allocation for
+the whole file.  Trying to operate with several blocks instead of one
+takes place because of discovering several dirty buffers for this file
+in nilfs_segctor_scan_file() method.
+
+The root cause of this issue is in nilfs_set_page_dirty function which
+is called just before writing to an mmapped page.
+
+When nilfs_page_mkwrite function handles a page at EOF boundary, it
+fills hole blocks only inside EOF through __block_page_mkwrite().
+
+The __block_page_mkwrite() function calls set_page_dirty() after filling
+hole blocks, thus nilfs_set_page_dirty function (=
+a_ops->set_page_dirty) is called.  However, the current implementation
+of nilfs_set_page_dirty() wrongly marks all buffers dirty even for page
+at EOF boundary.
+
+As a result, buffers outside EOF are inconsistently marked dirty and
+queued for write even though they are not mapped with nilfs_get_block
+function.
+
+FIX:
+This modifies nilfs_set_page_dirty() not to mark hole blocks dirty.
+
+Thanks to Vyacheslav Dubeyko for his effort on analysis and proposals
+for this issue.
+
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Reported-by: Anthony Doggett <Anthony2486@interfaces.org.uk>
+Reported-by: Vyacheslav Dubeyko <slava@dubeyko.com>
+Cc: Vyacheslav Dubeyko <slava@dubeyko.com>
+Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/io_ti.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/nilfs2/inode.c |   27 +++++++++++++++++++++++----
+ 1 file changed, 23 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@ -558,6 +558,9 @@ static void chase_port(struct edgeport_p
- 	wait_queue_t wait;
- 	unsigned long flags;
+--- a/fs/nilfs2/inode.c
++++ b/fs/nilfs2/inode.c
+@@ -195,13 +195,32 @@ static int nilfs_writepage(struct page *
  
-+	if (!tty)
-+		return;
+ static int nilfs_set_page_dirty(struct page *page)
+ {
+-	int ret = __set_page_dirty_buffers(page);
++	int ret = __set_page_dirty_nobuffers(page);
+ 
+-	if (ret) {
++	if (page_has_buffers(page)) {
+ 		struct inode *inode = page->mapping->host;
+-		unsigned nr_dirty = 1 << (PAGE_SHIFT - inode->i_blkbits);
++		unsigned nr_dirty = 0;
++		struct buffer_head *bh, *head;
+ 
+-		nilfs_set_file_dirty(inode, nr_dirty);
++		/*
++		 * This page is locked by callers, and no other thread
++		 * concurrently marks its buffers dirty since they are
++		 * only dirtied through routines in fs/buffer.c in
++		 * which call sites of mark_buffer_dirty are protected
++		 * by page lock.
++		 */
++		bh = head = page_buffers(page);
++		do {
++			/* Do not mark hole blocks dirty */
++			if (buffer_dirty(bh) || !buffer_mapped(bh))
++				continue;
 +
- 	if (!timeout)
- 		timeout = (HZ * EDGE_CLOSING_WAIT)/100;
- 
++			set_buffer_dirty(bh);
++			nr_dirty++;
++		} while (bh = bh->b_this_page, bh != head);
++
++		if (nr_dirty)
++			nilfs_set_file_dirty(inode, nr_dirty);
+ 	}
+ 	return ret;
+ }
 
 
