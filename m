@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932892Ab3FEVfn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:35:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37847 "EHLO
+	id S932994Ab3FEVyi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:54:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37885 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932845Ab3FEVfi (ORCPT
+	with ESMTP id S932874Ab3FEVfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:38 -0400
+	Wed, 5 Jun 2013 17:35:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Veaceslav Falico <vfalico@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Ben Greear <greearb@candelatech.com>
-Subject: [ 061/127] module: dont unlink the module until weve removed all exposure.
-Date: Wed,  5 Jun 2013 14:33:48 -0700
-Message-Id: <20130605213224.923715222@linuxfoundation.org>
+        Nicolas Schichan <nschichan@freebox.fr>,
+        Brian Austin <brian.austin@cirrus.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 067/127] ASoC: cs42l52: fix default value for MASTERA_VOL.
+Date: Wed,  5 Jun 2013 14:33:54 -0700
+Message-Id: <20130605213225.547325527@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -28,79 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rusty Russell <rusty@rustcorp.com.au>
+From: Nicolas Schichan <nschichan@freebox.fr>
 
-commit 944a1fa01266aa9ace607f29551b73c41e9440e9 upstream.
+commit 04d245b7899c020559402841d2f70ddd740a7704 upstream.
 
-Otherwise we get a race between unload and reload of the same module:
-the new module doesn't see the old one in the list, but then fails because
-it can't register over the still-extant entries in sysfs:
+The default register value for MASTERA_VOL is 0x00, the same as
+MASTERB_VOL.
 
- [  103.981925] ------------[ cut here ]------------
- [  103.986902] WARNING: at fs/sysfs/dir.c:536 sysfs_add_one+0xab/0xd0()
- [  103.993606] Hardware name: CrownBay Platform
- [  103.998075] sysfs: cannot create duplicate filename '/module/pch_gbe'
- [  104.004784] Modules linked in: pch_gbe(+) [last unloaded: pch_gbe]
- [  104.011362] Pid: 3021, comm: modprobe Tainted: G        W    3.9.0-rc5+ #5
- [  104.018662] Call Trace:
- [  104.021286]  [<c103599d>] warn_slowpath_common+0x6d/0xa0
- [  104.026933]  [<c1168c8b>] ? sysfs_add_one+0xab/0xd0
- [  104.031986]  [<c1168c8b>] ? sysfs_add_one+0xab/0xd0
- [  104.037000]  [<c1035a4e>] warn_slowpath_fmt+0x2e/0x30
- [  104.042188]  [<c1168c8b>] sysfs_add_one+0xab/0xd0
- [  104.046982]  [<c1168dbe>] create_dir+0x5e/0xa0
- [  104.051633]  [<c1168e78>] sysfs_create_dir+0x78/0xd0
- [  104.056774]  [<c1262bc3>] kobject_add_internal+0x83/0x1f0
- [  104.062351]  [<c126daf6>] ? kvasprintf+0x46/0x60
- [  104.067231]  [<c1262ebd>] kobject_add_varg+0x2d/0x50
- [  104.072450]  [<c1262f07>] kobject_init_and_add+0x27/0x30
- [  104.078075]  [<c1089240>] mod_sysfs_setup+0x80/0x540
- [  104.083207]  [<c1260851>] ? module_bug_finalize+0x51/0xc0
- [  104.088720]  [<c108ab29>] load_module+0x1429/0x18b0
-
-We can teardown sysfs first, then to be sure, put the state in
-MODULE_STATE_UNFORMED so it's ignored while we deconstruct it.
-
-Reported-by: Veaceslav Falico <vfalico@redhat.com>
-Tested-by: Veaceslav Falico <vfalico@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
+Acked-by: Brian Austin <brian.austin@cirrus.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/module.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ sound/soc/codecs/cs42l52.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -1861,12 +1861,12 @@ static void free_module(struct module *m
- {
- 	trace_module_free(mod);
- 
--	/* Delete from various lists */
--	mutex_lock(&module_mutex);
--	stop_machine(__unlink_module, mod, NULL);
--	mutex_unlock(&module_mutex);
- 	mod_sysfs_teardown(mod);
- 
-+	/* We leave it in list to prevent duplicate loads, but make sure
-+	 * that noone uses it while it's being deconstructed. */
-+	mod->state = MODULE_STATE_UNFORMED;
-+
- 	/* Remove dynamic debug info */
- 	ddebug_remove_module(mod->name);
- 
-@@ -1879,6 +1879,11 @@ static void free_module(struct module *m
- 	/* Free any allocated parameters. */
- 	destroy_params(mod->kp, mod->num_kp);
- 
-+	/* Now we can delete it from the lists */
-+	mutex_lock(&module_mutex);
-+	stop_machine(__unlink_module, mod, NULL);
-+	mutex_unlock(&module_mutex);
-+
- 	/* This may be NULL, but that's OK */
- 	unset_module_init_ro_nx(mod);
- 	module_free(mod, mod->module_init);
+--- a/sound/soc/codecs/cs42l52.c
++++ b/sound/soc/codecs/cs42l52.c
+@@ -86,7 +86,7 @@ static const struct reg_default cs42l52_
+ 	{ CS42L52_BEEP_VOL, 0x00 },	/* r1D Beep Volume off Time */
+ 	{ CS42L52_BEEP_TONE_CTL, 0x00 },	/* r1E Beep Tone Cfg. */
+ 	{ CS42L52_TONE_CTL, 0x00 },	/* r1F Tone Ctl */
+-	{ CS42L52_MASTERA_VOL, 0x88 },	/* r20 Master A Volume */
++	{ CS42L52_MASTERA_VOL, 0x00 },	/* r20 Master A Volume */
+ 	{ CS42L52_MASTERB_VOL, 0x00 },	/* r21 Master B Volume */
+ 	{ CS42L52_HPA_VOL, 0x00 },	/* r22 Headphone A Volume */
+ 	{ CS42L52_HPB_VOL, 0x00 },	/* r23 Headphone B Volume */
 
 
