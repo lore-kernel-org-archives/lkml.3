@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933325Ab3FEVur (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:50:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37938 "EHLO
+	id S933100Ab3FEVuq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:50:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37944 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932960Ab3FEVfw (ORCPT
+	with ESMTP id S932559Ab3FEVfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Jun 2013 17:35:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ivan Bulatovic <combuster@archlinux.us>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
-Subject: [ 080/127] cgroup: initialize xattr before calling d_instantiate()
-Date: Wed,  5 Jun 2013 14:34:07 -0700
-Message-Id: <20130605213227.041292220@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>
+Subject: [ 081/127] cgroup: fix a subtle bug in descendant pre-order walk
+Date: Wed,  5 Jun 2013 14:34:08 -0700
+Message-Id: <20130605213227.149125525@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -28,50 +26,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit d6cbf35dac8a3dadb9103379820c96d7c85df3d9 upstream.
+commit 7805d000db30a3787a4c969bab6ae4d8a5fd8ce6 upstream.
 
-cgroup_create_file() calls d_instantiate(), which may decide to look
-at the xattrs on the file. Smack always does this and SELinux can be
-configured to do so.
+When cgroup_next_descendant_pre() initiates a walk, it checks whether
+the subtree root doesn't have any children and if not returns NULL.
+Later code assumes that the subtree isn't empty.  This is broken
+because the subtree may become empty inbetween, which can lead to the
+traversal escaping the subtree by walking to the sibling of the
+subtree root.
 
-But cgroup_add_file() didn't initialize xattrs before calling
-cgroup_create_file(), which finally leads to dereferencing NULL
-dentry->d_fsdata.
+There's no reason to have the early exit path.  Remove it along with
+the later assumption that the subtree isn't empty.  This simplifies
+the code a bit and fixes the subtle bug.
 
-This bug has been there since cgroup xattr was introduced.
+While at it, fix the comment of cgroup_for_each_descendant_pre() which
+was incorrectly referring to ->css_offline() instead of
+->css_online().
 
-Reported-by: Ivan Bulatovic <combuster@archlinux.us>
-Reported-by: Casey Schaufler <casey@schaufler-ca.com>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/cgroup.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ include/linux/cgroup.h |    2 +-
+ kernel/cgroup.c        |    9 +++------
+ 2 files changed, 4 insertions(+), 7 deletions(-)
 
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -570,7 +570,7 @@ struct cgroup *cgroup_rightmost_descenda
+  *
+  * If a subsystem synchronizes against the parent in its ->css_online() and
+  * before starting iterating, and synchronizes against @pos on each
+- * iteration, any descendant cgroup which finished ->css_offline() is
++ * iteration, any descendant cgroup which finished ->css_online() is
+  * guaranteed to be visible in the future iterations.
+  *
+  * In other words, the following guarantees that a descendant can't escape
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -2747,13 +2747,14 @@ static int cgroup_add_file(struct cgroup
- 		goto out;
- 	}
+@@ -3000,11 +3000,8 @@ struct cgroup *cgroup_next_descendant_pr
+ 	WARN_ON_ONCE(!rcu_read_lock_held());
  
-+	cfe->type = (void *)cft;
-+	cfe->dentry = dentry;
-+	dentry->d_fsdata = cfe;
-+	simple_xattrs_init(&cfe->xattrs);
-+
- 	mode = cgroup_file_mode(cft);
- 	error = cgroup_create_file(dentry, mode | S_IFREG, cgrp->root->sb);
- 	if (!error) {
--		cfe->type = (void *)cft;
--		cfe->dentry = dentry;
--		dentry->d_fsdata = cfe;
--		simple_xattrs_init(&cfe->xattrs);
- 		list_add_tail(&cfe->node, &parent->files);
- 		cfe = NULL;
- 	}
+ 	/* if first iteration, pretend we just visited @cgroup */
+-	if (!pos) {
+-		if (list_empty(&cgroup->children))
+-			return NULL;
++	if (!pos)
+ 		pos = cgroup;
+-	}
+ 
+ 	/* visit the first child if exists */
+ 	next = list_first_or_null_rcu(&pos->children, struct cgroup, sibling);
+@@ -3012,14 +3009,14 @@ struct cgroup *cgroup_next_descendant_pr
+ 		return next;
+ 
+ 	/* no child, visit my or the closest ancestor's next sibling */
+-	do {
++	while (pos != cgroup) {
+ 		next = list_entry_rcu(pos->sibling.next, struct cgroup,
+ 				      sibling);
+ 		if (&next->sibling != &pos->parent->children)
+ 			return next;
+ 
+ 		pos = pos->parent;
+-	} while (pos != cgroup);
++	}
+ 
+ 	return NULL;
+ }
 
 
