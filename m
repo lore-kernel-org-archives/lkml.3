@@ -1,100 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756699Ab3FEQee (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 12:34:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1613 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755387Ab3FEQec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 12:34:32 -0400
-Date: Wed, 5 Jun 2013 19:35:00 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Jason Wang <jasowang@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, qemu-devel@nongnu.org
-Subject: [PATCH RFC] virtio-pci: support config layout in BAR1
-Message-ID: <20130605163500.GA3393@redhat.com>
+	id S1756739Ab3FEQe6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 12:34:58 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:36405 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755414Ab3FEQe4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 12:34:56 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Hebbar Gururaja <gururaja.hebbar@ti.com>,
+        Mark Brown <broonie@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: Re: [PATCH 3/3] i2c: nomadik: use pinctrl PM helpers
+References: <1370439873-30053-1-git-send-email-linus.walleij@stericsson.com>
+	<1370439873-30053-3-git-send-email-linus.walleij@stericsson.com>
+Date: Wed, 05 Jun 2013 09:34:53 -0700
+In-Reply-To: <1370439873-30053-3-git-send-email-linus.walleij@stericsson.com>
+	(Linus Walleij's message of "Wed, 5 Jun 2013 15:44:33 +0200")
+Message-ID: <87bo7kwm6q.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some setups don't support enabling BAR0 (IO BAR). Reasons range from CPU
-limitations (e.g. on some powerpc setups) to architecture limmitations
-(e.g. a setup with >15 PCI bridges, with one virtio device behind each,
-on x86).
+Linus Walleij <linus.walleij@stericsson.com> writes:
 
-PCI Express spec made IO optional, so future guests will disable IO for
-a device in more and more configurations.
+> From: Linus Walleij <linus.walleij@linaro.org>
+>
+> This utilize the new pinctrl core PM helpers to transition
+> the driver to "sleep" and "idle" states, cutting away some
+> boilerplate code.
+>
+> Cc: Hebbar Gururaja <gururaja.hebbar@ti.com>
+> Cc: Mark Brown <broonie@kernel.org>
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Cc: Kevin Hilman <khilman@linaro.org>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Stephen Warren <swarren@wwwdotorg.org>
+> Cc: Wolfram Sang <wsa@the-dreams.de>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-This patch makes it possible for host to mirror the config in BAR1, such
-that these setups can work properly.
+I have some questions on the interaction with runtime PM here...
 
-Guests with old drivers can't be fixed, they will continue to work as
-well (or as bad) as they did previously.  For this reason, changing
-revision id appears unnecessary - it would break setups that previously
-worked, partially.
+> ---
+> I'm seeking Wolfram's ACK on this to take it through the
+> pinctrl tree in the end.
+> ---
+>  drivers/i2c/busses/i2c-nomadik.c | 90 +++++-----------------------------------
+>  1 file changed, 10 insertions(+), 80 deletions(-)
+>
+> diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
+> index 650293f..c7e3b0c 100644
+> --- a/drivers/i2c/busses/i2c-nomadik.c
+> +++ b/drivers/i2c/busses/i2c-nomadik.c
+> @@ -148,10 +148,6 @@ struct i2c_nmk_client {
+>   * @stop: stop condition.
+>   * @xfer_complete: acknowledge completion for a I2C message.
+>   * @result: controller propogated result.
+> - * @pinctrl: pinctrl handle.
+> - * @pins_default: default state for the pins.
+> - * @pins_idle: idle state for the pins.
+> - * @pins_sleep: sleep state for the pins.
+>   * @busy: Busy doing transfer.
+>   */
+>  struct nmk_i2c_dev {
+> @@ -165,11 +161,6 @@ struct nmk_i2c_dev {
+>  	int				stop;
+>  	struct completion		xfer_complete;
+>  	int				result;
+> -	/* Three pin states - default, idle & sleep */
+> -	struct pinctrl			*pinctrl;
+> -	struct pinctrl_state		*pins_default;
+> -	struct pinctrl_state		*pins_idle;
+> -	struct pinctrl_state		*pins_sleep;
+>  	bool				busy;
+>  };
+>  
+> @@ -645,13 +636,7 @@ static int nmk_i2c_xfer(struct i2c_adapter *i2c_adap,
+>  	}
+>  
+>  	/* Optionaly enable pins to be muxed in and configured */
+> -	if (!IS_ERR(dev->pins_default)) {
+> -		status = pinctrl_select_state(dev->pinctrl,
+> -				dev->pins_default);
+> -		if (status)
+> -			dev_err(&dev->adev->dev,
+> -				"could not set default pins\n");
+> -	}
+> +	pinctrl_pm_select_default_state(&dev->adev->dev);
 
-Future work on re-organizing layout won't conflict with this patch - it
-can use a different BAR or put config at an offset, or update revision.
+Shouldn't this be in the ->runtime_resume() callback of the driver (the
+original code should've as well.)
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/virtio/virtio_pci.c | 32 +++++++++++++++++++++++++++++++-
- 1 file changed, 31 insertions(+), 1 deletion(-)
+IOW, the pinctrl changes only need to happen when the runtime PM
+usecount goes from zero to 1.  For any additional users, the device will
+already be active and pins already in default state.
 
-diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index a7ce730..03564fe 100644
---- a/drivers/virtio/virtio_pci.c
-+++ b/drivers/virtio/virtio_pci.c
-@@ -675,6 +675,33 @@ static void virtio_pci_release_dev(struct device *_d)
- 	 */
- }
- 
-+/* Map a BAR. But carefully: make sure we don't overlap the MSI-X table */
-+static void __iomem * virtio_pci_iomap(struct pci_dev *pci_dev, int bar)
-+{
-+	int msix_cap = pci_find_capability(pci_dev, PCI_CAP_ID_MSIX);
-+	if (msix_cap) {
-+		u32 offset;
-+		u8 bir;
-+		pci_read_config_dword(pci_dev, msix_cap + PCI_MSIX_TABLE,
-+				      &offset);
-+		bir = (u8)(offset & PCI_MSIX_TABLE_BIR);
-+		offset &= PCI_MSIX_TABLE_OFFSET;
-+		/* Spec says table offset is in a 4K page all by itself */
-+		if (bir == bar && offset < 4096)
-+			return NULL;
-+
-+		pci_read_config_dword(pci_dev, msix_cap + PCI_MSIX_PBA,
-+				      &offset);
-+		bir = (u8)(offset & PCI_MSIX_PBA_BIR);
-+		offset &= PCI_MSIX_PBA_OFFSET;
-+		/* Spec says table offset is in a 4K page all by itself. */
-+		if (bir == bar && offset < 4096)
-+			return NULL;
-+	}
-+	/* 4K is enough for all devices at the moment. */
-+	return pci_iomap(pci_dev, 0, 4096);
-+}
-+
- /* the PCI probing function */
- static int virtio_pci_probe(struct pci_dev *pci_dev,
- 			    const struct pci_device_id *id)
-@@ -716,7 +743,10 @@ static int virtio_pci_probe(struct pci_dev *pci_dev,
- 	if (err)
- 		goto out_enable_device;
- 
--	vp_dev->ioaddr = pci_iomap(pci_dev, 0, 0);
-+	vp_dev->ioaddr = virtio_pci_iomap(pci_dev, 0);
-+	/* Failed to map BAR0? Try with BAR1. */
-+	if (vp_dev->ioaddr == NULL)
-+		vp_dev->ioaddr = virtio_pci_iomap(pci_dev, 1);
- 	if (vp_dev->ioaddr == NULL) {
- 		err = -ENOMEM;
- 		goto out_req_regions;
--- 
-MST
+I'm not familiar with this HW, and maybe the driver already prevents
+multiple users, but for correctness sake (and because others will copy
+this), the (re)muxing should be in the runtime PM callback.
+
+Also, IMO, that's further evidence that the pinctrl stuff could (and
+probably should) be handled by the PM core.
+
+>  	status = init_hw(dev);
+>  	if (status)
+> @@ -681,13 +666,7 @@ out:
+>  	clk_disable_unprepare(dev->clk);
+>  out_clk:
+>  	/* Optionally let pins go into idle state */
+> -	if (!IS_ERR(dev->pins_idle)) {
+> -		status = pinctrl_select_state(dev->pinctrl,
+> -				dev->pins_idle);
+> -		if (status)
+> -			dev_err(&dev->adev->dev,
+> -				"could not set pins to idle state\n");
+> -	}
+> +	pinctrl_pm_select_idle_state(&dev->adev->dev);
+
+Again, if there are multiple users, you're changing the pin states
+without knowing if you're the last user or not (again, the problem
+existed in the original code as well.)
+
+Runtime PM is doing the usecouning, so this should be in the
+->runtime_suspend() callback.
+
+>  	pm_runtime_put_sync(&dev->adev->dev);
+>  
+
+Kevin
