@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755798Ab3FEQRW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 12:17:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43814 "EHLO mx2.suse.de"
+	id S1756285Ab3FEQRb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 12:17:31 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53200 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753783Ab3FEQRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 12:17:20 -0400
-Date: Wed, 5 Jun 2013 18:17:03 +0200
-From: Borislav Petkov <bp@suse.de>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of
- target frequency
-Message-ID: <20130605161703.GA29958@pd.tnic>
-References: <51AF60D5.3080605@semaphore.gr>
+	id S1755933Ab3FEQR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 12:17:28 -0400
+Message-ID: <51AF63C7.9070007@ti.com>
+Date: Wed, 5 Jun 2013 19:13:59 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <51AF60D5.3080605@semaphore.gr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] i2c: Let users disable "Probe an I2C bus for certain
+ devices"
+References: <1370367222-19353-1-git-send-email-grygorii.strashko@ti.com> <20130604174900.GA2992@katana>
+In-Reply-To: <20130604174900.GA2992@katana>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 07:01:25PM +0300, Stratos Karafotis wrote:
-> Ondemand calculates load in terms of frequency and increases it only
-> if the load_freq is greater than up_threshold multiplied by current
-> or average frequency. This seems to produce oscillations of frequency
-> between min and max because, for example, a relatively small load can
-> easily saturate minimum frequency and lead the CPU to max. Then, the
-> CPU will decrease back to min due to a small load_freq.
+Hi
+On 06/04/2013 08:49 PM, Wolfram Sang wrote:
+> On Tue, Jun 04, 2013 at 08:33:42PM +0300, Grygorii Strashko wrote:
+>
+>> Currently the I2C devices instantiation Method 3 "Probe an I2C bus for
+>> certain devices" (see Documentation/i2c/instantiating-devices) is always
+>> enabled for all platforms (boards) and can't be disabled.
+> Not true. Set .class = 0 for your adapter. I always ask authors of new
+> drivers if they really need to set .class to something.
+>
+Agree, sorry, my statement is wrong. it would be right to say
+"..can't be disabled without kernel code modification".
 
-Right, and I think this is how we want it, no?
+Few notes here:
+1) boot delay issue isn't related to new drivers. There are
+hwmon/lm75.c, i2c/busses/i2c-gpio.c and i2c/busses/i2c-omap.c
 
-The thing is, the faster you finish your work, the faster you can become
-idle and save power.
+2) Initially, I've fighted with it on TI K3.4 product kernel where
+DT isn't supported yet. And first thing, which I've tried to do is to 
+correct
+.class parameter for adapter, but with assumption:
+"Default behavior shouldn't be changed as I2C detection might be used by 
+some
+of OMAP boards".
 
-If you switch frequencies in a staircase-like manner, you're going to
-take longer to finish, in certain cases, and burn more power while doing
-so.
+I've started from i2c-omap.c and OMAP4/5 (my target). As result, I was 
+need to make
+changes in *7* files to set and pass platform parameter to i2c-omap.c 
+driver which
+will allow to change .class to 0 on demand.
 
-Btw, racing to idle is also a good example for why you want boosting:
-you want to go max out the core but stay within power limits so that you
-can finish sooner.
+At this point, I've realized that i still need to deal with i2c-gpio.c - 
+which
+is generic driver.
 
-> This patch changes the calculation method of load and target frequency
-> considering 2 points:
-> - Load computation should be independent from current or average
-> measured frequency. For example an absolute load 80% at 100MHz is not
-> necessarily equivalent to 8% at 1000MHz in the next sampling interval.
-> - Target frequency should be increased to any value of frequency table
-> proportional to absolute load, instead to only the max. Thus:
-> 
-> Target frequency = C * load
-> 
-> where C = policy->cpuinfo.max_freq / 100
-> 
-> Tested on Intel i7-3770 CPU @ 3.40GHz and on Quad core 1500MHz Krait.
-> Phoronix benchmark of Linux Kernel Compilation 3.1 test shows an
-> increase ~1.5% in performance. cpufreq_stats (time_in_state) shows
-> that middle frequencies are used more, with this patch. Highest
-> and lowest frequencies were used less by ~9%
+3) Thinking about Mainline: To reach the same target - no I2C detection 
+- and taking
+into account above assumption "No changes in default behavior"
+the following will need to be done:
+- change i2c-omap/i2c-gpio DT bindings and add parameter which will 
+allow to change
+   .class value for adapter. Not sure, it's possible because this parameter
+   will be Linux and not HW specific (smth. like "i2c_disable_detection")
+- update drivers i2c-omap/i2c-gpio to use "i2c_disable_detection"
+- update OMAP4/5 DTS files
 
-I read this as "the workload takes longer to complete" which means
-higher power consumption and longer execution times which means less
-time spent in idle. And I don't think we want that.
+So, It seemed a good solution for me to add 6 lines of code in i2c-core.c
+instead of doing all that stuff.
 
-Yes, no?
+Thanks/sorry for your time.
 
-Thanks.
+- grygorii
 
--- 
-Regards/Gruss,
-    Boris.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
