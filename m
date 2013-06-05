@@ -1,73 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab3FENE5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 09:04:57 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:9747 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753571Ab3FENEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 09:04:55 -0400
-X-IronPort-AV: E=Sophos;i="4.87,806,1363132800"; 
-   d="scan'208";a="27986101"
-Date: Wed, 5 Jun 2013 14:04:50 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>, <Ian.Campbell@citrix.com>,
-        <catalin.marinas@arm.com>, <konrad.wilk@oracle.com>,
-        <will.deacon@arm.com>, <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v3 5/6] arm64/xen: introduce CONFIG_XEN and hypercall.S
- on ARM64
-In-Reply-To: <1471793.18ZhhAHKN9@wuerfel>
-Message-ID: <alpine.DEB.2.02.1306051352380.4589@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1306041712100.4589@kaball.uk.xensource.com> <1370434530-22428-5-git-send-email-stefano.stabellini@eu.citrix.com> <1471793.18ZhhAHKN9@wuerfel>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755319Ab3FENI4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 09:08:56 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:47749 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754699Ab3FENIy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 09:08:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <1855098.3p2j9hWHoD@vostro.rjw.lan>
+References: <68ae523282b494da0e8f67536af1df874c326675.1370422554.git.viresh.kumar@linaro.org>
+	<1855098.3p2j9hWHoD@vostro.rjw.lan>
+Date: Wed, 5 Jun 2013 18:38:53 +0530
+Message-ID: <CAKohpon3Tc+dSycv-QeLg9vwjXijaZrtjzw0-tHVAqX6moBUjA@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: userspace: Simplify governor
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
+        chenxg.marvell@gmail.com
+Content-Type: multipart/mixed; boundary=089e0115f6c64bcad004de67e694
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Jun 2013, Arnd Bergmann wrote:
-> On Wednesday 05 June 2013 13:15:29 Stefano Stabellini wrote:
-> > diff --git a/arch/arm64/Makefile b/arch/arm64/Makefile
-> > index c95c5cb..79dd13d 100644
-> > --- a/arch/arm64/Makefile
-> > +++ b/arch/arm64/Makefile
-> > @@ -37,6 +37,7 @@ TEXT_OFFSET := 0x00080000
-> >  export TEXT_OFFSET GZFLAGS
-> >  
-> >  core-y         += arch/arm64/kernel/ arch/arm64/mm/
-> > +core-$(CONFIG_XEN)             += arch/arm64/xen/
-> >  libs-y         := arch/arm64/lib/ $(libs-y)
-> >  libs-y         += $(LIBGCC)
-> >  
-> > diff --git a/arch/arm64/xen/Makefile b/arch/arm64/xen/Makefile
-> > new file mode 100644
-> > index 0000000..be24040
-> > --- /dev/null
-> > +++ b/arch/arm64/xen/Makefile
-> > @@ -0,0 +1,2 @@
-> > +xen-arm-y      += $(addprefix ../../arm/xen/, enlighten.o grant-table.o)
-> > +obj-y          := xen-arm.o hypercall.o
-> 
-> I think it would be nicer to redirect the entire directory, not just
-> the enlighten.o and grant-table.o files. You could do in arch/arm64/Makefile:
-> 
-> core-(CONFIG_XEN) += arch/arm/xen/
-> 
-> That leaves a small difference in hypercall.o, which I think you can
-> handle with an #ifdef.
+--089e0115f6c64bcad004de67e694
+Content-Type: text/plain; charset=ISO-8859-1
 
-That is nicer.
+On 5 June 2013 18:07, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Wednesday, June 05, 2013 02:34:33 PM Viresh Kumar wrote:
+>> Userspace governor has got more code than what it needs for its functioning.
+>> Lets simplify it.
+>
+> OK
+>
+> Why exactly is the code you're removing unnecessary?
+>
+>> Over that it will fix issues in cpufreq_governor_userspace(), which isn't doing
+>> right things in START/STOP.
+>
+> What exactly is the problem?
 
-The implementation of hypercall.S is significantly different between
-arm32 and arm64, so hypercall.S is going to be harder to read.
-However hypercall.S is just one file and it's not going to grow much,
-while we might have many more C source files in common between the two
-architecures, so I think that your approach is going to be cleaner in
-the long term.
+I sent a reply now to the problem reported by Xiaoguang as I don't feel
+now there is a problem :(
 
-I'll make the change.
+>> It is working per-cpu currently whereas it just
+>> required to manage policy->cpu.
+>>
+>> Reported-by: Xiaoguang Chen <chenxg.marvell@gmail.com>
+>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+>> ---
+>> @Rafael:
+>>
+>> I don't know why this code was initially added. Please let me know if I am doing
+>> something stupid.
+>>
+>> Also, please apply it as a fix for 3.10 as it is broken recently in 3.9.
+>
+> I'd love to, but I need answers to the above questions before I do that.
+
+To be honest with the amount of experience I have now, my log was
+poor :(
+
+I have used following log in the attached patch:
+
+Subject: [PATCH] cpufreq: userspace: Simplify governor
+
+Userspace governor has got more code than what it needs for its functioning.
+Lets simplify it. Portions of code removed are:
+- Extra header files which aren't required anymore (rearranged them as well)
+- cpu_{max|min|cur|set}_freq, as they are always same as policy->{max|min|cur}
+- userspace_cpufreq_notifier_block as we don't need to set cpu_cur_freq anymore
+- cpus_using_userspace_governor as it was for notifier code
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+
+--089e0115f6c64bcad004de67e694
+Content-Type: application/octet-stream; 
+	name="0001-cpufreq-userspace-Simplify-governor.patch"
+Content-Disposition: attachment; 
+	filename="0001-cpufreq-userspace-Simplify-governor.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hhkj86rv0
+
+RnJvbSAzYjA2MTYyZTg3NTQxNGE0MjA3YzIyYzJmMzMzMjc3NThjYzMxOWYzIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8M2IwNjE2MmU4NzU0MTRhNDIwN2MyMmMyZjMzMzI3
+NzU4Y2MzMTlmMy4xMzcwNDM3NTgzLmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRnJvbTog
+VmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRGF0ZTogV2VkLCA1IEp1biAy
+MDEzIDExOjQ3OjM4ICswNTMwClN1YmplY3Q6IFtQQVRDSF0gY3B1ZnJlcTogdXNlcnNwYWNlOiBT
+aW1wbGlmeSBnb3Zlcm5vcgoKVXNlcnNwYWNlIGdvdmVybm9yIGhhcyBnb3QgbW9yZSBjb2RlIHRo
+YW4gd2hhdCBpdCBuZWVkcyBmb3IgaXRzIGZ1bmN0aW9uaW5nLgpMZXRzIHNpbXBsaWZ5IGl0LiBQ
+b3J0aW9ucyBvZiBjb2RlIHJlbW92ZWQgYXJlOgotIEV4dHJhIGhlYWRlciBmaWxlcyB3aGljaCBh
+cmVuJ3QgcmVxdWlyZWQgYW55bW9yZSAocmVhcnJhbmdlZCB0aGVtIGFzIHdlbGwpCi0gY3B1X3tt
+YXh8bWlufGN1cnxzZXR9X2ZyZXEsIGFzIHRoZXkgYXJlIGFsd2F5cyBzYW1lIGFzIHBvbGljeS0+
+e21heHxtaW58Y3VyfQotIHVzZXJzcGFjZV9jcHVmcmVxX25vdGlmaWVyX2Jsb2NrIGFzIHdlIGRv
+bid0IG5lZWQgdG8gc2V0IGNwdV9jdXJfZnJlcSBhbnltb3JlCi0gY3B1c191c2luZ191c2Vyc3Bh
+Y2VfZ292ZXJub3IgYXMgaXQgd2FzIGZvciBub3RpZmllciBjb2RlCgpTaWduZWQtb2ZmLWJ5OiBW
+aXJlc2ggS3VtYXIgPHZpcmVzaC5rdW1hckBsaW5hcm8ub3JnPgotLS0KIGRyaXZlcnMvY3B1ZnJl
+cS9jcHVmcmVxX3VzZXJzcGFjZS5jIHwgMTA4ICsrKystLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLQogMSBmaWxlIGNoYW5nZWQsIDEyIGluc2VydGlvbnMoKyksIDk2IGRlbGV0aW9ucygt
+KQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvY3B1ZnJlcS9jcHVmcmVxX3VzZXJzcGFjZS5jIGIvZHJp
+dmVycy9jcHVmcmVxL2NwdWZyZXFfdXNlcnNwYWNlLmMKaW5kZXggYmJlYjljMC4uNWRjNzdiNyAx
+MDA2NDQKLS0tIGEvZHJpdmVycy9jcHVmcmVxL2NwdWZyZXFfdXNlcnNwYWNlLmMKKysrIGIvZHJp
+dmVycy9jcHVmcmVxL2NwdWZyZXFfdXNlcnNwYWNlLmMKQEAgLTEzLDU1ICsxMywxMyBAQAogCiAj
+ZGVmaW5lIHByX2ZtdChmbXQpIEtCVUlMRF9NT0ROQU1FICI6ICIgZm10CiAKLSNpbmNsdWRlIDxs
+aW51eC9rZXJuZWwuaD4KLSNpbmNsdWRlIDxsaW51eC9tb2R1bGUuaD4KLSNpbmNsdWRlIDxsaW51
+eC9zbXAuaD4KLSNpbmNsdWRlIDxsaW51eC9pbml0Lmg+Ci0jaW5jbHVkZSA8bGludXgvc3Bpbmxv
+Y2suaD4KLSNpbmNsdWRlIDxsaW51eC9pbnRlcnJ1cHQuaD4KICNpbmNsdWRlIDxsaW51eC9jcHVm
+cmVxLmg+Ci0jaW5jbHVkZSA8bGludXgvY3B1Lmg+Ci0jaW5jbHVkZSA8bGludXgvdHlwZXMuaD4K
+LSNpbmNsdWRlIDxsaW51eC9mcy5oPgotI2luY2x1ZGUgPGxpbnV4L3N5c2ZzLmg+CisjaW5jbHVk
+ZSA8bGludXgvaW5pdC5oPgorI2luY2x1ZGUgPGxpbnV4L21vZHVsZS5oPgogI2luY2x1ZGUgPGxp
+bnV4L211dGV4Lmg+CiAKLS8qKgotICogQSBmZXcgdmFsdWVzIG5lZWRlZCBieSB0aGUgdXNlcnNw
+YWNlIGdvdmVybm9yCi0gKi8KLXN0YXRpYyBERUZJTkVfUEVSX0NQVSh1bnNpZ25lZCBpbnQsIGNw
+dV9tYXhfZnJlcSk7Ci1zdGF0aWMgREVGSU5FX1BFUl9DUFUodW5zaWduZWQgaW50LCBjcHVfbWlu
+X2ZyZXEpOwotc3RhdGljIERFRklORV9QRVJfQ1BVKHVuc2lnbmVkIGludCwgY3B1X2N1cl9mcmVx
+KTsgLyogY3VycmVudCBDUFUgZnJlcSAqLwotc3RhdGljIERFRklORV9QRVJfQ1BVKHVuc2lnbmVk
+IGludCwgY3B1X3NldF9mcmVxKTsgLyogQ1BVIGZyZXEgZGVzaXJlZCBieQotCQkJCQkJCXVzZXJz
+cGFjZSAqLwogc3RhdGljIERFRklORV9QRVJfQ1BVKHVuc2lnbmVkIGludCwgY3B1X2lzX21hbmFn
+ZWQpOwotCiBzdGF0aWMgREVGSU5FX01VVEVYKHVzZXJzcGFjZV9tdXRleCk7Ci1zdGF0aWMgaW50
+IGNwdXNfdXNpbmdfdXNlcnNwYWNlX2dvdmVybm9yOwotCi0vKiBrZWVwIHRyYWNrIG9mIGZyZXF1
+ZW5jeSB0cmFuc2l0aW9ucyAqLwotc3RhdGljIGludAotdXNlcnNwYWNlX2NwdWZyZXFfbm90aWZp
+ZXIoc3RydWN0IG5vdGlmaWVyX2Jsb2NrICpuYiwgdW5zaWduZWQgbG9uZyB2YWwsCi0Jdm9pZCAq
+ZGF0YSkKLXsKLQlzdHJ1Y3QgY3B1ZnJlcV9mcmVxcyAqZnJlcSA9IGRhdGE7Ci0KLQlpZiAoIXBl
+cl9jcHUoY3B1X2lzX21hbmFnZWQsIGZyZXEtPmNwdSkpCi0JCXJldHVybiAwOwotCi0JaWYgKHZh
+bCA9PSBDUFVGUkVRX1BPU1RDSEFOR0UpIHsKLQkJcHJfZGVidWcoInNhdmluZyBjcHVfY3VyX2Zy
+ZXEgb2YgY3B1ICV1IHRvIGJlICV1IGtIelxuIiwKLQkJCQlmcmVxLT5jcHUsIGZyZXEtPm5ldyk7
+Ci0JCXBlcl9jcHUoY3B1X2N1cl9mcmVxLCBmcmVxLT5jcHUpID0gZnJlcS0+bmV3OwotCX0KLQot
+CXJldHVybiAwOwotfQotCi1zdGF0aWMgc3RydWN0IG5vdGlmaWVyX2Jsb2NrIHVzZXJzcGFjZV9j
+cHVmcmVxX25vdGlmaWVyX2Jsb2NrID0gewotCS5ub3RpZmllcl9jYWxsICA9IHVzZXJzcGFjZV9j
+cHVmcmVxX25vdGlmaWVyCi19OwotCiAKIC8qKgogICogY3B1ZnJlcV9zZXQgLSBzZXQgdGhlIENQ
+VSBmcmVxdWVuY3kKQEAgLTgwLDEzICszOCw2IEBAIHN0YXRpYyBpbnQgY3B1ZnJlcV9zZXQoc3Ry
+dWN0IGNwdWZyZXFfcG9saWN5ICpwb2xpY3ksIHVuc2lnbmVkIGludCBmcmVxKQogCWlmICghcGVy
+X2NwdShjcHVfaXNfbWFuYWdlZCwgcG9saWN5LT5jcHUpKQogCQlnb3RvIGVycjsKIAotCXBlcl9j
+cHUoY3B1X3NldF9mcmVxLCBwb2xpY3ktPmNwdSkgPSBmcmVxOwotCi0JaWYgKGZyZXEgPCBwZXJf
+Y3B1KGNwdV9taW5fZnJlcSwgcG9saWN5LT5jcHUpKQotCQlmcmVxID0gcGVyX2NwdShjcHVfbWlu
+X2ZyZXEsIHBvbGljeS0+Y3B1KTsKLQlpZiAoZnJlcSA+IHBlcl9jcHUoY3B1X21heF9mcmVxLCBw
+b2xpY3ktPmNwdSkpCi0JCWZyZXEgPSBwZXJfY3B1KGNwdV9tYXhfZnJlcSwgcG9saWN5LT5jcHUp
+OwotCiAJLyoKIAkgKiBXZSdyZSBzYWZlIGZyb20gY29uY3VycmVudCBjYWxscyB0byAtPnRhcmdl
+dCgpIGhlcmUKIAkgKiBhcyB3ZSBob2xkIHRoZSB1c2Vyc3BhY2VfbXV0ZXggbG9jay4gSWYgd2Ug
+d2VyZSBjYWxsaW5nCkBAIC0xMDcsNyArNTgsNyBAQCBzdGF0aWMgaW50IGNwdWZyZXFfc2V0KHN0
+cnVjdCBjcHVmcmVxX3BvbGljeSAqcG9saWN5LCB1bnNpZ25lZCBpbnQgZnJlcSkKIAogc3RhdGlj
+IHNzaXplX3Qgc2hvd19zcGVlZChzdHJ1Y3QgY3B1ZnJlcV9wb2xpY3kgKnBvbGljeSwgY2hhciAq
+YnVmKQogewotCXJldHVybiBzcHJpbnRmKGJ1ZiwgIiV1XG4iLCBwZXJfY3B1KGNwdV9jdXJfZnJl
+cSwgcG9saWN5LT5jcHUpKTsKKwlyZXR1cm4gc3ByaW50ZihidWYsICIldVxuIiwgcG9saWN5LT5j
+dXIpOwogfQogCiBzdGF0aWMgaW50IGNwdWZyZXFfZ292ZXJub3JfdXNlcnNwYWNlKHN0cnVjdCBj
+cHVmcmVxX3BvbGljeSAqcG9saWN5LApAQCAtMTE5LDY2ICs3MCwzMSBAQCBzdGF0aWMgaW50IGNw
+dWZyZXFfZ292ZXJub3JfdXNlcnNwYWNlKHN0cnVjdCBjcHVmcmVxX3BvbGljeSAqcG9saWN5LAog
+CXN3aXRjaCAoZXZlbnQpIHsKIAljYXNlIENQVUZSRVFfR09WX1NUQVJUOgogCQlCVUdfT04oIXBv
+bGljeS0+Y3VyKTsKLQkJbXV0ZXhfbG9jaygmdXNlcnNwYWNlX211dGV4KTsKLQotCQlpZiAoY3B1
+c191c2luZ191c2Vyc3BhY2VfZ292ZXJub3IgPT0gMCkgewotCQkJY3B1ZnJlcV9yZWdpc3Rlcl9u
+b3RpZmllcigKLQkJCQkJJnVzZXJzcGFjZV9jcHVmcmVxX25vdGlmaWVyX2Jsb2NrLAotCQkJCQlD
+UFVGUkVRX1RSQU5TSVRJT05fTk9USUZJRVIpOwotCQl9Ci0JCWNwdXNfdXNpbmdfdXNlcnNwYWNl
+X2dvdmVybm9yKys7CisJCXByX2RlYnVnKCJzdGFydGVkIG1hbmFnaW5nIGNwdSAldVxuIiwgY3B1
+KTsKIAorCQltdXRleF9sb2NrKCZ1c2Vyc3BhY2VfbXV0ZXgpOwogCQlwZXJfY3B1KGNwdV9pc19t
+YW5hZ2VkLCBjcHUpID0gMTsKLQkJcGVyX2NwdShjcHVfbWluX2ZyZXEsIGNwdSkgPSBwb2xpY3kt
+Pm1pbjsKLQkJcGVyX2NwdShjcHVfbWF4X2ZyZXEsIGNwdSkgPSBwb2xpY3ktPm1heDsKLQkJcGVy
+X2NwdShjcHVfY3VyX2ZyZXEsIGNwdSkgPSBwb2xpY3ktPmN1cjsKLQkJcGVyX2NwdShjcHVfc2V0
+X2ZyZXEsIGNwdSkgPSBwb2xpY3ktPmN1cjsKLQkJcHJfZGVidWcoIm1hbmFnaW5nIGNwdSAldSBz
+dGFydGVkICIKLQkJCSIoJXUgLSAldSBrSHosIGN1cnJlbnRseSAldSBrSHopXG4iLAotCQkJCWNw
+dSwKLQkJCQlwZXJfY3B1KGNwdV9taW5fZnJlcSwgY3B1KSwKLQkJCQlwZXJfY3B1KGNwdV9tYXhf
+ZnJlcSwgY3B1KSwKLQkJCQlwZXJfY3B1KGNwdV9jdXJfZnJlcSwgY3B1KSk7Ci0KIAkJbXV0ZXhf
+dW5sb2NrKCZ1c2Vyc3BhY2VfbXV0ZXgpOwogCQlicmVhazsKIAljYXNlIENQVUZSRVFfR09WX1NU
+T1A6Ci0JCW11dGV4X2xvY2soJnVzZXJzcGFjZV9tdXRleCk7Ci0JCWNwdXNfdXNpbmdfdXNlcnNw
+YWNlX2dvdmVybm9yLS07Ci0JCWlmIChjcHVzX3VzaW5nX3VzZXJzcGFjZV9nb3Zlcm5vciA9PSAw
+KSB7Ci0JCQljcHVmcmVxX3VucmVnaXN0ZXJfbm90aWZpZXIoCi0JCQkJCSZ1c2Vyc3BhY2VfY3B1
+ZnJlcV9ub3RpZmllcl9ibG9jaywKLQkJCQkJQ1BVRlJFUV9UUkFOU0lUSU9OX05PVElGSUVSKTsK
+LQkJfQorCQlwcl9kZWJ1ZygibWFuYWdpbmcgY3B1ICV1IHN0b3BwZWRcbiIsIGNwdSk7CiAKKwkJ
+bXV0ZXhfbG9jaygmdXNlcnNwYWNlX211dGV4KTsKIAkJcGVyX2NwdShjcHVfaXNfbWFuYWdlZCwg
+Y3B1KSA9IDA7Ci0JCXBlcl9jcHUoY3B1X21pbl9mcmVxLCBjcHUpID0gMDsKLQkJcGVyX2NwdShj
+cHVfbWF4X2ZyZXEsIGNwdSkgPSAwOwotCQlwZXJfY3B1KGNwdV9zZXRfZnJlcSwgY3B1KSA9IDA7
+Ci0JCXByX2RlYnVnKCJtYW5hZ2luZyBjcHUgJXUgc3RvcHBlZFxuIiwgY3B1KTsKIAkJbXV0ZXhf
+dW5sb2NrKCZ1c2Vyc3BhY2VfbXV0ZXgpOwogCQlicmVhazsKIAljYXNlIENQVUZSRVFfR09WX0xJ
+TUlUUzoKIAkJbXV0ZXhfbG9jaygmdXNlcnNwYWNlX211dGV4KTsKLQkJcHJfZGVidWcoImxpbWl0
+IGV2ZW50IGZvciBjcHUgJXU6ICV1IC0gJXUga0h6LCAiCi0JCQkiY3VycmVudGx5ICV1IGtIeiwg
+bGFzdCBzZXQgdG8gJXUga0h6XG4iLAorCQlwcl9kZWJ1ZygibGltaXQgZXZlbnQgZm9yIGNwdSAl
+dTogJXUgLSAldSBrSHosIGN1cnJlbnRseSAldSBrSHpcbiIsCiAJCQljcHUsIHBvbGljeS0+bWlu
+LCBwb2xpY3ktPm1heCwKLQkJCXBlcl9jcHUoY3B1X2N1cl9mcmVxLCBjcHUpLAotCQkJcGVyX2Nw
+dShjcHVfc2V0X2ZyZXEsIGNwdSkpOwotCQlpZiAocG9saWN5LT5tYXggPCBwZXJfY3B1KGNwdV9z
+ZXRfZnJlcSwgY3B1KSkgeworCQkJcG9saWN5LT5jdXIpOworCisJCWlmIChwb2xpY3ktPm1heCA8
+IHBvbGljeS0+Y3VyKQogCQkJX19jcHVmcmVxX2RyaXZlcl90YXJnZXQocG9saWN5LCBwb2xpY3kt
+Pm1heCwKIAkJCQkJCUNQVUZSRVFfUkVMQVRJT05fSCk7Ci0JCX0gZWxzZSBpZiAocG9saWN5LT5t
+aW4gPiBwZXJfY3B1KGNwdV9zZXRfZnJlcSwgY3B1KSkgeworCQllbHNlIGlmIChwb2xpY3ktPm1p
+biA+IHBvbGljeS0+Y3VyKQogCQkJX19jcHVmcmVxX2RyaXZlcl90YXJnZXQocG9saWN5LCBwb2xp
+Y3ktPm1pbiwKIAkJCQkJCUNQVUZSRVFfUkVMQVRJT05fTCk7Ci0JCX0gZWxzZSB7Ci0JCQlfX2Nw
+dWZyZXFfZHJpdmVyX3RhcmdldChwb2xpY3ksCi0JCQkJCQlwZXJfY3B1KGNwdV9zZXRfZnJlcSwg
+Y3B1KSwKLQkJCQkJCUNQVUZSRVFfUkVMQVRJT05fTCk7Ci0JCX0KLQkJcGVyX2NwdShjcHVfbWlu
+X2ZyZXEsIGNwdSkgPSBwb2xpY3ktPm1pbjsKLQkJcGVyX2NwdShjcHVfbWF4X2ZyZXEsIGNwdSkg
+PSBwb2xpY3ktPm1heDsKLQkJcGVyX2NwdShjcHVfY3VyX2ZyZXEsIGNwdSkgPSBwb2xpY3ktPmN1
+cjsKIAkJbXV0ZXhfdW5sb2NrKCZ1c2Vyc3BhY2VfbXV0ZXgpOwogCQlicmVhazsKIAl9Ci0tIAox
+LjcuMTIucmMyLjE4Lmc2MWI0NzJlCgo=
+--089e0115f6c64bcad004de67e694--
