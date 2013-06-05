@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932640Ab3FEVOt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:14:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36956 "EHLO
+	id S932617Ab3FEVPE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:15:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36953 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932617Ab3FEVNK (ORCPT
+	with ESMTP id S932615Ab3FEVNK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Jun 2013 17:13:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: [ 40/44] iommu/amd: Re-enable IOMMU event log interrupt after handling.
-Date: Wed,  5 Jun 2013 14:12:38 -0700
-Message-Id: <20130605211226.035189038@linuxfoundation.org>
+        Wei Liu <wei.liu2@citrix.com>, Ian Campbell <ian.campbell@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 39/44] xen-netback: remove skb in xen_netbk_alloc_page
+Date: Wed,  5 Jun 2013 14:12:37 -0700
+Message-Id: <20130605211225.925253032@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605211221.858177087@linuxfoundation.org>
 References: <20130605211221.858177087@linuxfoundation.org>
@@ -27,47 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+From: Wei Liu <wei.liu2@citrix.com>
 
-commit 925fe08bce38d1ff052fe2209b9e2b8d5fbb7f98 upstream.
+commit 27f852282ab9a028f57da96d05c26f38c424a315 upstream.
 
-Current driver does not clear the IOMMU event log interrupt bit
-in the IOMMU status register after processing an interrupt.
-This causes the IOMMU hardware to generate event log interrupt only once.
-This has been observed in both IOMMU v1 and V2 hardware.
-This patch clears the bit by writing 1 to bit 1 of the IOMMU
-status register (MMIO Offset 2020h)
+This variable is never used.
 
-Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Signed-off-by: Wei Liu <wei.liu2@citrix.com>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/amd_iommu.c       |    3 +++
- drivers/iommu/amd_iommu_types.h |    1 +
- 2 files changed, 4 insertions(+)
+ drivers/net/xen-netback/netback.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -534,6 +534,9 @@ static void iommu_poll_events(struct amd
- 	u32 head, tail;
- 	unsigned long flags;
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -914,7 +914,6 @@ static int netbk_count_requests(struct x
+ }
  
-+	/* enable event interrupts again */
-+	writel(MMIO_STATUS_EVT_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
-+
- 	spin_lock_irqsave(&iommu->lock, flags);
+ static struct page *xen_netbk_alloc_page(struct xen_netbk *netbk,
+-					 struct sk_buff *skb,
+ 					 u16 pending_idx)
+ {
+ 	struct page *page;
+@@ -948,7 +947,7 @@ static struct gnttab_copy *xen_netbk_get
  
- 	head = readl(iommu->mmio_base + MMIO_EVT_HEAD_OFFSET);
---- a/drivers/iommu/amd_iommu_types.h
-+++ b/drivers/iommu/amd_iommu_types.h
-@@ -99,6 +99,7 @@
- #define PASID_MASK		0x000fffff
+ 		index = pending_index(netbk->pending_cons++);
+ 		pending_idx = netbk->pending_ring[index];
+-		page = xen_netbk_alloc_page(netbk, skb, pending_idx);
++		page = xen_netbk_alloc_page(netbk, pending_idx);
+ 		if (!page)
+ 			goto err;
  
- /* MMIO status bits */
-+#define MMIO_STATUS_EVT_INT_MASK	(1 << 1)
- #define MMIO_STATUS_COM_WAIT_INT_MASK	(1 << 2)
- #define MMIO_STATUS_PPR_INT_MASK	(1 << 6)
+@@ -1353,7 +1352,7 @@ static unsigned xen_netbk_tx_build_gops(
+ 		}
  
+ 		/* XXX could copy straight to head */
+-		page = xen_netbk_alloc_page(netbk, skb, pending_idx);
++		page = xen_netbk_alloc_page(netbk, pending_idx);
+ 		if (!page) {
+ 			kfree_skb(skb);
+ 			netbk_tx_err(vif, &txreq, idx);
 
 
