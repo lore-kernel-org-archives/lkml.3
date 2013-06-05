@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542Ab3FEHjp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 03:39:45 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:59186 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743Ab3FEHjo (ORCPT
+	id S1752250Ab3FEHoR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 03:44:17 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:37743 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751723Ab3FEHoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 03:39:44 -0400
-Message-ID: <51AEEB37.1070403@linux.vnet.ibm.com>
-Date: Wed, 05 Jun 2013 15:39:35 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Wed, 5 Jun 2013 03:44:16 -0400
+Date: Wed, 5 Jun 2013 00:44:12 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
+        Zach Brown <zab@redhat.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul McKenney <paul.mckenney@us.ibm.com>
+Subject: Re: [PATCH] Generic percpu refcounting
+Message-ID: <20130605074412.GE7303@mtj.dyndns.org>
+References: <1370039205-14071-1-git-send-email-koverstreet@google.com>
+ <87d2s1rowi.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] workqueue: code refine/clean for workqueue
-References: <51AEE452.8080605@linux.vnet.ibm.com>
-In-Reply-To: <51AEE452.8080605@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060507-8878-0000-0000-00000767B756
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87d2s1rowi.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2013 03:10 PM, Michael Wang wrote:
-> Code refine/clean patch set for workqueue.
-> 
-> Michael Wang (3):
-> 	[PATCH 1/3] workqueue: move the internal helper from .h to .c
-> 	[PATCH 2/3] workqueue: remove the unused helper in .h
-> 	[PATCH 3/3] workqueue: add a check point in pwq_activate_delayed_work()
+On Wed, Jun 05, 2013 at 05:05:09PM +0930, Rusty Russell wrote:
+> I think this should be rcu_read_lock(), which is currently equivalent
+> but theoretically different.
 
-Hi, Tejun
+I suggested using preempt_disable/enable() along with sched RCU.  I
+thought that was better for some reason but I was probably
+misremembering something.  rcu_read_lock/unlock() w/ synchronize_rcu()
+should be fine too.  I don't care either way.
 
-Sounds like I failed to grasp the essentials of the way we maintain
-workqueue :(
+> Does your percpu_ref_kill() *really* need to be nonblocking?  (I'd have
+> to read your other patches which use this to be sure).  Otherwise, just
+> use synchronize_rcu(), and get rid of the release function...
 
-These are just self opinion I got during the review, please ignore them
-if they will cause trouble to your maintain work :)
+synchronize_rcu() can always become problematic and should always be
+avoided for generic things which may be used in various ways.  They
+develop into very long latencies pretty quickly when chained back to
+back.
 
-Regards,
-Michael Wang
+Thanks.
 
-> 
-> ---
->  b/include/linux/workqueue.h |    5 -----
->  b/kernel/workqueue.c        |    5 +++++
->  include/linux/workqueue.h   |   27 ---------------------------
->  kernel/workqueue.c          |    6 +++---
->  4 files changed, 8 insertions(+), 35 deletions(-)
-> 
-
+-- 
+tejun
