@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711Ab3FEHia (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 03:38:30 -0400
-Received: from ozlabs.org ([203.10.76.45]:54693 "EHLO ozlabs.org"
+	id S1752614Ab3FEHi3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 03:38:29 -0400
+Received: from ozlabs.org ([203.10.76.45]:52297 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752370Ab3FEHi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752079Ab3FEHi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Jun 2013 03:38:27 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Joe Lawrence <joe.lawrence@stratus.com>
-Cc: Ben Greear <greearb@candelatech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
-Subject: Re: Please add to stable:  module: don't unlink the module until we've removed all exposure.
-In-Reply-To: <20130605050719.GC10475@kroah.com>
-References: <51A8E884.1080009@candelatech.com> <87ehclumhr.fsf@rustcorp.com.au> <alpine.DEB.2.02.1306022212200.10003@jlaw-desktop.mno.stratus.com> <alpine.DEB.2.02.1306030724230.19647@jlaw-desktop.mno.stratus.com> <alpine.DEB.2.02.1306031012460.22652@jlaw-desktop.mno.stratus.com> <20130605050719.GC10475@kroah.com>
+To: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org
+Cc: Kent Overstreet <koverstreet@google.com>, Zach Brown <zab@redhat.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul McKenney" <paul.mckenney@us.ibm.com>
+Subject: Re: [PATCH] Generic percpu refcounting
+In-Reply-To: <1370039205-14071-1-git-send-email-koverstreet@google.com>
+References: <1370039205-14071-1-git-send-email-koverstreet@google.com>
 User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Wed, 05 Jun 2013 16:43:14 +0930
-Message-ID: <87k3m9rpx1.fsf@rustcorp.com.au>
+Date: Wed, 05 Jun 2013 17:05:09 +0930
+Message-ID: <87d2s1rowi.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <gregkh@linuxfoundation.org> writes:
-> On Mon, Jun 03, 2013 at 10:17:17AM -0400, Joe Lawrence wrote:
->> [Cc: stable@vger.kernel.org]
->> 
->> Third time is a charm?  The stable address was incorrect from the first 
->> msg in this thread, but the relevant bits remain quoted below...
->
-> Really?  I'm totally confused...
->
->> On Mon, 3 Jun 2013, Joe Lawrence wrote:
->> 
->> > [fixing Cc: stable@kernel.org address]
->> > 
->> > On Sun, 2 Jun 2013, Joe Lawrence wrote:
->> > 
->> > > On Sun, 2 Jun 2013, Rusty Russell wrote:
->> > > 
->> > > > Ben Greear <greearb@candelatech.com> writes:
->> > > > 
->> > > > > It turns out, the bug I spent yesterday chasing in various 3.9 kernels is apparently
->> > > > > fixed by the commit in the title (c9c390bb5535380d40614571894ef0c00bc026ff).
->> > > > 
->> > > > Apparently being the operative word.
->> > > > 
->> > > > This commit avoids the entire "module insert failed due to sysfs race"
->> > > > path in the common case, it doesn't fix any actual problem.
->> > > > 
->> > > > I think the real commit you want is Linus' kobject fix
->> > > > a49b7e82cab0f9b41f483359be83f44fbb6b4979 "kobject: fix kset_find_obj()
->> > > > race with concurrent last kobject_put()".
->> > > > 
->> > > > Or is that already in stable?
->> > > 
->> > > Hi Rusty,
->> > >  
->> > > I had pointed Ben (offlist) to that bugzilla entry without realizing
->> > > there were other earlier related fixes in this space.  Re-viewing bz-
->> > > 58011, it looks like it was opened against 3.8.12, while Ben and myself
->> > > had encountered module loading problems in versions 3.9 and
->> > > 3.9.[1-3].  I can update the bugzilla entry to add a comment noting commit
->> > > a49b7e82 "kobject: fix kset_find_obj() race with concurrent last
->> > > kobject_put()".
->> > > 
->> > > That said, it doesn't appear that commit 944a1fa "module: don't unlink the
->> > > module until we've removed all exposure" has not made it into any stable  
->> > > kernel.  On my system, applying this on top of 3.9 resolved a module
->> > > unload/load race that would occasionally occur on boot (two video adapters
->> > > of the same make, the module unloads for whatever reason and I see "module
->> > > is already loaded" and "sysfs: cannot create duplicate filename
->> > > '/module/mgag200'" messages every 5-10% instances.)  I have logs if you
->> > > were interested in these warnings/crashes.
->> > > 
->> > > Hope this clarifies things.
->
-> After this whole thread, what should I be doing for the 3.9-stable tree?
-> Add commit 944a1fa?  Or something else?
+Kent Overstreet <koverstreet@google.com> writes:
 
-Yes.  It does fix an Oops unrelated to what it was intended to fix, so
-it's the lowest pain path.
+> This implements a refcount with similar semantics to
+> atomic_get()/atomic_dec_and_test() - but percpu.
+>
+> It also implements two stage shutdown, as we need it to tear down the
+> percpu counts.  Before dropping the initial refcount, you must call
+> percpu_ref_kill(); this puts the refcount in "shutting down mode" and
+> switches back to a single atomic refcount with the appropriate barriers
+> (synchronize_rcu()).
+>
+> It's also legal to call percpu_ref_kill() multiple times - it only returns
+> true once, so callers don't have to reimplement shutdown synchronization.
 
-There may be other ways of triggering a similar oops, but do far the
-obvious attempt has failed (holding a sysfs file open while a module
-fails its init).  I might patch it anyway, because it makes me
-uncomfortable, but that's separate.
+> +static inline void percpu_ref_get(struct percpu_ref *ref)
+> +{
+> +	unsigned __percpu *pcpu_count;
+> +
+> +	preempt_disable();
+> +
+> +	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
+> +
+> +	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR))
+> +		__this_cpu_inc(*pcpu_count);
+> +	else
+> +		atomic_inc(&ref->count);
+> +
+> +	preempt_enable();
+> +}
 
-Thanks,
+I think this should be rcu_read_lock(), which is currently equivalent
+but theoretically different.
+
+Does your percpu_ref_kill() *really* need to be nonblocking?  (I'd have
+to read your other patches which use this to be sure).  Otherwise, just
+use synchronize_rcu(), and get rid of the release function...
+
+Cheers,
 Rusty.
