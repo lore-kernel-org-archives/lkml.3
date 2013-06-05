@@ -1,203 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807Ab3FEJfb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 05:35:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53082 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969Ab3FEJf3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 05:35:29 -0400
+	id S1753234Ab3FEJfn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 05:35:43 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:60950 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752829Ab3FEJfm (ORCPT
+	<rfc822;	linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 05:35:42 -0400
+Date: Wed, 05 Jun 2013 12:35:27 +0300
+Subject: Re: [PATCH v2 2/3] cpufreq: Remove unused function
+ __cpufreq_driver_getavg
+Message-ID: <v6q3yh4g49poaxn58wac6mqx.1370424863903@email.android.com>
+From: Stratos Karafotis <stratosk@semaphore.gr>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, " H. Peter Anvin" <hpa@zytor.com>,
+        linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <s5hbo7lrq2a.wl%tiwai@suse.de>
-References: <1370410969-15328-1-git-send-email-ming.lei@canonical.com>
-	<1370410969-15328-4-git-send-email-ming.lei@canonical.com>
-	<s5hbo7lrq2a.wl%tiwai@suse.de>
-Date: Wed, 5 Jun 2013 17:35:26 +0800
-Message-ID: <CACVXFVNpH2H0wxfmbeVY--Q+1UnNT1rq_Rwr-3ou3Nddq2EWXw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] firmware loader: allow distribution to choose default
- search paths
-From: Ming Lei <ming.lei@canonical.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r559Zo0M027299
 
-On Wed, Jun 5, 2013 at 3:10 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Wed,  5 Jun 2013 13:42:49 +0800,
-> Ming Lei wrote:
->>
->> For some distributions(e.g. android), firmware images aren't put
->> under kernel built-in search paths, so introduce one Kconfig
->> option to allow distributions or users to choose its specific default
->> search paths, which are always tried before searching from kernel
->> built-in paths in direct loading.
->>
->> Cc: Linus Torvalds <torvalds@linux-foundation.org>
->> Cc: Takashi Iwai <tiwai@suse.de>
->> Signed-off-by: Ming Lei <ming.lei@canonical.com>
->> ---
->>  drivers/base/Kconfig          |   12 +++++++
->>  drivers/base/firmware_class.c |   76 ++++++++++++++++++++++++++++++++++++-----
->>  2 files changed, 80 insertions(+), 8 deletions(-)
->>
->> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
->> index 07abd9d..5b0c909 100644
->> --- a/drivers/base/Kconfig
->> +++ b/drivers/base/Kconfig
->> @@ -156,6 +156,18 @@ config FW_LOADER_USER_HELPER
->>         no longer required unless you have a special firmware file that
->>         resides in a non-standard path.
->>
->> +config FW_CUSTOMIZED_PATH
->> +     string "default firmware search paths for direct loading"
->> +     help
->> +       On some distribution(e.g. android), firmware images aren't
->> +       put under kernel built-in search paths, so provide this option
->> +       for distributions to choose a distribution specific firmware
->> +       search path. The option allows to choose more than one path,
->> +       and paths are seperated with semicolon(e.g. on android, the
->> +       option might look as "/etc/firmware;/vendor/firmware").
->> +
->> +       If you are unsure about this, don't choose here.
->> +
->>  config DEBUG_DRIVER
->>       bool "Driver Core verbose debug messages"
->>       depends on DEBUG_KERNEL
->> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
->> index c743409..50b5913 100644
->> --- a/drivers/base/firmware_class.c
->> +++ b/drivers/base/firmware_class.c
->> @@ -267,6 +267,9 @@ static void fw_free_buf(struct firmware_buf *buf)
->>  static char fw_path_para[256];
->>  static const char * const fw_path[] = {
->>       fw_path_para,
->> +#ifdef CONFIG_FW_CUSTOMIZED_PATH
->> +     CONFIG_FW_CUSTOMIZED_PATH,
->> +#endif
->>       "/lib/firmware/updates/" UTS_RELEASE,
->>       "/lib/firmware/updates",
->>       "/lib/firmware/" UTS_RELEASE,
->> @@ -314,6 +317,59 @@ static bool fw_read_file_contents(struct file *file, struct firmware_buf *fw_buf
->>       return true;
->>  }
->>
->> +static bool fw_get_file_firmware(const char *path,
->> +                              struct firmware_buf *buf)
->> +{
->> +     struct file *file;
->> +     bool success;
->> +
->> +     file = filp_open(path, O_RDONLY, 0);
->> +     if (IS_ERR(file))
->> +             return false;
->> +     success = fw_read_file_contents(file, buf);
->> +     fput(file);
->> +
->> +     return success;
->> +}
->> +
->> +#ifdef CONFIG_FW_CUSTOMIZED_PATH
->> +/* The path in @paths is seperated by ';' */
->> +static bool fw_get_fw_file_from_paths(const char *paths, char *path,
->> +                                   struct firmware_buf *buf)
->> +{
->> +     int len, start, end;
->> +     char *pos;
->> +
->> +     end = -1;
->> +     do {
->> +             start = end + 1;
->> +             pos = strchr(&paths[start], ';');
->> +             if (pos) {
->> +                     end = (int)(pos - paths);
->> +                     len = end - start;
->> +             } else {
->> +                     len = strlen(&paths[start]);
->> +             }
->> +
->> +             if (PATH_MAX < len + strlen(buf->fw_id))
->> +                     continue;
->> +             strncpy(path, &paths[start], len);
->> +             snprintf(&path[len], PATH_MAX - len, "/%s", buf->fw_id);
->> +
->> +             if (fw_get_file_firmware(path, buf))
->> +                     return true;
->> +     } while (pos && end < strlen(paths) - 1);
->> +
->> +     return false;
->> +}
->> +#else
->> +static bool fw_get_fw_file_from_paths(const char *paths, char *path,
->> +                                   struct firmware_buf *buf)
->> +{
->> +     return false;
->> +}
->> +#endif
->> +
->>  static bool fw_get_filesystem_firmware(struct device *device,
->>                                      struct firmware_buf *buf)
->>  {
->> @@ -322,19 +378,23 @@ static bool fw_get_filesystem_firmware(struct device *device,
->>       char *path = __getname();
->>
->>       for (i = 0; i < ARRAY_SIZE(fw_path); i++) {
->> -             struct file *file;
->>
->>               /* skip the unset customized path */
->>               if (!fw_path[i][0])
->>                       continue;
->>
->> -             snprintf(path, PATH_MAX, "%s/%s", fw_path[i], buf->fw_id);
->> -
->> -             file = filp_open(path, O_RDONLY, 0);
->> -             if (IS_ERR(file))
->> -                     continue;
->> -             success = fw_read_file_contents(file, buf);
->> -             fput(file);
->> +             /*
->> +              * If CONFIG_FW_CUSTOMIZED_PATH is set, search from
->> +              * these paths first
->> +              */
->> +             if (i == 1 && ARRAY_SIZE(fw_path) > 5) {
->> +                     success = fw_get_fw_file_from_paths(fw_path[1],
->> +                                                         path, buf);
->> +             } else {
->> +                     snprintf(path, PATH_MAX, "%s/%s", fw_path[i],
->> +                              buf->fw_id);
->> +                     success = fw_get_file_firmware(path, buf);
->
-> Shouldn't fw_get_fw_file_from_paths() be applied unconditionally?
-> It'll be benefit for the customized path passed via module option,
-> too.  The only drawback is a slight code growth, but the code can be
-> reduced a bit with strcspn() or such.
-
-You mean that both the 1st two items should be covered by
-fw_get_fw_file_from_paths()? If so, the function may become
-a bit ugly since two strings are required to pass in, and we can't
-merge one runtime string and one ro string created in compiling.
-
-Looks we can let fw_get_fw_file_from_paths() handle all
-predefined paths(CONFIG_FW_CUSTOMIZED_PATH and
-kernel built-in paths), then fw_get_filesystem_firmware()
-may become simple, just check fw_path_para and all
-other paths by fw_get_fw_file_from_paths(). How about the
-idea?
-
->
-> BTW, I now wonder what happens if you pass a relative path.
-> Did you already test it?
-
-I tested absolute paths, and not test relative paths. Do you mean
-it may cause security problem? If so, we can check and ignore them,
-but it should be OK since the paths are provided by kernel builder.
->From view of function, I don't think there are much difference with
-absolute paths.
-
+I think you are right. I will reorder 2/3 and 3/3 with the change you suggested.
 
 Thanks,
---
-Ming Lei
+Stratos
+
+Viresh Kumar <viresh.kumar@linaro.org> wrote:
+
+>On 4 June 2013 20:36, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+>> On 06/04/2013 08:19 AM, Viresh Kumar wrote:
+>>> Should this be done in 3/3 ?
+>>>
+>>
+>> acpi-cpufreq does not use mperf after 2/3. Why should we compile it with
+>> CONFIG_X86_ACPI_CPUFREQ?
+>> Do you want me to move the change in 3/3?
+>
+>I somehow feel now that 3/3 should come before 2/3 and then this change
+>should be merged into it. And at the end we can have this patch as 3/3..
+>
+>What do you say? core should go last and users/drivers must go first.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
