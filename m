@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932819Ab3FEWAr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 18:00:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37771 "EHLO
+	id S933378Ab3FEWBE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 18:01:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37765 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932726Ab3FEVf2 (ORCPT
+	with ESMTP id S932592Ab3FEVf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:28 -0400
+	Wed, 5 Jun 2013 17:35:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
+        Christian Gmeiner <christian.gmeiner@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 046/127] rapidio/tsi721: fix bug in MSI interrupt handling
-Date: Wed,  5 Jun 2013 14:33:33 -0700
-Message-Id: <20130605213223.220518960@linuxfoundation.org>
+Subject: [ 045/127] drivers/leds/leds-ot200.c: fix error caused by shifted mask
+Date: Wed,  5 Jun 2013 14:33:32 -0700
+Message-Id: <20130605213223.116537319@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -29,59 +30,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexandre Bounine <alexandre.bounine@idt.com>
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
 
-commit 1ccc819da6fda9bee10ab8b72e9adbb5ad3e4959 upstream.
+commit 4b949b8af12e24b8a48fa5bb775a13b558d9f4da upstream.
 
-Fix bug in MSI interrupt handling which causes loss of event
-notifications.
+During the development of this driver an in-house register documentation
+was used.  The last week some integration tests were done and this
+problem was found.  It turned out that the released register
+documentation is wrong.
 
-Typical indication of lost MSI interrupts are stalled message and
-doorbell transfers between RapidIO endpoints.  To avoid loss of MSI
-interrupts all interrupts from the device must be disabled on entering
-the interrupt handler routine and re-enabled when exiting it.
-Re-enabling device interrupts will trigger new MSI message(s) if Tsi721
-registered new events since entering interrupt handler routine.
+The fix is very simple: shift all masks by one.
 
-This patch is applicable to kernel versions starting from v3.2.
-
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
+Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+Cc: Bryan Wu <cooloney@gmail.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rapidio/devices/tsi721.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/leds/leds-ot200.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/rapidio/devices/tsi721.c
-+++ b/drivers/rapidio/devices/tsi721.c
-@@ -471,6 +471,10 @@ static irqreturn_t tsi721_irqhandler(int
- 	u32 intval;
- 	u32 ch_inte;
- 
-+	/* For MSI mode disable all device-level interrupts */
-+	if (priv->flags & TSI721_USING_MSI)
-+		iowrite32(0, priv->regs + TSI721_DEV_INTE);
-+
- 	dev_int = ioread32(priv->regs + TSI721_DEV_INT);
- 	if (!dev_int)
- 		return IRQ_NONE;
-@@ -560,6 +564,14 @@ static irqreturn_t tsi721_irqhandler(int
- 		}
+--- a/drivers/leds/leds-ot200.c
++++ b/drivers/leds/leds-ot200.c
+@@ -47,37 +47,37 @@ static struct ot200_led leds[] = {
+ 	{
+ 		.name = "led_1",
+ 		.port = 0x49,
+-		.mask = BIT(7),
++		.mask = BIT(6),
+ 	},
+ 	{
+ 		.name = "led_2",
+ 		.port = 0x49,
+-		.mask = BIT(6),
++		.mask = BIT(5),
+ 	},
+ 	{
+ 		.name = "led_3",
+ 		.port = 0x49,
+-		.mask = BIT(5),
++		.mask = BIT(4),
+ 	},
+ 	{
+ 		.name = "led_4",
+ 		.port = 0x49,
+-		.mask = BIT(4),
++		.mask = BIT(3),
+ 	},
+ 	{
+ 		.name = "led_5",
+ 		.port = 0x49,
+-		.mask = BIT(3),
++		.mask = BIT(2),
+ 	},
+ 	{
+ 		.name = "led_6",
+ 		.port = 0x49,
+-		.mask = BIT(2),
++		.mask = BIT(1),
+ 	},
+ 	{
+ 		.name = "led_7",
+ 		.port = 0x49,
+-		.mask = BIT(1),
++		.mask = BIT(0),
  	}
- #endif
-+
-+	/* For MSI mode re-enable device-level interrupts */
-+	if (priv->flags & TSI721_USING_MSI) {
-+		dev_int = TSI721_DEV_INT_SR2PC_CH | TSI721_DEV_INT_SRIO |
-+			TSI721_DEV_INT_SMSG_CH | TSI721_DEV_INT_BDMA_CH;
-+		iowrite32(dev_int, priv->regs + TSI721_DEV_INTE);
-+	}
-+
- 	return IRQ_HANDLED;
- }
+ };
  
 
 
