@@ -1,111 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797Ab3FEOB6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 10:01:58 -0400
-Received: from sauhun.de ([89.238.76.85]:52371 "EHLO pokefinder.org"
+	id S1755860Ab3FEODG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 10:03:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21723 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755668Ab3FEOB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 10:01:57 -0400
-Date: Wed, 5 Jun 2013 16:03:40 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Hebbar Gururaja <gururaja.hebbar@ti.com>,
-        Mark Brown <broonie@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH 1/3] drivers: pinctrl sleep and idle states in the core
-Message-ID: <20130605140338.GC2934@katana>
-References: <1370439873-30053-1-git-send-email-linus.walleij@stericsson.com>
+	id S1755624Ab3FEODD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 10:03:03 -0400
+Date: Wed, 5 Jun 2013 16:02:58 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Michel Lespinasse <walken@google.com>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH] Re: Repeated fork() causes SLAB to grow without bound
+Message-ID: <20130605140258.GL3463@redhat.com>
+References: <20120816024610.GA5350@evergreen.ssec.wisc.edu>
+ <502D42E5.7090403@redhat.com>
+ <20120818000312.GA4262@evergreen.ssec.wisc.edu>
+ <502F100A.1080401@redhat.com>
+ <alpine.LSU.2.00.1208200032450.24855@eggly.anvils>
+ <CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com>
+ <20120822032057.GA30871@google.com>
+ <50345232.4090002@redhat.com>
+ <20130603195003.GA31275@evergreen.ssec.wisc.edu>
+ <51ADC365.4010307@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oJ71EGRlYNjSvfq7"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370439873-30053-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51ADC365.4010307@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 04, 2013 at 06:37:25AM -0400, Rik van Riel wrote:
+> On 06/03/2013 03:50 PM, Daniel Forrest wrote:
+> > On Tue, Aug 21, 2012 at 11:29:54PM -0400, Rik van Riel wrote:
+> >> On 08/21/2012 11:20 PM, Michel Lespinasse wrote:
+> >>> On Mon, Aug 20, 2012 at 02:39:26AM -0700, Michel Lespinasse wrote:
+> >>>> Instead of adding an atomic count for page references, we could limit
+> >>>> the anon_vma stacking depth. In fork, we would only clone anon_vmas
+> >>>> that have a low enough generation count. I think that's not great
+> >>>> (adds a special case for the deep-fork-without-exec behavior), but
+> >>>> still better than the atomic page reference counter.
+> >>>
+> >>> Here is an attached patch to demonstrate the idea.
+> >>>
+> >>> anon_vma_clone() is modified to return the length of the existing same_vma
+> >>> anon vma chain, and we create a new anon_vma in the child only on the first
+> >>> fork (this could be tweaked to allow up to a set number of forks, but
+> >>> I think the first fork would cover all the common forking server cases).
+> >>
+> >> I suspect we need 2 or 3.
+> >>
+> >> Some forking servers first fork off one child, and have
+> >> the original parent exit, in order to "background the server".
+> >> That first child then becomes the parent to the real child
+> >> processes that do the work.
+> >>
+> >> It is conceivable that we might need an extra level for
+> >> processes that do something special with privilege dropping,
+> >> namespace changing, etc...
+> >>
+> >> Even setting the threshold to 5 should be totally harmless,
+> >> since the problem does not kick in until we have really
+> >> long chains, like in Dan's bug report.
+> >
+> > I have been running with Michel's patch (with the threshold set to 5)
+> > for quite a few months now and can confirm that it does indeed solve
+> > my problem.  I am not a kernel developer, so I would appreciate if one
+> > of you could push this into the kernel tree.
+> >
+> > NOTE: I have attached Michel's patch with "(length > 1)" modified to
+> > "(length > 5)" and added a "Tested-by:".
+> 
+> Thank you for testing this.
+> 
+> I believe this code should go into the Linux kernel,
+> since it closes up what could be a denial of service
+> attack (albeit a local one) with the anonvma code.
 
---oJ71EGRlYNjSvfq7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Agreed. The only thing I don't like about this patch is the hardcoding
+of number 5: could we make it a variable to tweak with sysfs/sysctl so
+if some weird workload arises we have a tuning tweak? It'd cost one
+cacheline during fork, so it doesn't look excessive overhead.
 
-On Wed, Jun 05, 2013 at 03:44:31PM +0200, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
->=20
-> If a device have sleep and idle states in addition to the
-> default state, look up these in the core and stash them in
-> the pinctrl state container.
->=20
-> Add accessor functions for pinctrl consumers to put the pins
-> into "default", "sleep" and "idle" states passing nothing but
-> the struct device * affected.
->=20
-> Solution suggested by Kevin Hilman, Mark Brown and Dmitry
-> Torokhov in response to a patch series from Hebbar
-> Gururaja.
->=20
-> Cc: Hebbar Gururaja <gururaja.hebbar@ti.com>
-> Cc: Mark Brown <broonie@kernel.org>
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Cc: Kevin Hilman <khilman@linaro.org>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Stephen Warren <swarren@wwwdotorg.org>
-> Cc: Wolfram Sang <wsa@the-dreams.de>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-
-Some nits:
-
-> +	if (IS_ERR(pins->sleep_state))
-> +		return 0; /* No default state */
-
-Comment wants to say "sleep state"?
-
-> +	ret =3D pinctrl_select_state(pins->p, pins->sleep_state);
-> +	if (ret)
-> +		dev_err(dev, "failed to activate sleep pinctrl state\n");
-
-Better say "pinctrl sleep state"?
-
-> +	if (IS_ERR(pins->idle_state))
-> +		return 0; /* No default state */
-> +	ret =3D pinctrl_select_state(pins->p, pins->idle_state);
-> +	if (ret)
-> +		dev_err(dev, "failed to activate idle pinctrl state\n");
-
-Similar issues here...
-
-Other than that, on all 3 patches:
-
-Acked-by: Wolfram Sang <wsa@the-dreams.de>
-
-
---oJ71EGRlYNjSvfq7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRr0U6AAoJEBQN5MwUoCm2NJkP+wTmFx+A3SUevh8UpEBI/mUx
-9t7fcyVCteWPIKwRh4hhA5I+HUc3AKqHBPwhR4A2xtHoj6FTKWzKpVTL0hw9vgBx
-0SUUml1dXXRhth1YB/Xc99EDIG93mqKTAkGRdndJ8s5nbfhy7A7Q8SLzRGo9sPBp
-VCJ8D4XLGZHQpcR1sqZqfxJZQa7nWQqSxM4NxjkkmJhfrN/tRp5fR4lFaKn6tOAC
-nEdk7x2ne2L4syRq9G4Sa4IW2Ex6uzOuaKE2tDZMEO1rvqQHJz856rsCzti7BHW5
-1E5SyK5d956Cx9QPK4b7yUxC/nvYhNgSc4fslvackc2Afg+hmKqqIGKzMDLWsem6
-kGkKqYXQucj+zTyygm+QQd6emy427+DSE4f5iZsjC/HBsMHpGChgTCeNdJj3orF2
-BbkOgEqm7m9Dqe9PQuElmXVHWI1i49Q5QRgu44YPdHnrMLfaySyt945xhRXu3TFm
-KdHuiQixbwlLfGY3VGP3pO4XadzUqYaxtV5YgMFYHOmt1LxeXyi8VFUprC1XA9HX
-gjVeTfexZP2ZpsLVmiIH6rqsWyd55ZBx33Cxk5giMKDKoklppfIVKkOISi+9N8Dd
-p6yHJecYIa4zRBNfA1vxxNFGrP38D5I4KcezOYnRC6UExv2XgjutfKx5jyRLy+AM
-m57vmAJfu9rIFxWapkNP
-=XBwd
------END PGP SIGNATURE-----
-
---oJ71EGRlYNjSvfq7--
+Thanks,
+Andrea
