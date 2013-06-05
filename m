@@ -1,143 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab3FEQe3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 12:34:29 -0400
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:54625 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755566Ab3FEQe2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 12:34:28 -0400
-Date: Wed, 5 Jun 2013 18:34:26 +0200
-From: Andreas Mohr <andi@lisas.de>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Andreas Mohr <andi@lisas.de>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        OndrejZary <linux@rainbow-software.org>
-Subject: Re: [PATCH] usbnet: improve/fix status interrupt endpoint interval
-Message-ID: <20130605163426.GA18818@rhlx01.hs-esslingen.de>
-References: <20130604182830.GA13186@rhlx01.hs-esslingen.de>
- <CACVXFVOYMGjGLmyGy=pQwkcuFshLmdNcLZKfqUDazge45GMBPA@mail.gmail.com>
+	id S1756699Ab3FEQee (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 12:34:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1613 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755387Ab3FEQec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 12:34:32 -0400
+Date: Wed, 5 Jun 2013 19:35:00 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Jason Wang <jasowang@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, qemu-devel@nongnu.org
+Subject: [PATCH RFC] virtio-pci: support config layout in BAR1
+Message-ID: <20130605163500.GA3393@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACVXFVOYMGjGLmyGy=pQwkcuFshLmdNcLZKfqUDazge45GMBPA@mail.gmail.com>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Some setups don't support enabling BAR0 (IO BAR). Reasons range from CPU
+limitations (e.g. on some powerpc setups) to architecture limmitations
+(e.g. a setup with >15 PCI bridges, with one virtio device behind each,
+on x86).
 
-On Wed, Jun 05, 2013 at 09:22:25AM +0800, Ming Lei wrote:
-> On Wed, Jun 5, 2013 at 2:28 AM, Andreas Mohr <andi@lisas.de> wrote:
-> >
-> > From 307685fe8e6dfc8181e30167b9c31479332cb22f Mon Sep 17 00:00:00 2001
-> > From: Andreas Mohr <andim2@users.sourceforge.net>
-> > Date: Sun, 2 Jun 2013 20:37:05 +0200
-> > Subject: [PATCH] usbnet: improve/fix status interrupt endpoint interval
-> >  tweaking.
-> >
-> > - failed to take super-speed into account
-> > - <= full-speed seems to have wrong value (specified as frames [ms],
-> >   thus 3 is not suitable to achieve 8ms)
-> 
-> The above change is correct.
-> 
-> >   Value 8 now managed to reduce powertop wakeups from ~ 540 to ~ 155
-> 
-> It means that your device only returns current link status instead of link
-> change. IMO, it isn't a good behaviour for the device.
+PCI Express spec made IO optional, so future guests will disable IO for
+a device in more and more configurations.
 
-I don't quite understand that.
-The way I see it is that there's the "20 times same value" averaging,
-and once that was successful, a link change gets communicated
-(usbnet_link_change()). Thus that merely results in a *delay*
-in signalling the link change...
+This patch makes it possible for host to mirror the config in BAR1, such
+that these setups can work properly.
 
-> In fact, you still can increase the period only for your device, for example,
-> 128ms/256ms/512ms should be accepted.
+Guests with old drivers can't be fixed, they will continue to work as
+well (or as bad) as they did previously.  For this reason, changing
+revision id appears unnecessary - it would break setups that previously
+worked, partially.
 
-Possibly.
+Future work on re-organizing layout won't conflict with this patch - it
+can use a different BAR or put config at an offset, or update revision.
 
-> > - add detailed docs and question marks about current practice
-> 
-> But the doc need to be fixed.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/virtio/virtio_pci.c | 32 +++++++++++++++++++++++++++++++-
+ 1 file changed, 31 insertions(+), 1 deletion(-)
 
-Hmm.
-
-> >         /* avoid 1 msec chatter:  min 8 msec poll rate */
-> > +       /* High/SuperSpeed expresses intervals in microframes
-> > +        * (in logarithmic encoding, PRIOR to encoding in URB)
-> > +        * rather than frames.
-> > +        * Thus, for >= HighSpeed: == X [microframes] * 125us [-> 8ms],
-> > +        * <= FullSpeed: == X [ms] [-> 8ms].
-> > +        * Finally, it's questionable whether we'll even get away unscathed
-> > +        * with doing such rate tweaking at all:
-> > +        * bInterval value is declared as being a hard demand by a device
-> 
-> It isn't a hard demand, which only means the poll interval by which HC
-> sends IN token to device.
-
-I believe this number is meant to be a hard demand by the *device*,
-since a device is the authoritative party to know best about its
-own servicing requirements.
-Or, IOW, the thing that is a USB descriptor is to be seen as a *protocol*
-where a device signals its requirements (hopefully accurately, though!).
-And if it indicates a 1ms bInterval (which is "the requested maximum(!!)
-number of milliseconds between transaction attempts" [lvr usbfaq]),
-then one could argue that the servicing party (the kernel) damn well
-ought to follow through (unless it reliably knows that it can violate
-some parts of these demands without getting caught).
-
-> > +        * in order to guarantee having its I/O needs serviced properly...
-> > +        * if we don't do this, then... [overruns], [fire], [apocalypse]?
-> 
-> Not so serious, if one packet is ready, the late poll from HC may still
-> get the packet since device can buffer the packet, but if it is too late,
-> the successor packet might be missed by device.
-
-Is proper damage-less (overflows...) handling here a promise/guarantee
-that's made by the USB specs?
-Otherwise I wouldn't be so confident that a device is acting this way ;)
-
-> For usbnet, generally speaking, the interrupt pipe is for polling the
-> link change, which is a very low frequency event, so you don't need to
-> worry about missing events if the interval is increased.
-
-Yeah, but then those status bits also contain other error info for every packet
-processed, thus it's also very useful to achieve polling that's frequent
-enough to properly grab info for all transferred ether frames, rather
-than merely concentrating on link change info.
-
-> > +        * If this turns out to be problematic, such policy should be moved
-> > +        * to individual drivers (indicate flag to [dis]allow rate tweaking
-> > +        * as tolerated by specific devices).
-> 
-> Yes, we can add quirk for such kind device by increasing polling
-> interval.
-
-Sure, but that handling seems a bit static. An ideal service level would be
-getting notified of all link changes in a sufficiently slow way,
-*and* always catching status flags of *all* frames, too.
-
-> > +        */
-> >         period = max ((int) dev->status->desc.bInterval,
-> > -               (dev->udev->speed == USB_SPEED_HIGH) ? 7 : 3);
-> > +               ((dev->udev->speed == USB_SPEED_HIGH) ||
-> > +                (dev->udev->speed == USB_SPEED_SUPER)) ? 7 : 8);
-> 
-> For the above change, please feel free to add my ack:
-> 
->               Acked-by: Ming Lei <ming.lei@canonical.com>
-
-Thanks!
-
-
-I'm still unsure how/whether to reword my documentation part, though.
-If you happen to have some ideas about some updates,
-that would be great.
-
-Thanks!
-
-Andreas Mohr
+diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+index a7ce730..03564fe 100644
+--- a/drivers/virtio/virtio_pci.c
++++ b/drivers/virtio/virtio_pci.c
+@@ -675,6 +675,33 @@ static void virtio_pci_release_dev(struct device *_d)
+ 	 */
+ }
+ 
++/* Map a BAR. But carefully: make sure we don't overlap the MSI-X table */
++static void __iomem * virtio_pci_iomap(struct pci_dev *pci_dev, int bar)
++{
++	int msix_cap = pci_find_capability(pci_dev, PCI_CAP_ID_MSIX);
++	if (msix_cap) {
++		u32 offset;
++		u8 bir;
++		pci_read_config_dword(pci_dev, msix_cap + PCI_MSIX_TABLE,
++				      &offset);
++		bir = (u8)(offset & PCI_MSIX_TABLE_BIR);
++		offset &= PCI_MSIX_TABLE_OFFSET;
++		/* Spec says table offset is in a 4K page all by itself */
++		if (bir == bar && offset < 4096)
++			return NULL;
++
++		pci_read_config_dword(pci_dev, msix_cap + PCI_MSIX_PBA,
++				      &offset);
++		bir = (u8)(offset & PCI_MSIX_PBA_BIR);
++		offset &= PCI_MSIX_PBA_OFFSET;
++		/* Spec says table offset is in a 4K page all by itself. */
++		if (bir == bar && offset < 4096)
++			return NULL;
++	}
++	/* 4K is enough for all devices at the moment. */
++	return pci_iomap(pci_dev, 0, 4096);
++}
++
+ /* the PCI probing function */
+ static int virtio_pci_probe(struct pci_dev *pci_dev,
+ 			    const struct pci_device_id *id)
+@@ -716,7 +743,10 @@ static int virtio_pci_probe(struct pci_dev *pci_dev,
+ 	if (err)
+ 		goto out_enable_device;
+ 
+-	vp_dev->ioaddr = pci_iomap(pci_dev, 0, 0);
++	vp_dev->ioaddr = virtio_pci_iomap(pci_dev, 0);
++	/* Failed to map BAR0? Try with BAR1. */
++	if (vp_dev->ioaddr == NULL)
++		vp_dev->ioaddr = virtio_pci_iomap(pci_dev, 1);
+ 	if (vp_dev->ioaddr == NULL) {
+ 		err = -ENOMEM;
+ 		goto out_req_regions;
+-- 
+MST
