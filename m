@@ -1,87 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932856Ab3FEWAD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 18:00:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37783 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932752Ab3FEVf2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:28 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
-        Leonid Yegoshin <yegoshin@mips.com>, Rik van Riel <riel@redhat.com>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Russell King <rmk@arm.linux.org.uk>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 047/127] mm compaction: fix of improper cache flush in migration code
-Date: Wed,  5 Jun 2013 14:33:34 -0700
-Message-Id: <20130605213223.322672469@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
-References: <20130605213217.966891866@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S932854Ab3FEWAS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 18:00:18 -0400
+Received: from vps1.hno.se ([31.192.227.87]:43119 "EHLO vps1.hno.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932533Ab3FEWAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 18:00:13 -0400
+X-Greylist: delayed 600 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Jun 2013 18:00:12 EDT
+Message-ID: <1370469574.18839.33.camel@localhost>
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
+ Uploading linux (3.9.4-1))
+From: Henrik =?ISO-8859-1?Q?Nordstr=F6m?= <henrik@henriknordstrom.net>
+To: Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
+        debian-kernel@lists.debian.org
+Date: Wed, 05 Jun 2013 23:59:34 +0200
+In-Reply-To: <CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com>
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
+	 <CAKON4OxDD5orX2w-_+d5kawTGXbE3KKj2QLERo9m7=NiUSXhgQ@mail.gmail.com>
+	 <51AFA6DD.3000202@wwwdotorg.org>
+	 <CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+ons 2013-06-05 klockan 22:24 +0100 skrev Luke Kenneth Casson Leighton:
 
-------------------
+>  And Then Some, stephen.  there are two versions of u-boot being used:
+> one is the community-assembled [GPL-compliant] one, and the other
+> includes a [as-of-a-few-days-ago-but-no-longer, yay!]
+> formerly-GPL-violating one from allwinner.
+> 
+>  the community-based one *doesn't* have fex integration (i don't
+> think, but henrik will know for sure), but the allwinner one
+> definitely does.
 
-From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+Correct.
 
-commit c2cc499c5bcf9040a738f49e8051b42078205748 upstream.
+>  .... and then there's the boot0 and boot1 loaders, these *do* have
+> fex integration: they're absolutely tiny and they're designed to fit
+> into the 1st level cache.  the job of these bootloaders is to set up
+> the DDR3 RAM timings (so that you can access DRAM!!) and to then
+> decide whether to load from NAND, SD/MMC etc. and many other things.
 
-Page 'new' during MIGRATION can't be flushed with flush_cache_page().
-Using flush_cache_page(vma, addr, pfn) is justified only if the page is
-already placed in process page table, and that is done right after
-flush_cache_page().  But without it the arch function has no knowledge
-of process PTE and does nothing.
-
-Besides that, flush_cache_page() flushes an application cache page, but
-the kernel has a different page virtual address and dirtied it.
-
-Replace it with flush_dcache_page(new) which is the proper usage.
-
-The old page is flushed in try_to_unmap_one() before migration.
-
-This bug takes place in Sead3 board with M14Kc MIPS CPU without cache
-aliasing (but Harvard arch - separate I and D cache) in tight memory
-environment (128MB) each 1-3days on SOAK test.  It fails in cc1 during
-kernel build (SIGILL, SIGBUS, SIGSEG) if CONFIG_COMPACTION is switched
-ON.
-
-Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-Cc: Leonid Yegoshin <yegoshin@mips.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Russell King <rmk@arm.linux.org.uk>
-Cc: David Miller <davem@davemloft.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- mm/migrate.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -165,7 +165,7 @@ static int remove_migration_pte(struct p
- 		pte = arch_make_huge_pte(pte, vma, new, 0);
- 	}
- #endif
--	flush_cache_page(vma, addr, pte_pfn(pte));
-+	flush_dcache_page(new);
- 	set_pte_at(mm, addr, ptep, pte);
+no, these are not tiny. boot0 is 24KB to fit the initial embedded SRAM
+(not cache), but boot1 is on pair with u-boot in size and runs from
+DRAM.
  
- 	if (PageHuge(new)) {
+boot0 do NOT read the script.bin at all. It can't, there isn't space
+fore it. There is tools in the build process that reads the script.bin
+and adds some information to a header of boot0, but it's irrelevant to
+the device tree question. Exactly the same can be done from a device
+tree, or from a fex, it does not matter.
 
+even most of boot1 is not using script.bin. The important parameters are
+all recorded in a heaeder of boot1 when the image is composed using the
+Allwinner pack tools. Currently based on those tools reading script.bin
+to prepare the boot1 part of the image.
+
+>  these boot0 and boot1 loaders are themselves configureable so that
+> you can specify, through script.fex, what GPIO is to be the "reset
+> key" and so on.  that's a much simplified story btw.
+
+No. That info is in the boot0 and boot1 file headers, not script.bin. 
+
+>  so the point is: if anyone wishes me to propose to allwinner that
+> they convert over to devicetree, or any other proposal which involves
+> significant low-level changes to their working practices that could
+> potentially have a massive knock-on effect onto their
+> multi-million-dollar clients, it had better be a damn good story.
+
+Calm down. It isn't really a significant difference to them outside of
+the kernel. They do not need to change any of their configuraiton
+methods, only a small toolchain change in how the resultig images are
+built to have a corresponding device tree built.
+
+But it is a fair bit of one-time changes kernel side. And some
+scratching to figure out how to use/improve/ignore the stuff being
+mainlined.
+
+Regards
+Henrik
 
