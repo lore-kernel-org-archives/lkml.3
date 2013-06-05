@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135Ab3FER7w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 13:59:52 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:58795 "EHLO
+	id S932117Ab3FESAu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 14:00:50 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:2754 "EHLO
 	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757086Ab3FERsL (ORCPT
+	with ESMTP id S1757079Ab3FERsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Jun 2013 13:48:11 -0400
 From: Nick Dyer <nick.dyer@itdev.co.uk>
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
 Cc: Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 40/53] Input: atmel_mxt_ts - implement I2C retries
-Date: Wed,  5 Jun 2013 18:37:33 +0100
-Message-Id: <1370453866-16534-41-git-send-email-nick.dyer@itdev.co.uk>
+Subject: [PATCH 08/53] Input: atmel_mxt_ts - Initialise IRQ before probing
+Date: Wed,  5 Jun 2013 18:37:01 +0100
+Message-Id: <1370453866-16534-9-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -25,103 +25,201 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some maXTouch chips (eg mXT1386) will not respond on the first I2C request
-when they are in a sleep state. It must be retried after a delay for the chip
-to wake up.
+This allows the interrupt handler to be used to detect CHG line during config
+download. We need to make sure we do not report events if input device not yet
+registered.
+
+data->enable_reporting is checked in each of the possible message handling
+function paths rather than higher up (such as at mxt_proc_message) because
+some objects may be used for completions (T6).
 
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
+Acked-by: Benson Leung <bleung@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   45 ++++++++++++++++++++----------
- 1 file changed, 30 insertions(+), 15 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   73 +++++++++++++++++++++---------
+ 1 file changed, 51 insertions(+), 22 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index bd8971e..5a195be 100644
+index 55d7667..1e24e54 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -197,6 +197,7 @@ struct t9_range {
- #define MXT_CRC_TIMEOUT		1000	/* msec */
- #define MXT_FW_RESET_TIME	3000	/* msec */
- #define MXT_FW_CHG_TIMEOUT	300	/* msec */
-+#define MXT_WAKEUP_TIME		25	/* msec */
+@@ -2,6 +2,7 @@
+  * Atmel maXTouch Touchscreen driver
+  *
+  * Copyright (C) 2010 Samsung Electronics Co.Ltd
++ * Copyright (C) 2011-2012 Atmel Corporation
+  * Copyright (C) 2012 Google, Inc.
+  *
+  * Author: Joonyoung Shim <jy0922.shim@samsung.com>
+@@ -261,6 +262,9 @@ struct mxt_data {
  
- /* Command to unlock bootloader */
- #define MXT_UNLOCK_CMD_MSB	0xaa
-@@ -569,6 +570,7 @@ static int __mxt_read_reg(struct i2c_client *client,
- 	struct i2c_msg xfer[2];
- 	u8 buf[2];
- 	int ret;
-+	bool retry = false;
+ 	/* for fw update in bootloader */
+ 	struct completion bl_completion;
++
++	/* Enable reporting of input events */
++	bool enable_reporting;
+ };
  
- 	buf[0] = reg & 0xff;
- 	buf[1] = (reg >> 8) & 0xff;
-@@ -585,17 +587,22 @@ static int __mxt_read_reg(struct i2c_client *client,
- 	xfer[1].len = len;
- 	xfer[1].buf = val;
+ static inline size_t mxt_obj_size(const struct mxt_object *obj)
+@@ -568,6 +572,10 @@ static void mxt_input_button(struct mxt_data *data, struct mxt_message *message)
+ 	bool button;
+ 	int i;
  
--	ret = i2c_transfer(client->adapter, xfer, 2);
--	if (ret == 2) {
--		ret = 0;
--	} else {
--		if (ret >= 0)
--			ret = -EIO;
--		dev_err(&client->dev, "%s: i2c transfer failed (%d)\n",
--			__func__, ret);
-+retry_read:
-+	ret = i2c_transfer(client->adapter, xfer, ARRAY_SIZE(xfer));
-+	if (ret != ARRAY_SIZE(xfer)) {
-+		if (!retry) {
-+			dev_dbg(&client->dev, "%s: i2c retry\n", __func__);
-+			msleep(MXT_WAKEUP_TIME);
-+			retry = true;
-+			goto retry_read;
-+		} else {
-+			dev_err(&client->dev, "%s: i2c transfer failed (%d)\n",
-+				__func__, ret);
-+			return -EIO;
-+		}
++	/* do not report events if input device not yet registered */
++	if (!data->enable_reporting)
++		return;
++
+ 	/* Active-low switch */
+ 	for (i = 0; i < pdata->t19_num_keys; i++) {
+ 		if (pdata->t19_keymap[i] == KEY_RESERVED)
+@@ -588,6 +596,10 @@ static void mxt_input_touchevent(struct mxt_data *data,
+ 	int area;
+ 	int pressure;
+ 
++	/* do not report events if input device not yet registered */
++	if (!data->enable_reporting)
++		return;
++
+ 	x = (message->message[1] << 4) | ((message->message[3] >> 4) & 0xf);
+ 	y = (message->message[2] << 4) | ((message->message[3] & 0xf));
+ 	if (data->max_x < 1024)
+@@ -667,7 +679,7 @@ static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
+ 		}
+ 	} while (reportid != 0xff);
+ 
+-	if (update_input) {
++	if (data->enable_reporting && update_input) {
+ 		input_mt_report_pointer_emulation(data->input_dev, false);
+ 		input_sync(data->input_dev);
+ 	}
+@@ -685,6 +697,9 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
+ 		return IRQ_HANDLED;
  	}
  
--	return ret;
-+	return 0;
++	if (!data->object_table)
++		return IRQ_NONE;
++
+ 	return mxt_process_messages_until_invalid(data);
  }
  
- static int __mxt_write_reg(struct i2c_client *client, u16 reg, u16 len,
-@@ -604,6 +611,7 @@ static int __mxt_write_reg(struct i2c_client *client, u16 reg, u16 len,
- 	u8 *buf;
- 	size_t count;
- 	int ret;
-+	bool retry = false;
+@@ -746,6 +761,19 @@ static int mxt_make_highchg(struct mxt_data *data)
+ 	return 0;
+ }
  
- 	count = len + 2;
- 	buf = kmalloc(count, GFP_KERNEL);
-@@ -614,14 +622,21 @@ static int __mxt_write_reg(struct i2c_client *client, u16 reg, u16 len,
- 	buf[1] = (reg >> 8) & 0xff;
- 	memcpy(&buf[2], val, len);
++static int mxt_acquire_irq(struct mxt_data *data)
++{
++	int error;
++
++	enable_irq(data->irq);
++
++	error = mxt_make_highchg(data);
++	if (error)
++		return error;
++
++	return 0;
++}
++
+ static int mxt_get_info(struct mxt_data *data)
+ {
+ 	struct i2c_client *client = data->client;
+@@ -819,6 +847,7 @@ static void mxt_free_object_table(struct mxt_data *data)
+ {
+ 	kfree(data->object_table);
+ 	data->object_table = NULL;
++	data->enable_reporting = false;
+ 	data->T6_reportid = 0;
+ 	data->T9_reportid_min = 0;
+ 	data->T9_reportid_max = 0;
+@@ -849,6 +878,10 @@ static int mxt_initialize(struct mxt_data *data)
+ 	if (error)
+ 		goto err_free_object_table;
  
-+retry_write:
- 	ret = i2c_master_send(client, buf, count);
--	if (ret == count) {
--		ret = 0;
--	} else {
--		if (ret >= 0)
-+	if (ret != count) {
-+		if (!retry) {
-+			dev_dbg(&client->dev, "%s: i2c retry\n", __func__);
-+			msleep(MXT_WAKEUP_TIME);
-+			retry = true;
-+			goto retry_write;
-+		} else {
-+			dev_err(&client->dev, "%s: i2c send failed (%d)\n",
-+				__func__, ret);
- 			ret = -EIO;
--		dev_err(&client->dev, "%s: i2c send failed (%d)\n",
--			__func__, ret);
-+		}
-+	} else {
-+		ret = 0;
++	error = mxt_acquire_irq(data);
++	if (error)
++		goto err_free_object_table;
++
+ 	/* Check register init values */
+ 	error = mxt_check_reg_init(data);
+ 	if (error)
+@@ -886,6 +919,8 @@ static int mxt_initialize(struct mxt_data *data)
+ 			info->matrix_xsize, info->matrix_ysize,
+ 			info->object_num);
+ 
++	data->enable_reporting = true;
++
+ 	return 0;
+ 
+ err_free_object_table:
+@@ -1087,11 +1122,7 @@ static ssize_t mxt_update_fw_store(struct device *dev,
+ 		dev_dbg(dev, "The firmware update succeeded\n");
+ 		mxt_free_object_table(data);
+ 
+-		mxt_initialize(data);
+-
+-		enable_irq(data->irq);
+-
+-		error = mxt_make_highchg(data);
++		error = mxt_initialize(data);
+ 		if (error)
+ 			return error;
  	}
+@@ -1188,9 +1219,19 @@ static int mxt_probe(struct i2c_client *client,
  
- 	kfree(buf);
+ 	mxt_calc_resolution(data);
+ 
++	error = request_threaded_irq(client->irq, NULL, mxt_interrupt,
++				     pdata->irqflags | IRQF_ONESHOT,
++				     client->name, data);
++	if (error) {
++		dev_err(&client->dev, "Failed to register interrupt\n");
++		goto err_free_mem;
++	}
++
++	disable_irq(client->irq);
++
+ 	error = mxt_initialize(data);
+ 	if (error)
+-		goto err_free_mem;
++		goto err_free_irq;
+ 
+ 	__set_bit(EV_ABS, input_dev->evbit);
+ 	__set_bit(EV_KEY, input_dev->evbit);
+@@ -1241,21 +1282,9 @@ static int mxt_probe(struct i2c_client *client,
+ 	input_set_drvdata(input_dev, data);
+ 	i2c_set_clientdata(client, data);
+ 
+-	error = request_threaded_irq(client->irq, NULL, mxt_interrupt,
+-				     pdata->irqflags | IRQF_ONESHOT,
+-				     client->name, data);
+-	if (error) {
+-		dev_err(&client->dev, "Failed to register interrupt\n");
+-		goto err_free_object;
+-	}
+-
+-	error = mxt_make_highchg(data);
+-	if (error)
+-		goto err_free_irq;
+-
+ 	error = input_register_device(input_dev);
+ 	if (error)
+-		goto err_free_irq;
++		goto err_free_object;
+ 
+ 	error = sysfs_create_group(&client->dev.kobj, &mxt_attr_group);
+ 	if (error)
+@@ -1266,10 +1295,10 @@ static int mxt_probe(struct i2c_client *client,
+ err_unregister_device:
+ 	input_unregister_device(input_dev);
+ 	input_dev = NULL;
+-err_free_irq:
+-	free_irq(client->irq, data);
+ err_free_object:
+ 	kfree(data->object_table);
++err_free_irq:
++	free_irq(client->irq, data);
+ err_free_mem:
+ 	input_free_device(input_dev);
+ 	kfree(data);
 -- 
 1.7.10.4
 
