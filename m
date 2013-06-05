@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933090Ab3FEVgL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:36:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38030 "EHLO
+	id S933218Ab3FEVg2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:36:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38141 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933070Ab3FEVgI (ORCPT
+	with ESMTP id S933203Ab3FEVgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:36:08 -0400
+	Wed, 5 Jun 2013 17:36:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: [ 102/127] iommu/amd: Workaround for ERBT1312
-Date: Wed,  5 Jun 2013 14:34:29 -0700
-Message-Id: <20130605213229.581763580@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 126/127] mac80211_hwsim: remove P2P_DEVICE support
+Date: Wed,  5 Jun 2013 14:34:53 -0700
+Message-Id: <20130605213232.288638188@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -27,83 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <joro@8bytes.org>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit d3263bc29706e42f74d8800807c2dedf320d77f1 upstream.
+Unfortunately, advertising P2P_DEVICE support was a little
+premature, a number of issues came up in testing and have
+been fixed for 3.10. Rather than try to backport all the
+different fixes, disable P2P_DEVICE support in the drivers
+using it.
 
-Work around an IOMMU  hardware bug where clearing the
-EVT_INT or PPR_INT bit in the status register may race with
-the hardware trying to set it again. When not handled the
-bit might not be cleared and we lose all future event or ppr
-interrupts.
-
-Reported-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/iommu/amd_iommu.c |   34 ++++++++++++++++++++++++++--------
- 1 file changed, 26 insertions(+), 8 deletions(-)
+ drivers/net/wireless/mac80211_hwsim.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -700,14 +700,23 @@ retry:
+--- a/drivers/net/wireless/mac80211_hwsim.c
++++ b/drivers/net/wireless/mac80211_hwsim.c
+@@ -2118,7 +2118,6 @@ static const struct ieee80211_iface_limi
+ #endif
+ 				 BIT(NL80211_IFTYPE_AP) |
+ 				 BIT(NL80211_IFTYPE_P2P_GO) },
+-	{ .max = 1, .types = BIT(NL80211_IFTYPE_P2P_DEVICE) },
+ };
  
- static void iommu_poll_events(struct amd_iommu *iommu)
- {
--	u32 head, tail;
-+	u32 head, tail, status;
- 	unsigned long flags;
+ static struct ieee80211_iface_combination hwsim_if_comb = {
+@@ -2230,8 +2229,7 @@ static int __init init_mac80211_hwsim(vo
+ 			BIT(NL80211_IFTYPE_P2P_CLIENT) |
+ 			BIT(NL80211_IFTYPE_P2P_GO) |
+ 			BIT(NL80211_IFTYPE_ADHOC) |
+-			BIT(NL80211_IFTYPE_MESH_POINT) |
+-			BIT(NL80211_IFTYPE_P2P_DEVICE);
++			BIT(NL80211_IFTYPE_MESH_POINT);
  
--	/* enable event interrupts again */
--	writel(MMIO_STATUS_EVT_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
--
- 	spin_lock_irqsave(&iommu->lock, flags);
- 
-+	/* enable event interrupts again */
-+	do {
-+		/*
-+		 * Workaround for Erratum ERBT1312
-+		 * Clearing the EVT_INT bit may race in the hardware, so read
-+		 * it again and make sure it was really cleared
-+		 */
-+		status = readl(iommu->mmio_base + MMIO_STATUS_OFFSET);
-+		writel(MMIO_STATUS_EVT_INT_MASK,
-+		       iommu->mmio_base + MMIO_STATUS_OFFSET);
-+	} while (status & MMIO_STATUS_EVT_INT_MASK);
-+
- 	head = readl(iommu->mmio_base + MMIO_EVT_HEAD_OFFSET);
- 	tail = readl(iommu->mmio_base + MMIO_EVT_TAIL_OFFSET);
- 
-@@ -744,16 +753,25 @@ static void iommu_handle_ppr_entry(struc
- static void iommu_poll_ppr_log(struct amd_iommu *iommu)
- {
- 	unsigned long flags;
--	u32 head, tail;
-+	u32 head, tail, status;
- 
- 	if (iommu->ppr_log == NULL)
- 		return;
- 
--	/* enable ppr interrupts again */
--	writel(MMIO_STATUS_PPR_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
--
- 	spin_lock_irqsave(&iommu->lock, flags);
- 
-+	/* enable ppr interrupts again */
-+	do {
-+		/*
-+		 * Workaround for Erratum ERBT1312
-+		 * Clearing the PPR_INT bit may race in the hardware, so read
-+		 * it again and make sure it was really cleared
-+		 */
-+		status = readl(iommu->mmio_base + MMIO_STATUS_OFFSET);
-+		writel(MMIO_STATUS_PPR_INT_MASK,
-+		       iommu->mmio_base + MMIO_STATUS_OFFSET);
-+	} while (status & MMIO_STATUS_PPR_INT_MASK);
-+
- 	head = readl(iommu->mmio_base + MMIO_PPR_HEAD_OFFSET);
- 	tail = readl(iommu->mmio_base + MMIO_PPR_TAIL_OFFSET);
- 
+ 		hw->flags = IEEE80211_HW_MFP_CAPABLE |
+ 			    IEEE80211_HW_SIGNAL_DBM |
 
 
