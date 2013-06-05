@@ -1,103 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929Ab3FEJPn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 05:15:43 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:43888 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433Ab3FEJPl (ORCPT
+	id S1753245Ab3FEJQM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 05:16:12 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:51248 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753070Ab3FEJQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 05:15:41 -0400
-Message-ID: <51AF01AB.2070405@huawei.com>
-Date: Wed, 5 Jun 2013 17:15:23 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Wed, 5 Jun 2013 05:16:10 -0400
+Message-ID: <51AF0269.9070900@oracle.com>
+Date: Wed, 05 Jun 2013 17:18:33 +0800
+From: vaughan <vaughan.cao@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: [PATCH v2 02/10] cpuset: cleanup guarantee_online_{cpus|mems}()
-References: <51AF0183.8070602@huawei.com>
-In-Reply-To: <51AF0183.8070602@huawei.com>
-Content-Type: text/plain; charset="GB2312"
+To: dgilbert@interlog.com
+CC: JBottomley@parallels.com, linux-scsi@vger.kernel.org, joern@logfs.org,
+        xitao.cao@gmail.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] sg: atomize check and set sdp->exclude in sg_open
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- We never pass a NULL @cs to these functions.
-- The top cpuset always has some online cpus/mems.
+Check and set sdp->exclude should be atomic when set in sg_open().
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Vaughan Cao <vaughan.cao@oracle.com>
 ---
- kernel/cpuset.c | 29 +++++++----------------------
- 1 file changed, 7 insertions(+), 22 deletions(-)
+  drivers/scsi/sg.c | 17 ++++++++++++++++-
+  1 file changed, 16 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index f0c884a..d753837 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -304,53 +304,38 @@ static struct file_system_type cpuset_fs_type = {
- /*
-  * Return in pmask the portion of a cpusets's cpus_allowed that
-  * are online.  If none are online, walk up the cpuset hierarchy
-- * until we find one that does have some online cpus.  If we get
-- * all the way to the top and still haven't found any online cpus,
-- * return cpu_online_mask.  Or if passed a NULL cs from an exit'ing
-- * task, return cpu_online_mask.
-+ * until we find one that does have some online cpus.  The top
-+ * cpuset always has some cpus online.
-  *
-  * One way or another, we guarantee to return some non-empty subset
-  * of cpu_online_mask.
-  *
-  * Call with callback_mutex held.
-  */
--
- static void guarantee_online_cpus(const struct cpuset *cs,
- 				  struct cpumask *pmask)
- {
--	while (cs && !cpumask_intersects(cs->cpus_allowed, cpu_online_mask))
-+	while (!cpumask_intersects(cs->cpus_allowed, cpu_online_mask))
- 		cs = parent_cs(cs);
--	if (cs)
--		cpumask_and(pmask, cs->cpus_allowed, cpu_online_mask);
--	else
--		cpumask_copy(pmask, cpu_online_mask);
--	BUG_ON(!cpumask_intersects(pmask, cpu_online_mask));
-+	cpumask_and(pmask, cs->cpus_allowed, cpu_online_mask);
- }
- 
- /*
-  * Return in *pmask the portion of a cpusets's mems_allowed that
-  * are online, with memory.  If none are online with memory, walk
-  * up the cpuset hierarchy until we find one that does have some
-- * online mems.  If we get all the way to the top and still haven't
-- * found any online mems, return node_states[N_MEMORY].
-+ * online mems.  The top cpuset always has some mems online.
-  *
-  * One way or another, we guarantee to return some non-empty subset
-  * of node_states[N_MEMORY].
-  *
-  * Call with callback_mutex held.
-  */
--
- static void guarantee_online_mems(const struct cpuset *cs, nodemask_t *pmask)
- {
--	while (cs && !nodes_intersects(cs->mems_allowed,
--					node_states[N_MEMORY]))
-+	while (!nodes_intersects(cs->mems_allowed, node_states[N_MEMORY]))
- 		cs = parent_cs(cs);
--	if (cs)
--		nodes_and(*pmask, cs->mems_allowed,
--					node_states[N_MEMORY]);
--	else
--		*pmask = node_states[N_MEMORY];
--	BUG_ON(!nodes_intersects(*pmask, node_states[N_MEMORY]));
-+	nodes_and(*pmask, cs->mems_allowed, node_states[N_MEMORY]);
- }
- 
- /*
+diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
+index 25b5455..0ede08f 100644
+--- a/drivers/scsi/sg.c
++++ b/drivers/scsi/sg.c
+@@ -245,6 +245,21 @@ static int set_exclude(Sg_device *sdp, char val)
+      return val;
+  }
+
++/* Check if we can set exclude and then set, return 1 if success */
++static int try_set_exclude(Sg_device *sdp)
++{
++    unsigned long flags;
++
++    spin_lock_irqsave(&sg_open_exclusive_lock, flags);
++    if (sdp->exclude) {
++        spin_unlock_irqrestore(&sg_open_exclusive_lock, flags);
++        return 0;
++    }
++    sdp->exclude = 1;
++    spin_unlock_irqrestore(&sg_open_exclusive_lock, flags);
++    return 1;
++}
++
+  static int sfds_list_empty(Sg_device *sdp)
+  {
+      unsigned long flags;
+@@ -303,7 +318,7 @@ sg_open(struct inode *inode, struct file *filp)
+              goto error_out;
+          }
+          res = wait_event_interruptible(sdp->o_excl_wait,
+-                       ((!sfds_list_empty(sdp) || get_exclude(sdp)) ? 0 
+: set_exclude(sdp, 1)));
++            ((!sfds_list_empty(sdp) || get_exclude(sdp)) ? 0 : 
+try_set_exclude(sdp)));
+          if (res) {
+              retval = res;    /* -ERESTARTSYS because signal hit process */
+              goto error_out;
 -- 
-1.8.0.2
+1.7.11.7
+
