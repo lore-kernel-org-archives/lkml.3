@@ -1,53 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab3FEHSN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 03:18:13 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:36895 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752447Ab3FEHSM (ORCPT
+	id S1752711Ab3FEHTL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 03:19:11 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:51651 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752304Ab3FEHTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 03:18:12 -0400
-Message-ID: <51AEE53C.5050704@linux.vnet.ibm.com>
-Date: Wed, 05 Jun 2013 15:14:04 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/3] workqueue: code refine in wqattrs_equal()
+	Wed, 5 Jun 2013 03:19:10 -0400
+Date: Wed, 5 Jun 2013 00:19:06 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] workqueue: move the internal helper from .h to .c
+Message-ID: <20130605071906.GB7303@mtj.dyndns.org>
 References: <51AEE452.8080605@linux.vnet.ibm.com>
-In-Reply-To: <51AEE452.8080605@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060507-1396-0000-0000-00000311A2E0
+ <51AEE473.6020402@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51AEE473.6020402@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-code refine to save some line.
+On Wed, Jun 05, 2013 at 03:10:43PM +0800, Michael Wang wrote:
+> alloc_workqueue_attrs(), free_workqueue_attrs() and apply_workqueue_attrs()
+> are only used internally, move them to .c and make them static.
+> 
+> CC: Tejun Heo <tj@kernel.org>
+> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
 
-CC: Tejun Heo <tj@kernel.org>
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
----
- kernel/workqueue.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+Nack.  That's the published and only interface to use custom attrs
+from inside kernel.
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index ee8e29a..5fd4791 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3417,9 +3417,8 @@ static bool wqattrs_equal(const struct workqueue_attrs *a,
- {
- 	if (a->nice != b->nice)
- 		return false;
--	if (!cpumask_equal(a->cpumask, b->cpumask))
--		return false;
--	return true;
-+
-+	return cpumask_equal(a->cpumask, b->cpumask);
- }
- 
- /**
+Thanks.
+
 -- 
-1.7.4.1
-
+tejun
