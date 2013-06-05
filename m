@@ -1,135 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756200Ab3FEOyd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 10:54:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27215 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755694Ab3FEOya (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 10:54:30 -0400
-X-Authority-Analysis: v=2.0 cv=Et5QXFgA c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=pOOK0n4x9skA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=U0Jj00tbnlYA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=J8b0nuACsjpp0o9fA58A:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1370444067.9844.21.camel@gandalf.local.home>
-Subject: Re: [07/65] dm bufio: avoid a possible __vmalloc deadlock
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org, stable@kernel.org,
-        Alasdair G Kergon <agk@redhat.com>
-Date: Wed, 05 Jun 2013 10:54:27 -0400
-In-Reply-To: <Pine.LNX.4.64.1306040858060.22591@file.rdu.redhat.com>
-References: <20130603221016.243553628@goodmis.org>
-	 <20130603221153.315507011@goodmis.org>
-	 <Pine.LNX.4.64.1306040858060.22591@file.rdu.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	id S1755678Ab3FEO4p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 10:56:45 -0400
+Received: from mga14.intel.com ([143.182.124.37]:46488 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752871Ab3FEO4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 10:56:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,807,1363158000"; 
+   d="scan'208";a="312675359"
+Message-ID: <51AF5193.1060209@linux.intel.com>
+Date: Wed, 05 Jun 2013 17:56:19 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH v9 net-next 5/7] net: simple poll/select low latency socket
+ poll
+References: <20130605103400.11172.49099.stgit@ladj378.jer.intel.com>  <20130605103452.11172.31453.stgit@ladj378.jer.intel.com>  <1370439054.24311.248.camel@edumazet-glaptop>  <51AF401C.2030506@linux.intel.com>  <1370440607.24311.251.camel@edumazet-glaptop> <1370441849.24311.256.camel@edumazet-glaptop>
+In-Reply-To: <1370441849.24311.256.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-04 at 08:59 -0400, Mikulas Patocka wrote:
-> > +	 */
-> > +
-> > +	if (gfp_mask & __GFP_NORETRY) {
-> > +		noio_flag = current->flags;
-> 
-> There should be noio_flag = current->flags & PF_MEMALLOC; because we don't 
-> want to restore other flags.
-> 
+On 05/06/2013 17:17, Eric Dumazet wrote:
+> On Wed, 2013-06-05 at 06:56 -0700, Eric Dumazet wrote:
+>
+>> This looks quite easy, by adding in include/uapi/asm-generic/poll.h
+>>
+>> #define POLL_LL 0x8000
+>>
+>> And do the sk_poll_ll() call only if flag is set.
+>>
+>> I do not think we have to support select(), as its legacy interface, and
+>> people wanting ll should really use epoll() or poll().
+>
+> Alternatively, add a per socket flag to enable/disable ll
+>
+> This global enable assumes the application owns the host anyway.
+>
 
-Here's the updated version:
+I plan on adding a socket option in the next stage.
+I'm also testing a patch much like you described with a poll flag.
+Select/poll set it to indicate that they want to busy poll.
+Sock_poll sets it to indicate that this socket can (at the moment)
+busy-poll.
 
-Thanks,
+If you think the way things are done right now is unacceptable,
+even as an experimental feature, I would much prefer to drop this patch
+and have the rest applied rather then bring in new code that is not 
+fully tested at this stage.
 
--- Steve
-
-
->From e265a702cb479f58f451ec4458a26dd2bebeedab Mon Sep 17 00:00:00 2001
-From: Mikulas Patocka <mpatocka@redhat.com>
-Date: Fri, 10 May 2013 14:37:15 +0100
-Subject: [PATCH] dm bufio: avoid a possible __vmalloc deadlock
-
-[ Upstream commit 502624bdad3dba45dfaacaf36b7d83e39e74b2d2 ]
-
-This patch uses memalloc_noio_save to avoid a possible deadlock in
-dm-bufio.  (it could happen only with large block size, at most
-PAGE_SIZE << MAX_ORDER (typically 8MiB).
-
-__vmalloc doesn't fully respect gfp flags. The specified gfp flags are
-used for allocation of requested pages, structures vmap_area, vmap_block
-and vm_struct and the radix tree nodes.
-
-However, the kernel pagetables are allocated always with GFP_KERNEL.
-Thus the allocation of pagetables can recurse back to the I/O layer and
-cause a deadlock.
-
-This patch uses the function memalloc_noio_save to set per-process
-PF_MEMALLOC_NOIO flag and the function memalloc_noio_restore to restore
-it. When this flag is set, all allocations in the process are done with
-implied GFP_NOIO flag, thus the deadlock can't happen.
-
-This should be backported to stable kernels, but they don't have the
-PF_MEMALLOC_NOIO flag and memalloc_noio_save/memalloc_noio_restore
-functions. So, PF_MEMALLOC should be set and restored instead.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: stable@kernel.org
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-[ Set and clear PF_MEMALLOC manually - SR ]
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- drivers/md/dm-bufio.c |   26 +++++++++++++++++++++++++-
- 1 file changed, 25 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
-index c0fc827..e9097af 100644
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -321,6 +321,9 @@ static void __cache_size_refresh(void)
- static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
- 			       enum data_mode *data_mode)
- {
-+	unsigned noio_flag;
-+	void *ptr;
-+
- 	if (c->block_size <= DM_BUFIO_BLOCK_SIZE_SLAB_LIMIT) {
- 		*data_mode = DATA_MODE_SLAB;
- 		return kmem_cache_alloc(DM_BUFIO_CACHE(c), gfp_mask);
-@@ -334,7 +337,28 @@ static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
- 	}
- 
- 	*data_mode = DATA_MODE_VMALLOC;
--	return __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
-+
-+	/*
-+	 * __vmalloc allocates the data pages and auxiliary structures with
-+	 * gfp_flags that were specified, but pagetables are always allocated
-+	 * with GFP_KERNEL, no matter what was specified as gfp_mask.
-+	 *
-+	 * Consequently, we must set per-process flag PF_MEMALLOC_NOIO so that
-+	 * all allocations done by this process (including pagetables) are done
-+	 * as if GFP_NOIO was specified.
-+	 */
-+
-+	if (gfp_mask & __GFP_NORETRY) {
-+		noio_flag = current->flags & PF_MEMALLOC;
-+		current->flags |= PF_MEMALLOC;
-+	}
-+
-+	ptr = __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
-+
-+	if (gfp_mask & __GFP_NORETRY)
-+		current->flags = (current->flags & ~PF_MEMALLOC) | noio_flag;
-+
-+	return ptr;
- }
- 
- /*
--- 
-1.7.10.4
-
-
+-Eliezer
 
