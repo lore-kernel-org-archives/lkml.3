@@ -1,76 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab3FEM05 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 08:26:57 -0400
+	id S1755363Ab3FEM1Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 08:27:16 -0400
 Received: from mga01.intel.com ([192.55.52.88]:39597 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754877Ab3FEM0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 08:26:55 -0400
+	id S1755144Ab3FEM04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 08:26:56 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,806,1363158000"; 
-   d="scan'208";a="348479128"
+   d="scan'208";a="348479141"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
         spear-devel <spear-devel@list.st.com>, viresh.kumar@linaro.org,
         Arnd Bergmann <arnd@arndb.de>, Felipe Balbi <balbi@ti.com>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v2 0/4] dw_dmac: move to own folder and split
-Date: Wed,  5 Jun 2013 15:26:42 +0300
-Message-Id: <1370435206-13474-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v2 4/4] dma: dw: add PCI part of the driver
+Date: Wed,  5 Jun 2013 15:26:46 +0300
+Message-Id: <1370435206-13474-5-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
+In-Reply-To: <1370435206-13474-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1370435206-13474-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is split of the dw_dmac driver as suggested by Arnd et al [1,2].
-There are three most important patches:
- 2/4 moves driver to its own folder
- 3/4 does the actual split
- 4/4 introduces PCI part of the driver
+This is the PCI part of the DesignWare DMAC driver. The controller is usually
+used in the Intel hardware such as Intel Medfield.
 
-During this files are renamed: mostly means that dw_dmac prefix is eliminated.
-I hope to get it ready to be included in v3.11.
-
-[1] http://www.spinics.net/lists/kernel/msg1408174.html
-[2] http://www.spinics.net/lists/kernel/msg1408495.html
-
-Changes v1->v2:
- - address Arnd's comments
- - compile test when !CONFIG_PM
- - apply ACKs
-
-Cnages v0->v1:
- - apply Viresh's ACKs
- - append PCI part of the driver
- - test altogether on Intel Medfield
- - add 1/4 to the series as it based on it, but Vinod didn't apply it yet to
-   his tree.
-
-Andy Shevchenko (4):
-  dw_dmac: don't check resource with devm_ioremap_resource
-  dma: move dw_dmac driver to an own directory
-  dma: dw: split driver to library part and platform code
-  dma: dw: add PCI part of the driver
-
- MAINTAINERS                               |   3 +-
- drivers/dma/Kconfig                       |  20 +-
- drivers/dma/Makefile                      |   2 +-
- drivers/dma/dw/Kconfig                    |  36 ++++
- drivers/dma/dw/Makefile                   |   8 +
- drivers/dma/{dw_dmac.c => dw/core.c}      | 316 ++++-------------------------
- drivers/dma/dw/internal.h                 |  70 +++++++
- drivers/dma/dw/pci.c                      | 101 ++++++++++
- drivers/dma/dw/platform.c                 | 317 ++++++++++++++++++++++++++++++
- drivers/dma/{dw_dmac_regs.h => dw/regs.h} |   1 +
- 10 files changed, 573 insertions(+), 301 deletions(-)
- create mode 100644 drivers/dma/dw/Kconfig
- create mode 100644 drivers/dma/dw/Makefile
- rename drivers/dma/{dw_dmac.c => dw/core.c} (85%)
- create mode 100644 drivers/dma/dw/internal.h
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/dma/dw/Kconfig  |   9 +++++
+ drivers/dma/dw/Makefile |   3 ++
+ drivers/dma/dw/pci.c    | 101 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 113 insertions(+)
  create mode 100644 drivers/dma/dw/pci.c
- create mode 100644 drivers/dma/dw/platform.c
- rename drivers/dma/{dw_dmac_regs.h => dw/regs.h} (99%)
 
+diff --git a/drivers/dma/dw/Kconfig b/drivers/dma/dw/Kconfig
+index efd9e02..db2b41f 100644
+--- a/drivers/dma/dw/Kconfig
++++ b/drivers/dma/dw/Kconfig
+@@ -15,6 +15,15 @@ config DW_DMAC
+ 	  Support the Synopsys DesignWare AHB DMA controller. This
+ 	  can be integrated in chips such as the Atmel AT32ap7000.
+ 
++config DW_DMAC_PCI
++	tristate "Synopsys DesignWare AHB DMA PCI driver"
++	depends on PCI
++	select DW_DMAC_CORE
++	help
++	  Support the Synopsys DesignWare AHB DMA controller on the
++	  platfroms that enumerate it as a PCI device. For example,
++	  Intel Medfield has integrated this GPDMA controller.
++
+ config DW_DMAC_BIG_ENDIAN_IO
+ 	bool "Use big endian I/O register access"
+ 	default y if AVR32
+diff --git a/drivers/dma/dw/Makefile b/drivers/dma/dw/Makefile
+index 47f3674..3eebd1c 100644
+--- a/drivers/dma/dw/Makefile
++++ b/drivers/dma/dw/Makefile
+@@ -3,3 +3,6 @@ dw_dmac_core-objs	:= core.o
+ 
+ obj-$(CONFIG_DW_DMAC)		+= dw_dmac.o
+ dw_dmac-objs		:= platform.o
++
++obj-$(CONFIG_DW_DMAC_PCI)	+= dw_dmac_pci.o
++dw_dmac_pci-objs	:= pci.o
+diff --git a/drivers/dma/dw/pci.c b/drivers/dma/dw/pci.c
+new file mode 100644
+index 0000000..e89fc24
+--- /dev/null
++++ b/drivers/dma/dw/pci.c
+@@ -0,0 +1,101 @@
++/*
++ * PCI driver for the Synopsys DesignWare DMA Controller
++ *
++ * Copyright (C) 2013 Intel Corporation
++ * Author: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/module.h>
++#include <linux/pci.h>
++#include <linux/device.h>
++
++#include "internal.h"
++
++static struct dw_dma_platform_data dw_pci_pdata = {
++	.is_private = 1,
++	.chan_allocation_order = CHAN_ALLOCATION_ASCENDING,
++	.chan_priority = CHAN_PRIORITY_ASCENDING,
++};
++
++static int dw_pci_probe(struct pci_dev *pdev, const struct pci_device_id *pid)
++{
++	struct dw_dma_chip *chip;
++	struct dw_dma_platform_data *pdata = (void *)pid->driver_data;
++	int ret;
++
++	ret = pcim_enable_device(pdev);
++	if (ret)
++		return ret;
++
++	ret = pcim_iomap_regions(pdev, 1 << 0, pci_name(pdev));
++	if (ret) {
++		dev_err(&pdev->dev, "I/O memory remapping failed\n");
++		return ret;
++	}
++
++	pci_set_master(pdev);
++	pci_try_set_mwi(pdev);
++
++	ret = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
++	if (ret)
++		return ret;
++
++	ret = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
++	if (ret)
++		return ret;
++
++	chip = devm_kzalloc(&pdev->dev, sizeof(*chip), GFP_KERNEL);
++	if (!chip)
++		return -ENOMEM;
++
++	chip->dev = &pdev->dev;
++	chip->regs = pcim_iomap_table(pdev)[0];
++	chip->irq = pdev->irq;
++
++	ret = dw_dma_probe(chip, pdata);
++	if (ret)
++		return ret;
++
++	pci_set_drvdata(pdev, chip);
++
++	return 0;
++}
++
++static void dw_pci_remove(struct pci_dev *pdev)
++{
++	struct dw_dma_chip *chip = pci_get_drvdata(pdev);
++	int ret;
++
++	ret = dw_dma_remove(chip);
++	if (ret)
++		dev_warn(&pdev->dev, "can't remove device properly: %d\n", ret);
++}
++
++static DEFINE_PCI_DEVICE_TABLE(dw_pci_id_table) = {
++	/* Medfield */
++	{ PCI_VDEVICE(INTEL, 0x0827), (kernel_ulong_t)&dw_pci_pdata },
++	{ PCI_VDEVICE(INTEL, 0x0830), (kernel_ulong_t)&dw_pci_pdata },
++
++	/* BayTrail */
++	{ PCI_VDEVICE(INTEL, 0x0f06), (kernel_ulong_t)&dw_pci_pdata },
++	{ PCI_VDEVICE(INTEL, 0x0f40), (kernel_ulong_t)&dw_pci_pdata },
++	{ }
++};
++MODULE_DEVICE_TABLE(pci, dw_pci_id_table);
++
++static struct pci_driver dw_pci_driver = {
++	.name		= "dw_dmac_pci",
++	.id_table	= dw_pci_id_table,
++	.probe		= dw_pci_probe,
++	.remove		= dw_pci_remove,
++};
++
++module_pci_driver(dw_pci_driver);
++
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("Synopsys DesignWare DMA Controller PCI driver");
++MODULE_AUTHOR("Andy Shevchenko <andriy.shevchenko@linux.intel.com>");
 -- 
 1.8.2.rc0.22.gb3600c3
 
