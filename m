@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933151Ab3FEVnO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:43:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38051 "EHLO
+	id S933126Ab3FEVnp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:43:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38043 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933094Ab3FEVgM (ORCPT
+	with ESMTP id S933088Ab3FEVgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:36:12 -0400
+	Wed, 5 Jun 2013 17:36:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Liu <wei.liu2@citrix.com>, Ian Campbell <ian.campbell@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 099/127] xen-netback: remove skb in xen_netbk_alloc_page
-Date: Wed,  5 Jun 2013 14:34:26 -0700
-Message-Id: <20130605213229.265371127@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 106/127] mac80211: fix direct probe auth
+Date: Wed,  5 Jun 2013 14:34:33 -0700
+Message-Id: <20130605213230.075322541@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -27,48 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Liu <wei.liu2@citrix.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 27f852282ab9a028f57da96d05c26f38c424a315 upstream.
+commit 6211dd12da609bc6893b9c3182630b494737ec4b upstream.
 
-This variable is never used.
+We send direct probe to broadcast address, as some APs do not respond to
+unicast PROBE frames when unassociated. Broadcast frames are not acked,
+so we can not use that for trigger MLME state machine, but we need to
+use old timeout mechanism.
 
-Signed-off-by: Wei Liu <wei.liu2@citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This fixes authentication timed out like below:
+
+[ 1024.671974] wlan6: authenticate with 54:e6:fc:98:63:fe
+[ 1024.694125] wlan6: direct probe to 54:e6:fc:98:63:fe (try 1/3)
+[ 1024.695450] wlan6: direct probe to 54:e6:fc:98:63:fe (try 2/3)
+[ 1024.700586] wlan6: send auth to 54:e6:fc:98:63:fe (try 3/3)
+[ 1024.701441] wlan6: authentication with 54:e6:fc:98:63:fe timed out
+
+With fix, we have:
+
+[ 4524.198978] wlan6: authenticate with 54:e6:fc:98:63:fe
+[ 4524.220692] wlan6: direct probe to 54:e6:fc:98:63:fe (try 1/3)
+[ 4524.421784] wlan6: send auth to 54:e6:fc:98:63:fe (try 2/3)
+[ 4524.423272] wlan6: authenticated
+[ 4524.423811] wlan6: associate with 54:e6:fc:98:63:fe (try 1/3)
+[ 4524.427492] wlan6: RX AssocResp from 54:e6:fc:98:63:fe (capab=0x431 status=0 aid=1)
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/xen-netback/netback.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ net/mac80211/mlme.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -942,7 +942,6 @@ static int netbk_count_requests(struct x
- }
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -3182,10 +3182,6 @@ static int ieee80211_probe_auth(struct i
+ 	if (WARN_ON_ONCE(!auth_data))
+ 		return -EINVAL;
  
- static struct page *xen_netbk_alloc_page(struct xen_netbk *netbk,
--					 struct sk_buff *skb,
- 					 u16 pending_idx)
- {
- 	struct page *page;
-@@ -976,7 +975,7 @@ static struct gnttab_copy *xen_netbk_get
+-	if (local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS)
+-		tx_flags = IEEE80211_TX_CTL_REQ_TX_STATUS |
+-			   IEEE80211_TX_INTFL_MLME_CONN_TX;
+-
+ 	auth_data->tries++;
  
- 		index = pending_index(netbk->pending_cons++);
- 		pending_idx = netbk->pending_ring[index];
--		page = xen_netbk_alloc_page(netbk, skb, pending_idx);
-+		page = xen_netbk_alloc_page(netbk, pending_idx);
- 		if (!page)
- 			goto err;
- 
-@@ -1381,7 +1380,7 @@ static unsigned xen_netbk_tx_build_gops(
+ 	if (auth_data->tries > IEEE80211_AUTH_MAX_TRIES) {
+@@ -3219,6 +3215,10 @@ static int ieee80211_probe_auth(struct i
+ 			auth_data->expected_transaction = trans;
  		}
  
- 		/* XXX could copy straight to head */
--		page = xen_netbk_alloc_page(netbk, skb, pending_idx);
-+		page = xen_netbk_alloc_page(netbk, pending_idx);
- 		if (!page) {
- 			kfree_skb(skb);
- 			netbk_tx_err(vif, &txreq, idx);
++		if (local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS)
++			tx_flags = IEEE80211_TX_CTL_REQ_TX_STATUS |
++				   IEEE80211_TX_INTFL_MLME_CONN_TX;
++
+ 		ieee80211_send_auth(sdata, trans, auth_data->algorithm, status,
+ 				    auth_data->data, auth_data->data_len,
+ 				    auth_data->bss->bssid,
+@@ -3242,12 +3242,12 @@ static int ieee80211_probe_auth(struct i
+ 		 * will not answer to direct packet in unassociated state.
+ 		 */
+ 		ieee80211_send_probe_req(sdata, NULL, ssidie + 2, ssidie[1],
+-					 NULL, 0, (u32) -1, true, tx_flags,
++					 NULL, 0, (u32) -1, true, 0,
+ 					 auth_data->bss->channel, false);
+ 		rcu_read_unlock();
+ 	}
+ 
+-	if (!(local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS)) {
++	if (tx_flags == 0) {
+ 		auth_data->timeout = jiffies + IEEE80211_AUTH_TIMEOUT;
+ 		ifmgd->auth_data->timeout_started = true;
+ 		run_again(ifmgd, auth_data->timeout);
 
 
