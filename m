@@ -1,92 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450Ab3FEFGv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 01:06:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53794 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab3FEFGu (ORCPT
+	id S1751530Ab3FEFHc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 01:07:32 -0400
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:36355 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116Ab3FEFHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 01:06:50 -0400
-Date: Tue, 4 Jun 2013 22:07:19 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Joe Lawrence <joe.lawrence@stratus.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Ben Greear <greearb@candelatech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
-Subject: Re: Please add to stable:  module: don't unlink the module until
- we've removed all exposure.
-Message-ID: <20130605050719.GC10475@kroah.com>
-References: <51A8E884.1080009@candelatech.com>
- <87ehclumhr.fsf@rustcorp.com.au>
- <alpine.DEB.2.02.1306022212200.10003@jlaw-desktop.mno.stratus.com>
- <alpine.DEB.2.02.1306030724230.19647@jlaw-desktop.mno.stratus.com>
- <alpine.DEB.2.02.1306031012460.22652@jlaw-desktop.mno.stratus.com>
+	Wed, 5 Jun 2013 01:07:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1306031012460.22652@jlaw-desktop.mno.stratus.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51AEC1C3.1040804@linux.vnet.ibm.com>
+References: <d226c91fed3dfa2dca644d14c88b1d1ff9d2e722.1370344689.git.viresh.kumar@linaro.org>
+	<51AEC1C3.1040804@linux.vnet.ibm.com>
+Date: Wed, 5 Jun 2013 10:37:29 +0530
+Message-ID: <CAKohpokGrgFOtOT6Y3e4MOJBUQWT4FG4Mk-F6_M0V-pEEf3KYw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] sched: Optimize build_sched_domains() for saving
+ first SD node for a cpu
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: mingo@redhat.com, peterz@infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, linux-kernel@vger.kernel.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com
+Content-Type: multipart/mixed; boundary=089e016350c4aa44ea04de612c49
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 10:17:17AM -0400, Joe Lawrence wrote:
-> [Cc: stable@vger.kernel.org]
-> 
-> Third time is a charm?  The stable address was incorrect from the first 
-> msg in this thread, but the relevant bits remain quoted below...
+--089e016350c4aa44ea04de612c49
+Content-Type: text/plain; charset=ISO-8859-1
 
-Really?  I'm totally confused...
+On 5 June 2013 10:12, Michael Wang <wangyun@linux.vnet.ibm.com> wrote:
+> Hi, Viresh
+>
+> On 06/04/2013 07:20 PM, Viresh Kumar wrote:
+> [snip]
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index 58453b8..638f6cb 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -6533,16 +6533,13 @@ static int build_sched_domains(const struct cpumask *cpu_map,
+>>               sd = NULL;
+>>               for (tl = sched_domain_topology; tl->init; tl++) {
+>>                       sd = build_sched_domain(tl, &d, cpu_map, attr, sd, i);
+>> +                     if (!*per_cpu_ptr(d.sd, i))
+>
+> What about:
+>                         if (tl == sched_domain_topology)
+>
+> It cost less than per_cpu_ptr(), isn't it?
 
-> On Mon, 3 Jun 2013, Joe Lawrence wrote:
-> 
-> > [fixing Cc: stable@kernel.org address]
-> > 
-> > On Sun, 2 Jun 2013, Joe Lawrence wrote:
-> > 
-> > > On Sun, 2 Jun 2013, Rusty Russell wrote:
-> > > 
-> > > > Ben Greear <greearb@candelatech.com> writes:
-> > > > 
-> > > > > It turns out, the bug I spent yesterday chasing in various 3.9 kernels is apparently
-> > > > > fixed by the commit in the title (c9c390bb5535380d40614571894ef0c00bc026ff).
-> > > > 
-> > > > Apparently being the operative word.
-> > > > 
-> > > > This commit avoids the entire "module insert failed due to sysfs race"
-> > > > path in the common case, it doesn't fix any actual problem.
-> > > > 
-> > > > I think the real commit you want is Linus' kobject fix
-> > > > a49b7e82cab0f9b41f483359be83f44fbb6b4979 "kobject: fix kset_find_obj()
-> > > > race with concurrent last kobject_put()".
-> > > > 
-> > > > Or is that already in stable?
-> > > 
-> > > Hi Rusty,
-> > >  
-> > > I had pointed Ben (offlist) to that bugzilla entry without realizing
-> > > there were other earlier related fixes in this space.  Re-viewing bz-
-> > > 58011, it looks like it was opened against 3.8.12, while Ben and myself
-> > > had encountered module loading problems in versions 3.9 and
-> > > 3.9.[1-3].  I can update the bugzilla entry to add a comment noting commit
-> > > a49b7e82 "kobject: fix kset_find_obj() race with concurrent last
-> > > kobject_put()".
-> > > 
-> > > That said, it doesn't appear that commit 944a1fa "module: don't unlink the
-> > > module until we've removed all exposure" has not made it into any stable  
-> > > kernel.  On my system, applying this on top of 3.9 resolved a module
-> > > unload/load race that would occasionally occur on boot (two video adapters
-> > > of the same make, the module unloads for whatever reason and I see "module
-> > > is already loaded" and "sysfs: cannot create duplicate filename
-> > > '/module/mgag200'" messages every 5-10% instances.)  I have logs if you
-> > > were interested in these warnings/crashes.
-> > > 
-> > > Hope this clarifies things.
+How can I miss it.. Obviously its better :)
 
-After this whole thread, what should I be doing for the 3.9-stable tree?
-Add commit 944a1fa?  Or something else?
+See if below one looks better (Attached too in case gmail screws up
+my mail)..
 
-confused,
+--------x-------------x------------------
 
-greg k-h
+From: Viresh Kumar <viresh.kumar@linaro.org>
+Date: Tue, 4 Jun 2013 15:41:15 +0530
+Subject: [PATCH] sched: Optimize build_sched_domains() for saving first SD
+ node for a cpu
+
+We are saving first scheduling domain for a cpu in build_sched_domains() by
+iterating over the nested sd->child list. We don't actually need to do it this
+way.
+
+tl will be equal to sched_domain_topology for the first iteration and so we can
+set *per_cpu_ptr(d.sd, i) based on that.  So, save pointer to first SD while
+running the iteration loop over tl's.
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ kernel/sched/core.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 58453b8..08a27be 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6533,16 +6533,13 @@ static int build_sched_domains(const struct
+cpumask *cpu_map,
+ 		sd = NULL;
+ 		for (tl = sched_domain_topology; tl->init; tl++) {
+ 			sd = build_sched_domain(tl, &d, cpu_map, attr, sd, i);
++			if (tl == sched_domain_topology)
++				*per_cpu_ptr(d.sd, i) = sd;
+ 			if (tl->flags & SDTL_OVERLAP || sched_feat(FORCE_SD_OVERLAP))
+ 				sd->flags |= SD_OVERLAP;
+ 			if (cpumask_equal(cpu_map, sched_domain_span(sd)))
+ 				break;
+ 		}
+-
+-		while (sd->child)
+-			sd = sd->child;
+-
+-		*per_cpu_ptr(d.sd, i) = sd;
+ 	}
+
+ 	/* Build the groups for the domains */
+
+--089e016350c4aa44ea04de612c49
+Content-Type: application/octet-stream; 
+	name="0001-sched-Optimize-build_sched_domains-for-saving-first-.patch"
+Content-Disposition: attachment; 
+	filename="0001-sched-Optimize-build_sched_domains-for-saving-first-.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hhk20pdf0
+
+RnJvbSA0NjBkYmVhYWVhNzdhOTM5ZTQyYjVhNTFjYjI3NTc4ZjdiY2I4ZjRkIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8NDYwZGJlYWFlYTc3YTkzOWU0MmI1YTUxY2IyNzU3
+OGY3YmNiOGY0ZC4xMzcwNDA4Nzg3LmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRnJvbTog
+VmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRGF0ZTogVHVlLCA0IEp1biAy
+MDEzIDE1OjQxOjE1ICswNTMwClN1YmplY3Q6IFtQQVRDSF0gc2NoZWQ6IE9wdGltaXplIGJ1aWxk
+X3NjaGVkX2RvbWFpbnMoKSBmb3Igc2F2aW5nIGZpcnN0IFNECiBub2RlIGZvciBhIGNwdQoKV2Ug
+YXJlIHNhdmluZyBmaXJzdCBzY2hlZHVsaW5nIGRvbWFpbiBmb3IgYSBjcHUgaW4gYnVpbGRfc2No
+ZWRfZG9tYWlucygpIGJ5Cml0ZXJhdGluZyBvdmVyIHRoZSBuZXN0ZWQgc2QtPmNoaWxkIGxpc3Qu
+IFdlIGRvbid0IGFjdHVhbGx5IG5lZWQgdG8gZG8gaXQgdGhpcwp3YXkuCgp0bCB3aWxsIGJlIGVx
+dWFsIHRvIHNjaGVkX2RvbWFpbl90b3BvbG9neSBmb3IgdGhlIGZpcnN0IGl0ZXJhdGlvbiBhbmQg
+c28gd2UgY2FuCnNldCAqcGVyX2NwdV9wdHIoZC5zZCwgaSkgYmFzZWQgb24gdGhhdC4gIFNvLCBz
+YXZlIHBvaW50ZXIgdG8gZmlyc3QgU0Qgd2hpbGUKcnVubmluZyB0aGUgaXRlcmF0aW9uIGxvb3Ag
+b3ZlciB0bCdzLgoKU2lnbmVkLW9mZi1ieTogVmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGlu
+YXJvLm9yZz4KLS0tCiBrZXJuZWwvc2NoZWQvY29yZS5jIHwgNyArKy0tLS0tCiAxIGZpbGUgY2hh
+bmdlZCwgMiBpbnNlcnRpb25zKCspLCA1IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2tlcm5l
+bC9zY2hlZC9jb3JlLmMgYi9rZXJuZWwvc2NoZWQvY29yZS5jCmluZGV4IDU4NDUzYjguLjA4YTI3
+YmUgMTAwNjQ0Ci0tLSBhL2tlcm5lbC9zY2hlZC9jb3JlLmMKKysrIGIva2VybmVsL3NjaGVkL2Nv
+cmUuYwpAQCAtNjUzMywxNiArNjUzMywxMyBAQCBzdGF0aWMgaW50IGJ1aWxkX3NjaGVkX2RvbWFp
+bnMoY29uc3Qgc3RydWN0IGNwdW1hc2sgKmNwdV9tYXAsCiAJCXNkID0gTlVMTDsKIAkJZm9yICh0
+bCA9IHNjaGVkX2RvbWFpbl90b3BvbG9neTsgdGwtPmluaXQ7IHRsKyspIHsKIAkJCXNkID0gYnVp
+bGRfc2NoZWRfZG9tYWluKHRsLCAmZCwgY3B1X21hcCwgYXR0ciwgc2QsIGkpOworCQkJaWYgKHRs
+ID09IHNjaGVkX2RvbWFpbl90b3BvbG9neSkKKwkJCQkqcGVyX2NwdV9wdHIoZC5zZCwgaSkgPSBz
+ZDsKIAkJCWlmICh0bC0+ZmxhZ3MgJiBTRFRMX09WRVJMQVAgfHwgc2NoZWRfZmVhdChGT1JDRV9T
+RF9PVkVSTEFQKSkKIAkJCQlzZC0+ZmxhZ3MgfD0gU0RfT1ZFUkxBUDsKIAkJCWlmIChjcHVtYXNr
+X2VxdWFsKGNwdV9tYXAsIHNjaGVkX2RvbWFpbl9zcGFuKHNkKSkpCiAJCQkJYnJlYWs7CiAJCX0K
+LQotCQl3aGlsZSAoc2QtPmNoaWxkKQotCQkJc2QgPSBzZC0+Y2hpbGQ7Ci0KLQkJKnBlcl9jcHVf
+cHRyKGQuc2QsIGkpID0gc2Q7CiAJfQogCiAJLyogQnVpbGQgdGhlIGdyb3VwcyBmb3IgdGhlIGRv
+bWFpbnMgKi8KLS0gCjEuNy4xMi5yYzIuMTguZzYxYjQ3MmUKCg==
+--089e016350c4aa44ea04de612c49--
