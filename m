@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933113Ab3FEVqT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:46:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37995 "EHLO
+	id S933254Ab3FEVql (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:46:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37990 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933032Ab3FEVgD (ORCPT
+	with ESMTP id S933030Ab3FEVgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:36:03 -0400
+	Wed, 5 Jun 2013 17:36:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Adam Lackorzynski <adam@os.inf.tu-dresden.de>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 094/127] powerpc/pseries: Always enable CONFIG_HOTPLUG_CPU on PSERIES SMP
-Date: Wed,  5 Jun 2013 14:34:21 -0700
-Message-Id: <20130605213228.648115217@linuxfoundation.org>
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 093/127] regulator: palmas: Fix "enable_reg" to point to the correct reg for SMPS10
+Date: Wed,  5 Jun 2013 14:34:20 -0700
+Message-Id: <20130605213228.516621132@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,50 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+From: Kishon Vijay Abraham I <kishon@ti.com>
 
-commit f274ef8747d3be649bba8708696fb31cb00fa75a upstream.
+commit f232168df0c7e7414b70ac5d8fed83086d441c0b upstream.
 
-Adam Lackorzynski reported the following build failure on
-!CONFIG_HOTPLUG_CPU configuration:
+regulator_enable_regmap() uses enable_reg to enable the regulator.
+But enable_reg for smps10 points to SMPS10_STATUS which is a
+read-only register. Fixed the same by having enable_reg
+set to SMPS10_CTRL.
 
-  CC      arch/powerpc/kernel/rtas.o
-arch/powerpc/kernel/rtas.c: In function ‘rtas_cpu_state_change_mask’:
-arch/powerpc/kernel/rtas.c:843:4: error: implicit declaration of function ‘cpu_down’ [-Werror=implicit-function-declaration]
-cc1: all warnings being treated as errors
-make[1]: *** [arch/powerpc/kernel/rtas.o] Error 1
-make: *** [arch/powerpc/kernel] Error 2
-
-The build fails because cpu_down() is defined only under CONFIG_HOTPLUG_CPU.
-
-Looking further, the mobility code in pseries is one of the call-sites which
-uses rtas_ibm_suspend_me(), which in turn calls rtas_cpu_state_change_mask().
-And the mobility code is unconditionally compiled-in (it does not fall under
-any Kconfig option). And commit 120496ac (powerpc: Bring all threads online
-prior to migration/hibernation) which introduced this build regression is
-critical for the proper functioning of the migration code. So it appears
-that the only solution to this problem is to enable CONFIG_HOTPLUG_CPU if
-SMP is enabled on PPC_PSERIES platforms. So make that change in the Kconfig.
-
-Reported-by: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/pseries/Kconfig |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/regulator/palmas-regulator.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/platforms/pseries/Kconfig
-+++ b/arch/powerpc/platforms/pseries/Kconfig
-@@ -18,6 +18,8 @@ config PPC_PSERIES
- 	select PPC_PCI_CHOICE if EXPERT
- 	select ZLIB_DEFLATE
- 	select PPC_DOORBELL
-+	select HOTPLUG if SMP
-+	select HOTPLUG_CPU if SMP
- 	default y
- 
- config PPC_SPLPAR
+--- a/drivers/regulator/palmas-regulator.c
++++ b/drivers/regulator/palmas-regulator.c
+@@ -677,7 +677,7 @@ static int palmas_probe(struct platform_
+ 			pmic->desc[id].vsel_mask = SMPS10_VSEL;
+ 			pmic->desc[id].enable_reg =
+ 					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
+-							PALMAS_SMPS10_STATUS);
++							PALMAS_SMPS10_CTRL);
+ 			pmic->desc[id].enable_mask = SMPS10_BOOST_EN;
+ 			pmic->desc[id].min_uV = 3750000;
+ 			pmic->desc[id].uV_step = 1250000;
 
 
