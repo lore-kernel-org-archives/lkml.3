@@ -1,109 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825Ab3FEF1G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 01:27:06 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:33044 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab3FEF1D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 01:27:03 -0400
-Message-ID: <51AECC1A.9060400@linux.vnet.ibm.com>
-Date: Wed, 05 Jun 2013 13:26:50 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1751969Ab3FEF1S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 01:27:18 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50502 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751297Ab3FEF1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 01:27:12 -0400
+Message-ID: <51AECBE6.9090400@ti.com>
+Date: Wed, 5 Jun 2013 10:55:58 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: mingo@redhat.com, peterz@infradead.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com
-Subject: Re: [PATCH 1/2] sched: Optimize build_sched_domains() for saving
- first SD node for a cpu
-References: <d226c91fed3dfa2dca644d14c88b1d1ff9d2e722.1370344689.git.viresh.kumar@linaro.org> <51AEC1C3.1040804@linux.vnet.ibm.com> <CAKohpokGrgFOtOT6Y3e4MOJBUQWT4FG4Mk-F6_M0V-pEEf3KYw@mail.gmail.com>
-In-Reply-To: <CAKohpokGrgFOtOT6Y3e4MOJBUQWT4FG4Mk-F6_M0V-pEEf3KYw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060516-3568-0000-0000-000003B8B73F
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+CC: <grant.likely@linaro.org>, <tony@atomide.com>, <balbi@ti.com>,
+        <arnd@arndb.de>, <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <b-cousson@ti.com>, <linux@arm.linux.org.uk>,
+        <gregkh@linuxfoundation.org>, <benoit.cousson@linaro.org>,
+        <mchehab@redhat.com>, <akpm@linux-foundation.org>, <cesarb@cesarb.net>,
+        <davem@davemloft.net>, <rnayak@ti.com>, <shawn.guo@linaro.org>,
+        <santosh.shilimkar@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <nsekhar@ti.com>
+Subject: Re: [PATCH v6 1/9] drivers: phy: add generic PHY framework
+References: <1367229812-30574-1-git-send-email-kishon@ti.com> <1367229812-30574-2-git-send-email-kishon@ti.com> <51ADBF9B.5060403@samsung.com> <51ADDCD9.8080400@ti.com> <51ADEEF6.1030200@samsung.com>
+In-Reply-To: <51ADEEF6.1030200@samsung.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2013 01:07 PM, Viresh Kumar wrote:
-> On 5 June 2013 10:12, Michael Wang <wangyun@linux.vnet.ibm.com> wrote:
->> Hi, Viresh
+Hi,
+
+On Tuesday 04 June 2013 07:13 PM, Sylwester Nawrocki wrote:
+> Hi,
+>
+> On 06/04/2013 02:26 PM, Kishon Vijay Abraham I wrote:
+>>>> +static inline int phy_init(struct phy *phy)
+>>>> +{
+>>>> +	pm_runtime_get_sync(&phy->dev);
+>>>
+>>> Hmm, no need to check return value here ? Also it looks a bit unexpected to
 >>
->> On 06/04/2013 07:20 PM, Viresh Kumar wrote:
->> [snip]
->>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->>> index 58453b8..638f6cb 100644
->>> --- a/kernel/sched/core.c
->>> +++ b/kernel/sched/core.c
->>> @@ -6533,16 +6533,13 @@ static int build_sched_domains(const struct cpumask *cpu_map,
->>>               sd = NULL;
->>>               for (tl = sched_domain_topology; tl->init; tl++) {
->>>                       sd = build_sched_domain(tl, &d, cpu_map, attr, sd, i);
->>> +                     if (!*per_cpu_ptr(d.sd, i))
+>> I purposely dint check the return values in order to support platforms
+>> that don’t enable pm_runtime.
+>
+> Then I guess this should be called conditionally and any errors returned
+> if runtime PM is enabled ? Not sure if pm_runtime_enabled() would be
+> helpful such situation.
+Indeed. I think it can be used.
+>
+>>> possibly have runtime_resume callback of a PHY device called before ops->init()
+>>> call ? It seems a bit unclear what the purpose of init() callback is.
 >>
->> What about:
->>                         if (tl == sched_domain_topology)
+>> Not really. Anything that is used to initialize the PHY (internal
+>> configuration) can go in phy_init. Usually in runtime_resume callback,
+>> optional functional clocks are enabled and also in some cases context
+>> restore is done. So it really makes sense to enable clocks/module
+>> (pm_runtime_get_sync) before doing a PHY configuration (phy_init).
+>
+> OK, that makes sense. All PHY device resources must be prepared anyway
+> before a PHY object is registered with the PHY core.
+>
+>>>> +	if (phy->ops->init)
+>>>> +		return phy->ops->init(phy);
+>>>> +
+>>>> +	return -EINVAL;
+>>>> +}
+>>>> +
+>>>> +static inline int phy_exit(struct phy *phy)
+>>>> +{
+>>>> +	int ret = -EINVAL;
+>>>> +
+>>>> +	if (phy->ops->exit)
+>>>> +		ret = phy->ops->exit(phy);
+>>>> +
+>>>> +	pm_runtime_put_sync(&phy->dev);
+>>>> +
+>>>> +	return ret;
+>>>> +}
+>>>
+>>> Do phy_init/phy_exit need to be mandatory ? What if there is really
 >>
->> It cost less than per_cpu_ptr(), isn't it?
-> 
-> How can I miss it.. Obviously its better :)
-> 
-> See if below one looks better (Attached too in case gmail screws up
-> my mail)..
+>> No. phy_init/phy_exit is not mandatory at all.
+>>> nothing to do in those callbacks ? Perhaps -ENOIOCTLCMD should be
+>>> returned if a callback is not implemented, so PHY users can recognize
+>>> such situation and proceed ?
+>>
+>> So currently these APIs return -EINVAL if these callbacks are not
+>> populated which is good enough IMHO.
+>
+> But -EINVAL could be well returned from the callback function. Perhaps
+> ENOTSUPP could be used instead ?
 
-Looks good to me :)
+hmm.. could be..
 
-Regards,
-Michael Wang
-
-> 
-> --------x-------------x------------------
-> 
-> From: Viresh Kumar <viresh.kumar@linaro.org>
-> Date: Tue, 4 Jun 2013 15:41:15 +0530
-> Subject: [PATCH] sched: Optimize build_sched_domains() for saving first SD
->  node for a cpu
-> 
-> We are saving first scheduling domain for a cpu in build_sched_domains() by
-> iterating over the nested sd->child list. We don't actually need to do it this
-> way.
-> 
-> tl will be equal to sched_domain_topology for the first iteration and so we can
-> set *per_cpu_ptr(d.sd, i) based on that.  So, save pointer to first SD while
-> running the iteration loop over tl's.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  kernel/sched/core.c | 7 ++-----
->  1 file changed, 2 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 58453b8..08a27be 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -6533,16 +6533,13 @@ static int build_sched_domains(const struct
-> cpumask *cpu_map,
->  		sd = NULL;
->  		for (tl = sched_domain_topology; tl->init; tl++) {
->  			sd = build_sched_domain(tl, &d, cpu_map, attr, sd, i);
-> +			if (tl == sched_domain_topology)
-> +				*per_cpu_ptr(d.sd, i) = sd;
->  			if (tl->flags & SDTL_OVERLAP || sched_feat(FORCE_SD_OVERLAP))
->  				sd->flags |= SD_OVERLAP;
->  			if (cpumask_equal(cpu_map, sched_domain_span(sd)))
->  				break;
->  		}
-> -
-> -		while (sd->child)
-> -			sd = sd->child;
-> -
-> -		*per_cpu_ptr(d.sd, i) = sd;
->  	}
-> 
->  	/* Build the groups for the domains */
-> 
-
+Thanks
+Kishon
