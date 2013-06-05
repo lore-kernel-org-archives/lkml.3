@@ -1,175 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933229Ab3FEVgn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:36:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38145 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933181Ab3FEVg0 (ORCPT
+	id S933239Ab3FEVgv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:36:51 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:49523 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933051Ab3FEVgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:36:26 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Campbell <ian.campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 127/127] xen-netback: better names for thresholds
-Date: Wed,  5 Jun 2013 14:34:54 -0700
-Message-Id: <20130605213232.388960394@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
-References: <20130605213217.966891866@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Wed, 5 Jun 2013 17:36:48 -0400
+Message-ID: <51AFAF6D.7050204@itdev.co.uk>
+Date: Wed, 05 Jun 2013 22:36:45 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
+Subject: Re: [PATCH 10/53] Input: atmel_mxt_ts - Add memory access interface
+ via sysfs
+References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk> <7380889.l4hHqCT0mm@dtor-d630.eng.vmware.com> <51AF8730.4010507@itdev.co.uk> <1717403.GgHsbyUkDZ@dtor-d630.eng.vmware.com> <51AFA02B.3000604@itdev.co.uk> <20130605210715.GA16013@core.coreip.homeip.net>
+In-Reply-To: <20130605210715.GA16013@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+Dmitry Torokhov wrote:
+>> debugfs is a debug filesystem. This interface is useful for purposes which
+>> are not debug.
+> 
+> What other purposes does it serve? I'd expect you need it during new
+> board bringup.
 
-------------------
+Yes, during board bringup it's extremely useful. We have implemented
+numerous open and closed source utilities that can use this interface.
 
-From: Wei Liu <wei.liu2@citrix.com>
+Run-time examples would be adjusting noise suppression or touch suppression
+parameters based on something going on in the app layer (eg having
+different parameters during unlock screen), or tuning report rates based on
+application requirements, ot to inspect debug data if the touch sensor is
+faulty. You might say, well we should implement an kernel driver interface
+for these requirements, but they will vary hugely between different
+products. We are trying to keep the driver as generic as possible and push
+product-specific complexity to user space. Hence exposing the register map
+and implementing user-space libraries to deal with this kind of customisation.
 
-commit 376414945d15aa636e65f7e773c1e398b7a21cb9 upstream.
+>> I have to be pragmatic: I don't see debugfs enabled on most
+>> shipping Android devices, and however much I tell them to enable debugfs
+>> doesn't seem to hold much weight.
+> 
+> You do not need to have debugfs enabled on shipping kernels, just the
+> ones you use for integration work.
 
-This patch only changes some names to avoid confusion.
+I disagree. See above.
 
-In this patch we have:
+>> It's partly path dependence - it was implemented like this because regmap
+>> wasn't in mainline at the point when I wrote it. Having a dependency on
+>> regmap would now be a API break complicating support of customers using
+>> older kernels than mainline. I would also have to update a bunch of
+>> software and documentation and people to know about the two different APIs.
+>> The existing implementation already appears in shipping devices, so it is
+>> well tested.
+> 
+> This was never a good argument for introducing an interface into the
+> kernel.
 
-  MAX_SKB_SLOTS_DEFAULT -> FATAL_SKB_SLOTS_DEFAULT
-  max_skb_slots -> fatal_skb_slots
-  #define XEN_NETBK_LEGACY_SLOTS_MAX XEN_NETIF_NR_SLOTS_MIN
+Yes, I know. Just pointing out that making changes to this does result in a
+significant cost.
 
-The fatal_skb_slots is the threshold to determine whether a packet is
-malicious.
+>> I can look into porting on top of regmap. But it seems a pity to pepper
+>> regmap with atmel_mxt_ts quirks just to save on three small functions in
+>> the driver.
+> 
+> This is not about saving 3 functions but rather the fact that individual
+> register access is desired by many parties and instead of each driver
+> implementing it's own solution (via a char device, sysfs, debugfs, etc)
+> we should try to standardize on common userspace interface.
 
-XEN_NETBK_LEGACY_SLOTS_MAX is the maximum slots a valid packet can have at
-this point. It is defined to be XEN_NETIF_NR_SLOTS_MIN because that's
-guaranteed to be supported by all backends.
-
-Suggested-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: Wei Liu <wei.liu2@citrix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/net/xen-netback/netback.c |   49 ++++++++++++++++++++++----------------
- 1 file changed, 29 insertions(+), 20 deletions(-)
-
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -51,9 +51,17 @@
-  * This is the maximum slots a skb can have. If a guest sends a skb
-  * which exceeds this limit it is considered malicious.
-  */
--#define MAX_SKB_SLOTS_DEFAULT 20
--static unsigned int max_skb_slots = MAX_SKB_SLOTS_DEFAULT;
--module_param(max_skb_slots, uint, 0444);
-+#define FATAL_SKB_SLOTS_DEFAULT 20
-+static unsigned int fatal_skb_slots = FATAL_SKB_SLOTS_DEFAULT;
-+module_param(fatal_skb_slots, uint, 0444);
-+
-+/*
-+ * To avoid confusion, we define XEN_NETBK_LEGACY_SLOTS_MAX indicating
-+ * the maximum slots a valid packet can use. Now this value is defined
-+ * to be XEN_NETIF_NR_SLOTS_MIN, which is supposed to be supported by
-+ * all backend.
-+ */
-+#define XEN_NETBK_LEGACY_SLOTS_MAX XEN_NETIF_NR_SLOTS_MIN
- 
- typedef unsigned int pending_ring_idx_t;
- #define INVALID_PENDING_RING_IDX (~0U)
-@@ -953,25 +961,26 @@ static int netbk_count_requests(struct x
- 		/* This guest is really using too many slots and
- 		 * considered malicious.
- 		 */
--		if (unlikely(slots >= max_skb_slots)) {
-+		if (unlikely(slots >= fatal_skb_slots)) {
- 			netdev_err(vif->dev,
- 				   "Malicious frontend using %d slots, threshold %u\n",
--				   slots, max_skb_slots);
-+				   slots, fatal_skb_slots);
- 			netbk_fatal_tx_err(vif);
- 			return -E2BIG;
- 		}
- 
- 		/* Xen network protocol had implicit dependency on
--		 * MAX_SKB_FRAGS. XEN_NETIF_NR_SLOTS_MIN is set to the
--		 * historical MAX_SKB_FRAGS value 18 to honor the same
--		 * behavior as before. Any packet using more than 18
--		 * slots but less than max_skb_slots slots is dropped
-+		 * MAX_SKB_FRAGS. XEN_NETBK_LEGACY_SLOTS_MAX is set to
-+		 * the historical MAX_SKB_FRAGS value 18 to honor the
-+		 * same behavior as before. Any packet using more than
-+		 * 18 slots but less than fatal_skb_slots slots is
-+		 * dropped
- 		 */
--		if (!drop_err && slots >= XEN_NETIF_NR_SLOTS_MIN) {
-+		if (!drop_err && slots >= XEN_NETBK_LEGACY_SLOTS_MAX) {
- 			if (net_ratelimit())
- 				netdev_dbg(vif->dev,
- 					   "Too many slots (%d) exceeding limit (%d), dropping packet\n",
--					   slots, XEN_NETIF_NR_SLOTS_MIN);
-+					   slots, XEN_NETBK_LEGACY_SLOTS_MAX);
- 			drop_err = -E2BIG;
- 		}
- 
-@@ -1053,7 +1062,7 @@ static struct gnttab_copy *xen_netbk_get
- 	struct pending_tx_info *first = NULL;
- 
- 	/* At this point shinfo->nr_frags is in fact the number of
--	 * slots, which can be as large as XEN_NETIF_NR_SLOTS_MIN.
-+	 * slots, which can be as large as XEN_NETBK_LEGACY_SLOTS_MAX.
- 	 */
- 	nr_slots = shinfo->nr_frags;
- 
-@@ -1420,12 +1429,12 @@ static unsigned xen_netbk_tx_build_gops(
- 	struct sk_buff *skb;
- 	int ret;
- 
--	while ((nr_pending_reqs(netbk) + XEN_NETIF_NR_SLOTS_MIN
-+	while ((nr_pending_reqs(netbk) + XEN_NETBK_LEGACY_SLOTS_MAX
- 		< MAX_PENDING_REQS) &&
- 		!list_empty(&netbk->net_schedule_list)) {
- 		struct xenvif *vif;
- 		struct xen_netif_tx_request txreq;
--		struct xen_netif_tx_request txfrags[XEN_NETIF_NR_SLOTS_MIN];
-+		struct xen_netif_tx_request txfrags[XEN_NETBK_LEGACY_SLOTS_MAX];
- 		struct page *page;
- 		struct xen_netif_extra_info extras[XEN_NETIF_EXTRA_TYPE_MAX-1];
- 		u16 pending_idx;
-@@ -1513,7 +1522,7 @@ static unsigned xen_netbk_tx_build_gops(
- 		pending_idx = netbk->pending_ring[index];
- 
- 		data_len = (txreq.size > PKT_PROT_LEN &&
--			    ret < XEN_NETIF_NR_SLOTS_MIN) ?
-+			    ret < XEN_NETBK_LEGACY_SLOTS_MAX) ?
- 			PKT_PROT_LEN : txreq.size;
- 
- 		skb = alloc_skb(data_len + NET_SKB_PAD + NET_IP_ALIGN,
-@@ -1789,7 +1798,7 @@ static inline int rx_work_todo(struct xe
- static inline int tx_work_todo(struct xen_netbk *netbk)
- {
- 
--	if ((nr_pending_reqs(netbk) + XEN_NETIF_NR_SLOTS_MIN
-+	if ((nr_pending_reqs(netbk) + XEN_NETBK_LEGACY_SLOTS_MAX
- 	     < MAX_PENDING_REQS) &&
- 	     !list_empty(&netbk->net_schedule_list))
- 		return 1;
-@@ -1874,11 +1883,11 @@ static int __init netback_init(void)
- 	if (!xen_domain())
- 		return -ENODEV;
- 
--	if (max_skb_slots < XEN_NETIF_NR_SLOTS_MIN) {
-+	if (fatal_skb_slots < XEN_NETBK_LEGACY_SLOTS_MAX) {
- 		printk(KERN_INFO
--		       "xen-netback: max_skb_slots too small (%d), bump it to XEN_NETIF_NR_SLOTS_MIN (%d)\n",
--		       max_skb_slots, XEN_NETIF_NR_SLOTS_MIN);
--		max_skb_slots = XEN_NETIF_NR_SLOTS_MIN;
-+		       "xen-netback: fatal_skb_slots too small (%d), bump it to XEN_NETBK_LEGACY_SLOTS_MAX (%d)\n",
-+		       fatal_skb_slots, XEN_NETBK_LEGACY_SLOTS_MAX);
-+		fatal_skb_slots = XEN_NETBK_LEGACY_SLOTS_MAX;
- 	}
- 
- 	xen_netbk_group_nr = num_online_cpus();
-
-
+I agree that a common interface is desirable. If regmap met the
+requirements I would certainly use it instead.
