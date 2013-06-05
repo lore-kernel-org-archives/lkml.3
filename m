@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757466Ab3FER4b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 13:56:31 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:20962 "EHLO
+	id S1757479Ab3FER4q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 13:56:46 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:60573 "EHLO
 	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756982Ab3FERsP (ORCPT
+	with ESMTP id S1756990Ab3FERsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Jun 2013 13:48:15 -0400
 From: Nick Dyer <nick.dyer@itdev.co.uk>
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
 Cc: Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 01/53] Input: atmel_mxt_ts - Remove unnecessary platform data
-Date: Wed,  5 Jun 2013 18:36:54 +0100
-Message-Id: <1370453866-16534-2-git-send-email-nick.dyer@itdev.co.uk>
+Subject: [PATCH 14/53] Input: atmel_mxt_ts - Download device config using firmware loader
+Date: Wed,  5 Jun 2013 18:37:07 +0100
+Message-Id: <1370453866-16534-15-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -25,204 +25,353 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is not necessary to download these values to the maXTouch chip on every
-probe, since they are stored in NVRAM. It makes life difficult when tuning the
-device to keep them in sync with the config array/file, and requires a new
-kernel build for minor tweaks.
+The existing implementation which encodes the configuration as a binary blob
+in platform data is unsatisfactory since it requires a kernel recompile for
+the configuration to be changed, and it doesn't deal well with firmware
+changes that move values around on the chip.
 
-These parameters only represent a tiny subset of the available configuration
-options, tracking all of these options in platform data would be a endless
-task. In addition, different versions of maXTouch chips may have these values
-in different places or may not even have them at all.
-
-Having these values also makes life more complex for device tree and other
-platforms where having to define a static configuration isn't helpful.
+Atmel define an ASCII format for the configuration which can be exported from
+their tools. This patch implements a parser for that format which loads the
+configuration via the firmware loader and sends it to the MXT chip.
 
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 Acked-by: Benson Leung <bleung@chromium.org>
 ---
- arch/arm/mach-exynos/mach-nuri.c           |    5 ---
- arch/arm/mach-exynos/mach-universal_c210.c |    5 ---
- arch/arm/mach-s5pv210/mach-goni.c          |    5 ---
- drivers/input/touchscreen/atmel_mxt_ts.c   |   50 ----------------------------
- drivers/platform/x86/chromeos_laptop.c     |   10 ------
- include/linux/i2c/atmel_mxt_ts.h           |    6 +---
- 6 files changed, 1 insertion(+), 80 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |  234 ++++++++++++++++++++++--------
+ drivers/platform/x86/chromeos_laptop.c   |    4 -
+ include/linux/i2c/atmel_mxt_ts.h         |    4 -
+ 3 files changed, 175 insertions(+), 67 deletions(-)
 
-diff --git a/arch/arm/mach-exynos/mach-nuri.c b/arch/arm/mach-exynos/mach-nuri.c
-index 1ea7973..4516d26 100644
---- a/arch/arm/mach-exynos/mach-nuri.c
-+++ b/arch/arm/mach-exynos/mach-nuri.c
-@@ -333,13 +333,8 @@ static struct i2c_board_info i2c1_devs[] __initdata = {
- 
- /* TSP */
- static struct mxt_platform_data mxt_platform_data = {
--	.x_line			= 18,
--	.y_line			= 11,
- 	.x_size			= 1024,
- 	.y_size			= 600,
--	.blen			= 0x1,
--	.threshold		= 0x28,
--	.voltage		= 2800000,		/* 2.8V */
- 	.orient			= MXT_DIAGONAL_COUNTER,
- 	.irqflags		= IRQF_TRIGGER_FALLING,
- };
-diff --git a/arch/arm/mach-exynos/mach-universal_c210.c b/arch/arm/mach-exynos/mach-universal_c210.c
-index 497fcb7..2461e60 100644
---- a/arch/arm/mach-exynos/mach-universal_c210.c
-+++ b/arch/arm/mach-exynos/mach-universal_c210.c
-@@ -604,13 +604,8 @@ static struct i2c_board_info i2c5_devs[] __initdata = {
- 
- /* I2C3 (TSP) */
- static struct mxt_platform_data qt602240_platform_data = {
--	.x_line		= 19,
--	.y_line		= 11,
- 	.x_size		= 800,
- 	.y_size		= 480,
--	.blen		= 0x11,
--	.threshold	= 0x28,
--	.voltage	= 2800000,		/* 2.8V */
- 	.orient		= MXT_DIAGONAL,
- 	.irqflags	= IRQF_TRIGGER_FALLING,
- };
-diff --git a/arch/arm/mach-s5pv210/mach-goni.c b/arch/arm/mach-s5pv210/mach-goni.c
-index 3a38f7b..eca73af 100644
---- a/arch/arm/mach-s5pv210/mach-goni.c
-+++ b/arch/arm/mach-s5pv210/mach-goni.c
-@@ -239,13 +239,8 @@ static void __init goni_radio_init(void)
- 
- /* TSP */
- static struct mxt_platform_data qt602240_platform_data = {
--	.x_line		= 17,
--	.y_line		= 11,
- 	.x_size		= 800,
- 	.y_size		= 480,
--	.blen		= 0x21,
--	.threshold	= 0x28,
--	.voltage	= 2800000,              /* 2.8V */
- 	.orient		= MXT_DIAGONAL,
- 	.irqflags	= IRQF_TRIGGER_FALLING,
- };
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 59aa240..e01a9ed 100644
+index 434e674..7ce8ab4 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -686,54 +686,6 @@ static int mxt_make_highchg(struct mxt_data *data)
- 	return 0;
+@@ -36,8 +36,10 @@
+ #define MXT_BOOT_LOW		0x24
+ #define MXT_BOOT_HIGH		0x25
+ 
+-/* Firmware */
++/* Firmware files */
+ #define MXT_FW_NAME		"maxtouch.fw"
++#define MXT_CFG_NAME		"maxtouch.cfg"
++#define MXT_CFG_MAGIC		"OBP_RAW V1"
+ 
+ /* Registers */
+ #define MXT_INFO		0x00
+@@ -334,37 +336,6 @@ static bool mxt_object_readable(unsigned int type)
+ 	}
  }
  
--static void mxt_handle_pdata(struct mxt_data *data)
+-static bool mxt_object_writable(unsigned int type)
 -{
--	const struct mxt_platform_data *pdata = data->pdata;
--	u8 voltage;
--
--	/* Set touchscreen lines */
--	mxt_write_object(data, MXT_TOUCH_MULTI_T9, MXT_TOUCH_XSIZE,
--			pdata->x_line);
--	mxt_write_object(data, MXT_TOUCH_MULTI_T9, MXT_TOUCH_YSIZE,
--			pdata->y_line);
--
--	/* Set touchscreen orient */
--	mxt_write_object(data, MXT_TOUCH_MULTI_T9, MXT_TOUCH_ORIENT,
--			pdata->orient);
--
--	/* Set touchscreen burst length */
--	mxt_write_object(data, MXT_TOUCH_MULTI_T9,
--			MXT_TOUCH_BLEN, pdata->blen);
--
--	/* Set touchscreen threshold */
--	mxt_write_object(data, MXT_TOUCH_MULTI_T9,
--			MXT_TOUCH_TCHTHR, pdata->threshold);
--
--	/* Set touchscreen resolution */
--	mxt_write_object(data, MXT_TOUCH_MULTI_T9,
--			MXT_TOUCH_XRANGE_LSB, (pdata->x_size - 1) & 0xff);
--	mxt_write_object(data, MXT_TOUCH_MULTI_T9,
--			MXT_TOUCH_XRANGE_MSB, (pdata->x_size - 1) >> 8);
--	mxt_write_object(data, MXT_TOUCH_MULTI_T9,
--			MXT_TOUCH_YRANGE_LSB, (pdata->y_size - 1) & 0xff);
--	mxt_write_object(data, MXT_TOUCH_MULTI_T9,
--			MXT_TOUCH_YRANGE_MSB, (pdata->y_size - 1) >> 8);
--
--	/* Set touchscreen voltage */
--	if (pdata->voltage) {
--		if (pdata->voltage < MXT_VOLTAGE_DEFAULT) {
--			voltage = (MXT_VOLTAGE_DEFAULT - pdata->voltage) /
--				MXT_VOLTAGE_STEP;
--			voltage = 0xff - voltage + 1;
--		} else
--			voltage = (pdata->voltage - MXT_VOLTAGE_DEFAULT) /
--				MXT_VOLTAGE_STEP;
--
--		mxt_write_object(data, MXT_SPT_CTECONFIG_T28,
--				MXT_CTE_VOLTAGE, voltage);
+-	switch (type) {
+-	case MXT_GEN_COMMAND_T6:
+-	case MXT_GEN_POWER_T7:
+-	case MXT_GEN_ACQUIRE_T8:
+-	case MXT_TOUCH_MULTI_T9:
+-	case MXT_TOUCH_KEYARRAY_T15:
+-	case MXT_TOUCH_PROXIMITY_T23:
+-	case MXT_TOUCH_PROXKEY_T52:
+-	case MXT_PROCI_GRIPFACE_T20:
+-	case MXT_PROCG_NOISE_T22:
+-	case MXT_PROCI_ONETOUCH_T24:
+-	case MXT_PROCI_TWOTOUCH_T27:
+-	case MXT_PROCI_GRIP_T40:
+-	case MXT_PROCI_PALM_T41:
+-	case MXT_PROCI_TOUCHSUPPRESSION_T42:
+-	case MXT_PROCI_STYLUS_T47:
+-	case MXT_PROCG_NOISESUPPRESSION_T48:
+-	case MXT_SPT_COMMSCONFIG_T18:
+-	case MXT_SPT_GPIOPWM_T19:
+-	case MXT_SPT_SELFTEST_T25:
+-	case MXT_SPT_CTECONFIG_T28:
+-	case MXT_SPT_DIGITIZER_T43:
+-	case MXT_SPT_CTECONFIG_T46:
+-		return true;
+-	default:
+-		return false;
 -	}
 -}
 -
- static int mxt_get_info(struct mxt_data *data)
+ static void mxt_dump_message(struct device *dev, struct mxt_message *message)
  {
- 	struct i2c_client *client = data->client;
-@@ -841,8 +793,6 @@ static int mxt_initialize(struct mxt_data *data)
- 	if (error)
- 		goto err_free_object_table;
+ 	dev_dbg(dev, "MXT MSG: %*ph\n",
+@@ -557,7 +528,7 @@ mxt_get_object(struct mxt_data *data, u8 type)
+ 			return object;
+ 	}
  
--	mxt_handle_pdata(data);
--
- 	/* Backup to memory */
- 	mxt_write_object(data, MXT_GEN_COMMAND_T6,
- 			MXT_COMMAND_BACKUPNV,
+-	dev_err(&data->client->dev, "Invalid object type T%u\n", type);
++	dev_warn(&data->client->dev, "Invalid object type T%u\n", type);
+ 	return NULL;
+ }
+ 
+@@ -809,58 +780,203 @@ static void mxt_update_crc(struct mxt_data *data, u8 cmd, u8 value)
+ 	mxt_wait_for_completion(data, &data->crc_completion, MXT_CRC_TIMEOUT);
+ }
+ 
++/*
++ * mxt_check_reg_init - download configuration to chip
++ *
++ * Atmel Raw Config File Format
++ *
++ * The first four lines of the raw config file contain:
++ *  1) Version
++ *  2) Chip ID Information (first 7 bytes of device memory)
++ *  3) Chip Information Block 24-bit CRC Checksum
++ *  4) Chip Configuration 24-bit CRC Checksum
++ *
++ * The rest of the file consists of one line per object instance:
++ *   <TYPE> <INSTANCE> <SIZE> <CONTENTS>
++ *
++ *   <TYPE> - 2-byte object type as hex
++ *   <INSTANCE> - 2-byte object instance number as hex
++ *   <SIZE> - 2-byte object size as hex
++ *   <CONTENTS> - array of <SIZE> 1-byte hex values
++ */
+ static int mxt_check_reg_init(struct mxt_data *data)
+ {
+-	const struct mxt_platform_data *pdata = data->pdata;
+-	struct mxt_object *object;
+ 	struct device *dev = &data->client->dev;
+-	int index = 0;
+-	int i, size;
++	struct mxt_info cfg_info;
++	struct mxt_object *object;
++	const struct firmware *cfg = NULL;
+ 	int ret;
++	int offset;
++	int pos;
++	int i;
++	u32 info_crc, config_crc;
++	unsigned int type, instance, size;
++	u8 val;
++	u16 reg;
+ 
+-	if (!pdata->config) {
+-		dev_dbg(dev, "No cfg data defined, skipping reg init\n");
++	ret = request_firmware(&cfg, MXT_CFG_NAME, dev);
++	if (ret < 0) {
++		dev_err(dev, "Failure to request config file %s\n",
++			MXT_CFG_NAME);
+ 		return 0;
+ 	}
+ 
+ 	mxt_update_crc(data, MXT_COMMAND_REPORTALL, 1);
+ 
+-	if (data->config_crc == pdata->config_crc) {
+-		dev_info(dev, "Config CRC 0x%06X: OK\n", data->config_crc);
+-		return 0;
+-	} else {
+-		dev_info(dev, "Config CRC 0x%06X: does not match 0x%06X\n",
+-				data->config_crc, pdata->config_crc);
++	if (strncmp(cfg->data, MXT_CFG_MAGIC, strlen(MXT_CFG_MAGIC))) {
++		dev_err(dev, "Unrecognised config file\n");
++		ret = -EINVAL;
++		goto release;
+ 	}
+ 
+-	for (i = 0; i < data->info.object_num; i++) {
+-		object = data->object_table + i;
++	pos = strlen(MXT_CFG_MAGIC);
++
++	/* Load information block and check */
++	for (i = 0; i < sizeof(struct mxt_info); i++) {
++		ret = sscanf(cfg->data + pos, "%hhx%n",
++			     (unsigned char *)&cfg_info + i,
++			     &offset);
++		if (ret != 1) {
++			dev_err(dev, "Bad format\n");
++			ret = -EINVAL;
++			goto release;
++		}
++
++		pos += offset;
++	}
++
++	if (cfg_info.family_id != data->info.family_id) {
++		dev_err(dev, "Family ID mismatch!\n");
++		ret = -EINVAL;
++		goto release;
++	}
+ 
+-		if (!mxt_object_writable(object->type))
++	if (cfg_info.variant_id != data->info.variant_id) {
++		dev_err(dev, "Variant ID mismatch!\n");
++		ret = -EINVAL;
++		goto release;
++	}
++
++	if (cfg_info.version != data->info.version)
++		dev_err(dev, "Warning: version mismatch!\n");
++
++	if (cfg_info.build != data->info.build)
++		dev_err(dev, "Warning: build num mismatch!\n");
++
++	ret = sscanf(cfg->data + pos, "%x%n", &info_crc, &offset);
++	if (ret != 1) {
++		dev_err(dev, "Bad format: failed to parse Info CRC\n");
++		ret = -EINVAL;
++		goto release;
++	}
++	pos += offset;
++
++	/* Check config CRC */
++	ret = sscanf(cfg->data + pos, "%x%n", &config_crc, &offset);
++	if (ret != 1) {
++		dev_err(dev, "Bad format: failed to parse Config CRC\n");
++		ret = -EINVAL;
++		goto release;
++	}
++	pos += offset;
++
++	if (data->config_crc == config_crc) {
++		dev_info(dev, "Config CRC 0x%06X: OK\n", config_crc);
++		ret = 0;
++		goto release;
++	} else {
++		dev_info(dev, "Config CRC 0x%06X: does not match file 0x%06X\n",
++			 data->config_crc, config_crc);
++	}
++
++	while (pos < cfg->size) {
++		/* Read type, instance, length */
++		ret = sscanf(cfg->data + pos, "%x %x %x%n",
++			     &type, &instance, &size, &offset);
++		if (ret == 0) {
++			/* EOF */
++			ret = 1;
++			goto release;
++		} else if (ret != 3) {
++			dev_err(dev, "Bad format: failed to parse object\n");
++			ret = -EINVAL;
++			goto release;
++		}
++		pos += offset;
++
++		object = mxt_get_object(data, type);
++		if (!object) {
++			/* Skip object */
++			for (i = 0; i < size; i++) {
++				ret = sscanf(cfg->data + pos, "%hhx%n",
++					     &val,
++					     &offset);
++				pos += offset;
++			}
+ 			continue;
++		}
+ 
+-		size = mxt_obj_size(object) * mxt_obj_instances(object);
+-		if (index + size > pdata->config_length) {
+-			dev_err(dev, "Not enough config data!\n");
+-			return -EINVAL;
++		if (size > mxt_obj_size(object)) {
++			dev_err(dev, "Discarding %u byte(s) in T%u\n",
++				size - mxt_obj_size(object), type);
+ 		}
+ 
+-		ret = __mxt_write_reg(data->client, object->start_address,
+-				size, &pdata->config[index]);
+-		if (ret)
+-			return ret;
+-		index += size;
++		if (instance >= mxt_obj_instances(object)) {
++			dev_err(dev, "Object instances exceeded!\n");
++			ret = -EINVAL;
++			goto release;
++		}
++
++		reg = object->start_address + mxt_obj_size(object) * instance;
++
++		for (i = 0; i < size; i++) {
++			ret = sscanf(cfg->data + pos, "%hhx%n",
++				     &val,
++				     &offset);
++			if (ret != 1) {
++				dev_err(dev, "Bad format in T%d\n", type);
++				ret = -EINVAL;
++				goto release;
++			}
++			pos += offset;
++
++			if (i > mxt_obj_size(object))
++				continue;
++
++			ret = mxt_write_reg(data->client, reg + i, val);
++			if (ret)
++				goto release;
++
++		}
++
++		/* If firmware is upgraded, new bytes may be added to end of
++		 * objects. It is generally forward compatible to zero these
++		 * bytes - previous behaviour will be retained. However
++		 * this does invalidate the CRC and will force a config
++		 * download every time until the configuration is updated */
++		if (size < mxt_obj_size(object)) {
++			dev_info(dev, "Zeroing %u byte(s) in T%d\n",
++				 mxt_obj_size(object) - size, type);
++
++			for (i = size + 1; i < mxt_obj_size(object); i++) {
++				ret = mxt_write_reg(data->client, reg + i, 0);
++				if (ret)
++					goto release;
++			}
++		}
+ 	}
+ 
+ 	mxt_update_crc(data, MXT_COMMAND_BACKUPNV, MXT_BACKUP_VALUE);
+ 
+ 	ret = mxt_soft_reset(data);
+ 	if (ret)
+-		return ret;
++		goto release;
+ 
+ 	dev_info(dev, "Config written\n");
+ 
+-	return 0;
++release:
++	release_firmware(cfg);
++	return ret;
+ }
+ 
+ static int mxt_make_highchg(struct mxt_data *data)
 diff --git a/drivers/platform/x86/chromeos_laptop.c b/drivers/platform/x86/chromeos_laptop.c
-index 3e5b4497..78ed277 100644
+index 8026554..4f6f0b8 100644
 --- a/drivers/platform/x86/chromeos_laptop.c
 +++ b/drivers/platform/x86/chromeos_laptop.c
-@@ -71,13 +71,8 @@ static struct i2c_board_info __initdata tsl2563_als_device = {
- };
- 
- static struct mxt_platform_data atmel_224s_tp_platform_data = {
--	.x_line			= 18,
--	.y_line			= 12,
- 	.x_size			= 102*20,
- 	.y_size			= 68*20,
--	.blen			= 0x80,	/* Gain setting is in upper 4 bits */
--	.threshold		= 0x32,
--	.voltage		= 0,	/* 3.3V */
- 	.orient			= MXT_VERTICAL_FLIP,
+@@ -86,8 +86,6 @@ static struct mxt_platform_data atmel_224s_tp_platform_data = {
  	.irqflags		= IRQF_TRIGGER_FALLING,
- 	.is_tp			= true,
-@@ -96,13 +91,8 @@ static struct i2c_board_info __initdata atmel_224s_tp_device = {
+ 	.t19_num_keys		= ARRAY_SIZE(mxt_t19_keys),
+ 	.t19_keymap		= mxt_t19_keys,
+-	.config			= NULL,
+-	.config_length		= 0,
  };
  
- static struct mxt_platform_data atmel_1664s_platform_data = {
--	.x_line			= 32,
--	.y_line			= 50,
- 	.x_size			= 1700,
+ static struct i2c_board_info __initdata atmel_224s_tp_device = {
+@@ -101,8 +99,6 @@ static struct mxt_platform_data atmel_1664s_platform_data = {
  	.y_size			= 2560,
--	.blen			= 0x89,	/* Gain setting is in upper 4 bits */
--	.threshold		= 0x28,
--	.voltage		= 0,	/* 3.3V */
  	.orient			= MXT_ROTATED_90_COUNTER,
  	.irqflags		= IRQF_TRIGGER_FALLING,
- 	.is_tp			= false,
+-	.config			= NULL,
+-	.config_length		= 0,
+ };
+ 
+ static struct i2c_board_info __initdata atmel_1664s_device = {
 diff --git a/include/linux/i2c/atmel_mxt_ts.h b/include/linux/i2c/atmel_mxt_ts.h
-index 99e379b..eff0cdc 100644
+index 9f92135..b569bb8 100644
 --- a/include/linux/i2c/atmel_mxt_ts.h
 +++ b/include/linux/i2c/atmel_mxt_ts.h
-@@ -33,14 +33,10 @@ struct mxt_platform_data {
- 	const u8 *config;
- 	size_t config_length;
+@@ -27,10 +27,6 @@
  
--	unsigned int x_line;
--	unsigned int y_line;
+ /* The platform data for the Atmel maXTouch touchscreen driver */
+ struct mxt_platform_data {
+-	const u8 *config;
+-	size_t config_length;
+-	u32 config_crc;
+-
  	unsigned int x_size;
  	unsigned int y_size;
--	unsigned int blen;
--	unsigned int threshold;
--	unsigned int voltage;
  	unsigned char orient;
-+
- 	unsigned long irqflags;
- 	bool is_tp;
- 	const unsigned int key_map[MXT_NUM_GPIO];
 -- 
 1.7.10.4
 
