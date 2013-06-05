@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084Ab3FEJgh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 05:36:37 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:25808 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752250Ab3FEJgg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 05:36:36 -0400
-USER-AGENT: Mutt/1.5.21 (2010-09-15)
+	id S1753329Ab3FEJiv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 05:38:51 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60672 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752604Ab3FEJit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 05:38:49 -0400
+Message-ID: <51AF071D.2050002@ti.com>
+Date: Wed, 5 Jun 2013 12:38:37 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Message-ID: <20130605093603.GR28112@mwanda>
-Date: Wed, 5 Jun 2013 02:36:03 -0700 (PDT)
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Johannes Schilling <of82ecuq@cip.cs.fau.de>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Kurt Kanzenbach <shifty91@gmail.com>, linux-kernel@i4.cs.fau.de,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Al Cho <acho@novell.com>,
-        Amarjargal Gundjalam <amarjargal16@gmail.com>,
-        Laura Lawniczak <laura.lawniczak@googlemail.com>
-Subject: Re: [PATCH 4/6] keucr: make error messages less aggressive
-References: <1370422206-14961-1-git-send-email-of82ecuq@cip.cs.fau.de>
- <1370422206-14961-5-git-send-email-of82ecuq@cip.cs.fau.de>
-In-Reply-To: <1370422206-14961-5-git-send-email-of82ecuq@cip.cs.fau.de>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: <balbi@ti.com>
+CC: Greg KH <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>,
+        <arnd@arndb.de>, <adrienverge@gmail.com>, <kishon@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/2] USB: PHY: Improve PHY selection logic
+References: <1369999743-11758-1-git-send-email-rogerq@ti.com> <20130603174709.GA11059@kroah.com> <51AD9462.4020300@ti.com> <20130604202632.GF28302@arwen.pp.htv.fi>
+In-Reply-To: <20130604202632.GF28302@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 10:50:04AM +0200, Johannes Schilling wrote:
-> here's a flower: ⚘. have a very happy day ☺
+On 06/04/2013 11:26 PM, Felipe Balbi wrote:
+> Hi,
 > 
-> Signed-off-by: Laura Lawniczak <laura.lawniczak@googlemail.com>
-> Signed-off-by: Johannes Schilling <of82ecuq@cip.cs.fau.de>
+> On Tue, Jun 04, 2013 at 10:16:50AM +0300, Roger Quadros wrote:
+>> On 06/03/2013 08:47 PM, Greg KH wrote:
+>>> On Fri, May 31, 2013 at 02:29:01PM +0300, Roger Quadros wrote:
+>>>> Hi,
+>>>>
+>>>> Improve Kconfig so that the relevant PHY driver can be explicitely
+>>>> selected by the controller driver instead of relying on the user
+>>>> to do so.
+>>>>
+>>>> Detailed description in patch 1.
+>>>
+>>> Felipe needs to take these, not I.
+>>>
+>>
+>> Felipe,
+>>
+>> Could you please take these if appropriate? Thanks.
+> 
+> it's for v3.11 merge window, right ? I think I'll enjoy the rest of my
+> vacations before taking these patches ;-)
+> 
+> I'll be back on office next monday, cheers
+> 
 
-You two goof balls need to get organized.  This still doesn't
-compile.  What does "SM RW" stand for btw?
+Yes these are for 3.11 so no hurry :). Didn't mean to interrupt your vacations.
 
-regards,
-dan carpenter
-
+cheers,
+-roger
