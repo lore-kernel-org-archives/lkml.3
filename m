@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933305Ab3FEVsr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:48:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37953 "EHLO
+	id S933024Ab3FEVtD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:49:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37949 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932997Ab3FEVf4 (ORCPT
+	with ESMTP id S932926Ab3FEVf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Jun 2013 17:35:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Michael Neuling <mikey@neuling.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 087/127] powerpc/tm: Move TM abort cause codes to uapi
-Date: Wed,  5 Jun 2013 14:34:14 -0700
-Message-Id: <20130605213227.781591861@linuxfoundation.org>
+Subject: [ 086/127] powerpc/tm: Abort on emulation and alignment faults
+Date: Wed,  5 Jun 2013 14:34:13 -0700
+Message-Id: <20130605213227.685711779@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -29,85 +29,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michael Neuling <mikey@neuling.org>
 
-commit b75c100ef24894bd2c8b52e123bcc5f191c5d9fd upstream.
+commit 6ce6c629fd8254b3177650de99699682ff7f6707 upstream.
 
-These cause codes are usable by userspace, so let's export to uapi.
+If we are emulating an instruction inside an active user transaction that
+touches memory, the kernel can't emulate it as it operates in transactional
+suspend context.  We need to abort these transactions and send them back to
+userspace for the hardware to rollback.
+
+We can service these if the user transaction is in suspend mode, since the
+kernel will operate in the same suspend context.
+
+This adds a check to all alignment faults and to specific instruction
+emulations (only string instructions for now).  If the user process is in an
+active (non-suspended) transaction, we abort the transaction go back to
+userspace allowing the HW to roll back the transaction and tell the user of the
+failure.  This also adds new tm abort cause codes to report the reason of the
+persistent error to the user.
+
+Crappy test case here http://neuling.org/devel/junkcode/aligntm.c
 
 Signed-off-by: Michael Neuling <mikey@neuling.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/reg.h       |   14 --------------
- arch/powerpc/include/asm/tm.h        |    2 ++
- arch/powerpc/include/uapi/asm/Kbuild |    1 +
- arch/powerpc/include/uapi/asm/tm.h   |   18 ++++++++++++++++++
- 4 files changed, 21 insertions(+), 14 deletions(-)
+ Documentation/powerpc/transactional_memory.txt |    7 ++++--
+ arch/powerpc/include/asm/reg.h                 |    2 +
+ arch/powerpc/kernel/traps.c                    |   29 +++++++++++++++++++++++++
+ 3 files changed, 36 insertions(+), 2 deletions(-)
 
+--- a/Documentation/powerpc/transactional_memory.txt
++++ b/Documentation/powerpc/transactional_memory.txt
+@@ -180,9 +180,12 @@ kernel aborted a transaction:
+                         transactions for consistency will use this.
+  TM_CAUSE_SIGNAL        Signal delivered.
+  TM_CAUSE_MISC          Currently unused.
++ TM_CAUSE_ALIGNMENT     Alignment fault.
++ TM_CAUSE_EMULATE       Emulation that touched memory.
+ 
+-These can be checked by the user program's abort handler as TEXASR[0:7].
+-
++These can be checked by the user program's abort handler as TEXASR[0:7].  If
++bit 7 is set, it indicates that the error is consider persistent.  For example
++a TM_CAUSE_ALIGNMENT will be persistent while a TM_CAUSE_RESCHED will not.q
+ 
+ GDB
+ ===
 --- a/arch/powerpc/include/asm/reg.h
 +++ b/arch/powerpc/include/asm/reg.h
-@@ -111,20 +111,6 @@
- #define MSR_TM_TRANSACTIONAL(x)	(((x) & MSR_TS_MASK) == MSR_TS_T)
- #define MSR_TM_SUSPENDED(x)	(((x) & MSR_TS_MASK) == MSR_TS_S)
- 
--/* Reason codes describing kernel causes for transaction aborts.  By
--   convention, bit0 is copied to TEXASR[56] (IBM bit 7) which is set if
--   the failure is persistent.  PAPR saves 0xff-0xe0 for the hypervisor.
--*/
--#define TM_CAUSE_PERSISTENT	0x01
--#define TM_CAUSE_RESCHED	0xde
--#define TM_CAUSE_TLBI		0xdc
--#define TM_CAUSE_FAC_UNAV	0xda
--#define TM_CAUSE_SYSCALL	0xd8  /* future use */
--#define TM_CAUSE_MISC		0xd6  /* future use */
--#define TM_CAUSE_SIGNAL		0xd4
--#define TM_CAUSE_ALIGNMENT	0xd2
--#define TM_CAUSE_EMULATE	0xd0
--
- #if defined(CONFIG_PPC_BOOK3S_64)
- #define MSR_64BIT	MSR_SF
- 
---- a/arch/powerpc/include/asm/tm.h
-+++ b/arch/powerpc/include/asm/tm.h
-@@ -5,6 +5,8 @@
-  * Copyright 2012 Matt Evans & Michael Neuling, IBM Corporation.
-  */
- 
-+#include <uapi/asm/tm.h>
-+
- #ifdef CONFIG_PPC_TRANSACTIONAL_MEM
- extern void do_load_up_transact_fpu(struct thread_struct *thread);
- extern void do_load_up_transact_altivec(struct thread_struct *thread);
---- a/arch/powerpc/include/uapi/asm/Kbuild
-+++ b/arch/powerpc/include/uapi/asm/Kbuild
-@@ -40,6 +40,7 @@ header-y += statfs.h
- header-y += swab.h
- header-y += termbits.h
- header-y += termios.h
-+header-y += tm.h
- header-y += types.h
- header-y += ucontext.h
- header-y += unistd.h
---- /dev/null
-+++ b/arch/powerpc/include/uapi/asm/tm.h
-@@ -0,0 +1,18 @@
-+#ifndef _ASM_POWERPC_TM_H
-+#define _ASM_POWERPC_TM_H
-+
-+/* Reason codes describing kernel causes for transaction aborts.  By
-+ * convention, bit0 is copied to TEXASR[56] (IBM bit 7) which is set if
-+ * the failure is persistent.  PAPR saves 0xff-0xe0 for the hypervisor.
-+ */
-+#define TM_CAUSE_PERSISTENT	0x01
-+#define TM_CAUSE_RESCHED	0xde
-+#define TM_CAUSE_TLBI		0xdc
-+#define TM_CAUSE_FAC_UNAV	0xda
-+#define TM_CAUSE_SYSCALL	0xd8  /* future use */
-+#define TM_CAUSE_MISC		0xd6  /* future use */
-+#define TM_CAUSE_SIGNAL		0xd4
+@@ -122,6 +122,8 @@
+ #define TM_CAUSE_SYSCALL	0xd8  /* future use */
+ #define TM_CAUSE_MISC		0xd6  /* future use */
+ #define TM_CAUSE_SIGNAL		0xd4
 +#define TM_CAUSE_ALIGNMENT	0xd2
 +#define TM_CAUSE_EMULATE	0xd0
-+
+ 
+ #if defined(CONFIG_PPC_BOOK3S_64)
+ #define MSR_64BIT	MSR_SF
+--- a/arch/powerpc/kernel/traps.c
++++ b/arch/powerpc/kernel/traps.c
+@@ -52,6 +52,7 @@
+ #ifdef CONFIG_PPC64
+ #include <asm/firmware.h>
+ #include <asm/processor.h>
++#include <asm/tm.h>
+ #endif
+ #include <asm/kexec.h>
+ #include <asm/ppc-opcode.h>
+@@ -913,6 +914,28 @@ static int emulate_isel(struct pt_regs *
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
++static inline bool tm_abort_check(struct pt_regs *regs, int cause)
++{
++        /* If we're emulating a load/store in an active transaction, we cannot
++         * emulate it as the kernel operates in transaction suspended context.
++         * We need to abort the transaction.  This creates a persistent TM
++         * abort so tell the user what caused it with a new code.
++	 */
++	if (MSR_TM_TRANSACTIONAL(regs->msr)) {
++		tm_enable();
++		tm_abort(cause);
++		return true;
++	}
++	return false;
++}
++#else
++static inline bool tm_abort_check(struct pt_regs *regs, int reason)
++{
++	return false;
++}
 +#endif
++
+ static int emulate_instruction(struct pt_regs *regs)
+ {
+ 	u32 instword;
+@@ -952,6 +975,9 @@ static int emulate_instruction(struct pt
+ 
+ 	/* Emulate load/store string insn. */
+ 	if ((instword & PPC_INST_STRING_GEN_MASK) == PPC_INST_STRING) {
++		if (tm_abort_check(regs,
++				   TM_CAUSE_EMULATE | TM_CAUSE_PERSISTENT))
++			return -EINVAL;
+ 		PPC_WARN_EMULATED(string, regs);
+ 		return emulate_string_inst(regs, instword);
+ 	}
+@@ -1124,6 +1150,9 @@ void alignment_exception(struct pt_regs
+ 	if (!arch_irq_disabled_regs(regs))
+ 		local_irq_enable();
+ 
++	if (tm_abort_check(regs, TM_CAUSE_ALIGNMENT | TM_CAUSE_PERSISTENT))
++		goto bail;
++
+ 	/* we don't implement logging of alignment exceptions */
+ 	if (!(current->thread.align_ctl & PR_UNALIGN_SIGBUS))
+ 		fixed = fix_alignment(regs);
 
 
