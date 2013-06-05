@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757863Ab3FEWSD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 18:18:03 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:59460 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757653Ab3FEWSA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 18:18:00 -0400
+	id S1757913Ab3FEWSt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 18:18:49 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33171 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757679Ab3FEWSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 18:18:48 -0400
+Date: Thu, 6 Jun 2013 00:18:33 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>
+Subject: Re: [PATCH 0/2] x86/microcode/amd: early loading fixes
+Message-ID: <20130605221833.GA15427@pd.tnic>
+References: <1370463236-2115-1-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
-In-Reply-To: <CAME+o4kn=xBToxV2xfC5L0b5wVbQ27EA8+tDt9jT44BvBPeSTA@mail.gmail.com>
-References: <1368221329-1841-1-git-send-email-zoran.markovic@linaro.org>
-	<3006354.hOxNuWCXu4@vostro.rjw.lan>
-	<CAME+o4kJYD2K_aL4xNi-jNP1Q8R+seDNZDwsGBhvU00ArR0Skg@mail.gmail.com>
-	<1515063.BZy7p4GtyV@vostro.rjw.lan>
-	<CAME+o4kn=xBToxV2xfC5L0b5wVbQ27EA8+tDt9jT44BvBPeSTA@mail.gmail.com>
-Date: Wed, 5 Jun 2013 15:17:59 -0700
-Message-ID: <CAME+o4mkBknj0jiUW=Z77fG1bJYy1jHF7=shNQ_ixeL_oJDjFg@mail.gmail.com>
-Subject: Re: [RFC PATCHv2 1/2] drivers: power: Add watchdog timer to catch
- drivers which lockup during suspend/resume.
-From: Zoran Markovic <zoran.markovic@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Colin Cross <ccross@android.com>, lkml <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Benoit Goby <benoit@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Todd Poynor <toddpoynor@google.com>, San Mehat <san@google.com>,
-        John Stultz <john.stultz@linaro.org>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1370463236-2115-1-git-send-email-jacob.shin@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael,
+On Wed, Jun 05, 2013 at 03:13:54PM -0500, Jacob Shin wrote:
+> This patchset addreses two problems with early loading on AMD.
 
->>> We could do cancel_work_sync() as a recovery, but that call blocks until the
->>> running async task is flushed, which might never happen. So doing a panic()
->>> is pretty much the only option for recovering.
->>
->> Well, its usefulness is quite limited, then.  That said I'm still not convinced
->> that this actually is the case.
->
-> It does block in my environment, AFAICS. Looking a bit further in the
-> code, it looks like dpm_suspend() does an async_synchronize_full()
-> which would wait for all async tasks to complete. This is a
-> show-stopper because (under the circumstances) the assumption that
-> every async suspend routine eventually completes doesn't hold.
->
-> We could possibly select which async tasks to wait for, but this would
-> add unnecessary complexity to a feature targeted for debugging. It
-> seems that this approach - although sounding reasonable - needs to
-> wait until we have a mechanism to cancel an async task.
+It would be nice if, in the future, you put the maintainers of this
+driver to CC.
 
-Looks like the implementation of proposal for an async suspend +
-wait_for_completion_timeout is quite complex due to above limitations.
-How do we proceed from here? We have the following options:
-1. Give up on the idea of having a suspend/resume watchdog.
-2. Use the timer implementation (with possible modifications).
-3. Wait for the implementation of (or implement) killing of an already
-running async work.
+Unless you're volunteering up for maintaining it...
 
-Are there any other ideas floating around?
+-- 
+Regards/Gruss,
+    Boris.
 
-Thanks,
-Zoran
+Sent from a fat crate under my desk. Formatting is fine.
+--
