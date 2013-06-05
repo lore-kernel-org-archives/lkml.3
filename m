@@ -1,92 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600Ab3FEPxN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 11:53:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11675 "EHLO mx1.redhat.com"
+	id S1756610Ab3FEPyK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 11:54:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17653 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752554Ab3FEPxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 11:53:10 -0400
-Date: Wed, 5 Jun 2013 18:53:38 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        KVM list <kvm@vger.kernel.org>, virtualization@lists.osdl.org,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Asias He <asias@redhat.com>,
-        target-devel <target-devel@vger.kernel.org>
-Subject: Re: [PULL] vhost: cleanups and fixes
-Message-ID: <20130605155338.GA26561@redhat.com>
-References: <20130502105353.GA24655@redhat.com>
- <1367520929.23900.114.camel@haakon3.risingtidesystems.com>
- <20130502193309.GC16031@redhat.com>
- <CA+55aFwwVMhmmJfWoepipWT+WQZHt4gRPKSucgBABe5Rq=kVkw@mail.gmail.com>
+	id S1756375Ab3FEPyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 11:54:07 -0400
+Date: Wed, 5 Jun 2013 17:49:51 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Colin King <colin.king@canonical.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        John Johansen <john.johansen@canonical.com>
+Subject: Re: [ 020/184] ptrace: ensure arch_ptrace/ptrace_request can never
+Message-ID: <20130605154950.GA23647@redhat.com>
+References: <20130604172131.136042108@1wt.eu> <87sj0wucft.fsf@canonical.com> <20130605154051.GA23025@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwwVMhmmJfWoepipWT+WQZHt4gRPKSucgBABe5Rq=kVkw@mail.gmail.com>
+In-Reply-To: <20130605154051.GA23025@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 12:49:42PM -0700, Linus Torvalds wrote:
-> On Thu, May 2, 2013 at 12:33 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> >
-> > I prefer not rebasing,
-> 
-> Good.
-> 
-> >                   will play with git to see why
-> > does request-pull get me a wrong diffstat and how
-> > to trick it into doing the right thing.
-> > Maybe merging my branch into master will do this.
-> 
-> No, don't do an unnecessary merge just to get the diffstat right.
-> 
-> git pull-request ends up assuming that there are no back-merges, and
-> that you have a uniquely defined single shared merge base. That allows
-> pull-request to just generate the diff directly from that merge base,
-> without actually trying to do the merge itself (which may have
-> conflicts etc).
-> 
-> But because git pull-request doesn't actually *do* the merge, it means
-> that it will fail to give the correct diffstat if the tree is
-> complicated and has multiple merge bases, and it can't really figure
-> what the original shared state was before the development.
-> 
-> This is just one reason I do *not* want to see back-merges. They make
-> history harder to read not just for humans.
-> 
-> You can either ignore the problem (I'll see the real diffstat when I
-> actually do the merge), or you can do a test-merge yourself (that you
-> do *not* then push out in the development branch - keep it in a
-> temporary branch for your own edification or just delete it after
-> doing the merge, and don't do development on it!)
-> 
-> In this case, it's an indirect back-merge: you back-merged a commit
-> from the target tree that I have now merged, so it has become a
-> back-merge. I'm not sure why you did that - if you needed to start
-> from that state, it would actually have been better to just start at
-> that state instead of merging it.
+On 06/05, Oleg Nesterov wrote:
+>
+> Note: I can make a _much_ simpler patch for 2.6.32, please let me know
+> if you need it.
+>
+> We can rely on sys_ptrace()->lock_kernel() and simply do lock/unlock
+> if fatal_signal_pending() in ptrace_stop/do_signal_stop. This is not
+> the same, this doesn't prevent wakeup(), but this should be enough.
 
-OK I'm in that situation again. I have some vhost-net patches that depend on
-changes in tip.
-But I also have a vhost-next branch with unrelated changes, that
-I started from -rc3.
+Something like below. Untested/uncompiled. I think it should close the
+security problems.
 
-Previously I would just merge tip into vhost-next, then everyone's
-happy, but it will create an implicit back-merge again, won't it?
+Oleg.
 
-So what should I do?
 
-Sorry about being dense.
+--- x/kernel/signal.c
++++ x/kernel/signal.c
+@@ -1545,6 +1545,14 @@ static int sigkill_pending(struct task_s
+ 		sigismember(&tsk->signal->shared_pending.signal, SIGKILL);
+ }
+ 
++static void ptrace_sync(void)
++{
++	if (fatal_signal_pending(current)) {
++		lock_kernel();
++		unlock_kernel();
++	}
++}
++
+ /*
+  * This must be called with current->sighand->siglock held.
+  *
+@@ -1603,6 +1611,7 @@ static void ptrace_stop(int exit_code, i
+ 		read_unlock(&tasklist_lock);
+ 		preempt_enable_no_resched();
+ 		schedule();
++		ptrace_sync();
+ 	} else {
+ 		/*
+ 		 * By the time we got the lock, our tracer went away.
+@@ -1722,6 +1731,9 @@ static int do_signal_stop(int signr)
+ 		schedule();
+ 	} while (try_to_freeze());
+ 
++	if (current->ptrace)
++		ptrace_sync();
++
+ 	tracehook_finish_jctl();
+ 	current->exit_code = 0;
+ 
 
-> But whatever. You can get the
-> diffstat by using your merge as the base, so
-> 
->     git diff -M --stat --summary bc7562355fda..
-> 
-> in your branch should get the right result without any merges etc..
-> But please do send me a proper pull request.
-> 
->               Linus
