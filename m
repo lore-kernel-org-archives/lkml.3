@@ -1,110 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932321Ab3FEVIU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:08:20 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:45938 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932248Ab3FEVIS convert rfc822-to-8bit (ORCPT
+	id S932334Ab3FEVKA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:10:00 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:54339 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932242Ab3FEVJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:08:18 -0400
+	Wed, 5 Jun 2013 17:09:55 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAN8TOE9UDGuQd9AbE-4UVcAiqCFpqhY=fX+LbrDybdgr16THdQ@mail.gmail.com>
-References: <1370310406-413-1-git-send-email-computersforpeace@gmail.com>
-	<1370310406-413-3-git-send-email-computersforpeace@gmail.com>
-	<51AD9140.90500@freescale.com>
-	<CAN8TOE9UDGuQd9AbE-4UVcAiqCFpqhY=fX+LbrDybdgr16THdQ@mail.gmail.com>
-Date: Wed, 5 Jun 2013 14:08:17 -0700
-Message-ID: <CAN8TOE8FRtQupXwvAtrVSN-C-nQz-XgOW7OA5C=XRs9YmCwTkg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] mtd: cfi_cmdset_0002: increase do_write_buffer() timeout
-From: Brian Norris <computersforpeace@gmail.com>
-To: Huang Shijie <b32955@freescale.com>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Kevin Cernekee <cernekee@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Imre Deak <imre.deak@intel.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130605205638.GA5816@breakpoint.cc>
+References: <cover.1368431413.git.agordeev@redhat.com> <8575dc590b819892f366852fe50835efaf579f4f.1368431413.git.agordeev@redhat.com>
+ <20130605205638.GA5816@breakpoint.cc>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 5 Jun 2013 15:09:34 -0600
+Message-ID: <CAErSpo5hJYhWpBfN6GpyPv-ViaYNXyyLtw96xcN59CtQjfZi6w@mail.gmail.com>
+Subject: Re: [PATCH v3 -tip x86/apic 1/2] PCI/MSI: Allocate as many
+ multiple-MSIs as requested
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joro@8bytes.org>,
+        Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding a few others
-
-For reference, this thread started with this patch:
-
-http://lists.infradead.org/pipermail/linux-mtd/2013-June/047164.html
-
-On Wed, Jun 5, 2013 at 11:01 AM, Brian Norris
-<computersforpeace@gmail.com> wrote:
-> On Tue, Jun 4, 2013 at 12:03 AM, Huang Shijie <b32955@freescale.com> wrote:
->> 于 2013年06月04日 09:46, Brian Norris 写道:
->>> After various tests, it seems simply that the timeout is not long enough
->>> for my system; increasing it by a few jiffies prevented all failures
->>> (testing for 12+ hours). There is no harm in increasing the timeout, but
->>> there is harm in having it too short, as evidenced here.
->>>
->> I like the patch1 and patch 2.
->>
->> But extending the timeout from 1ms to 10ms is like a workaround. :)
+On Wed, Jun 5, 2013 at 2:56 PM, Sebastian Andrzej Siewior
+<sebastian@breakpoint.cc> wrote:
+> On Mon, May 13, 2013 at 11:05:48AM +0200, Alexander Gordeev wrote:
+>> Note, although the existing 'msi_desc::multiple' field might seem
+>> redundant, in fact in does not. In general case the number of MSIs a
+>> PCI device is initialized with is not necessarily the closest power-
+>> of-two value of the number of MSIs the device will send. Thus, in
+>> theory it would not be always possible to derive the former from the
+>> latter and we need to keep them both, to stress this corner case.
+>> Besides, since 'msi_desc::multiple' is a bitfield, throwing it out
+>> would not save us any space.
 >
-> I was afraid you might say that; that's why I stuck the first two
-> patches first ;)
-...
->> I GUESS your problem is caused by the timer system, not the MTD code. I
->> ever met this type of bug.
-...
->> I try to describe the jiffies bug with my poor english:
->>
->> [1] background:
->> CONFIG_HZ=100, CONFIG_NO_HZ=y
->>
->> [2] call nand_wait() when we write a nand page.
->>
->> [3] The jiffies was not updated at a _even_ speed.
->>
->> In the nand_wait(), you wait for 20ms(2 jiffies) for a page write,
->> and the timeout occurs during the page write. Of course, you think that
->> we have already waited for 20ms.
->> But in actually, we only waited for 1ms or less!
->> How do i know this? I use the gettimeofday to check the real time when
->> the timeout occur.
->
-> I suspected this very type of thing, since this has come up in a few
-> different contexts. And for some time, with a number of different
-> checks, it appeared that this *wasn't* the case. But while writing
-> this very email, I had the bright idea that my time checkpoint was in
-> slightly the wrong place; so sure enough, I found that I was timing
-> out after only 72519 ns! (That is, 72 us, or well below the max write
-> buffer time.)
+> The last paragraph makes me curious. The only place where 'multiple' is set is
+> in do_setup_msi_irqs() and this uses the next power of two for it. And since a
+> device is not enabled twice, it is not overridden.
+> So it should be possible to compute 'multiple' out of 'nvec' but it saves
+> cycles not do to so. I agree to keep 'multiple' but your argument does not
+> seem to make sense.
 
-So I can confirm that with the 1ms timeout, I actually am sometimes
-timing out at 40 to 70 microseconds. I think this may have multiple
-causes:
-(1) uneven timer interrupts, as suggested by Huang?
-(2) a jiffies timeout of 1 is two short (with HZ=1000, msecs_to_jiffies(1) is 1)
+Alexander had an example device that advertised 16 vectors, but the
+driver knew that it could only generate 6.  That's a case where we
+can't compute 'multiple' from 'nvec' (assuming the driver supplies
+'nvec == 6').  If we just rounded up to compute 'multiple', I think
+we'd compute 8 instead of 16.
 
-Regarding reason (2):
+> While nitpicking, 'nvec' might deserve a better comment than 'number of
+> messages' since it holds the number of allocated interrupts. :)
 
-My thought (which matches with Imre's comments from his [1]) is that
-one problem here is that we do not know how long it will be until the
-*next* timer tick -- "waiting 1 jiffy" is really just waiting until
-the next timer tick, which very well might be in 40us! So the correct
-timeout calculation is something like:
+I did change the name 'nvec' to 'nvec_used', which should help a bit.
+But I agree that it's still somewhat confusing.
 
-uWriteTimeout = msecs_to_jiffies(1) + 1;
+BTW, the patches actually in my tree are at
+http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/alexander-msi
+(I tweaked this name and some comments slightly).
 
-or with Imre's proposed methods (not merged upstream yet), just:
-
-uWriteTimeout = msecs_to_jiffies_timeout(1);
-
-Thoughts?
-
-Note that a 2-jiffy timeout does not, in fact, totally resolve my
-problems; with a timeout of 2 jiffies, I still get a timeout that
-(according to getnstimeofday()) occurs after only 56us. It does
-decrease its rate of occurrence, but Huang may still be right that
-reason (1) is involved.
-
-Brian
-
-[1] http://marc.info/?l=linux-kernel&m=136854294730957
+Bjorn
