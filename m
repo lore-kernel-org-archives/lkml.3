@@ -1,43 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab3FEQ02 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 12:26:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55421 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754553Ab3FEQ00 (ORCPT
+	id S1756597Ab3FEQ3l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 12:29:41 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39628 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755724Ab3FEQ3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 12:26:26 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: stable@vger.kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: Re: Please backport bee980d9e9642e96351fa3ca9077b853ecf62f57 (xen/events: Handle VIRQ_TIMER before any other hardirq in event loop.) to earlier kernels v3.8...and so on
-References: <20130603120232.GA6893@phenom.dumpdata.com>
-Date: Wed, 05 Jun 2013 17:26:22 +0100
-In-Reply-To: <20130603120232.GA6893@phenom.dumpdata.com> (Konrad Rzeszutek
-	Wilk's message of "Mon, 3 Jun 2013 08:02:32 -0400")
-Message-ID: <87zjv4h6c1.fsf@canonical.com>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
+	Wed, 5 Jun 2013 12:29:40 -0400
+Message-ID: <51AF6771.1070108@wwwdotorg.org>
+Date: Wed, 05 Jun 2013 10:29:37 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: linux-arm-kernel@lists.infradead.org, mturquette@linaro.org,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Override bits for PLLM
+References: <1370441329-8619-1-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1370441329-8619-1-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
+On 06/05/2013 08:08 AM, Peter De Schrijver wrote:
+> PLLM has override bits on Tegra30 and Tegra114. This patchset implements
+> support for them for both Tegra30 and Tegra114.
 
-> Hey Greg,
->
-> I hadn't (by mistake) put the CC: stable@vger.kernel.org on said patch
-> (Which is in the Linux kernel).
->
-> If possible please back-port said patch to the existing stable trees.
-> Attached is a version that applies to some of the earlier trees easily.
->
->
+The series,
 
-Thanks, I'm queuing it to the 3.5 kernel as well.
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
-Cheers,
--- 
-Luis
+(assuming the one comment I already made is fixed)
+
