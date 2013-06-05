@@ -1,111 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab3FEOxI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 10:53:08 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:36130 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754690Ab3FEOxH (ORCPT
+	id S1755662Ab3FEOx2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 10:53:28 -0400
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:20767 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755487Ab3FEOxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 10:53:07 -0400
-Message-ID: <51AF50CE.5050607@monstr.eu>
-Date: Wed, 05 Jun 2013 16:53:02 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 5 Jun 2013 10:53:25 -0400
+Message-ID: <51AF50D9.5060006@hp.com>
+Date: Wed, 05 Jun 2013 10:53:13 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: Michal Simek <michal.simek@xilinx.com>
-CC: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Eric Paris <eparis@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] audit: Fix decimal constant description
-References: <f0df7e546368dbf705bd302cfe7f834476d00e3e.1369288979.git.michal.simek@xilinx.com>
-In-Reply-To: <f0df7e546368dbf705bd302cfe7f834476d00e3e.1369288979.git.michal.simek@xilinx.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2WBJMNHFHLQEIFIABEDQR"
+To: Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@parisplace.org>
+CC: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH RFC 1/2] SELinux: reduce overhead of mls_level_isvalid()
+ function call
+References: <1365618383-29340-1-git-send-email-Waiman.Long@hp.com> <5183C4BE.5030504@hp.com>
+In-Reply-To: <5183C4BE.5030504@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2WBJMNHFHLQEIFIABEDQR
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 05/03/2013 10:07 AM, Waiman Long wrote:
+> On 04/10/2013 02:26 PM, Waiman Long wrote:
+>> While running the high_systime workload of the AIM7 benchmark on
+>> a 2-socket 12-core Westmere x86-64 machine running 3.8.2 kernel,
+>> it was found that a pretty sizable amount of time was spent in the
+>> SELinux code. Below was the perf trace of the "perf record -a -s"
+>> of a test run at 1500 users:
+>>
+>>    3.96%            ls  [kernel.kallsyms]     [k] ebitmap_get_bit
+>>    1.44%            ls  [kernel.kallsyms]     [k] mls_level_isvalid
+>>    1.33%            ls  [kernel.kallsyms]     [k] find_next_bit
+>>
+>> The ebitmap_get_bit() was the hottest function in the perf-report
+>> output.  Both the ebitmap_get_bit() and find_next_bit() functions
+>> were, in fact, called by mls_level_isvalid(). As a result, the
+>> mls_level_isvalid() call consumed 6.73% of the total CPU time of all
+>> the 24 virtual CPUs which is quite a lot.
+>>
+>> Looking at the mls_level_isvalid() function, it is checking to see
+>> if all the bits set in one of the ebitmap structure are also set in
+>> another one as well as the highest set bit is no bigger than the one
+>> specified by the given policydb data structure. It is doing it in
+>> a bit-by-bit manner. So if the ebitmap structure has many bits set,
+>> the iteration loop will be done many times.
+>>
+>> The current code can be rewritten to use a similar algorithm as the
+>> ebitmap_contains() function with an additional check for the highest
+>> set bit. With that change, the perf trace showed that the used CPU
+>> time drop down to just 0.09% of the total which is about 100X less
+>> than before.
+>>
+>>    0.04%            ls  [kernel.kallsyms]     [k] ebitmap_get_bit
+>>    0.04%            ls  [kernel.kallsyms]     [k] mls_level_isvalid
+>>    0.01%            ls  [kernel.kallsyms]     [k] find_next_bit
+>>
+>> Actually, the remaining ebitmap_get_bit() and find_next_bit() function
+>> calls are made by other kernel routines as the new mls_level_isvalid()
+>> function will not call them anymore.
+>>
+>> This patch also improves the high_systime AIM7 benchmark result,
+>> though the improvement is not as impressive as is suggested by the
+>> reduction in CPU time. The table below shows the performance change
+>> on the 2-socket x86-64 system mentioned above.
+>>
+>> +--------------+---------------+----------------+-----------------+
+>> |   Workload   | mean % change | mean % change  | mean % change   |
+>> |              | 10-100 users  | 200-1000 users | 1100-2000 users |
+>> +--------------+---------------+----------------+-----------------+
+>> | high_systime |     +0.2%     |     +1.1%      |     +2.4%       |
+>> +--------------+---------------+----------------+-----------------+
+>>
+>> Signed-off-by: Waiman Long<Waiman.Long@hp.com>
+>> ---
+>>   security/selinux/ss/mls.c |   38 
+>> +++++++++++++++++++++++++++-----------
+>>   1 files changed, 27 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/security/selinux/ss/mls.c b/security/selinux/ss/mls.c
+>> index 40de8d3..ce02803 100644
+>> --- a/security/selinux/ss/mls.c
+>> +++ b/security/selinux/ss/mls.c
+>> @@ -160,8 +160,7 @@ void mls_sid_to_context(struct context *context,
+>>   int mls_level_isvalid(struct policydb *p, struct mls_level *l)
+>>   {
+>>       struct level_datum *levdatum;
+>> -    struct ebitmap_node *node;
+>> -    int i;
+>> +    struct ebitmap_node *nodel, *noded;
+>>
+>>       if (!l->sens || l->sens>  p->p_levels.nprim)
+>>           return 0;
+>> @@ -170,16 +169,33 @@ int mls_level_isvalid(struct policydb *p, 
+>> struct mls_level *l)
+>>       if (!levdatum)
+>>           return 0;
+>>
+>> -    ebitmap_for_each_positive_bit(&l->cat, node, i) {
+>> -        if (i>  p->p_cats.nprim)
+>> -            return 0;
+>> -        if (!ebitmap_get_bit(&levdatum->level->cat, i)) {
+>> -            /*
+>> -             * Category may not be associated with
+>> -             * sensitivity.
+>> -             */
+>> -            return 0;
+>> +    /*
+>> +     * Return 1 iff
+>> +     * 1. l->cat.node is NULL, or
+>> +     * 2. all the bits set in l->cat are also set in 
+>> levdatum->level->cat,
+>> +     *    and
+>> +     * 3. the last bit set in l->cat should not be larger than
+>> +     *    p->p_cats.nprim.
+>> +     */
+>> +    noded = levdatum->level->cat.node;
+>> +    for (nodel = l->cat.node ; nodel ; nodel = nodel->next) {
+>> +        int i, lastsetbit = -1;
+>> +
+>> +        for (i = EBITMAP_UNIT_NUMS - 1 ; i>= 0 ; i--) {
+>> +            if (!nodel->maps[i])
+>> +                continue;
+>> +            if (!noded ||
+>> +               ((nodel->maps[i]&noded->maps[i]) != nodel->maps[i]))
+>> +                return 0;
+>> +            if (lastsetbit<  0)
+>> +                lastsetbit = nodel->startbit +
+>> +                         i * EBITMAP_UNIT_SIZE +
+>> +                         __fls(nodel->maps[i]);
+>>           }
+>> +        if ((lastsetbit>= 0)&&  (lastsetbit>  p->p_cats.nprim))
+>> +            return 0;
+>> +        if (noded)
+>> +            noded = noded->next;
+>>       }
+>>
+>>       return 1;
+>
+> Would you mind giving me some feedback on what you think about this 
+> patch?
+>
+> Thank a lot!
+> Regards,
+> Longman
 
-Hi guys,
-
-any comment on this?
-
-Geert: I fixes one warning reported in your regression log.
+I am sorry for the annoyance, but I really want to  have some feedback 
+on whether this patch is viable or not.
 
 Thanks,
-Michal
-
-On 05/23/2013 08:03 AM, Michal Simek wrote:
-> Use proper decimal type for comparison with u32.
->=20
-> Compilation warning was introduced by:
-> "audit: Make testing for a valid loginuid explicit."
-> (sha1: 780a7654cee8d61819512385e778e4827db4bfbc)
->=20
-> Warning:
-> kernel/auditfilter.c: In function 'audit_data_to_entry':
-> kernel/auditfilter.c:426:3: warning: this decimal constant
-> is unsigned only in ISO C90 [enabled by default]
->    if ((f->type =3D=3D AUDIT_LOGINUID) && (f->val =3D=3D 4294967295)) {=
-
->=20
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> CC: Al Viro <viro@zeniv.linux.org.uk>
-> CC: Eric Paris <eparis@redhat.com>
-> ---
->  kernel/auditfilter.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-> index 83a2970..cfa1f73 100644
-> --- a/kernel/auditfilter.c
-> +++ b/kernel/auditfilter.c
-> @@ -423,7 +423,7 @@ static struct audit_entry *audit_data_to_entry(stru=
-ct audit_rule_data *data,
->  		f->lsm_rule =3D NULL;
->=20
->  		/* Support legacy tests for a valid loginuid */
-> -		if ((f->type =3D=3D AUDIT_LOGINUID) && (f->val =3D=3D 4294967295)) {=
-
-> +		if ((f->type =3D=3D AUDIT_LOGINUID) && (f->val =3D=3D ~0U)) {
->  			f->type =3D AUDIT_LOGINUID_SET;
->  			f->val =3D 0;
->  		}
-> --
-> 1.8.2.3
->=20
-
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
-------enig2WBJMNHFHLQEIFIABEDQR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlGvUM4ACgkQykllyylKDCEqAgCeNqEStC7A+hw+nx748aOMCrKD
-j7EAoINiMtZR+2EPJ/bX5MQKBiGFuUGp
-=dy8k
------END PGP SIGNATURE-----
-
-------enig2WBJMNHFHLQEIFIABEDQR--
+Longman
