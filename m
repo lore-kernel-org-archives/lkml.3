@@ -1,91 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873Ab3FERNb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 13:13:31 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:34329 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756413Ab3FERN3 (ORCPT
+	id S1756907Ab3FERNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 13:13:52 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40045 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756413Ab3FERNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 13:13:29 -0400
-Message-ID: <51AF71B6.6030408@semaphore.gr>
-Date: Wed, 05 Jun 2013 20:13:26 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Wed, 5 Jun 2013 13:13:50 -0400
+Message-ID: <51AF71CA.8060808@wwwdotorg.org>
+Date: Wed, 05 Jun 2013 11:13:46 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Borislav Petkov <bp@suse.de>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of target
- frequency
-References: <51AF60D5.3080605@semaphore.gr> <20130605161703.GA29958@pd.tnic>
-In-Reply-To: <20130605161703.GA29958@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: J Keerthy <j-keerthy@ti.com>
+CC: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        broonie@opensource.wolfsonmicro.com, rob.herring@calxeda.com,
+        rob@landley.net, sameo@linux.intel.com, wim@iguana.be,
+        lgirdwood@gmail.com, gg@slimlogic.co.uk, t-kristo@ti.com,
+        lee.jones@linaro.org, Ian Lartey <ian@slimlogic.co.uk>
+Subject: Re: [PATCH v2] mfd: DT bindings for the palmas family MFD
+References: <1370335309-6319-1-git-send-email-j-keerthy@ti.com>
+In-Reply-To: <1370335309-6319-1-git-send-email-j-keerthy@ti.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Borislav,
+On 06/04/2013 02:41 AM, J Keerthy wrote:
+> From: Graeme Gregory <gg@slimlogic.co.uk>
+> 
+> Add the various binding files for the palmas family of chips. There is a
+> top level MFD binding then a seperate binding for regulators IP blocks on chips.
 
-On 06/05/2013 07:17 PM, Borislav Petkov wrote:
-> On Wed, Jun 05, 2013 at 07:01:25PM +0300, Stratos Karafotis wrote:
->> Ondemand calculates load in terms of frequency and increases it only
->> if the load_freq is greater than up_threshold multiplied by current
->> or average frequency. This seems to produce oscillations of frequency
->> between min and max because, for example, a relatively small load can
->> easily saturate minimum frequency and lead the CPU to max. Then, the
->> CPU will decrease back to min due to a small load_freq.
->
-> Right, and I think this is how we want it, no?
->
-> The thing is, the faster you finish your work, the faster you can become
-> idle and save power.
+> diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt b/Documentation/devicetree/bindings/mfd/palmas.txt
 
-This is exactly the goal of this patch. To use more efficiently middle
-frequencies to finish faster the work.
+> +Optional properties:
+> +  ti,mux_padX : set the pad register X (1-2) to the correct muxing for the
+> +  		hardware, if not set will use muxing in OTP.
+> +
+> +Example:
+...
+> +	ti,mux-pad1 = <0>;
+> +	ti,mux-pad2 = <0>;
 
-> If you switch frequencies in a staircase-like manner, you're going to
-> take longer to finish, in certain cases, and burn more power while doing
-> so.
+Use of - vs. _ is inconsistent there. It should be -.
 
-This is not true with this patch. It switches to middle frequencies
-when the load < up_threshold.
-Now, ondemand does not increase freq. CPU runs in lowest freq till the
-load is greater than up_threshold.
+> diff --git a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
 
-> Btw, racing to idle is also a good example for why you want boosting:
-> you want to go max out the core but stay within power limits so that you
-> can finish sooner.
->
->> This patch changes the calculation method of load and target frequency
->> considering 2 points:
->> - Load computation should be independent from current or average
->> measured frequency. For example an absolute load 80% at 100MHz is not
->> necessarily equivalent to 8% at 1000MHz in the next sampling interval.
->> - Target frequency should be increased to any value of frequency table
->> proportional to absolute load, instead to only the max. Thus:
->>
->> Target frequency = C * load
->>
->> where C = policy->cpuinfo.max_freq / 100
->>
->> Tested on Intel i7-3770 CPU @ 3.40GHz and on Quad core 1500MHz Krait.
->> Phoronix benchmark of Linux Kernel Compilation 3.1 test shows an
->> increase ~1.5% in performance. cpufreq_stats (time_in_state) shows
->> that middle frequencies are used more, with this patch. Highest
->> and lowest frequencies were used less by ~9%
->
-> I read this as "the workload takes longer to complete" which means
-> higher power consumption and longer execution times which means less
-> time spent in idle. And I don't think we want that.
->
-> Yes, no?
+> +Optional nodes:
+> +- regulators : should contain the constrains and init information for the
+> +	       regulators. It should contain a subnode per regulator from the
+> +	       list.
 
-In my opinion, no.
-Running the benchmark mentioned in changelog shows shorter execution
-time by ~1.5%
+I would re-phrase that as:
 
-Thanks,
-Stratos
+Must contain a sub-node per regulator from the list below. Each sub-node
+should contain the constraints and initialization information for that
+regulator. See regulator.txt for a description of standard properties
+for these sub-nodes. Additional custom properties  are listed below.
+
+> +	       For ti,palmas-pmic - smps12, smps123, smps3 depending on OTP,
+> +	       smps45, smps457, smps7 depending on varient, smps6, smps[8-10],
+
+typo: s/varient/variant/.
+
+> +	       ldo[1-9], ldoln, ldousb
+
+nit: s/$/./ ?
+
+> +
+> +	       optional chip specific regulator fields :-
+
+Perhaps "Optional sub-node properties:"?
+
+> +pmic {
+> +	compatible = "ti,twl6035-pmic", "ti,palmas-pmic";
+> +	interrupt-parent = <&palmas>;
+> +	interrupts = <14 IRQ_TYPE_NONE>;
+> +	interrupt-name = "short-irq";
+
+If those are required, shouldn't they be listed in a "Required
+properties" section above? In particular, the order of entries in the
+interrupts property must be defined, as well as the expected nameds in
+the interrupt-name property.
+
+Oh, and it's interrupt-names not interrupt-name.
+
+Oh, one question though: How does the regulator driver determine the
+register address of the regulator sub-device within the overall PMIC?
+Presumably if these are pluggable independent modules, that could change
+depending on which overall chip the PMIC device is plugged into. don't
+you need a reg property to specify that?
+
+Aside from those comments, this all looks reasonable to me.
