@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933129Ab3FEVgQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:36:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38033 "EHLO
+	id S933188Ab3FEVm3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:42:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38072 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933071Ab3FEVgJ (ORCPT
+	with ESMTP id S933120Ab3FEVgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:36:09 -0400
+	Wed, 5 Jun 2013 17:36:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 103/127] ACPI / PM: Allow device power states to be used for CONFIG_PM unset
-Date: Wed,  5 Jun 2013 14:34:30 -0700
-Message-Id: <20130605213229.717237205@linuxfoundation.org>
+        Jonas Peterson <jonas.peterson@gmail.com>,
+        Olivier Sobrie <olivier@sobrie.be>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 113/127] net: can: kvaser_usb: fix reception on "USBcan Pro" and "USBcan R" type hardware.
+Date: Wed,  5 Jun 2013 14:34:40 -0700
+Message-Id: <20130605213230.828265508@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -27,247 +28,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Jonas Peterson <jonas.peterson@gmail.com>
 
-commit ec4602a9588a196fa1a9af46bfdd37cbf5792db4 upstream.
+commit a90f13b24fb40d02d11496cce6a10ae8d4b319b2 upstream.
 
-Currently, drivers/acpi/device_pm.c depends on CONFIG_PM and all of
-the functions defined in there are replaced with static inline stubs
-if that option is unset.  However, CONFIG_PM means, roughly, "runtime
-PM or suspend/hibernation support" and some of those functions are
-useful regardless of that.  For example, they are used by the ACPI
-fan driver for controlling fans and acpi_device_set_power() is called
-during device removal.  Moreover, device initialization may depend on
-setting device power states properly.
+Unlike Kvaser Leaf light devices, some other Kvaser devices (like USBcan
+Pro, USBcan R) receive CAN messages in CMD_LOG_MESSAGE frames. This
+patch adds support for it.
 
-For these reasons, make the routines manipulating ACPI device power
-states defined in drivers/acpi/device_pm.c available for CONFIG_PM
-unset too.
-
-Reported-by: Zhang Rui <rui.zhang@intel.com>
-Reported-and-tested-by: Michel Lespinasse <walken@google.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Jonas Peterson <jonas.peterson@gmail.com>
+Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/Makefile    |    2 
- drivers/acpi/device_pm.c |  126 +++++++++++++++++++++++------------------------
- include/acpi/acpi_bus.h  |   40 +-------------
- 3 files changed, 70 insertions(+), 98 deletions(-)
+ drivers/net/can/usb/kvaser_usb.c |   68 +++++++++++++++++++++++++--------------
+ 1 file changed, 45 insertions(+), 23 deletions(-)
 
---- a/drivers/acpi/Makefile
-+++ b/drivers/acpi/Makefile
-@@ -24,7 +24,7 @@ acpi-y				+= nvs.o
- # Power management related files
- acpi-y				+= wakeup.o
- acpi-y				+= sleep.o
--acpi-$(CONFIG_PM)		+= device_pm.o
-+acpi-y				+= device_pm.o
- acpi-$(CONFIG_ACPI_SLEEP)	+= proc.o
+--- a/drivers/net/can/usb/kvaser_usb.c
++++ b/drivers/net/can/usb/kvaser_usb.c
+@@ -136,6 +136,9 @@
+ #define KVASER_CTRL_MODE_SELFRECEPTION	3
+ #define KVASER_CTRL_MODE_OFF		4
  
++/* log message */
++#define KVASER_EXTENDED_FRAME		BIT(31)
++
+ struct kvaser_msg_simple {
+ 	u8 tid;
+ 	u8 channel;
+@@ -817,8 +820,13 @@ static void kvaser_usb_rx_can_msg(const
+ 	priv = dev->nets[channel];
+ 	stats = &priv->netdev->stats;
  
---- a/drivers/acpi/device_pm.c
-+++ b/drivers/acpi/device_pm.c
-@@ -37,68 +37,6 @@
- #define _COMPONENT	ACPI_POWER_COMPONENT
- ACPI_MODULE_NAME("device_pm");
+-	if (msg->u.rx_can.flag & (MSG_FLAG_ERROR_FRAME | MSG_FLAG_NERR |
+-				  MSG_FLAG_OVERRUN)) {
++	if ((msg->u.rx_can.flag & MSG_FLAG_ERROR_FRAME) &&
++	    (msg->id == CMD_LOG_MESSAGE)) {
++		kvaser_usb_rx_error(dev, msg);
++		return;
++	} else if (msg->u.rx_can.flag & (MSG_FLAG_ERROR_FRAME |
++					 MSG_FLAG_NERR |
++					 MSG_FLAG_OVERRUN)) {
+ 		kvaser_usb_rx_can_err(priv, msg);
+ 		return;
+ 	} else if (msg->u.rx_can.flag & ~MSG_FLAG_REMOTE_FRAME) {
+@@ -834,22 +842,40 @@ static void kvaser_usb_rx_can_msg(const
+ 		return;
+ 	}
  
--static DEFINE_MUTEX(acpi_pm_notifier_lock);
+-	cf->can_id = ((msg->u.rx_can.msg[0] & 0x1f) << 6) |
+-		     (msg->u.rx_can.msg[1] & 0x3f);
+-	cf->can_dlc = get_can_dlc(msg->u.rx_can.msg[5]);
 -
--/**
-- * acpi_add_pm_notifier - Register PM notifier for given ACPI device.
-- * @adev: ACPI device to add the notifier for.
-- * @context: Context information to pass to the notifier routine.
-- *
-- * NOTE: @adev need not be a run-wake or wakeup device to be a valid source of
-- * PM wakeup events.  For example, wakeup events may be generated for bridges
-- * if one of the devices below the bridge is signaling wakeup, even if the
-- * bridge itself doesn't have a wakeup GPE associated with it.
-- */
--acpi_status acpi_add_pm_notifier(struct acpi_device *adev,
--				 acpi_notify_handler handler, void *context)
--{
--	acpi_status status = AE_ALREADY_EXISTS;
+-	if (msg->id == CMD_RX_EXT_MESSAGE) {
+-		cf->can_id <<= 18;
+-		cf->can_id |= ((msg->u.rx_can.msg[2] & 0x0f) << 14) |
+-			      ((msg->u.rx_can.msg[3] & 0xff) << 6) |
+-			      (msg->u.rx_can.msg[4] & 0x3f);
+-		cf->can_id |= CAN_EFF_FLAG;
+-	}
 -
--	mutex_lock(&acpi_pm_notifier_lock);
--
--	if (adev->wakeup.flags.notifier_present)
--		goto out;
--
--	status = acpi_install_notify_handler(adev->handle,
--					     ACPI_SYSTEM_NOTIFY,
--					     handler, context);
--	if (ACPI_FAILURE(status))
--		goto out;
--
--	adev->wakeup.flags.notifier_present = true;
--
-- out:
--	mutex_unlock(&acpi_pm_notifier_lock);
--	return status;
--}
--
--/**
-- * acpi_remove_pm_notifier - Unregister PM notifier from given ACPI device.
-- * @adev: ACPI device to remove the notifier from.
-- */
--acpi_status acpi_remove_pm_notifier(struct acpi_device *adev,
--				    acpi_notify_handler handler)
--{
--	acpi_status status = AE_BAD_PARAMETER;
--
--	mutex_lock(&acpi_pm_notifier_lock);
--
--	if (!adev->wakeup.flags.notifier_present)
--		goto out;
--
--	status = acpi_remove_notify_handler(adev->handle,
--					    ACPI_SYSTEM_NOTIFY,
--					    handler);
--	if (ACPI_FAILURE(status))
--		goto out;
--
--	adev->wakeup.flags.notifier_present = false;
--
-- out:
--	mutex_unlock(&acpi_pm_notifier_lock);
--	return status;
--}
--
- /**
-  * acpi_power_state_string - String representation of ACPI device power state.
-  * @state: ACPI device power state to return the string representation of.
-@@ -376,6 +314,69 @@ bool acpi_bus_power_manageable(acpi_hand
- }
- EXPORT_SYMBOL(acpi_bus_power_manageable);
+-	if (msg->u.rx_can.flag & MSG_FLAG_REMOTE_FRAME)
+-		cf->can_id |= CAN_RTR_FLAG;
+-	else
+-		memcpy(cf->data, &msg->u.rx_can.msg[6], cf->can_dlc);
++	if (msg->id == CMD_LOG_MESSAGE) {
++		cf->can_id = le32_to_cpu(msg->u.log_message.id);
++		if (cf->can_id & KVASER_EXTENDED_FRAME)
++			cf->can_id &= CAN_EFF_MASK | CAN_EFF_FLAG;
++		else
++			cf->can_id &= CAN_SFF_MASK;
++
++		cf->can_dlc = get_can_dlc(msg->u.log_message.dlc);
++
++		if (msg->u.log_message.flags & MSG_FLAG_REMOTE_FRAME)
++			cf->can_id |= CAN_RTR_FLAG;
++		else
++			memcpy(cf->data, &msg->u.log_message.data,
++			       cf->can_dlc);
++	} else {
++		cf->can_id = ((msg->u.rx_can.msg[0] & 0x1f) << 6) |
++			     (msg->u.rx_can.msg[1] & 0x3f);
++
++		if (msg->id == CMD_RX_EXT_MESSAGE) {
++			cf->can_id <<= 18;
++			cf->can_id |= ((msg->u.rx_can.msg[2] & 0x0f) << 14) |
++				      ((msg->u.rx_can.msg[3] & 0xff) << 6) |
++				      (msg->u.rx_can.msg[4] & 0x3f);
++			cf->can_id |= CAN_EFF_FLAG;
++		}
++
++		cf->can_dlc = get_can_dlc(msg->u.rx_can.msg[5]);
++
++		if (msg->u.rx_can.flag & MSG_FLAG_REMOTE_FRAME)
++			cf->can_id |= CAN_RTR_FLAG;
++		else
++			memcpy(cf->data, &msg->u.rx_can.msg[6],
++			       cf->can_dlc);
++	}
  
-+#ifdef CONFIG_PM
-+static DEFINE_MUTEX(acpi_pm_notifier_lock);
-+
-+/**
-+ * acpi_add_pm_notifier - Register PM notifier for given ACPI device.
-+ * @adev: ACPI device to add the notifier for.
-+ * @context: Context information to pass to the notifier routine.
-+ *
-+ * NOTE: @adev need not be a run-wake or wakeup device to be a valid source of
-+ * PM wakeup events.  For example, wakeup events may be generated for bridges
-+ * if one of the devices below the bridge is signaling wakeup, even if the
-+ * bridge itself doesn't have a wakeup GPE associated with it.
-+ */
-+acpi_status acpi_add_pm_notifier(struct acpi_device *adev,
-+				 acpi_notify_handler handler, void *context)
-+{
-+	acpi_status status = AE_ALREADY_EXISTS;
-+
-+	mutex_lock(&acpi_pm_notifier_lock);
-+
-+	if (adev->wakeup.flags.notifier_present)
-+		goto out;
-+
-+	status = acpi_install_notify_handler(adev->handle,
-+					     ACPI_SYSTEM_NOTIFY,
-+					     handler, context);
-+	if (ACPI_FAILURE(status))
-+		goto out;
-+
-+	adev->wakeup.flags.notifier_present = true;
-+
-+ out:
-+	mutex_unlock(&acpi_pm_notifier_lock);
-+	return status;
-+}
-+
-+/**
-+ * acpi_remove_pm_notifier - Unregister PM notifier from given ACPI device.
-+ * @adev: ACPI device to remove the notifier from.
-+ */
-+acpi_status acpi_remove_pm_notifier(struct acpi_device *adev,
-+				    acpi_notify_handler handler)
-+{
-+	acpi_status status = AE_BAD_PARAMETER;
-+
-+	mutex_lock(&acpi_pm_notifier_lock);
-+
-+	if (!adev->wakeup.flags.notifier_present)
-+		goto out;
-+
-+	status = acpi_remove_notify_handler(adev->handle,
-+					    ACPI_SYSTEM_NOTIFY,
-+					    handler);
-+	if (ACPI_FAILURE(status))
-+		goto out;
-+
-+	adev->wakeup.flags.notifier_present = false;
-+
-+ out:
-+	mutex_unlock(&acpi_pm_notifier_lock);
-+	return status;
-+}
-+
- bool acpi_bus_can_wakeup(acpi_handle handle)
- {
- 	struct acpi_device *device;
-@@ -1014,3 +1015,4 @@ void acpi_dev_pm_remove_dependent(acpi_h
- 	mutex_unlock(&adev->physical_node_lock);
- }
- EXPORT_SYMBOL_GPL(acpi_dev_pm_remove_dependent);
-+#endif /* CONFIG_PM */
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -352,7 +352,6 @@ acpi_status acpi_bus_get_status_handle(a
- 				       unsigned long long *sta);
- int acpi_bus_get_status(struct acpi_device *device);
+ 	netif_rx(skb);
  
--#ifdef CONFIG_PM
- int acpi_bus_set_power(acpi_handle handle, int state);
- const char *acpi_power_state_string(int state);
- int acpi_device_get_power(struct acpi_device *device, int *state);
-@@ -360,41 +359,12 @@ int acpi_device_set_power(struct acpi_de
- int acpi_bus_init_power(struct acpi_device *device);
- int acpi_bus_update_power(acpi_handle handle, int *state_p);
- bool acpi_bus_power_manageable(acpi_handle handle);
-+
-+#ifdef CONFIG_PM
- bool acpi_bus_can_wakeup(acpi_handle handle);
--#else /* !CONFIG_PM */
--static inline int acpi_bus_set_power(acpi_handle handle, int state)
--{
--	return 0;
--}
--static inline const char *acpi_power_state_string(int state)
--{
--	return "D0";
--}
--static inline int acpi_device_get_power(struct acpi_device *device, int *state)
--{
--	return 0;
--}
--static inline int acpi_device_set_power(struct acpi_device *device, int state)
--{
--	return 0;
--}
--static inline int acpi_bus_init_power(struct acpi_device *device)
--{
--	return 0;
--}
--static inline int acpi_bus_update_power(acpi_handle handle, int *state_p)
--{
--	return 0;
--}
--static inline bool acpi_bus_power_manageable(acpi_handle handle)
--{
--	return false;
--}
--static inline bool acpi_bus_can_wakeup(acpi_handle handle)
--{
--	return false;
--}
--#endif /* !CONFIG_PM */
-+#else
-+static inline bool acpi_bus_can_wakeup(acpi_handle handle) { return false; }
-+#endif
+@@ -911,6 +937,7 @@ static void kvaser_usb_handle_message(co
  
- #ifdef CONFIG_ACPI_PROC_EVENT
- int acpi_bus_generate_proc_event(struct acpi_device *device, u8 type, int data);
+ 	case CMD_RX_STD_MESSAGE:
+ 	case CMD_RX_EXT_MESSAGE:
++	case CMD_LOG_MESSAGE:
+ 		kvaser_usb_rx_can_msg(dev, msg);
+ 		break;
+ 
+@@ -919,11 +946,6 @@ static void kvaser_usb_handle_message(co
+ 		kvaser_usb_rx_error(dev, msg);
+ 		break;
+ 
+-	case CMD_LOG_MESSAGE:
+-		if (msg->u.log_message.flags & MSG_FLAG_ERROR_FRAME)
+-			kvaser_usb_rx_error(dev, msg);
+-		break;
+-
+ 	case CMD_TX_ACKNOWLEDGE:
+ 		kvaser_usb_tx_acknowledge(dev, msg);
+ 		break;
 
 
