@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932724Ab3FEVS5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:18:57 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36743 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932584Ab3FEVSy (ORCPT
+	id S932757Ab3FEVTX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:19:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36896 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932564Ab3FEVNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:18:54 -0400
-Date: Wed, 5 Jun 2013 22:16:37 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org,
-        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
-        Luke Kenneth Casson Leighton <lkcl@lkcl.net>,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        debian-release@lists.debian.org, debian-kernel@lists.debian.org
-Subject: Re: getting allwinner SoC support upstream (was Re: Uploading
-	linux (3.9.4-1))
-Message-ID: <20130605211637.GH18614@n2100.arm.linux.org.uk>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com> <CAKON4OxDD5orX2w-_+d5kawTGXbE3KKj2QLERo9m7=NiUSXhgQ@mail.gmail.com> <51AFA6DD.3000202@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51AFA6DD.3000202@wwwdotorg.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 5 Jun 2013 17:13:02 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "wang, biao" <biao.wang@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [ 21/44] klist: del waiter from klist_remove_waiters before wakeup waitting process
+Date: Wed,  5 Jun 2013 14:12:19 -0700
+Message-Id: <20130605211224.082345886@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130605211221.858177087@linuxfoundation.org>
+References: <20130605211221.858177087@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 03:00:13PM -0600, Stephen Warren wrote:
-> 2) Having U-Boot itself read a DT and configure itself, just like the
-> kernel does. This is relatively new, and only supported by a few boards
-> (all Tegra to some extent, and a couple each Samsung Exynos and Xilinx
-> boards). I suspect/guess this is the kind of thing that Luke was
-> referring to re: U-Boot fex integration.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Reading what I have of this thread, this is just another case of
-$company runs of and does their own unique way of doing something,
-which is in a totally different direction from that path chosen by
-Linux kernel developers, and Linux kernel developers are _expected_
-to roll over and accept $company's unique way of doing it.
+------------------
 
-$company could have assisted with the DT effort, helping to sort out
-the common arch issues (which haven't been all that much), converting
-drivers to DT and such like.  But no, instead they've gone off and
-created their own thing.
+From: "wang, biao" <biao.wang@intel.com>
 
-I wonder how many more of these cases there needs to be before people
-get the message that Linux kernel developers *do* *not* like this
-behaviour, and if you do this, then chances are you're going to be
-stuck with having code which isn't able to be merged into mainline.
+commit ac5a2962b02f57dea76d314ef2521a2170b28ab6 upstream.
 
-And I don't buy the argument that we were still sorting out DT.  DT has
-been well defined for many many years before we started using it on ARM.
-It has been used for years on both PowerPC and Sparc architectures to
-describe their hardware, and all of the DT infrastructure was already
-present in the kernel.  What was left for us were:
+There is a race between klist_remove and klist_release. klist_remove
+uses a local var waiter saved on stack. When klist_release calls
+wake_up_process(waiter->process) to wake up the waiter, waiter might run
+immediately and reuse the stack. Then, klist_release calls
+list_del(&waiter->list) to change previous
+wait data and cause prior waiter thread corrupt.
 
-* converting our platform-data based drivers to use data from DT.
-* come up with ways of dealing with SoC issues such as clock
-  representation, pin muxing and such like in DT.
+The patch fixes it against kernel 3.9.
 
-But no... all that had to be created in this custom fex stuff which now
-presents a barrier with getting support for something merged.
+Signed-off-by: wang, biao <biao.wang@intel.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-And somehow people make out that this is _our_ problem...
+---
+ lib/klist.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/lib/klist.c
++++ b/lib/klist.c
+@@ -193,10 +193,10 @@ static void klist_release(struct kref *k
+ 		if (waiter->node != n)
+ 			continue;
+ 
++		list_del(&waiter->list);
+ 		waiter->woken = 1;
+ 		mb();
+ 		wake_up_process(waiter->process);
+-		list_del(&waiter->list);
+ 	}
+ 	spin_unlock(&klist_remove_lock);
+ 	knode_set_klist(n, NULL);
+
+
