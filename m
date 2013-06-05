@@ -1,93 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757504Ab3FEUUN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 16:20:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56553 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756628Ab3FEUUM (ORCPT
+	id S1757540Ab3FEUY5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 16:24:57 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:53185 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757234Ab3FEUY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 16:20:12 -0400
-Message-ID: <51AF9D77.2000901@canonical.com>
-Date: Wed, 05 Jun 2013 15:20:07 -0500
-From: Dave Chiluk <chiluk@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Petr Vandrovec <petr@vandrovec.name>
-CC: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] ncpfs: fix rmdir returns Device or resource busy
-References: <1369781410-24473-1-git-send-email-chiluk@canonical.com> <51A918B8.20303@canonical.com> <CA+i2_De5HHw2H9SvZ=W+QAOcy0M7jFac88OK6aeYdJVCGL6b+A@mail.gmail.com>
-In-Reply-To: <CA+i2_De5HHw2H9SvZ=W+QAOcy0M7jFac88OK6aeYdJVCGL6b+A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Jun 2013 16:24:56 -0400
+From: Aldo Iljazi <neonsync1@gmail.com>
+To: gregh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Aldo Iljazi <neonsync1@gmail.com>
+Subject: [PATCH] Staging: anrdroid: sync.c: fixed all checkpatch errors and warnings
+Date: Wed,  5 Jun 2013 23:23:47 +0300
+Message-Id: <1370463827-6881-1-git-send-email-neonsync1@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Petr do you still have commit rights to ncpfs?  Can you please commit it
-to upstream or do I have to get Al to do that?
+Signed-off-by: Aldo Iljazi <neonsync1@gmail.com>
+---
+ drivers/staging/android/sync.c |   21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
 
-Dave.
-
-
-On 05/31/2013 05:22 PM, Petr Vandrovec wrote:
-> Looks OK to me.
-> 
-> As I said elsewhere, I do not use ncpfs for years so I cannot provide
-> any sensible maintainership for it anymore :-(
-> 
-> Petr
-> 
-> On May 31, 2013 2:40 PM, "Dave Chiluk" <chiluk@canonical.com
-> <mailto:chiluk@canonical.com>> wrote:
-> 
->     Any thoughts on this?  NCPFS seems to be the forgotten, left-behind,
->     red-headed stepchild of the fs community.
-> 
->     Dave.
-> 
->     On 05/28/2013 05:50 PM, Dave Chiluk wrote:
->     > 1d2ef5901483004d74947bbf78d5146c24038fe7 caused a regression in
->     ncpfs such that
->     > directories could no longer be removed.  This was because
->     ncp_rmdir checked
->     > to see if a dentry could be unhashed before allowing it to be
->     removed. Since
->     > 1d2ef5901483004d74947bbf78d5146c24038fe7 introduced a change that
->     incremented
->     > dentry->d_count causing it to always be greater than 1 unhash
->     would always
->     > fail.  Thus causing the error path in ncp_rmdir to always be
->     taken.  Removing
->     > this error path is safe as unhashing is still accomplished by
->     calls to dput
->     > from vfs_rmdir.
->     > ---
->     >  fs/ncpfs/dir.c |    9 ---------
->     >  1 file changed, 9 deletions(-)
->     >
->     > diff --git a/fs/ncpfs/dir.c b/fs/ncpfs/dir.c
->     > index 8163260..6792ce1 100644
->     > --- a/fs/ncpfs/dir.c
->     > +++ b/fs/ncpfs/dir.c
->     > @@ -1029,15 +1029,6 @@ static int ncp_rmdir(struct inode *dir,
->     struct dentry *dentry)
->     >       DPRINTK("ncp_rmdir: removing %s/%s\n",
->     >               dentry->d_parent->d_name.name <http://d_name.name>,
->     dentry->d_name.name <http://d_name.name>);
->     >
->     > -     /*
->     > -      * fail with EBUSY if there are still references to this
->     > -      * directory.
->     > -      */
->     > -     dentry_unhash(dentry);
->     > -     error = -EBUSY;
->     > -     if (!d_unhashed(dentry))
->     > -             goto out;
->     > -
->     >       len = sizeof(__name);
->     >       error = ncp_io2vol(server, __name, &len, dentry->d_name.name
->     <http://d_name.name>,
->     >                          dentry->d_name.len, !ncp_preserve_case(dir));
->     >
-> 
+diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
+index 3893a35..8bd5bf3 100644
+--- a/drivers/staging/android/sync.c
++++ b/drivers/staging/android/sync.c
+@@ -125,9 +125,8 @@ static void sync_timeline_remove_pt(struct sync_pt *pt)
+ 	spin_unlock_irqrestore(&obj->active_list_lock, flags);
+ 
+ 	spin_lock_irqsave(&obj->child_list_lock, flags);
+-	if (!list_empty(&pt->child_list)) {
++	if (!list_empty(&pt->child_list))
+ 		list_del_init(&pt->child_list);
+-	}
+ 	spin_unlock_irqrestore(&obj->child_list_lock, flags);
+ }
+ 
+@@ -876,11 +875,11 @@ static void sync_print_pt(struct seq_file *s, struct sync_pt *pt, bool fence)
+ 			seq_printf(s, " / %s", value);
+ 		}
+ 	} else if (pt->parent->ops->print_pt) {
+-		seq_printf(s, ": ");
++		seq_puts(s, ": ");
+ 		pt->parent->ops->print_pt(s, pt);
+ 	}
+ 
+-	seq_printf(s, "\n");
++	seq_puts(s, "\n");
+ }
+ 
+ static void sync_print_obj(struct seq_file *s, struct sync_timeline *obj)
+@@ -893,13 +892,13 @@ static void sync_print_obj(struct seq_file *s, struct sync_timeline *obj)
+ 	if (obj->ops->timeline_value_str) {
+ 		char value[64];
+ 		obj->ops->timeline_value_str(obj, value, sizeof(value));
+-		seq_printf(s, ": %s", value);
++		seq_puts(s, ": %s", value);
+ 	} else if (obj->ops->print_obj) {
+-		seq_printf(s, ": ");
++		seq_puts(s, ": ");
+ 		obj->ops->print_obj(s, obj);
+ 	}
+ 
+-	seq_printf(s, "\n");
++	seq_puts(s, "\n");
+ 
+ 	spin_lock_irqsave(&obj->child_list_lock, flags);
+ 	list_for_each(pos, &obj->child_list_head) {
+@@ -940,7 +939,7 @@ static int sync_debugfs_show(struct seq_file *s, void *unused)
+ 	unsigned long flags;
+ 	struct list_head *pos;
+ 
+-	seq_printf(s, "objs:\n--------------\n");
++	seq_puts(s, "objs:\n--------------\n");
+ 
+ 	spin_lock_irqsave(&sync_timeline_list_lock, flags);
+ 	list_for_each(pos, &sync_timeline_list_head) {
+@@ -949,11 +948,11 @@ static int sync_debugfs_show(struct seq_file *s, void *unused)
+ 				     sync_timeline_list);
+ 
+ 		sync_print_obj(s, obj);
+-		seq_printf(s, "\n");
++		seq_puts(s, "\n");
+ 	}
+ 	spin_unlock_irqrestore(&sync_timeline_list_lock, flags);
+ 
+-	seq_printf(s, "fences:\n--------------\n");
++	seq_puts(s, "fences:\n--------------\n");
+ 
+ 	spin_lock_irqsave(&sync_fence_list_lock, flags);
+ 	list_for_each(pos, &sync_fence_list_head) {
+@@ -961,7 +960,7 @@ static int sync_debugfs_show(struct seq_file *s, void *unused)
+ 			container_of(pos, struct sync_fence, sync_fence_list);
+ 
+ 		sync_print_fence(s, fence);
+-		seq_printf(s, "\n");
++		seq_puts(s, "\n");
+ 	}
+ 	spin_unlock_irqrestore(&sync_fence_list_lock, flags);
+ 	return 0;
+-- 
+1.7.10.4
 
