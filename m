@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933346Ab3FEV5O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:57:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37843 "EHLO
+	id S932952Ab3FEV5e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:57:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37841 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932821Ab3FEVfg (ORCPT
+	with ESMTP id S932814Ab3FEVff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:36 -0400
+	Wed, 5 Jun 2013 17:35:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Yinghai Lu <yinghai@kernel.org>,
+        Pekka Riikonen <priikone@iki.fi>,
         "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 058/127] x86-64, init: Fix a possible wraparound bug in switchover in head_64.S
-Date: Wed,  5 Jun 2013 14:33:45 -0700
-Message-Id: <20130605213224.640471005@linuxfoundation.org>
+Subject: [ 057/127] x86: Allow FPU to be used at interrupt time even with eagerfpu
+Date: Wed,  5 Jun 2013 14:33:44 -0700
+Message-Id: <20130605213224.520257595@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -28,67 +27,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+From: Pekka Riikonen <priikone@iki.fi>
 
-commit e9d0626ed43a41a3fc526d1df06122b0d4eac174 upstream.
+commit 5187b28ff08249ab8a162e802209ed04e271ca02 upstream.
 
-In head_64.S, a switchover has been used to handle kernel crossing
-1G, 512G boundaries.
+With the addition of eagerfpu the irq_fpu_usable() now returns false
+negatives especially in the case of ksoftirqd and interrupted idle task,
+two common cases for FPU use for example in networking/crypto.  With
+eagerfpu=off FPU use is possible in those contexts.  This is because of
+the eagerfpu check in interrupted_kernel_fpu_idle():
 
-And commit 8170e6bed465b4b0c7687f93e9948aca4358a33b
-    x86, 64bit: Use a #PF handler to materialize early mappings on demand
-said:
-    During the switchover in head_64.S, before #PF handler is available,
-    we use three pages to handle kernel crossing 1G, 512G boundaries with
-    sharing page by playing games with page aliasing: the same page is
-    mapped twice in the higher-level tables with appropriate wraparound.
+...
+  * For now, with eagerfpu we will return interrupted kernel FPU
+  * state as not-idle. TBD: Ideally we can change the return value
+  * to something like __thread_has_fpu(current). But we need to
+  * be careful of doing __thread_clear_has_fpu() before saving
+  * the FPU etc for supporting nested uses etc. For now, take
+  * the simple route!
+...
+ 	if (use_eager_fpu())
+ 		return 0;
 
-But from the switchover code, when we set up the PUD table:
-114         addq    $4096, %rdx
-115         movq    %rdi, %rax
-116         shrq    $PUD_SHIFT, %rax
-117         andl    $(PTRS_PER_PUD-1), %eax
-118         movq    %rdx, (4096+0)(%rbx,%rax,8)
-119         movq    %rdx, (4096+8)(%rbx,%rax,8)
+As eagerfpu is automatically "on" on those CPUs that also have the
+features like AES-NI this patch changes the eagerfpu check to return 1 in
+case the kernel_fpu_begin() has not been said yet.  Once it has been the
+__thread_has_fpu() will start returning 0.
 
-It seems line 119 has a potential bug there. For example,
-if the kernel is loaded at physical address 511G+1008M, that is
-    000000000 111111111 111111000 000000000000000000000
-and the kernel _end is 512G+2M, that is
-    000000001 000000000 000000001 000000000000000000000
-So in this example, when using the 2nd page to setup PUD (line 114~119),
-rax is 511.
-In line 118, we put rdx which is the address of the PMD page (the 3rd page)
-into entry 511 of the PUD table. But in line 119, the entry we calculate from
-(4096+8)(%rbx,%rax,8) has exceeded the PUD page. IMO, the entry in line
-119 should be wraparound into entry 0 of the PUD table.
+Notice that with eagerfpu the __thread_has_fpu is always true initially.
+FPU use is thus always possible no matter what task is under us, unless
+the state has already been saved with kernel_fpu_begin().
 
-The patch fixes the bug.
+[ hpa: this is a performance regression, not a correctness regression,
+  but since it can be quite serious on CPUs which need encryption at
+  interrupt time I am marking this for urgent/stable. ]
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Link: http://lkml.kernel.org/r/5191DE5A.3020302@cn.fujitsu.com
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Pekka Riikonen <priikone@iki.fi>
+Link: http://lkml.kernel.org/r/alpine.GSO.2.00.1305131356320.18@git.silcnet.org
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/head_64.S |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/x86/kernel/i387.c |   14 +++++---------
+ 1 file changed, 5 insertions(+), 9 deletions(-)
 
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -115,8 +115,10 @@ startup_64:
- 	movq	%rdi, %rax
- 	shrq	$PUD_SHIFT, %rax
- 	andl	$(PTRS_PER_PUD-1), %eax
--	movq	%rdx, (4096+0)(%rbx,%rax,8)
--	movq	%rdx, (4096+8)(%rbx,%rax,8)
-+	movq	%rdx, 4096(%rbx,%rax,8)
-+	incl	%eax
-+	andl	$(PTRS_PER_PUD-1), %eax
-+	movq	%rdx, 4096(%rbx,%rax,8)
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -22,23 +22,19 @@
+ /*
+  * Were we in an interrupt that interrupted kernel mode?
+  *
+- * For now, with eagerfpu we will return interrupted kernel FPU
+- * state as not-idle. TBD: Ideally we can change the return value
+- * to something like __thread_has_fpu(current). But we need to
+- * be careful of doing __thread_clear_has_fpu() before saving
+- * the FPU etc for supporting nested uses etc. For now, take
+- * the simple route!
+- *
+  * On others, we can do a kernel_fpu_begin/end() pair *ONLY* if that
+  * pair does nothing at all: the thread must not have fpu (so
+  * that we don't try to save the FPU state), and TS must
+  * be set (so that the clts/stts pair does nothing that is
+  * visible in the interrupted kernel thread).
++ *
++ * Except for the eagerfpu case when we return 1 unless we've already
++ * been eager and saved the state in kernel_fpu_begin().
+  */
+ static inline bool interrupted_kernel_fpu_idle(void)
+ {
+ 	if (use_eager_fpu())
+-		return 0;
++		return __thread_has_fpu(current);
  
- 	addq	$8192, %rbx
- 	movq	%rdi, %rax
+ 	return !__thread_has_fpu(current) &&
+ 		(read_cr0() & X86_CR0_TS);
+@@ -78,8 +74,8 @@ void __kernel_fpu_begin(void)
+ 	struct task_struct *me = current;
+ 
+ 	if (__thread_has_fpu(me)) {
+-		__save_init_fpu(me);
+ 		__thread_clear_has_fpu(me);
++		__save_init_fpu(me);
+ 		/* We do 'stts()' in __kernel_fpu_end() */
+ 	} else if (!use_eager_fpu()) {
+ 		this_cpu_write(fpu_owner_task, NULL);
 
 
