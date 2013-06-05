@@ -1,172 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573Ab3FESIi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 14:08:38 -0400
-Received: from smarthost04.mail.zen.net.uk ([212.23.1.4]:36320 "EHLO
-	smarthost04.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753657Ab3FESIg (ORCPT
+	id S1756595Ab3FESUp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 14:20:45 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:37761 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755944Ab3FESUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 14:08:36 -0400
-X-Greylist: delayed 5763 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Jun 2013 14:08:36 EDT
-Message-ID: <1370455713.3496.22.camel@linaro1.home>
-Subject: Re: [RFC PATCH v2 2/2] drivers: mfd: vexpress: add Serial Power
- Controller (SPC) support
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <pawel.moll@arm.com>,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        Achin Gupta <achin.gupta@arm.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>
-Date: Wed, 05 Jun 2013 19:08:33 +0100
-In-Reply-To: <1370432767-6620-3-git-send-email-lorenzo.pieralisi@arm.com>
-References: <1370432767-6620-1-git-send-email-lorenzo.pieralisi@arm.com>
-	 <1370432767-6620-3-git-send-email-lorenzo.pieralisi@arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-Smarthost04-IP: [82.69.122.217]
+	Wed, 5 Jun 2013 14:20:44 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: devicetree-discuss@lists.ozlabs.org
+Cc: linux-arm-kernel@lists.infradead.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] of: irq: Pass trigger type in IRQ resource flags
+Date: Wed, 05 Jun 2013 20:20:39 +0200
+Message-ID: <54821523.hBKS2L2vLj@flatron>
+User-Agent: KMail/4.10.4 (Linux/3.9.4-gentoo; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <1368917790-23770-1-git-send-email-tomasz.figa@gmail.com>
+References: <1368917790-23770-1-git-send-email-tomasz.figa@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-05 at 12:46 +0100, Lorenzo Pieralisi wrote:
-[...]
-> +static const struct of_device_id vexpress_spc_ids[] __initconst = {
-> +	{ .compatible = "arm,vexpress-spc,v2p-ca15_a7" },
-> +	{ .compatible = "arm,vexpress-spc" },
-> +	{},
-> +};
-> +
-> +static int __init vexpress_spc_init(void)
-> +{
-> +	int ret;
-> +	struct device_node *node = of_find_matching_node(NULL,
-> +							 vexpress_spc_ids);
+Hi,
 
-To allow for devices without an SPC we should check for !node here and
-bail out, otherwise we get an ugly message from the WARN_ON further
-down. I see this on RTSM, and multiplatform kernels would suffer this as
-well.
+On Sunday 19 of May 2013 00:56:30 Tomasz Figa wrote:
+> Some drivers might rely on availability of trigger flags in IRQ
+> resource, for example to configure the hardware for particular interrupt
+> type. However current code creating IRQ resources from data in device
+> tree does not configure trigger flags in resulting resources.
+> 
+> This patch solves the problem, based on the fact that
+> irq_of_parse_and_map() configures the trigger based on DT interrupt
+> specifier, IRQD_TRIGGER_* flags are consistent with IORESOURCE_IRQ_*,
+> and we can get trigger type by calling irqd_get_trigger_type() after
+> mapping the interrupt.
+> 
+> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+> ---
+>  drivers/of/irq.c | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+> 
+> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+> index a3c1c5a..79a7a26 100644
+> --- a/drivers/of/irq.c
+> +++ b/drivers/of/irq.c
+> @@ -355,6 +355,16 @@ int of_irq_to_resource(struct device_node *dev, int
+> index, struct resource *r) r->start = r->end = irq;
+>  		r->flags = IORESOURCE_IRQ;
+>  		r->name = name ? name : dev->full_name;
+> +
+> +		/*
+> +		 * Some drivers might rely on availability of trigger 
+flags
+> +		 * in IRQ resource. Since irq_of_parse_and_map() 
+configures the
+> +		 * trigger based on interrupt specifier and IRQD_TRIGGER_*
+> +		 * flags are consistent with IORESOURCE_IRQ_*, we can get
+> +		 * trigger type that was just set and pass it through 
+resource
+> +		 * flags as well.
+> +		 */
+> +		r->flags |= irqd_get_trigger_type(irq_get_irq_data(irq));
+>  	}
+> 
+>  	return irq;
 
-Even if the ugly warning wasn't there, it still seems cleaner to me to
-have a proper check for an absent spc node.
+Any comments on this patch?
 
-> +	info = kzalloc(sizeof(*info), GFP_KERNEL);
-> +	if (!info) {
-> +		pr_err("%s: unable to allocate mem\n", __func__);
-> +		return -ENOMEM;
-> +	}
-> +	info->cur_req_type = INVALID_TYPE;
-> +
-> +	info->baseaddr = of_iomap(node, 0);
-> +	if (WARN_ON(!info->baseaddr)) {
-> +		ret = -ENXIO;
-> +		goto mem_free;
-> +	}
-> +
-> +	info->irq = irq_of_parse_and_map(node, 0);
-> +
-> +	if (WARN_ON(!info->irq)) {
-> +		ret = -ENXIO;
-> +		goto unmap;
-> +	}
-> +
-> +	readl_relaxed(info->baseaddr + PWC_STATUS);
-> +
-> +	ret = request_irq(info->irq, vexpress_spc_irq_handler,
-> +		IRQF_DISABLED | IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
-> +		"arm-spc", info);
-> +
-> +	if (ret) {
-> +		pr_err("IRQ %d request failed\n", info->irq);
-> +		ret = -ENODEV;
-> +		goto unmap;
-> +	}
-> +
-> +	info->a15_clusid = readl_relaxed(info->baseaddr + A15_CONF) & 0xf;
-> +
-> +	vexpress_spc_config_bridge = vexpress_config_bridge_register(
-> +			node, &vexpress_spc_config_bridge_info);
-> +
-> +	if (WARN_ON(!vexpress_spc_config_bridge)) {
-> +		ret = -ENODEV;
-> +		goto unmap;
-> +	}
-> +
-> +	opp_func = vexpress_config_func_get(vexpress_spc_config_bridge, "opp");
-> +	perf_func =
-> +		vexpress_config_func_get(vexpress_spc_config_bridge, "perf");
-> +
-> +	if (!opp_func || !perf_func) {
-> +		ret = -ENODEV;
-> +		goto unmap;
-> +	}
-> +
-> +	if (vexpress_spc_populate_opps(0) || vexpress_spc_populate_opps(1)) {
-> +		if (info->irq)
-> +			free_irq(info->irq, info);
-> +		pr_err("failed to build OPP table\n");
-> +		ret = -ENODEV;
-> +		goto unmap;
-> +	}
-> +	/*
-> +	 * Multi-cluster systems may need this data when non-coherent, during
-> +	 * cluster power-up/power-down. Make sure it reaches main memory:
-> +	 */
-> +	sync_cache_w(info);
-> +	sync_cache_w(&info);
-> +	pr_info("vexpress-spc loaded at %p\n", info->baseaddr);
-> +	return 0;
-> +
-> +unmap:
-> +	iounmap(info->baseaddr);
-> +
-> +mem_free:
-> +	kfree(info);
-> +	return ret;
-> +}
-> +
-> +static bool __init __vexpress_spc_check_loaded(void);
-> +static bool (*spc_check_loaded)(void) = &__vexpress_spc_check_loaded;
-> +
-> +static bool __init __vexpress_spc_check_loaded(void)
-> +{
-> +	if (vexpress_spc_load_result == -EAGAIN)
-> +		vexpress_spc_load_result = vexpress_spc_init();
-> +	spc_check_loaded = &vexpress_spc_initialized;
-> +	return vexpress_spc_initialized();
-> +}
-> +
-> +/*
-> + * Function exported to manage early_initcall ordering.
-> + * SPC code is needed very early in the boot process
-> + * to bring CPUs out of reset and initialize power
-> + * management back-end. After boot swap pointers to
-> + * make the functionality check available to loadable
-> + * modules, when early boot init functions have been
-> + * already freed from kernel address space.
-> + */
-> +bool vexpress_spc_check_loaded(void)
-> +{
-> +	return spc_check_loaded();
-> +}
-> +EXPORT_SYMBOL_GPL(vexpress_spc_check_loaded);
-> +
-> +static int __init vexpress_spc_early_init(void)
-> +{
-> +	__vexpress_spc_check_loaded();
-> +	return vexpress_spc_load_result;
-> +}
-> +early_initcall(vexpress_spc_early_init);
-> +MODULE_LICENSE("GPL");
-> +MODULE_DESCRIPTION("Serial Power Controller (SPC) support");
-[...]
-
--- 
-Tixy
-
+Best regards,
+Tomasz
 
