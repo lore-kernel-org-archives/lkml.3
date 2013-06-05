@@ -1,98 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757689Ab3FEX2p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 19:28:45 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:65236 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752352Ab3FEX2n convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 19:28:43 -0400
+	id S1757501Ab3FEX3l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 19:29:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1988 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752486Ab3FEX3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 19:29:40 -0400
+Date: Wed, 5 Jun 2013 20:29:33 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Luiz Capitulino <lcapitulino@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] virtio_balloon: leak_balloon(): only tell host if we got
+ pages deflated
+Message-ID: <20130605232932.GA30387@optiplex.redhat.com>
+References: <20130605171031.7448deea@redhat.com>
+ <20130605212449.GB19617@optiplex.redhat.com>
+ <20130605190844.1e96bbde@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAPweEDw1BabE0cmT5fxZ3Z9p9EH508M3Nzcqk2VcO0oz-qYsvg@mail.gmail.com>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
-	<CAKON4OxDD5orX2w-_+d5kawTGXbE3KKj2QLERo9m7=NiUSXhgQ@mail.gmail.com>
-	<51AFA6DD.3000202@wwwdotorg.org>
-	<CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com>
-	<1370469574.18839.33.camel@localhost>
-	<CAPweEDxMpeJc-w=Yd7d2OT=UisRBp2rxf-MPMDUCOG3EyJz1GQ@mail.gmail.com>
-	<CAKON4OxwyV2f_iTEb5RnP_azc7EsSxPdku_TY5WLWxN7USiY1Q@mail.gmail.com>
-	<CAPweEDw1BabE0cmT5fxZ3Z9p9EH508M3Nzcqk2VcO0oz-qYsvg@mail.gmail.com>
-Date: Wed, 5 Jun 2013 19:28:42 -0400
-Message-ID: <CAKON4OyWaUod8m-7Fn5qdjnMs8o+ajqdOJ=XRmw_v=93L00fWQ@mail.gmail.com>
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
- Uploading linux (3.9.4-1))
-From: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
-To: "luke.leighton" <luke.leighton@gmail.com>
-Cc: Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org,
-        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
-        debian-kernel@lists.debian.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130605190844.1e96bbde@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 5, 2013 at 7:26 PM, luke.leighton <luke.leighton@gmail.com> wrote:
-> On Thu, Jun 6, 2013 at 12:07 AM, jonsmirl@gmail.com <jonsmirl@gmail.com> wrote:
->> On Wed, Jun 5, 2013 at 6:47 PM, luke.leighton <luke.leighton@gmail.com> wrote:
->>> On Wed, Jun 5, 2013 at 10:59 PM, Henrik Nordström
->>> <henrik@henriknordstrom.net> wrote:
->>>
->>>>>  .... and then there's the boot0 and boot1 loaders, these *do* have
->>>
->>>> no, these are not tiny. boot0 is 24KB to fit the initial embedded SRAM
->>>> (not cache), but boot1 is on pair with u-boot in size and runs from
->>>> DRAM.
->>>
->>>  btw, please listen to henrik: he knows what he's talking about, as
->>> you can see :)   henrik, thank you for correcting my technical
->>> misunderstandings, i'll try to remember them and not propagate
->>> incorrect stuff.
->>
->> This is not about the fex syntax or uboot. The root problem is needing
->> two sets of binding for every device driver in the kernel. Pick a
->> random driver like gpio-pca953x.c and look at the source. In that file
->> there are #ifdef CONFIG_OF_ sections. Those sections are directly
->> reading the FDT binary via calls like of_get_property(node,
->> "linux,gpio-base", &size);. If fex is added to the kernel every driver
->> driver will now need both a #ifdef CONFIG_OF_ section and also a
->> #ifdef CONFIG_FEX_ section. Doing that is just crazy.
+On Wed, Jun 05, 2013 at 07:08:44PM -0400, Luiz Capitulino wrote:
+> On Wed, 5 Jun 2013 18:24:49 -0300
+> Rafael Aquini <aquini@redhat.com> wrote:
+> 
+> > On Wed, Jun 05, 2013 at 05:10:31PM -0400, Luiz Capitulino wrote:
+> > > The balloon_page_dequeue() function can return NULL. If it does for
+> > > the first page being freed, then leak_balloon() will create a
+> > > scatter list with len=0. Which in turn seems to generate an invalid
+> > > virtio request.
+> > > 
+> > > Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+> > > ---
+> > > 
+> > > PS: I didn't get this in practice. I found it by code review. On the other
+> > >     hand, automatic-ballooning was able to put such invalid requests in
+> > >     the virtqueue and QEMU would explode...
+> > >
+> > 
+> > Nice catch! The patch looks sane and replicates the check done at
+> > fill_balloon(). I think we also could use this P.S. as a commentary 
+> > to let others aware of this scenario. Thanks Luiz!
+> 
+> Want me to respin?
 >
->  yes.  which is why they haven't done it.
->
->> Is Allwinner
->> going to add fex support to every single device driver in the kernel?
->
->  no john - they've only added it to the multiplexed sections of the
-> drivers which they themselves have written.  such as
-> drivers/usb/sun{N}i_usb/*.[ch], drivers/block/nand/sun{N}_i,
-> arch/arm/mach-sun{N}i and so on.
->
-> even the touchscreen driver that they wrote, that's got nothing to do
-> with any other code in the touchscreen linux kernel source tree: it's
-> more of a "meta-"driver which even has the name of the linux kernel
-> module that needs to be loaded and what I2C address, GPIO options etc.
-> to pass in [normally done as modprobe options in userspace].
->
->  to be honest, there are better people to fully answer this question
-> (alejandro and henrik are two that spring to mind) but you're
-> definitely off-base, jon.  the script.fex system deals with the pinmux
-> issue in a very neat way that:
->
->   a) has very little impact on the rest of the kernel tree [citation
-> needed!  i'm saying that: could someone please confirm if it's true]
->
->   b) the linux kernel developers could, instead of criticising it,
-> actually learn a great deal from.
->
-> l.
 
+That would be great, indeed. I guess the commentary could also go for the same
+if case at fill_balloon(), assuming the tests are placed to prevent the same
+scenario you described at changelog. You can stick my Ack on it, if reposting.
 
-
--- 
-Jon Smirl
-jonsmirl@gmail.com
+Cheers!
+-- Rafael
