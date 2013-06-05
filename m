@@ -1,84 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591Ab3FEGrT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 02:47:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55162 "EHLO mx1.redhat.com"
+	id S1752865Ab3FEGr6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 02:47:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62372 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752477Ab3FEGrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 02:47:14 -0400
+	id S1752607Ab3FEGrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 02:47:43 -0400
 From: Jason Wang <jasowang@redhat.com>
 To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: sergei.shtylyov@cogentembedded.com, Jason Wang <jasowang@redhat.com>
-Subject: [net-next rfc V3 4/9] macvtap: introduce macvtap_get_vlan()
-Date: Wed,  5 Jun 2013 14:36:27 +0800
-Message-Id: <1370414192-5830-5-git-send-email-jasowang@redhat.com>
+Subject: [net-next rfc V3 5/9] macvlan: change the max number of queues to 16
+Date: Wed,  5 Jun 2013 14:36:28 +0800
+Message-Id: <1370414192-5830-6-git-send-email-jasowang@redhat.com>
 In-Reply-To: <1370414192-5830-1-git-send-email-jasowang@redhat.com>
 References: <1370414192-5830-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factor out the device holding logic to a macvtap_get_vlan(), this will be also
-used by multiqueue API.
+Macvtap should be at least compatible with tap, so change the max number to 16.
 
 Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- drivers/net/macvtap.c |   27 ++++++++++++++++++++-------
- 1 files changed, 20 insertions(+), 7 deletions(-)
+ include/linux/if_macvlan.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index 8949631..d18130b 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -893,6 +893,24 @@ out:
- 	return ret;
- }
- 
-+static struct macvlan_dev *macvtap_get_vlan(struct macvtap_queue *q)
-+{
-+	struct macvlan_dev *vlan;
-+
-+	rcu_read_lock_bh();
-+	vlan = rcu_dereference_bh(q->vlan);
-+	if (vlan)
-+		dev_hold(vlan->dev);
-+	rcu_read_unlock_bh();
-+
-+	return vlan;
-+}
-+
-+static void macvtap_put_vlan(struct macvlan_dev *vlan)
-+{
-+	dev_put(vlan->dev);
-+}
-+
- /*
-  * provide compatibility with generic tun/tap interface
+diff --git a/include/linux/if_macvlan.h b/include/linux/if_macvlan.h
+index e47ad46..62d8bda 100644
+--- a/include/linux/if_macvlan.h
++++ b/include/linux/if_macvlan.h
+@@ -50,7 +50,7 @@ struct macvlan_pcpu_stats {
+  * Maximum times a macvtap device can be opened. This can be used to
+  * configure the number of receive queue, e.g. for multiqueue virtio.
   */
-@@ -924,12 +942,7 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
- 		return ret;
+-#define MAX_MACVTAP_QUEUES	(NR_CPUS < 16 ? NR_CPUS : 16)
++#define MAX_MACVTAP_QUEUES	16
  
- 	case TUNGETIFF:
--		rcu_read_lock_bh();
--		vlan = rcu_dereference_bh(q->vlan);
--		if (vlan)
--			dev_hold(vlan->dev);
--		rcu_read_unlock_bh();
--
-+		vlan = macvtap_get_vlan(q);
- 		if (!vlan)
- 			return -ENOLINK;
- 
-@@ -937,7 +950,7 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
- 		if (copy_to_user(&ifr->ifr_name, vlan->dev->name, IFNAMSIZ) ||
- 		    put_user(q->flags, &ifr->ifr_flags))
- 			ret = -EFAULT;
--		dev_put(vlan->dev);
-+		macvtap_put_vlan(vlan);
- 		return ret;
- 
- 	case TUNGETFEATURES:
+ #define MACVLAN_MC_FILTER_BITS	8
+ #define MACVLAN_MC_FILTER_SZ	(1 << MACVLAN_MC_FILTER_BITS)
 -- 
 1.7.1
 
