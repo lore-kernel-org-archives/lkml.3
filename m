@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757396Ab3FERyK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 13:54:10 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:2754 "EHLO
+	id S1757466Ab3FER4b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 13:56:31 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:20962 "EHLO
 	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757128Ab3FERsP (ORCPT
+	with ESMTP id S1756982Ab3FERsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Jun 2013 13:48:15 -0400
 From: Nick Dyer <nick.dyer@itdev.co.uk>
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
 Cc: Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 16/53] Input: atmel_mxt_ts - Add additional bootloader addresses
-Date: Wed,  5 Jun 2013 18:37:09 +0100
-Message-Id: <1370453866-16534-17-git-send-email-nick.dyer@itdev.co.uk>
+Subject: [PATCH 01/53] Input: atmel_mxt_ts - Remove unnecessary platform data
+Date: Wed,  5 Jun 2013 18:36:54 +0100
+Message-Id: <1370453866-16534-2-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -25,254 +25,204 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move bootloaders reads/writes into separate functions. Instead of switching
-client->addr, define new field bootloader_addr in mxt_data. Implement lookup
-calculation for bootloader addresses.
+It is not necessary to download these values to the maXTouch chip on every
+probe, since they are stored in NVRAM. It makes life difficult when tuning the
+device to keep them in sync with the config array/file, and requires a new
+kernel build for minor tweaks.
+
+These parameters only represent a tiny subset of the available configuration
+options, tracking all of these options in platform data would be a endless
+task. In addition, different versions of maXTouch chips may have these values
+in different places or may not even have them at all.
+
+Having these values also makes life more complex for device tree and other
+platforms where having to define a static configuration isn't helpful.
 
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 Acked-by: Benson Leung <bleung@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |  138 ++++++++++++++++++++----------
- 1 file changed, 93 insertions(+), 45 deletions(-)
+ arch/arm/mach-exynos/mach-nuri.c           |    5 ---
+ arch/arm/mach-exynos/mach-universal_c210.c |    5 ---
+ arch/arm/mach-s5pv210/mach-goni.c          |    5 ---
+ drivers/input/touchscreen/atmel_mxt_ts.c   |   50 ----------------------------
+ drivers/platform/x86/chromeos_laptop.c     |   10 ------
+ include/linux/i2c/atmel_mxt_ts.h           |    6 +---
+ 6 files changed, 1 insertion(+), 80 deletions(-)
 
+diff --git a/arch/arm/mach-exynos/mach-nuri.c b/arch/arm/mach-exynos/mach-nuri.c
+index 1ea7973..4516d26 100644
+--- a/arch/arm/mach-exynos/mach-nuri.c
++++ b/arch/arm/mach-exynos/mach-nuri.c
+@@ -333,13 +333,8 @@ static struct i2c_board_info i2c1_devs[] __initdata = {
+ 
+ /* TSP */
+ static struct mxt_platform_data mxt_platform_data = {
+-	.x_line			= 18,
+-	.y_line			= 11,
+ 	.x_size			= 1024,
+ 	.y_size			= 600,
+-	.blen			= 0x1,
+-	.threshold		= 0x28,
+-	.voltage		= 2800000,		/* 2.8V */
+ 	.orient			= MXT_DIAGONAL_COUNTER,
+ 	.irqflags		= IRQF_TRIGGER_FALLING,
+ };
+diff --git a/arch/arm/mach-exynos/mach-universal_c210.c b/arch/arm/mach-exynos/mach-universal_c210.c
+index 497fcb7..2461e60 100644
+--- a/arch/arm/mach-exynos/mach-universal_c210.c
++++ b/arch/arm/mach-exynos/mach-universal_c210.c
+@@ -604,13 +604,8 @@ static struct i2c_board_info i2c5_devs[] __initdata = {
+ 
+ /* I2C3 (TSP) */
+ static struct mxt_platform_data qt602240_platform_data = {
+-	.x_line		= 19,
+-	.y_line		= 11,
+ 	.x_size		= 800,
+ 	.y_size		= 480,
+-	.blen		= 0x11,
+-	.threshold	= 0x28,
+-	.voltage	= 2800000,		/* 2.8V */
+ 	.orient		= MXT_DIAGONAL,
+ 	.irqflags	= IRQF_TRIGGER_FALLING,
+ };
+diff --git a/arch/arm/mach-s5pv210/mach-goni.c b/arch/arm/mach-s5pv210/mach-goni.c
+index 3a38f7b..eca73af 100644
+--- a/arch/arm/mach-s5pv210/mach-goni.c
++++ b/arch/arm/mach-s5pv210/mach-goni.c
+@@ -239,13 +239,8 @@ static void __init goni_radio_init(void)
+ 
+ /* TSP */
+ static struct mxt_platform_data qt602240_platform_data = {
+-	.x_line		= 17,
+-	.y_line		= 11,
+ 	.x_size		= 800,
+ 	.y_size		= 480,
+-	.blen		= 0x21,
+-	.threshold	= 0x28,
+-	.voltage	= 2800000,              /* 2.8V */
+ 	.orient		= MXT_DIAGONAL,
+ 	.irqflags	= IRQF_TRIGGER_FALLING,
+ };
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index d620a4a..842312e 100644
+index 59aa240..e01a9ed 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -30,12 +30,6 @@
- #define MXT_VER_21		21
- #define MXT_VER_22		22
- 
--/* Slave addresses */
--#define MXT_APP_LOW		0x4a
--#define MXT_APP_HIGH		0x4b
--#define MXT_BOOT_LOW		0x24
--#define MXT_BOOT_HIGH		0x25
--
- /* Firmware files */
- #define MXT_FW_NAME		"maxtouch.fw"
- #define MXT_CFG_NAME		"maxtouch.cfg"
-@@ -273,6 +267,7 @@ struct mxt_data {
- 	bool debug_enabled;
- 	u32 config_crc;
- 	u32 info_crc;
-+	u8 bootloader_addr;
- 
- 	/* Cached parameters from object table */
- 	u8 T6_reportid;
-@@ -362,9 +357,82 @@ static int mxt_wait_for_completion(struct mxt_data *data,
+@@ -686,54 +686,6 @@ static int mxt_make_highchg(struct mxt_data *data)
  	return 0;
  }
  
-+static int mxt_bootloader_read(struct mxt_data *data,
-+			       u8 *val, unsigned int count)
-+{
-+	int ret;
-+	struct i2c_msg msg;
-+
-+	msg.addr = data->bootloader_addr;
-+	msg.flags = data->client->flags & I2C_M_TEN;
-+	msg.flags |= I2C_M_RD;
-+	msg.len = count;
-+	msg.buf = val;
-+
-+	ret = i2c_transfer(data->client->adapter, &msg, 1);
-+
-+	if (ret == 1) {
-+		ret = 0;
-+	} else {
-+		ret = (ret < 0) ? ret : -EIO;
-+		dev_err(&data->client->dev, "%s: i2c recv failed (%d)\n",
-+			__func__, ret);
-+	}
-+
-+	return ret;
-+}
-+
-+static int mxt_bootloader_write(struct mxt_data *data,
-+				const u8 * const val, unsigned int count)
-+{
-+	int ret;
-+	struct i2c_msg msg;
-+
-+	msg.addr = data->bootloader_addr;
-+	msg.flags = data->client->flags & I2C_M_TEN;
-+	msg.len = count;
-+	msg.buf = (u8 *)val;
-+
-+	ret = i2c_transfer(data->client->adapter, &msg, 1);
-+	if (ret == 1) {
-+		ret = 0;
-+	} else {
-+		ret = (ret < 0) ? ret : -EIO;
-+		dev_err(&data->client->dev, "%s: i2c send failed (%d)\n",
-+			__func__, ret);
-+	}
-+
-+	return ret;
-+}
-+
-+static int mxt_lookup_bootloader_address(struct mxt_data *data)
-+{
-+	u8 appmode = data->client->addr;
-+	u8 bootloader;
-+
-+	switch (appmode) {
-+	case 0x4a:
-+	case 0x4b:
-+	case 0x4c:
-+	case 0x4d:
-+	case 0x5a:
-+	case 0x5b:
-+		bootloader = appmode - 0x26;
-+		break;
-+	default:
-+		dev_err(&data->client->dev,
-+			"Appmode i2c address 0x%02x not found\n",
-+			appmode);
-+		return -EINVAL;
-+	}
-+
-+	data->bootloader_addr = bootloader;
-+	return 0;
-+}
-+
- static int mxt_check_bootloader(struct mxt_data *data, unsigned int state)
- {
--	struct i2c_client *client = data->client;
-+	struct device *dev = &data->client->dev;
- 	u8 val;
- 	int ret;
- 
-@@ -385,15 +453,14 @@ recheck:
- 			 * length 0x000 to device (iff we are in
- 			 * WAITING_FRAME_DATA state).
- 			 */
--			dev_err(&client->dev, "Update wait error %d\n", ret);
-+			dev_err(dev, "Update wait error %d\n", ret);
- 			return ret;
- 		}
- 	}
- 
--	if (i2c_master_recv(client, &val, 1) != 1) {
--		dev_err(&client->dev, "%s: i2c recv failed\n", __func__);
--		return -EIO;
--	}
-+	ret = mxt_bootloader_read(data, &val, 1);
-+	if (ret)
-+		return ret;
- 
- 	switch (state) {
- 	case MXT_WAITING_BOOTLOAD_CMD:
-@@ -409,7 +476,7 @@ recheck:
- 	}
- 
- 	if (val != state) {
--		dev_err(&client->dev, "Invalid bootloader state %02X != %02X\n",
-+		dev_err(dev, "Invalid bootloader state %02X != %02X\n",
- 			val, state);
- 		return -EINVAL;
- 	}
-@@ -417,28 +484,17 @@ recheck:
- 	return 0;
- }
- 
--static int mxt_unlock_bootloader(struct i2c_client *client)
-+static int mxt_unlock_bootloader(struct mxt_data *data)
- {
-+	int ret;
- 	u8 buf[2];
- 
- 	buf[0] = MXT_UNLOCK_CMD_LSB;
- 	buf[1] = MXT_UNLOCK_CMD_MSB;
- 
--	if (i2c_master_send(client, buf, 2) != 2) {
--		dev_err(&client->dev, "%s: i2c send failed\n", __func__);
--		return -EIO;
--	}
+-static void mxt_handle_pdata(struct mxt_data *data)
+-{
+-	const struct mxt_platform_data *pdata = data->pdata;
+-	u8 voltage;
 -
--	return 0;
+-	/* Set touchscreen lines */
+-	mxt_write_object(data, MXT_TOUCH_MULTI_T9, MXT_TOUCH_XSIZE,
+-			pdata->x_line);
+-	mxt_write_object(data, MXT_TOUCH_MULTI_T9, MXT_TOUCH_YSIZE,
+-			pdata->y_line);
+-
+-	/* Set touchscreen orient */
+-	mxt_write_object(data, MXT_TOUCH_MULTI_T9, MXT_TOUCH_ORIENT,
+-			pdata->orient);
+-
+-	/* Set touchscreen burst length */
+-	mxt_write_object(data, MXT_TOUCH_MULTI_T9,
+-			MXT_TOUCH_BLEN, pdata->blen);
+-
+-	/* Set touchscreen threshold */
+-	mxt_write_object(data, MXT_TOUCH_MULTI_T9,
+-			MXT_TOUCH_TCHTHR, pdata->threshold);
+-
+-	/* Set touchscreen resolution */
+-	mxt_write_object(data, MXT_TOUCH_MULTI_T9,
+-			MXT_TOUCH_XRANGE_LSB, (pdata->x_size - 1) & 0xff);
+-	mxt_write_object(data, MXT_TOUCH_MULTI_T9,
+-			MXT_TOUCH_XRANGE_MSB, (pdata->x_size - 1) >> 8);
+-	mxt_write_object(data, MXT_TOUCH_MULTI_T9,
+-			MXT_TOUCH_YRANGE_LSB, (pdata->y_size - 1) & 0xff);
+-	mxt_write_object(data, MXT_TOUCH_MULTI_T9,
+-			MXT_TOUCH_YRANGE_MSB, (pdata->y_size - 1) >> 8);
+-
+-	/* Set touchscreen voltage */
+-	if (pdata->voltage) {
+-		if (pdata->voltage < MXT_VOLTAGE_DEFAULT) {
+-			voltage = (MXT_VOLTAGE_DEFAULT - pdata->voltage) /
+-				MXT_VOLTAGE_STEP;
+-			voltage = 0xff - voltage + 1;
+-		} else
+-			voltage = (pdata->voltage - MXT_VOLTAGE_DEFAULT) /
+-				MXT_VOLTAGE_STEP;
+-
+-		mxt_write_object(data, MXT_SPT_CTECONFIG_T28,
+-				MXT_CTE_VOLTAGE, voltage);
+-	}
 -}
 -
--static int mxt_fw_write(struct i2c_client *client,
--			     const u8 *data, unsigned int frame_size)
--{
--	if (i2c_master_send(client, data, frame_size) != frame_size) {
--		dev_err(&client->dev, "%s: i2c send failed\n", __func__);
--		return -EIO;
--	}
-+	ret = mxt_bootloader_write(data, buf, 2);
-+	if (ret)
-+		return ret;
- 
- 	return 0;
- }
-@@ -1375,7 +1431,6 @@ done:
- static int mxt_load_fw(struct device *dev, const char *fn)
+ static int mxt_get_info(struct mxt_data *data)
  {
- 	struct mxt_data *data = dev_get_drvdata(dev);
--	struct i2c_client *client = data->client;
- 	const struct firmware *fw = NULL;
- 	unsigned int frame_size;
- 	unsigned int pos = 0;
-@@ -1387,6 +1442,10 @@ static int mxt_load_fw(struct device *dev, const char *fn)
- 		return ret;
- 	}
+ 	struct i2c_client *client = data->client;
+@@ -841,8 +793,6 @@ static int mxt_initialize(struct mxt_data *data)
+ 	if (error)
+ 		goto err_free_object_table;
  
-+	ret = mxt_lookup_bootloader_address(data);
-+	if (ret)
-+		goto release_firmware;
+-	mxt_handle_pdata(data);
+-
+ 	/* Backup to memory */
+ 	mxt_write_object(data, MXT_GEN_COMMAND_T6,
+ 			MXT_COMMAND_BACKUPNV,
+diff --git a/drivers/platform/x86/chromeos_laptop.c b/drivers/platform/x86/chromeos_laptop.c
+index 3e5b4497..78ed277 100644
+--- a/drivers/platform/x86/chromeos_laptop.c
++++ b/drivers/platform/x86/chromeos_laptop.c
+@@ -71,13 +71,8 @@ static struct i2c_board_info __initdata tsl2563_als_device = {
+ };
+ 
+ static struct mxt_platform_data atmel_224s_tp_platform_data = {
+-	.x_line			= 18,
+-	.y_line			= 12,
+ 	.x_size			= 102*20,
+ 	.y_size			= 68*20,
+-	.blen			= 0x80,	/* Gain setting is in upper 4 bits */
+-	.threshold		= 0x32,
+-	.voltage		= 0,	/* 3.3V */
+ 	.orient			= MXT_VERTICAL_FLIP,
+ 	.irqflags		= IRQF_TRIGGER_FALLING,
+ 	.is_tp			= true,
+@@ -96,13 +91,8 @@ static struct i2c_board_info __initdata atmel_224s_tp_device = {
+ };
+ 
+ static struct mxt_platform_data atmel_1664s_platform_data = {
+-	.x_line			= 32,
+-	.y_line			= 50,
+ 	.x_size			= 1700,
+ 	.y_size			= 2560,
+-	.blen			= 0x89,	/* Gain setting is in upper 4 bits */
+-	.threshold		= 0x28,
+-	.voltage		= 0,	/* 3.3V */
+ 	.orient			= MXT_ROTATED_90_COUNTER,
+ 	.irqflags		= IRQF_TRIGGER_FALLING,
+ 	.is_tp			= false,
+diff --git a/include/linux/i2c/atmel_mxt_ts.h b/include/linux/i2c/atmel_mxt_ts.h
+index 99e379b..eff0cdc 100644
+--- a/include/linux/i2c/atmel_mxt_ts.h
++++ b/include/linux/i2c/atmel_mxt_ts.h
+@@ -33,14 +33,10 @@ struct mxt_platform_data {
+ 	const u8 *config;
+ 	size_t config_length;
+ 
+-	unsigned int x_line;
+-	unsigned int y_line;
+ 	unsigned int x_size;
+ 	unsigned int y_size;
+-	unsigned int blen;
+-	unsigned int threshold;
+-	unsigned int voltage;
+ 	unsigned char orient;
 +
- 	/* Change to the bootloader mode */
- 	data->in_bootloader = true;
- 
-@@ -1396,12 +1455,6 @@ static int mxt_load_fw(struct device *dev, const char *fn)
- 
- 	msleep(MXT_RESET_TIME);
- 
--	/* Change to slave address of bootloader */
--	if (client->addr == MXT_APP_LOW)
--		client->addr = MXT_BOOT_LOW;
--	else
--		client->addr = MXT_BOOT_HIGH;
--
- 	INIT_COMPLETION(data->bl_completion);
- 
- 	ret = mxt_check_bootloader(data, MXT_WAITING_BOOTLOAD_CMD);
-@@ -1409,7 +1462,7 @@ static int mxt_load_fw(struct device *dev, const char *fn)
- 		goto disable_irq;
- 
- 	/* Unlock bootloader */
--	mxt_unlock_bootloader(client);
-+	mxt_unlock_bootloader(data);
- 
- 	while (pos < fw->size) {
- 		ret = mxt_check_bootloader(data, MXT_WAITING_FRAME_DATA);
-@@ -1424,7 +1477,9 @@ static int mxt_load_fw(struct device *dev, const char *fn)
- 		frame_size += 2;
- 
- 		/* Write one frame to device */
--		mxt_fw_write(client, fw->data + pos, frame_size);
-+		ret = mxt_bootloader_write(data, fw->data + pos, frame_size);
-+		if (ret)
-+			goto disable_irq;
- 
- 		ret = mxt_check_bootloader(data, MXT_FRAME_CRC_PASS);
- 		if (ret)
-@@ -1452,13 +1507,6 @@ disable_irq:
- 	disable_irq(data->irq);
- release_firmware:
- 	release_firmware(fw);
--
--	/* Change to slave address of application */
--	if (client->addr == MXT_BOOT_LOW)
--		client->addr = MXT_APP_LOW;
--	else
--		client->addr = MXT_APP_HIGH;
--
- 	return ret;
- }
- 
+ 	unsigned long irqflags;
+ 	bool is_tp;
+ 	const unsigned int key_map[MXT_NUM_GPIO];
 -- 
 1.7.10.4
 
