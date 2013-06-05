@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933580Ab3FEWGc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 18:06:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37683 "EHLO
+	id S932404Ab3FEWGx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 18:06:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37678 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932381Ab3FEVfN (ORCPT
+	with ESMTP id S1757939Ab3FEVfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Jun 2013 17:35:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
-Subject: [ 026/127] USB: Blacklisted Cinterions PLxx WWAN Interface
-Date: Wed,  5 Jun 2013 14:33:13 -0700
-Message-Id: <20130605213220.967818927@linuxfoundation.org>
+        Wang YanQing <udknight@gmail.com>
+Subject: [ 025/127] TTY: Fix tty miss restart after we turn off flow-control
+Date: Wed,  5 Jun 2013 14:33:12 -0700
+Message-Id: <20130605213220.869839933@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -26,45 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Schemmel Hans-Christoph <Hans-Christoph.Schemmel@gemalto.com>
+From: Wang YanQing <udknight@gmail.com>
 
-commit 8ff10bdb14a52e3f25d4ce09e0582a8684c1a6db upstream.
+commit dab73b4eb9ef924a2b90dab84e539076d82b256f upstream.
 
-/drivers/usb/serial/option.c: Blacklisted Cinterion's PLxx WWAN
-Interface (USB Interface 4), because it will be handled by QMI WWAN
-driver. Product IDs renamed.
+I meet emacs hang in start if I do the operation below:
+  1: echo 3 > /proc/sys/vm/drop_caches
+  2: emacs BigFile
+  3: Press CTRL-S follow 2 immediately
 
-Signed-off-by: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
+Then emacs hang on, CTRL-Q can't resume, the terminal
+hang on, you can do nothing with this terminal except
+close it.
+
+The reason is before emacs takeover control the tty,
+we use CTRL-S to XOFF it. Then when emacs takeover the
+control, it may don't use the flow-control, so emacs hang.
+This patch fix it.
+
+This patch will fix a kind of strange tty relation hang problem,
+I believe I meet it with vim in ssh, and also see below bug report:
+http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=465823
+
+Signed-off-by: Wang YanQing <udknight@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/tty/n_tty.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -342,8 +342,8 @@ static void option_instat_callback(struc
- #define CINTERION_PRODUCT_EU3_E			0x0051
- #define CINTERION_PRODUCT_EU3_P			0x0052
- #define CINTERION_PRODUCT_PH8			0x0053
--#define CINTERION_PRODUCT_AH6			0x0055
--#define CINTERION_PRODUCT_PLS8			0x0060
-+#define CINTERION_PRODUCT_AHXX			0x0055
-+#define CINTERION_PRODUCT_PLXX			0x0060
- 
- /* Olivetti products */
- #define OLIVETTI_VENDOR_ID			0x0b3c
-@@ -1268,8 +1268,9 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_E) },
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_P) },
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8) },
--	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_AH6) },
--	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLS8) },
-+	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_AHXX) },
-+	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLXX),
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) }, 
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
- 	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDM) },
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1588,6 +1588,14 @@ static void n_tty_set_termios(struct tty
+ 			ldata->real_raw = 0;
+ 	}
+ 	n_tty_set_room(tty);
++	/*
++	 * Fix tty hang when I_IXON(tty) is cleared, but the tty
++	 * been stopped by STOP_CHAR(tty) before it.
++	 */
++	if (!I_IXON(tty) && old && (old->c_iflag & IXON) && !tty->flow_stopped) {
++		start_tty(tty);
++	}
++
+ 	/* The termios change make the tty ready for I/O */
+ 	wake_up_interruptible(&tty->write_wait);
+ 	wake_up_interruptible(&tty->read_wait);
 
 
