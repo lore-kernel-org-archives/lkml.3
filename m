@@ -1,189 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab3FELjB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 07:39:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18626 "EHLO mx1.redhat.com"
+	id S1754796Ab3FELkU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 07:40:20 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37973 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752147Ab3FELi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 07:38:58 -0400
-Date: Wed, 5 Jun 2013 07:38:22 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
-        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
-        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, cluster-devel@redhat.com,
-        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        piastryyy@gmail.com
-Subject: Re: [PATCH v1 07/11] locks: only pull entries off of blocked_list
- when they are really unblocked
-Message-ID: <20130605073822.4d67c57c@corrin.poochiereds.net>
-In-Reply-To: <20130604215839.GD15594@fieldses.org>
-References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
-	<1370056054-25449-8-git-send-email-jlayton@redhat.com>
-	<20130604215839.GD15594@fieldses.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752147Ab3FELkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 07:40:18 -0400
+From: Illia Smyrnov <illia.smyrnov@ti.com>
+To: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Mark Brown <broonie@kernel.org>
+CC: Illia Smyrnov <illia.smyrnov@ti.com>, Daniel Mack <zonque@gmail.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        <spi-devel-general@lists.sourceforge.net>
+Subject: [PATCH 1/2] spi: spi-omap2-mcspi.c: Add dts for slave device configuration.
+Date: Wed, 5 Jun 2013 14:39:57 +0300
+Message-ID: <1370432398-7796-2-git-send-email-illia.smyrnov@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1370432398-7796-1-git-send-email-illia.smyrnov@ti.com>
+References: <1370432398-7796-1-git-send-email-illia.smyrnov@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Jun 2013 17:58:39 -0400
-"J. Bruce Fields" <bfields@fieldses.org> wrote:
+From: Matthias Brugger <matthias.bgg@gmail.com>
 
-> On Fri, May 31, 2013 at 11:07:30PM -0400, Jeff Layton wrote:
-> > Currently, when there is a lot of lock contention the kernel spends an
-> > inordinate amount of time taking blocked locks off of the global
-> > blocked_list and then putting them right back on again. When all of this
-> > code was protected by a single lock, then it didn't matter much, but now
-> > it means a lot of file_lock_lock thrashing.
-> > 
-> > Optimize this a bit by deferring the removal from the blocked_list until
-> > we're either applying or cancelling the lock. By doing this, and using a
-> > lockless list_empty check, we can avoid taking the file_lock_lock in
-> > many cases.
-> > 
-> > Because the fl_link check is lockless, we must ensure that only the task
-> > that "owns" the request manipulates the fl_link. Also, with this change,
-> > it's possible that we'll see an entry on the blocked_list that has a
-> > NULL fl_next pointer. In that event, just ignore it and continue walking
-> > the list.
-> 
-> OK, that sounds safe as in it shouldn't crash, but does the deadlock
-> detection still work, or can it miss loops?
-> 
-> Those locks that are temporarily NULL would previously not have been on
-> the list at all, OK, but...  I'm having trouble reasoning about how this
-> works now.
-> 
-> Previously a single lock was held interrupted across
-> posix_locks_deadlock and locks_insert_block() which guaranteed we
-> shouldn't be adding a loop, is that still true?
-> 
-> --b.
-> 
+TI omap2 mcspi allows the slave devices to configure the behavior of
+the SPI master. This patch adds device tree support to the existing
+options.
 
-I had thought it was when I originally looked at this, but now that I
-consider it again I think you may be correct and that there are possible
-races here. Since we might end up reblocking behind a different lock
-without taking the global spinlock we could flip to blocking behind a
-different lock such that a loop is created if you had a complex (>2)
-chain of locks.
+[Illia: added changes discussed at
+https://patchwork.kernel.org/patch/2333911/]
 
-I think I'm going to have to drop this approach and instead make it so
-that the deadlock detection and insertion into the global blocker
-list/hash are atomic. Ditto for locks_wake_up_blocks on posix locks and
-taking the entries off the list/hash.
+Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+Signed-off-by: Illia Smyrnov <illia.smyrnov@ti.com>
+---
+ Documentation/devicetree/bindings/spi/omap-spi.txt |   17 ++++++++
+ drivers/spi/spi-omap2-mcspi.c                      |   40 ++++++++++++++++++++
+ 2 files changed, 57 insertions(+), 0 deletions(-)
 
-Now that I look, I think that approach may actually improve performance
-too since we'll be taking the global spinlock less than we would have,
-but I'll need to test it out to know for sure.
-
-> > 
-> > Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> > ---
-> >  fs/locks.c |   29 +++++++++++++++++++++++------
-> >  1 files changed, 23 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/fs/locks.c b/fs/locks.c
-> > index 055c06c..fc35b9e 100644
-> > --- a/fs/locks.c
-> > +++ b/fs/locks.c
-> > @@ -520,7 +520,6 @@ locks_delete_global_locks(struct file_lock *waiter)
-> >  static void __locks_delete_block(struct file_lock *waiter)
-> >  {
-> >  	list_del_init(&waiter->fl_block);
-> > -	locks_delete_global_blocked(waiter);
-> >  	waiter->fl_next = NULL;
-> >  }
-> >  
-> > @@ -704,13 +703,16 @@ EXPORT_SYMBOL(posix_test_lock);
-> >  /* Find a lock that the owner of the given block_fl is blocking on. */
-> >  static struct file_lock *what_owner_is_waiting_for(struct file_lock *block_fl)
-> >  {
-> > -	struct file_lock *fl;
-> > +	struct file_lock *fl, *ret = NULL;
-> >  
-> >  	list_for_each_entry(fl, &blocked_list, fl_link) {
-> > -		if (posix_same_owner(fl, block_fl))
-> > -			return fl->fl_next;
-> > +		if (posix_same_owner(fl, block_fl)) {
-> > +			ret = fl->fl_next;
-> > +			if (likely(ret))
-> > +				break;
-> > +		}
-> >  	}
-> > -	return NULL;
-> > +	return ret;
-> >  }
-> >  
-> >  static int posix_locks_deadlock(struct file_lock *caller_fl,
-> > @@ -865,7 +867,8 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
-> >  				goto out;
-> >  			error = FILE_LOCK_DEFERRED;
-> >  			locks_insert_block(fl, request);
-> > -			locks_insert_global_blocked(request);
-> > +			if (list_empty(&request->fl_link))
-> > +				locks_insert_global_blocked(request);
-> >  			goto out;
-> >    		}
-> >    	}
-> > @@ -876,6 +879,16 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
-> >  		goto out;
-> >  
-> >  	/*
-> > +	 * Now that we know the request is no longer blocked, we can take it
-> > +	 * off the global list. Some callers send down partially initialized
-> > +	 * requests, so we only do this if FL_SLEEP is set. Also, avoid taking
-> > +	 * the lock if the list is empty, as that indicates a request that
-> > +	 * never blocked.
-> > +	 */
-> > +	if ((request->fl_flags & FL_SLEEP) && !list_empty(&request->fl_link))
-> > +		locks_delete_global_blocked(request);
-> > +
-> > +	/*
-> >  	 * Find the first old lock with the same owner as the new lock.
-> >  	 */
-> >  	
-> > @@ -1069,6 +1082,7 @@ int posix_lock_file_wait(struct file *filp, struct file_lock *fl)
-> >  			continue;
-> >  
-> >  		locks_delete_block(fl);
-> > +		locks_delete_global_blocked(fl);
-> >  		break;
-> >  	}
-> >  	return error;
-> > @@ -1147,6 +1161,7 @@ int locks_mandatory_area(int read_write, struct inode *inode,
-> >  		}
-> >  
-> >  		locks_delete_block(&fl);
-> > +		locks_delete_global_blocked(&fl);
-> >  		break;
-> >  	}
-> >  
-> > @@ -1859,6 +1874,7 @@ static int do_lock_file_wait(struct file *filp, unsigned int cmd,
-> >  			continue;
-> >  
-> >  		locks_delete_block(fl);
-> > +		locks_delete_global_blocked(fl);
-> >  		break;
-> >  	}
-> >  
-> > @@ -2160,6 +2176,7 @@ posix_unblock_lock(struct file *filp, struct file_lock *waiter)
-> >  	else
-> >  		status = -ENOENT;
-> >  	spin_unlock(&inode->i_lock);
-> > +	locks_delete_global_blocked(waiter);
-> >  	return status;
-> >  }
-> >  
-> > -- 
-> > 1.7.1
-> > 
-
-
+diff --git a/Documentation/devicetree/bindings/spi/omap-spi.txt b/Documentation/devicetree/bindings/spi/omap-spi.txt
+index 938809c..87b2841 100644
+--- a/Documentation/devicetree/bindings/spi/omap-spi.txt
++++ b/Documentation/devicetree/bindings/spi/omap-spi.txt
+@@ -10,8 +10,15 @@ Required properties:
+ 			  input. The default is D0 as input and
+ 			  D1 as output.
+ 
++SPI Controller specific data in SPI slave nodes:
++- The spi slave nodes can provide the following information which is used
++  by the spi controller:
++  - ti,spi-turbo-mode: Set turbo mode for this device.
++
+ Example:
+ 
++- SoC Specific Portion:
++
+ mcspi1: mcspi@1 {
+     #address-cells = <1>;
+     #size-cells = <0>;
+@@ -20,3 +27,13 @@ mcspi1: mcspi@1 {
+     ti,spi-num-cs = <4>;
+ };
+ 
++- Board Specific Portion:
++
++	spi-device@0 {
++		#address-cells = <1>;
++		#size-cells = <1>;
++
++		controller-data {
++			ti,spi-turbo-mode;
++		};
++	};
+diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+index 86d2158..67d0409 100644
+--- a/drivers/spi/spi-omap2-mcspi.c
++++ b/drivers/spi/spi-omap2-mcspi.c
+@@ -735,6 +735,38 @@ static u32 omap2_mcspi_calc_divisor(u32 speed_hz)
+ 	return 15;
+ }
+ 
++static struct omap2_mcspi_device_config *omap2_mcspi_get_slave_ctrldata(
++			struct spi_device *spi)
++{
++	struct omap2_mcspi_device_config *cd;
++	struct device_node *slave_np, *data_np = NULL;
++
++	slave_np = spi->dev.of_node;
++	if (!slave_np) {
++		dev_err(&spi->dev, "device node not found\n");
++		return ERR_PTR(-EINVAL);
++	}
++
++	data_np = of_get_child_by_name(slave_np, "controller-data");
++	if (!data_np) {
++		dev_err(&spi->dev, "child node 'controller-data' not found\n");
++		return ERR_PTR(-EINVAL);
++	}
++
++	cd = kzalloc(sizeof(*cd), GFP_KERNEL);
++	if (!cd) {
++		dev_err(&spi->dev, "could not allocate memory for controller data\n");
++		of_node_put(data_np);
++		return ERR_PTR(-ENOMEM);
++	}
++
++	if (of_find_property(data_np, "ti,spi-turbo-mode", NULL))
++		cd->turbo_mode = 1;
++
++	of_node_put(data_np);
++	return cd;
++}
++
+ /* called only when no transfer is active to this device */
+ static int omap2_mcspi_setup_transfer(struct spi_device *spi,
+ 		struct spi_transfer *t)
+@@ -856,6 +888,11 @@ static int omap2_mcspi_setup(struct spi_device *spi)
+ 	struct omap2_mcspi_regs	*ctx = &mcspi->ctx;
+ 	struct omap2_mcspi_dma	*mcspi_dma;
+ 	struct omap2_mcspi_cs	*cs = spi->controller_state;
++	struct omap2_mcspi_device_config *cd;
++
++	if (spi->dev.of_node)
++		spi->controller_data = omap2_mcspi_get_slave_ctrldata(spi);
++	cd = spi->controller_data;
+ 
+ 	if (spi->bits_per_word < 4 || spi->bits_per_word > 32) {
+ 		dev_dbg(&spi->dev, "setup: unsupported %d bit words\n",
+@@ -902,6 +939,9 @@ static void omap2_mcspi_cleanup(struct spi_device *spi)
+ 
+ 	mcspi = spi_master_get_devdata(spi->master);
+ 
++	if (spi->dev.of_node && spi->controller_data)
++		kfree(spi->controller_data);
++
+ 	if (spi->controller_state) {
+ 		/* Unlink controller state from context save list */
+ 		cs = spi->controller_state;
 -- 
-Jeff Layton <jlayton@redhat.com>
+1.7.0.4
+
