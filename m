@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757556Ab3FEUPB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 16:15:01 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:43948 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757286Ab3FEUO6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 16:14:58 -0400
+	id S932110Ab3FEUP7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 16:15:59 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:58446 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757286Ab3FEUP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 16:15:58 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Lan Tianyu <tianyu.lan@intel.com>,
+        Jerome Cantenot <jerome.cantenot@gmail.com>,
+        Peter Wu <lekensteyn@gmail.com>
+Subject: [PATCH] ACPI / PM: Do not execute _PS0 for devices without _PSC during initialization
+Date: Wed, 05 Jun 2013 22:24:58 +0200
+Message-ID: <1448886.dqrNhOa96I@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <1369489718-25869-7-git-send-email-jiang.liu@huawei.com>
-References: <1369489718-25869-1-git-send-email-jiang.liu@huawei.com> <1369489718-25869-7-git-send-email-jiang.liu@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 5 Jun 2013 14:14:38 -0600
-Message-ID: <CAErSpo4AFxSqUfxbw60B8XVk3XxtYfRcLyWDy=yPb0fURV=BQg@mail.gmail.com>
-Subject: Re: [PATCH v3, part1 06/10] PCI: make PCI host bridge/bus creating
- and destroying logic symmetric
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 25, 2013 at 7:48 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> This patch makes PCI host bridge/bus creating and destroying logic
-> symmetric by using device_initialize()/device_add()/device_del()/put_device()
-> pairs as discussed in thread at:
-> http://comments.gmane.org/gmane.linux.kernel.pci/22073
->
-> It also fixes a bug in error recovery path in pci_create_root_bus()
-> which may kfree() an in-use host bridge object.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Can you split out the bug fix into a separate patch, in case it's
-something we want to backport by itself?  I'd do it myself, but I
-didn't understand at a glance what the problem was.
+Commit b378549 (ACPI / PM: Do not power manage devices in unknown
+initial states) added code to force devices without _PSC, but having
+_PS0 defined in the ACPI namespace, into ACPI power state D0 by
+executing _PS0 for them.  That turned out to break Toshiba P870-303,
+however, so revert that code.
 
-Bjorn
+References: https://bugzilla.kernel.org/show_bug.cgi?id=58201
+Reported-and-tested-by: Jerome Cantenot <jerome.cantenot@gmail.com>
+Tracked-down-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/device_pm.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+Index: linux-pm/drivers/acpi/device_pm.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/device_pm.c
++++ linux-pm/drivers/acpi/device_pm.c
+@@ -278,11 +278,13 @@ int acpi_bus_init_power(struct acpi_devi
+ 		if (result)
+ 			return result;
+ 	} else if (state == ACPI_STATE_UNKNOWN) {
+-		/* No power resources and missing _PSC? Try to force D0. */
++		/*
++		 * No power resources and missing _PSC?  Cross fingers and make
++		 * it D0 in hope that this is what the BIOS put the device into.
++		 * [We tried to force D0 here by executing _PS0, but that broke
++		 * Toshiba P870-303 in a nasty way.]
++		 */
+ 		state = ACPI_STATE_D0;
+-		result = acpi_dev_pm_explicit_set(device, state);
+-		if (result)
+-			return result;
+ 	}
+ 	device->power.state = state;
+ 	return 0;
+
