@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932703Ab3FEVRL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:17:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36936 "EHLO
+	id S932674Ab3FEVRJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:17:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36926 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932594Ab3FEVNH (ORCPT
+	with ESMTP id S932601Ab3FEVNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:13:07 -0400
+	Wed, 5 Jun 2013 17:13:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vincent Pelletier <plr.vincent@gmail.com>, Tejun Heo <tj@kernel.org>
-Subject: [ 35/44] libata: make ata_exec_internal_sg honor DMADIR
-Date: Wed,  5 Jun 2013 14:12:33 -0700
-Message-Id: <20130605211225.511126754@linuxfoundation.org>
+        Finn Thain <fthain@telegraphics.com.au>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [ 36/44] m68k/mac: Fix unexpected interrupt with CONFIG_EARLY_PRINTK
+Date: Wed,  5 Jun 2013 14:12:34 -0700
+Message-Id: <20130605211225.619039691@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605211221.858177087@linuxfoundation.org>
 References: <20130605211221.858177087@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,90 +27,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vincent Pelletier <plr.vincent@gmail.com>
+From: Finn Thain <fthain@telegraphics.com.au>
 
-commit e771451c0a831d96a7c14b0ca8a8ec671d98567b upstream.
+commit df66834a43c461de2565c45d815288ba1c0def37 upstream.
 
-libata honors DMADIR for regular commands, but not for internal commands
-used (among other) during device initialisation.
+The present code does not wait for the SCC to finish resetting itself
+before trying to initialise the device. The result is that the SCC
+interrupt sources become enabled (if they weren't already). This leads to
+an early boot crash (unexpected interrupt) given CONFIG_EARLY_PRINTK. Fix
+this by adding a delay. A successful reset disables the interrupt sources.
 
-This makes SATA-host-to-PATA-device bridges based on Silicon Image SiL3611
-(such as "Abit Serillel 2") end up disabled when used with an ATAPI device
-after a few tries.
+Also, after the reset for channel A setup, the SCC then gets a second
+reset for channel B setup which leaves channel A uninitialised again. Fix
+this by performing the reset only once.
 
-Log output of the bridge being hot-plugged with an ATAPI drive:
-
-  [ 9631.212901] ata1: exception Emask 0x10 SAct 0x0 SErr 0x40c0000 action 0xe frozen
-  [ 9631.212913] ata1: irq_stat 0x00000040, connection status changed
-  [ 9631.212923] ata1: SError: { CommWake 10B8B DevExch }
-  [ 9631.212939] ata1: hard resetting link
-  [ 9632.104962] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-  [ 9632.106393] ata1.00: ATAPI: PIONEER DVD-RW  DVR-115, 1.06, max UDMA/33
-  [ 9632.106407] ata1.00: applying bridge limits
-  [ 9632.108151] ata1.00: configured for UDMA/33
-  [ 9637.105303] ata1.00: qc timeout (cmd 0xa0)
-  [ 9637.105324] ata1.00: failed to clear UNIT ATTENTION (err_mask=0x5)
-  [ 9637.105335] ata1: hard resetting link
-  [ 9638.044599] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-  [ 9638.047878] ata1.00: configured for UDMA/33
-  [ 9643.044933] ata1.00: qc timeout (cmd 0xa0)
-  [ 9643.044953] ata1.00: failed to clear UNIT ATTENTION (err_mask=0x5)
-  [ 9643.044963] ata1: limiting SATA link speed to 1.5 Gbps
-  [ 9643.044971] ata1.00: limiting speed to UDMA/33:PIO3
-  [ 9643.044979] ata1: hard resetting link
-  [ 9643.984225] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
-  [ 9643.987471] ata1.00: configured for UDMA/33
-  [ 9648.984591] ata1.00: qc timeout (cmd 0xa0)
-  [ 9648.984612] ata1.00: failed to clear UNIT ATTENTION (err_mask=0x5)
-  [ 9648.984619] ata1.00: disabled
-  [ 9649.000593] ata1: hard resetting link
-  [ 9649.939902] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
-  [ 9649.955864] ata1: EH complete
-
-With this patch, the drive enumerates correctly when libata is loaded with
-atapi_dmadir=1:
-
-  [ 9891.810863] ata1: exception Emask 0x10 SAct 0x0 SErr 0x40c0000 action 0xe frozen
-  [ 9891.810874] ata1: irq_stat 0x00000040, connection status changed
-  [ 9891.810884] ata1: SError: { CommWake 10B8B DevExch }
-  [ 9891.810900] ata1: hard resetting link
-  [ 9892.762105] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-  [ 9892.763544] ata1.00: ATAPI: PIONEER DVD-RW  DVR-115, 1.06, max UDMA/33, DMADIR
-  [ 9892.763558] ata1.00: applying bridge limits
-  [ 9892.765393] ata1.00: configured for UDMA/33
-  [ 9892.786063] ata1: EH complete
-  [ 9892.792062] scsi 0:0:0:0: CD-ROM            PIONEER  DVD-RW  DVR-115  1.06 PQ: 0 ANSI: 5
-  [ 9892.798455] sr2: scsi3-mmc drive: 12x/12x writer dvd-ram cd/rw xa/form2 cdda tray
-  [ 9892.798837] sr 0:0:0:0: Attached scsi CD-ROM sr2
-  [ 9892.799109] sr 0:0:0:0: Attached scsi generic sg6 type 5
-
-Based on a patch by Csaba Halász <csaba.halasz@gmail.com> on linux-ide:
-http://marc.info/?l=linux-ide&m=136121147832295&w=2
-
-tj: minor formatting changes.
-
-Signed-off-by: Vincent Pelletier <plr.vincent@gmail.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-core.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/m68k/kernel/head.S |   29 +++++++++++++++++++----------
+ 1 file changed, 19 insertions(+), 10 deletions(-)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -1599,6 +1599,12 @@ unsigned ata_exec_internal_sg(struct ata
- 	qc->tf = *tf;
- 	if (cdb)
- 		memcpy(qc->cdb, cdb, ATAPI_CDB_LEN);
+--- a/arch/m68k/kernel/head.S
++++ b/arch/m68k/kernel/head.S
+@@ -2752,11 +2752,9 @@ func_return	get_new_page
+ #ifdef CONFIG_MAC
+ 
+ L(scc_initable_mac):
+-	.byte	9,12		/* Reset */
+ 	.byte	4,0x44		/* x16, 1 stopbit, no parity */
+ 	.byte	3,0xc0		/* receiver: 8 bpc */
+ 	.byte	5,0xe2		/* transmitter: 8 bpc, assert dtr/rts */
+-	.byte	9,0		/* no interrupts */
+ 	.byte	10,0		/* NRZ */
+ 	.byte	11,0x50		/* use baud rate generator */
+ 	.byte	12,1,13,0	/* 38400 baud */
+@@ -2899,6 +2897,7 @@ func_start	serial_init,%d0/%d1/%a0/%a1
+ 	is_not_mac(L(serial_init_not_mac))
+ 
+ #ifdef SERIAL_DEBUG
 +
-+	/* some SATA bridges need us to indicate data xfer direction */
-+	if (tf->protocol == ATAPI_PROT_DMA && (dev->flags & ATA_DFLAG_DMADIR) &&
-+	    dma_dir == DMA_FROM_DEVICE)
-+		qc->tf.feature |= ATAPI_DMADIR;
+ /* You may define either or both of these. */
+ #define MAC_USE_SCC_A /* Modem port */
+ #define MAC_USE_SCC_B /* Printer port */
+@@ -2908,9 +2907,21 @@ func_start	serial_init,%d0/%d1/%a0/%a1
+ #define mac_scc_cha_b_data_offset	0x4
+ #define mac_scc_cha_a_data_offset	0x6
+ 
++#if defined(MAC_USE_SCC_A) || defined(MAC_USE_SCC_B)
++	movel	%pc@(L(mac_sccbase)),%a0
++	/* Reset SCC device */
++	moveb	#9,%a0@(mac_scc_cha_a_ctrl_offset)
++	moveb	#0xc0,%a0@(mac_scc_cha_a_ctrl_offset)
++	/* Wait for 5 PCLK cycles, which is about 68 CPU cycles */
++	/* 5 / 3.6864 MHz = approx. 1.36 us = 68 / 50 MHz */
++	movel	#35,%d0
++5:
++	subq	#1,%d0
++	jne	5b
++#endif
 +
- 	qc->flags |= ATA_QCFLAG_RESULT_TF;
- 	qc->dma_dir = dma_dir;
- 	if (dma_dir != DMA_NONE) {
+ #ifdef MAC_USE_SCC_A
+ 	/* Initialize channel A */
+-	movel	%pc@(L(mac_sccbase)),%a0
+ 	lea	%pc@(L(scc_initable_mac)),%a1
+ 5:	moveb	%a1@+,%d0
+ 	jmi	6f
+@@ -2922,9 +2933,6 @@ func_start	serial_init,%d0/%d1/%a0/%a1
+ 
+ #ifdef MAC_USE_SCC_B
+ 	/* Initialize channel B */
+-#ifndef MAC_USE_SCC_A	/* Load mac_sccbase only if needed */
+-	movel	%pc@(L(mac_sccbase)),%a0
+-#endif	/* MAC_USE_SCC_A */
+ 	lea	%pc@(L(scc_initable_mac)),%a1
+ 7:	moveb	%a1@+,%d0
+ 	jmi	8f
+@@ -2933,6 +2941,7 @@ func_start	serial_init,%d0/%d1/%a0/%a1
+ 	jra	7b
+ 8:
+ #endif	/* MAC_USE_SCC_B */
++
+ #endif	/* SERIAL_DEBUG */
+ 
+ 	jra	L(serial_init_done)
+@@ -3006,17 +3015,17 @@ func_start	serial_putc,%d0/%d1/%a0/%a1
+ 
+ #ifdef SERIAL_DEBUG
+ 
+-#ifdef MAC_USE_SCC_A
++#if defined(MAC_USE_SCC_A) || defined(MAC_USE_SCC_B)
+ 	movel	%pc@(L(mac_sccbase)),%a1
++#endif
++
++#ifdef MAC_USE_SCC_A
+ 3:	btst	#2,%a1@(mac_scc_cha_a_ctrl_offset)
+ 	jeq	3b
+ 	moveb	%d0,%a1@(mac_scc_cha_a_data_offset)
+ #endif	/* MAC_USE_SCC_A */
+ 
+ #ifdef MAC_USE_SCC_B
+-#ifndef MAC_USE_SCC_A	/* Load mac_sccbase only if needed */
+-	movel	%pc@(L(mac_sccbase)),%a1
+-#endif	/* MAC_USE_SCC_A */
+ 4:	btst	#2,%a1@(mac_scc_cha_b_ctrl_offset)
+ 	jeq	4b
+ 	moveb	%d0,%a1@(mac_scc_cha_b_data_offset)
 
 
