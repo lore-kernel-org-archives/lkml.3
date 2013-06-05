@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751405Ab3FEFM1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 01:12:27 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37327 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751198Ab3FEFMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 01:12:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,804,1363158000"; 
-   d="scan'208";a="348323965"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Alex Shi <alex.shi@intel.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <51AE8FC7.8090300@intel.com>
-References: <1370358196-5699-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20130604150956.05843E0090@blue.fi.intel.com>
- <51AE8FC7.8090300@intel.com>
-Subject: Re: [PATCH] x86/tlb_info: detect more tlb configuration
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130605051501.8A226E0090@blue.fi.intel.com>
-Date: Wed,  5 Jun 2013 08:15:01 +0300 (EEST)
+	id S1751490Ab3FEFWt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 01:22:49 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:51417 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243Ab3FEFWr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 01:22:47 -0400
+MIME-Version: 1.0
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Wed, 5 Jun 2013 14:22:26 +0900
+Message-ID: <CAAVeFu+hQHScYYkvO1KOrUPLLaC0ju_O4SDZWyJE8KhLn_hibQ@mail.gmail.com>
+Subject: Active-low behavior in gpiolib
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-gpio@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alex Shi wrote:
-> On 06/04/2013 11:09 PM, Kirill A. Shutemov wrote:
-> > 
-> > Kirill A. Shutemov wrote:
-> >> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> >>
-> > 
-> > Err.. Forgot CC lists.
-> > 
-> >> Software Developerâ€™s Manual covers two more TLB configurations:
-> >>
-> >> 63H Data TLB: 1 GByte pages, 4-way set associative, 4 entries
-> >> 76H Instruction TLB: 2M/4M pages, fully associative, 8 entries
-> 
-> Acked-by: Alex Shi <alex.shi@intel.com>
-> 
-> BTW,
-> What the new CPU has them?
+Hi everyone,
 
-All starting from SandyBridge, I believe.
+While preparing the v2 of the descriptor-based GPIO interface (gpiod),
+I stumbled upon this point that looks like some inconsistency in the
+current interface.
 
--- 
- Kirill A. Shutemov
+gpiolib.c defines the following flags that can influence the gpio
+output: FLAG_ACTIVE_LOW, FLAG_OPEN_DRAIN, and FLAG_OPEN_SOURCE.
+FLAG_OPEN_DRAIN and FLAG_OPEN_SOURCE, when set, take effet on all set
+operations no matter where they come from.
+
+FLAG_ACTIVE_LOW, on the other hand, is *only* set and used through
+sysfs operations. Independently, the active low property can be
+specified in gpio phandles and retrieved by
+of_get_(named_)gpio_flags() - only it has to be kept in a separate
+variable which must then be checked everytime one wants to change the
+GPIO value to set the correct level.
+
+I find it rather confusing and wonder if we could not come with a more
+consistent behavior for the gpiod interface. In particular:
+- the active low property could be specified when declaring GPIO
+mappings (either through DT or platform data)
+- gpiod_get() would retrieve it transparently and set it as a
+permanent property of the GPIO
+- gpiod_set/get_value() would take the active low property into
+account when setting the value - making these functions work with the
+actual *value* (as their name states) instead of the physical line
+level.
+
+The old gpio_* interface would still behave as usual, of course.
+
+This would make gpiolib behavior more consistent IMHO, at the price of
+a semantic difference between the otherwise very similar gpio and
+gpiod interfaces. Any thought for or against this? If we go this way
+and decide to allow gpiod to diverge, are there other things we are
+not satisfied with about the current gpio interface and that we want
+to improve?
+
+Thanks,
+Alex.
