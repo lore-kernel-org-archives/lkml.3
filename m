@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab3FEU4h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 16:56:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36324 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932182Ab3FEUx3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932184Ab3FEUx3 (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 5 Jun 2013 16:53:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36294 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757648Ab3FEUxZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 16:53:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 24/33] drm/radeon: fix card_posted check for newer asics
-Date: Wed,  5 Jun 2013 13:53:02 -0700
-Message-Id: <20130605204707.906051609@linuxfoundation.org>
+        Imre Deak <imre.deak@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Howells <dhowells@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 18/33] wait: fix false timeouts when using wait_event_timeout()
+Date: Wed,  5 Jun 2013 13:52:56 -0700
+Message-Id: <20130605204706.586687472@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605204702.359510786@linuxfoundation.org>
 References: <20130605204702.359510786@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,52 +32,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Imre Deak <imre.deak@intel.com>
 
-commit 09fb8bd1a63b0f9f15e655c4fe8d047e5d2bf67a upstream.
+commit 4c663cfc523a88d97a8309b04a089c27dc57fd7e upstream.
 
-Newer asics have variable numbers of crtcs.  Use that
-rather than the asic family to determine which crtcs
-to check.  This avoids checking non-existent crtcs or
-missing crtcs on certain asics.
+Many callers of the wait_event_timeout() and
+wait_event_interruptible_timeout() expect that the return value will be
+positive if the specified condition becomes true before the timeout
+elapses.  However, at the moment this isn't guaranteed.  If the wake-up
+handler is delayed enough, the time remaining until timeout will be
+calculated as 0 - and passed back as a return value - even if the
+condition became true before the timeout has passed.
 
-Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Fix this by returning at least 1 if the condition becomes true.  This
+semantic is in line with what wait_for_condition_timeout() does; see
+commit bb10ed09 ("sched: fix wait_for_completion_timeout() spurious
+failure under heavy load").
+
+Daniel said "We have 3 instances of this bug in drm/i915.  One case even
+where we switch between the interruptible and not interruptible
+wait_event_timeout variants, foolishly presuming they have the same
+semantics.  I very much like this."
+
+One such bug is reported at
+  https://bugs.freedesktop.org/show_bug.cgi?id=64133
+
+Signed-off-by: Imre Deak <imre.deak@intel.com>
+Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Acked-by: David Howells <dhowells@redhat.com>
+Acked-by: Jens Axboe <axboe@kernel.dk>
+Cc: "Paul E.  McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_device.c |   19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+ include/linux/wait.h |   16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -352,18 +352,17 @@ bool radeon_card_posted(struct radeon_de
- 	uint32_t reg;
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -233,6 +233,8 @@ do {									\
+ 		if (!ret)						\
+ 			break;						\
+ 	}								\
++	if (!ret && (condition))					\
++		ret = 1;						\
+ 	finish_wait(&wq, &__wait);					\
+ } while (0)
  
- 	/* first check CRTCs */
--	if (ASIC_IS_DCE41(rdev)) {
-+	if (ASIC_IS_DCE4(rdev)) {
- 		reg = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET) |
- 			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET);
--		if (reg & EVERGREEN_CRTC_MASTER_EN)
--			return true;
--	} else if (ASIC_IS_DCE4(rdev)) {
--		reg = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET) |
--			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET) |
--			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET) |
--			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET) |
--			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET) |
--			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET);
-+			if (rdev->num_crtc >= 4) {
-+				reg |= RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET) |
-+					RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET);
-+			}
-+			if (rdev->num_crtc >= 6) {
-+				reg |= RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET) |
-+					RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET);
-+			}
- 		if (reg & EVERGREEN_CRTC_MASTER_EN)
- 			return true;
- 	} else if (ASIC_IS_AVIVO(rdev)) {
+@@ -249,8 +251,9 @@ do {									\
+  * wake_up() has to be called after changing any variable that could
+  * change the result of the wait condition.
+  *
+- * The function returns 0 if the @timeout elapsed, and the remaining
+- * jiffies if the condition evaluated to true before the timeout elapsed.
++ * The function returns 0 if the @timeout elapsed, or the remaining
++ * jiffies (at least 1) if the @condition evaluated to %true before
++ * the @timeout elapsed.
+  */
+ #define wait_event_timeout(wq, condition, timeout)			\
+ ({									\
+@@ -318,6 +321,8 @@ do {									\
+ 		ret = -ERESTARTSYS;					\
+ 		break;							\
+ 	}								\
++	if (!ret && (condition))					\
++		ret = 1;						\
+ 	finish_wait(&wq, &__wait);					\
+ } while (0)
+ 
+@@ -334,9 +339,10 @@ do {									\
+  * wake_up() has to be called after changing any variable that could
+  * change the result of the wait condition.
+  *
+- * The function returns 0 if the @timeout elapsed, -ERESTARTSYS if it
+- * was interrupted by a signal, and the remaining jiffies otherwise
+- * if the condition evaluated to true before the timeout elapsed.
++ * Returns:
++ * 0 if the @timeout elapsed, -%ERESTARTSYS if it was interrupted by
++ * a signal, or the remaining jiffies (at least 1) if the @condition
++ * evaluated to %true before the @timeout elapsed.
+  */
+ #define wait_event_interruptible_timeout(wq, condition, timeout)	\
+ ({									\
 
 
