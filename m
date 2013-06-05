@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757325Ab3FETje (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 15:39:34 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:49854 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757051Ab3FETjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 15:39:33 -0400
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH 07/10] pinctrl: add pinctrl driver for Rockchip SoCs
-Date: Wed, 5 Jun 2013 20:50:00 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>
-References: <201306030055.15413.heiko@sntech.de> <CACRpkdZty-TszfBTOab4_PUi8dy5DYim=wNERv=pyqC3HNuT4w@mail.gmail.com> <51AF72F9.3060307@wwwdotorg.org>
-In-Reply-To: <51AF72F9.3060307@wwwdotorg.org>
+	id S1757374Ab3FETp3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 15:45:29 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:44779 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757088Ab3FETp1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 15:45:27 -0400
+Date: Wed, 5 Jun 2013 12:45:22 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: Re: [PATCH v2 06/10] cpuset: record old_mems_allowed in struct cpuset
+Message-ID: <20130605194522.GG10693@mtj.dyndns.org>
+References: <51AF0183.8070602@huawei.com>
+ <51AF01E8.8080205@huawei.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201306052050.00410.heiko@sntech.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51AF01E8.8080205@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 5. Juni 2013, 19:18:49 schrieb Stephen Warren:
-> On 06/05/2013 01:01 AM, Linus Walleij wrote:
-> > On Tue, Jun 4, 2013 at 2:05 PM, Heiko Stübner <heiko@sntech.de> wrote:
-> ...
-> 
-> >> The only problem is the pull stuff mentioned above that is either pull
-> >> up or down without the driver having knowledge about it. And
-> >> generic_pinconf only knows about them separately right now.
-> > 
-> > Create a separate patch adding PIN_CONFIG_BIAS_PULL_AUTO
-> > to include/linux/pinctrl/pinconf-generic.h, don't forget the
-> > kerneldoc, and patching drivers/pinctrl/pinconf-generic.c.
-> 
-> "AUTO" sounds really rather generic. Based on just the word "AUTO", I
-> have no idea if it's a HW- or SW-supplied default, or what the algorithm
-> is for determining the automatically selected value. Perhaps
-> s/AUTO/PIN_DEFAULT/ or something like that?
+Hello, Li.
 
-I would also go with PIN_DEFAULT, which somehow captures what the function 
-does better than "AUTO". So, if no-one objects I'll go with Stephen's 
-suggestion.
+On Wed, Jun 05, 2013 at 05:16:24PM +0800, Li Zefan wrote:
+> @@ -1425,7 +1435,6 @@ static void cpuset_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
+>  	 * Change mm, possibly for multiple threads in a threadgroup. This is
+>  	 * expensive and may sleep.
+>  	 */
+> -	cpuset_attach_nodemask_to = cs->mems_allowed;
+>  	mm = get_task_mm(leader);
+>  	if (mm) {
+>  		mpol_rebind_mm(mm, &cpuset_attach_nodemask_to);
 
+This looks a bit suspicious to me.  Now we're setting mm's nodemask to
+guarantee_online_mems() output rather than cs->mems_allowed.  Is this
+change intended?  If so, it probably deserves an explanation in the
+description?
 
-> While the concept is simple enough, it's unusual enough that such a
-> patch would hopefully have a comment containing a full explanation of
-> exactly what this option means.
+Thanks.
 
-of course :-)
+-- 
+tejun
