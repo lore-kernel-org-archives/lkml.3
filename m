@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932692Ab3FEVPv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:15:51 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:18558 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932510Ab3FEVPt (ORCPT
+	id S932677Ab3FEVPu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:15:50 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:17449 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932221Ab3FEVPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:15:49 -0400
+	Wed, 5 Jun 2013 17:15:48 -0400
 From: Waiman Long <Waiman.Long@hp.com>
 Cc: Waiman Long <Waiman.Long@hp.com>, linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Chandramouleeswaran, Aswin" <aswin@hp.com>,
         "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH v2 2/2] SELinux: Increase ebitmap_node size for 64-bit configuration
-Date: Wed,  5 Jun 2013 17:15:02 -0400
-Message-Id: <1370466902-21144-2-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH v2 1/2] SELinux: reduce overhead of mls_level_isvalid() function call
+Date: Wed,  5 Jun 2013 17:15:01 -0400
+Message-Id: <1370466902-21144-1-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1370466902-21144-1-git-send-email-Waiman.Long@hp.com>
-References: <1370466902-21144-1-git-send-email-Waiman.Long@hp.com>
 To: Stephen Smalley <sds@tycho.nsa.gov>,
         James Morris <james.l.morris@oracle.com>,
         Eric Paris <eparis@parisplace.org>
@@ -25,45 +23,193 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the ebitmap_node structure has a fixed size of 32 bytes. On
-a 32-bit system, the overhead is 8 bytes, leaving 24 bytes for being
-used as bitmaps. The overhead ratio is 1/4.
+v1->v2:
+ - Move the new ebitmap comparison logic from mls_level_isvalid()
+   into the ebitmap_contains() helper function.
+ - Rerun perf and performance tests on the latest v3.10-rc4 kernel.
 
-On a 64-bit system, the overhead is 16 bytes. Therefore, only 16 bytes
-are left for bitmap purpose and the overhead ratio is 1/2. With a
-3.8.2 kernel, a boot-up operation will cause the ebitmap_get_bit()
-function to be called about 9 million times. The average number of
-ebitmap_node traversal is about 3.7.
+While running the high_systime workload of the AIM7 benchmark on
+a 2-socket 12-core Westmere x86-64 machine running 3.10-rc4 kernel
+(with HT on), it was found that a pretty sizable amount of time was
+spent in the SELinux code. Below was the perf trace of the "perf
+record -a -s" of a test run at 1500 users:
 
-This patch increases the size of the ebitmap_node structure to 64
-bytes for 64-bit system to keep the overhead ratio at 1/4. This may
-also improve performance a little bit by making node to node traversal
-less frequent (< 2) as more bits are available in each node.
+  5.04%            ls  [kernel.kallsyms]     [k] ebitmap_get_bit
+  1.96%            ls  [kernel.kallsyms]     [k] mls_level_isvalid
+  1.95%            ls  [kernel.kallsyms]     [k] find_next_bit
+
+The ebitmap_get_bit() was the hottest function in the perf-report
+output.  Both the ebitmap_get_bit() and find_next_bit() functions
+were, in fact, called by mls_level_isvalid(). As a result, the
+mls_level_isvalid() call consumed 8.95% of the total CPU time of
+all the 24 virtual CPUs which is quite a lot. The majority of the
+mls_level_isvalid() function invocations come from the socket creation
+system call.
+
+Looking at the mls_level_isvalid() function, it is checking to see
+if all the bits set in one of the ebitmap structure are also set in
+another one as well as the highest set bit is no bigger than the one
+specified by the given policydb data structure. It is doing it in
+a bit-by-bit manner. So if the ebitmap structure has many bits set,
+the iteration loop will be done many times.
+
+The current code can be rewritten to use a similar algorithm as the
+ebitmap_contains() function with an additional check for the
+highest set bit. The ebitmap_contains() function was extended to
+cover an optional additional check for the highest set bit, and the
+mls_level_isvalid() function was modified to call ebitmap_contains().
+
+With that change, the perf trace showed that the used CPU time drop
+down to just 0.08% (ebitmap_contains + mls_level_isvalid) of the
+total which is about 100X less than before.
+
+  0.07%            ls  [kernel.kallsyms]     [k] ebitmap_contains
+  0.05%            ls  [kernel.kallsyms]     [k] ebitmap_get_bit
+  0.01%            ls  [kernel.kallsyms]     [k] mls_level_isvalid
+  0.01%            ls  [kernel.kallsyms]     [k] find_next_bit
+
+The remaining ebitmap_get_bit() and find_next_bit() functions calls
+are made by other kernel routines as the new mls_level_isvalid()
+function will not call them anymore.
+
+This patch also improves the high_systime AIM7 benchmark result,
+though the improvement is not as impressive as is suggested by the
+reduction in CPU time spent in the ebitmap functions. The table below
+shows the performance change on the 2-socket x86-64 system (with HT
+on) mentioned above.
+
++--------------+---------------+----------------+-----------------+
+|   Workload   | mean % change | mean % change  | mean % change   |
+|              | 10-100 users  | 200-1000 users | 1100-2000 users |
++--------------+---------------+----------------+-----------------+
+| high_systime |     +0.1%     |     +0.9%      |     +2.6%       |
++--------------+---------------+----------------+-----------------+
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- security/selinux/ss/ebitmap.h |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+ security/selinux/ss/ebitmap.c   |   35 ++++++++++++++++++++++++++++++++++-
+ security/selinux/ss/ebitmap.h   |    2 +-
+ security/selinux/ss/mls.c       |   20 +++++++-------------
+ security/selinux/ss/mls_types.h |    2 +-
+ 4 files changed, 43 insertions(+), 16 deletions(-)
 
+diff --git a/security/selinux/ss/ebitmap.c b/security/selinux/ss/ebitmap.c
+index 30f119b..100b3e6 100644
+--- a/security/selinux/ss/ebitmap.c
++++ b/security/selinux/ss/ebitmap.c
+@@ -213,7 +213,12 @@ netlbl_import_failure:
+ }
+ #endif /* CONFIG_NETLABEL */
+ 
+-int ebitmap_contains(struct ebitmap *e1, struct ebitmap *e2)
++/*
++ * Check to see if all the bits set in e2 are also set in e1. Optionally,
++ * if last_e2bit is non-zero, the highest set bit in e2 cannot exceed
++ * last_e2bit.
++ */
++int ebitmap_contains(struct ebitmap *e1, struct ebitmap *e2, u32 last_e2bit)
+ {
+ 	struct ebitmap_node *n1, *n2;
+ 	int i;
+@@ -223,6 +228,33 @@ int ebitmap_contains(struct ebitmap *e1, struct ebitmap *e2)
+ 
+ 	n1 = e1->node;
+ 	n2 = e2->node;
++	if (last_e2bit) {
++		while (n1 && n2 && (n1->startbit <= n2->startbit)) {
++			int lastsetbit = -1;
++
++			if (n1->startbit < n2->startbit) {
++				n1 = n1->next;
++				continue;
++			}
++			for (i = EBITMAP_UNIT_NUMS - 1; i >= 0; i--) {
++				if (!n2->maps[i])
++					continue;
++				if ((n1->maps[i] & n2->maps[i]) != n2->maps[i])
++					return 0;
++				if (lastsetbit < 0)
++					lastsetbit = n2->startbit +
++						     i * EBITMAP_UNIT_SIZE +
++						     __fls(n2->maps[i]);
++			}
++			if ((lastsetbit >= 0) && (lastsetbit > last_e2bit))
++				return 0;
++
++			n1 = n1->next;
++			n2 = n2->next;
++		}
++		goto done;
++	}
++
+ 	while (n1 && n2 && (n1->startbit <= n2->startbit)) {
+ 		if (n1->startbit < n2->startbit) {
+ 			n1 = n1->next;
+@@ -237,6 +269,7 @@ int ebitmap_contains(struct ebitmap *e1, struct ebitmap *e2)
+ 		n2 = n2->next;
+ 	}
+ 
++done:
+ 	if (n2)
+ 		return 0;
+ 
 diff --git a/security/selinux/ss/ebitmap.h b/security/selinux/ss/ebitmap.h
-index e7eb3a9..712c8a7 100644
+index 922f8af..e7eb3a9 100644
 --- a/security/selinux/ss/ebitmap.h
 +++ b/security/selinux/ss/ebitmap.h
-@@ -16,7 +16,13 @@
+@@ -117,7 +117,7 @@ static inline void ebitmap_node_clr_bit(struct ebitmap_node *n,
  
- #include <net/netlabel.h>
+ int ebitmap_cmp(struct ebitmap *e1, struct ebitmap *e2);
+ int ebitmap_cpy(struct ebitmap *dst, struct ebitmap *src);
+-int ebitmap_contains(struct ebitmap *e1, struct ebitmap *e2);
++int ebitmap_contains(struct ebitmap *e1, struct ebitmap *e2, u32 last_e2bit);
+ int ebitmap_get_bit(struct ebitmap *e, unsigned long bit);
+ int ebitmap_set_bit(struct ebitmap *e, unsigned long bit, int value);
+ void ebitmap_destroy(struct ebitmap *e);
+diff --git a/security/selinux/ss/mls.c b/security/selinux/ss/mls.c
+index 40de8d3..48ab2b7 100644
+--- a/security/selinux/ss/mls.c
++++ b/security/selinux/ss/mls.c
+@@ -170,19 +170,13 @@ int mls_level_isvalid(struct policydb *p, struct mls_level *l)
+ 	if (!levdatum)
+ 		return 0;
  
--#define EBITMAP_UNIT_NUMS	((32 - sizeof(void *) - sizeof(u32))	\
-+#ifdef CONFIG_64BIT
-+#define	EBITMAP_NODE_SIZE	64
-+#else
-+#define	EBITMAP_NODE_SIZE	32
-+#endif
-+
-+#define EBITMAP_UNIT_NUMS	((EBITMAP_NODE_SIZE-sizeof(void *)-sizeof(u32))\
- 					/ sizeof(unsigned long))
- #define EBITMAP_UNIT_SIZE	BITS_PER_LONG
- #define EBITMAP_SIZE		(EBITMAP_UNIT_NUMS * EBITMAP_UNIT_SIZE)
+-	ebitmap_for_each_positive_bit(&l->cat, node, i) {
+-		if (i > p->p_cats.nprim)
+-			return 0;
+-		if (!ebitmap_get_bit(&levdatum->level->cat, i)) {
+-			/*
+-			 * Category may not be associated with
+-			 * sensitivity.
+-			 */
+-			return 0;
+-		}
+-	}
+-
+-	return 1;
++	/*
++	 * Return 1 iff all the bits set in l->cat are also be set in
++	 * levdatum->level->cat and no bit in l->cat is larger than
++	 * p->p_cats.nprim.
++	 */
++	return ebitmap_contains(&levdatum->level->cat, &l->cat,
++				p->p_cats.nprim);
+ }
+ 
+ int mls_range_isvalid(struct policydb *p, struct mls_range *r)
+diff --git a/security/selinux/ss/mls_types.h b/security/selinux/ss/mls_types.h
+index 03bed52..e936487 100644
+--- a/security/selinux/ss/mls_types.h
++++ b/security/selinux/ss/mls_types.h
+@@ -35,7 +35,7 @@ static inline int mls_level_eq(struct mls_level *l1, struct mls_level *l2)
+ static inline int mls_level_dom(struct mls_level *l1, struct mls_level *l2)
+ {
+ 	return ((l1->sens >= l2->sens) &&
+-		ebitmap_contains(&l1->cat, &l2->cat));
++		ebitmap_contains(&l1->cat, &l2->cat, 0));
+ }
+ 
+ #define mls_level_incomp(l1, l2) \
 -- 
 1.7.1
 
