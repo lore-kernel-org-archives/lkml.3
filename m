@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757924Ab3FEVfJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:35:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37644 "EHLO
+	id S932869Ab3FEVfl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:35:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37858 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752756Ab3FEVfG (ORCPT
+	with ESMTP id S932835Ab3FEVfi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:06 -0400
+	Wed, 5 Jun 2013 17:35:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jouni Malinen <j@w1.fi>, Johannes Berg <johannes.berg@intel.com>
-Subject: [ 015/127] mac80211: fix AP-mode frame matching
-Date: Wed,  5 Jun 2013 14:33:02 -0700
-Message-Id: <20130605213219.777712779@linuxfoundation.org>
+        Jan Beulich <jbeulich@suse.com>,
+        Alexander Boyko <alexander_boyko@xyratex.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Huang Ying <ying.huang@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 060/127] x86, crc32-pclmul: Fix build with older binutils
+Date: Wed,  5 Jun 2013 14:33:47 -0700
+Message-Id: <20130605213224.828197014@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -26,34 +30,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Jan Beulich <JBeulich@suse.com>
 
-commit 2b9ccd4e4308272e5aec614b77c5385e7ec2ec90 upstream.
+commit 2baad6121e2b2fa3428ee6cb2298107be11ab23a upstream.
 
-In AP mode, ignore frames with mis-matched BSSID that aren't
-multicast or sent to the correct destination. This fixes
-reporting public action frames to userspace multiple times
-on multiple virtual AP interfaces.
+binutils prior to 2.18 (e.g. the ones found on SLE10) don't support
+assembling PEXTRD, so a macro based approach like the one for PCLMULQDQ
+in the same file should be used.
 
-Reported-by: Jouni Malinen <j@w1.fi>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+This requires making the helper macros capable of recognizing 32-bit
+general purpose register operands.
+
+[ hpa: tagging for stable as it is a low risk build fix ]
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Link: http://lkml.kernel.org/r/51A6142A02000078000D99D8@nat28.tlf.novell.com
+Cc: Alexander Boyko <alexander_boyko@xyratex.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Huang Ying <ying.huang@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/rx.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/x86/crypto/crc32-pclmul_asm.S |    2 -
+ arch/x86/include/asm/inst.h        |   74 ++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 73 insertions(+), 3 deletions(-)
 
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -3032,6 +3032,9 @@ static int prepare_for_handlers(struct i
- 			 * and location updates. Note that mac80211
- 			 * itself never looks at these frames.
- 			 */
-+			if (!multicast &&
-+			    !ether_addr_equal(sdata->vif.addr, hdr->addr1))
-+				return 0;
- 			if (ieee80211_is_public_action(hdr, skb->len))
- 				return 1;
- 			if (!ieee80211_is_beacon(hdr->frame_control))
+--- a/arch/x86/crypto/crc32-pclmul_asm.S
++++ b/arch/x86/crypto/crc32-pclmul_asm.S
+@@ -241,6 +241,6 @@ fold_64:
+ 	pand    %xmm3, %xmm1
+ 	PCLMULQDQ 0x00, CONSTANT, %xmm1
+ 	pxor    %xmm2, %xmm1
+-	pextrd  $0x01, %xmm1, %eax
++	PEXTRD  0x01, %xmm1, %eax
+ 
+ 	ret
+--- a/arch/x86/include/asm/inst.h
++++ b/arch/x86/include/asm/inst.h
+@@ -9,12 +9,68 @@
+ 
+ #define REG_NUM_INVALID		100
+ 
+-#define REG_TYPE_R64		0
+-#define REG_TYPE_XMM		1
++#define REG_TYPE_R32		0
++#define REG_TYPE_R64		1
++#define REG_TYPE_XMM		2
+ #define REG_TYPE_INVALID	100
+ 
++	.macro R32_NUM opd r32
++	\opd = REG_NUM_INVALID
++	.ifc \r32,%eax
++	\opd = 0
++	.endif
++	.ifc \r32,%ecx
++	\opd = 1
++	.endif
++	.ifc \r32,%edx
++	\opd = 2
++	.endif
++	.ifc \r32,%ebx
++	\opd = 3
++	.endif
++	.ifc \r32,%esp
++	\opd = 4
++	.endif
++	.ifc \r32,%ebp
++	\opd = 5
++	.endif
++	.ifc \r32,%esi
++	\opd = 6
++	.endif
++	.ifc \r32,%edi
++	\opd = 7
++	.endif
++#ifdef CONFIG_X86_64
++	.ifc \r32,%r8d
++	\opd = 8
++	.endif
++	.ifc \r32,%r9d
++	\opd = 9
++	.endif
++	.ifc \r32,%r10d
++	\opd = 10
++	.endif
++	.ifc \r32,%r11d
++	\opd = 11
++	.endif
++	.ifc \r32,%r12d
++	\opd = 12
++	.endif
++	.ifc \r32,%r13d
++	\opd = 13
++	.endif
++	.ifc \r32,%r14d
++	\opd = 14
++	.endif
++	.ifc \r32,%r15d
++	\opd = 15
++	.endif
++#endif
++	.endm
++
+ 	.macro R64_NUM opd r64
+ 	\opd = REG_NUM_INVALID
++#ifdef CONFIG_X86_64
+ 	.ifc \r64,%rax
+ 	\opd = 0
+ 	.endif
+@@ -63,6 +119,7 @@
+ 	.ifc \r64,%r15
+ 	\opd = 15
+ 	.endif
++#endif
+ 	.endm
+ 
+ 	.macro XMM_NUM opd xmm
+@@ -118,10 +175,13 @@
+ 	.endm
+ 
+ 	.macro REG_TYPE type reg
++	R32_NUM reg_type_r32 \reg
+ 	R64_NUM reg_type_r64 \reg
+ 	XMM_NUM reg_type_xmm \reg
+ 	.if reg_type_r64 <> REG_NUM_INVALID
+ 	\type = REG_TYPE_R64
++	.elseif reg_type_r32 <> REG_NUM_INVALID
++	\type = REG_TYPE_R32
+ 	.elseif reg_type_xmm <> REG_NUM_INVALID
+ 	\type = REG_TYPE_XMM
+ 	.else
+@@ -162,6 +222,16 @@
+ 	.byte \imm8
+ 	.endm
+ 
++	.macro PEXTRD imm8 xmm gpr
++	R32_NUM extrd_opd1 \gpr
++	XMM_NUM extrd_opd2 \xmm
++	PFX_OPD_SIZE
++	PFX_REX extrd_opd1 extrd_opd2
++	.byte 0x0f, 0x3a, 0x16
++	MODRM 0xc0 extrd_opd1 extrd_opd2
++	.byte \imm8
++	.endm
++
+ 	.macro AESKEYGENASSIST rcon xmm1 xmm2
+ 	XMM_NUM aeskeygen_opd1 \xmm1
+ 	XMM_NUM aeskeygen_opd2 \xmm2
 
 
