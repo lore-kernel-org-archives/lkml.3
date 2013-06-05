@@ -1,86 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933251Ab3FEViY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:38:24 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:39171 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933158Ab3FEViU (ORCPT
+	id S933224Ab3FEVit (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:38:49 -0400
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:45868 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932168Ab3FEVir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:38:20 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCHv4 3/3] gpio: msm: Add device tree and irqdomain support for gpio-msm-v2
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+	Wed, 5 Jun 2013 17:38:47 -0400
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Wed, 5 Jun 2013 17:38:45 -0400
+To: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-In-Reply-To: <51AC0005.2020700@codeaurora.org>
-References: <1370046121-7835-1-git-send-email-rvaswani@codeaurora.org> <1370046121-7835-4-git-send-email-rvaswani@codeaurora.org> <CACxGe6tD253nb-5sOSBQu0Kj1JwYOeas2-WpR2isFO+Q+8ty2A@mail.gmail.com> <51AC0005.2020700@codeaurora.org>
-Date: Wed, 05 Jun 2013 22:38:13 +0100
-Message-Id: <20130605213813.2D9703E10E4@localhost>
+        debian-arm@lists.debian.org,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>,
+        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
+        debian-kernel@lists.debian.org
+Subject: Re: getting allwinner SoC support upstream (was Re: Uploading
+ linux (3.9.4-1))
+Message-ID: <20130605213845.GX11182@csclub.uwaterloo.ca>
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
+ <CAKON4OxDD5orX2w-_+d5kawTGXbE3KKj2QLERo9m7=NiUSXhgQ@mail.gmail.com>
+ <51AFA6DD.3000202@wwwdotorg.org>
+ <CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 02 Jun 2013 19:31:33 -0700, Rohit Vaswani <rvaswani@codeaurora.org> wrote:
-> On 6/1/2013 1:09 AM, Grant Likely wrote:
-> > On Sat, Jun 1, 2013 at 1:22 AM, Rohit Vaswani <rvaswani@codeaurora.org> wrote:
-> >> This cleans up the gpio-msm-v2 driver of all the global define usage.
-> >> The number of gpios are now defined in the device tree. This enables
-> >> adding irqdomain support as well.
-> >>
-> >> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
-> >> @@ -101,11 +96,27 @@ enum {
-> >>    */
-> >>   struct msm_gpio_dev {
-> >>          struct gpio_chip gpio_chip;
-> >> -       DECLARE_BITMAP(enabled_irqs, NR_GPIO_IRQS);
-> >> -       DECLARE_BITMAP(wake_irqs, NR_GPIO_IRQS);
-> >> -       DECLARE_BITMAP(dual_edge_irqs, NR_GPIO_IRQS);
-> >> +       unsigned long *enabled_irqs;
-> >> +       unsigned long *wake_irqs;
-> >> +       unsigned long *dual_edge_irqs;
-> > Was there a reason you ignored the comment to leave these bitmaps as
-> > statically allocated?
-> >
-> > [...]
-> >
-> >> +       msm_gpio.enabled_irqs = devm_kzalloc(&pdev->dev,
-> >> +                                               sizeof(unsigned long) *
-> >> +                                               BITS_TO_LONGS(ngpio) * 3,
-> >> +                                               GFP_KERNEL);
-> >> +       msm_gpio.wake_irqs = &msm_gpio.enabled_irqs[BITS_TO_LONGS(ngpio)];
-> >> +       msm_gpio.dual_edge_irqs =
-> >> +                       &msm_gpio.enabled_irqs[BITS_TO_LONGS(ngpio * 2)];
-> > I should have just deleted my comment about doing it this way. I was
-> > making the point that one allocation is better that three; but then I
-> > also said that it was better to not allocate at all. Go back to the
-> > statically allocated bitmap array. It is far better than this.
-> >
-> > g.
+On Wed, Jun 05, 2013 at 10:24:15PM +0100, Luke Kenneth Casson Leighton wrote:
+>   https://github.com/linux-sunxi/u-boot-sunxi
 > 
-> I agree that DECLARE_BITMAP is the most efficient way, but 
-> DECLARE_BITMAP takes a statically defined number of gpios as an 
-> argument. Since we get the ngpio from device tree, these had to go as 
-> well. Under this scheme, 1 allocation was better than 3 and went ahead 
-> with your suggestion.
+>  And Then Some, stephen.  there are two versions of u-boot being used:
+> one is the community-assembled [GPL-compliant] one, and the other
+> includes a [as-of-a-few-days-ago-but-no-longer, yay!]
+> formerly-GPL-violating one from allwinner.
+> 
+>  the community-based one *doesn't* have fex integration (i don't
+> think, but henrik will know for sure), but the allwinner one
+> definitely does.
+> 
+>  .... and then there's the boot0 and boot1 loaders, these *do* have
+> fex integration: they're absolutely tiny and they're designed to fit
+> into the 1st level cache.  the job of these bootloaders is to set up
+> the DDR3 RAM timings (so that you can access DRAM!!) and to then
+> decide whether to load from NAND, SD/MMC etc. and many other things.
+> 
+>  these boot0 and boot1 loaders are themselves configureable so that
+> you can specify, through script.fex, what GPIO is to be the "reset
+> key" and so on.  that's a much simplified story btw.
+> 
+>  so the point is: if anyone wishes me to propose to allwinner that
+> they convert over to devicetree, or any other proposal which involves
+> significant low-level changes to their working practices that could
+> potentially have a massive knock-on effect onto their
+> multi-million-dollar clients, it had better be a damn good story.
 
-Think about it for a moment; You *know* all the devices that are going
-to use the driver. The largest size for ngpios that I see is 173 which
-is a mere 18 long words for 3 bitmaps. Even if you were to quadruple
-that amount the total for all the bitmasks is 72 long words. You're
-optimizing at the wrong place. Changing it to dynamic allocation makes
-the code slower, more complicated, and probably doesn't do anything to
-save on real memory consumption.
+Well certainly anyone interested in being a customer of allwinner should
+very much encourage them to get with it.  Having support upstream really
+is very helpful when trying to use a chip.  Going off an inventing your
+own thing rather than talking to the linux kernel developers first is
+just a bad idea as far as long term support is concerned.  Had they asked
+they would probably have been told devicetree would be a good idea to use.
 
-The solution is simple; choose a maximum value of ngpios that the driver
-will likely need to work support. If a device appears with more GPIOs,
-then the driver should throw a warning and work with the maximum it can
-support. Part of enablement for the new device will be increasing the
-driver to handle more gpios.
+Allwinner has some very nice chips, and it certainly would be nice if
+they would start doing things "properly".
 
-g.
+Texas instruments uses devicetree for their arm devices.  It's very nice.
+
+I haven't checked what freescale is doing yet, although at least for
+powerpc, freescale is very used to devicetree, so hopefully they are
+doing that for their arm chips too.
+
+Both are certainly pushing their drivers upstream for inclusion and seem
+to be listening to feedback on how to best do things.
+
+I haven't personally dealt with any nvidia arm devices, so I have no
+idea how those are turning out, nor have I looked much at the marvell
+ones yet (even though I have a cubox sitting on my desk I intend to play
+around with).
+
+Lots of others like qualcomm, samsung, and who knows who else.  No idea
+how they are doing things either.
+
+-- 
+Len Sorensen
