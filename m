@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757038Ab3FERgW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 13:36:22 -0400
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:56118 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757019Ab3FERgT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 13:36:19 -0400
-Date: Wed, 5 Jun 2013 10:36:14 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Robin Dong <sanbai@taobao.com>, linux-kernel@vger.kernel.org,
-        Zhu Yanhai <gaoyang.zyh@taobao.com>, Jens Axboe <axboe@kernel.dk>,
-        Tao Ma <taoma.tm@gmail.com>, kent.overstreet@gmail.com
-Subject: Re: [RFC v1] add new io-scheduler to use cgroup on high-speed device
-Message-ID: <20130605173614.GB10693@mtj.dyndns.org>
-References: <1370398171-25173-1-git-send-email-sanbai@taobao.com>
- <20130605030337.GO14916@htj.dyndns.org>
- <20130605135512.GB16339@redhat.com>
+	id S1757065Ab3FERjh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 13:39:37 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:38745 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756721Ab3FERjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 13:39:37 -0400
+X-IronPort-AV: E=Sophos;i="4.87,808,1363132800"; 
+   d="scan'208";a="29454162"
+Date: Wed, 5 Jun 2013 18:30:35 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <konrad.wilk@oracle.com>,
+        <marc.zyngier@arm.com>, <will.deacon@arm.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, <linux@arm.linux.org.uk>,
+        <olof@lixom.net>, <arnd@arndb.de>, <mingo@redhat.com>,
+        <peterz@infradead.org>
+Subject: Re: [PATCH v5 2/4] kernel: missing include in cputime.c
+In-Reply-To: <1369920902-3546-2-git-send-email-stefano.stabellini@eu.citrix.com>
+Message-ID: <alpine.DEB.2.02.1306051828050.4589@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1305301426520.4799@kaball.uk.xensource.com> <1369920902-3546-2-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130605135512.GB16339@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Vivek.
+Ingo, Peter,
+in cputime.c we calls functions declared in asm/paravirt.h but we
+have no include asm/paravirt.h.
+Are you OK with this patch that fixes the issue?
 
-On Wed, Jun 05, 2013 at 09:55:12AM -0400, Vivek Goyal wrote:
-> I think it will be hard to cover all the use cases. There is a reason
-> why CFQ got so complicated and bulky because it tried to cover all the
-> use cases and provide service differentiation among workloads. blk-cgroup
-> will try to do the same thing at group level. All these question will
-> arise when to idle, how much to idle, how much device queue depth we
-> should drive to keep service differention better, how much outstanding
-> IO from each group we should allow in the queue.
 
-Yes but that's because we were trying to serve disks with rotating
-platters.  I don't think we can use the same thing for disks and
-non-rotational devices.  For the latter, things get a lot simpler.
-Note that even the current blk-throttle doesn't care about the
-underlying device at all.  We can do the same thing for proportional
-control in a hopefully better and scalable way of course.
 
-> And all of this affects what kind of service differentation you see
-> on different devices for different workloads.
+On Thu, 30 May 2013, Stefano Stabellini wrote:
+> steal_account_process_tick calls paravirt_steal_clock, but paravirt.h is
+> currently missing amoung the included header files.
+> Add include asm/paravirt.h ifdef CONFIG_PARAVIRT.
 > 
-> I think generic implementation can be written with the goal of trying to
-> make it work with faster flash devices (which will typically use blk-mq).
-> And for slower disks, one can continue to use CFQ's cgroup implementation.
-
-Yeap.  Pretty much the same feeling here.
-
-> On a side note, it would be nice if we handle problem of managing buffered
-> writes using cgroup first. Otherwise there are very few practical
-> scenarios where proportional IO thing can be used.
-
-Indeed.  It's currently below unified hierarchy in my todo list but if
-you wanna tackle it, I'll be happy to help.
-
-Thanks.
-
--- 
-tejun
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> CC: mingo@redhat.com
+> CC: peterz@infradead.org
+> 
+> Changes in v5:
+> - add ifdef CONFIG_PARAVIRT.
+> ---
+>  kernel/sched/cputime.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+> index cc2dc3ee..317a578 100644
+> --- a/kernel/sched/cputime.c
+> +++ b/kernel/sched/cputime.c
+> @@ -5,7 +5,9 @@
+>  #include <linux/static_key.h>
+>  #include <linux/context_tracking.h>
+>  #include "sched.h"
+> -
+> +#ifdef CONFIG_PARAVIRT
+> +#include <asm/paravirt.h>
+> +#endif
+>  
+>  #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+>  
+> -- 
+> 1.7.2.5
+> 
