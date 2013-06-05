@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932326Ab3FEU5e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 16:57:34 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:42338 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932259Ab3FEU5b (ORCPT
+	id S932290Ab3FEU57 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 16:57:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36320 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932168Ab3FEUx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 16:57:31 -0400
-Date: Wed, 5 Jun 2013 22:56:38 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-pci@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH v3 -tip x86/apic 1/2] PCI/MSI: Allocate as many
- multiple-MSIs as requested
-Message-ID: <20130605205638.GA5816@breakpoint.cc>
-References: <cover.1368431413.git.agordeev@redhat.com>
- <8575dc590b819892f366852fe50835efaf579f4f.1368431413.git.agordeev@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8575dc590b819892f366852fe50835efaf579f4f.1368431413.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 5 Jun 2013 16:53:28 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>,
+        Antoine Martin <antoine@nagafix.co.uk>
+Subject: [ 23/33] um: Serve io_remap_pfn_range()
+Date: Wed,  5 Jun 2013 13:53:01 -0700
+Message-Id: <20130605204707.651233002@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130605204702.359510786@linuxfoundation.org>
+References: <20130605204702.359510786@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 11:05:48AM +0200, Alexander Gordeev wrote:
-> Note, although the existing 'msi_desc::multiple' field might seem
-> redundant, in fact in does not. In general case the number of MSIs a
-> PCI device is initialized with is not necessarily the closest power-
-> of-two value of the number of MSIs the device will send. Thus, in
-> theory it would not be always possible to derive the former from the
-> latter and we need to keep them both, to stress this corner case.
-> Besides, since 'msi_desc::multiple' is a bitfield, throwing it out
-> would not save us any space.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-The last paragraph makes me curious. The only place where 'multiple' is set is
-in do_setup_msi_irqs() and this uses the next power of two for it. And since a
-device is not enabled twice, it is not overridden.
-So it should be possible to compute 'multiple' out of 'nvec' but it saves
-cycles not do to so. I agree to keep 'multiple' but your argument does not
-seem to make sense.
-While nitpicking, 'nvec' might deserve a better comment than 'number of
-messages' since it holds the number of allocated interrupts. :)
+------------------
 
-Sebastian
+From: Richard Weinberger <richard@nod.at>
+
+commit 4d94d6d030adfdea4837694d293ec6918d133ab2 upstream.
+
+At some places io_remap_pfn_range() is needed.
+UML has to serve it like all other archs do.
+
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Tested-by: Antoine Martin <antoine@nagafix.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/um/include/asm/pgtable.h |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/arch/um/include/asm/pgtable.h
++++ b/arch/um/include/asm/pgtable.h
+@@ -69,6 +69,8 @@ extern unsigned long end_iomem;
+ #define PAGE_KERNEL	__pgprot(_PAGE_PRESENT | _PAGE_RW | _PAGE_DIRTY | _PAGE_ACCESSED)
+ #define PAGE_KERNEL_EXEC	__pgprot(__PAGE_KERNEL_EXEC)
+ 
++#define io_remap_pfn_range	remap_pfn_range
++
+ /*
+  * The i386 can't do page protection for execute, and considers that the same
+  * are read.
+
+
