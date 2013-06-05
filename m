@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614Ab3FEHi3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 03:38:29 -0400
-Received: from ozlabs.org ([203.10.76.45]:52297 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752079Ab3FEHi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 03:38:27 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org
-Cc: Kent Overstreet <koverstreet@google.com>, Zach Brown <zab@redhat.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul McKenney" <paul.mckenney@us.ibm.com>
-Subject: Re: [PATCH] Generic percpu refcounting
-In-Reply-To: <1370039205-14071-1-git-send-email-koverstreet@google.com>
-References: <1370039205-14071-1-git-send-email-koverstreet@google.com>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Wed, 05 Jun 2013 17:05:09 +0930
-Message-ID: <87d2s1rowi.fsf@rustcorp.com.au>
+	id S1752542Ab3FEHjp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 03:39:45 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:59186 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751743Ab3FEHjo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 03:39:44 -0400
+Message-ID: <51AEEB37.1070403@linux.vnet.ibm.com>
+Date: Wed, 05 Jun 2013 15:39:35 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] workqueue: code refine/clean for workqueue
+References: <51AEE452.8080605@linux.vnet.ibm.com>
+In-Reply-To: <51AEE452.8080605@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060507-8878-0000-0000-00000767B756
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kent Overstreet <koverstreet@google.com> writes:
+On 06/05/2013 03:10 PM, Michael Wang wrote:
+> Code refine/clean patch set for workqueue.
+> 
+> Michael Wang (3):
+> 	[PATCH 1/3] workqueue: move the internal helper from .h to .c
+> 	[PATCH 2/3] workqueue: remove the unused helper in .h
+> 	[PATCH 3/3] workqueue: add a check point in pwq_activate_delayed_work()
 
-> This implements a refcount with similar semantics to
-> atomic_get()/atomic_dec_and_test() - but percpu.
->
-> It also implements two stage shutdown, as we need it to tear down the
-> percpu counts.  Before dropping the initial refcount, you must call
-> percpu_ref_kill(); this puts the refcount in "shutting down mode" and
-> switches back to a single atomic refcount with the appropriate barriers
-> (synchronize_rcu()).
->
-> It's also legal to call percpu_ref_kill() multiple times - it only returns
-> true once, so callers don't have to reimplement shutdown synchronization.
+Hi, Tejun
 
-> +static inline void percpu_ref_get(struct percpu_ref *ref)
-> +{
-> +	unsigned __percpu *pcpu_count;
-> +
-> +	preempt_disable();
-> +
-> +	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
-> +
-> +	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR))
-> +		__this_cpu_inc(*pcpu_count);
-> +	else
-> +		atomic_inc(&ref->count);
-> +
-> +	preempt_enable();
-> +}
+Sounds like I failed to grasp the essentials of the way we maintain
+workqueue :(
 
-I think this should be rcu_read_lock(), which is currently equivalent
-but theoretically different.
+These are just self opinion I got during the review, please ignore them
+if they will cause trouble to your maintain work :)
 
-Does your percpu_ref_kill() *really* need to be nonblocking?  (I'd have
-to read your other patches which use this to be sure).  Otherwise, just
-use synchronize_rcu(), and get rid of the release function...
+Regards,
+Michael Wang
 
-Cheers,
-Rusty.
+> 
+> ---
+>  b/include/linux/workqueue.h |    5 -----
+>  b/kernel/workqueue.c        |    5 +++++
+>  include/linux/workqueue.h   |   27 ---------------------------
+>  kernel/workqueue.c          |    6 +++---
+>  4 files changed, 8 insertions(+), 35 deletions(-)
+> 
+
