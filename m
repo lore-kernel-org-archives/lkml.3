@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758076Ab3FEW4p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 18:56:45 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:59490 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757638Ab3FEW4n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 18:56:43 -0400
+	id S1758027Ab3FEXBs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 19:01:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41726 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756129Ab3FEXBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 19:01:47 -0400
+Message-ID: <51AFC335.3000902@zytor.com>
+Date: Wed, 05 Jun 2013 16:01:09 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <3619282.JgdgeGHudI@flatron>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
-	<CAKON4OyyRF4Z46RyJFDWUwo4L52Z8bgSH0CzDr2gDerw4iDwcw@mail.gmail.com>
-	<3619282.JgdgeGHudI@flatron>
-Date: Wed, 5 Jun 2013 23:56:43 +0100
-X-Google-Sender-Auth: YG38DYAWMoJYI7A8-hdi4FoZCQI
-Message-ID: <CAPweEDwyX4=Sme9kyDU64k9h3SPUHuErD8gEqfdYLGwBOocZDQ@mail.gmail.com>
-Subject: Re: getting allwinner SoC support upstream (was Re: Uploading linux (3.9.4-1))
-From: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        debian-kernel@lists.debian.org
+To: Borislav Petkov <bp@alien8.de>
+CC: Jacob Shin <jacob.shin@amd.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>
+Subject: Re: [PATCH 0/2] x86/microcode/amd: early loading fixes
+References: <1370463236-2115-1-git-send-email-jacob.shin@amd.com> <20130605221833.GA15427@pd.tnic>
+In-Reply-To: <20130605221833.GA15427@pd.tnic>
+X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[removing debian-release again - at their request]
+On 06/05/2013 03:18 PM, Borislav Petkov wrote:
+> On Wed, Jun 05, 2013 at 03:13:54PM -0500, Jacob Shin wrote:
+>> This patchset addreses two problems with early loading on AMD.
+> 
+> It would be nice if, in the future, you put the maintainers of this
+> driver to CC.
+> 
+> Unless you're volunteering up for maintaining it...
+> 
 
-On Wed, Jun 5, 2013 at 11:11 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+Indeed.  My bad for not adding all in, too.
 
-> Allwinner has just reinvented a wheel, without even considering the fact
-> that it has been already invented.
+	-hpa
 
-apologies, tomasz, but i believe i covered this issue in, again, my
-reply to russell, in which i point out that the both the context as
-well as the scope of the problem being solved is entirely different
-from that which the linux kernel developers find themselves in.  also,
-we note from what russell said, was that device tree wasn't ready for
-commercial deployment; allwinner's developers don't speak english, and
-additionally a fabless semiconductor company need to maintain absolute
-commercial secrecy at the all-critical time when they're doing
-FPGA-based testing of their netlists (yes, really: running linux on a
-huge $250k's worth of FPGAs) and haven't yet put the design into
-actual silicon.
-
-so there's a lot of factors which i believe the linux kernel
-developers are not aware of, and haven't taken into account, and to
-place blame onto the SoC vendors for not working with *you* when *you*
-haven't made an effort to understand their situation is, i feel, not
-really helping anyone.  not that i'm one to talk about understanding
-people, but hey... :)
-
-l.
