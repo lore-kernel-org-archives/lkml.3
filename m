@@ -1,96 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933237Ab3FEViL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:38:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38113 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933184Ab3FEVgX (ORCPT
+	id S933251Ab3FEViY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:38:24 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:39171 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933158Ab3FEViU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:36:23 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wenchao Xia <xiawenc@linux.vnet.ibm.com>,
-        Badari Pulavarty <pbadari@us.ibm.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Lingzhu Xiang <lxiang@redhat.com>
-Subject: [ 118/127] target/file: Fix off-by-one READ_CAPACITY bug for !S_ISBLK export
-Date: Wed,  5 Jun 2013 14:34:45 -0700
-Message-Id: <20130605213231.391789216@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
-References: <20130605213217.966891866@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Wed, 5 Jun 2013 17:38:20 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCHv4 3/3] gpio: msm: Add device tree and irqdomain support for gpio-msm-v2
+To: Rohit Vaswani <rvaswani@codeaurora.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+In-Reply-To: <51AC0005.2020700@codeaurora.org>
+References: <1370046121-7835-1-git-send-email-rvaswani@codeaurora.org> <1370046121-7835-4-git-send-email-rvaswani@codeaurora.org> <CACxGe6tD253nb-5sOSBQu0Kj1JwYOeas2-WpR2isFO+Q+8ty2A@mail.gmail.com> <51AC0005.2020700@codeaurora.org>
+Date: Wed, 05 Jun 2013 22:38:13 +0100
+Message-Id: <20130605213813.2D9703E10E4@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+On Sun, 02 Jun 2013 19:31:33 -0700, Rohit Vaswani <rvaswani@codeaurora.org> wrote:
+> On 6/1/2013 1:09 AM, Grant Likely wrote:
+> > On Sat, Jun 1, 2013 at 1:22 AM, Rohit Vaswani <rvaswani@codeaurora.org> wrote:
+> >> This cleans up the gpio-msm-v2 driver of all the global define usage.
+> >> The number of gpios are now defined in the device tree. This enables
+> >> adding irqdomain support as well.
+> >>
+> >> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+> >> @@ -101,11 +96,27 @@ enum {
+> >>    */
+> >>   struct msm_gpio_dev {
+> >>          struct gpio_chip gpio_chip;
+> >> -       DECLARE_BITMAP(enabled_irqs, NR_GPIO_IRQS);
+> >> -       DECLARE_BITMAP(wake_irqs, NR_GPIO_IRQS);
+> >> -       DECLARE_BITMAP(dual_edge_irqs, NR_GPIO_IRQS);
+> >> +       unsigned long *enabled_irqs;
+> >> +       unsigned long *wake_irqs;
+> >> +       unsigned long *dual_edge_irqs;
+> > Was there a reason you ignored the comment to leave these bitmaps as
+> > statically allocated?
+> >
+> > [...]
+> >
+> >> +       msm_gpio.enabled_irqs = devm_kzalloc(&pdev->dev,
+> >> +                                               sizeof(unsigned long) *
+> >> +                                               BITS_TO_LONGS(ngpio) * 3,
+> >> +                                               GFP_KERNEL);
+> >> +       msm_gpio.wake_irqs = &msm_gpio.enabled_irqs[BITS_TO_LONGS(ngpio)];
+> >> +       msm_gpio.dual_edge_irqs =
+> >> +                       &msm_gpio.enabled_irqs[BITS_TO_LONGS(ngpio * 2)];
+> > I should have just deleted my comment about doing it this way. I was
+> > making the point that one allocation is better that three; but then I
+> > also said that it was better to not allocate at all. Go back to the
+> > statically allocated bitmap array. It is far better than this.
+> >
+> > g.
+> 
+> I agree that DECLARE_BITMAP is the most efficient way, but 
+> DECLARE_BITMAP takes a statically defined number of gpios as an 
+> argument. Since we get the ngpio from device tree, these had to go as 
+> well. Under this scheme, 1 allocation was better than 3 and went ahead 
+> with your suggestion.
 
-------------------
+Think about it for a moment; You *know* all the devices that are going
+to use the driver. The largest size for ngpios that I see is 173 which
+is a mere 18 long words for 3 bitmaps. Even if you were to quadruple
+that amount the total for all the bitmasks is 72 long words. You're
+optimizing at the wrong place. Changing it to dynamic allocation makes
+the code slower, more complicated, and probably doesn't do anything to
+save on real memory consumption.
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+The solution is simple; choose a maximum value of ngpios that the driver
+will likely need to work support. If a device appears with more GPIOs,
+then the driver should throw a warning and work with the maximum it can
+support. Part of enablement for the new device will be increasing the
+driver to handle more gpios.
 
-commit 21363ca873334391992f2f424856aa864345bb61 upstream.
-
-This patch fixes a bug where FILEIO was incorrectly reporting the number
-of logical blocks (+ 1) when using non struct block_device export mode.
-
-It changes fd_get_blocks() to follow all other backend ->get_blocks() cases,
-and reduces the calculated dev_size by one dev->dev_attrib.block_size
-number of bytes, and also fixes initial fd_block_size assignment at
-fd_configure_device() time introduced in commit 0fd97ccf4.
-
-Reported-by: Wenchao Xia <xiawenc@linux.vnet.ibm.com>
-Reported-by: Badari Pulavarty <pbadari@us.ibm.com>
-Tested-by: Badari Pulavarty <pbadari@us.ibm.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/target/target_core_file.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
-
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -150,6 +150,7 @@ static int fd_configure_device(struct se
- 	if (S_ISBLK(inode->i_mode)) {
- 		unsigned long long dev_size;
- 
-+		fd_dev->fd_block_size = bdev_logical_block_size(inode->i_bdev);
- 		/*
- 		 * Determine the number of bytes from i_size_read() minus
- 		 * one (1) logical sector from underlying struct block_device
-@@ -168,11 +169,11 @@ static int fd_configure_device(struct se
- 				" block_device\n");
- 			goto fail;
- 		}
--	}
- 
--	fd_dev->fd_block_size = dev->dev_attrib.hw_block_size;
-+		fd_dev->fd_block_size = FD_BLOCKSIZE;
-+	}
- 
--	dev->dev_attrib.hw_block_size = FD_BLOCKSIZE;
-+	dev->dev_attrib.hw_block_size = fd_dev->fd_block_size;
- 	dev->dev_attrib.hw_max_sectors = FD_MAX_SECTORS;
- 	dev->dev_attrib.hw_queue_depth = FD_MAX_DEVICE_QUEUE_DEPTH;
- 
-@@ -583,11 +584,12 @@ static sector_t fd_get_blocks(struct se_
- 	 * to handle underlying block_device resize operations.
- 	 */
- 	if (S_ISBLK(i->i_mode))
--		dev_size = (i_size_read(i) - fd_dev->fd_block_size);
-+		dev_size = i_size_read(i);
- 	else
- 		dev_size = fd_dev->fd_dev_size;
- 
--	return div_u64(dev_size, dev->dev_attrib.block_size);
-+	return div_u64(dev_size - dev->dev_attrib.block_size,
-+		       dev->dev_attrib.block_size);
- }
- 
- static struct sbc_ops fd_sbc_ops = {
-
-
+g.
