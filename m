@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933254Ab3FEVql (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:46:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37990 "EHLO
+	id S933038Ab3FEVqz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:46:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37987 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933030Ab3FEVgC (ORCPT
+	with ESMTP id S933004Ab3FEVgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:36:02 -0400
+	Wed, 5 Jun 2013 17:36:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 093/127] regulator: palmas: Fix "enable_reg" to point to the correct reg for SMPS10
-Date: Wed,  5 Jun 2013 14:34:20 -0700
-Message-Id: <20130605213228.516621132@linuxfoundation.org>
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@redhat.com>
+Subject: [ 092/127] KVM: fix sil/dil/bpl/spl in the mod/rm fields
+Date: Wed,  5 Jun 2013 14:34:19 -0700
+Message-Id: <20130605213228.385910585@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -27,33 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kishon Vijay Abraham I <kishon@ti.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit f232168df0c7e7414b70ac5d8fed83086d441c0b upstream.
+commit 8acb42070ec4c87a9baab5c7bac626030d5bef28 upstream.
 
-regulator_enable_regmap() uses enable_reg to enable the regulator.
-But enable_reg for smps10 points to SMPS10_STATUS which is a
-read-only register. Fixed the same by having enable_reg
-set to SMPS10_CTRL.
+The x86-64 extended low-byte registers were fetched correctly from reg,
+but not from mod/rm.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+This fixes another bug in the boot of RHEL5.9 64-bit, but it is still
+not enough.
+
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/regulator/palmas-regulator.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kvm/emulate.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/regulator/palmas-regulator.c
-+++ b/drivers/regulator/palmas-regulator.c
-@@ -677,7 +677,7 @@ static int palmas_probe(struct platform_
- 			pmic->desc[id].vsel_mask = SMPS10_VSEL;
- 			pmic->desc[id].enable_reg =
- 					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
--							PALMAS_SMPS10_STATUS);
-+							PALMAS_SMPS10_CTRL);
- 			pmic->desc[id].enable_mask = SMPS10_BOOST_EN;
- 			pmic->desc[id].min_uV = 3750000;
- 			pmic->desc[id].uV_step = 1250000;
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -1239,9 +1239,12 @@ static int decode_modrm(struct x86_emula
+ 	ctxt->modrm_seg = VCPU_SREG_DS;
+ 
+ 	if (ctxt->modrm_mod == 3) {
++		int highbyte_regs = ctxt->rex_prefix == 0;
++
+ 		op->type = OP_REG;
+ 		op->bytes = (ctxt->d & ByteOp) ? 1 : ctxt->op_bytes;
+-		op->addr.reg = decode_register(ctxt, ctxt->modrm_rm, ctxt->d & ByteOp);
++		op->addr.reg = decode_register(ctxt, ctxt->modrm_rm,
++					       highbyte_regs && (ctxt->d & ByteOp));
+ 		if (ctxt->d & Sse) {
+ 			op->type = OP_XMM;
+ 			op->bytes = 16;
 
 
