@@ -1,20 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932674Ab3FEVRJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:17:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36926 "EHLO
+	id S932596Ab3FEVNH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:13:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36891 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932601Ab3FEVNI (ORCPT
+	with ESMTP id S932562Ab3FEVNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:13:08 -0400
+	Wed, 5 Jun 2013 17:13:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Finn Thain <fthain@telegraphics.com.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [ 36/44] m68k/mac: Fix unexpected interrupt with CONFIG_EARLY_PRINTK
-Date: Wed,  5 Jun 2013 14:12:34 -0700
-Message-Id: <20130605211225.619039691@linuxfoundation.org>
+        Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
+        Leonid Yegoshin <yegoshin@mips.com>, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Russell King <rmk@arm.linux.org.uk>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 20/44] mm compaction: fix of improper cache flush in migration code
+Date: Wed,  5 Jun 2013 14:12:18 -0700
+Message-Id: <20130605211223.965253814@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605211221.858177087@linuxfoundation.org>
 References: <20130605211221.858177087@linuxfoundation.org>
@@ -27,112 +33,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Finn Thain <fthain@telegraphics.com.au>
+From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
 
-commit df66834a43c461de2565c45d815288ba1c0def37 upstream.
+commit c2cc499c5bcf9040a738f49e8051b42078205748 upstream.
 
-The present code does not wait for the SCC to finish resetting itself
-before trying to initialise the device. The result is that the SCC
-interrupt sources become enabled (if they weren't already). This leads to
-an early boot crash (unexpected interrupt) given CONFIG_EARLY_PRINTK. Fix
-this by adding a delay. A successful reset disables the interrupt sources.
+Page 'new' during MIGRATION can't be flushed with flush_cache_page().
+Using flush_cache_page(vma, addr, pfn) is justified only if the page is
+already placed in process page table, and that is done right after
+flush_cache_page().  But without it the arch function has no knowledge
+of process PTE and does nothing.
 
-Also, after the reset for channel A setup, the SCC then gets a second
-reset for channel B setup which leaves channel A uninitialised again. Fix
-this by performing the reset only once.
+Besides that, flush_cache_page() flushes an application cache page, but
+the kernel has a different page virtual address and dirtied it.
 
-Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Replace it with flush_dcache_page(new) which is the proper usage.
+
+The old page is flushed in try_to_unmap_one() before migration.
+
+This bug takes place in Sead3 board with M14Kc MIPS CPU without cache
+aliasing (but Harvard arch - separate I and D cache) in tight memory
+environment (128MB) each 1-3days on SOAK test.  It fails in cc1 during
+kernel build (SIGILL, SIGBUS, SIGSEG) if CONFIG_COMPACTION is switched
+ON.
+
+Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+Cc: Leonid Yegoshin <yegoshin@mips.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Russell King <rmk@arm.linux.org.uk>
+Cc: David Miller <davem@davemloft.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/m68k/kernel/head.S |   29 +++++++++++++++++++----------
- 1 file changed, 19 insertions(+), 10 deletions(-)
+ mm/migrate.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/m68k/kernel/head.S
-+++ b/arch/m68k/kernel/head.S
-@@ -2752,11 +2752,9 @@ func_return	get_new_page
- #ifdef CONFIG_MAC
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -145,7 +145,7 @@ static int remove_migration_pte(struct p
+ 	if (PageHuge(new))
+ 		pte = pte_mkhuge(pte);
+ #endif
+-	flush_cache_page(vma, addr, pte_pfn(pte));
++	flush_dcache_page(new);
+ 	set_pte_at(mm, addr, ptep, pte);
  
- L(scc_initable_mac):
--	.byte	9,12		/* Reset */
- 	.byte	4,0x44		/* x16, 1 stopbit, no parity */
- 	.byte	3,0xc0		/* receiver: 8 bpc */
- 	.byte	5,0xe2		/* transmitter: 8 bpc, assert dtr/rts */
--	.byte	9,0		/* no interrupts */
- 	.byte	10,0		/* NRZ */
- 	.byte	11,0x50		/* use baud rate generator */
- 	.byte	12,1,13,0	/* 38400 baud */
-@@ -2899,6 +2897,7 @@ func_start	serial_init,%d0/%d1/%a0/%a1
- 	is_not_mac(L(serial_init_not_mac))
- 
- #ifdef SERIAL_DEBUG
-+
- /* You may define either or both of these. */
- #define MAC_USE_SCC_A /* Modem port */
- #define MAC_USE_SCC_B /* Printer port */
-@@ -2908,9 +2907,21 @@ func_start	serial_init,%d0/%d1/%a0/%a1
- #define mac_scc_cha_b_data_offset	0x4
- #define mac_scc_cha_a_data_offset	0x6
- 
-+#if defined(MAC_USE_SCC_A) || defined(MAC_USE_SCC_B)
-+	movel	%pc@(L(mac_sccbase)),%a0
-+	/* Reset SCC device */
-+	moveb	#9,%a0@(mac_scc_cha_a_ctrl_offset)
-+	moveb	#0xc0,%a0@(mac_scc_cha_a_ctrl_offset)
-+	/* Wait for 5 PCLK cycles, which is about 68 CPU cycles */
-+	/* 5 / 3.6864 MHz = approx. 1.36 us = 68 / 50 MHz */
-+	movel	#35,%d0
-+5:
-+	subq	#1,%d0
-+	jne	5b
-+#endif
-+
- #ifdef MAC_USE_SCC_A
- 	/* Initialize channel A */
--	movel	%pc@(L(mac_sccbase)),%a0
- 	lea	%pc@(L(scc_initable_mac)),%a1
- 5:	moveb	%a1@+,%d0
- 	jmi	6f
-@@ -2922,9 +2933,6 @@ func_start	serial_init,%d0/%d1/%a0/%a1
- 
- #ifdef MAC_USE_SCC_B
- 	/* Initialize channel B */
--#ifndef MAC_USE_SCC_A	/* Load mac_sccbase only if needed */
--	movel	%pc@(L(mac_sccbase)),%a0
--#endif	/* MAC_USE_SCC_A */
- 	lea	%pc@(L(scc_initable_mac)),%a1
- 7:	moveb	%a1@+,%d0
- 	jmi	8f
-@@ -2933,6 +2941,7 @@ func_start	serial_init,%d0/%d1/%a0/%a1
- 	jra	7b
- 8:
- #endif	/* MAC_USE_SCC_B */
-+
- #endif	/* SERIAL_DEBUG */
- 
- 	jra	L(serial_init_done)
-@@ -3006,17 +3015,17 @@ func_start	serial_putc,%d0/%d1/%a0/%a1
- 
- #ifdef SERIAL_DEBUG
- 
--#ifdef MAC_USE_SCC_A
-+#if defined(MAC_USE_SCC_A) || defined(MAC_USE_SCC_B)
- 	movel	%pc@(L(mac_sccbase)),%a1
-+#endif
-+
-+#ifdef MAC_USE_SCC_A
- 3:	btst	#2,%a1@(mac_scc_cha_a_ctrl_offset)
- 	jeq	3b
- 	moveb	%d0,%a1@(mac_scc_cha_a_data_offset)
- #endif	/* MAC_USE_SCC_A */
- 
- #ifdef MAC_USE_SCC_B
--#ifndef MAC_USE_SCC_A	/* Load mac_sccbase only if needed */
--	movel	%pc@(L(mac_sccbase)),%a1
--#endif	/* MAC_USE_SCC_A */
- 4:	btst	#2,%a1@(mac_scc_cha_b_ctrl_offset)
- 	jeq	4b
- 	moveb	%d0,%a1@(mac_scc_cha_b_data_offset)
+ 	if (PageHuge(new)) {
 
 
