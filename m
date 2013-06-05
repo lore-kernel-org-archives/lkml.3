@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab3FEOaG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 10:30:06 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:17323 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756020Ab3FEOaE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 10:30:04 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 05 Jun 2013 07:29:37 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] clk: tegra: fix sclk_parents
-Date: Wed, 5 Jun 2013 17:29:28 +0300
-Message-ID: <1370442573-17512-1-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-X-NVConfidentiality: public
+	id S1756216Ab3FEOcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 10:32:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38068 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754483Ab3FEOcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 10:32:46 -0400
+Date: Wed, 5 Jun 2013 16:32:44 +0200
+From: David Sterba <dsterba@suse.cz>
+To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: Arne Jansen <sensille@gmx.net>, Chris Mason <clmason@fusionio.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Subject: Re: [PATCH 1/2] list: add while_list_drain_entry
+Message-ID: <20130605143244.GC18160@twin.jikos.cz>
+Reply-To: dsterba@suse.cz
+Mail-Followup-To: dsterba@suse.cz,
+	=?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+	Arne Jansen <sensille@gmx.net>, Chris Mason <clmason@fusionio.com>,
+	Christoph Hellwig <hch@infradead.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+References: <1370280485-10047-1-git-send-email-joern@logfs.org>
+ <20130603204930.GA28299@infradead.org>
+ <20130603193647.GB10200@logfs.org>
+ <20130603195555.GC10200@logfs.org>
+ <20130604144856.GA12302@infradead.org>
+ <20130604145322.4088.78915@localhost.localdomain>
+ <51AE4969.8050709@gmx.net>
+ <20130604184435.GA23436@logfs.org>
+ <20130605020341.GA27240@logfs.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130605020341.GA27240@logfs.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the correct parents for sclk according to the TRM.
+On Tue, Jun 04, 2013 at 10:03:41PM -0400, Jörn Engel wrote:
+> I have seen a lot of boilerplate code that either follows the pattern of
+> 	while (!list_empty(head)) {
+> 		pos = list_entry(head->next, struct foo, list);
+> 		list_del(pos->list);
+> 		...
+> 	}
+> or some variant thereof.
+> 
+> With this patch in, people can use
+> 	while_list_drain_entry(pos, head, list) {
+> 		...
+> 	}
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- drivers/clk/tegra/clk-tegra114.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The while_list_drain_entry way changes the semantics: the list link is
+deleted before the {...} body starts, so it's not possible to access the
+list anymore. None of the code you've converted uses this, from that
+point it's safe, but if this is about to be a public interface, it
+should be (at least) documented.
 
-diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
-index 2774379e..758ba7d 100644
---- a/drivers/clk/tegra/clk-tegra114.c
-+++ b/drivers/clk/tegra/clk-tegra114.c
-@@ -1735,7 +1735,7 @@ static void __init tegra114_pmc_clk_init(void __iomem *pmc_base)
- }
- 
- static const char *sclk_parents[] = { "clk_m", "pll_c_out1", "pll_p_out4",
--			       "pll_p_out3", "pll_p_out2", "unused",
-+			       "pll_p", "pll_p_out2", "unused",
- 			       "clk_32k", "pll_m_out1" };
- 
- static const char *cclk_g_parents[] = { "clk_m", "pll_c", "clk_32k", "pll_m",
--- 
-1.7.7.rc0.72.g4b5ea.dirty
+Macro trickery to postpone list_del after the {...} finishes does not
+work if kfree/kmem_cache_free/rcu_string_free/... is used.
 
+
+david
