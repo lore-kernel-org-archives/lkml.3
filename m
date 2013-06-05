@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab3FENCd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 09:02:33 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45530 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752388Ab3FENCb (ORCPT
+	id S1755346Ab3FENEN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 09:04:13 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51573 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753615Ab3FENEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 09:02:31 -0400
-Date: Wed, 5 Jun 2013 15:02:22 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2] arch/*/asm/include/bitops.h: api issue, find_*_bit()
- defination are different with each other
-Message-ID: <20130605130222.GL23140@pengutronix.de>
-References: <51AE8FEF.1020809@asianux.com>
- <51AE903C.6010806@asianux.com>
- <51AE909D.9080006@asianux.com>
- <20130605071915.GK23140@pengutronix.de>
- <51AF225A.5020703@asianux.com>
+	Wed, 5 Jun 2013 09:04:12 -0400
+Date: Wed, 5 Jun 2013 15:03:58 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Michael Wang <wangyun@linux.vnet.ibm.com>, mingo@redhat.com,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com
+Subject: Re: [PATCH 1/2] sched: Optimize build_sched_domains() for saving
+ first SD node for a cpu
+Message-ID: <20130605130358.GL27176@twins.programming.kicks-ass.net>
+References: <d226c91fed3dfa2dca644d14c88b1d1ff9d2e722.1370344689.git.viresh.kumar@linaro.org>
+ <51AEC1C3.1040804@linux.vnet.ibm.com>
+ <CAKohpokGrgFOtOT6Y3e4MOJBUQWT4FG4Mk-F6_M0V-pEEf3KYw@mail.gmail.com>
+ <20130605110434.GY8923@twins.programming.kicks-ass.net>
+ <CAKohpomJOGKoX9+HWkiGshUwTG9yKbn=M25xJvEYVZGnmj9Bkg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51AF225A.5020703@asianux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <CAKohpomJOGKoX9+HWkiGshUwTG9yKbn=M25xJvEYVZGnmj9Bkg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Wed, Jun 05, 2013 at 07:34:50PM +0800, Chen Gang wrote:
-> >> +extern unsigned long  _find_first_zero_bit_le(const void *p,
-> > doesn't checkpatch critizise the double space in the line above?
-> > 
+On Wed, Jun 05, 2013 at 06:12:15PM +0530, Viresh Kumar wrote:
+> On 5 June 2013 16:34, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Wed, Jun 05, 2013 at 10:37:29AM +0530, Viresh Kumar wrote:
 > 
-> Thank you very much for your carefully checking (could you tell me how
-> do you find it ?)  :-)
-I have no tool for that, it just catched my eye.
+> >> See if below one looks better (Attached too in case gmail screws up
+> >> my mail)..
+> 
+> > Applying patch
+> > patches/viresh_kumar-_patch__sched-optimize_build_sched_domains_for_saving_first_sd.patch
+> > patching file kernel/sched/core.c
+> > patch: **** malformed patch at line 56: cpumask *cpu_map,
+> 
+> You tried to apply patch from mail or attachment? I requested to
+> pick attachment as gmail's copy-paste screws up patches.
+> 
 
-Best regards
-Uwe
+>From email; that's what my mailer is scripted for. TBH I didn't even
+notice the attachment.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+I'll go prod at the attachment.
