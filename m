@@ -1,87 +1,368 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046Ab3FEMyr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 08:54:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54214 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754166Ab3FEMyo (ORCPT
+	id S1755182Ab3FEM52 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 08:57:28 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:14814 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753686Ab3FEM50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 08:54:44 -0400
+	Wed, 5 Jun 2013 08:57:26 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 05 Jun 2013 05:56:18 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] clk: tegra: pllc and pllxc should use pdiv_map
+Date: Wed, 5 Jun 2013 15:56:41 +0300
+Message-ID: <1370437007-25596-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
 MIME-Version: 1.0
-In-Reply-To: <s5hwqq8u3o1.wl%tiwai@suse.de>
-References: <1370410969-15328-1-git-send-email-ming.lei@canonical.com>
-	<1370410969-15328-4-git-send-email-ming.lei@canonical.com>
-	<s5hbo7lrq2a.wl%tiwai@suse.de>
-	<CACVXFVNpH2H0wxfmbeVY--Q+1UnNT1rq_Rwr-3ou3Nddq2EWXw@mail.gmail.com>
-	<CACVXFVN5L6ZO2nT2o+JVqG-OUu-+ods3wgV=G4imWd7GNM5M6g@mail.gmail.com>
-	<s5h1u8gvkh4.wl%tiwai@suse.de>
-	<CACVXFVPxJpjViUBHeM3qi_kndwiRc7qf1J-kEqTHE3mL7mpaRQ@mail.gmail.com>
-	<s5hwqq8u3o1.wl%tiwai@suse.de>
-Date: Wed, 5 Jun 2013 20:54:42 +0800
-Message-ID: <CACVXFVMURqYxhNk=H-r2c9WoGUxD6uWWaiPS_4F-fHp-v5fOog@mail.gmail.com>
-Subject: Re: [PATCH 3/3] firmware loader: allow distribution to choose default
- search paths
-From: Ming Lei <ming.lei@canonical.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 5, 2013 at 8:45 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Wed, 5 Jun 2013 20:36:19 +0800,
-> Ming Lei wrote:
->>
->> On Wed, Jun 5, 2013 at 7:57 PM, Takashi Iwai <tiwai@suse.de> wrote:
->> >
->> > Hmm, separating with semicolons isn't so common, but we can live with
->>
->> Looks there are seldom such usage patterns in kernel, so could you let me
->> know which separator is more common?
->
-> $PATH uses colon, but I don't know of many others.
+The pllc and pllxc code weren't always using the correct pdiv_map to
+map between the post divider value and the hw p field. This could result
+in illegal values being programmed in the hw.
 
-OK, will change to colon to keep consistent with $PATH.
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ drivers/clk/tegra/clk-pll.c |  162 ++++++++++++++++++++++---------------------
+ 1 files changed, 82 insertions(+), 80 deletions(-)
 
->
->> > it.  I thought the previous loop can be kept but just pass each member
->> > to fw_get_file_firmware() unconditionally.  This will reduce the
->> > changes, I guess.  But it's just a matter of taste, here is no
->> > critically hot path, after all.
->>
->> Yes, aother way is to move 'fw_path_para' out of fw_path[], and only
->> let  fw_get_fw_file_from_paths() deal with 'fw_path_para' and
->> CONFIG_FW_CUSTOMIZED_PATH. Looks it is still clean.
->
-> Why not just pass all strings to fw_get_fw_file_from_paths(), no
-> matter whether it's a single or multiple path strings?
->
-> static const char * const fw_path[] = {
->         fw_path_para,
-> #ifdef CONFIG_FW_CUSTOMIZED_PATH
->         CONFIG_FW_CUSTOMIZED_PATH,
-> #endif
->         "/lib/firmware/updates/" UTS_RELEASE,
->         "/lib/firmware/updates",
->         "/lib/firmware/" UTS_RELEASE,
-> };
->
-> ....
->
->         for (i = 0; i < ARRAY_SIZE(fw_path); i++) {
->                 /* skip the unset customized path */
->                 if (!fw_path[i][0])
->                         continue;
->                 success = fw_get_fw_file_from_paths(fw_path[i], path, buf);
->                 if (success)
->                         break;
->         }
+diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
+index 17c2cc0..85bec1d 100644
+--- a/drivers/clk/tegra/clk-pll.c
++++ b/drivers/clk/tegra/clk-pll.c
+@@ -143,24 +143,6 @@
+ #define divn_max(p) (divn_mask(p))
+ #define divp_max(p) (1 << (divp_mask(p)))
+ 
+-
+-#ifdef CONFIG_ARCH_TEGRA_114_SOC
+-/* PLLXC has 4-bit PDIV, but entry 15 is not allowed in h/w */
+-#define PLLXC_PDIV_MAX			14
+-
+-/* non-monotonic mapping below is not a typo */
+-static u8 pllxc_p[PLLXC_PDIV_MAX + 1] = {
+-	/* PDIV: 0, 1, 2, 3, 4, 5, 6,  7,  8,  9, 10, 11, 12, 13, 14 */
+-	/* p: */ 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 12, 16, 20, 24, 32
+-};
+-
+-#define PLLCX_PDIV_MAX 7
+-static u8 pllcx_p[PLLCX_PDIV_MAX + 1] = {
+-	/* PDIV: 0, 1, 2, 3, 4, 5,  6,  7 */
+-	/* p: */ 1, 2, 3, 4, 6, 8, 12, 16
+-};
+-#endif
+-
+ static void clk_pll_enable_lock(struct tegra_clk_pll *pll)
+ {
+ 	u32 val;
+@@ -297,6 +279,39 @@ static void clk_pll_disable(struct clk_hw *hw)
+ 		spin_unlock_irqrestore(pll->lock, flags);
+ }
+ 
++static int _p_div_to_hw(struct clk_hw *hw, u8 p_div)
++{
++	struct tegra_clk_pll *pll = to_clk_pll(hw);
++	struct pdiv_map *p_tohw = pll->params->pdiv_tohw;
++
++	if (p_tohw) {
++		while (p_tohw->pdiv) {
++			if (p_div <= p_tohw->pdiv)
++				return p_tohw->hw_val;
++			p_tohw++;
++		}
++		return -EINVAL;
++	}
++	return -EINVAL;
++}
++
++static int _hw_to_p_div(struct clk_hw *hw, u8 p_div_hw)
++{
++	struct tegra_clk_pll *pll = to_clk_pll(hw);
++	struct pdiv_map *p_tohw = pll->params->pdiv_tohw;
++
++	if (p_tohw) {
++		while (p_tohw->pdiv) {
++			if (p_div_hw == p_tohw->hw_val)
++				return p_tohw->pdiv;
++			p_tohw++;
++		}
++		return -EINVAL;
++	}
++
++	return 1 << p_div_hw;
++}
++
+ static int _get_table_rate(struct clk_hw *hw,
+ 			   struct tegra_clk_pll_freq_table *cfg,
+ 			   unsigned long rate, unsigned long parent_rate)
+@@ -326,9 +341,9 @@ static int _calc_rate(struct clk_hw *hw, struct tegra_clk_pll_freq_table *cfg,
+ 		      unsigned long rate, unsigned long parent_rate)
+ {
+ 	struct tegra_clk_pll *pll = to_clk_pll(hw);
+-	struct pdiv_map *p_tohw = pll->params->pdiv_tohw;
+ 	unsigned long cfreq;
+ 	u32 p_div = 0;
++	int ret;
+ 
+ 	switch (parent_rate) {
+ 	case 12000000:
+@@ -369,20 +384,16 @@ static int _calc_rate(struct clk_hw *hw, struct tegra_clk_pll_freq_table *cfg,
+ 	    || cfg->output_rate > pll->params->vco_max) {
+ 		pr_err("%s: Failed to set %s rate %lu\n",
+ 		       __func__, __clk_get_name(hw->clk), rate);
++		WARN_ON(1);
+ 		return -EINVAL;
+ 	}
+ 
+-	if (p_tohw) {
+-		p_div = 1 << p_div;
+-		while (p_tohw->pdiv) {
+-			if (p_div <= p_tohw->pdiv) {
+-				cfg->p = p_tohw->hw_val;
+-				break;
+-			}
+-			p_tohw++;
+-		}
+-		if (!p_tohw->pdiv)
+-			return -EINVAL;
++	if (pll->params->pdiv_tohw) {
++		ret = _p_div_to_hw(hw, 1 << p_div);
++		if (ret < 0)
++			return ret;
++		else
++			cfg->p = ret;
+ 	} else
+ 		cfg->p = p_div;
+ 
+@@ -485,9 +496,10 @@ static int clk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
+ 	}
+ 
+ 	if (_get_table_rate(hw, &cfg, rate, parent_rate) &&
+-	    _calc_rate(hw, &cfg, rate, parent_rate))
++	    _calc_rate(hw, &cfg, rate, parent_rate)) {
++		WARN_ON(1);
+ 		return -EINVAL;
+-
++	}
+ 	if (pll->lock)
+ 		spin_lock_irqsave(pll->lock, flags);
+ 
+@@ -507,7 +519,6 @@ static long clk_pll_round_rate(struct clk_hw *hw, unsigned long rate,
+ {
+ 	struct tegra_clk_pll *pll = to_clk_pll(hw);
+ 	struct tegra_clk_pll_freq_table cfg;
+-	u64 output_rate = *prate;
+ 
+ 	if (pll->flags & TEGRA_PLL_FIXED)
+ 		return pll->fixed_rate;
+@@ -517,13 +528,12 @@ static long clk_pll_round_rate(struct clk_hw *hw, unsigned long rate,
+ 		return __clk_get_rate(hw->clk);
+ 
+ 	if (_get_table_rate(hw, &cfg, rate, *prate) &&
+-	    _calc_rate(hw, &cfg, rate, *prate))
++	    _calc_rate(hw, &cfg, rate, *prate)) {
++		WARN_ON(1);
+ 		return -EINVAL;
++	}
+ 
+-	output_rate *= cfg.n;
+-	do_div(output_rate, cfg.m * (1 << cfg.p));
+-
+-	return output_rate;
++	return cfg.output_rate;
+ }
+ 
+ static unsigned long clk_pll_recalc_rate(struct clk_hw *hw,
+@@ -531,7 +541,6 @@ static unsigned long clk_pll_recalc_rate(struct clk_hw *hw,
+ {
+ 	struct tegra_clk_pll *pll = to_clk_pll(hw);
+ 	struct tegra_clk_pll_freq_table cfg;
+-	struct pdiv_map *p_tohw = pll->params->pdiv_tohw;
+ 	u32 val;
+ 	u64 rate = parent_rate;
+ 	int pdiv;
+@@ -553,21 +562,11 @@ static unsigned long clk_pll_recalc_rate(struct clk_hw *hw,
+ 
+ 	_get_pll_mnp(pll, &cfg);
+ 
+-	if (p_tohw) {
+-		while (p_tohw->pdiv) {
+-			if (cfg.p == p_tohw->hw_val) {
+-				pdiv = p_tohw->pdiv;
+-				break;
+-			}
+-			p_tohw++;
+-		}
+-
+-		if (!p_tohw->pdiv) {
+-			WARN_ON(1);
+-			pdiv = 1;
+-		}
+-	} else
+-		pdiv = 1 << cfg.p;
++	pdiv = _hw_to_p_div(hw, cfg.p);
++	if (pdiv < 0) {
++		WARN_ON(1);
++		pdiv = 1;
++	}
+ 
+ 	cfg.m *= pdiv;
+ 
+@@ -769,16 +768,22 @@ static int _calc_dynamic_ramp_rate(struct clk_hw *hw,
+ {
+ 	struct tegra_clk_pll *pll = to_clk_pll(hw);
+ 	unsigned int p;
++	int p_div;
+ 
+ 	if (!rate)
+ 		return -EINVAL;
+ 
+ 	p = DIV_ROUND_UP(pll->params->vco_min, rate);
+ 	cfg->m = _pll_fixed_mdiv(pll->params, parent_rate);
+-	cfg->p = p;
+-	cfg->output_rate = rate * cfg->p;
++	cfg->output_rate = rate * p;
+ 	cfg->n = cfg->output_rate * cfg->m / parent_rate;
+ 
++	p_div = _p_div_to_hw(hw, p);
++	if (p_div < 0)
++		return p_div;
++	else
++		cfg->p = p_div;
++
+ 	if (cfg->n > divn_max(pll) || cfg->output_rate > pll->params->vco_max)
+ 		return -EINVAL;
+ 
+@@ -790,18 +795,25 @@ static int _pll_ramp_calc_pll(struct clk_hw *hw,
+ 			      unsigned long rate, unsigned long parent_rate)
+ {
+ 	struct tegra_clk_pll *pll = to_clk_pll(hw);
+-	int err = 0;
++	int err = 0, p_div;
+ 
+ 	err = _get_table_rate(hw, cfg, rate, parent_rate);
+ 	if (err < 0)
+ 		err = _calc_dynamic_ramp_rate(hw, cfg, rate, parent_rate);
+-	else if (cfg->m != _pll_fixed_mdiv(pll->params, parent_rate)) {
++	else {
++		if (cfg->m != _pll_fixed_mdiv(pll->params, parent_rate)) {
+ 			WARN_ON(1);
+ 			err = -EINVAL;
+ 			goto out;
++		}
++		p_div = _p_div_to_hw(hw, cfg->p);
++		if (p_div < 0)
++			return p_div;
++		else
++			cfg->p = p_div;
+ 	}
+ 
+-	if (!cfg->p || (cfg->p >  pll->params->max_p))
++	if (cfg->p >  pll->params->max_p)
+ 		err = -EINVAL;
+ 
+ out:
+@@ -815,7 +827,6 @@ static int clk_pllxc_set_rate(struct clk_hw *hw, unsigned long rate,
+ 	struct tegra_clk_pll_freq_table cfg, old_cfg;
+ 	unsigned long flags = 0;
+ 	int ret = 0;
+-	u8 old_p;
+ 
+ 	ret = _pll_ramp_calc_pll(hw, &cfg, rate, parent_rate);
+ 	if (ret < 0)
+@@ -826,11 +837,8 @@ static int clk_pllxc_set_rate(struct clk_hw *hw, unsigned long rate,
+ 
+ 	_get_pll_mnp(pll, &old_cfg);
+ 
+-	old_p = pllxc_p[old_cfg.p];
+-	if (old_cfg.m != cfg.m || old_cfg.n != cfg.n || old_p != cfg.p) {
+-		cfg.p -= 1;
++	if (old_cfg.m != cfg.m || old_cfg.n != cfg.n || old_cfg.p != cfg.p)
+ 		ret = _program_pll(hw, &cfg, rate);
+-	}
+ 
+ 	if (pll->lock)
+ 		spin_unlock_irqrestore(pll->lock, flags);
+@@ -842,15 +850,19 @@ static long clk_pll_ramp_round_rate(struct clk_hw *hw, unsigned long rate,
+ 				unsigned long *prate)
+ {
+ 	struct tegra_clk_pll_freq_table cfg;
+-	int ret = 0;
++	int ret = 0, p_div;
+ 	u64 output_rate = *prate;
+ 
+ 	ret = _pll_ramp_calc_pll(hw, &cfg, rate, *prate);
+ 	if (ret < 0)
+ 		return ret;
+ 
++	p_div = _hw_to_p_div(hw, cfg.p);
++	if (p_div < 0)
++		return p_div;
++
+ 	output_rate *= cfg.n;
+-	do_div(output_rate, cfg.m * cfg.p);
++	do_div(output_rate, cfg.m * p_div);
+ 
+ 	return output_rate;
+ }
+@@ -881,8 +893,6 @@ static int clk_pllm_set_rate(struct clk_hw *hw, unsigned long rate,
+ 	if (ret < 0)
+ 		goto out;
+ 
+-	cfg.p -= 1;
+-
+ 	val = readl_relaxed(pll->pmc + PMC_PLLM_WB0_OVERRIDE);
+ 	if (val & PMC_PLLP_WB0_OVERRIDE_PLLM_OVERRIDE) {
+ 		val = readl_relaxed(pll->pmc + PMC_PLLM_WB0_OVERRIDE_2);
+@@ -1010,13 +1020,10 @@ static int _pllcx_update_dynamic_coef(struct tegra_clk_pll *pll,
+ static int clk_pllc_set_rate(struct clk_hw *hw, unsigned long rate,
+ 				unsigned long parent_rate)
+ {
+-	struct tegra_clk_pll_freq_table cfg;
++	struct tegra_clk_pll_freq_table cfg, old_cfg;
+ 	struct tegra_clk_pll *pll = to_clk_pll(hw);
+ 	unsigned long flags = 0;
+ 	int state, ret = 0;
+-	u32 val;
+-	u16 old_m, old_n;
+-	u8 old_p;
+ 
+ 	if (pll->lock)
+ 		spin_lock_irqsave(pll->lock, flags);
+@@ -1025,21 +1032,16 @@ static int clk_pllc_set_rate(struct clk_hw *hw, unsigned long rate,
+ 	if (ret < 0)
+ 		goto out;
+ 
+-	val = pll_readl_base(pll);
+-	old_m = (val >> pll->divm_shift) & (divm_mask(pll));
+-	old_n = (val >> pll->divn_shift) & (divn_mask(pll));
+-	old_p = pllcx_p[(val >> pll->divp_shift) & (divp_mask(pll))];
++	_get_pll_mnp(pll, &old_cfg);
+ 
+-	if (cfg.m != old_m) {
++	if (cfg.m != old_cfg.m) {
+ 		WARN_ON(1);
+ 		goto out;
+ 	}
+ 
+-	if (old_n == cfg.n && old_p == cfg.p)
++	if (old_cfg.n == cfg.n && old_cfg.p == cfg.p)
+ 		goto out;
+ 
+-	cfg.p -= 1;
+-
+ 	state = clk_pll_is_enabled(hw);
+ 	if (state)
+ 		_clk_pllc_disable(hw);
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
 
-Good, this approach is very clean, and I will take it, :-)
-
-Thanks,
---
-Ming Lei
