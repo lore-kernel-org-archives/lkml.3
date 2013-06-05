@@ -1,117 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372Ab3FEVMH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:12:07 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:46485 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932161Ab3FEVMF (ORCPT
+	id S932391Ab3FEVMP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:12:15 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:39190
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932161Ab3FEVMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:12:05 -0400
-Date: Wed, 5 Jun 2013 14:11:57 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Ben Greear <greearb@candelatech.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Joe Lawrence <joe.lawrence@stratus.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        Jouni Malinen <jouni@qca.qualcomm.com>,
-        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
-        Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: stop_machine lockup issue in 3.9.y.
-Message-ID: <20130605211157.GK10693@mtj.dyndns.org>
-References: <20130604100744.7cdf8777@jlaw-desktop.mno.stratus.com>
- <51AE1B81.20900@candelatech.com>
- <51AE27D5.7050202@candelatech.com>
- <87sj0xry1k.fsf@rustcorp.com.au>
- <20130605071539.GA3429@mtj.dyndns.org>
- <51AF6E54.3050108@candelatech.com>
- <20130605184807.GD10693@mtj.dyndns.org>
- <51AF8D4B.4090407@candelatech.com>
- <51AF91F5.6090801@candelatech.com>
- <51AFA677.9010605@candelatech.com>
+	Wed, 5 Jun 2013 17:12:12 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1e23h1155h)
+X-WSS-ID: 0MNXUVV-02-IFM-02
+X-M-MSG: 
+From: <suravee.suthikulpanit@amd.com>
+To: <linux-kernel@vger.kernel.org>, <a.p.zijlstra@chello.nl>,
+        <mingo@redhat.com>, <iommu@lists.linux-foundation.org>,
+        <joro@8bytes.org>
+CC: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Subject: [PATCH 0/2 V5] perf/x86/amd: IOMMU Performance Counter Support
+Date: Wed, 5 Jun 2013 16:11:47 -0500
+Message-ID: <1370466709-3212-1-git-send-email-suravee.suthikulpanit@amd.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51AFA677.9010605@candelatech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing wireless crowd, tglx and Ingo.  The original thread is at
- http://thread.gmane.org/gmane.linux.kernel/1500158/focus=55005 )
+From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
 
-Hello, Ben.
+NOTE: Please see individual patch for changes list.
 
-On Wed, Jun 05, 2013 at 01:58:31PM -0700, Ben Greear wrote:
-> Hmm, wonder if I found it.  I previously saw times where it appears
-> jiffies does not increment.  __do_softirq has a break-out based on
-> jiffies timeout.  Maybe that is failing to get us out of __do_softirq
-> in my lockup case because for whatever reason the system cannot update
-> jiffies in this case?
-> 
-> I added this (probably whitespace damaged) hack and now I have not been
-> able to reproduce the problem.
+These patches implement the AMD IOMMU Performance Counter functionality
+via custom perf PMU and implement static counting for various IOMMU
+translations.
 
-Ah, nice catch. :)
+    1) Extend the AMD IOMMU initialization to include performance
+       counter enablement.
 
-> diff --git a/kernel/softirq.c b/kernel/softirq.c
-> index 14d7758..621ea3b 100644
-> --- a/kernel/softirq.c
-> +++ b/kernel/softirq.c
-> @@ -212,6 +212,7 @@ asmlinkage void __do_softirq(void)
->         unsigned long end = jiffies + MAX_SOFTIRQ_TIME;
->         int cpu;
->         unsigned long old_flags = current->flags;
-> +       unsigned long loops = 0;
-> 
->         /*
->          * Mask out PF_MEMALLOC s current task context is borrowed for the
-> @@ -241,6 +242,7 @@ restart:
->                         unsigned int vec_nr = h - softirq_vec;
->                         int prev_count = preempt_count();
-> 
-> +                       loops++;
->                         kstat_incr_softirqs_this_cpu(vec_nr);
-> 
->                         trace_softirq_entry(vec_nr);
-> @@ -265,7 +267,7 @@ restart:
-> 
->         pending = local_softirq_pending();
->         if (pending) {
-> -               if (time_before(jiffies, end) && !need_resched())
-> +               if (time_before(jiffies, end) && !need_resched() && (loops < 500))
->                         goto restart;
+    2) The perf AMD IOMMU PMU to manage performance counters, which
+       interface with the AMD IOMMU core driver.
 
-So, softirq most likely kicked off from ath9k is rescheduling itself
-to the extent where it ends up locking out the CPU completely.  The
-problem is usually okay because the processing would break out in 2ms
-but as jiffies is stopped in this case with all other CPUs trapped in
-stop_machine, the loop never breaks and the machine hangs.  While
-adding the counter limit probably isn't a bad idea, softirq requeueing
-itself indefinitely sounds pretty buggy.
+Steven L Kinney (1):
+  perf/x86/amd: Adding IOMMU PC resource management
 
-ath9k people, do you guys have any idea what's going on?  Why would
-softirq repeat itself indefinitely?
+Suravee Suthikulpanit (1):
+  perf/x86/amd: AMD IOMMU PC PERF uncore PMU implementation
 
-Ingo, Thomas, we're seeing a stop_machine hanging because
-
-* All other CPUs entered IRQ disabled stage.  Jiffies is not being
-  updated.
-
-* The last CPU get caught up executing softirq indefinitely.  As
-  jiffies doesn't get updated, it never breaks out of softirq
-  handling.  This is a deadlock.  This CPU won't break out of softirq
-  handling unless jiffies is updated and other CPUs can't do anything
-  until this CPU enters the same stop_machine stage.
-
-Ben found out that breaking out of softirq handling after certain
-number of repetitions makes the issue go away, which isn't a proper
-fix but we might want anyway.  What do you guys think?
-
-Thanks.
+ arch/x86/kernel/cpu/Makefile               |    4 +
+ arch/x86/kernel/cpu/perf_event_amd_iommu.c |  504 ++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/perf_event_amd_iommu.h |   40 +++
+ drivers/iommu/amd_iommu_init.c             |  140 +++++++-
+ drivers/iommu/amd_iommu_proto.h            |    7 +
+ drivers/iommu/amd_iommu_types.h            |   15 +-
+ 6 files changed, 698 insertions(+), 12 deletions(-)
+ create mode 100644 arch/x86/kernel/cpu/perf_event_amd_iommu.c
+ create mode 100644 arch/x86/kernel/cpu/perf_event_amd_iommu.h
 
 -- 
-tejun
+1.7.10.4
+
+
