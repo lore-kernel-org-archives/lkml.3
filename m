@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758123Ab3FEWy3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 18:54:29 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51183 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757956Ab3FEWy1 (ORCPT
+	id S1758076Ab3FEW4p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 18:56:45 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:59490 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757638Ab3FEW4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 18:54:27 -0400
-Message-ID: <51AFC19F.9040601@wwwdotorg.org>
-Date: Wed, 05 Jun 2013 16:54:23 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 5 Jun 2013 18:56:43 -0400
 MIME-Version: 1.0
-To: =?UTF-8?B?SGVucmlrIE5vcmRzdHLDtm0=?= <henrik@henriknordstrom.net>
-CC: Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>,
+In-Reply-To: <3619282.JgdgeGHudI@flatron>
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
+	<CAKON4OyyRF4Z46RyJFDWUwo4L52Z8bgSH0CzDr2gDerw4iDwcw@mail.gmail.com>
+	<3619282.JgdgeGHudI@flatron>
+Date: Wed, 5 Jun 2013 23:56:43 +0100
+X-Google-Sender-Auth: YG38DYAWMoJYI7A8-hdi4FoZCQI
+Message-ID: <CAPweEDwyX4=Sme9kyDU64k9h3SPUHuErD8gEqfdYLGwBOocZDQ@mail.gmail.com>
+Subject: Re: getting allwinner SoC support upstream (was Re: Uploading linux (3.9.4-1))
+From: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
         devicetree-discuss <devicetree-discuss@ozlabs.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
+        debian-arm@lists.debian.org,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>,
         debian-kernel@lists.debian.org
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
- Uploading linux (3.9.4-1))
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>  <CAKON4OxDD5orX2w-_+d5kawTGXbE3KKj2QLERo9m7=NiUSXhgQ@mail.gmail.com>  <51AFA6DD.3000202@wwwdotorg.org>  <CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com> <1370469574.18839.33.camel@localhost>
-In-Reply-To: <1370469574.18839.33.camel@localhost>
-X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2013 03:59 PM, Henrik Nordström wrote:
-> ons 2013-06-05 klockan 22:24 +0100 skrev Luke Kenneth Casson Leighton:
-...
->>  so the point is: if anyone wishes me to propose to allwinner that
->> they convert over to devicetree, or any other proposal which involves
->> significant low-level changes to their working practices that could
->> potentially have a massive knock-on effect onto their
->> multi-million-dollar clients, it had better be a damn good story.
-> 
-> Calm down. It isn't really a significant difference to them outside of
-> the kernel. They do not need to change any of their configuraiton
-> methods, only a small toolchain change in how the resultig images are
-> built to have a corresponding device tree built.
+[removing debian-release again - at their request]
 
-If U-Boot needs to be parametrized, there are in theory a few options open:
+On Wed, Jun 5, 2013 at 11:11 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
 
-1) Put all the parameters in the U-Boot configuration header. This is
-normal.
+> Allwinner has just reinvented a wheel, without even considering the fact
+> that it has been already invented.
 
-2) Read some data structure at run-time. This data structure could in
-theory be some SoC-specific blob format (e.g. the packed version of
-information that some tool extracts from FEX/DT), a whole FEX blob, or
-device tree. The U-Boot maintainers have already indicated that they
-won't accept the first two options; run-time configuration has to be via
-DT, and not via some SoC-specific mechanism. (As I found out to my
-detriment when I attempted to make U-Boot on Tegra determine which UART
-to use for debug at run-time by reading the configuration header that
-our boot ROM uses). Now of course, boot0/boot1 could always transform
-whatever data structure they wish into a DTB before passing that to
-U-Boot...
+apologies, tomasz, but i believe i covered this issue in, again, my
+reply to russell, in which i point out that the both the context as
+well as the scope of the problem being solved is entirely different
+from that which the linux kernel developers find themselves in.  also,
+we note from what russell said, was that device tree wasn't ready for
+commercial deployment; allwinner's developers don't speak english, and
+additionally a fabless semiconductor company need to maintain absolute
+commercial secrecy at the all-critical time when they're doing
+FPGA-based testing of their netlists (yes, really: running linux on a
+huge $250k's worth of FPGAs) and haven't yet put the design into
+actual silicon.
+
+so there's a lot of factors which i believe the linux kernel
+developers are not aware of, and haven't taken into account, and to
+place blame onto the SoC vendors for not working with *you* when *you*
+haven't made an effort to understand their situation is, i feel, not
+really helping anyone.  not that i'm one to talk about understanding
+people, but hey... :)
+
+l.
