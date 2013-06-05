@@ -1,86 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912Ab3FEIxG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 04:53:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49189 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752208Ab3FEIxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 04:53:03 -0400
-Message-ID: <51AEFC60.70107@redhat.com>
-Date: Wed, 05 Jun 2013 10:52:48 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1753039Ab3FEIxq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 04:53:46 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:55304 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949Ab3FEIxn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 04:53:43 -0400
 MIME-Version: 1.0
-To: Jiang Liu <liuj97@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v1 6/8] zram: avoid access beyond the zram device
-References: <1370274140-26420-1-git-send-email-jiang.liu@huawei.com> <1370274140-26420-7-git-send-email-jiang.liu@huawei.com> <51ADE87F.9080303@redhat.com> <51AE033D.8090302@gmail.com>
-In-Reply-To: <51AE033D.8090302@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51AEFBA1.302@linux.vnet.ibm.com>
+References: <51AEFBA1.302@linux.vnet.ibm.com>
+Date: Wed, 5 Jun 2013 14:23:42 +0530
+Message-ID: <CAKohpom571kXwLVPzmAb1n16EuHwyOaiM3khXkjQZQixGCpX8Q@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: prevent 'policy->cpus' become offline in __gov_queue_work()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, rjw@sisk.pl,
+        Jiri Kosina <jkosina@suse.cz>, Borislav Petkov <bp@alien8.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2013 05:09 PM, Jiang Liu wrote:
-> On Tue 04 Jun 2013 09:15:43 PM CST, Jerome Marchand wrote:
->> On 06/03/2013 05:42 PM, Jiang Liu wrote:
->>> Function valid_io_request() should verify the entire request doesn't
->>> exceed the zram device, otherwise it will cause invalid memory access.
->>>
->>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->>> ---
->>>  drivers/staging/zram/zram_drv.c | 4 ++++
->>>  1 file changed, 4 insertions(+)
->>>
->>> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
->>> index 66cf28a..64b51b9 100644
->>> --- a/drivers/staging/zram/zram_drv.c
->>> +++ b/drivers/staging/zram/zram_drv.c
->>> @@ -428,6 +428,10 @@ static inline int valid_io_request(struct zram *zram, struct bio *bio)
->>>  		return 0;
->>>  	}
->>>
->>> +	if (unlikely((bio->bi_sector << SECTOR_SHIFT) + bio->bi_size >=
->>> +		     zram->disksize))
->>> +		return 0;
->>> +
->>
->> This test make the first line of previous test redundant. Why not just
->> update it like the following:
->>
->> -		(bio->bi_sector >= (zram->disksize >> SECTOR_SHIFT)) ||
->> +		((bio->bi_sector << SECTOR_SHIFT) + bio->bi_size >=
->> +			zram->disksize)) ||
->>
->>
->> Jerome
-> Hi Jerome,
->          I think the test "bio->bi_sector >= (zram->disksize >> 
-> SECTOR_SHIFT)" is still
-> needed to protect "(bio->bi_sector << SECTOR_SHIFT) + bio->bi_size" 
-> from wrapping
-> around.
+On 5 June 2013 14:19, Michael Wang <wangyun@linux.vnet.ibm.com> wrote:
+>
+> Jiri Kosina <jkosina@suse.cz> and Borislav Petkov <bp@alien8.de>
+> reported the warning:
+>
+> [   51.616759] ------------[ cut here ]------------
+> [   51.621460] WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule+0x58/0x60()
+> [   51.629638] Modules linked in: ext2 vfat fat loop snd_hda_codec_hdmi usbhid snd_hda_codec_realtek coretemp kvm_intel kvm snd_hda_intel snd_hda_codec crc32_pclmul crc32c_intel ghash_clmulni_intel snd_hwdep snd_pcm aesni_intel sb_edac aes_x86_64 ehci_pci snd_page_alloc glue_helper snd_timer xhci_hcd snd iTCO_wdt iTCO_vendor_support ehci_hcd edac_core lpc_ich acpi_cpufreq lrw gf128mul ablk_helper cryptd mperf usbcore usb_common soundcore mfd_core dcdbas evdev pcspkr processor i2c_i801 button microcode
+> [   51.675581] CPU: 0 PID: 244 Comm: kworker/1:1 Tainted: G        W    3.10.0-rc1+ #10
+> [   51.683407] Hardware name: Dell Inc. Precision T3600/0PTTT9, BIOS A08 01/24/2013
+> [   51.690901] Workqueue: events od_dbs_timer
+> [   51.695069]  0000000000000009 ffff88043a2f5b68 ffffffff8161441c ffff88043a2f5ba8
+> [   51.702602]  ffffffff8103e540 0000000000000033 0000000000000001 ffff88043d5f8000
+> [   51.710136]  00000000ffff0ce1 0000000000000001 ffff88044fc4fc08 ffff88043a2f5bb8
+> [   51.717691] Call Trace:
+> [   51.720191]  [<ffffffff8161441c>] dump_stack+0x19/0x1b
+> [   51.725396]  [<ffffffff8103e540>] warn_slowpath_common+0x70/0xa0
+> [   51.731473]  [<ffffffff8103e58a>] warn_slowpath_null+0x1a/0x20
+> [   51.737378]  [<ffffffff81025628>] native_smp_send_reschedule+0x58/0x60
+> [   51.744013]  [<ffffffff81072cfd>] wake_up_nohz_cpu+0x2d/0xa0
+> [   51.749745]  [<ffffffff8104f6bf>] add_timer_on+0x8f/0x110
+> [   51.755214]  [<ffffffff8105f6fe>] __queue_delayed_work+0x16e/0x1a0
+> [   51.761470]  [<ffffffff8105f251>] ? try_to_grab_pending+0xd1/0x1a0
+> [   51.767724]  [<ffffffff8105f78a>] mod_delayed_work_on+0x5a/0xa0
+> [   51.773719]  [<ffffffff814f6b5d>] gov_queue_work+0x4d/0xc0
+> [   51.779271]  [<ffffffff814f60cb>] od_dbs_timer+0xcb/0x170
+> [   51.784734]  [<ffffffff8105e75d>] process_one_work+0x1fd/0x540
+> [   51.790634]  [<ffffffff8105e6f2>] ? process_one_work+0x192/0x540
+> [   51.796711]  [<ffffffff8105ef22>] worker_thread+0x122/0x380
+> [   51.802350]  [<ffffffff8105ee00>] ? rescuer_thread+0x320/0x320
+> [   51.808264]  [<ffffffff8106634a>] kthread+0xea/0xf0
+> [   51.813200]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
+> [   51.819644]  [<ffffffff81623d5c>] ret_from_fork+0x7c/0xb0
+> [   51.918165] nouveau E[     DRM] GPU lockup - switching to software fbcon
+> [   51.930505]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
+> [   51.936994] ---[ end trace f419538ada83b5c5 ]---
+>
+> It was caused by the policy->cpus changed during the process of
+> __gov_queue_work(), in other word, cpu offline happened.
+>
+> This patch will use get/put_online_cpus() to prevent the offline
+> happen inside __gov_queue_work(), after applied the patch, the
+> warning is gone as Jiri tested:
+>
+>         Link: https://lkml.org/lkml/2013/6/5/88
+>
+> CC: "Rafael J. Wysocki" <rjw@sisk.pl>
+> CC: Viresh Kumar <viresh.kumar@linaro.org>
+> Reported-by: Borislav Petkov <bp@alien8.de>
+> Reported-by: Jiri Kosina <jkosina@suse.cz>
+> Tested-by: Jiri Kosina <jkosina@suse.cz>
+> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+> ---
+>  drivers/cpufreq/cpufreq_governor.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
 
-Good point, but I don't see how this is going to catch all the possible
-values that overflow. You still need an explicit overflow test
-(bio->bi_sector << SECTOR_SHIFT) + bio->bi_size < bio->bi_size), at
-which point the first test would be useless.
-
-Jerome
-
-> Regards!
-> Gerry
-> 
->>
->>>  	/* I/O request is valid */
->>>  	return 1;
->>>  }
->>>
->>
-> 
-> 
-
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
