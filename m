@@ -1,120 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569Ab3FENbV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 09:31:21 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:32780 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464Ab3FENbR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 09:31:17 -0400
-Date: Wed, 5 Jun 2013 15:31:13 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] sched: fix clear NOHZ_BALANCE_KICK
-Message-ID: <20130605133110.GA26600@somewhere>
-References: <1369927385-7801-1-git-send-email-vincent.guittot@linaro.org>
- <20130603224836.GA9388@somewhere>
- <CAKfTPtCB_ftNWjgAM9s79dX_tuS4yevjdD0YxvKfKS4dxz=LLQ@mail.gmail.com>
- <20130604093611.GJ8923@twins.programming.kicks-ass.net>
- <20130604102620.GB14012@somewhere>
- <CAKfTPtCLYnhQH3Mcx5dhRi9+9_679fdrhm8iZBSpgyu8VmevYw@mail.gmail.com>
- <20130604111900.GB14973@somewhere>
- <CAKfTPtCSr-M3ZLNF0NoHuSQTC1sP8wWo-m+hRttL3nZ1iCOHgA@mail.gmail.com>
- <20130604144451.GJ14973@somewhere>
- <CAKfTPtD1GR7ymQWByKGw23yBYc2gpMyZBG7w52=fzMvMLN3VzQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKfTPtD1GR7ymQWByKGw23yBYc2gpMyZBG7w52=fzMvMLN3VzQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754906Ab3FENfm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 09:35:42 -0400
+Received: from mail.skitlab.ru ([217.65.220.135]:44612 "EHLO mail.skitlab.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752718Ab3FENfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 09:35:39 -0400
+From: Aida Mynzhasova <aida.mynzhasova@skitlab.ru>
+To: linux-omap@vger.kernel.org
+Cc: tony@atomide.com, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Broken DM816x support in Linux 3.10-rc4
+Date: Wed,  5 Jun 2013 17:34:50 +0400
+Message-Id: <1370439295-9160-1-git-send-email-aida.mynzhasova@skitlab.ru>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 04, 2013 at 05:29:39PM +0200, Vincent Guittot wrote:
-> On 4 June 2013 16:44, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > On Tue, Jun 04, 2013 at 01:48:47PM +0200, Vincent Guittot wrote:
-> >> On 4 June 2013 13:19, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >> > On Tue, Jun 04, 2013 at 01:11:47PM +0200, Vincent Guittot wrote:
-> >> >> On 4 June 2013 12:26, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >> >> > On Tue, Jun 04, 2013 at 11:36:11AM +0200, Peter Zijlstra wrote:
-> >> >> >>
-> >> >> >> The best I can seem to come up with is something like the below; but I think
-> >> >> >> its ghastly. Surely we can do something saner with that bit.
-> >> >> >>
-> >> >> >> Having to clear it at 3 different places is just wrong.
-> >> >> >
-> >> >> > We could clear the flag early in scheduler_ipi() and set some
-> >> >> > specific value in rq->idle_balance that tells we want nohz idle
-> >> >> > balancing from the softirq, something like this untested:
-> >> >>
-> >> >> I'm not sure that we can have less than 2 places to clear it: cancel
-> >> >> place or acknowledge place otherwise we can face a situation where
-> >> >> idle load balance will be triggered 2 consecutive times because
-> >> >> NOHZ_BALANCE_KICK will be cleared before the idle load balance has
-> >> >> been done and had a chance to migrate tasks.
-> >> >
-> >> > I guess it depends what is the minimum value of rq->next_balance, it seems
-> >> > to be large enough to avoid this kind of incident. Although I don't
-> >> > know well the whole logic with rq->next_balance and ilb trigger so I must
-> >> > defer to you.
-> >>
-> >> In the trace that was showing the issue, i can see that both CPU0 and
-> >> CPU1 were trying to trig ILB almost simultaneously and the
-> >> test_and_set NOHZ_BALANCE_KICK filters one request so i would say that
-> >> clearing the bit before the end of the idle load balance sequence can
-> >> generate such sequence
-> >
-> > I see.
-> >
-> >>
-> >> In the sequence below, i have minimized the clear of NOHZ_BALANCE_KICK
-> >> in 2 places : acknowledge and cancel. I have reused part of the
-> >> proposal from peter which clears the bit if the condition doesn't
-> >> match but i have reordered the tests to done that only if all other
-> >> condition are matching
-> >>
-> >>  static inline bool got_nohz_idle_kick(void)
-> >>  {
-> >> - int cpu = smp_processor_id();
-> >> - return idle_cpu(cpu) && test_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu));
-> >> + bool nohz_kick = test_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu));
-> >> +
-> >> +       if (!nohz_kick)
-> >> +               return false;
-> >> +
-> >> +       if (idle_cpu(cpu) && !need_resched())
-> >> +               return true;
-> >> +
-> >> +       clear_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu));
-> >> +       return false;
-> >>  }
-> >>
-> >>  #else /* CONFIG_NO_HZ_COMMON */
-> >> @@ -1393,8 +1401,9 @@ static void sched_ttwu_pending(void)
-> >>
-> >>  void scheduler_ipi(void)
-> >>  {
-> >> - if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick()
-> >> -    && !tick_nohz_full_cpu(smp_processor_id()))
-> >> + if (llist_empty(&this_rq()->wake_list)
-> >> + && !tick_nohz_full_cpu(smp_processor_id())
-> >> + && !got_nohz_idle_kick())
-> >>   return;
-> >
-> > But we still need got_nohz_idle_kick() to be the first check, don't we? Otherwise
-> > if we run an "idle -> quick task slice -> idle" sequence we may keep the flag
-> > but lose the notifying IPI in between.
-> 
-> I'm not sure to catch the sequence you are describing above: "idle ->
-> quick task slice -> idle".
-> In addition, got_nohz_idle_kick must be the last tested condition (in
-> my proposal) in order to clear NOHZ_BALANCE_KICK only if we are sure
-> that we are going to return without possibility to trig the Idle load
-> balance
+Not so long ago I tried to boot Linux 3.10-rc4 kernel on DM816x EVM
+board. Unfortunately, my attempts were failed by reason of poor
+support of DM81xx-based devices in new kernels.
 
-Right, sorry for the confusion.
+Actually, on Linux 3.10-rc4 kernel early initialization of board
+is failed when it tries to initialize power domains:
+
+[    0.000000] Unhandled fault: external abort on non-linefetch (0x1028) 
+at 0xfa17f8e4
+[    0.000000] Internal error: : 1028 [#1] SMP ARM
+[    0.000000] Modules linked in:
+[    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 
+3.10.0-rc3-00001-g0e5443c-dirty #12
+[    0.000000] task: c076fc50 ti: c0764000 task.ti: c0764000
+[    0.000000] PC is at omap2_pwrdm_wait_transition+0x1c/0xac
+[    0.000000] LR is at pwrdm_register_pwrdms+0x15c/0x1ac
+[    0.000000] pc : [<c0031698>]    lr : [<c0036010>]    psr: 60000193
+[    0.000000] sp : c0765f28  ip : c07bebe0  fp : 00000001
+[    0.000000] r10: c07e6a90  r9 : 00000000  r8 : c07e6944
+[    0.000000] r7 : c0754a50  r6 : c064f264  r5 : c0775298  r4 : c0773e9c
+[    0.000000] r3 : fffff8e4  r2 : fa17f8e4  r1 : 00000004  r0 : c0775298
+[    0.000000] Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM 
+Segment kernel
+[    0.000000] Control: 10c5387d  Table: 80004019  DAC: 00000017
+[    0.000000] Process swapper (pid: 0, stack limit = 0xc0764240)
+[    0.000000] Stack: (0xc0765f28 to 0xc0766000)
+[    0.000000] 5f20:                   c0773e9c c0775298 c064f264 
+c0754a50 c0773ee4 c0036010
+[    0.000000] 5f40: 35170034 81600134 c05125a8 fa180000 80000200 
+c0771348 c07b1b48 c07475ac
+[    0.000000] 5f60: c0771348 c07191fc c0647c40 c0711598 16c00000 
+c0d24fb4 c06450ac c070c148
+[    0.000000] 5f80: c0765f98 c0765f90 c0771134 c0765fdc 00000000 
+00000000 00000000 00000000
+[    0.000000] 5fa0: c0643878 00000001 00000000 c0748774 c0771134 
+c076c880 413fc082 00000000
+[    0.000000] 5fc0: 00000000 c07086fc 00000000 00000000 00000000 
+00000000 00000000 c0748778
+[    0.000000] 5fe0: 10c53c7d c076c910 c0748774 c0771134 80004059 
+80008074 00000000 00000000
+[    0.000000] [<c0031698>] (omap2_pwrdm_wait_transition+0x1c/0xac) from 
+[<c0036010>] (pwrdm_register_pwrdms+0x15c/0x1ac)
+[    0.000000] [<c0036010>] (pwrdm_register_pwrdms+0x15c/0x1ac) from 
+[<c07191fc>] (omap3xxx_powerdomains_init+0x50/0x144)
+[    0.000000] [<c07191fc>] (omap3xxx_powerdomains_init+0x50/0x144) from 
+[<c0711598>] (ti81xx_init_early+0xcc/0x178)
+[    0.000000] [<c0711598>] (ti81xx_init_early+0xcc/0x178) from 
+[<c070c148>] (setup_arch+0x5ac/0x800)
+[    0.000000] [<c070c148>] (setup_arch+0x5ac/0x800) from [<c07086fc>] 
+(start_kernel+0x7c/0x330)
+[    0.000000] [<c07086fc>] (start_kernel+0x7c/0x330) from [<80008074>] 
+(0x80008074)
+[    0.000000] Code: e1d030f8 e5982000 e28330e4 e0822003 (e5921000)
+[    0.000000] ---[ end trace 1b75b31a2719ed1c ]---
+
+So, I suggest you this patch series, which fixes that kernel crush and
+adds new functions/structures, required for early initialization on
+DM816x (power and clock domains, hwmods). After applying these patches
+the kernel is able to successfully continue booting till clock
+initialization (will be added later).
+
+Thanks,
+
+Aida
+
