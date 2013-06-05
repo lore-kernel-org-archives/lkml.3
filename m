@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932210Ab3FEVBr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:01:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36246 "EHLO
+	id S1757635Ab3FEUxR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 16:53:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36220 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757653Ab3FEUxT (ORCPT
+	with ESMTP id S1757317Ab3FEUxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 16:53:19 -0400
+	Wed, 5 Jun 2013 16:53:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oliver@neukum.org>
-Subject: [ 10/33] USB: reset resume quirk needed by a hub
-Date: Wed,  5 Jun 2013 13:52:48 -0700
-Message-Id: <20130605204704.798620111@linuxfoundation.org>
+        David Binderman <dcb314@hotmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Subject: [ 01/33] avr32: fix relocation check for signed 18-bit offset
+Date: Wed,  5 Jun 2013 13:52:39 -0700
+Message-Id: <20130605204702.648944391@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605204702.359510786@linuxfoundation.org>
 References: <20130605204702.359510786@linuxfoundation.org>
@@ -26,30 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oliver@neukum.org>
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 
-commit bac6b03275184c912ad0818c9a0a736847804dca upstream.
+commit e68c636d88db3fda74e664ecb1a213ae0d50a7d8 upstream.
 
-Werner Fink has reported problems with this hub.
+Caught by static code analysis by David.
 
-Signed-off-by: Oliver Neukum <oliver@neukum.org>
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/quirks.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/avr32/kernel/module.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -110,6 +110,9 @@ static const struct usb_device_id usb_qu
- 	/* Edirol SD-20 */
- 	{ USB_DEVICE(0x0582, 0x0027), .driver_info = USB_QUIRK_RESET_RESUME },
- 
-+	/* Alcor Micro Corp. Hub */
-+	{ USB_DEVICE(0x058f, 0x9254), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* appletouch */
- 	{ USB_DEVICE(0x05ac, 0x021a), .driver_info = USB_QUIRK_RESET_RESUME },
- 
+--- a/arch/avr32/kernel/module.c
++++ b/arch/avr32/kernel/module.c
+@@ -271,7 +271,7 @@ int apply_relocate_add(Elf32_Shdr *sechd
+ 			break;
+ 		case R_AVR32_GOT18SW:
+ 			if ((relocation & 0xfffe0003) != 0
+-			    && (relocation & 0xfffc0003) != 0xffff0000)
++			    && (relocation & 0xfffc0000) != 0xfffc0000)
+ 				return reloc_overflow(module, "R_AVR32_GOT18SW",
+ 						     relocation);
+ 			relocation >>= 2;
 
 
