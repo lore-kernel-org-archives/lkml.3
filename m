@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933389Ab3FEWBY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 18:01:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37763 "EHLO
+	id S932862Ab3FEWBp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 18:01:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37756 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932694Ab3FEVf0 (ORCPT
+	with ESMTP id S932652Ab3FEVfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:26 -0400
+	Wed, 5 Jun 2013 17:35:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Michlmayr <tbm@cyrius.com>, Marek Vasut <marex@denx.de>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>
-Subject: [ 044/127] Kirkwood: Enable PCIe port 1 on QNAP TS-11x/TS-21x
-Date: Wed,  5 Jun 2013 14:33:31 -0700
-Message-Id: <20130605213222.985030286@linuxfoundation.org>
+        Joseph Qi <joseph.qi@huawei.com>, Jie Liu <jeff.liu@oracle.com>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Sunil Mushran <sunil.mushran@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 043/127] ocfs2: goto out_unlock if ocfs2_get_clusters_nocache() failed in ocfs2_fiemap()
+Date: Wed,  5 Jun 2013 14:33:30 -0700
+Message-Id: <20130605213222.866577392@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -27,34 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Michlmayr <tbm@cyrius.com>
+From: Joseph Qi <joseph.qi@huawei.com>
 
-commit 99e11334dcb846f9b76fb808196c7f47aa83abb3 upstream.
+commit b4ca2b4b577c3530e34dcfaafccb2cc680ce95d1 upstream.
 
-Enable KW_PCIE1 on QNAP TS-11x/TS-21x devices as newer revisions
-(rev 1.3) have a USB 3.0 chip from Etron on PCIe port 1.  Thanks
-to Marek Vasut for identifying this issue!
+Last time we found there is lock/unlock bug in ocfs2_file_aio_write, and
+then we did a thorough search for all lock resources in
+ocfs2_inode_info, including rw, inode and open lockres and found this
+bug.  My kernel version is 3.0.13, and it is also in the lastest version
+3.9.  In ocfs2_fiemap, once ocfs2_get_clusters_nocache failed, it should
+goto out_unlock instead of out, because we need release buffer head, up
+read alloc sem and unlock inode.
 
-Signed-off-by: Martin Michlmayr <tbm@cyrius.com>
-Tested-by: Marek Vasut <marex@denx.de>
-Acked-by: Andrew Lunn <andrew@lunn.ch>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Joseph Qi <joseph.qi@huawei.com>
+Reviewed-by: Jie Liu <jeff.liu@oracle.com>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Acked-by: Sunil Mushran <sunil.mushran@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-kirkwood/ts219-setup.c |    2 +-
+ fs/ocfs2/extent_map.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mach-kirkwood/ts219-setup.c
-+++ b/arch/arm/mach-kirkwood/ts219-setup.c
-@@ -124,7 +124,7 @@ static void __init qnap_ts219_init(void)
- static int __init ts219_pci_init(void)
- {
- 	if (machine_is_ts219())
--		kirkwood_pcie_init(KW_PCIE0);
-+		kirkwood_pcie_init(KW_PCIE1 | KW_PCIE0);
+--- a/fs/ocfs2/extent_map.c
++++ b/fs/ocfs2/extent_map.c
+@@ -790,7 +790,7 @@ int ocfs2_fiemap(struct inode *inode, st
+ 						 &hole_size, &rec, &is_last);
+ 		if (ret) {
+ 			mlog_errno(ret);
+-			goto out;
++			goto out_unlock;
+ 		}
  
- 	return 0;
- }
+ 		if (rec.e_blkno == 0ULL) {
 
 
