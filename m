@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab3FEGtW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 02:49:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17853 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752388Ab3FEGrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 02:47:08 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: sergei.shtylyov@cogentembedded.com, Jason Wang <jasowang@redhat.com>
-Subject: [net-next rfc V3 3/9] macvlan: switch to use IS_ENABLED()
-Date: Wed,  5 Jun 2013 14:36:26 +0800
-Message-Id: <1370414192-5830-4-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1370414192-5830-1-git-send-email-jasowang@redhat.com>
-References: <1370414192-5830-1-git-send-email-jasowang@redhat.com>
+	id S1752373Ab3FEGxM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 02:53:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52230 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752090Ab3FEGxK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 02:53:10 -0400
+From: Tyler Hicks <tyhicks@canonical.com>
+To: ecryptfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Paul Taysom <taysom@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
+Subject: [PATCH] eCryptfs: Check return of filemap_write_and_wait during fsync
+Date: Tue,  4 Jun 2013 23:53:03 -0700
+Message-Id: <1370415183-17023-1-git-send-email-tyhicks@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <20130524233139.GA4029@boyd>
+References: <20130524233139.GA4029@boyd>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- include/linux/if_macvlan.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Error out of ecryptfs_fsync() if filemap_write_and_wait() fails.
 
-diff --git a/include/linux/if_macvlan.h b/include/linux/if_macvlan.h
-index 84dde1d..e47ad46 100644
---- a/include/linux/if_macvlan.h
-+++ b/include/linux/if_macvlan.h
-@@ -8,7 +8,7 @@
- #include <net/netlink.h>
- #include <linux/u64_stats_sync.h>
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Cc: Paul Taysom <taysom@chromium.org>
+Cc: Olof Johansson <olofj@chromium.org>
+---
+
+After giving Paul's patch one more look, I noticed that we were ignoring
+filemap_write_and_wait()'s return value. I plan to push this patch along with
+Paul's original patch.
+
+ fs/ecryptfs/file.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
+index 16f509d..a7abbea 100644
+--- a/fs/ecryptfs/file.c
++++ b/fs/ecryptfs/file.c
+@@ -295,7 +295,12 @@ static int ecryptfs_release(struct inode *inode, struct file *file)
+ static int
+ ecryptfs_fsync(struct file *file, loff_t start, loff_t end, int datasync)
+ {
+-	filemap_write_and_wait(file->f_mapping);
++	int rc;
++
++	rc = filemap_write_and_wait(file->f_mapping);
++	if (rc)
++		return rc;
++
+ 	return vfs_fsync(ecryptfs_file_to_lower(file), datasync);
+ }
  
--#if defined(CONFIG_MACVTAP) || defined(CONFIG_MACVTAP_MODULE)
-+#if IS_ENABLED(CONFIG_MACVTAP)
- struct socket *macvtap_get_socket(struct file *);
- #else
- #include <linux/err.h>
 -- 
-1.7.1
+1.8.1.2
 
