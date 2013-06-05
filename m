@@ -1,116 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753628Ab3FELwD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 07:52:03 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49796 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543Ab3FELwB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 07:52:01 -0400
-Date: Wed, 5 Jun 2013 13:51:47 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Paul E. McKenney" <paulmck@us.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC][PATCH] ftrace: Use schedule_on_each_cpu() as a heavy
- synchronize_sched()
-Message-ID: <20130605115147.GF8923@twins.programming.kicks-ass.net>
-References: <1369785676.15552.55.camel@gandalf.local.home>
+	id S1753866Ab3FELxZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 07:53:25 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:45514 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752924Ab3FELxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 07:53:23 -0400
+Message-ID: <51AF25B8.4090701@ti.com>
+Date: Wed, 5 Jun 2013 14:49:12 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369785676.15552.55.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+CC: Alessandro Zummo <a.zummo@towertech.it>, Tony Lindgren <tony@atomide.com>,
+        <rtc-linux@googlegroups.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>,
+        Christoph Fritz <chf.fritz@googlemail.com>,
+        Tomi Valkeinen <tomi.valkeinen@iki.fi>
+Subject: Re: [PATCH v2 1/2] RTC: rtc-twl: Fix rtc_reg_map initialization
+References: <1366101013-21183-1-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1366101013-21183-1-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 08:01:16PM -0400, Steven Rostedt wrote:
-> The function tracer uses preempt_disable/enable_notrace() for
-> synchronization between reading registered ftrace_ops and unregistering
-> them.
-> 
-> Most of the ftrace_ops are global permanent structures that do not
-> require this synchronization. That is, ops may be added and removed from
-> the hlist but are never freed, and wont hurt if a synchronization is
-> missed.
-> 
-> But this is not true for dynamically created ftrace_ops or control_ops,
-> which are used by the perf function tracing.
-> 
-> The problem here is that the function tracer can be used to trace
-> kernel/user context switches as well as going to and from idle.
-> Basically, it can be used to trace blind spots of the RCU subsystem.
-> This means that even though preempt_disable() is done, a
-> synchronize_sched() will ignore CPUs that haven't made it out of user
-> space or idle. These can include functions that are being traced just
-> before entering or exiting the kernel sections.
-> 
-> To implement the RCU synchronization, instead of using
-> synchronize_sched() the use of schedule_on_each_cpu() is performed. This
-> means that when a dynamically allocated ftrace_ops, or a control ops is
-> being unregistered, all CPUs must be touched and execute a ftrace_sync()
-> stub function via the work queues. This will rip CPUs out from idle or
-> in dynamic tick mode. This only happens when a user disables perf
-> function tracing or other dynamically allocated function tracers, but it
-> allows us to continue to debug RCU and context tracking with function
-> tracing.
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> Index: linux-trace.git/kernel/trace/ftrace.c
-> ===================================================================
-> --- linux-trace.git.orig/kernel/trace/ftrace.c
-> +++ linux-trace.git/kernel/trace/ftrace.c
-> @@ -413,6 +413,17 @@ static int __register_ftrace_function(st
->  	return 0;
->  }
->  
-> +static void ftrace_sync(struct work_struct *work)
-> +{
-> +	/*
-> +	 * This function is just a stub to implement a hard force
-> +	 * of synchronize_sched(). This requires synchronizing
-> +	 * tasks even in userspace and idle.
-> +	 *
-> +	 * Yes, function tracing is rude.
-> +	 */
-> +}
-> +
->  static int __unregister_ftrace_function(struct ftrace_ops *ops)
->  {
->  	int ret;
-> @@ -440,8 +451,12 @@ static int __unregister_ftrace_function(
->  			 * so there'll be no new users. We must ensure
->  			 * all current users are done before we free
->  			 * the control data.
-> +			 * Note synchronize_sched() is not enough, as we
-> +			 * use preempt_disable() to do RCU, but the function
-> +			 * tracer can be called where RCU is not active
-> +			 * (before user_exit()).
->  			 */
-> -			synchronize_sched();
-> +			schedule_on_each_cpu(ftrace_sync);
->  			control_ops_free(ops);
->  		}
->  	} else
-> @@ -456,9 +471,13 @@ static int __unregister_ftrace_function(
->  	/*
->  	 * Dynamic ops may be freed, we must make sure that all
->  	 * callers are done before leaving this function.
-> +	 *
-> +	 * Again, normal synchronize_sched() is not good enough.
-> +	 * We need to do a hard force of sched synchronization.
->  	 */
->  	if (ops->flags & FTRACE_OPS_FL_DYNAMIC)
-> -		synchronize_sched();
-> +		schedule_on_each_cpu(ftrace_sync);
-> +
->  
->  	return 0;
->  }
-> 
+Hi Peter,
 
-So what happens if schedule_on_each_cpu() returns -ENOMEM? :-)
+Tested on OMAP4460 SDP - see no issues during boot.
+
+-grygorii
+
+On 04/16/2013 11:30 AM, Peter Ujfalusi wrote:
+> Initialize the rtc_reg_map in platform_driver's probe function instead at
+> module_init time. This way we can make sure that the twl-core has been already
+> probed and initialized (twl_priv->twl_id is valid) since the platform device
+> for the RTC driver will be created by the twl-core after it finished it's
+> init.
+>
+> Reported-by: Christoph Fritz <chf.fritz@googlemail.com>
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> ---
+> Hi,
+>
+> As Tomi commented on the first version:
+> www.spinics.net/lists/linux-omap/msg90064.html
+> www.spinics.net/lists/linux-omap/msg90066.html
+>
+> I have separated the actual fix from the module_platform_driver() conversion.
+>
+> Regards,
+> Peter
+>
+>   drivers/rtc/rtc-twl.c | 11 ++++++-----
+>   1 file changed, 6 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
+> index 8bc6c80..c385e9b 100644
+> --- a/drivers/rtc/rtc-twl.c
+> +++ b/drivers/rtc/rtc-twl.c
+> @@ -469,6 +469,12 @@ static int twl_rtc_probe(struct platform_device *pdev)
+>   	if (irq <= 0)
+>   		goto out1;
+>   
+> +	/* Initialize the register map */
+> +	if (twl_class_is_4030())
+> +		rtc_reg_map = (u8 *)twl4030_rtc_reg_map;
+> +	else
+> +		rtc_reg_map = (u8 *)twl6030_rtc_reg_map;
+> +
+>   	ret = twl_rtc_read_u8(&rd_reg, REG_RTC_STATUS_REG);
+>   	if (ret < 0)
+>   		goto out1;
+> @@ -614,11 +620,6 @@ static struct platform_driver twl4030rtc_driver = {
+>   
+>   static int __init twl_rtc_init(void)
+>   {
+> -	if (twl_class_is_4030())
+> -		rtc_reg_map = (u8 *) twl4030_rtc_reg_map;
+> -	else
+> -		rtc_reg_map = (u8 *) twl6030_rtc_reg_map;
+> -
+>   	return platform_driver_register(&twl4030rtc_driver);
+>   }
+>   module_init(twl_rtc_init);
+
