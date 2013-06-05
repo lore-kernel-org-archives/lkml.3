@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933180Ab3FEVgX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:36:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38069 "EHLO
+	id S933237Ab3FEViL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:38:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38113 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933115Ab3FEVgP (ORCPT
+	with ESMTP id S933184Ab3FEVgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:36:15 -0400
+	Wed, 5 Jun 2013 17:36:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roland Dreier <roland@purestorage.com>,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 112/127] tg3: Add read dma workaround for 5720
-Date: Wed,  5 Jun 2013 14:34:39 -0700
-Message-Id: <20130605213230.730056457@linuxfoundation.org>
+        Wenchao Xia <xiawenc@linux.vnet.ibm.com>,
+        Badari Pulavarty <pbadari@us.ibm.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Lingzhu Xiang <lxiang@redhat.com>
+Subject: [ 118/127] target/file: Fix off-by-one READ_CAPACITY bug for !S_ISBLK export
+Date: Wed,  5 Jun 2013 14:34:45 -0700
+Message-Id: <20130605213231.391789216@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -29,103 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nithin Sujir <nsujir@broadcom.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 9bc297ea0622bb2a6b3abfa2fa84f0a3b86ef8c8 upstream.
+commit 21363ca873334391992f2f424856aa864345bb61 upstream.
 
-Commit 091f0ea30074bc43f9250961b3247af713024bc6 "tg3: Add New 5719 Read
-DMA workaround" added a workaround for TX DMA stall on the 5719. This
-workaround needs to be applied to the 5720 as well.
+This patch fixes a bug where FILEIO was incorrectly reporting the number
+of logical blocks (+ 1) when using non struct block_device export mode.
 
-Reported-by: Roland Dreier <roland@purestorage.com>
-Tested-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+It changes fd_get_blocks() to follow all other backend ->get_blocks() cases,
+and reduces the calculated dev_size by one dev->dev_attrib.block_size
+number of bytes, and also fixes initial fd_block_size assignment at
+fd_configure_device() time introduced in commit 0fd97ccf4.
+
+Reported-by: Wenchao Xia <xiawenc@linux.vnet.ibm.com>
+Reported-by: Badari Pulavarty <pbadari@us.ibm.com>
+Tested-by: Badari Pulavarty <pbadari@us.ibm.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/broadcom/tg3.c |   21 +++++++++++++++------
- drivers/net/ethernet/broadcom/tg3.h |    5 +++--
- 2 files changed, 18 insertions(+), 8 deletions(-)
+ drivers/target/target_core_file.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -9093,6 +9093,14 @@ static void tg3_rss_write_indir_tbl(stru
- 	}
+--- a/drivers/target/target_core_file.c
++++ b/drivers/target/target_core_file.c
+@@ -150,6 +150,7 @@ static int fd_configure_device(struct se
+ 	if (S_ISBLK(inode->i_mode)) {
+ 		unsigned long long dev_size;
+ 
++		fd_dev->fd_block_size = bdev_logical_block_size(inode->i_bdev);
+ 		/*
+ 		 * Determine the number of bytes from i_size_read() minus
+ 		 * one (1) logical sector from underlying struct block_device
+@@ -168,11 +169,11 @@ static int fd_configure_device(struct se
+ 				" block_device\n");
+ 			goto fail;
+ 		}
+-	}
+ 
+-	fd_dev->fd_block_size = dev->dev_attrib.hw_block_size;
++		fd_dev->fd_block_size = FD_BLOCKSIZE;
++	}
+ 
+-	dev->dev_attrib.hw_block_size = FD_BLOCKSIZE;
++	dev->dev_attrib.hw_block_size = fd_dev->fd_block_size;
+ 	dev->dev_attrib.hw_max_sectors = FD_MAX_SECTORS;
+ 	dev->dev_attrib.hw_queue_depth = FD_MAX_DEVICE_QUEUE_DEPTH;
+ 
+@@ -583,11 +584,12 @@ static sector_t fd_get_blocks(struct se_
+ 	 * to handle underlying block_device resize operations.
+ 	 */
+ 	if (S_ISBLK(i->i_mode))
+-		dev_size = (i_size_read(i) - fd_dev->fd_block_size);
++		dev_size = i_size_read(i);
+ 	else
+ 		dev_size = fd_dev->fd_dev_size;
+ 
+-	return div_u64(dev_size, dev->dev_attrib.block_size);
++	return div_u64(dev_size - dev->dev_attrib.block_size,
++		       dev->dev_attrib.block_size);
  }
  
-+static inline u32 tg3_lso_rd_dma_workaround_bit(struct tg3 *tp)
-+{
-+	if (tg3_asic_rev(tp) == ASIC_REV_5719)
-+		return TG3_LSO_RD_DMA_TX_LENGTH_WA_5719;
-+	else
-+		return TG3_LSO_RD_DMA_TX_LENGTH_WA_5720;
-+}
-+
- /* tp->lock is held. */
- static int tg3_reset_hw(struct tg3 *tp, int reset_phy)
- {
-@@ -9772,16 +9780,17 @@ static int tg3_reset_hw(struct tg3 *tp,
- 	tw32_f(RDMAC_MODE, rdmac_mode);
- 	udelay(40);
- 
--	if (tg3_asic_rev(tp) == ASIC_REV_5719) {
-+	if (tg3_asic_rev(tp) == ASIC_REV_5719 ||
-+	    tg3_asic_rev(tp) == ASIC_REV_5720) {
- 		for (i = 0; i < TG3_NUM_RDMA_CHANNELS; i++) {
- 			if (tr32(TG3_RDMA_LENGTH + (i << 2)) > TG3_MAX_MTU(tp))
- 				break;
- 		}
- 		if (i < TG3_NUM_RDMA_CHANNELS) {
- 			val = tr32(TG3_LSO_RD_DMA_CRPTEN_CTRL);
--			val |= TG3_LSO_RD_DMA_TX_LENGTH_WA;
-+			val |= tg3_lso_rd_dma_workaround_bit(tp);
- 			tw32(TG3_LSO_RD_DMA_CRPTEN_CTRL, val);
--			tg3_flag_set(tp, 5719_RDMA_BUG);
-+			tg3_flag_set(tp, 5719_5720_RDMA_BUG);
- 		}
- 	}
- 
-@@ -10138,15 +10147,15 @@ static void tg3_periodic_fetch_stats(str
- 	TG3_STAT_ADD32(&sp->tx_ucast_packets, MAC_TX_STATS_UCAST);
- 	TG3_STAT_ADD32(&sp->tx_mcast_packets, MAC_TX_STATS_MCAST);
- 	TG3_STAT_ADD32(&sp->tx_bcast_packets, MAC_TX_STATS_BCAST);
--	if (unlikely(tg3_flag(tp, 5719_RDMA_BUG) &&
-+	if (unlikely(tg3_flag(tp, 5719_5720_RDMA_BUG) &&
- 		     (sp->tx_ucast_packets.low + sp->tx_mcast_packets.low +
- 		      sp->tx_bcast_packets.low) > TG3_NUM_RDMA_CHANNELS)) {
- 		u32 val;
- 
- 		val = tr32(TG3_LSO_RD_DMA_CRPTEN_CTRL);
--		val &= ~TG3_LSO_RD_DMA_TX_LENGTH_WA;
-+		val &= ~tg3_lso_rd_dma_workaround_bit(tp);
- 		tw32(TG3_LSO_RD_DMA_CRPTEN_CTRL, val);
--		tg3_flag_clear(tp, 5719_RDMA_BUG);
-+		tg3_flag_clear(tp, 5719_5720_RDMA_BUG);
- 	}
- 
- 	TG3_STAT_ADD32(&sp->rx_octets, MAC_RX_STATS_OCTETS);
---- a/drivers/net/ethernet/broadcom/tg3.h
-+++ b/drivers/net/ethernet/broadcom/tg3.h
-@@ -1422,7 +1422,8 @@
- #define TG3_LSO_RD_DMA_CRPTEN_CTRL	0x00004910
- #define TG3_LSO_RD_DMA_CRPTEN_CTRL_BLEN_BD_4K	 0x00030000
- #define TG3_LSO_RD_DMA_CRPTEN_CTRL_BLEN_LSO_4K	 0x000c0000
--#define TG3_LSO_RD_DMA_TX_LENGTH_WA	 0x02000000
-+#define TG3_LSO_RD_DMA_TX_LENGTH_WA_5719	 0x02000000
-+#define TG3_LSO_RD_DMA_TX_LENGTH_WA_5720	 0x00200000
- /* 0x4914 --> 0x4be0 unused */
- 
- #define TG3_NUM_RDMA_CHANNELS		4
-@@ -3043,7 +3044,7 @@ enum TG3_FLAGS {
- 	TG3_FLAG_APE_HAS_NCSI,
- 	TG3_FLAG_TX_TSTAMP_EN,
- 	TG3_FLAG_4K_FIFO_LIMIT,
--	TG3_FLAG_5719_RDMA_BUG,
-+	TG3_FLAG_5719_5720_RDMA_BUG,
- 	TG3_FLAG_RESET_TASK_PENDING,
- 	TG3_FLAG_PTP_CAPABLE,
- 	TG3_FLAG_5705_PLUS,
+ static struct sbc_ops fd_sbc_ops = {
 
 
