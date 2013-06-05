@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932806Ab3FEVfd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:35:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37725 "EHLO
+	id S932866Ab3FEV6L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:58:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37815 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932582Ab3FEVfV (ORCPT
+	with ESMTP id S932801Ab3FEVfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:21 -0400
+	Wed, 5 Jun 2013 17:35:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Chan <mchan@broadcom.com>,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 037/127] tg3: Skip powering down function 0 on certain serdes devices
-Date: Wed,  5 Jun 2013 14:33:24 -0700
-Message-Id: <20130605213222.153856336@linuxfoundation.org>
+        Brian Behlendorf <behlendorf1@llnl.gov>, Chris Wedgwood <cw@f00f.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 053/127] drivers/block/brd.c: fix brd_lookup_page() race
+Date: Wed,  5 Jun 2013 14:33:40 -0700
+Message-Id: <20130605213224.049232950@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -28,74 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nithin Sujir <nsujir@broadcom.com>
+From: Brian Behlendorf <behlendorf1@llnl.gov>
 
-commit 44f3b503c16425c8e9db4bbaa2fc9cd0c9d0ba91 upstream.
+commit dfd20b2b174d3a9b258ea3b7a35ead33576587b1 upstream.
 
-On the 5718, 5719 and 5720 serdes devices, powering down function 0
-results in all the other ports being powered down. Add code to skip
-function 0 power down.
+The index on the page must be set before it is inserted in the radix
+tree.  Otherwise there is a small race which can occur during lookup
+where the page can be found with the incorrect index.  This will trigger
+the BUG_ON() in brd_lookup_page().
 
-v2:
- - Modify tg3_phy_power_bug() function to use a switch instead of a
-   complicated if statement. Suggested by Joe Perches.
-
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Brian Behlendorf <behlendorf1@llnl.gov>
+Reported-by: Chris Wedgwood <cw@f00f.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/broadcom/tg3.c |   32 ++++++++++++++++++++++++++------
- 1 file changed, 26 insertions(+), 6 deletions(-)
+ drivers/block/brd.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -2921,6 +2921,31 @@ static int tg3_5700_link_polarity(struct
- 	return 0;
- }
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -117,13 +117,13 @@ static struct page *brd_insert_page(stru
  
-+static bool tg3_phy_power_bug(struct tg3 *tp)
-+{
-+	switch (tg3_asic_rev(tp)) {
-+	case ASIC_REV_5700:
-+	case ASIC_REV_5704:
-+		return true;
-+	case ASIC_REV_5780:
-+		if (tp->phy_flags & TG3_PHYFLG_MII_SERDES)
-+			return true;
-+		return false;
-+	case ASIC_REV_5717:
-+		if (!tp->pci_fn)
-+			return true;
-+		return false;
-+	case ASIC_REV_5719:
-+	case ASIC_REV_5720:
-+		if ((tp->phy_flags & TG3_PHYFLG_PHY_SERDES) &&
-+		    !tp->pci_fn)
-+			return true;
-+		return false;
+ 	spin_lock(&brd->brd_lock);
+ 	idx = sector >> PAGE_SECTORS_SHIFT;
++	page->index = idx;
+ 	if (radix_tree_insert(&brd->brd_pages, idx, page)) {
+ 		__free_page(page);
+ 		page = radix_tree_lookup(&brd->brd_pages, idx);
+ 		BUG_ON(!page);
+ 		BUG_ON(page->index != idx);
+-	} else
+-		page->index = idx;
 +	}
-+
-+	return false;
-+}
-+
- static void tg3_power_down_phy(struct tg3 *tp, bool do_low_power)
- {
- 	u32 val;
-@@ -2977,12 +3002,7 @@ static void tg3_power_down_phy(struct tg
- 	/* The PHY should not be powered down on some chips because
- 	 * of bugs.
- 	 */
--	if (tg3_asic_rev(tp) == ASIC_REV_5700 ||
--	    tg3_asic_rev(tp) == ASIC_REV_5704 ||
--	    (tg3_asic_rev(tp) == ASIC_REV_5780 &&
--	     (tp->phy_flags & TG3_PHYFLG_MII_SERDES)) ||
--	    (tg3_asic_rev(tp) == ASIC_REV_5717 &&
--	     !tp->pci_fn))
-+	if (tg3_phy_power_bug(tp))
- 		return;
+ 	spin_unlock(&brd->brd_lock);
  
- 	if (tg3_chip_rev(tp) == CHIPREV_5784_AX ||
+ 	radix_tree_preload_end();
 
 
