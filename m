@@ -1,83 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757069Ab3FETRk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 15:17:40 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:44053 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756566Ab3FETRi (ORCPT
+	id S1756955Ab3FETWn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 15:22:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34853 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755354Ab3FETWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 15:17:38 -0400
-Date: Wed, 5 Jun 2013 12:17:06 -0700
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: "Jan Beulich" <JBeulich@suse.com>
-Cc: "xen-devel" <xen-devel@lists.xen.org>, <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] PVH: vcpu info placement, load selectors,
- and remove debug printk.
-Message-ID: <20130605121706.3a8211d6@mantra.us.oracle.com>
-In-Reply-To: <51AEFED002000078000DB542@nat28.tlf.novell.com>
-References: <1370306612-12984-1-git-send-email-mukesh.rathor@oracle.com>
-	<51ADC0F702000078000DAF5A@nat28.tlf.novell.com>
-	<20130604145304.117ac60f@mantra.us.oracle.com>
-	<51AEFED002000078000DB542@nat28.tlf.novell.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Wed, 5 Jun 2013 15:22:41 -0400
+Date: Wed, 5 Jun 2013 12:22:40 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-pcmcia@lists.infradead.org, linux@dominikbrodowski.net,
+        Fabio Porcedda <fabio.porcedda@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        manabian@gmail.com, laurent.navet@gmail.com
+Subject: Re: [PATCH v2 0/7] pcmcia: at91_cf: clean up and add DT support
+Message-ID: <20130605192240.GA5647@kroah.com>
+References: <cover.1363865228.git.nicolas.ferre@atmel.com>
+ <CAHkwnC-aL=G9K9jttjD8Bk_ZKJ535vsGT26uCFbuFMeJUquYQw@mail.gmail.com>
+ <516E628B.1000104@atmel.com>
+ <20130419225448.GA8242@kroah.com>
+ <51AF0D2A.2@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51AF0D2A.2@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 05 Jun 2013 08:03:12 +0100
-"Jan Beulich" <JBeulich@suse.com> wrote:
-
-> >>> On 04.06.13 at 23:53, Mukesh Rathor <mukesh.rathor@oracle.com>
-> >>> wrote:
-> > Following OK? :
-> > 
-> >         if (xen_feature(XENFEAT_auto_translated_physmap)) {
-> >                 switch_to_new_gdt(0);
-> > 
-> >                 asm volatile (
-> >                         "pushq %%rax\n"
-> >                         "leaq 1f(%%rip),%%rax\n"
-> >                         "pushq %%rax\n"
-> >                         "lretq\n"
-> >                         "1:\n"
-> >                         : : "a" (__KERNEL_CS) : "memory");
-> > 
-> >                 return;
-> >         }
+On Wed, Jun 05, 2013 at 12:04:26PM +0200, Nicolas Ferre wrote:
+> On 20/04/2013 00:54, Greg Kroah-Hartman :
+> >On Wed, Apr 17, 2013 at 10:51:23AM +0200, Nicolas Ferre wrote:
+> >>On 04/17/2013 10:39 AM, Fabio Porcedda :
+> >>>On Thu, Mar 21, 2013 at 12:40 PM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+> >>>>These patches clean up at91_cf a bit and add DT bindings.
+> >>>>It is based on a previous series from Joachim Eastwood and other cleanup
+> >>>>patches by Fabio and Laurent.
+> >>>>I have collected them together as they are lying around for some time.
+> >>>>
+> >>>>Please tell me if It can go through PCMCIA tree or if Andrew or Greg can
+> >>>>take them.
+> >>>>Note that they are not bug fixes, so you can stack them for 3.10.
+> >>>>
+> >>>>Thanks for your help, best regards.
+> >>>>
+> >>>>v2: add 2 more cleanup patches:
+> >>>>         - move to module_platform_driver_probe()
+> >>>>         - little trivial indentation fix
+> >>>>
+> >>>>Fabio Porcedda (1):
+> >>>>   pcmcia: at91_cf: use module_platform_driver_probe()
+> >>>>
+> >>>>Joachim Eastwood (5):
+> >>>>   pcmcia: at91_cf: fix gpio_get_value in at91_cf_get_status
+> >>>>   pcmcia: at91_cf: convert to dev_ print functions
+> >>>>   pcmcia: at91_cf: use devm_ functions for allocations
+> >>>>   pcmcia: at91_cf: clean up header includes
+> >>>>   pcmcia: at91_cf: add support for DT
+> >>>>
+> >>>>Laurent Navet (1):
+> >>>>   pcmcia/trivial: at91_cf: fix checkpatch error
+> >>>>
+> >>>>  .../devicetree/bindings/ata/atmel-at91_cf.txt      |  19 +++
+> >>>>  drivers/pcmcia/Kconfig                             |   2 +-
+> >>>>  drivers/pcmcia/at91_cf.c                           | 176 ++++++++++-----------
+> >>>>  3 files changed, 108 insertions(+), 89 deletions(-)
+> >>>>  create mode 100644 Documentation/devicetree/bindings/ata/atmel-at91_cf.txt
+> >>>>
+> >>>>--
+> >>>>1.8.0
+> >>>>
+> >>>
+> >>>Ping?
+> >>
+> >>Andrew, Greg, can you please take this series?
+> >>
+> >>Here is the post on lkml:
+> >>https://lkml.org/lkml/2013/3/21/246
+> >>
+> >>Here is the first patch in patchwork (1/7):
+> >>https://patchwork.kernel.org/patch/2312691/
+> >>
+> >>Tell me if I can do something else to make this applied upstream...
+> >
+> >The PCMCIA maintainer should take these, not me.
 > 
-> While generally the choice of using %%rax instead of %0 here is
-> a matter of taste to some degree, I still don't see why you can't
-> use "r" as the constraint here in the first place.
-
-The compiler mostly picks eax anyways, but good suggestion.
-
-> Furthermore, assuming this sits in a function guaranteed to not be
-> inlined, this has a latent bug (and if the assumption isn't right, the
-> bug is real) in that the asm() modifies %rax without telling the
-> compiler.
-
-According to one of the unofficial asm tutorials i've here, the compiler
-knows since it's input and doesn't need to be told. In fact
-it'll barf if added to clobber list.
-
-> This is how I would have done it:
+> I know Greg, but this patch series is still not taken by anyone 3
+> months after its first submission and after several requests by both
+> Fabio and myself...
 > 
-> 		unsigned long dummy;
-> 
-> 		asm volatile ("pushq %0\n"
-> 			      "leaq 1f(%%rip),%0\n"
-> 			      "pushq %0\n"
-> 			      "lretq\n"
-> 			      "1:\n"
-> 			      : "=&r" (dummy) : "0" (__KERNEL_CS));
-> 
+> The series is still applying on linux-next today... Maybe it can go
+> via Andrew, then...
 
-Looks good. Thanks,
-Mukesh
+I can take them through my char/misc driver tree if it's been that long
+of a delay, care to resend them to me?
 
+thanks,
+
+greg k-h
