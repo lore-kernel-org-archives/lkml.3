@@ -1,112 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757182Ab3FESvh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 14:51:37 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:45192 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757023Ab3FESvf (ORCPT
+	id S1757260Ab3FESvp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 14:51:45 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:37876 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756797Ab3FESvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 14:51:35 -0400
-Subject: [PATCH v4 3/8] powerpc/pseries: Introduce generic read function to
- read nvram-partitions
+	Wed, 5 Jun 2013 14:51:43 -0400
+Subject: [PATCH v4 4/8] powerpc/pseries: Read/Write oops nvram partition via
+ pstore
 To: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
         benh@kernel.crashing.org
 From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
 Cc: jkenisto@linux.vnet.ibm.com, tony.luck@intel.com, ananth@in.ibm.com,
         mahesh@linux.vnet.ibm.com, ccross@android.com, anton@samba.org,
         cbouatmailru@gmail.com, keescook@chromium.org
-Date: Thu, 06 Jun 2013 00:21:16 +0530
-Message-ID: <20130605185116.25794.36566.stgit@aruna-ThinkPad-T420>
+Date: Thu, 06 Jun 2013 00:21:32 +0530
+Message-ID: <20130605185132.25794.23134.stgit@aruna-ThinkPad-T420>
 In-Reply-To: <20130605184756.25794.43872.stgit@aruna-ThinkPad-T420>
 References: <20130605184756.25794.43872.stgit@aruna-ThinkPad-T420>
 User-Agent: StGit/0.16-41-gd1dd
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060518-8256-0000-0000-000007CF347A
+x-cbid: 13060518-1396-0000-0000-000003123F99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce generic read function to read nvram partitions other than rtas.
-nvram_read_error_log will be retained which is used to read rtas partition
-from rtasd. nvram_read_partition is the generic read function to read from
-any nvram partition.
+IBM's p series machines provide persistent storage for LPARs through NVRAM.
+NVRAM's lnx,oops-log partition is used to log oops messages.
+Currently the kernel provides the contents of p-series NVRAM only as a
+simple stream of bytes via /dev/nvram, which must be interpreted in user
+space by the nvram command in the powerpc-utils package.
 
+This patch set exploits the pstore subsystem to expose oops partition in
+NVRAM as a separate file in /dev/pstore. For instance, Oops messages will be
+stored in a file named [dmesg-nvram-2]. In case pstore registration fails it
+will fall back to kmsg_dump mechanism.
+
+This patch will read/write the oops messages from/to this partition via pstore.
+
+Signed-off-by: Jim Keniston <jkenisto@us.ibm.com>
 Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
 ---
- arch/powerpc/platforms/pseries/nvram.c |   32 ++++++++++++++++++++++----------
- 1 file changed, 22 insertions(+), 10 deletions(-)
+ arch/powerpc/platforms/pseries/nvram.c |  172 +++++++++++++++++++++++++++++---
+ 1 file changed, 157 insertions(+), 15 deletions(-)
 
 diff --git a/arch/powerpc/platforms/pseries/nvram.c b/arch/powerpc/platforms/pseries/nvram.c
-index 742735a..088f023 100644
+index 088f023..9edec8e 100644
 --- a/arch/powerpc/platforms/pseries/nvram.c
 +++ b/arch/powerpc/platforms/pseries/nvram.c
-@@ -293,34 +293,35 @@ int nvram_write_error_log(char * buff, int length,
- 	return rc;
- }
+@@ -18,6 +18,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/slab.h>
+ #include <linux/kmsg_dump.h>
++#include <linux/pstore.h>
+ #include <linux/ctype.h>
+ #include <linux/zlib.h>
+ #include <asm/uaccess.h>
+@@ -127,6 +128,14 @@ static size_t oops_data_sz;
+ #define MEM_LEVEL 4
+ static struct z_stream_s stream;
  
--/* nvram_read_error_log
-+/* nvram_read_partition
-  *
-- * Reads nvram for error log for at most 'length'
-+ * Reads nvram partition for at most 'length'
-  */
--int nvram_read_error_log(char * buff, int length,
--                         unsigned int * err_type, unsigned int * error_log_cnt)
-+int nvram_read_partition(struct nvram_os_partition *part, char *buff,
-+			int length, unsigned int *err_type,
-+			unsigned int *error_log_cnt)
++#ifdef CONFIG_PSTORE
++static enum pstore_type_id nvram_type_ids[] = {
++	PSTORE_TYPE_DMESG,
++	-1
++};
++static int read_type;
++#endif
++
+ static ssize_t pSeries_nvram_read(char *buf, size_t count, loff_t *index)
  {
- 	int rc;
- 	loff_t tmp_index;
- 	struct err_log_info info;
- 	
--	if (rtas_log_partition.index == -1)
-+	if (part->index == -1)
- 		return -1;
- 
--	if (length > rtas_log_partition.size)
--		length = rtas_log_partition.size;
-+	if (length > part->size)
-+		length = part->size;
- 
--	tmp_index = rtas_log_partition.index;
-+	tmp_index = part->index;
- 
- 	rc = ppc_md.nvram_read((char *)&info, sizeof(struct err_log_info), &tmp_index);
- 	if (rc <= 0) {
--		printk(KERN_ERR "nvram_read_error_log: Failed nvram_read (%d)\n", rc);
-+		pr_err("%s: Failed nvram_read (%d)\n", __FUNCTION__, rc);
- 		return rc;
- 	}
- 
- 	rc = ppc_md.nvram_read(buff, length, &tmp_index);
- 	if (rc <= 0) {
--		printk(KERN_ERR "nvram_read_error_log: Failed nvram_read (%d)\n", rc);
-+		pr_err("%s: Failed nvram_read (%d)\n", __FUNCTION__, rc);
- 		return rc;
- 	}
- 
-@@ -330,6 +331,17 @@ int nvram_read_error_log(char * buff, int length,
+ 	unsigned int i;
+@@ -430,6 +439,149 @@ static int __init pseries_nvram_init_os_partition(struct nvram_os_partition
  	return 0;
  }
  
-+/* nvram_read_error_log
++/*
++ * Are we using the ibm,rtas-log for oops/panic reports?  And if so,
++ * would logging this oops/panic overwrite an RTAS event that rtas_errd
++ * hasn't had a chance to read and process?  Return 1 if so, else 0.
 + *
-+ * Reads nvram for error log for at most 'length'
++ * We assume that if rtas_errd hasn't read the RTAS event in
++ * NVRAM_RTAS_READ_TIMEOUT seconds, it's probably not going to.
 + */
-+int nvram_read_error_log(char *buff, int length,
-+			unsigned int *err_type, unsigned int *error_log_cnt)
++static int clobbering_unread_rtas_event(void)
 +{
-+	return nvram_read_partition(&rtas_log_partition, buff, length,
-+						err_type, error_log_cnt);
++	return (oops_log_partition.index == rtas_log_partition.index
++		&& last_unread_rtas_event
++		&& get_seconds() - last_unread_rtas_event <=
++						NVRAM_RTAS_READ_TIMEOUT);
 +}
 +
- /* This doesn't actually zero anything, but it sets the event_logged
-  * word to tell that this event is safely in syslog.
-  */
++#ifdef CONFIG_PSTORE
++static int nvram_pstore_open(struct pstore_info *psi)
++{
++	/* Reset the iterator to start reading partitions again */
++	read_type = -1;
++	return 0;
++}
++
++/**
++ * nvram_pstore_write - pstore write callback for nvram
++ * @type:               Type of message logged
++ * @reason:             reason behind dump (oops/panic)
++ * @id:                 identifier to indicate the write performed
++ * @part:               pstore writes data to registered buffer in parts,
++ *                      part number will indicate the same.
++ * @count:              Indicates oops count
++ * @size:               number of bytes written to the registered buffer
++ * @psi:                registered pstore_info structure
++ *
++ * Called by pstore_dump() when an oops or panic report is logged in the
++ * printk buffer.
++ * Returns 0 on successful write.
++ */
++static int nvram_pstore_write(enum pstore_type_id type,
++				enum kmsg_dump_reason reason,
++				u64 *id, unsigned int part, int count,
++				size_t size, struct pstore_info *psi)
++{
++	int rc;
++	struct oops_log_info *oops_hdr = (struct oops_log_info *) oops_buf;
++
++	/* part 1 has the recent messages from printk buffer */
++	if (part > 1 || type != PSTORE_TYPE_DMESG ||
++				clobbering_unread_rtas_event())
++		return -1;
++
++	oops_hdr->version = OOPS_HDR_VERSION;
++	oops_hdr->report_length = (u16) size;
++	oops_hdr->timestamp = get_seconds();
++	rc = nvram_write_os_partition(&oops_log_partition, oops_buf,
++		(int) (sizeof(*oops_hdr) + size), ERR_TYPE_KERNEL_PANIC,
++		count);
++
++	if (rc != 0)
++		return rc;
++
++	*id = part;
++	return 0;
++}
++
++/*
++ * Reads the oops/panic report.
++ * Returns the length of the data we read from each partition.
++ * Returns 0 if we've been called before.
++ */
++static ssize_t nvram_pstore_read(u64 *id, enum pstore_type_id *type,
++				int *count, struct timespec *time, char **buf,
++				struct pstore_info *psi)
++{
++	struct oops_log_info *oops_hdr;
++	unsigned int err_type, id_no;
++	struct nvram_os_partition *part = NULL;
++	char *buff = NULL;
++
++	read_type++;
++
++	switch (nvram_type_ids[read_type]) {
++	case PSTORE_TYPE_DMESG:
++		part = &oops_log_partition;
++		*type = PSTORE_TYPE_DMESG;
++		break;
++	default:
++		return 0;
++	}
++
++	buff = kmalloc(part->size, GFP_KERNEL);
++
++	if (!buff)
++		return -ENOMEM;
++
++	if (nvram_read_partition(part, buff, part->size, &err_type, &id_no)) {
++		kfree(buff);
++		return 0;
++	}
++
++	*count = 0;
++	*id = id_no;
++	oops_hdr = (struct oops_log_info *)buff;
++	*buf = buff + sizeof(*oops_hdr);
++	time->tv_sec = oops_hdr->timestamp;
++	time->tv_nsec = 0;
++	return oops_hdr->report_length;
++}
++
++static struct pstore_info nvram_pstore_info = {
++	.owner = THIS_MODULE,
++	.name = "nvram",
++	.open = nvram_pstore_open,
++	.read = nvram_pstore_read,
++	.write = nvram_pstore_write,
++};
++
++static int nvram_pstore_init(void)
++{
++	int rc = 0;
++
++	nvram_pstore_info.buf = oops_data;
++	nvram_pstore_info.bufsize = oops_data_sz;
++
++	rc = pstore_register(&nvram_pstore_info);
++	if (rc != 0)
++		pr_err("nvram: pstore_register() failed, defaults to "
++				"kmsg_dump; returned %d\n", rc);
++	else
++		/*TODO: Support compression when pstore is configured */
++		pr_info("nvram: Compression of oops text supported only when "
++				"pstore is not configured");
++
++	return rc;
++}
++#else
++static int nvram_pstore_init(void)
++{
++	return -1;
++}
++#endif
++
+ static void __init nvram_init_oops_partition(int rtas_partition_exists)
+ {
+ 	int rc;
+@@ -453,6 +605,11 @@ static void __init nvram_init_oops_partition(int rtas_partition_exists)
+ 	oops_data = oops_buf + sizeof(struct oops_log_info);
+ 	oops_data_sz = oops_log_partition.size - sizeof(struct oops_log_info);
+ 
++	rc = nvram_pstore_init();
++
++	if (!rc)
++		return;
++
+ 	/*
+ 	 * Figure compression (preceded by elimination of each line's <n>
+ 	 * severity prefix) will reduce the oops/panic report to at most
+@@ -525,21 +682,6 @@ int __init pSeries_nvram_init(void)
+ 	return 0;
+ }
+ 
+-/*
+- * Are we using the ibm,rtas-log for oops/panic reports?  And if so,
+- * would logging this oops/panic overwrite an RTAS event that rtas_errd
+- * hasn't had a chance to read and process?  Return 1 if so, else 0.
+- *
+- * We assume that if rtas_errd hasn't read the RTAS event in
+- * NVRAM_RTAS_READ_TIMEOUT seconds, it's probably not going to.
+- */
+-static int clobbering_unread_rtas_event(void)
+-{
+-	return (oops_log_partition.index == rtas_log_partition.index
+-		&& last_unread_rtas_event
+-		&& get_seconds() - last_unread_rtas_event <=
+-						NVRAM_RTAS_READ_TIMEOUT);
+-}
+ 
+ /* Derived from logfs_compress() */
+ static int nvram_compress(const void *in, void *out, size_t inlen,
 
