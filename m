@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932846Ab3FEVfi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:35:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37833 "EHLO
+	id S932902Ab3FEV4e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:56:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37847 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932517Ab3FEVfe (ORCPT
+	with ESMTP id S932829Ab3FEVfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:34 -0400
+	Wed, 5 Jun 2013 17:35:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        Anthony Doggett <Anthony2486@interfaces.org.uk>,
+        Vyacheslav Dubeyko <slava@dubeyko.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 055/127] mm/THP: use pmd_populate() to update the pmd with pgtable_t pointer
-Date: Wed,  5 Jun 2013 14:33:42 -0700
-Message-Id: <20130605213224.283950179@linuxfoundation.org>
+Subject: [ 050/127] nilfs2: fix issue of nilfs_set_page_dirty() for page at EOF boundary
+Date: Wed,  5 Jun 2013 14:33:37 -0700
+Message-Id: <20130605213223.689512998@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -31,45 +30,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 
-commit 7c3425123ddfdc5f48e7913ff59d908789712b18 upstream.
+commit 136e8770cd5d1fe38b3c613100dd6dc4db6d4fa6 upstream.
 
-We should not use set_pmd_at to update pmd_t with pgtable_t pointer.
-set_pmd_at is used to set pmd with huge pte entries and architectures
-like ppc64, clear few flags from the pte when saving a new entry.
-Without this change we observe bad pte errors like below on ppc64 with
-THP enabled.
+nilfs2: fix issue of nilfs_set_page_dirty for page at EOF boundary
 
-  BUG: Bad page map in process ld mm=0xc000001ee39f4780 pte:7fc3f37848000001 pmd:c000001ec0000000
+DESCRIPTION:
+ There are use-cases when NILFS2 file system (formatted with block size
+lesser than 4 KB) can be remounted in RO mode because of encountering of
+"broken bmap" issue.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+The issue was reported by Anthony Doggett <Anthony2486@interfaces.org.uk>:
+ "The machine I've been trialling nilfs on is running Debian Testing,
+  Linux version 3.2.0-4-686-pae (debian-kernel@lists.debian.org) (gcc
+  version 4.6.3 (Debian 4.6.3-14) ) #1 SMP Debian 3.2.35-2), but I've
+  also reproduced it (identically) with Debian Unstable amd64 and Debian
+  Experimental (using the 3.8-trunk kernel).  The problematic partitions
+  were formatted with "mkfs.nilfs2 -b 1024 -B 8192"."
+
+SYMPTOMS:
+(1) System log contains error messages likewise:
+
+    [63102.496756] nilfs_direct_assign: invalid pointer: 0
+    [63102.496786] NILFS error (device dm-17): nilfs_bmap_assign: broken bmap (inode number=28)
+    [63102.496798]
+    [63102.524403] Remounting filesystem read-only
+
+(2) The NILFS2 file system is remounted in RO mode.
+
+REPRODUSING PATH:
+(1) Create volume group with name "unencrypted" by means of vgcreate utility.
+(2) Run script (prepared by Anthony Doggett <Anthony2486@interfaces.org.uk>):
+
+----------------[BEGIN SCRIPT]--------------------
+
+VG=unencrypted
+lvcreate --size 2G --name ntest $VG
+mkfs.nilfs2 -b 1024 -B 8192 /dev/mapper/$VG-ntest
+mkdir /var/tmp/n
+mkdir /var/tmp/n/ntest
+mount /dev/mapper/$VG-ntest /var/tmp/n/ntest
+mkdir /var/tmp/n/ntest/thedir
+cd /var/tmp/n/ntest/thedir
+sleep 2
+date
+darcs init
+sleep 2
+dmesg|tail -n 5
+date
+darcs whatsnew || true
+date
+sleep 2
+dmesg|tail -n 5
+----------------[END SCRIPT]--------------------
+
+REPRODUCIBILITY: 100%
+
+INVESTIGATION:
+As it was discovered, the issue takes place during segment
+construction after executing such sequence of user-space operations:
+
+  open("_darcs/index", O_RDWR|O_CREAT|O_NOCTTY, 0666) = 7
+  fstat(7, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
+  ftruncate(7, 60)
+
+The error message "NILFS error (device dm-17): nilfs_bmap_assign: broken
+bmap (inode number=28)" takes place because of trying to get block
+number for third block of the file with logical offset #3072 bytes.  As
+it is possible to see from above output, the file has 60 bytes of the
+whole size.  So, it is enough one block (1 KB in size) allocation for
+the whole file.  Trying to operate with several blocks instead of one
+takes place because of discovering several dirty buffers for this file
+in nilfs_segctor_scan_file() method.
+
+The root cause of this issue is in nilfs_set_page_dirty function which
+is called just before writing to an mmapped page.
+
+When nilfs_page_mkwrite function handles a page at EOF boundary, it
+fills hole blocks only inside EOF through __block_page_mkwrite().
+
+The __block_page_mkwrite() function calls set_page_dirty() after filling
+hole blocks, thus nilfs_set_page_dirty function (=
+a_ops->set_page_dirty) is called.  However, the current implementation
+of nilfs_set_page_dirty() wrongly marks all buffers dirty even for page
+at EOF boundary.
+
+As a result, buffers outside EOF are inconsistently marked dirty and
+queued for write even though they are not mapped with nilfs_get_block
+function.
+
+FIX:
+This modifies nilfs_set_page_dirty() not to mark hole blocks dirty.
+
+Thanks to Vyacheslav Dubeyko for his effort on analysis and proposals
+for this issue.
+
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Reported-by: Anthony Doggett <Anthony2486@interfaces.org.uk>
+Reported-by: Vyacheslav Dubeyko <slava@dubeyko.com>
+Cc: Vyacheslav Dubeyko <slava@dubeyko.com>
+Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/huge_memory.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ fs/nilfs2/inode.c |   27 +++++++++++++++++++++++----
+ 1 file changed, 23 insertions(+), 4 deletions(-)
 
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -2318,7 +2318,12 @@ static void collapse_huge_page(struct mm
- 		pte_unmap(pte);
- 		spin_lock(&mm->page_table_lock);
- 		BUG_ON(!pmd_none(*pmd));
--		set_pmd_at(mm, address, pmd, _pmd);
+--- a/fs/nilfs2/inode.c
++++ b/fs/nilfs2/inode.c
+@@ -202,13 +202,32 @@ static int nilfs_writepage(struct page *
+ 
+ static int nilfs_set_page_dirty(struct page *page)
+ {
+-	int ret = __set_page_dirty_buffers(page);
++	int ret = __set_page_dirty_nobuffers(page);
+ 
+-	if (ret) {
++	if (page_has_buffers(page)) {
+ 		struct inode *inode = page->mapping->host;
+-		unsigned nr_dirty = 1 << (PAGE_SHIFT - inode->i_blkbits);
++		unsigned nr_dirty = 0;
++		struct buffer_head *bh, *head;
+ 
+-		nilfs_set_file_dirty(inode, nr_dirty);
 +		/*
-+		 * We can only use set_pmd_at when establishing
-+		 * hugepmds and never for establishing regular pmds that
-+		 * points to regular pagetables. Use pmd_populate for that
++		 * This page is locked by callers, and no other thread
++		 * concurrently marks its buffers dirty since they are
++		 * only dirtied through routines in fs/buffer.c in
++		 * which call sites of mark_buffer_dirty are protected
++		 * by page lock.
 +		 */
-+		pmd_populate(mm, pmd, pmd_pgtable(_pmd));
- 		spin_unlock(&mm->page_table_lock);
- 		anon_vma_unlock_write(vma->anon_vma);
- 		goto out;
++		bh = head = page_buffers(page);
++		do {
++			/* Do not mark hole blocks dirty */
++			if (buffer_dirty(bh) || !buffer_mapped(bh))
++				continue;
++
++			set_buffer_dirty(bh);
++			nr_dirty++;
++		} while (bh = bh->b_this_page, bh != head);
++
++		if (nr_dirty)
++			nilfs_set_file_dirty(inode, nr_dirty);
+ 	}
+ 	return ret;
+ }
 
 
