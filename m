@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305Ab3FERsW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 13:48:22 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:3842 "EHLO
+	id S1757287Ab3FERsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 13:48:21 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:61360 "EHLO
 	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757163Ab3FERsR (ORCPT
+	with ESMTP id S1757156Ab3FERsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Jun 2013 13:48:17 -0400
 From: Nick Dyer <nick.dyer@itdev.co.uk>
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
 Cc: Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 43/53] Input: atmel_mxt_ts - Remove unused defines
-Date: Wed,  5 Jun 2013 18:37:36 +0100
-Message-Id: <1370453866-16534-44-git-send-email-nick.dyer@itdev.co.uk>
+Subject: [PATCH 26/53] Input: atmel_mxt_ts - Rename touchscreen defines to include T9
+Date: Wed,  5 Jun 2013 18:37:19 +0100
+Message-Id: <1370453866-16534-27-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -25,124 +25,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many of these values are out of date and they aren't used in the driver - all
-they do is increase the size of the kernel source.
+This avoids confusion with the newer T100 touchscreen object.
 
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 Acked-by: Benson Leung <bleung@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   66 +-----------------------------
- 1 file changed, 1 insertion(+), 65 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   46 +++++++++++++++---------------
+ 1 file changed, 23 insertions(+), 23 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index b482f71..bbfea7a 100644
+index ab6a1f6..ad8b803 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -25,27 +25,13 @@
- #include <linux/interrupt.h>
- #include <linux/slab.h>
- 
--/* Version */
--#define MXT_VER_20		20
--#define MXT_VER_21		21
--#define MXT_VER_22		22
--
- /* Firmware files */
- #define MXT_FW_NAME		"maxtouch.fw"
- #define MXT_CFG_NAME		"maxtouch.cfg"
- #define MXT_CFG_MAGIC		"OBP_RAW V1"
- 
- /* Registers */
--#define MXT_INFO		0x00
--#define MXT_FAMILY_ID		0x00
--#define MXT_VARIANT_ID		0x01
--#define MXT_VERSION		0x02
--#define MXT_BUILD		0x03
--#define MXT_MATRIX_X_SIZE	0x04
--#define MXT_MATRIX_Y_SIZE	0x05
--#define MXT_OBJECT_NUM		0x06
- #define MXT_OBJECT_START	0x07
--
- #define MXT_OBJECT_SIZE		6
- #define MXT_INFO_CHECKSUM_SIZE	3
- #define MXT_MAX_BLOCK_WRITE	256
-@@ -107,15 +93,6 @@ struct t7_config {
- #define MXT_POWER_CFG_RUN		0
- #define MXT_POWER_CFG_DEEPSLEEP		1
- 
--/* MXT_GEN_ACQUIRE_T8 field */
--#define MXT_ACQUIRE_CHRGTIME	0
--#define MXT_ACQUIRE_TCHDRIFT	2
--#define MXT_ACQUIRE_DRIFTST	3
--#define MXT_ACQUIRE_TCHAUTOCAL	4
--#define MXT_ACQUIRE_SYNC	5
--#define MXT_ACQUIRE_ATCHCALST	6
--#define MXT_ACQUIRE_ATCHCALSTHR	7
--
- /* MXT_TOUCH_MULTI_T9 field */
+@@ -114,13 +114,23 @@ struct t7_config {
  #define MXT_T9_ORIENT		9
  #define MXT_T9_RANGE		18
-@@ -138,51 +115,10 @@ struct t9_range {
- /* MXT_TOUCH_MULTI_T9 orient */
- #define MXT_T9_ORIENT_SWITCH	(1 << 0)
  
--/* MXT_PROCI_GRIPFACE_T20 field */
--#define MXT_GRIPFACE_CTRL	0
--#define MXT_GRIPFACE_XLOGRIP	1
--#define MXT_GRIPFACE_XHIGRIP	2
--#define MXT_GRIPFACE_YLOGRIP	3
--#define MXT_GRIPFACE_YHIGRIP	4
--#define MXT_GRIPFACE_MAXTCHS	5
--#define MXT_GRIPFACE_SZTHR1	7
--#define MXT_GRIPFACE_SZTHR2	8
--#define MXT_GRIPFACE_SHPTHR1	9
--#define MXT_GRIPFACE_SHPTHR2	10
--#define MXT_GRIPFACE_SUPEXTTO	11
--
--/* MXT_PROCI_NOISE field */
--#define MXT_NOISE_CTRL		0
--#define MXT_NOISE_OUTFLEN	1
--#define MXT_NOISE_GCAFUL_LSB	3
--#define MXT_NOISE_GCAFUL_MSB	4
--#define MXT_NOISE_GCAFLL_LSB	5
--#define MXT_NOISE_GCAFLL_MSB	6
--#define MXT_NOISE_ACTVGCAFVALID	7
--#define MXT_NOISE_NOISETHR	8
--#define MXT_NOISE_FREQHOPSCALE	10
--#define MXT_NOISE_FREQ0		11
--#define MXT_NOISE_FREQ1		12
--#define MXT_NOISE_FREQ2		13
--#define MXT_NOISE_FREQ3		14
--#define MXT_NOISE_FREQ4		15
--#define MXT_NOISE_IDLEGCAFVALID	16
--
- /* MXT_SPT_COMMSCONFIG_T18 */
- #define MXT_COMMS_CTRL		0
- #define MXT_COMMS_CMD		1
++/* MXT_TOUCH_MULTI_T9 status */
++#define MXT_T9_UNGRIP		(1 << 0)
++#define MXT_T9_SUPPRESS		(1 << 1)
++#define MXT_T9_AMP		(1 << 2)
++#define MXT_T9_VECTOR		(1 << 3)
++#define MXT_T9_MOVE		(1 << 4)
++#define MXT_T9_RELEASE		(1 << 5)
++#define MXT_T9_PRESS		(1 << 6)
++#define MXT_T9_DETECT		(1 << 7)
++
+ struct t9_range {
+ 	u16 x;
+ 	u16 y;
+ } __packed;
  
--/* MXT_SPT_CTECONFIG_T28 field */
--#define MXT_CTE_CTRL		0
--#define MXT_CTE_CMD		1
--#define MXT_CTE_MODE		2
--#define MXT_CTE_IDLEGCAFDEPTH	3
--#define MXT_CTE_ACTVGCAFDEPTH	4
--#define MXT_CTE_VOLTAGE		5
--
--#define MXT_VOLTAGE_DEFAULT	2700000
--#define MXT_VOLTAGE_STEP	10000
--
- /* Define for MXT_GEN_COMMAND_T6 */
- #define MXT_BOOT_VALUE		0xa5
- #define MXT_RESET_VALUE		0x01
-@@ -1581,7 +1517,7 @@ static int mxt_get_info(struct mxt_data *data)
- 	int error;
+-/* Touch orient bits */
+-#define MXT_XY_SWITCH		(1 << 0)
++/* MXT_TOUCH_MULTI_T9 orient */
++#define MXT_T9_ORIENT_SWITCH	(1 << 0)
  
- 	/* Read 7-byte info block starting at address 0 */
--	error = __mxt_read_reg(client, MXT_INFO, sizeof(*info), info);
-+	error = __mxt_read_reg(client, 0, sizeof(*info), info);
- 	if (error)
- 		return error;
+ /* MXT_PROCI_GRIPFACE_T20 field */
+ #define MXT_GRIPFACE_CTRL	0
+@@ -195,16 +205,6 @@ struct t9_range {
+ #define MXT_BOOT_EXTENDED_ID	(1 << 5)
+ #define MXT_BOOT_ID_MASK	0x1f
  
+-/* Touch status */
+-#define MXT_UNGRIP		(1 << 0)
+-#define MXT_SUPPRESS		(1 << 1)
+-#define MXT_AMP			(1 << 2)
+-#define MXT_VECTOR		(1 << 3)
+-#define MXT_MOVE		(1 << 4)
+-#define MXT_RELEASE		(1 << 5)
+-#define MXT_PRESS		(1 << 6)
+-#define MXT_DETECT		(1 << 7)
+-
+ /* Touchscreen absolute values */
+ #define MXT_MAX_AREA		0xff
+ 
+@@ -660,21 +660,21 @@ static void mxt_input_touchevent(struct mxt_data *data,
+ 	dev_dbg(dev,
+ 		"[%u] %c%c%c%c%c%c%c%c x: %5u y: %5u area: %3u amp: %3u\n",
+ 		id,
+-		(status & MXT_DETECT) ? 'D' : '.',
+-		(status & MXT_PRESS) ? 'P' : '.',
+-		(status & MXT_RELEASE) ? 'R' : '.',
+-		(status & MXT_MOVE) ? 'M' : '.',
+-		(status & MXT_VECTOR) ? 'V' : '.',
+-		(status & MXT_AMP) ? 'A' : '.',
+-		(status & MXT_SUPPRESS) ? 'S' : '.',
+-		(status & MXT_UNGRIP) ? 'U' : '.',
++		(status & MXT_T9_DETECT) ? 'D' : '.',
++		(status & MXT_T9_PRESS) ? 'P' : '.',
++		(status & MXT_T9_RELEASE) ? 'R' : '.',
++		(status & MXT_T9_MOVE) ? 'M' : '.',
++		(status & MXT_T9_VECTOR) ? 'V' : '.',
++		(status & MXT_T9_AMP) ? 'A' : '.',
++		(status & MXT_T9_SUPPRESS) ? 'S' : '.',
++		(status & MXT_T9_UNGRIP) ? 'U' : '.',
+ 		x, y, area, amplitude);
+ 
+ 	input_mt_slot(input_dev, id);
+ 	input_mt_report_slot_state(input_dev, MT_TOOL_FINGER,
+-				   status & MXT_DETECT);
++				   status & MXT_T9_DETECT);
+ 
+-	if (status & MXT_DETECT) {
++	if (status & MXT_T9_DETECT) {
+ 		input_report_abs(input_dev, ABS_MT_POSITION_X, x);
+ 		input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
+ 		input_report_abs(input_dev, ABS_MT_PRESSURE, amplitude);
+@@ -1348,7 +1348,7 @@ static int mxt_read_t9_resolution(struct mxt_data *data)
+ 	if (range.y == 0)
+ 		range.y = 1023;
+ 
+-	if (orient & MXT_XY_SWITCH) {
++	if (orient & MXT_T9_ORIENT_SWITCH) {
+ 		data->max_x = range.y;
+ 		data->max_y = range.x;
+ 	} else {
 -- 
 1.7.10.4
 
