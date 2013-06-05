@@ -1,137 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751751Ab3FECnO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 22:43:14 -0400
-Received: from mail.windriver.com ([147.11.1.11]:59793 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951Ab3FECnL (ORCPT
+	id S1751662Ab3FECvK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 22:51:10 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:48235 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905Ab3FECvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 22:43:11 -0400
-Message-ID: <51AEA8B6.9090609@windriver.com>
-Date: Wed, 5 Jun 2013 10:55:50 +0800
-From: Xufeng Zhang <xufeng.zhang@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5 ThunderBrowse/3.3.5
+	Tue, 4 Jun 2013 22:51:08 -0400
+Date: Tue, 4 Jun 2013 19:51:04 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: bad merge in the libata tree
+Message-ID: <20130605025104.GN14916@htj.dyndns.org>
+References: <20130605101339.16b56c6fc7e17092798d9ea9@canb.auug.org.au>
 MIME-Version: 1.0
-To: <gregkh@linuxfoundation.org>, <davem@davemloft.net>
-CC: Xufeng Zhang <xufeng.zhang@windriver.com>, <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>, <nhorman@tuxdriver.com>,
-        <vyasevich@gmail.com>
-Subject: Re: [PATCH] sctp: set association state to established in dupcook_a
- handler
-References: <1370245978-12884-1-git-send-email-xufeng.zhang@windriver.com>
-In-Reply-To: <1370245978-12884-1-git-send-email-xufeng.zhang@windriver.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130605101339.16b56c6fc7e17092798d9ea9@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2013 03:52 PM, Xufeng Zhang wrote:
-> 3.4-stable review patch.  If anyone has any objections, please let me know.
->    
-Sorry Greg, David -- I did not fully understand all the details
-of the stable kernel process earlier.
+On Wed, Jun 05, 2013 at 10:13:39AM +1000, Stephen Rothwell wrote:
+> Hi Tejun,
+> 
+> The top commit of the libata tree is a merge that leaves some conflict
+> markers in drivers/ata/sata_rcar.c ...
+> 
+> I will use yesterday's tree for today.
 
-I have since checked the networking stable queue here:
+Sorry, I messed up while moving a sata_rcar build warning fix patch
+from for-3.11 to for-3.10-fixes.  My apologies.  Fixed up.  Should be
+okay now.
 
-http://patchwork.ozlabs.org/bundle/davem/stable/?state=*
+Thanks a lot.
 
-to confirm this upstream commit 9839ff0d has not yet been queued.
-
-It can be applied to kernel versions<3.0, 3.4>, and is
-present in mainline for 3.8+ kernels.
-
-I think it makes sense to queue for stable because it
-fixes the SCTP association can get stuck in SCTP_STATE_SHUTDOWN_PENDING
-state forever in the below test case:
-1). Set SCTP parameters on A (slow detection of link failure):
-net.sctp.association_max_retrans = 5
-net.sctp.path_max_retrans = 5
-net.sctp.hb_interval = 30000
-2). Set SCTP parameters on B (fast detection of link failure):
-net.sctp.association_max_retrans = 2
-net.sctp.path_max_retrans = 2
-net.sctp.hb_interval = 1000
-3). Start sctp_darn on both sides:
-A(interactive):
-sctp_darn -H 192.168.100.10 -P 256 -h 192.168.100.100 -p 256 -I -s
-B:
-sctp_darn -H 192.168.100.100 -P 256 -h 192.168.100.10 -p 256 -l&
-4). Send data on A to establish the SCTP association:
-snd=5
-5). Block SCTP traffic on B (simulates a network failure):
-iptables -t filter -I INPUT 1 -p sctp --dport 256 -j DROP
-iptables -t filter -I OUTPUT 1 -p sctp --dport 256 -j DROP
-Then quickly send data on A and then shutdown (A goes into SHUTDOWN_PENDING state):
-snd=5
-snd=5
-shutdown
-6). Wait for link to drop on B (Recieved SCTP_COMM_LOST), and quickly kill the listener,
-open the firewall for SCTP, then start an SCTP sender:
-kill $PID
-iptables -t filter -D INPUT 1
-iptables -t filter -D OUTPUT 1
-sctp_darn -H 192.168.100.100 -P 256 -h 192.168.100.10 -p 256 -s
-Press<Enter>  to send data to trigger sending INIT to A, the SHUTDOWN on A will failed and
-the association on A remains in SHUTDOWN_PENDING (5) state indefinitely.
-
-
-However if David doesn't think it is worth bothering with for
-net stable, then that is of course fine too.
-
-
-Thanks,
-Xufeng
-
-
-
-> ------------------
->
->
-> From: Xufeng Zhang<xufeng.zhang@windriver.com>
->
-> [ Upstream commit 9839ff0dead906e85e4d17490aeff87a5859a157 ]
->
-> While sctp handling a duplicate COOKIE-ECHO and the action is
-> 'Association restart', sctp_sf_do_dupcook_a() will processing
-> the unexpected COOKIE-ECHO for peer restart, but it does not set
-> the association state to SCTP_STATE_ESTABLISHED, so the association
-> could stuck in SCTP_STATE_SHUTDOWN_PENDING state forever.
-> This violates the sctp specification:
->    RFC 4960 5.2.4. Handle a COOKIE ECHO when a TCB Exists
->    Action
->    A) In this case, the peer may have restarted. .....
->       After this, the endpoint shall enter the ESTABLISHED state.
->
-> To resolve this problem, adding a SCTP_CMD_NEW_STATE cmd to the
-> command list before SCTP_CMD_REPLY cmd, this will set the restart
-> association to SCTP_STATE_ESTABLISHED state properly and also avoid
-> I-bit being set in the DATA chunk header when COOKIE_ACK is bundled
-> with DATA chunks.
->
-> Signed-off-by: Xufeng Zhang<xufeng.zhang@windriver.com>
-> Acked-by: Neil Horman<nhorman@tuxdriver.com>
-> Acked-by: Vlad Yasevich<vyasevich@gmail.com>
-> Signed-off-by: David S. Miller<davem@davemloft.net>
-> ---
->   net/sctp/sm_statefuns.c |    4 +++-
->   1 files changed, 3 insertions(+), 1 deletions(-)
->
-> diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-> index cb1c430..ab08f65 100644
-> --- a/net/sctp/sm_statefuns.c
-> +++ b/net/sctp/sm_statefuns.c
-> @@ -1747,8 +1747,10 @@ static sctp_disposition_t sctp_sf_do_dupcook_a(const struct sctp_endpoint *ep,
->
->   	/* Update the content of current association. */
->   	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
-> -	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
->   	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
-> +	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
-> +			SCTP_STATE(SCTP_STATE_ESTABLISHED));
-> +	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
->   	return SCTP_DISPOSITION_CONSUME;
->
->   nomem_ev:
->    
-
+-- 
+tejun
