@@ -1,329 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752344Ab3FEKwo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 06:52:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2169 "EHLO mx1.redhat.com"
+	id S1753321Ab3FEK67 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 06:58:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19316 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750905Ab3FEKwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 06:52:42 -0400
-Date: Wed, 5 Jun 2013 12:00:04 +0200 (CEST)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lczerner@localhost.localdomain
-To: Willy Tarreau <w@1wt.eu>
-cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Theodore Tso <tytso@mit.edu>
-Subject: Re: [ 122/184] ext4: Fix max file size and logical block counting
-In-Reply-To: <alpine.LFD.2.03.1306051125400.2912@redhat.com>
-Message-ID: <alpine.LFD.2.03.1306051159300.2912@redhat.com>
-References: <20130604172135.367032999@1wt.eu> <alpine.LFD.2.03.1306051125400.2912@redhat.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	id S1752543Ab3FEK65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 06:58:57 -0400
+Date: Wed, 5 Jun 2013 13:59:28 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sergei.shtylyov@cogentembedded.com
+Subject: Re: [net-next rfc V3 8/9] macvtap: add TUNSETQUEUE ioctl
+Message-ID: <20130605105928.GH31830@redhat.com>
+References: <1370414192-5830-1-git-send-email-jasowang@redhat.com>
+ <1370414192-5830-9-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-584140071-1370426407=:2912"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370414192-5830-9-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323328-584140071-1370426407=:2912
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
-
-On Wed, 5 Jun 2013, Luká¨ Czerner wrote:
-
-> Date: Wed, 5 Jun 2013 11:26:55 +0200 (CEST)
-> From: Luká¨ Czerner <lczerner@redhat.com>
-> To: Willy Tarreau <w@1wt.eu>
-> Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
->     Theodore Tso <tytso@mit.edu>
-> Subject: Re: [ 122/184] ext4: Fix max file size and logical block counting
+On Wed, Jun 05, 2013 at 02:36:31PM +0800, Jason Wang wrote:
+> This patch adds TUNSETQUEUE ioctl to let userspace can temporarily disable or
+> enable a queue of macvtap. This is used to be compatible at API layer of tuntap
+> to simplify the userspace to manage the queues. This is done through introducing
+> a linked list to track all taps while using vlan->taps array to only track
+> active taps.
 > 
-> On Tue, 4 Jun 2013, Willy Tarreau wrote:
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  drivers/net/macvtap.c      |  133 +++++++++++++++++++++++++++++++++++++++-----
+>  include/linux/if_macvlan.h |    4 +
+>  2 files changed, 122 insertions(+), 15 deletions(-)
 > 
-> > Date: Tue, 04 Jun 2013 19:23:32 +0200
-> > From: Willy Tarreau <w@1wt.eu>
-> > To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-> > Cc: Lukas Czerner <lczerner@redhat.com>, Theodore Tso <tytso@mit.edu>,
-> >     Willy Tarreau <w@1wt.eu>
-> > Subject: [ 122/184] ext4: Fix max file size and logical block counting
-> > 
-> > 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
-> 
-> Now it looks like we could get rid of this thing in e2fsprogs as
-> well. As well as remove the remaining bits from kernel.
-> What do you think Ted ?
+> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+> index 14764cc..355e6ad 100644
+> --- a/drivers/net/macvtap.c
+> +++ b/drivers/net/macvtap.c
+> @@ -45,6 +45,8 @@ struct macvtap_queue {
+>  	struct file *file;
+>  	unsigned int flags;
+>  	u16 queue_index;
+> +	bool enabled;
+> +	struct list_head next;
+>  };
+>  
+>  static struct proto macvtap_proto = {
+> @@ -85,14 +87,37 @@ static const struct proto_ops macvtap_socket_ops;
+>   */
+>  static DEFINE_SPINLOCK(macvtap_lock);
+>  
+> -static int macvtap_set_queue(struct net_device *dev, struct file *file,
+> +static int macvtap_enable_queue(struct net_device *dev, struct file *file,
+>  				struct macvtap_queue *q)
+>  {
+>  	struct macvlan_dev *vlan = netdev_priv(dev);
+> +	int err = -EINVAL;
+> +
+> +	spin_lock(&macvtap_lock);
+> +
+> +	if (q->enabled)
+> +		goto out;
+> +
+> +	err = 0;
+> +	rcu_assign_pointer(vlan->taps[vlan->numvtaps], q);
+> +	q->queue_index = vlan->numvtaps;
+> +	q->enabled = true;
+> +
+> +	vlan->numvtaps++;
+> +	vlan->numdisabled--;
+> +out:
+> +	spin_unlock(&macvtap_lock);
+> +	return err;
+> +}
+> +
+> +static int macvtap_set_queue(struct net_device *dev, struct file *file,
+> +			     struct macvtap_queue *q)
+> +{
+> +	struct macvlan_dev *vlan = netdev_priv(dev);
+>  	int err = -EBUSY;
+>  
+>  	spin_lock(&macvtap_lock);
+> -	if (vlan->numvtaps == MAX_MACVTAP_QUEUES)
+> +	if (vlan->numvtaps + vlan->numdisabled == MAX_MACVTAP_QUEUES)
+>  		goto out;
+>  
+>  	err = 0;
+> @@ -102,7 +127,9 @@ static int macvtap_set_queue(struct net_device *dev, struct file *file,
+>  
+>  	q->file = file;
+>  	q->queue_index = vlan->numvtaps;
+> +	q->enabled = true;
+>  	file->private_data = q;
+> +	list_add_tail(&q->next, &vlan->tap_link);
+>  
+>  	vlan->numvtaps++;
+>  
+> @@ -111,6 +138,38 @@ out:
+>  	return err;
+>  }
+>  
+> +static int macvtap_disable_queue(struct macvtap_queue *q)
+> +{
+> +	struct macvlan_dev *vlan;
+> +	struct macvtap_queue *nq;
+> +	int err = 0;
+> +
+> +	spin_lock(&macvtap_lock);
+> +	vlan = rcu_dereference_protected(q->vlan,
+> +					 lockdep_is_held(&macvtap_lock));
+> +
+> +	if (!q->enabled) {
+> +		err = -EINVAL;
+> +		goto out;
+> +	}
+> +
+> +	if (vlan) {
+> +		int index = q->queue_index;
+> +		nq = rcu_dereference_protected(vlan->taps[vlan->numvtaps - 1],
+> +					       lockdep_is_held(&macvtap_lock));
+> +		nq->queue_index = index;
+> +
+> +		rcu_assign_pointer(vlan->taps[index], nq);
+> +		RCU_INIT_POINTER(vlan->taps[vlan->numvtaps - 1], NULL);
+> +		q->enabled = false;
+> +
+> +		vlan->numvtaps--;
+> +		vlan->numdisabled++;
+> +	}
+> +out:
+> +	spin_unlock(&macvtap_lock);
+> +	return err;
+> +}
+>  /*
+>   * The file owning the queue got closed, give up both
+>   * the reference that the files holds as well as the
+> @@ -128,18 +187,24 @@ static void macvtap_put_queue(struct macvtap_queue *q)
+>  	vlan = rcu_dereference_protected(q->vlan,
+>  					 lockdep_is_held(&macvtap_lock));
+>  	if (vlan) {
+> +		int numvtaps = vlan->numvtaps;
+>  		int index = q->queue_index;
+> -		BUG_ON(index >= vlan->numvtaps);
+>  
+> -		nq = rcu_dereference_protected(vlan->taps[vlan->numvtaps - 1],
+> -					       lockdep_is_held(&macvtap_lock));
+> -		rcu_assign_pointer(vlan->taps[index], nq);
+> -		nq->queue_index = index;
+> +		if (q->enabled) {
+> +			BUG_ON(index >= vlan->numvtaps);
+> +			nq = rcu_dereference_protected(vlan->taps[numvtaps - 1],
+> +						lockdep_is_held(&macvtap_lock));
+> +			rcu_assign_pointer(vlan->taps[index], nq);
 
-Oops, this is not the commit I was looking for. Sorry for the noise!
+Do we really need these tricks?
+Can't we call macvtap_disable_queue and then only handle disable queues
+here?
 
--Lukas
+> +			nq->queue_index = index;
+> +
+> +			RCU_INIT_POINTER(vlan->taps[numvtaps - 1], NULL);
+> +			vlan->numvtaps--;
+> +		} else
+> +			vlan->numdisabled--;
+>  
+> -		RCU_INIT_POINTER(vlan->taps[vlan->numvtaps - 1], NULL);
+>  		RCU_INIT_POINTER(q->vlan, NULL);
+>  		sock_put(&q->sk);
+> -		--vlan->numvtaps;
+> +		list_del_init(&q->next);
+>  	}
+>  
+>  	spin_unlock(&macvtap_lock);
+> @@ -160,6 +225,10 @@ static struct macvtap_queue *macvtap_get_queue(struct net_device *dev,
+>  {
+>  	struct macvlan_dev *vlan = netdev_priv(dev);
+>  	struct macvtap_queue *tap = NULL;
+> +	/* numvtaps here is just a hint, even if the number of active taps were
+> +	 * reduced in the same sime,
 
-> 
-> -Lukas
-> 
-> > 
-> > ------------------
-> >  of extent format file
-> > 
-> > From: Lukas Czerner <lczerner@redhat.com>
-> > 
-> > commit f17722f917b2f21497deb6edc62fb1683daa08e6 upstream
-> > 
-> > Kazuya Mio reported that he was able to hit BUG_ON(next == lblock)
-> > in ext4_ext_put_gap_in_cache() while creating a sparse file in extent
-> > format and fill the tail of file up to its end. We will hit the BUG_ON
-> > when we write the last block (2^32-1) into the sparse file.
-> > 
-> > The root cause of the problem lies in the fact that we specifically set
-> > s_maxbytes so that block at s_maxbytes fit into on-disk extent format,
-> > which is 32 bit long. However, we are not storing start and end block
-> > number, but rather start block number and length in blocks. It means
-> > that in order to cover extent from 0 to EXT_MAX_BLOCK we need
-> > EXT_MAX_BLOCK+1 to fit into len (because we counting block 0 as well) -
-> > and it does not.
-> > 
-> > The only way to fix it without changing the meaning of the struct
-> > ext4_extent members is, as Kazuya Mio suggested, to lower s_maxbytes
-> > by one fs block so we can cover the whole extent we can get by the
-> > on-disk extent format.
-> > 
-> > Also in many places EXT_MAX_BLOCK is used as length instead of maximum
-> > logical block number as the name suggests, it is all a bit messy. So
-> > this commit renames it to EXT_MAX_BLOCKS and change its usage in some
-> > places to actually be maximum number of blocks in the extent.
-> > 
-> > The bug which this commit fixes can be reproduced as follows:
-> > 
-> >  dd if=/dev/zero of=/mnt/mp1/file bs=<blocksize> count=1 seek=$((2**32-2))
-> >  sync
-> >  dd if=/dev/zero of=/mnt/mp1/file bs=<blocksize> count=1 seek=$((2**32-1))
-> > 
-> > Reported-by: Kazuya Mio <k-mio@sx.jp.nec.com>
-> > Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-> > Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-> > [dannf: Applied the backport from RHEL6 to Debian's 2.6.32]
-> > Signed-off-by: Willy Tarreau <w@1wt.eu>
-> > ---
-> >  fs/ext4/ext4_extents.h |  7 +++++--
-> >  fs/ext4/extents.c      | 39 +++++++++++++++++++--------------------
-> >  fs/ext4/move_extent.c  | 10 +++++-----
-> >  fs/ext4/super.c        | 15 ++++++++++++---
-> >  4 files changed, 41 insertions(+), 30 deletions(-)
-> > 
-> > diff --git a/fs/ext4/ext4_extents.h b/fs/ext4/ext4_extents.h
-> > index bdb6ce7..24fa647 100644
-> > --- a/fs/ext4/ext4_extents.h
-> > +++ b/fs/ext4/ext4_extents.h
-> > @@ -137,8 +137,11 @@ typedef int (*ext_prepare_callback)(struct inode *, struct ext4_ext_path *,
-> >  #define EXT_BREAK      1
-> >  #define EXT_REPEAT     2
-> >  
-> > -/* Maximum logical block in a file; ext4_extent's ee_block is __le32 */
-> > -#define EXT_MAX_BLOCK	0xffffffff
-> > +/*
-> > + * Maximum number of logical blocks in a file; ext4_extent's ee_block is
-> > + * __le32.
-> > + */
-> > +#define EXT_MAX_BLOCKS	0xffffffff
-> >  
-> >  /*
-> >   * EXT_INIT_MAX_LEN is the maximum number of blocks we can have in an
-> > diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-> > index b4402c8..f4b471d 100644
-> > --- a/fs/ext4/extents.c
-> > +++ b/fs/ext4/extents.c
-> > @@ -1331,7 +1331,7 @@ got_index:
-> >  
-> >  /*
-> >   * ext4_ext_next_allocated_block:
-> > - * returns allocated block in subsequent extent or EXT_MAX_BLOCK.
-> > + * returns allocated block in subsequent extent or EXT_MAX_BLOCKS.
-> >   * NOTE: it considers block number from index entry as
-> >   * allocated block. Thus, index entries have to be consistent
-> >   * with leaves.
-> > @@ -1345,7 +1345,7 @@ ext4_ext_next_allocated_block(struct ext4_ext_path *path)
-> >  	depth = path->p_depth;
-> >  
-> >  	if (depth == 0 && path->p_ext == NULL)
-> > -		return EXT_MAX_BLOCK;
-> > +		return EXT_MAX_BLOCKS;
-> >  
-> >  	while (depth >= 0) {
-> >  		if (depth == path->p_depth) {
-> > @@ -1362,12 +1362,12 @@ ext4_ext_next_allocated_block(struct ext4_ext_path *path)
-> >  		depth--;
-> >  	}
-> >  
-> > -	return EXT_MAX_BLOCK;
-> > +	return EXT_MAX_BLOCKS;
-> >  }
-> >  
-> >  /*
-> >   * ext4_ext_next_leaf_block:
-> > - * returns first allocated block from next leaf or EXT_MAX_BLOCK
-> > + * returns first allocated block from next leaf or EXT_MAX_BLOCKS
-> >   */
-> >  static ext4_lblk_t ext4_ext_next_leaf_block(struct inode *inode,
-> >  					struct ext4_ext_path *path)
-> > @@ -1379,7 +1379,7 @@ static ext4_lblk_t ext4_ext_next_leaf_block(struct inode *inode,
-> >  
-> >  	/* zero-tree has no leaf blocks at all */
-> >  	if (depth == 0)
-> > -		return EXT_MAX_BLOCK;
-> > +		return EXT_MAX_BLOCKS;
-> >  
-> >  	/* go to index block */
-> >  	depth--;
-> > @@ -1392,7 +1392,7 @@ static ext4_lblk_t ext4_ext_next_leaf_block(struct inode *inode,
-> >  		depth--;
-> >  	}
-> >  
-> > -	return EXT_MAX_BLOCK;
-> > +	return EXT_MAX_BLOCKS;
-> >  }
-> >  
-> >  /*
-> > @@ -1572,13 +1572,13 @@ unsigned int ext4_ext_check_overlap(struct inode *inode,
-> >  	 */
-> >  	if (b2 < b1) {
-> >  		b2 = ext4_ext_next_allocated_block(path);
-> > -		if (b2 == EXT_MAX_BLOCK)
-> > +		if (b2 == EXT_MAX_BLOCKS)
-> >  			goto out;
-> >  	}
-> >  
-> >  	/* check for wrap through zero on extent logical start block*/
-> >  	if (b1 + len1 < b1) {
-> > -		len1 = EXT_MAX_BLOCK - b1;
-> > +		len1 = EXT_MAX_BLOCKS - b1;
-> >  		newext->ee_len = cpu_to_le16(len1);
-> >  		ret = 1;
-> >  	}
-> > @@ -1654,7 +1654,7 @@ repeat:
-> >  	fex = EXT_LAST_EXTENT(eh);
-> >  	next = ext4_ext_next_leaf_block(inode, path);
-> >  	if (le32_to_cpu(newext->ee_block) > le32_to_cpu(fex->ee_block)
-> > -	    && next != EXT_MAX_BLOCK) {
-> > +	    && next != EXT_MAX_BLOCKS) {
-> >  		ext_debug("next leaf block - %d\n", next);
-> >  		BUG_ON(npath != NULL);
-> >  		npath = ext4_ext_find_extent(inode, next, NULL);
-> > @@ -1772,7 +1772,7 @@ int ext4_ext_walk_space(struct inode *inode, ext4_lblk_t block,
-> >  	BUG_ON(func == NULL);
-> >  	BUG_ON(inode == NULL);
-> >  
-> > -	while (block < last && block != EXT_MAX_BLOCK) {
-> > +	while (block < last && block != EXT_MAX_BLOCKS) {
-> >  		num = last - block;
-> >  		/* find extent for this block */
-> >  		down_read(&EXT4_I(inode)->i_data_sem);
-> > @@ -1900,7 +1900,7 @@ ext4_ext_put_gap_in_cache(struct inode *inode, struct ext4_ext_path *path,
-> >  	if (ex == NULL) {
-> >  		/* there is no extent yet, so gap is [0;-] */
-> >  		lblock = 0;
-> > -		len = EXT_MAX_BLOCK;
-> > +		len = EXT_MAX_BLOCKS;
-> >  		ext_debug("cache gap(whole file):");
-> >  	} else if (block < le32_to_cpu(ex->ee_block)) {
-> >  		lblock = block;
-> > @@ -2145,8 +2145,8 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
-> >  		path[depth].p_ext = ex;
-> >  
-> >  		a = ex_ee_block > start ? ex_ee_block : start;
-> > -		b = ex_ee_block + ex_ee_len - 1 < EXT_MAX_BLOCK ?
-> > -			ex_ee_block + ex_ee_len - 1 : EXT_MAX_BLOCK;
-> > +		b = ex_ee_block + ex_ee_len - 1 < EXT_MAX_BLOCKS ?
-> > +			ex_ee_block + ex_ee_len - 1 : EXT_MAX_BLOCKS;
-> >  
-> >  		ext_debug("  border %u:%u\n", a, b);
-> >  
-> > @@ -3783,15 +3783,14 @@ static int ext4_ext_fiemap_cb(struct inode *inode, struct ext4_ext_path *path,
-> >  		flags |= FIEMAP_EXTENT_UNWRITTEN;
-> >  
-> >  	/*
-> > -	 * If this extent reaches EXT_MAX_BLOCK, it must be last.
-> > +	 * If this extent reaches EXT_MAX_BLOCKS, it must be last.
-> >  	 *
-> > -	 * Or if ext4_ext_next_allocated_block is EXT_MAX_BLOCK,
-> > +	 * Or if ext4_ext_next_allocated_block is EXT_MAX_BLOCKS,
-> >  	 * this also indicates no more allocated blocks.
-> >  	 *
-> > -	 * XXX this might miss a single-block extent at EXT_MAX_BLOCK
-> >  	 */
-> > -	if (ext4_ext_next_allocated_block(path) == EXT_MAX_BLOCK ||
-> > -	    newex->ec_block + newex->ec_len - 1 == EXT_MAX_BLOCK) {
-> > +	if (ext4_ext_next_allocated_block(path) == EXT_MAX_BLOCKS ||
-> > +	    newex->ec_block + newex->ec_len == EXT_MAX_BLOCKS) {
-> >  		loff_t size = i_size_read(inode);
-> >  		loff_t bs = EXT4_BLOCK_SIZE(inode->i_sb);
-> >  
-> > @@ -3871,8 +3870,8 @@ int ext4_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
-> >  
-> >  		start_blk = start >> inode->i_sb->s_blocksize_bits;
-> >  		last_blk = (start + len - 1) >> inode->i_sb->s_blocksize_bits;
-> > -		if (last_blk >= EXT_MAX_BLOCK)
-> > -			last_blk = EXT_MAX_BLOCK-1;
-> > +		if (last_blk >= EXT_MAX_BLOCKS)
-> > +			last_blk = EXT_MAX_BLOCKS-1;
-> >  		len_blks = ((ext4_lblk_t) last_blk) - start_blk + 1;
-> >  
-> >  		/*
-> > diff --git a/fs/ext4/move_extent.c b/fs/ext4/move_extent.c
-> > index a73ed78..fe81390 100644
-> > --- a/fs/ext4/move_extent.c
-> > +++ b/fs/ext4/move_extent.c
-> > @@ -1001,12 +1001,12 @@ mext_check_arguments(struct inode *orig_inode,
-> >  		return -EINVAL;
-> >  	}
-> >  
-> > -	if ((orig_start > EXT_MAX_BLOCK) ||
-> > -	    (donor_start > EXT_MAX_BLOCK) ||
-> > -	    (*len > EXT_MAX_BLOCK) ||
-> > -	    (orig_start + *len > EXT_MAX_BLOCK))  {
-> > +	if ((orig_start >= EXT_MAX_BLOCKS) ||
-> > +	    (donor_start >= EXT_MAX_BLOCKS) ||
-> > +	    (*len > EXT_MAX_BLOCKS) ||
-> > +	    (orig_start + *len >= EXT_MAX_BLOCKS))  {
-> >  		ext4_debug("ext4 move extent: Can't handle over [%u] blocks "
-> > -			"[ino:orig %lu, donor %lu]\n", EXT_MAX_BLOCK,
-> > +			"[ino:orig %lu, donor %lu]\n", EXT_MAX_BLOCKS,
-> >  			orig_inode->i_ino, donor_inode->i_ino);
-> >  		return -EINVAL;
-> >  	}
-> > diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-> > index f1e7077..3ce77c5 100644
-> > --- a/fs/ext4/super.c
-> > +++ b/fs/ext4/super.c
-> > @@ -1975,6 +1975,12 @@ static void ext4_orphan_cleanup(struct super_block *sb,
-> >   * in the vfs.  ext4 inode has 48 bits of i_block in fsblock units,
-> >   * so that won't be a limiting factor.
-> >   *
-> > + * However there is other limiting factor. We do store extents in the form
-> > + * of starting block and length, hence the resulting length of the extent
-> > + * covering maximum file size must fit into on-disk format containers as
-> > + * well. Given that length is always by 1 unit bigger than max unit (because
-> > + * we count 0 as well) we have to lower the s_maxbytes by one fs block.
-> > + *
-> >   * Note, this does *not* consider any metadata overhead for vfs i_blocks.
-> >   */
-> >  static loff_t ext4_max_size(int blkbits, int has_huge_files)
-> > @@ -1996,10 +2002,13 @@ static loff_t ext4_max_size(int blkbits, int has_huge_files)
-> >  		upper_limit <<= blkbits;
-> >  	}
-> >  
-> > -	/* 32-bit extent-start container, ee_block */
-> > -	res = 1LL << 32;
-> > +	/*
-> > +	 * 32-bit extent-start container, ee_block. We lower the maxbytes
-> > +	 * by one fs block, so ee_len can cover the extent of maximum file
-> > +	 * size
-> > +	 */
-> > +	res = (1LL << 32) - 1;
-> >  	res <<= blkbits;
-> > -	res -= 1;
-> >  
-> >  	/* Sanity check against vm- & vfs- imposed limits */
-> >  	if (res > upper_limit)
-> > 
-> 
---8323328-584140071-1370426407=:2912--
+typo
+
+> since we are protected by rcu read lock,
+> +	 * we're safe here.
+
+I don't really understand what is this comment trying to say.
+What is protected? What is safe? safe time as what?
+
+> +	 */
+>  	int numvtaps = ACCESS_ONCE(vlan->numvtaps);
+>  	__u32 rxq;
+>  
+> @@ -196,20 +265,25 @@ out:
+>  static void macvtap_del_queues(struct net_device *dev)
+>  {
+>  	struct macvlan_dev *vlan = netdev_priv(dev);
+> -	struct macvtap_queue *q, *qlist[MAX_MACVTAP_QUEUES];
+> +	struct macvtap_queue *q, *tmp, *qlist[MAX_MACVTAP_QUEUES];
+>  	int i, j = 0;
+>  
+>  	spin_lock(&macvtap_lock);
+> -	for (i = 0; i < vlan->numvtaps; i++) {
+> -		q = rcu_dereference_protected(vlan->taps[i],
+> -					      lockdep_is_held(&macvtap_lock));
+> -		BUG_ON(q == NULL);
+> +	list_for_each_entry_safe(q, tmp, &vlan->tap_link, next) {
+> +		list_del_init(&q->next);
+>  		qlist[j++] = q;
+> -		RCU_INIT_POINTER(vlan->taps[i], NULL);
+>  		RCU_INIT_POINTER(q->vlan, NULL);
+> +		if (q->enabled)
+> +			vlan->numvtaps--;
+> +		else
+> +			vlan->numdisabled--;
+>  	}
+> +	for (i = 0; i < vlan->numvtaps; i++)
+> +		RCU_INIT_POINTER(vlan->taps[i], NULL);
+> +	BUG_ON(vlan->numvtaps + vlan->numdisabled != 0);
+
+Better two BUG_ON checks - they are both 0 right?
+And no need for != 0.
+
+>  	/* guarantee that any future macvtap_set_queue will fail */
+>  	vlan->numvtaps = MAX_MACVTAP_QUEUES;
+> +	vlan->numdisabled = 0;
+
+What's this doing? We know it's 0 ...
+
+>  	spin_unlock(&macvtap_lock);
+>  
+>  	synchronize_rcu();
+> @@ -298,6 +372,9 @@ static int macvtap_newlink(struct net *src_net,
+>  			   struct nlattr *tb[],
+>  			   struct nlattr *data[])
+>  {
+> +	struct macvlan_dev *vlan = netdev_priv(dev);
+> +	INIT_LIST_HEAD(&vlan->tap_link);
+> +
+>  	/* Don't put anything that may fail after macvlan_common_newlink
+>  	 * because we can't undo what it does.
+>  	 */
+> @@ -926,6 +1003,27 @@ static int macvtap_set_iff(struct file *file, struct ifreq __user *ifr_u)
+>  	return 0;
+>  }
+>  
+> +static int macvtap_ioctl_set_queue(struct file *file, unsigned int flags)
+> +{
+> +	struct macvtap_queue *q = file->private_data;
+> +	struct macvlan_dev *vlan;
+> +	int ret = -EINVAL;
+> +
+> +	vlan = macvtap_get_vlan(q);
+> +	if (!vlan)
+> +		goto done;
+
+Can be just return -EINVAL, and you won't need to initialize
+above.
+
+> +
+> +	if (flags & IFF_ATTACH_QUEUE)
+> +		ret = macvtap_enable_queue(vlan->dev, file, q);
+> +	else if (flags & IFF_DETACH_QUEUE)
+> +		ret = macvtap_disable_queue(q);
+> +
+> +	macvtap_put_vlan(vlan);
+> +
+> +done:
+> +	return ret;
+> +}
+> +
+>  /*
+>   * provide compatibility with generic tun/tap interface
+>   */
+> @@ -958,6 +1056,11 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
+>  		macvtap_put_vlan(vlan);
+>  		return ret;
+>  
+> +	case TUNSETQUEUE:
+> +		if (get_user(u, &ifr->ifr_flags))
+> +			return -EFAULT;
+> +		return macvtap_ioctl_set_queue(file, u);
+> +
+>  	case TUNGETFEATURES:
+>  		if (put_user(IFF_TAP | IFF_NO_PI | IFF_VNET_HDR, up))
+>  			return -EFAULT;
+> diff --git a/include/linux/if_macvlan.h b/include/linux/if_macvlan.h
+> index 62d8bda..87b9091 100644
+> --- a/include/linux/if_macvlan.h
+> +++ b/include/linux/if_macvlan.h
+> @@ -69,8 +69,12 @@ struct macvlan_dev {
+>  	u16			flags;
+>  	int (*receive)(struct sk_buff *skb);
+>  	int (*forward)(struct net_device *dev, struct sk_buff *skb);
+> +	/* This array tracks active taps. */
+>  	struct macvtap_queue	*taps[MAX_MACVTAP_QUEUES];
+> +	/* This list tracks all taps (both enabled and disabled) */
+> +	struct list_head	tap_link;
+
+Bad name, e.g. queue_list would be better.
+
+>  	int			numvtaps;
+> +	int			numdisabled;
+
+So numvtaps is number of entries in the taps array.
+But to get items on list, you must add numdisabled and
+numvtaps, that's confusing.
+Instead of numdisabled, let's add a counter for
+number of entries in the tap_link list.
+
+How about numqueues?
+
+>  	int			minor;
+>  };
+>  
+> -- 
+> 1.7.1
