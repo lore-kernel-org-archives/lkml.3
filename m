@@ -1,164 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104Ab3FESD0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 14:03:26 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:21426 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756983Ab3FERsI (ORCPT
+	id S1757564Ab3FESDY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 14:03:24 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:36727 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757042Ab3FESDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 13:48:08 -0400
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
-Cc: Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 45/53] Input: atmel_mxt_ts - Use T18 RETRIGEN to handle IRQF_TRIGGER_LOW
-Date: Wed,  5 Jun 2013 18:37:38 +0100
-Message-Id: <1370453866-16534-46-git-send-email-nick.dyer@itdev.co.uk>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
-References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
+	Wed, 5 Jun 2013 14:03:20 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>, Tony Lindgren <tony@atomide.com>,
+        <rtc-linux@googlegroups.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>,
+        Christoph Fritz <chf.fritz@googlemail.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Tomi Valkeinen <tomi.valkeinen@iki.fi>
+Subject: Re: [PATCH v2 1/2] RTC: rtc-twl: Fix rtc_reg_map initialization
+References: <1366101013-21183-1-git-send-email-peter.ujfalusi@ti.com>
+Date: Wed, 05 Jun 2013 11:03:16 -0700
+In-Reply-To: <1366101013-21183-1-git-send-email-peter.ujfalusi@ti.com> (Peter
+	Ujfalusi's message of "Tue, 16 Apr 2013 10:30:12 +0200")
+Message-ID: <8738swwi3f.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The workaround of reading all messages until an invalid is received is a way
-of forcing the CHG line high, which means that when using edge-triggered
-interrupts the interrupt can be acquired.
+Peter Ujfalusi <peter.ujfalusi@ti.com> writes:
 
-With level-triggered interrupts this is unnecessary.
+> Initialize the rtc_reg_map in platform_driver's probe function instead at
+> module_init time. This way we can make sure that the twl-core has been already
+> probed and initialized (twl_priv->twl_id is valid) since the platform device
+> for the RTC driver will be created by the twl-core after it finished it's
+> init.
+>
+> Reported-by: Christoph Fritz <chf.fritz@googlemail.com>
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-Also, most recent maXTouch chips have a feature called RETRIGEN which, when
-enabled, reasserts the interrupt line every cycle if there are messages
-waiting. This also makes the workaround unnecessary.
+Tested-by: Kevin Hilman <khilman@linaro.org>
 
-Note: the RETRIGEN feature is only in some firmware versions/chips, it's not
-valid simply to enable the bit.
+Confirmed this fixes some init problems when using DT boot on OMAP3.
 
-Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
-Acked-by: Benson Leung <bleung@chromium.org>
----
- drivers/input/touchscreen/atmel_mxt_ts.c |   48 ++++++++++++++++++++++++++++--
- 1 file changed, 45 insertions(+), 3 deletions(-)
+Peter, you might want to resend (with acks collected) and be sure that
+it's sent to Andrew Morton who is maintaining drivers/rtc currently.
 
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index e0ff017..6631ef1 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -118,6 +118,7 @@ struct t9_range {
- /* MXT_SPT_COMMSCONFIG_T18 */
- #define MXT_COMMS_CTRL		0
- #define MXT_COMMS_CMD		1
-+#define MXT_COMMS_RETRIGEN      (1 << 6)
- 
- /* Define for MXT_GEN_COMMAND_T6 */
- #define MXT_BOOT_VALUE		0xa5
-@@ -215,6 +216,7 @@ struct mxt_data {
- 	u8 num_touchids;
- 	u8 num_stylusids;
- 	unsigned long t15_keystatus;
-+	bool use_retrigen_workaround;
- 
- 	/* Cached parameters from object table */
- 	u16 T5_address;
-@@ -226,6 +228,7 @@ struct mxt_data {
- 	u8 T9_reportid_max;
- 	u8 T15_reportid_min;
- 	u8 T15_reportid_max;
-+	u16 T18_address;
- 	u8 T19_reportid;
- 	u8 T42_reportid_min;
- 	u8 T42_reportid_max;
-@@ -1185,6 +1188,31 @@ static u32 mxt_calculate_crc(u8 *base, off_t start_off, off_t end_off)
- 	return crc;
- }
- 
-+static int mxt_check_retrigen(struct mxt_data *data)
-+{
-+	struct i2c_client *client = data->client;
-+	int error;
-+	int val;
-+
-+	if (data->pdata->irqflags & IRQF_TRIGGER_LOW)
-+		return 0;
-+
-+	if (data->T18_address) {
-+		error = __mxt_read_reg(client,
-+				       data->T18_address + MXT_COMMS_CTRL,
-+				       1, &val);
-+		if (error)
-+			return error;
-+
-+		if (val & MXT_COMMS_RETRIGEN)
-+			return 0;
-+	}
-+
-+	dev_warn(&client->dev, "Enabling RETRIGEN workaround\n");
-+	data->use_retrigen_workaround = true;
-+	return 0;
-+}
-+
- /*
-  * mxt_check_reg_init - download configuration to chip
-  *
-@@ -1434,6 +1462,10 @@ static int mxt_check_reg_init(struct mxt_data *data)
- 
- 	mxt_update_crc(data, MXT_COMMAND_BACKUPNV, MXT_BACKUP_VALUE);
- 
-+	ret = mxt_check_retrigen(data);
-+	if (ret)
-+		goto release_mem;
-+
- 	ret = mxt_soft_reset(data);
- 	if (ret)
- 		goto release_mem;
-@@ -1508,9 +1540,11 @@ static int mxt_acquire_irq(struct mxt_data *data)
- 
- 	enable_irq(data->irq);
- 
--	error = mxt_process_messages_until_invalid(data);
--	if (error)
--		return error;
-+	if (data->use_retrigen_workaround) {
-+		error = mxt_process_messages_until_invalid(data);
-+		if (error)
-+			return error;
-+	}
- 
- 	return 0;
- }
-@@ -1532,6 +1566,7 @@ static void mxt_free_object_table(struct mxt_data *data)
- 	data->T9_reportid_max = 0;
- 	data->T15_reportid_min = 0;
- 	data->T15_reportid_max = 0;
-+	data->T18_address = 0;
- 	data->T19_reportid = 0;
- 	data->T42_reportid_min = 0;
- 	data->T42_reportid_max = 0;
-@@ -1602,6 +1637,9 @@ static int mxt_parse_object_table(struct mxt_data *data)
- 			data->T15_reportid_min = min_id;
- 			data->T15_reportid_max = max_id;
- 			break;
-+		case MXT_SPT_COMMSCONFIG_T18:
-+			data->T18_address = object->start_address;
-+			break;
- 		case MXT_PROCI_TOUCHSUPPRESSION_T42:
- 			data->T42_reportid_min = min_id;
- 			data->T42_reportid_max = max_id;
-@@ -1823,6 +1861,10 @@ retry_bootloader:
- 		}
- 	}
- 
-+	error = mxt_check_retrigen(data);
-+	if (error)
-+		goto err_free_object_table;
-+
- 	error = mxt_acquire_irq(data);
- 	if (error)
- 		goto err_free_object_table;
--- 
-1.7.10.4
+Kevin
 
+> ---
+> Hi,
+>
+> As Tomi commented on the first version:
+> www.spinics.net/lists/linux-omap/msg90064.html
+> www.spinics.net/lists/linux-omap/msg90066.html
+>
+> I have separated the actual fix from the module_platform_driver() conversion.
+>
+> Regards,
+> Peter
+>
+>  drivers/rtc/rtc-twl.c | 11 ++++++-----
+>  1 file changed, 6 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
+> index 8bc6c80..c385e9b 100644
+> --- a/drivers/rtc/rtc-twl.c
+> +++ b/drivers/rtc/rtc-twl.c
+> @@ -469,6 +469,12 @@ static int twl_rtc_probe(struct platform_device *pdev)
+>  	if (irq <= 0)
+>  		goto out1;
+>  
+> +	/* Initialize the register map */
+> +	if (twl_class_is_4030())
+> +		rtc_reg_map = (u8 *)twl4030_rtc_reg_map;
+> +	else
+> +		rtc_reg_map = (u8 *)twl6030_rtc_reg_map;
+> +
+>  	ret = twl_rtc_read_u8(&rd_reg, REG_RTC_STATUS_REG);
+>  	if (ret < 0)
+>  		goto out1;
+> @@ -614,11 +620,6 @@ static struct platform_driver twl4030rtc_driver = {
+>  
+>  static int __init twl_rtc_init(void)
+>  {
+> -	if (twl_class_is_4030())
+> -		rtc_reg_map = (u8 *) twl4030_rtc_reg_map;
+> -	else
+> -		rtc_reg_map = (u8 *) twl6030_rtc_reg_map;
+> -
+>  	return platform_driver_register(&twl4030rtc_driver);
+>  }
+>  module_init(twl_rtc_init);
