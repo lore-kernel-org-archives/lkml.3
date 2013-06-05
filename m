@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564Ab3FEVfV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:35:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37703 "EHLO
+	id S933412Ab3FEWDK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 18:03:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37722 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932487Ab3FEVfS (ORCPT
+	with ESMTP id S932539Ab3FEVfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:18 -0400
+	Wed, 5 Jun 2013 17:35:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Kolesov <akolesov@synopsys.com>,
-        Vineet Gupta <vgupta@synopsys.com>
-Subject: [ 033/127] ARC: copy_(to|from)_user() to honor usermode-access permissions
-Date: Wed,  5 Jun 2013 14:33:20 -0700
-Message-Id: <20130605213221.718063470@linuxfoundation.org>
+        Krzysztof Strasburger <strasbur@chkw386.ch.pwr.wroc.pl>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 036/127] fat: fix possible overflow for fat_clusters
+Date: Wed,  5 Jun 2013 14:33:23 -0700
+Message-Id: <20130605213222.050623677@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -27,178 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vineet Gupta <vgupta@synopsys.com>
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 
-commit a950549c675f2c8c504469dec7d780da8a6433dc upstream.
+commit 7b92d03c3239f43e5b86c9cc9630f026d36ee995 upstream.
 
-This manifested as grep failing psuedo-randomly:
+Intermediate value of fat_clusters can be overflowed on 32bits arch.
 
--------------->8---------------------
-[ARCLinux]$ ip address show lo | grep inet
-[ARCLinux]$ ip address show lo | grep inet
-[ARCLinux]$ ip address show lo | grep inet
-[ARCLinux]$
-[ARCLinux]$ ip address show lo | grep inet
-    inet 127.0.0.1/8 scope host lo
--------------->8---------------------
-
-ARC700 MMU provides fully orthogonal permission bits per page:
-Ur, Uw, Ux, Kr, Kw, Kx
-
-The user mode page permission templates used to have all Kernel mode
-access bits enabled.
-This caused a tricky race condition observed with uClibc buffered file
-read and UNIX pipes.
-
-1. Read access to an anon mapped page in libc .bss: write-protected
-   zero_page mapped: TLB Entry installed with Ur + K[rwx]
-
-2. grep calls libc:getc() -> buffered read layer calls read(2) with the
-   internal read buffer in same .bss page.
-   The read() call is on STDIN which has been redirected to a pipe.
-   read(2) => sys_read() => pipe_read() => copy_to_user()
-
-3. Since page has Kernel-write permission (despite being user-mode
-   write-protected), copy_to_user() suceeds w/o taking a MMU TLB-Miss
-   Exception (page-fault for ARC). core-MM is unaware that kernel
-   erroneously wrote to the reserved read-only zero-page (BUG #1)
-
-4. Control returns to userspace which now does a write to same .bss page
-   Since Linux MM is not aware that page has been modified by kernel, it
-   simply reassigns a new writable zero-init page to mapping, loosing the
-   prior write by kernel - effectively zero'ing out the libc read buffer
-   under the hood - hence grep doesn't see right data (BUG #2)
-
-The fix is to make all kernel-mode access permissions mirror the
-user-mode ones. Note that the kernel still has full access to pages,
-when accessed directly (w/o MMU) - this fix ensures that kernel-mode
-access in copy_to_from() path uses the same faulting access model as for
-pure user accesses to keep MM fully aware of page state.
-
-The issue is peudo-random because it only shows up if the TLB entry
-installed in #1 is present at the time of #3. If it is evicted out, due
-to TLB pressure or some-such, then copy_to_user() does take a TLB Miss
-Exception, with a routine write-to-anon COW processing installing a
-fresh page for kernel writes and also usable as it is in userspace.
-
-Further the issue was dormant for so long as it depends on where the
-libc internal read buffer (in .bss) is mapped at runtime.
-If it happens to reside in file-backed data mapping of libc (in the
-page-aligned slack space trailing the file backed data), loader zero
-padding the slack space, does the early cow page replacement, setting
-things up at the very beginning itself.
-
-With gcc 4.8 based builds, the libc buffer got pushed out to a real
-anon mapping which triggers the issue.
-
-Reported-by: Anton Kolesov <akolesov@synopsys.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Reported-by: Krzysztof Strasburger <strasbur@chkw386.ch.pwr.wroc.pl>
+Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arc/include/asm/pgtable.h |   26 +++++++++++++++-----------
- arch/arc/include/asm/tlb.h     |    2 +-
- arch/arc/mm/tlbex.S            |    6 +++---
- 3 files changed, 19 insertions(+), 15 deletions(-)
+ fs/fat/inode.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
---- a/arch/arc/include/asm/pgtable.h
-+++ b/arch/arc/include/asm/pgtable.h
-@@ -57,9 +57,9 @@
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -1223,6 +1223,19 @@ static int fat_read_root(struct inode *i
+ 	return 0;
+ }
  
- #define _PAGE_ACCESSED      (1<<1)	/* Page is accessed (S) */
- #define _PAGE_CACHEABLE     (1<<2)	/* Page is cached (H) */
--#define _PAGE_EXECUTE       (1<<3)	/* Page has user execute perm (H) */
--#define _PAGE_WRITE         (1<<4)	/* Page has user write perm (H) */
--#define _PAGE_READ          (1<<5)	/* Page has user read perm (H) */
-+#define _PAGE_U_EXECUTE     (1<<3)	/* Page has user execute perm (H) */
-+#define _PAGE_U_WRITE       (1<<4)	/* Page has user write perm (H) */
-+#define _PAGE_U_READ        (1<<5)	/* Page has user read perm (H) */
- #define _PAGE_K_EXECUTE     (1<<6)	/* Page has kernel execute perm (H) */
- #define _PAGE_K_WRITE       (1<<7)	/* Page has kernel write perm (H) */
- #define _PAGE_K_READ        (1<<8)	/* Page has kernel perm (H) */
-@@ -72,9 +72,9 @@
- 
- /* PD1 */
- #define _PAGE_CACHEABLE     (1<<0)	/* Page is cached (H) */
--#define _PAGE_EXECUTE       (1<<1)	/* Page has user execute perm (H) */
--#define _PAGE_WRITE         (1<<2)	/* Page has user write perm (H) */
--#define _PAGE_READ          (1<<3)	/* Page has user read perm (H) */
-+#define _PAGE_U_EXECUTE     (1<<1)	/* Page has user execute perm (H) */
-+#define _PAGE_U_WRITE       (1<<2)	/* Page has user write perm (H) */
-+#define _PAGE_U_READ        (1<<3)	/* Page has user read perm (H) */
- #define _PAGE_K_EXECUTE     (1<<4)	/* Page has kernel execute perm (H) */
- #define _PAGE_K_WRITE       (1<<5)	/* Page has kernel write perm (H) */
- #define _PAGE_K_READ        (1<<6)	/* Page has kernel perm (H) */
-@@ -93,7 +93,8 @@
- #endif
- 
- /* Kernel allowed all permissions for all pages */
--#define _K_PAGE_PERMS  (_PAGE_K_EXECUTE | _PAGE_K_WRITE | _PAGE_K_READ)
-+#define _K_PAGE_PERMS  (_PAGE_K_EXECUTE | _PAGE_K_WRITE | _PAGE_K_READ | \
-+			_PAGE_GLOBAL | _PAGE_PRESENT)
- 
- #ifdef CONFIG_ARC_CACHE_PAGES
- #define _PAGE_DEF_CACHEABLE _PAGE_CACHEABLE
-@@ -106,7 +107,11 @@
-  * -by default cached, unless config otherwise
-  * -present in memory
-  */
--#define ___DEF (_PAGE_PRESENT | _K_PAGE_PERMS | _PAGE_DEF_CACHEABLE)
-+#define ___DEF (_PAGE_PRESENT | _PAGE_DEF_CACHEABLE)
++static unsigned long calc_fat_clusters(struct super_block *sb)
++{
++	struct msdos_sb_info *sbi = MSDOS_SB(sb);
 +
-+#define _PAGE_READ	(_PAGE_U_READ    | _PAGE_K_READ)
-+#define _PAGE_WRITE	(_PAGE_U_WRITE   | _PAGE_K_WRITE)
-+#define _PAGE_EXECUTE	(_PAGE_U_EXECUTE | _PAGE_K_EXECUTE)
- 
- /* Set of bits not changed in pte_modify */
- #define _PAGE_CHG_MASK	(PAGE_MASK | _PAGE_ACCESSED | _PAGE_MODIFIED)
-@@ -125,11 +130,10 @@
-  * kernel vaddr space - visible in all addr spaces, but kernel mode only
-  * Thus Global, all-kernel-access, no-user-access, cached
++	/* Divide first to avoid overflow */
++	if (sbi->fat_bits != 12) {
++		unsigned long ent_per_sec = sb->s_blocksize * 8 / sbi->fat_bits;
++		return ent_per_sec * sbi->fat_length;
++	}
++
++	return sbi->fat_length * sb->s_blocksize * 8 / sbi->fat_bits;
++}
++
+ /*
+  * Read the super block of an MS-DOS FS.
   */
--#define PAGE_KERNEL          __pgprot(___DEF | _PAGE_GLOBAL)
-+#define PAGE_KERNEL          __pgprot(_K_PAGE_PERMS | _PAGE_DEF_CACHEABLE)
+@@ -1427,7 +1440,7 @@ int fat_fill_super(struct super_block *s
+ 		sbi->dirty = b->fat16.state & FAT_STATE_DIRTY;
  
- /* ioremap */
--#define PAGE_KERNEL_NO_CACHE __pgprot(_PAGE_PRESENT | _K_PAGE_PERMS | \
--						     _PAGE_GLOBAL)
-+#define PAGE_KERNEL_NO_CACHE __pgprot(_K_PAGE_PERMS)
- 
- /**************************************************************************
-  * Mapping of vm_flags (Generic VM) to PTE flags (arch specific)
---- a/arch/arc/include/asm/tlb.h
-+++ b/arch/arc/include/asm/tlb.h
-@@ -16,7 +16,7 @@
- /* Masks for actual TLB "PD"s */
- #define PTE_BITS_IN_PD0	(_PAGE_GLOBAL | _PAGE_PRESENT)
- #define PTE_BITS_IN_PD1	(PAGE_MASK | _PAGE_CACHEABLE | \
--			 _PAGE_EXECUTE | _PAGE_WRITE | _PAGE_READ | \
-+			 _PAGE_U_EXECUTE | _PAGE_U_WRITE | _PAGE_U_READ | \
- 			 _PAGE_K_EXECUTE | _PAGE_K_WRITE | _PAGE_K_READ)
- 
- #ifndef __ASSEMBLY__
---- a/arch/arc/mm/tlbex.S
-+++ b/arch/arc/mm/tlbex.S
-@@ -277,7 +277,7 @@ ARC_ENTRY EV_TLBMissI
- 	;----------------------------------------------------------------
- 	; VERIFY_PTE: Check if PTE permissions approp for executing code
- 	cmp_s   r2, VMALLOC_START
--	mov.lo  r2, (_PAGE_PRESENT | _PAGE_READ | _PAGE_EXECUTE)
-+	mov.lo  r2, (_PAGE_PRESENT | _PAGE_U_READ | _PAGE_U_EXECUTE)
- 	mov.hs  r2, (_PAGE_PRESENT | _PAGE_K_READ | _PAGE_K_EXECUTE)
- 
- 	and     r3, r0, r2  ; Mask out NON Flag bits from PTE
-@@ -320,9 +320,9 @@ ARC_ENTRY EV_TLBMissD
- 	mov_s   r2, 0
- 	lr      r3, [ecr]
- 	btst_s  r3, ECR_C_BIT_DTLB_LD_MISS	; Read Access
--	or.nz   r2, r2, _PAGE_READ      	; chk for Read flag in PTE
-+	or.nz   r2, r2, _PAGE_U_READ      	; chk for Read flag in PTE
- 	btst_s  r3, ECR_C_BIT_DTLB_ST_MISS	; Write Access
--	or.nz   r2, r2, _PAGE_WRITE     	; chk for Write flag in PTE
-+	or.nz   r2, r2, _PAGE_U_WRITE     	; chk for Write flag in PTE
- 	; Above laddering takes care of XCHG access
- 	;   which is both Read and Write
- 
+ 	/* check that FAT table does not overflow */
+-	fat_clusters = sbi->fat_length * sb->s_blocksize * 8 / sbi->fat_bits;
++	fat_clusters = calc_fat_clusters(sb);
+ 	total_clusters = min(total_clusters, fat_clusters - FAT_START_ENT);
+ 	if (total_clusters > MAX_FAT(sb)) {
+ 		if (!silent)
 
 
