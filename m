@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933274Ab3FEVla (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:41:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38086 "EHLO
+	id S933278Ab3FEVls (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:41:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38083 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933137Ab3FEVgR (ORCPT
+	with ESMTP id S933071Ab3FEVgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Jun 2013 17:36:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        Feng Shuo <steve.shuo.feng@gmail.com>
-Subject: [ 116/127] fuse: fix readdirplus Oops in fuse_dentry_revalidate
-Date: Wed,  5 Jun 2013 14:34:43 -0700
-Message-Id: <20130605213231.156897031@linuxfoundation.org>
+        Daniel Mack <zonque@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Lingzhu Xiang <lxiang@redhat.com>
+Subject: [ 115/127] ASoC: davinci: fix sample rotation
+Date: Wed,  5 Jun 2013 14:34:42 -0700
+Message-Id: <20130605213231.045127665@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -28,85 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Daniel Mack <zonque@gmail.com>
 
-commit 28420dad233520811c0e0860e7fb4975ed863fc4 upstream.
+commit 796718925159523919a589ecbd6d1811c22ef55f upstream.
 
-Fix bug introduced by commit 4582a4ab2a "FUSE: Adapt readdirplus to application
-usage patterns".
+McASP serial audio engine needs different rotation values on TX and RX
+channels. Commit dde109fb462 ("ASoC: McASP: Fix data rotation for
+playback. Enables 24bit audio playback") changed the calculation to fix
+the playback format, but broke the capture stream by doing it for both
+TXFMT and RXFMT.
 
-We need to check for a positive dentry; negative dentries are not added by
-readdirplus.  Secondly we need to advise the use of readdirplus on the *parent*,
-otherwise the whole thing is useless.  Thirdly all this is only relevant if
-"readdirplus_auto" mode is selected by the filesystem.
-
-We advise the use of readdirplus only if the dentry was still valid.  If we had
-to redo the lookup then there was no use in doing the -plus version.
-
-Reported-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-CC: Feng Shuo <steve.shuo.feng@gmail.com>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fuse/dir.c   |   12 +++++++++---
- fs/fuse/inode.c |    7 ++++---
- 2 files changed, 13 insertions(+), 6 deletions(-)
+ sound/soc/davinci/davinci-mcasp.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -180,6 +180,8 @@ u64 fuse_get_attr_version(struct fuse_co
- static int fuse_dentry_revalidate(struct dentry *entry, unsigned int flags)
+--- a/sound/soc/davinci/davinci-mcasp.c
++++ b/sound/soc/davinci/davinci-mcasp.c
+@@ -626,7 +626,8 @@ static int davinci_config_channel_size(s
+ 				       int word_length)
  {
- 	struct inode *inode;
-+	struct dentry *parent;
-+	struct fuse_conn *fc;
+ 	u32 fmt;
+-	u32 rotate = (word_length / 4) & 0x7;
++	u32 tx_rotate = (word_length / 4) & 0x7;
++	u32 rx_rotate = (32 - word_length) / 4;
+ 	u32 mask = (1ULL << word_length) - 1;
  
- 	inode = ACCESS_ONCE(entry->d_inode);
- 	if (inode && is_bad_inode(inode))
-@@ -187,10 +189,8 @@ static int fuse_dentry_revalidate(struct
- 	else if (fuse_dentry_time(entry) < get_jiffies_64()) {
- 		int err;
- 		struct fuse_entry_out outarg;
--		struct fuse_conn *fc;
- 		struct fuse_req *req;
- 		struct fuse_forget_link *forget;
--		struct dentry *parent;
- 		u64 attr_version;
- 
- 		/* For negative dentries, always do a fresh lookup */
-@@ -241,8 +241,14 @@ static int fuse_dentry_revalidate(struct
- 				       entry_attr_timeout(&outarg),
- 				       attr_version);
- 		fuse_change_entry_timeout(entry, &outarg);
-+	} else if (inode) {
-+		fc = get_fuse_conn(inode);
-+		if (fc->readdirplus_auto) {
-+			parent = dget_parent(entry);
-+			fuse_advise_use_readdirplus(parent->d_inode);
-+			dput(parent);
-+		}
- 	}
--	fuse_advise_use_readdirplus(inode);
- 	return 1;
- }
- 
---- a/fs/fuse/inode.c
-+++ b/fs/fuse/inode.c
-@@ -864,10 +864,11 @@ static void process_init_reply(struct fu
- 				fc->dont_mask = 1;
- 			if (arg->flags & FUSE_AUTO_INVAL_DATA)
- 				fc->auto_inval_data = 1;
--			if (arg->flags & FUSE_DO_READDIRPLUS)
-+			if (arg->flags & FUSE_DO_READDIRPLUS) {
- 				fc->do_readdirplus = 1;
--			if (arg->flags & FUSE_READDIRPLUS_AUTO)
--				fc->readdirplus_auto = 1;
-+				if (arg->flags & FUSE_READDIRPLUS_AUTO)
-+					fc->readdirplus_auto = 1;
-+			}
- 		} else {
- 			ra_pages = fc->max_read / PAGE_CACHE_SIZE;
- 			fc->no_lock = 1;
+ 	/*
+@@ -647,9 +648,9 @@ static int davinci_config_channel_size(s
+ 					RXSSZ(fmt), RXSSZ(0x0F));
+ 	mcasp_mod_bits(dev->base + DAVINCI_MCASP_TXFMT_REG,
+ 					TXSSZ(fmt), TXSSZ(0x0F));
+-	mcasp_mod_bits(dev->base + DAVINCI_MCASP_TXFMT_REG, TXROT(rotate),
++	mcasp_mod_bits(dev->base + DAVINCI_MCASP_TXFMT_REG, TXROT(tx_rotate),
+ 							TXROT(7));
+-	mcasp_mod_bits(dev->base + DAVINCI_MCASP_RXFMT_REG, RXROT(rotate),
++	mcasp_mod_bits(dev->base + DAVINCI_MCASP_RXFMT_REG, RXROT(rx_rotate),
+ 							RXROT(7));
+ 	mcasp_set_reg(dev->base + DAVINCI_MCASP_TXMASK_REG, mask);
+ 	mcasp_set_reg(dev->base + DAVINCI_MCASP_RXMASK_REG, mask);
 
 
