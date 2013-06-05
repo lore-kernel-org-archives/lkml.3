@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932705Ab3FEVf0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:35:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37737 "EHLO
+	id S933389Ab3FEWBY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 18:01:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37763 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932592Ab3FEVfX (ORCPT
+	with ESMTP id S932694Ab3FEVf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:23 -0400
+	Wed, 5 Jun 2013 17:35:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heiko Abraham <abrahamh@web.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 030/127] Input: egalax_ts - ABS_MT_POSITION_Y not reported well
-Date: Wed,  5 Jun 2013 14:33:17 -0700
-Message-Id: <20130605213221.397742214@linuxfoundation.org>
+        Martin Michlmayr <tbm@cyrius.com>, Marek Vasut <marex@denx.de>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>
+Subject: [ 044/127] Kirkwood: Enable PCIe port 1 on QNAP TS-11x/TS-21x
+Date: Wed,  5 Jun 2013 14:33:31 -0700
+Message-Id: <20130605213222.985030286@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -27,31 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Abraham <abrahamh@web.de>
+From: Martin Michlmayr <tbm@cyrius.com>
 
-commit 3c9cfa782e075cc2348b949ba139911aac02c7cb upstream.
+commit 99e11334dcb846f9b76fb808196c7f47aa83abb3 upstream.
 
-The egalax_ts touchscreen modul not report ABS_MT_POSITION_Y proper.
-As result it may be, that upper software levels only receive x coordinates well.
+Enable KW_PCIE1 on QNAP TS-11x/TS-21x devices as newer revisions
+(rev 1.3) have a USB 3.0 chip from Etron on PCIe port 1.  Thanks
+to Marek Vasut for identifying this issue!
 
-Signed-off-by: Heiko Abraham <abrahamh@web.de>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Martin Michlmayr <tbm@cyrius.com>
+Tested-by: Marek Vasut <marex@denx.de>
+Acked-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/touchscreen/egalax_ts.c |    2 +-
+ arch/arm/mach-kirkwood/ts219-setup.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/input/touchscreen/egalax_ts.c
-+++ b/drivers/input/touchscreen/egalax_ts.c
-@@ -216,7 +216,7 @@ static int egalax_ts_probe(struct i2c_cl
- 	input_set_abs_params(input_dev,
- 			     ABS_MT_POSITION_X, 0, EGALAX_MAX_X, 0, 0);
- 	input_set_abs_params(input_dev,
--			     ABS_MT_POSITION_X, 0, EGALAX_MAX_Y, 0, 0);
-+			     ABS_MT_POSITION_Y, 0, EGALAX_MAX_Y, 0, 0);
- 	input_mt_init_slots(input_dev, MAX_SUPPORT_POINTS, 0);
+--- a/arch/arm/mach-kirkwood/ts219-setup.c
++++ b/arch/arm/mach-kirkwood/ts219-setup.c
+@@ -124,7 +124,7 @@ static void __init qnap_ts219_init(void)
+ static int __init ts219_pci_init(void)
+ {
+ 	if (machine_is_ts219())
+-		kirkwood_pcie_init(KW_PCIE0);
++		kirkwood_pcie_init(KW_PCIE1 | KW_PCIE0);
  
- 	input_set_drvdata(input_dev, ts);
+ 	return 0;
+ }
 
 
