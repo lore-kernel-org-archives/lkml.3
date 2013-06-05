@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757578Ab3FEU0F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 16:26:05 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:58455 "EHLO hydra.sisk.pl"
+	id S932152Ab3FEUbJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 16:31:09 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:58460 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757389Ab3FEU0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 16:26:02 -0400
+	id S932065Ab3FEUbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 16:31:07 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: Borislav Petkov <bp@suse.de>, Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of target frequency
-Date: Wed, 05 Jun 2013 22:35:05 +0200
-Message-ID: <105446113.ZumbZWCbSi@vostro.rjw.lan>
+To: Joe Jin <joe.jin@oracle.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, Neil Gu <qing.gu@oracle.com>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ACPI: update user_policy.max when _PPC updated
+Date: Wed, 05 Jun 2013 22:40:11 +0200
+Message-ID: <31897041.QcNuTieHbo@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51AF71B6.6030408@semaphore.gr>
-References: <51AF60D5.3080605@semaphore.gr> <20130605161703.GA29958@pd.tnic> <51AF71B6.6030408@semaphore.gr>
+In-Reply-To: <51AE8BE4.8050409@oracle.com>
+References: <51AE8BE4.8050409@oracle.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -25,65 +24,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 05, 2013 08:13:26 PM Stratos Karafotis wrote:
-> Hi Borislav,
-> 
-> On 06/05/2013 07:17 PM, Borislav Petkov wrote:
-> > On Wed, Jun 05, 2013 at 07:01:25PM +0300, Stratos Karafotis wrote:
-> >> Ondemand calculates load in terms of frequency and increases it only
-> >> if the load_freq is greater than up_threshold multiplied by current
-> >> or average frequency. This seems to produce oscillations of frequency
-> >> between min and max because, for example, a relatively small load can
-> >> easily saturate minimum frequency and lead the CPU to max. Then, the
-> >> CPU will decrease back to min due to a small load_freq.
-> >
-> > Right, and I think this is how we want it, no?
-> >
-> > The thing is, the faster you finish your work, the faster you can become
-> > idle and save power.
-> 
-> This is exactly the goal of this patch. To use more efficiently middle
-> frequencies to finish faster the work.
-> 
-> > If you switch frequencies in a staircase-like manner, you're going to
-> > take longer to finish, in certain cases, and burn more power while doing
-> > so.
-> 
-> This is not true with this patch. It switches to middle frequencies
-> when the load < up_threshold.
-> Now, ondemand does not increase freq. CPU runs in lowest freq till the
-> load is greater than up_threshold.
-> 
-> > Btw, racing to idle is also a good example for why you want boosting:
-> > you want to go max out the core but stay within power limits so that you
-> > can finish sooner.
-> >
-> >> This patch changes the calculation method of load and target frequency
-> >> considering 2 points:
-> >> - Load computation should be independent from current or average
-> >> measured frequency. For example an absolute load 80% at 100MHz is not
-> >> necessarily equivalent to 8% at 1000MHz in the next sampling interval.
-> >> - Target frequency should be increased to any value of frequency table
-> >> proportional to absolute load, instead to only the max. Thus:
-> >>
-> >> Target frequency = C * load
-> >>
-> >> where C = policy->cpuinfo.max_freq / 100
-> >>
-> >> Tested on Intel i7-3770 CPU @ 3.40GHz and on Quad core 1500MHz Krait.
-> >> Phoronix benchmark of Linux Kernel Compilation 3.1 test shows an
-> >> increase ~1.5% in performance. cpufreq_stats (time_in_state) shows
-> >> that middle frequencies are used more, with this patch. Highest
-> >> and lowest frequencies were used less by ~9%
+On Wednesday, June 05, 2013 08:52:52 AM Joe Jin wrote:
+> When _PPC changed dynamically the user_policy.max will not be updated,
+> this prevent CPU run on the highest frequency.
 
-Can you also use powertop to measure the percentage of time spent in idle
-states for the same workload with and without your patchset?  Also, it would
-be good to measure the total energy consumption somehow ...
+Why should the user setting be always related to the current maximum available
+frequency?  What if the user sets the limit for power capping purposes?
 
-Thanks,
 Rafael
 
 
+> Signed-off-by: Joe Jin <joe.jin@oracle.com>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/acpi/processor_perflib.c | 17 ++++++++++++++++-
+>  1 file changed, 16 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
+> index e854582..e01aa7d 100644
+> --- a/drivers/acpi/processor_perflib.c
+> +++ b/drivers/acpi/processor_perflib.c
+> @@ -180,6 +180,7 @@ static void acpi_processor_ppc_ost(acpi_handle handle, int status)
+>  int acpi_processor_ppc_has_changed(struct acpi_processor *pr, int event_flag)
+>  {
+>  	int ret;
+> +	unsigned int saved = (unsigned int)pr->performance_platform_limit;
+>  
+>  	if (ignore_ppc) {
+>  		/*
+> @@ -204,8 +205,22 @@ int acpi_processor_ppc_has_changed(struct acpi_processor *pr, int event_flag)
+>  	}
+>  	if (ret < 0)
+>  		return (ret);
+> -	else
+> +	else {
+> +		unsigned int ppc = (unsigned int)pr->performance_platform_limit;
+> +
+> +		if (saved != ppc) {
+> +			struct cpufreq_policy *policy;
+> +
+> +			policy = cpufreq_cpu_get(pr->id);
+> +			if (likely(policy))
+> +				policy->user_policy.max =
+> +					pr->performance->states[ppc].
+> +					core_frequency * 1000;
+> +			cpufreq_cpu_put(policy);
+> +		}
+> +
+>  		return cpufreq_update_policy(pr->id);
+> +	}
+>  }
+>  
+>  int acpi_processor_get_bios_limit(int cpu, unsigned int *limit)
+> 
 -- 
 I speak only for myself.
 Rafael J. Wysocki, Intel Open Source Technology Center.
