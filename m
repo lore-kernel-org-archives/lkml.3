@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758151Ab3FEXHN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 19:07:13 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:58799 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757729Ab3FEXHK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 19:07:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPweEDxMpeJc-w=Yd7d2OT=UisRBp2rxf-MPMDUCOG3EyJz1GQ@mail.gmail.com>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
-	<CAKON4OxDD5orX2w-_+d5kawTGXbE3KKj2QLERo9m7=NiUSXhgQ@mail.gmail.com>
-	<51AFA6DD.3000202@wwwdotorg.org>
-	<CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com>
-	<1370469574.18839.33.camel@localhost>
-	<CAPweEDxMpeJc-w=Yd7d2OT=UisRBp2rxf-MPMDUCOG3EyJz1GQ@mail.gmail.com>
-Date: Wed, 5 Jun 2013 19:07:07 -0400
-Message-ID: <CAKON4OxwyV2f_iTEb5RnP_azc7EsSxPdku_TY5WLWxN7USiY1Q@mail.gmail.com>
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
- Uploading linux (3.9.4-1))
-From: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
-To: "luke.leighton" <luke.leighton@gmail.com>
-Cc: Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org,
-        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
-        debian-kernel@lists.debian.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1758195Ab3FEXIt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 19:08:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16305 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757580Ab3FEXIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 19:08:47 -0400
+Date: Wed, 5 Jun 2013 19:08:44 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] virtio_balloon: leak_balloon(): only tell host if we
+ got pages deflated
+Message-ID: <20130605190844.1e96bbde@redhat.com>
+In-Reply-To: <20130605212449.GB19617@optiplex.redhat.com>
+References: <20130605171031.7448deea@redhat.com>
+	<20130605212449.GB19617@optiplex.redhat.com>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 5, 2013 at 6:47 PM, luke.leighton <luke.leighton@gmail.com> wrote:
-> On Wed, Jun 5, 2013 at 10:59 PM, Henrik Nordström
-> <henrik@henriknordstrom.net> wrote:
->
->>>  .... and then there's the boot0 and boot1 loaders, these *do* have
->
->> no, these are not tiny. boot0 is 24KB to fit the initial embedded SRAM
->> (not cache), but boot1 is on pair with u-boot in size and runs from
->> DRAM.
->
->  btw, please listen to henrik: he knows what he's talking about, as
-> you can see :)   henrik, thank you for correcting my technical
-> misunderstandings, i'll try to remember them and not propagate
-> incorrect stuff.
+On Wed, 5 Jun 2013 18:24:49 -0300
+Rafael Aquini <aquini@redhat.com> wrote:
 
-This is not about the fex syntax or uboot. The root problem is needing
-two sets of binding for every device driver in the kernel. Pick a
-random driver like gpio-pca953x.c and look at the source. In that file
-there are #ifdef CONFIG_OF_ sections. Those sections are directly
-reading the FDT binary via calls like of_get_property(node,
-"linux,gpio-base", &size);. If fex is added to the kernel every driver
-driver will now need both a #ifdef CONFIG_OF_ section and also a
-#ifdef CONFIG_FEX_ section. Doing that is just crazy. Is Allwinner
-going to add fex support to every single device driver in the kernel?
-Of course not, that task is far too large. What Allwinner needs to do
-is come onto the common API that everyone else is using.
+> On Wed, Jun 05, 2013 at 05:10:31PM -0400, Luiz Capitulino wrote:
+> > The balloon_page_dequeue() function can return NULL. If it does for
+> > the first page being freed, then leak_balloon() will create a
+> > scatter list with len=0. Which in turn seems to generate an invalid
+> > virtio request.
+> > 
+> > Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+> > ---
+> > 
+> > PS: I didn't get this in practice. I found it by code review. On the other
+> >     hand, automatic-ballooning was able to put such invalid requests in
+> >     the virtqueue and QEMU would explode...
+> >
+> 
+> Nice catch! The patch looks sane and replicates the check done at
+> fill_balloon(). I think we also could use this P.S. as a commentary 
+> to let others aware of this scenario. Thanks Luiz!
 
-So consider what is going to happen if you try to use a pca953x chip
-in an Allwinner system. You're going to have to rewrite part of the
-device driver. You're going to have to do that for every chip you try
-to use. Those forks won't be accepted back into the kernel, etc. And
-you'll end up as yet another port and forget embedded developer.
+Want me to respin?
 
-As for uboot I hope you are using the SPL support and haven't
-reimplemented it. If the full uboot has been modified to dynamically
-read a script.bin then it shouldn't be much of a stretch to teach it
-about FDT instead. That would be a useful feature to add to mainline
-uboot.
+> Acked-by: Rafael Aquini <aquini@redhat.com>
 
-As for fex2bin and bin2fex you already have the equivalent tool on
-your machine. It is called dtc. Check out scripts/dtc.
+Thanks for your review!
 
-So if you are in love with fex syntax write a script that converts it
-into device tree syntax. Then compile the DTS using dtc into a DTB.
-When the DTB is in memory it is a FDT (flattened device tree). It's
-that FDT format in memory that has become fixed in stone.
+> 
+>  
+> > PPS: Very lightly tested
+> >
+> >  drivers/virtio/virtio_balloon.c | 3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+> > index bd3ae32..71af7b5 100644
+> > --- a/drivers/virtio/virtio_balloon.c
+> > +++ b/drivers/virtio/virtio_balloon.c
+> > @@ -191,7 +191,8 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
+> >  	 * virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
+> >  	 * is true, we *have* to do it in this order
+> >  	 */
+> > -	tell_host(vb, vb->deflate_vq);
+> > +	if (vb->num_pfns != 0)
+> > +		tell_host(vb, vb->deflate_vq);
+> >  	mutex_unlock(&vb->balloon_lock);
+> >  	release_pages_by_pfn(vb->pfns, vb->num_pfns);
+> >  }
+> > -- 
+> > 1.8.1.4
+> > 
+> 
 
---
-Jon Smirl
-jonsmirl@gmail.com
