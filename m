@@ -1,154 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab3FEPPA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 11:15:00 -0400
-Received: from emvm-gh1-uea09.nsa.gov ([63.239.67.10]:65001 "EHLO nsa.gov"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755762Ab3FEPO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 11:14:58 -0400
-X-Greylist: delayed 898 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Jun 2013 11:14:58 EDT
-X-TM-IMSS-Message-ID: <7447fa8b0000d1c4@nsa.gov>
-Message-ID: <51AF5251.5060104@tycho.nsa.gov>
-Date: Wed, 05 Jun 2013 10:59:29 -0400
-From: Stephen Smalley <sds@tycho.nsa.gov>
-Organization: National Security Agency
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1756120Ab3FEPRt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 11:17:49 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:49308 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755794Ab3FEPRr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 11:17:47 -0400
+Date: Wed, 5 Jun 2013 11:15:41 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
+Cc: tpmdd-devel@lists.sourceforge.net, Daniel De Graaf <dgdegra@tycho.nsa.gov>,
+        linux-kernel@vger.kernel.org, leosilva@linux.vnet.ibm.com,
+        shpedoikal@gmail.com, xen-devel@lists.xen.org, mail@srajiv.net,
+        adlai@linux.vnet.ibm.com, tpmdd@sirrix.com
+Subject: Re: [tpmdd-devel] [PATCH v3] drivers/tpm: add xen tpmfront interface
+Message-ID: <20130605151541.GC28843@phenom.dumpdata.com>
+References: <1369755632-2753-1-git-send-email-dgdegra@tycho.nsa.gov>
+ <201306050014.29162.PeterHuewe@gmx.de>
 MIME-Version: 1.0
-To: Waiman Long <Waiman.Long@hp.com>
-CC: James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@parisplace.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH RFC 1/2] SELinux: reduce overhead of mls_level_isvalid()
- function call
-References: <1365618383-29340-1-git-send-email-Waiman.Long@hp.com> <5183C4BE.5030504@hp.com>
-In-Reply-To: <5183C4BE.5030504@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <201306050014.29162.PeterHuewe@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2013 10:07 AM, Waiman Long wrote:
-> On 04/10/2013 02:26 PM, Waiman Long wrote:
->> While running the high_systime workload of the AIM7 benchmark on
->> a 2-socket 12-core Westmere x86-64 machine running 3.8.2 kernel,
->> it was found that a pretty sizable amount of time was spent in the
->> SELinux code. Below was the perf trace of the "perf record -a -s"
->> of a test run at 1500 users:
->>
->>    3.96%            ls  [kernel.kallsyms]     [k] ebitmap_get_bit
->>    1.44%            ls  [kernel.kallsyms]     [k] mls_level_isvalid
->>    1.33%            ls  [kernel.kallsyms]     [k] find_next_bit
->>
->> The ebitmap_get_bit() was the hottest function in the perf-report
->> output.  Both the ebitmap_get_bit() and find_next_bit() functions
->> were, in fact, called by mls_level_isvalid(). As a result, the
->> mls_level_isvalid() call consumed 6.73% of the total CPU time of all
->> the 24 virtual CPUs which is quite a lot.
->>
->> Looking at the mls_level_isvalid() function, it is checking to see
->> if all the bits set in one of the ebitmap structure are also set in
->> another one as well as the highest set bit is no bigger than the one
->> specified by the given policydb data structure. It is doing it in
->> a bit-by-bit manner. So if the ebitmap structure has many bits set,
->> the iteration loop will be done many times.
->>
->> The current code can be rewritten to use a similar algorithm as the
->> ebitmap_contains() function with an additional check for the highest
->> set bit. With that change, the perf trace showed that the used CPU
->> time drop down to just 0.09% of the total which is about 100X less
->> than before.
->>
->>    0.04%            ls  [kernel.kallsyms]     [k] ebitmap_get_bit
->>    0.04%            ls  [kernel.kallsyms]     [k] mls_level_isvalid
->>    0.01%            ls  [kernel.kallsyms]     [k] find_next_bit
->>
->> Actually, the remaining ebitmap_get_bit() and find_next_bit() function
->> calls are made by other kernel routines as the new mls_level_isvalid()
->> function will not call them anymore.
->>
->> This patch also improves the high_systime AIM7 benchmark result,
->> though the improvement is not as impressive as is suggested by the
->> reduction in CPU time. The table below shows the performance change
->> on the 2-socket x86-64 system mentioned above.
->>
->> +--------------+---------------+----------------+-----------------+
->> |   Workload   | mean % change | mean % change  | mean % change   |
->> |              | 10-100 users  | 200-1000 users | 1100-2000 users |
->> +--------------+---------------+----------------+-----------------+
->> | high_systime |     +0.2%     |     +1.1%      |     +2.4%       |
->> +--------------+---------------+----------------+-----------------+
->>
->> Signed-off-by: Waiman Long<Waiman.Long@hp.com>
->> ---
->>   security/selinux/ss/mls.c |   38 +++++++++++++++++++++++++++-----------
->>   1 files changed, 27 insertions(+), 11 deletions(-)
->>
->> diff --git a/security/selinux/ss/mls.c b/security/selinux/ss/mls.c
->> index 40de8d3..ce02803 100644
->> --- a/security/selinux/ss/mls.c
->> +++ b/security/selinux/ss/mls.c
->> @@ -160,8 +160,7 @@ void mls_sid_to_context(struct context *context,
->>   int mls_level_isvalid(struct policydb *p, struct mls_level *l)
->>   {
->>       struct level_datum *levdatum;
->> -    struct ebitmap_node *node;
->> -    int i;
->> +    struct ebitmap_node *nodel, *noded;
->>
->>       if (!l->sens || l->sens>  p->p_levels.nprim)
->>           return 0;
->> @@ -170,16 +169,33 @@ int mls_level_isvalid(struct policydb *p, struct
->> mls_level *l)
->>       if (!levdatum)
->>           return 0;
->>
->> -    ebitmap_for_each_positive_bit(&l->cat, node, i) {
->> -        if (i>  p->p_cats.nprim)
->> -            return 0;
->> -        if (!ebitmap_get_bit(&levdatum->level->cat, i)) {
->> -            /*
->> -             * Category may not be associated with
->> -             * sensitivity.
->> -             */
->> -            return 0;
->> +    /*
->> +     * Return 1 iff
->> +     * 1. l->cat.node is NULL, or
->> +     * 2. all the bits set in l->cat are also set in
->> levdatum->level->cat,
->> +     *    and
->> +     * 3. the last bit set in l->cat should not be larger than
->> +     *    p->p_cats.nprim.
->> +     */
->> +    noded = levdatum->level->cat.node;
->> +    for (nodel = l->cat.node ; nodel ; nodel = nodel->next) {
->> +        int i, lastsetbit = -1;
->> +
->> +        for (i = EBITMAP_UNIT_NUMS - 1 ; i>= 0 ; i--) {
->> +            if (!nodel->maps[i])
->> +                continue;
->> +            if (!noded ||
->> +               ((nodel->maps[i]&noded->maps[i]) != nodel->maps[i]))
->> +                return 0;
->> +            if (lastsetbit<  0)
->> +                lastsetbit = nodel->startbit +
->> +                         i * EBITMAP_UNIT_SIZE +
->> +                         __fls(nodel->maps[i]);
->>           }
->> +        if ((lastsetbit>= 0)&&  (lastsetbit>  p->p_cats.nprim))
->> +            return 0;
->> +        if (noded)
->> +            noded = noded->next;
->>       }
->>
->>       return 1;
->
-> Would you mind giving me some feedback on what you think about this patch?
+On Tue, Jun 04, 2013 at 03:14:28PM -0700, Peter Hüwe wrote:
+> Hi Daniel,
+> 
+> thanks for this v3.
+> It's really nice to see the progress and I really like that 
+> sparse/smatch/clang/coccicheck do not complain at all - nice job!
+> 
+> Konrad already did an excellent job at reviewing the driver (thanks for that), 
+> and all previously pointed out issues are fixed.
 
-Can you take the core logic into a helper function within ebitmap.c? 
-Otherwise you are directly exposing ebitmap internals to the mls code.
+Thank you.
+> 
+> Unfortunately I haven't had the opportunity to test it yet, but 
+> the driver looks clean from the TPM perspective.
+> 
+> 
+> However I do have some minor comments from a general perspective - see below.
+> 
+> 
+> From the TPM point of view I'd say it is fine.
+> (I'm currently _not_ the (official) maintainer of the tpm subsystem but at least 
+> take care of the incoming stuff as an interim)
+> 
+> 
+> So if the comments are addressed you can add:
+> Acked-by: Peter Huewe <peterhuewe@gmx.de>
+> Reviewed-by: Peter Huewe <peterhuewe@gmx.de>
+> 
+> @Konrad: I can stage the driver and push it to James or you can take it.
 
+This is James L. Morris?
+> As it lives in drivers/tpm maybe it should go through the tpm (interim ;) 
+> maintainer and james' tree.
 
+Entirely up to you. I am happy to stick in my queue for 3.11 and just
+tack on the Acked/Reviewed by from you (once Daniel addresses the issues
+and reposts the patch).
+
+If it is going through me - naturally that means I will have to test it :-)
+
+> 
+> 
+> So here are my comments:
+> 
+> Am Dienstag, 28. Mai 2013, 17:40:32 schrieb Daniel De Graaf:
+> > This is a complete rewrite of the Xen TPM frontend driver, taking
+> > advantage of a simplified frontend/backend interface and adding support
+> > for cancellation and timeouts.  The backend for this driver is provided
+> > by a vTPM stub domain using the interface in Xen 4.3.
+> > 
+> > Signed-off-by: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+> > Acked-by: Matthew Fioravante <matthew.fioravante@jhuapl.edu>
+> 
+> > diff --git a/Documentation/xen-tpmfront.txt
+> > b/Documentation/xen-tpmfront.txt new file mode 100644
+> > index 0000000..8a61d6f
+> > --- /dev/null
+> > +++ b/Documentation/xen-tpmfront.txt
+> > @@ -0,0 +1,116 @@
+> > +Copyright (c) 2010-2012 United States Government, as represented by
+> > +the Secretary of Defense.  All rights reserved.
+> 
+> I'm not 100% sure if this can stay this way, as it doesn't permit any changes 
+> to the documentation itself.
+> 
+> 
+> > + * Linux DomU: The Linux based guest that wants to use a vTPM. There many
+> > be +	       more than one of these.
+> -* Linux DomU: The Linux based guest that wants to use a vTPM. There many
+> +* Linux DomU: The Linux based guest that wants to use a vTPM. There may
+> Just a minor typo
+> 
+> 
+> > diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
+> > index dbfd564..205ed35 100644
+> > --- a/drivers/char/tpm/Kconfig
+> > +++ b/drivers/char/tpm/Kconfig
+> > @@ -91,4 +91,15 @@ config TCG_ST33_I2C
+> >          To compile this driver as a module, choose M here; the module will
+> > be called tpm_stm_st33_i2c.
+> > 
+> > +config TCG_XEN
+> Maybe TCG_XEN_TPM would be better, but TCG_XEN is okay for me.
+> 
+> 
+> > +static int vtpm_send(struct tpm_chip *chip, u8 *buf, size_t count)
+> > +{
+> > +	struct tpm_private *priv = TPM_VPRIV(chip);
+> > +	struct vtpm_shared_page *shr = priv->shr;
+> > +	unsigned int offset = shr_data_offset(shr);
+> > +
+> > +	u32 ordinal;
+> > +	unsigned long duration;
+> > +
+> > +	if (offset > PAGE_SIZE)
+> > +		return -EIO;
+> Maybe -EINVAL?
+> > +
+> > +	if (offset + count > PAGE_SIZE)
+> > +		return -EIO;
+> Maybe -EINVAL?
+> > +
+> 
+> 
+> > +/*************************************************************************
+> > ***** + * tpmif.h
+> > + *
+> > + * TPM I/O interface for Xen guest OSes, v2
+> > + *
+> > + * Permission is hereby granted, free of charge, to any person obtaining a
+> > copy + * of this software and associated documentation files (the
+> > "Software"), to + * deal in the Software without restriction, including
+> > without limitation the + * rights to use, copy, modify, merge, publish,
+> > distribute, sublicense, and/or + * sell copies of the Software, and to
+> > permit persons to whom the Software is + * furnished to do so, subject to
+> > the following conditions:
+> > + *
+> > + * The above copyright notice and this permission notice shall be included
+> > in + * all copies or substantial portions of the Software.
+> > + *
+> > + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+> > OR + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+> > MERCHANTABILITY, + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+> > IN NO EVENT SHALL THE + * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+> > CLAIM, DAMAGES OR OTHER + * LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+> > TORT OR OTHERWISE, ARISING + * FROM, OUT OF OR IN CONNECTION WITH THE
+> > SOFTWARE OR THE USE OR OTHER + * DEALINGS IN THE SOFTWARE.
+> > + *
+> > + */
+> 
+> Also not sure if this license is correct/compliant with the kernel as it 
+> indicates no clear license to me.
+> 
+> Peter
