@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757726Ab3FEU6T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 16:58:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36315 "EHLO
+	id S1757788Ab3FEU6k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 16:58:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36287 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932090Ab3FEUx1 (ORCPT
+	with ESMTP id S1757736Ab3FEUxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 16:53:27 -0400
+	Wed, 5 Jun 2013 16:53:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 22/33] mm/THP: use pmd_populate() to update the pmd with pgtable_t pointer
-Date: Wed,  5 Jun 2013 13:53:00 -0700
-Message-Id: <20130605204707.463300361@linuxfoundation.org>
+        "wang, biao" <biao.wang@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [ 17/33] klist: del waiter from klist_remove_waiters before wakeup waitting process
+Date: Wed,  5 Jun 2013 13:52:55 -0700
+Message-Id: <20130605204706.289870691@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605204702.359510786@linuxfoundation.org>
 References: <20130605204702.359510786@linuxfoundation.org>
@@ -31,45 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+From: "wang, biao" <biao.wang@intel.com>
 
-commit 7c3425123ddfdc5f48e7913ff59d908789712b18 upstream.
+commit ac5a2962b02f57dea76d314ef2521a2170b28ab6 upstream.
 
-We should not use set_pmd_at to update pmd_t with pgtable_t pointer.
-set_pmd_at is used to set pmd with huge pte entries and architectures
-like ppc64, clear few flags from the pte when saving a new entry.
-Without this change we observe bad pte errors like below on ppc64 with
-THP enabled.
+There is a race between klist_remove and klist_release. klist_remove
+uses a local var waiter saved on stack. When klist_release calls
+wake_up_process(waiter->process) to wake up the waiter, waiter might run
+immediately and reuse the stack. Then, klist_release calls
+list_del(&waiter->list) to change previous
+wait data and cause prior waiter thread corrupt.
 
-  BUG: Bad page map in process ld mm=0xc000001ee39f4780 pte:7fc3f37848000001 pmd:c000001ec0000000
+The patch fixes it against kernel 3.9.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: wang, biao <biao.wang@intel.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/huge_memory.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ lib/klist.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1893,7 +1893,12 @@ static void collapse_huge_page(struct mm
- 		pte_unmap(pte);
- 		spin_lock(&mm->page_table_lock);
- 		BUG_ON(!pmd_none(*pmd));
--		set_pmd_at(mm, address, pmd, _pmd);
-+		/*
-+		 * We can only use set_pmd_at when establishing
-+		 * hugepmds and never for establishing regular pmds that
-+		 * points to regular pagetables. Use pmd_populate for that
-+		 */
-+		pmd_populate(mm, pmd, pmd_pgtable(_pmd));
- 		spin_unlock(&mm->page_table_lock);
- 		anon_vma_unlock(vma->anon_vma);
- 		goto out;
+--- a/lib/klist.c
++++ b/lib/klist.c
+@@ -193,10 +193,10 @@ static void klist_release(struct kref *k
+ 		if (waiter->node != n)
+ 			continue;
+ 
++		list_del(&waiter->list);
+ 		waiter->woken = 1;
+ 		mb();
+ 		wake_up_process(waiter->process);
+-		list_del(&waiter->list);
+ 	}
+ 	spin_unlock(&klist_remove_lock);
+ 	knode_set_klist(n, NULL);
 
 
