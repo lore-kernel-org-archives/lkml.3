@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933125Ab3FEVoq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:44:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38022 "EHLO
+	id S933067Ab3FEVgH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:36:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38007 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933056Ab3FEVgG (ORCPT
+	with ESMTP id S932690Ab3FEVgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:36:06 -0400
+	Wed, 5 Jun 2013 17:36:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Ilan Peer <ilan.peer@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Lingzhu Xiang <lxiang@redhat.com>
-Subject: [ 100/127] iwlwifi: mvm: fix aggregation drain flow
-Date: Wed,  5 Jun 2013 14:34:27 -0700
-Message-Id: <20130605213229.367431720@linuxfoundation.org>
+        Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [ 096/127] reiserfs: fix problems with chowning setuid file w/ xattrs
+Date: Wed,  5 Jun 2013 14:34:23 -0700
+Message-Id: <20130605213228.887663732@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -29,181 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Jeff Mahoney <jeffm@suse.com>
 
-commit e3d4bc8cc0230e8dc8033484666f03f87392a8c4 upstream.
+commit 4a8570112b76a63ad21cfcbe2783f98f7fd5ba1b upstream.
 
-Move the counter for non-AMPDU frames to mvm. It is needed
-for the drain flow which happens once the ieee80211_sta has
-been freed, so keeping it in iwl_mvm_sta which is embed into
-ieee80211_sta is not a good idea.
+reiserfs_chown_xattrs() takes the iattr struct passed into ->setattr
+and uses it to iterate over all the attrs associated with a file to change
+ownership of xattrs (and transfer quota associated with the xattr files).
 
-Also, since its purpose it to remove the STA in the fw only
-after all the frames for this station have exited the shared
-Tx queues, we need to decrement it in the reclaim flow. This
-flow can happen after ieee80211_sta has been removed, which
-means that we have no iwl_mvm_sta there. So we can't know
-what is the vif type. Hence, we know audit these frames for
-all the vif types.
-In order to avoid spawning sta_drained_wk all the time, we
-now check that we are in a flow in which draining might
-happen - only when mvmsta is NULL. This is better than
-previous code that would spawn sta_drained_wk all the time
-in AP mode.
+When the setuid bit is cleared during chown, ATTR_MODE and iattr->ia_mode
+are passed to all the xattrs as well. This means that the xattr directory
+will have S_IFREG added to its mode bits.
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Reviewed-by: Ilan Peer <ilan.peer@intel.com>
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
+This has been prevented in practice by a missing IS_PRIVATE check
+in reiserfs_acl_chmod, which caused a double-lock to occur while holding
+the write lock. Since the file system was completely locked up, the
+writeout of the corrupted mode never happened.
+
+This patch temporarily clears everything but ATTR_UID|ATTR_GID for the
+calls to reiserfs_setattr and adds the missing IS_PRIVATE check.
+
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/mvm/mac80211.c |    2 -
- drivers/net/wireless/iwlwifi/mvm/mvm.h      |    1 
- drivers/net/wireless/iwlwifi/mvm/sta.c      |   13 +++++--
- drivers/net/wireless/iwlwifi/mvm/sta.h      |    2 -
- drivers/net/wireless/iwlwifi/mvm/tx.c       |   48 +++++++++++++++++++++-------
- 5 files changed, 48 insertions(+), 18 deletions(-)
+ fs/reiserfs/xattr.c     |   14 +++++++++++++-
+ fs/reiserfs/xattr_acl.c |    3 +++
+ 2 files changed, 16 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-@@ -886,7 +886,7 @@ static void iwl_mvm_mac_sta_notify(struc
- 
- 	switch (cmd) {
- 	case STA_NOTIFY_SLEEP:
--		if (atomic_read(&mvmsta->pending_frames) > 0)
-+		if (atomic_read(&mvm->pending_frames[mvmsta->sta_id]) > 0)
- 			ieee80211_sta_block_awake(hw, sta, true);
- 		/*
- 		 * The fw updates the STA to be asleep. Tx packets on the Tx
---- a/drivers/net/wireless/iwlwifi/mvm/mvm.h
-+++ b/drivers/net/wireless/iwlwifi/mvm/mvm.h
-@@ -293,6 +293,7 @@ struct iwl_mvm {
- 	struct ieee80211_sta __rcu *fw_id_to_mac_id[IWL_MVM_STATION_COUNT];
- 	struct work_struct sta_drained_wk;
- 	unsigned long sta_drained[BITS_TO_LONGS(IWL_MVM_STATION_COUNT)];
-+	atomic_t pending_frames[IWL_MVM_STATION_COUNT];
- 
- 	/* configured by mac80211 */
- 	u32 rts_threshold;
---- a/drivers/net/wireless/iwlwifi/mvm/sta.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/sta.c
-@@ -172,7 +172,7 @@ int iwl_mvm_add_sta(struct iwl_mvm *mvm,
- 	mvm_sta->max_agg_bufsize = LINK_QUAL_AGG_FRAME_LIMIT_DEF;
- 
- 	/* HW restart, don't assume the memory has been zeroed */
--	atomic_set(&mvm_sta->pending_frames, 0);
-+	atomic_set(&mvm->pending_frames[sta_id], 0);
- 	mvm_sta->tid_disable_agg = 0;
- 	mvm_sta->tfd_queue_msk = 0;
- 	for (i = 0; i < IEEE80211_NUM_ACS; i++)
-@@ -360,14 +360,21 @@ int iwl_mvm_rm_sta(struct iwl_mvm *mvm,
- 	}
- 
- 	/*
-+	 * Make sure that the tx response code sees the station as -EBUSY and
-+	 * calls the drain worker.
-+	 */
-+	spin_lock_bh(&mvm_sta->lock);
+--- a/fs/reiserfs/xattr.c
++++ b/fs/reiserfs/xattr.c
+@@ -318,7 +318,19 @@ static int delete_one_xattr(struct dentr
+ static int chown_one_xattr(struct dentry *dentry, void *data)
+ {
+ 	struct iattr *attrs = data;
+-	return reiserfs_setattr(dentry, attrs);
++	int ia_valid = attrs->ia_valid;
++	int err;
++
 +	/*
- 	 * There are frames pending on the AC queues for this station.
- 	 * We need to wait until all the frames are drained...
- 	 */
--	if (atomic_read(&mvm_sta->pending_frames)) {
--		ret = iwl_mvm_drain_sta(mvm, mvm_sta, true);
-+	if (atomic_read(&mvm->pending_frames[mvm_sta->sta_id])) {
- 		rcu_assign_pointer(mvm->fw_id_to_mac_id[mvm_sta->sta_id],
- 				   ERR_PTR(-EBUSY));
-+		spin_unlock_bh(&mvm_sta->lock);
-+		ret = iwl_mvm_drain_sta(mvm, mvm_sta, true);
- 	} else {
-+		spin_unlock_bh(&mvm_sta->lock);
- 		ret = iwl_mvm_rm_sta_common(mvm, mvm_sta->sta_id);
- 		rcu_assign_pointer(mvm->fw_id_to_mac_id[mvm_sta->sta_id], NULL);
- 	}
---- a/drivers/net/wireless/iwlwifi/mvm/sta.h
-+++ b/drivers/net/wireless/iwlwifi/mvm/sta.h
-@@ -273,7 +273,6 @@ struct iwl_mvm_tid_data {
-  * @max_agg_bufsize: the maximal size of the AGG buffer for this station
-  * @lock: lock to protect the whole struct. Since %tid_data is access from Tx
-  * and from Tx response flow, it needs a spinlock.
-- * @pending_frames: number of frames for this STA on the shared Tx queues.
-  * @tid_data: per tid data. Look at %iwl_mvm_tid_data.
-  *
-  * When mac80211 creates a station it reserves some space (hw->sta_data_size)
-@@ -288,7 +287,6 @@ struct iwl_mvm_sta {
- 	u16 tid_disable_agg;
- 	u8 max_agg_bufsize;
- 	spinlock_t lock;
--	atomic_t pending_frames;
- 	struct iwl_mvm_tid_data tid_data[IWL_MAX_TID_COUNT];
- 	struct iwl_lq_sta lq_sta;
- 	struct ieee80211_vif *vif;
---- a/drivers/net/wireless/iwlwifi/mvm/tx.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/tx.c
-@@ -416,9 +416,8 @@ int iwl_mvm_tx_skb(struct iwl_mvm *mvm,
++	 * We only want the ownership bits. Otherwise, we'll do
++	 * things like change a directory to a regular file if
++	 * ATTR_MODE is set.
++	 */
++	attrs->ia_valid &= (ATTR_UID|ATTR_GID);
++	err = reiserfs_setattr(dentry, attrs);
++	attrs->ia_valid = ia_valid;
++
++	return err;
+ }
  
- 	spin_unlock(&mvmsta->lock);
+ /* No i_mutex, but the inode is unconnected. */
+--- a/fs/reiserfs/xattr_acl.c
++++ b/fs/reiserfs/xattr_acl.c
+@@ -443,6 +443,9 @@ int reiserfs_acl_chmod(struct inode *ino
+ 	int depth;
+ 	int error;
  
--	if (mvmsta->vif->type == NL80211_IFTYPE_AP &&
--	    txq_id < IWL_FIRST_AMPDU_QUEUE)
--		atomic_inc(&mvmsta->pending_frames);
-+	if (txq_id < IWL_FIRST_AMPDU_QUEUE)
-+		atomic_inc(&mvm->pending_frames[mvmsta->sta_id]);
++	if (IS_PRIVATE(inode))
++		return 0;
++
+ 	if (S_ISLNK(inode->i_mode))
+ 		return -EOPNOTSUPP;
  
- 	return 0;
- 
-@@ -678,16 +677,41 @@ static void iwl_mvm_rx_tx_cmd_single(str
- 	/*
- 	 * If the txq is not an AMPDU queue, there is no chance we freed
- 	 * several skbs. Check that out...
--	 * If there are no pending frames for this STA, notify mac80211 that
--	 * this station can go to sleep in its STA table.
- 	 */
--	if (txq_id < IWL_FIRST_AMPDU_QUEUE && mvmsta &&
--	    !WARN_ON(skb_freed > 1) &&
--	    mvmsta->vif->type == NL80211_IFTYPE_AP &&
--	    atomic_sub_and_test(skb_freed, &mvmsta->pending_frames)) {
--		ieee80211_sta_block_awake(mvm->hw, sta, false);
--		set_bit(sta_id, mvm->sta_drained);
--		schedule_work(&mvm->sta_drained_wk);
-+	if (txq_id < IWL_FIRST_AMPDU_QUEUE && !WARN_ON(skb_freed > 1) &&
-+	    atomic_sub_and_test(skb_freed, &mvm->pending_frames[sta_id])) {
-+		if (mvmsta) {
-+			/*
-+			 * If there are no pending frames for this STA, notify
-+			 * mac80211 that this station can go to sleep in its
-+			 * STA table.
-+			 */
-+			if (mvmsta->vif->type == NL80211_IFTYPE_AP)
-+				ieee80211_sta_block_awake(mvm->hw, sta, false);
-+			/*
-+			 * We might very well have taken mvmsta pointer while
-+			 * the station was being removed. The remove flow might
-+			 * have seen a pending_frame (because we didn't take
-+			 * the lock) even if now the queues are drained. So make
-+			 * really sure now that this the station is not being
-+			 * removed. If it is, run the drain worker to remove it.
-+			 */
-+			spin_lock_bh(&mvmsta->lock);
-+			sta = rcu_dereference(mvm->fw_id_to_mac_id[sta_id]);
-+			if (IS_ERR_OR_NULL(sta)) {
-+				/*
-+				 * Station disappeared in the meantime:
-+				 * so we are draining.
-+				 */
-+				set_bit(sta_id, mvm->sta_drained);
-+				schedule_work(&mvm->sta_drained_wk);
-+			}
-+			spin_unlock_bh(&mvmsta->lock);
-+		} else if (!mvmsta) {
-+			/* Tx response without STA, so we are draining */
-+			set_bit(sta_id, mvm->sta_drained);
-+			schedule_work(&mvm->sta_drained_wk);
-+		}
- 	}
- 
- 	rcu_read_unlock();
 
 
