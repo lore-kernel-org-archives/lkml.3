@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932294Ab3FEUyG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 16:54:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36364 "EHLO
+	id S932279Ab3FEUyb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 16:54:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36359 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932254Ab3FEUxf (ORCPT
+	with ESMTP id S932242Ab3FEUxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 16:53:35 -0400
+	Wed, 5 Jun 2013 16:53:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Manoj Iyer <manoj.iyer@canonical.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Shuduo Sang <shuduo.sang@canonical.com>
-Subject: [ 33/33] thinkpad-acpi: recognize latest V-Series using DMI_BIOS_VENDOR
-Date: Wed,  5 Jun 2013 13:53:11 -0700
-Message-Id: <20130605204709.935191420@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: [ 32/33] mac80211: close AP_VLAN interfaces before unregistering all
+Date: Wed,  5 Jun 2013 13:53:10 -0700
+Message-Id: <20130605204709.733687952@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605204702.359510786@linuxfoundation.org>
 References: <20130605204702.359510786@linuxfoundation.org>
@@ -28,80 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Manoj Iyer <manoj.iyer@canonical.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit a4f46bb9fa84642e356898ee44b670989622f8bb upstream.
+commit c8aa22db0112f640ac6631347f850879c621840b upstream.
 
-In the latest V-series bios DMI_PRODUCT_VERSION does not contain
-the string Lenovo or Thinkpad, but is set to the model number, this
-causes the thinkpad_acpi module to fail to load. Recognize laptop
-as Lenovo using DMI_BIOS_VENDOR instead, which is set to Lenovo.
+Since Eric's commit efe117ab8 ("Speedup ieee80211_remove_interfaces")
+there's a bug in mac80211 when it unregisters with AP_VLAN interfaces
+up. If the AP_VLAN interface was registered after the AP it belongs
+to (which is the typical case) and then we get into this code path,
+unregister_netdevice_many() will crash because it isn't prepared to
+deal with interfaces being closed in the middle of it. Exactly this
+happens though, because we iterate the list, find the AP master this
+AP_VLAN belongs to and dev_close() the dependent VLANs. After this,
+unregister_netdevice_many() won't pick up the fact that the AP_VLAN
+is already down and will do it again, causing a crash.
 
-Test on V490u
-=============
-== After the patch ==
-
-[ 1350.295757] thinkpad_acpi: ThinkPad ACPI Extras v0.24
-[ 1350.295760] thinkpad_acpi: http://ibm-acpi.sf.net/
-[ 1350.295761] thinkpad_acpi: ThinkPad BIOS H7ET21WW (1.00 ), EC unknown
-[ 1350.295763] thinkpad_acpi: Lenovo LENOVO, model LV5DXXX
-[ 1350.296086] thinkpad_acpi: detected a 8-level brightness capable ThinkPad
-[ 1350.296694] thinkpad_acpi: radio switch found; radios are enabled
-[ 1350.296703] thinkpad_acpi: possible tablet mode switch found; ThinkPad in laptop mode
-[ 1350.306466] thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is unblocked
-[ 1350.307082] Registered led device: tpacpi::thinklight
-[ 1350.307215] Registered led device: tpacpi::power
-[ 1350.307255] Registered led device: tpacpi::standby
-[ 1350.307294] Registered led device: tpacpi::thinkvantage
-[ 1350.308160] thinkpad_acpi: Standard ACPI backlight interface available, not loading native one
-[ 1350.308333] thinkpad_acpi: Console audio control enabled, mode: monitor (read only)
-[ 1350.312287] input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input14
-
-== Before the patch ==
-sudo modprobe thinkpad_acpi
-FATAL: Error inserting thinkpad_acpi (/lib/modules/3.2.0-27-generic/kernel/drivers/platform/x86/thinkpad_acpi.ko): No such device
-
-Test on B485
-=============
-This patch was also test in a B485 where the thinkpad_acpi module does not
-have any issues loading. But, I tested it to make sure this patch does not
-break on already functioning models of Lenovo products.
-
-[13486.746359] thinkpad_acpi: ThinkPad ACPI Extras v0.24
-[13486.746364] thinkpad_acpi: http://ibm-acpi.sf.net/
-[13486.746368] thinkpad_acpi: ThinkPad BIOS HJET15WW(1.01), EC unknown
-[13486.746373] thinkpad_acpi: Lenovo Lenovo LB485, model 814TR01
-[13486.747300] thinkpad_acpi: detected a 8-level brightness capable ThinkPad
-[13486.752435] thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is unblocked
-[13486.752883] Registered led device: tpacpi::thinklight
-[13486.752915] thinkpad_acpi: Standard ACPI backlight interface available, not loading native one
-[13486.753216] thinkpad_acpi: Console audio control enabled, mode: monitor (read only)
-[13486.757147] input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input15
-
-Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Cc: Shuduo Sang <shuduo.sang@canonical.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/platform/x86/thinkpad_acpi.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ net/mac80211/iface.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -8656,6 +8656,13 @@ static int __must_check __init get_think
- 		tp->model_str = kstrdup(s, GFP_KERNEL);
- 		if (!tp->model_str)
- 			return -ENOMEM;
-+	} else {
-+		s = dmi_get_system_info(DMI_BIOS_VENDOR);
-+		if (s && !(strnicmp(s, "Lenovo", 6))) {
-+			tp->model_str = kstrdup(s, GFP_KERNEL);
-+			if (!tp->model_str)
-+				return -ENOMEM;
-+		}
- 	}
+--- a/net/mac80211/iface.c
++++ b/net/mac80211/iface.c
+@@ -1242,6 +1242,15 @@ void ieee80211_remove_interfaces(struct
  
- 	s = dmi_get_system_info(DMI_PRODUCT_NAME);
+ 	ASSERT_RTNL();
+ 
++	/*
++	 * Close all AP_VLAN interfaces first, as otherwise they
++	 * might be closed while the AP interface they belong to
++	 * is closed, causing unregister_netdevice_many() to crash.
++	 */
++	list_for_each_entry(sdata, &local->interfaces, list)
++		if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN)
++			dev_close(sdata->dev);
++
+ 	mutex_lock(&local->iflist_mtx);
+ 	list_for_each_entry_safe(sdata, tmp, &local->interfaces, list) {
+ 		list_del(&sdata->list);
 
 
