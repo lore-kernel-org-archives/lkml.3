@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab3FELGw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 07:06:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29652 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752978Ab3FELGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 07:06:50 -0400
-Date: Wed, 5 Jun 2013 14:07:22 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sergei.shtylyov@cogentembedded.com
-Subject: Re: [net-next rfc V3 2/9] macvtap: do not add self to waitqueue if
- doing a nonblock read
-Message-ID: <20130605110722.GK31830@redhat.com>
-References: <1370414192-5830-1-git-send-email-jasowang@redhat.com>
- <1370414192-5830-3-git-send-email-jasowang@redhat.com>
+	id S1754327Ab3FELHK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 07:07:10 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48814 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290Ab3FELHG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 07:07:06 -0400
+Date: Wed, 5 Jun 2013 13:06:57 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Turner <pjt@google.com>
+Subject: Re: [PATCH v2 1/3] sched: don't repeat the initialization in
+ sched_init()
+Message-ID: <20130605110657.GZ8923@twins.programming.kicks-ass.net>
+References: <51AD87A8.6080608@linux.vnet.ibm.com>
+ <51AD87D0.7020300@linux.vnet.ibm.com>
+ <51AEA152.1050609@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370414192-5830-3-git-send-email-jasowang@redhat.com>
+In-Reply-To: <51AEA152.1050609@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 02:36:25PM +0800, Jason Wang wrote:
-> There's no need to add self to waitqueue if doing a nonblock read. This could
-> help to avoid the spinlock contention.
+On Wed, Jun 05, 2013 at 10:24:18AM +0800, Michael Wang wrote:
+> v2:
+> 	Move comments back before init_tg_cfs_entry(). (Thanks for the notify from pjt)
 > 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-
+> In sched_init(), there is no need to initialize 'root_task_group.shares' and
+> 'root_task_group.cfs_bandwidth' repeatedly.
+> 
+> CC: Paul Tuner <pjt@google.com>
+> CC: Ingo Molnar <mingo@kernel.org>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
 > ---
->  drivers/net/macvtap.c |    7 +++++--
+>  kernel/sched/core.c |    7 +++++--
 >  1 files changed, 5 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> index 5e485e3..8949631 100644
-> --- a/drivers/net/macvtap.c
-> +++ b/drivers/net/macvtap.c
-> @@ -845,7 +845,9 @@ static ssize_t macvtap_do_read(struct macvtap_queue *q, struct kiocb *iocb,
->  	ssize_t ret = 0;
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 58453b8..96f69da 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -6955,6 +6955,11 @@ void __init sched_init(void)
 >  
->  	while (len) {
-> -		prepare_to_wait(sk_sleep(&q->sk), &wait, TASK_INTERRUPTIBLE);
-> +		if (!noblock)
-> +			prepare_to_wait(sk_sleep(&q->sk), &wait,
-> +					TASK_INTERRUPTIBLE);
+>  #endif /* CONFIG_CGROUP_SCHED */
 >  
->  		/* Read frames from the queue */
->  		skb = skb_dequeue(&q->sk.sk_receive_queue);
-> @@ -867,7 +869,8 @@ static ssize_t macvtap_do_read(struct macvtap_queue *q, struct kiocb *iocb,
->  		break;
->  	}
+> +#ifdef CONFIG_FAIR_GROUP_SCHED
+> +	root_task_group.shares = ROOT_TASK_GROUP_LOAD;
+> +	init_cfs_bandwidth(&root_task_group.cfs_bandwidth);
+> +#endif
+> +
+>  	for_each_possible_cpu(i) {
+>  		struct rq *rq;
 >  
-> -	finish_wait(sk_sleep(&q->sk), &wait);
-> +	if (!noblock)
-> +		finish_wait(sk_sleep(&q->sk), &wait);
->  	return ret;
->  }
->  
-> -- 
-> 1.7.1
+> @@ -6966,7 +6971,6 @@ void __init sched_init(void)
+>  		init_cfs_rq(&rq->cfs);
+>  		init_rt_rq(&rq->rt, rq);
+>  #ifdef CONFIG_FAIR_GROUP_SCHED
+> -		root_task_group.shares = ROOT_TASK_GROUP_LOAD;
+>  		INIT_LIST_HEAD(&rq->leaf_cfs_rq_list);
+>  		/*
+>  		 * How much cpu bandwidth does root_task_group get?
+> @@ -6987,7 +6991,6 @@ void __init sched_init(void)
+>  		 * We achieve this by letting root_task_group's tasks sit
+>  		 * directly in rq->cfs (i.e root_task_group->se[] = NULL).
+>  		 */
+> -		init_cfs_bandwidth(&root_task_group.cfs_bandwidth);
+>  		init_tg_cfs_entry(&root_task_group, &rq->cfs, NULL, i, NULL);
+>  #endif /* CONFIG_FAIR_GROUP_SCHED */
+
+I would actually like a patch reducing the #ifdef forest there, not
+adding to it.
+
+There's no actual harm in doing the initialization mutliple times,
+right?
