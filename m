@@ -1,86 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab3FELZm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 07:25:42 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:55965 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754495Ab3FELZl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 07:25:41 -0400
-Date: Wed, 5 Jun 2013 13:25:37 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH] cpufreq: cpufreq-cpu0: use the exact frequency for
- clk_set_rate()
-In-Reply-To: <16318112.i755nOUCKx@vostro.rjw.lan>
-Message-ID: <Pine.LNX.4.64.1306051323160.19739@axis700.grange>
-References: <Pine.LNX.4.64.1302251820431.3030@axis700.grange>
- <20130328020732.GF5429@S2101-09.ap.freescale.net>
- <Pine.LNX.4.64.1305222000510.12715@axis700.grange> <16318112.i755nOUCKx@vostro.rjw.lan>
+	id S1754696Ab3FEL3V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 07:29:21 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37565 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752441Ab3FEL3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 07:29:19 -0400
+Message-ID: <51AF2030.5090309@ti.com>
+Date: Wed, 5 Jun 2013 14:25:36 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:aea4VznMC3xvWcxytjqzDvG0AWOlpDn7SMtlyiv4wqU
- B8K6RPtunuadDR2dWoLYCNPEi1054FSAskZEp5/2x15GEfqwJW
- XLD8XfYrLI333JQYtMua3fBOiPIGo6ZLGVeP+k7uDAFZ4eLxQo
- xO+JMxXqUzqa3mddgsnGqQT0M6P0PQyD6XpiZrIn7DfiZE1ikB
- FIt+npd9IDI8+zVtSUvWElpnYn6E1YEHFza8Xb24NJMaz7AQ8j
- Y151dHAPv4WjQZpkP3bAXR/Z4sGcau0U1lAoQI1gqoiQZEz8A+
- LKN4Rc3hEzWJAIlh0iCH3PeGRxs7gxjemgbjk7TzS6lj0+CCDp
- jaLb4UXVkGozETbC+3o4EKOlgKMR2eYaTXF8a+1YCle4oTqhqy
- P/FPC5Ho2dTOg==
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+CC: <rtc-linux@googlegroups.com>, Andrew Morton <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] rtc: rtc-twl: fix initialization sequence
+References: <1370431162-24185-1-git-send-email-grygorii.strashko@ti.com>
+In-Reply-To: <1370431162-24185-1-git-send-email-grygorii.strashko@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael
+Pls, ignore this patch. It duplicates:
 
-On Wed, 22 May 2013, Rafael J. Wysocki wrote:
+https://patchwork.kernel.org/patch/2448251/ - [v2,1/2] RTC: rtc-twl: Fix 
+rtc_reg_map initialization
+from Peter Ujfalusi
 
-> On Wednesday, May 22, 2013 08:12:22 PM Guennadi Liakhovetski wrote:
-> > Hi Rafael
-> > 
-> > I don't see this patch in your cpufreq branch nor in next or Linus' trees, 
-> > has it been pulled yet?
-> 
-> No, I haven't applied it yet, not sure why exactly.
-> 
-> In the future it's better to CC cpufreq patches to linux-pm@vger.kernel.org so
-> that the kernel.org Patchwork can pick them up.  I'm much less likely to
-> overlook them then.
-> 
-> This is a fix, so do we need it in 3.10-rc?
+On 06/05/2013 02:19 PM, Grygorii Strashko wrote:
+> The twl-rtc has the following dependencies from other drivers during the boot:
+> pinctrl
+> |-i2c-omap
+>    |- twl-core
+>       |- twl-rtc
+>
+> The i2c-omap probe may be deferred because pinctrl iss not ready yet. As result,
+> i2c-omap will be probed at late init time. Which, in turn, will delay twl-core
+> initialization till late init time too.
+>
+> But, the twl-rtc driver is registered from finction twl_rtc_init() at
+> module(device) init time and contains part of its initialization code within it.
+> Unfortunatelly, this code depends on twl-core which may be not ready at that
+> moment and, as result, wrong register map will be selected
+> (on OMAP3 twl6030_rtc_reg_map will be selected instead of twl4030_rtc_reg_map).
+>
+> static int __init twl_rtc_init(void)
+> {
+>      if (twl_class_is_4030()) <--- twl-core might be not ready here
+>                               <--- and twl_class_is_4030() will return 0
+>          rtc_reg_map = (u8 *) twl4030_rtc_reg_map;
+>      else
+>          rtc_reg_map = (u8 *) twl6030_rtc_reg_map;
+>
+>      return platform_driver_register(&twl4030rtc_driver);
+> }
+>
+> Hence, move register map selection code in twl_rtc_probe() to solve this issue.
+>
+> Cc: Alessandro Zummo <a.zummo@towertech.it>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> ---
+>   drivers/rtc/rtc-twl.c |   10 +++++-----
+>   1 file changed, 5 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
+> index bbda0fd..1698115 100644
+> --- a/drivers/rtc/rtc-twl.c
+> +++ b/drivers/rtc/rtc-twl.c
+> @@ -481,6 +481,11 @@ static int twl_rtc_probe(struct platform_device *pdev)
+>   	if (irq <= 0)
+>   		goto out1;
+>   
+> +	if (twl_class_is_4030())
+> +		rtc_reg_map = (u8 *) twl4030_rtc_reg_map;
+> +	else
+> +		rtc_reg_map = (u8 *) twl6030_rtc_reg_map;
+> +
+>   	ret = twl_rtc_read_u8(&rd_reg, REG_RTC_STATUS_REG);
+>   	if (ret < 0)
+>   		goto out1;
+> @@ -622,11 +627,6 @@ static struct platform_driver twl4030rtc_driver = {
+>   
+>   static int __init twl_rtc_init(void)
+>   {
+> -	if (twl_class_is_4030())
+> -		rtc_reg_map = (u8 *) twl4030_rtc_reg_map;
+> -	else
+> -		rtc_reg_map = (u8 *) twl6030_rtc_reg_map;
+> -
+>   	return platform_driver_register(&twl4030rtc_driver);
+>   }
+>   module_init(twl_rtc_init);
 
-Would be good, yes.
-
-Thanks
-Guennadi
-
-> 
-> Rafael
-> 
-> 
-> > On Thu, 28 Mar 2013, Shawn Guo wrote:
-> > 
-> > > On Wed, Mar 27, 2013 at 11:46:38PM +0100, Guennadi Liakhovetski wrote:
-> > > > Hi Shawn
-> > > > 
-> > > > On Mon, 25 Feb 2013, Guennadi Liakhovetski wrote:
-> > > > 
-> > > > > clk_set_rate() isn't supposed to accept approximate frequencies, instead
-> > > > > a supported frequency should be obtained from clk_round_rate() and then
-> > > > > used to set the clock.
-> > > > > 
-> > > > > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> > > > 
-> > > > Can I have your ack for this one, please?
-> > > 
-> > > Acked-by: Shawn Guo <shawn.guo@linaro.org>
-
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
