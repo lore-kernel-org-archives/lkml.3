@@ -1,56 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab3FEMid (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 08:38:33 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:23080 "EHLO SMTP.CITRIX.COM"
+	id S1753589Ab3FEMji (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 08:39:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32654 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752912Ab3FEMib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 08:38:31 -0400
-X-IronPort-AV: E=Sophos;i="4.87,806,1363132800"; 
-   d="scan'208";a="29368927"
-Date: Wed, 5 Jun 2013 13:38:26 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xensource.com>, <will.deacon@arm.com>,
-        <catalin.marinas@arm.com>, <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v3 5/6] arm64/xen: introduce CONFIG_XEN and hypercall.S
- on ARM64
-In-Reply-To: <1370435014.24512.190.camel@zakaz.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1306051334580.4589@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1306041712100.4589@kaball.uk.xensource.com>  <1370434530-22428-5-git-send-email-stefano.stabellini@eu.citrix.com> <1370435014.24512.190.camel@zakaz.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1752211Ab3FEMjf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 08:39:35 -0400
+Date: Wed, 5 Jun 2013 08:38:59 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
+        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
+        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, cluster-devel@redhat.com,
+        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        piastryyy@gmail.com
+Subject: Re: [PATCH v1 07/11] locks: only pull entries off of blocked_list
+ when they are really unblocked
+Message-ID: <20130605083859.72c855cd@corrin.poochiereds.net>
+In-Reply-To: <20130605122432.GA24193@fieldses.org>
+References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
+	<1370056054-25449-8-git-send-email-jlayton@redhat.com>
+	<20130604215839.GD15594@fieldses.org>
+	<20130605073822.4d67c57c@corrin.poochiereds.net>
+	<20130605122432.GA24193@fieldses.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Jun 2013, Ian Campbell wrote:
-> On Wed, 2013-06-05 at 13:15 +0100, Stefano Stabellini wrote:
-> > Introduce CONFIG_XEN and the implementation of hypercall.S (that is
-> > the only ARMv8 specific code in Xen support for ARM).
-> > 
-> > Compile enlighten.c and grant_table.c from arch/arm.
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> 
-> Acked-by: Ian Campbell <ian.campbell@citrix.com>
-> 
-> > [....]
-> > +#define HYPERCALL_SIMPLE(hypercall)		\
-> > +ENTRY(HYPERVISOR_##hypercall)			\
-> > +	mov x16, #__HYPERVISOR_##hypercall;	\
-> > +	hvc XEN_IMM;						\
-> > +	ret;								\
-> 
-> Not sure if this is corruption due to whitespace/email etc but it'd be
-> nice to align those \'s.
+On Wed, 5 Jun 2013 08:24:32 -0400
+"J. Bruce Fields" <bfields@fieldses.org> wrote:
 
-They are aligned with ts=4, misaligned with ts=8 (ts is vim terminology
-for "how many spaces a tab equals to") :-/
+> On Wed, Jun 05, 2013 at 07:38:22AM -0400, Jeff Layton wrote:
+> > On Tue, 4 Jun 2013 17:58:39 -0400
+> > "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> > 
+> > > On Fri, May 31, 2013 at 11:07:30PM -0400, Jeff Layton wrote:
+> > > > Currently, when there is a lot of lock contention the kernel spends an
+> > > > inordinate amount of time taking blocked locks off of the global
+> > > > blocked_list and then putting them right back on again. When all of this
+> > > > code was protected by a single lock, then it didn't matter much, but now
+> > > > it means a lot of file_lock_lock thrashing.
+> > > > 
+> > > > Optimize this a bit by deferring the removal from the blocked_list until
+> > > > we're either applying or cancelling the lock. By doing this, and using a
+> > > > lockless list_empty check, we can avoid taking the file_lock_lock in
+> > > > many cases.
+> > > > 
+> > > > Because the fl_link check is lockless, we must ensure that only the task
+> > > > that "owns" the request manipulates the fl_link. Also, with this change,
+> > > > it's possible that we'll see an entry on the blocked_list that has a
+> > > > NULL fl_next pointer. In that event, just ignore it and continue walking
+> > > > the list.
+> > > 
+> > > OK, that sounds safe as in it shouldn't crash, but does the deadlock
+> > > detection still work, or can it miss loops?
+> > > 
+> > > Those locks that are temporarily NULL would previously not have been on
+> > > the list at all, OK, but...  I'm having trouble reasoning about how this
+> > > works now.
+> > > 
+> > > Previously a single lock was held interrupted across
+> > > posix_locks_deadlock and locks_insert_block() which guaranteed we
+> > > shouldn't be adding a loop, is that still true?
+> > > 
+> > > --b.
+> > > 
+> > 
+> > I had thought it was when I originally looked at this, but now that I
+> > consider it again I think you may be correct and that there are possible
+> > races here. Since we might end up reblocking behind a different lock
+> > without taking the global spinlock we could flip to blocking behind a
+> > different lock such that a loop is created if you had a complex (>2)
+> > chain of locks.
+> > 
+> > I think I'm going to have to drop this approach and instead make it so
+> > that the deadlock detection and insertion into the global blocker
+> > list/hash are atomic.
+> 
+> Right.  Once you drop the lock you can no longer be sure that what you
+> learned about the file-lock graph stays true.
+> 
+> > Ditto for locks_wake_up_blocks on posix locks and
+> > taking the entries off the list/hash.
+> 
+> Here I'm not sure what you mean.
+> 
 
-Given that according to Linux coding style tabs are 8 characters, I'll
-fix the indentation.
+Basically, I mean that rather than setting the fl_next pointer to NULL
+while holding only the inode lock and then ignoring those locks in the
+deadlock detection code, we should additionally take the global lock in
+locks_wake_up_blocks too and take the blocked locks off the global list
+and the i_flock list at the same time.
+
+That actually might not be completely necessary, but it'll make the
+logic clearer and easier to understand and probably won't hurt
+performance too much. Again, I'll need to do some perf testing to be
+sure.
+
+-- 
+Jeff Layton <jlayton@redhat.com>
