@@ -1,129 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab3FELfu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 07:35:50 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:22511 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754495Ab3FELfs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 07:35:48 -0400
-X-Spam-Score: -100.8
-Message-ID: <51AF225A.5020703@asianux.com>
-Date: Wed, 05 Jun 2013 19:34:50 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2] arch/*/asm/include/bitops.h: api issue, find_*_bit()
- defination are different with each other
-References: <51AE8FEF.1020809@asianux.com> <51AE903C.6010806@asianux.com> <51AE909D.9080006@asianux.com> <20130605071915.GK23140@pengutronix.de>
-In-Reply-To: <20130605071915.GK23140@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1754785Ab3FELjB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 07:39:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18626 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752147Ab3FELi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 07:38:58 -0400
+Date: Wed, 5 Jun 2013 07:38:22 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
+        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
+        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, cluster-devel@redhat.com,
+        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        piastryyy@gmail.com
+Subject: Re: [PATCH v1 07/11] locks: only pull entries off of blocked_list
+ when they are really unblocked
+Message-ID: <20130605073822.4d67c57c@corrin.poochiereds.net>
+In-Reply-To: <20130604215839.GD15594@fieldses.org>
+References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
+	<1370056054-25449-8-git-send-email-jlayton@redhat.com>
+	<20130604215839.GD15594@fieldses.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2013 03:19 PM, Uwe � wrote:
-> Hello,
+On Tue, 4 Jun 2013 17:58:39 -0400
+"J. Bruce Fields" <bfields@fieldses.org> wrote:
+
+> On Fri, May 31, 2013 at 11:07:30PM -0400, Jeff Layton wrote:
+> > Currently, when there is a lot of lock contention the kernel spends an
+> > inordinate amount of time taking blocked locks off of the global
+> > blocked_list and then putting them right back on again. When all of this
+> > code was protected by a single lock, then it didn't matter much, but now
+> > it means a lot of file_lock_lock thrashing.
+> > 
+> > Optimize this a bit by deferring the removal from the blocked_list until
+> > we're either applying or cancelling the lock. By doing this, and using a
+> > lockless list_empty check, we can avoid taking the file_lock_lock in
+> > many cases.
+> > 
+> > Because the fl_link check is lockless, we must ensure that only the task
+> > that "owns" the request manipulates the fl_link. Also, with this change,
+> > it's possible that we'll see an entry on the blocked_list that has a
+> > NULL fl_next pointer. In that event, just ignore it and continue walking
+> > the list.
 > 
-> On Wed, Jun 05, 2013 at 09:13:01AM +0800, Chen Gang wrote:
->>
->> For arm and m68k, they customize find_*_bit(), but the API is different
->> with 'generic'.
->>
->> avr32, s390, and unicore32 also customize find_*_bit(), but the API is
->> the same with 'generic', and the left architectures all use 'generic'.
->>
->> So need change arm and m68k related API to match the 'generic', then
->> all another modules can face same public API for various architectures.
->>
->> Also beautify code and comments to pass "./scripts/checkpatch.pl"
->>
->>
->> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> ---
->>  arch/arm/include/asm/bitops.h  |   26 ++++++++++++++++++--------
->>  arch/arm/lib/findbit.S         |   14 ++++++++++----
->>  arch/m68k/include/asm/bitops.h |   25 ++++++++++++++-----------
->>  3 files changed, 42 insertions(+), 23 deletions(-)
->>
->> diff --git a/arch/arm/include/asm/bitops.h b/arch/arm/include/asm/bitops.h
->> index e691ec9..10566c8 100644
->> --- a/arch/arm/include/asm/bitops.h
->> +++ b/arch/arm/include/asm/bitops.h
->> @@ -161,18 +161,28 @@ extern int _test_and_change_bit(int nr, volatile unsigned long * p);
->>  /*
->>   * Little endian assembly bitops.  nr = 0 -> byte 0 bit 0.
->>   */
->> -extern int _find_first_zero_bit_le(const void * p, unsigned size);
->> -extern int _find_next_zero_bit_le(const void * p, int size, int offset);
->> -extern int _find_first_bit_le(const unsigned long *p, unsigned size);
->> -extern int _find_next_bit_le(const unsigned long *p, int size, int offset);
->> +extern unsigned long  _find_first_zero_bit_le(const void *p,
-> doesn't checkpatch critizise the double space in the line above?
+> OK, that sounds safe as in it shouldn't crash, but does the deadlock
+> detection still work, or can it miss loops?
+> 
+> Those locks that are temporarily NULL would previously not have been on
+> the list at all, OK, but...  I'm having trouble reasoning about how this
+> works now.
+> 
+> Previously a single lock was held interrupted across
+> posix_locks_deadlock and locks_insert_block() which guaranteed we
+> shouldn't be adding a loop, is that still true?
+> 
+> --b.
 > 
 
-Thank you very much for your carefully checking (could you tell me how
-do you find it ?)  :-)
+I had thought it was when I originally looked at this, but now that I
+consider it again I think you may be correct and that there are possible
+races here. Since we might end up reblocking behind a different lock
+without taking the global spinlock we could flip to blocking behind a
+different lock such that a loop is created if you had a complex (>2)
+chain of locks.
 
-I need wait for a day at least, if no another suggestions or
-completions, I should send patch v3.
+I think I'm going to have to drop this approach and instead make it so
+that the deadlock detection and insertion into the global blocker
+list/hash are atomic. Ditto for locks_wake_up_blocks on posix locks and
+taking the entries off the list/hash.
 
+Now that I look, I think that approach may actually improve performance
+too since we'll be taking the global spinlock less than we would have,
+but I'll need to test it out to know for sure.
 
->> +						unsigned long size);
->> +extern unsigned long _find_next_zero_bit_le(const void *p, unsigned long size,
->> +						unsigned long offset);
->> +extern unsigned long _find_first_bit_le(const unsigned long *p,
->> +						unsigned long size);
->> +extern unsigned long _find_next_bit_le(const unsigned long *p,
->> +						unsigned long size,
->> +						unsigned long offset);
->>  
->>  /*
->>   * Big endian assembly bitops.  nr = 0 -> byte 3 bit 0.
->>   */
->> -extern int _find_first_zero_bit_be(const void * p, unsigned size);
->> -extern int _find_next_zero_bit_be(const void * p, int size, int offset);
->> -extern int _find_first_bit_be(const unsigned long *p, unsigned size);
->> -extern int _find_next_bit_be(const unsigned long *p, int size, int offset);
->> +extern unsigned long _find_first_zero_bit_be(const void *p,
->> +						unsigned long size);
->> +extern unsigned long _find_next_zero_bit_be(const void *p, unsigned long size,
->> +						unsigned long offset);
->> +extern unsigned long _find_first_bit_be(const unsigned long *p,
->> +						unsigned long size);
->> +extern unsigned long _find_next_bit_be(const unsigned long *p,
->> +						unsigned long size,
->> +						unsigned long offset);
->>  
->>  #ifndef CONFIG_SMP
->>  /*
->> diff --git a/arch/arm/lib/findbit.S b/arch/arm/lib/findbit.S
->> index 64f6bc1..9e3263a 100644
->> --- a/arch/arm/lib/findbit.S
->> +++ b/arch/arm/lib/findbit.S
->> @@ -19,7 +19,8 @@
->>  
->>  /*
->>   * Purpose  : Find a 'zero' bit
->> - * Prototype: int find_first_zero_bit(void *addr, unsigned int maxbit);
->> + * Prototype: unsigned long  find_first_zero_bit(const void *p,
-> here is another one.
-> 
-
-Thanks.
+> > 
+> > Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> > ---
+> >  fs/locks.c |   29 +++++++++++++++++++++++------
+> >  1 files changed, 23 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/fs/locks.c b/fs/locks.c
+> > index 055c06c..fc35b9e 100644
+> > --- a/fs/locks.c
+> > +++ b/fs/locks.c
+> > @@ -520,7 +520,6 @@ locks_delete_global_locks(struct file_lock *waiter)
+> >  static void __locks_delete_block(struct file_lock *waiter)
+> >  {
+> >  	list_del_init(&waiter->fl_block);
+> > -	locks_delete_global_blocked(waiter);
+> >  	waiter->fl_next = NULL;
+> >  }
+> >  
+> > @@ -704,13 +703,16 @@ EXPORT_SYMBOL(posix_test_lock);
+> >  /* Find a lock that the owner of the given block_fl is blocking on. */
+> >  static struct file_lock *what_owner_is_waiting_for(struct file_lock *block_fl)
+> >  {
+> > -	struct file_lock *fl;
+> > +	struct file_lock *fl, *ret = NULL;
+> >  
+> >  	list_for_each_entry(fl, &blocked_list, fl_link) {
+> > -		if (posix_same_owner(fl, block_fl))
+> > -			return fl->fl_next;
+> > +		if (posix_same_owner(fl, block_fl)) {
+> > +			ret = fl->fl_next;
+> > +			if (likely(ret))
+> > +				break;
+> > +		}
+> >  	}
+> > -	return NULL;
+> > +	return ret;
+> >  }
+> >  
+> >  static int posix_locks_deadlock(struct file_lock *caller_fl,
+> > @@ -865,7 +867,8 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+> >  				goto out;
+> >  			error = FILE_LOCK_DEFERRED;
+> >  			locks_insert_block(fl, request);
+> > -			locks_insert_global_blocked(request);
+> > +			if (list_empty(&request->fl_link))
+> > +				locks_insert_global_blocked(request);
+> >  			goto out;
+> >    		}
+> >    	}
+> > @@ -876,6 +879,16 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+> >  		goto out;
+> >  
+> >  	/*
+> > +	 * Now that we know the request is no longer blocked, we can take it
+> > +	 * off the global list. Some callers send down partially initialized
+> > +	 * requests, so we only do this if FL_SLEEP is set. Also, avoid taking
+> > +	 * the lock if the list is empty, as that indicates a request that
+> > +	 * never blocked.
+> > +	 */
+> > +	if ((request->fl_flags & FL_SLEEP) && !list_empty(&request->fl_link))
+> > +		locks_delete_global_blocked(request);
+> > +
+> > +	/*
+> >  	 * Find the first old lock with the same owner as the new lock.
+> >  	 */
+> >  	
+> > @@ -1069,6 +1082,7 @@ int posix_lock_file_wait(struct file *filp, struct file_lock *fl)
+> >  			continue;
+> >  
+> >  		locks_delete_block(fl);
+> > +		locks_delete_global_blocked(fl);
+> >  		break;
+> >  	}
+> >  	return error;
+> > @@ -1147,6 +1161,7 @@ int locks_mandatory_area(int read_write, struct inode *inode,
+> >  		}
+> >  
+> >  		locks_delete_block(&fl);
+> > +		locks_delete_global_blocked(&fl);
+> >  		break;
+> >  	}
+> >  
+> > @@ -1859,6 +1874,7 @@ static int do_lock_file_wait(struct file *filp, unsigned int cmd,
+> >  			continue;
+> >  
+> >  		locks_delete_block(fl);
+> > +		locks_delete_global_blocked(fl);
+> >  		break;
+> >  	}
+> >  
+> > @@ -2160,6 +2176,7 @@ posix_unblock_lock(struct file *filp, struct file_lock *waiter)
+> >  	else
+> >  		status = -ENOENT;
+> >  	spin_unlock(&inode->i_lock);
+> > +	locks_delete_global_blocked(waiter);
+> >  	return status;
+> >  }
+> >  
+> > -- 
+> > 1.7.1
+> > 
 
 
 -- 
-Chen Gang
-
-Asianux Corporation
+Jeff Layton <jlayton@redhat.com>
