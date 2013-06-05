@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab3FEMEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 08:04:45 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:35467 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752389Ab3FEMEo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 08:04:44 -0400
-From: Matthias Schid <aircrach115@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, sjakub@gmail.com, jonbrett.dev@gmail.com,
-        cruz@massive-dynamics.biz, joe@perches.com, devel@driverdev.osuosl.org,
-        linux-kernel@i4.cs.fau.de, steffhip@googlemail.com,
-        simon.puels@gmail.com, Matthias Schid <aircrach115@gmail.com>
-Subject: [PATCH 2/2] staging/asus_oled fixed linebreak and printk issue
-Date: Wed,  5 Jun 2013 14:04:32 +0200
-Message-Id: <1370433872-25251-1-git-send-email-aircrach115@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20130605111512.GW28112@mwanda>
-References: <20130605111512.GW28112@mwanda>
+	id S1754149Ab3FEMG3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 08:06:29 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:58333 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752389Ab3FEMG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 08:06:27 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH] cpufreq: cpufreq-cpu0: use the exact frequency for clk_set_rate()
+Date: Wed, 05 Jun 2013 14:15:28 +0200
+Message-ID: <91385266.39H0Z0D5Kr@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.64.1306051323160.19739@axis700.grange>
+References: <Pine.LNX.4.64.1302251820431.3030@axis700.grange> <16318112.i755nOUCKx@vostro.rjw.lan> <Pine.LNX.4.64.1306051323160.19739@axis700.grange>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed a linebreak within an error message string coding style
-issue reported by checkpatch.pl and dev_err format parameters
+On Wednesday, June 05, 2013 01:25:37 PM Guennadi Liakhovetski wrote:
+> Hi Rafael
+> 
+> On Wed, 22 May 2013, Rafael J. Wysocki wrote:
+> 
+> > On Wednesday, May 22, 2013 08:12:22 PM Guennadi Liakhovetski wrote:
+> > > Hi Rafael
+> > > 
+> > > I don't see this patch in your cpufreq branch nor in next or Linus' trees, 
+> > > has it been pulled yet?
+> > 
+> > No, I haven't applied it yet, not sure why exactly.
+> > 
+> > In the future it's better to CC cpufreq patches to linux-pm@vger.kernel.org so
+> > that the kernel.org Patchwork can pick them up.  I'm much less likely to
+> > overlook them then.
+> > 
+> > This is a fix, so do we need it in 3.10-rc?
+> 
+> Would be good, yes.
 
-Signed-off-by: Matthias Schid <aircrach115@gmail.com>
-Signed-off-by: Stefan Huber <steffhip@googlemail.com>
-Signed-off-by: Simon Puels <simon.puels@gmail.com>
----
- drivers/staging/asus_oled/asus_oled.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+OK, queued up for 3.10.
 
-diff --git a/drivers/staging/asus_oled/asus_oled.c b/drivers/staging/asus_oled/asus_oled.c
-index 173fb9a..9fe13d0 100644
---- a/drivers/staging/asus_oled/asus_oled.c
-+++ b/drivers/staging/asus_oled/asus_oled.c
-@@ -383,10 +383,8 @@ static int append_values(struct asus_oled_dev *odev, uint8_t val, size_t count)
- 		}
- 
- 		if (i >= odev->buf_size) {
--			dev_err(odev->dev, "Buffer overflow! Report a bug:"
--			       "offs: %d >= %d i: %d (x: %d y: %d)\n",
--			       (int) odev->buf_offs, (int) odev->buf_size,
--			       (int) i, (int) x, (int) y);
-+			dev_err(odev->dev, "Buffer overflow! Report a bug: offs: %zu >= %zu i: %zu (x: %zu y: %zu)\n",
-+			       odev->buf_offs, odev->buf_size, i, x, y);
- 			return -EIO;
- 		}
- 
+Thanks,
+Rafael
+
+
+> > > On Thu, 28 Mar 2013, Shawn Guo wrote:
+> > > 
+> > > > On Wed, Mar 27, 2013 at 11:46:38PM +0100, Guennadi Liakhovetski wrote:
+> > > > > Hi Shawn
+> > > > > 
+> > > > > On Mon, 25 Feb 2013, Guennadi Liakhovetski wrote:
+> > > > > 
+> > > > > > clk_set_rate() isn't supposed to accept approximate frequencies, instead
+> > > > > > a supported frequency should be obtained from clk_round_rate() and then
+> > > > > > used to set the clock.
+> > > > > > 
+> > > > > > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> > > > > 
+> > > > > Can I have your ack for this one, please?
+> > > > 
+> > > > Acked-by: Shawn Guo <shawn.guo@linaro.org>
+> 
+> ---
+> Guennadi Liakhovetski, Ph.D.
+> Freelance Open-Source Software Developer
+> http://www.open-technology.de/
 -- 
-1.7.10.4
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
