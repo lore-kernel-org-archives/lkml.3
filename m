@@ -1,46 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644Ab3FEPyS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 11:54:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42840 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756511Ab3FEPyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 11:54:14 -0400
-Message-ID: <51AF5F1F.6010903@suse.com>
-Date: Wed, 05 Jun 2013 11:54:07 -0400
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Paul Mackerras <paulus@au.ibm.com>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] powerpc: add missing include to book3s_xics.c
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756724Ab3FEPyv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 11:54:51 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37934 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756287Ab3FEPyu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 11:54:50 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3/9] xen/smp: Set the per-cpu IRQ number to a valid default.
+Date: Wed,  5 Jun 2013 11:54:32 -0400
+Message-Id: <1370447678-22367-4-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1370447678-22367-1-git-send-email-konrad.wilk@oracle.com>
+References: <1370447678-22367-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following build failure:
-arch/powerpc/kvm/book3s_xics.c:812: error: implicit declaration of function 'get_tb'
+When we free it we want to make sure to set it to a default
+value of -1 so that we don't double-free it (in case somebody
+calls us twice).
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/powerpc/kvm/book3s_xics.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/xen/smp.c | 28 +++++++++++++++++++---------
+ 1 file changed, 19 insertions(+), 9 deletions(-)
 
---- a/arch/powerpc/kvm/book3s_xics.c
-+++ b/arch/powerpc/kvm/book3s_xics.c
-@@ -19,6 +19,7 @@
- #include <asm/hvcall.h>
- #include <asm/xics.h>
- #include <asm/debug.h>
-+#include <asm/time.h>
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index f5b29ec..6a483cd 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -43,10 +43,10 @@ struct xen_common_irq {
+ 	int irq;
+ 	char *name;
+ };
+-static DEFINE_PER_CPU(struct xen_common_irq, xen_resched_irq);
+-static DEFINE_PER_CPU(struct xen_common_irq, xen_callfunc_irq);
+-static DEFINE_PER_CPU(struct xen_common_irq, xen_callfuncsingle_irq);
+-static DEFINE_PER_CPU(struct xen_common_irq, xen_irq_work);
++static DEFINE_PER_CPU(struct xen_common_irq, xen_resched_irq) = { .irq = -1 };
++static DEFINE_PER_CPU(struct xen_common_irq, xen_callfunc_irq) = { .irq = -1 };
++static DEFINE_PER_CPU(struct xen_common_irq, xen_callfuncsingle_irq) = { .irq = -1 };
++static DEFINE_PER_CPU(struct xen_common_irq, xen_irq_work) = { .irq = -1 };
+ static DEFINE_PER_CPU(struct xen_common_irq, xen_debug_irq) = { .irq = -1 };
  
- #include <linux/debugfs.h>
- #include <linux/seq_file.h>
-
-
+ static irqreturn_t xen_call_function_interrupt(int irq, void *dev_id);
+@@ -104,20 +104,30 @@ static void __cpuinit cpu_bringup_and_idle(void)
+ 
+ static void xen_smp_intr_free(unsigned int cpu)
+ {
+-	if (per_cpu(xen_resched_irq, cpu).irq >= 0)
++	if (per_cpu(xen_resched_irq, cpu).irq >= 0) {
+ 		unbind_from_irqhandler(per_cpu(xen_resched_irq, cpu).irq, NULL);
+-	if (per_cpu(xen_callfunc_irq, cpu).irq >= 0)
++		per_cpu(xen_resched_irq, cpu).irq = -1;
++	}
++	if (per_cpu(xen_callfunc_irq, cpu).irq >= 0) {
+ 		unbind_from_irqhandler(per_cpu(xen_callfunc_irq, cpu).irq, NULL);
+-	if (per_cpu(xen_debug_irq, cpu).irq >= 0)
++		per_cpu(xen_callfunc_irq, cpu).irq = -1;
++	}
++	if (per_cpu(xen_debug_irq, cpu).irq >= 0) {
+ 		unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu).irq, NULL);
+-	if (per_cpu(xen_callfuncsingle_irq, cpu).irq >= 0)
++		per_cpu(xen_debug_irq, cpu).irq = -1;
++	}
++	if (per_cpu(xen_callfuncsingle_irq, cpu).irq >= 0) {
+ 		unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu).irq,
+ 				       NULL);
++		per_cpu(xen_callfuncsingle_irq, cpu).irq = -1;
++	}
+ 	if (xen_hvm_domain())
+ 		return;
+ 
+-	if (per_cpu(xen_irq_work, cpu).irq >= 0)
++	if (per_cpu(xen_irq_work, cpu).irq >= 0) {
+ 		unbind_from_irqhandler(per_cpu(xen_irq_work, cpu).irq, NULL);
++		per_cpu(xen_irq_work, cpu).irq = -1;
++	}
+ };
+ static int xen_smp_intr_init(unsigned int cpu)
+ {
 -- 
-Jeff Mahoney
-SUSE Labs
+1.8.1.4
+
