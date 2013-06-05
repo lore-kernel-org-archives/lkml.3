@@ -1,119 +1,390 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757259Ab3FETLS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 15:11:18 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:52879 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757017Ab3FETLQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 15:11:16 -0400
-Message-ID: <51AF8D4B.4090407@candelatech.com>
-Date: Wed, 05 Jun 2013 12:11:07 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1757352Ab3FETLa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 15:11:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54277 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757282Ab3FETL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 15:11:27 -0400
+Date: Wed, 5 Jun 2013 21:07:23 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Imre Deak <imre.deak@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Jones <davej@redhat.com>,
+        David Howells <dhowells@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Lukas Czerner <lczerner@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] wait: fix false timeouts when using
+	wait_event_timeout()
+Message-ID: <20130605190723.GA4957@redhat.com>
+References: <20130604192818.GA31316@redhat.com> <1370381717.8432.14.camel@ideak-mobl> <1370382051.8432.16.camel@ideak-mobl> <20130605163702.GA26135@redhat.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Rusty Russell <rusty@rustcorp.com.au>,
-        Joe Lawrence <joe.lawrence@stratus.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
-Subject: Re: Please add to stable:  module: don't unlink the module until
- we've removed all exposure.
-References: <alpine.DEB.2.02.1306031012460.22652@jlaw-desktop.mno.stratus.com> <51ACBD6A.1030304@candelatech.com> <51ACC60B.8090504@candelatech.com> <87d2s2to4z.fsf@rustcorp.com.au> <20130604100744.7cdf8777@jlaw-desktop.mno.stratus.com> <51AE1B81.20900@candelatech.com> <51AE27D5.7050202@candelatech.com> <87sj0xry1k.fsf@rustcorp.com.au> <20130605071539.GA3429@mtj.dyndns.org> <51AF6E54.3050108@candelatech.com> <20130605184807.GD10693@mtj.dyndns.org>
-In-Reply-To: <20130605184807.GD10693@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130605163702.GA26135@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2013 11:48 AM, Tejun Heo wrote:
-> Hello, Ben.
+On 06/05, Oleg Nesterov wrote:
 >
-> On Wed, Jun 05, 2013 at 09:59:00AM -0700, Ben Greear wrote:
->> One pattern I notice repeating for at least most of the hangs is that all but one
->> CPU thread has irqs disabled and is in state 2.  But, there will be one thread
->> in state 1 that still has IRQs enabled and it is reported to be in soft-lockup
->> instead of hard-lockup.  In 'sysrq l' it always shows some IRQ processing,
->> but typically that of the sysrq itself.  I added printk that would always
->> print if the thread notices that smdata->state != curstate, and the soft-lockup
->> thread (cpu 2 below) never shows that message.
+> I think that wait_eveint_timeout(wq, COND, 0) should return !!(COND).
+> But it doesn't, for example wait_event_timeout(wq, true, 0) == 0, this
+> doesn'tlook right to me.
 >
-> It sounds like one of the cpus get live-locked by IRQs.  I can't tell
-> why the situation is made worse by other CPUs being tied up.  Do you
-> ever see CPUs being live locked by IRQs during normal operation?
-
-No, I have not noticed any live locks aside from this, at least in
-the 3.9 kernels.
-
->> I thought it might be because it was reading stale smdata->state, so I changed
->> that to atomic_t hoping that would mitigate that.  I also tried adding smp_rmb()
->> below the cpu_relax().  Neither had any affect, so I am left assuming that the
+> And, this is off-topic, but wait_eveint_timeout/__wait_eveint_timeout
+> do not match wait_event/__wait_event. IOW, you can't use
+> __wait_eveint_timeout() if you do not need the fast-path check.
 >
-> I looked at the code again and the memory accesses seem properly
-> interlocked.  It's a bit tricky and should probably have used spinlock
-> instead considering it's already a hugely expensive path anyway, but
-> it does seem correct to me.
+> So. How about
 >
->> thread instead is stuck handling IRQs and never gets out of the IRQ handler.
+> 	#define __wait_event_timeout(wq, condition, timeout)			\
+> 	({									\
+> 		DEFINE_WAIT(__wait);						\
+> 		long __ret = 0, __to = timeout;					\
+> 										\
+> 		for (;;) {							\
+> 			prepare_to_wait(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
+> 			if (condition) {					\
+> 				__ret = __to ?: 1;				\
+> 				break;						\
+> 			}							\
+> 			if (!__to)						\
+> 				break;						\
+> 			__to = schedule_timeout(__to);				\
+> 		}								\
+> 		finish_wait(&wq, &__wait);					\
+> 		__ret;								\
+> 	})
 >
-> Seems that way to me too.
+> 	#define wait_event_timeout(wq, condition, timeout)			\
+> 	({									\
+> 		long __ret;							\
+> 		if (condition)							\
+> 			__ret = (timeout) ?: 1;					\
+> 		else								\
+> 			__ret = __wait_event_timeout(wq, condition, timeout);	\
+> 		__ret;								\
+> 	})
 >
->> Maybe since I have 2 real cores, and 3 processes busy-spinning on their CPU cores,
->> the remaining process can just never handle all the IRQs and get back to the
->> cpu shutdown state machine?  The various soft-hang stacks below show at least slightly
->> different stacks, so I assume that thread is doing at least something.
+> ?
 >
-> What's the source of all those IRQs tho?  I don't think the IRQs are
-> from actual events.  The system is quiesced.  Even if it's from
-> receiving packets, it's gonna quiet down pretty quickly.  The hang
-> doesn't go away if you disconnect the network cable while hung, right?
->
-> What could be happening is that IRQ handling is handled by a thread
-> but the IRQ handler itself doesn't clear the IRQ properly and depends
-> on the handling thread to clear the condition.  If no CPU is available
-> for scheduling, it might end up raising and re-reraising IRQs for the
-> same condition without ever being handled.  If that's the case, such
-> lockup could happen on a normally functioning UP machine or if the IRQ
-> is pinned to a single CPU which happens to be running the handling
-> thread.  At any rate, it'd be a plain live-lock bug on the driver
-> side.
->
-> Can you please try to confirm the specific interrupt being
-> continuously raised?  Detecting the hang shouldn't be too difficult.
-> Just recording the starting jiffies and if progress hasn't been made
-> for, say, ten seconds, it can set a flag and then print the IRQs being
-> handled if the flag is set.  If it indeed is the ath device, we
-> probably wanna get the driver maintainer involved.
+> Othwerwise we should document the fact that the caller should alvays verify
+> timeout != 0 if it checks the result of wait_event_timeout().
 
-I am not sure how to tell which IRQ is being handled.  Do the
-stack traces (showing smp_apic_timer_interrupt, for instance)
-indicate potential culprits, or is that more a symptom of just
-when the soft-lockup check is called?
+And in fact, perhaps we can implement wait_event_common() and avoid the
+code duplications?
 
+	#define __wait_no_timeout(timeout)	\
+		(__builtin_constant_p(timeout) && (timeout) == MAX_SCHEDULE_TIMEOUT)
 
-Where should I add code to print out irqs?  In the lockup state,
-the thread (probably) stuck handling irqs isn't executing any code in
-the stop_machine file as far as I can tell.
+	/* uglified signal_pending_state() */
+	#define __wait_signal_pending(state)					\
+		((state == TASK_INTERRUPTIBLE) ? signal_pending(current) :	\
+		 (state == TASK_KILLABLE) ? fatal_signal_pending(current) :	\
+		  0)
 
-Maybe I need to instrument the __do_softirq or similar method?
+	#define __wait_event_common(wq, condition, state, tout)			\
+	({									\
+		DEFINE_WAIT(__wait);						\
+		long __ret = 0, __tout = tout;					\
+										\
+		for (;;) {							\
+			prepare_to_wait(&wq, &__wait, state);			\
+			if (condition) {					\
+				__ret = __wait_no_timeout(tout) ?: __tout ?: 1;	\
+				break;						\
+			}							\
+										\
+			if (__wait_signal_pending(state)) {			\
+				__ret = -ERESTARTSYS;				\
+				break;						\
+			}							\
+										\
+			if (__wait_no_timeout(tout))				\
+				schedule();					\
+			else if (__tout)					\
+				__tout = schedule_timeout(__tout);		\
+			else							\
+				break;						\
+		}								\
+		finish_wait(&wq, &__wait);					\
+		__ret;								\
+	})
 
-For what it's worth, previous debugging appears to show that jiffies
-stops incrementing in many of these lockups.
+	#define wait_event_common(wq, condition, state, tout)			\
+	({									\
+		long __ret;							\
+		if (condition)							\
+			__ret = __wait_no_timeout(tout) ?: (tout) ?: 1;		\
+		else								\
+			__ret = __wait_event_common(wq, condition, state, tout);\
+		__ret;								\
+	})
 
-Also, I have been trying for 20+ minutes to reproduce the lockup
-with the ath9k module removed (and my user-space app that uses it
-stopped), and I have not reproduced it yet.  So, possibly it is
-related to ath9k, but my user-space app pokes at lots of other
-stuff and starts loads of dhcp client processes and such too,
-so not sure yet.
+Then, for example, wait_event() becomes
 
+	#define wait_event(wq, condition) 					\
+		wait_event_common(wq, condition,				\
+				TASK_UNINTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT)	\
 
-Thanks,
-Ben
+Hmm. I compiled the kernel with the patch below,
 
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+		$ size vmlinux
+		   text	   data	    bss	    dec	    hex	filename
+	-	4978601	2935080	10104832	18018513	112f0d1	vmlinux
+	+	4977769	2930984	10104832	18013585	112dd91	vmlinux
+
+looks good...
+
+Oleg.
+
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 1133695..359fffc 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -173,18 +173,52 @@ wait_queue_head_t *bit_waitqueue(void *, int);
+ #define wake_up_interruptible_sync_poll(x, m)				\
+ 	__wake_up_sync_key((x), TASK_INTERRUPTIBLE, 1, (void *) (m))
+ 
+-#define __wait_event(wq, condition) 					\
+-do {									\
++#define __wait_no_timeout(timeout)	\
++	(__builtin_constant_p(timeout) && (timeout) == MAX_SCHEDULE_TIMEOUT)
++
++/* uglified signal_pending_state() */
++#define __wait_signal_pending(state)					\
++	((state == TASK_INTERRUPTIBLE) ? signal_pending(current) :	\
++	 (state == TASK_KILLABLE) ? fatal_signal_pending(current) :	\
++	  0)
++
++#define __wait_event_common(wq, condition, state, tout)			\
++({									\
+ 	DEFINE_WAIT(__wait);						\
++	long __ret = 0, __tout = tout;					\
+ 									\
+ 	for (;;) {							\
+-		prepare_to_wait(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
+-		if (condition)						\
++		prepare_to_wait(&wq, &__wait, state);			\
++		if (condition) {					\
++			__ret = __wait_no_timeout(tout) ?: __tout ?: 1;	\
++			break;						\
++		}							\
++									\
++		if (__wait_signal_pending(state)) {			\
++			__ret = -ERESTARTSYS;				\
++			break;						\
++		}							\
++									\
++		if (__wait_no_timeout(tout))				\
++			schedule();					\
++		else if (__tout)					\
++			__tout = schedule_timeout(__tout);		\
++		else							\
+ 			break;						\
+-		schedule();						\
+ 	}								\
+ 	finish_wait(&wq, &__wait);					\
+-} while (0)
++	__ret;								\
++})
++
++#define wait_event_common(wq, condition, state, tout)			\
++({									\
++	long __ret;							\
++	if (condition)							\
++		__ret = __wait_no_timeout(tout) ?: (tout) ?: 1;		\
++	else								\
++		__ret = __wait_event_common(wq, condition, state, tout);\
++	__ret;								\
++})
+ 
+ /**
+  * wait_event - sleep until a condition gets true
+@@ -198,29 +232,13 @@ do {									\
+  * wake_up() has to be called after changing any variable that could
+  * change the result of the wait condition.
+  */
+-#define wait_event(wq, condition) 					\
+-do {									\
+-	if (condition)	 						\
+-		break;							\
+-	__wait_event(wq, condition);					\
+-} while (0)
++#define __wait_event(wq, condition) 					\
++	__wait_event_common(wq, condition,				\
++			TASK_UNINTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT)	\
+ 
+-#define __wait_event_timeout(wq, condition, ret)			\
+-do {									\
+-	DEFINE_WAIT(__wait);						\
+-									\
+-	for (;;) {							\
+-		prepare_to_wait(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
+-		if (condition)						\
+-			break;						\
+-		ret = schedule_timeout(ret);				\
+-		if (!ret)						\
+-			break;						\
+-	}								\
+-	if (!ret && (condition))					\
+-		ret = 1;						\
+-	finish_wait(&wq, &__wait);					\
+-} while (0)
++#define wait_event(wq, condition) 					\
++	wait_event_common(wq, condition,				\
++			TASK_UNINTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT)	\
+ 
+ /**
+  * wait_event_timeout - sleep until a condition gets true or a timeout elapses
+@@ -239,31 +257,13 @@ do {									\
+  * jiffies (at least 1) if the @condition evaluated to %true before
+  * the @timeout elapsed.
+  */
+-#define wait_event_timeout(wq, condition, timeout)			\
+-({									\
+-	long __ret = timeout;						\
+-	if (!(condition)) 						\
+-		__wait_event_timeout(wq, condition, __ret);		\
+-	__ret;								\
+-})
++#define __wait_event_timeout(wq, condition, timeout)			\
++	__wait_event_common(wq, condition,				\
++			TASK_UNINTERRUPTIBLE, timeout)
+ 
+-#define __wait_event_interruptible(wq, condition, ret)			\
+-do {									\
+-	DEFINE_WAIT(__wait);						\
+-									\
+-	for (;;) {							\
+-		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
+-		if (condition)						\
+-			break;						\
+-		if (!signal_pending(current)) {				\
+-			schedule();					\
+-			continue;					\
+-		}							\
+-		ret = -ERESTARTSYS;					\
+-		break;							\
+-	}								\
+-	finish_wait(&wq, &__wait);					\
+-} while (0)
++#define wait_event_timeout(wq, condition, timeout)			\
++	wait_event_common(wq, condition,				\
++			TASK_UNINTERRUPTIBLE, timeout)
+ 
+ /**
+  * wait_event_interruptible - sleep until a condition gets true
+@@ -280,35 +280,13 @@ do {									\
+  * The function will return -ERESTARTSYS if it was interrupted by a
+  * signal and 0 if @condition evaluated to true.
+  */
+-#define wait_event_interruptible(wq, condition)				\
+-({									\
+-	int __ret = 0;							\
+-	if (!(condition))						\
+-		__wait_event_interruptible(wq, condition, __ret);	\
+-	__ret;								\
+-})
++#define __wait_event_interruptible(wq, condition)			\
++	__wait_event_common(wq, condition,				\
++			TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT)
+ 
+-#define __wait_event_interruptible_timeout(wq, condition, ret)		\
+-do {									\
+-	DEFINE_WAIT(__wait);						\
+-									\
+-	for (;;) {							\
+-		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
+-		if (condition)						\
+-			break;						\
+-		if (!signal_pending(current)) {				\
+-			ret = schedule_timeout(ret);			\
+-			if (!ret)					\
+-				break;					\
+-			continue;					\
+-		}							\
+-		ret = -ERESTARTSYS;					\
+-		break;							\
+-	}								\
+-	if (!ret && (condition))					\
+-		ret = 1;						\
+-	finish_wait(&wq, &__wait);					\
+-} while (0)
++#define wait_event_interruptible(wq, condition)				\
++	wait_event_common(wq, condition,				\
++			TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT)
+ 
+ /**
+  * wait_event_interruptible_timeout - sleep until a condition gets true or a timeout elapses
+@@ -328,13 +306,13 @@ do {									\
+  * a signal, or the remaining jiffies (at least 1) if the @condition
+  * evaluated to %true before the @timeout elapsed.
+  */
++#define __wait_event_interruptible_timeout(wq, condition, timeout)	\
++	__wait_event_common(wq, condition,				\
++			TASK_INTERRUPTIBLE, timeout)
++
+ #define wait_event_interruptible_timeout(wq, condition, timeout)	\
+-({									\
+-	long __ret = timeout;						\
+-	if (!(condition))						\
+-		__wait_event_interruptible_timeout(wq, condition, __ret); \
+-	__ret;								\
+-})
++	wait_event_common(wq, condition,				\
++			TASK_INTERRUPTIBLE, timeout)
+ 
+ #define __wait_event_hrtimeout(wq, condition, timeout, state)		\
+ ({									\
+@@ -601,24 +579,6 @@ do {									\
+ 
+ 
+ 
+-#define __wait_event_killable(wq, condition, ret)			\
+-do {									\
+-	DEFINE_WAIT(__wait);						\
+-									\
+-	for (;;) {							\
+-		prepare_to_wait(&wq, &__wait, TASK_KILLABLE);		\
+-		if (condition)						\
+-			break;						\
+-		if (!fatal_signal_pending(current)) {			\
+-			schedule();					\
+-			continue;					\
+-		}							\
+-		ret = -ERESTARTSYS;					\
+-		break;							\
+-	}								\
+-	finish_wait(&wq, &__wait);					\
+-} while (0)
+-
+ /**
+  * wait_event_killable - sleep until a condition gets true
+  * @wq: the waitqueue to wait on
+@@ -634,14 +594,13 @@ do {									\
+  * The function will return -ERESTARTSYS if it was interrupted by a
+  * signal and 0 if @condition evaluated to true.
+  */
+-#define wait_event_killable(wq, condition)				\
+-({									\
+-	int __ret = 0;							\
+-	if (!(condition))						\
+-		__wait_event_killable(wq, condition, __ret);		\
+-	__ret;								\
+-})
++#define __wait_event_killable(wq, condition)				\
++	__wait_event_common(wq, condition,				\
++			TASK_KILLABLE, MAX_SCHEDULE_TIMEOUT)
+ 
++#define wait_event_killable(wq, condition)				\
++	wait_event_common(wq, condition,				\
++			TASK_KILLABLE, MAX_SCHEDULE_TIMEOUT)
+ 
+ #define __wait_event_lock_irq(wq, condition, lock, cmd)			\
+ do {									\
 
