@@ -1,139 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714Ab3FELch (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 07:32:37 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37692 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754500Ab3FELcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 07:32:35 -0400
-Message-ID: <51AF20F0.30000@ti.com>
-Date: Wed, 5 Jun 2013 14:28:48 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1754755Ab3FELfu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 07:35:50 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:22511 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754495Ab3FELfs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 07:35:48 -0400
+X-Spam-Score: -100.8
+Message-ID: <51AF225A.5020703@asianux.com>
+Date: Wed, 05 Jun 2013 19:34:50 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@linaro.org>
-CC: Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] i2c: omap: convert to module_platform_driver()
-References: <1366723151-23209-1-git-send-email-grygorii.strashko@ti.com> <1366723151-23209-2-git-send-email-grygorii.strashko@ti.com> <87fvwylxl8.fsf@linaro.org> <51ADD06B.3000201@ti.com> <87zjv5zq41.fsf@linaro.org>
-In-Reply-To: <87zjv5zq41.fsf@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] arch/*/asm/include/bitops.h: api issue, find_*_bit()
+ defination are different with each other
+References: <51AE8FEF.1020809@asianux.com> <51AE903C.6010806@asianux.com> <51AE909D.9080006@asianux.com> <20130605071915.GK23140@pengutronix.de>
+In-Reply-To: <20130605071915.GK23140@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2013 09:29 PM, Kevin Hilman wrote:
-> Grygorii Strashko <grygorii.strashko@ti.com> writes:
->
->> Hi Kevin,
->> On 06/03/2013 11:59 PM, Kevin Hilman wrote:
->>> Grygorii Strashko <grygorii.strashko@ti.com> writes:
->>>
->>>> The OMAP I2C driver has a relation to pinctrl-single driver. As result,
->>>> its probe will be deferred during system boot until late init time,
->>>> because the pinctrl-single is initizalized as moudle/device init time.
->>>> This, in turn, will delay initialization of all I2C devices (like mfd,
->>>> I2C regulators and etc.) and cause boot delay (more over, it can broken
->>>> initialization of drivers which are not ready to use deferred probe
->>>> mechanism yet, for example DSS).
->>>>
->>>> There are no sense to keep OMAP I2C initialization on subsys init layer
->>>> any more, hence shift it to module/device layer where the i2c <-->
->>>> pinctrl-single dependency is resolved in drivers/Makefile now.
->>>>
->>>> Cc: Wolfram Sang <wsa@the-dreams.de>
->>>> Cc: "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>
->>>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>>> Cc: linux-omap@vger.kernel.org
->>>> Cc: linux-i2c@vger.kernel.org
->>>> Cc: linux-kernel@vger.kernel.org
->>>>
->>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->>> Testing this patch with PATCH 1/2, the twl_rtc driver fails to correctly
->>> initialize on OMAP3:
->>>
->>>            twl_rtc rtc.22: hctosys: invalid date/time
->>>
->>> instead of the expected result:
->>>
->>>             twl_rtc rtc.22: setting system clock to 2000-01-01 00:00:00 UTC (946684800)
->>>
->>> so something is still not right for the init sequence.
->>>
->>> Kevin
->> I think, the root cause of the problem isn't this patch - it's just
->> yet another side effect
->> of using deferred probes :). I've taken a look on twl-rtc code and
->> found possible error place
->> static int __init twl_rtc_init(void)
->> {
->>      if (twl_class_is_4030()) <------ here,
->>          rtc_reg_map = (u8 *) twl4030_rtc_reg_map;
->>      else
->>          rtc_reg_map = (u8 *) twl6030_rtc_reg_map;
+On 06/05/2013 03:19 PM, Uwe � wrote:
+> Hello,
+> 
+> On Wed, Jun 05, 2013 at 09:13:01AM +0800, Chen Gang wrote:
 >>
->>      return platform_driver_register(&twl4030rtc_driver);
->> }
->> In drivers/Makefile:
->> obj-$(CONFIG_RTC_LIB)        += rtc/  <------ RTC is placed before I2C
->> obj-y                += i2c/ media/ <----- and only here I2C bus
->> instantiates TWL-core device
->> and configures twl_priv->twl_id
+>> For arm and m68k, they customize find_*_bit(), but the API is different
+>> with 'generic'.
 >>
->> Thats why it's working on my OMAP4/twl6030 board. Could you check if
->> below fix will work on OMAP3:
-> Yes, your fix works.  Thanks for digging into it.
->
-> Care to send a proper patch?  Please be sure to send to Andrew Morton
-> also, since he'll be the one to queue the RTC patch.
-Hi Kevin,
+>> avr32, s390, and unicore32 also customize find_*_bit(), but the API is
+>> the same with 'generic', and the left architectures all use 'generic'.
+>>
+>> So need change arm and m68k related API to match the 'generic', then
+>> all another modules can face same public API for various architectures.
+>>
+>> Also beautify code and comments to pass "./scripts/checkpatch.pl"
+>>
+>>
+>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> ---
+>>  arch/arm/include/asm/bitops.h  |   26 ++++++++++++++++++--------
+>>  arch/arm/lib/findbit.S         |   14 ++++++++++----
+>>  arch/m68k/include/asm/bitops.h |   25 ++++++++++++++-----------
+>>  3 files changed, 42 insertions(+), 23 deletions(-)
+>>
+>> diff --git a/arch/arm/include/asm/bitops.h b/arch/arm/include/asm/bitops.h
+>> index e691ec9..10566c8 100644
+>> --- a/arch/arm/include/asm/bitops.h
+>> +++ b/arch/arm/include/asm/bitops.h
+>> @@ -161,18 +161,28 @@ extern int _test_and_change_bit(int nr, volatile unsigned long * p);
+>>  /*
+>>   * Little endian assembly bitops.  nr = 0 -> byte 0 bit 0.
+>>   */
+>> -extern int _find_first_zero_bit_le(const void * p, unsigned size);
+>> -extern int _find_next_zero_bit_le(const void * p, int size, int offset);
+>> -extern int _find_first_bit_le(const unsigned long *p, unsigned size);
+>> -extern int _find_next_bit_le(const unsigned long *p, int size, int offset);
+>> +extern unsigned long  _find_first_zero_bit_le(const void *p,
+> doesn't checkpatch critizise the double space in the line above?
+> 
 
-The similar patch already exists:
-https://patchwork.kernel.org/patch/2448251/ - [v2,1/2] RTC: rtc-twl: Fix 
-rtc_reg_map initialization
-from Peter Ujfalusi
+Thank you very much for your carefully checking (could you tell me how
+do you find it ?)  :-)
 
--grygorii
+I need wait for a day at least, if no another suggestions or
+completions, I should send patch v3.
 
->
->> diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
->> index 8751a52..aaa5015 100644
->> --- a/drivers/rtc/rtc-twl.c
->> +++ b/drivers/rtc/rtc-twl.c
->> @@ -469,6 +469,11 @@ static int twl_rtc_probe(struct platform_device *pdev)
->>          if (irq <= 0)
->>                  goto out1;
->>
->> +       if (twl_class_is_4030())
->> +               rtc_reg_map = (u8 *) twl4030_rtc_reg_map;
->> +       else
->> +               rtc_reg_map = (u8 *) twl6030_rtc_reg_map;
->> +
->>          ret = twl_rtc_read_u8(&rd_reg, REG_RTC_STATUS_REG);
->>          if (ret < 0)
->>                  goto out1;
->> @@ -610,11 +615,6 @@ static struct platform_driver twl4030rtc_driver = {
->>
->>   static int __init twl_rtc_init(void)
->>   {
->> -       if (twl_class_is_4030())
->> -               rtc_reg_map = (u8 *) twl4030_rtc_reg_map;
->> -       else
->> -               rtc_reg_map = (u8 *) twl6030_rtc_reg_map;
->> -
->>          return platform_driver_register(&twl4030rtc_driver);
->>   }
->>   module_init(twl_rtc_init);
->>
->> Unfortunately, I have no OMAP3 HW and can't check it.
-> I suggest you find a Beagle or Gumstix/Overo type board someplace.
-> There is an abundance of cheap OMAP3 hardware available.
->
-> Kevin
->
 
+>> +						unsigned long size);
+>> +extern unsigned long _find_next_zero_bit_le(const void *p, unsigned long size,
+>> +						unsigned long offset);
+>> +extern unsigned long _find_first_bit_le(const unsigned long *p,
+>> +						unsigned long size);
+>> +extern unsigned long _find_next_bit_le(const unsigned long *p,
+>> +						unsigned long size,
+>> +						unsigned long offset);
+>>  
+>>  /*
+>>   * Big endian assembly bitops.  nr = 0 -> byte 3 bit 0.
+>>   */
+>> -extern int _find_first_zero_bit_be(const void * p, unsigned size);
+>> -extern int _find_next_zero_bit_be(const void * p, int size, int offset);
+>> -extern int _find_first_bit_be(const unsigned long *p, unsigned size);
+>> -extern int _find_next_bit_be(const unsigned long *p, int size, int offset);
+>> +extern unsigned long _find_first_zero_bit_be(const void *p,
+>> +						unsigned long size);
+>> +extern unsigned long _find_next_zero_bit_be(const void *p, unsigned long size,
+>> +						unsigned long offset);
+>> +extern unsigned long _find_first_bit_be(const unsigned long *p,
+>> +						unsigned long size);
+>> +extern unsigned long _find_next_bit_be(const unsigned long *p,
+>> +						unsigned long size,
+>> +						unsigned long offset);
+>>  
+>>  #ifndef CONFIG_SMP
+>>  /*
+>> diff --git a/arch/arm/lib/findbit.S b/arch/arm/lib/findbit.S
+>> index 64f6bc1..9e3263a 100644
+>> --- a/arch/arm/lib/findbit.S
+>> +++ b/arch/arm/lib/findbit.S
+>> @@ -19,7 +19,8 @@
+>>  
+>>  /*
+>>   * Purpose  : Find a 'zero' bit
+>> - * Prototype: int find_first_zero_bit(void *addr, unsigned int maxbit);
+>> + * Prototype: unsigned long  find_first_zero_bit(const void *p,
+> here is another one.
+> 
+
+Thanks.
+
+
+-- 
+Chen Gang
+
+Asianux Corporation
