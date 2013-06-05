@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933024Ab3FEVtD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:49:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37949 "EHLO
+	id S933012Ab3FEVtX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:49:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37953 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932926Ab3FEVf4 (ORCPT
+	with ESMTP id S932820Ab3FEVfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:56 -0400
+	Wed, 5 Jun 2013 17:35:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Michael Neuling <mikey@neuling.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 086/127] powerpc/tm: Abort on emulation and alignment faults
-Date: Wed,  5 Jun 2013 14:34:13 -0700
-Message-Id: <20130605213227.685711779@linuxfoundation.org>
+Subject: [ 085/127] powerpc/tm: Fix userspace stack corruption on signal delivery for active transactions
+Date: Wed,  5 Jun 2013 14:34:12 -0700
+Message-Id: <20130605213227.576049527@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -29,121 +29,264 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michael Neuling <mikey@neuling.org>
 
-commit 6ce6c629fd8254b3177650de99699682ff7f6707 upstream.
+commit 2b3f8e87cf99a33fb6faf5026d7147748bbd77b6 upstream.
 
-If we are emulating an instruction inside an active user transaction that
-touches memory, the kernel can't emulate it as it operates in transactional
-suspend context.  We need to abort these transactions and send them back to
-userspace for the hardware to rollback.
+When in an active transaction that takes a signal, we need to be careful with
+the stack.  It's possible that the stack has moved back up after the tbegin.
+The obvious case here is when the tbegin is called inside a function that
+returns before a tend.  In this case, the stack is part of the checkpointed
+transactional memory state.  If we write over this non transactionally or in
+suspend, we are in trouble because if we get a tm abort, the program counter
+and stack pointer will be back at the tbegin but our in memory stack won't be
+valid anymore.
 
-We can service these if the user transaction is in suspend mode, since the
-kernel will operate in the same suspend context.
+To avoid this, when taking a signal in an active transaction, we need to use
+the stack pointer from the checkpointed state, rather than the speculated
+state.  This ensures that the signal context (written tm suspended) will be
+written below the stack required for the rollback.  The transaction is aborted
+becuase of the treclaim, so any memory written between the tbegin and the
+signal will be rolled back anyway.
 
-This adds a check to all alignment faults and to specific instruction
-emulations (only string instructions for now).  If the user process is in an
-active (non-suspended) transaction, we abort the transaction go back to
-userspace allowing the HW to roll back the transaction and tell the user of the
-failure.  This also adds new tm abort cause codes to report the reason of the
-persistent error to the user.
+For signals taken in non-TM or suspended mode, we use the
+normal/non-checkpointed stack pointer.
 
-Crappy test case here http://neuling.org/devel/junkcode/aligntm.c
+Tested with 64 and 32 bit signals
 
 Signed-off-by: Michael Neuling <mikey@neuling.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/powerpc/transactional_memory.txt |    7 ++++--
- arch/powerpc/include/asm/reg.h                 |    2 +
- arch/powerpc/kernel/traps.c                    |   29 +++++++++++++++++++++++++
- 3 files changed, 36 insertions(+), 2 deletions(-)
+ Documentation/powerpc/transactional_memory.txt |   19 +++++++++++
+ arch/powerpc/include/asm/processor.h           |   13 ++------
+ arch/powerpc/include/asm/signal.h              |    3 +
+ arch/powerpc/kernel/signal.c                   |   40 +++++++++++++++++++++++--
+ arch/powerpc/kernel/signal.h                   |    2 -
+ arch/powerpc/kernel/signal_32.c                |   10 +-----
+ arch/powerpc/kernel/signal_64.c                |   23 ++++----------
+ 7 files changed, 74 insertions(+), 36 deletions(-)
 
 --- a/Documentation/powerpc/transactional_memory.txt
 +++ b/Documentation/powerpc/transactional_memory.txt
-@@ -180,9 +180,12 @@ kernel aborted a transaction:
-                         transactions for consistency will use this.
-  TM_CAUSE_SIGNAL        Signal delivered.
-  TM_CAUSE_MISC          Currently unused.
-+ TM_CAUSE_ALIGNMENT     Alignment fault.
-+ TM_CAUSE_EMULATE       Emulation that touched memory.
+@@ -147,6 +147,25 @@ Example signal handler:
+       fix_the_problem(ucp->dar);
+     }
  
--These can be checked by the user program's abort handler as TEXASR[0:7].
--
-+These can be checked by the user program's abort handler as TEXASR[0:7].  If
-+bit 7 is set, it indicates that the error is consider persistent.  For example
-+a TM_CAUSE_ALIGNMENT will be persistent while a TM_CAUSE_RESCHED will not.q
++When in an active transaction that takes a signal, we need to be careful with
++the stack.  It's possible that the stack has moved back up after the tbegin.
++The obvious case here is when the tbegin is called inside a function that
++returns before a tend.  In this case, the stack is part of the checkpointed
++transactional memory state.  If we write over this non transactionally or in
++suspend, we are in trouble because if we get a tm abort, the program counter and
++stack pointer will be back at the tbegin but our in memory stack won't be valid
++anymore.
++
++To avoid this, when taking a signal in an active transaction, we need to use
++the stack pointer from the checkpointed state, rather than the speculated
++state.  This ensures that the signal context (written tm suspended) will be
++written below the stack required for the rollback.  The transaction is aborted
++becuase of the treclaim, so any memory written between the tbegin and the
++signal will be rolled back anyway.
++
++For signals taken in non-TM or suspended mode, we use the
++normal/non-checkpointed stack pointer.
++
  
- GDB
- ===
---- a/arch/powerpc/include/asm/reg.h
-+++ b/arch/powerpc/include/asm/reg.h
-@@ -122,6 +122,8 @@
- #define TM_CAUSE_SYSCALL	0xd8  /* future use */
- #define TM_CAUSE_MISC		0xd6  /* future use */
- #define TM_CAUSE_SIGNAL		0xd4
-+#define TM_CAUSE_ALIGNMENT	0xd2
-+#define TM_CAUSE_EMULATE	0xd0
- 
- #if defined(CONFIG_PPC_BOOK3S_64)
- #define MSR_64BIT	MSR_SF
---- a/arch/powerpc/kernel/traps.c
-+++ b/arch/powerpc/kernel/traps.c
-@@ -52,6 +52,7 @@
- #ifdef CONFIG_PPC64
- #include <asm/firmware.h>
- #include <asm/processor.h>
-+#include <asm/tm.h>
+ Failure cause codes used by kernel
+ ==================================
+--- a/arch/powerpc/include/asm/processor.h
++++ b/arch/powerpc/include/asm/processor.h
+@@ -407,21 +407,16 @@ static inline void prefetchw(const void
  #endif
- #include <asm/kexec.h>
- #include <asm/ppc-opcode.h>
-@@ -913,6 +914,28 @@ static int emulate_isel(struct pt_regs *
- 	return 0;
- }
  
-+#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
-+static inline bool tm_abort_check(struct pt_regs *regs, int cause)
-+{
-+        /* If we're emulating a load/store in an active transaction, we cannot
-+         * emulate it as the kernel operates in transaction suspended context.
-+         * We need to abort the transaction.  This creates a persistent TM
-+         * abort so tell the user what caused it with a new code.
-+	 */
-+	if (MSR_TM_TRANSACTIONAL(regs->msr)) {
-+		tm_enable();
-+		tm_abort(cause);
-+		return true;
-+	}
-+	return false;
-+}
-+#else
-+static inline bool tm_abort_check(struct pt_regs *regs, int reason)
-+{
-+	return false;
-+}
-+#endif
-+
- static int emulate_instruction(struct pt_regs *regs)
+ #ifdef CONFIG_PPC64
+-static inline unsigned long get_clean_sp(struct pt_regs *regs, int is_32)
++static inline unsigned long get_clean_sp(unsigned long sp, int is_32)
  {
- 	u32 instword;
-@@ -952,6 +975,9 @@ static int emulate_instruction(struct pt
+-	unsigned long sp;
+-
+ 	if (is_32)
+-		sp = regs->gpr[1] & 0x0ffffffffUL;
+-	else
+-		sp = regs->gpr[1];
+-
++		return sp & 0x0ffffffffUL;
+ 	return sp;
+ }
+ #else
+-static inline unsigned long get_clean_sp(struct pt_regs *regs, int is_32)
++static inline unsigned long get_clean_sp(unsigned long sp, int is_32)
+ {
+-	return regs->gpr[1];
++	return sp;
+ }
+ #endif
  
- 	/* Emulate load/store string insn. */
- 	if ((instword & PPC_INST_STRING_GEN_MASK) == PPC_INST_STRING) {
-+		if (tm_abort_check(regs,
-+				   TM_CAUSE_EMULATE | TM_CAUSE_PERSISTENT))
-+			return -EINVAL;
- 		PPC_WARN_EMULATED(string, regs);
- 		return emulate_string_inst(regs, instword);
- 	}
-@@ -1124,6 +1150,9 @@ void alignment_exception(struct pt_regs
- 	if (!arch_irq_disabled_regs(regs))
- 		local_irq_enable();
+--- a/arch/powerpc/include/asm/signal.h
++++ b/arch/powerpc/include/asm/signal.h
+@@ -3,5 +3,8 @@
  
-+	if (tm_abort_check(regs, TM_CAUSE_ALIGNMENT | TM_CAUSE_PERSISTENT))
-+		goto bail;
+ #define __ARCH_HAS_SA_RESTORER
+ #include <uapi/asm/signal.h>
++#include <uapi/asm/ptrace.h>
 +
- 	/* we don't implement logging of alignment exceptions */
- 	if (!(current->thread.align_ctl & PR_UNALIGN_SIGBUS))
- 		fixed = fix_alignment(regs);
++extern unsigned long get_tm_stackpointer(struct pt_regs *regs);
+ 
+ #endif /* _ASM_POWERPC_SIGNAL_H */
+--- a/arch/powerpc/kernel/signal.c
++++ b/arch/powerpc/kernel/signal.c
+@@ -17,6 +17,7 @@
+ #include <asm/uaccess.h>
+ #include <asm/unistd.h>
+ #include <asm/debug.h>
++#include <asm/tm.h>
+ 
+ #include "signal.h"
+ 
+@@ -29,13 +30,13 @@ int show_unhandled_signals = 0;
+ /*
+  * Allocate space for the signal frame
+  */
+-void __user * get_sigframe(struct k_sigaction *ka, struct pt_regs *regs,
++void __user * get_sigframe(struct k_sigaction *ka, unsigned long sp,
+ 			   size_t frame_size, int is_32)
+ {
+         unsigned long oldsp, newsp;
+ 
+         /* Default to using normal stack */
+-        oldsp = get_clean_sp(regs, is_32);
++        oldsp = get_clean_sp(sp, is_32);
+ 
+ 	/* Check for alt stack */
+ 	if ((ka->sa.sa_flags & SA_ONSTACK) &&
+@@ -170,3 +171,38 @@ void do_notify_resume(struct pt_regs *re
+ 		tracehook_notify_resume(regs);
+ 	}
+ }
++
++unsigned long get_tm_stackpointer(struct pt_regs *regs)
++{
++	/* When in an active transaction that takes a signal, we need to be
++	 * careful with the stack.  It's possible that the stack has moved back
++	 * up after the tbegin.  The obvious case here is when the tbegin is
++	 * called inside a function that returns before a tend.  In this case,
++	 * the stack is part of the checkpointed transactional memory state.
++	 * If we write over this non transactionally or in suspend, we are in
++	 * trouble because if we get a tm abort, the program counter and stack
++	 * pointer will be back at the tbegin but our in memory stack won't be
++	 * valid anymore.
++	 *
++	 * To avoid this, when taking a signal in an active transaction, we
++	 * need to use the stack pointer from the checkpointed state, rather
++	 * than the speculated state.  This ensures that the signal context
++	 * (written tm suspended) will be written below the stack required for
++	 * the rollback.  The transaction is aborted becuase of the treclaim,
++	 * so any memory written between the tbegin and the signal will be
++	 * rolled back anyway.
++	 *
++	 * For signals taken in non-TM or suspended mode, we use the
++	 * normal/non-checkpointed stack pointer.
++	 */
++
++#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
++	if (MSR_TM_ACTIVE(regs->msr)) {
++		tm_enable();
++		tm_reclaim(&current->thread, regs->msr, TM_CAUSE_SIGNAL);
++		if (MSR_TM_TRANSACTIONAL(regs->msr))
++			return current->thread.ckpt_regs.gpr[1];
++	}
++#endif
++	return regs->gpr[1];
++}
+--- a/arch/powerpc/kernel/signal.h
++++ b/arch/powerpc/kernel/signal.h
+@@ -12,7 +12,7 @@
+ 
+ extern void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags);
+ 
+-extern void __user * get_sigframe(struct k_sigaction *ka, struct pt_regs *regs,
++extern void __user * get_sigframe(struct k_sigaction *ka, unsigned long sp,
+ 				  size_t frame_size, int is_32);
+ 
+ extern int handle_signal32(unsigned long sig, struct k_sigaction *ka,
+--- a/arch/powerpc/kernel/signal_32.c
++++ b/arch/powerpc/kernel/signal_32.c
+@@ -503,12 +503,6 @@ static int save_tm_user_regs(struct pt_r
+ {
+ 	unsigned long msr = regs->msr;
+ 
+-	/* tm_reclaim rolls back all reg states, updating thread.ckpt_regs,
+-	 * thread.transact_fpr[], thread.transact_vr[], etc.
+-	 */
+-	tm_enable();
+-	tm_reclaim(&current->thread, msr, TM_CAUSE_SIGNAL);
+-
+ 	/* Make sure floating point registers are stored in regs */
+ 	flush_fp_to_thread(current);
+ 
+@@ -965,7 +959,7 @@ int handle_rt_signal32(unsigned long sig
+ 
+ 	/* Set up Signal Frame */
+ 	/* Put a Real Time Context onto stack */
+-	rt_sf = get_sigframe(ka, regs, sizeof(*rt_sf), 1);
++	rt_sf = get_sigframe(ka, get_tm_stackpointer(regs), sizeof(*rt_sf), 1);
+ 	addr = rt_sf;
+ 	if (unlikely(rt_sf == NULL))
+ 		goto badframe;
+@@ -1403,7 +1397,7 @@ int handle_signal32(unsigned long sig, s
+ 	unsigned long tramp;
+ 
+ 	/* Set up Signal Frame */
+-	frame = get_sigframe(ka, regs, sizeof(*frame), 1);
++	frame = get_sigframe(ka, get_tm_stackpointer(regs), sizeof(*frame), 1);
+ 	if (unlikely(frame == NULL))
+ 		goto badframe;
+ 	sc = (struct sigcontext __user *) &frame->sctx;
+--- a/arch/powerpc/kernel/signal_64.c
++++ b/arch/powerpc/kernel/signal_64.c
+@@ -154,11 +154,12 @@ static long setup_sigcontext(struct sigc
+  * As above, but Transactional Memory is in use, so deliver sigcontexts
+  * containing checkpointed and transactional register states.
+  *
+- * To do this, we treclaim to gather both sets of registers and set up the
+- * 'normal' sigcontext registers with rolled-back register values such that a
+- * simple signal handler sees a correct checkpointed register state.
+- * If interested, a TM-aware sighandler can examine the transactional registers
+- * in the 2nd sigcontext to determine the real origin of the signal.
++ * To do this, we treclaim (done before entering here) to gather both sets of
++ * registers and set up the 'normal' sigcontext registers with rolled-back
++ * register values such that a simple signal handler sees a correct
++ * checkpointed register state.  If interested, a TM-aware sighandler can
++ * examine the transactional registers in the 2nd sigcontext to determine the
++ * real origin of the signal.
+  */
+ static long setup_tm_sigcontexts(struct sigcontext __user *sc,
+ 				 struct sigcontext __user *tm_sc,
+@@ -184,16 +185,6 @@ static long setup_tm_sigcontexts(struct
+ 
+ 	BUG_ON(!MSR_TM_ACTIVE(regs->msr));
+ 
+-	/* tm_reclaim rolls back all reg states, saving checkpointed (older)
+-	 * GPRs to thread.ckpt_regs and (if used) FPRs to (newer)
+-	 * thread.transact_fp and/or VRs to (newer) thread.transact_vr.
+-	 * THEN we save out FP/VRs, if necessary, to the checkpointed (older)
+-	 * thread.fr[]/vr[]s.  The transactional (newer) GPRs are on the
+-	 * stack, in *regs.
+-	 */
+-	tm_enable();
+-	tm_reclaim(&current->thread, msr, TM_CAUSE_SIGNAL);
+-
+ 	flush_fp_to_thread(current);
+ 
+ #ifdef CONFIG_ALTIVEC
+@@ -711,7 +702,7 @@ int handle_rt_signal64(int signr, struct
+ 	unsigned long newsp = 0;
+ 	long err = 0;
+ 
+-	frame = get_sigframe(ka, regs, sizeof(*frame), 0);
++	frame = get_sigframe(ka, get_tm_stackpointer(regs), sizeof(*frame), 0);
+ 	if (unlikely(frame == NULL))
+ 		goto badframe;
+ 
 
 
