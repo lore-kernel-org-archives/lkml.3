@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab3FEAjd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 20:39:33 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:60731 "EHLO
+	id S1752693Ab3FEAn0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 20:43:26 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60783 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990Ab3FEAj2 (ORCPT
+	with ESMTP id S1752051Ab3FEAnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 20:39:28 -0400
-Date: Tue, 04 Jun 2013 17:39:27 -0700 (PDT)
-Message-Id: <20130604.173927.1262961402705099933.davem@davemloft.net>
-To: arnd@arndb.de
-Cc: michal.simek@xilinx.com, linux-kernel@vger.kernel.org, monstr@monstr.eu,
-        wfp5p@virginia.edu, gregkh@linuxfoundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] net: emaclite: Use platform resource table
+	Tue, 4 Jun 2013 20:43:24 -0400
+Date: Tue, 04 Jun 2013 17:43:23 -0700 (PDT)
+Message-Id: <20130604.174323.350497684225826523.davem@davemloft.net>
+To: andy.shevchenko@gmail.com
+Cc: arnd@arndb.de, gregkh@linuxfoundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: core: move mac_pton() to lib/net_utils.c
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <201306042210.05844.arnd@arndb.de>
-References: <6ece0a9ee777b987ca777a338cc146ed67897529.1370340196.git.michal.simek@xilinx.com>
-	<201306042210.05844.arnd@arndb.de>
+In-Reply-To: <1370364386-5034-1-git-send-email-andy.shevchenko@gmail.com>
+References: <1370364386-5034-1-git-send-email-andy.shevchenko@gmail.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -25,21 +24,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
-Date: Tue, 4 Jun 2013 22:10:05 +0200
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+Date: Tue,  4 Jun 2013 19:46:26 +0300
 
-> On Tuesday 04 June 2013, Michal Simek wrote:
->>   Read data directly from platform recource table
->> and do not use of_irq_to_resource().
->> Also use devm_request_and_ioremap() for probe
->> functions simplification.
->> 
->> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
->> ---
->> Based on my discussion with Arnd
->> "[PATCH] net: emaclite: include linux/of_irq.h"
->> 
+> Since we have at least one user of this function outside of CONFIG_NET
+> scope, we have to provide this function independently. The proposed
+> solution is to move it under lib/net_utils.c with corresponding
+> configuration variable and select wherever it is needed.
 > 
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+> Reported-by: Arnd Bergmann <arnd@arndb.de>
 
-Applied to net-next, thanks.
+I do not see a mac_pton() usage under drivers/misc in any of my trees,
+so I really am not the person to apply this.
