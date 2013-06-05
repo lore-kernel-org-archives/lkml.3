@@ -1,91 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab3FEH5Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 03:57:16 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62910 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752181Ab3FEH5P (ORCPT
+	id S1752850Ab3FEH5p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 03:57:45 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:15726 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752275Ab3FEH5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 03:57:15 -0400
-X-AuditID: 9c930179-b7c1dae000003992-1a-51aeef599189
-Date: Wed, 5 Jun 2013 16:57:13 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Dave Hansen <dave@sr71.net>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mgorman@suse.de, tim.c.chen@linux.intel.com
-Subject: Re: [v5][PATCH 5/6] mm: vmscan: batch shrink_page_list() locking
- operations
-Message-ID: <20130605075713.GJ8732@blaptop>
-References: <20130603200202.7F5FDE07@viggo.jf.intel.com>
- <20130603200208.6F71D31F@viggo.jf.intel.com>
- <CAJd=RBC563c64usU2oK40b62c7N0R15KD_4ihFExeT021wUTcw@mail.gmail.com>
- <20130604050744.GD14719@blaptop>
- <CAJd=RBAt9eSx3_FB79J93e19bv15sFry-mU6hkUYH80isULszw@mail.gmail.com>
+	Wed, 5 Jun 2013 03:57:44 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <hein_tibosch@yahoo.es>, <s.trumtrar@pengutronix.de>,
+        <michal.simek@xilinx.com>, <monstr@monstr.eu>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 1/2 v4] net/macb: increase RX buffer size for GEM
+Date: Wed, 5 Jun 2013 09:57:11 +0200
+Message-ID: <047de14c0f3fe7d0c70c6a453548cdfb8424f1e3.1370418770.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <cover.1370418770.git.nicolas.ferre@atmel.com>
+References: <cover.1370418770.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBAt9eSx3_FB79J93e19bv15sFry-mU6hkUYH80isULszw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 03:28:27PM +0800, Hillf Danton wrote:
-> On Tue, Jun 4, 2013 at 1:07 PM, Minchan Kim <minchan@kernel.org> wrote:
-> > On Tue, Jun 04, 2013 at 09:17:26AM +0800, Hillf Danton wrote:
-> >> On Tue, Jun 4, 2013 at 4:02 AM, Dave Hansen <dave@sr71.net> wrote:
-> >> > +/*
-> >> > + * pages come in here (via remove_list) locked and leave unlocked
-> >> > + * (on either ret_pages or free_pages)
-> >> > + *
-> >> > + * We do this batching so that we free batches of pages with a
-> >> > + * single mapping->tree_lock acquisition/release.  This optimization
-> >> > + * only makes sense when the pages on remove_list all share a
-> >> > + * page_mapping().  If this is violated you will BUG_ON().
-> >> > + */
-> >> > +static int __remove_mapping_batch(struct list_head *remove_list,
-> >> > +                                 struct list_head *ret_pages,
-> >> > +                                 struct list_head *free_pages)
-> >> > +{
-> >> > +       int nr_reclaimed = 0;
-> >> > +       struct address_space *mapping;
-> >> > +       struct page *page;
-> >> > +       LIST_HEAD(need_free_mapping);
-> >> > +
-> >> > +       if (list_empty(remove_list))
-> >> > +               return 0;
-> >> > +
-> >> > +       mapping = page_mapping(lru_to_page(remove_list));
-> >> > +       spin_lock_irq(&mapping->tree_lock);
-> >> > +       while (!list_empty(remove_list)) {
-> >> > +               page = lru_to_page(remove_list);
-> >> > +               BUG_ON(!PageLocked(page));
-> >> > +               BUG_ON(page_mapping(page) != mapping);
-> >> > +               list_del(&page->lru);
-> >> > +
-> >> > +               if (!__remove_mapping(mapping, page)) {
-> >> > +                       unlock_page(page);
-> >> > +                       list_add(&page->lru, ret_pages);
-> >> > +                       continue;
-> >> > +               }
-> >> > +               list_add(&page->lru, &need_free_mapping);
-> >> > +       }
-> >> > +       spin_unlock_irq(&mapping->tree_lock);
-> >> > +
-> >> While reclaiming pages, can we open ears upon IRQ controller,
-> >> if the page list length is over 10, or even 20?
-> >
-> > At the moment, it implicitly could be bounded by SWAP_CLUSTER_MAX and
-> 
-> Could we reclaim a THP currently?
+Macb Ethernet controller requires a RX buffer of 128 bytes. It is
+highly sub-optimal for Gigabit-capable GEM that is able to use
+a bigger DMA buffer. Change this constant and associated macros
+with data stored in the private structure.
+RX DMA buffer size has to be multiple of 64 bytes as indicated in
+DMA Configuration Register specification.
 
-You mean that we could have (512 * SWAP_CLUSTER_MAX) pages in
-page_list as worst case?
-Yes but in that case, we drain batch_for_mapping_rm by [6/6] so
-THP page couldn't be a problem, IMO.
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/net/ethernet/cadence/macb.c | 45 ++++++++++++++++++++++++++++++-------
+ drivers/net/ethernet/cadence/macb.h |  1 +
+ 2 files changed, 38 insertions(+), 8 deletions(-)
 
+diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+index 4465e27..aab7bb2 100644
+--- a/drivers/net/ethernet/cadence/macb.c
++++ b/drivers/net/ethernet/cadence/macb.c
+@@ -32,7 +32,9 @@
+ 
+ #include "macb.h"
+ 
+-#define RX_BUFFER_SIZE		128
++#define MACB_RX_BUFFER_SIZE	128
++#define GEM_RX_BUFFER_SIZE	2048
++#define RX_BUFFER_MULTIPLE	64  /* bytes */
+ #define RX_RING_SIZE		512 /* must be power of 2 */
+ #define RX_RING_BYTES		(sizeof(struct macb_dma_desc) * RX_RING_SIZE)
+ 
+@@ -92,7 +94,7 @@ static struct macb_dma_desc *macb_rx_desc(struct macb *bp, unsigned int index)
+ 
+ static void *macb_rx_buffer(struct macb *bp, unsigned int index)
+ {
+-	return bp->rx_buffers + RX_BUFFER_SIZE * macb_rx_ring_wrap(index);
++	return bp->rx_buffers + bp->rx_buffer_size * macb_rx_ring_wrap(index);
+ }
+ 
+ void macb_set_hwaddr(struct macb *bp)
+@@ -575,7 +577,7 @@ static int macb_rx_frame(struct macb *bp, unsigned int first_frag,
+ 	skb_put(skb, len);
+ 
+ 	for (frag = first_frag; ; frag++) {
+-		unsigned int frag_len = RX_BUFFER_SIZE;
++		unsigned int frag_len = bp->rx_buffer_size;
+ 
+ 		if (offset + frag_len > len) {
+ 			BUG_ON(frag != last_frag);
+@@ -583,7 +585,7 @@ static int macb_rx_frame(struct macb *bp, unsigned int first_frag,
+ 		}
+ 		skb_copy_to_linear_data_offset(skb, offset,
+ 				macb_rx_buffer(bp, frag), frag_len);
+-		offset += RX_BUFFER_SIZE;
++		offset += bp->rx_buffer_size;
+ 		desc = macb_rx_desc(bp, frag);
+ 		desc->addr &= ~MACB_BIT(RX_USED);
+ 
+@@ -870,6 +872,30 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	return NETDEV_TX_OK;
+ }
+ 
++static void macb_init_rx_buffer_size(struct macb *bp)
++{
++	if (!macb_is_gem(bp)) {
++		bp->rx_buffer_size = MACB_RX_BUFFER_SIZE;
++	} else {
++		bp->rx_buffer_size = GEM_RX_BUFFER_SIZE;
++
++		if (bp->rx_buffer_size > PAGE_SIZE) {
++			netdev_warn(bp->dev,
++				    "RX buffer cannot be bigger than PAGE_SIZE, shrinking\n");
++			bp->rx_buffer_size = PAGE_SIZE;
++		}
++		if (bp->rx_buffer_size % RX_BUFFER_MULTIPLE) {
++			netdev_warn(bp->dev,
++				    "RX buffer must be multiple of %d bytes, shrinking\n",
++				    RX_BUFFER_MULTIPLE);
++			bp->rx_buffer_size =
++				rounddown(bp->rx_buffer_size, RX_BUFFER_MULTIPLE);
++		}
++		bp->rx_buffer_size = max(RX_BUFFER_MULTIPLE, GEM_RX_BUFFER_SIZE);
++	}
++}
++
++
+ static void macb_free_consistent(struct macb *bp)
+ {
+ 	if (bp->tx_skb) {
+@@ -888,7 +914,7 @@ static void macb_free_consistent(struct macb *bp)
+ 	}
+ 	if (bp->rx_buffers) {
+ 		dma_free_coherent(&bp->pdev->dev,
+-				  RX_RING_SIZE * RX_BUFFER_SIZE,
++				  RX_RING_SIZE * bp->rx_buffer_size,
+ 				  bp->rx_buffers, bp->rx_buffers_dma);
+ 		bp->rx_buffers = NULL;
+ 	}
+@@ -921,7 +947,7 @@ static int macb_alloc_consistent(struct macb *bp)
+ 		   "Allocated TX ring of %d bytes at %08lx (mapped %p)\n",
+ 		   size, (unsigned long)bp->tx_ring_dma, bp->tx_ring);
+ 
+-	size = RX_RING_SIZE * RX_BUFFER_SIZE;
++	size = RX_RING_SIZE * bp->rx_buffer_size;
+ 	bp->rx_buffers = dma_alloc_coherent(&bp->pdev->dev, size,
+ 					    &bp->rx_buffers_dma, GFP_KERNEL);
+ 	if (!bp->rx_buffers)
+@@ -946,7 +972,7 @@ static void macb_init_rings(struct macb *bp)
+ 	for (i = 0; i < RX_RING_SIZE; i++) {
+ 		bp->rx_ring[i].addr = addr;
+ 		bp->rx_ring[i].ctrl = 0;
+-		addr += RX_BUFFER_SIZE;
++		addr += bp->rx_buffer_size;
+ 	}
+ 	bp->rx_ring[RX_RING_SIZE - 1].addr |= MACB_BIT(RX_WRAP);
+ 
+@@ -1056,7 +1082,7 @@ static void macb_configure_dma(struct macb *bp)
+ 
+ 	if (macb_is_gem(bp)) {
+ 		dmacfg = gem_readl(bp, DMACFG) & ~GEM_BF(RXBS, -1L);
+-		dmacfg |= GEM_BF(RXBS, RX_BUFFER_SIZE / 64);
++		dmacfg |= GEM_BF(RXBS, bp->rx_buffer_size / RX_BUFFER_MULTIPLE);
+ 		dmacfg |= GEM_BF(FBLDO, 16);
+ 		dmacfg |= GEM_BIT(TXPBMS) | GEM_BF(RXBMS, -1L);
+ 		dmacfg &= ~GEM_BIT(ENDIA);
+@@ -1244,6 +1270,9 @@ static int macb_open(struct net_device *dev)
+ 	if (!bp->phy_dev)
+ 		return -EAGAIN;
+ 
++	/* RX buffers initialization */
++	macb_init_rx_buffer_size(bp);
++
+ 	err = macb_alloc_consistent(bp);
+ 	if (err) {
+ 		netdev_err(dev, "Unable to allocate DMA memory (error %d)\n",
+diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
+index 548c0ec..9b5e19f 100644
+--- a/drivers/net/ethernet/cadence/macb.h
++++ b/drivers/net/ethernet/cadence/macb.h
+@@ -551,6 +551,7 @@ struct macb {
+ 	unsigned int		rx_tail;
+ 	struct macb_dma_desc	*rx_ring;
+ 	void			*rx_buffers;
++	size_t			rx_buffer_size;
+ 
+ 	unsigned int		tx_head, tx_tail;
+ 	struct macb_dma_desc	*tx_ring;
 -- 
-Kind regards,
-Minchan Kim
+1.8.2.2
+
