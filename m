@@ -1,164 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377Ab3FEM1x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 08:27:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:39597 "EHLO mga01.intel.com"
+	id S1755432Ab3FEM2O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 08:28:14 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:58348 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755085Ab3FEM0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 08:26:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,806,1363158000"; 
-   d="scan'208";a="345146344"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>, viresh.kumar@linaro.org,
-        Arnd Bergmann <arnd@arndb.de>, Felipe Balbi <balbi@ti.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v2 2/4] dma: move dw_dmac driver to an own directory
-Date: Wed,  5 Jun 2013 15:26:44 +0300
-Message-Id: <1370435206-13474-3-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
-In-Reply-To: <1370435206-13474-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1370435206-13474-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1755220Ab3FEM2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 08:28:11 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
+        chenxg.marvell@gmail.com
+Subject: Re: [PATCH] cpufreq: userspace: Simplify governor
+Date: Wed, 05 Jun 2013 14:37:15 +0200
+Message-ID: <1855098.3p2j9hWHoD@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <68ae523282b494da0e8f67536af1df874c326675.1370422554.git.viresh.kumar@linaro.org>
+References: <68ae523282b494da0e8f67536af1df874c326675.1370422554.git.viresh.kumar@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dw_dmac driver is going to be split into multiple files. To make this more
-convenient move it to an own directory.
+On Wednesday, June 05, 2013 02:34:33 PM Viresh Kumar wrote:
+> Userspace governor has got more code than what it needs for its functioning.
+> Lets simplify it.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
----
- MAINTAINERS                         |  3 +--
- drivers/dma/Kconfig                 | 20 +-------------------
- drivers/dma/Makefile                |  2 +-
- drivers/dma/dw/Kconfig              | 23 +++++++++++++++++++++++
- drivers/dma/dw/Makefile             |  1 +
- drivers/dma/{ => dw}/dw_dmac.c      |  2 +-
- drivers/dma/{ => dw}/dw_dmac_regs.h |  0
- 7 files changed, 28 insertions(+), 23 deletions(-)
- create mode 100644 drivers/dma/dw/Kconfig
- create mode 100644 drivers/dma/dw/Makefile
- rename drivers/dma/{ => dw}/dw_dmac.c (99%)
- rename drivers/dma/{ => dw}/dw_dmac_regs.h (100%)
+OK
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index f554c8b..e605ee1 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -7005,8 +7005,7 @@ SYNOPSYS DESIGNWARE DMAC DRIVER
- M:	Viresh Kumar <viresh.linux@gmail.com>
- S:	Maintained
- F:	include/linux/dw_dmac.h
--F:	drivers/dma/dw_dmac_regs.h
--F:	drivers/dma/dw_dmac.c
-+F:	drivers/dma/dw/
- 
- SYNOPSYS DESIGNWARE MMC/SD/SDIO DRIVER
- M:	Seungwon Jeon <tgih.jun@samsung.com>
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index e992489..146a1d8 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -79,25 +79,7 @@ config INTEL_IOP_ADMA
- 	help
- 	  Enable support for the Intel(R) IOP Series RAID engines.
- 
--config DW_DMAC
--	tristate "Synopsys DesignWare AHB DMA support"
--	depends on GENERIC_HARDIRQS
--	select DMA_ENGINE
--	default y if CPU_AT32AP7000
--	help
--	  Support the Synopsys DesignWare AHB DMA controller.  This
--	  can be integrated in chips such as the Atmel AT32ap7000.
--
--config DW_DMAC_BIG_ENDIAN_IO
--	bool "Use big endian I/O register access"
--	default y if AVR32
--	depends on DW_DMAC
--	help
--	  Say yes here to use big endian I/O access when reading and writing
--	  to the DMA controller registers. This is needed on some platforms,
--	  like the Atmel AVR32 architecture.
--
--	  If unsure, use the default setting.
-+source "drivers/dma/dw/Kconfig"
- 
- config AT_HDMAC
- 	tristate "Atmel AHB DMA support"
-diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
-index a2b0df5..ac44ca0 100644
---- a/drivers/dma/Makefile
-+++ b/drivers/dma/Makefile
-@@ -15,7 +15,7 @@ obj-$(CONFIG_FSL_DMA) += fsldma.o
- obj-$(CONFIG_MPC512X_DMA) += mpc512x_dma.o
- obj-$(CONFIG_PPC_BESTCOMM) += bestcomm/
- obj-$(CONFIG_MV_XOR) += mv_xor.o
--obj-$(CONFIG_DW_DMAC) += dw_dmac.o
-+obj-$(CONFIG_DW_DMAC) += dw/
- obj-$(CONFIG_AT_HDMAC) += at_hdmac.o
- obj-$(CONFIG_MX3_IPU) += ipu/
- obj-$(CONFIG_TXX9_DMAC) += txx9dmac.o
-diff --git a/drivers/dma/dw/Kconfig b/drivers/dma/dw/Kconfig
-new file mode 100644
-index 0000000..38a215a
---- /dev/null
-+++ b/drivers/dma/dw/Kconfig
-@@ -0,0 +1,23 @@
-+#
-+# DMA engine configuration for dw
-+#
-+
-+config DW_DMAC
-+	tristate "Synopsys DesignWare AHB DMA support"
-+	depends on GENERIC_HARDIRQS
-+	select DMA_ENGINE
-+	default y if CPU_AT32AP7000
-+	help
-+	  Support the Synopsys DesignWare AHB DMA controller. This
-+	  can be integrated in chips such as the Atmel AT32ap7000.
-+
-+config DW_DMAC_BIG_ENDIAN_IO
-+	bool "Use big endian I/O register access"
-+	default y if AVR32
-+	depends on DW_DMAC
-+	help
-+	  Say yes here to use big endian I/O access when reading and writing
-+	  to the DMA controller registers. This is needed on some platforms,
-+	  like the Atmel AVR32 architecture.
-+
-+	  If unsure, use the default setting.
-diff --git a/drivers/dma/dw/Makefile b/drivers/dma/dw/Makefile
-new file mode 100644
-index 0000000..dd8d993
---- /dev/null
-+++ b/drivers/dma/dw/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_DW_DMAC) += dw_dmac.o
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw/dw_dmac.c
-similarity index 99%
-rename from drivers/dma/dw_dmac.c
-rename to drivers/dma/dw/dw_dmac.c
-index 2b65ba6..15f3f4f 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw/dw_dmac.c
-@@ -28,8 +28,8 @@
- #include <linux/acpi.h>
- #include <linux/acpi_dma.h>
- 
-+#include "../dmaengine.h"
- #include "dw_dmac_regs.h"
--#include "dmaengine.h"
- 
- /*
-  * This supports the Synopsys "DesignWare AHB Central DMA Controller",
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw/dw_dmac_regs.h
-similarity index 100%
-rename from drivers/dma/dw_dmac_regs.h
-rename to drivers/dma/dw/dw_dmac_regs.h
+Why exactly is the code you're removing unnecessary?
+
+> Over that it will fix issues in cpufreq_governor_userspace(), which isn't doing
+> right things in START/STOP.
+
+What exactly is the problem?
+
+> It is working per-cpu currently whereas it just
+> required to manage policy->cpu.
+> 
+> Reported-by: Xiaoguang Chen <chenxg.marvell@gmail.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> @Rafael:
+> 
+> I don't know why this code was initially added. Please let me know if I am doing
+> something stupid.
+> 
+> Also, please apply it as a fix for 3.10 as it is broken recently in 3.9.
+
+I'd love to, but I need answers to the above questions before I do that.
+
+Thanks,
+Rafael
+
+
+>  drivers/cpufreq/cpufreq_userspace.c | 108 ++++--------------------------------
+>  1 file changed, 12 insertions(+), 96 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq_userspace.c b/drivers/cpufreq/cpufreq_userspace.c
+> index bbeb9c0..5dc77b7 100644
+> --- a/drivers/cpufreq/cpufreq_userspace.c
+> +++ b/drivers/cpufreq/cpufreq_userspace.c
+> @@ -13,55 +13,13 @@
+>  
+>  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>  
+> -#include <linux/kernel.h>
+> -#include <linux/module.h>
+> -#include <linux/smp.h>
+> -#include <linux/init.h>
+> -#include <linux/spinlock.h>
+> -#include <linux/interrupt.h>
+>  #include <linux/cpufreq.h>
+> -#include <linux/cpu.h>
+> -#include <linux/types.h>
+> -#include <linux/fs.h>
+> -#include <linux/sysfs.h>
+> +#include <linux/init.h>
+> +#include <linux/module.h>
+>  #include <linux/mutex.h>
+>  
+> -/**
+> - * A few values needed by the userspace governor
+> - */
+> -static DEFINE_PER_CPU(unsigned int, cpu_max_freq);
+> -static DEFINE_PER_CPU(unsigned int, cpu_min_freq);
+> -static DEFINE_PER_CPU(unsigned int, cpu_cur_freq); /* current CPU freq */
+> -static DEFINE_PER_CPU(unsigned int, cpu_set_freq); /* CPU freq desired by
+> -							userspace */
+>  static DEFINE_PER_CPU(unsigned int, cpu_is_managed);
+> -
+>  static DEFINE_MUTEX(userspace_mutex);
+> -static int cpus_using_userspace_governor;
+> -
+> -/* keep track of frequency transitions */
+> -static int
+> -userspace_cpufreq_notifier(struct notifier_block *nb, unsigned long val,
+> -	void *data)
+> -{
+> -	struct cpufreq_freqs *freq = data;
+> -
+> -	if (!per_cpu(cpu_is_managed, freq->cpu))
+> -		return 0;
+> -
+> -	if (val == CPUFREQ_POSTCHANGE) {
+> -		pr_debug("saving cpu_cur_freq of cpu %u to be %u kHz\n",
+> -				freq->cpu, freq->new);
+> -		per_cpu(cpu_cur_freq, freq->cpu) = freq->new;
+> -	}
+> -
+> -	return 0;
+> -}
+> -
+> -static struct notifier_block userspace_cpufreq_notifier_block = {
+> -	.notifier_call  = userspace_cpufreq_notifier
+> -};
+> -
+>  
+>  /**
+>   * cpufreq_set - set the CPU frequency
+> @@ -80,13 +38,6 @@ static int cpufreq_set(struct cpufreq_policy *policy, unsigned int freq)
+>  	if (!per_cpu(cpu_is_managed, policy->cpu))
+>  		goto err;
+>  
+> -	per_cpu(cpu_set_freq, policy->cpu) = freq;
+> -
+> -	if (freq < per_cpu(cpu_min_freq, policy->cpu))
+> -		freq = per_cpu(cpu_min_freq, policy->cpu);
+> -	if (freq > per_cpu(cpu_max_freq, policy->cpu))
+> -		freq = per_cpu(cpu_max_freq, policy->cpu);
+> -
+>  	/*
+>  	 * We're safe from concurrent calls to ->target() here
+>  	 * as we hold the userspace_mutex lock. If we were calling
+> @@ -107,7 +58,7 @@ static int cpufreq_set(struct cpufreq_policy *policy, unsigned int freq)
+>  
+>  static ssize_t show_speed(struct cpufreq_policy *policy, char *buf)
+>  {
+> -	return sprintf(buf, "%u\n", per_cpu(cpu_cur_freq, policy->cpu));
+> +	return sprintf(buf, "%u\n", policy->cur);
+>  }
+>  
+>  static int cpufreq_governor_userspace(struct cpufreq_policy *policy,
+> @@ -119,66 +70,31 @@ static int cpufreq_governor_userspace(struct cpufreq_policy *policy,
+>  	switch (event) {
+>  	case CPUFREQ_GOV_START:
+>  		BUG_ON(!policy->cur);
+> -		mutex_lock(&userspace_mutex);
+> -
+> -		if (cpus_using_userspace_governor == 0) {
+> -			cpufreq_register_notifier(
+> -					&userspace_cpufreq_notifier_block,
+> -					CPUFREQ_TRANSITION_NOTIFIER);
+> -		}
+> -		cpus_using_userspace_governor++;
+> +		pr_debug("started managing cpu %u\n", cpu);
+>  
+> +		mutex_lock(&userspace_mutex);
+>  		per_cpu(cpu_is_managed, cpu) = 1;
+> -		per_cpu(cpu_min_freq, cpu) = policy->min;
+> -		per_cpu(cpu_max_freq, cpu) = policy->max;
+> -		per_cpu(cpu_cur_freq, cpu) = policy->cur;
+> -		per_cpu(cpu_set_freq, cpu) = policy->cur;
+> -		pr_debug("managing cpu %u started "
+> -			"(%u - %u kHz, currently %u kHz)\n",
+> -				cpu,
+> -				per_cpu(cpu_min_freq, cpu),
+> -				per_cpu(cpu_max_freq, cpu),
+> -				per_cpu(cpu_cur_freq, cpu));
+> -
+>  		mutex_unlock(&userspace_mutex);
+>  		break;
+>  	case CPUFREQ_GOV_STOP:
+> -		mutex_lock(&userspace_mutex);
+> -		cpus_using_userspace_governor--;
+> -		if (cpus_using_userspace_governor == 0) {
+> -			cpufreq_unregister_notifier(
+> -					&userspace_cpufreq_notifier_block,
+> -					CPUFREQ_TRANSITION_NOTIFIER);
+> -		}
+> +		pr_debug("managing cpu %u stopped\n", cpu);
+>  
+> +		mutex_lock(&userspace_mutex);
+>  		per_cpu(cpu_is_managed, cpu) = 0;
+> -		per_cpu(cpu_min_freq, cpu) = 0;
+> -		per_cpu(cpu_max_freq, cpu) = 0;
+> -		per_cpu(cpu_set_freq, cpu) = 0;
+> -		pr_debug("managing cpu %u stopped\n", cpu);
+>  		mutex_unlock(&userspace_mutex);
+>  		break;
+>  	case CPUFREQ_GOV_LIMITS:
+>  		mutex_lock(&userspace_mutex);
+> -		pr_debug("limit event for cpu %u: %u - %u kHz, "
+> -			"currently %u kHz, last set to %u kHz\n",
+> +		pr_debug("limit event for cpu %u: %u - %u kHz, currently %u kHz\n",
+>  			cpu, policy->min, policy->max,
+> -			per_cpu(cpu_cur_freq, cpu),
+> -			per_cpu(cpu_set_freq, cpu));
+> -		if (policy->max < per_cpu(cpu_set_freq, cpu)) {
+> +			policy->cur);
+> +
+> +		if (policy->max < policy->cur)
+>  			__cpufreq_driver_target(policy, policy->max,
+>  						CPUFREQ_RELATION_H);
+> -		} else if (policy->min > per_cpu(cpu_set_freq, cpu)) {
+> +		else if (policy->min > policy->cur)
+>  			__cpufreq_driver_target(policy, policy->min,
+>  						CPUFREQ_RELATION_L);
+> -		} else {
+> -			__cpufreq_driver_target(policy,
+> -						per_cpu(cpu_set_freq, cpu),
+> -						CPUFREQ_RELATION_L);
+> -		}
+> -		per_cpu(cpu_min_freq, cpu) = policy->min;
+> -		per_cpu(cpu_max_freq, cpu) = policy->max;
+> -		per_cpu(cpu_cur_freq, cpu) = policy->cur;
+>  		mutex_unlock(&userspace_mutex);
+>  		break;
+>  	}
+> 
 -- 
-1.8.2.rc0.22.gb3600c3
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
