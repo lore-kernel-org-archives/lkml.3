@@ -1,105 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab3FECas (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 22:30:48 -0400
-Received: from mail-yh0-f74.google.com ([209.85.213.74]:45193 "EHLO
-	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752070Ab3FECap (ORCPT
+	id S1752715Ab3FECjD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 22:39:03 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:44515 "EHLO
+	intranet.asianux.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751272Ab3FECix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 22:30:45 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>, Simon Glass <sjg@chromium.org>,
-        linux-samsung-soc@vger.kernel.org, Tomasz Figa <tomasz.figa@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: samsung: avoid racy early printk at bootup
-Date: Tue,  4 Jun 2013 18:58:59 -0700
-Message-Id: <1370397539-21653-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.3
+	Tue, 4 Jun 2013 22:38:53 -0400
+X-Spam-Score: -99.9
+Message-ID: <51AE903C.6010806@asianux.com>
+Date: Wed, 05 Jun 2013 09:11:24 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] arch/*/asm/include/bitops.h: api issue, find_*_bit()
+ defination are different with each other
+References: <51AE8FEF.1020809@asianux.com>
+In-Reply-To: <51AE8FEF.1020809@asianux.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At boot, we've got a stack trace that looks something like this
-(exynos5 as example)
-* exynos5_map_io
-* s3c_init_cpu
-* exynos_init_io
-* exynos5_dt_map_io
-* paging_init
-* setup_arch
 
-When paging_init() runs we'll lose any early MMU mappings that we
-might have had to allow us access to S3C_VA_UART.  We won't add those
-mappings back in until after the SoC-specific map_io() function is
-called.  However, we print the CPU ID _right before_ we call the
-SoC-specific function.  Oops.
+Oh, sorry for word wrap. I need send patch v2, I should notice it next time.
 
-Things happen to work all right most of the time because the mapping
-is sticking around in our TLB.  ...but if we get really unlucky (like
-me!) or we put an explicit flush_tlb_all() at the start of
-exynos_init_io(), then things go boom.
+On 06/05/2013 09:10 AM, Chen Gang wrote:
+> 
+> For arm and m68k, they customize find_*_bit(), but the API is different
+> with 'generic'.
+> 
+> avr32, s390, and unicore32 also customize find_*_bit(), but the API is
+> the same with 'generic', and the left architectures all use 'generic'.
+> 
+> So need change arm and m68k related API to match the 'generic', then
+> all another modules can face same public API for various architectures.
+> 
+> Also beautify code and comments to pass "./scripts/checkpatch.pl"
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  arch/arm/include/asm/bitops.h  |   26 ++++++++++++++++++--------
+>  arch/arm/lib/findbit.S         |   14 ++++++++++----
+>  arch/m68k/include/asm/bitops.h |   25 ++++++++++++++-----------
+>  3 files changed, 42 insertions(+), 23 deletions(-)
+> 
+> diff --git a/arch/arm/include/asm/bitops.h b/arch/arm/include/asm/bitops.h
+> index e691ec9..10566c8 100644
+> --- a/arch/arm/include/asm/bitops.h
+> +++ b/arch/arm/include/asm/bitops.h
+> @@ -161,18 +161,28 @@ extern int _test_and_change_bit(int nr, volatile
+> unsigned long * p);
+>  /*
+>   * Little endian assembly bitops.  nr = 0 -> byte 0 bit 0.
+>   */
+> -extern int _find_first_zero_bit_le(const void * p, unsigned size);
+> -extern int _find_next_zero_bit_le(const void * p, int size, int offset);
+> -extern int _find_first_bit_le(const unsigned long *p, unsigned size);
+> -extern int _find_next_bit_le(const unsigned long *p, int size, int offset);
+> +extern unsigned long  _find_first_zero_bit_le(const void *p,
+> +						unsigned long size);
+> +extern unsigned long _find_next_zero_bit_le(const void *p, unsigned
+> long size,
+> +						unsigned long offset);
+> +extern unsigned long _find_first_bit_le(const unsigned long *p,
+> +						unsigned long size);
+> +extern unsigned long _find_next_bit_le(const unsigned long *p,
+> +						unsigned long size,
+> +						unsigned long offset);
+> 
+>  /*
+>   * Big endian assembly bitops.  nr = 0 -> byte 3 bit 0.
+>   */
+> -extern int _find_first_zero_bit_be(const void * p, unsigned size);
+> -extern int _find_next_zero_bit_be(const void * p, int size, int offset);
+> -extern int _find_first_bit_be(const unsigned long *p, unsigned size);
+> -extern int _find_next_bit_be(const unsigned long *p, int size, int offset);
+> +extern unsigned long _find_first_zero_bit_be(const void *p,
+> +						unsigned long size);
+> +extern unsigned long _find_next_zero_bit_be(const void *p, unsigned
+> long size,
+> +						unsigned long offset);
+> +extern unsigned long _find_first_bit_be(const unsigned long *p,
+> +						unsigned long size);
+> +extern unsigned long _find_next_bit_be(const unsigned long *p,
+> +						unsigned long size,
+> +						unsigned long offset);
+> 
+>  #ifndef CONFIG_SMP
+>  /*
+> diff --git a/arch/arm/lib/findbit.S b/arch/arm/lib/findbit.S
+> index 64f6bc1..9e3263a 100644
+> --- a/arch/arm/lib/findbit.S
+> +++ b/arch/arm/lib/findbit.S
+> @@ -19,7 +19,8 @@
+> 
+>  /*
+>   * Purpose  : Find a 'zero' bit
+> - * Prototype: int find_first_zero_bit(void *addr, unsigned int maxbit);
+> + * Prototype: unsigned long  find_first_zero_bit(const void *p,
+> + *						unsigned long size);
+>   */
+>  ENTRY(_find_first_zero_bit_le)
+>  		teq	r1, #0	
+> @@ -40,7 +41,9 @@ ENDPROC(_find_first_zero_bit_le)
+> 
+>  /*
+>   * Purpose  : Find next 'zero' bit
+> - * Prototype: int find_next_zero_bit(void *addr, unsigned int maxbit,
+> int offset)
+> + * Prototype: unsigned long find_next_zero_bit(const void *p,
+> + *						unsigned long size,
+> + *						unsigned long offset);
+>   */
+>  ENTRY(_find_next_zero_bit_le)
+>  		teq	r1, #0
+> @@ -60,7 +63,8 @@ ENDPROC(_find_next_zero_bit_le)
+> 
+>  /*
+>   * Purpose  : Find a 'one' bit
+> - * Prototype: int find_first_bit(const unsigned long *addr, unsigned
+> int maxbit);
+> + * Prototype: unsigned long find_first_bit(const unsigned long *p,
+> + *					unsigned long size);
+>   */
+>  ENTRY(_find_first_bit_le)
+>  		teq	r1, #0	
+> @@ -81,7 +85,9 @@ ENDPROC(_find_first_bit_le)
+> 
+>  /*
+>   * Purpose  : Find next 'one' bit
+> - * Prototype: int find_next_zero_bit(void *addr, unsigned int maxbit,
+> int offset)
+> + * Prototype: unsigned long find_next_bit(const unsigned long *p,
+> + *					unsigned long size,
+> + *					unsigned long offset);
+>   */
+>  ENTRY(_find_next_bit_le)
+>  		teq	r1, #0
+> diff --git a/arch/m68k/include/asm/bitops.h b/arch/m68k/include/asm/bitops.h
+> index c6baa91..b1d8752 100644
+> --- a/arch/m68k/include/asm/bitops.h
+> +++ b/arch/m68k/include/asm/bitops.h
+> @@ -320,11 +320,11 @@ static inline int
+> bfchg_mem_test_and_change_bit(int nr,
+>  #include <asm-generic/bitops/ffz.h>
+>  #else
+> 
+> -static inline int find_first_zero_bit(const unsigned long *vaddr,
+> -				      unsigned size)
+> +static inline unsigned long find_first_zero_bit(const unsigned long *vaddr,
+> +				      unsigned long size)
+>  {
+>  	const unsigned long *p = vaddr;
+> -	int res = 32;
+> +	unsigned int res = 32;
+>  	unsigned int words;
+>  	unsigned long num;
+> 
+> @@ -346,11 +346,12 @@ out:
+>  }
+>  #define find_first_zero_bit find_first_zero_bit
+> 
+> -static inline int find_next_zero_bit(const unsigned long *vaddr, int size,
+> -				     int offset)
+> +static inline unsigned long find_next_zero_bit(const unsigned long *vaddr,
+> +						unsigned long size,
+> +						unsigned long offset)
+>  {
+>  	const unsigned long *p = vaddr + (offset >> 5);
+> -	int bit = offset & 31UL, res;
+> +	unsigned int bit = offset & 31UL, res;
+> 
+>  	if (offset >= size)
+>  		return size;
+> @@ -376,10 +377,11 @@ static inline int find_next_zero_bit(const
+> unsigned long *vaddr, int size,
+>  }
+>  #define find_next_zero_bit find_next_zero_bit
+> 
+> -static inline int find_first_bit(const unsigned long *vaddr, unsigned size)
+> +static inline unsigned long find_first_bit(const unsigned long *vaddr,
+> +						unsigned long size)
+>  {
+>  	const unsigned long *p = vaddr;
+> -	int res = 32;
+> +	unsigned int res = 32;
+>  	unsigned int words;
+>  	unsigned long num;
+> 
+> @@ -401,11 +403,12 @@ out:
+>  }
+>  #define find_first_bit find_first_bit
+> 
+> -static inline int find_next_bit(const unsigned long *vaddr, int size,
+> -				int offset)
+> +static inline unsigned long find_next_bit(const unsigned long *vaddr,
+> +						unsigned long size,
+> +						unsigned long offset)
+>  {
+>  	const unsigned long *p = vaddr + (offset >> 5);
+> -	int bit = offset & 31UL, res;
+> +	unsigned int bit = offset & 31UL, res;
+> 
+>  	if (offset >= size)
+>  		return size;
+> 
 
-This patch moves the problematic printk() till after the cpu->map_io()
-call.  It also switches it over to pr_info().  This patch _doesn't_
-remove the questionable printks in the panic case, since we might get
-lucky and the TLB might still let us print.  This patch also adds a
-few warnings to help others avoid similar headaches.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- arch/arm/mach-exynos/common.c | 7 +++++++
- arch/arm/plat-samsung/init.c  | 8 +++++---
- 2 files changed, 12 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
-index 027c9e7..8b51b0d 100644
---- a/arch/arm/mach-exynos/common.c
-+++ b/arch/arm/mach-exynos/common.c
-@@ -386,6 +386,13 @@ int __init exynos_fdt_map_chipid(unsigned long node, const char *uname,
- 
- void __init exynos_init_io(struct map_desc *mach_desc, int size)
- {
-+	/*
-+	 * WARNING: use of printk in this function or its children can be
-+	 * deadly.  We've switched over to new page tables but haven't yet
-+	 * added S3C_VA_UART into the mapping.  You might get lucky and see a
-+	 * printout work, but if you call flush_tlb_all() it will fail reliably.
-+	 */
-+
- #ifdef CONFIG_OF
- 	if (initial_boot_params)
- 		of_scan_flat_dt(exynos_fdt_map_chipid, NULL);
-diff --git a/arch/arm/plat-samsung/init.c b/arch/arm/plat-samsung/init.c
-index 79d10fc..494cfbb 100644
---- a/arch/arm/plat-samsung/init.c
-+++ b/arch/arm/plat-samsung/init.c
-@@ -49,18 +49,20 @@ void __init s3c_init_cpu(unsigned long idcode,
- 	cpu = s3c_lookup_cpu(idcode, cputab, cputab_size);
- 
- 	if (cpu == NULL) {
-+		/* Questionable printk; S3C_VA_UART not mapped yet! */
- 		printk(KERN_ERR "Unknown CPU type 0x%08lx\n", idcode);
- 		panic("Unknown S3C24XX CPU");
- 	}
--
--	printk("CPU %s (id 0x%08lx)\n", cpu->name, idcode);
--
- 	if (cpu->map_io == NULL || cpu->init == NULL) {
-+		/* Questionable printk; S3C_VA_UART not mapped yet! */
- 		printk(KERN_ERR "CPU %s support not enabled\n", cpu->name);
- 		panic("Unsupported Samsung CPU");
- 	}
- 
- 	cpu->map_io();
-+
-+	/* IMPORTANT: call this after cpu->map_io() so we can print reliably */
-+	pr_info("CPU %s (id 0x%08lx)\n", cpu->name, idcode);
- }
- 
- /* s3c24xx_init_clocks
 -- 
-1.8.3
+Chen Gang
 
+Asianux Corporation
