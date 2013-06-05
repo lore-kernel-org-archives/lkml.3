@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933188Ab3FEVm3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:42:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38072 "EHLO
+	id S933286Ab3FEVmm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:42:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38063 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933120Ab3FEVgP (ORCPT
+	with ESMTP id S933109Ab3FEVgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:36:15 -0400
+	Wed, 5 Jun 2013 17:36:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jonas Peterson <jonas.peterson@gmail.com>,
-        Olivier Sobrie <olivier@sobrie.be>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [ 113/127] net: can: kvaser_usb: fix reception on "USBcan Pro" and "USBcan R" type hardware.
-Date: Wed,  5 Jun 2013 14:34:40 -0700
-Message-Id: <20130605213230.828265508@linuxfoundation.org>
+        Gabor Juhos <juhosg@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 111/127] ath9k: use correct OTP register offsets for AR9550
+Date: Wed,  5 Jun 2013 14:34:38 -0700
+Message-Id: <20130605213230.632355021@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -28,127 +27,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonas Peterson <jonas.peterson@gmail.com>
+From: Gabor Juhos <juhosg@openwrt.org>
 
-commit a90f13b24fb40d02d11496cce6a10ae8d4b319b2 upstream.
+commit add295a4afbdf5852d004c754c552d692b0fcac8 upstream.
 
-Unlike Kvaser Leaf light devices, some other Kvaser devices (like USBcan
-Pro, USBcan R) receive CAN messages in CMD_LOG_MESSAGE frames. This
-patch adds support for it.
+Accessing the OTP memory on AR9950 causes a data bus
+like this:
 
-Signed-off-by: Jonas Peterson <jonas.peterson@gmail.com>
-Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+  Data bus error, epc == 801f7774, ra == 801f7774
+  Oops[#1]:
+  CPU: 0 PID: 1 Comm: swapper Not tainted 3.10.0-rc3 #592
+  task: 87c28000 ti: 87c22000 task.ti: 87c22000
+  $ 0   : 00000000 00000061 deadc0de 00000000
+  $ 4   : b8115f18 00015f18 00000007 00000004
+  $ 8   : 00000001 7c7c3c7c 7c7c7c7c 7c7c7c7c
+  $12   : 7c7c3c7c 80320a68 00000000 7c7c7c3c
+  $16   : 87cd8010 00015f18 00000007 00000000
+  $20   : 00000064 00000004 87c23c7c 8035210c
+  $24   : 00000000 801f3674
+  $28   : 87c22000 87c23b48 00000001 801f7774
+  Hi    : 00000000
+  Lo    : 00000064
+  epc   : 801f7774 ath9k_hw_wait+0x58/0xb0
+      Not tainted
+  ra    : 801f7774 ath9k_hw_wait+0x58/0xb0
+  Status: 1000cc03 KERNEL EXL IE
+  Cause : 4080801c
+  PrId  : 00019750 (MIPS 74Kc)
+  Modules linked in:
+  Process swapper (pid: 1, threadinfo=87c22000, task=87c28000, ts=00000000)
+  Stack : 0000000f 00000061 00002710 8006240c 00000001 87cd8010 87c23bb0 87cd8010
+          00000000 00000004 00000003 80210c7c 000000b3 67fa8000 0000032a 000006fe
+          000003e8 00000002 00000028 87c23bf0 000003ff 80210d24 803e5630 80210e28
+          00000000 00000007 87cd8010 00007044 00000004 00000061 000003ff 000001ff
+          87c26000 87cd8010 00000220 87cd8bb8 80210000 8020fcf4 87c22000 87c23c08
+          ...
+  Call Trace:
+  [<801f7774>] ath9k_hw_wait+0x58/0xb0
+  [<80210c7c>] ar9300_otp_read_word+0x80/0xd4
+  [<80210d24>] ar9300_read_otp+0x54/0xb0
+  [<8020fcf4>] ar9300_check_eeprom_header+0x1c/0x40
+  [<80210fe4>] ath9k_hw_ar9300_fill_eeprom+0x118/0x39c
+  [<80206650>] ath9k_hw_eeprom_init+0x74/0xb4
+  [<801f96d0>] ath9k_hw_init+0x7ec/0x96c
+  [<801e65ec>] ath9k_init_device+0x340/0x758
+  [<801f35d0>] ath_ahb_probe+0x21c/0x2c0
+  [<801c041c>] driver_probe_device+0xc0/0x1e4
+  [<801c05ac>] __driver_attach+0x6c/0xa4
+  [<801bea08>] bus_for_each_dev+0x64/0xa8
+  [<801bfa40>] bus_add_driver+0xcc/0x24c
+  [<801c0954>] driver_register+0xbc/0x17c
+  [<803f8fc0>] ath9k_init+0x5c/0x88
+  [<800608fc>] do_one_initcall+0xec/0x1a0
+  [<803e6a68>] kernel_init_freeable+0x13c/0x200
+  [<80309cdc>] kernel_init+0x1c/0xe4
+  [<80062450>] ret_from_kernel_thread+0x10/0x18
+
+On the AR9550, the OTP registers are located at
+the same address as on the AR9340. Use the correct
+values to avoid the error.
+
+Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/usb/kvaser_usb.c |   68 +++++++++++++++++++++++++--------------
- 1 file changed, 45 insertions(+), 23 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.h |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/net/can/usb/kvaser_usb.c
-+++ b/drivers/net/can/usb/kvaser_usb.c
-@@ -136,6 +136,9 @@
- #define KVASER_CTRL_MODE_SELFRECEPTION	3
- #define KVASER_CTRL_MODE_OFF		4
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h
+@@ -68,13 +68,16 @@
+ #define AR9300_BASE_ADDR 0x3ff
+ #define AR9300_BASE_ADDR_512 0x1ff
  
-+/* log message */
-+#define KVASER_EXTENDED_FRAME		BIT(31)
-+
- struct kvaser_msg_simple {
- 	u8 tid;
- 	u8 channel;
-@@ -817,8 +820,13 @@ static void kvaser_usb_rx_can_msg(const
- 	priv = dev->nets[channel];
- 	stats = &priv->netdev->stats;
+-#define AR9300_OTP_BASE			(AR_SREV_9340(ah) ? 0x30000 : 0x14000)
+-#define AR9300_OTP_STATUS		(AR_SREV_9340(ah) ? 0x30018 : 0x15f18)
++#define AR9300_OTP_BASE \
++		((AR_SREV_9340(ah) || AR_SREV_9550(ah)) ? 0x30000 : 0x14000)
++#define AR9300_OTP_STATUS \
++		((AR_SREV_9340(ah) || AR_SREV_9550(ah)) ? 0x30018 : 0x15f18)
+ #define AR9300_OTP_STATUS_TYPE		0x7
+ #define AR9300_OTP_STATUS_VALID		0x4
+ #define AR9300_OTP_STATUS_ACCESS_BUSY	0x2
+ #define AR9300_OTP_STATUS_SM_BUSY	0x1
+-#define AR9300_OTP_READ_DATA		(AR_SREV_9340(ah) ? 0x3001c : 0x15f1c)
++#define AR9300_OTP_READ_DATA \
++		((AR_SREV_9340(ah) || AR_SREV_9550(ah)) ? 0x3001c : 0x15f1c)
  
--	if (msg->u.rx_can.flag & (MSG_FLAG_ERROR_FRAME | MSG_FLAG_NERR |
--				  MSG_FLAG_OVERRUN)) {
-+	if ((msg->u.rx_can.flag & MSG_FLAG_ERROR_FRAME) &&
-+	    (msg->id == CMD_LOG_MESSAGE)) {
-+		kvaser_usb_rx_error(dev, msg);
-+		return;
-+	} else if (msg->u.rx_can.flag & (MSG_FLAG_ERROR_FRAME |
-+					 MSG_FLAG_NERR |
-+					 MSG_FLAG_OVERRUN)) {
- 		kvaser_usb_rx_can_err(priv, msg);
- 		return;
- 	} else if (msg->u.rx_can.flag & ~MSG_FLAG_REMOTE_FRAME) {
-@@ -834,22 +842,40 @@ static void kvaser_usb_rx_can_msg(const
- 		return;
- 	}
- 
--	cf->can_id = ((msg->u.rx_can.msg[0] & 0x1f) << 6) |
--		     (msg->u.rx_can.msg[1] & 0x3f);
--	cf->can_dlc = get_can_dlc(msg->u.rx_can.msg[5]);
--
--	if (msg->id == CMD_RX_EXT_MESSAGE) {
--		cf->can_id <<= 18;
--		cf->can_id |= ((msg->u.rx_can.msg[2] & 0x0f) << 14) |
--			      ((msg->u.rx_can.msg[3] & 0xff) << 6) |
--			      (msg->u.rx_can.msg[4] & 0x3f);
--		cf->can_id |= CAN_EFF_FLAG;
--	}
--
--	if (msg->u.rx_can.flag & MSG_FLAG_REMOTE_FRAME)
--		cf->can_id |= CAN_RTR_FLAG;
--	else
--		memcpy(cf->data, &msg->u.rx_can.msg[6], cf->can_dlc);
-+	if (msg->id == CMD_LOG_MESSAGE) {
-+		cf->can_id = le32_to_cpu(msg->u.log_message.id);
-+		if (cf->can_id & KVASER_EXTENDED_FRAME)
-+			cf->can_id &= CAN_EFF_MASK | CAN_EFF_FLAG;
-+		else
-+			cf->can_id &= CAN_SFF_MASK;
-+
-+		cf->can_dlc = get_can_dlc(msg->u.log_message.dlc);
-+
-+		if (msg->u.log_message.flags & MSG_FLAG_REMOTE_FRAME)
-+			cf->can_id |= CAN_RTR_FLAG;
-+		else
-+			memcpy(cf->data, &msg->u.log_message.data,
-+			       cf->can_dlc);
-+	} else {
-+		cf->can_id = ((msg->u.rx_can.msg[0] & 0x1f) << 6) |
-+			     (msg->u.rx_can.msg[1] & 0x3f);
-+
-+		if (msg->id == CMD_RX_EXT_MESSAGE) {
-+			cf->can_id <<= 18;
-+			cf->can_id |= ((msg->u.rx_can.msg[2] & 0x0f) << 14) |
-+				      ((msg->u.rx_can.msg[3] & 0xff) << 6) |
-+				      (msg->u.rx_can.msg[4] & 0x3f);
-+			cf->can_id |= CAN_EFF_FLAG;
-+		}
-+
-+		cf->can_dlc = get_can_dlc(msg->u.rx_can.msg[5]);
-+
-+		if (msg->u.rx_can.flag & MSG_FLAG_REMOTE_FRAME)
-+			cf->can_id |= CAN_RTR_FLAG;
-+		else
-+			memcpy(cf->data, &msg->u.rx_can.msg[6],
-+			       cf->can_dlc);
-+	}
- 
- 	netif_rx(skb);
- 
-@@ -911,6 +937,7 @@ static void kvaser_usb_handle_message(co
- 
- 	case CMD_RX_STD_MESSAGE:
- 	case CMD_RX_EXT_MESSAGE:
-+	case CMD_LOG_MESSAGE:
- 		kvaser_usb_rx_can_msg(dev, msg);
- 		break;
- 
-@@ -919,11 +946,6 @@ static void kvaser_usb_handle_message(co
- 		kvaser_usb_rx_error(dev, msg);
- 		break;
- 
--	case CMD_LOG_MESSAGE:
--		if (msg->u.log_message.flags & MSG_FLAG_ERROR_FRAME)
--			kvaser_usb_rx_error(dev, msg);
--		break;
--
- 	case CMD_TX_ACKNOWLEDGE:
- 		kvaser_usb_tx_acknowledge(dev, msg);
- 		break;
+ enum targetPowerHTRates {
+ 	HT_TARGET_RATE_0_8_16,
 
 
