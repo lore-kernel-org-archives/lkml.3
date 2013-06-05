@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757716Ab3FEUxX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 16:53:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36243 "EHLO
+	id S1757838Ab3FEU7i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 16:59:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36269 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757641Ab3FEUxS (ORCPT
+	with ESMTP id S1757703Ab3FEUxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 16:53:18 -0400
+	Wed, 5 Jun 2013 16:53:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
-Subject: [ 09/33] USB: Blacklisted Cinterions PLxx WWAN Interface
-Date: Wed,  5 Jun 2013 13:52:47 -0700
-Message-Id: <20130605204704.602693158@linuxfoundation.org>
+        Martin Michlmayr <tbm@cyrius.com>, Marek Vasut <marex@denx.de>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>
+Subject: [ 15/33] Kirkwood: Enable PCIe port 1 on QNAP TS-11x/TS-21x
+Date: Wed,  5 Jun 2013 13:52:53 -0700
+Message-Id: <20130605204705.834670795@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605204702.359510786@linuxfoundation.org>
 References: <20130605204702.359510786@linuxfoundation.org>
@@ -26,45 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Schemmel Hans-Christoph <Hans-Christoph.Schemmel@gemalto.com>
+From: Martin Michlmayr <tbm@cyrius.com>
 
-commit 8ff10bdb14a52e3f25d4ce09e0582a8684c1a6db upstream.
+commit 99e11334dcb846f9b76fb808196c7f47aa83abb3 upstream.
 
-/drivers/usb/serial/option.c: Blacklisted Cinterion's PLxx WWAN
-Interface (USB Interface 4), because it will be handled by QMI WWAN
-driver. Product IDs renamed.
+Enable KW_PCIE1 on QNAP TS-11x/TS-21x devices as newer revisions
+(rev 1.3) have a USB 3.0 chip from Etron on PCIe port 1.  Thanks
+to Marek Vasut for identifying this issue!
 
-Signed-off-by: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
+Signed-off-by: Martin Michlmayr <tbm@cyrius.com>
+Tested-by: Marek Vasut <marex@denx.de>
+Acked-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ arch/arm/mach-kirkwood/ts219-setup.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -342,8 +342,8 @@ static void option_instat_callback(struc
- #define CINTERION_PRODUCT_EU3_E			0x0051
- #define CINTERION_PRODUCT_EU3_P			0x0052
- #define CINTERION_PRODUCT_PH8			0x0053
--#define CINTERION_PRODUCT_AH6			0x0055
--#define CINTERION_PRODUCT_PLS8			0x0060
-+#define CINTERION_PRODUCT_AHXX			0x0055
-+#define CINTERION_PRODUCT_PLXX			0x0060
+--- a/arch/arm/mach-kirkwood/ts219-setup.c
++++ b/arch/arm/mach-kirkwood/ts219-setup.c
+@@ -124,7 +124,7 @@ static void __init qnap_ts219_init(void)
+ static int __init ts219_pci_init(void)
+ {
+ 	if (machine_is_ts219())
+-		kirkwood_pcie_init(KW_PCIE0);
++		kirkwood_pcie_init(KW_PCIE1 | KW_PCIE0);
  
- /* Olivetti products */
- #define OLIVETTI_VENDOR_ID			0x0b3c
-@@ -1268,8 +1268,9 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_E) },
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_P) },
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8) },
--	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_AH6) },
--	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLS8) },
-+	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_AHXX) },
-+	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLXX),
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) }, 
- 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
- 	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDM) },
+ 	return 0;
+ }
 
 
