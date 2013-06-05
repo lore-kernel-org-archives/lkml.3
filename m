@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab3FEQZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 12:25:29 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51536 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756521Ab3FEQZ1 (ORCPT
+	id S1756630Ab3FEQ02 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 12:26:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55421 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754553Ab3FEQ00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 12:25:27 -0400
-Message-ID: <51AF6674.3020701@wwwdotorg.org>
-Date: Wed, 05 Jun 2013 10:25:24 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 5 Jun 2013 12:26:26 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: stable@vger.kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: Re: Please backport bee980d9e9642e96351fa3ca9077b853ecf62f57 (xen/events: Handle VIRQ_TIMER before any other hardirq in event loop.) to earlier kernels v3.8...and so on
+References: <20130603120232.GA6893@phenom.dumpdata.com>
+Date: Wed, 05 Jun 2013 17:26:22 +0100
+In-Reply-To: <20130603120232.GA6893@phenom.dumpdata.com> (Konrad Rzeszutek
+	Wilk's message of "Mon, 3 Jun 2013 08:02:32 -0400")
+Message-ID: <87zjv4h6c1.fsf@canonical.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: linux-arm-kernel@lists.infradead.org, mturquette@linaro.org,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] PLL m,n,p init from SoC files
-References: <1370440301-3562-1-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1370440301-3562-1-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2013 07:51 AM, Peter De Schrijver wrote:
-> The m,n,p fields don't have the same bit offset and width across all PLLs.
-> This patchset allows SoC specific files to indicate the offset and width.
-> It also provides the data for Tegra114.
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
 
-The series,
-Tested-by: Stephen Warren <swarren@nvidia.com>
-Acked-by: Stephen Warren <swarren@nvidia.com>
+> Hey Greg,
+>
+> I hadn't (by mistake) put the CC: stable@vger.kernel.org on said patch
+> (Which is in the Linux kernel).
+>
+> If possible please back-port said patch to the existing stable trees.
+> Attached is a version that applies to some of the earlier trees easily.
+>
+>
 
+Thanks, I'm queuing it to the 3.5 kernel as well.
+
+Cheers,
+-- 
+Luis
