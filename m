@@ -1,138 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144Ab3FEKmg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 06:42:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51938 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753335Ab3FEKmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 06:42:35 -0400
-Date: Wed, 5 Jun 2013 13:43:06 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sergei.shtylyov@cogentembedded.com
-Subject: Re: [net-next rfc V3 7/9] macvtap: allow TUNSETIFF to create
- multiqueue device
-Message-ID: <20130605104306.GG31830@redhat.com>
-References: <1370414192-5830-1-git-send-email-jasowang@redhat.com>
- <1370414192-5830-8-git-send-email-jasowang@redhat.com>
+	id S1754119Ab3FEKo1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 06:44:27 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48426 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752072Ab3FEKo0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 06:44:26 -0400
+Date: Wed, 5 Jun 2013 12:44:19 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        mingo@kernel.org, fweisbec@gmail.com
+Subject: Re: [PATCH v2] sched: fix clear NOHZ_BALANCE_KICK
+Message-ID: <20130605104419.GW8923@twins.programming.kicks-ass.net>
+References: <1370419991-13870-1-git-send-email-vincent.guittot@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370414192-5830-8-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1370419991-13870-1-git-send-email-vincent.guittot@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 02:36:30PM +0800, Jason Wang wrote:
-> Though the queue were in fact created by open(), we still need to add this check
-> to be compatible with tuntap which can let mgmt software use a single API to
-> manage queues. This patch only validates the device name and moves the TUNSETIFF
-> to a helper.
+On Wed, Jun 05, 2013 at 10:13:11AM +0200, Vincent Guittot wrote:
+> I have faced a sequence where the Idle Load Balance was sometime not
+> triggered for a while on my platform.
 > 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-
-The patch is OK, the description is confusing.
-What you mean is simply:
-
-	Allow IFF_MULTI_QUEUE in TUNSETIFF for macvtap, to match
-	tun behaviour.
-
-And if you put it like this, I would say make this
-the last patch in the series, so userspace
-can use IFF_MULTI_QUEUE to detect new versus old
-behaviour.
-
-> ---
->  drivers/net/macvtap.c |   51 ++++++++++++++++++++++++++++++++++++++----------
->  1 files changed, 40 insertions(+), 11 deletions(-)
+> CPU 0 and CPU 1 are running tasks and CPU 2 is idle
 > 
-> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> index 5ccba99..14764cc 100644
-> --- a/drivers/net/macvtap.c
-> +++ b/drivers/net/macvtap.c
-> @@ -869,6 +869,7 @@ out:
->  	return ret;
->  }
->  
-> +
->  static struct macvlan_dev *macvtap_get_vlan(struct macvtap_queue *q)
->  {
->  	struct macvlan_dev *vlan;
+> CPU 1 kicks the Idle Load Balance
+> CPU 1 selects CPU 2 as the new Idle Load Balancer
+> CPU 2 sets NOHZ_BALANCE_KICK for CPU 2
+> CPU 2 sends a reschedule IPI to CPU 2
+> While CPU 3 wakes up, CPU 0 or CPU 1 migrates a waking up task A on CPU 2
+> CPU 2 finally wakes up, runs task A and discards the Idle Load Balance
+> task A quickly goes back to sleep (before a tick occurs on CPU 2)
+> CPU 2 goes back to idle with NOHZ_BALANCE_KICK set
+> 
+> Whenever CPU 2 will be selected as the ILB, no reschedule IPI will be sent
+> because NOHZ_BALANCE_KICK is already set and no Idle Load Balance will be
+> performed.
+> 
+> We must wait for the sched softirq to be raised on CPU 2 thanks to another
+> part the kernel to come back to clear NOHZ_BALANCE_KICK.
+> 
+> The proposed solution clears NOHZ_BALANCE_KICK in schedule_ipi if
+> we can't raise the sched_softirq for the Idle Load Balance.
+> 
+> Change since V1:
+> - move the clear of NOHZ_BALANCE_KICK in got_nohz_idle_kick if the ILB
+> can't run on this CPU (as suggested by Peter)
+> 
+> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
 
-Please don't.
-
-> @@ -887,6 +888,44 @@ static void macvtap_put_vlan(struct macvlan_dev *vlan)
->  	dev_put(vlan->dev);
->  }
->  
-> +static int macvtap_set_iff(struct file *file, struct ifreq __user *ifr_u)
-> +{
-> +	struct macvtap_queue *q = file->private_data;
-> +	struct net *net = current->nsproxy->net_ns;
-> +	struct inode *inode = file_inode(file);
-> +	struct net_device *dev, *dev2;
-> +	struct ifreq ifr;
-> +
-> +	if (copy_from_user(&ifr, ifr_u, sizeof(struct ifreq)))
-> +		return -EFAULT;
-> +
-> +	/* To keep the same behavior of tuntap, validate ifr_name */
-
-So I'm not sure - why is it important to validate ifr_name here?
-We ignore the name for all other flags - why is IFF_MULTI_QUEUE
-special?
-
-> +	if (ifr.ifr_flags & IFF_MULTI_QUEUE) {
-> +		dev = __dev_get_by_name(net, ifr.ifr_name);
-> +		if (!dev)
-> +			return -EINVAL;
-> +
-> +		dev2 = dev_get_by_macvtap_minor(iminor(inode));
-> +		if (!dev2)
-> +			return -EINVAL;
-> +
-> +		if (dev != dev2) {
-> +			dev_put(dev2);
-> +			return -EINVAL;
-> +		}
-> +
-> +		dev_put(dev2);
-> +	}
-> +
-> +	if ((ifr.ifr_flags & ~(IFF_VNET_HDR | IFF_MULTI_QUEUE)) !=
-> +	    (IFF_NO_PI | IFF_TAP))
-> +		return -EINVAL;
-> +	else
-> +		q->flags = ifr.ifr_flags;
-> +
-> +	return 0;
-> +}
-> +
->  /*
->   * provide compatibility with generic tun/tap interface
->   */
-> @@ -905,17 +944,7 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
->  
->  	switch (cmd) {
->  	case TUNSETIFF:
-> -		/* ignore the name, just look at flags */
-
-This is actually a useful comment that you've removed.
-
-> -		if (get_user(u, &ifr->ifr_flags))
-> -			return -EFAULT;
-> -
-> -		ret = 0;
-> -		if ((u & ~IFF_VNET_HDR) != (IFF_NO_PI | IFF_TAP))
-> -			ret = -EINVAL;
-> -		else
-> -			q->flags = u;
-> -
-> -		return ret;
-> +		return macvtap_set_iff(file, ifr);
->  
->  	case TUNGETIFF:
->  		vlan = macvtap_get_vlan(q);
-> -- 
-> 1.7.1
+Thanks!
