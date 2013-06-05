@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603Ab3FEUvy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 16:51:54 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:54477 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757347Ab3FEUvv (ORCPT
+	id S1757746Ab3FEUxZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 16:53:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36273 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757717Ab3FEUxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 16:51:51 -0400
-Date: Wed, 5 Jun 2013 13:51:46 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [PATCH v2 08/10] cpuset: allow to keep tasks in empty cpusets
-Message-ID: <20130605205146.GI10693@mtj.dyndns.org>
-References: <51AF0183.8070602@huawei.com>
- <51AF020B.3030701@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51AF020B.3030701@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 5 Jun 2013 16:53:23 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
+Subject: [ 12/33] cifs: only set ops for inodes in I_NEW state
+Date: Wed,  5 Jun 2013 13:52:50 -0700
+Message-Id: <20130605204705.230656879@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130605204702.359510786@linuxfoundation.org>
+References: <20130605204702.359510786@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Li.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-On Wed, Jun 05, 2013 at 05:16:59PM +0800, Li Zefan wrote:
-> @@ -2092,11 +2183,13 @@ static void cpuset_propagate_hotplug_workfn(struct work_struct *work)
->  	mutex_unlock(&cpuset_mutex);
->  
->  	/*
-> -	 * If @cs became empty, move tasks to the nearest ancestor with
-> -	 * execution resources.  This is full cgroup operation which will
-> +	 * If sane_behavior flag is set, we'll keep tasks in empty cpusets.
-> +	 *
-> +	 * Otherwise move tasks to the nearest ancestor with execution
-> +	 *  resources.  This is full cgroup operation which will
->  	 * also call back into cpuset.  Should be done outside any lock.
->  	 */
-> -	if (is_empty)
-> +	if (!sane && is_empty)
->  		remove_tasks_in_empty_cpuset(cs);
->  
->  	/* the following may free @cs, should be the last operation */
-> @@ -2171,6 +2264,7 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
->  		cpumask_copy(top_cpuset.cpus_allowed, &new_cpus);
->  		mutex_unlock(&callback_mutex);
->  		/* we don't mess with cpumasks of tasks in top_cpuset */
-> +		update_tasks_cpumask_hier(&top_cpuset, false, NULL);
->  	}
+------------------
 
-I'm a little confused by the order of operation.  We now have two
-different hierarchical walks for hotplug propagation, right?  I
-suppose the above one is added because we now also need to update the
-mask when cpus are being brought online?
+From: Jeff Layton <jlayton@redhat.com>
 
-I wonder whether it'd be possible to merge the two paths.  My
-suspicion is that we probably don't need propagate_hotplug_work
-anymore now that we can drop RCU read lock while doing the pre-order
-walk.  What do you think?
+commit c2b93e0699723700f886ce17bb65ffd771195a6d upstream.
 
-Thanks.
+It's generally not safe to reset the inode ops once they've been set. In
+the case where the inode was originally thought to be a directory and
+then later found to be a DFS referral, this can lead to an oops when we
+try to trigger an inode op on it after changing the ops to the blank
+referral operations.
 
--- 
-tejun
+Reported-and-Tested-by: Sachin Prabhu <sprabhu@redhat.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/cifs/inode.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -173,7 +173,8 @@ cifs_fattr_to_inode(struct inode *inode,
+ 
+ 	if (fattr->cf_flags & CIFS_FATTR_DFS_REFERRAL)
+ 		inode->i_flags |= S_AUTOMOUNT;
+-	cifs_set_ops(inode);
++	if (inode->i_state & I_NEW)
++		cifs_set_ops(inode);
+ }
+ 
+ void
+
+
