@@ -1,101 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758066Ab3FEWiy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 18:38:54 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:43199 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757840Ab3FEWix (ORCPT
+	id S1758093Ab3FEWjJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 18:39:09 -0400
+Received: from moeglingen.blank.eu.org ([82.139.201.30]:55543 "EHLO
+	mail.waldi.eu.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757840Ab3FEWjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 18:38:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <19865137.ey1FePPnmD@flatron>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
-	<CAKON4OxDD5orX2w-_+d5kawTGXbE3KKj2QLERo9m7=NiUSXhgQ@mail.gmail.com>
-	<CAPweEDzDC87KmOQ=0hyPcjPtPsRuXHxNTs97vbEqVNNnix69rA@mail.gmail.com>
-	<19865137.ey1FePPnmD@flatron>
-Date: Wed, 5 Jun 2013 23:38:52 +0100
-X-Google-Sender-Auth: ehxyqcOWzsrrY6JloZmw_Ww3mrM
-Message-ID: <CAPweEDzk0T+fZ1aW16D8K4XpvRR2GRrOFtfcjzstnmEJWxmREg@mail.gmail.com>
-Subject: Re: getting allwinner SoC support upstream (was Re: Uploading linux (3.9.4-1))
-From: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+	Wed, 5 Jun 2013 18:39:06 -0400
+X-Greylist: delayed 510 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Jun 2013 18:39:06 EDT
+Date: Thu, 6 Jun 2013 00:30:32 +0200
+From: Bastian Blank <waldi@debian.org>
+To: debian-kernel@lists.debian.org,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org,
         Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        debian-kernel@lists.debian.org
-Content-Type: text/plain; charset=UTF-8
+	<arm-netbook@lists.phcomp.co.uk>
+Subject: Re: getting allwinner SoC support upstream (was Re: Uploading linux
+ (3.9.4-1))
+Message-ID: <20130605223031.GB22277@mail.waldi.eu.org>
+Mail-Followup-To: debian-kernel@lists.debian.org,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 5, 2013 at 10:52 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> Hi Luke,
+On Wed, Jun 05, 2013 at 08:46:30PM +0100, Luke Kenneth Casson Leighton wrote:
+>  to begin to describe the problem in getting allwinner soc source code
+> upstream is this: not only do we have the usual "let's get it out the
+> door as fast as possible" learning curve of a very young, very new and
+> bewilderingly-successful fabless SoC company, but we also have a
+> completely new type of very successful and comprehensive
+> device-tree-like dynamic configuration system to deal with, which
+> allwinner have called "fex" [*1].
 
- allo tomasz :)
+IBM for example pushs the code into the kernel before the silicon is
+even finished. Once a driver was removed because the project was
+scrapped before it reached the customers. Arm did the same for the 64bit
+variant of the architecture.
 
- ok - much of what you say is duplicated by what russell said, so in
-effect the same reply is relevant, but there's been some cross-over.
-i'll summarise below and cut all but the key question below:
+Are the turn around times for the allwinner SoC stuff really shorter
+then two kernel releases?
 
-> I tend to disagree with your view. Is it really our task to convince such
-> companies to work with open source community?
+>  basically at the time when device-tree was being thought of,
+> allwinner needed something that they could *right then* - not waiting
+> for developers to finish device-tree - they needed to be able to
+> reconfigure their customer's kernels *without* needing a recompile.
+> so they invented the script.fex system, which is a simple config.ini
+> file-format, compile it to binary, and get the bootloader to upload it
+> to memory and read it.
 
- their sheer overwhelming success provides us with mass-volume
-ultra-low cost hardware.  to not make an effort to accommodate them
-would in this specific instance be a huge missed opportunity,
-responsibility for which currently falls on the shoulders of the sunxi
-community, where that small community is in no way considered
-"authoritative" as an upstream source and thus every single GNU/Linux
-Distro is left in a position of forcing people to follow insane
-non-standard build procedures that are *way* outside of the capability
-of the average person.
+So it was invented over five years ago? What did you do in the last two
+years since it was finished in all its glory?
 
- so by the linux kernel developers intransigent position, the reach of
-free software as a whole is greatly reduced.  simple logical
-unavoidable conclusion.
+> what's the point of mentioning this?
 
- please feel free - linux kernel developers - to maintain this
-intransigent position for as long as you find it useful to you to do
-so.  btw, that is a sincere statement, devoid and completely free of
-all and any implicit or explicit additional statements and
-implications.
+Obviously nothing, as the decision stands.
 
+> well, the point is: the expectation of the linux kernel developers is
+> that Everyone Must Convert To DeviceTree.  implicitly behind that is,
+> i believe, an expectation that if you *don't* convert to Device Tree,
+> you can kiss upstream submission goodbye.  and, in allwinner's case,
+> that's simply not going to happen.
 
->> > Device tree on ARM's goal is to achieve a single kernel across
->> > vendors, not just a single kernel for a single vendor.
->>
->>  you'll be aware that i've mentioned a number of times and have
->> discussed at some length why this is a goal that is completely
->> impossible to achieve [*1].  sadly.
->
-> I tend to disagree on this as well, but it's another story. Have read one
-> of the discussions on this topic and it seemed to look more like lobbying
-> for one of the standards being promoted by some company,
+Yes. Our project, our rules. If you don't like them, go away.
 
- yeahh, that's rather unfortunate.  i went to some lengths to avoid
-mentioning eoma [*1] until there was a natural point at which it
-became difficult *not* to bring it up, not least because i didn't hear
-anyone else presenting any actual real workable solutions.
+> add to this the fact that they've already taken *five* near-identical
+> copies of each version of their drivers (for sun3i up to sun7i) - if
+> you do a recursive diff in the drivers/usb/sun7i_usb and
+> drivers/usb/sun4i_usb directories, the discrepancies are negligeable
+> (and are in many cases a regression, reintroducing known or new
+> bugs!), you can start to see that they simply have no idea how to work
+> with the free software community (they're too busy) and that they're
+> not really about to start, either.
 
-but, you have to bear in mind a couple of things:
+Send patches as everyone else.
 
-a) i'm a free software developer and advocate.  "business", "lobbying"
-etc. do not come naturally to me.  my associates scream at me
-regularly.
+Bastian
 
-b) i've been thinking about this incredibly hard problem for at least
-4 years and almost *all* of my background in computing of the past 30
-years leads me naturally towards actually coming up with a solution
-
-c) i'm actually really, really really and truly going about *actively*
-implementing that solution rather than just complaining about it *and*
-i'm inviting free software developers to participate, why, because see
-first sentence of a) above.
-
-l.
-
-[*1] which is an open standard, not a proprietary locked one.
+-- 
+I've already got a female to worry about.  Her name is the Enterprise.
+		-- Kirk, "The Corbomite Maneuver", stardate 1514.0
