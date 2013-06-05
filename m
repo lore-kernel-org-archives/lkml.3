@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627Ab3FEHL0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 03:11:26 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:33375 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752589Ab3FEHLX convert rfc822-to-8bit (ORCPT
+	id S1752707Ab3FEHLo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 03:11:44 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:40988 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752508Ab3FEHLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 03:11:23 -0400
-Date: Wed, 5 Jun 2013 09:11:19 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Heiko =?UTF-8?B?U3TDvGJuZXI=?= <heiko@sntech.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>, linux-mmc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [PATCH 10/10] arm: add basic support for Rockchip RK3066a
- boards
-Message-ID: <20130605091119.18432af4@skate>
-In-Reply-To: <201306030102.20890.heiko@sntech.de>
-References: <201306030055.15413.heiko@sntech.de>
-	<201306030102.20890.heiko@sntech.de>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 5 Jun 2013 03:11:42 -0400
+Message-ID: <51AEE4A7.6050808@linux.vnet.ibm.com>
+Date: Wed, 05 Jun 2013 15:11:35 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/3] workqueue: add a check point in pwq_activate_delayed_work()
+References: <51AEE452.8080605@linux.vnet.ibm.com>
+In-Reply-To: <51AEE452.8080605@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060518-3568-0000-0000-000003B8DEA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Heiko Stübner,
+get_work_pwq() is possible to return NULL, add a check point for that in
+the context inside pwq_activate_delayed_work().
 
-On Mon, 3 Jun 2013 01:02:20 +0200, Heiko Stübner wrote:
-> index 0000000..a2d8c70
-> --- /dev/null
-> +++ b/arch/arm/mach-rockchip/Makefile.boot
-> @@ -0,0 +1,3 @@
-> +zreladdr-$(CONFIG_ARCH_ROCKCHIP)	:= 0x60408000
-> +params_phys-$(CONFIG_ARCH_ROCKCHIP)	:= 0x60088000
-> +initrd_phys-$(CONFIG_ARCH_ROCKCHIP)	:= 0x60800000
+CC: Tejun Heo <tj@kernel.org>
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+---
+ kernel/workqueue.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Thanks to the AUTO_ZRELADDR thing that you're using as part of the
-MULTIPLATFORM support, this Makefile.boot file is no longer useful. See
-mach-socfpga, mach-mvebu, mach-bcm2835, mach-bcm, mach-highbank, etc.
-
-Cc'ing Maxime Ripard, since I see that mach-sunxi does have a
-Makefile.boot, even though I believe it is not needed.
-
-Best regards,
-
-Thomas
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index ee8e29a..ea2ec38 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1072,6 +1072,7 @@ static void put_pwq_unlocked(struct pool_workqueue *pwq)
+ static void pwq_activate_delayed_work(struct work_struct *work)
+ {
+ 	struct pool_workqueue *pwq = get_work_pwq(work);
++	BUG_ON(!pwq);
+ 
+ 	trace_workqueue_activate_work(work);
+ 	move_linked_works(work, &pwq->pool->worklist, NULL);
 -- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+1.7.4.1
+
