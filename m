@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932934Ab3FEVfr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:35:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37872 "EHLO
+	id S933005Ab3FEVf5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:35:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37915 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932690Ab3FEVfk (ORCPT
+	with ESMTP id S932690Ab3FEVfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:40 -0400
+	Wed, 5 Jun 2013 17:35:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [ 063/127] arm64: dont kill the kernel on a bad esr from el0
-Date: Wed,  5 Jun 2013 14:33:50 -0700
-Message-Id: <20130605213225.114563277@linuxfoundation.org>
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Subject: [ 073/127] cifs: fix potential buffer overrun when composing a new options string
+Date: Wed,  5 Jun 2013 14:34:00 -0700
+Message-Id: <20130605213226.232074043@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -27,48 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Rutland <mark.rutland@arm.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 9955ac47f4ba1c95ecb6092aeaefb40a22e99268 upstream.
+commit 166faf21bd14bc5c5295a44874bf7f3930c30b20 upstream.
 
-Rather than completely killing the kernel if we receive an esr value we
-can't deal with in the el0 handlers, send the process a SIGILL and log
-the esr value in the hope that we can debug it. If we receive a bad esr
-from el1, we'll die() as before.
+Consider the case where we have a very short ip= string in the original
+mount options, and when we chase a referral we end up with a very long
+IPv6 address. Be sure to allow for that possibility when estimating the
+size of the string to allocate.
 
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/kernel/traps.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ fs/cifs/cifs_dfs_ref.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/arm64/kernel/traps.c
-+++ b/arch/arm64/kernel/traps.c
-@@ -317,14 +317,20 @@ asmlinkage long do_ni_syscall(struct pt_
-  */
- asmlinkage void bad_mode(struct pt_regs *regs, int reason, unsigned int esr)
- {
-+	siginfo_t info;
-+	void __user *pc = (void __user *)instruction_pointer(regs);
- 	console_verbose();
- 
- 	pr_crit("Bad mode in %s handler detected, code 0x%08x\n",
- 		handler[reason], esr);
-+	__show_regs(regs);
- 
--	die("Oops - bad mode", regs, 0);
--	local_irq_disable();
--	panic("bad mode");
-+	info.si_signo = SIGILL;
-+	info.si_errno = 0;
-+	info.si_code  = ILL_ILLOPC;
-+	info.si_addr  = pc;
-+
-+	arm64_notify_die("Oops - bad mode", regs, &info, 0);
- }
- 
- void __pte_error(const char *file, int line, unsigned long val)
+--- a/fs/cifs/cifs_dfs_ref.c
++++ b/fs/cifs/cifs_dfs_ref.c
+@@ -18,6 +18,7 @@
+ #include <linux/slab.h>
+ #include <linux/vfs.h>
+ #include <linux/fs.h>
++#include <linux/inet.h>
+ #include "cifsglob.h"
+ #include "cifsproto.h"
+ #include "cifsfs.h"
+@@ -150,7 +151,8 @@ char *cifs_compose_mount_options(const c
+ 	 * assuming that we have 'unc=' and 'ip=' in
+ 	 * the original sb_mountdata
+ 	 */
+-	md_len = strlen(sb_mountdata) + rc + strlen(ref->node_name) + 12;
++	md_len = strlen(sb_mountdata) + rc + strlen(ref->node_name) + 12 +
++			INET6_ADDRSTRLEN;
+ 	mountdata = kzalloc(md_len+1, GFP_KERNEL);
+ 	if (mountdata == NULL) {
+ 		rc = -ENOMEM;
 
 
