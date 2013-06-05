@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932982Ab3FEVxe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:53:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37898 "EHLO
+	id S933339Ab3FEVxv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:53:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37894 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932900Ab3FEVfo (ORCPT
+	with ESMTP id S932784Ab3FEVfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Jun 2013 17:35:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 069/127] drm/i915: Adding more reserved PCI IDs for Haswell.
-Date: Wed,  5 Jun 2013 14:33:56 -0700
-Message-Id: <20130605213225.790990840@linuxfoundation.org>
+        Finn Thain <fthain@telegraphics.com.au>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [ 078/127] m68k/mac: Fix unexpected interrupt with CONFIG_EARLY_PRINTK
+Date: Wed,  5 Jun 2013 14:34:05 -0700
+Message-Id: <20130605213226.811660599@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -29,107 +27,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+From: Finn Thain <fthain@telegraphics.com.au>
 
-commit 1c98b4871cca4b7ce07e19f92f934d47cf7210b0 upstream.
+commit df66834a43c461de2565c45d815288ba1c0def37 upstream.
 
-At DDX commit Chris mentioned the tendency we have of finding out more
-PCI IDs only when users report. So Let's add all new reserved Haswell IDs.
+The present code does not wait for the SCC to finish resetting itself
+before trying to initialise the device. The result is that the SCC
+interrupt sources become enabled (if they weren't already). This leads to
+an early boot crash (unexpected interrupt) given CONFIG_EARLY_PRINTK. Fix
+this by adding a delay. A successful reset disables the interrupt sources.
 
-This patch also fix GT3 names. I'no not sending in separated patche because
-names are only in few comments and not in variable names.
+Also, after the reset for channel A setup, the SCC then gets a second
+reset for channel B setup which leaves channel A uninitialised again. Fix
+this by performing the reset only once.
 
-v2: Fix some mobile ids (by Paulo)
-
-References: http://bugs.freedesktop.org/show_bug.cgi?id=63701
-Signed-off-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_drv.c |   46 ++++++++++++++++++++++++++++++----------
- 1 file changed, 35 insertions(+), 11 deletions(-)
+ arch/m68k/kernel/head.S |   29 +++++++++++++++++++----------
+ 1 file changed, 19 insertions(+), 10 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -359,40 +359,64 @@ static const struct pci_device_id pciidl
- 	INTEL_VGA_DEVICE(0x016a, &intel_ivybridge_d_info), /* GT2 server */
- 	INTEL_VGA_DEVICE(0x0402, &intel_haswell_d_info), /* GT1 desktop */
- 	INTEL_VGA_DEVICE(0x0412, &intel_haswell_d_info), /* GT2 desktop */
--	INTEL_VGA_DEVICE(0x0422, &intel_haswell_d_info), /* GT2 desktop */
-+	INTEL_VGA_DEVICE(0x0422, &intel_haswell_d_info), /* GT3 desktop */
- 	INTEL_VGA_DEVICE(0x040a, &intel_haswell_d_info), /* GT1 server */
- 	INTEL_VGA_DEVICE(0x041a, &intel_haswell_d_info), /* GT2 server */
--	INTEL_VGA_DEVICE(0x042a, &intel_haswell_d_info), /* GT2 server */
-+	INTEL_VGA_DEVICE(0x042a, &intel_haswell_d_info), /* GT3 server */
- 	INTEL_VGA_DEVICE(0x0406, &intel_haswell_m_info), /* GT1 mobile */
- 	INTEL_VGA_DEVICE(0x0416, &intel_haswell_m_info), /* GT2 mobile */
- 	INTEL_VGA_DEVICE(0x0426, &intel_haswell_m_info), /* GT2 mobile */
-+	INTEL_VGA_DEVICE(0x040B, &intel_haswell_d_info), /* GT1 reserved */
-+	INTEL_VGA_DEVICE(0x041B, &intel_haswell_d_info), /* GT2 reserved */
-+	INTEL_VGA_DEVICE(0x042B, &intel_haswell_d_info), /* GT3 reserved */
-+	INTEL_VGA_DEVICE(0x040E, &intel_haswell_d_info), /* GT1 reserved */
-+	INTEL_VGA_DEVICE(0x041E, &intel_haswell_d_info), /* GT2 reserved */
-+	INTEL_VGA_DEVICE(0x042E, &intel_haswell_d_info), /* GT3 reserved */
- 	INTEL_VGA_DEVICE(0x0C02, &intel_haswell_d_info), /* SDV GT1 desktop */
- 	INTEL_VGA_DEVICE(0x0C12, &intel_haswell_d_info), /* SDV GT2 desktop */
--	INTEL_VGA_DEVICE(0x0C22, &intel_haswell_d_info), /* SDV GT2 desktop */
-+	INTEL_VGA_DEVICE(0x0C22, &intel_haswell_d_info), /* SDV GT3 desktop */
- 	INTEL_VGA_DEVICE(0x0C0A, &intel_haswell_d_info), /* SDV GT1 server */
- 	INTEL_VGA_DEVICE(0x0C1A, &intel_haswell_d_info), /* SDV GT2 server */
--	INTEL_VGA_DEVICE(0x0C2A, &intel_haswell_d_info), /* SDV GT2 server */
-+	INTEL_VGA_DEVICE(0x0C2A, &intel_haswell_d_info), /* SDV GT3 server */
- 	INTEL_VGA_DEVICE(0x0C06, &intel_haswell_m_info), /* SDV GT1 mobile */
- 	INTEL_VGA_DEVICE(0x0C16, &intel_haswell_m_info), /* SDV GT2 mobile */
--	INTEL_VGA_DEVICE(0x0C26, &intel_haswell_m_info), /* SDV GT2 mobile */
-+	INTEL_VGA_DEVICE(0x0C26, &intel_haswell_m_info), /* SDV GT3 mobile */
-+	INTEL_VGA_DEVICE(0x0C0B, &intel_haswell_d_info), /* SDV GT1 reserved */
-+	INTEL_VGA_DEVICE(0x0C1B, &intel_haswell_d_info), /* SDV GT2 reserved */
-+	INTEL_VGA_DEVICE(0x0C2B, &intel_haswell_d_info), /* SDV GT3 reserved */
-+	INTEL_VGA_DEVICE(0x0C0E, &intel_haswell_d_info), /* SDV GT1 reserved */
-+	INTEL_VGA_DEVICE(0x0C1E, &intel_haswell_d_info), /* SDV GT2 reserved */
-+	INTEL_VGA_DEVICE(0x0C2E, &intel_haswell_d_info), /* SDV GT3 reserved */
- 	INTEL_VGA_DEVICE(0x0A02, &intel_haswell_d_info), /* ULT GT1 desktop */
- 	INTEL_VGA_DEVICE(0x0A12, &intel_haswell_d_info), /* ULT GT2 desktop */
--	INTEL_VGA_DEVICE(0x0A22, &intel_haswell_d_info), /* ULT GT2 desktop */
-+	INTEL_VGA_DEVICE(0x0A22, &intel_haswell_d_info), /* ULT GT3 desktop */
- 	INTEL_VGA_DEVICE(0x0A0A, &intel_haswell_d_info), /* ULT GT1 server */
- 	INTEL_VGA_DEVICE(0x0A1A, &intel_haswell_d_info), /* ULT GT2 server */
--	INTEL_VGA_DEVICE(0x0A2A, &intel_haswell_d_info), /* ULT GT2 server */
-+	INTEL_VGA_DEVICE(0x0A2A, &intel_haswell_d_info), /* ULT GT3 server */
- 	INTEL_VGA_DEVICE(0x0A06, &intel_haswell_m_info), /* ULT GT1 mobile */
- 	INTEL_VGA_DEVICE(0x0A16, &intel_haswell_m_info), /* ULT GT2 mobile */
--	INTEL_VGA_DEVICE(0x0A26, &intel_haswell_m_info), /* ULT GT2 mobile */
-+	INTEL_VGA_DEVICE(0x0A26, &intel_haswell_m_info), /* ULT GT3 mobile */
-+	INTEL_VGA_DEVICE(0x0A0B, &intel_haswell_d_info), /* ULT GT1 reserved */
-+	INTEL_VGA_DEVICE(0x0A1B, &intel_haswell_d_info), /* ULT GT2 reserved */
-+	INTEL_VGA_DEVICE(0x0A2B, &intel_haswell_d_info), /* ULT GT3 reserved */
-+	INTEL_VGA_DEVICE(0x0A0E, &intel_haswell_m_info), /* ULT GT1 reserved */
-+	INTEL_VGA_DEVICE(0x0A1E, &intel_haswell_m_info), /* ULT GT2 reserved */
-+	INTEL_VGA_DEVICE(0x0A2E, &intel_haswell_m_info), /* ULT GT3 reserved */
- 	INTEL_VGA_DEVICE(0x0D02, &intel_haswell_d_info), /* CRW GT1 desktop */
- 	INTEL_VGA_DEVICE(0x0D12, &intel_haswell_d_info), /* CRW GT2 desktop */
--	INTEL_VGA_DEVICE(0x0D22, &intel_haswell_d_info), /* CRW GT2 desktop */
-+	INTEL_VGA_DEVICE(0x0D22, &intel_haswell_d_info), /* CRW GT3 desktop */
- 	INTEL_VGA_DEVICE(0x0D0A, &intel_haswell_d_info), /* CRW GT1 server */
- 	INTEL_VGA_DEVICE(0x0D1A, &intel_haswell_d_info), /* CRW GT2 server */
--	INTEL_VGA_DEVICE(0x0D2A, &intel_haswell_d_info), /* CRW GT2 server */
-+	INTEL_VGA_DEVICE(0x0D2A, &intel_haswell_d_info), /* CRW GT3 server */
- 	INTEL_VGA_DEVICE(0x0D06, &intel_haswell_m_info), /* CRW GT1 mobile */
- 	INTEL_VGA_DEVICE(0x0D16, &intel_haswell_m_info), /* CRW GT2 mobile */
--	INTEL_VGA_DEVICE(0x0D26, &intel_haswell_m_info), /* CRW GT2 mobile */
-+	INTEL_VGA_DEVICE(0x0D26, &intel_haswell_m_info), /* CRW GT3 mobile */
-+	INTEL_VGA_DEVICE(0x0D0B, &intel_haswell_d_info), /* CRW GT1 reserved */
-+	INTEL_VGA_DEVICE(0x0D1B, &intel_haswell_d_info), /* CRW GT2 reserved */
-+	INTEL_VGA_DEVICE(0x0D2B, &intel_haswell_d_info), /* CRW GT3 reserved */
-+	INTEL_VGA_DEVICE(0x0D0E, &intel_haswell_d_info), /* CRW GT1 reserved */
-+	INTEL_VGA_DEVICE(0x0D1E, &intel_haswell_d_info), /* CRW GT2 reserved */
-+	INTEL_VGA_DEVICE(0x0D2E, &intel_haswell_d_info), /* CRW GT3 reserved */
- 	INTEL_VGA_DEVICE(0x0f30, &intel_valleyview_m_info),
- 	INTEL_VGA_DEVICE(0x0157, &intel_valleyview_m_info),
- 	INTEL_VGA_DEVICE(0x0155, &intel_valleyview_d_info),
+--- a/arch/m68k/kernel/head.S
++++ b/arch/m68k/kernel/head.S
+@@ -2752,11 +2752,9 @@ func_return	get_new_page
+ #ifdef CONFIG_MAC
+ 
+ L(scc_initable_mac):
+-	.byte	9,12		/* Reset */
+ 	.byte	4,0x44		/* x16, 1 stopbit, no parity */
+ 	.byte	3,0xc0		/* receiver: 8 bpc */
+ 	.byte	5,0xe2		/* transmitter: 8 bpc, assert dtr/rts */
+-	.byte	9,0		/* no interrupts */
+ 	.byte	10,0		/* NRZ */
+ 	.byte	11,0x50		/* use baud rate generator */
+ 	.byte	12,1,13,0	/* 38400 baud */
+@@ -2899,6 +2897,7 @@ func_start	serial_init,%d0/%d1/%a0/%a1
+ 	is_not_mac(L(serial_init_not_mac))
+ 
+ #ifdef SERIAL_DEBUG
++
+ /* You may define either or both of these. */
+ #define MAC_USE_SCC_A /* Modem port */
+ #define MAC_USE_SCC_B /* Printer port */
+@@ -2908,9 +2907,21 @@ func_start	serial_init,%d0/%d1/%a0/%a1
+ #define mac_scc_cha_b_data_offset	0x4
+ #define mac_scc_cha_a_data_offset	0x6
+ 
++#if defined(MAC_USE_SCC_A) || defined(MAC_USE_SCC_B)
++	movel	%pc@(L(mac_sccbase)),%a0
++	/* Reset SCC device */
++	moveb	#9,%a0@(mac_scc_cha_a_ctrl_offset)
++	moveb	#0xc0,%a0@(mac_scc_cha_a_ctrl_offset)
++	/* Wait for 5 PCLK cycles, which is about 68 CPU cycles */
++	/* 5 / 3.6864 MHz = approx. 1.36 us = 68 / 50 MHz */
++	movel	#35,%d0
++5:
++	subq	#1,%d0
++	jne	5b
++#endif
++
+ #ifdef MAC_USE_SCC_A
+ 	/* Initialize channel A */
+-	movel	%pc@(L(mac_sccbase)),%a0
+ 	lea	%pc@(L(scc_initable_mac)),%a1
+ 5:	moveb	%a1@+,%d0
+ 	jmi	6f
+@@ -2922,9 +2933,6 @@ func_start	serial_init,%d0/%d1/%a0/%a1
+ 
+ #ifdef MAC_USE_SCC_B
+ 	/* Initialize channel B */
+-#ifndef MAC_USE_SCC_A	/* Load mac_sccbase only if needed */
+-	movel	%pc@(L(mac_sccbase)),%a0
+-#endif	/* MAC_USE_SCC_A */
+ 	lea	%pc@(L(scc_initable_mac)),%a1
+ 7:	moveb	%a1@+,%d0
+ 	jmi	8f
+@@ -2933,6 +2941,7 @@ func_start	serial_init,%d0/%d1/%a0/%a1
+ 	jra	7b
+ 8:
+ #endif	/* MAC_USE_SCC_B */
++
+ #endif	/* SERIAL_DEBUG */
+ 
+ 	jra	L(serial_init_done)
+@@ -3006,17 +3015,17 @@ func_start	serial_putc,%d0/%d1/%a0/%a1
+ 
+ #ifdef SERIAL_DEBUG
+ 
+-#ifdef MAC_USE_SCC_A
++#if defined(MAC_USE_SCC_A) || defined(MAC_USE_SCC_B)
+ 	movel	%pc@(L(mac_sccbase)),%a1
++#endif
++
++#ifdef MAC_USE_SCC_A
+ 3:	btst	#2,%a1@(mac_scc_cha_a_ctrl_offset)
+ 	jeq	3b
+ 	moveb	%d0,%a1@(mac_scc_cha_a_data_offset)
+ #endif	/* MAC_USE_SCC_A */
+ 
+ #ifdef MAC_USE_SCC_B
+-#ifndef MAC_USE_SCC_A	/* Load mac_sccbase only if needed */
+-	movel	%pc@(L(mac_sccbase)),%a1
+-#endif	/* MAC_USE_SCC_A */
+ 4:	btst	#2,%a1@(mac_scc_cha_b_ctrl_offset)
+ 	jeq	4b
+ 	moveb	%d0,%a1@(mac_scc_cha_b_data_offset)
 
 
