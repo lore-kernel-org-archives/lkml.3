@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932862Ab3FEWBp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 18:01:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37756 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932652Ab3FEVfZ (ORCPT
+	id S933397Ab3FEWBw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 18:01:52 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:55004 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932286Ab3FEWBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:25 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joseph Qi <joseph.qi@huawei.com>, Jie Liu <jeff.liu@oracle.com>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Sunil Mushran <sunil.mushran@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 043/127] ocfs2: goto out_unlock if ocfs2_get_clusters_nocache() failed in ocfs2_fiemap()
-Date: Wed,  5 Jun 2013 14:33:30 -0700
-Message-Id: <20130605213222.866577392@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
-References: <20130605213217.966891866@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Wed, 5 Jun 2013 18:01:49 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/o4atswQe2O2D0F6pPDd40
+Date: Wed, 5 Jun 2013 15:01:39 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+Cc: linus.walleij@linaro.org, nsekhar@ti.com, grant.likely@linaro.org,
+        rob.herring@calxeda.com, linux@arm.linux.org.uk, rob@landley.net,
+        prabhakar.csengg@gmail.com, peter.ujfalusi@ti.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com
+Subject: Re: [PATCH 1/3] pinctrl: pinctrl-single: enhance to configure
+ multiple pins of different modules
+Message-ID: <20130605220138.GE3331@atomide.com>
+References: <1369145282-14419-1-git-send-email-prakash.pm@ti.com>
+ <1369145282-14419-3-git-send-email-prakash.pm@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369145282-14419-3-git-send-email-prakash.pm@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+* Manjunathappa, Prakash <prakash.pm@ti.com> [130521 07:13]:
+> Add support to configure multiple pins in each register, existing
+> implementation added by [1] does not support full fledge multiple pin
+> configuration in single register, reports a pin clash when different
+> modules configure different bits of same register. The issue reported
+> and discussed here
+> http://www.spinics.net/lists/arm-kernel/msg235213.html
+> 
+> With pinctrl-single,bits-per-mux property specified, use function-mask
+> property to find out number pins to configure. Allocate and register
+> pin control functions based sub mask.
 
-------------------
+Thanks for fixing this! Looks good to me, and things keep
+working for me just fine with these applied:
 
-From: Joseph Qi <joseph.qi@huawei.com>
-
-commit b4ca2b4b577c3530e34dcfaafccb2cc680ce95d1 upstream.
-
-Last time we found there is lock/unlock bug in ocfs2_file_aio_write, and
-then we did a thorough search for all lock resources in
-ocfs2_inode_info, including rw, inode and open lockres and found this
-bug.  My kernel version is 3.0.13, and it is also in the lastest version
-3.9.  In ocfs2_fiemap, once ocfs2_get_clusters_nocache failed, it should
-goto out_unlock instead of out, because we need release buffer head, up
-read alloc sem and unlock inode.
-
-Signed-off-by: Joseph Qi <joseph.qi@huawei.com>
-Reviewed-by: Jie Liu <jeff.liu@oracle.com>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Acked-by: Sunil Mushran <sunil.mushran@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/ocfs2/extent_map.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/fs/ocfs2/extent_map.c
-+++ b/fs/ocfs2/extent_map.c
-@@ -790,7 +790,7 @@ int ocfs2_fiemap(struct inode *inode, st
- 						 &hole_size, &rec, &is_last);
- 		if (ret) {
- 			mlog_errno(ret);
--			goto out;
-+			goto out_unlock;
- 		}
- 
- 		if (rec.e_blkno == 0ULL) {
-
-
+Acked-by: Tony Lindgren <tony@atomide.com>
