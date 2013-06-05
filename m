@@ -1,182 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932700Ab3FEVSe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:18:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36909 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932568Ab3FEVNE (ORCPT
+	id S932724Ab3FEVS5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:18:57 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36743 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932584Ab3FEVSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:13:04 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        Anthony Doggett <Anthony2486@interfaces.org.uk>,
-        Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 23/44] nilfs2: fix issue of nilfs_set_page_dirty() for page at EOF boundary
-Date: Wed,  5 Jun 2013 14:12:21 -0700
-Message-Id: <20130605211224.281166536@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130605211221.858177087@linuxfoundation.org>
-References: <20130605211221.858177087@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Wed, 5 Jun 2013 17:18:54 -0400
+Date: Wed, 5 Jun 2013 22:16:37 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm@lists.debian.org,
+        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
+        Luke Kenneth Casson Leighton <lkcl@lkcl.net>,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>,
+        debian-release@lists.debian.org, debian-kernel@lists.debian.org
+Subject: Re: getting allwinner SoC support upstream (was Re: Uploading
+	linux (3.9.4-1))
+Message-ID: <20130605211637.GH18614@n2100.arm.linux.org.uk>
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com> <CAKON4OxDD5orX2w-_+d5kawTGXbE3KKj2QLERo9m7=NiUSXhgQ@mail.gmail.com> <51AFA6DD.3000202@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51AFA6DD.3000202@wwwdotorg.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Jun 05, 2013 at 03:00:13PM -0600, Stephen Warren wrote:
+> 2) Having U-Boot itself read a DT and configure itself, just like the
+> kernel does. This is relatively new, and only supported by a few boards
+> (all Tegra to some extent, and a couple each Samsung Exynos and Xilinx
+> boards). I suspect/guess this is the kind of thing that Luke was
+> referring to re: U-Boot fex integration.
 
-------------------
+Reading what I have of this thread, this is just another case of
+$company runs of and does their own unique way of doing something,
+which is in a totally different direction from that path chosen by
+Linux kernel developers, and Linux kernel developers are _expected_
+to roll over and accept $company's unique way of doing it.
 
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+$company could have assisted with the DT effort, helping to sort out
+the common arch issues (which haven't been all that much), converting
+drivers to DT and such like.  But no, instead they've gone off and
+created their own thing.
 
-commit 136e8770cd5d1fe38b3c613100dd6dc4db6d4fa6 upstream.
+I wonder how many more of these cases there needs to be before people
+get the message that Linux kernel developers *do* *not* like this
+behaviour, and if you do this, then chances are you're going to be
+stuck with having code which isn't able to be merged into mainline.
 
-nilfs2: fix issue of nilfs_set_page_dirty for page at EOF boundary
+And I don't buy the argument that we were still sorting out DT.  DT has
+been well defined for many many years before we started using it on ARM.
+It has been used for years on both PowerPC and Sparc architectures to
+describe their hardware, and all of the DT infrastructure was already
+present in the kernel.  What was left for us were:
 
-DESCRIPTION:
- There are use-cases when NILFS2 file system (formatted with block size
-lesser than 4 KB) can be remounted in RO mode because of encountering of
-"broken bmap" issue.
+* converting our platform-data based drivers to use data from DT.
+* come up with ways of dealing with SoC issues such as clock
+  representation, pin muxing and such like in DT.
 
-The issue was reported by Anthony Doggett <Anthony2486@interfaces.org.uk>:
- "The machine I've been trialling nilfs on is running Debian Testing,
-  Linux version 3.2.0-4-686-pae (debian-kernel@lists.debian.org) (gcc
-  version 4.6.3 (Debian 4.6.3-14) ) #1 SMP Debian 3.2.35-2), but I've
-  also reproduced it (identically) with Debian Unstable amd64 and Debian
-  Experimental (using the 3.8-trunk kernel).  The problematic partitions
-  were formatted with "mkfs.nilfs2 -b 1024 -B 8192"."
+But no... all that had to be created in this custom fex stuff which now
+presents a barrier with getting support for something merged.
 
-SYMPTOMS:
-(1) System log contains error messages likewise:
-
-    [63102.496756] nilfs_direct_assign: invalid pointer: 0
-    [63102.496786] NILFS error (device dm-17): nilfs_bmap_assign: broken bmap (inode number=28)
-    [63102.496798]
-    [63102.524403] Remounting filesystem read-only
-
-(2) The NILFS2 file system is remounted in RO mode.
-
-REPRODUSING PATH:
-(1) Create volume group with name "unencrypted" by means of vgcreate utility.
-(2) Run script (prepared by Anthony Doggett <Anthony2486@interfaces.org.uk>):
-
-----------------[BEGIN SCRIPT]--------------------
-
-VG=unencrypted
-lvcreate --size 2G --name ntest $VG
-mkfs.nilfs2 -b 1024 -B 8192 /dev/mapper/$VG-ntest
-mkdir /var/tmp/n
-mkdir /var/tmp/n/ntest
-mount /dev/mapper/$VG-ntest /var/tmp/n/ntest
-mkdir /var/tmp/n/ntest/thedir
-cd /var/tmp/n/ntest/thedir
-sleep 2
-date
-darcs init
-sleep 2
-dmesg|tail -n 5
-date
-darcs whatsnew || true
-date
-sleep 2
-dmesg|tail -n 5
-----------------[END SCRIPT]--------------------
-
-REPRODUCIBILITY: 100%
-
-INVESTIGATION:
-As it was discovered, the issue takes place during segment
-construction after executing such sequence of user-space operations:
-
-  open("_darcs/index", O_RDWR|O_CREAT|O_NOCTTY, 0666) = 7
-  fstat(7, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
-  ftruncate(7, 60)
-
-The error message "NILFS error (device dm-17): nilfs_bmap_assign: broken
-bmap (inode number=28)" takes place because of trying to get block
-number for third block of the file with logical offset #3072 bytes.  As
-it is possible to see from above output, the file has 60 bytes of the
-whole size.  So, it is enough one block (1 KB in size) allocation for
-the whole file.  Trying to operate with several blocks instead of one
-takes place because of discovering several dirty buffers for this file
-in nilfs_segctor_scan_file() method.
-
-The root cause of this issue is in nilfs_set_page_dirty function which
-is called just before writing to an mmapped page.
-
-When nilfs_page_mkwrite function handles a page at EOF boundary, it
-fills hole blocks only inside EOF through __block_page_mkwrite().
-
-The __block_page_mkwrite() function calls set_page_dirty() after filling
-hole blocks, thus nilfs_set_page_dirty function (=
-a_ops->set_page_dirty) is called.  However, the current implementation
-of nilfs_set_page_dirty() wrongly marks all buffers dirty even for page
-at EOF boundary.
-
-As a result, buffers outside EOF are inconsistently marked dirty and
-queued for write even though they are not mapped with nilfs_get_block
-function.
-
-FIX:
-This modifies nilfs_set_page_dirty() not to mark hole blocks dirty.
-
-Thanks to Vyacheslav Dubeyko for his effort on analysis and proposals
-for this issue.
-
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Reported-by: Anthony Doggett <Anthony2486@interfaces.org.uk>
-Reported-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>
-Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/nilfs2/inode.c |   27 +++++++++++++++++++++++----
- 1 file changed, 23 insertions(+), 4 deletions(-)
-
---- a/fs/nilfs2/inode.c
-+++ b/fs/nilfs2/inode.c
-@@ -195,13 +195,32 @@ static int nilfs_writepage(struct page *
- 
- static int nilfs_set_page_dirty(struct page *page)
- {
--	int ret = __set_page_dirty_buffers(page);
-+	int ret = __set_page_dirty_nobuffers(page);
- 
--	if (ret) {
-+	if (page_has_buffers(page)) {
- 		struct inode *inode = page->mapping->host;
--		unsigned nr_dirty = 1 << (PAGE_SHIFT - inode->i_blkbits);
-+		unsigned nr_dirty = 0;
-+		struct buffer_head *bh, *head;
- 
--		nilfs_set_file_dirty(inode, nr_dirty);
-+		/*
-+		 * This page is locked by callers, and no other thread
-+		 * concurrently marks its buffers dirty since they are
-+		 * only dirtied through routines in fs/buffer.c in
-+		 * which call sites of mark_buffer_dirty are protected
-+		 * by page lock.
-+		 */
-+		bh = head = page_buffers(page);
-+		do {
-+			/* Do not mark hole blocks dirty */
-+			if (buffer_dirty(bh) || !buffer_mapped(bh))
-+				continue;
-+
-+			set_buffer_dirty(bh);
-+			nr_dirty++;
-+		} while (bh = bh->b_this_page, bh != head);
-+
-+		if (nr_dirty)
-+			nilfs_set_file_dirty(inode, nr_dirty);
- 	}
- 	return ret;
- }
-
-
+And somehow people make out that this is _our_ problem...
