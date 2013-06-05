@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab3FEKKY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 06:10:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52877 "EHLO mx2.suse.de"
+	id S1753733Ab3FEKRS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 06:17:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2737 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751904Ab3FEKKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 06:10:23 -0400
-Date: Wed, 5 Jun 2013 11:10:19 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Robin Holt <holt@sgi.com>
-Cc: Frank Mehnert <frank.mehnert@oracle.com>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: Handling NUMA page migration
-Message-ID: <20130605101019.GA18242@suse.de>
-References: <201306040922.10235.frank.mehnert@oracle.com>
- <20130604115807.GF3672@sgi.com>
+	id S1753059Ab3FEKRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 06:17:16 -0400
+Date: Wed, 5 Jun 2013 13:17:09 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: kvm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 1/1] KVM: add kvm_para_available to asm-generic/kvm_para.h
+Message-ID: <20130605101709.GV4725@redhat.com>
+References: <1369222162-4857-1-git-send-email-james.hogan@imgtec.com>
+ <20130604090508.GL4725@redhat.com>
+ <CAAG0J98B=TiJXkrK2dF8DaWQjoHwkk+k7CXiN1XJ5VHQFkowFA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130604115807.GF3672@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAG0J98B=TiJXkrK2dF8DaWQjoHwkk+k7CXiN1XJ5VHQFkowFA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 04, 2013 at 06:58:07AM -0500, Robin Holt wrote:
-> > B) 1. allocate memory with alloc_pages()
-> >    2. SetPageReserved()
-> >    3. vm_mmap() to allocate a userspace mapping
-> >    4. vm_insert_page()
-> >    5. vm_flags |= (VM_DONTEXPAND | VM_DONTDUMP)
-> >       (resulting flags are VM_MIXEDMAP | VM_DONTDUMP | VM_DONTEXPAND | 0xff)
-> > 
-> > At least the memory allocated like B) is affected by automatic NUMA page
-> > migration. I'm not sure about A).
-> > 
-> > 1. How can I prevent automatic NUMA page migration on this memory?
-> > 2. Can NUMA page migration also be handled on such kind of memory without
-> >    preventing migration?
-> > 
+On Tue, Jun 04, 2013 at 12:33:19PM +0100, James Hogan wrote:
+> On 4 June 2013 10:05, Gleb Natapov <gleb@redhat.com> wrote:
+> > On Wed, May 22, 2013 at 12:29:22PM +0100, James Hogan wrote:
+> >> According to include/uapi/linux/kvm_para.h architectures should define
+> >> kvm_para_available, so add an implementation to asm-generic/kvm_para.h
+> >> which just returns false.
+> >>
+> > What is this fixing? The only user of kvm_para_available() that can
+> > benefit from this is in sound/pci/intel8x0.c, but I do not see follow up
+> > patch to use it there.
+> 
+> It was an unintentional config with mips + kvm + intel8x0 that hit it
+> (I think I accidentally based my mips config off an x86_64 config).
+> Kind of equivalent to a randconfig build failure I suppose.
+> 
+Yes, I see. I will queue the fix. Thanks!
 
-Page migration does not expect a PageReserved && PageLRU page. The only
-reserved check that is made by migration is for the zero page and that
-happens in the syscall path for move_pages() which is not used by either
-compaction or automatic balancing.
-
-At some point you must have a driver that is setting PageReserved on
-anonymous pages that is later encountered by automatic numa balancing
-during a NUMA hinting fault.  I expect this is an out-of-tree driver or
-a custom kernel of some sort. Memory should be pinned by elevating the
-reference count of the page, not setting PageReserved.
-
-It's not particularly clear how you avoid hitting the same bug due to THP and
-memory compaction to be honest but maybe your setup hits a steady state that
-simply never hit the problem or it happens rarely and it was not identified.
-
--- 
-Mel Gorman
-SUSE Labs
+--
+			Gleb.
