@@ -1,84 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab3FEINA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 04:13:00 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:46211 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752500Ab3FEIM5 (ORCPT
+	id S1752885Ab3FEIN2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 04:13:28 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:39351 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752767Ab3FEIN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 04:12:57 -0400
-Message-ID: <51AEF2FD.2020007@linux.vnet.ibm.com>
-Date: Wed, 05 Jun 2013 16:12:45 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Borislav Petkov <bp@alien8.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule,
- round 2
-References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz> <20130509125040.GF27333@pd.tnic> <20130509125859.GG27333@pd.tnic> <20130515184528.GO4442@linux.vnet.ibm.com> <20130515224358.GF11783@pd.tnic> <20130515235512.GT4442@linux.vnet.ibm.com> <20130517135641.GF23035@pd.tnic> <alpine.LNX.2.00.1306042319360.6750@pobox.suse.cz> <51AEA2A8.90605@linux.vnet.ibm.com> <alpine.LNX.2.00.1306051007540.6750@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1306051007540.6750@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060508-5490-0000-0000-0000039688E9
+	Wed, 5 Jun 2013 04:13:26 -0400
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org, fweisbec@gmail.com
+Cc: Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [PATCH v2] sched: fix clear NOHZ_BALANCE_KICK
+Date: Wed,  5 Jun 2013 10:13:11 +0200
+Message-Id: <1370419991-13870-1-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2013 04:08 PM, Jiri Kosina wrote:
-> On Wed, 5 Jun 2013, Michael Wang wrote:
-> 
->>> Just to not let this thread sleep -- I am seeing this as well, even with 
->>> current Linus' tree (git HEAD == aa4f608).
->>
->> Have you tried this:
->>
->> diff --git a/drivers/cpufreq/cpufreq_governor.c
->> b/drivers/cpufreq/cpufreq_governor.c
->> index 443442d..449be88 100644
->> --- a/drivers/cpufreq/cpufreq_governor.c
->> +++ b/drivers/cpufreq/cpufreq_governor.c
->> @@ -26,6 +26,7 @@
->>  #include <linux/tick.h>
->>  #include <linux/types.h>
->>  #include <linux/workqueue.h>
->> +#include <linux/cpu.h>
->>
->>  #include "cpufreq_governor.h"
->>
->> @@ -180,8 +181,10 @@ void gov_queue_work(struct dbs_data *dbs_data,
->> struct cpufreq_policy *policy,
->>         if (!all_cpus) {
->>                 __gov_queue_work(smp_processor_id(), dbs_data, delay);
->>         } else {
->> +               get_online_cpus();
->>                 for_each_cpu(i, policy->cpus)
->>                         __gov_queue_work(i, dbs_data, delay);
->> +               put_online_cpus();
->>         }
->>  }
->>  EXPORT_SYMBOL_GPL(gov_queue_work);
->>
->> Does it works?
-> 
-> Yes, the warning is gone with this patch.
+I have faced a sequence where the Idle Load Balance was sometime not
+triggered for a while on my platform.
 
-Nice, so I think we proved that 'policy->cpus' is well maintained.
+CPU 0 and CPU 1 are running tasks and CPU 2 is idle
 
-> 
-> 	Tested-by: Jiri Kosina <jkosina@suse.cz>
+CPU 1 kicks the Idle Load Balance
+CPU 1 selects CPU 2 as the new Idle Load Balancer
+CPU 2 sets NOHZ_BALANCE_KICK for CPU 2
+CPU 2 sends a reschedule IPI to CPU 2
+While CPU 3 wakes up, CPU 0 or CPU 1 migrates a waking up task A on CPU 2
+CPU 2 finally wakes up, runs task A and discards the Idle Load Balance
+task A quickly goes back to sleep (before a tick occurs on CPU 2)
+CPU 2 goes back to idle with NOHZ_BALANCE_KICK set
 
-Thanks for your testing :)
+Whenever CPU 2 will be selected as the ILB, no reschedule IPI will be sent
+because NOHZ_BALANCE_KICK is already set and no Idle Load Balance will be
+performed.
 
-Regards,
-Michael Wang
+We must wait for the sched softirq to be raised on CPU 2 thanks to another
+part the kernel to come back to clear NOHZ_BALANCE_KICK.
 
-> 
-> Thanks,
-> 
+The proposed solution clears NOHZ_BALANCE_KICK in schedule_ipi if
+we can't raise the sched_softirq for the Idle Load Balance.
+
+Change since V1:
+- move the clear of NOHZ_BALANCE_KICK in got_nohz_idle_kick if the ILB
+can't run on this CPU (as suggested by Peter)
+
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ kernel/sched/core.c |   21 +++++++++++++++++----
+ 1 file changed, 17 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 58453b8..919bee6 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -633,7 +633,19 @@ void wake_up_nohz_cpu(int cpu)
+ static inline bool got_nohz_idle_kick(void)
+ {
+ 	int cpu = smp_processor_id();
+-	return idle_cpu(cpu) && test_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu));
++
++	if (!test_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu)))
++		return false;
++
++	if (idle_cpu(cpu) && !need_resched())
++		return true;
++
++	/*
++	 * We can't run Idle Load Balance on this CPU for this time so we
++	 * cancel it and clear NOHZ_BALANCE_KICK
++	 */
++	clear_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu));
++	return false;
+ }
+ 
+ #else /* CONFIG_NO_HZ_COMMON */
+@@ -1393,8 +1405,9 @@ static void sched_ttwu_pending(void)
+ 
+ void scheduler_ipi(void)
+ {
+-	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick()
+-	    && !tick_nohz_full_cpu(smp_processor_id()))
++	if (llist_empty(&this_rq()->wake_list)
++			&& !tick_nohz_full_cpu(smp_processor_id())
++			&& !got_nohz_idle_kick())
+ 		return;
+ 
+ 	/*
+@@ -1417,7 +1430,7 @@ void scheduler_ipi(void)
+ 	/*
+ 	 * Check if someone kicked us for doing the nohz idle load balance.
+ 	 */
+-	if (unlikely(got_nohz_idle_kick() && !need_resched())) {
++	if (unlikely(got_nohz_idle_kick())) {
+ 		this_rq()->idle_balance = 1;
+ 		raise_softirq_irqoff(SCHED_SOFTIRQ);
+ 	}
+-- 
+1.7.9.5
 
