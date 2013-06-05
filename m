@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933026Ab3FEVgB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:36:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37968 "EHLO
+	id S933087Ab3FEVrR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:47:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37984 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933004Ab3FEVf5 (ORCPT
+	with ESMTP id S933019Ab3FEVgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:57 -0400
+	Wed, 5 Jun 2013 17:36:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Schwidefky <schwidefsky@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: [ 079/127] s390/pgtable: Fix check for pgste/storage key handling
-Date: Wed,  5 Jun 2013 14:34:06 -0700
-Message-Id: <20130605213226.934884205@linuxfoundation.org>
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@redhat.com>
+Subject: [ 091/127] KVM: Emulate multibyte NOP
+Date: Wed,  5 Jun 2013 14:34:18 -0700
+Message-Id: <20130605213228.251424008@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -27,78 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit b56433cb782d1cc7e44fc46d2ce3917fa75d2236 upstream.
+commit 103f98ea64a1b0a67d8a1b23070b4db3533db2b8 upstream.
 
-pte_present might return true on PAGE_TYPE_NONE, even if
-the invalid bit is on. Modify the existing check of the
-pgste functions to avoid crashes.
+This is encountered when booting RHEL5.9 64-bit.  There is another bug
+after this one that is not a simple emulation failure, but this one lets
+the boot proceed a bit.
 
-[ Martin Schwidefsky: added ptep_modify_prot_[start|commit] bits ]
-
-Reported-by: Martin Schwidefky <schwidefsky@de.ibm.com>
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/include/asm/pgtable.h |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ arch/x86/kvm/emulate.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -637,7 +637,7 @@ static inline pgste_t pgste_update_all(p
- 	unsigned long address, bits;
- 	unsigned char skey;
- 
--	if (!pte_present(*ptep))
-+	if (pte_val(*ptep) & _PAGE_INVALID)
- 		return pgste;
- 	address = pte_val(*ptep) & PAGE_MASK;
- 	skey = page_get_storage_key(address);
-@@ -671,7 +671,7 @@ static inline pgste_t pgste_update_young
- #ifdef CONFIG_PGSTE
- 	int young;
- 
--	if (!pte_present(*ptep))
-+	if (pte_val(*ptep) & _PAGE_INVALID)
- 		return pgste;
- 	/* Get referenced bit from storage key */
- 	young = page_reset_referenced(pte_val(*ptep) & PAGE_MASK);
-@@ -697,7 +697,7 @@ static inline void pgste_set_key(pte_t *
- 	unsigned long address;
- 	unsigned long okey, nkey;
- 
--	if (!pte_present(entry))
-+	if (pte_val(entry) & _PAGE_INVALID)
- 		return;
- 	address = pte_val(entry) & PAGE_MASK;
- 	okey = nkey = page_get_storage_key(address);
-@@ -1072,6 +1072,9 @@ static inline pte_t ptep_modify_prot_sta
- 	pte = *ptep;
- 	if (!mm_exclusive(mm))
- 		__ptep_ipte(address, ptep);
-+
-+	if (mm_has_pgste(mm))
-+		pgste = pgste_update_all(&pte, pgste);
- 	return pte;
- }
- 
-@@ -1079,9 +1082,13 @@ static inline void ptep_modify_prot_comm
- 					   unsigned long address,
- 					   pte_t *ptep, pte_t pte)
- {
-+	pgste_t pgste;
-+
- 	if (mm_has_pgste(mm)) {
-+		pgste = *(pgste_t *)(ptep + PTRS_PER_PTE);
-+		pgste_set_key(ptep, pgste, pte);
- 		pgste_set_pte(ptep, pte);
--		pgste_set_unlock(ptep, *(pgste_t *)(ptep + PTRS_PER_PTE));
-+		pgste_set_unlock(ptep, pgste);
- 	} else
- 		*ptep = pte;
- }
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -3987,7 +3987,8 @@ static const struct opcode twobyte_table
+ 	DI(ImplicitOps | Priv, invd), DI(ImplicitOps | Priv, wbinvd), N, N,
+ 	N, D(ImplicitOps | ModRM), N, N,
+ 	/* 0x10 - 0x1F */
+-	N, N, N, N, N, N, N, N, D(ImplicitOps | ModRM), N, N, N, N, N, N, N,
++	N, N, N, N, N, N, N, N,
++	D(ImplicitOps | ModRM), N, N, N, N, N, N, D(ImplicitOps | ModRM),
+ 	/* 0x20 - 0x2F */
+ 	DIP(ModRM | DstMem | Priv | Op3264, cr_read, check_cr_read),
+ 	DIP(ModRM | DstMem | Priv | Op3264, dr_read, check_dr_read),
+@@ -4825,6 +4826,7 @@ twobyte_insn:
+ 	case 0x08:		/* invd */
+ 	case 0x0d:		/* GrpP (prefetch) */
+ 	case 0x18:		/* Grp16 (prefetch/nop) */
++	case 0x1f:		/* nop */
+ 		break;
+ 	case 0x20: /* mov cr, reg */
+ 		ctxt->dst.val = ops->get_cr(ctxt, ctxt->modrm_reg);
 
 
