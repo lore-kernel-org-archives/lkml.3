@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757300Ab3FERuB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 13:50:01 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:20962 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757211Ab3FERsT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757263Ab3FERsT (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 5 Jun 2013 13:48:19 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:50313 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757138Ab3FERsQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 13:48:16 -0400
 From: Nick Dyer <nick.dyer@itdev.co.uk>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Daniel Kurtz <djkurtz@chromium.org>,
@@ -14,10 +14,10 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
-Cc: Yufeng Shen <miletus@chromium.org>, Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 22/53] Input: atmel_mxt_ts - Set default irqflags when there is no pdata
-Date: Wed,  5 Jun 2013 18:37:15 +0100
-Message-Id: <1370453866-16534-23-git-send-email-nick.dyer@itdev.co.uk>
+Cc: Iiro Valkonen <iiro.valkonen@atmel.com>, Nick Dyer <nick.dyer@itdev.co.uk>
+Subject: [PATCH 09/53] Input: atmel_mxt_ts - Make wait-after-reset period compatible with all chips
+Date: Wed,  5 Jun 2013 18:37:02 +0100
+Message-Id: <1370453866-16534-10-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -25,152 +25,244 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yufeng Shen <miletus@chromium.org>
+From: Iiro Valkonen <iiro.valkonen@atmel.com>
 
-This is the preparation for supporting the code path when there is
-platform data provided and still boot the device into a sane state
-with backup NVRAM config.
+The delay before the chip can be accessed after reset varies between different
+chips in maXTouch family. Waiting for an interrupt and a T6 status message
+with the RESET bit set is a better behaviour.
 
-Make the irqflags default to be IRQF_TRIGGER_FALLING if no platform data is
-provided.
-
-Signed-off-by: Yufeng Shen <miletus@chromium.org>
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 Acked-by: Benson Leung <bleung@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   54 +++++++++++++++++++++---------
- 1 file changed, 39 insertions(+), 15 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |  109 ++++++++++++++++++++++++------
+ 1 file changed, 87 insertions(+), 22 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 037f785..41ec122 100644
+index 1e24e54..11ee78a 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -235,7 +235,7 @@ struct mxt_data {
- 	struct i2c_client *client;
- 	struct input_dev *input_dev;
- 	char phys[64];		/* device physical location */
--	const struct mxt_platform_data *pdata;
-+	struct mxt_platform_data *pdata;
- 	struct mxt_object *object_table;
- 	struct mxt_info info;
- 	unsigned int irq;
-@@ -1729,10 +1729,29 @@ static void mxt_input_close(struct input_dev *dev)
- 	mxt_stop(data);
+@@ -88,6 +88,9 @@
+ #define MXT_COMMAND_REPORTALL	3
+ #define MXT_COMMAND_DIAGNOSTIC	5
+ 
++/* Define for T6 status byte */
++#define MXT_T6_STATUS_RESET	(1 << 7)
++
+ /* MXT_GEN_POWER_T7 field */
+ #define MXT_POWER_IDLEACQINT	0
+ #define MXT_POWER_ACTVACQINT	1
+@@ -179,9 +182,13 @@
+ 
+ /* Define for MXT_GEN_COMMAND_T6 */
+ #define MXT_BOOT_VALUE		0xa5
++#define MXT_RESET_VALUE		0x01
+ #define MXT_BACKUP_VALUE	0x55
++
++/* Delay times */
+ #define MXT_BACKUP_TIME		50	/* msec */
+ #define MXT_RESET_TIME		200	/* msec */
++#define MXT_RESET_TIMEOUT	3000	/* msec */
+ #define MXT_FW_RESET_TIME	3000	/* msec */
+ #define MXT_FW_CHG_TIMEOUT	300	/* msec */
+ 
+@@ -256,6 +263,7 @@ struct mxt_data {
+ 
+ 	/* Cached parameters from object table */
+ 	u8 T6_reportid;
++	u16 T6_address;
+ 	u8 T9_reportid_min;
+ 	u8 T9_reportid_max;
+ 	u8 T19_reportid;
+@@ -263,6 +271,9 @@ struct mxt_data {
+ 	/* for fw update in bootloader */
+ 	struct completion bl_completion;
+ 
++	/* for reset handling */
++	struct completion reset_completion;
++
+ 	/* Enable reporting of input events */
+ 	bool enable_reporting;
+ };
+@@ -348,10 +359,10 @@ static void mxt_dump_message(struct device *dev,
+ 		message->reportid, 7, message->message);
  }
  
-+static int mxt_handle_pdata(struct mxt_data *data)
-+{
-+	data->pdata = dev_get_platdata(&data->client->dev);
+-static int mxt_wait_for_chg(struct mxt_data *data, unsigned int timeout_ms)
++static int mxt_wait_for_completion(struct mxt_data *data,
++			struct completion *comp, unsigned int timeout_ms)
+ {
+ 	struct device *dev = &data->client->dev;
+-	struct completion *comp = &data->bl_completion;
+ 	unsigned long timeout = msecs_to_jiffies(timeout_ms);
+ 	long ret;
+ 
+@@ -380,7 +391,8 @@ recheck:
+ 		 * CHG assertion before reading the status byte.
+ 		 * Once the status byte has been read, the line is deasserted.
+ 		 */
+-		ret = mxt_wait_for_chg(data, MXT_FW_CHG_TIMEOUT);
++		ret = mxt_wait_for_completion(data, &data->bl_completion,
++					      MXT_FW_CHG_TIMEOUT);
+ 		if (ret) {
+ 			/*
+ 			 * TODO: handle -EINTR better by terminating fw update
+@@ -667,6 +679,9 @@ static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
+ 			unsigned csum = mxt_extract_T6_csum(&payload[1]);
+ 			dev_dbg(dev, "Status: %02x Config Checksum: %06x\n",
+ 				status, csum);
 +
-+	/* Use provided platform data if present */
-+	if (data->pdata)
++			if (status & MXT_T6_STATUS_RESET)
++				complete(&data->reset_completion);
+ 		} else if (mxt_is_T9_message(data, &message)) {
+ 			int id = reportid - data->T9_reportid_min;
+ 			mxt_input_touchevent(data, &message, id);
+@@ -703,6 +718,59 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
+ 	return mxt_process_messages_until_invalid(data);
+ }
+ 
++static int mxt_t6_command(struct mxt_data *data, u16 cmd_offset,
++			  u8 value, bool wait)
++{
++	u16 reg;
++	u8 command_register;
++	int timeout_counter = 0;
++	int ret;
++
++	reg = data->T6_address + cmd_offset;
++
++	ret = mxt_write_reg(data->client, reg, value);
++	if (ret)
++		return ret;
++
++	if (!wait)
 +		return 0;
 +
-+	data->pdata = kzalloc(sizeof(*data->pdata), GFP_KERNEL);
-+	if (!data->pdata) {
-+		dev_err(&data->client->dev, "Failed to allocate pdata\n");
-+		return -ENOMEM;
-+	}
++	do {
++		msleep(20);
++		ret = __mxt_read_reg(data->client, reg, 1, &command_register);
++		if (ret)
++			return ret;
++	} while ((command_register != 0) && (timeout_counter++ <= 100));
 +
-+	/* Set default parameters */
-+	data->pdata->irqflags = IRQF_TRIGGER_FALLING;
++	if (timeout_counter > 100) {
++		dev_err(&data->client->dev, "Command failed!\n");
++		return -EIO;
++	}
 +
 +	return 0;
 +}
 +
- static int mxt_probe(struct i2c_client *client,
- 		const struct i2c_device_id *id)
- {
--	const struct mxt_platform_data *pdata = client->dev.platform_data;
- 	struct mxt_data *data;
- 	struct input_dev *input_dev;
- 	int error;
-@@ -1740,9 +1759,6 @@ static int mxt_probe(struct i2c_client *client,
- 	unsigned int mt_flags = 0;
- 	int i;
- 
--	if (!pdata)
--		return -EINVAL;
--
- 	data = kzalloc(sizeof(struct mxt_data), GFP_KERNEL);
- 	input_dev = input_allocate_device();
- 	if (!data || !input_dev) {
-@@ -1764,19 +1780,23 @@ static int mxt_probe(struct i2c_client *client,
- 
- 	data->client = client;
- 	data->input_dev = input_dev;
--	data->pdata = pdata;
- 	data->irq = client->irq;
-+	i2c_set_clientdata(client, data);
++static int mxt_soft_reset(struct mxt_data *data)
++{
++	struct device *dev = &data->client->dev;
++	int ret = 0;
 +
-+	error = mxt_handle_pdata(data);
-+	if (error)
-+		goto err_free_mem;
++	dev_info(dev, "Resetting chip\n");
++
++	INIT_COMPLETION(data->reset_completion);
++
++	ret = mxt_t6_command(data, MXT_COMMAND_RESET, MXT_RESET_VALUE, false);
++	if (ret)
++		return ret;
++
++	ret = mxt_wait_for_completion(data, &data->reset_completion,
++				      MXT_RESET_TIMEOUT);
++	if (ret)
++		return ret;
++
++	return 0;
++}
++
+ static int mxt_check_reg_init(struct mxt_data *data)
+ {
+ 	const struct mxt_platform_data *pdata = data->pdata;
+@@ -829,6 +897,7 @@ static int mxt_get_object_table(struct mxt_data *data)
+ 		switch (object->type) {
+ 		case MXT_GEN_COMMAND_T6:
+ 			data->T6_reportid = min_id;
++			data->T6_address = object->start_address;
+ 			break;
+ 		case MXT_TOUCH_MULTI_T9:
+ 			data->T9_reportid_min = min_id;
+@@ -887,16 +956,10 @@ static int mxt_initialize(struct mxt_data *data)
+ 	if (error)
+ 		goto err_free_object_table;
  
- 	init_completion(&data->bl_completion);
- 	init_completion(&data->reset_completion);
- 	init_completion(&data->crc_completion);
+-	/* Backup to memory */
+-	mxt_write_object(data, MXT_GEN_COMMAND_T6,
+-			MXT_COMMAND_BACKUPNV,
+-			MXT_BACKUP_VALUE);
+-	msleep(MXT_BACKUP_TIME);
+-
+-	/* Soft reset */
+-	mxt_write_object(data, MXT_GEN_COMMAND_T6,
+-			MXT_COMMAND_RESET, 1);
+-	msleep(MXT_RESET_TIME);
++	error = mxt_t6_command(data, MXT_COMMAND_BACKUPNV,
++			       MXT_BACKUP_VALUE, false);
++	if (!error)
++		mxt_soft_reset(data);
  
--	error = request_threaded_irq(client->irq, NULL, mxt_interrupt,
--				     pdata->irqflags | IRQF_ONESHOT,
-+	error = request_threaded_irq(data->irq, NULL, mxt_interrupt,
-+				     data->pdata->irqflags | IRQF_ONESHOT,
- 				     client->name, data);
- 	if (error) {
- 		dev_err(&client->dev, "Failed to register interrupt\n");
--		goto err_free_mem;
-+		goto err_free_pdata;
+ 	/* Update matrix size at info struct */
+ 	error = mxt_read_reg(client, MXT_MATRIX_X_SIZE, &val);
+@@ -1040,8 +1103,10 @@ static int mxt_load_fw(struct device *dev, const char *fn)
+ 	/* Change to the bootloader mode */
+ 	data->in_bootloader = true;
+ 
+-	mxt_write_object(data, MXT_GEN_COMMAND_T6,
+-			MXT_COMMAND_RESET, MXT_BOOT_VALUE);
++	ret = mxt_t6_command(data, MXT_COMMAND_RESET, MXT_BOOT_VALUE, false);
++	if (ret)
++		goto release_firmware;
++
+ 	msleep(MXT_RESET_TIME);
+ 
+ 	/* Change to slave address of bootloader */
+@@ -1084,18 +1149,21 @@ static int mxt_load_fw(struct device *dev, const char *fn)
  	}
  
- 	disable_irq(client->irq);
-@@ -1789,13 +1809,13 @@ static int mxt_probe(struct i2c_client *client,
- 	__set_bit(EV_KEY, input_dev->evbit);
- 	__set_bit(BTN_TOUCH, input_dev->keybit);
+ 	/* Wait for flash. */
+-	ret = mxt_wait_for_chg(data, MXT_FW_RESET_TIME);
++	ret = mxt_wait_for_completion(data, &data->bl_completion,
++				MXT_FW_RESET_TIME);
+ 	if (ret)
+ 		goto disable_irq;
  
--	if (pdata->t19_num_keys) {
-+	if (data->pdata->t19_num_keys) {
- 		__set_bit(INPUT_PROP_BUTTONPAD, input_dev->propbit);
+ 	/* Wait for device to reset. Some bootloader versions do not assert
+ 	 * the CHG line after bootloading has finished, so ignore error */
+-	mxt_wait_for_chg(data, MXT_FW_RESET_TIME);
++	mxt_wait_for_completion(data, &data->bl_completion,
++				MXT_FW_RESET_TIME);
  
--		for (i = 0; i < pdata->t19_num_keys; i++)
--			if (pdata->t19_keymap[i] != KEY_RESERVED)
-+		for (i = 0; i < data->pdata->t19_num_keys; i++)
-+			if (data->pdata->t19_keymap[i] != KEY_RESERVED)
- 				input_set_capability(input_dev, EV_KEY,
--						     pdata->t19_keymap[i]);
-+						data->pdata->t19_keymap[i]);
+ 	data->in_bootloader = false;
  
- 		mt_flags |= INPUT_MT_POINTER;
+ disable_irq:
+ 	disable_irq(data->irq);
++release_firmware:
+ 	release_firmware(fw);
  
-@@ -1832,7 +1852,6 @@ static int mxt_probe(struct i2c_client *client,
- 			     0, 255, 0, 0);
+ 	/* Change to slave address of application */
+@@ -1216,6 +1284,7 @@ static int mxt_probe(struct i2c_client *client,
+ 	data->irq = client->irq;
  
- 	input_set_drvdata(input_dev, data);
--	i2c_set_clientdata(client, data);
+ 	init_completion(&data->bl_completion);
++	init_completion(&data->reset_completion);
  
- 	error = input_register_device(input_dev);
- 	if (error) {
-@@ -1872,7 +1891,10 @@ err_unregister_device:
- err_free_object:
- 	kfree(data->object_table);
- err_free_irq:
--	free_irq(client->irq, data);
-+	free_irq(data->irq, data);
-+err_free_pdata:
-+	if (!dev_get_platdata(&data->client->dev))
-+		kfree(data->pdata);
- err_free_mem:
- 	input_free_device(input_dev);
- 	kfree(data);
-@@ -1891,6 +1913,8 @@ static int mxt_remove(struct i2c_client *client)
- 	free_irq(data->irq, data);
- 	input_unregister_device(data->input_dev);
- 	kfree(data->object_table);
-+	if (!dev_get_platdata(&data->client->dev))
-+		kfree(data->pdata);
- 	kfree(data);
+ 	mxt_calc_resolution(data);
  
- 	return 0;
+@@ -1341,11 +1410,7 @@ static int mxt_resume(struct device *dev)
+ 	struct mxt_data *data = i2c_get_clientdata(client);
+ 	struct input_dev *input_dev = data->input_dev;
+ 
+-	/* Soft reset */
+-	mxt_write_object(data, MXT_GEN_COMMAND_T6,
+-			MXT_COMMAND_RESET, 1);
+-
+-	msleep(MXT_RESET_TIME);
++	mxt_soft_reset(data);
+ 
+ 	mutex_lock(&input_dev->mutex);
+ 
 -- 
 1.7.10.4
 
