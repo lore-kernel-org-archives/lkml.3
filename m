@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756794Ab3FERAL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 13:00:11 -0400
-Received: from exprod6og111.obsmtp.com ([64.18.1.27]:37634 "EHLO
-	exprod6og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755311Ab3FERAJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 13:00:09 -0400
-Message-ID: <51AF6E39.2080307@verisign.com>
-Date: Wed, 05 Jun 2013 12:58:33 -0400
-From: David C Niemi <dniemi@verisign.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1756798Ab3FERCV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 13:02:21 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:23077 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755761Ab3FERCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 13:02:18 -0400
+X-IronPort-AV: E=Sophos;i="4.87,808,1363132800"; 
+   d="scan'208";a="29444472"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
+        <Stefano.Stabellini@eu.citrix.com>, <will.deacon@arm.com>,
+        <catalin.marinas@arm.com>, <Ian.Campbell@citrix.com>,
+        <konrad.wilk@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v4 1/6] arm/xen: define xen_remap as ioremap_cached
+Date: Wed, 5 Jun 2013 18:02:02 +0100
+Message-ID: <1370451727-26826-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1306051605030.4589@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1306051605030.4589@kaball.uk.xensource.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@suse.de>
-CC: Stratos Karafotis <stratosk@semaphore.gr>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of target
- frequency
-References: <51AF60D5.3080605@semaphore.gr> <20130605161703.GA29958@pd.tnic>
-In-Reply-To: <20130605161703.GA29958@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Jun 2013 16:58:34.0271 (UTC) FILETIME=[EA24F2F0:01CE620D]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When you are doing a locally-originated truly CPU-bound task, "race to idle" does make some sense.  But I can think of a couple of caveats.
+Define xen_remap as ioremap_cache (MT_MEMORY and MT_DEVICE_CACHED end up
+having the same AttrIndx encoding).
 
-1) If you care about power consumption, you want to avoid super-power-hungry turbo states, as you get less done per watt-hour than in some of the middle states.
+Remove include asm/mach/map.h, not unneeded.
 
-2) CPU usage that is related to I/O (network, disk, video) doesn't necessarily let you go to idle sooner if at all.  In this case if you want to minimize power consumption you may want to use middle states a lot.  But if you care more about responsiveness or latency than power consumption, you might want to go to a high state anyway; that is why we have tunables -- so we can configure based on the actual priorities for the machine.
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ arch/arm/include/asm/xen/page.h |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-DCN
-
-On 06/05/13 12:17, Borislav Petkov wrote:
-> On Wed, Jun 05, 2013 at 07:01:25PM +0300, Stratos Karafotis wrote:
->> Ondemand calculates load in terms of frequency and increases it only
->> if the load_freq is greater than up_threshold multiplied by current
->> or average frequency. This seems to produce oscillations of frequency
->> between min and max because, for example, a relatively small load can
->> easily saturate minimum frequency and lead the CPU to max. Then, the
->> CPU will decrease back to min due to a small load_freq.
-> Right, and I think this is how we want it, no?
->
-> The thing is, the faster you finish your work, the faster you can become
-> idle and save power.
->
-> If you switch frequencies in a staircase-like manner, you're going to
-> take longer to finish, in certain cases, and burn more power while doing
-> so.
->
-> Btw, racing to idle is also a good example for why you want boosting:
-> you want to go max out the core but stay within power limits so that you
-> can finish sooner.
->
->> This patch changes the calculation method of load and target frequency
->> considering 2 points:
->> - Load computation should be independent from current or average
->> measured frequency. For example an absolute load 80% at 100MHz is not
->> necessarily equivalent to 8% at 1000MHz in the next sampling interval.
->> - Target frequency should be increased to any value of frequency table
->> proportional to absolute load, instead to only the max. Thus:
->>
->> Target frequency = C * load
->>
->> where C = policy->cpuinfo.max_freq / 100
->>
->> Tested on Intel i7-3770 CPU @ 3.40GHz and on Quad core 1500MHz Krait.
->> Phoronix benchmark of Linux Kernel Compilation 3.1 test shows an
->> increase ~1.5% in performance. cpufreq_stats (time_in_state) shows
->> that middle frequencies are used more, with this patch. Highest
->> and lowest frequencies were used less by ~9%
-> I read this as "the workload takes longer to complete" which means
-> higher power consumption and longer execution times which means less
-> time spent in idle. And I don't think we want that.
->
-> Yes, no?
->
-> Thanks.
->
+diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
+index 30cdacb..359a7b5 100644
+--- a/arch/arm/include/asm/xen/page.h
++++ b/arch/arm/include/asm/xen/page.h
+@@ -1,7 +1,6 @@
+ #ifndef _ASM_ARM_XEN_PAGE_H
+ #define _ASM_ARM_XEN_PAGE_H
+ 
+-#include <asm/mach/map.h>
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+ 
+@@ -88,6 +87,6 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+ 	return __set_phys_to_machine(pfn, mfn);
+ }
+ 
+-#define xen_remap(cookie, size) __arm_ioremap((cookie), (size), MT_MEMORY);
++#define xen_remap(cookie, size) ioremap_cached((cookie), (size));
+ 
+ #endif /* _ASM_ARM_XEN_PAGE_H */
+-- 
+1.7.2.5
 
