@@ -1,312 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475Ab3FERyN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 13:54:13 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:13520 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757125Ab3FERsP (ORCPT
+	id S1757490Ab3FERy7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 13:54:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34143 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757298Ab3FERy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 13:48:15 -0400
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
-Cc: Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 33/53] Input: atmel_mxt_ts - Add support for dynamic message size
-Date: Wed,  5 Jun 2013 18:37:26 +0100
-Message-Id: <1370453866-16534-34-git-send-email-nick.dyer@itdev.co.uk>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
-References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
+	Wed, 5 Jun 2013 13:54:56 -0400
+Date: Wed, 5 Jun 2013 10:54:55 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tobias Winter <tobias@linuxdingsda.de>,
+        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        Rob Landley <rob@landley.net>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/3] USB: serial: make minor allocation dynamic
+Message-ID: <20130605175455.GB13461@kroah.com>
+References: <20130605175426.GA13461@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130605175426.GA13461@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The T5 object may have various sizes depending on the objects used on the
-particular maXTouch chip and firmware version, therefore it can't be hardcoded
-in the driver. Allocate a buffer on probe instead.
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
-Acked-by: Benson Leung <bleung@chromium.org>
+This moves the allocation of minor device numbers from a static array to
+be dynamic, using the idr interface.  This means that you could
+potentially get "gaps" in a minor number range for a single USB serial
+device with multiple ports, but all should still work properly.
+
+Note, we still have the limitation of 255 USB to serial devices in the
+system, as that is all we are registering with the TTY layer at this
+point in time.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |  108 +++++++++++++++++-------------
- 1 file changed, 61 insertions(+), 47 deletions(-)
+ drivers/usb/serial/usb-serial.c |   97 ++++++++++++++++++++--------------------
+ include/linux/usb/serial.h      |    4 -
+ 2 files changed, 51 insertions(+), 50 deletions(-)
 
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index ae9ea93..76ad308 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -228,11 +228,6 @@ struct mxt_object {
- 	u8 num_report_ids;
- } __packed;
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -37,6 +37,7 @@
+ #include <linux/usb.h>
+ #include <linux/usb/serial.h>
+ #include <linux/kfifo.h>
++#include <linux/idr.h>
+ #include "pl2303.h"
  
--struct mxt_message {
--	u8 reportid;
--	u8 message[7];
--};
+ #define DRIVER_AUTHOR "Greg Kroah-Hartman <gregkh@linuxfoundation.org>"
+@@ -49,7 +50,7 @@
+    drivers depend on it.
+ */
+ 
+-static struct usb_serial *serial_table[SERIAL_TTY_MINORS];
++static DEFINE_IDR(serial_minors);
+ static DEFINE_MUTEX(table_lock);
+ static LIST_HEAD(usb_serial_driver_list);
+ 
+@@ -60,61 +61,65 @@ static LIST_HEAD(usb_serial_driver_list)
+  */
+ struct usb_serial *usb_serial_get_by_index(unsigned index)
+ {
+-	struct usb_serial *serial;
++	struct usb_serial *serial = NULL;
++	struct usb_serial_port *port;
+ 
+ 	mutex_lock(&table_lock);
+-	serial = serial_table[index];
++	port = idr_find(&serial_minors, index);
++	if (!port)
++		goto exit;
+ 
+-	if (serial) {
+-		mutex_lock(&serial->disc_mutex);
+-		if (serial->disconnected) {
+-			mutex_unlock(&serial->disc_mutex);
+-			serial = NULL;
+-		} else {
+-			kref_get(&serial->kref);
+-		}
++	serial = port->serial;
++	mutex_lock(&serial->disc_mutex);
++	if (serial->disconnected) {
++		mutex_unlock(&serial->disc_mutex);
++		serial = NULL;
++	} else {
++		kref_get(&serial->kref);
+ 	}
++exit:
+ 	mutex_unlock(&table_lock);
+ 	return serial;
+ }
+ 
+-static struct usb_serial *get_free_serial(struct usb_serial *serial,
+-					int num_ports, unsigned int *minor)
++static int get_free_port(struct usb_serial_port *port)
+ {
+-	unsigned int i, j;
+-	int good_spot;
 -
- /* Each client has this additional data */
- struct mxt_data {
- 	struct i2c_client *client;
-@@ -252,8 +247,10 @@ struct mxt_data {
- 	u32 info_crc;
- 	u8 bootloader_addr;
- 	struct t7_config t7_cfg;
-+	u8 *msg_buf;
+-	dev_dbg(&serial->interface->dev, "%s %d\n", __func__, num_ports);
++	int i;
  
- 	/* Cached parameters from object table */
-+	u8 T5_msg_size;
- 	u8 T6_reportid;
- 	u16 T6_address;
- 	u16 T7_address;
-@@ -317,10 +314,10 @@ static bool mxt_object_readable(unsigned int type)
- 	}
- }
- 
--static void mxt_dump_message(struct device *dev, struct mxt_message *message)
-+static void mxt_dump_message(struct mxt_data *data, u8 *message)
- {
--	dev_dbg(dev, "MXT MSG: %*ph\n",
--		       sizeof(struct mxt_message), message);
-+	dev_dbg(&data->client->dev, "MXT MSG: %*ph\n",
-+		       data->T5_msg_size, message);
- }
- 
- static int mxt_wait_for_completion(struct mxt_data *data,
-@@ -634,8 +631,7 @@ mxt_get_object(struct mxt_data *data, u8 type)
- 	return NULL;
- }
- 
--static int mxt_read_message(struct mxt_data *data,
--				 struct mxt_message *message)
-+static int mxt_read_message(struct mxt_data *data, u8 *message)
- {
- 	struct mxt_object *object;
- 	u16 reg;
-@@ -646,10 +642,10 @@ static int mxt_read_message(struct mxt_data *data,
- 
- 	reg = object->start_address;
- 	return __mxt_read_reg(data->client, reg,
--			sizeof(struct mxt_message), message);
-+			data->T5_msg_size, message);
- }
- 
--static void mxt_input_button(struct mxt_data *data, struct mxt_message *message)
-+static void mxt_input_button(struct mxt_data *data, u8 *message)
- {
- 	struct input_dev *input = data->input_dev;
- 	const struct mxt_platform_data *pdata = data->pdata;
-@@ -664,7 +660,7 @@ static void mxt_input_button(struct mxt_data *data, struct mxt_message *message)
- 	for (i = 0; i < pdata->t19_num_keys; i++) {
- 		if (pdata->t19_keymap[i] == KEY_RESERVED)
- 			continue;
--		button = !(message->message[0] & (1 << i));
-+		button = !(message[1] & (1 << i));
- 		input_report_key(input, pdata->t19_keymap[i], button);
- 	}
- }
-@@ -675,12 +671,12 @@ static void mxt_input_sync(struct input_dev *input_dev)
- 	input_sync(input_dev);
- }
- 
--static void mxt_input_touchevent(struct mxt_data *data,
--				      struct mxt_message *message, int id)
-+static void mxt_input_touchevent(struct mxt_data *data, u8 *message)
- {
- 	struct device *dev = &data->client->dev;
--	u8 status = message->message[0];
- 	struct input_dev *input_dev = data->input_dev;
-+	int id;
-+	u8 status;
- 	int x;
- 	int y;
- 	int area;
-@@ -690,8 +686,10 @@ static void mxt_input_touchevent(struct mxt_data *data,
- 	if (!data->enable_reporting)
- 		return;
- 
--	x = (message->message[1] << 4) | ((message->message[3] >> 4) & 0xf);
--	y = (message->message[2] << 4) | ((message->message[3] & 0xf));
-+	id = message[0] - data->T9_reportid_min;
-+	status = message[1];
-+	x = (message[2] << 4) | ((message[4] >> 4) & 0xf);
-+	y = (message[3] << 4) | ((message[4] & 0xf));
- 
- 	/* Handle 10/12 bit switching */
- 	if (data->max_x < 1024)
-@@ -699,8 +697,8 @@ static void mxt_input_touchevent(struct mxt_data *data,
- 	if (data->max_y < 1024)
- 		y >>= 2;
- 
--	area = message->message[4];
--	amplitude = message->message[5];
-+	area = message[5];
-+	amplitude = message[6];
- 
- 	dev_dbg(dev,
- 		"[%u] %c%c%c%c%c%c%c%c x: %5u y: %5u area: %3u amp: %3u\n",
-@@ -744,16 +742,16 @@ static u16 mxt_extract_T6_csum(const u8 *csum)
- 	return csum[0] | (csum[1] << 8) | (csum[2] << 16);
- }
- 
--static bool mxt_is_T9_message(struct mxt_data *data, struct mxt_message *msg)
-+static bool mxt_is_T9_message(struct mxt_data *data, u8 *msg)
- {
--	u8 id = msg->reportid;
-+	u8 id = msg[0];
- 	return (id >= data->T9_reportid_min && id <= data->T9_reportid_max);
- }
- 
- static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
- {
--	struct mxt_message message;
--	const u8 *payload = &message.message[0];
-+	u8 *message = &data->msg_buf[0];
-+	const u8 *payload = &data->msg_buf[1];
- 	struct device *dev = &data->client->dev;
- 	u8 reportid;
- 	bool update_input = false;
-@@ -761,12 +759,12 @@ static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
- 	u32 crc;
- 
- 	do {
--		if (mxt_read_message(data, &message)) {
-+		if (mxt_read_message(data, message)) {
- 			dev_err(dev, "Failed to read message\n");
- 			return IRQ_NONE;
- 		}
- 
--		reportid = message.reportid;
-+		reportid = message[0];
- 		dump = data->debug_enabled;
- 
- 		if (reportid == data->T6_reportid) {
-@@ -783,19 +781,18 @@ static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
- 
- 			if (status & MXT_T6_STATUS_RESET)
- 				complete(&data->reset_completion);
--		} else if (mxt_is_T9_message(data, &message)) {
--			int id = reportid - data->T9_reportid_min;
--			mxt_input_touchevent(data, &message, id);
-+		} else if (mxt_is_T9_message(data, message)) {
-+			mxt_input_touchevent(data, message);
- 			update_input = true;
--		} else if (message.reportid == data->T19_reportid) {
--			mxt_input_button(data, &message);
-+		} else if (reportid == data->T19_reportid) {
-+			mxt_input_button(data, message);
- 			update_input = true;
- 		} else {
- 			dump = true;
- 		}
- 
- 		if (dump)
--			mxt_dump_message(dev, &message);
-+			mxt_dump_message(data, message);
- 	} while (reportid != MXT_RPTID_NOMSG);
- 
- 	if (data->enable_reporting && update_input)
-@@ -1245,16 +1242,15 @@ recheck:
- static int mxt_make_highchg(struct mxt_data *data)
- {
- 	struct device *dev = &data->client->dev;
--	struct mxt_message message;
- 	int count = 10;
- 	int error;
- 
- 	/* Read dummy message to make high CHG pin */
- 	do {
--		error = mxt_read_message(data, &message);
-+		error = mxt_read_message(data, data->msg_buf);
- 		if (error)
- 			return error;
--	} while (message.reportid != MXT_RPTID_NOMSG && --count);
-+	} while (data->msg_buf[0] != MXT_RPTID_NOMSG && --count);
- 
- 	if (!count) {
- 		dev_err(dev, "CHG pin isn't cleared\n");
-@@ -1291,6 +1287,21 @@ static int mxt_get_info(struct mxt_data *data)
- 	return 0;
- }
- 
-+static void mxt_free_object_table(struct mxt_data *data)
-+{
-+	kfree(data->object_table);
-+	data->object_table = NULL;
-+	kfree(data->msg_buf);
-+	data->msg_buf = NULL;
-+	data->enable_reporting = false;
-+	data->T5_msg_size = 0;
-+	data->T6_reportid = 0;
-+	data->T7_address = 0;
-+	data->T9_reportid_min = 0;
-+	data->T9_reportid_max = 0;
-+	data->T19_reportid = 0;
+-	*minor = 0;
+ 	mutex_lock(&table_lock);
+-	for (i = 0; i < SERIAL_TTY_MINORS; ++i) {
+-		if (serial_table[i])
+-			continue;
++	i = idr_alloc(&serial_minors, port, 0, 0, GFP_KERNEL);
++	if (i < 0)
++		goto exit;
++	port->minor = i;
++exit:
++	mutex_unlock(&table_lock);
++	return i;
 +}
-+
- static int mxt_get_object_table(struct mxt_data *data)
- {
- 	struct i2c_client *client = data->client;
-@@ -1332,6 +1343,9 @@ static int mxt_get_object_table(struct mxt_data *data)
- 			min_id, max_id);
  
- 		switch (object->type) {
-+		case MXT_GEN_MESSAGE_T5:
-+			/* CRC not enabled, therefore don't read last byte */
-+			data->T5_msg_size = mxt_obj_size(object) - 1;
- 		case MXT_GEN_COMMAND_T6:
- 			data->T6_reportid = min_id;
- 			data->T6_address = object->start_address;
-@@ -1355,18 +1369,18 @@ static int mxt_get_object_table(struct mxt_data *data)
- 			data->mem_size = end_address + 1;
+-		good_spot = 1;
+-		for (j = 1; j <= num_ports-1; ++j)
+-			if ((i+j >= SERIAL_TTY_MINORS) || (serial_table[i+j])) {
+-				good_spot = 0;
+-				i += j;
+-				break;
+-			}
+-		if (good_spot == 0)
+-			continue;
++static int get_free_serial(struct usb_serial *serial, int num_ports,
++			   unsigned int *minor)
++{
++	unsigned int i;
++	unsigned int j;
++	int x;
+ 
+-		*minor = i;
+-		j = 0;
+-		dev_dbg(&serial->interface->dev, "%s - minor base = %d\n", __func__, *minor);
+-		for (i = *minor; (i < (*minor + num_ports)) && (i < SERIAL_TTY_MINORS); ++i, ++j) {
+-			serial_table[i] = serial;
+-			serial->port[j]->minor = i;
+-			serial->port[j]->port_number = i - *minor;
+-		}
+-		mutex_unlock(&table_lock);
+-		return serial;
++	dev_dbg(&serial->interface->dev, "%s %d\n", __func__, num_ports);
++
++	*minor = 0xffffffff;
++	for (i = 0; i < num_ports; ++i) {
++		x = get_free_port(serial->port[i]);
++		if (x < 0)
++			goto error;
++		if (*minor == 0xffffffff)
++			*minor = x;
++		serial->port[i]->port_number = i;
  	}
- 
-+	data->msg_buf = kzalloc(data->T5_msg_size, GFP_KERNEL);
-+	if (!data->msg_buf) {
-+		dev_err(&client->dev, "Failed to allocate message buffer\n");
-+		error = -ENOMEM;
-+		goto free_object_table;
-+	}
-+
- 	return 0;
--}
- 
--static void mxt_free_object_table(struct mxt_data *data)
--{
--	kfree(data->object_table);
--	data->object_table = NULL;
--	data->enable_reporting = false;
--	data->T6_reportid = 0;
--	data->T9_reportid_min = 0;
--	data->T9_reportid_max = 0;
--	data->T19_reportid = 0;
-+free_object_table:
-+	mxt_free_object_table(data);
-+	return error;
+-	mutex_unlock(&table_lock);
+-	return NULL;
++	return 0;
++error:
++	/* unwind the already allocated minors */
++	for (j = 0; j < i; ++j)
++		idr_remove(&serial_minors, serial->port[j]->minor);
++	return x;
  }
  
- static int mxt_read_t9_resolution(struct mxt_data *data)
-@@ -2064,7 +2078,7 @@ err_unregister_device:
- 	input_unregister_device(data->input_dev);
- 	data->input_dev = NULL;
- err_free_object:
--	kfree(data->object_table);
-+	mxt_free_object_table(data);
- err_free_irq:
- 	free_irq(data->irq, data);
- err_free_pdata:
-@@ -2086,7 +2100,7 @@ static int mxt_remove(struct i2c_client *client)
- 	sysfs_remove_group(&client->dev.kobj, &mxt_attr_group);
- 	free_irq(data->irq, data);
- 	input_unregister_device(data->input_dev);
--	kfree(data->object_table);
-+	mxt_free_object_table(data);
- 	if (!dev_get_platdata(&data->client->dev))
- 		kfree(data->pdata);
- 	kfree(data);
--- 
-1.7.10.4
-
+ static void return_serial(struct usb_serial *serial)
+@@ -123,7 +128,7 @@ static void return_serial(struct usb_ser
+ 
+ 	mutex_lock(&table_lock);
+ 	for (i = 0; i < serial->num_ports; ++i)
+-		serial_table[serial->minor + i] = NULL;
++		idr_remove(&serial_minors, serial->port[i]->minor);
+ 	mutex_unlock(&table_lock);
+ }
+ 
+@@ -1040,7 +1045,7 @@ static int usb_serial_probe(struct usb_i
+ 	 */
+ 	serial->disconnected = 1;
+ 
+-	if (get_free_serial(serial, num_ports, &minor) == NULL) {
++	if (get_free_serial(serial, num_ports, &minor)) {
+ 		dev_err(ddev, "No more free serial devices\n");
+ 		goto probe_error;
+ 	}
+@@ -1224,7 +1229,6 @@ static struct usb_driver usb_serial_driv
+ 
+ static int __init usb_serial_init(void)
+ {
+-	int i;
+ 	int result;
+ 
+ 	usb_serial_tty_driver = alloc_tty_driver(SERIAL_TTY_MINORS);
+@@ -1232,9 +1236,6 @@ static int __init usb_serial_init(void)
+ 		return -ENOMEM;
+ 
+ 	/* Initialize our global data */
+-	for (i = 0; i < SERIAL_TTY_MINORS; ++i)
+-		serial_table[i] = NULL;
+-
+ 	result = bus_register(&usb_serial_bus_type);
+ 	if (result) {
+ 		pr_err("%s - registering bus driver failed\n", __func__);
+--- a/include/linux/usb/serial.h
++++ b/include/linux/usb/serial.h
+@@ -21,7 +21,7 @@
+ 
+ #define SERIAL_TTY_MAJOR	188	/* Nice legal number now */
+ #define SERIAL_TTY_MINORS	254	/* loads of devices :) */
+-#define SERIAL_TTY_NO_MINOR	255	/* No minor was assigned */
++#define SERIAL_TTY_NO_MINOR	0xffffffff	/* No minor was assigned */
+ 
+ /* The maximum number of ports one device can grab at once */
+ #define MAX_NUM_PORTS		8
+@@ -161,13 +161,13 @@ struct usb_serial {
+ 	unsigned char			disconnected:1;
+ 	unsigned char			suspending:1;
+ 	unsigned char			attached:1;
+-	unsigned char			minor;
+ 	unsigned char			num_ports;
+ 	unsigned char			num_port_pointers;
+ 	char				num_interrupt_in;
+ 	char				num_interrupt_out;
+ 	char				num_bulk_in;
+ 	char				num_bulk_out;
++	u32				minor;
+ 	struct usb_serial_port		*port[MAX_NUM_PORTS];
+ 	struct kref			kref;
+ 	struct mutex			disc_mutex;
