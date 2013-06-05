@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932323Ab3FEU5G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 16:57:06 -0400
-Received: from mail-qc0-f202.google.com ([209.85.216.202]:41045 "EHLO
-	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932194Ab3FEU5A (ORCPT
+	id S932250Ab3FEU53 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 16:57:29 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:47672 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757347Ab3FEU50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 16:57:00 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>, Simon Glass <sjg@chromium.org>,
-        linux-samsung-soc@vger.kernel.org, Tomasz Figa <tomasz.figa@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Doug Anderson <dianders@chromium.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] ARM: exynos: add debug_ll_io_init() call in exynos_init_io()
-Date: Wed,  5 Jun 2013 13:56:33 -0700
-Message-Id: <1370465793-7997-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.3
-In-Reply-To: <1370397539-21653-1-git-send-email-dianders@chromium.org>
-References: <1370397539-21653-1-git-send-email-dianders@chromium.org>
+	Wed, 5 Jun 2013 16:57:26 -0400
+Date: Wed, 5 Jun 2013 13:57:21 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: Re: [PATCH v2 05/10] cpuset: re-structure update_cpumask() a bit
+Message-ID: <20130605205721.GJ10693@mtj.dyndns.org>
+References: <51AF0183.8070602@huawei.com>
+ <51AF01CF.1070706@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51AF01CF.1070706@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the early MMU mapping of the UART happens to get booted out of the
-TLB between the start of paging_init() and when we finally re-add the
-UART at the very end of s3c_init_cpu(), we'll get a hang at bootup if
-we've got early_printk enabled.  Avoid this hang by calling
-debug_ll_io_init() early.
+On Wed, Jun 05, 2013 at 05:15:59PM +0800, Li Zefan wrote:
+> Check if cpus_allowed is to be changed before calling validate_change().
+> 
+> This won't change any behavior, but later it will allow us to do this:
+> 
+>  # mkdir /cpuset/child
+>  # echo $$ > /cpuset/child/tasks	/* empty cpuset */
+>  # echo > /cpuset/child/cpuset.cpus	/* do nothing, won't fail */
+> 
+> Without this patch, the last operation will fail.
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-Without this patch, you can reliably reproduce a hang when early
-printk is enabled by adding flush_tlb_all() at the start of
-exynos_init_io().  After this patch the hang goes away.
+Applied 1-5 to cgroup/for-3.11-cpuset.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-Changes in v2:
-- Use debug_ll_io_init() instead of reordering printks and adding
-  warnings.  Thanks Olof!
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.11-cpuset
 
- arch/arm/mach-exynos/common.c | 2 ++
- 1 file changed, 2 insertions(+)
+Thanks.
 
-diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
-index 027c9e7..f7e504b 100644
---- a/arch/arm/mach-exynos/common.c
-+++ b/arch/arm/mach-exynos/common.c
-@@ -386,6 +386,8 @@ int __init exynos_fdt_map_chipid(unsigned long node, const char *uname,
- 
- void __init exynos_init_io(struct map_desc *mach_desc, int size)
- {
-+	debug_ll_io_init();
-+
- #ifdef CONFIG_OF
- 	if (initial_boot_params)
- 		of_scan_flat_dt(exynos_fdt_map_chipid, NULL);
 -- 
-1.8.3
-
+tejun
