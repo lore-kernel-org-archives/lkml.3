@@ -1,51 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929Ab3FEMcN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 08:32:13 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:33572 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab3FEMcM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 08:32:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <2771350.uHLSSD79no@wuerfel>
-References: <1370360208-6500-1-git-send-email-lee.jones@linaro.org>
-	<2771350.uHLSSD79no@wuerfel>
-Date: Wed, 5 Jun 2013 14:32:11 +0200
-Message-ID: <CACRpkdbs=K_aa+mS4EHZk3qVZ1GA-gT6sB1zPOMEVWP=h50WqA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ARM: ux500: Silence compiler warnings due to missing
- ux500_read_asicid() __init
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lee Jones <lee.jones@linaro.org>,
+	id S1753133Ab3FEMeH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 08:34:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60499 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752945Ab3FEMeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 08:34:06 -0400
+Date: Wed, 5 Jun 2013 13:34:00 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Frank Mehnert <frank.mehnert@oracle.com>
+Cc: Robin Holt <holt@sgi.com>, linux-mm@kvack.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Hugh Dickins <hughd@google.com>
+Subject: Re: Handling NUMA page migration
+Message-ID: <20130605123400.GA1936@suse.de>
+References: <201306040922.10235.frank.mehnert@oracle.com>
+ <20130604115807.GF3672@sgi.com>
+ <20130605101019.GA18242@suse.de>
+ <201306051235.35678.frank.mehnert@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <201306051235.35678.frank.mehnert@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 4, 2013 at 5:55 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 04 June 2013 16:36:47 Lee Jones wrote:
->> WARNING: vmlinux.o(.text.unlikely+0x1e8): Section mismatch in reference from\
->>  the function ux500_read_asicid() to the function .init.text:iotable_init()
->> The function ux500_read_asicid() references
->> the function __init iotable_init().
->> This is often because ux500_read_asicid lacks a __init
->>
->> Signed-off-by: Lee Jones <lee.jones@linaro.org>
->
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
->
-> This is also part of my other patch to ux500_read_asicid that
-> Linus just applied, but we could take yours for 3.10 if he thinks
-> it's important.
+On Wed, Jun 05, 2013 at 12:35:35PM +0200, Frank Mehnert wrote:
+> On Wednesday 05 June 2013 12:10:19 Mel Gorman wrote:
+> > On Tue, Jun 04, 2013 at 06:58:07AM -0500, Robin Holt wrote:
+> > > > B) 1. allocate memory with alloc_pages()
+> > > > 
+> > > >    2. SetPageReserved()
+> > > >    3. vm_mmap() to allocate a userspace mapping
+> > > >    4. vm_insert_page()
+> > > >    5. vm_flags |= (VM_DONTEXPAND | VM_DONTDUMP)
+> > > >    
+> > > >       (resulting flags are VM_MIXEDMAP | VM_DONTDUMP | VM_DONTEXPAND |
+> > > >       0xff)
+> > > > 
+> > > > At least the memory allocated like B) is affected by automatic NUMA
+> > > > page migration. I'm not sure about A).
+> > > > 
+> > > > 1. How can I prevent automatic NUMA page migration on this memory?
+> > > > 2. Can NUMA page migration also be handled on such kind of memory
+> > > > without
+> > > > 
+> > > >    preventing migration?
+> > 
+> > Page migration does not expect a PageReserved && PageLRU page. The only
+> > reserved check that is made by migration is for the zero page and that
+> > happens in the syscall path for move_pages() which is not used by either
+> > compaction or automatic balancing.
+> > 
+> > At some point you must have a driver that is setting PageReserved on
+> > anonymous pages that is later encountered by automatic numa balancing
+> > during a NUMA hinting fault.  I expect this is an out-of-tree driver or
+> > a custom kernel of some sort. Memory should be pinned by elevating the
+> > reference count of the page, not setting PageReserved.
+> 
+> Yes, this is ring 0 code from VirtualBox. The VBox ring 0 driver does the
+> steps which are shown above. Setting PageReserved is not only for pinning
+> but also for fork() protection.
 
-We don't need two patches conflicting about such small
-things, so I'll drop this in favor of your patch.
+Offhand I don't see what setting PageReserved on an LRU page has to do
+with fork() protection. If the VMA should not be copied by fork then use
+MADV_DONTFORK.
 
-Yours,
-Linus Walleij
+> I've tried to do get_page() as well but
+> it did not help preventing the migration during NUMA balancing.
+> 
+
+I think you mean elevating the page count did not prevent the unmapping. The
+elevated count should have prevented the actual migration but would not
+prevent the unmapping.
+
+> As I wrote, the code for allocating + mapping the memory assumes that
+> the memory is finally pinned and will be never unmapped. That assumption
+> might be wrong or wrong under certain/rare conditions. I would like to
+> know these conditions and how we can prevent them from happening or how
+> we can handle them correctly.
+
+Memory compaction for THP allocations will break that assumption as
+compaction ignores VM_LOCKED. I strongly suspect that if you did something
+like move a process into a cpuset bound to another node that it would
+also break. If a process like numad is running then it would probably
+break virtualbox as well as it triggers migration from userspace. It is
+a fragile assumption to make.
+
+> > It's not particularly clear how you avoid hitting the same bug due to THP
+> > and memory compaction to be honest but maybe your setup hits a steady
+> > state that simply never hit the problem or it happens rarely and it was
+> > not identified.
+> 
+> I'm currently using the stock Ubuntu 13.04 generic kernel (3.8.0-23),
+
+and an out-of-tree driver which is what is hitting the problem.
+
+A few of your options in order of estimated time to completion are;
+
+1. Disable numa balancing within your driver or fail to start if it's
+   running
+2. Create a patch that adds a new NUMA_PTE_SCAN_IGNORE value for
+   mm->first_nid (see includ/linux.mm_types.h). In sched/core/fair.c,
+   add a check that first_nid == NUMA_PTE_SCAN_IGNORE should be ignored.
+   Document that only virtualbox needs this and set it within your
+   driver. This will not fix the compaction cases or numad using cpusets
+   to migrate your processes though
+3. When the driver affects a region, set mm->numa_next_reset and
+   mm->numa_next_scan to large values to prevent the pages being unmapped.
+   This would be very fragile, could break again in the future and is ugly
+4. Add a check in change_pte_range() for the !prot_numa case to check
+   PageReserved. This will prevent automatic numa balancing unmapping the
+   page. Document that only virtualbox requires this.
+5. Add a check in change_pte_range() for an elevated page count.
+   Document that there is no point unmapping a page for a NUMA hinting
+   fault that will only fail migration later anyway which is true albeit of
+   marginal benefit. Then, in the vbox driver, elevate the page count, do
+   away with the PageReserved trick, use MADV_DONTFORK to prevent copying
+   at fork time.
+
+-- 
+Mel Gorman
+SUSE Labs
