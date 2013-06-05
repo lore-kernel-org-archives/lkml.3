@@ -1,88 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860Ab3FEODG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 10:03:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21723 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755624Ab3FEODD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 10:03:03 -0400
-Date: Wed, 5 Jun 2013 16:02:58 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Michel Lespinasse <walken@google.com>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC PATCH] Re: Repeated fork() causes SLAB to grow without bound
-Message-ID: <20130605140258.GL3463@redhat.com>
-References: <20120816024610.GA5350@evergreen.ssec.wisc.edu>
- <502D42E5.7090403@redhat.com>
- <20120818000312.GA4262@evergreen.ssec.wisc.edu>
- <502F100A.1080401@redhat.com>
- <alpine.LSU.2.00.1208200032450.24855@eggly.anvils>
- <CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com>
- <20120822032057.GA30871@google.com>
- <50345232.4090002@redhat.com>
- <20130603195003.GA31275@evergreen.ssec.wisc.edu>
- <51ADC365.4010307@redhat.com>
+	id S1755925Ab3FEOF3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 10:05:29 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:36781 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755704Ab3FEOF2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 10:05:28 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Hebbar Gururaja <gururaja.hebbar@ti.com>,
+        Mark Brown <broonie@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH 2/3] tty: serial: modify PL011 driver to use pinctrl PM helpers
+Date: Wed, 5 Jun 2013 15:44:32 +0200
+Message-ID: <1370439873-30053-2-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
+In-Reply-To: <1370439873-30053-1-git-send-email-linus.walleij@stericsson.com>
+References: <1370439873-30053-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51ADC365.4010307@redhat.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 04, 2013 at 06:37:25AM -0400, Rik van Riel wrote:
-> On 06/03/2013 03:50 PM, Daniel Forrest wrote:
-> > On Tue, Aug 21, 2012 at 11:29:54PM -0400, Rik van Riel wrote:
-> >> On 08/21/2012 11:20 PM, Michel Lespinasse wrote:
-> >>> On Mon, Aug 20, 2012 at 02:39:26AM -0700, Michel Lespinasse wrote:
-> >>>> Instead of adding an atomic count for page references, we could limit
-> >>>> the anon_vma stacking depth. In fork, we would only clone anon_vmas
-> >>>> that have a low enough generation count. I think that's not great
-> >>>> (adds a special case for the deep-fork-without-exec behavior), but
-> >>>> still better than the atomic page reference counter.
-> >>>
-> >>> Here is an attached patch to demonstrate the idea.
-> >>>
-> >>> anon_vma_clone() is modified to return the length of the existing same_vma
-> >>> anon vma chain, and we create a new anon_vma in the child only on the first
-> >>> fork (this could be tweaked to allow up to a set number of forks, but
-> >>> I think the first fork would cover all the common forking server cases).
-> >>
-> >> I suspect we need 2 or 3.
-> >>
-> >> Some forking servers first fork off one child, and have
-> >> the original parent exit, in order to "background the server".
-> >> That first child then becomes the parent to the real child
-> >> processes that do the work.
-> >>
-> >> It is conceivable that we might need an extra level for
-> >> processes that do something special with privilege dropping,
-> >> namespace changing, etc...
-> >>
-> >> Even setting the threshold to 5 should be totally harmless,
-> >> since the problem does not kick in until we have really
-> >> long chains, like in Dan's bug report.
-> >
-> > I have been running with Michel's patch (with the threshold set to 5)
-> > for quite a few months now and can confirm that it does indeed solve
-> > my problem.  I am not a kernel developer, so I would appreciate if one
-> > of you could push this into the kernel tree.
-> >
-> > NOTE: I have attached Michel's patch with "(length > 1)" modified to
-> > "(length > 5)" and added a "Tested-by:".
-> 
-> Thank you for testing this.
-> 
-> I believe this code should go into the Linux kernel,
-> since it closes up what could be a denial of service
-> attack (albeit a local one) with the anonvma code.
+From: Linus Walleij <linus.walleij@linaro.org>
 
-Agreed. The only thing I don't like about this patch is the hardcoding
-of number 5: could we make it a variable to tweak with sysfs/sysctl so
-if some weird workload arises we have a tuning tweak? It'd cost one
-cacheline during fork, so it doesn't look excessive overhead.
+This augments the PL011 UART driver to utilize the new pinctrl
+core PM helpers to transition the driver to default and sleep
+states, cutting away some boilerplate code.
 
-Thanks,
-Andrea
+Cc: Hebbar Gururaja <gururaja.hebbar@ti.com>
+Cc: Mark Brown <broonie@kernel.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+I'm seeking Greg's ACK on this as well so we can take the
+whole refactoring through the pinctrl tree.
+---
+ drivers/tty/serial/amba-pl011.c | 42 +++--------------------------------------
+ 1 file changed, 3 insertions(+), 39 deletions(-)
+
+diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
+index e2774f9..6ac3254 100644
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -151,10 +151,6 @@ struct pl011_dmatx_data {
+ struct uart_amba_port {
+ 	struct uart_port	port;
+ 	struct clk		*clk;
+-	/* Two optional pin states - default & sleep */
+-	struct pinctrl		*pinctrl;
+-	struct pinctrl_state	*pins_default;
+-	struct pinctrl_state	*pins_sleep;
+ 	const struct vendor_data *vendor;
+ 	unsigned int		dmacr;		/* dma control reg */
+ 	unsigned int		im;		/* interrupt mask */
+@@ -1480,12 +1476,7 @@ static int pl011_hwinit(struct uart_port *port)
+ 	int retval;
+ 
+ 	/* Optionaly enable pins to be muxed in and configured */
+-	if (!IS_ERR(uap->pins_default)) {
+-		retval = pinctrl_select_state(uap->pinctrl, uap->pins_default);
+-		if (retval)
+-			dev_err(port->dev,
+-				"could not set default pins\n");
+-	}
++	pinctrl_pm_select_default_state(port->dev);
+ 
+ 	/*
+ 	 * Try to enable the clock producer.
+@@ -1611,7 +1602,6 @@ static void pl011_shutdown(struct uart_port *port)
+ {
+ 	struct uart_amba_port *uap = (struct uart_amba_port *)port;
+ 	unsigned int cr;
+-	int retval;
+ 
+ 	/*
+ 	 * disable all interrupts
+@@ -1654,13 +1644,7 @@ static void pl011_shutdown(struct uart_port *port)
+ 	 */
+ 	clk_disable_unprepare(uap->clk);
+ 	/* Optionally let pins go into sleep states */
+-	if (!IS_ERR(uap->pins_sleep)) {
+-		retval = pinctrl_select_state(uap->pinctrl, uap->pins_sleep);
+-		if (retval)
+-			dev_err(port->dev,
+-				"could not set pins to sleep state\n");
+-	}
+-
++	pinctrl_pm_select_sleep_state(port->dev);
+ 
+ 	if (uap->port.dev->platform_data) {
+ 		struct amba_pl011_data *plat;
+@@ -2013,12 +1997,7 @@ static int __init pl011_console_setup(struct console *co, char *options)
+ 		return -ENODEV;
+ 
+ 	/* Allow pins to be muxed in and configured */
+-	if (!IS_ERR(uap->pins_default)) {
+-		ret = pinctrl_select_state(uap->pinctrl, uap->pins_default);
+-		if (ret)
+-			dev_err(uap->port.dev,
+-				"could not set default pins\n");
+-	}
++	pinctrl_pm_select_default_state(uap->port.dev);
+ 
+ 	ret = clk_prepare(uap->clk);
+ 	if (ret)
+@@ -2132,21 +2111,6 @@ static int pl011_probe(struct amba_device *dev, const struct amba_id *id)
+ 		goto out;
+ 	}
+ 
+-	uap->pinctrl = devm_pinctrl_get(&dev->dev);
+-	if (IS_ERR(uap->pinctrl)) {
+-		ret = PTR_ERR(uap->pinctrl);
+-		goto out;
+-	}
+-	uap->pins_default = pinctrl_lookup_state(uap->pinctrl,
+-						 PINCTRL_STATE_DEFAULT);
+-	if (IS_ERR(uap->pins_default))
+-		dev_err(&dev->dev, "could not get default pinstate\n");
+-
+-	uap->pins_sleep = pinctrl_lookup_state(uap->pinctrl,
+-					       PINCTRL_STATE_SLEEP);
+-	if (IS_ERR(uap->pins_sleep))
+-		dev_dbg(&dev->dev, "could not get sleep pinstate\n");
+-
+ 	uap->clk = devm_clk_get(&dev->dev, NULL);
+ 	if (IS_ERR(uap->clk)) {
+ 		ret = PTR_ERR(uap->clk);
+-- 
+1.7.11.3
+
