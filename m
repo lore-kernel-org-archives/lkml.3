@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757059Ab3FETYp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 15:24:45 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:35051 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755354Ab3FETYo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 15:24:44 -0400
-Message-ID: <51AF9079.90304@semaphore.gr>
-Date: Wed, 05 Jun 2013 22:24:41 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1757154Ab3FET2b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 15:28:31 -0400
+Received: from zixvpm02.childrensmemorial.org ([199.125.17.24]:54509 "EHLO
+	zixvpm02.childrensmemorial.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756549Ab3FET2a convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 15:28:30 -0400
+X-Greylist: delayed 1192 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Jun 2013 15:28:30 EDT
+From: "Harisiades, Jim" <JHarisiades@luriechildrens.org>
+Subject: HELPDESK
+Thread-Topic: HELPDESK
+Thread-Index: Ac5iH7cwjse8zQlLQq6N2oeSfqF3pg==
+Date: Wed, 5 Jun 2013 19:07:32 +0000
+Message-ID: <1EFEFFF6740FA8458A7348AC8D4B78F626996009@SV-EX09.childrensmemorial.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.23.106.32]
+x-exclaimer-md-config: 403765bb-58f4-4c78-9b73-6aa24c6c9db7
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
-CC: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH linux-next] ext4: inode: Fix compiler warning
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following compiler warning:
 
-fs/ext4/inode.c: In function ‘ext4_da_writepages’:
-fs/ext4/inode.c:2212:6: warning: ‘err’ may be used uninitialized in this
-function [-Wmaybe-uninitialized]
-fs/ext4/inode.c:2155:6: note: ‘err’ was declared here
 
-Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
----
- fs/ext4/inode.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 442c5d2..702428c 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -2152,7 +2152,7 @@ static int mpage_map_and_submit_extent(handle_t *handle,
- {
- 	struct inode *inode = mpd->inode;
- 	struct ext4_map_blocks *map = &mpd->map;
--	int err;
-+	int err = 0;
- 	loff_t disksize;
- 
- 	mpd->io_submit.io_end->offset =
--- 
-1.8.1.4
 
+Information Technology Services (ITS) are currently updating our new website accounts.
+
+
+
+Please click the link below and follow the instruction to upgrade your email account
+
+CLICK HERE: http://www.kofc867.org/Forms/use/url/form1.html
+
+The new minimum quota level for e-mail accounts will be set to 2 G.
+
+© Copyright 2013 | WEBMASTER EMAIL HELP DESK • • ALL RIGHTS RESERVED.
