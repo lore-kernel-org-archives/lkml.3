@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab3FEURN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 16:17:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35603 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932067Ab3FEURL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 16:17:11 -0400
-Date: Wed, 5 Jun 2013 13:17:10 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "Adamson, Andy" <William.Adamson@netapp.com>
-Subject: Re: [PATCH 3.9-stable] NFSv4.1 Fix a pNFS session draining deadlock
-Message-ID: <20130605201710.GC13713@kroah.com>
-References: <000001ce5a70$7b9bd410$72d37c30$%choi@samsung.com>
- <1369617780.15984.9.camel@leira.trondhjem.org>
+	id S932138Ab3FEUTW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 16:19:22 -0400
+Received: from mga02.intel.com ([134.134.136.20]:13931 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756628Ab3FEUTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 16:19:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,809,1363158000"; 
+   d="scan'208";a="348795951"
+Message-ID: <51AF9D40.60906@linux.intel.com>
+Date: Wed, 05 Jun 2013 13:19:12 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369617780.15984.9.camel@leira.trondhjem.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Matt Fleming <matt@console-pimps.org>
+CC: Matthew Garrett <matthew.garrett@nebula.com>,
+        "Fleming, Matt" <matt.fleming@intel.com>, joeyli <jlee@suse.com>,
+        "rja@sgi.com" <rja@sgi.com>, "mingo@kernel.org" <mingo@kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "bp@alien8.de" <bp@alien8.de>, "jkosina@suse.cz" <jkosina@suse.cz>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "oneukum@suse.de" <oneukum@suse.de>
+Subject: Re: [PATCH] Modify UEFI anti-bricking code
+References: <1370117180-1712-1-git-send-email-matthew.garrett@nebula.com> <1370276021.30695.4.camel@linux-s257.site> <1370277079.6315.14.camel@x230.lan> <1370316933.30695.7.camel@linux-s257.site> <CAL01qptzxe5L6Vq+nBZLq+bQNxbe_i_2OdKMNJGZQDfMihaHOw@mail.gmail.com> <1370444007.6315.32.camel@x230.lan> <20130605155904.GC30420@console-pimps.org>
+In-Reply-To: <20130605155904.GC30420@console-pimps.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 27, 2013 at 01:23:05AM +0000, Myklebust, Trond wrote:
-> On Mon, 2013-05-27 at 09:23 +0900, Jonghwan Choi wrote:
-> > This patch looks like it should be in the 3.9-stable tree, should we apply
-> > it?
-> 
-> It's a condition which appears to be extremely rare: so far, we've only
-> seen it during extreme stress testing at NetApp. For that reason, and
-> because it is NFSv4.1 only, I'm inclined to wait until we see real-world
-> cases before making it a stable patch.
+On 06/05/2013 08:59 AM, Matt Fleming wrote:
+> +		 * There still isn't enough room, so return an error
+> +		 */
+> +		if (remaining_size - size < 5120)
+> +			return EFI_OUT_OF_RESOURCES;
+> +	}
 
-Thanks for letting us know, I'll not apply it unless you say we should
-later on.
+Please don't open-code the constant 5120 in this case.  We may easily
+run into a system which needs, say, 7K, and it is error-prone to just
+replace numbers.
 
-greg k-h
+	-hpa
+
+
