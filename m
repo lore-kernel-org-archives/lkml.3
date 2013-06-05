@@ -1,209 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515Ab3FEJFd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 05:05:33 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:43283 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753344Ab3FEJF2 (ORCPT
+	id S1753589Ab3FEJGU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 05:06:20 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37379 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752526Ab3FEJGR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 05:05:28 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        chenxg.marvell@gmail.com, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH] cpufreq: userspace: Simplify governor
-Date: Wed,  5 Jun 2013 14:34:33 +0530
-Message-Id: <68ae523282b494da0e8f67536af1df874c326675.1370422554.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	Wed, 5 Jun 2013 05:06:17 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: Kevin Hilman <khilman@linaro.org>
+CC: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Bedia, Vaibhav" <vaibhav.bedia@ti.com>,
+        "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Subject: RE: [PATCH 11/11] i2c: omap: enhance pinctrl support
+Thread-Topic: [PATCH 11/11] i2c: omap: enhance pinctrl support
+Thread-Index: AQHOXiUsVxfgXGT07Eyasoe5jzaNzZkm20ig
+Date: Wed, 5 Jun 2013 09:05:37 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EC2875B@DBDE04.ent.ti.com>
+References: <1369995191-20855-1-git-send-email-gururaja.hebbar@ti.com>
+	<1369995191-20855-12-git-send-email-gururaja.hebbar@ti.com>
+ <87k3mf2gu4.fsf@linaro.org>
+In-Reply-To: <87k3mf2gu4.fsf@linaro.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Userspace governor has got more code than what it needs for its functioning.
-Lets simplify it.
+On Fri, May 31, 2013 at 23:04:59, Kevin Hilman wrote:
+> Hebbar Gururaja <gururaja.hebbar@ti.com> writes:
+> 
+> > Amend the I2C omap pin controller to optionally take a pin control
+> > handle and set the state of the pins to:
+> >
+> > - "default" on boot, resume and before performing an i2c transfer
+> > - "idle" after initial default, after resume default, and after each
+> > i2c xfer
+> > - "sleep" on suspend()
+> >
+> > By optionally putting the pins into sleep state in the suspend callback
+> > we can accomplish two things.
+> > - One is to minimize current leakage from pins and thus save power,
+> > - second, we can prevent the IP from driving pins output in an
+> > uncontrolled manner, which may happen if the power domain drops the
+> > domain regulator.
+> >
+> > Note:
+> > A .suspend & .resume callback is added which simply puts the pins to sleep
+> > state upon suspend & are moved to default & idle state upon resume.
+> >
+> > If any of the above pin states are missing in dt, a warning message
+> > about the missing state is displayed.
+> > If certain pin-states are not available, to remove this warning message
+> > pass respective state name with null phandler.
+> >
+> > (Changes based on i2c-nomadik.c)
+> >
+> > Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
+> > Cc: Tony Lindgren <tony@atomide.com>
+> > Cc: Wolfram Sang <wsa@the-dreams.de>
+> > Cc: linux-omap@vger.kernel.org
+> > Cc: linux-i2c@vger.kernel.org
+> 
+> [...]
+> 
+> > @@ -664,7 +673,13 @@ omap_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
+> >  
+> >  out:
+> >  	pm_runtime_mark_last_busy(dev->dev);
+> > +
+> >  	pm_runtime_put_autosuspend(dev->dev);
+> > +	/* Optionally let pins go into idle state */
+> > +	if (!IS_ERR(dev->pins_idle))
+> > +		if (pinctrl_select_state(dev->pinctrl, dev->pins_idle))
+> > +			dev_err(dev->dev, "could not set pins to idle state\n");
+> 
+> This is wrong.  You're changing the muxing before the device actually
+> goes idle.  Anything you want to happen when the device actually idles
+> for real has to be in runtime PM callbacks.
+> 
+> Looking below, I see it's already in the callbacks, so why is it here also?
 
-Over that it will fix issues in cpufreq_governor_userspace(), which isn't doing
-right things in START/STOP. It is working per-cpu currently whereas it just
-required to manage policy->cpu.
+Just to be double sure. Seems it is unwanted.
 
-Reported-by: Xiaoguang Chen <chenxg.marvell@gmail.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
-@Rafael:
+> 
+> [...]
+> 
+> > @@ -1300,6 +1348,10 @@ static int omap_i2c_runtime_suspend(struct device *dev)
+> >  		omap_i2c_read_reg(_dev, OMAP_I2C_STAT_REG);
+> >  	}
+> >  
+> > +	if (!IS_ERR(_dev->pins_idle))
+> > +		if (pinctrl_select_state(_dev->pinctrl, _dev->pins_idle))
+> > +			dev_err(dev, "could not set pins to idle state\n");
+> > +
+> >  	return 0;
+> >  }
+> >  
+> 
+> Kevin
+> 
 
-I don't know why this code was initially added. Please let me know if I am doing
-something stupid.
 
-Also, please apply it as a fix for 3.10 as it is broken recently in 3.9.
-
- drivers/cpufreq/cpufreq_userspace.c | 108 ++++--------------------------------
- 1 file changed, 12 insertions(+), 96 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq_userspace.c b/drivers/cpufreq/cpufreq_userspace.c
-index bbeb9c0..5dc77b7 100644
---- a/drivers/cpufreq/cpufreq_userspace.c
-+++ b/drivers/cpufreq/cpufreq_userspace.c
-@@ -13,55 +13,13 @@
- 
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
--#include <linux/kernel.h>
--#include <linux/module.h>
--#include <linux/smp.h>
--#include <linux/init.h>
--#include <linux/spinlock.h>
--#include <linux/interrupt.h>
- #include <linux/cpufreq.h>
--#include <linux/cpu.h>
--#include <linux/types.h>
--#include <linux/fs.h>
--#include <linux/sysfs.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
- #include <linux/mutex.h>
- 
--/**
-- * A few values needed by the userspace governor
-- */
--static DEFINE_PER_CPU(unsigned int, cpu_max_freq);
--static DEFINE_PER_CPU(unsigned int, cpu_min_freq);
--static DEFINE_PER_CPU(unsigned int, cpu_cur_freq); /* current CPU freq */
--static DEFINE_PER_CPU(unsigned int, cpu_set_freq); /* CPU freq desired by
--							userspace */
- static DEFINE_PER_CPU(unsigned int, cpu_is_managed);
--
- static DEFINE_MUTEX(userspace_mutex);
--static int cpus_using_userspace_governor;
--
--/* keep track of frequency transitions */
--static int
--userspace_cpufreq_notifier(struct notifier_block *nb, unsigned long val,
--	void *data)
--{
--	struct cpufreq_freqs *freq = data;
--
--	if (!per_cpu(cpu_is_managed, freq->cpu))
--		return 0;
--
--	if (val == CPUFREQ_POSTCHANGE) {
--		pr_debug("saving cpu_cur_freq of cpu %u to be %u kHz\n",
--				freq->cpu, freq->new);
--		per_cpu(cpu_cur_freq, freq->cpu) = freq->new;
--	}
--
--	return 0;
--}
--
--static struct notifier_block userspace_cpufreq_notifier_block = {
--	.notifier_call  = userspace_cpufreq_notifier
--};
--
- 
- /**
-  * cpufreq_set - set the CPU frequency
-@@ -80,13 +38,6 @@ static int cpufreq_set(struct cpufreq_policy *policy, unsigned int freq)
- 	if (!per_cpu(cpu_is_managed, policy->cpu))
- 		goto err;
- 
--	per_cpu(cpu_set_freq, policy->cpu) = freq;
--
--	if (freq < per_cpu(cpu_min_freq, policy->cpu))
--		freq = per_cpu(cpu_min_freq, policy->cpu);
--	if (freq > per_cpu(cpu_max_freq, policy->cpu))
--		freq = per_cpu(cpu_max_freq, policy->cpu);
--
- 	/*
- 	 * We're safe from concurrent calls to ->target() here
- 	 * as we hold the userspace_mutex lock. If we were calling
-@@ -107,7 +58,7 @@ static int cpufreq_set(struct cpufreq_policy *policy, unsigned int freq)
- 
- static ssize_t show_speed(struct cpufreq_policy *policy, char *buf)
- {
--	return sprintf(buf, "%u\n", per_cpu(cpu_cur_freq, policy->cpu));
-+	return sprintf(buf, "%u\n", policy->cur);
- }
- 
- static int cpufreq_governor_userspace(struct cpufreq_policy *policy,
-@@ -119,66 +70,31 @@ static int cpufreq_governor_userspace(struct cpufreq_policy *policy,
- 	switch (event) {
- 	case CPUFREQ_GOV_START:
- 		BUG_ON(!policy->cur);
--		mutex_lock(&userspace_mutex);
--
--		if (cpus_using_userspace_governor == 0) {
--			cpufreq_register_notifier(
--					&userspace_cpufreq_notifier_block,
--					CPUFREQ_TRANSITION_NOTIFIER);
--		}
--		cpus_using_userspace_governor++;
-+		pr_debug("started managing cpu %u\n", cpu);
- 
-+		mutex_lock(&userspace_mutex);
- 		per_cpu(cpu_is_managed, cpu) = 1;
--		per_cpu(cpu_min_freq, cpu) = policy->min;
--		per_cpu(cpu_max_freq, cpu) = policy->max;
--		per_cpu(cpu_cur_freq, cpu) = policy->cur;
--		per_cpu(cpu_set_freq, cpu) = policy->cur;
--		pr_debug("managing cpu %u started "
--			"(%u - %u kHz, currently %u kHz)\n",
--				cpu,
--				per_cpu(cpu_min_freq, cpu),
--				per_cpu(cpu_max_freq, cpu),
--				per_cpu(cpu_cur_freq, cpu));
--
- 		mutex_unlock(&userspace_mutex);
- 		break;
- 	case CPUFREQ_GOV_STOP:
--		mutex_lock(&userspace_mutex);
--		cpus_using_userspace_governor--;
--		if (cpus_using_userspace_governor == 0) {
--			cpufreq_unregister_notifier(
--					&userspace_cpufreq_notifier_block,
--					CPUFREQ_TRANSITION_NOTIFIER);
--		}
-+		pr_debug("managing cpu %u stopped\n", cpu);
- 
-+		mutex_lock(&userspace_mutex);
- 		per_cpu(cpu_is_managed, cpu) = 0;
--		per_cpu(cpu_min_freq, cpu) = 0;
--		per_cpu(cpu_max_freq, cpu) = 0;
--		per_cpu(cpu_set_freq, cpu) = 0;
--		pr_debug("managing cpu %u stopped\n", cpu);
- 		mutex_unlock(&userspace_mutex);
- 		break;
- 	case CPUFREQ_GOV_LIMITS:
- 		mutex_lock(&userspace_mutex);
--		pr_debug("limit event for cpu %u: %u - %u kHz, "
--			"currently %u kHz, last set to %u kHz\n",
-+		pr_debug("limit event for cpu %u: %u - %u kHz, currently %u kHz\n",
- 			cpu, policy->min, policy->max,
--			per_cpu(cpu_cur_freq, cpu),
--			per_cpu(cpu_set_freq, cpu));
--		if (policy->max < per_cpu(cpu_set_freq, cpu)) {
-+			policy->cur);
-+
-+		if (policy->max < policy->cur)
- 			__cpufreq_driver_target(policy, policy->max,
- 						CPUFREQ_RELATION_H);
--		} else if (policy->min > per_cpu(cpu_set_freq, cpu)) {
-+		else if (policy->min > policy->cur)
- 			__cpufreq_driver_target(policy, policy->min,
- 						CPUFREQ_RELATION_L);
--		} else {
--			__cpufreq_driver_target(policy,
--						per_cpu(cpu_set_freq, cpu),
--						CPUFREQ_RELATION_L);
--		}
--		per_cpu(cpu_min_freq, cpu) = policy->min;
--		per_cpu(cpu_max_freq, cpu) = policy->max;
--		per_cpu(cpu_cur_freq, cpu) = policy->cur;
- 		mutex_unlock(&userspace_mutex);
- 		break;
- 	}
--- 
-1.7.12.rc2.18.g61b472e
-
+Regards, 
+Gururaja
