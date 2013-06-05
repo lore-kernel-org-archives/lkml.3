@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932579Ab3FEVNF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:13:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36876 "EHLO
+	id S932668Ab3FEVSP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:18:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36914 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932558Ab3FEVNA (ORCPT
+	with ESMTP id S932572Ab3FEVNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:13:00 -0400
+	Wed, 5 Jun 2013 17:13:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Michlmayr <tbm@cyrius.com>, Marek Vasut <marex@denx.de>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>
-Subject: [ 18/44] Kirkwood: Enable PCIe port 1 on QNAP TS-11x/TS-21x
-Date: Wed,  5 Jun 2013 14:12:16 -0700
-Message-Id: <20130605211223.754811102@linuxfoundation.org>
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 24/44] mm: mmu_notifier: re-fix freed page still mapped in secondary MMU
+Date: Wed,  5 Jun 2013 14:12:22 -0700
+Message-Id: <20130605211224.406437292@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605211221.858177087@linuxfoundation.org>
 References: <20130605211221.858177087@linuxfoundation.org>
@@ -27,34 +28,185 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Michlmayr <tbm@cyrius.com>
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 
-commit 99e11334dcb846f9b76fb808196c7f47aa83abb3 upstream.
+commit d34883d4e35c0a994e91dd847a82b4c9e0c31d83 upstream.
 
-Enable KW_PCIE1 on QNAP TS-11x/TS-21x devices as newer revisions
-(rev 1.3) have a USB 3.0 chip from Etron on PCIe port 1.  Thanks
-to Marek Vasut for identifying this issue!
+Commit 751efd8610d3 ("mmu_notifier_unregister NULL Pointer deref and
+multiple ->release()") breaks the fix 3ad3d901bbcf ("mm: mmu_notifier:
+fix freed page still mapped in secondary MMU").
 
-Signed-off-by: Martin Michlmayr <tbm@cyrius.com>
-Tested-by: Marek Vasut <marex@denx.de>
-Acked-by: Andrew Lunn <andrew@lunn.ch>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Since hlist_for_each_entry_rcu() is changed now, we can not revert that
+patch directly, so this patch reverts the commit and simply fix the bug
+spotted by that patch
+
+This bug spotted by commit 751efd8610d3 is:
+
+    There is a race condition between mmu_notifier_unregister() and
+    __mmu_notifier_release().
+
+    Assume two tasks, one calling mmu_notifier_unregister() as a result
+    of a filp_close() ->flush() callout (task A), and the other calling
+    mmu_notifier_release() from an mmput() (task B).
+
+                        A                               B
+    t1                                            srcu_read_lock()
+    t2            if (!hlist_unhashed())
+    t3                                            srcu_read_unlock()
+    t4            srcu_read_lock()
+    t5                                            hlist_del_init_rcu()
+    t6                                            synchronize_srcu()
+    t7            srcu_read_unlock()
+    t8            hlist_del_rcu()  <--- NULL pointer deref.
+
+This can be fixed by using hlist_del_init_rcu instead of hlist_del_rcu.
+
+The another issue spotted in the commit is "multiple ->release()
+callouts", we needn't care it too much because it is really rare (e.g,
+can not happen on kvm since mmu-notify is unregistered after
+exit_mmap()) and the later call of multiple ->release should be fast
+since all the pages have already been released by the first call.
+Anyway, this issue should be fixed in a separate patch.
+
+-stable suggestions: Any version that has commit 751efd8610d3 need to be
+backported.  I find the oldest version has this commit is 3.0-stable.
+
+[akpm@linux-foundation.org: tweak comments]
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Tested-by: Robin Holt <holt@sgi.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-kirkwood/ts219-setup.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/mmu_notifier.c |   80 +++++++++++++++++++++++++++---------------------------
+ 1 file changed, 40 insertions(+), 40 deletions(-)
 
---- a/arch/arm/mach-kirkwood/ts219-setup.c
-+++ b/arch/arm/mach-kirkwood/ts219-setup.c
-@@ -124,7 +124,7 @@ static void __init qnap_ts219_init(void)
- static int __init ts219_pci_init(void)
+--- a/mm/mmu_notifier.c
++++ b/mm/mmu_notifier.c
+@@ -37,51 +37,48 @@ static struct srcu_struct srcu;
+ void __mmu_notifier_release(struct mm_struct *mm)
  {
- 	if (machine_is_ts219())
--		kirkwood_pcie_init(KW_PCIE0);
-+		kirkwood_pcie_init(KW_PCIE1 | KW_PCIE0);
+ 	struct mmu_notifier *mn;
++	struct hlist_node *node;
+ 	int id;
  
- 	return 0;
+ 	/*
+-	 * srcu_read_lock() here will block synchronize_srcu() in
+-	 * mmu_notifier_unregister() until all registered
+-	 * ->release() callouts this function makes have
+-	 * returned.
++	 * SRCU here will block mmu_notifier_unregister until
++	 * ->release returns.
+ 	 */
+ 	id = srcu_read_lock(&srcu);
++	hlist_for_each_entry_rcu(mn, node, &mm->mmu_notifier_mm->list, hlist)
++		/*
++		 * If ->release runs before mmu_notifier_unregister it must be
++		 * handled, as it's the only way for the driver to flush all
++		 * existing sptes and stop the driver from establishing any more
++		 * sptes before all the pages in the mm are freed.
++		 */
++		if (mn->ops->release)
++			mn->ops->release(mn, mm);
++	srcu_read_unlock(&srcu, id);
++
+ 	spin_lock(&mm->mmu_notifier_mm->lock);
+ 	while (unlikely(!hlist_empty(&mm->mmu_notifier_mm->list))) {
+ 		mn = hlist_entry(mm->mmu_notifier_mm->list.first,
+ 				 struct mmu_notifier,
+ 				 hlist);
+-
+ 		/*
+-		 * Unlink.  This will prevent mmu_notifier_unregister()
+-		 * from also making the ->release() callout.
++		 * We arrived before mmu_notifier_unregister so
++		 * mmu_notifier_unregister will do nothing other than to wait
++		 * for ->release to finish and for mmu_notifier_unregister to
++		 * return.
+ 		 */
+ 		hlist_del_init_rcu(&mn->hlist);
+-		spin_unlock(&mm->mmu_notifier_mm->lock);
+-
+-		/*
+-		 * Clear sptes. (see 'release' description in mmu_notifier.h)
+-		 */
+-		if (mn->ops->release)
+-			mn->ops->release(mn, mm);
+-
+-		spin_lock(&mm->mmu_notifier_mm->lock);
+ 	}
+ 	spin_unlock(&mm->mmu_notifier_mm->lock);
+ 
+ 	/*
+-	 * All callouts to ->release() which we have done are complete.
+-	 * Allow synchronize_srcu() in mmu_notifier_unregister() to complete
+-	 */
+-	srcu_read_unlock(&srcu, id);
+-
+-	/*
+-	 * mmu_notifier_unregister() may have unlinked a notifier and may
+-	 * still be calling out to it.	Additionally, other notifiers
+-	 * may have been active via vmtruncate() et. al. Block here
+-	 * to ensure that all notifier callouts for this mm have been
+-	 * completed and the sptes are really cleaned up before returning
+-	 * to exit_mmap().
++	 * synchronize_srcu here prevents mmu_notifier_release from returning to
++	 * exit_mmap (which would proceed with freeing all pages in the mm)
++	 * until the ->release method returns, if it was invoked by
++	 * mmu_notifier_unregister.
++	 *
++	 * The mmu_notifier_mm can't go away from under us because one mm_count
++	 * is held by exit_mmap.
+ 	 */
+ 	synchronize_srcu(&srcu);
  }
+@@ -302,31 +299,34 @@ void mmu_notifier_unregister(struct mmu_
+ {
+ 	BUG_ON(atomic_read(&mm->mm_count) <= 0);
+ 
+-	spin_lock(&mm->mmu_notifier_mm->lock);
+ 	if (!hlist_unhashed(&mn->hlist)) {
++		/*
++		 * SRCU here will force exit_mmap to wait for ->release to
++		 * finish before freeing the pages.
++		 */
+ 		int id;
+ 
++		id = srcu_read_lock(&srcu);
+ 		/*
+-		 * Ensure we synchronize up with __mmu_notifier_release().
++		 * exit_mmap will block in mmu_notifier_release to guarantee
++		 * that ->release is called before freeing the pages.
+ 		 */
+-		id = srcu_read_lock(&srcu);
+-
+-		hlist_del_rcu(&mn->hlist);
+-		spin_unlock(&mm->mmu_notifier_mm->lock);
+-
+ 		if (mn->ops->release)
+ 			mn->ops->release(mn, mm);
++		srcu_read_unlock(&srcu, id);
+ 
++		spin_lock(&mm->mmu_notifier_mm->lock);
+ 		/*
+-		 * Allow __mmu_notifier_release() to complete.
++		 * Can not use list_del_rcu() since __mmu_notifier_release
++		 * can delete it before we hold the lock.
+ 		 */
+-		srcu_read_unlock(&srcu, id);
+-	} else
++		hlist_del_init_rcu(&mn->hlist);
+ 		spin_unlock(&mm->mmu_notifier_mm->lock);
++	}
+ 
+ 	/*
+-	 * Wait for any running method to finish, including ->release() if it
+-	 * was run by __mmu_notifier_release() instead of us.
++	 * Wait for any running method to finish, of course including
++	 * ->release if it was run by mmu_notifier_relase instead of us.
+ 	 */
+ 	synchronize_srcu(&srcu);
+ 
 
 
