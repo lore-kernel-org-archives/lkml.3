@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790Ab3FESfx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 14:35:53 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:35123 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755911Ab3FESfv (ORCPT
+	id S1756834Ab3FESpJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 14:45:09 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:12608 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756366Ab3FESpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 14:35:51 -0400
+	Wed, 5 Jun 2013 14:45:08 -0400
+Message-ID: <51AF8730.4010507@itdev.co.uk>
+Date: Wed, 05 Jun 2013 19:45:04 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <20130605183318.GE12812@phenom.dumpdata.com>
-References: <CAErSpo7onNaU5mquJ_a7kwGPgzs3Q_7U89__HT9DbJFkUX4fsQ@mail.gmail.com>
- <20130529083652.GA25971@dhcp-26-207.brq.redhat.com> <CAErSpo4EkXX-UoFLyni+ZpXaTmCRq5sJCqZ4FCt7fywpDyVWqw@mail.gmail.com>
- <CAErSpo6bjBEK=Ta=pVzwCBMfrqfe3jB-sEfv1Kz9mt9iakdeaA@mail.gmail.com>
- <20130604131451.GA24385@dhcp-26-207.brq.redhat.com> <CAErSpo7DL0LeW_rZ0KL-AzBEM-crj+zaiG9n9f8SRn2Sd+6Atw@mail.gmail.com>
- <20130605183318.GE12812@phenom.dumpdata.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 5 Jun 2013 12:35:31 -0600
-Message-ID: <CAErSpo5pZupF3qq-w=EuJXswUOqZTXQmSnMioqtVSvSDmo2fjg@mail.gmail.com>
-Subject: Re: [PATCH v3 -tip x86/apic 1/2] PCI/MSI: Allocate as many
- multiple-MSIs as requested
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@redhat.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
+Subject: Re: [PATCH 10/53] Input: atmel_mxt_ts - Add memory access interface
+ via sysfs
+References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk> <1370453866-16534-11-git-send-email-nick.dyer@itdev.co.uk> <7380889.l4hHqCT0mm@dtor-d630.eng.vmware.com>
+In-Reply-To: <7380889.l4hHqCT0mm@dtor-d630.eng.vmware.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 5, 2013 at 12:33 PM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> On Wed, Jun 05, 2013 at 11:18:54AM -0600, Bjorn Helgaas wrote:
->> On Tue, Jun 4, 2013 at 7:14 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
->> > On Mon, Jun 03, 2013 at 02:46:59PM -0600, Bjorn Helgaas wrote:
->> >> On Wed, May 29, 2013 at 2:58 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> >> I pushed these with updates to
->> >> http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/alexander-msi
->> >>
->> >> Anybody want to ack the iommu/irq_remapping.c patch?  If so, I can
->> >> merge that branch into -next for v3.11.
->> >
->> > Konrad, Sebastian,
->> >
->> > Any chance to take a look and patch 2/2?
->
-> I presume you mean:
-> x86/MSI: Conserve interrupt resources when using multiple-MSI
->
-> ? Looks good
-> This one:
-> PCI: Allocate only as many MSI vectors as requested by driver
->
->
-> looks OK as well.
+Dmitry Torokhov wrote:
+> On Wednesday, June 05, 2013 06:37:03 PM Nick Dyer wrote:
+>> Atmel maXTouch chips can be addressed via an "Object Based Protocol" which
+>> defines how i2c registers are mapped to different functions within the
+>> chips. This interface exposes the register map and allows user-space
+>> utilities to inspect and alter object configuration, and to view diagnostic
+>> data, while the device is running.
+> 
+> I think if the driver was to use regmap then this fucntionality will already 
+> be there as regmap exports registers via debugfs.
 
-Great, thanks, Konrad!
+Yes, this was suggested in the past and I spent some time looking into it.
+
+We have made a deliberate choice to implement this via sysfs rather than
+debugfs since it needs to work on devices that don't have debugfs enabled.
+
+In addition, there are some quirks about the way in which we have to
+read/write registers which means regmap isn't a good fit.
