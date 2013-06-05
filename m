@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932733Ab3FEVW3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:22:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36832 "EHLO
+	id S932657Ab3FEVW1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:22:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36844 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932419Ab3FEVMz (ORCPT
+	with ESMTP id S932509Ab3FEVMz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Jun 2013 17:12:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cliff Wickman <cpw@sgi.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, David Sterba <dsterba@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Hugh Dickins <hughd@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 26/44] mm/pagewalk.c: walk_page_range should avoid VM_PFNMAP areas
-Date: Wed,  5 Jun 2013 14:12:24 -0700
-Message-Id: <20130605211224.615407261@linuxfoundation.org>
+Subject: [ 27/44] mm/THP: use pmd_populate() to update the pmd with pgtable_t pointer
+Date: Wed,  5 Jun 2013 14:12:25 -0700
+Message-Id: <20130605211224.709812237@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605211221.858177087@linuxfoundation.org>
 References: <20130605211221.858177087@linuxfoundation.org>
@@ -34,151 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cliff Wickman <cpw@sgi.com>
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-commit a9ff785e4437c83d2179161e012f5bdfbd6381f0 upstream.
+commit 7c3425123ddfdc5f48e7913ff59d908789712b18 upstream.
 
-A panic can be caused by simply cat'ing /proc/<pid>/smaps while an
-application has a VM_PFNMAP range.  It happened in-house when a
-benchmarker was trying to decipher the memory layout of his program.
+We should not use set_pmd_at to update pmd_t with pgtable_t pointer.
+set_pmd_at is used to set pmd with huge pte entries and architectures
+like ppc64, clear few flags from the pte when saving a new entry.
+Without this change we observe bad pte errors like below on ppc64 with
+THP enabled.
 
-/proc/<pid>/smaps and similar walks through a user page table should not
-be looking at VM_PFNMAP areas.
+  BUG: Bad page map in process ld mm=0xc000001ee39f4780 pte:7fc3f37848000001 pmd:c000001ec0000000
 
-Certain tests in walk_page_range() (specifically split_huge_page_pmd())
-assume that all the mapped PFN's are backed with page structures.  And
-this is not usually true for VM_PFNMAP areas.  This can result in panics
-on kernel page faults when attempting to address those page structures.
-
-There are a half dozen callers of walk_page_range() that walk through a
-task's entire page table (as N.  Horiguchi pointed out).  So rather than
-change all of them, this patch changes just walk_page_range() to ignore
-VM_PFNMAP areas.
-
-The logic of hugetlb_vma() is moved back into walk_page_range(), as we
-want to test any vma in the range.
-
-VM_PFNMAP areas are used by:
-- graphics memory manager   gpu/drm/drm_gem.c
-- global reference unit     sgi-gru/grufile.c
-- sgi special memory        char/mspec.c
-- and probably several out-of-tree modules
-
-[akpm@linux-foundation.org: remove now-unused hugetlb_vma() stub]
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Dave Hansen <dave.hansen@intel.com>
-Cc: David Sterba <dsterba@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/pagewalk.c |   70 +++++++++++++++++++++++++++++-----------------------------
- 1 file changed, 36 insertions(+), 34 deletions(-)
+ mm/huge_memory.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/mm/pagewalk.c
-+++ b/mm/pagewalk.c
-@@ -127,28 +127,7 @@ static int walk_hugetlb_range(struct vm_
- 	return 0;
- }
- 
--static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
--{
--	struct vm_area_struct *vma;
--
--	/* We don't need vma lookup at all. */
--	if (!walk->hugetlb_entry)
--		return NULL;
--
--	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
--	vma = find_vma(walk->mm, addr);
--	if (vma && vma->vm_start <= addr && is_vm_hugetlb_page(vma))
--		return vma;
--
--	return NULL;
--}
--
- #else /* CONFIG_HUGETLB_PAGE */
--static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
--{
--	return NULL;
--}
--
- static int walk_hugetlb_range(struct vm_area_struct *vma,
- 			      unsigned long addr, unsigned long end,
- 			      struct mm_walk *walk)
-@@ -199,30 +178,53 @@ int walk_page_range(unsigned long addr,
- 	if (!walk->mm)
- 		return -EINVAL;
- 
-+	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
-+
- 	pgd = pgd_offset(walk->mm, addr);
- 	do {
--		struct vm_area_struct *vma;
-+		struct vm_area_struct *vma = NULL;
- 
- 		next = pgd_addr_end(addr, end);
- 
- 		/*
--		 * handle hugetlb vma individually because pagetable walk for
--		 * the hugetlb page is dependent on the architecture and
--		 * we can't handled it in the same manner as non-huge pages.
-+		 * This function was not intended to be vma based.
-+		 * But there are vma special cases to be handled:
-+		 * - hugetlb vma's
-+		 * - VM_PFNMAP vma's
- 		 */
--		vma = hugetlb_vma(addr, walk);
-+		vma = find_vma(walk->mm, addr);
- 		if (vma) {
--			if (vma->vm_end < next)
-+			/*
-+			 * There are no page structures backing a VM_PFNMAP
-+			 * range, so do not allow split_huge_page_pmd().
-+			 */
-+			if ((vma->vm_start <= addr) &&
-+			    (vma->vm_flags & VM_PFNMAP)) {
- 				next = vma->vm_end;
-+				pgd = pgd_offset(walk->mm, next);
-+				continue;
-+			}
- 			/*
--			 * Hugepage is very tightly coupled with vma, so
--			 * walk through hugetlb entries within a given vma.
-+			 * Handle hugetlb vma individually because pagetable
-+			 * walk for the hugetlb page is dependent on the
-+			 * architecture and we can't handled it in the same
-+			 * manner as non-huge pages.
- 			 */
--			err = walk_hugetlb_range(vma, addr, next, walk);
--			if (err)
--				break;
--			pgd = pgd_offset(walk->mm, next);
--			continue;
-+			if (walk->hugetlb_entry && (vma->vm_start <= addr) &&
-+			    is_vm_hugetlb_page(vma)) {
-+				if (vma->vm_end < next)
-+					next = vma->vm_end;
-+				/*
-+				 * Hugepage is very tightly coupled with vma,
-+				 * so walk through hugetlb entries within a
-+				 * given vma.
-+				 */
-+				err = walk_hugetlb_range(vma, addr, next, walk);
-+				if (err)
-+					break;
-+				pgd = pgd_offset(walk->mm, next);
-+				continue;
-+			}
- 		}
- 
- 		if (pgd_none_or_clear_bad(pgd)) {
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1949,7 +1949,12 @@ static void collapse_huge_page(struct mm
+ 		pte_unmap(pte);
+ 		spin_lock(&mm->page_table_lock);
+ 		BUG_ON(!pmd_none(*pmd));
+-		set_pmd_at(mm, address, pmd, _pmd);
++		/*
++		 * We can only use set_pmd_at when establishing
++		 * hugepmds and never for establishing regular pmds that
++		 * points to regular pagetables. Use pmd_populate for that
++		 */
++		pmd_populate(mm, pmd, pmd_pgtable(_pmd));
+ 		spin_unlock(&mm->page_table_lock);
+ 		anon_vma_unlock(vma->anon_vma);
+ 		goto out;
 
 
