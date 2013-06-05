@@ -1,89 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936Ab3FEO5B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 10:57:01 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59393 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755789Ab3FEO45 (ORCPT
+	id S1755596Ab3FEO6P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 10:58:15 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17674 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754162Ab3FEO6M convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 10:56:57 -0400
-Date: Wed, 5 Jun 2013 09:27:46 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: vaughan <vaughan.cao@oracle.com>
-Cc: dgilbert@interlog.com, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, xitao.cao@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sg: atomize check and set sdp->exclude in sg_open
-Message-ID: <20130605132746.GA1690@logfs.org>
-References: <51AF0269.9070900@oracle.com>
+	Wed, 5 Jun 2013 10:58:12 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 05 Jun 2013 07:57:48 -0700
+From: Jay Agarwal <jagarwal@nvidia.com>
+To: "'Stephen Warren'" <swarren@wwwdotorg.org>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "olof@lixom.net" <olof@lixom.net>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Juha Tukkinen <jtukkinen@nvidia.com>,
+        Krishna Thota <kthota@nvidia.com>
+Date: Wed, 5 Jun 2013 20:27:44 +0530
+Subject: RE: [PATCH V3 2/4] ARM: tegra: pcie: Add tegra3 support
+Thread-Topic: [PATCH V3 2/4] ARM: tegra: pcie: Add tegra3 support
+Thread-Index: Ac5hWCY/2YYDO2K2RJy7xwoWdDrb0wApMUxg
+Message-ID: <C79B248886DD134989C8FF6B096A91AB91B616BECE@BGMAIL01.nvidia.com>
+References: <1370372252-4332-1-git-send-email-jagarwal@nvidia.com>
+ <1370372252-4332-2-git-send-email-jagarwal@nvidia.com>
+ <51AE3D3B.6080102@wwwdotorg.org>
+In-Reply-To: <51AE3D3B.6080102@wwwdotorg.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51AF0269.9070900@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 June 2013 17:18:33 +0800, vaughan wrote:
+> > diff --git
+> > a/Documentation/devicetree/bindings/pci/nvidia,tegra20-pcie.txt
+> > b/Documentation/devicetree/bindings/pci/nvidia,tegra20-pcie.txt
 > 
-> Check and set sdp->exclude should be atomic when set in sg_open().
-
-The patch is line-wrapped.  More importantly, it doesn't seem to do
-what your description indicates it should do.  And lastly, does this
-fix a bug, possibly even one you have a testcase for, or was it found
-by code inspection?
-
-> Signed-off-by: Vaughan Cao <vaughan.cao@oracle.com>
-> ---
->  drivers/scsi/sg.c | 17 ++++++++++++++++-
->  1 file changed, 16 insertions(+), 1 deletion(-)
+> > +- avdd-supply: Power supply for controller (1.05V)
 > 
-> diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
-> index 25b5455..0ede08f 100644
-> --- a/drivers/scsi/sg.c
-> +++ b/drivers/scsi/sg.c
-> @@ -245,6 +245,21 @@ static int set_exclude(Sg_device *sdp, char val)
->      return val;
->  }
+> > +  "cml": The Tegra clock of that name
 > 
-> +/* Check if we can set exclude and then set, return 1 if success */
-> +static int try_set_exclude(Sg_device *sdp)
-> +{
-> +    unsigned long flags;
-> +
-> +    spin_lock_irqsave(&sg_open_exclusive_lock, flags);
-> +    if (sdp->exclude) {
-> +        spin_unlock_irqrestore(&sg_open_exclusive_lock, flags);
-> +        return 0;
-> +    }
-> +    sdp->exclude = 1;
-> +    spin_unlock_irqrestore(&sg_open_exclusive_lock, flags);
-> +    return 1;
-> +}
-> +
->  static int sfds_list_empty(Sg_device *sdp)
->  {
->      unsigned long flags;
-> @@ -303,7 +318,7 @@ sg_open(struct inode *inode, struct file *filp)
->              goto error_out;
->          }
->          res = wait_event_interruptible(sdp->o_excl_wait,
-> -                       ((!sfds_list_empty(sdp) || get_exclude(sdp))
-> ? 0 : set_exclude(sdp, 1)));
-> +            ((!sfds_list_empty(sdp) || get_exclude(sdp)) ? 0 :
-> try_set_exclude(sdp)));
->          if (res) {
->              retval = res;    /* -ERESTARTSYS because signal hit process */
->              goto error_out;
-> -- 
-> 1.7.11.7
+> Both those changes need to mention that those additions are only required
+> for Tegra30, not Tegra20. In other words,
 > 
-
-Jörn
-
---
-Fantasy is more important than knowledge. Knowledge is limited,
-while fantasy embraces the whole world.
--- Albert Einstein
+> +- avdd-supply: Power supply for controller (1.05V) (not required for
+> Tegra20)
+> 
+> +  "cml": The Tegra clock of that name (not required for Tegra20)
+> 
+> You probably also want to explicitly mention nvidia,tegra30-pcie as a legal
+> compatible value.
+> 
+> > diff --git a/drivers/pci/host/pci-tegra.c
+> > b/drivers/pci/host/pci-tegra.c
+> 
+> > +/* used to differentiate tegra chips code */ struct
+> > +tegra_pcie_soc_data {
+> > +	unsigned int num_max_ports;
+> 
+> nit: "num max" seems redundant. max_ports or num_ports would be better.
+> 
+> >  struct tegra_pcie_port {
+> > @@ -384,7 +408,7 @@ static int tegra_pcie_read_conf(struct pci_bus *bus,
+> unsigned int devfn,
+> >  		struct tegra_pcie_port *port;
+> >
+> >  		list_for_each_entry(port, &pcie->ports, list) {
+> > -			if (port->index + 1 == slot) {
+> > +			if (port->index == slot) {
+> 
+> This and the equivalent change in tegra_pcie_write_conf() seem like a bug-
+> fix unrelated to the addition of Tegra30 support. Hence, they should be a
+> separate patch.
+> 
+> 
+> > @@ -398,7 +422,6 @@ static int tegra_pcie_read_conf(struct pci_bus *bus,
+> unsigned int devfn,
+> >  			*value = 0xffffffff;
+> >  			return PCIBIOS_DEVICE_NOT_FOUND;
+> >  		}
+> > -
+> >  		addr += tegra_pcie_conf_offset(devfn, where);
+> 
+> Unnecessary white-space change.
+> 
+> > @@ -1549,10 +1660,9 @@ static int tegra_pcie_remove(struct
+> platform_device *pdev)
+> >  	struct tegra_pcie_bus *bus;
+> >  	int err;
+> >
+> > -	list_for_each_entry(bus, &pcie->busses, list) {
+> > +	list_for_each_entry(bus, &pcie->busses, list)
+> >  		vunmap(bus->area->addr);
+> > -		kfree(bus);
+> > -	}
+> > +	kfree(bus);
+> 
+> This doesn't look right. Can you please explain it further? This is looping
+> over every bus in a dynamic list, so surely each entry needs to be freed? Did
+> you do this to avoid a crash? If so, the issue is likely that the loop should use
+> list_for_each_entry_safe() rather than list_for_each_entry().
+Yes you are right, it is not required. I will revert it along with taking care of other comments.
