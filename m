@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933321Ab3FEVp0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:45:26 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:38848 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933047Ab3FEVpV (ORCPT
+	id S933302Ab3FEVpF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:45:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38002 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933043Ab3FEVgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:45:21 -0400
-Date: Wed, 5 Jun 2013 23:45:06 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>, linux-mmc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 10/10] arm: add basic support for Rockchip RK3066a boards
-Message-ID: <20130605214506.GC14209@lukather>
-References: <201306030055.15413.heiko@sntech.de>
- <201306030102.20890.heiko@sntech.de>
- <20130605091119.18432af4@skate>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130605091119.18432af4@skate>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 5 Jun 2013 17:36:03 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [ 095/127] reiserfs: fix deadlock with nfs racing on create/lookup
+Date: Wed,  5 Jun 2013 14:34:22 -0700
+Message-Id: <20130605213228.769499918@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
+References: <20130605213217.966891866@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+3.9-stable review patch.  If anyone has any objections, please let me know.
 
-On Wed, Jun 05, 2013 at 09:11:19AM +0200, Thomas Petazzoni wrote:
-> Dear Heiko Stübner,
-> 
-> On Mon, 3 Jun 2013 01:02:20 +0200, Heiko Stübner wrote:
-> > index 0000000..a2d8c70
-> > --- /dev/null
-> > +++ b/arch/arm/mach-rockchip/Makefile.boot
-> > @@ -0,0 +1,3 @@
-> > +zreladdr-$(CONFIG_ARCH_ROCKCHIP)	:= 0x60408000
-> > +params_phys-$(CONFIG_ARCH_ROCKCHIP)	:= 0x60088000
-> > +initrd_phys-$(CONFIG_ARCH_ROCKCHIP)	:= 0x60800000
-> 
-> Thanks to the AUTO_ZRELADDR thing that you're using as part of the
-> MULTIPLATFORM support, this Makefile.boot file is no longer useful. See
-> mach-socfpga, mach-mvebu, mach-bcm2835, mach-bcm, mach-highbank, etc.
-> 
-> Cc'ing Maxime Ripard, since I see that mach-sunxi does have a
-> Makefile.boot, even though I believe it is not needed.
+------------------
 
-Yes, it is a left-over and should be removed obviously.
+From: Jeff Mahoney <jeffm@suse.com>
 
-Thanks for reminding it to me :)
+commit a1457c0ce976bad1356b9b0437f2a5c3ab8a9cfc upstream.
 
-Maxime
+Reiserfs is currently able to be deadlocked by having two NFS clients
+where one has removed and recreated a file and another is accessing the
+file with an open file handle.
+
+If one client deletes and recreates a file with timing such that the
+recreated file obtains the same [dirid, objectid] pair as the original
+file while another client accesses the file via file handle, the create
+and lookup can race and deadlock if the lookup manages to create the
+in-memory inode first.
+
+The create thread, in insert_inode_locked4, will hold the write lock
+while waiting on the other inode to be unlocked. The lookup thread,
+anywhere in the iget path, will release and reacquire the write lock while
+it schedules. If it needs to reacquire the lock while the create thread
+has it, it will never be able to make forward progress because it needs
+to reacquire the lock before ultimately unlocking the inode.
+
+This patch drops the write lock across the insert_inode_locked4 call so
+that the ordering of inode_wait -> write lock is retained. Since this
+would have been the case before the BKL push-down, this is safe.
+
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/reiserfs/inode.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+--- a/fs/reiserfs/inode.c
++++ b/fs/reiserfs/inode.c
+@@ -1810,11 +1810,16 @@ int reiserfs_new_inode(struct reiserfs_t
+ 				  TYPE_STAT_DATA, SD_SIZE, MAX_US_INT);
+ 	memcpy(INODE_PKEY(inode), &(ih.ih_key), KEY_SIZE);
+ 	args.dirid = le32_to_cpu(ih.ih_key.k_dir_id);
+-	if (insert_inode_locked4(inode, args.objectid,
+-			     reiserfs_find_actor, &args) < 0) {
++
++	reiserfs_write_unlock(inode->i_sb);
++	err = insert_inode_locked4(inode, args.objectid,
++			     reiserfs_find_actor, &args);
++	reiserfs_write_lock(inode->i_sb);
++	if (err) {
+ 		err = -EINVAL;
+ 		goto out_bad_inode;
+ 	}
++
+ 	if (old_format_only(sb))
+ 		/* not a perfect generation count, as object ids can be reused, but
+ 		 ** this is as good as reiserfs can do right now.
+
+
