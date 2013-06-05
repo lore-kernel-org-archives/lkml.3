@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757263Ab3FERsT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 13:48:19 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:50313 "EHLO
+	id S1757238Ab3FERu0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 13:50:26 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:39038 "EHLO
 	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757138Ab3FERsQ (ORCPT
+	with ESMTP id S1757195Ab3FERsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 13:48:16 -0400
+	Wed, 5 Jun 2013 13:48:19 -0400
 From: Nick Dyer <nick.dyer@itdev.co.uk>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Daniel Kurtz <djkurtz@chromium.org>,
@@ -14,10 +14,10 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
-Cc: Iiro Valkonen <iiro.valkonen@atmel.com>, Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 09/53] Input: atmel_mxt_ts - Make wait-after-reset period compatible with all chips
-Date: Wed,  5 Jun 2013 18:37:02 +0100
-Message-Id: <1370453866-16534-10-git-send-email-nick.dyer@itdev.co.uk>
+Cc: Nick Dyer <nick.dyer@itdev.co.uk>
+Subject: [PATCH 50/53] Input: atmel_mxt_ts - Implement support for T100 touch object
+Date: Wed,  5 Jun 2013 18:37:43 +0100
+Message-Id: <1370453866-16534-51-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -25,244 +25,419 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Iiro Valkonen <iiro.valkonen@atmel.com>
-
-The delay before the chip can be accessed after reset varies between different
-chips in maXTouch family. Waiting for an interrupt and a T6 status message
-with the RESET bit set is a better behaviour.
+The T100 object replaces the old T9 multitouch touchscreen object in new
+chips.
 
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
-Acked-by: Benson Leung <bleung@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |  109 ++++++++++++++++++++++++------
- 1 file changed, 87 insertions(+), 22 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |  299 ++++++++++++++++++++++++++++--
+ 1 file changed, 288 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 1e24e54..11ee78a 100644
+index ce676a1..2b5d876 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -88,6 +88,9 @@
- #define MXT_COMMAND_REPORTALL	3
- #define MXT_COMMAND_DIAGNOSTIC	5
+@@ -67,6 +67,7 @@
+ #define MXT_SPT_MESSAGECOUNT_T44	44
+ #define MXT_SPT_CTECONFIG_T46		46
+ #define MXT_PROCI_ACTIVE_STYLUS_T63	63
++#define MXT_TOUCH_MULTITOUCHSCREEN_T100 100
  
-+/* Define for T6 status byte */
-+#define MXT_T6_STATUS_RESET	(1 << 7)
-+
- /* MXT_GEN_POWER_T7 field */
- #define MXT_POWER_IDLEACQINT	0
- #define MXT_POWER_ACTVACQINT	1
-@@ -179,9 +182,13 @@
+ /* MXT_GEN_MESSAGE_T5 object */
+ #define MXT_RPTID_NOMSG		0xff
+@@ -146,6 +147,23 @@ struct t9_range {
  
- /* Define for MXT_GEN_COMMAND_T6 */
- #define MXT_BOOT_VALUE		0xa5
-+#define MXT_RESET_VALUE		0x01
- #define MXT_BACKUP_VALUE	0x55
+ #define MXT_STYLUS_PRESSURE_MASK	0x3F
+ 
++/* T100 Multiple Touch Touchscreen */
++#define MXT_T100_CTRL		0
++#define MXT_T100_CFG1		1
++#define MXT_T100_TCHAUX		3
++#define MXT_T100_XRANGE		13
++#define MXT_T100_YRANGE		24
 +
-+/* Delay times */
++#define MXT_T100_CFG_SWITCHXY	(1 << 5)
++
++#define MXT_T100_TCHAUX_VECT	(1 << 0)
++#define MXT_T100_TCHAUX_AMPL	(1 << 1)
++#define MXT_T100_TCHAUX_AREA	(1 << 2)
++
++#define MXT_T100_DETECT		(1 << 7)
++#define MXT_T100_TYPE_MASK	0x70
++#define MXT_T100_TYPE_STYLUS	0x20
++
+ /* Delay times */
  #define MXT_BACKUP_TIME		50	/* msec */
  #define MXT_RESET_TIME		200	/* msec */
-+#define MXT_RESET_TIMEOUT	3000	/* msec */
- #define MXT_FW_RESET_TIME	3000	/* msec */
- #define MXT_FW_CHG_TIMEOUT	300	/* msec */
+@@ -209,6 +227,9 @@ struct mxt_data {
+ 	unsigned int max_y;
+ 	bool in_bootloader;
+ 	u16 mem_size;
++	u8 t100_aux_ampl;
++	u8 t100_aux_area;
++	u8 t100_aux_vect;
+ 	struct bin_attribute mem_access_attr;
+ 	bool debug_enabled;
+ 	u8 max_reportid;
+@@ -246,6 +267,8 @@ struct mxt_data {
+ 	u8 T48_reportid;
+ 	u8 T63_reportid_min;
+ 	u8 T63_reportid_max;
++	u8 T100_reportid_min;
++	u8 T100_reportid_max;
  
-@@ -256,6 +263,7 @@ struct mxt_data {
- 
- 	/* Cached parameters from object table */
- 	u8 T6_reportid;
-+	u16 T6_address;
- 	u8 T9_reportid_min;
- 	u8 T9_reportid_max;
- 	u8 T19_reportid;
-@@ -263,6 +271,9 @@ struct mxt_data {
  	/* for fw update in bootloader */
  	struct completion bl_completion;
- 
-+	/* for reset handling */
-+	struct completion reset_completion;
-+
- 	/* Enable reporting of input events */
- 	bool enable_reporting;
- };
-@@ -348,10 +359,10 @@ static void mxt_dump_message(struct device *dev,
- 		message->reportid, 7, message->message);
+@@ -782,6 +805,79 @@ static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
+ 	data->update_input = true;
  }
  
--static int mxt_wait_for_chg(struct mxt_data *data, unsigned int timeout_ms)
-+static int mxt_wait_for_completion(struct mxt_data *data,
-+			struct completion *comp, unsigned int timeout_ms)
- {
- 	struct device *dev = &data->client->dev;
--	struct completion *comp = &data->bl_completion;
- 	unsigned long timeout = msecs_to_jiffies(timeout_ms);
- 	long ret;
- 
-@@ -380,7 +391,8 @@ recheck:
- 		 * CHG assertion before reading the status byte.
- 		 * Once the status byte has been read, the line is deasserted.
- 		 */
--		ret = mxt_wait_for_chg(data, MXT_FW_CHG_TIMEOUT);
-+		ret = mxt_wait_for_completion(data, &data->bl_completion,
-+					      MXT_FW_CHG_TIMEOUT);
- 		if (ret) {
- 			/*
- 			 * TODO: handle -EINTR better by terminating fw update
-@@ -667,6 +679,9 @@ static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
- 			unsigned csum = mxt_extract_T6_csum(&payload[1]);
- 			dev_dbg(dev, "Status: %02x Config Checksum: %06x\n",
- 				status, csum);
-+
-+			if (status & MXT_T6_STATUS_RESET)
-+				complete(&data->reset_completion);
- 		} else if (mxt_is_T9_message(data, &message)) {
- 			int id = reportid - data->T9_reportid_min;
- 			mxt_input_touchevent(data, &message, id);
-@@ -703,6 +718,59 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
- 	return mxt_process_messages_until_invalid(data);
- }
- 
-+static int mxt_t6_command(struct mxt_data *data, u16 cmd_offset,
-+			  u8 value, bool wait)
-+{
-+	u16 reg;
-+	u8 command_register;
-+	int timeout_counter = 0;
-+	int ret;
-+
-+	reg = data->T6_address + cmd_offset;
-+
-+	ret = mxt_write_reg(data->client, reg, value);
-+	if (ret)
-+		return ret;
-+
-+	if (!wait)
-+		return 0;
-+
-+	do {
-+		msleep(20);
-+		ret = __mxt_read_reg(data->client, reg, 1, &command_register);
-+		if (ret)
-+			return ret;
-+	} while ((command_register != 0) && (timeout_counter++ <= 100));
-+
-+	if (timeout_counter > 100) {
-+		dev_err(&data->client->dev, "Command failed!\n");
-+		return -EIO;
-+	}
-+
-+	return 0;
-+}
-+
-+static int mxt_soft_reset(struct mxt_data *data)
++static void mxt_proc_t100_message(struct mxt_data *data, u8 *message)
 +{
 +	struct device *dev = &data->client->dev;
-+	int ret = 0;
++	struct input_dev *input_dev = data->input_dev;
++	int id;
++	u8 status;
++	int x;
++	int y;
++	int tool;
 +
-+	dev_info(dev, "Resetting chip\n");
++	/* do not report events if input device not yet registered */
++	if (!data->enable_reporting)
++		return;
 +
-+	INIT_COMPLETION(data->reset_completion);
++	id = message[0] - data->T100_reportid_min - 2;
 +
-+	ret = mxt_t6_command(data, MXT_COMMAND_RESET, MXT_RESET_VALUE, false);
-+	if (ret)
-+		return ret;
++	/* ignore SCRSTATUS events */
++	if (id < 0)
++		return;
 +
-+	ret = mxt_wait_for_completion(data, &data->reset_completion,
-+				      MXT_RESET_TIMEOUT);
-+	if (ret)
-+		return ret;
++	status = message[1];
++	x = (message[3] << 8) | message[2];
++	y = (message[5] << 8) | message[4];
++
++	dev_dbg(dev,
++		"[%u] status:%02X x:%u y:%u area:%02X amp:%02X vec:%02X\n",
++		id,
++		status,
++		x, y,
++		(data->t100_aux_area) ? message[data->t100_aux_area] : 0,
++		(data->t100_aux_ampl) ? message[data->t100_aux_ampl] : 0,
++		(data->t100_aux_vect) ? message[data->t100_aux_vect] : 0);
++
++	input_mt_slot(input_dev, id);
++
++	if (status & MXT_T100_DETECT) {
++		/* A reported size of zero indicates that the reported touch
++		 * is a stylus from a linked Stylus T47 object. */
++		if ((status & MXT_T100_TYPE_MASK) == MXT_T100_TYPE_STYLUS)
++			tool = MT_TOOL_PEN;
++		else
++			tool = MT_TOOL_FINGER;
++
++		/* Touch active */
++		input_mt_report_slot_state(input_dev, tool, 1);
++		input_report_abs(input_dev, ABS_MT_POSITION_X, x);
++		input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
++
++		if (data->t100_aux_ampl)
++			input_report_abs(input_dev, ABS_MT_PRESSURE,
++					 message[data->t100_aux_ampl]);
++
++		if (data->t100_aux_area) {
++			if (tool == MT_TOOL_PEN)
++				input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR,
++						 MXT_TOUCH_MAJOR_T47_STYLUS);
++			else
++				input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR,
++						 message[data->t100_aux_area]);
++		}
++
++		if (data->t100_aux_vect)
++			input_report_abs(input_dev, ABS_MT_ORIENTATION,
++					 message[data->t100_aux_vect]);
++	} else {
++		/* Touch no longer active, close out slot */
++		input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, 0);
++	}
++
++	data->update_input = true;
++}
++
++
+ static void mxt_proc_t15_messages(struct mxt_data *data, u8 *msg)
+ {
+ 	struct input_dev *input_dev = data->input_dev;
+@@ -917,6 +1013,9 @@ static int mxt_proc_message(struct mxt_data *data, u8 *message)
+ 	} else if (report_id >= data->T9_reportid_min
+ 	    && report_id <= data->T9_reportid_max) {
+ 		mxt_proc_t9_message(data, message);
++	} else if (report_id >= data->T100_reportid_min
++	    && report_id <= data->T100_reportid_max) {
++		mxt_proc_t100_message(data, message);
+ 	} else if (report_id == data->T19_reportid) {
+ 		mxt_input_button(data, message);
+ 		data->update_input = true;
+@@ -1586,6 +1685,12 @@ static void mxt_free_object_table(struct mxt_data *data)
+ 	data->raw_info_block = NULL;
+ 	kfree(data->msg_buf);
+ 	data->msg_buf = NULL;
++
++	if (data->input_dev) {
++		input_unregister_device(data->input_dev);
++		data->input_dev = NULL;
++	}
++
+ 	data->enable_reporting = false;
+ 	data->T5_address = 0;
+ 	data->T5_msg_size = 0;
+@@ -1603,6 +1708,8 @@ static void mxt_free_object_table(struct mxt_data *data)
+ 	data->T48_reportid = 0;
+ 	data->T63_reportid_min = 0;
+ 	data->T63_reportid_max = 0;
++	data->T100_reportid_min = 0;
++	data->T100_reportid_max = 0;
+ 	data->max_reportid = 0;
+ }
+ 
+@@ -1688,6 +1795,12 @@ static int mxt_parse_object_table(struct mxt_data *data)
+ 			data->num_stylusids = object->num_report_ids
+ 						* mxt_obj_instances(object);
+ 			break;
++		case MXT_TOUCH_MULTITOUCHSCREEN_T100:
++			data->T100_reportid_min = min_id;
++			data->T100_reportid_max = max_id;
++			/* first two report IDs reserved */
++			data->num_touchids = object->num_report_ids - 2;
++			break;
+ 		}
+ 
+ 		end_address = object->start_address
+@@ -1910,6 +2023,168 @@ fail:
+ 	data->use_regulator = false;
+ }
+ 
++static int mxt_read_t100_config(struct mxt_data *data)
++{
++	struct i2c_client *client = data->client;
++	int error;
++	struct mxt_object *object;
++	u16 range_x, range_y;
++	u8 cfg, tchaux;
++	u8 aux;
++
++	object = mxt_get_object(data, MXT_TOUCH_MULTITOUCHSCREEN_T100);
++	if (!object)
++		return -EINVAL;
++
++	error = __mxt_read_reg(client,
++			       object->start_address + MXT_T100_XRANGE,
++			       sizeof(range_x), &range_x);
++	if (error)
++		return error;
++
++	le16_to_cpus(range_x);
++
++	error = __mxt_read_reg(client,
++			       object->start_address + MXT_T100_YRANGE,
++			       sizeof(range_y), &range_y);
++	if (error)
++		return error;
++
++	le16_to_cpus(range_y);
++
++	error =  __mxt_read_reg(client,
++				object->start_address + MXT_T100_CFG1,
++				1, &cfg);
++	if (error)
++		return error;
++
++	error =  __mxt_read_reg(client,
++				object->start_address + MXT_T100_TCHAUX,
++				1, &tchaux);
++	if (error)
++		return error;
++
++	/* Handle default values */
++	if (range_x == 0)
++		range_x = 1023;
++
++	/* Handle default values */
++	if (range_x == 0)
++		range_x = 1023;
++
++	if (range_y == 0)
++		range_y = 1023;
++
++	if (cfg & MXT_T100_CFG_SWITCHXY) {
++		data->max_x = range_y;
++		data->max_y = range_x;
++	} else {
++		data->max_x = range_x;
++		data->max_y = range_y;
++	}
++
++	/* allocate aux bytes */
++	aux = 6;
++
++	if (tchaux & MXT_T100_TCHAUX_VECT)
++		data->t100_aux_vect = aux++;
++
++	if (tchaux & MXT_T100_TCHAUX_AMPL)
++		data->t100_aux_ampl = aux++;
++
++	if (tchaux & MXT_T100_TCHAUX_AREA)
++		data->t100_aux_area = aux++;
++
++	dev_info(&client->dev,
++		 "T100 Touchscreen size X%uY%u\n", data->max_x, data->max_y);
 +
 +	return 0;
 +}
 +
- static int mxt_check_reg_init(struct mxt_data *data)
- {
- 	const struct mxt_platform_data *pdata = data->pdata;
-@@ -829,6 +897,7 @@ static int mxt_get_object_table(struct mxt_data *data)
- 		switch (object->type) {
- 		case MXT_GEN_COMMAND_T6:
- 			data->T6_reportid = min_id;
-+			data->T6_address = object->start_address;
- 			break;
- 		case MXT_TOUCH_MULTI_T9:
- 			data->T9_reportid_min = min_id;
-@@ -887,16 +956,10 @@ static int mxt_initialize(struct mxt_data *data)
- 	if (error)
- 		goto err_free_object_table;
- 
--	/* Backup to memory */
--	mxt_write_object(data, MXT_GEN_COMMAND_T6,
--			MXT_COMMAND_BACKUPNV,
--			MXT_BACKUP_VALUE);
--	msleep(MXT_BACKUP_TIME);
--
--	/* Soft reset */
--	mxt_write_object(data, MXT_GEN_COMMAND_T6,
--			MXT_COMMAND_RESET, 1);
--	msleep(MXT_RESET_TIME);
-+	error = mxt_t6_command(data, MXT_COMMAND_BACKUPNV,
-+			       MXT_BACKUP_VALUE, false);
-+	if (!error)
-+		mxt_soft_reset(data);
- 
- 	/* Update matrix size at info struct */
- 	error = mxt_read_reg(client, MXT_MATRIX_X_SIZE, &val);
-@@ -1040,8 +1103,10 @@ static int mxt_load_fw(struct device *dev, const char *fn)
- 	/* Change to the bootloader mode */
- 	data->in_bootloader = true;
- 
--	mxt_write_object(data, MXT_GEN_COMMAND_T6,
--			MXT_COMMAND_RESET, MXT_BOOT_VALUE);
-+	ret = mxt_t6_command(data, MXT_COMMAND_RESET, MXT_BOOT_VALUE, false);
-+	if (ret)
-+		goto release_firmware;
++static int mxt_input_open(struct input_dev *dev);
++static void mxt_input_close(struct input_dev *dev);
 +
- 	msleep(MXT_RESET_TIME);
- 
- 	/* Change to slave address of bootloader */
-@@ -1084,18 +1149,21 @@ static int mxt_load_fw(struct device *dev, const char *fn)
++static int mxt_initialize_t100_input_device(struct mxt_data *data)
++{
++	struct device *dev = &data->client->dev;
++	struct input_dev *input_dev;
++	int error;
++
++	error = mxt_read_t100_config(data);
++	if (error)
++		dev_warn(dev, "Failed to initialize T9 resolution\n");
++
++	input_dev = input_allocate_device();
++	if (!data || !input_dev) {
++		dev_err(dev, "Failed to allocate memory\n");
++		return -ENOMEM;
++	}
++
++	input_dev->name = "atmel_mxt_ts T100 touchscreen";
++
++	input_dev->phys = data->phys;
++	input_dev->id.bustype = BUS_I2C;
++	input_dev->dev.parent = &data->client->dev;
++	input_dev->open = mxt_input_open;
++	input_dev->close = mxt_input_close;
++
++	set_bit(EV_ABS, input_dev->evbit);
++	input_set_capability(input_dev, EV_KEY, BTN_TOUCH);
++
++	/* For single touch */
++	input_set_abs_params(input_dev, ABS_X,
++			     0, data->max_x, 0, 0);
++	input_set_abs_params(input_dev, ABS_Y,
++			     0, data->max_y, 0, 0);
++
++	if (data->t100_aux_ampl)
++		input_set_abs_params(input_dev, ABS_PRESSURE,
++				     0, 255, 0, 0);
++
++	/* For multi touch */
++	error = input_mt_init_slots(input_dev, data->num_touchids, 0);
++	if (error) {
++		dev_err(dev, "Error %d initialising slots\n", error);
++		goto err_free_mem;
++	}
++
++	input_set_abs_params(input_dev, ABS_MT_TOOL_TYPE, 0, MT_TOOL_MAX, 0, 0);
++	input_set_abs_params(input_dev, ABS_MT_POSITION_X,
++			     0, data->max_x, 0, 0);
++	input_set_abs_params(input_dev, ABS_MT_POSITION_Y,
++			     0, data->max_y, 0, 0);
++
++	if (data->t100_aux_area)
++		input_set_abs_params(input_dev, ABS_MT_TOUCH_MAJOR,
++				     0, MXT_MAX_AREA, 0, 0);
++
++	if (data->t100_aux_ampl)
++		input_set_abs_params(input_dev, ABS_MT_PRESSURE,
++				     0, 255, 0, 0);
++
++	if (data->t100_aux_vect)
++		input_set_abs_params(input_dev, ABS_MT_ORIENTATION,
++				     0, 255, 0, 0);
++
++	input_set_drvdata(input_dev, data);
++
++	error = input_register_device(input_dev);
++	if (error) {
++		dev_err(dev, "Error %d registering input device\n", error);
++		goto err_free_mem;
++	}
++
++	data->input_dev = input_dev;
++
++	return 0;
++
++err_free_mem:
++	input_free_device(input_dev);
++	return error;
++}
++
++static int mxt_initialize_t9_input_device(struct mxt_data *data);
++
+ static int mxt_initialize(struct mxt_data *data)
+ {
+ 	struct i2c_client *client = data->client;
+@@ -1972,6 +2247,18 @@ retry_bootloader:
+ 		goto err_free_object_table;
  	}
  
- 	/* Wait for flash. */
--	ret = mxt_wait_for_chg(data, MXT_FW_RESET_TIME);
-+	ret = mxt_wait_for_completion(data, &data->bl_completion,
-+				MXT_FW_RESET_TIME);
- 	if (ret)
- 		goto disable_irq;
++	if (data->T9_reportid_min) {
++		error = mxt_initialize_t9_input_device(data);
++		if (error)
++			goto err_free_object_table;
++	} else if (data->T100_reportid_min) {
++		error = mxt_initialize_t100_input_device(data);
++		if (error)
++			goto err_free_object_table;
++	} else {
++		dev_warn(&client->dev, "No touch object detected\n");
++	}
++
+ 	data->enable_reporting = true;
  
- 	/* Wait for device to reset. Some bootloader versions do not assert
- 	 * the CHG line after bootloading has finished, so ignore error */
--	mxt_wait_for_chg(data, MXT_FW_RESET_TIME);
-+	mxt_wait_for_completion(data, &data->bl_completion,
-+				MXT_FW_RESET_TIME);
+ 	return 0;
+@@ -2576,17 +2863,11 @@ static int mxt_probe(struct i2c_client *client,
+ 	if (error)
+ 		goto err_free_irq;
  
- 	data->in_bootloader = false;
- 
- disable_irq:
- 	disable_irq(data->irq);
-+release_firmware:
- 	release_firmware(fw);
- 
- 	/* Change to slave address of application */
-@@ -1216,6 +1284,7 @@ static int mxt_probe(struct i2c_client *client,
- 	data->irq = client->irq;
- 
- 	init_completion(&data->bl_completion);
-+	init_completion(&data->reset_completion);
- 
- 	mxt_calc_resolution(data);
- 
-@@ -1341,11 +1410,7 @@ static int mxt_resume(struct device *dev)
- 	struct mxt_data *data = i2c_get_clientdata(client);
- 	struct input_dev *input_dev = data->input_dev;
- 
--	/* Soft reset */
--	mxt_write_object(data, MXT_GEN_COMMAND_T6,
--			MXT_COMMAND_RESET, 1);
+-	if (!data->in_bootloader) {
+-		error = mxt_initialize_t9_input_device(data);
+-		if (error)
+-			goto err_free_object;
+-	}
 -
--	msleep(MXT_RESET_TIME);
-+	mxt_soft_reset(data);
+ 	error = sysfs_create_group(&client->dev.kobj, &mxt_attr_group);
+ 	if (error) {
+ 		dev_err(&client->dev, "Failure %d creating sysfs group\n",
+ 			error);
+-		goto err_unregister_device;
++		goto err_free_object;
+ 	}
  
- 	mutex_lock(&input_dev->mutex);
+ 	sysfs_bin_attr_init(&data->mem_access_attr);
+@@ -2607,9 +2888,6 @@ static int mxt_probe(struct i2c_client *client,
  
+ err_remove_sysfs_group:
+ 	sysfs_remove_group(&client->dev.kobj, &mxt_attr_group);
+-err_unregister_device:
+-	input_unregister_device(data->input_dev);
+-	data->input_dev = NULL;
+ err_free_object:
+ 	mxt_free_object_table(data);
+ err_free_irq:
+@@ -2632,7 +2910,6 @@ static int mxt_remove(struct i2c_client *client)
+ 
+ 	sysfs_remove_group(&client->dev.kobj, &mxt_attr_group);
+ 	free_irq(data->irq, data);
+-	input_unregister_device(data->input_dev);
+ 	regulator_put(data->reg_avdd);
+ 	regulator_put(data->reg_vdd);
+ 	mxt_free_object_table(data);
 -- 
 1.7.10.4
 
