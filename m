@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab3FELPl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 07:15:41 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:38036 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513Ab3FELPk (ORCPT
+	id S1754191Ab3FELPx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 07:15:53 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48919 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753967Ab3FELPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 07:15:40 -0400
-Date: Wed, 5 Jun 2013 14:15:12 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Matthias Schid <aircrach115@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        cruz@massive-dynamics.biz, jonbrett.dev@gmail.com,
-        linux-kernel@i4.cs.fau.de, linux-kernel@vger.kernel.org,
-        sjakub@gmail.com, joe@perches.com, steffhip@googlemail.com,
-        simon.puels@gmail.com
-Subject: Re: [PATCH 2/2] staging/asus_oled fixed linebreak style issue
-Message-ID: <20130605111512.GW28112@mwanda>
-References: <1370429445-17185-1-git-send-email-aircrach115@gmail.com>
- <1370429445-17185-3-git-send-email-aircrach115@gmail.com>
+	Wed, 5 Jun 2013 07:15:51 -0400
+Date: Wed, 5 Jun 2013 13:15:44 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 2/3] sched: code refine in unthrottle_cfs_rq()
+Message-ID: <20130605111544.GA8923@twins.programming.kicks-ass.net>
+References: <51AD87A8.6080608@linux.vnet.ibm.com>
+ <51AD87EB.1070605@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370429445-17185-3-git-send-email-aircrach115@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <51AD87EB.1070605@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 12:50:45PM +0200, Matthias Schid wrote:
-> fixed a linebreak within an error message string coding style
-> issue reported by checkpatch.pl
+On Tue, Jun 04, 2013 at 02:23:39PM +0800, Michael Wang wrote:
+> Directly use rq to save some code.
 > 
-> Signed-off-by: Matthias Schid <aircrach115@gmail.com>
-> Signed-off-by: Stefan Huber <steffhip@googlemail.com>
-> Signed-off-by: Simon Puels <simon.puels@gmail.com>
+> CC: Ingo Molnar <mingo@kernel.org>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+
+Please send patches against tip/master; the below didn't apply cleanly.
+It was a trivial conflict so I applied force and made it fit.
+
+Thanks!
+
 > ---
->  drivers/staging/asus_oled/asus_oled.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
+>  kernel/sched/fair.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/staging/asus_oled/asus_oled.c b/drivers/staging/asus_oled/asus_oled.c
-> index 173fb9a..a7cd65a 100644
-> --- a/drivers/staging/asus_oled/asus_oled.c
-> +++ b/drivers/staging/asus_oled/asus_oled.c
-> @@ -383,8 +383,7 @@ static int append_values(struct asus_oled_dev *odev, uint8_t val, size_t count)
->  		}
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index c61a614..1e10911 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -2298,7 +2298,7 @@ void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
+>  	int enqueue = 1;
+>  	long task_delta;
 >  
->  		if (i >= odev->buf_size) {
-> -			dev_err(odev->dev, "Buffer overflow! Report a bug:"
-> -			       "offs: %d >= %d i: %d (x: %d y: %d)\n",
-> +			dev_err(odev->dev, "Buffer overflow! Report a bug: offs: %d >= %d i: %d (x: %d y: %d)\n",
->  			       (int) odev->buf_offs, (int) odev->buf_size,
->  			       (int) i, (int) x, (int) y);
-
-This could be improved:
-
-			dev_err(odev->dev,
-				"Buffer overflow! Report a bug: offs: %zu >= %d i: %zu (x: %zu y: %zu)\n",
-			     	odev->buf_offs, odev->buf_size, i, x, y);
-
-Printk fromats are documented in Documentation/printk-formats.txt.
-
-regards,
-dan carpenter
-
+> -	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
+> +	se = cfs_rq->tg->se[cpu_of(rq)];
+>  
+>  	cfs_rq->throttled = 0;
+>  	raw_spin_lock(&cfs_b->lock);
+> -- 
+> 1.7.4.1
+> 
