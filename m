@@ -1,200 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539Ab3FEKfh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 06:35:37 -0400
-Received: from mga02.intel.com ([134.134.136.20]:53068 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754085Ab3FEKff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 06:35:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,804,1363158000"; 
-   d="scan'208";a="348473528"
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: [PATCH v9 net-next 7/7] ixgbe: add extra stats for ndo_ll_poll
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Eric Dumazet <erdnetdev@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Wed, 05 Jun 2013 13:35:12 +0300
-Message-ID: <20130605103512.11172.83075.stgit@ladj378.jer.intel.com>
-In-Reply-To: <20130605103400.11172.49099.stgit@ladj378.jer.intel.com>
-References: <20130605103400.11172.49099.stgit@ladj378.jer.intel.com>
-User-Agent: StGIT/0.14.3
+	id S1754589Ab3FEKfv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 06:35:51 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:31907 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754119Ab3FEKft (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 06:35:49 -0400
+From: Frank Mehnert <frank.mehnert@oracle.com>
+Organization: Oracle Corporation
+To: Mel Gorman <mgorman@suse.de>
+Subject: Re: Handling NUMA page migration
+Date: Wed, 5 Jun 2013 12:35:35 +0200
+User-Agent: KMail/1.13.7 (Linux/3.9.4; KDE/4.8.4; x86_64; ; )
+Cc: Robin Holt <holt@sgi.com>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>
+References: <201306040922.10235.frank.mehnert@oracle.com> <20130604115807.GF3672@sgi.com> <20130605101019.GA18242@suse.de>
+In-Reply-To: <20130605101019.GA18242@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed;
+  boundary="nextPart1742548.6Bb9FW9k8G";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201306051235.35678.frank.mehnert@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add additional statistics to the ixgbe driver for ndo_ll_poll
-Defined under LL_EXTENDED_STATS
+--nextPart1742548.6Bb9FW9k8G
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-Tested-by: Willem de Bruijn <willemb@google.com>
-Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
----
+On Wednesday 05 June 2013 12:10:19 Mel Gorman wrote:
+> On Tue, Jun 04, 2013 at 06:58:07AM -0500, Robin Holt wrote:
+> > > B) 1. allocate memory with alloc_pages()
+> > >=20
+> > >    2. SetPageReserved()
+> > >    3. vm_mmap() to allocate a userspace mapping
+> > >    4. vm_insert_page()
+> > >    5. vm_flags |=3D (VM_DONTEXPAND | VM_DONTDUMP)
+> > >   =20
+> > >       (resulting flags are VM_MIXEDMAP | VM_DONTDUMP | VM_DONTEXPAND |
+> > >       0xff)
+> > >=20
+> > > At least the memory allocated like B) is affected by automatic NUMA
+> > > page migration. I'm not sure about A).
+> > >=20
+> > > 1. How can I prevent automatic NUMA page migration on this memory?
+> > > 2. Can NUMA page migration also be handled on such kind of memory
+> > > without
+> > >=20
+> > >    preventing migration?
+>=20
+> Page migration does not expect a PageReserved && PageLRU page. The only
+> reserved check that is made by migration is for the zero page and that
+> happens in the syscall path for move_pages() which is not used by either
+> compaction or automatic balancing.
+>=20
+> At some point you must have a driver that is setting PageReserved on
+> anonymous pages that is later encountered by automatic numa balancing
+> during a NUMA hinting fault.  I expect this is an out-of-tree driver or
+> a custom kernel of some sort. Memory should be pinned by elevating the
+> reference count of the page, not setting PageReserved.
 
- drivers/net/ethernet/intel/ixgbe/ixgbe.h         |   14 ++++++++
- drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c |   40 ++++++++++++++++++++++
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c    |    6 +++
- 3 files changed, 60 insertions(+), 0 deletions(-)
+Yes, this is ring 0 code from VirtualBox. The VBox ring 0 driver does the
+steps which are shown above. Setting PageReserved is not only for pinning
+but also for fork() protection. I've tried to do get_page() as well but
+it did not help preventing the migration during NUMA balancing.
 
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe.h b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-index e9d9862..fb098b4 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-@@ -54,6 +54,9 @@
- 
- #include <net/ll_poll.h>
- 
-+#ifdef CONFIG_NET_LL_RX_POLL
-+#define LL_EXTENDED_STATS
-+#endif
- /* common prefix used by pr_<> macros */
- #undef pr_fmt
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-@@ -184,6 +187,11 @@ struct ixgbe_rx_buffer {
- struct ixgbe_queue_stats {
- 	u64 packets;
- 	u64 bytes;
-+#ifdef LL_EXTENDED_STATS
-+	u64 yields;
-+	u64 misses;
-+	u64 cleaned;
-+#endif  /* LL_EXTENDED_STATS */
- };
- 
- struct ixgbe_tx_queue_stats {
-@@ -391,6 +399,9 @@ static inline bool ixgbe_qv_lock_napi(struct ixgbe_q_vector *q_vector)
- 		WARN_ON(q_vector->state & IXGBE_QV_STATE_NAPI);
- 		q_vector->state |= IXGBE_QV_STATE_NAPI_YIELD;
- 		rc = false;
-+#ifdef LL_EXTENDED_STATS
-+		q_vector->tx.ring->stats.yields++;
-+#endif
- 	} else
- 		/* we don't care if someone yielded */
- 		q_vector->state = IXGBE_QV_STATE_NAPI;
-@@ -421,6 +432,9 @@ static inline bool ixgbe_qv_lock_poll(struct ixgbe_q_vector *q_vector)
- 	if ((q_vector->state & IXGBE_QV_LOCKED)) {
- 		q_vector->state |= IXGBE_QV_STATE_POLL_YIELD;
- 		rc = false;
-+#ifdef LL_EXTENDED_STATS
-+		q_vector->rx.ring->stats.yields++;
-+#endif
- 	} else
- 		/* preserve yield marks */
- 		q_vector->state |= IXGBE_QV_STATE_POLL;
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-index d375472..24e2e7a 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-@@ -1054,6 +1054,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i] = 0;
- 			data[i+1] = 0;
- 			i += 2;
-+#ifdef LL_EXTENDED_STATS
-+			data[i] = 0;
-+			data[i+1] = 0;
-+			data[i+2] = 0;
-+			i += 3;
-+#endif
- 			continue;
- 		}
- 
-@@ -1063,6 +1069,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i+1] = ring->stats.bytes;
- 		} while (u64_stats_fetch_retry_bh(&ring->syncp, start));
- 		i += 2;
-+#ifdef LL_EXTENDED_STATS
-+		data[i] = ring->stats.yields;
-+		data[i+1] = ring->stats.misses;
-+		data[i+2] = ring->stats.cleaned;
-+		i += 3;
-+#endif
- 	}
- 	for (j = 0; j < IXGBE_NUM_RX_QUEUES; j++) {
- 		ring = adapter->rx_ring[j];
-@@ -1070,6 +1082,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i] = 0;
- 			data[i+1] = 0;
- 			i += 2;
-+#ifdef LL_EXTENDED_STATS
-+			data[i] = 0;
-+			data[i+1] = 0;
-+			data[i+2] = 0;
-+			i += 3;
-+#endif
- 			continue;
- 		}
- 
-@@ -1079,6 +1097,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i+1] = ring->stats.bytes;
- 		} while (u64_stats_fetch_retry_bh(&ring->syncp, start));
- 		i += 2;
-+#ifdef LL_EXTENDED_STATS
-+		data[i] = ring->stats.yields;
-+		data[i+1] = ring->stats.misses;
-+		data[i+2] = ring->stats.cleaned;
-+		i += 3;
-+#endif
- 	}
- 
- 	for (j = 0; j < IXGBE_MAX_PACKET_BUFFERS; j++) {
-@@ -1115,12 +1139,28 @@ static void ixgbe_get_strings(struct net_device *netdev, u32 stringset,
- 			p += ETH_GSTRING_LEN;
- 			sprintf(p, "tx_queue_%u_bytes", i);
- 			p += ETH_GSTRING_LEN;
-+#ifdef LL_EXTENDED_STATS
-+			sprintf(p, "tx_q_%u_napi_yield", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "tx_q_%u_misses", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "tx_q_%u_cleaned", i);
-+			p += ETH_GSTRING_LEN;
-+#endif /* LL_EXTENDED_STATS */
- 		}
- 		for (i = 0; i < IXGBE_NUM_RX_QUEUES; i++) {
- 			sprintf(p, "rx_queue_%u_packets", i);
- 			p += ETH_GSTRING_LEN;
- 			sprintf(p, "rx_queue_%u_bytes", i);
- 			p += ETH_GSTRING_LEN;
-+#ifdef LL_EXTENDED_STATS
-+			sprintf(p, "rx_q_%u_ll_poll_yield", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "rx_q_%u_misses", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "rx_q_%u_cleaned", i);
-+			p += ETH_GSTRING_LEN;
-+#endif /* LL_EXTENDED_STATS */
- 		}
- 		for (i = 0; i < IXGBE_MAX_PACKET_BUFFERS; i++) {
- 			sprintf(p, "tx_pb_%u_pxon", i);
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index 9a7dc40..047ebaa 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -2016,6 +2016,12 @@ static int ixgbe_low_latency_recv(struct napi_struct *napi)
- 
- 	ixgbe_for_each_ring(ring, q_vector->rx) {
- 		found = ixgbe_clean_rx_irq(q_vector, ring, 4);
-+#ifdef LL_EXTENDED_STATS
-+		if (found)
-+			ring->stats.cleaned += found;
-+		else
-+			ring->stats.misses++;
-+#endif
- 		if (found)
- 			break;
- 	}
+As I wrote, the code for allocating + mapping the memory assumes that
+the memory is finally pinned and will be never unmapped. That assumption
+might be wrong or wrong under certain/rare conditions. I would like to
+know these conditions and how we can prevent them from happening or how
+we can handle them correctly.
 
+> It's not particularly clear how you avoid hitting the same bug due to THP
+> and memory compaction to be honest but maybe your setup hits a steady
+> state that simply never hit the problem or it happens rarely and it was
+> not identified.
+
+I'm currently using the stock Ubuntu 13.04 generic kernel (3.8.0-23),
+patched with some additional logging code. It is true that this problem
+could also be triggered by other kernel mechanisms as you described.
+
+Thanks,
+
+=46rank
+=2D-=20
+Dr.-Ing. Frank Mehnert | Software Development Director, VirtualBox
+ORACLE Deutschland B.V. & Co. KG | Werkstr. 24 | 71384 Weinstadt, Germany
+
+Hauptverwaltung: Riesstr. 25, D-80992 M=FCnchen
+Registergericht: Amtsgericht M=FCnchen, HRA 95603
+Gesch=E4ftsf=FChrer: J=FCrgen Kunz
+
+Komplement=E4rin: ORACLE Deutschland Verwaltung B.V.
+Hertogswetering 163/167, 3543 AS Utrecht, Niederlande
+Handelsregister der Handelskammer Midden-Niederlande, Nr. 30143697
+Gesch=E4ftsf=FChrer: Alexander van der Ven, Astrid Kepper, Val Maher
+
+--nextPart1742548.6Bb9FW9k8G
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iEYEABECAAYFAlGvFHcACgkQ6z8pigLf3Ee+fQCfRn5LVuyryamvUHGqfh/eEd0H
+kS0AoJccisiMGUwpRLMfqExEWxkZ+MLc
+=JvuG
+-----END PGP SIGNATURE-----
+
+--nextPart1742548.6Bb9FW9k8G--
