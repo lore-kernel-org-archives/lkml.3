@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab3FEMgX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 08:36:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54086 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab3FEMgW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 08:36:22 -0400
+	id S1753549Ab3FEMid (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 08:38:33 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:23080 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752912Ab3FEMib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 08:38:31 -0400
+X-IronPort-AV: E=Sophos;i="4.87,806,1363132800"; 
+   d="scan'208";a="29368927"
+Date: Wed, 5 Jun 2013 13:38:26 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xensource.com>, <will.deacon@arm.com>,
+        <catalin.marinas@arm.com>, <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v3 5/6] arm64/xen: introduce CONFIG_XEN and hypercall.S
+ on ARM64
+In-Reply-To: <1370435014.24512.190.camel@zakaz.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1306051334580.4589@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1306041712100.4589@kaball.uk.xensource.com>  <1370434530-22428-5-git-send-email-stefano.stabellini@eu.citrix.com> <1370435014.24512.190.camel@zakaz.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <s5h1u8gvkh4.wl%tiwai@suse.de>
-References: <1370410969-15328-1-git-send-email-ming.lei@canonical.com>
-	<1370410969-15328-4-git-send-email-ming.lei@canonical.com>
-	<s5hbo7lrq2a.wl%tiwai@suse.de>
-	<CACVXFVNpH2H0wxfmbeVY--Q+1UnNT1rq_Rwr-3ou3Nddq2EWXw@mail.gmail.com>
-	<CACVXFVN5L6ZO2nT2o+JVqG-OUu-+ods3wgV=G4imWd7GNM5M6g@mail.gmail.com>
-	<s5h1u8gvkh4.wl%tiwai@suse.de>
-Date: Wed, 5 Jun 2013 20:36:19 +0800
-Message-ID: <CACVXFVPxJpjViUBHeM3qi_kndwiRc7qf1J-kEqTHE3mL7mpaRQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] firmware loader: allow distribution to choose default
- search paths
-From: Ming Lei <ming.lei@canonical.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 5, 2013 at 7:57 PM, Takashi Iwai <tiwai@suse.de> wrote:
->
-> Hmm, separating with semicolons isn't so common, but we can live with
+On Wed, 5 Jun 2013, Ian Campbell wrote:
+> On Wed, 2013-06-05 at 13:15 +0100, Stefano Stabellini wrote:
+> > Introduce CONFIG_XEN and the implementation of hypercall.S (that is
+> > the only ARMv8 specific code in Xen support for ARM).
+> > 
+> > Compile enlighten.c and grant_table.c from arch/arm.
+> > 
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> 
+> Acked-by: Ian Campbell <ian.campbell@citrix.com>
+> 
+> > [....]
+> > +#define HYPERCALL_SIMPLE(hypercall)		\
+> > +ENTRY(HYPERVISOR_##hypercall)			\
+> > +	mov x16, #__HYPERVISOR_##hypercall;	\
+> > +	hvc XEN_IMM;						\
+> > +	ret;								\
+> 
+> Not sure if this is corruption due to whitespace/email etc but it'd be
+> nice to align those \'s.
 
-Looks there are seldom such usage patterns in kernel, so could you let me
-know which separator is more common?
+They are aligned with ts=4, misaligned with ts=8 (ts is vim terminology
+for "how many spaces a tab equals to") :-/
 
-> it.  I thought the previous loop can be kept but just pass each member
-> to fw_get_file_firmware() unconditionally.  This will reduce the
-> changes, I guess.  But it's just a matter of taste, here is no
-> critically hot path, after all.
-
-Yes, aother way is to move 'fw_path_para' out of fw_path[], and only
-let  fw_get_fw_file_from_paths() deal with 'fw_path_para' and
-CONFIG_FW_CUSTOMIZED_PATH. Looks it is still clean.
-
-
->> +             if (strstr(path, ".."))
->> +                     continue;
->
-> I expect you'll prepare this path sanity check part in a separate
-> patch, right?  It's basically independent from the new kconfig.
-
-Yes, it will be submitted as another patch, also I plan to add
-the check on firmware_name in _request_firmware_prepare()
-so that the similar problem can be found earlier.
-
-Thanks,
---
-Ming Lei
+Given that according to Linux coding style tabs are 8 characters, I'll
+fix the indentation.
