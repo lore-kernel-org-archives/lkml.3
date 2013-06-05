@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756961Ab3FERaM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 13:30:12 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:56104 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756721Ab3FERaJ (ORCPT
+	id S1756974Ab3FERdx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 13:33:53 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:41797 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756721Ab3FERdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 13:30:09 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: archit@ti.com, axel.lin@gmail.com
-Cc: linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH] OMAPDSS: Remove kfree for memory allocated with devm_kzalloc
-Date: Wed,  5 Jun 2013 19:29:56 +0200
-Message-Id: <1370453396-18043-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 5 Jun 2013 13:33:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <Pine.LNX.4.64.1306051924190.19739@axis700.grange>
+References: <1369308593-3723-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<Pine.LNX.4.64.1305242353210.7187@axis700.grange>
+	<1369638667.29283.197.camel@smile>
+	<20130605171001.GC26663@mudshark.cambridge.arm.com>
+	<Pine.LNX.4.64.1306051924190.19739@axis700.grange>
+Date: Wed, 5 Jun 2013 20:33:51 +0300
+Message-ID: <CAHp75Vdv=ybs7jJ1k6rfPoxAyEmhtMr8CSaSrdU+1dMDSr5x+A@mail.gmail.com>
+Subject: Re: [PATCH] dmatest: do not allow to interrupt ongoing tests
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
+        "djbw@fb.com" <djbw@fb.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's not necessary to free memory allocated with devm_kzalloc
-in a remove function and using kfree leads to a double free.
+On Wed, Jun 5, 2013 at 8:25 PM, Guennadi Liakhovetski
+<g.liakhovetski@gmx.de> wrote:
+> On Wed, 5 Jun 2013, Will Deacon wrote:
+>> On Mon, May 27, 2013 at 08:11:07AM +0100, Andy Shevchenko wrote:
+>> > On Fri, 2013-05-24 at 23:55 +0200, Guennadi Liakhovetski wrote:
+>> > > On Thu, 23 May 2013, Andy Shevchenko wrote:
+>> > >
+>> > > > When user interrupts ongoing transfers the dmatest may end up with console
+>> > > > lockup, oops, or data mismatch. This patch prevents user to abort any ongoing
+>> > > > test.
+>> > >
+>> > > Personally I would be against such a change. What about interrupting the
+>> > > test with rmmod?
+>> > >  Is it still possible after this your patch or not? If not
+>> > > - this doesn't seem like a good idea to me. Why don't we just fix those
+>> > > bugs, that you're describing?
+>> >
+>> > The behaviour of the module is returned to the same page by this patch
+>> > as it was before (w/o debugfs).
+>> >
+>> > The user can interrupt tests by rmmod, but it will take time up to
+>> > timeout.
+>> >
+>> > I appreciate if you can do a deeper analysis of what happened in
+>> > case Will reported.
+>>
+>> Did this query hold up the application of this patch? I'd really like to see
+>> *something* in 3.10, otherwise dmatest will be broken.
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
- drivers/video/omap2/displays/panel-picodlp.c |    2 --
- 1 file changed, 2 deletions(-)
+Will, Vinod is the slave DMA subsystem maintainer, I hope he could
+shed a light on your concerns.
+Actually, does it work as expected if you didn't run modprobe -r ?
 
-diff --git a/drivers/video/omap2/displays/panel-picodlp.c b/drivers/video/omap2/displays/panel-picodlp.c
-index 62f2db0..859e111 100644
---- a/drivers/video/omap2/displays/panel-picodlp.c
-+++ b/drivers/video/omap2/displays/panel-picodlp.c
-@@ -469,8 +469,6 @@ static void picodlp_panel_remove(struct omap_dss_device *dssdev)
- 	i2c_unregister_device(picod->picodlp_i2c_client);
- 	dev_set_drvdata(&dssdev->dev, NULL);
- 	dev_dbg(&dssdev->dev, "removing picodlp panel\n");
--
--	kfree(picod);
- }
- 
- static int picodlp_panel_enable(struct omap_dss_device *dssdev)
--- 
-1.7.10.4
+> Not from me, no. I just expressed a doubt, the author thinks there is no
+> problem, and I have no capacity atm to try to verify it, so, my query
+> shouldn't be considered a nak.
 
+Guennadi, anyway, thanks for your opinion.
+
+Vinod, have you chance to try last patch?
+
+--
+With Best Regards,
+Andy Shevchenko
