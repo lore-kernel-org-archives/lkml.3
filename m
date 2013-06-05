@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361Ab3FERte (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 13:49:34 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:55235 "EHLO
+	id S1757318Ab3FERtd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 13:49:33 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:13520 "EHLO
 	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757226Ab3FERsT (ORCPT
+	with ESMTP id S1757215Ab3FERsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Jun 2013 13:48:19 -0400
 From: Nick Dyer <nick.dyer@itdev.co.uk>
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
 Cc: Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 39/53] Input: atmel_mxt_ts - Implement vector/orientation support
-Date: Wed,  5 Jun 2013 18:37:32 +0100
-Message-Id: <1370453866-16534-40-git-send-email-nick.dyer@itdev.co.uk>
+Subject: [PATCH 06/53] Input: atmel_mxt_ts - wait for CHG assert in mxt_check_bootloader
+Date: Wed,  5 Jun 2013 18:36:59 +0100
+Message-Id: <1370453866-16534-7-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -25,73 +25,236 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The atmel touch messages contain orientation information as a byte in a packed
-format which can be passed straight on to Android if the input device
-configuration is correct, see
-http://source.android.com/tech/input/touch-devices.html#touchorientationcalibration
+From: Benson Leung <bleung@chromium.org>
 
-This requires vector reports to be enabled in maXTouch config (zero DISVECT
-bit in T9 CTRL field)
+The driver should not immediately read bootloader status when
+in Application Update Mode. The CHG line will assert when the device
+has made a state transition and is ready to report a new status
+via i2c.
 
-Android converts the format in frameworks/base/services/input/Input.cpp,
-search for ORIENTATION_CALIBRATION_VECTOR.
+This change adds a wait for completion in mxt_check_bootloader,
+and changes the mxt_interrupt handler to signal the completion.
 
+Signed-off-by: Benson Leung <bleung@chromium.org>
+Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
-Acked-by: Benson Leung <bleung@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |  102 ++++++++++++++++++++++++------
+ 1 file changed, 81 insertions(+), 21 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 27a2425..bd8971e 100644
+index 7de3b47..3f75e8c 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -718,6 +718,7 @@ static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
- 	int y;
- 	int area;
- 	int amplitude;
-+	u8 vector;
+@@ -15,6 +15,7 @@
  
- 	/* do not report events if input device not yet registered */
- 	if (!data->enable_reporting)
-@@ -736,9 +737,10 @@ static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
+ #include <linux/module.h>
+ #include <linux/init.h>
++#include <linux/completion.h>
+ #include <linux/delay.h>
+ #include <linux/firmware.h>
+ #include <linux/i2c.h>
+@@ -247,16 +248,19 @@ struct mxt_data {
+ 	const struct mxt_platform_data *pdata;
+ 	struct mxt_object *object_table;
+ 	struct mxt_info info;
+-
+ 	unsigned int irq;
+ 	unsigned int max_x;
+ 	unsigned int max_y;
++	bool in_bootloader;
  
- 	area = message[5];
- 	amplitude = message[6];
-+	vector = message[7];
+ 	/* Cached parameters from object table */
+ 	u8 T6_reportid;
+ 	u8 T9_reportid_min;
+ 	u8 T9_reportid_max;
+ 	u8 T19_reportid;
++
++	/* for fw update in bootloader */
++	struct completion bl_completion;
+ };
  
- 	dev_dbg(dev,
--		"[%u] %c%c%c%c%c%c%c%c x: %5u y: %5u area: %3u amp: %3u\n",
-+		"[%u] %c%c%c%c%c%c%c%c x: %5u y: %5u area: %3u amp: %3u vector: %02X\n",
- 		id,
- 		(status & MXT_T9_DETECT) ? 'D' : '.',
- 		(status & MXT_T9_PRESS) ? 'P' : '.',
-@@ -748,7 +750,7 @@ static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
- 		(status & MXT_T9_AMP) ? 'A' : '.',
- 		(status & MXT_T9_SUPPRESS) ? 'S' : '.',
- 		(status & MXT_T9_UNGRIP) ? 'U' : '.',
--		x, y, area, amplitude);
-+		x, y, area, amplitude, vector);
+ static inline size_t mxt_obj_size(const struct mxt_object *obj)
+@@ -340,12 +344,51 @@ static void mxt_dump_message(struct device *dev,
+ 		message->reportid, 7, message->message);
+ }
  
- 	input_mt_slot(input_dev, id);
+-static int mxt_check_bootloader(struct i2c_client *client,
+-				     unsigned int state)
++static int mxt_wait_for_chg(struct mxt_data *data, unsigned int timeout_ms)
++{
++	struct device *dev = &data->client->dev;
++	struct completion *comp = &data->bl_completion;
++	unsigned long timeout = msecs_to_jiffies(timeout_ms);
++	long ret;
++
++	ret = wait_for_completion_interruptible_timeout(comp, timeout);
++	if (ret < 0) {
++		dev_err(dev, "Wait for completion interrupted.\n");
++		return -EINTR;
++	} else if (ret == 0) {
++		dev_err(dev, "Wait for completion timed out.\n");
++		return -ETIMEDOUT;
++	}
++	return 0;
++}
++
++static int mxt_check_bootloader(struct mxt_data *data, unsigned int state)
+ {
++	struct i2c_client *client = data->client;
+ 	u8 val;
++	int ret;
  
-@@ -768,6 +770,7 @@ static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
- 		input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
- 		input_report_abs(input_dev, ABS_MT_PRESSURE, amplitude);
- 		input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, area);
-+		input_report_abs(input_dev, ABS_MT_ORIENTATION, vector);
- 	} else {
- 		/* Touch no longer active, close out slot */
- 		input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, 0);
-@@ -2186,6 +2189,8 @@ static int mxt_initialize_t9_input_device(struct mxt_data *data)
- 			     0, data->max_y, 0, 0);
- 	input_set_abs_params(input_dev, ABS_MT_PRESSURE,
- 			     0, 255, 0, 0);
-+	input_set_abs_params(input_dev, ABS_MT_ORIENTATION,
-+			     0, 255, 0, 0);
+ recheck:
++	if (state != MXT_WAITING_BOOTLOAD_CMD) {
++		/*
++		 * In application update mode, the interrupt
++		 * line signals state transitions. We must wait for the
++		 * CHG assertion before reading the status byte.
++		 * Once the status byte has been read, the line is deasserted.
++		 */
++		ret = mxt_wait_for_chg(data, 300);
++		if (ret) {
++			/*
++			 * TODO: handle -EINTR better by terminating fw update
++			 * process before returning to userspace by writing
++			 * length 0x000 to device (iff we are in
++			 * WAITING_FRAME_DATA state).
++			 */
++			dev_err(&client->dev, "Update wait error %d\n", ret);
++			return ret;
++		}
++	}
++
+ 	if (i2c_master_recv(client, &val, 1) != 1) {
+ 		dev_err(&client->dev, "%s: i2c recv failed\n", __func__);
+ 		return -EIO;
+@@ -591,9 +634,8 @@ static bool mxt_is_T9_message(struct mxt_data *data, struct mxt_message *msg)
+ 	return (id >= data->T9_reportid_min && id <= data->T9_reportid_max);
+ }
  
- 	input_set_drvdata(input_dev, data);
+-static irqreturn_t mxt_interrupt(int irq, void *dev_id)
++static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
+ {
+-	struct mxt_data *data = dev_id;
+ 	struct mxt_message message;
+ 	const u8 *payload = &message.message[0];
+ 	struct device *dev = &data->client->dev;
+@@ -633,6 +675,19 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
+ }
  
++static irqreturn_t mxt_interrupt(int irq, void *dev_id)
++{
++	struct mxt_data *data = dev_id;
++
++	if (data->in_bootloader) {
++		/* bootloader state transition completion */
++		complete(&data->bl_completion);
++		return IRQ_HANDLED;
++	}
++
++	return mxt_process_messages_until_invalid(data);
++}
++
+ static int mxt_check_reg_init(struct mxt_data *data)
+ {
+ 	const struct mxt_platform_data *pdata = data->pdata;
+@@ -948,6 +1003,8 @@ static int mxt_load_fw(struct device *dev, const char *fn)
+ 	}
+ 
+ 	/* Change to the bootloader mode */
++	data->in_bootloader = true;
++
+ 	mxt_write_object(data, MXT_GEN_COMMAND_T6,
+ 			MXT_COMMAND_RESET, MXT_BOOT_VALUE);
+ 	msleep(MXT_RESET_TIME);
+@@ -958,18 +1015,19 @@ static int mxt_load_fw(struct device *dev, const char *fn)
+ 	else
+ 		client->addr = MXT_BOOT_HIGH;
+ 
+-	ret = mxt_check_bootloader(client, MXT_WAITING_BOOTLOAD_CMD);
++	INIT_COMPLETION(data->bl_completion);
++
++	ret = mxt_check_bootloader(data, MXT_WAITING_BOOTLOAD_CMD);
+ 	if (ret)
+-		goto out;
++		goto disable_irq;
+ 
+ 	/* Unlock bootloader */
+ 	mxt_unlock_bootloader(client);
+ 
+ 	while (pos < fw->size) {
+-		ret = mxt_check_bootloader(client,
+-						MXT_WAITING_FRAME_DATA);
++		ret = mxt_check_bootloader(data, MXT_WAITING_FRAME_DATA);
+ 		if (ret)
+-			goto out;
++			goto disable_irq;
+ 
+ 		frame_size = ((*(fw->data + pos) << 8) | *(fw->data + pos + 1));
+ 
+@@ -981,17 +1039,19 @@ static int mxt_load_fw(struct device *dev, const char *fn)
+ 		/* Write one frame to device */
+ 		mxt_fw_write(client, fw->data + pos, frame_size);
+ 
+-		ret = mxt_check_bootloader(client,
+-						MXT_FRAME_CRC_PASS);
++		ret = mxt_check_bootloader(data, MXT_FRAME_CRC_PASS);
+ 		if (ret)
+-			goto out;
++			goto disable_irq;
+ 
+ 		pos += frame_size;
+ 
+ 		dev_dbg(dev, "Updated %d bytes / %zd bytes\n", pos, fw->size);
+ 	}
+ 
+-out:
++	data->in_bootloader = false;
++
++disable_irq:
++	disable_irq(data->irq);
+ 	release_firmware(fw);
+ 
+ 	/* Change to slave address of application */
+@@ -1010,8 +1070,6 @@ static ssize_t mxt_update_fw_store(struct device *dev,
+ 	struct mxt_data *data = dev_get_drvdata(dev);
+ 	int error;
+ 
+-	disable_irq(data->irq);
+-
+ 	error = mxt_load_fw(dev, MXT_FW_NAME);
+ 	if (error) {
+ 		dev_err(dev, "The firmware update failed(%d)\n", error);
+@@ -1025,13 +1083,13 @@ static ssize_t mxt_update_fw_store(struct device *dev,
+ 		mxt_free_object_table(data);
+ 
+ 		mxt_initialize(data);
+-	}
+ 
+-	enable_irq(data->irq);
++		enable_irq(data->irq);
+ 
+-	error = mxt_make_highchg(data);
+-	if (error)
+-		return error;
++		error = mxt_make_highchg(data);
++		if (error)
++			return error;
++	}
+ 
+ 	return count;
+ }
+@@ -1121,6 +1179,8 @@ static int mxt_probe(struct i2c_client *client,
+ 	data->pdata = pdata;
+ 	data->irq = client->irq;
+ 
++	init_completion(&data->bl_completion);
++
+ 	mxt_calc_resolution(data);
+ 
+ 	error = mxt_initialize(data);
 -- 
 1.7.10.4
 
