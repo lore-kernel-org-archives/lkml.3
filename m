@@ -1,118 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589Ab3FEKfv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 06:35:51 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:31907 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754119Ab3FEKft (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 06:35:49 -0400
-From: Frank Mehnert <frank.mehnert@oracle.com>
-Organization: Oracle Corporation
-To: Mel Gorman <mgorman@suse.de>
-Subject: Re: Handling NUMA page migration
-Date: Wed, 5 Jun 2013 12:35:35 +0200
-User-Agent: KMail/1.13.7 (Linux/3.9.4; KDE/4.8.4; x86_64; ; )
-Cc: Robin Holt <holt@sgi.com>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>
-References: <201306040922.10235.frank.mehnert@oracle.com> <20130604115807.GF3672@sgi.com> <20130605101019.GA18242@suse.de>
-In-Reply-To: <20130605101019.GA18242@suse.de>
+	id S1754656Ab3FEKf6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 06:35:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62615 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754597Ab3FEKfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 06:35:54 -0400
+Date: Wed, 5 Jun 2013 13:36:25 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sergei.shtylyov@cogentembedded.com
+Subject: Re: [net-next rfc V3 0/9] Multiqueue API for macvtap
+Message-ID: <20130605103625.GF31830@redhat.com>
+References: <1370414192-5830-1-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1742548.6Bb9FW9k8G";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306051235.35678.frank.mehnert@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370414192-5830-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1742548.6Bb9FW9k8G
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jun 05, 2013 at 02:36:23PM +0800, Jason Wang wrote:
+> Hi all:
+> 
+> This series implements a v3 of fully tuntap compatiable API which could be used
+> by userspace to manage multiple macvtap queues. The main parts is to add
+> TUNSETQUEUE ioctl support for macvtap.
+> 
+> Patch 1 - 5 was some tuntap compatibility and misc cleanups.
+> Patch 6 removes the linear search in macvtap by reshuffling the macvtaps array
+> each time a queue is removed. After this, we could store both enabled and
+> disabled queues in the same array without introducing extra data structure.
+> Patch 7 let TUNSETIFF can create multiqueue device, nothing but some check
+> were added.
+> Patch 8 implement TUNSETQUEUE ioctl
+> Patch 9 reports IFF_MULTI_QUEUE to userspace to notify the userspace that the
+> multiqueue API is completed.
+> 
+> Flow caches implememtation were missed in this version, since I am doing
+> rework on the tuntap flow caches. Have some some stress test with both netperf
+> and pktgen.
+> 
+> Please review, thanks.
 
-On Wednesday 05 June 2013 12:10:19 Mel Gorman wrote:
-> On Tue, Jun 04, 2013 at 06:58:07AM -0500, Robin Holt wrote:
-> > > B) 1. allocate memory with alloc_pages()
-> > >=20
-> > >    2. SetPageReserved()
-> > >    3. vm_mmap() to allocate a userspace mapping
-> > >    4. vm_insert_page()
-> > >    5. vm_flags |=3D (VM_DONTEXPAND | VM_DONTDUMP)
-> > >   =20
-> > >       (resulting flags are VM_MIXEDMAP | VM_DONTDUMP | VM_DONTEXPAND |
-> > >       0xff)
-> > >=20
-> > > At least the memory allocated like B) is affected by automatic NUMA
-> > > page migration. I'm not sure about A).
-> > >=20
-> > > 1. How can I prevent automatic NUMA page migration on this memory?
-> > > 2. Can NUMA page migration also be handled on such kind of memory
-> > > without
-> > >=20
-> > >    preventing migration?
->=20
-> Page migration does not expect a PageReserved && PageLRU page. The only
-> reserved check that is made by migration is for the zero page and that
-> happens in the syscall path for move_pages() which is not used by either
-> compaction or automatic balancing.
->=20
-> At some point you must have a driver that is setting PageReserved on
-> anonymous pages that is later encountered by automatic numa balancing
-> during a NUMA hinting fault.  I expect this is an out-of-tree driver or
-> a custom kernel of some sort. Memory should be pinned by elevating the
-> reference count of the page, not setting PageReserved.
+FYI by netdev rules RFC means "don't apply yet".
 
-Yes, this is ring 0 code from VirtualBox. The VBox ring 0 driver does the
-steps which are shown above. Setting PageReserved is not only for pinning
-but also for fork() protection. I've tried to do get_page() as well but
-it did not help preventing the migration during NUMA balancing.
-
-As I wrote, the code for allocating + mapping the memory assumes that
-the memory is finally pinned and will be never unmapped. That assumption
-might be wrong or wrong under certain/rare conditions. I would like to
-know these conditions and how we can prevent them from happening or how
-we can handle them correctly.
-
-> It's not particularly clear how you avoid hitting the same bug due to THP
-> and memory compaction to be honest but maybe your setup hits a steady
-> state that simply never hit the problem or it happens rarely and it was
-> not identified.
-
-I'm currently using the stock Ubuntu 13.04 generic kernel (3.8.0-23),
-patched with some additional logging code. It is true that this problem
-could also be triggered by other kernel mechanisms as you described.
-
-Thanks,
-
-=46rank
-=2D-=20
-Dr.-Ing. Frank Mehnert | Software Development Director, VirtualBox
-ORACLE Deutschland B.V. & Co. KG | Werkstr. 24 | 71384 Weinstadt, Germany
-
-Hauptverwaltung: Riesstr. 25, D-80992 M=FCnchen
-Registergericht: Amtsgericht M=FCnchen, HRA 95603
-Gesch=E4ftsf=FChrer: J=FCrgen Kunz
-
-Komplement=E4rin: ORACLE Deutschland Verwaltung B.V.
-Hertogswetering 163/167, 3543 AS Utrecht, Niederlande
-Handelsregister der Handelskammer Midden-Niederlande, Nr. 30143697
-Gesch=E4ftsf=FChrer: Alexander van der Ven, Astrid Kepper, Val Maher
-
---nextPart1742548.6Bb9FW9k8G
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iEYEABECAAYFAlGvFHcACgkQ6z8pigLf3Ee+fQCfRn5LVuyryamvUHGqfh/eEd0H
-kS0AoJccisiMGUwpRLMfqExEWxkZ+MLc
-=JvuG
------END PGP SIGNATURE-----
-
---nextPart1742548.6Bb9FW9k8G--
+> Changes from V2:
+> - Don't place disabled taps in the array and use a linked like to track all taps
+> - Remove unnecessary best-effort barriers
+> - Add ACCESS_ONCE() for vlan->numvtaps to prevent compiler generate unexpected
+>   codes
+> - Add a comment to explain that numvtaps is just a hint in macvtap_get_queue()
+> - blank line fixes
+> 
+> Changes from V1:
+> - Drop the patch of "return -EBADFD when TUNGETIFF fails" to preserve backward
+>   compatibility
+> - Add a small patch of optimizing macvtap_do_read() (see patch 1/8)
+> - Use different functions to do tap enabling and creating
+> - Use different functions to do tap disabling and closing
+> - Remove the emtpy line in patch 6/8
+> - Add a line in patch 3/8
+> - Add a comment to explain the checking when doing TUNSETIFF with
+>   IFF_MULTI_QUEUE
+> - Add comments to explian the second swapping when moving taps between disabled
+>   areas and enabled areas.
+> - Fix the commit log of patch 7/8 ( v1 says the linked list were used which is
+>   wrong )
+> - Other minor bug fixes
+> 
+> Jason Wang (9):
+>   macvtap: fix a possible race between queue selection and changing
+>     queues
+>   macvtap: do not add self to waitqueue if doing a nonblock read
+>   macvlan: switch to use IS_ENABLED()
+>   macvtap: introduce macvtap_get_vlan()
+>   macvlan: change the max number of queues to 16
+>   macvtap: eliminate linear search
+>   macvtap: allow TUNSETIFF to create multiqueue device
+>   macvtap: add TUNSETQUEUE ioctl
+>   macvtap: enable multiqueue flag
+> 
+>  drivers/net/macvtap.c      |  261 ++++++++++++++++++++++++++++++++------------
+>  include/linux/if_macvlan.h |    8 +-
+>  2 files changed, 197 insertions(+), 72 deletions(-)
