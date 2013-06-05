@@ -1,126 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133Ab3FEMeH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 08:34:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60499 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752945Ab3FEMeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 08:34:06 -0400
-Date: Wed, 5 Jun 2013 13:34:00 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Frank Mehnert <frank.mehnert@oracle.com>
-Cc: Robin Holt <holt@sgi.com>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: Handling NUMA page migration
-Message-ID: <20130605123400.GA1936@suse.de>
-References: <201306040922.10235.frank.mehnert@oracle.com>
- <20130604115807.GF3672@sgi.com>
- <20130605101019.GA18242@suse.de>
- <201306051235.35678.frank.mehnert@oracle.com>
+	id S1753403Ab3FEMgX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 08:36:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54086 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148Ab3FEMgW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 08:36:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <201306051235.35678.frank.mehnert@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5h1u8gvkh4.wl%tiwai@suse.de>
+References: <1370410969-15328-1-git-send-email-ming.lei@canonical.com>
+	<1370410969-15328-4-git-send-email-ming.lei@canonical.com>
+	<s5hbo7lrq2a.wl%tiwai@suse.de>
+	<CACVXFVNpH2H0wxfmbeVY--Q+1UnNT1rq_Rwr-3ou3Nddq2EWXw@mail.gmail.com>
+	<CACVXFVN5L6ZO2nT2o+JVqG-OUu-+ods3wgV=G4imWd7GNM5M6g@mail.gmail.com>
+	<s5h1u8gvkh4.wl%tiwai@suse.de>
+Date: Wed, 5 Jun 2013 20:36:19 +0800
+Message-ID: <CACVXFVPxJpjViUBHeM3qi_kndwiRc7qf1J-kEqTHE3mL7mpaRQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] firmware loader: allow distribution to choose default
+ search paths
+From: Ming Lei <ming.lei@canonical.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 12:35:35PM +0200, Frank Mehnert wrote:
-> On Wednesday 05 June 2013 12:10:19 Mel Gorman wrote:
-> > On Tue, Jun 04, 2013 at 06:58:07AM -0500, Robin Holt wrote:
-> > > > B) 1. allocate memory with alloc_pages()
-> > > > 
-> > > >    2. SetPageReserved()
-> > > >    3. vm_mmap() to allocate a userspace mapping
-> > > >    4. vm_insert_page()
-> > > >    5. vm_flags |= (VM_DONTEXPAND | VM_DONTDUMP)
-> > > >    
-> > > >       (resulting flags are VM_MIXEDMAP | VM_DONTDUMP | VM_DONTEXPAND |
-> > > >       0xff)
-> > > > 
-> > > > At least the memory allocated like B) is affected by automatic NUMA
-> > > > page migration. I'm not sure about A).
-> > > > 
-> > > > 1. How can I prevent automatic NUMA page migration on this memory?
-> > > > 2. Can NUMA page migration also be handled on such kind of memory
-> > > > without
-> > > > 
-> > > >    preventing migration?
-> > 
-> > Page migration does not expect a PageReserved && PageLRU page. The only
-> > reserved check that is made by migration is for the zero page and that
-> > happens in the syscall path for move_pages() which is not used by either
-> > compaction or automatic balancing.
-> > 
-> > At some point you must have a driver that is setting PageReserved on
-> > anonymous pages that is later encountered by automatic numa balancing
-> > during a NUMA hinting fault.  I expect this is an out-of-tree driver or
-> > a custom kernel of some sort. Memory should be pinned by elevating the
-> > reference count of the page, not setting PageReserved.
-> 
-> Yes, this is ring 0 code from VirtualBox. The VBox ring 0 driver does the
-> steps which are shown above. Setting PageReserved is not only for pinning
-> but also for fork() protection.
+On Wed, Jun 5, 2013 at 7:57 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>
+> Hmm, separating with semicolons isn't so common, but we can live with
 
-Offhand I don't see what setting PageReserved on an LRU page has to do
-with fork() protection. If the VMA should not be copied by fork then use
-MADV_DONTFORK.
+Looks there are seldom such usage patterns in kernel, so could you let me
+know which separator is more common?
 
-> I've tried to do get_page() as well but
-> it did not help preventing the migration during NUMA balancing.
-> 
+> it.  I thought the previous loop can be kept but just pass each member
+> to fw_get_file_firmware() unconditionally.  This will reduce the
+> changes, I guess.  But it's just a matter of taste, here is no
+> critically hot path, after all.
 
-I think you mean elevating the page count did not prevent the unmapping. The
-elevated count should have prevented the actual migration but would not
-prevent the unmapping.
+Yes, aother way is to move 'fw_path_para' out of fw_path[], and only
+let  fw_get_fw_file_from_paths() deal with 'fw_path_para' and
+CONFIG_FW_CUSTOMIZED_PATH. Looks it is still clean.
 
-> As I wrote, the code for allocating + mapping the memory assumes that
-> the memory is finally pinned and will be never unmapped. That assumption
-> might be wrong or wrong under certain/rare conditions. I would like to
-> know these conditions and how we can prevent them from happening or how
-> we can handle them correctly.
 
-Memory compaction for THP allocations will break that assumption as
-compaction ignores VM_LOCKED. I strongly suspect that if you did something
-like move a process into a cpuset bound to another node that it would
-also break. If a process like numad is running then it would probably
-break virtualbox as well as it triggers migration from userspace. It is
-a fragile assumption to make.
+>> +             if (strstr(path, ".."))
+>> +                     continue;
+>
+> I expect you'll prepare this path sanity check part in a separate
+> patch, right?  It's basically independent from the new kconfig.
 
-> > It's not particularly clear how you avoid hitting the same bug due to THP
-> > and memory compaction to be honest but maybe your setup hits a steady
-> > state that simply never hit the problem or it happens rarely and it was
-> > not identified.
-> 
-> I'm currently using the stock Ubuntu 13.04 generic kernel (3.8.0-23),
+Yes, it will be submitted as another patch, also I plan to add
+the check on firmware_name in _request_firmware_prepare()
+so that the similar problem can be found earlier.
 
-and an out-of-tree driver which is what is hitting the problem.
-
-A few of your options in order of estimated time to completion are;
-
-1. Disable numa balancing within your driver or fail to start if it's
-   running
-2. Create a patch that adds a new NUMA_PTE_SCAN_IGNORE value for
-   mm->first_nid (see includ/linux.mm_types.h). In sched/core/fair.c,
-   add a check that first_nid == NUMA_PTE_SCAN_IGNORE should be ignored.
-   Document that only virtualbox needs this and set it within your
-   driver. This will not fix the compaction cases or numad using cpusets
-   to migrate your processes though
-3. When the driver affects a region, set mm->numa_next_reset and
-   mm->numa_next_scan to large values to prevent the pages being unmapped.
-   This would be very fragile, could break again in the future and is ugly
-4. Add a check in change_pte_range() for the !prot_numa case to check
-   PageReserved. This will prevent automatic numa balancing unmapping the
-   page. Document that only virtualbox requires this.
-5. Add a check in change_pte_range() for an elevated page count.
-   Document that there is no point unmapping a page for a NUMA hinting
-   fault that will only fail migration later anyway which is true albeit of
-   marginal benefit. Then, in the vbox driver, elevate the page count, do
-   away with the PageReserved trick, use MADV_DONTFORK to prevent copying
-   at fork time.
-
--- 
-Mel Gorman
-SUSE Labs
+Thanks,
+--
+Ming Lei
