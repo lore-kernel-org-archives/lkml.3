@@ -1,112 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449Ab3FEIty (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 04:49:54 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:55639 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab3FEItu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 04:49:50 -0400
-Message-ID: <51AEFBA1.302@linux.vnet.ibm.com>
-Date: Wed, 05 Jun 2013 16:49:37 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1752846Ab3FEIws (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 04:52:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44229 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752208Ab3FEIwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 04:52:45 -0400
+Date: Wed, 5 Jun 2013 10:52:39 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Michel Lespinasse <walken@google.com>,
+        Greg Thelen <gthelen@google.com>, Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [patch -v4 4/8] memcg: enhance memcg iterator to support
+ predicates
+Message-ID: <20130605085239.GF15997@dhcp22.suse.cz>
+References: <1370254735-13012-1-git-send-email-mhocko@suse.cz>
+ <1370254735-13012-5-git-send-email-mhocko@suse.cz>
+ <20130604010737.GF29989@mtj.dyndns.org>
+ <20130604134523.GH31242@dhcp22.suse.cz>
+ <20130604193619.GA14916@htj.dyndns.org>
+ <20130604204807.GA13231@dhcp22.suse.cz>
+ <20130604205426.GI14916@htj.dyndns.org>
+ <20130605073728.GC15997@dhcp22.suse.cz>
+ <20130605080545.GF7303@mtj.dyndns.org>
 MIME-Version: 1.0
-To: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, rjw@sisk.pl,
-        Viresh Kumar <viresh.kumar@linaro.org>, Jiri Kosina <jkosina@suse.cz>,
-        Borislav Petkov <bp@alien8.de>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH] cpufreq: prevent 'policy->cpus' become offline in __gov_queue_work()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060508-1396-0000-0000-00000311C365
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130605080545.GF7303@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed 05-06-13 01:05:45, Tejun Heo wrote:
+> Hey, Michal.
+> 
+> On Wed, Jun 05, 2013 at 09:37:28AM +0200, Michal Hocko wrote:
+> > Tejun, I do not have infinite amount of time and this is barely a
+> > priority for the patchset. The core part is to be able to skip
+> > nodes/subtrees which are not worth reclaiming, remember?
+> >
+> > I have already expressed my priorities for inside skipping
+> > decisions. You are just throwing "let's try a different way" handwavy
+> > suggestions. I have no problem to pull the skip logic outside of
+> > iterators if more people think that this is _really_ important. But
+> > until then I take it as a really low priority that shouldn't delay the
+> > patchset without a good reason.
+> > 
+> > So please try to focus on the technical parts of the patchset if you
+> > want to help with the review. I really appreciate suggestions but please
+> > do not get down to bike scheding.
+> 
+> Well, so, I know I've been pain in the ass but here's the thing.  I
+> don't think you've been doing a good job of maintaining memcg.  Among
+> the code pieces that I look at, it really ranks very close to the
+> bottom in terms of readability and general messiness. 
 
-Jiri Kosina <jkosina@suse.cz> and Borislav Petkov <bp@alien8.de>
-reported the warning:
+Something, something, something, something and other similar things....
+Is this really an argumentation. Comon' Tejun.
 
-[   51.616759] ------------[ cut here ]------------
-[   51.621460] WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule+0x58/0x60()
-[   51.629638] Modules linked in: ext2 vfat fat loop snd_hda_codec_hdmi usbhid snd_hda_codec_realtek coretemp kvm_intel kvm snd_hda_intel snd_hda_codec crc32_pclmul crc32c_intel ghash_clmulni_intel snd_hwdep snd_pcm aesni_intel sb_edac aes_x86_64 ehci_pci snd_page_alloc glue_helper snd_timer xhci_hcd snd iTCO_wdt iTCO_vendor_support ehci_hcd edac_core lpc_ich acpi_cpufreq lrw gf128mul ablk_helper cryptd mperf usbcore usb_common soundcore mfd_core dcdbas evdev pcspkr processor i2c_i801 button microcode
-[   51.675581] CPU: 0 PID: 244 Comm: kworker/1:1 Tainted: G        W    3.10.0-rc1+ #10
-[   51.683407] Hardware name: Dell Inc. Precision T3600/0PTTT9, BIOS A08 01/24/2013
-[   51.690901] Workqueue: events od_dbs_timer
-[   51.695069]  0000000000000009 ffff88043a2f5b68 ffffffff8161441c ffff88043a2f5ba8
-[   51.702602]  ffffffff8103e540 0000000000000033 0000000000000001 ffff88043d5f8000
-[   51.710136]  00000000ffff0ce1 0000000000000001 ffff88044fc4fc08 ffff88043a2f5bb8
-[   51.717691] Call Trace:
-[   51.720191]  [<ffffffff8161441c>] dump_stack+0x19/0x1b
-[   51.725396]  [<ffffffff8103e540>] warn_slowpath_common+0x70/0xa0
-[   51.731473]  [<ffffffff8103e58a>] warn_slowpath_null+0x1a/0x20
-[   51.737378]  [<ffffffff81025628>] native_smp_send_reschedule+0x58/0x60
-[   51.744013]  [<ffffffff81072cfd>] wake_up_nohz_cpu+0x2d/0xa0
-[   51.749745]  [<ffffffff8104f6bf>] add_timer_on+0x8f/0x110
-[   51.755214]  [<ffffffff8105f6fe>] __queue_delayed_work+0x16e/0x1a0
-[   51.761470]  [<ffffffff8105f251>] ? try_to_grab_pending+0xd1/0x1a0
-[   51.767724]  [<ffffffff8105f78a>] mod_delayed_work_on+0x5a/0xa0
-[   51.773719]  [<ffffffff814f6b5d>] gov_queue_work+0x4d/0xc0
-[   51.779271]  [<ffffffff814f60cb>] od_dbs_timer+0xcb/0x170
-[   51.784734]  [<ffffffff8105e75d>] process_one_work+0x1fd/0x540
-[   51.790634]  [<ffffffff8105e6f2>] ? process_one_work+0x192/0x540
-[   51.796711]  [<ffffffff8105ef22>] worker_thread+0x122/0x380
-[   51.802350]  [<ffffffff8105ee00>] ? rescuer_thread+0x320/0x320
-[   51.808264]  [<ffffffff8106634a>] kthread+0xea/0xf0
-[   51.813200]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
-[   51.819644]  [<ffffffff81623d5c>] ret_from_fork+0x7c/0xb0
-[   51.918165] nouveau E[     DRM] GPU lockup - switching to software fbcon
-[   51.930505]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
-[   51.936994] ---[ end trace f419538ada83b5c5 ]---
+I _really_ do not let this into a flame and I will not respond to any
+other emails that are not related to the patchset. I do not care and do
+not have time for that!
 
-It was caused by the policy->cpus changed during the process of
-__gov_queue_work(), in other word, cpu offline happened.
+> One of the core jobs of being a maintainer is ensuring the code stays
+> in readable and maintainable state.
 
-This patch will use get/put_online_cpus() to prevent the offline
-happen inside __gov_queue_work(), after applied the patch, the
-warning is gone as Jiri tested:
+As you might know I am playing the maintainer role for around year and a
+half and there were many improvemtns merged since then (and some faults
+as well of course).
+There is a lot of space for improvements and I work at areas as time
+permits focusing more at reviews for other people are willing to do.
 
-	Link: https://lkml.org/lkml/2013/6/5/88
+[...]
 
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Viresh Kumar <viresh.kumar@linaro.org>
-Reported-by: Borislav Petkov <bp@alien8.de>
-Reported-by: Jiri Kosina <jkosina@suse.cz>
-Tested-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
----
- drivers/cpufreq/cpufreq_governor.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-index 5af40ad..dc9b72e 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -26,6 +26,7 @@
- #include <linux/tick.h>
- #include <linux/types.h>
- #include <linux/workqueue.h>
-+#include <linux/cpu.h>
- 
- #include "cpufreq_governor.h"
- 
-@@ -180,8 +181,10 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
- 	if (!all_cpus) {
- 		__gov_queue_work(smp_processor_id(), dbs_data, delay);
- 	} else {
-+		get_online_cpus();
- 		for_each_cpu(i, policy->cpus)
- 			__gov_queue_work(i, dbs_data, delay);
-+		put_online_cpus();
- 	}
- }
- EXPORT_SYMBOL_GPL(gov_queue_work);
+Please stop distracting from the main purpose of this discussion with
+side tracks and personal things.
 -- 
-1.7.4.1
-
+Michal Hocko
+SUSE Labs
