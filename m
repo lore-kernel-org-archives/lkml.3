@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932213Ab3FEUxa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 16:53:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36301 "EHLO
+	id S932264Ab3FEU4V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 16:56:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36329 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757609Ab3FEUx0 (ORCPT
+	with ESMTP id S932190Ab3FEUx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 16:53:26 -0400
+	Wed, 5 Jun 2013 16:53:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        Anthony Doggett <Anthony2486@interfaces.org.uk>,
-        Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 19/33] nilfs2: fix issue of nilfs_set_page_dirty() for page at EOF boundary
-Date: Wed,  5 Jun 2013 13:52:57 -0700
-Message-Id: <20130605204706.836625177@linuxfoundation.org>
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Subject: [ 25/33] cifs: fix potential buffer overrun when composing a new options string
+Date: Wed,  5 Jun 2013 13:53:03 -0700
+Message-Id: <20130605204708.222895790@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605204702.359510786@linuxfoundation.org>
 References: <20130605204702.359510786@linuxfoundation.org>
@@ -30,153 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 136e8770cd5d1fe38b3c613100dd6dc4db6d4fa6 upstream.
+commit 166faf21bd14bc5c5295a44874bf7f3930c30b20 upstream.
 
-nilfs2: fix issue of nilfs_set_page_dirty for page at EOF boundary
+Consider the case where we have a very short ip= string in the original
+mount options, and when we chase a referral we end up with a very long
+IPv6 address. Be sure to allow for that possibility when estimating the
+size of the string to allocate.
 
-DESCRIPTION:
- There are use-cases when NILFS2 file system (formatted with block size
-lesser than 4 KB) can be remounted in RO mode because of encountering of
-"broken bmap" issue.
-
-The issue was reported by Anthony Doggett <Anthony2486@interfaces.org.uk>:
- "The machine I've been trialling nilfs on is running Debian Testing,
-  Linux version 3.2.0-4-686-pae (debian-kernel@lists.debian.org) (gcc
-  version 4.6.3 (Debian 4.6.3-14) ) #1 SMP Debian 3.2.35-2), but I've
-  also reproduced it (identically) with Debian Unstable amd64 and Debian
-  Experimental (using the 3.8-trunk kernel).  The problematic partitions
-  were formatted with "mkfs.nilfs2 -b 1024 -B 8192"."
-
-SYMPTOMS:
-(1) System log contains error messages likewise:
-
-    [63102.496756] nilfs_direct_assign: invalid pointer: 0
-    [63102.496786] NILFS error (device dm-17): nilfs_bmap_assign: broken bmap (inode number=28)
-    [63102.496798]
-    [63102.524403] Remounting filesystem read-only
-
-(2) The NILFS2 file system is remounted in RO mode.
-
-REPRODUSING PATH:
-(1) Create volume group with name "unencrypted" by means of vgcreate utility.
-(2) Run script (prepared by Anthony Doggett <Anthony2486@interfaces.org.uk>):
-
-----------------[BEGIN SCRIPT]--------------------
-
-VG=unencrypted
-lvcreate --size 2G --name ntest $VG
-mkfs.nilfs2 -b 1024 -B 8192 /dev/mapper/$VG-ntest
-mkdir /var/tmp/n
-mkdir /var/tmp/n/ntest
-mount /dev/mapper/$VG-ntest /var/tmp/n/ntest
-mkdir /var/tmp/n/ntest/thedir
-cd /var/tmp/n/ntest/thedir
-sleep 2
-date
-darcs init
-sleep 2
-dmesg|tail -n 5
-date
-darcs whatsnew || true
-date
-sleep 2
-dmesg|tail -n 5
-----------------[END SCRIPT]--------------------
-
-REPRODUCIBILITY: 100%
-
-INVESTIGATION:
-As it was discovered, the issue takes place during segment
-construction after executing such sequence of user-space operations:
-
-  open("_darcs/index", O_RDWR|O_CREAT|O_NOCTTY, 0666) = 7
-  fstat(7, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
-  ftruncate(7, 60)
-
-The error message "NILFS error (device dm-17): nilfs_bmap_assign: broken
-bmap (inode number=28)" takes place because of trying to get block
-number for third block of the file with logical offset #3072 bytes.  As
-it is possible to see from above output, the file has 60 bytes of the
-whole size.  So, it is enough one block (1 KB in size) allocation for
-the whole file.  Trying to operate with several blocks instead of one
-takes place because of discovering several dirty buffers for this file
-in nilfs_segctor_scan_file() method.
-
-The root cause of this issue is in nilfs_set_page_dirty function which
-is called just before writing to an mmapped page.
-
-When nilfs_page_mkwrite function handles a page at EOF boundary, it
-fills hole blocks only inside EOF through __block_page_mkwrite().
-
-The __block_page_mkwrite() function calls set_page_dirty() after filling
-hole blocks, thus nilfs_set_page_dirty function (=
-a_ops->set_page_dirty) is called.  However, the current implementation
-of nilfs_set_page_dirty() wrongly marks all buffers dirty even for page
-at EOF boundary.
-
-As a result, buffers outside EOF are inconsistently marked dirty and
-queued for write even though they are not mapped with nilfs_get_block
-function.
-
-FIX:
-This modifies nilfs_set_page_dirty() not to mark hole blocks dirty.
-
-Thanks to Vyacheslav Dubeyko for his effort on analysis and proposals
-for this issue.
-
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Reported-by: Anthony Doggett <Anthony2486@interfaces.org.uk>
-Reported-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>
-Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nilfs2/inode.c |   27 +++++++++++++++++++++++----
- 1 file changed, 23 insertions(+), 4 deletions(-)
+ fs/cifs/cifs_dfs_ref.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/nilfs2/inode.c
-+++ b/fs/nilfs2/inode.c
-@@ -195,13 +195,32 @@ static int nilfs_writepage(struct page *
- 
- static int nilfs_set_page_dirty(struct page *page)
- {
--	int ret = __set_page_dirty_buffers(page);
-+	int ret = __set_page_dirty_nobuffers(page);
- 
--	if (ret) {
-+	if (page_has_buffers(page)) {
- 		struct inode *inode = page->mapping->host;
--		unsigned nr_dirty = 1 << (PAGE_SHIFT - inode->i_blkbits);
-+		unsigned nr_dirty = 0;
-+		struct buffer_head *bh, *head;
- 
--		nilfs_set_file_dirty(inode, nr_dirty);
-+		/*
-+		 * This page is locked by callers, and no other thread
-+		 * concurrently marks its buffers dirty since they are
-+		 * only dirtied through routines in fs/buffer.c in
-+		 * which call sites of mark_buffer_dirty are protected
-+		 * by page lock.
-+		 */
-+		bh = head = page_buffers(page);
-+		do {
-+			/* Do not mark hole blocks dirty */
-+			if (buffer_dirty(bh) || !buffer_mapped(bh))
-+				continue;
-+
-+			set_buffer_dirty(bh);
-+			nr_dirty++;
-+		} while (bh = bh->b_this_page, bh != head);
-+
-+		if (nr_dirty)
-+			nilfs_set_file_dirty(inode, nr_dirty);
- 	}
- 	return ret;
- }
+--- a/fs/cifs/cifs_dfs_ref.c
++++ b/fs/cifs/cifs_dfs_ref.c
+@@ -18,6 +18,7 @@
+ #include <linux/slab.h>
+ #include <linux/vfs.h>
+ #include <linux/fs.h>
++#include <linux/inet.h>
+ #include "cifsglob.h"
+ #include "cifsproto.h"
+ #include "cifsfs.h"
+@@ -149,7 +150,8 @@ char *cifs_compose_mount_options(const c
+ 	 * assuming that we have 'unc=' and 'ip=' in
+ 	 * the original sb_mountdata
+ 	 */
+-	md_len = strlen(sb_mountdata) + rc + strlen(ref->node_name) + 12;
++	md_len = strlen(sb_mountdata) + rc + strlen(ref->node_name) + 12 +
++			INET6_ADDRSTRLEN;
+ 	mountdata = kzalloc(md_len+1, GFP_KERNEL);
+ 	if (mountdata == NULL) {
+ 		rc = -ENOMEM;
 
 
