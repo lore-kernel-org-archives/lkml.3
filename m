@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757393Ab3FERxM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 13:53:12 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:53346 "EHLO
+	id S1757495Ab3FERyP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 13:54:15 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:23138 "EHLO
 	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757303Ab3FERxH (ORCPT
+	with ESMTP id S1757126Ab3FERsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 13:53:07 -0400
+	Wed, 5 Jun 2013 13:48:15 -0400
 From: Nick Dyer <nick.dyer@itdev.co.uk>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Daniel Kurtz <djkurtz@chromium.org>,
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
 Cc: Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 51/53] Input: atmel_mxt_ts - Allow specification of firmware file name
-Date: Wed,  5 Jun 2013 18:37:44 +0100
-Message-Id: <1370453866-16534-52-git-send-email-nick.dyer@itdev.co.uk>
+Subject: [PATCH 47/53] Input: atmel_mxt_ts - Release touch state during suspend
+Date: Wed,  5 Jun 2013 18:37:40 +0100
+Message-Id: <1370453866-16534-48-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -25,110 +25,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On platforms which have multiple device instances using this driver, the
-firmware may be different on each device. This patch makes the user give the
-name of the firmware file when flashing.
+If fingers are down as the MXT chip goes into suspend it does not send a lift
+message. In addition, it may not complete its final measurement cycle
+immediately, which means touch messages may be received by the interrupt
+handler after mxt_stop() has completed.
 
-This also prevents accidental triggering of the firmware load process.
+So:
+- disable irq during suspend
+- flush any messages created after suspend
+- tell app layer that slots were released at suspend
 
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 Acked-by: Benson Leung <bleung@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   45 ++++++++++++++++++++++++++----
- 1 file changed, 39 insertions(+), 6 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   46 ++++++++++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 2b5d876..3a74371 100644
+index cd8f3e0..724a95d 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -27,8 +27,7 @@
- #include <linux/regulator/consumer.h>
- #include <linux/gpio.h>
+@@ -251,6 +251,9 @@ struct mxt_data {
  
--/* Firmware files */
--#define MXT_FW_NAME		"maxtouch.fw"
-+/* Configuration file */
- #define MXT_CFG_NAME		"maxtouch.cfg"
- #define MXT_CFG_MAGIC		"OBP_RAW V1"
+ 	/* Enable reporting of input events */
+ 	bool enable_reporting;
++
++	/* Indicates whether device is in suspend */
++	bool suspended;
+ };
  
-@@ -248,6 +247,7 @@ struct mxt_data {
- 	bool use_regulator;
- 	struct regulator *reg_vdd;
- 	struct regulator *reg_avdd;
-+	char *fw_name;
+ static inline size_t mxt_obj_size(const struct mxt_object *obj)
+@@ -2028,6 +2031,11 @@ static int mxt_load_fw(struct device *dev, const char *fn)
+ 	if (ret)
+ 		goto release_firmware;
  
- 	/* Cached parameters from object table */
- 	u16 T5_address;
-@@ -2369,7 +2369,7 @@ static int mxt_check_firmware_format(struct device *dev,
- 	return -1;
- }
++	if (data->suspended) {
++		enable_irq(data->irq);
++		data->suspended = false;
++	}
++
+ 	if (!data->in_bootloader) {
+ 		/* Change to the bootloader mode */
+ 		data->in_bootloader = true;
+@@ -2140,6 +2148,8 @@ static ssize_t mxt_update_fw_store(struct device *dev,
+ 	} else {
+ 		dev_info(dev, "The firmware update succeeded\n");
  
--static int mxt_load_fw(struct device *dev, const char *fn)
-+static int mxt_load_fw(struct device *dev)
- {
- 	struct mxt_data *data = dev_get_drvdata(dev);
- 	const struct firmware *fw = NULL;
-@@ -2379,9 +2379,9 @@ static int mxt_load_fw(struct device *dev, const char *fn)
- 	unsigned int frame = 0;
- 	int ret;
++		data->suspended = false;
++
+ 		error = mxt_initialize(data);
+ 		if (error)
+ 			return error;
+@@ -2245,17 +2255,53 @@ static const struct attribute_group mxt_attr_group = {
+ 	.attrs = mxt_attrs,
+ };
  
--	ret = request_firmware(&fw, fn, dev);
-+	ret = request_firmware(&fw, data->fw_name, dev);
- 	if (ret) {
--		dev_err(dev, "Unable to open firmware %s\n", fn);
-+		dev_err(dev, "Unable to open firmware %s\n", data->fw_name);
- 		return ret;
- 	}
- 
-@@ -2496,6 +2496,35 @@ release_firmware:
- 	return ret;
- }
- 
-+static int mxt_update_file_name(struct device *dev, char **file_name,
-+				const char *buf, size_t count)
++static void mxt_reset_slots(struct mxt_data *data)
 +{
-+	char *file_name_tmp;
++	struct input_dev *input_dev = data->input_dev;
++	unsigned int num_mt_slots;
++	int id;
 +
-+	/* Simple sanity check */
-+	if (count > 64) {
-+		dev_warn(dev, "File name too long\n");
-+		return -EINVAL;
++	num_mt_slots = data->num_touchids + data->num_stylusids;
++
++	for (id = 0; id < num_mt_slots; id++) {
++		input_mt_slot(input_dev, id);
++		input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, 0);
 +	}
 +
-+	file_name_tmp = krealloc(*file_name, count + 1, GFP_KERNEL);
-+	if (!file_name_tmp) {
-+		dev_warn(dev, "no memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	*file_name = file_name_tmp;
-+	memcpy(*file_name, buf, count);
-+
-+	/* Echo into the sysfs entry may append newline at the end of buf */
-+	if (buf[count - 1] == '\n')
-+		(*file_name)[count - 1] = '\0';
-+	else
-+		(*file_name)[count] = '\0';
-+
-+	return 0;
++	mxt_input_sync(input_dev);
 +}
 +
- static ssize_t mxt_update_fw_store(struct device *dev,
- 					struct device_attribute *attr,
- 					const char *buf, size_t count)
-@@ -2503,7 +2532,11 @@ static ssize_t mxt_update_fw_store(struct device *dev,
- 	struct mxt_data *data = dev_get_drvdata(dev);
- 	int error;
- 
--	error = mxt_load_fw(dev, MXT_FW_NAME);
-+	error = mxt_update_file_name(dev, &data->fw_name, buf, count);
-+	if (error)
-+		return error;
+ static void mxt_start(struct mxt_data *data)
+ {
++	if (!data->suspended || data->in_bootloader)
++		return;
 +
-+	error = mxt_load_fw(dev);
- 	if (error) {
- 		dev_err(dev, "The firmware update failed(%d)\n", error);
- 		count = error;
++	/* Discard any touch messages still in message buffer from before chip
++	 * went to sleep */
++	mxt_process_messages_until_invalid(data);
++
+ 	mxt_set_t7_power_cfg(data, MXT_POWER_CFG_RUN);
+ 
+ 	/* Recalibrate since chip has been in deep sleep */
+ 	mxt_t6_command(data, MXT_COMMAND_CALIBRATE, 1, false);
++
++	mxt_acquire_irq(data);
++	data->enable_reporting = true;
++	data->suspended = false;
+ }
+ 
+ static void mxt_stop(struct mxt_data *data)
+ {
++	if (data->suspended || data->in_bootloader)
++		return;
++
++	data->enable_reporting = false;
++	disable_irq(data->irq);
++
+ 	mxt_set_t7_power_cfg(data, MXT_POWER_CFG_DEEPSLEEP);
++
++	mxt_reset_slots(data);
++	data->suspended = true;
+ }
+ 
+ static int mxt_input_open(struct input_dev *dev)
 -- 
 1.7.10.4
 
