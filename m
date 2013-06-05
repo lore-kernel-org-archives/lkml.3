@@ -1,106 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450Ab3FEEZF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 00:25:05 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47697 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750854Ab3FEEYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 00:24:36 -0400
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: Lee Jones <lee.jones@linaro.org>, Stephen Warren <swarren@wwwdotorg.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "wim@iguana.be" <wim@iguana.be>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "Kristo, Tero" <t-kristo@ti.com>
-Subject: RE: [PATCH v2] mfd: DT bindings for the palmas family MFD
-Thread-Topic: [PATCH v2] mfd: DT bindings for the palmas family MFD
-Thread-Index: AQHOYQBsAZZhG5yimUKsMK4ElU7bxZkk8ggAgAGUXUA=
-Date: Wed, 5 Jun 2013 04:24:02 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229E8DF9@DBDE04.ent.ti.com>
-References: <1370335309-6319-1-git-send-email-j-keerthy@ti.com>
- <20130604121434.GN3370@gmail.com>
-In-Reply-To: <20130604121434.GN3370@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="utf-8"
+	id S1751419Ab3FEEeN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 00:34:13 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:38271 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326Ab3FEEeL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 00:34:11 -0400
 MIME-Version: 1.0
+In-Reply-To: <51AD698F.3020305@cn.fujitsu.com>
+References: <1370071212-7715-1-git-send-email-linkinjeon@gmail.com>
+	<51AD698F.3020305@cn.fujitsu.com>
+Date: Wed, 5 Jun 2013 13:34:10 +0900
+Message-ID: <CAKYAXd_jFuG00-HWQREKieXdqBGEAs+W0imvYZjCpGAH5S4H9A@mail.gmail.com>
+Subject: Re: [PATCH 1/2] f2fs: add remount_fs callback support
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: jaegeuk.kim@samsung.com, linux-f2fs-devel@lists.sourceforge.net,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r554PFEv025004
 
-Hello Lee Jones,
+2013/6/4 Gu Zheng <guz.fnst@cn.fujitsu.com>:
+> On 06/01/2013 03:20 PM, Namjae Jeon wrote:
+>
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>>
+>> Add the f2fs_remount function call which will be used
+>> during the filesystem remounting. This function
+>> will help us to change the mount options specific to
+>> f2fs.
+>>
+>> Also modify the f2fs background_gc mount option, which
+>> will allow the user to dynamically trun on/off the
+>> garbage collection in f2fs based on the background_gc
+>> value. If background_gc=0, Garbage collection will
+>> be turned off & if background_gc=1, Garbage collection
+>> will be truned on.
+>
+>
+> Hi Namjae,
+Hi. Gu.
 
-> -----Original Message-----
-> From: Lee Jones [mailto:lee.jones@linaro.org]
-> Sent: Tuesday, June 04, 2013 5:45 PM
-> To: J, KEERTHY
-> Cc: linux-kernel@vger.kernel.org; linux-doc@vger.kernel.org;
-> devicetree-discuss@lists.ozlabs.org; swarren@wwwdotorg.org;
-> broonie@opensource.wolfsonmicro.com; rob.herring@calxeda.com;
-> rob@landley.net; sameo@linux.intel.com; wim@iguana.be;
-> lgirdwood@gmail.com; gg@slimlogic.co.uk; Kristo, Tero; Ian Lartey
-> Subject: Re: [PATCH v2] mfd: DT bindings for the palmas family MFD
-> 
-> On Tue, 04 Jun 2013, J Keerthy wrote:
-> 
-> > From: Graeme Gregory <gg@slimlogic.co.uk>
-> >
-> > Add the various binding files for the palmas family of chips. There
-> is
-> > a top level MFD binding then a seperate binding for regulators IP
-> blocks on chips.
-> >
-> > Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-> > Signed-off-by: J Keerthy <j-keerthy@ti.com>
-> > Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
-> > ---
-> > Changes from v1:
-> > * Corrected ti,ldo6_vibrator property ---> ti,ldo6-vibrator
-> > * Added the irq.h header file inclusion for defining type of
-> interrupt
-> >
-> >  Documentation/devicetree/bindings/mfd/palmas.txt   |   49
-> +++++++++++++++
-> >  .../devicetree/bindings/regulator/palmas-pmic.txt  |   65
-> ++++++++++++++++++++
-> >  2 files changed, 114 insertions(+), 0 deletions(-)  create mode
-> > 100644 Documentation/devicetree/bindings/mfd/palmas.txt
-> >  create mode 100644
-> > Documentation/devicetree/bindings/regulator/palmas-pmic.txt
-> 
-> Is there a driver to go with this patch, or was the documentation an
-> afterthought in this case? If the latter is true I'd be happy to apply
-> this patch with an Ack from Stephen or one of the other previous
-> reviewers.
+>   I think splitting these two changes into single ones seems better.
+> Refer to the inline comments.
+I don't think so. Mount option background_gc is changed to make
+remount_fs working in the correct way.
 
-Well that's the latter case :-). 
+>
+> Thanks,
+> Gu
+>
+>
+> Though simply option show is enough, but I think the "background_gc=on/off" is more friendly.
+Yes, Agree. I will update.
 
-Stephen,
+>
+>> +
+>> +     /**
+>> +      * We stop the GC thread if FS is mounted as RO
+>> +      * or if background_gc = 0 is passed in mount
+>> +      * option. Also sync the filesystem.
+>> +      */
+>> +     if ((*flags & MS_RDONLY) || !test_opt(sbi, BG_GC)) {
+>
+>
+> Another condition: The old mount is not RO.
+I don't think that it is needed. I think current condition check can
+be covered about all cases.
+Am I missing something ?
 
-Can this be taken?
+>
+>> +             stop_gc_thread(sbi);
+>> +             f2fs_sync_fs(sb, 1);
+>> +     } else if (test_opt(sbi, BG_GC) && !sbi->gc_thread) {
+>> +             err = start_gc_thread(sbi);
+>> +             if (err)
+>> +                     goto restore_opts;
+>> +     }
+>> +
+>> +     /* Update the POSIXACL Flag */
+>> +      sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
+>> +             (test_opt(sbi, POSIX_ACL) ? MS_POSIXACL : 0);
+>
+>
+> Maybe you forget to update the flags with MS_RDONLY or ~MS_RDONLY, if the flags changed.
+No, we don't need to check this flags. sb-s_flags will be updated by
+MS_REMOUNT of vfs.(do_remount_sb)
 
-> 
-> --
-> Lee Jones
-> Linaro ST-Ericsson Landing Team Lead
-> Linaro.org â”‚ Open source software for ARM SoCs Follow Linaro: Facebook
-> | Twitter | Blog
+>
+>> +     return 0;
+>> +
+>> +restore_opts:
+>> +     sb->s_flags = old_sb_flags;
+>
+>
+> There is no need to restore sb->s_flags, parse_options() did not change it.
+> no need to store the old sb->s_flags too.
+Yes, right, I will update.
 
-Regards,
-Keerthy
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>
+>>
+>> -     /* After POR, we can run background GC thread */
+>> -     err = start_gc_thread(sbi);
+>> -     if (err)
+>> -             goto fail;
+>> +     /* After POR, we can run background GC thread.*/
+>> +     if (!(sb->s_flags & MS_RDONLY)) {
+>> +             /**
+>> +              * If filesystem is mounted as read-only then
+>> +              * do not start the gc_thread.
+>> +              */
+>
+> It seems that the comment here is against with the logic.
+hum.. Okay, I will update comment to avoid some confusion.
+
+Thanks for review :)
+I will post v2 patch including your opinion soon.
