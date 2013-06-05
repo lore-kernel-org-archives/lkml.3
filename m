@@ -1,87 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab3FEIxq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 04:53:46 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:55304 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949Ab3FEIxn convert rfc822-to-8bit (ORCPT
+	id S1753148Ab3FEIxv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 04:53:51 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:42109 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753083Ab3FEIxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 04:53:43 -0400
+	Wed, 5 Jun 2013 04:53:49 -0400
+Date: Wed, 5 Jun 2013 16:53:44 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: linux-kernel@vger.kernel.org, "'Matt Mackall'" <mpm@selenic.com>,
+        "'Deepak Saxena'" <dsaxena@plexity.net>
+Subject: Re: [PATCH V2] hwrng: use platform_{get,set}_drvdata()
+Message-ID: <20130605085344.GD12202@gondor.apana.org.au>
+References: <001801ce5c06$190091f0$4b01b5d0$@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <51AEFBA1.302@linux.vnet.ibm.com>
-References: <51AEFBA1.302@linux.vnet.ibm.com>
-Date: Wed, 5 Jun 2013 14:23:42 +0530
-Message-ID: <CAKohpom571kXwLVPzmAb1n16EuHwyOaiM3khXkjQZQixGCpX8Q@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: prevent 'policy->cpus' become offline in __gov_queue_work()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, rjw@sisk.pl,
-        Jiri Kosina <jkosina@suse.cz>, Borislav Petkov <bp@alien8.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <001801ce5c06$190091f0$4b01b5d0$@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 June 2013 14:19, Michael Wang <wangyun@linux.vnet.ibm.com> wrote:
->
-> Jiri Kosina <jkosina@suse.cz> and Borislav Petkov <bp@alien8.de>
-> reported the warning:
->
-> [   51.616759] ------------[ cut here ]------------
-> [   51.621460] WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule+0x58/0x60()
-> [   51.629638] Modules linked in: ext2 vfat fat loop snd_hda_codec_hdmi usbhid snd_hda_codec_realtek coretemp kvm_intel kvm snd_hda_intel snd_hda_codec crc32_pclmul crc32c_intel ghash_clmulni_intel snd_hwdep snd_pcm aesni_intel sb_edac aes_x86_64 ehci_pci snd_page_alloc glue_helper snd_timer xhci_hcd snd iTCO_wdt iTCO_vendor_support ehci_hcd edac_core lpc_ich acpi_cpufreq lrw gf128mul ablk_helper cryptd mperf usbcore usb_common soundcore mfd_core dcdbas evdev pcspkr processor i2c_i801 button microcode
-> [   51.675581] CPU: 0 PID: 244 Comm: kworker/1:1 Tainted: G        W    3.10.0-rc1+ #10
-> [   51.683407] Hardware name: Dell Inc. Precision T3600/0PTTT9, BIOS A08 01/24/2013
-> [   51.690901] Workqueue: events od_dbs_timer
-> [   51.695069]  0000000000000009 ffff88043a2f5b68 ffffffff8161441c ffff88043a2f5ba8
-> [   51.702602]  ffffffff8103e540 0000000000000033 0000000000000001 ffff88043d5f8000
-> [   51.710136]  00000000ffff0ce1 0000000000000001 ffff88044fc4fc08 ffff88043a2f5bb8
-> [   51.717691] Call Trace:
-> [   51.720191]  [<ffffffff8161441c>] dump_stack+0x19/0x1b
-> [   51.725396]  [<ffffffff8103e540>] warn_slowpath_common+0x70/0xa0
-> [   51.731473]  [<ffffffff8103e58a>] warn_slowpath_null+0x1a/0x20
-> [   51.737378]  [<ffffffff81025628>] native_smp_send_reschedule+0x58/0x60
-> [   51.744013]  [<ffffffff81072cfd>] wake_up_nohz_cpu+0x2d/0xa0
-> [   51.749745]  [<ffffffff8104f6bf>] add_timer_on+0x8f/0x110
-> [   51.755214]  [<ffffffff8105f6fe>] __queue_delayed_work+0x16e/0x1a0
-> [   51.761470]  [<ffffffff8105f251>] ? try_to_grab_pending+0xd1/0x1a0
-> [   51.767724]  [<ffffffff8105f78a>] mod_delayed_work_on+0x5a/0xa0
-> [   51.773719]  [<ffffffff814f6b5d>] gov_queue_work+0x4d/0xc0
-> [   51.779271]  [<ffffffff814f60cb>] od_dbs_timer+0xcb/0x170
-> [   51.784734]  [<ffffffff8105e75d>] process_one_work+0x1fd/0x540
-> [   51.790634]  [<ffffffff8105e6f2>] ? process_one_work+0x192/0x540
-> [   51.796711]  [<ffffffff8105ef22>] worker_thread+0x122/0x380
-> [   51.802350]  [<ffffffff8105ee00>] ? rescuer_thread+0x320/0x320
-> [   51.808264]  [<ffffffff8106634a>] kthread+0xea/0xf0
-> [   51.813200]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
-> [   51.819644]  [<ffffffff81623d5c>] ret_from_fork+0x7c/0xb0
-> [   51.918165] nouveau E[     DRM] GPU lockup - switching to software fbcon
-> [   51.930505]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
-> [   51.936994] ---[ end trace f419538ada83b5c5 ]---
->
-> It was caused by the policy->cpus changed during the process of
-> __gov_queue_work(), in other word, cpu offline happened.
->
-> This patch will use get/put_online_cpus() to prevent the offline
-> happen inside __gov_queue_work(), after applied the patch, the
-> warning is gone as Jiri tested:
->
->         Link: https://lkml.org/lkml/2013/6/5/88
->
-> CC: "Rafael J. Wysocki" <rjw@sisk.pl>
-> CC: Viresh Kumar <viresh.kumar@linaro.org>
-> Reported-by: Borislav Petkov <bp@alien8.de>
-> Reported-by: Jiri Kosina <jkosina@suse.cz>
-> Tested-by: Jiri Kosina <jkosina@suse.cz>
-> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
-> ---
->  drivers/cpufreq/cpufreq_governor.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
+On Wed, May 29, 2013 at 09:47:29AM +0900, Jingoo Han wrote:
+> Use the wrapper functions for getting and setting the driver data using
+> platform_device instead of using dev_{get,set}_drvdata() with &pdev->dev,
+> so we can directly pass a struct platform_device.
+> 
+> Also, unnecessary dev_set_drvdata() is removed, because the driver core
+> clears the driver data to NULL after device_release or on probe failure.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Patch applied.  Thanks!
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
