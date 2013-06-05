@@ -1,90 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755950Ab3FENz1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 09:55:27 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:40439 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755411Ab3FENzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 09:55:22 -0400
-Date: Wed, 5 Jun 2013 08:55:08 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Bob Liu <bob.liu@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCHv13 2/4] zbud: add to mm/
-Message-ID: <20130605135508.GA25375@cerebellum>
-References: <1370291585-26102-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1370291585-26102-3-git-send-email-sjenning@linux.vnet.ibm.com>
- <51AEDE10.4010108@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51AEDE10.4010108@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060513-7182-0000-0000-0000072647B8
+	id S1755800Ab3FEN45 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 09:56:57 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:36799 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753257Ab3FEN44 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 09:56:56 -0400
+Message-ID: <1370440607.24311.251.camel@edumazet-glaptop>
+Subject: Re: [PATCH v9 net-next 5/7] net: simple poll/select low latency
+ socket poll
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Wed, 05 Jun 2013 06:56:47 -0700
+In-Reply-To: <51AF401C.2030506@linux.intel.com>
+References: <20130605103400.11172.49099.stgit@ladj378.jer.intel.com>
+	  <20130605103452.11172.31453.stgit@ladj378.jer.intel.com>
+	 <1370439054.24311.248.camel@edumazet-glaptop>
+	 <51AF401C.2030506@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 02:43:28PM +0800, Bob Liu wrote:
-> Hi Seth,
+On Wed, 2013-06-05 at 16:41 +0300, Eliezer Tamir wrote:
+> On 05/06/2013 16:30, Eric Dumazet wrote:
+> > On Wed, 2013-06-05 at 13:34 +0300, Eliezer Tamir wrote:
+> >> A very naive select/poll busy-poll support.
+> >> Add busy-polling to sock_poll().
+> >> When poll/select have nothing to report, call the low-level
+> >> sock_poll() again until we are out of time or we find something.
+> >> Right now we poll every socket once, this is suboptimal
+> >> but improves latency when the number of sockets polled is not large.
+> >>
+> >> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+> >> Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+> >> Tested-by: Willem de Bruijn <willemb@google.com>
+> >> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+> >> ---
+> >
+> > I am a bit uneasy with this one, because an applicatio polling() on one
+> > thousand file descriptors using select()/poll(), will call sk_poll_ll()
+> > one thousand times.
 > 
-> On 06/04/2013 04:33 AM, Seth Jennings wrote:
-> > +	/* Couldn't find unbuddied zbud page, create new one */
+> But we call sk_poll_ll() with nonblock set, so it will only test once
+> for each socket and not loop.
 > 
-> How about moving zswap_is_full() to here.
+> I think this is not as bad as it sounds.
+> We still honor the time limit on how long to poll.
 > 
-> if (zswap_is_full()) {
-> 	/* Don't alloc any new page, try to reclaim and direct use the
-> reclaimed page instead */
-
-Yes, this is at the top of the list for improvements.
-
-I have already started on this work and it isn't quite as simple as it seems.
-The difficulty rises from the fact that, for now, zswap uses per-cpu
-compression buffers which require preemption to be disabled. This prevents the
-calling zbud_reclaim_page() in zbud_alloc() because the eviction handler for
-the user may do something that can wait; an allocation with GFP_WAIT for
-example.
-
-So it's going to take some massaging in the zswap layer to get that to work.
-
-It's very doable.  Just not in this patchset without causing a lot of code
-thrash.
-
-> }
+> When we busy-wait on a single socket we call sk_poll_ll() repeatedly
+> until we timeout or we have something to report.
 > 
-> > +	spin_unlock(&pool->lock);
-> > +	page = alloc_page(gfp);
-> > +	if (!page)
-> > +		return -ENOMEM;
-> > +	spin_lock(&pool->lock);
-> > +	pool->pages_nr++;
-> > +	zhdr = init_zbud_page(page);
-> > +	bud = FIRST;
-<snip>
+> Here on the other hand, we sk_poll_ll() once for each file, so we loop 
+> on the files. We moved the loop from inside sk_poll_ll to select/poll.
 > 
-> It looks good for me except two things.
-> One is about what the performance might be after the zswap pool is full.
-> The other is still about the 20% limit of zswap pool size.
+> I also plan on improving this this in the next stage.
+> 
+> The plan is to give control on whether sk_poll_ll is called to
+> select/poll/epoll, so the caller has even more control.
 
-Yep, working on both of them.
+This looks quite easy, by adding in include/uapi/asm-generic/poll.h
 
-Seth
+#define POLL_LL 0x8000
+
+And do the sk_poll_ll() call only if flag is set.
+
+I do not think we have to support select(), as its legacy interface, and
+people wanting ll should really use epoll() or poll().
+
+
 
