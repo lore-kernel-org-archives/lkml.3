@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932596Ab3FEVNH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:13:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36891 "EHLO
+	id S932358Ab3FEVRs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:17:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36931 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932562Ab3FEVNC (ORCPT
+	with ESMTP id S932586Ab3FEVNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:13:02 -0400
+	Wed, 5 Jun 2013 17:13:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
-        Leonid Yegoshin <yegoshin@mips.com>, Rik van Riel <riel@redhat.com>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Russell King <rmk@arm.linux.org.uk>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 20/44] mm compaction: fix of improper cache flush in migration code
-Date: Wed,  5 Jun 2013 14:12:18 -0700
-Message-Id: <20130605211223.965253814@linuxfoundation.org>
+        "Chew, Chiau Ee" <chiau.ee.chew@intel.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [ 34/44] ata_piix: add PCI IDs for Intel BayTail
+Date: Wed,  5 Jun 2013 14:12:32 -0700
+Message-Id: <20130605211225.405380788@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605211221.858177087@linuxfoundation.org>
 References: <20130605211221.858177087@linuxfoundation.org>
@@ -33,55 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+From: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
 
-commit c2cc499c5bcf9040a738f49e8051b42078205748 upstream.
+commit fca8c90d519dedd4f4b19901d005c243f7f0bf2e upstream.
 
-Page 'new' during MIGRATION can't be flushed with flush_cache_page().
-Using flush_cache_page(vma, addr, pfn) is justified only if the page is
-already placed in process page table, and that is done right after
-flush_cache_page().  But without it the arch function has no knowledge
-of process PTE and does nothing.
+Adds IDE-mode SATA Device IDs for the Intel BayTrail platform.
 
-Besides that, flush_cache_page() flushes an application cache page, but
-the kernel has a different page virtual address and dirtied it.
-
-Replace it with flush_dcache_page(new) which is the proper usage.
-
-The old page is flushed in try_to_unmap_one() before migration.
-
-This bug takes place in Sead3 board with M14Kc MIPS CPU without cache
-aliasing (but Harvard arch - separate I and D cache) in tight memory
-environment (128MB) each 1-3days on SOAK test.  It fails in cc1 during
-kernel build (SIGILL, SIGBUS, SIGSEG) if CONFIG_COMPACTION is switched
-ON.
-
-Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-Cc: Leonid Yegoshin <yegoshin@mips.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Russell King <rmk@arm.linux.org.uk>
-Cc: David Miller <davem@davemloft.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/migrate.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/ata_piix.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -145,7 +145,7 @@ static int remove_migration_pte(struct p
- 	if (PageHuge(new))
- 		pte = pte_mkhuge(pte);
- #endif
--	flush_cache_page(vma, addr, pte_pfn(pte));
-+	flush_dcache_page(new);
- 	set_pte_at(mm, addr, ptep, pte);
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -151,6 +151,7 @@ enum piix_controller_ids {
+ 	piix_pata_vmw,			/* PIIX4 for VMware, spurious DMA_ERR */
+ 	ich8_sata_snb,
+ 	ich8_2port_sata_snb,
++	ich8_2port_sata_byt,
+ };
  
- 	if (PageHuge(new)) {
+ struct piix_map_db {
+@@ -348,6 +349,9 @@ static const struct pci_device_id piix_p
+ 	{ 0x8086, 0x8d60, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
+ 	/* SATA Controller IDE (Wellsburg) */
+ 	{ 0x8086, 0x8d68, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	/* SATA Controller IDE (BayTrail) */
++	{ 0x8086, 0x0F20, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
++	{ 0x8086, 0x0F21, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
+ 
+ 	{ }	/* terminate list */
+ };
+@@ -513,6 +517,7 @@ static const struct piix_map_db *piix_ma
+ 	[tolapai_sata]		= &tolapai_map_db,
+ 	[ich8_sata_snb]		= &ich8_map_db,
+ 	[ich8_2port_sata_snb]	= &ich8_2port_map_db,
++	[ich8_2port_sata_byt]	= &ich8_2port_map_db,
+ };
+ 
+ static struct ata_port_info piix_port_info[] = {
+@@ -663,6 +668,16 @@ static struct ata_port_info piix_port_in
+ 		.udma_mask	= ATA_UDMA6,
+ 		.port_ops	= &piix_sata_ops,
+ 	},
++
++	[ich8_2port_sata_byt] =
++	{
++		.flags          = PIIX_SATA_FLAGS | PIIX_FLAG_SIDPR | PIIX_FLAG_PIO16,
++		.pio_mask       = ATA_PIO4,
++		.mwdma_mask     = ATA_MWDMA2,
++		.udma_mask      = ATA_UDMA6,
++		.port_ops       = &piix_sata_ops,
++	},
++
+ };
+ 
+ static struct pci_bits piix_enable_bits[] = {
 
 
