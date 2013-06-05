@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043Ab3FEOLf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 10:11:35 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:43928 "EHLO gloria.sntech.de"
+	id S1756046Ab3FEOMM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 10:12:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36930 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753913Ab3FEOLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 10:11:33 -0400
-From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-To: Seungwon Jeon <tgih.jun@samsung.com>
-Subject: Re: [PATCH 06/10] mmc: dw_mmc-pltfm: add Rockchip variant
-Date: Wed, 5 Jun 2013 16:11:21 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "'John Stultz'" <john.stultz@linaro.org>,
-        "'Thomas Gleixner'" <tglx@linutronix.de>,
-        "'Mike Turquette'" <mturquette@linaro.org>,
-        "'Jaehoon Chung'" <jh80.chung@samsung.com>,
-        "'Chris Ball'" <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        "'Grant Likely'" <grant.likely@linaro.org>,
-        "'Rob Herring'" <rob.herring@calxeda.com>,
-        "'Linus Walleij'" <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Arnd Bergmann'" <arnd@arndb.de>, "'Olof Johansson'" <olof@lixom.net>
-References: <201306030055.15413.heiko@sntech.de> <201306030059.03783.heiko@sntech.de> <001601ce61f5$11b37b20$351a7160$%jun@samsung.com>
-In-Reply-To: <001601ce61f5$11b37b20$351a7160$%jun@samsung.com>
+	id S1753060Ab3FEOMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 10:12:09 -0400
+Date: Wed, 5 Jun 2013 16:12:06 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: chauplac@gmail.com, dirk@gouders.net, matthijs@stdin.nl, mmarek@suse.cz,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild fixes for v3.10-rc5
+Message-ID: <20130605141206.GA1573@sepie.suse.cz>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201306051611.21669.heiko@sntech.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 5. Juni 2013, 16:00:43 schrieb Seungwon Jeon:
-> On 06/03/13 7:59 AM, Heiko Stübner wrote:
-> > Cortex-A9 SoCs from Rockchip use a slightly modified variant of dw_mmc
-> > controllers that seems to require the SDMMC_CMD_USE_HOLD_REG bit to
-> > always be set.
-> > 
-> > There also seem to be no other modifications (additional register etc)
-> > present, so to keep the footprint low, add this small variant to the
-> > pltfm driver.
-> > 
-> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> > ---
-> > 
-> >  drivers/mmc/host/dw_mmc-pltfm.c |   48
-> >  +++++++++++++++++++++++++++----------- 1 files changed, 34
-> >  insertions(+), 14 deletions(-)
-> > 
-> > diff --git a/drivers/mmc/host/dw_mmc-pltfm.c
-> > b/drivers/mmc/host/dw_mmc-pltfm.c index 0048da8..7d041b5 100644
-> > --- a/drivers/mmc/host/dw_mmc-pltfm.c
-> > +++ b/drivers/mmc/host/dw_mmc-pltfm.c
-> > @@ -24,6 +24,16 @@
-> > 
-> >  #include "dw_mmc.h"
-> > 
-> > +
-> > +static void dw_mci_rockchip_prepare_command(struct dw_mci *host, u32
-> > *cmdr) +{
-> > +	*cmdr |= SDMMC_CMD_USE_HOLD_REG;
-> 
-> Currently, SDMMC_CMD_USE_HOLD_REG is defined in dw_mmc-exynos.c
-> It should be moved to dw_mmc.h
+Hi Linus,
 
-It's already done in another patch "mmc: dw_mmc: Add support DW SD/MMC driver 
-on SOCFPGA" from Dinh Nguyen <dinguyen@altera.com>, which I therefore named as 
-dependency in the cover letter.
+There is one fix for a kbuild regression, plus three kconfig fixes for
+bugs that have alway been there, but are simple enough to be fixed in an
+-rc.
 
-Don't know if it's better to also include the move here again and let the 
-merging person sort out the conflict?
+Thanks,
+Michal
 
+The following changes since commit f66ba560943ae21f5d1e505bad0a3591823b2b37:
 
+  package: Makefile: unbreak binrpm-pkg target (2013-05-16 09:46:45 +0200)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git rc-fixes
+
+for you to fetch changes up to 42a0940d9d582214a8d0f8ba41f2b4fe987e21b0:
+
+  Merge branch 'yem-kconfig-rc-fixes' of git://gitorious.org/linux-kconfig/linux-kconfig into kbuild/rc-fixes (2013-05-30 15:21:48 +0200)
+
+----------------------------------------------------------------
+
+Clement Chauplannaz (1):
+      scripts/config: fix assignment of parameters for short version of --*-after options
+
+Dirk Gouders (2):
+      mconf: handle keys in empty dialogs
+      kconfig/menu.c: fix multiple references to expressions in menu_add_prop()
+
+Matthijs Kooijman (1):
+      kbuild: Don't assume dts files live in arch/*/boot/dts
+
+Michal Marek (1):
+      Merge branch 'yem-kconfig-rc-fixes' of git://gitorious.org/linux-kconfig/linux-kconfig into kbuild/rc-fixes
+
+ scripts/Makefile.lib               |  2 +-
+ scripts/config                     |  2 +-
+ scripts/kconfig/lxdialog/menubox.c |  9 +++++----
+ scripts/kconfig/mconf.c            | 11 ++++++-----
+ scripts/kconfig/menu.c             | 15 ++++++++++++++-
+ 5 files changed, 27 insertions(+), 12 deletions(-)
