@@ -1,91 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996Ab3FEMZT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 08:25:19 -0400
-Received: from fieldses.org ([174.143.236.118]:42601 "EHLO fieldses.org"
+	id S1755278Ab3FEM05 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 08:26:57 -0400
+Received: from mga01.intel.com ([192.55.52.88]:39597 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754551Ab3FEMZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 08:25:16 -0400
-Date: Wed, 5 Jun 2013 08:24:32 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
-        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
-        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, cluster-devel@redhat.com,
-        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        piastryyy@gmail.com
-Subject: Re: [PATCH v1 07/11] locks: only pull entries off of blocked_list
- when they are really unblocked
-Message-ID: <20130605122432.GA24193@fieldses.org>
-References: <1370056054-25449-1-git-send-email-jlayton@redhat.com>
- <1370056054-25449-8-git-send-email-jlayton@redhat.com>
- <20130604215839.GD15594@fieldses.org>
- <20130605073822.4d67c57c@corrin.poochiereds.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130605073822.4d67c57c@corrin.poochiereds.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754877Ab3FEM0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 08:26:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,806,1363158000"; 
+   d="scan'208";a="348479128"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>, viresh.kumar@linaro.org,
+        Arnd Bergmann <arnd@arndb.de>, Felipe Balbi <balbi@ti.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v2 0/4] dw_dmac: move to own folder and split
+Date: Wed,  5 Jun 2013 15:26:42 +0300
+Message-Id: <1370435206-13474-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 07:38:22AM -0400, Jeff Layton wrote:
-> On Tue, 4 Jun 2013 17:58:39 -0400
-> "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> 
-> > On Fri, May 31, 2013 at 11:07:30PM -0400, Jeff Layton wrote:
-> > > Currently, when there is a lot of lock contention the kernel spends an
-> > > inordinate amount of time taking blocked locks off of the global
-> > > blocked_list and then putting them right back on again. When all of this
-> > > code was protected by a single lock, then it didn't matter much, but now
-> > > it means a lot of file_lock_lock thrashing.
-> > > 
-> > > Optimize this a bit by deferring the removal from the blocked_list until
-> > > we're either applying or cancelling the lock. By doing this, and using a
-> > > lockless list_empty check, we can avoid taking the file_lock_lock in
-> > > many cases.
-> > > 
-> > > Because the fl_link check is lockless, we must ensure that only the task
-> > > that "owns" the request manipulates the fl_link. Also, with this change,
-> > > it's possible that we'll see an entry on the blocked_list that has a
-> > > NULL fl_next pointer. In that event, just ignore it and continue walking
-> > > the list.
-> > 
-> > OK, that sounds safe as in it shouldn't crash, but does the deadlock
-> > detection still work, or can it miss loops?
-> > 
-> > Those locks that are temporarily NULL would previously not have been on
-> > the list at all, OK, but...  I'm having trouble reasoning about how this
-> > works now.
-> > 
-> > Previously a single lock was held interrupted across
-> > posix_locks_deadlock and locks_insert_block() which guaranteed we
-> > shouldn't be adding a loop, is that still true?
-> > 
-> > --b.
-> > 
-> 
-> I had thought it was when I originally looked at this, but now that I
-> consider it again I think you may be correct and that there are possible
-> races here. Since we might end up reblocking behind a different lock
-> without taking the global spinlock we could flip to blocking behind a
-> different lock such that a loop is created if you had a complex (>2)
-> chain of locks.
-> 
-> I think I'm going to have to drop this approach and instead make it so
-> that the deadlock detection and insertion into the global blocker
-> list/hash are atomic.
+This is split of the dw_dmac driver as suggested by Arnd et al [1,2].
+There are three most important patches:
+ 2/4 moves driver to its own folder
+ 3/4 does the actual split
+ 4/4 introduces PCI part of the driver
 
-Right.  Once you drop the lock you can no longer be sure that what you
-learned about the file-lock graph stays true.
+During this files are renamed: mostly means that dw_dmac prefix is eliminated.
+I hope to get it ready to be included in v3.11.
 
-> Ditto for locks_wake_up_blocks on posix locks and
-> taking the entries off the list/hash.
+[1] http://www.spinics.net/lists/kernel/msg1408174.html
+[2] http://www.spinics.net/lists/kernel/msg1408495.html
 
-Here I'm not sure what you mean.
+Changes v1->v2:
+ - address Arnd's comments
+ - compile test when !CONFIG_PM
+ - apply ACKs
 
---b.
+Cnages v0->v1:
+ - apply Viresh's ACKs
+ - append PCI part of the driver
+ - test altogether on Intel Medfield
+ - add 1/4 to the series as it based on it, but Vinod didn't apply it yet to
+   his tree.
+
+Andy Shevchenko (4):
+  dw_dmac: don't check resource with devm_ioremap_resource
+  dma: move dw_dmac driver to an own directory
+  dma: dw: split driver to library part and platform code
+  dma: dw: add PCI part of the driver
+
+ MAINTAINERS                               |   3 +-
+ drivers/dma/Kconfig                       |  20 +-
+ drivers/dma/Makefile                      |   2 +-
+ drivers/dma/dw/Kconfig                    |  36 ++++
+ drivers/dma/dw/Makefile                   |   8 +
+ drivers/dma/{dw_dmac.c => dw/core.c}      | 316 ++++-------------------------
+ drivers/dma/dw/internal.h                 |  70 +++++++
+ drivers/dma/dw/pci.c                      | 101 ++++++++++
+ drivers/dma/dw/platform.c                 | 317 ++++++++++++++++++++++++++++++
+ drivers/dma/{dw_dmac_regs.h => dw/regs.h} |   1 +
+ 10 files changed, 573 insertions(+), 301 deletions(-)
+ create mode 100644 drivers/dma/dw/Kconfig
+ create mode 100644 drivers/dma/dw/Makefile
+ rename drivers/dma/{dw_dmac.c => dw/core.c} (85%)
+ create mode 100644 drivers/dma/dw/internal.h
+ create mode 100644 drivers/dma/dw/pci.c
+ create mode 100644 drivers/dma/dw/platform.c
+ rename drivers/dma/{dw_dmac_regs.h => dw/regs.h} (99%)
+
+-- 
+1.8.2.rc0.22.gb3600c3
+
