@@ -1,46 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab3FEIpH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 04:45:07 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:46375 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347Ab3FEIpB (ORCPT
+	id S1752449Ab3FEIty (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 04:49:54 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:55639 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772Ab3FEItu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 04:45:01 -0400
+	Wed, 5 Jun 2013 04:49:50 -0400
+Message-ID: <51AEFBA1.302@linux.vnet.ibm.com>
+Date: Wed, 05 Jun 2013 16:49:37 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <1370349382-20914-4-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1370349382-20914-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1370349382-20914-4-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Wed, 5 Jun 2013 14:15:00 +0530
-Message-ID: <CAKohpo=JF1hBiv6dhHaQ=NK2tgGmLqw_hQqHVoOGQZFZ7FL+wg@mail.gmail.com>
-Subject: Re: [PATCH v1 3/4] dma: dw: split driver to library part and platform code
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>, Arnd Bergmann <arnd@arndb.de>,
-        Felipe Balbi <balbi@ti.com>
+To: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, rjw@sisk.pl,
+        Viresh Kumar <viresh.kumar@linaro.org>, Jiri Kosina <jkosina@suse.cz>,
+        Borislav Petkov <bp@alien8.de>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH] cpufreq: prevent 'policy->cpus' become offline in __gov_queue_work()
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060508-1396-0000-0000-00000311C365
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 June 2013 18:06, Andy Shevchenko <andriy.shevchenko@linux.intel.com> wrote:
-> To simplify the driver development let's split driver to library and platform
-> code parts. It helps us to add PCI driver in future.
->
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  drivers/dma/Makefile                      |   2 +-
->  drivers/dma/dw/Kconfig                    |   8 +-
->  drivers/dma/dw/Makefile                   |   6 +-
->  drivers/dma/dw/{dw_dmac.c => core.c}      | 309 ++++--------------------------
->  drivers/dma/dw/internal.h                 |  74 +++++++
->  drivers/dma/dw/platform.c                 | 308 +++++++++++++++++++++++++++++
->  drivers/dma/dw/{dw_dmac_regs.h => regs.h} |   1 +
->  7 files changed, 428 insertions(+), 280 deletions(-)
->  rename drivers/dma/dw/{dw_dmac.c => core.c} (85%)
->  create mode 100644 drivers/dma/dw/internal.h
->  create mode 100644 drivers/dma/dw/platform.c
->  rename drivers/dma/dw/{dw_dmac_regs.h => regs.h} (99%)
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Jiri Kosina <jkosina@suse.cz> and Borislav Petkov <bp@alien8.de>
+reported the warning:
+
+[   51.616759] ------------[ cut here ]------------
+[   51.621460] WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule+0x58/0x60()
+[   51.629638] Modules linked in: ext2 vfat fat loop snd_hda_codec_hdmi usbhid snd_hda_codec_realtek coretemp kvm_intel kvm snd_hda_intel snd_hda_codec crc32_pclmul crc32c_intel ghash_clmulni_intel snd_hwdep snd_pcm aesni_intel sb_edac aes_x86_64 ehci_pci snd_page_alloc glue_helper snd_timer xhci_hcd snd iTCO_wdt iTCO_vendor_support ehci_hcd edac_core lpc_ich acpi_cpufreq lrw gf128mul ablk_helper cryptd mperf usbcore usb_common soundcore mfd_core dcdbas evdev pcspkr processor i2c_i801 button microcode
+[   51.675581] CPU: 0 PID: 244 Comm: kworker/1:1 Tainted: G        W    3.10.0-rc1+ #10
+[   51.683407] Hardware name: Dell Inc. Precision T3600/0PTTT9, BIOS A08 01/24/2013
+[   51.690901] Workqueue: events od_dbs_timer
+[   51.695069]  0000000000000009 ffff88043a2f5b68 ffffffff8161441c ffff88043a2f5ba8
+[   51.702602]  ffffffff8103e540 0000000000000033 0000000000000001 ffff88043d5f8000
+[   51.710136]  00000000ffff0ce1 0000000000000001 ffff88044fc4fc08 ffff88043a2f5bb8
+[   51.717691] Call Trace:
+[   51.720191]  [<ffffffff8161441c>] dump_stack+0x19/0x1b
+[   51.725396]  [<ffffffff8103e540>] warn_slowpath_common+0x70/0xa0
+[   51.731473]  [<ffffffff8103e58a>] warn_slowpath_null+0x1a/0x20
+[   51.737378]  [<ffffffff81025628>] native_smp_send_reschedule+0x58/0x60
+[   51.744013]  [<ffffffff81072cfd>] wake_up_nohz_cpu+0x2d/0xa0
+[   51.749745]  [<ffffffff8104f6bf>] add_timer_on+0x8f/0x110
+[   51.755214]  [<ffffffff8105f6fe>] __queue_delayed_work+0x16e/0x1a0
+[   51.761470]  [<ffffffff8105f251>] ? try_to_grab_pending+0xd1/0x1a0
+[   51.767724]  [<ffffffff8105f78a>] mod_delayed_work_on+0x5a/0xa0
+[   51.773719]  [<ffffffff814f6b5d>] gov_queue_work+0x4d/0xc0
+[   51.779271]  [<ffffffff814f60cb>] od_dbs_timer+0xcb/0x170
+[   51.784734]  [<ffffffff8105e75d>] process_one_work+0x1fd/0x540
+[   51.790634]  [<ffffffff8105e6f2>] ? process_one_work+0x192/0x540
+[   51.796711]  [<ffffffff8105ef22>] worker_thread+0x122/0x380
+[   51.802350]  [<ffffffff8105ee00>] ? rescuer_thread+0x320/0x320
+[   51.808264]  [<ffffffff8106634a>] kthread+0xea/0xf0
+[   51.813200]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
+[   51.819644]  [<ffffffff81623d5c>] ret_from_fork+0x7c/0xb0
+[   51.918165] nouveau E[     DRM] GPU lockup - switching to software fbcon
+[   51.930505]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
+[   51.936994] ---[ end trace f419538ada83b5c5 ]---
+
+It was caused by the policy->cpus changed during the process of
+__gov_queue_work(), in other word, cpu offline happened.
+
+This patch will use get/put_online_cpus() to prevent the offline
+happen inside __gov_queue_work(), after applied the patch, the
+warning is gone as Jiri tested:
+
+	Link: https://lkml.org/lkml/2013/6/5/88
+
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Viresh Kumar <viresh.kumar@linaro.org>
+Reported-by: Borislav Petkov <bp@alien8.de>
+Reported-by: Jiri Kosina <jkosina@suse.cz>
+Tested-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+---
+ drivers/cpufreq/cpufreq_governor.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index 5af40ad..dc9b72e 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -26,6 +26,7 @@
+ #include <linux/tick.h>
+ #include <linux/types.h>
+ #include <linux/workqueue.h>
++#include <linux/cpu.h>
+ 
+ #include "cpufreq_governor.h"
+ 
+@@ -180,8 +181,10 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
+ 	if (!all_cpus) {
+ 		__gov_queue_work(smp_processor_id(), dbs_data, delay);
+ 	} else {
++		get_online_cpus();
+ 		for_each_cpu(i, policy->cpus)
+ 			__gov_queue_work(i, dbs_data, delay);
++		put_online_cpus();
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(gov_queue_work);
+-- 
+1.7.4.1
+
