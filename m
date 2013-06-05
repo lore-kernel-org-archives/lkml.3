@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933429Ab3FEWHL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 18:07:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37666 "EHLO
+	id S932543Ab3FEWHx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 18:07:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37660 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752756Ab3FEVfK (ORCPT
+	with ESMTP id S1757917Ab3FEVfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:10 -0400
+	Wed, 5 Jun 2013 17:35:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [ 018/127] staging: vt6656: [bug] Fix missing spin lock in iwctl_siwpower.
-Date: Wed,  5 Jun 2013 14:33:05 -0700
-Message-Id: <20130605213220.090697582@linuxfoundation.org>
+        David Rientjes <rientjes@google.com>
+Subject: [ 020/127] usb, chipidea: fix link error when USB_EHCI_HCD is a module
+Date: Wed,  5 Jun 2013 14:33:07 -0700
+Message-Id: <20130605213220.319083322@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -26,49 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: David Rientjes <rientjes@google.com>
 
-commit 91ec61f8f01cf32868e2ed2fa96a299e77964055 upstream.
+commit 7c8bfed7aaeba690de30835fe89882e1047a55fd upstream.
 
-Fixes occasional dead lock on power up / down.
+Fixes link error when USB_EHCI_HCD=m and USB_CHIPIDEA_HOST=y:
 
-spin_lock_irq is used because of unlocking with spin_unlock_irq
-elsewhere in the driver.
+	drivers/built-in.o: In function `ci_hdrc_host_init':
+	drivers/usb/chipidea/host.c:104: undefined reference to `ehci_init_driver'
 
-Only relevant to kernels 3.8 and later when command was
-transferred to the iw_handler.
+as a result of commit 09f6ffde2ece ("USB: EHCI: fix build error by making
+ChipIdea host a normal EHCI driver").
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/iwctl.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/chipidea/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/vt6656/iwctl.c
-+++ b/drivers/staging/vt6656/iwctl.c
-@@ -1348,9 +1348,12 @@ int iwctl_siwpower(struct net_device *de
- 		return rc;
- 	}
- 
-+	spin_lock_irq(&pDevice->lock);
-+
- 	if (wrq->disabled) {
- 		pDevice->ePSMode = WMAC_POWER_CAM;
- 		PSvDisablePowerSaving(pDevice);
-+		spin_unlock_irq(&pDevice->lock);
- 		return rc;
- 	}
- 	if ((wrq->flags & IW_POWER_TYPE) == IW_POWER_TIMEOUT) {
-@@ -1361,6 +1364,9 @@ int iwctl_siwpower(struct net_device *de
- 		pDevice->ePSMode = WMAC_POWER_FAST;
- 		PSvEnablePowerSaving((void *)pDevice, pMgmt->wListenInterval);
- 	}
-+
-+	spin_unlock_irq(&pDevice->lock);
-+
- 	switch (wrq->flags & IW_POWER_MODE) {
- 	case IW_POWER_UNICAST_R:
- 		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO " SIOCSIWPOWER: IW_POWER_UNICAST_R \n");
+--- a/drivers/usb/chipidea/Kconfig
++++ b/drivers/usb/chipidea/Kconfig
+@@ -20,7 +20,7 @@ config USB_CHIPIDEA_UDC
+ config USB_CHIPIDEA_HOST
+ 	bool "ChipIdea host controller"
+ 	depends on USB=y || USB=USB_CHIPIDEA
+-	depends on USB_EHCI_HCD
++	depends on USB_EHCI_HCD=y
+ 	select USB_EHCI_ROOT_HUB_TT
+ 	help
+ 	  Say Y here to enable host controller functionality of the
 
 
