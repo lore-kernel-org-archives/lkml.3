@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932420Ab3FEVfQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:35:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37670 "EHLO
+	id S932966Ab3FEWE5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 18:04:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37691 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757929Ab3FEVfK (ORCPT
+	with ESMTP id S932416Ab3FEVfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:10 -0400
+	Wed, 5 Jun 2013 17:35:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Williams <dcbw@redhat.com>
-Subject: [ 022/127] USB: option: add device IDs for Dell 5804 (Novatel E371) WWAN card
-Date: Wed,  5 Jun 2013 14:33:09 -0700
-Message-Id: <20130605213220.528795402@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 029/127] USB: UHCI: fix for suspend of virtual HP controller
+Date: Wed,  5 Jun 2013 14:33:16 -0700
+Message-Id: <20130605213221.290787068@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -26,36 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 49c6e370dd6400b84897c4100095089b5c13a061 upstream.
+commit 997ff893603c6455da4c5e26ba1d0f81adfecdfc upstream.
 
-A rebranded Novatel E371 for AT&T's LTE bands.
+HP's virtual UHCI host controller takes a long time to suspend
+(several hundred microseconds), even when no devices are attached.
+This provokes a warning message from uhci-hcd in the auto-stop case.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
+To prevent this from happening, this patch adds a test to avoid
+performing an auto-stop when the wait_for_hp quirk flag is set.  The
+controller will still suspend through the normal runtime PM mechanism.
+And since that pathway includes a 1-ms delay, the slowness of the
+virtual hardware won't matter.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: ZhenHua <zhen-hual@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/host/uhci-hub.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -196,6 +196,7 @@ static void option_instat_callback(struc
+--- a/drivers/usb/host/uhci-hub.c
++++ b/drivers/usb/host/uhci-hub.c
+@@ -225,7 +225,8 @@ static int uhci_hub_status_data(struct u
+ 		/* auto-stop if nothing connected for 1 second */
+ 		if (any_ports_active(uhci))
+ 			uhci->rh_state = UHCI_RH_RUNNING;
+-		else if (time_after_eq(jiffies, uhci->auto_stop_time))
++		else if (time_after_eq(jiffies, uhci->auto_stop_time) &&
++				!uhci->wait_for_hp)
+ 			suspend_rh(uhci, UHCI_RH_AUTO_STOPPED);
+ 		break;
  
- #define DELL_PRODUCT_5800_MINICARD_VZW		0x8195  /* Novatel E362 */
- #define DELL_PRODUCT_5800_V2_MINICARD_VZW	0x8196  /* Novatel E362 */
-+#define DELL_PRODUCT_5804_MINICARD_ATT		0x819b  /* Novatel E371 */
- 
- #define KYOCERA_VENDOR_ID			0x0c88
- #define KYOCERA_PRODUCT_KPC650			0x17da
-@@ -771,6 +772,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(DELL_VENDOR_ID, DELL_PRODUCT_5730_MINICARD_VZW) }, 	/* Dell Wireless 5730 Mobile Broadband EVDO/HSPA Mini-Card */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_MINICARD_VZW, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5800_V2_MINICARD_VZW, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, DELL_PRODUCT_5804_MINICARD_ATT, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_E100A) },	/* ADU-E100, ADU-310 */
- 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_500A) },
- 	{ USB_DEVICE(ANYDATA_VENDOR_ID, ANYDATA_PRODUCT_ADU_620UW) },
 
 
