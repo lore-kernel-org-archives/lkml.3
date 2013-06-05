@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932747Ab3FEVT4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:19:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36881 "EHLO
+	id S932556Ab3FEVNA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:13:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36819 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932432Ab3FEVNB (ORCPT
+	with ESMTP id S932432Ab3FEVMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:13:01 -0400
+	Wed, 5 Jun 2013 17:12:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Gmeiner <christian.gmeiner@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 19/44] drivers/leds/leds-ot200.c: fix error caused by shifted mask
-Date: Wed,  5 Jun 2013 14:12:17 -0700
-Message-Id: <20130605211223.847001687@linuxfoundation.org>
+        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
+Subject: [ 13/44] cifs: only set ops for inodes in I_NEW state
+Date: Wed,  5 Jun 2013 14:12:11 -0700
+Message-Id: <20130605211223.259272859@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605211221.858177087@linuxfoundation.org>
 References: <20130605211221.858177087@linuxfoundation.org>
@@ -30,74 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 4b949b8af12e24b8a48fa5bb775a13b558d9f4da upstream.
+commit c2b93e0699723700f886ce17bb65ffd771195a6d upstream.
 
-During the development of this driver an in-house register documentation
-was used.  The last week some integration tests were done and this
-problem was found.  It turned out that the released register
-documentation is wrong.
+It's generally not safe to reset the inode ops once they've been set. In
+the case where the inode was originally thought to be a directory and
+then later found to be a DFS referral, this can lead to an oops when we
+try to trigger an inode op on it after changing the ops to the blank
+referral operations.
 
-The fix is very simple: shift all masks by one.
-
-Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
-Cc: Bryan Wu <cooloney@gmail.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-and-Tested-by: Sachin Prabhu <sprabhu@redhat.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/leds/leds-ot200.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ fs/cifs/inode.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/leds/leds-ot200.c
-+++ b/drivers/leds/leds-ot200.c
-@@ -47,37 +47,37 @@ static struct ot200_led leds[] = {
- 	{
- 		.name = "led_1",
- 		.port = 0x49,
--		.mask = BIT(7),
-+		.mask = BIT(6),
- 	},
- 	{
- 		.name = "led_2",
- 		.port = 0x49,
--		.mask = BIT(6),
-+		.mask = BIT(5),
- 	},
- 	{
- 		.name = "led_3",
- 		.port = 0x49,
--		.mask = BIT(5),
-+		.mask = BIT(4),
- 	},
- 	{
- 		.name = "led_4",
- 		.port = 0x49,
--		.mask = BIT(4),
-+		.mask = BIT(3),
- 	},
- 	{
- 		.name = "led_5",
- 		.port = 0x49,
--		.mask = BIT(3),
-+		.mask = BIT(2),
- 	},
- 	{
- 		.name = "led_6",
- 		.port = 0x49,
--		.mask = BIT(2),
-+		.mask = BIT(1),
- 	},
- 	{
- 		.name = "led_7",
- 		.port = 0x49,
--		.mask = BIT(1),
-+		.mask = BIT(0),
- 	}
- };
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -173,7 +173,8 @@ cifs_fattr_to_inode(struct inode *inode,
  
+ 	if (fattr->cf_flags & CIFS_FATTR_DFS_REFERRAL)
+ 		inode->i_flags |= S_AUTOMOUNT;
+-	cifs_set_ops(inode);
++	if (inode->i_state & I_NEW)
++		cifs_set_ops(inode);
+ }
+ 
+ void
 
 
