@@ -1,99 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733Ab3FEXcJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 19:32:09 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:35468 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905Ab3FEXcH (ORCPT
+	id S1753364Ab3FEXkV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 19:40:21 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:41057 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752446Ab3FEXkU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 19:32:07 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-10-51afca746684
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Olof Johansson'" <olof@lixom.net>,
-        "'Doug Anderson'" <dianders@chromium.org>
-Cc: "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Simon Glass'" <sjg@chromium.org>, linux-samsung-soc@vger.kernel.org,
-        "'Tomasz Figa'" <tomasz.figa@gmail.com>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Ben Dooks'" <ben-linux@fluff.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1370397539-21653-1-git-send-email-dianders@chromium.org>
- <1370465793-7997-1-git-send-email-dianders@chromium.org>
- <CAOesGMhQX9ip=nb9AQa5fcDFRNpZZSxUO0N0GTX051dakWZD9Q@mail.gmail.com>
-In-reply-to: <CAOesGMhQX9ip=nb9AQa5fcDFRNpZZSxUO0N0GTX051dakWZD9Q@mail.gmail.com>
-Subject: RE: [PATCH v2] ARM: exynos: add debug_ll_io_init() call in
- exynos_init_io()
-Date: Thu, 06 Jun 2013 08:32:04 +0900
-Message-id: <09ca01ce6244$e2f0e7a0$a8d2b6e0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac5iMV1ibvuwwt/TRka2YoOMMxU3NQAEyKAA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHIsWRmVeSWpSXmKPExsVy+t8zA92SU+sDDRpmGFhMWneAyeLssoNs
-	FpseX2O1uLxrDpvFjPP7mCxuX+a1OHX9M5vFty3bGC2OzVjCaLFq1x9GBy6PluYeNo/ZDRdZ
-	PP6uesHssXPWXXaPO9f2sHlsXlLvceVEE6vH501yARxRXDYpqTmZZalF+nYJXBk37s9mLpjE
-	UbG3eRVjA+NGti5GTg4JAROJW3sXs0DYYhIX7q0HinNxCAksY5RYN2MKI0zR66UzmCES0xkl
-	/jW/Y4Rw/jJKPH87FaydTUBD4vD7Z+wgtoiAn8SGzg0sIEXMAluYJN407Iaae5xR4s2kI8wg
-	VZwCwRIzjq1j7WLk4BAWCJP4PxmsmUVAVeLC2V2sIDavgK3EgkNfWSBsQYkfk++B2cwCWhLr
-	dx5ngrDlJTavecsMMkZCQF3i0V9dEFNEwEji174aiAoRiX0vIG6WEJjKIfHnynMWiFUCEt8m
-	H2KBaJWV2HSAGeJhSYmDK26wTGCUmIVk8Swki2chWTwLyYoFjCyrGEVTC5ILipPSi0z1ihNz
-	i0vz0vWS83M3MULifuIOxvsHrA8xJgOtn8gsJZqcD0wbeSXxhsZmRhamJqbGRuaWZqQJK4nz
-	qrdYBwoJpCeWpGanphakFsUXleakFh9iZOLglGpg1JsjteOEHXOfbsabR9N0Lz56tuM6c9sS
-	27Z+cSXjDa+yt/GpuAhF1rbeF/vTvPnq0yjne5+6dpl07Lj1cJ79g8TC4O2ZIRpz2E+f3B6Q
-	ekfz+714u26hWm7OAgOry90T3kzlFio+l6Np/WSS3MF84zmX6uWEc45GH5BZLMu5RNrkkvO6
-	aWvTlFiKMxINtZiLihMBvR8v+xEDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNKsWRmVeSWpSXmKPExsVy+t9jQd2SU+sDDe5M0baYtO4Ak8XZZQfZ
-	LDY9vsZqcXnXHDaLGef3MVncvsxrcer6ZzaLb1u2MVocm7GE0WLVrj+MDlweLc09bB6zGy6y
-	ePxd9YLZY+esu+wed67tYfPYvKTe48qJJlaPz5vkAjiiGhhtMlITU1KLFFLzkvNTMvPSbZW8
-	g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4BuVFIoS8wpBQoFJBYXK+nbYZoQGuKmawHT
-	GKHrGxIE12NkgAYS1jFm3Lg/m7lgEkfF3uZVjA2MG9m6GDk5JARMJF4vncEMYYtJXLi3HijO
-	xSEkMJ1R4l/zO0YI5y+jxPO3U1lAqtgENCQOv3/GDmKLCPhJbOjcwAJSxCywhUniTcNuqPbj
-	jBJvJh0Bm8spECwx49g61i5GDg5hgTCJ/5PBmlkEVCUunN3FCmLzCthKLDj0lQXCFpT4Mfke
-	mM0soCWxfudxJghbXmLzmrfMIGMkBNQlHv3VBTFFBIwkfu2rgagQkdj34h3jBEahWUgGzUIy
-	aBaSQbOQtCxgZFnFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJEZxUnknvYFzVYHGIUYCDUYmH
-	VyJgfaAQa2JZcWXuIUYJDmYlEd5/FUAh3pTEyqrUovz4otKc1OJDjMlAf05klhJNzgcmvLyS
-	eENjEzMjSyMzCyMTc3PShJXEeQ+2WgcKCaQnlqRmp6YWpBbBbGHi4JRqYAx6WrmX7+dpl3MF
-	ldKfBS5N/aZwT6aR4/dLthS/RccM+u9cFUiWaZSRap3BeDY1Xf10qW6ekFR/5ErfKy9dWV29
-	ovNdzE9PLbpSZ9lnn/cojGXe4V2Pm3mkwl7tcA54u8Z299l5O7NDT4v8NaqofXuFdfpiOebZ
-	xxfZ3vnmlKL/UytZ9X+qmhJLcUaioRZzUXEiAHwaInJuAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 5 Jun 2013 19:40:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPweEDw1BabE0cmT5fxZ3Z9p9EH508M3Nzcqk2VcO0oz-qYsvg@mail.gmail.com>
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
+	<CAKON4OxDD5orX2w-_+d5kawTGXbE3KKj2QLERo9m7=NiUSXhgQ@mail.gmail.com>
+	<51AFA6DD.3000202@wwwdotorg.org>
+	<CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com>
+	<1370469574.18839.33.camel@localhost>
+	<CAPweEDxMpeJc-w=Yd7d2OT=UisRBp2rxf-MPMDUCOG3EyJz1GQ@mail.gmail.com>
+	<CAKON4OxwyV2f_iTEb5RnP_azc7EsSxPdku_TY5WLWxN7USiY1Q@mail.gmail.com>
+	<CAPweEDw1BabE0cmT5fxZ3Z9p9EH508M3Nzcqk2VcO0oz-qYsvg@mail.gmail.com>
+Date: Wed, 5 Jun 2013 19:40:18 -0400
+Message-ID: <CAKON4Oz79hUE_ReAqjeynwL6ZWntX2W1uw3YOg0G2AiY7Gjs=g@mail.gmail.com>
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
+ Uploading linux (3.9.4-1))
+From: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
+To: "luke.leighton" <luke.leighton@gmail.com>
+Cc: Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm@lists.debian.org,
+        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
+        debian-kernel@lists.debian.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Olof Johansson wrote:
-> 
-> On Wed, Jun 5, 2013 at 1:56 PM, Doug Anderson <dianders@chromium.org>
-> wrote:
-> > If the early MMU mapping of the UART happens to get booted out of the
-> > TLB between the start of paging_init() and when we finally re-add the
-> > UART at the very end of s3c_init_cpu(), we'll get a hang at bootup if
-> > we've got early_printk enabled.  Avoid this hang by calling
-> > debug_ll_io_init() early.
-> >
-> > Without this patch, you can reliably reproduce a hang when early
-> > printk is enabled by adding flush_tlb_all() at the start of
-> > exynos_init_io().  After this patch the hang goes away.
-> >
-> > Signed-off-by: Doug Anderson <dianders@chromium.org>
-> 
-> Acked-by: Olof Johansson <olof@lixom.net>
-> 
-> 
-> Kukjin, this seems appropriate for 3.10. Do you have other fixes
-> queued or should I apply this directly?
-> 
-If I remember correctly, nothing in my tree for 3.10.
+On Wed, Jun 5, 2013 at 7:26 PM, luke.leighton <luke.leighton@gmail.com> wrote:
+> On Thu, Jun 6, 2013 at 12:07 AM, jonsmirl@gmail.com <jonsmirl@gmail.com> wrote:
+>> On Wed, Jun 5, 2013 at 6:47 PM, luke.leighton <luke.leighton@gmail.com> wrote:
+>>> On Wed, Jun 5, 2013 at 10:59 PM, Henrik Nordström
+>>> <henrik@henriknordstrom.net> wrote:
+>>>
+>>>>>  .... and then there's the boot0 and boot1 loaders, these *do* have
+>>>
+>>>> no, these are not tiny. boot0 is 24KB to fit the initial embedded SRAM
+>>>> (not cache), but boot1 is on pair with u-boot in size and runs from
+>>>> DRAM.
+>>>
+>>>  btw, please listen to henrik: he knows what he's talking about, as
+>>> you can see :)   henrik, thank you for correcting my technical
+>>> misunderstandings, i'll try to remember them and not propagate
+>>> incorrect stuff.
+>>
+>> This is not about the fex syntax or uboot. The root problem is needing
+>> two sets of binding for every device driver in the kernel. Pick a
+>> random driver like gpio-pca953x.c and look at the source. In that file
+>> there are #ifdef CONFIG_OF_ sections. Those sections are directly
+>> reading the FDT binary via calls like of_get_property(node,
+>> "linux,gpio-base", &size);. If fex is added to the kernel every driver
+>> driver will now need both a #ifdef CONFIG_OF_ section and also a
+>> #ifdef CONFIG_FEX_ section. Doing that is just crazy.
+>
+>  yes.  which is why they haven't done it.
+>
+>> Is Allwinner
+>> going to add fex support to every single device driver in the kernel?
+>
+>  no john - they've only added it to the multiplexed sections of the
+> drivers which they themselves have written.  such as
+> drivers/usb/sun{N}i_usb/*.[ch], drivers/block/nand/sun{N}_i,
+> arch/arm/mach-sun{N}i and so on.
+>
+> even the touchscreen driver that they wrote, that's got nothing to do
+> with any other code in the touchscreen linux kernel source tree: it's
+> more of a "meta-"driver which even has the name of the linux kernel
+> module that needs to be loaded and what I2C address, GPIO options etc.
+> to pass in [normally done as modprobe options in userspace].
+>
+>  to be honest, there are better people to fully answer this question
+> (alejandro and henrik are two that spring to mind) but you're
+> definitely off-base, jon.  the script.fex system deals with the pinmux
+> issue in a very neat way that:
 
-So please go ahead with my ack if you want,
+I have a Cubieboard and I have a pca9532 on my desk. Now I want to
+attach this pca9532 to the Cubieboard so I wire them together on I2C.
 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+How is the Allwinner kernel going to load the driver for the pca9532?
+The mainline pca9532 driver does not understand fex so it can't read
+the necessary initialization data.
 
-Thanks.
+Luke, you of all people should see what is going on. Take an EOMA
+module based on an A10. Now plug it into ten different hosts with
+widely varying hardware support - like each of the ten hosts has a
+different lm-sensor type chip. Where are the fex drivers for those ten
+different lm-sensor chips going to come from? We already have DT
+support for them.
 
-- Kukjin
+fex is only supported on the small number of peripheral chips
+Allwinner has blessed. Use any chip outside of that set and it isn't
+going to boot.
 
+>
+>   a) has very little impact on the rest of the kernel tree [citation
+> needed!  i'm saying that: could someone please confirm if it's true]
+>
+>   b) the linux kernel developers could, instead of criticising it,
+> actually learn a great deal from.
+>
+> l.
+
+
+
+--
+Jon Smirl
+jonsmirl@gmail.com
