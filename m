@@ -1,61 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413Ab3FEANv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 20:13:51 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40216 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343Ab3FEANt (ORCPT
+	id S1752577Ab3FEAOE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 20:14:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:44719 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752486Ab3FEAOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 20:13:49 -0400
-Date: Wed, 5 Jun 2013 10:13:39 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: bad merge in the libata tree
-Message-Id: <20130605101339.16b56c6fc7e17092798d9ea9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+	Tue, 4 Jun 2013 20:14:01 -0400
+Message-ID: <1370391220.21654.73.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH] sctp: set association state to established in dupcook_a
+ handler
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Xufeng Zhang <xufeng.zhang@windriver.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, nhorman@tuxdriver.com, vyasevich@gmail.com,
+        davem@davemloft.net
+Date: Wed, 05 Jun 2013 01:13:40 +0100
+In-Reply-To: <51AD4A34.6050606@windriver.com>
+References: <1370245978-12884-1-git-send-email-xufeng.zhang@windriver.com>
+	 <20130603142811.GE7024@kroah.com> <51AD4A34.6050606@windriver.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-on7SGts9RYWWqGp6zLJ7"
+X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__5_Jun_2013_10_13_39_+1000_z289I/zex=/JzBXc"
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__5_Jun_2013_10_13_39_+1000_z289I/zex=/JzBXc
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+
+--=-on7SGts9RYWWqGp6zLJ7
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-Hi Tejun,
+On Tue, 2013-06-04 at 10:00 +0800, Xufeng Zhang wrote:
+> On 06/03/2013 10:28 PM, Greg KH wrote:
+> > On Mon, Jun 03, 2013 at 03:52:58PM +0800, Xufeng Zhang wrote:
+> >   =20
+> >> 3.4-stable review patch.  If anyone has any objections, please let me =
+know.
+> >>     =20
+> > Really?  What are you going to do with it if no one objects?
+> >   =20
+> Sorry, I don't have any experience with stable patch and I consult
+> stable_kernel_rules.txt, there are not much special rules and here I just
+> want to specify the kernel version I wish it to be applied to.
+>=20
+> > I know I'm sure not going to do anything with it...
+> >
+> > (hint, this isn't how you ask for networking stable patches to be
+> > applied.)
+> >   =20
+> Ok, thanks for your hint, I'll resend the patch.
 
-The top commit of the libata tree is a merge that leaves some conflict
-markers in drivers/ata/sata_rcar.c ...
+The heading you used should only be used by a stable branch maintainer
+sending out a series of patches they've already accepted, prior to
+making a new release.  If you want a fix to be added to be applied to
+one or more stable branches, you should write in the form of a request.
+And if you're just not sure, then you should write in the form of a
+question.
 
-I will use yesterday's tree for today.
+Networking is a special case in that the subsystem maintainer, David
+Miller, generally collects together and backports fixes for all the
+official 3.x branches.  So you should send your request to him (but do
+cc the stable and subsystem lists as well).
+
+Ben.
+
 --=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Ben Hutchings
+Sturgeon's Law: Ninety percent of everything is crap.
 
---Signature=_Wed__5_Jun_2013_10_13_39_+1000_z289I/zex=/JzBXc
-Content-Type: application/pgp-signature
+--=-on7SGts9RYWWqGp6zLJ7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJRroK4AAoJEECxmPOUX5FEwn8P/izAJst8PHKQ/TlTVaKNrPwW
-gCKB2aYxCitV6cR93GWZWhY/oPXKm1SHu4b9cviPXVJi2WkyBmJ66c+eG/Rd0soR
-5bZ5++at8PQBGyGTvDSvU1P75Iozd6H9f37eWwY/nMxkqg9iJi9iZDZCLMETN+Vg
-i51Il4MT9gEBny+LzhBsR0x9YCI4jI71orPxcVJmycr70RMLpHPQwAbFlPNqGhSt
-Twg0+DAGU60s2551IJVj/QnBBsfEcqESmE0Qnklui1bCKZDAbAxM1oVGTBN/zZBs
-mXg/+Csi+Rgzkav2cheb7npkVdJ/cQi8YZrMCBx2bO9TNEOE6cvwS0ERGBPF1gTu
-YsHW2AEor6DXmu7ZyvJmKIr4B5oixEsZ2n1fWj70befzcJLd70LYXhL1CFvw7k99
-ThHxBWjLj7NItSQJ1p1O4ci/tNsKFTzW9+U3JP8cpCnC51Zvhs1oVGeZfgPduuhL
-XTlpCN6qqvOjbduV25kGY4xV8IwzvPXHv/HNXdW9PHA84JdF8zsBcQXNtcz5aMet
-JEyNQ/M61xrAW5FHoCV0I8oOYXqE632+sSiz2oaH+c/LD4jaEULo9/2ySMId/LF0
-kLVBrROAlGIMfz8eDpJSwV/g951vVHguZG2nptyJUkC85WALHVgeMdnI+VK0QCWw
-dUhRZfgjxbcfzBhDNivT
-=OM9c
+iQIVAwUAUa6CtOe/yOyVhhEJAQrS7Q/9E/wG9aVLgjIZuxfikkH0OrIvVPU5NCHH
+duo9KkRTRDGI82f2E2Qcaho/Sp2cHd3uF6tSz+j7Sbu6N5vQYIIYP9CH6oWhp1oG
+nVzT2HR38QKhtGMQctxwM8HRL2b1azY5npusPmnSgUTo1FFFitclIHapX2SMmPKv
+1GhxmtdwoerjNy8tAw46KenLeAC4as0xdcss10MjeRjH/jcX+h5Ef6A0OsGt1wDu
+NFELedtZq7MWESg2FMNol0jaBO1oBgY5w1FishQbboIucmDRROjB0ZdhJh+6RQnm
+Tg6Y+3D5+n4a17epwWRak5jrnLxnVYazkzjU0mr8/ZchPRCMG0NVCQdMozM39QRe
+puHE3bmnJvB51fRz+gRGnI0x3Y4A1WZhu48YanJf1/6s5fbjiaD+ve7WQg1mHFIh
+yLhVN5Lk9VllVDwThNx19vJ/nDuvQEj9Ts8UCEM0YD49hFcn6lsP1rl+5dKLPuLo
+GDYYjvI5OWw0BfTDEu25ULqO9Eyoyob3dTjUAVYJmp1M/wACBk3lvC2xcuPz45rX
+yX4TKTW4cXaaYoe1P5pa9j2bLYKPnHWhTyOF7MjyxLQiI/xcE3TQi21zbx84FTg8
+YwPCLd0MzFhyYBh4U/vwTbBs+ZpvpFbtUzTlmC6/3uC0sVB3L7ars0JnB66o1hlo
+jzS3I7DhOys=
+=/v8h
 -----END PGP SIGNATURE-----
 
---Signature=_Wed__5_Jun_2013_10_13_39_+1000_z289I/zex=/JzBXc--
+--=-on7SGts9RYWWqGp6zLJ7--
