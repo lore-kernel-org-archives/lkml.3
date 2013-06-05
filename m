@@ -1,97 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932273Ab3FEVHV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:07:21 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:49194 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932143Ab3FEVHU (ORCPT
+	id S932321Ab3FEVIU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:08:20 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:45938 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932248Ab3FEVIS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:07:20 -0400
-Date: Wed, 5 Jun 2013 14:07:15 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Nick Dyer <nick.dyer@itdev.co.uk>
-Cc: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
-Subject: Re: [PATCH 10/53] Input: atmel_mxt_ts - Add memory access interface
- via sysfs
-Message-ID: <20130605210715.GA16013@core.coreip.homeip.net>
-References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
- <7380889.l4hHqCT0mm@dtor-d630.eng.vmware.com>
- <51AF8730.4010507@itdev.co.uk>
- <1717403.GgHsbyUkDZ@dtor-d630.eng.vmware.com>
- <51AFA02B.3000604@itdev.co.uk>
+	Wed, 5 Jun 2013 17:08:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51AFA02B.3000604@itdev.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAN8TOE9UDGuQd9AbE-4UVcAiqCFpqhY=fX+LbrDybdgr16THdQ@mail.gmail.com>
+References: <1370310406-413-1-git-send-email-computersforpeace@gmail.com>
+	<1370310406-413-3-git-send-email-computersforpeace@gmail.com>
+	<51AD9140.90500@freescale.com>
+	<CAN8TOE9UDGuQd9AbE-4UVcAiqCFpqhY=fX+LbrDybdgr16THdQ@mail.gmail.com>
+Date: Wed, 5 Jun 2013 14:08:17 -0700
+Message-ID: <CAN8TOE8FRtQupXwvAtrVSN-C-nQz-XgOW7OA5C=XRs9YmCwTkg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] mtd: cfi_cmdset_0002: increase do_write_buffer() timeout
+From: Brian Norris <computersforpeace@gmail.com>
+To: Huang Shijie <b32955@freescale.com>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Kevin Cernekee <cernekee@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Imre Deak <imre.deak@intel.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 09:31:39PM +0100, Nick Dyer wrote:
-> Dmitry Torokhov wrote:
-> >> We have made a deliberate choice to implement this via sysfs rather than
-> >> debugfs since it needs to work on devices that don't have debugfs enabled.
-> > 
-> > Then they will have to enable it. Re-implementing something because
-> > someone might not enable needed subsystem is not a good idea. Let's
-> > say somebody disabled I2C - will you write your own implementation because
-> > of that? Of course not, you just say that for given functionality it
-> > is a prerequisite.
-> 
-> debugfs is a debug filesystem. This interface is useful for purposes which
-> are not debug.
+Adding a few others
 
-What other purposes does it serve? I'd expect you need it during new
-board bringup.
+For reference, this thread started with this patch:
 
-> I have to be pragmatic: I don't see debugfs enabled on most
-> shipping Android devices, and however much I tell them to enable debugfs
-> doesn't seem to hold much weight.
+http://lists.infradead.org/pipermail/linux-mtd/2013-June/047164.html
 
-You do not need to have debugfs enabled on shipping kernels, just the
-ones you use for integration work.
+On Wed, Jun 5, 2013 at 11:01 AM, Brian Norris
+<computersforpeace@gmail.com> wrote:
+> On Tue, Jun 4, 2013 at 12:03 AM, Huang Shijie <b32955@freescale.com> wrote:
+>> 于 2013年06月04日 09:46, Brian Norris 写道:
+>>> After various tests, it seems simply that the timeout is not long enough
+>>> for my system; increasing it by a few jiffies prevented all failures
+>>> (testing for 12+ hours). There is no harm in increasing the timeout, but
+>>> there is harm in having it too short, as evidenced here.
+>>>
+>> I like the patch1 and patch 2.
+>>
+>> But extending the timeout from 1ms to 10ms is like a workaround. :)
+>
+> I was afraid you might say that; that's why I stuck the first two
+> patches first ;)
+...
+>> I GUESS your problem is caused by the timer system, not the MTD code. I
+>> ever met this type of bug.
+...
+>> I try to describe the jiffies bug with my poor english:
+>>
+>> [1] background:
+>> CONFIG_HZ=100, CONFIG_NO_HZ=y
+>>
+>> [2] call nand_wait() when we write a nand page.
+>>
+>> [3] The jiffies was not updated at a _even_ speed.
+>>
+>> In the nand_wait(), you wait for 20ms(2 jiffies) for a page write,
+>> and the timeout occurs during the page write. Of course, you think that
+>> we have already waited for 20ms.
+>> But in actually, we only waited for 1ms or less!
+>> How do i know this? I use the gettimeofday to check the real time when
+>> the timeout occur.
+>
+> I suspected this very type of thing, since this has come up in a few
+> different contexts. And for some time, with a number of different
+> checks, it appeared that this *wasn't* the case. But while writing
+> this very email, I had the bright idea that my time checkpoint was in
+> slightly the wrong place; so sure enough, I found that I was timing
+> out after only 72519 ns! (That is, 72 us, or well below the max write
+> buffer time.)
 
-> 
-> It's partly path dependence - it was implemented like this because regmap
-> wasn't in mainline at the point when I wrote it. Having a dependency on
-> regmap would now be a API break complicating support of customers using
-> older kernels than mainline. I would also have to update a bunch of
-> software and documentation and people to know about the two different APIs.
-> The existing implementation already appears in shipping devices, so it is
-> well tested.
+So I can confirm that with the 1ms timeout, I actually am sometimes
+timing out at 40 to 70 microseconds. I think this may have multiple
+causes:
+(1) uneven timer interrupts, as suggested by Huang?
+(2) a jiffies timeout of 1 is two short (with HZ=1000, msecs_to_jiffies(1) is 1)
 
-This was never a good argument for introducing an interface into the
-kernel.
+Regarding reason (2):
 
-> 
-> >> In addition, there are some quirks about the way in which we have to
-> >> read/write registers which means regmap isn't a good fit.
-> > 
-> > Could you please elaborate more on this?
-> 
-> - the mxt chip caches the I2C read pointer, so you can get a performance
-> optimisation by not sending the address on every read/write (I haven't
-> implemented this yet but plan to)
-> - the address pointer can wrap around when you read the T5 message
-> processor, which would confuse regmap
-> - we require I2C retries in some cases due to way the chip handles sleep states
-> - I can't see how to map the object protocol (used on mxt chips) into the
-> way regmap treats register ranges
-> 
-> I can look into porting on top of regmap. But it seems a pity to pepper
-> regmap with atmel_mxt_ts quirks just to save on three small functions in
-> the driver.
+My thought (which matches with Imre's comments from his [1]) is that
+one problem here is that we do not know how long it will be until the
+*next* timer tick -- "waiting 1 jiffy" is really just waiting until
+the next timer tick, which very well might be in 40us! So the correct
+timeout calculation is something like:
 
-This is not about saving 3 functions but rather the fact that individual
-register access is desired by many parties and instead of each driver
-implementing it's own solution (via a char device, sysfs, debugfs, etc)
-we should try to standardize on common userspace interface.
+uWriteTimeout = msecs_to_jiffies(1) + 1;
 
-Thanks.
+or with Imre's proposed methods (not merged upstream yet), just:
 
--- 
-Dmitry
+uWriteTimeout = msecs_to_jiffies_timeout(1);
+
+Thoughts?
+
+Note that a 2-jiffy timeout does not, in fact, totally resolve my
+problems; with a timeout of 2 jiffies, I still get a timeout that
+(according to getnstimeofday()) occurs after only 56us. It does
+decrease its rate of occurrence, but Huang may still be right that
+reason (1) is involved.
+
+Brian
+
+[1] http://marc.info/?l=linux-kernel&m=136854294730957
