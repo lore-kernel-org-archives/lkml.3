@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933200Ab3FEVgZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:36:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38123 "EHLO
+	id S933215Ab3FEVhe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:37:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38138 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933181Ab3FEVgX (ORCPT
+	with ESMTP id S933192Ab3FEVgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:36:23 -0400
+	Wed, 5 Jun 2013 17:36:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Beulich <jbeulich@suse.com>, Wei Liu <wei.liu2@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 123/127] xen-netback: avoid allocating variable size array on stack
-Date: Wed,  5 Jun 2013 14:34:50 -0700
-Message-Id: <20130605213231.953827076@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 125/127] iwlwifi: mvm: remove P2P_DEVICE support
+Date: Wed,  5 Jun 2013 14:34:52 -0700
+Message-Id: <20130605213232.177053992@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -27,72 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Liu <wei.liu2@citrix.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 59ccb4ebbc35e36a3c143f2d1355deb75c2e628f upstream.
+Unfortunately, advertising P2P_DEVICE support was a little
+premature, a number of issues came up in testing and have
+been fixed for 3.10. Rather than try to backport all the
+different fixes, disable P2P_DEVICE support in the drivers
+using it. For iwlmvm that implies disabling P2P completely
+as it can't support P2P operation w/o P2P Device.
 
-Tune xen_netbk_count_requests to not touch working array beyond limit, so that
-we can make working array size constant.
-
-Suggested-by: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: Wei Liu <wei.liu2@citrix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/xen-netback/netback.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/net/wireless/iwlwifi/mvm/mac80211.c |   14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -934,11 +934,14 @@ static int netbk_count_requests(struct x
- 	RING_IDX cons = vif->tx.req_cons;
- 	int slots = 0;
- 	int drop_err = 0;
-+	int more_data;
+--- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
++++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
+@@ -82,15 +82,6 @@ static const struct ieee80211_iface_limi
+ 		.types = BIT(NL80211_IFTYPE_STATION) |
+ 			BIT(NL80211_IFTYPE_AP),
+ 	},
+-	{
+-		.max = 1,
+-		.types = BIT(NL80211_IFTYPE_P2P_CLIENT) |
+-			BIT(NL80211_IFTYPE_P2P_GO),
+-	},
+-	{
+-		.max = 1,
+-		.types = BIT(NL80211_IFTYPE_P2P_DEVICE),
+-	},
+ };
  
- 	if (!(first->flags & XEN_NETTXF_more_data))
- 		return 0;
+ static const struct ieee80211_iface_combination iwl_mvm_iface_combinations[] = {
+@@ -136,10 +127,7 @@ int iwl_mvm_mac_setup_register(struct iw
+ 	hw->chanctx_data_size = sizeof(struct iwl_mvm_phy_ctxt);
  
- 	do {
-+		struct xen_netif_tx_request dropped_tx = { 0 };
-+
- 		if (slots >= work_to_do) {
- 			netdev_err(vif->dev,
- 				   "Asked for %d slots but exceeds this limit\n",
-@@ -972,6 +975,9 @@ static int netbk_count_requests(struct x
- 			drop_err = -E2BIG;
- 		}
+ 	hw->wiphy->interface_modes = BIT(NL80211_IFTYPE_STATION) |
+-		BIT(NL80211_IFTYPE_P2P_CLIENT) |
+-		BIT(NL80211_IFTYPE_AP) |
+-		BIT(NL80211_IFTYPE_P2P_GO) |
+-		BIT(NL80211_IFTYPE_P2P_DEVICE);
++		BIT(NL80211_IFTYPE_AP);
  
-+		if (drop_err)
-+			txp = &dropped_tx;
-+
- 		memcpy(txp, RING_GET_REQUEST(&vif->tx, cons + slots),
- 		       sizeof(*txp));
- 
-@@ -1001,7 +1007,13 @@ static int netbk_count_requests(struct x
- 			netbk_fatal_tx_err(vif);
- 			return -EINVAL;
- 		}
--	} while ((txp++)->flags & XEN_NETTXF_more_data);
-+
-+		more_data = txp->flags & XEN_NETTXF_more_data;
-+
-+		if (!drop_err)
-+			txp++;
-+
-+	} while (more_data);
- 
- 	if (drop_err) {
- 		netbk_tx_err(vif, first, cons + slots);
-@@ -1413,7 +1425,7 @@ static unsigned xen_netbk_tx_build_gops(
- 		!list_empty(&netbk->net_schedule_list)) {
- 		struct xenvif *vif;
- 		struct xen_netif_tx_request txreq;
--		struct xen_netif_tx_request txfrags[max_skb_slots];
-+		struct xen_netif_tx_request txfrags[XEN_NETIF_NR_SLOTS_MIN];
- 		struct page *page;
- 		struct xen_netif_extra_info extras[XEN_NETIF_EXTRA_TYPE_MAX-1];
- 		u16 pending_idx;
+ 	hw->wiphy->flags |= WIPHY_FLAG_CUSTOM_REGULATORY |
+ 			    WIPHY_FLAG_DISABLE_BEACON_HINTS |
 
 
