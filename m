@@ -1,206 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926Ab3FECi5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 22:38:57 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:44510 "EHLO
-	intranet.asianux.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab3FECix (ORCPT
+	id S1751751Ab3FECnO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 22:43:14 -0400
+Received: from mail.windriver.com ([147.11.1.11]:59793 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab3FECnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 22:38:53 -0400
-X-Spam-Score: -99.9
-Message-ID: <51AE909D.9080006@asianux.com>
-Date: Wed, 05 Jun 2013 09:13:01 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 4 Jun 2013 22:43:11 -0400
+Message-ID: <51AEA8B6.9090609@windriver.com>
+Date: Wed, 5 Jun 2013 10:55:50 +0800
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5 ThunderBrowse/3.3.5
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: [PATCH v2] arch/*/asm/include/bitops.h: api issue, find_*_bit() defination
- are different with each other
-References: <51AE8FEF.1020809@asianux.com> <51AE903C.6010806@asianux.com>
-In-Reply-To: <51AE903C.6010806@asianux.com>
-Content-Type: text/plain; charset=GB2312
+To: <gregkh@linuxfoundation.org>, <davem@davemloft.net>
+CC: Xufeng Zhang <xufeng.zhang@windriver.com>, <linux-kernel@vger.kernel.org>,
+        <stable@vger.kernel.org>, <nhorman@tuxdriver.com>,
+        <vyasevich@gmail.com>
+Subject: Re: [PATCH] sctp: set association state to established in dupcook_a
+ handler
+References: <1370245978-12884-1-git-send-email-xufeng.zhang@windriver.com>
+In-Reply-To: <1370245978-12884-1-git-send-email-xufeng.zhang@windriver.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/03/2013 03:52 PM, Xufeng Zhang wrote:
+> 3.4-stable review patch.  If anyone has any objections, please let me know.
+>    
+Sorry Greg, David -- I did not fully understand all the details
+of the stable kernel process earlier.
 
-For arm and m68k, they customize find_*_bit(), but the API is different
-with 'generic'.
+I have since checked the networking stable queue here:
 
-avr32, s390, and unicore32 also customize find_*_bit(), but the API is
-the same with 'generic', and the left architectures all use 'generic'.
+http://patchwork.ozlabs.org/bundle/davem/stable/?state=*
 
-So need change arm and m68k related API to match the 'generic', then
-all another modules can face same public API for various architectures.
+to confirm this upstream commit 9839ff0d has not yet been queued.
 
-Also beautify code and comments to pass "./scripts/checkpatch.pl"
+It can be applied to kernel versions<3.0, 3.4>, and is
+present in mainline for 3.8+ kernels.
+
+I think it makes sense to queue for stable because it
+fixes the SCTP association can get stuck in SCTP_STATE_SHUTDOWN_PENDING
+state forever in the below test case:
+1). Set SCTP parameters on A (slow detection of link failure):
+net.sctp.association_max_retrans = 5
+net.sctp.path_max_retrans = 5
+net.sctp.hb_interval = 30000
+2). Set SCTP parameters on B (fast detection of link failure):
+net.sctp.association_max_retrans = 2
+net.sctp.path_max_retrans = 2
+net.sctp.hb_interval = 1000
+3). Start sctp_darn on both sides:
+A(interactive):
+sctp_darn -H 192.168.100.10 -P 256 -h 192.168.100.100 -p 256 -I -s
+B:
+sctp_darn -H 192.168.100.100 -P 256 -h 192.168.100.10 -p 256 -l&
+4). Send data on A to establish the SCTP association:
+snd=5
+5). Block SCTP traffic on B (simulates a network failure):
+iptables -t filter -I INPUT 1 -p sctp --dport 256 -j DROP
+iptables -t filter -I OUTPUT 1 -p sctp --dport 256 -j DROP
+Then quickly send data on A and then shutdown (A goes into SHUTDOWN_PENDING state):
+snd=5
+snd=5
+shutdown
+6). Wait for link to drop on B (Recieved SCTP_COMM_LOST), and quickly kill the listener,
+open the firewall for SCTP, then start an SCTP sender:
+kill $PID
+iptables -t filter -D INPUT 1
+iptables -t filter -D OUTPUT 1
+sctp_darn -H 192.168.100.100 -P 256 -h 192.168.100.10 -p 256 -s
+Press<Enter>  to send data to trigger sending INIT to A, the SHUTDOWN on A will failed and
+the association on A remains in SHUTDOWN_PENDING (5) state indefinitely.
 
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/arm/include/asm/bitops.h  |   26 ++++++++++++++++++--------
- arch/arm/lib/findbit.S         |   14 ++++++++++----
- arch/m68k/include/asm/bitops.h |   25 ++++++++++++++-----------
- 3 files changed, 42 insertions(+), 23 deletions(-)
+However if David doesn't think it is worth bothering with for
+net stable, then that is of course fine too.
 
-diff --git a/arch/arm/include/asm/bitops.h b/arch/arm/include/asm/bitops.h
-index e691ec9..10566c8 100644
---- a/arch/arm/include/asm/bitops.h
-+++ b/arch/arm/include/asm/bitops.h
-@@ -161,18 +161,28 @@ extern int _test_and_change_bit(int nr, volatile unsigned long * p);
- /*
-  * Little endian assembly bitops.  nr = 0 -> byte 0 bit 0.
-  */
--extern int _find_first_zero_bit_le(const void * p, unsigned size);
--extern int _find_next_zero_bit_le(const void * p, int size, int offset);
--extern int _find_first_bit_le(const unsigned long *p, unsigned size);
--extern int _find_next_bit_le(const unsigned long *p, int size, int offset);
-+extern unsigned long  _find_first_zero_bit_le(const void *p,
-+						unsigned long size);
-+extern unsigned long _find_next_zero_bit_le(const void *p, unsigned long size,
-+						unsigned long offset);
-+extern unsigned long _find_first_bit_le(const unsigned long *p,
-+						unsigned long size);
-+extern unsigned long _find_next_bit_le(const unsigned long *p,
-+						unsigned long size,
-+						unsigned long offset);
- 
- /*
-  * Big endian assembly bitops.  nr = 0 -> byte 3 bit 0.
-  */
--extern int _find_first_zero_bit_be(const void * p, unsigned size);
--extern int _find_next_zero_bit_be(const void * p, int size, int offset);
--extern int _find_first_bit_be(const unsigned long *p, unsigned size);
--extern int _find_next_bit_be(const unsigned long *p, int size, int offset);
-+extern unsigned long _find_first_zero_bit_be(const void *p,
-+						unsigned long size);
-+extern unsigned long _find_next_zero_bit_be(const void *p, unsigned long size,
-+						unsigned long offset);
-+extern unsigned long _find_first_bit_be(const unsigned long *p,
-+						unsigned long size);
-+extern unsigned long _find_next_bit_be(const unsigned long *p,
-+						unsigned long size,
-+						unsigned long offset);
- 
- #ifndef CONFIG_SMP
- /*
-diff --git a/arch/arm/lib/findbit.S b/arch/arm/lib/findbit.S
-index 64f6bc1..9e3263a 100644
---- a/arch/arm/lib/findbit.S
-+++ b/arch/arm/lib/findbit.S
-@@ -19,7 +19,8 @@
- 
- /*
-  * Purpose  : Find a 'zero' bit
-- * Prototype: int find_first_zero_bit(void *addr, unsigned int maxbit);
-+ * Prototype: unsigned long  find_first_zero_bit(const void *p,
-+ *						unsigned long size);
-  */
- ENTRY(_find_first_zero_bit_le)
- 		teq	r1, #0	
-@@ -40,7 +41,9 @@ ENDPROC(_find_first_zero_bit_le)
- 
- /*
-  * Purpose  : Find next 'zero' bit
-- * Prototype: int find_next_zero_bit(void *addr, unsigned int maxbit, int offset)
-+ * Prototype: unsigned long find_next_zero_bit(const void *p,
-+ *						unsigned long size,
-+ *						unsigned long offset);
-  */
- ENTRY(_find_next_zero_bit_le)
- 		teq	r1, #0
-@@ -60,7 +63,8 @@ ENDPROC(_find_next_zero_bit_le)
- 
- /*
-  * Purpose  : Find a 'one' bit
-- * Prototype: int find_first_bit(const unsigned long *addr, unsigned int maxbit);
-+ * Prototype: unsigned long find_first_bit(const unsigned long *p,
-+ *					unsigned long size);
-  */
- ENTRY(_find_first_bit_le)
- 		teq	r1, #0	
-@@ -81,7 +85,9 @@ ENDPROC(_find_first_bit_le)
- 
- /*
-  * Purpose  : Find next 'one' bit
-- * Prototype: int find_next_zero_bit(void *addr, unsigned int maxbit, int offset)
-+ * Prototype: unsigned long find_next_bit(const unsigned long *p,
-+ *					unsigned long size,
-+ *					unsigned long offset);
-  */
- ENTRY(_find_next_bit_le)
- 		teq	r1, #0
-diff --git a/arch/m68k/include/asm/bitops.h b/arch/m68k/include/asm/bitops.h
-index c6baa91..b1d8752 100644
---- a/arch/m68k/include/asm/bitops.h
-+++ b/arch/m68k/include/asm/bitops.h
-@@ -320,11 +320,11 @@ static inline int bfchg_mem_test_and_change_bit(int nr,
- #include <asm-generic/bitops/ffz.h>
- #else
- 
--static inline int find_first_zero_bit(const unsigned long *vaddr,
--				      unsigned size)
-+static inline unsigned long find_first_zero_bit(const unsigned long *vaddr,
-+				      unsigned long size)
- {
- 	const unsigned long *p = vaddr;
--	int res = 32;
-+	unsigned int res = 32;
- 	unsigned int words;
- 	unsigned long num;
- 
-@@ -346,11 +346,12 @@ out:
- }
- #define find_first_zero_bit find_first_zero_bit
- 
--static inline int find_next_zero_bit(const unsigned long *vaddr, int size,
--				     int offset)
-+static inline unsigned long find_next_zero_bit(const unsigned long *vaddr,
-+						unsigned long size,
-+						unsigned long offset)
- {
- 	const unsigned long *p = vaddr + (offset >> 5);
--	int bit = offset & 31UL, res;
-+	unsigned int bit = offset & 31UL, res;
- 
- 	if (offset >= size)
- 		return size;
-@@ -376,10 +377,11 @@ static inline int find_next_zero_bit(const unsigned long *vaddr, int size,
- }
- #define find_next_zero_bit find_next_zero_bit
- 
--static inline int find_first_bit(const unsigned long *vaddr, unsigned size)
-+static inline unsigned long find_first_bit(const unsigned long *vaddr,
-+						unsigned long size)
- {
- 	const unsigned long *p = vaddr;
--	int res = 32;
-+	unsigned int res = 32;
- 	unsigned int words;
- 	unsigned long num;
- 
-@@ -401,11 +403,12 @@ out:
- }
- #define find_first_bit find_first_bit
- 
--static inline int find_next_bit(const unsigned long *vaddr, int size,
--				int offset)
-+static inline unsigned long find_next_bit(const unsigned long *vaddr,
-+						unsigned long size,
-+						unsigned long offset)
- {
- 	const unsigned long *p = vaddr + (offset >> 5);
--	int bit = offset & 31UL, res;
-+	unsigned int bit = offset & 31UL, res;
- 
- 	if (offset >= size)
- 		return size;
--- 
-1.7.7.6
+
+Thanks,
+Xufeng
+
+
+
+> ------------------
+>
+>
+> From: Xufeng Zhang<xufeng.zhang@windriver.com>
+>
+> [ Upstream commit 9839ff0dead906e85e4d17490aeff87a5859a157 ]
+>
+> While sctp handling a duplicate COOKIE-ECHO and the action is
+> 'Association restart', sctp_sf_do_dupcook_a() will processing
+> the unexpected COOKIE-ECHO for peer restart, but it does not set
+> the association state to SCTP_STATE_ESTABLISHED, so the association
+> could stuck in SCTP_STATE_SHUTDOWN_PENDING state forever.
+> This violates the sctp specification:
+>    RFC 4960 5.2.4. Handle a COOKIE ECHO when a TCB Exists
+>    Action
+>    A) In this case, the peer may have restarted. .....
+>       After this, the endpoint shall enter the ESTABLISHED state.
+>
+> To resolve this problem, adding a SCTP_CMD_NEW_STATE cmd to the
+> command list before SCTP_CMD_REPLY cmd, this will set the restart
+> association to SCTP_STATE_ESTABLISHED state properly and also avoid
+> I-bit being set in the DATA chunk header when COOKIE_ACK is bundled
+> with DATA chunks.
+>
+> Signed-off-by: Xufeng Zhang<xufeng.zhang@windriver.com>
+> Acked-by: Neil Horman<nhorman@tuxdriver.com>
+> Acked-by: Vlad Yasevich<vyasevich@gmail.com>
+> Signed-off-by: David S. Miller<davem@davemloft.net>
+> ---
+>   net/sctp/sm_statefuns.c |    4 +++-
+>   1 files changed, 3 insertions(+), 1 deletions(-)
+>
+> diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
+> index cb1c430..ab08f65 100644
+> --- a/net/sctp/sm_statefuns.c
+> +++ b/net/sctp/sm_statefuns.c
+> @@ -1747,8 +1747,10 @@ static sctp_disposition_t sctp_sf_do_dupcook_a(const struct sctp_endpoint *ep,
+>
+>   	/* Update the content of current association. */
+>   	sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, SCTP_ASOC(new_asoc));
+> -	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
+>   	sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
+> +	sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
+> +			SCTP_STATE(SCTP_STATE_ESTABLISHED));
+> +	sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
+>   	return SCTP_DISPOSITION_CONSUME;
+>
+>   nomem_ev:
+>    
+
