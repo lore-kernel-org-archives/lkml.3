@@ -1,98 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab3FELqM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 07:46:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49586 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441Ab3FELqK (ORCPT
+	id S1754944Ab3FELq2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 07:46:28 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:56289 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754465Ab3FELqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 07:46:10 -0400
-Date: Wed, 5 Jun 2013 13:45:59 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>, Dave Jones <davej@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH v2][RFC] tracing/context-tracking: Add
- preempt_schedule_context() for tracing
-Message-ID: <20130605114559.GE8923@twins.programming.kicks-ass.net>
-References: <1369943981.26799.43.camel@gandalf.local.home>
- <20130531134319.GE5932@somewhere>
- <1370013528.26799.49.camel@gandalf.local.home>
- <20130531160101.GB5910@twins.programming.kicks-ass.net>
- <1370050218.26799.87.camel@gandalf.local.home>
- <20130604122712.GE14973@somewhere>
- <1370355416.26799.119.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370355416.26799.119.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 5 Jun 2013 07:46:25 -0400
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org
+Cc: Pawel Moll <pawel.moll@arm.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Achin Gupta <achin.gupta@arm.com>,
+        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jon Medhurst <tixy@linaro.org>
+Subject: [RFC PATCH v2 1/2] drivers: mfd: refactor the vexpress config bridge API
+Date: Wed,  5 Jun 2013 12:46:06 +0100
+Message-Id: <1370432767-6620-2-git-send-email-lorenzo.pieralisi@arm.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <1370432767-6620-1-git-send-email-lorenzo.pieralisi@arm.com>
+References: <1370432767-6620-1-git-send-email-lorenzo.pieralisi@arm.com>
+X-OriginalArrivalTime: 05 Jun 2013 11:46:22.0367 (UTC) FILETIME=[4D0F3AF0:01CE61E2]
+X-MC-Unique: 113060512462315301
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r55BkY3c028316
 
-On Tue, Jun 04, 2013 at 10:16:56AM -0400, Steven Rostedt wrote:
-> index 65349f0..73b89d9 100644
-> --- a/kernel/context_tracking.c
-> +++ b/kernel/context_tracking.c
-> @@ -71,6 +71,46 @@ void user_enter(void)
->  	local_irq_restore(flags);
->  }
->  
-> +#ifdef CONFIG_PREEMPT
-> +/**
-> + * preempt_schedule_context - preempt_schedule called by tracing
-> + *
-> + * The tracing infrastructure uses preempt_enable_notrace to prevent
-> + * recursion and tracing preempt enabling caused by the tracing
-> + * infrastructure itself. But as tracing can happen in areas coming
-> + * from userspace or just about to enter userspace, a preempt enable
-> + * can occur before user_exit() is called. This will cause the scheduler
-> + * to be called when the system is still in usermode.
-> + *
-> + * To prevent this, the preempt_enable_notrace will use this function
-> + * instead of preempt_schedule() to exit user context if needed before
-> + * calling the scheduler.
-> + */
+From: Pawel Moll <pawel.moll@arm.com>
 
-If preempt_enable_notrace() is the only user, why does this live in
-kernel/context_tracking.c and not in kernel/sched/core.c?
+The introduction of Serial Power Controller (SPC) requires the vexpress
+config interface to change slightly since the SPC memory mapped interface
+can be used as configuration bus but also for operating points
+programming and retrieval. The helper that allocates the bridge functions
+requires an additional parameter allowing to request component specific
+functions that need not be initialized through device tree bindings but
+just using simple look-up and statically defined constants.
 
-> +void __sched notrace preempt_schedule_context(void)
-> +{
-> +	struct thread_info *ti = current_thread_info();
-> +	enum ctx_state prev_ctx;
-> +
-> +	if (likely(ti->preempt_count || irqs_disabled()))
-> +		return;
-> +
-> +	/*
-> +	 * Need to disable preemption in case user_exit() is traced
-> +	 * and the tracer calls preempt_enable_notrace() causing
-> +	 * an infinite recursion.
-> +	 */
-> +	preempt_disable_notrace();
-> +	prev_ctx = exception_enter();
-> +	preempt_enable_no_resched_notrace();
-> +
-> +	preempt_schedule();
-> +
-> +	preempt_disable_notrace();
-> +	exception_exit(prev_ctx);
-> +	preempt_enable_notrace();
-> +}
-> +EXPORT_SYMBOL(preempt_schedule_context);
+This patch introduces the necessary changes to the vexpress config layer
+to cater for the new vexpress bridge interface requirements.
 
-Do we really need to export this?
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Achin Gupta <achin.gupta@arm.com>
+Cc: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>
+Cc: Jon Medhurst <tixy@linaro.org>
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+---
+ drivers/mfd/vexpress-config.c | 61 +++++++++++++++++++++++++++----------------
+ drivers/mfd/vexpress-sysreg.c |  2 +-
+ include/linux/vexpress.h      | 16 ++++++++----
+ 3 files changed, 51 insertions(+), 28 deletions(-)
 
-> +#endif /* CONFIG_PREEMPT */
->  
->  /**
->   * user_exit - Inform the context tracking that the CPU is
-> -- 
-> 1.7.10.4
-> 
-> 
-> 
+diff --git a/drivers/mfd/vexpress-config.c b/drivers/mfd/vexpress-config.c
+index 84ce6b9..1af2b0e 100644
+--- a/drivers/mfd/vexpress-config.c
++++ b/drivers/mfd/vexpress-config.c
+@@ -86,29 +86,13 @@ void vexpress_config_bridge_unregister(struct vexpress_config_bridge *bridge)
+ }
+ EXPORT_SYMBOL(vexpress_config_bridge_unregister);
+ 
+-
+-struct vexpress_config_func {
+-	struct vexpress_config_bridge *bridge;
+-	void *func;
+-};
+-
+-struct vexpress_config_func *__vexpress_config_func_get(struct device *dev,
+-		struct device_node *node)
++static struct vexpress_config_bridge *
++		vexpress_config_bridge_find(struct device_node *node)
+ {
+-	struct device_node *bridge_node;
+-	struct vexpress_config_func *func;
+ 	int i;
++	struct vexpress_config_bridge *res = NULL;
++	struct device_node *bridge_node = of_node_get(node);
+ 
+-	if (WARN_ON(dev && node && dev->of_node != node))
+-		return NULL;
+-	if (dev && !node)
+-		node = dev->of_node;
+-
+-	func = kzalloc(sizeof(*func), GFP_KERNEL);
+-	if (!func)
+-		return NULL;
+-
+-	bridge_node = of_node_get(node);
+ 	while (bridge_node) {
+ 		const __be32 *prop = of_get_property(bridge_node,
+ 				"arm,vexpress,config-bridge", NULL);
+@@ -129,13 +113,46 @@ struct vexpress_config_func *__vexpress_config_func_get(struct device *dev,
+ 
+ 		if (test_bit(i, vexpress_config_bridges_map) &&
+ 				bridge->node == bridge_node) {
+-			func->bridge = bridge;
+-			func->func = bridge->info->func_get(dev, node);
++			res = bridge;
+ 			break;
+ 		}
+ 	}
+ 	mutex_unlock(&vexpress_config_bridges_mutex);
+ 
++	return res;
++}
++
++
++struct vexpress_config_func {
++	struct vexpress_config_bridge *bridge;
++	void *func;
++};
++
++struct vexpress_config_func *__vexpress_config_func_get(
++		struct vexpress_config_bridge *bridge,
++		struct device *dev,
++		struct device_node *node,
++		const char *id)
++{
++	struct vexpress_config_func *func;
++
++	if (WARN_ON(dev && node && dev->of_node != node))
++		return NULL;
++	if (dev && !node)
++		node = dev->of_node;
++
++	if (!bridge)
++		bridge = vexpress_config_bridge_find(node);
++	if (!bridge)
++		return NULL;
++
++	func = kzalloc(sizeof(*func), GFP_KERNEL);
++	if (!func)
++		return NULL;
++
++	func->bridge = bridge;
++	func->func = bridge->info->func_get(dev, node, id);
++
+ 	if (!func->func) {
+ 		of_node_put(node);
+ 		kfree(func);
+diff --git a/drivers/mfd/vexpress-sysreg.c b/drivers/mfd/vexpress-sysreg.c
+index 96a020b..d2599aa 100644
+--- a/drivers/mfd/vexpress-sysreg.c
++++ b/drivers/mfd/vexpress-sysreg.c
+@@ -165,7 +165,7 @@ static u32 *vexpress_sysreg_config_data;
+ static int vexpress_sysreg_config_tries;
+ 
+ static void *vexpress_sysreg_config_func_get(struct device *dev,
+-		struct device_node *node)
++		struct device_node *node, const char *id)
+ {
+ 	struct vexpress_sysreg_config_func *config_func;
+ 	u32 site;
+diff --git a/include/linux/vexpress.h b/include/linux/vexpress.h
+index 6e7980d..50368e0 100644
+--- a/include/linux/vexpress.h
++++ b/include/linux/vexpress.h
+@@ -68,7 +68,8 @@
+  */
+ struct vexpress_config_bridge_info {
+ 	const char *name;
+-	void *(*func_get)(struct device *dev, struct device_node *node);
++	void *(*func_get)(struct device *dev, struct device_node *node,
++			  const char *id);
+ 	void (*func_put)(void *func);
+ 	int (*func_exec)(void *func, int offset, bool write, u32 *data);
+ };
+@@ -87,12 +88,17 @@ void vexpress_config_complete(struct vexpress_config_bridge *bridge,
+ 
+ struct vexpress_config_func;
+ 
+-struct vexpress_config_func *__vexpress_config_func_get(struct device *dev,
+-		struct device_node *node);
++struct vexpress_config_func *__vexpress_config_func_get(
++		struct vexpress_config_bridge *bridge,
++		struct device *dev,
++		struct device_node *node,
++		const char *id);
++#define vexpress_config_func_get(bridge, id) \
++		__vexpress_config_func_get(bridge, NULL, NULL, id)
+ #define vexpress_config_func_get_by_dev(dev) \
+-		__vexpress_config_func_get(dev, NULL)
++		__vexpress_config_func_get(NULL, dev, NULL, NULL)
+ #define vexpress_config_func_get_by_node(node) \
+-		__vexpress_config_func_get(NULL, node)
++		__vexpress_config_func_get(NULL, NULL, node, NULL)
+ void vexpress_config_func_put(struct vexpress_config_func *func);
+ 
+ /* Both may sleep! */
+-- 
+1.8.2.2
+
+
