@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932788Ab3FEVfb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:35:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37731 "EHLO
+	id S932861Ab3FEV7J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:59:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37797 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932487Ab3FEVfW (ORCPT
+	with ESMTP id S932772Ab3FEVfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:35:22 -0400
+	Wed, 5 Jun 2013 17:35:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Chan <mchan@broadcom.com>,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 038/127] tg3: Fix data corruption on 5725 with TSO
-Date: Wed,  5 Jun 2013 14:33:25 -0700
-Message-Id: <20130605213222.278113919@linuxfoundation.org>
+Subject: [ 040/127] perf: net_dropmonitor: Fix symbol-relative addresses
+Date: Wed,  5 Jun 2013 14:33:27 -0700
+Message-Id: <20130605213222.512637692@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -28,55 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Chan <mchan@broadcom.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 0f0d15100a8ac875bdd408324c473e16d73d3557 upstream.
+commit 5a1e99dd2028e00998d42029be86835d8ef4a46e upstream.
 
-The 5725 family of devices (asic rev 5762), corrupts TSO packets where
-the buffer is within MSS bytes of a 4G boundary (4G, 8G etc.). Detect
-this condition and trigger the workaround path.
+The comparison between traced and symbol addresses is backwards: if
+the traced address doesn't exactly match a symbol (which we don't
+expect it to), we'll show the next symbol and the offset to it,
+whereas we should show the previous symbol and the offset from it.
 
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/broadcom/tg3.c |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ tools/perf/scripts/python/net_dropmonitor.py |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -7078,6 +7078,20 @@ static inline int tg3_4g_overflow_test(d
- 	return (base > 0xffffdcc0) && (base + len + 8 < base);
- }
+--- a/tools/perf/scripts/python/net_dropmonitor.py
++++ b/tools/perf/scripts/python/net_dropmonitor.py
+@@ -40,9 +40,9 @@ def get_kallsyms_table():
  
-+/* Test for TSO DMA buffers that cross into regions which are within MSS bytes
-+ * of any 4GB boundaries: 4G, 8G, etc
-+ */
-+static inline int tg3_4g_tso_overflow_test(struct tg3 *tp, dma_addr_t mapping,
-+					   u32 len, u32 mss)
-+{
-+	if (tg3_asic_rev(tp) == ASIC_REV_5762 && mss) {
-+		u32 base = (u32) mapping & 0xffffffff;
-+
-+		return ((base + len + (mss & 0x3fff)) < base);
-+	}
-+	return 0;
-+}
-+
- /* Test for DMA addresses > 40-bit */
- static inline int tg3_40bit_overflow_test(struct tg3 *tp, dma_addr_t mapping,
- 					  int len)
-@@ -7114,6 +7128,9 @@ static bool tg3_tx_frag_set(struct tg3_n
- 	if (tg3_4g_overflow_test(map, len))
- 		hwbug = true;
+ def get_sym(sloc):
+ 	loc = int(sloc)
+-	for i in kallsyms:
+-		if (i['loc'] >= loc):
+-			return (i['name'], i['loc']-loc)
++	for i in kallsyms[::-1]:
++		if loc >= i['loc']:
++			return (i['name'], loc - i['loc'])
+ 	return (None, 0)
  
-+	if (tg3_4g_tso_overflow_test(tp, map, len, mss))
-+		hwbug = true;
-+
- 	if (tg3_40bit_overflow_test(tp, map, len))
- 		hwbug = true;
- 
+ def print_drop_table():
 
 
