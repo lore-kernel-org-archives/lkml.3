@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385Ab3FEXzI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 19:55:08 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:60389 "EHLO
+	id S1754539Ab3FEXzm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 19:55:42 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:60380 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754208Ab3FEXyu (ORCPT
+	with ESMTP id S1753582Ab3FEXyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 19:54:50 -0400
+	Wed, 5 Jun 2013 19:54:49 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: John Stultz <john.stultz@linaro.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         Will Deacon <will.deacon@arm.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Christopher Covington <cov@codeaurora.org>
-Subject: [PATCHv3 3/3] arm64: Move to generic sched_clock infrastructure
-Date: Wed,  5 Jun 2013 16:54:45 -0700
-Message-Id: <1370476485-468-4-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCHv3 2/3] ARM: arch_timer: Move to generic sched_clock framework
+Date: Wed,  5 Jun 2013 16:54:44 -0700
+Message-Id: <1370476485-468-3-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.3.rc3.8.g5e49f30.dirty
 In-Reply-To: <1370476485-468-1-git-send-email-sboyd@codeaurora.org>
 References: <1370476485-468-1-git-send-email-sboyd@codeaurora.org>
@@ -26,68 +26,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the generic sched_clock infrastructure instead of rolling our
-own. This has the added benefit of fixing suspend/resume as
-outlined in 6a4dae5 (ARM: 7565/1: sched: stop sched_clock()
-during suspend, 2012-10-23) and correcting the timestamps when
-the hardware returns a value instead of 0 upon the first read.
+Register with the generic sched_clock framework now that it
+supports 64 bits. This fixes two problems with the current
+sched_clock support for machines using the architected timers.
+First off, we don't subtract the start value from subsequent
+sched_clock calls so we can potentially start off with
+sched_clock returning gigantic numbers. Second, there is no
+support for suspend/resume handling so problems such as discussed
+in 6a4dae5 (ARM: 7565/1: sched: stop sched_clock() during
+suspend, 2012-10-23) can happen without this patch.
 
-Cc: Christopher Covington <cov@codeaurora.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm64/Kconfig       |  1 +
- arch/arm64/kernel/time.c | 11 ++---------
- 2 files changed, 3 insertions(+), 9 deletions(-)
+ arch/arm/kernel/arch_timer.c | 14 ++------------
+ include/linux/sched_clock.h  |  2 --
+ kernel/time/sched_clock.c    | 13 ++++---------
+ 3 files changed, 6 insertions(+), 23 deletions(-)
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 56b3f6d..f9c6e92 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -13,6 +13,7 @@ config ARM64
- 	select GENERIC_IOMAP
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_IRQ_SHOW
-+	select GENERIC_SCHED_CLOCK
- 	select GENERIC_SMP_IDLE_THREAD
- 	select GENERIC_TIME_VSYSCALL
- 	select HARDIRQS_SW_RESEND
-diff --git a/arch/arm64/kernel/time.c b/arch/arm64/kernel/time.c
-index a551f88..a98eb8b 100644
---- a/arch/arm64/kernel/time.c
-+++ b/arch/arm64/kernel/time.c
-@@ -33,6 +33,7 @@
- #include <linux/irq.h>
- #include <linux/delay.h>
- #include <linux/clocksource.h>
-+#include <linux/sched_clock.h>
+diff --git a/arch/arm/kernel/arch_timer.c b/arch/arm/kernel/arch_timer.c
+index 221f07b..2966288 100644
+--- a/arch/arm/kernel/arch_timer.c
++++ b/arch/arm/kernel/arch_timer.c
+@@ -22,13 +22,6 @@ static unsigned long arch_timer_read_counter_long(void)
+ 	return arch_timer_read_counter();
+ }
  
- #include <clocksource/arm_arch_timer.h>
- 
-@@ -61,13 +62,6 @@ unsigned long profile_pc(struct pt_regs *regs)
- EXPORT_SYMBOL(profile_pc);
- #endif
- 
--static u64 sched_clock_mult __read_mostly;
+-static u32 sched_clock_mult __read_mostly;
 -
--unsigned long long notrace sched_clock(void)
+-static unsigned long long notrace arch_timer_sched_clock(void)
 -{
 -	return arch_timer_read_counter() * sched_clock_mult;
 -}
 -
- int read_current_timer(unsigned long *timer_value)
- {
- 	*timer_value = arch_timer_read_counter();
-@@ -84,8 +78,7 @@ void __init time_init(void)
- 	if (!arch_timer_rate)
- 		panic("Unable to initialise architected timer.\n");
+ static struct delay_timer arch_delay_timer;
+ 
+ static void __init arch_timer_delay_timer_register(void)
+@@ -48,11 +41,8 @@ int __init arch_timer_arch_init(void)
+ 
+ 	arch_timer_delay_timer_register();
  
 -	/* Cache the sched_clock multiplier to save a divide in the hot path. */
 -	sched_clock_mult = NSEC_PER_SEC / arch_timer_rate;
+-	sched_clock_func = arch_timer_sched_clock;
+-	pr_info("sched_clock: ARM arch timer >56 bits at %ukHz, resolution %uns\n",
+-		arch_timer_rate / 1000, sched_clock_mult);
++	/* 56 bits minimum, so we assume worst case rollover */
 +	sched_clock_setup(arch_timer_read_counter, 56, arch_timer_rate);
  
- 	/* Calibrate the delay loop directly */
- 	lpj_fine = arch_timer_rate / HZ;
+ 	return 0;
+ }
+diff --git a/include/linux/sched_clock.h b/include/linux/sched_clock.h
+index 81baaef..04cee83 100644
+--- a/include/linux/sched_clock.h
++++ b/include/linux/sched_clock.h
+@@ -17,6 +17,4 @@ static inline void sched_clock_postinit(void) { }
+ extern void setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate);
+ extern void sched_clock_setup(u64 (*read)(void), int bits, unsigned long rate);
+ 
+-extern unsigned long long (*sched_clock_func)(void);
+-
+ #endif
+diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
+index 3478b6d..f69addf 100644
+--- a/kernel/time/sched_clock.c
++++ b/kernel/time/sched_clock.c
+@@ -173,20 +173,15 @@ void __init setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate)
+ 	sched_clock_setup(read_sched_clock_32_wrapper, bits, rate);
+ }
+ 
+-static unsigned long long notrace sched_clock_32(void)
+-{
+-	u64 cyc = read_sched_clock();
+-	return cyc_to_sched_clock(cyc, sched_clock_mask);
+-}
+-
+-unsigned long long __read_mostly (*sched_clock_func)(void) = sched_clock_32;
+-
+ unsigned long long notrace sched_clock(void)
+ {
++	u64 cyc;
++
+ 	if (cd.suspended)
+ 		return cd.epoch_ns;
+ 
+-	return sched_clock_func();
++	cyc = read_sched_clock();
++	return cyc_to_sched_clock(cyc, sched_clock_mask);
+ }
+ 
+ void __init sched_clock_postinit(void)
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
