@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab3FERWz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 13:22:55 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42075 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756215Ab3FERWx (ORCPT
+	id S1756884Ab3FER0b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 13:26:31 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:50150 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756511Ab3FER0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 13:22:53 -0400
-Message-ID: <51AF73E9.90506@wwwdotorg.org>
-Date: Wed, 05 Jun 2013 11:22:49 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 5 Jun 2013 13:26:30 -0400
+Date: Wed, 5 Jun 2013 19:25:47 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Will Deacon <will.deacon@arm.com>
+cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
+        "djbw@fb.com" <djbw@fb.com>
+Subject: Re: [PATCH] dmatest: do not allow to interrupt ongoing tests
+In-Reply-To: <20130605171001.GC26663@mudshark.cambridge.arm.com>
+Message-ID: <Pine.LNX.4.64.1306051924190.19739@axis700.grange>
+References: <1369308593-3723-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <Pine.LNX.4.64.1305242353210.7187@axis700.grange> <1369638667.29283.197.camel@smile>
+ <20130605171001.GC26663@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Hebbar Gururaja <gururaja.hebbar@ti.com>,
-        Mark Brown <broonie@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: Re: [PATCH 1/3] drivers: pinctrl sleep and idle states in the core
-References: <1370439873-30053-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1370439873-30053-1-git-send-email-linus.walleij@stericsson.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:IoE/wudUYx27uabOSSorc6ejkYUwpR08dHHSIQTrIn0
+ Ei0mah9sLqGmSOxVwAdC4vrKdJJbb4hWTVydMxx5UCQwnjLJzR
+ sOnzzMXTCFHOzdevU1FlLJfGGLJpM//hUaUlvwKcdJ02I0NBwb
+ 8dApkvuHQJCbVRORAjQtfL0Zfvqap//YBUKaDDNRhk/XN3kpJD
+ lK3oTbGYgirmOEmykpbvUiOmsFG57qkEvZAZRlTlcm0lWFr6mL
+ 4zbnX1zy2MseXnnV0z65GlOzgeiGqEURMu7ZHUfO/toUZ2l1kU
+ J2+Ui48HSX7ksJiSiZhNCRIFq4rNkv0/d8s/SCNEMH5hd8rdk3
+ hF3a1r5LEjFJ9WceRkfrTb+gov/FUZoJvK3cd4U7wEGdjj4Qff
+ tPQHenKDMbYUQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2013 07:44 AM, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
+On Wed, 5 Jun 2013, Will Deacon wrote:
+
+> On Mon, May 27, 2013 at 08:11:07AM +0100, Andy Shevchenko wrote:
+> > On Fri, 2013-05-24 at 23:55 +0200, Guennadi Liakhovetski wrote: 
+> > > On Thu, 23 May 2013, Andy Shevchenko wrote:
+> > > 
+> > > > When user interrupts ongoing transfers the dmatest may end up with console
+> > > > lockup, oops, or data mismatch. This patch prevents user to abort any ongoing
+> > > > test.
+> > > 
+> > > Personally I would be against such a change. What about interrupting the 
+> > > test with rmmod?
+> > >  Is it still possible after this your patch or not? If not 
+> > > - this doesn't seem like a good idea to me. Why don't we just fix those 
+> > > bugs, that you're describing?
+> > 
+> > The behaviour of the module is returned to the same page by this patch
+> > as it was before (w/o debugfs).
+> > 
+> > The user can interrupt tests by rmmod, but it will take time up to
+> > timeout.
+> > 
+> > I appreciate if you can do a deeper analysis of what happened in
+> > case Will reported.
 > 
-> If a device have sleep and idle states in addition to the
-> default state, look up these in the core and stash them in
-> the pinctrl state container.
-> 
-> Add accessor functions for pinctrl consumers to put the pins
-> into "default", "sleep" and "idle" states passing nothing but
-> the struct device * affected.
-> 
-> Solution suggested by Kevin Hilman, Mark Brown and Dmitry
-> Torokhov in response to a patch series from Hebbar
-> Gururaja.
+> Did this query hold up the application of this patch? I'd really like to see
+> *something* in 3.10, otherwise dmatest will be broken.
 
-> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+Not from me, no. I just expressed a doubt, the author thinks there is no 
+problem, and I have no capacity atm to try to verify it, so, my query 
+shouldn't be considered a nak.
 
-> +int pinctrl_pm_select_default_state(struct device *dev)
-
-> +int pinctrl_pm_select_sleep_state(struct device *dev)
-
-> +int pinctrl_pm_select_idle_state(struct device *dev)
-
-The implementation of those 3 functions is basically identical. I'd be
-inclined to move it to a helper function, and just pass (dev,
-pins->xxx_state) to it.
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
