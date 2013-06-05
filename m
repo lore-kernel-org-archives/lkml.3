@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932668Ab3FEVSP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:18:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36914 "EHLO
+	id S932700Ab3FEVSe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:18:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36909 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932572Ab3FEVNE (ORCPT
+	with ESMTP id S932568Ab3FEVNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Jun 2013 17:13:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        Anthony Doggett <Anthony2486@interfaces.org.uk>,
+        Vyacheslav Dubeyko <slava@dubeyko.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 24/44] mm: mmu_notifier: re-fix freed page still mapped in secondary MMU
-Date: Wed,  5 Jun 2013 14:12:22 -0700
-Message-Id: <20130605211224.406437292@linuxfoundation.org>
+Subject: [ 23/44] nilfs2: fix issue of nilfs_set_page_dirty() for page at EOF boundary
+Date: Wed,  5 Jun 2013 14:12:21 -0700
+Message-Id: <20130605211224.281166536@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605211221.858177087@linuxfoundation.org>
 References: <20130605211221.858177087@linuxfoundation.org>
@@ -28,185 +30,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 
-commit d34883d4e35c0a994e91dd847a82b4c9e0c31d83 upstream.
+commit 136e8770cd5d1fe38b3c613100dd6dc4db6d4fa6 upstream.
 
-Commit 751efd8610d3 ("mmu_notifier_unregister NULL Pointer deref and
-multiple ->release()") breaks the fix 3ad3d901bbcf ("mm: mmu_notifier:
-fix freed page still mapped in secondary MMU").
+nilfs2: fix issue of nilfs_set_page_dirty for page at EOF boundary
 
-Since hlist_for_each_entry_rcu() is changed now, we can not revert that
-patch directly, so this patch reverts the commit and simply fix the bug
-spotted by that patch
+DESCRIPTION:
+ There are use-cases when NILFS2 file system (formatted with block size
+lesser than 4 KB) can be remounted in RO mode because of encountering of
+"broken bmap" issue.
 
-This bug spotted by commit 751efd8610d3 is:
+The issue was reported by Anthony Doggett <Anthony2486@interfaces.org.uk>:
+ "The machine I've been trialling nilfs on is running Debian Testing,
+  Linux version 3.2.0-4-686-pae (debian-kernel@lists.debian.org) (gcc
+  version 4.6.3 (Debian 4.6.3-14) ) #1 SMP Debian 3.2.35-2), but I've
+  also reproduced it (identically) with Debian Unstable amd64 and Debian
+  Experimental (using the 3.8-trunk kernel).  The problematic partitions
+  were formatted with "mkfs.nilfs2 -b 1024 -B 8192"."
 
-    There is a race condition between mmu_notifier_unregister() and
-    __mmu_notifier_release().
+SYMPTOMS:
+(1) System log contains error messages likewise:
 
-    Assume two tasks, one calling mmu_notifier_unregister() as a result
-    of a filp_close() ->flush() callout (task A), and the other calling
-    mmu_notifier_release() from an mmput() (task B).
+    [63102.496756] nilfs_direct_assign: invalid pointer: 0
+    [63102.496786] NILFS error (device dm-17): nilfs_bmap_assign: broken bmap (inode number=28)
+    [63102.496798]
+    [63102.524403] Remounting filesystem read-only
 
-                        A                               B
-    t1                                            srcu_read_lock()
-    t2            if (!hlist_unhashed())
-    t3                                            srcu_read_unlock()
-    t4            srcu_read_lock()
-    t5                                            hlist_del_init_rcu()
-    t6                                            synchronize_srcu()
-    t7            srcu_read_unlock()
-    t8            hlist_del_rcu()  <--- NULL pointer deref.
+(2) The NILFS2 file system is remounted in RO mode.
 
-This can be fixed by using hlist_del_init_rcu instead of hlist_del_rcu.
+REPRODUSING PATH:
+(1) Create volume group with name "unencrypted" by means of vgcreate utility.
+(2) Run script (prepared by Anthony Doggett <Anthony2486@interfaces.org.uk>):
 
-The another issue spotted in the commit is "multiple ->release()
-callouts", we needn't care it too much because it is really rare (e.g,
-can not happen on kvm since mmu-notify is unregistered after
-exit_mmap()) and the later call of multiple ->release should be fast
-since all the pages have already been released by the first call.
-Anyway, this issue should be fixed in a separate patch.
+----------------[BEGIN SCRIPT]--------------------
 
--stable suggestions: Any version that has commit 751efd8610d3 need to be
-backported.  I find the oldest version has this commit is 3.0-stable.
+VG=unencrypted
+lvcreate --size 2G --name ntest $VG
+mkfs.nilfs2 -b 1024 -B 8192 /dev/mapper/$VG-ntest
+mkdir /var/tmp/n
+mkdir /var/tmp/n/ntest
+mount /dev/mapper/$VG-ntest /var/tmp/n/ntest
+mkdir /var/tmp/n/ntest/thedir
+cd /var/tmp/n/ntest/thedir
+sleep 2
+date
+darcs init
+sleep 2
+dmesg|tail -n 5
+date
+darcs whatsnew || true
+date
+sleep 2
+dmesg|tail -n 5
+----------------[END SCRIPT]--------------------
 
-[akpm@linux-foundation.org: tweak comments]
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Tested-by: Robin Holt <holt@sgi.com>
+REPRODUCIBILITY: 100%
+
+INVESTIGATION:
+As it was discovered, the issue takes place during segment
+construction after executing such sequence of user-space operations:
+
+  open("_darcs/index", O_RDWR|O_CREAT|O_NOCTTY, 0666) = 7
+  fstat(7, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
+  ftruncate(7, 60)
+
+The error message "NILFS error (device dm-17): nilfs_bmap_assign: broken
+bmap (inode number=28)" takes place because of trying to get block
+number for third block of the file with logical offset #3072 bytes.  As
+it is possible to see from above output, the file has 60 bytes of the
+whole size.  So, it is enough one block (1 KB in size) allocation for
+the whole file.  Trying to operate with several blocks instead of one
+takes place because of discovering several dirty buffers for this file
+in nilfs_segctor_scan_file() method.
+
+The root cause of this issue is in nilfs_set_page_dirty function which
+is called just before writing to an mmapped page.
+
+When nilfs_page_mkwrite function handles a page at EOF boundary, it
+fills hole blocks only inside EOF through __block_page_mkwrite().
+
+The __block_page_mkwrite() function calls set_page_dirty() after filling
+hole blocks, thus nilfs_set_page_dirty function (=
+a_ops->set_page_dirty) is called.  However, the current implementation
+of nilfs_set_page_dirty() wrongly marks all buffers dirty even for page
+at EOF boundary.
+
+As a result, buffers outside EOF are inconsistently marked dirty and
+queued for write even though they are not mapped with nilfs_get_block
+function.
+
+FIX:
+This modifies nilfs_set_page_dirty() not to mark hole blocks dirty.
+
+Thanks to Vyacheslav Dubeyko for his effort on analysis and proposals
+for this issue.
+
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Reported-by: Anthony Doggett <Anthony2486@interfaces.org.uk>
+Reported-by: Vyacheslav Dubeyko <slava@dubeyko.com>
+Cc: Vyacheslav Dubeyko <slava@dubeyko.com>
+Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mmu_notifier.c |   80 +++++++++++++++++++++++++++---------------------------
- 1 file changed, 40 insertions(+), 40 deletions(-)
+ fs/nilfs2/inode.c |   27 +++++++++++++++++++++++----
+ 1 file changed, 23 insertions(+), 4 deletions(-)
 
---- a/mm/mmu_notifier.c
-+++ b/mm/mmu_notifier.c
-@@ -37,51 +37,48 @@ static struct srcu_struct srcu;
- void __mmu_notifier_release(struct mm_struct *mm)
- {
- 	struct mmu_notifier *mn;
-+	struct hlist_node *node;
- 	int id;
+--- a/fs/nilfs2/inode.c
++++ b/fs/nilfs2/inode.c
+@@ -195,13 +195,32 @@ static int nilfs_writepage(struct page *
  
- 	/*
--	 * srcu_read_lock() here will block synchronize_srcu() in
--	 * mmu_notifier_unregister() until all registered
--	 * ->release() callouts this function makes have
--	 * returned.
-+	 * SRCU here will block mmu_notifier_unregister until
-+	 * ->release returns.
- 	 */
- 	id = srcu_read_lock(&srcu);
-+	hlist_for_each_entry_rcu(mn, node, &mm->mmu_notifier_mm->list, hlist)
+ static int nilfs_set_page_dirty(struct page *page)
+ {
+-	int ret = __set_page_dirty_buffers(page);
++	int ret = __set_page_dirty_nobuffers(page);
+ 
+-	if (ret) {
++	if (page_has_buffers(page)) {
+ 		struct inode *inode = page->mapping->host;
+-		unsigned nr_dirty = 1 << (PAGE_SHIFT - inode->i_blkbits);
++		unsigned nr_dirty = 0;
++		struct buffer_head *bh, *head;
+ 
+-		nilfs_set_file_dirty(inode, nr_dirty);
 +		/*
-+		 * If ->release runs before mmu_notifier_unregister it must be
-+		 * handled, as it's the only way for the driver to flush all
-+		 * existing sptes and stop the driver from establishing any more
-+		 * sptes before all the pages in the mm are freed.
++		 * This page is locked by callers, and no other thread
++		 * concurrently marks its buffers dirty since they are
++		 * only dirtied through routines in fs/buffer.c in
++		 * which call sites of mark_buffer_dirty are protected
++		 * by page lock.
 +		 */
-+		if (mn->ops->release)
-+			mn->ops->release(mn, mm);
-+	srcu_read_unlock(&srcu, id);
++		bh = head = page_buffers(page);
++		do {
++			/* Do not mark hole blocks dirty */
++			if (buffer_dirty(bh) || !buffer_mapped(bh))
++				continue;
 +
- 	spin_lock(&mm->mmu_notifier_mm->lock);
- 	while (unlikely(!hlist_empty(&mm->mmu_notifier_mm->list))) {
- 		mn = hlist_entry(mm->mmu_notifier_mm->list.first,
- 				 struct mmu_notifier,
- 				 hlist);
--
- 		/*
--		 * Unlink.  This will prevent mmu_notifier_unregister()
--		 * from also making the ->release() callout.
-+		 * We arrived before mmu_notifier_unregister so
-+		 * mmu_notifier_unregister will do nothing other than to wait
-+		 * for ->release to finish and for mmu_notifier_unregister to
-+		 * return.
- 		 */
- 		hlist_del_init_rcu(&mn->hlist);
--		spin_unlock(&mm->mmu_notifier_mm->lock);
--
--		/*
--		 * Clear sptes. (see 'release' description in mmu_notifier.h)
--		 */
--		if (mn->ops->release)
--			mn->ops->release(mn, mm);
--
--		spin_lock(&mm->mmu_notifier_mm->lock);
++			set_buffer_dirty(bh);
++			nr_dirty++;
++		} while (bh = bh->b_this_page, bh != head);
++
++		if (nr_dirty)
++			nilfs_set_file_dirty(inode, nr_dirty);
  	}
- 	spin_unlock(&mm->mmu_notifier_mm->lock);
- 
- 	/*
--	 * All callouts to ->release() which we have done are complete.
--	 * Allow synchronize_srcu() in mmu_notifier_unregister() to complete
--	 */
--	srcu_read_unlock(&srcu, id);
--
--	/*
--	 * mmu_notifier_unregister() may have unlinked a notifier and may
--	 * still be calling out to it.	Additionally, other notifiers
--	 * may have been active via vmtruncate() et. al. Block here
--	 * to ensure that all notifier callouts for this mm have been
--	 * completed and the sptes are really cleaned up before returning
--	 * to exit_mmap().
-+	 * synchronize_srcu here prevents mmu_notifier_release from returning to
-+	 * exit_mmap (which would proceed with freeing all pages in the mm)
-+	 * until the ->release method returns, if it was invoked by
-+	 * mmu_notifier_unregister.
-+	 *
-+	 * The mmu_notifier_mm can't go away from under us because one mm_count
-+	 * is held by exit_mmap.
- 	 */
- 	synchronize_srcu(&srcu);
+ 	return ret;
  }
-@@ -302,31 +299,34 @@ void mmu_notifier_unregister(struct mmu_
- {
- 	BUG_ON(atomic_read(&mm->mm_count) <= 0);
- 
--	spin_lock(&mm->mmu_notifier_mm->lock);
- 	if (!hlist_unhashed(&mn->hlist)) {
-+		/*
-+		 * SRCU here will force exit_mmap to wait for ->release to
-+		 * finish before freeing the pages.
-+		 */
- 		int id;
- 
-+		id = srcu_read_lock(&srcu);
- 		/*
--		 * Ensure we synchronize up with __mmu_notifier_release().
-+		 * exit_mmap will block in mmu_notifier_release to guarantee
-+		 * that ->release is called before freeing the pages.
- 		 */
--		id = srcu_read_lock(&srcu);
--
--		hlist_del_rcu(&mn->hlist);
--		spin_unlock(&mm->mmu_notifier_mm->lock);
--
- 		if (mn->ops->release)
- 			mn->ops->release(mn, mm);
-+		srcu_read_unlock(&srcu, id);
- 
-+		spin_lock(&mm->mmu_notifier_mm->lock);
- 		/*
--		 * Allow __mmu_notifier_release() to complete.
-+		 * Can not use list_del_rcu() since __mmu_notifier_release
-+		 * can delete it before we hold the lock.
- 		 */
--		srcu_read_unlock(&srcu, id);
--	} else
-+		hlist_del_init_rcu(&mn->hlist);
- 		spin_unlock(&mm->mmu_notifier_mm->lock);
-+	}
- 
- 	/*
--	 * Wait for any running method to finish, including ->release() if it
--	 * was run by __mmu_notifier_release() instead of us.
-+	 * Wait for any running method to finish, of course including
-+	 * ->release if it was run by mmu_notifier_relase instead of us.
- 	 */
- 	synchronize_srcu(&srcu);
- 
 
 
