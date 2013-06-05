@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933365Ab3FEV6t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:58:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37801 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932487Ab3FEVfb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932788Ab3FEVfb (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 5 Jun 2013 17:35:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37731 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932487Ab3FEVfW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 17:35:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 051/127] mm: mmu_notifier: re-fix freed page still mapped in secondary MMU
-Date: Wed,  5 Jun 2013 14:33:38 -0700
-Message-Id: <20130605213223.797687857@linuxfoundation.org>
+        Michael Chan <mchan@broadcom.com>,
+        Nithin Nayak Sujir <nsujir@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 038/127] tg3: Fix data corruption on 5725 with TSO
+Date: Wed,  5 Jun 2013 14:33:25 -0700
+Message-Id: <20130605213222.278113919@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -28,181 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+From: Michael Chan <mchan@broadcom.com>
 
-commit d34883d4e35c0a994e91dd847a82b4c9e0c31d83 upstream.
+commit 0f0d15100a8ac875bdd408324c473e16d73d3557 upstream.
 
-Commit 751efd8610d3 ("mmu_notifier_unregister NULL Pointer deref and
-multiple ->release()") breaks the fix 3ad3d901bbcf ("mm: mmu_notifier:
-fix freed page still mapped in secondary MMU").
+The 5725 family of devices (asic rev 5762), corrupts TSO packets where
+the buffer is within MSS bytes of a 4G boundary (4G, 8G etc.). Detect
+this condition and trigger the workaround path.
 
-Since hlist_for_each_entry_rcu() is changed now, we can not revert that
-patch directly, so this patch reverts the commit and simply fix the bug
-spotted by that patch
-
-This bug spotted by commit 751efd8610d3 is:
-
-    There is a race condition between mmu_notifier_unregister() and
-    __mmu_notifier_release().
-
-    Assume two tasks, one calling mmu_notifier_unregister() as a result
-    of a filp_close() ->flush() callout (task A), and the other calling
-    mmu_notifier_release() from an mmput() (task B).
-
-                        A                               B
-    t1                                            srcu_read_lock()
-    t2            if (!hlist_unhashed())
-    t3                                            srcu_read_unlock()
-    t4            srcu_read_lock()
-    t5                                            hlist_del_init_rcu()
-    t6                                            synchronize_srcu()
-    t7            srcu_read_unlock()
-    t8            hlist_del_rcu()  <--- NULL pointer deref.
-
-This can be fixed by using hlist_del_init_rcu instead of hlist_del_rcu.
-
-The another issue spotted in the commit is "multiple ->release()
-callouts", we needn't care it too much because it is really rare (e.g,
-can not happen on kvm since mmu-notify is unregistered after
-exit_mmap()) and the later call of multiple ->release should be fast
-since all the pages have already been released by the first call.
-Anyway, this issue should be fixed in a separate patch.
-
--stable suggestions: Any version that has commit 751efd8610d3 need to be
-backported.  I find the oldest version has this commit is 3.0-stable.
-
-[akpm@linux-foundation.org: tweak comments]
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Tested-by: Robin Holt <holt@sgi.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mmu_notifier.c |   79 ++++++++++++++++++++++++++----------------------------
- 1 file changed, 39 insertions(+), 40 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
---- a/mm/mmu_notifier.c
-+++ b/mm/mmu_notifier.c
-@@ -40,48 +40,44 @@ void __mmu_notifier_release(struct mm_st
- 	int id;
- 
- 	/*
--	 * srcu_read_lock() here will block synchronize_srcu() in
--	 * mmu_notifier_unregister() until all registered
--	 * ->release() callouts this function makes have
--	 * returned.
-+	 * SRCU here will block mmu_notifier_unregister until
-+	 * ->release returns.
- 	 */
- 	id = srcu_read_lock(&srcu);
-+	hlist_for_each_entry_rcu(mn, &mm->mmu_notifier_mm->list, hlist)
-+		/*
-+		 * If ->release runs before mmu_notifier_unregister it must be
-+		 * handled, as it's the only way for the driver to flush all
-+		 * existing sptes and stop the driver from establishing any more
-+		 * sptes before all the pages in the mm are freed.
-+		 */
-+		if (mn->ops->release)
-+			mn->ops->release(mn, mm);
-+	srcu_read_unlock(&srcu, id);
-+
- 	spin_lock(&mm->mmu_notifier_mm->lock);
- 	while (unlikely(!hlist_empty(&mm->mmu_notifier_mm->list))) {
- 		mn = hlist_entry(mm->mmu_notifier_mm->list.first,
- 				 struct mmu_notifier,
- 				 hlist);
--
- 		/*
--		 * Unlink.  This will prevent mmu_notifier_unregister()
--		 * from also making the ->release() callout.
-+		 * We arrived before mmu_notifier_unregister so
-+		 * mmu_notifier_unregister will do nothing other than to wait
-+		 * for ->release to finish and for mmu_notifier_unregister to
-+		 * return.
- 		 */
- 		hlist_del_init_rcu(&mn->hlist);
--		spin_unlock(&mm->mmu_notifier_mm->lock);
--
--		/*
--		 * Clear sptes. (see 'release' description in mmu_notifier.h)
--		 */
--		if (mn->ops->release)
--			mn->ops->release(mn, mm);
--
--		spin_lock(&mm->mmu_notifier_mm->lock);
- 	}
- 	spin_unlock(&mm->mmu_notifier_mm->lock);
- 
- 	/*
--	 * All callouts to ->release() which we have done are complete.
--	 * Allow synchronize_srcu() in mmu_notifier_unregister() to complete
--	 */
--	srcu_read_unlock(&srcu, id);
--
--	/*
--	 * mmu_notifier_unregister() may have unlinked a notifier and may
--	 * still be calling out to it.	Additionally, other notifiers
--	 * may have been active via vmtruncate() et. al. Block here
--	 * to ensure that all notifier callouts for this mm have been
--	 * completed and the sptes are really cleaned up before returning
--	 * to exit_mmap().
-+	 * synchronize_srcu here prevents mmu_notifier_release from returning to
-+	 * exit_mmap (which would proceed with freeing all pages in the mm)
-+	 * until the ->release method returns, if it was invoked by
-+	 * mmu_notifier_unregister.
-+	 *
-+	 * The mmu_notifier_mm can't go away from under us because one mm_count
-+	 * is held by exit_mmap.
- 	 */
- 	synchronize_srcu(&srcu);
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -7078,6 +7078,20 @@ static inline int tg3_4g_overflow_test(d
+ 	return (base > 0xffffdcc0) && (base + len + 8 < base);
  }
-@@ -292,31 +288,34 @@ void mmu_notifier_unregister(struct mmu_
- {
- 	BUG_ON(atomic_read(&mm->mm_count) <= 0);
  
--	spin_lock(&mm->mmu_notifier_mm->lock);
- 	if (!hlist_unhashed(&mn->hlist)) {
-+		/*
-+		 * SRCU here will force exit_mmap to wait for ->release to
-+		 * finish before freeing the pages.
-+		 */
- 		int id;
- 
-+		id = srcu_read_lock(&srcu);
- 		/*
--		 * Ensure we synchronize up with __mmu_notifier_release().
-+		 * exit_mmap will block in mmu_notifier_release to guarantee
-+		 * that ->release is called before freeing the pages.
- 		 */
--		id = srcu_read_lock(&srcu);
--
--		hlist_del_rcu(&mn->hlist);
--		spin_unlock(&mm->mmu_notifier_mm->lock);
--
- 		if (mn->ops->release)
- 			mn->ops->release(mn, mm);
-+		srcu_read_unlock(&srcu, id);
- 
-+		spin_lock(&mm->mmu_notifier_mm->lock);
- 		/*
--		 * Allow __mmu_notifier_release() to complete.
-+		 * Can not use list_del_rcu() since __mmu_notifier_release
-+		 * can delete it before we hold the lock.
- 		 */
--		srcu_read_unlock(&srcu, id);
--	} else
-+		hlist_del_init_rcu(&mn->hlist);
- 		spin_unlock(&mm->mmu_notifier_mm->lock);
++/* Test for TSO DMA buffers that cross into regions which are within MSS bytes
++ * of any 4GB boundaries: 4G, 8G, etc
++ */
++static inline int tg3_4g_tso_overflow_test(struct tg3 *tp, dma_addr_t mapping,
++					   u32 len, u32 mss)
++{
++	if (tg3_asic_rev(tp) == ASIC_REV_5762 && mss) {
++		u32 base = (u32) mapping & 0xffffffff;
++
++		return ((base + len + (mss & 0x3fff)) < base);
 +	}
++	return 0;
++}
++
+ /* Test for DMA addresses > 40-bit */
+ static inline int tg3_40bit_overflow_test(struct tg3 *tp, dma_addr_t mapping,
+ 					  int len)
+@@ -7114,6 +7128,9 @@ static bool tg3_tx_frag_set(struct tg3_n
+ 	if (tg3_4g_overflow_test(map, len))
+ 		hwbug = true;
  
- 	/*
--	 * Wait for any running method to finish, including ->release() if it
--	 * was run by __mmu_notifier_release() instead of us.
-+	 * Wait for any running method to finish, of course including
-+	 * ->release if it was run by mmu_notifier_relase instead of us.
- 	 */
- 	synchronize_srcu(&srcu);
++	if (tg3_4g_tso_overflow_test(tp, map, len, mss))
++		hwbug = true;
++
+ 	if (tg3_40bit_overflow_test(tp, map, len))
+ 		hwbug = true;
  
 
 
