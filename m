@@ -1,103 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194Ab3FELxk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 07:53:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2075 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753949Ab3FELxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 07:53:38 -0400
-Date: Wed, 5 Jun 2013 14:54:08 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Tommi Rantala <tt.rantala@gmail.com>
-Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        trinity@vger.kernel.org, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: vhost && kernel BUG at /build/linux/mm/slub.c:3352!
-Message-ID: <20130605115408.GA2643@redhat.com>
-References: <CA+ydwtrtpA3jXojG3tKt_-ueJOWDSOL1trM9h6F5qLvdoonUOw@mail.gmail.com>
+	id S1753880Ab3FELzx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 07:55:53 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49868 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752441Ab3FELzv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 07:55:51 -0400
+Date: Wed, 5 Jun 2013 13:55:38 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@ghostprotocols.net,
+        viro@zeniv.linux.org.uk, vincent.weaver@maine.edu, tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/urgent] perf: Fix perf mmap bugs
+Message-ID: <20130605115538.GI27176@twins.programming.kicks-ass.net>
+References: <20130528085548.GA12193@twins.programming.kicks-ass.net>
+ <tip-26cb63ad11e04047a64309362674bcbbd6a6f246@git.kernel.org>
+ <20130604084421.GI8923@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+ydwtrtpA3jXojG3tKt_-ueJOWDSOL1trM9h6F5qLvdoonUOw@mail.gmail.com>
+In-Reply-To: <20130604084421.GI8923@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 04, 2013 at 09:50:59PM +0300, Tommi Rantala wrote:
-> Hello,
+On Tue, Jun 04, 2013 at 10:44:21AM +0200, Peter Zijlstra wrote:
 > 
-> Hit this right after killing trinity with Ctrl-C. Was fuzzing
-> v3.10-rc4-0-gd683b96 in a qemu virtual machine as the root user.
+> Ingo asked for a delta against the patch already included in -tip.
 > 
-> Tommi
+> Vince; perf_fuzzer crashed after about 5670000 iterations -- not sure
+> you're aware it will crash at times. Anyway at this time accounting was
+> still good.
+> 
+> ---
+> Subject: perf: Fix mmap() accounting hole
+> 
+> Vince's fuzzer once again found holes. This time it spotted a leak in
+> the locked page accounting.
+> 
+> When an event had redirected output and its close() was the last
+> reference to the buffer we didn't have a vm context to undo accounting.
+> 
+> Change the code to destroy the buffer on the last munmap() and detach
+> all redirected events at that time. This provides us the right context
+> to undo the vm accounting.
+> 
+> Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 
-Thanks a lot for the report. If found some bugs when looking
-at this: I think they were introduced by
-2839400f8fe28ce216eeeba3fb97bdf90977f7ad
-though I don't exactly see how ctrl-c can trigger this.
-I'll work on patches - is this reproducible at all?
-
-> [29175] Random reseed: 3970521611
-> [29175] Random reseed: 202886419
-> [29175] Random reseed: 2930978521
-> [179904.099501] binder: 29175:2539 ioctl 4010630e fff returned -22
-> [29175] Random reseed: 2776471322
-> [29175] Random reseed: 3086119361
-> child 2606 exiting
-> [29175] Bailing main loop. Exit reason: ctrl-c
-> [179906.393060] ------------[ cut here ]------------
-> [179906.396341] kernel BUG at /build/linux/mm/slub.c:3352!
-> [179906.399693] invalid opcode: 0000 [#1] SMP DEBUG_PAGEALLOC
-> [179906.403272] CPU: 0 PID: 29175 Comm: trinity-main Not tainted 3.10.0-rc4 #1
-> [179906.407692] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [179906.411475] task: ffff8800b69e47c0 ti: ffff880092f2e000 task.ti:
-> ffff880092f2e000
-> [179906.416305] RIP: 0010:[<ffffffff81225255>]  [<ffffffff81225255>]
-> kfree+0x155/0x2c0
-> [179906.421462] RSP: 0000:ffff880092f2fdb0  EFLAGS: 00010246
-> [179906.424983] RAX: 0100000000000000 RBX: ffff88009e588000 RCX:
-> 0000000000000000
-> [179906.429746] RDX: ffff8800b69e47c0 RSI: 00000000000a0004 RDI:
-> ffff88009e588000
-> [179906.434499] RBP: ffff880092f2fdd8 R08: 0000000000000001 R09:
-> 0000000000000000
-> [179906.439226] R10: 0000000000000000 R11: 0000000000000001 R12:
-> 0000000000000000
-> [179906.443835] R13: ffffea0002796200 R14: ffff8800b9a960f8 R15:
-> ffff8800ba06f6a0
-> [179906.448470] FS:  00007f04cd25c700(0000) GS:ffff8800bf600000(0000)
-> knlGS:0000000000000000
-> [179906.453857] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [179906.456956] CR2: 00007f98e29d8f50 CR3: 000000009294a000 CR4:
-> 00000000000006f0
-> [179906.460558] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-> 0000000000000000
-> [179906.464059] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-> 0000000000000400
-> [179906.467617] Stack:
-> [179906.468704]  ffff88001a7c0000 0000000000000000 0000000000000000
-> ffff8800b9a960f8
-> [179906.472638]  ffff8800ba06f6a0 ffff880092f2fdf0 ffffffff81c1c6df
-> ffff88001a7c0000
-> [179906.476583]  ffff880092f2fe18 ffffffff81c1c771 ffff8800b69718c0
-> 0000000000000008
-> [179906.480377] Call Trace:
-> [179906.481636]  [<ffffffff81c1c6df>] vhost_net_vq_reset+0x7f/0xb0
-> [179906.484611]  [<ffffffff81c1c771>] vhost_net_release+0x61/0xb0
-> [179906.487481]  [<ffffffff8123237a>] __fput+0x12a/0x230
-> [179906.489968]  [<ffffffff81232489>] ____fput+0x9/0x10
-> [179906.492422]  [<ffffffff8113a79e>] task_work_run+0xae/0xf0
-> [179906.495169]  [<ffffffff811172bc>] do_exit+0x44c/0xb40
-> [179906.497789]  [<ffffffff822a24d8>] ? retint_swapgs+0x13/0x1b
-> [179906.500652]  [<ffffffff81117a74>] do_group_exit+0x84/0xd0
-> [179906.503348]  [<ffffffff81117ad2>] SyS_exit_group+0x12/0x20
-> [179906.506146]  [<ffffffff822a2e29>] system_call_fastpath+0x16/0x1b
-> [179906.509147] Code: 49 c1 ed 0c 49 c1 e5 06 49 01 c5 49 8b 45 00 f6
-> c4 80 74 0a 4d 8b 6d 30 66 0f 1f 44 00 00 49 8b 45 00 a8 80 75 28 f6
-> c4 c0 75 02 <0f> 0b 49 8b 45 00 31 f6 f6 c4 40 74 04 41 8b 75 68 4c 89
-> ef e8
-> [179906.522213] RIP  [<ffffffff81225255>] kfree+0x155/0x2c0
-> [179906.524937]  RSP <ffff880092f2fdb0>
-> [179906.575627] ---[ end trace 3d4ce10faaa29990 ]---
-> [179906.577103] Fixing recursive fault but reboot is needed!
-> [29174] Watchdog exiting
+Vince, can you confirm?
