@@ -1,93 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996Ab3FEI5V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 04:57:21 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:50030 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752369Ab3FEI5R (ORCPT
+	id S1753014Ab3FEI64 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 04:58:56 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:33941 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752194Ab3FEI6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 04:57:17 -0400
-Message-ID: <51AEFD65.6030306@gmail.com>
-Date: Wed, 05 Jun 2013 10:57:09 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 5 Jun 2013 04:58:53 -0400
+Date: Wed, 5 Jun 2013 01:58:49 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Michel Lespinasse <walken@google.com>,
+        Greg Thelen <gthelen@google.com>, Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [patch -v4 4/8] memcg: enhance memcg iterator to support
+ predicates
+Message-ID: <20130605085849.GB7990@mtj.dyndns.org>
+References: <1370254735-13012-1-git-send-email-mhocko@suse.cz>
+ <1370254735-13012-5-git-send-email-mhocko@suse.cz>
+ <20130604010737.GF29989@mtj.dyndns.org>
+ <20130604134523.GH31242@dhcp22.suse.cz>
+ <20130604193619.GA14916@htj.dyndns.org>
+ <20130604204807.GA13231@dhcp22.suse.cz>
+ <20130604205426.GI14916@htj.dyndns.org>
+ <20130605073728.GC15997@dhcp22.suse.cz>
+ <20130605080545.GF7303@mtj.dyndns.org>
+ <20130605085239.GF15997@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: Orion: Hoist bridge interrupt handling out of the
- timer
-References: <20121207225507.GB29262@obsidianresearch.com> <20121208112624.GD25315@lunn.ch> <20121209025748.GA10405@obsidianresearch.com> <20121209083046.GA25466@lunn.ch> <50C48CE8.9070400@gmail.com> <20130604172638.GB13745@obsidianresearch.com>
-In-Reply-To: <20130604172638.GB13745@obsidianresearch.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130605085239.GF15997@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/13 19:26, Jason Gunthorpe wrote:
-> On Sun, Dec 09, 2012 at 02:06:48PM +0100, Sebastian Hesselbarth wrote:
->> The main irq controller will be required for sure, but for the secondary
->> irq controller we had a discussion long ago. IIRC Gregory proposed to have
->> shared irqs handled by timer and watchdog, I was proposing chained irqs.
->
-> +1 on decoded IRQs for bridge. I've been running that configuration
-> now since this patch set was first posted.
->
-> There is too much HW variance, the timer, watchdog, etc drivers should
-> not have to poke into SOC specific registers just to get an interrupt.
->
-> The bridge decode can either be via a chained handler, or by incorporating
-> the bridge decode into the main kirkwood handler - the latter having
-> lower overhead for timer ticks.
+Hey, Michal.
 
-Jason,
+On Wed, Jun 05, 2013 at 10:52:39AM +0200, Michal Hocko wrote:
+> > One of the core jobs of being a maintainer is ensuring the code stays
+> > in readable and maintainable state.
+> 
+> As you might know I am playing the maintainer role for around year and a
+> half and there were many improvemtns merged since then (and some faults
+> as well of course).
+> There is a lot of space for improvements and I work at areas as time
+> permits focusing more at reviews for other people are willing to do.
 
-I have irqchip and clocksource drivers done for Orion, just need to
-find some time to rebase them.
+I see.  Yeah, maybe I was attributing too many things to you.  Sorry
+about that.
 
->> For mvebu archs, IIRC, we have wrt to timer-related irqs:
->> - Armada 370/XP with different irq handler and timer irq handling within
->>    timer registers.
->> - Orion SoCs with Bridge irq registers for timer related stuff (timer0/1)
->> - Kirkwood and Dove with watchdog timers (both with wdt irq in bridge irqs)
->> - RTC in bridge irqs, but Dove with RTC connected to PMU irqs
->
->> I think we should have patches for irqchip-orion first and then rethink
->> if we want a standalone timer-orion or merge it with timer-mvebu. Having
->> watchdog using irqs is kind of independent from this.
+> [...]
+> 
+> Please stop distracting from the main purpose of this discussion with
+> side tracks and personal things.
 
-I suggest not to merge clocksource for Orion and Armada 370/XP. They
-are different enough to justify separate drivers. IIRC Armada 370/XP
-acks timer interrupts by clearing timer register bits that are not
-implemented in Orion SoCs.
+I'm not really trying to distract you.  I suppose my points are.
 
-> I would think the logical progression is:
-> - irq-chip orion combined with work to keep the existing timer working
-> - Patch to add the bridge irq-chip
-> - Patches to support orion/kirkwood/dove/etc in the existing timer drivers
-> - Patch to update the DT to switch to the bridge and updated timer
-> - Patch to remove the old timer
+* Let's please pay more attention to each change which goes in.
 
-I'd rather have irqchip and clocksource mainlined and enable both
-drivers when they have surfaced. I try to sent patches by end of this week.
+* Let's prioritize cleanups over new features because, whatever the
+  history, memcg needs quite some cleanups.
 
-> When I last looked briefly, it seems like merging with timer-mvebu was
-> fairly straightforward..
->
->> Back in the days when Gregory, Thomas, and I were looking into merged timer
->> we agreed not to have an extra check on 25MHz support. If you put the
->> property in the node, it will try to set the timer to fixed 25MHz. If you
->> use the property on Orion timer, it will just break timer handling.
->
-> As for the mveth case we should have a compatible tag for each SOC,
-> the driver can ignore it, but it should be in the DT for future use..
+I really don't have personal vandetta against you.  I'm mostly just
+very frustrated about memcg.  Maybe you're too.
 
-We could have a single clocksource driver but as said above,
-clocksource is a tiny driver compared to others. Separate drivers will
-save us from checking SoC on every timer event or have a callback for 
-Armada 370/XP clearing timer irqs.
+Anyways, so you aren't gonna try the skipping thing?
 
-Sebastian
+Thanks.
+
+-- 
+tejun
