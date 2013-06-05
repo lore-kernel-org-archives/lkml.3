@@ -1,153 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab3FEOhR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 10:37:17 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54541 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756109Ab3FEOhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 10:37:13 -0400
-Message-ID: <51AF4C0D.3060203@ti.com>
-Date: Wed, 5 Jun 2013 17:32:45 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756227Ab3FEOjh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 10:39:37 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:63444 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756020Ab3FEOjf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 10:39:35 -0400
+Message-ID: <51AF4D9D.6070808@monstr.eu>
+Date: Wed, 05 Jun 2013 16:39:25 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@linaro.org>
-CC: <rtc-linux@googlegroups.com>, Andrew Morton <akpm@linux-foundation.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linaro-kernel@lists.linaro.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Tony Lindgren <tony@atomide.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rtc: rtc-twl: ensure IRQ is wakeup enabled
-References: <1370039827-25033-1-git-send-email-khilman@linaro.org> <51ADD031.2090808@ti.com> <877gi94vln.fsf@linaro.org>
-In-Reply-To: <877gi94vln.fsf@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Mark Brown <broonie@kernel.org>
+CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Peter Crosthwaite <pcrost@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        spi-devel-general@lists.sourceforge.net
+Subject: Re: [PATCH 2/3] spi: spi-xilinx: Clear dma_mask for xilinx spi controller
+References: <041d7ca272ef9499fab630294e3395110b3e31ac.1370354549.git.michal.simek@xilinx.com> <c5f546072e530c42e7ca15745ffa16729d72a5ac.1370354549.git.michal.simek@xilinx.com> <20130604173632.GM31367@sirena.org.uk>
+In-Reply-To: <20130604173632.GM31367@sirena.org.uk>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2FJUXOAVGOWQCQWOJOUDC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2013 08:46 PM, Kevin Hilman wrote:
-> Grygorii Strashko <grygorii.strashko@ti.com> writes:
->
->> Hi Kevin,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2FJUXOAVGOWQCQWOJOUDC
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On 06/04/2013 07:36 PM, Mark Brown wrote:
+> On Tue, Jun 04, 2013 at 04:02:35PM +0200, Michal Simek wrote:
+>> From: Michal Simek <monstr@monstr.eu>
 >>
->> On 06/01/2013 01:37 AM, Kevin Hilman wrote:
->>> Currently, the RTC IRQ is never wakeup-enabled so is not capable of
->>> bringing the system out of suspend.
->>>
->>> On OMAP platforms, we have gotten by without this because the TWL RTC
->>> is on an I2C-connected chip which is capable of waking up the OMAP via
->>> the IO ring when the OMAP is in low-power states.
->>>
->>> However, if the OMAP suspends without hitting the low-power states
->>> (and the IO ring is not enabled), RTC wakeups will not work because
->>> the IRQ is not wakeup enabled.
->> As I understand, IRQ wake up capabilities are set/clear simultaneously with
->> IRQ unmasking/masking on OMAP4+ in omap-wakeupgen.c.
->> So, it should work without this patch on OMAP4+.
-> It might work on OMAP4 for wakeup from suspend, but without properly
-> declaring the IRQ as a wakeup source, it will not abort suspend if the
-> RTC fires during the suspend process.  To abort suspend, the IRQ must be
-> declared as a wakeup IRQ.
->
->> But if TWL is used on non OMAP4+ platform then it is needed.  (OMAP3:
->> I haven't found the place where IRQ wakeup capabilities are
->> configured, would be appreciate if you can point me on)
-> IRQ wakeup is a genirq feature that trickles into the irq_chip (in OMAP3
-> case, it's the twl4030 irq_chip.)
->
-> On OMAP3, as mentioned in the changelog, RTC wake has been working fine
-> without this because we default to CORE retention, so wakeup happens via
-> the IO ring.  However, if you prevent retention during suspend, then
-> this IRQ will not wake the system.
->
-> Kevin
->
->>> To fix, ensure the RTC IRQ is wakeup enabled whenever the RTC alarm is
->>> set.
->>>
->>> Cc: Alessandro Zummo <a.zummo@towertech.it>
->>> Cc: Andrew Morton <akpm@linux-foundation.org>
->>> Cc: Tony Lindgren <tony@atomide.com>
->>> Signed-off-by: Kevin Hilman <khilman@linaro.org>
->>> ---
->>>    drivers/rtc/rtc-twl.c | 16 ++++++++++++++--
->>>    1 file changed, 14 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
->>> index 8751a52..bbda0fd 100644
->>> --- a/drivers/rtc/rtc-twl.c
->>> +++ b/drivers/rtc/rtc-twl.c
->>> @@ -213,12 +213,24 @@ static int mask_rtc_irq_bit(unsigned char bit)
->>>      static int twl_rtc_alarm_irq_enable(struct device *dev, unsigned
->>> enabled)
->>>    {
->>> +	struct platform_device *pdev = to_platform_device(dev);
->>> +	int irq = platform_get_irq(pdev, 0);
->>> +	static bool twl_rtc_wake_enabled;
->>>    	int ret;
->>>    -	if (enabled)
->>> +	if (enabled) {
->>>    		ret = set_rtc_irq_bit(BIT_RTC_INTERRUPTS_REG_IT_ALARM_M);
->>> -	else
->>> +		if (device_can_wakeup(dev) && !twl_rtc_wake_enabled) {
->>> +			enable_irq_wake(irq);
->>> +			twl_rtc_wake_enabled = true;
->>> +		}
->>> +	} else {
->>>    		ret = mask_rtc_irq_bit(BIT_RTC_INTERRUPTS_REG_IT_ALARM_M);
->>> +		if (twl_rtc_wake_enabled) {
->>> +			disable_irq_wake(irq);
->>> +			twl_rtc_wake_enabled = false;
->>> +		}
->>> +	}
->>>      	return ret;
->>>    }
->> twl-rtc has suspend/resume callbacks implemented, so I think it's the
->> better place
->> for this code and twl_rtc_wake_enabled can be dropped.
-> In theory, that might be the better place (and that's where I put these
-> at first), but unfortunately, it doesn't work that way because the
-> twl6030-irq core enables/diables the parent IRQ wake feature using PM
-> notifiers (which was done to avoid potential lock recursion[1].)
->
-> During suspend, the notifier runs at suspend_prepare() time, which is
-> well before the driver's ->suspend() method is called.  The result is
-> that the parents IRQ wakeup capabilies are never set.
-Sorry, forget about this patch - have no questions for this patch anymore.
+>> mmc_spi driver tests if dma is available
+>> through spi->master->dev.parent->dma_mask.
+>> Microblaze supports DMA but xilinx_spi IP doesn't.
+>> That's why clear dma_mask in the driver.
+>=20
+>> +	/* clear the dma_mask, to try to disable use of dma */
+>> +	master->dev.dma_mask =3D 0;
+>> +
+>=20
+> This looks like a bodge in the wrong place.  Either the device
+> registration is incorrect in that it advertises DMA when none is
+> available or the SPI driver ought to be offering the MMC driver a more
+> sensible way of advertising this limitation.  My first thought is the
+> former but I didn't check where dma_mask is getting set.
 
-Thanks.
+I have looked at history of this change and we have done it 3 years ago
+based on one custom configuration.
 
-Just FYI. It seems, The suspend will never be aborted on OMAP4 by SYSN_IRQ
-because of these two patches:
-782baa2 mfd: Disable twl6030 IRQ during suspend
-9c6079a genirq: Do not consider disabled wakeup irqs
+It is shame that I don't have hw to test this but there was
+something wrong in connection to mmc_spi.c.
+I will try to find out hw for this to test but probably
+won't be available. :-( And I will just revert this change in my tree.
 
--grygorii
->
-> Kevin
->
->
-> [1]
-> commit ab2b9260df67e29d5bd69d989f2f84f8c2ed4238
-> Author: Todd Poynor <toddpoynor@google.com>
-> Date:   Tue Oct 4 11:52:29 2011 +0200
->
->      mfd: Fix twl6030 lockdep recursion warning on setting wake IRQs
->      
->      LOCKDEP explicitly sets all irq_desc locks as a single lock-class,
->      causing "possible recursive locking detected" when the TWL RTC
->      driver calls through enable_irq_wake to twl6030_irq_set_wake,
->      which recursively calls irq_set_irq_wake.  Although the
->      irq_desc and lock are different, LOCKDEP treats these as
->      equivalent, presumably due to problems that can be incurred
->      when locking more than one irq_desc, so best to avoid this.
->      
->      Suspend/resume actions implemented as PM notifiers to avoid
->      touch the TWL core for this.
->      
->      Signed-off-by: Todd Poynor <toddpoynor@google.com>
->      Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->      Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Thanks,
+Michal
 
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+------enig2FJUXOAVGOWQCQWOJOUDC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlGvTaMACgkQykllyylKDCFMoQCggbK+i2sJoQYcGZ6tq5AThklh
+dxMAnAq2G6HAjx29MdksrH6Rlrx14uxF
+=FsxK
+-----END PGP SIGNATURE-----
+
+------enig2FJUXOAVGOWQCQWOJOUDC--
