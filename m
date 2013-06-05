@@ -1,142 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621Ab3FEQjf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 12:39:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21065 "EHLO mx1.redhat.com"
+	id S1756659Ab3FEQlG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 12:41:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65345 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755288Ab3FEQje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 12:39:34 -0400
-Message-ID: <1370450370.3516.21.camel@ul30vt.home>
-Subject: Re: [PATCH] iommu: Split iommu_unmaps
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: linux-kernel@vger.kernel.org, iommu <iommu@lists.linux-foundation.org>
-Date: Wed, 05 Jun 2013 10:39:30 -0600
-In-Reply-To: <20130524171401.14099.78694.stgit@bling.home>
-References: <20130524171401.14099.78694.stgit@bling.home>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755761Ab3FEQlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 12:41:04 -0400
+Date: Wed, 5 Jun 2013 18:37:02 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Imre Deak <imre.deak@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Jones <davej@redhat.com>,
+        David Howells <dhowells@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Lukas Czerner <lczerner@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] wait: fix false timeouts when using
+	wait_event_timeout()
+Message-ID: <20130605163702.GA26135@redhat.com>
+References: <20130604192818.GA31316@redhat.com> <1370381717.8432.14.camel@ideak-mobl> <1370382051.8432.16.camel@ideak-mobl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370382051.8432.16.camel@ideak-mobl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joerg,
+On 06/05, Imre Deak wrote:
+>
+> On Wed, 2013-06-05 at 00:35 +0300, Imre Deak wrote:
+> > On Tue, 2013-06-04 at 21:28 +0200, Oleg Nesterov wrote:
+> > >
+> > > Shouldn't we also change wait_event_timeout() ? Say,
+> > >
+> > > 	#define wait_event_timeout(wq, condition, timeout)			\
+> > > 	({									\
+> > > 		long __ret = timeout;						\
+> > > 		if (!(condition))						\
+> > > 			__wait_event_timeout(wq, condition, __ret);		\
+> > > 		else if (!__ret)						\
+> > > 			__ret = 1;						\
+> > > 		__ret;								\
+> > > 	})
+> > >
+> > > Or wait_event_timeout(timeout => 0) is not legal in a non-void context?
+> > >
+> > > To me the code like
+> > >
+> > > 	long wait_for_something(bool nonblock)
+> > > 	{
+> > > 		timeout = nonblock ? 0 : DEFAULT_TIMEOUT;
+> > > 		return wait_event_timeout(..., timeout);
+> > > 	}
+> > >
+> > > looks reasonable and correct. But it is not?
+> >
+> > I don't see why it would be not legal. Note though that in the above
+> > form wait_event_timeout(cond, 0) would still schedule() if cond is
+> > false, which is not what I'd expect from a non-blocking function.
 
-Any comments on this?  I need this for vfio hugepage support, otherwise
-we risk getting a map failure that results in a BUG_ON from
-iommu_unmap_page in amd_iommu.  I can take it in through my vfio tree to
-keep the dependencies together if you want to provide an ack.  Thanks,
+Yes, if false. But what if it is true?
 
-Alex
+> Ah sorry, if you also rewrite __wait_event_timeout() then timeout=>0
+> wouldn't schedule(), so things would work as expected.
 
-On Fri, 2013-05-24 at 11:14 -0600, Alex Williamson wrote:
-> iommu_map splits requests into pages that the iommu driver reports
-> that it can handle.  The iommu_unmap path does not do the same.  This
-> can cause problems not only from callers that might expect the same
-> behavior as the map path, but even from the failure path of iommu_map,
-> should it fail at a point where it has mapped and needs to unwind a
-> set of pages that the iommu driver cannot handle directly.  amd_iommu,
-> for example, will BUG_ON if asked to unmap a non power of 2 size.
-> 
-> Fix this by extracting and generalizing the sizing code from the
-> iommu_map path and use it for both map and unmap.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
->  drivers/iommu/iommu.c |   63 +++++++++++++++++++++++++++----------------------
->  1 file changed, 35 insertions(+), 28 deletions(-)
-> 
-> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-> index d8f98b1..4b0b56b 100644
-> --- a/drivers/iommu/iommu.c
-> +++ b/drivers/iommu/iommu.c
-> @@ -754,6 +754,38 @@ int iommu_domain_has_cap(struct iommu_domain *domain,
->  }
->  EXPORT_SYMBOL_GPL(iommu_domain_has_cap);
->  
-> +static size_t iommu_pgsize(struct iommu_domain *domain,
-> +			   unsigned long addr_merge, size_t size)
-> +{
-> +	unsigned int pgsize_idx;
-> +	size_t pgsize;
-> +
-> +	/* Max page size that still fits into 'size' */
-> +	pgsize_idx = __fls(size);
-> +
-> +	/* need to consider alignment requirements ? */
-> +	if (likely(addr_merge)) {
-> +		/* Max page size allowed by address */
-> +		unsigned int align_pgsize_idx = __ffs(addr_merge);
-> +		pgsize_idx = min(pgsize_idx, align_pgsize_idx);
-> +	}
-> +
-> +	/* build a mask of acceptable page sizes */
-> +	pgsize = (1UL << (pgsize_idx + 1)) - 1;
-> +
-> +	/* throw away page sizes not supported by the hardware */
-> +	pgsize &= domain->ops->pgsize_bitmap;
-> +
-> +	/* make sure we're still sane */
-> +	BUG_ON(!pgsize);
-> +
-> +	/* pick the biggest page */
-> +	pgsize_idx = __fls(pgsize);
-> +	pgsize = 1UL << pgsize_idx;
-> +
-> +	return pgsize;
-> +}
-> +
->  int iommu_map(struct iommu_domain *domain, unsigned long iova,
->  	      phys_addr_t paddr, size_t size, int prot)
->  {
-> @@ -785,32 +817,7 @@ int iommu_map(struct iommu_domain *domain, unsigned long iova,
->  				(unsigned long)paddr, (unsigned long)size);
->  
->  	while (size) {
-> -		unsigned long pgsize, addr_merge = iova | paddr;
-> -		unsigned int pgsize_idx;
-> -
-> -		/* Max page size that still fits into 'size' */
-> -		pgsize_idx = __fls(size);
-> -
-> -		/* need to consider alignment requirements ? */
-> -		if (likely(addr_merge)) {
-> -			/* Max page size allowed by both iova and paddr */
-> -			unsigned int align_pgsize_idx = __ffs(addr_merge);
-> -
-> -			pgsize_idx = min(pgsize_idx, align_pgsize_idx);
-> -		}
-> -
-> -		/* build a mask of acceptable page sizes */
-> -		pgsize = (1UL << (pgsize_idx + 1)) - 1;
-> -
-> -		/* throw away page sizes not supported by the hardware */
-> -		pgsize &= domain->ops->pgsize_bitmap;
-> -
-> -		/* make sure we're still sane */
-> -		BUG_ON(!pgsize);
-> -
-> -		/* pick the biggest page */
-> -		pgsize_idx = __fls(pgsize);
-> -		pgsize = 1UL << pgsize_idx;
-> +		size_t pgsize = iommu_pgsize(domain, iova | paddr, size);
->  
->  		pr_debug("mapping: iova 0x%lx pa 0x%lx pgsize %lu\n", iova,
->  					(unsigned long)paddr, pgsize);
-> @@ -863,9 +870,9 @@ size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova, size_t size)
->  	 * or we hit an area that isn't mapped.
->  	 */
->  	while (unmapped < size) {
-> -		size_t left = size - unmapped;
-> +		size_t pgsize = iommu_pgsize(domain, iova, size - unmapped);
->  
-> -		unmapped_page = domain->ops->unmap(domain, iova, left);
-> +		unmapped_page = domain->ops->unmap(domain, iova, pgsize);
->  		if (!unmapped_page)
->  			break;
->  
-> 
+Can't understand... probably you missed my point. Let me try again.
 
+I think that wait_eveint_timeout(wq, COND, 0) should return !!(COND).
+But it doesn't, for example wait_event_timeout(wq, true, 0) == 0, this
+doesn'tlook right to me.
 
+And, this is off-topic, but wait_eveint_timeout/__wait_eveint_timeout
+do not match wait_event/__wait_event. IOW, you can't use
+__wait_eveint_timeout() if you do not need the fast-path check.
+
+So. How about
+
+	#define __wait_event_timeout(wq, condition, timeout)			\
+	({									\
+		DEFINE_WAIT(__wait);						\
+		long __ret = 0, __to = timeout;					\
+										\
+		for (;;) {							\
+			prepare_to_wait(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
+			if (condition) {					\
+				__ret = __to ?: 1;				\
+				break;						\
+			}							\
+			if (!__to)						\
+				break;						\
+			__to = schedule_timeout(__to);				\
+		}								\
+		finish_wait(&wq, &__wait);					\
+		__ret;								\
+	})
+
+	#define wait_event_timeout(wq, condition, timeout)			\
+	({									\
+		long __ret;							\
+		if (condition)							\
+			__ret = (timeout) ?: 1;					\
+		else								\
+			__ret = __wait_event_timeout(wq, condition, timeout);	\
+		__ret;								\
+	})
+
+?
+
+Othwerwise we should document the fact that the caller should alvays verify
+timeout != 0 if it checks the result of wait_event_timeout().
 
