@@ -1,113 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582Ab3FEKXI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 06:23:08 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:48638 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904Ab3FEKXG (ORCPT
+	id S1753952Ab3FEKYO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 06:24:14 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:49363 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753083Ab3FEKYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 06:23:06 -0400
-ORGANIZATION: Oracle Corporation
-USER-AGENT: KMail/1.13.7 (Linux/3.9.4; KDE/4.8.4; x86_64; ; )
+	Wed, 5 Jun 2013 06:24:12 -0400
+Date: Wed, 5 Jun 2013 12:23:54 +0200
+From: Emil Goode <emilgoode@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, lorenzo@google.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] net: ipv6: Fix incompatible pointer type warning
+Message-ID: <20130605102354.GA24766@debian>
+References: <1370262068-16658-1-git-send-email-emilgoode@gmail.com>
+ <20130604.171456.2052649822776872955.davem@davemloft.net>
 MIME-Version: 1.0
-Message-ID: <201306051222.32786.frank.mehnert@oracle.com>
-Date: Wed, 5 Jun 2013 03:22:32 -0700 (PDT)
-From: Frank Mehnert <frank.mehnert@oracle.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Robin Holt <holt@sgi.com>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: Handling NUMA page migration
-References: <201306040922.10235.frank.mehnert@oracle.com>
- <201306051132.15788.frank.mehnert@oracle.com>
- <20130605095630.GL15997@dhcp22.suse.cz>
-In-Reply-To: <20130605095630.GL15997@dhcp22.suse.cz>
-Content-Type: multipart/signed;
- boundary="__1370427774877127954abhmt116.oracle.com";
- protocol=application/pgp-signature; micalg=pgp-sha1
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130604.171456.2052649822776872955.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---__1370427774877127954abhmt116.oracle.com
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hello David,
 
-On Wednesday 05 June 2013 11:56:30 Michal Hocko wrote:
-> On Wed 05-06-13 11:32:15, Frank Mehnert wrote:
-> [...]
->=20
-> > Thank you very much for your help. As I said, this problem happens _onl=
-y_
-> > with NUMA_BALANCING enabled. I understand that you treat the VirtualBox
-> > code as untrusted but the reason for the problem is that some assumption
-> > is obviously not met: The VirtualBox code assumes that the memory it
-> > allocates using case A and case B is
-> >=20
-> >  1. always present and
-> >  2. will always be backed by the same phyiscal memory
-> >=20
-> > over the entire life time. Enabling NUMA_BALANCING seems to make this
-> > assumption false. I only want to know why.
->=20
-> As I said earlier. Both the manual node migration and numa_fault handler
-> do not migrate pages with elevated ref count (your A case) and pages
-> that are not on the LRU. So if your Referenced pages might be on the LRU
-> then you probably have to look into numamigrate_isolate_page and do an
-> exception for PageReserved pages. But I am a bit suspicious this is the
-> cause because the reclaim doesn't consider PageReserved pages either so
-> they could get reclaimed. Or maybe you have handled that path in your
-> kernel.
+I'm sorry, the patch applies to the linux-next tree.
+In the future I will be very careful about sending patches that fix
+problems related to the merging of different trees.
 
-Thanks, I will also investigate into this direction.
+Best regards,
 
-> Or the other option is that you depend on a timing or something like
-> that which doesn't hold anymore. That would be hard to debug though.
->=20
-> > I see, you don't believe me. I will add more code to the kernel logging
-> > which pages were migrated.
->=20
-> Simple test for PageReserved flag in numamigrate_isolate_page should
-> tell you more.
->=20
-> This would cover the migration part. Another potential problem could be
-> that the page might get unmapped and marked for the numa fault (see
-> do_numa_page). So maybe your code just assumes that the page even
-> doesn't get unmapped?
+Emil Goode
 
-Exactly, that's the assumption -- therefore all these vm_flags tricks.
-If this assumption is wrong or not always true, can this requirement
-(page is _never_ unmapped) be met at all?
-
-Thanks,
-
-=46rank
-=2D-=20
-Dr.-Ing. Frank Mehnert | Software Development Director, VirtualBox
-ORACLE Deutschland B.V. & Co. KG | Werkstr. 24 | 71384 Weinstadt, Germany
-
-Hauptverwaltung: Riesstr. 25, D-80992 M=FCnchen
-Registergericht: Amtsgericht M=FCnchen, HRA 95603
-Gesch=E4ftsf=FChrer: J=FCrgen Kunz
-
-Komplement=E4rin: ORACLE Deutschland Verwaltung B.V.
-Hertogswetering 163/167, 3543 AS Utrecht, Niederlande
-Handelsregister der Handelskammer Midden-Niederlande, Nr. 30143697
-Gesch=E4ftsf=FChrer: Alexander van der Ven, Astrid Kepper, Val Maher
-
---__1370427774877127954abhmt116.oracle.com
-Content-Description: This is a digitally signed message part.
-Content-Type: application/pgp-signature; charset=ascii; name="signature.asc"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iEYEABECAAYFAlGvEWgACgkQ6z8pigLf3EceqgCeIvCbuMlq78IuaTUXjkQZlHe8
-G8sAoIEdEpsNNYwkxqKVb7FXAYfCp0Er
-=9Mof
------END PGP SIGNATURE-----
-
---__1370427774877127954abhmt116.oracle.com--
+On Tue, Jun 04, 2013 at 05:14:56PM -0700, David Miller wrote:
+> From: Emil Goode <emilgoode@gmail.com>
+> Date: Mon,  3 Jun 2013 14:21:08 +0200
+> 
+> > This fixes the sparse warning below about assignment from
+> > incompatible pointer type.
+> > 
+> > In the following commit the third argument in function ipv6_chk_addr
+> > was changed to const and struct nf_ipv6_ops was introduced with
+> > the third argument of .chk_addr beeing const.
+> > 
+> > 2a7851bffb008ff4882eee673da74718997b4265
+> > ("netfilter: add nf_ipv6_ops hook to fix xt_addrtype with IPv6")
+> > 
+> > The below commit introduced the warning as the third argument of
+> > dummy_ipv6_chk_addr and .ipv6_chk_addr in struct pingv6_ops is
+> > missing a const.
+> > 
+> > 6d0bfe22611602f36617bc7aa2ffa1bbb2f54c67
+> > ("net: ipv6: Add IPv6 support to the ping socket.")
+> > 
+> > Sparse output:
+> > 
+> > net/ipv6/ping.c: In function ‘pingv6_init’:
+> > net/ipv6/ping.c:87:27: warning:
+> > 	assignment from incompatible pointer type [enabled by default]
+> > 
+> > Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> 
+> This only happens when you combine net with net-next, therefore your
+> patch isn't actually relevent to any real GIT tree.
+> 
+> Please make this very clear in the future.
