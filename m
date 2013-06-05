@@ -1,88 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758042Ab3FEWrP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 18:47:15 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:37672 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757660Ab3FEWrN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 18:47:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <1370469574.18839.33.camel@localhost>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
-	<CAKON4OxDD5orX2w-_+d5kawTGXbE3KKj2QLERo9m7=NiUSXhgQ@mail.gmail.com>
-	<51AFA6DD.3000202@wwwdotorg.org>
-	<CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com>
-	<1370469574.18839.33.camel@localhost>
-Date: Wed, 5 Jun 2013 23:47:13 +0100
-Message-ID: <CAPweEDxMpeJc-w=Yd7d2OT=UisRBp2rxf-MPMDUCOG3EyJz1GQ@mail.gmail.com>
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
- Uploading linux (3.9.4-1))
-From: "luke.leighton" <luke.leighton@gmail.com>
-To: Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>
-Cc: devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
-        debian-kernel@lists.debian.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1758057Ab3FEWx7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 18:53:59 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:46739 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757638Ab3FEWx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 18:53:57 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 2/2] mm: memcontrol: factor out reclaim iterator loading and updating
+Date: Wed,  5 Jun 2013 18:53:46 -0400
+Message-Id: <1370472826-29959-2-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.8.3
+In-Reply-To: <1370472826-29959-1-git-send-email-hannes@cmpxchg.org>
+References: <1370472826-29959-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 5, 2013 at 10:59 PM, Henrik Nordström
-<henrik@henriknordstrom.net> wrote:
+mem_cgroup_iter() is too hard to follow.  Factor out the lockless
+reclaim iterator loading and updating so it's easier to follow the big
+picture.
 
->>  .... and then there's the boot0 and boot1 loaders, these *do* have
+Also document the iterator invalidation mechanism a bit more
+extensively.
 
-> no, these are not tiny. boot0 is 24KB to fit the initial embedded SRAM
-> (not cache), but boot1 is on pair with u-boot in size and runs from
-> DRAM.
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/memcontrol.c | 86 ++++++++++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 57 insertions(+), 29 deletions(-)
 
- btw, please listen to henrik: he knows what he's talking about, as
-you can see :)   henrik, thank you for correcting my technical
-misunderstandings, i'll try to remember them and not propagate
-incorrect stuff.
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index e2cbb44..23a9236 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1148,6 +1148,58 @@ skip_node:
+ 	return NULL;
+ }
+ 
++static void mem_cgroup_iter_invalidate(struct mem_cgroup *root)
++{
++	/*
++	 * When a group in the hierarchy below root is destroyed, the
++	 * hierarchy iterator can no longer be trusted since it might
++	 * have pointed to the destroyed group.  Invalidate it.
++	 */
++	atomic_inc(&root->dead_count);
++}
++
++static struct mem_cgroup *
++mem_cgroup_iter_load(struct mem_cgroup_reclaim_iter *iter,
++		     struct mem_cgroup *root,
++		     int *sequence)
++{
++	struct mem_cgroup *position = NULL;
++	/*
++	 * A cgroup destruction happens in two stages: offlining and
++	 * release.  They are separated by a RCU grace period.
++	 *
++	 * If the iterator is valid, we may still race with an
++	 * offlining.  The RCU lock ensures the object won't be
++	 * released, tryget will fail if we lost the race.
++	 */
++	*sequence = atomic_read(&root->dead_count);
++	if (iter->last_dead_count == *sequence) {
++		smp_rmb();
++		position = iter->last_visited;
++		if (position && !css_tryget(&position->css))
++			position = NULL;
++	}
++	return position;
++}
++
++static void mem_cgroup_iter_update(struct mem_cgroup_reclaim_iter *iter,
++				   struct mem_cgroup *last_visited,
++				   struct mem_cgroup *new_position,
++				   int sequence)
++{
++	if (last_visited)
++		css_put(&last_visited->css);
++	/*
++	 * We store the sequence count from the time @last_visited was
++	 * loaded successfully instead of rereading it here so that we
++	 * don't lose destruction events in between.  We could have
++	 * raced with the destruction of @new_position after all.
++	 */
++	iter->last_visited = new_position;
++	smp_wmb();
++	iter->last_dead_count = sequence;
++}
++
+ /**
+  * mem_cgroup_iter - iterate over memory cgroup hierarchy
+  * @root: hierarchy root
+@@ -1171,7 +1223,6 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+ {
+ 	struct mem_cgroup *memcg = NULL;
+ 	struct mem_cgroup *last_visited = NULL;
+-	unsigned long uninitialized_var(dead_count);
+ 
+ 	if (mem_cgroup_disabled())
+ 		return NULL;
+@@ -1191,6 +1242,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+ 	rcu_read_lock();
+ 	while (!memcg) {
+ 		struct mem_cgroup_reclaim_iter *uninitialized_var(iter);
++		int uninitialized_var(seq);
+ 
+ 		if (reclaim) {
+ 			int nid = zone_to_nid(reclaim->zone);
+@@ -1204,37 +1256,13 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+ 				goto out_unlock;
+ 			}
+ 
+-			/*
+-			 * If the dead_count mismatches, a destruction
+-			 * has happened or is happening concurrently.
+-			 * If the dead_count matches, a destruction
+-			 * might still happen concurrently, but since
+-			 * we checked under RCU, that destruction
+-			 * won't free the object until we release the
+-			 * RCU reader lock.  Thus, the dead_count
+-			 * check verifies the pointer is still valid,
+-			 * css_tryget() verifies the cgroup pointed to
+-			 * is alive.
+-			 */
+-			dead_count = atomic_read(&root->dead_count);
+-			if (dead_count == iter->last_dead_count) {
+-				smp_rmb();
+-				last_visited = iter->last_visited;
+-				if (last_visited &&
+-				    !css_tryget(&last_visited->css))
+-					last_visited = NULL;
+-			}
++			last_visited = mem_cgroup_iter_load(iter, root, &seq);
+ 		}
+ 
+ 		memcg = __mem_cgroup_iter_next(root, last_visited);
+ 
+ 		if (reclaim) {
+-			if (last_visited)
+-				css_put(&last_visited->css);
+-
+-			iter->last_visited = memcg;
+-			smp_wmb();
+-			iter->last_dead_count = dead_count;
++			mem_cgroup_iter_update(iter, last_visited, memcg, seq);
+ 
+ 			if (!memcg)
+ 				iter->generation++;
+@@ -6319,14 +6347,14 @@ static void mem_cgroup_invalidate_reclaim_iterators(struct mem_cgroup *memcg)
+ 	struct mem_cgroup *parent = memcg;
+ 
+ 	while ((parent = parent_mem_cgroup(parent)))
+-		atomic_inc(&parent->dead_count);
++		mem_cgroup_iter_invalidate(parent);
+ 
+ 	/*
+ 	 * if the root memcg is not hierarchical we have to check it
+ 	 * explicitely.
+ 	 */
+ 	if (!root_mem_cgroup->use_hierarchy)
+-		atomic_inc(&root_mem_cgroup->dead_count);
++		mem_cgroup_iter_invalidate(root_mem_cgroup);
+ }
+ 
+ static void mem_cgroup_css_offline(struct cgroup *cont)
+-- 
+1.8.3
 
->>  so the point is: if anyone wishes me to propose to allwinner that
->> they convert over to devicetree, or any other proposal which involves
->> significant low-level changes to their working practices that could
->> potentially have a massive knock-on effect onto their
->> multi-million-dollar clients, it had better be a damn good story.
->
-> Calm down.
-
- i am - honest!  yes it's a little past my bed-time, but hey...
-
-> It isn't really a significant difference to them outside of
-> the kernel. They do not need to change any of their configuraiton
-> methods, only a small toolchain change in how the resultig images are
-> built to have a corresponding device tree built.
-
- henrik, jon (smirl), can i ask you both a favour?  could you write
-something up, preferably short, that i could put forward to allwinner?
- describing what's needed, who would need to do what and so on.
-
-
-> But it is a fair bit of one-time changes kernel side. And some
-> scratching to figure out how to use/improve/ignore the stuff being
-> mainlined.
-
- i still also - really - need a good justification for this.
-something which helps explain clearly what the immediate or perhaps
-strategic benefits would be to allwinner, as to why they should accept
-such changes.   i cannot emphasise enough how important that is.
-
- if someone can please help come up with a good justification as to
-why allwinner should change their working practices, that would be
-enormously helpful i feel, to solving this issue.
-
- otherwise we are stuck in the current situation which nobody really
-likes.  i'm inviting you - linux kernel developers - i'm giving you an
-opportunity to *fix* things.  you have 2 weeks to come up with a
-solution, which can be presented in a simple format.  that's the
-window of opportunity.
-
-l.
