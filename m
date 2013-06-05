@@ -1,164 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175Ab3FEGLx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 02:11:53 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:61309 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752090Ab3FEGLe (ORCPT
+	id S1752084Ab3FEG3j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 02:29:39 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:64716 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268Ab3FEG3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 02:11:34 -0400
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm-ppc@vger.kernel.org
-Subject: [PATCH 2/4] powerpc: Prepare to support kernel handling of IOMMU map/unmap
-Date: Wed,  5 Jun 2013 16:11:11 +1000
-Message-Id: <1370412673-1345-3-git-send-email-aik@ozlabs.ru>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1370412673-1345-1-git-send-email-aik@ozlabs.ru>
-References: <1370412673-1345-1-git-send-email-aik@ozlabs.ru>
+	Wed, 5 Jun 2013 02:29:38 -0400
+X-AuditID: 9c93017d-b7c30ae0000063eb-9c-51aedacf4101
+Date: Wed, 5 Jun 2013 15:29:35 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 03/10] zram: use zram->lock to protect
+ zram_free_page() in swap free notify path
+Message-ID: <20130605062935.GC8732@blaptop>
+References: <1370361968-8764-1-git-send-email-jiang.liu@huawei.com>
+ <1370361968-8764-3-git-send-email-jiang.liu@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370361968-8764-3-git-send-email-jiang.liu@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current VFIO-on-POWER implementation supports only user mode
-driven mapping, i.e. QEMU is sending requests to map/unmap pages.
-However this approach is really slow, so we want to move that to KVM.
-Since H_PUT_TCE can be extremely performance sensitive (especially with
-network adapters where each packet needs to be mapped/unmapped) we chose
-to implement that as a "fast" hypercall directly in "real
-mode" (processor still in the guest context but MMU off).
+On Wed, Jun 05, 2013 at 12:06:01AM +0800, Jiang Liu wrote:
+> zram_free_page() is protected by down_write(&zram->lock) when called by
+> zram_bvec_write(), but there's no such protection when called by
+> zram_slot_free_notify(), which may cause wrong states to zram object.
+> 
+> There are two possible consequences of this issue:
+> 1) It may cause invalid memory access if we read from a zram device used
+>    as swap device. (Not sure whether it's legal to make read/write
+>    requests to a zram device used as swap device.)
 
-To be able to do that, we need to provide some facilities to
-access the struct page count within that real mode environment as things
-like the sparsemem vmemmap mappings aren't accessible.
+I think it's possible if the permission is allowed so we should take care
+of that. But I'd like to clear your comment about "invalid memory access".
 
-This adds an API to increment/decrement page counter as
-get_user_pages API used for user mode mapping does not work
-in the real mode.
+As I read the code, one of the problem we can encounter by race between
+zram_bvec_read and zram_slot_free_notify is BUG_ON(!handle) on zs_map_object
+or pr_err("Decompression failed xxxx) on zram_decompress_page.
+Otherwise, it would be able to access different swap block with
+user request's one.
 
-CONFIG_SPARSEMEM_VMEMMAP and CONFIG_FLATMEM are supported.
+Could you please expand your vague "invalid memory access"?
 
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-Reviewed-by: Paul Mackerras <paulus@samba.org>
-Cc: David Gibson <david@gibson.dropbear.id.au>
-Signed-off-by: Paul Mackerras <paulus@samba.org>
 
----
+> 2) It may cause some fields (bad_compress, good_compress, pages_stored)
+>    in zram->stats wrong if the swap layer makes concurrently call to
+>    zram_slot_free_notify().
+> 
+> So enhance zram_slot_free_notify() to acquire writer lock on zram->lock
+> before calling zram_free_page().
 
-Changes:
-2013-05-20:
-* PageTail() is replaced by PageCompound() in order to have the same checks
-for whether the page is huge in realmode_get_page() and realmode_put_page()
----
- arch/powerpc/include/asm/pgtable-ppc64.h |    4 ++
- arch/powerpc/mm/init_64.c                |   77 +++++++++++++++++++++++++++++-
- 2 files changed, 80 insertions(+), 1 deletion(-)
+OK.
 
-diff --git a/arch/powerpc/include/asm/pgtable-ppc64.h b/arch/powerpc/include/asm/pgtable-ppc64.h
-index e3d55f6f..7b46e5f 100644
---- a/arch/powerpc/include/asm/pgtable-ppc64.h
-+++ b/arch/powerpc/include/asm/pgtable-ppc64.h
-@@ -376,6 +376,10 @@ static inline pte_t *find_linux_pte_or_hugepte(pgd_t *pgdir, unsigned long ea,
- }
- #endif /* !CONFIG_HUGETLB_PAGE */
- 
-+struct page *realmode_pfn_to_page(unsigned long pfn);
-+int realmode_get_page(struct page *page);
-+int realmode_put_page(struct page *page);
-+
- #endif /* __ASSEMBLY__ */
- 
- #endif /* _ASM_POWERPC_PGTABLE_PPC64_H_ */
-diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
-index a90b9c4..ce3d8d4 100644
---- a/arch/powerpc/mm/init_64.c
-+++ b/arch/powerpc/mm/init_64.c
-@@ -297,5 +297,80 @@ void vmemmap_free(unsigned long start, unsigned long end)
- {
- }
- 
--#endif /* CONFIG_SPARSEMEM_VMEMMAP */
-+/*
-+ * We do not have access to the sparsemem vmemmap, so we fallback to
-+ * walking the list of sparsemem blocks which we already maintain for
-+ * the sake of crashdump. In the long run, we might want to maintain
-+ * a tree if performance of that linear walk becomes a problem.
-+ *
-+ * Any of realmode_XXXX functions can fail due to:
-+ * 1) As real sparsemem blocks do not lay in RAM continously (they
-+ * are in virtual address space which is not available in the real mode),
-+ * the requested page struct can be split between blocks so get_page/put_page
-+ * may fail.
-+ * 2) When huge pages are used, the get_page/put_page API will fail
-+ * in real mode as the linked addresses in the page struct are virtual
-+ * too.
-+ * When 1) or 2) takes place, the API returns an error code to cause
-+ * an exit to kernel virtual mode where the operation will be completed.
-+ */
-+struct page *realmode_pfn_to_page(unsigned long pfn)
-+{
-+	struct vmemmap_backing *vmem_back;
-+	struct page *page;
-+	unsigned long page_size = 1 << mmu_psize_defs[mmu_vmemmap_psize].shift;
-+	unsigned long pg_va = (unsigned long) pfn_to_page(pfn);
-+
-+	for (vmem_back = vmemmap_list; vmem_back; vmem_back = vmem_back->list) {
-+		if (pg_va < vmem_back->virt_addr)
-+			continue;
- 
-+		/* Check that page struct is not split between real pages */
-+		if ((pg_va + sizeof(struct page)) >
-+				(vmem_back->virt_addr + page_size))
-+			return NULL;
-+
-+		page = (struct page *) (vmem_back->phys + pg_va -
-+				vmem_back->virt_addr);
-+		return page;
-+	}
-+
-+	return NULL;
-+}
-+EXPORT_SYMBOL_GPL(realmode_pfn_to_page);
-+
-+#elif defined(CONFIG_FLATMEM)
-+
-+struct page *realmode_pfn_to_page(unsigned long pfn)
-+{
-+	struct page *page = pfn_to_page(pfn);
-+	return page;
-+}
-+EXPORT_SYMBOL_GPL(realmode_pfn_to_page);
-+
-+#endif /* CONFIG_SPARSEMEM_VMEMMAP/CONFIG_FLATMEM */
-+
-+#if defined(CONFIG_SPARSEMEM_VMEMMAP) || defined(CONFIG_FLATMEM)
-+int realmode_get_page(struct page *page)
-+{
-+	if (PageCompound(page))
-+		return -EAGAIN;
-+
-+	get_page(page);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(realmode_get_page);
-+
-+int realmode_put_page(struct page *page)
-+{
-+	if (PageCompound(page))
-+		return -EAGAIN;
-+
-+	if (!atomic_add_unless(&page->_count, -1, 1))
-+		return -EAGAIN;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(realmode_put_page);
-+#endif
+And please add the comment struct zram->lock feild, too.
+
+Thanks.
+
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: stable@vger.kernel.org
+> ---
+>  drivers/staging/zram/zram_drv.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index 5a2f20b..847d207 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -582,7 +582,9 @@ static void zram_slot_free_notify(struct block_device *bdev,
+>  	struct zram *zram;
+>  
+>  	zram = bdev->bd_disk->private_data;
+> +	down_write(&zram->lock);
+>  	zram_free_page(zram, index);
+> +	up_write(&zram->lock);
+>  	zram_stat64_inc(zram, &zram->stats.notify_free);
+>  }
+>  
+> -- 
+> 1.8.1.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 -- 
-1.7.10.4
-
+Kind regards,
+Minchan Kim
