@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab3FEM2t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 08:28:49 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:58355 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755220Ab3FEM2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 08:28:47 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>, Borislav Petkov <bp@alien8.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] cpufreq: prevent 'policy->cpus' become offline in __gov_queue_work()
-Date: Wed, 05 Jun 2013 14:37:50 +0200
-Message-ID: <1862476.P5VBB45STK@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51AEFDC4.8070801@linux.vnet.ibm.com>
-References: <51AEFBA1.302@linux.vnet.ibm.com> <CAKohpom571kXwLVPzmAb1n16EuHwyOaiM3khXkjQZQixGCpX8Q@mail.gmail.com> <51AEFDC4.8070801@linux.vnet.ibm.com>
+	id S1752929Ab3FEMcN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 08:32:13 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:33572 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772Ab3FEMcM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 08:32:12 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <2771350.uHLSSD79no@wuerfel>
+References: <1370360208-6500-1-git-send-email-lee.jones@linaro.org>
+	<2771350.uHLSSD79no@wuerfel>
+Date: Wed, 5 Jun 2013 14:32:11 +0200
+Message-ID: <CACRpkdbs=K_aa+mS4EHZk3qVZ1GA-gT6sB1zPOMEVWP=h50WqA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ARM: ux500: Silence compiler warnings due to missing
+ ux500_read_asicid() __init
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 05, 2013 04:58:44 PM Michael Wang wrote:
-> Hi, Viresh
-> 
-> On 06/05/2013 04:53 PM, Viresh Kumar wrote:
-> [snip]
-> >> It was caused by the policy->cpus changed during the process of
-> >> __gov_queue_work(), in other word, cpu offline happened.
-> >>
-> >> This patch will use get/put_online_cpus() to prevent the offline
-> >> happen inside __gov_queue_work(), after applied the patch, the
-> >> warning is gone as Jiri tested:
-> >>
-> >>         Link: https://lkml.org/lkml/2013/6/5/88
-> >>
-> >> CC: "Rafael J. Wysocki" <rjw@sisk.pl>
-> >> CC: Viresh Kumar <viresh.kumar@linaro.org>
-> >> Reported-by: Borislav Petkov <bp@alien8.de>
-> >> Reported-by: Jiri Kosina <jkosina@suse.cz>
-> >> Tested-by: Jiri Kosina <jkosina@suse.cz>
-> >> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
-> >> ---
-> >>  drivers/cpufreq/cpufreq_governor.c |    3 +++
-> >>  1 files changed, 3 insertions(+), 0 deletions(-)
-> > 
-> > Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> 
-> Thanks for your ack :)
+On Tue, Jun 4, 2013 at 5:55 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 04 June 2013 16:36:47 Lee Jones wrote:
+>> WARNING: vmlinux.o(.text.unlikely+0x1e8): Section mismatch in reference from\
+>>  the function ux500_read_asicid() to the function .init.text:iotable_init()
+>> The function ux500_read_asicid() references
+>> the function __init iotable_init().
+>> This is often because ux500_read_asicid lacks a __init
+>>
+>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+>
+> This is also part of my other patch to ux500_read_asicid that
+> Linus just applied, but we could take yours for 3.10 if he thinks
+> it's important.
 
-Queued up for 3.10.
+We don't need two patches conflicting about such small
+things, so I'll drop this in favor of your patch.
 
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Yours,
+Linus Walleij
