@@ -1,107 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450Ab3FEDCU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Jun 2013 23:02:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34593 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750791Ab3FEDCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Jun 2013 23:02:16 -0400
-Message-ID: <51AEAA1A.7060202@redhat.com>
-Date: Wed, 05 Jun 2013 11:01:46 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1751993Ab3FEDDp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Jun 2013 23:03:45 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:57232 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab3FEDDk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Jun 2013 23:03:40 -0400
+Date: Tue, 4 Jun 2013 20:03:37 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Robin Dong <sanbai@taobao.com>
+Cc: linux-kernel@vger.kernel.org, Zhu Yanhai <gaoyang.zyh@taobao.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Tao Ma <taoma.tm@gmail.com>, kent.overstreet@gmail.com
+Subject: Re: [RFC v1] add new io-scheduler to use cgroup on high-speed device
+Message-ID: <20130605030337.GO14916@htj.dyndns.org>
+References: <1370398171-25173-1-git-send-email-sanbai@taobao.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [net-next rfc V2 7/8] macvtap: add TUNSETQUEUE ioctl
-References: <1369994005-5943-1-git-send-email-jasowang@redhat.com> <1369994005-5943-8-git-send-email-jasowang@redhat.com> <20130602112228.GA10190@redhat.com> <51AC27BA.8050808@redhat.com> <20130603110923.GA11241@redhat.com> <51AD8130.1090807@redhat.com> <20130604070519.GE19433@redhat.com>
-In-Reply-To: <20130604070519.GE19433@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370398171-25173-1-git-send-email-sanbai@taobao.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2013 03:05 PM, Michael S. Tsirkin wrote:
-> On Tue, Jun 04, 2013 at 01:54:56PM +0800, Jason Wang wrote:
->> On 06/03/2013 07:09 PM, Michael S. Tsirkin wrote:
->>> On Mon, Jun 03, 2013 at 01:20:58PM +0800, Jason Wang wrote:
->>>> On 06/02/2013 07:22 PM, Michael S. Tsirkin wrote:
->>>>> On Fri, May 31, 2013 at 05:53:24PM +0800, Jason Wang wrote:
->>>>>> This patch adds TUNSETQUEUE ioctl to let userspace can temporarily disable or
->>>>>> enable a queue of macvtap. This is used to be compatible at API layer of tuntap
->>>>>> to simplify the userspace to manage the queues.
->>>>>>
->>>>>> This is done by split the taps array into three different areas:
->>>>>>
->>>>>> - [0, numvtaps) : enabled taps
->>>>>> - [numvtaps, numvtaps + numdisabled) : disabled taps
->>>>>> - [numvtaps + numdisabled, MAX_MAXVTAP_QUEUES) : unused slots
->>>>>>
->>>>>> When a tap were enabled and disabled, it was moved to another area.
->>>>>>
->>>>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
-[...]
->>>>> +static int macvtap_disable_queue(struct macvtap_queue *q)
->>>>> +{
->>>>> +	struct macvlan_dev *vlan;
->>>>> +	int err = -EINVAL;
->>>>> +
->>>>> +	spin_lock(&macvtap_lock);
->>>>> +	vlan = rcu_dereference_protected(q->vlan,
->>>>> +					 lockdep_is_held(&macvtap_lock));
->>>>> +
->>>>> +	if (vlan) {
->>>>> +		int total = vlan->numvtaps + vlan->numdisabled;
->>>>> +		int index = q->queue_index;
->>>>> +
->>>>> +		BUG_ON(q->queue_index >= total);
->>>>> +		if (q->queue_index >= vlan->numvtaps)
->>>>> +			goto out;
->>>>> +
->>>>> +		err = 0;
->>>>> +		macvtap_swap_slot(vlan, index, total - 1);
->>>>> +		if (vlan->numdisabled)
->>>>> +			/* If there's disabled taps, the above swap will cause
->>>>> +			 * a disabled tap to be moved to enabled area. So
->>>>> +			 * another swap is needed to keep the right order.
->>>>> +			 */
->>>>> +			macvtap_swap_slot(vlan, index, vlan->numvtaps - 1);
->>>>> +
->>>>> +		/* make sure the pointers were seen before indices */
->>>>> +		wmb();
->>>>> Hmm this looks questionable. The code near rmb first
->>>>> checks numvtaps then dereferences the queue.
->>>>> So it might see a new queue but old value of numvtaps.
->>>> Right, barriers here were just best effort to reduce the possibility of
->>>> wrong queue selection when changing the number of queues.
->>> If this is an optimization, I'd say benchmark it and
->>> see if it helps performance.
->>>
->>> I don't expect it to have any effect really.
->>> In fact, the re-ordering of queues that this patch does
->>> is likely to cause packet reorering and hurt performance
->>> more.
->> Yes, so I will remove the barriers.
->>
->> The re-ordering seems to be the easiest way to do fast lookup of active
->> queues. We could use indirection to avoid the re-ordering of queues,
->> it's hard to eliminate OOO packets. If we don't depends on changing the
->> number of queues frequently, we're ok.
->>> I'm guessing the only thing we need for correctness
->>> is ACCESS_ONCE on numvtaps?
->> Did't see how it help.
-> For this loop:
->                while (unlikely(rxq >= numvtaps))
->                         rxq -= numvtaps;
->
-> you better read numvtaps with ACCESS_ONCE otherwise
-> compiler can re-read numvtaps and it would
-> change during loop execution.
-> rxq can then become negative.
->
+(cc'ing Kent.  Original posting at
+ http://thread.gmane.org/gmane.linux.kernel/1502484 )
 
-I get your meaning, looks like tun should be fixed as well.
+Hello,
 
-Thanks
+On Wed, Jun 05, 2013 at 10:09:31AM +0800, Robin Dong wrote:
+> We want to use blkio.cgroup on high-speed device (like fusionio) for our mysql clusters.
+> After testing different io-scheduler, we found that  cfq is too slow and deadline can't run on cgroup.
+> So we developed a new io-scheduler: tpps (Tiny Parallel Proportion Scheduler).It dispatch requests
+> only by using their individual weight and total weight (proportion) therefore it's simply and efficient.
+> 
+> Test case: fusionio card, 4 cgroups, iodepth-512
 
+So, while I understand the intention behind it, I'm not sure a
+separate io-sched for this is what we want.  Kent and Jens have been
+thinking about this lately so they'll probably chime in.  From my POV,
+I see a few largish issues.
+
+* It has to be scalable with relatively large scale SMP / NUMA
+  configurations.  It better integrate with blk-mq support currently
+  being brewed.
+
+* It definitely has to support hierarchy.  Nothing which doesn't
+  support full hierarchy can be added to cgroup at this point.
+
+* We already have separate implementations in blk-throtl and
+  cfq-iosched.  Maybe it's too late and too different for cfq-iosched
+  given that it's primarily targeted at disks, but I wonder whether we
+  can make blk-throtl generic and scalable enough to cover all other
+  use cases.
+
+Thanks.
+
+-- 
+tejun
