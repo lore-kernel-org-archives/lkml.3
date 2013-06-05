@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758027Ab3FEXBs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 19:01:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41726 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756129Ab3FEXBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 19:01:47 -0400
-Message-ID: <51AFC335.3000902@zytor.com>
-Date: Wed, 05 Jun 2013 16:01:09 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Jacob Shin <jacob.shin@amd.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>
-Subject: Re: [PATCH 0/2] x86/microcode/amd: early loading fixes
-References: <1370463236-2115-1-git-send-email-jacob.shin@amd.com> <20130605221833.GA15427@pd.tnic>
-In-Reply-To: <20130605221833.GA15427@pd.tnic>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1758061Ab3FEXDO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 19:03:14 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:36349 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756129Ab3FEXDN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 19:03:13 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 1/3] irq: Set multiple MSI descriptor data for multiple IRQs
+To: Mike Qiu <qiudayu@linux.vnet.ibm.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Cc: benh@kernel.crashing.org, tglx@linutronix.de,
+        Mike Qiu <qiudayu@linux.vnet.ibm.com>
+In-Reply-To: <1358235536-32741-2-git-send-email-qiudayu@linux.vnet.ibm.com>
+References: <1358235536-32741-1-git-send-email-qiudayu@linux.vnet.ibm.com> <1358235536-32741-2-git-send-email-qiudayu@linux.vnet.ibm.com>
+Date: Thu, 06 Jun 2013 00:03:08 +0100
+Message-Id: <20130605230308.8CC093E10E4@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2013 03:18 PM, Borislav Petkov wrote:
-> On Wed, Jun 05, 2013 at 03:13:54PM -0500, Jacob Shin wrote:
->> This patchset addreses two problems with early loading on AMD.
+On Tue, 15 Jan 2013 15:38:54 +0800, Mike Qiu <qiudayu@linux.vnet.ibm.com> wrote:
+> Multiple MSI only requires the IRQ in msi_desc entry to be set as
+> the value of irq_base.
 > 
-> It would be nice if, in the future, you put the maintainers of this
-> driver to CC.
+> This patch implements the above mentioned technique.
 > 
-> Unless you're volunteering up for maintaining it...
-> 
+> Signed-off-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
 
-Indeed.  My bad for not adding all in, too.
+Hi Mike,
 
-	-hpa
+question below...
 
+> ---
+> +int irq_set_multiple_msi_desc(unsigned int irq_base, unsigned int nvec,
+> +				struct msi_desc *entry)
+> +{
+> +	unsigned long flags, i;
+> +	struct irq_desc *desc;
+> +
+> +	for (i = 0; i < nvec; i++) {
+> +		desc = irq_get_desc_lock(irq_base + i, &flags,
+> +					IRQ_GET_DESC_CHECK_GLOBAL);
+> +		if (!desc)
+> +			return -EINVAL;
+> +		desc->irq_data.msi_desc = entry;
+> +		if (i == 0 && entry)
+> +			entry->irq = irq_base;
+
+It's not clear to me why this code only sets the irq value for the first
+desc. Why don't the other descs in the array want (irq_base + i) here? A
+comment describing what is going on would be appropriate and helpful.
+
+g.
