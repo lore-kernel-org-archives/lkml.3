@@ -1,159 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755662Ab3FEOx2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 10:53:28 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:20767 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755487Ab3FEOxZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 10:53:25 -0400
-Message-ID: <51AF50D9.5060006@hp.com>
-Date: Wed, 05 Jun 2013 10:53:13 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	id S1755915Ab3FEOxw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 10:53:52 -0400
+Received: from mail-bl2lp0206.outbound.protection.outlook.com ([207.46.163.206]:3379
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755451Ab3FEOxt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 10:53:49 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "Fleming, Matt" <matt.fleming@intel.com>
+CC: joeyli <jlee@suse.com>, "rja@sgi.com" <rja@sgi.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "bp@alien8.de" <bp@alien8.de>, "jkosina@suse.cz" <jkosina@suse.cz>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "oneukum@suse.de" <oneukum@suse.de>
+Subject: Re: [PATCH] Modify UEFI anti-bricking code
+Thread-Topic: [PATCH] Modify UEFI anti-bricking code
+Thread-Index: AQHOXwRQ69J870D+8ESfIa4gHR89tpkkLJYAgAAE7oCAALmWgIACTrOAgAABCYA=
+Date: Wed, 5 Jun 2013 14:53:27 +0000
+Message-ID: <1370444007.6315.32.camel@x230.lan>
+References: <1370117180-1712-1-git-send-email-matthew.garrett@nebula.com>
+	 <1370276021.30695.4.camel@linux-s257.site>
+	 <1370277079.6315.14.camel@x230.lan>
+	 <1370316933.30695.7.camel@linux-s257.site>
+	 <CAL01qptzxe5L6Vq+nBZLq+bQNxbe_i_2OdKMNJGZQDfMihaHOw@mail.gmail.com>
+In-Reply-To: <CAL01qptzxe5L6Vq+nBZLq+bQNxbe_i_2OdKMNJGZQDfMihaHOw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+x-forefront-antispam-report: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:BY2PR05MB221;H:BY2PR05MB222.namprd05.prod.outlook.com;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <38775550AFA00F4681CBC1AF5B3E43FD@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-To: Stephen Smalley <sds@tycho.nsa.gov>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@parisplace.org>
-CC: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH RFC 1/2] SELinux: reduce overhead of mls_level_isvalid()
- function call
-References: <1365618383-29340-1-git-send-email-Waiman.Long@hp.com> <5183C4BE.5030504@hp.com>
-In-Reply-To: <5183C4BE.5030504@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r55Erxkl032593
 
-On 05/03/2013 10:07 AM, Waiman Long wrote:
-> On 04/10/2013 02:26 PM, Waiman Long wrote:
->> While running the high_systime workload of the AIM7 benchmark on
->> a 2-socket 12-core Westmere x86-64 machine running 3.8.2 kernel,
->> it was found that a pretty sizable amount of time was spent in the
->> SELinux code. Below was the perf trace of the "perf record -a -s"
->> of a test run at 1500 users:
->>
->>    3.96%            ls  [kernel.kallsyms]     [k] ebitmap_get_bit
->>    1.44%            ls  [kernel.kallsyms]     [k] mls_level_isvalid
->>    1.33%            ls  [kernel.kallsyms]     [k] find_next_bit
->>
->> The ebitmap_get_bit() was the hottest function in the perf-report
->> output.  Both the ebitmap_get_bit() and find_next_bit() functions
->> were, in fact, called by mls_level_isvalid(). As a result, the
->> mls_level_isvalid() call consumed 6.73% of the total CPU time of all
->> the 24 virtual CPUs which is quite a lot.
->>
->> Looking at the mls_level_isvalid() function, it is checking to see
->> if all the bits set in one of the ebitmap structure are also set in
->> another one as well as the highest set bit is no bigger than the one
->> specified by the given policydb data structure. It is doing it in
->> a bit-by-bit manner. So if the ebitmap structure has many bits set,
->> the iteration loop will be done many times.
->>
->> The current code can be rewritten to use a similar algorithm as the
->> ebitmap_contains() function with an additional check for the highest
->> set bit. With that change, the perf trace showed that the used CPU
->> time drop down to just 0.09% of the total which is about 100X less
->> than before.
->>
->>    0.04%            ls  [kernel.kallsyms]     [k] ebitmap_get_bit
->>    0.04%            ls  [kernel.kallsyms]     [k] mls_level_isvalid
->>    0.01%            ls  [kernel.kallsyms]     [k] find_next_bit
->>
->> Actually, the remaining ebitmap_get_bit() and find_next_bit() function
->> calls are made by other kernel routines as the new mls_level_isvalid()
->> function will not call them anymore.
->>
->> This patch also improves the high_systime AIM7 benchmark result,
->> though the improvement is not as impressive as is suggested by the
->> reduction in CPU time. The table below shows the performance change
->> on the 2-socket x86-64 system mentioned above.
->>
->> +--------------+---------------+----------------+-----------------+
->> |   Workload   | mean % change | mean % change  | mean % change   |
->> |              | 10-100 users  | 200-1000 users | 1100-2000 users |
->> +--------------+---------------+----------------+-----------------+
->> | high_systime |     +0.2%     |     +1.1%      |     +2.4%       |
->> +--------------+---------------+----------------+-----------------+
->>
->> Signed-off-by: Waiman Long<Waiman.Long@hp.com>
->> ---
->>   security/selinux/ss/mls.c |   38 
->> +++++++++++++++++++++++++++-----------
->>   1 files changed, 27 insertions(+), 11 deletions(-)
->>
->> diff --git a/security/selinux/ss/mls.c b/security/selinux/ss/mls.c
->> index 40de8d3..ce02803 100644
->> --- a/security/selinux/ss/mls.c
->> +++ b/security/selinux/ss/mls.c
->> @@ -160,8 +160,7 @@ void mls_sid_to_context(struct context *context,
->>   int mls_level_isvalid(struct policydb *p, struct mls_level *l)
->>   {
->>       struct level_datum *levdatum;
->> -    struct ebitmap_node *node;
->> -    int i;
->> +    struct ebitmap_node *nodel, *noded;
->>
->>       if (!l->sens || l->sens>  p->p_levels.nprim)
->>           return 0;
->> @@ -170,16 +169,33 @@ int mls_level_isvalid(struct policydb *p, 
->> struct mls_level *l)
->>       if (!levdatum)
->>           return 0;
->>
->> -    ebitmap_for_each_positive_bit(&l->cat, node, i) {
->> -        if (i>  p->p_cats.nprim)
->> -            return 0;
->> -        if (!ebitmap_get_bit(&levdatum->level->cat, i)) {
->> -            /*
->> -             * Category may not be associated with
->> -             * sensitivity.
->> -             */
->> -            return 0;
->> +    /*
->> +     * Return 1 iff
->> +     * 1. l->cat.node is NULL, or
->> +     * 2. all the bits set in l->cat are also set in 
->> levdatum->level->cat,
->> +     *    and
->> +     * 3. the last bit set in l->cat should not be larger than
->> +     *    p->p_cats.nprim.
->> +     */
->> +    noded = levdatum->level->cat.node;
->> +    for (nodel = l->cat.node ; nodel ; nodel = nodel->next) {
->> +        int i, lastsetbit = -1;
->> +
->> +        for (i = EBITMAP_UNIT_NUMS - 1 ; i>= 0 ; i--) {
->> +            if (!nodel->maps[i])
->> +                continue;
->> +            if (!noded ||
->> +               ((nodel->maps[i]&noded->maps[i]) != nodel->maps[i]))
->> +                return 0;
->> +            if (lastsetbit<  0)
->> +                lastsetbit = nodel->startbit +
->> +                         i * EBITMAP_UNIT_SIZE +
->> +                         __fls(nodel->maps[i]);
->>           }
->> +        if ((lastsetbit>= 0)&&  (lastsetbit>  p->p_cats.nprim))
->> +            return 0;
->> +        if (noded)
->> +            noded = noded->next;
->>       }
->>
->>       return 1;
->
-> Would you mind giving me some feedback on what you think about this 
-> patch?
->
-> Thank a lot!
-> Regards,
-> Longman
+On Wed, 2013-06-05 at 15:49 +0100, Fleming, Matt wrote:
 
-I am sorry for the annoyance, but I really want to  have some feedback 
-on whether this patch is viable or not.
+> Folks, what do you want me to do with this? Merge it with Matthew's patch?
 
-Thanks,
-Longman
+Do that and add Joey's signed-off-by?
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
