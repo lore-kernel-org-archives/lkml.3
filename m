@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932556Ab3FEVNA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:13:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36819 "EHLO
+	id S932727Ab3FEVUZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:20:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36853 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932432Ab3FEVMx (ORCPT
+	with ESMTP id S932549Ab3FEVM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:12:53 -0400
+	Wed, 5 Jun 2013 17:12:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
-Subject: [ 13/44] cifs: only set ops for inodes in I_NEW state
-Date: Wed,  5 Jun 2013 14:12:11 -0700
-Message-Id: <20130605211223.259272859@linuxfoundation.org>
+        Joseph Qi <joseph.qi@huawei.com>, Jie Liu <jeff.liu@oracle.com>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Sunil Mushran <sunil.mushran@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 17/44] ocfs2: goto out_unlock if ocfs2_get_clusters_nocache() failed in ocfs2_fiemap()
+Date: Wed,  5 Jun 2013 14:12:15 -0700
+Message-Id: <20130605211223.636041001@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605211221.858177087@linuxfoundation.org>
 References: <20130605211221.858177087@linuxfoundation.org>
@@ -26,36 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Joseph Qi <joseph.qi@huawei.com>
 
-commit c2b93e0699723700f886ce17bb65ffd771195a6d upstream.
+commit b4ca2b4b577c3530e34dcfaafccb2cc680ce95d1 upstream.
 
-It's generally not safe to reset the inode ops once they've been set. In
-the case where the inode was originally thought to be a directory and
-then later found to be a DFS referral, this can lead to an oops when we
-try to trigger an inode op on it after changing the ops to the blank
-referral operations.
+Last time we found there is lock/unlock bug in ocfs2_file_aio_write, and
+then we did a thorough search for all lock resources in
+ocfs2_inode_info, including rw, inode and open lockres and found this
+bug.  My kernel version is 3.0.13, and it is also in the lastest version
+3.9.  In ocfs2_fiemap, once ocfs2_get_clusters_nocache failed, it should
+goto out_unlock instead of out, because we need release buffer head, up
+read alloc sem and unlock inode.
 
-Reported-and-Tested-by: Sachin Prabhu <sprabhu@redhat.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Joseph Qi <joseph.qi@huawei.com>
+Reviewed-by: Jie Liu <jeff.liu@oracle.com>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Acked-by: Sunil Mushran <sunil.mushran@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/inode.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/ocfs2/extent_map.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -173,7 +173,8 @@ cifs_fattr_to_inode(struct inode *inode,
+--- a/fs/ocfs2/extent_map.c
++++ b/fs/ocfs2/extent_map.c
+@@ -791,7 +791,7 @@ int ocfs2_fiemap(struct inode *inode, st
+ 						 &hole_size, &rec, &is_last);
+ 		if (ret) {
+ 			mlog_errno(ret);
+-			goto out;
++			goto out_unlock;
+ 		}
  
- 	if (fattr->cf_flags & CIFS_FATTR_DFS_REFERRAL)
- 		inode->i_flags |= S_AUTOMOUNT;
--	cifs_set_ops(inode);
-+	if (inode->i_state & I_NEW)
-+		cifs_set_ops(inode);
- }
- 
- void
+ 		if (rec.e_blkno == 0ULL) {
 
 
