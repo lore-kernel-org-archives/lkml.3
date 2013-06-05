@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932774Ab3FEVY6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:24:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9611 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932421Ab3FEVYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:24:55 -0400
-Date: Wed, 5 Jun 2013 18:24:49 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Luiz Capitulino <lcapitulino@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH] virtio_balloon: leak_balloon(): only tell host if we got
- pages deflated
-Message-ID: <20130605212449.GB19617@optiplex.redhat.com>
-References: <20130605171031.7448deea@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130605171031.7448deea@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932749Ab3FEVYm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:24:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36805 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932473Ab3FEVMu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 17:12:50 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Wang YanQing <udknight@gmail.com>
+Subject: [ 08/44] TTY: Fix tty miss restart after we turn off flow-control
+Date: Wed,  5 Jun 2013 14:12:06 -0700
+Message-Id: <20130605211222.742294221@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130605211221.858177087@linuxfoundation.org>
+References: <20130605211221.858177087@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 05:10:31PM -0400, Luiz Capitulino wrote:
-> The balloon_page_dequeue() function can return NULL. If it does for
-> the first page being freed, then leak_balloon() will create a
-> scatter list with len=0. Which in turn seems to generate an invalid
-> virtio request.
-> 
-> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
-> ---
-> 
-> PS: I didn't get this in practice. I found it by code review. On the other
->     hand, automatic-ballooning was able to put such invalid requests in
->     the virtqueue and QEMU would explode...
->
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Nice catch! The patch looks sane and replicates the check done at
-fill_balloon(). I think we also could use this P.S. as a commentary 
-to let others aware of this scenario. Thanks Luiz!
+------------------
 
-Acked-by: Rafael Aquini <aquini@redhat.com>
+From: Wang YanQing <udknight@gmail.com>
 
- 
-> PPS: Very lightly tested
->
->  drivers/virtio/virtio_balloon.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-> index bd3ae32..71af7b5 100644
-> --- a/drivers/virtio/virtio_balloon.c
-> +++ b/drivers/virtio/virtio_balloon.c
-> @@ -191,7 +191,8 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
->  	 * virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
->  	 * is true, we *have* to do it in this order
->  	 */
-> -	tell_host(vb, vb->deflate_vq);
-> +	if (vb->num_pfns != 0)
-> +		tell_host(vb, vb->deflate_vq);
->  	mutex_unlock(&vb->balloon_lock);
->  	release_pages_by_pfn(vb->pfns, vb->num_pfns);
->  }
-> -- 
-> 1.8.1.4
-> 
+commit dab73b4eb9ef924a2b90dab84e539076d82b256f upstream.
+
+I meet emacs hang in start if I do the operation below:
+  1: echo 3 > /proc/sys/vm/drop_caches
+  2: emacs BigFile
+  3: Press CTRL-S follow 2 immediately
+
+Then emacs hang on, CTRL-Q can't resume, the terminal
+hang on, you can do nothing with this terminal except
+close it.
+
+The reason is before emacs takeover control the tty,
+we use CTRL-S to XOFF it. Then when emacs takeover the
+control, it may don't use the flow-control, so emacs hang.
+This patch fix it.
+
+This patch will fix a kind of strange tty relation hang problem,
+I believe I meet it with vim in ssh, and also see below bug report:
+http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=465823
+
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/tty/n_tty.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1529,6 +1529,14 @@ static void n_tty_set_termios(struct tty
+ 			tty->real_raw = 0;
+ 	}
+ 	n_tty_set_room(tty);
++	/*
++	 * Fix tty hang when I_IXON(tty) is cleared, but the tty
++	 * been stopped by STOP_CHAR(tty) before it.
++	 */
++	if (!I_IXON(tty) && old && (old->c_iflag & IXON) && !tty->flow_stopped) {
++		start_tty(tty);
++	}
++
+ 	/* The termios change make the tty ready for I/O */
+ 	wake_up_interruptible(&tty->write_wait);
+ 	wake_up_interruptible(&tty->read_wait);
+
+
