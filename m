@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409Ab3FEVMW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:12:22 -0400
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:44046 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932394Ab3FEVMS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:12:18 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <1370465793-7997-1-git-send-email-dianders@chromium.org>
-References: <1370397539-21653-1-git-send-email-dianders@chromium.org>
-	<1370465793-7997-1-git-send-email-dianders@chromium.org>
-Date: Wed, 5 Jun 2013 14:12:17 -0700
-Message-ID: <CAOesGMhQX9ip=nb9AQa5fcDFRNpZZSxUO0N0GTX051dakWZD9Q@mail.gmail.com>
-Subject: Re: [PATCH v2] ARM: exynos: add debug_ll_io_init() call in exynos_init_io()
-From: Olof Johansson <olof@lixom.net>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Simon Glass <sjg@chromium.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757684Ab3FEV1b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:27:31 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:48329 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757652Ab3FEV1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 17:27:30 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] USB: fix PTR_ERR translation in init_usb_class()
+Date: Thu,  6 Jun 2013 01:27:15 +0400
+Message-Id: <1370467635-4414-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 5, 2013 at 1:56 PM, Doug Anderson <dianders@chromium.org> wrote:
-> If the early MMU mapping of the UART happens to get booted out of the
-> TLB between the start of paging_init() and when we finally re-add the
-> UART at the very end of s3c_init_cpu(), we'll get a hang at bootup if
-> we've got early_printk enabled.  Avoid this hang by calling
-> debug_ll_io_init() early.
->
-> Without this patch, you can reliably reproduce a hang when early
-> printk is enabled by adding flush_tlb_all() at the start of
-> exynos_init_io().  After this patch the hang goes away.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+There is a misprint in init_usb_class():
+IS_ERR is used to get error code instead of PTR_ERR.
 
-Acked-by: Olof Johansson <olof@lixom.net>
+Found by Linux Driver Verification project (linuxtesting.org).
 
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/usb/core/file.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Kukjin, this seems appropriate for 3.10. Do you have other fixes
-queued or should I apply this directly?
+diff --git a/drivers/usb/core/file.c b/drivers/usb/core/file.c
+index e5387a4..6a4c407 100644
+--- a/drivers/usb/core/file.c
++++ b/drivers/usb/core/file.c
+@@ -94,7 +94,7 @@ static int init_usb_class(void)
+ 	kref_init(&usb_class->kref);
+ 	usb_class->class = class_create(THIS_MODULE, "usbmisc");
+ 	if (IS_ERR(usb_class->class)) {
+-		result = IS_ERR(usb_class->class);
++		result = PTR_ERR(usb_class->class);
+ 		printk(KERN_ERR "class_create failed for usb devices\n");
+ 		kfree(usb_class);
+ 		usb_class = NULL;
+-- 
+1.8.1.2
 
-
--Olof
