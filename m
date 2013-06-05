@@ -1,116 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309Ab3FEHBr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 03:01:47 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:53422 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751682Ab3FEHBp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 03:01:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <201306041405.13320.heiko@sntech.de>
-References: <201306030055.15413.heiko@sntech.de>
-	<201306030059.47611.heiko@sntech.de>
-	<CACRpkdbBr7s1NoTQewVOotorHJHLL8Z6-_gAx5GC0x6uNUX0gw@mail.gmail.com>
-	<201306041405.13320.heiko@sntech.de>
-Date: Wed, 5 Jun 2013 09:01:44 +0200
-Message-ID: <CACRpkdZty-TszfBTOab4_PUi8dy5DYim=wNERv=pyqC3HNuT4w@mail.gmail.com>
-Subject: Re: [PATCH 07/10] pinctrl: add pinctrl driver for Rockchip SoCs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752233Ab3FEHDY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 03:03:24 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:45826 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751682Ab3FEHDX convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Wed, 5 Jun 2013 03:03:23 -0400
+Message-Id: <51AEFED002000078000DB542@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Wed, 05 Jun 2013 08:03:12 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Mukesh Rathor" <mukesh.rathor@oracle.com>
+Cc: "xen-devel" <xen-devel@lists.xen.org>, <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] PVH: vcpu info placement, load
+ selectors, and remove debug printk.
+References: <1370306612-12984-1-git-send-email-mukesh.rathor@oracle.com>
+ <51ADC0F702000078000DAF5A@nat28.tlf.novell.com>
+ <20130604145304.117ac60f@mantra.us.oracle.com>
+In-Reply-To: <20130604145304.117ac60f@mantra.us.oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 4, 2013 at 2:05 PM, Heiko Stübner <heiko@sntech.de> wrote:
+>>> On 04.06.13 at 23:53, Mukesh Rathor <mukesh.rathor@oracle.com> wrote:
+> Following OK? :
+> 
+>         if (xen_feature(XENFEAT_auto_translated_physmap)) {
+>                 switch_to_new_gdt(0);
+> 
+>                 asm volatile (
+>                         "pushq %%rax\n"
+>                         "leaq 1f(%%rip),%%rax\n"
+>                         "pushq %%rax\n"
+>                         "lretq\n"
+>                         "1:\n"
+>                         : : "a" (__KERNEL_CS) : "memory");
+> 
+>                 return;
+>         }
 
->> > +PULL_AUTO      (1 << 0): indicate this pin needs a pull setting for SoCs
->> > +                         that determine the pull up or down themselfs
->>
->> Hm, never saw that before...
->
-> Citing the original gpio driver:
->
->         /*
->          * Values written to this register independently
->          * control Pullup/Pulldown or not for the
->          * corresponding data bit in GPIO.
->          * 0: pull up/down enable, PAD type will decide
->          * to be up or down, not related with this value
->          * 1: pull up/down disable
->          */
->
-> So if it's a pull up or down is decided based on the mux of the pin. Calling
-> everything a "pull down" (or up) when it isn't seemed somehow wrong to me.
->
-> The rk3188 on the other hand supports both pull up and down separately.
->
-> Or should this be selected as PULL_UP | PULL_DOWN in the config?
+While generally the choice of using %%rax instead of %0 here is
+a matter of taste to some degree, I still don't see why you can't
+use "r" as the constraint here in the first place.
 
-The generic config is pretty much either/or so it'd be a new
-config for that approach.
+Furthermore, assuming this sits in a function guaranteed to not be
+inlined, this has a latent bug (and if the assumption isn't right, the
+bug is real) in that the asm() modifies %rax without telling the
+compiler.
 
-Basically it seems they have embedded knowledge into the
-silicon: there is no specific rule as to whether a pad should be
-pulled up or down depending on "pad type" as is stated, rather
-it's so that if you know a pad will be used for I2C SCL then
-you know it needs pull-up. Probably something like a "1" on
-some constant switch in VHDL/Verilog is hard-coded into
-the silicon turning on pull-up if I2C is selected and the
-autopull is set for example.
+This is how I would have done it:
 
->> +config PINCTRL_ROCKCHIP
->> +       bool
->> +       select PINMUX
->> +       select PINCONF
->> +       select GENERIC_IRQ_CHIP
->>
->> Why is this super-simple pin config thing not using
->> GENERIC_PINCONF?
->>
->> I *know* it is simpler to implement your own thing, but think of the
->> poor maintainers that have to wade through 50 identical implementations.
->> Do this, it pays off.
->
-> generic pinconf sounds interesting ... will give it a try.
->
-> The only problem is the pull stuff mentioned above that is either pull up or
-> down without the driver having knowledge about it. And generic_pinconf only
-> knows about them separately right now.
+		unsigned long dummy;
 
-Create a separate patch adding PIN_CONFIG_BIAS_PULL_AUTO
-to include/linux/pinctrl/pinconf-generic.h, don't forget the
-kerneldoc, and patching drivers/pinctrl/pinconf-generic.c.
+		asm volatile ("pushq %0\n"
+			      "leaq 1f(%%rip),%0\n"
+			      "pushq %0\n"
+			      "lretq\n"
+			      "1:\n"
+			      : "=&r" (dummy) : "0" (__KERNEL_CS));
 
-I'll apply it right away.
+(also dropping the memory clobber, as I don't see what you
+need this for).
 
->> Nothing else you want to say about the pins here?
->> (No big deal for sure, but....)
->
-> when using pinconfig_generic, its dump_pin function should be more talkative
-> right?
+Jan
 
-Yes, one of the things you get for free... soon also the pin config
-DT parser will be for free I hope.
-
-Yours,
-Linus Walleij
