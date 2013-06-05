@@ -1,131 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab3FEMmR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 08:42:17 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:64606 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752996Ab3FEMmQ (ORCPT
+	id S1753375Ab3FEMoy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 08:44:54 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:52249 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753033Ab3FEMox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 08:42:16 -0400
+	Wed, 5 Jun 2013 08:44:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        xen-devel@lists.xensource.com, Ian.Campbell@citrix.com,
+        catalin.marinas@arm.com, konrad.wilk@oracle.com, will.deacon@arm.com,
+        linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v3 5/6] arm64/xen: introduce CONFIG_XEN and hypercall.S on ARM64
+Date: Wed, 05 Jun 2013 14:44:55 +0200
+Message-ID: <1471793.18ZhhAHKN9@wuerfel>
+User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
+In-Reply-To: <1370434530-22428-5-git-send-email-stefano.stabellini@eu.citrix.com>
+References: <alpine.DEB.2.02.1306041712100.4589@kaball.uk.xensource.com> <1370434530-22428-5-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
-In-Reply-To: <20130605110434.GY8923@twins.programming.kicks-ass.net>
-References: <d226c91fed3dfa2dca644d14c88b1d1ff9d2e722.1370344689.git.viresh.kumar@linaro.org>
-	<51AEC1C3.1040804@linux.vnet.ibm.com>
-	<CAKohpokGrgFOtOT6Y3e4MOJBUQWT4FG4Mk-F6_M0V-pEEf3KYw@mail.gmail.com>
-	<20130605110434.GY8923@twins.programming.kicks-ass.net>
-Date: Wed, 5 Jun 2013 18:12:15 +0530
-Message-ID: <CAKohpomJOGKoX9+HWkiGshUwTG9yKbn=M25xJvEYVZGnmj9Bkg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] sched: Optimize build_sched_domains() for saving
- first SD node for a cpu
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Michael Wang <wangyun@linux.vnet.ibm.com>, mingo@redhat.com,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com
-Content-Type: multipart/mixed; boundary=e89a8ff2560e0caffe04de6787c2
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:nOlBtCllwtaVt4gYjm0TwN/k2QnnYWxNCN9NC5q46SH
+ yYWW0iXJoeukv2NMkSjzZEruoJN4OAyQOBXaKsJR2+yJlT8M7x
+ lHxzjhqp3g0mmDvR4Q+M/SWX1KnyeOcYqLBwlej8MGyB0tqPlp
+ 3Sw3EgbejlmECM6Jks/1J/seV7Ws5NgPXJguXljrRtZ3wlGMUG
+ +cTJo2YXorXzs4dLqU0AN7WXRiS3UsVoC7Suoi98sMD2PFsSJs
+ FZjrWH0iHbbOEgH4QVSvXusDNo/2gwBBuuvU5Rgrwf8s3z2zlf
+ jQpSMlS9fgtwF7GydBJzKMTDfGWKVLv/jT8/9BSGdiy2TdiG1B
+ yrtTT0KhgQfN7tIlviyY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---e89a8ff2560e0caffe04de6787c2
-Content-Type: text/plain; charset=ISO-8859-1
+On Wednesday 05 June 2013 13:15:29 Stefano Stabellini wrote:
+> diff --git a/arch/arm64/Makefile b/arch/arm64/Makefile
+> index c95c5cb..79dd13d 100644
+> --- a/arch/arm64/Makefile
+> +++ b/arch/arm64/Makefile
+> @@ -37,6 +37,7 @@ TEXT_OFFSET := 0x00080000
+>  export TEXT_OFFSET GZFLAGS
+>  
+>  core-y         += arch/arm64/kernel/ arch/arm64/mm/
+> +core-$(CONFIG_XEN)             += arch/arm64/xen/
+>  libs-y         := arch/arm64/lib/ $(libs-y)
+>  libs-y         += $(LIBGCC)
+>  
+> diff --git a/arch/arm64/xen/Makefile b/arch/arm64/xen/Makefile
+> new file mode 100644
+> index 0000000..be24040
+> --- /dev/null
+> +++ b/arch/arm64/xen/Makefile
+> @@ -0,0 +1,2 @@
+> +xen-arm-y      += $(addprefix ../../arm/xen/, enlighten.o grant-table.o)
+> +obj-y          := xen-arm.o hypercall.o
 
-On 5 June 2013 16:34, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Jun 05, 2013 at 10:37:29AM +0530, Viresh Kumar wrote:
+I think it would be nicer to redirect the entire directory, not just
+the enlighten.o and grant-table.o files. You could do in arch/arm64/Makefile:
 
->> See if below one looks better (Attached too in case gmail screws up
->> my mail)..
+core-(CONFIG_XEN) += arch/arm/xen/
 
-> Applying patch
-> patches/viresh_kumar-_patch__sched-optimize_build_sched_domains_for_saving_first_sd.patch
-> patching file kernel/sched/core.c
-> patch: **** malformed patch at line 56: cpumask *cpu_map,
+That leaves a small difference in hypercall.o, which I think you can
+handle with an #ifdef.
 
-You tried to apply patch from mail or attachment? I requested to
-pick attachment as gmail's copy-paste screws up patches.
+I believe the reason why KVM does the more elaborate variant is that
+they want to be able to build their code as a loadable module that
+also includes code from virt/kvm, which you don't need.
 
-I rebased it over tip/master now:
-
-2bf6874 Merge branch 'x86/cleanups'
-
-Patches are attached now.
-
---e89a8ff2560e0caffe04de6787c2
-Content-Type: application/octet-stream; 
-	name="0001-sched-Remove-unused-params-of-build_sched_domain.patch"
-Content-Disposition: attachment; 
-	filename="0001-sched-Remove-unused-params-of-build_sched_domain.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hhkiacri0
-
-RnJvbSA1NDVlMGI0NTM2MTY2YTE1YjQ0NzVhYmNhZmU1ZWQwZGI0YWQ0YTJjIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8NTQ1ZTBiNDUzNjE2NmExNWI0NDc1YWJjYWZlNWVk
-MGRiNGFkNGEyYy4xMzcwNDM2MTIwLmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRnJvbTog
-VmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRGF0ZTogVHVlLCA0IEp1biAy
-MDEzIDE2OjEyOjQzICswNTMwClN1YmplY3Q6IFtQQVRDSCAxLzJdIHNjaGVkOiBSZW1vdmUgdW51
-c2VkIHBhcmFtcyBvZiBidWlsZF9zY2hlZF9kb21haW4oKQoKYnVpbGRfc2NoZWRfZG9tYWluKCkg
-bmV2ZXIgdXNlcyBwYXJhbWV0ZXIgc3RydWN0IHNfZGF0YSAqZCBhbmQgc28gcGFzc2luZyBpdCBp
-cwp1c2VsZXNzLgoKUmVtb3ZlIGl0LgoKU2lnbmVkLW9mZi1ieTogVmlyZXNoIEt1bWFyIDx2aXJl
-c2gua3VtYXJAbGluYXJvLm9yZz4KLS0tCiBrZXJuZWwvc2NoZWQvY29yZS5jIHwgNyArKystLS0t
-CiAxIGZpbGUgY2hhbmdlZCwgMyBpbnNlcnRpb25zKCspLCA0IGRlbGV0aW9ucygtKQoKZGlmZiAt
-LWdpdCBhL2tlcm5lbC9zY2hlZC9jb3JlLmMgYi9rZXJuZWwvc2NoZWQvY29yZS5jCmluZGV4IDUy
-YTE3NjAuLjA2MjM3MDMgMTAwNjQ0Ci0tLSBhL2tlcm5lbC9zY2hlZC9jb3JlLmMKKysrIGIva2Vy
-bmVsL3NjaGVkL2NvcmUuYwpAQCAtNTkzMCw5ICs1OTMwLDggQEAgc3RhdGljIHZvaWQgX19zZHRf
-ZnJlZShjb25zdCBzdHJ1Y3QgY3B1bWFzayAqY3B1X21hcCkKIH0KIAogc3RydWN0IHNjaGVkX2Rv
-bWFpbiAqYnVpbGRfc2NoZWRfZG9tYWluKHN0cnVjdCBzY2hlZF9kb21haW5fdG9wb2xvZ3lfbGV2
-ZWwgKnRsLAotCQlzdHJ1Y3Qgc19kYXRhICpkLCBjb25zdCBzdHJ1Y3QgY3B1bWFzayAqY3B1X21h
-cCwKLQkJc3RydWN0IHNjaGVkX2RvbWFpbl9hdHRyICphdHRyLCBzdHJ1Y3Qgc2NoZWRfZG9tYWlu
-ICpjaGlsZCwKLQkJaW50IGNwdSkKKwkJY29uc3Qgc3RydWN0IGNwdW1hc2sgKmNwdV9tYXAsIHN0
-cnVjdCBzY2hlZF9kb21haW5fYXR0ciAqYXR0ciwKKwkJc3RydWN0IHNjaGVkX2RvbWFpbiAqY2hp
-bGQsIGludCBjcHUpCiB7CiAJc3RydWN0IHNjaGVkX2RvbWFpbiAqc2QgPSB0bC0+aW5pdCh0bCwg
-Y3B1KTsKIAlpZiAoIXNkKQpAQCAtNTk3Miw3ICs1OTcxLDcgQEAgc3RhdGljIGludCBidWlsZF9z
-Y2hlZF9kb21haW5zKGNvbnN0IHN0cnVjdCBjcHVtYXNrICpjcHVfbWFwLAogCiAJCXNkID0gTlVM
-TDsKIAkJZm9yICh0bCA9IHNjaGVkX2RvbWFpbl90b3BvbG9neTsgdGwtPmluaXQ7IHRsKyspIHsK
-LQkJCXNkID0gYnVpbGRfc2NoZWRfZG9tYWluKHRsLCAmZCwgY3B1X21hcCwgYXR0ciwgc2QsIGkp
-OworCQkJc2QgPSBidWlsZF9zY2hlZF9kb21haW4odGwsIGNwdV9tYXAsIGF0dHIsIHNkLCBpKTsK
-IAkJCWlmICh0bCA9PSBzY2hlZF9kb21haW5fdG9wb2xvZ3kpCiAJCQkJKnBlcl9jcHVfcHRyKGQu
-c2QsIGkpID0gc2Q7CiAJCQlpZiAodGwtPmZsYWdzICYgU0RUTF9PVkVSTEFQIHx8IHNjaGVkX2Zl
-YXQoRk9SQ0VfU0RfT1ZFUkxBUCkpCi0tIAoxLjcuMTIucmMyLjE4Lmc2MWI0NzJlCgo=
---e89a8ff2560e0caffe04de6787c2
-Content-Type: application/octet-stream; 
-	name="0002-sched-Optimize-build_sched_domains-for-saving-first-.patch"
-Content-Disposition: attachment; 
-	filename="0002-sched-Optimize-build_sched_domains-for-saving-first-.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hhkiacrm1
-
-RnJvbSBmYzQ3MzUyN2NiYzRkZmEwYjhlZWVmMmE1OWRiNzQ2ODRlYjU5YTgzIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8ZmM0NzM1MjdjYmM0ZGZhMGI4ZWVlZjJhNTlkYjc0
-Njg0ZWI1OWE4My4xMzcwNDM2MTIwLmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KSW4tUmVw
-bHktVG86IDw1NDVlMGI0NTM2MTY2YTE1YjQ0NzVhYmNhZmU1ZWQwZGI0YWQ0YTJjLjEzNzA0MzYx
-MjAuZ2l0LnZpcmVzaC5rdW1hckBsaW5hcm8ub3JnPgpSZWZlcmVuY2VzOiA8NTQ1ZTBiNDUzNjE2
-NmExNWI0NDc1YWJjYWZlNWVkMGRiNGFkNGEyYy4xMzcwNDM2MTIwLmdpdC52aXJlc2gua3VtYXJA
-bGluYXJvLm9yZz4KRnJvbTogVmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4K
-RGF0ZTogVHVlLCA0IEp1biAyMDEzIDE1OjQxOjE1ICswNTMwClN1YmplY3Q6IFtQQVRDSCAyLzJd
-IHNjaGVkOiBPcHRpbWl6ZSBidWlsZF9zY2hlZF9kb21haW5zKCkgZm9yIHNhdmluZyBmaXJzdAog
-U0Qgbm9kZSBmb3IgYSBjcHUKCldlIGFyZSBzYXZpbmcgZmlyc3Qgc2NoZWR1bGluZyBkb21haW4g
-Zm9yIGEgY3B1IGluIGJ1aWxkX3NjaGVkX2RvbWFpbnMoKSBieQppdGVyYXRpbmcgb3ZlciB0aGUg
-bmVzdGVkIHNkLT5jaGlsZCBsaXN0LiBXZSBkb24ndCBhY3R1YWxseSBuZWVkIHRvIGRvIGl0IHRo
-aXMKd2F5LgoKdGwgd2lsbCBiZSBlcXVhbCB0byBzY2hlZF9kb21haW5fdG9wb2xvZ3kgZm9yIHRo
-ZSBmaXJzdCBpdGVyYXRpb24gYW5kIHNvIHdlIGNhbgpzZXQgKnBlcl9jcHVfcHRyKGQuc2QsIGkp
-IGJhc2VkIG9uIHRoYXQuICBTbywgc2F2ZSBwb2ludGVyIHRvIGZpcnN0IFNEIHdoaWxlCnJ1bm5p
-bmcgdGhlIGl0ZXJhdGlvbiBsb29wIG92ZXIgdGwncy4KClNpZ25lZC1vZmYtYnk6IFZpcmVzaCBL
-dW1hciA8dmlyZXNoLmt1bWFyQGxpbmFyby5vcmc+Ci0tLQoga2VybmVsL3NjaGVkL2NvcmUuYyB8
-IDcgKystLS0tLQogMSBmaWxlIGNoYW5nZWQsIDIgaW5zZXJ0aW9ucygrKSwgNSBkZWxldGlvbnMo
-LSkKCmRpZmYgLS1naXQgYS9rZXJuZWwvc2NoZWQvY29yZS5jIGIva2VybmVsL3NjaGVkL2NvcmUu
-YwppbmRleCAxNDJjNjgyZi4uNTJhMTc2MCAxMDA2NDQKLS0tIGEva2VybmVsL3NjaGVkL2NvcmUu
-YworKysgYi9rZXJuZWwvc2NoZWQvY29yZS5jCkBAIC01OTczLDE2ICs1OTczLDEzIEBAIHN0YXRp
-YyBpbnQgYnVpbGRfc2NoZWRfZG9tYWlucyhjb25zdCBzdHJ1Y3QgY3B1bWFzayAqY3B1X21hcCwK
-IAkJc2QgPSBOVUxMOwogCQlmb3IgKHRsID0gc2NoZWRfZG9tYWluX3RvcG9sb2d5OyB0bC0+aW5p
-dDsgdGwrKykgewogCQkJc2QgPSBidWlsZF9zY2hlZF9kb21haW4odGwsICZkLCBjcHVfbWFwLCBh
-dHRyLCBzZCwgaSk7CisJCQlpZiAodGwgPT0gc2NoZWRfZG9tYWluX3RvcG9sb2d5KQorCQkJCSpw
-ZXJfY3B1X3B0cihkLnNkLCBpKSA9IHNkOwogCQkJaWYgKHRsLT5mbGFncyAmIFNEVExfT1ZFUkxB
-UCB8fCBzY2hlZF9mZWF0KEZPUkNFX1NEX09WRVJMQVApKQogCQkJCXNkLT5mbGFncyB8PSBTRF9P
-VkVSTEFQOwogCQkJaWYgKGNwdW1hc2tfZXF1YWwoY3B1X21hcCwgc2NoZWRfZG9tYWluX3NwYW4o
-c2QpKSkKIAkJCQlicmVhazsKIAkJfQotCi0JCXdoaWxlIChzZC0+Y2hpbGQpCi0JCQlzZCA9IHNk
-LT5jaGlsZDsKLQotCQkqcGVyX2NwdV9wdHIoZC5zZCwgaSkgPSBzZDsKIAl9CiAKIAkvKiBCdWls
-ZCB0aGUgZ3JvdXBzIGZvciB0aGUgZG9tYWlucyAqLwotLSAKMS43LjEyLnJjMi4xOC5nNjFiNDcy
-ZQoK
---e89a8ff2560e0caffe04de6787c2--
+	Arnd
