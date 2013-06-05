@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932574Ab3FEVXp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:23:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36812 "EHLO
+	id S932541Ab3FEVYI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:24:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36809 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932482Ab3FEVMv (ORCPT
+	with ESMTP id S932475Ab3FEVMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:12:51 -0400
+	Wed, 5 Jun 2013 17:12:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oliver@neukum.org>
-Subject: [ 10/44] USB: reset resume quirk needed by a hub
-Date: Wed,  5 Jun 2013 14:12:08 -0700
-Message-Id: <20130605211222.955285068@linuxfoundation.org>
+        Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
+Subject: [ 09/44] USB: Blacklisted Cinterions PLxx WWAN Interface
+Date: Wed,  5 Jun 2013 14:12:07 -0700
+Message-Id: <20130605211222.841168498@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605211221.858177087@linuxfoundation.org>
 References: <20130605211221.858177087@linuxfoundation.org>
@@ -26,30 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oliver@neukum.org>
+From: Schemmel Hans-Christoph <Hans-Christoph.Schemmel@gemalto.com>
 
-commit bac6b03275184c912ad0818c9a0a736847804dca upstream.
+commit 8ff10bdb14a52e3f25d4ce09e0582a8684c1a6db upstream.
 
-Werner Fink has reported problems with this hub.
+/drivers/usb/serial/option.c: Blacklisted Cinterion's PLxx WWAN
+Interface (USB Interface 4), because it will be handled by QMI WWAN
+driver. Product IDs renamed.
 
-Signed-off-by: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/quirks.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/option.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -110,6 +110,9 @@ static const struct usb_device_id usb_qu
- 	/* Edirol SD-20 */
- 	{ USB_DEVICE(0x0582, 0x0027), .driver_info = USB_QUIRK_RESET_RESUME },
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -342,8 +342,8 @@ static void option_instat_callback(struc
+ #define CINTERION_PRODUCT_EU3_E			0x0051
+ #define CINTERION_PRODUCT_EU3_P			0x0052
+ #define CINTERION_PRODUCT_PH8			0x0053
+-#define CINTERION_PRODUCT_AH6			0x0055
+-#define CINTERION_PRODUCT_PLS8			0x0060
++#define CINTERION_PRODUCT_AHXX			0x0055
++#define CINTERION_PRODUCT_PLXX			0x0060
  
-+	/* Alcor Micro Corp. Hub */
-+	{ USB_DEVICE(0x058f, 0x9254), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* appletouch */
- 	{ USB_DEVICE(0x05ac, 0x021a), .driver_info = USB_QUIRK_RESET_RESUME },
- 
+ /* Olivetti products */
+ #define OLIVETTI_VENDOR_ID			0x0b3c
+@@ -1268,8 +1268,9 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_E) },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_P) },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8) },
+-	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_AH6) },
+-	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLS8) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_AHXX) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLXX),
++		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) }, 
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
+ 	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDM) },
 
 
