@@ -1,222 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab3FEJ7j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 05:59:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53211 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752988Ab3FEJ7i (ORCPT
+	id S1753910Ab3FEKEd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 06:04:33 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:35567 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819Ab3FEKEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 05:59:38 -0400
+	Wed, 5 Jun 2013 06:04:32 -0400
+Message-ID: <51AF0D2A.2@atmel.com>
+Date: Wed, 5 Jun 2013 12:04:26 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <s5hli6ovqck.wl%tiwai@suse.de>
-References: <1370410969-15328-1-git-send-email-ming.lei@canonical.com>
-	<1370410969-15328-4-git-send-email-ming.lei@canonical.com>
-	<s5hbo7lrq2a.wl%tiwai@suse.de>
-	<CACVXFVNpH2H0wxfmbeVY--Q+1UnNT1rq_Rwr-3ou3Nddq2EWXw@mail.gmail.com>
-	<s5hli6ovqck.wl%tiwai@suse.de>
-Date: Wed, 5 Jun 2013 17:59:35 +0800
-Message-ID: <CACVXFVP12214=H7Mf-d-Gd2bV0my=7VF65brXVHJT4cQk-Qubg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] firmware loader: allow distribution to choose default
- search paths
-From: Ming Lei <ming.lei@canonical.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-pcmcia@lists.infradead.org>
+CC: <linux@dominikbrodowski.net>, Fabio Porcedda <fabio.porcedda@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <manabian@gmail.com>, <laurent.navet@gmail.com>,
+        Fabio Porcedda <fabio.porcedda@gmail.com>
+Subject: Re: [PATCH v2 0/7] pcmcia: at91_cf: clean up and add DT support
+References: <cover.1363865228.git.nicolas.ferre@atmel.com> <CAHkwnC-aL=G9K9jttjD8Bk_ZKJ535vsGT26uCFbuFMeJUquYQw@mail.gmail.com> <516E628B.1000104@atmel.com> <20130419225448.GA8242@kroah.com>
+In-Reply-To: <20130419225448.GA8242@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 5, 2013 at 5:50 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Wed, 5 Jun 2013 17:35:26 +0800,
-> Ming Lei wrote:
+On 20/04/2013 00:54, Greg Kroah-Hartman :
+> On Wed, Apr 17, 2013 at 10:51:23AM +0200, Nicolas Ferre wrote:
+>> On 04/17/2013 10:39 AM, Fabio Porcedda :
+>>> On Thu, Mar 21, 2013 at 12:40 PM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+>>>> These patches clean up at91_cf a bit and add DT bindings.
+>>>> It is based on a previous series from Joachim Eastwood and other cleanup
+>>>> patches by Fabio and Laurent.
+>>>> I have collected them together as they are lying around for some time.
+>>>>
+>>>> Please tell me if It can go through PCMCIA tree or if Andrew or Greg can
+>>>> take them.
+>>>> Note that they are not bug fixes, so you can stack them for 3.10.
+>>>>
+>>>> Thanks for your help, best regards.
+>>>>
+>>>> v2: add 2 more cleanup patches:
+>>>>          - move to module_platform_driver_probe()
+>>>>          - little trivial indentation fix
+>>>>
+>>>> Fabio Porcedda (1):
+>>>>    pcmcia: at91_cf: use module_platform_driver_probe()
+>>>>
+>>>> Joachim Eastwood (5):
+>>>>    pcmcia: at91_cf: fix gpio_get_value in at91_cf_get_status
+>>>>    pcmcia: at91_cf: convert to dev_ print functions
+>>>>    pcmcia: at91_cf: use devm_ functions for allocations
+>>>>    pcmcia: at91_cf: clean up header includes
+>>>>    pcmcia: at91_cf: add support for DT
+>>>>
+>>>> Laurent Navet (1):
+>>>>    pcmcia/trivial: at91_cf: fix checkpatch error
+>>>>
+>>>>   .../devicetree/bindings/ata/atmel-at91_cf.txt      |  19 +++
+>>>>   drivers/pcmcia/Kconfig                             |   2 +-
+>>>>   drivers/pcmcia/at91_cf.c                           | 176 ++++++++++-----------
+>>>>   3 files changed, 108 insertions(+), 89 deletions(-)
+>>>>   create mode 100644 Documentation/devicetree/bindings/ata/atmel-at91_cf.txt
+>>>>
+>>>> --
+>>>> 1.8.0
+>>>>
+>>>
+>>> Ping?
 >>
->> On Wed, Jun 5, 2013 at 3:10 PM, Takashi Iwai <tiwai@suse.de> wrote:
->> > At Wed,  5 Jun 2013 13:42:49 +0800,
->> > Ming Lei wrote:
->> >>
->> >> For some distributions(e.g. android), firmware images aren't put
->> >> under kernel built-in search paths, so introduce one Kconfig
->> >> option to allow distributions or users to choose its specific default
->> >> search paths, which are always tried before searching from kernel
->> >> built-in paths in direct loading.
->> >>
->> >> Cc: Linus Torvalds <torvalds@linux-foundation.org>
->> >> Cc: Takashi Iwai <tiwai@suse.de>
->> >> Signed-off-by: Ming Lei <ming.lei@canonical.com>
->> >> ---
->> >>  drivers/base/Kconfig          |   12 +++++++
->> >>  drivers/base/firmware_class.c |   76 ++++++++++++++++++++++++++++++++++++-----
->> >>  2 files changed, 80 insertions(+), 8 deletions(-)
->> >>
->> >> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
->> >> index 07abd9d..5b0c909 100644
->> >> --- a/drivers/base/Kconfig
->> >> +++ b/drivers/base/Kconfig
->> >> @@ -156,6 +156,18 @@ config FW_LOADER_USER_HELPER
->> >>         no longer required unless you have a special firmware file that
->> >>         resides in a non-standard path.
->> >>
->> >> +config FW_CUSTOMIZED_PATH
->> >> +     string "default firmware search paths for direct loading"
->> >> +     help
->> >> +       On some distribution(e.g. android), firmware images aren't
->> >> +       put under kernel built-in search paths, so provide this option
->> >> +       for distributions to choose a distribution specific firmware
->> >> +       search path. The option allows to choose more than one path,
->> >> +       and paths are seperated with semicolon(e.g. on android, the
->> >> +       option might look as "/etc/firmware;/vendor/firmware").
->> >> +
->> >> +       If you are unsure about this, don't choose here.
->> >> +
->> >>  config DEBUG_DRIVER
->> >>       bool "Driver Core verbose debug messages"
->> >>       depends on DEBUG_KERNEL
->> >> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
->> >> index c743409..50b5913 100644
->> >> --- a/drivers/base/firmware_class.c
->> >> +++ b/drivers/base/firmware_class.c
->> >> @@ -267,6 +267,9 @@ static void fw_free_buf(struct firmware_buf *buf)
->> >>  static char fw_path_para[256];
->> >>  static const char * const fw_path[] = {
->> >>       fw_path_para,
->> >> +#ifdef CONFIG_FW_CUSTOMIZED_PATH
->> >> +     CONFIG_FW_CUSTOMIZED_PATH,
->> >> +#endif
->> >>       "/lib/firmware/updates/" UTS_RELEASE,
->> >>       "/lib/firmware/updates",
->> >>       "/lib/firmware/" UTS_RELEASE,
->> >> @@ -314,6 +317,59 @@ static bool fw_read_file_contents(struct file *file, struct firmware_buf *fw_buf
->> >>       return true;
->> >>  }
->> >>
->> >> +static bool fw_get_file_firmware(const char *path,
->> >> +                              struct firmware_buf *buf)
->> >> +{
->> >> +     struct file *file;
->> >> +     bool success;
->> >> +
->> >> +     file = filp_open(path, O_RDONLY, 0);
->> >> +     if (IS_ERR(file))
->> >> +             return false;
->> >> +     success = fw_read_file_contents(file, buf);
->> >> +     fput(file);
->> >> +
->> >> +     return success;
->> >> +}
->> >> +
->> >> +#ifdef CONFIG_FW_CUSTOMIZED_PATH
->> >> +/* The path in @paths is seperated by ';' */
->> >> +static bool fw_get_fw_file_from_paths(const char *paths, char *path,
->> >> +                                   struct firmware_buf *buf)
->> >> +{
->> >> +     int len, start, end;
->> >> +     char *pos;
->> >> +
->> >> +     end = -1;
->> >> +     do {
->> >> +             start = end + 1;
->> >> +             pos = strchr(&paths[start], ';');
->> >> +             if (pos) {
->> >> +                     end = (int)(pos - paths);
->> >> +                     len = end - start;
->> >> +             } else {
->> >> +                     len = strlen(&paths[start]);
->> >> +             }
->> >> +
->> >> +             if (PATH_MAX < len + strlen(buf->fw_id))
->> >> +                     continue;
->> >> +             strncpy(path, &paths[start], len);
->> >> +             snprintf(&path[len], PATH_MAX - len, "/%s", buf->fw_id);
->> >> +
->> >> +             if (fw_get_file_firmware(path, buf))
->> >> +                     return true;
->> >> +     } while (pos && end < strlen(paths) - 1);
->> >> +
->> >> +     return false;
->> >> +}
->> >> +#else
->> >> +static bool fw_get_fw_file_from_paths(const char *paths, char *path,
->> >> +                                   struct firmware_buf *buf)
->> >> +{
->> >> +     return false;
->> >> +}
->> >> +#endif
->> >> +
->> >>  static bool fw_get_filesystem_firmware(struct device *device,
->> >>                                      struct firmware_buf *buf)
->> >>  {
->> >> @@ -322,19 +378,23 @@ static bool fw_get_filesystem_firmware(struct device *device,
->> >>       char *path = __getname();
->> >>
->> >>       for (i = 0; i < ARRAY_SIZE(fw_path); i++) {
->> >> -             struct file *file;
->> >>
->> >>               /* skip the unset customized path */
->> >>               if (!fw_path[i][0])
->> >>                       continue;
->> >>
->> >> -             snprintf(path, PATH_MAX, "%s/%s", fw_path[i], buf->fw_id);
->> >> -
->> >> -             file = filp_open(path, O_RDONLY, 0);
->> >> -             if (IS_ERR(file))
->> >> -                     continue;
->> >> -             success = fw_read_file_contents(file, buf);
->> >> -             fput(file);
->> >> +             /*
->> >> +              * If CONFIG_FW_CUSTOMIZED_PATH is set, search from
->> >> +              * these paths first
->> >> +              */
->> >> +             if (i == 1 && ARRAY_SIZE(fw_path) > 5) {
->> >> +                     success = fw_get_fw_file_from_paths(fw_path[1],
->> >> +                                                         path, buf);
->> >> +             } else {
->> >> +                     snprintf(path, PATH_MAX, "%s/%s", fw_path[i],
->> >> +                              buf->fw_id);
->> >> +                     success = fw_get_file_firmware(path, buf);
->> >
->> > Shouldn't fw_get_fw_file_from_paths() be applied unconditionally?
->> > It'll be benefit for the customized path passed via module option,
->> > too.  The only drawback is a slight code growth, but the code can be
->> > reduced a bit with strcspn() or such.
+>> Andrew, Greg, can you please take this series?
 >>
->> You mean that both the 1st two items should be covered by
->> fw_get_fw_file_from_paths()? If so, the function may become
->> a bit ugly since two strings are required to pass in, and we can't
->> merge one runtime string and one ro string created in compiling.
->
-> I meant to simply call fw_get_fw_file_from_paths() for all fw_path[]
-> entries.  So far, the module option can pass only a single path.
-> But if it's handled through fw_get_file_from_paths(), you can pass
-> multiple paths there, too.
->
->> Looks we can let fw_get_fw_file_from_paths() handle all
->> predefined paths(CONFIG_FW_CUSTOMIZED_PATH and
->> kernel built-in paths), then fw_get_filesystem_firmware()
->> may become simple, just check fw_path_para and all
->> other paths by fw_get_fw_file_from_paths(). How about the
->> idea?
+>> Here is the post on lkml:
+>> https://lkml.org/lkml/2013/3/21/246
 >>
->> > BTW, I now wonder what happens if you pass a relative path.
->> > Did you already test it?
+>> Here is the first patch in patchwork (1/7):
+>> https://patchwork.kernel.org/patch/2312691/
 >>
->> I tested absolute paths, and not test relative paths. Do you mean
->> it may cause security problem?
+>> Tell me if I can do something else to make this applied upstream...
 >
-> Yes.  It just came to my mind while reviewing your patch.
->
->> If so, we can check and ignore them,
->> but it should be OK since the paths are provided by kernel builder.
->> >From view of function, I don't think there are much difference with
->> absolute paths.
->
-> The path can be provided via module option, too, so we need to check
-> it in anyway.
+> The PCMCIA maintainer should take these, not me.
 
-Yes, even the firmware name may includes "..".
+I know Greg, but this patch series is still not taken by anyone 3 months 
+after its first submission and after several requests by both Fabio and 
+myself...
 
+The series is still applying on linux-next today... Maybe it can go via 
+Andrew, then...
 
-Thanks,
---
-Ming Lei
+Best regards,
+-- 
+Nicolas Ferre
