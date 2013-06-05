@@ -1,80 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792Ab3FEP7d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 11:59:33 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:48345 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756689Ab3FEP7a (ORCPT
+	id S1756710Ab3FEQA3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 12:00:29 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:46637 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756520Ab3FEQA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 11:59:30 -0400
-Message-ID: <1370447966.24311.284.camel@edumazet-glaptop>
-Subject: Re: [PATCH v9 net-next 2/7] net: add low latency socket poll
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Wed, 05 Jun 2013 08:59:26 -0700
-In-Reply-To: <51AF5D5A.8030907@linux.intel.com>
-References: <20130605103400.11172.49099.stgit@ladj378.jer.intel.com>
-	   <20130605103421.11172.82925.stgit@ladj378.jer.intel.com>
-	  <1370445714.24311.268.camel@edumazet-glaptop>
-	  <51AF59B0.6080101@linux.intel.com>
-	 <1370446760.24311.275.camel@edumazet-glaptop>
-	 <51AF5D5A.8030907@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Wed, 5 Jun 2013 12:00:27 -0400
+Message-ID: <51AF6095.8050701@gmail.com>
+Date: Thu, 06 Jun 2013 00:00:21 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 03/10] zram: use zram->lock to protect zram_free_page()
+ in swap free notify path
+References: <1370361968-8764-1-git-send-email-jiang.liu@huawei.com> <1370361968-8764-3-git-send-email-jiang.liu@huawei.com> <20130605062935.GC8732@blaptop>
+In-Reply-To: <20130605062935.GC8732@blaptop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-05 at 18:46 +0300, Eliezer Tamir wrote:
-> On 05/06/2013 18:39, Eric Dumazet wrote:
-> > On Wed, 2013-06-05 at 18:30 +0300, Eliezer Tamir wrote:
-> >> On 05/06/2013 18:21, Eric Dumazet wrote:
-> 
-> >>> It would also make sense to give end_time as a parameter, so that the
-> >>> polling() code could really give  a end_time for the whole duration of
-> >>> poll().
-> >>>
-> >>> (You then should test can_poll_ll(end_time) _before_ call to
-> >>> ndo_ll_poll())
-> >>
-> >> how would you handle a nonblocking operation in that case?
-> >> I guess if we have a socket option, then we don't need to handle none
-> >> blocking any diffrent, since the user specified exactly how much time to
-> >> waste polling. right?
-> >
-> > If the thread already spent 50us in the poll() system call, it for sure
-> > should not call any ndo_ll_poll(). This makes no more sense at this
-> > point.
-> 
-> what about a non-blocking read from a socket?
-> Right now we assume this means poll only once since the application will 
-> repeat as needed.
-> 
-> maybe add a "once" parameter that will cause sk_poll_ll() to ignore end 
-> time and only try once?
+On Wed 05 Jun 2013 02:29:35 PM CST, Minchan Kim wrote:
+> On Wed, Jun 05, 2013 at 12:06:01AM +0800, Jiang Liu wrote:
+>> zram_free_page() is protected by down_write(&zram->lock) when called by
+>> zram_bvec_write(), but there's no such protection when called by
+>> zram_slot_free_notify(), which may cause wrong states to zram object.
+>>
+>> There are two possible consequences of this issue:
+>> 1) It may cause invalid memory access if we read from a zram device used
+>>    as swap device. (Not sure whether it's legal to make read/write
+>>    requests to a zram device used as swap device.)
+>
+> I think it's possible if the permission is allowed so we should take care
+> of that. But I'd like to clear your comment about "invalid memory access".
+>
+> As I read the code, one of the problem we can encounter by race between
+> zram_bvec_read and zram_slot_free_notify is BUG_ON(!handle) on zs_map_object
+> or pr_err("Decompression failed xxxx) on zram_decompress_page.
+> Otherwise, it would be able to access different swap block with
+> user request's one.
+>
+> Could you please expand your vague "invalid memory access"?
+Hi Minchan,
+     I have no enough time to read all zsmalloc code yet, but I'm 
+thinking of this scenario:
+a user does a "dd" from a zram device used as swap device.
 
-extern bool __sk_poll_ll(struct sock *sk, cycles_t end);
+A possible sequence may be:
+Thread 1: zram_bvec_rw()->zram_bvec_read()->zram_decompress_page()
 
-static inline bool sk_poll_ll(struct sock *sk, bool nonblock)
-{
-	return __sk_poll_ll(sk, nonblock, ll_end_time());
-}
+Just before zram_decompress_page() calls zs_map_object().
+Thread 2: 
+zram_slot_free_notify()->zram_free_page()->zs_free()->free_zspage()->reset_page()/free_page()
 
-In the poll() code, we should call ll_end_time() once, even if we poll
-1000 fds.
+Then:
+Thread 1: zs_map_object()
+                              
+->get_zspage_mapping(get_first_page(page), &class_idx, &fg)
+                                            ->get_first_page()
+                                                        ->return 
+page->first_page  /* may be invalid address */
 
+Actually I guess it may cause different invalid memory access, 
+depending on the
+executing order of thread 1 and thread 2.
 
+Regards!
+Gerry
+>
+>
+>> 2) It may cause some fields (bad_compress, good_compress, pages_stored)
+>>    in zram->stats wrong if the swap layer makes concurrently call to
+>>    zram_slot_free_notify().
+>>
+>> So enhance zram_slot_free_notify() to acquire writer lock on zram->lock
+>> before calling zram_free_page().
+>
+> OK.
+>
+> And please add the comment struct zram->lock feild, too.
+>
+> Thanks.
+>
+>>
+>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>> Cc: stable@vger.kernel.org
+>> ---
+>>  drivers/staging/zram/zram_drv.c | 2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+>> index 5a2f20b..847d207 100644
+>> --- a/drivers/staging/zram/zram_drv.c
+>> +++ b/drivers/staging/zram/zram_drv.c
+>> @@ -582,7 +582,9 @@ static void zram_slot_free_notify(struct block_device *bdev,
+>>  	struct zram *zram;
+>>
+>>  	zram = bdev->bd_disk->private_data;
+>> +	down_write(&zram->lock);
+>>  	zram_free_page(zram, index);
+>> +	up_write(&zram->lock);
+>>  	zram_stat64_inc(zram, &zram->stats.notify_free);
+>>  }
+>>
+>> --
+>> 1.8.1.2
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
 
