@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932681Ab3FEVQv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:16:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36941 "EHLO
+	id S932703Ab3FEVRL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:17:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36936 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932604Ab3FEVNI (ORCPT
+	with ESMTP id S932594Ab3FEVNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:13:08 -0400
+	Wed, 5 Jun 2013 17:13:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Keir Fraser <keir.fraser@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 37/44] xen/events: Handle VIRQ_TIMER before any other hardirq in event loop.
-Date: Wed,  5 Jun 2013 14:12:35 -0700
-Message-Id: <20130605211225.711463237@linuxfoundation.org>
+        Vincent Pelletier <plr.vincent@gmail.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 35/44] libata: make ata_exec_internal_sg honor DMADIR
+Date: Wed,  5 Jun 2013 14:12:33 -0700
+Message-Id: <20130605211225.511126754@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605211221.858177087@linuxfoundation.org>
 References: <20130605211221.858177087@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,82 +29,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Keir Fraser <keir.fraser@citrix.com>
+From: Vincent Pelletier <plr.vincent@gmail.com>
 
-commit bee980d9e9642e96351fa3ca9077b853ecf62f57 upstream.
+commit e771451c0a831d96a7c14b0ca8a8ec671d98567b upstream.
 
-This avoids any other hardirq handler seeing a very stale jiffies
-value immediately after wakeup from a long idle period. The one
-observable symptom of this was a USB keyboard, with software keyboard
-repeat, which would always repeat a key immediately that it was
-pressed. This is due to the key press waking the guest, the key
-handler immediately runs, sees an old jiffies value, and then that
-jiffies value significantly updated, before the key is unpressed.
+libata honors DMADIR for regular commands, but not for internal commands
+used (among other) during device initialisation.
 
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Keir Fraser <keir.fraser@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+This makes SATA-host-to-PATA-device bridges based on Silicon Image SiL3611
+(such as "Abit Serillel 2") end up disabled when used with an ATAPI device
+after a few tries.
+
+Log output of the bridge being hot-plugged with an ATAPI drive:
+
+  [ 9631.212901] ata1: exception Emask 0x10 SAct 0x0 SErr 0x40c0000 action 0xe frozen
+  [ 9631.212913] ata1: irq_stat 0x00000040, connection status changed
+  [ 9631.212923] ata1: SError: { CommWake 10B8B DevExch }
+  [ 9631.212939] ata1: hard resetting link
+  [ 9632.104962] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+  [ 9632.106393] ata1.00: ATAPI: PIONEER DVD-RW  DVR-115, 1.06, max UDMA/33
+  [ 9632.106407] ata1.00: applying bridge limits
+  [ 9632.108151] ata1.00: configured for UDMA/33
+  [ 9637.105303] ata1.00: qc timeout (cmd 0xa0)
+  [ 9637.105324] ata1.00: failed to clear UNIT ATTENTION (err_mask=0x5)
+  [ 9637.105335] ata1: hard resetting link
+  [ 9638.044599] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+  [ 9638.047878] ata1.00: configured for UDMA/33
+  [ 9643.044933] ata1.00: qc timeout (cmd 0xa0)
+  [ 9643.044953] ata1.00: failed to clear UNIT ATTENTION (err_mask=0x5)
+  [ 9643.044963] ata1: limiting SATA link speed to 1.5 Gbps
+  [ 9643.044971] ata1.00: limiting speed to UDMA/33:PIO3
+  [ 9643.044979] ata1: hard resetting link
+  [ 9643.984225] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+  [ 9643.987471] ata1.00: configured for UDMA/33
+  [ 9648.984591] ata1.00: qc timeout (cmd 0xa0)
+  [ 9648.984612] ata1.00: failed to clear UNIT ATTENTION (err_mask=0x5)
+  [ 9648.984619] ata1.00: disabled
+  [ 9649.000593] ata1: hard resetting link
+  [ 9649.939902] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+  [ 9649.955864] ata1: EH complete
+
+With this patch, the drive enumerates correctly when libata is loaded with
+atapi_dmadir=1:
+
+  [ 9891.810863] ata1: exception Emask 0x10 SAct 0x0 SErr 0x40c0000 action 0xe frozen
+  [ 9891.810874] ata1: irq_stat 0x00000040, connection status changed
+  [ 9891.810884] ata1: SError: { CommWake 10B8B DevExch }
+  [ 9891.810900] ata1: hard resetting link
+  [ 9892.762105] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+  [ 9892.763544] ata1.00: ATAPI: PIONEER DVD-RW  DVR-115, 1.06, max UDMA/33, DMADIR
+  [ 9892.763558] ata1.00: applying bridge limits
+  [ 9892.765393] ata1.00: configured for UDMA/33
+  [ 9892.786063] ata1: EH complete
+  [ 9892.792062] scsi 0:0:0:0: CD-ROM            PIONEER  DVD-RW  DVR-115  1.06 PQ: 0 ANSI: 5
+  [ 9892.798455] sr2: scsi3-mmc drive: 12x/12x writer dvd-ram cd/rw xa/form2 cdda tray
+  [ 9892.798837] sr 0:0:0:0: Attached scsi CD-ROM sr2
+  [ 9892.799109] sr 0:0:0:0: Attached scsi generic sg6 type 5
+
+Based on a patch by Csaba Halász <csaba.halasz@gmail.com> on linux-ide:
+http://marc.info/?l=linux-ide&m=136121147832295&w=2
+
+tj: minor formatting changes.
+
+Signed-off-by: Vincent Pelletier <plr.vincent@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/events.c |   19 +++++++++++++++----
- 1 file changed, 15 insertions(+), 4 deletions(-)
+ drivers/ata/libata-core.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -1258,7 +1258,7 @@ static void __xen_evtchn_do_upcall(void)
- {
- 	int start_word_idx, start_bit_idx;
- 	int word_idx, bit_idx;
--	int i;
-+	int i, irq;
- 	int cpu = get_cpu();
- 	struct shared_info *s = HYPERVISOR_shared_info;
- 	struct vcpu_info *vcpu_info = __this_cpu_read(xen_vcpu);
-@@ -1266,6 +1266,8 @@ static void __xen_evtchn_do_upcall(void)
- 
- 	do {
- 		unsigned long pending_words;
-+		unsigned long pending_bits;
-+		struct irq_desc *desc;
- 
- 		vcpu_info->evtchn_upcall_pending = 0;
- 
-@@ -1276,6 +1278,17 @@ static void __xen_evtchn_do_upcall(void)
- 		/* Clear master flag /before/ clearing selector flag. */
- 		wmb();
- #endif
-+		if ((irq = per_cpu(virq_to_irq, cpu)[VIRQ_TIMER]) != -1) {
-+			int evtchn = evtchn_from_irq(irq);
-+			word_idx = evtchn / BITS_PER_LONG;
-+			pending_bits = evtchn % BITS_PER_LONG;
-+			if (active_evtchns(cpu, s, word_idx) & (1ULL << pending_bits)) {
-+				desc = irq_to_desc(irq);
-+				if (desc)
-+					generic_handle_irq_desc(irq, desc);
-+			}
-+		}
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -1599,6 +1599,12 @@ unsigned ata_exec_internal_sg(struct ata
+ 	qc->tf = *tf;
+ 	if (cdb)
+ 		memcpy(qc->cdb, cdb, ATAPI_CDB_LEN);
 +
- 		pending_words = xchg(&vcpu_info->evtchn_pending_sel, 0);
- 
- 		start_word_idx = __this_cpu_read(current_word_idx);
-@@ -1284,7 +1297,6 @@ static void __xen_evtchn_do_upcall(void)
- 		word_idx = start_word_idx;
- 
- 		for (i = 0; pending_words != 0; i++) {
--			unsigned long pending_bits;
- 			unsigned long words;
- 
- 			words = MASK_LSBS(pending_words, word_idx);
-@@ -1313,8 +1325,7 @@ static void __xen_evtchn_do_upcall(void)
- 
- 			do {
- 				unsigned long bits;
--				int port, irq;
--				struct irq_desc *desc;
-+				int port;
- 
- 				bits = MASK_LSBS(pending_bits, bit_idx);
- 
++	/* some SATA bridges need us to indicate data xfer direction */
++	if (tf->protocol == ATAPI_PROT_DMA && (dev->flags & ATA_DFLAG_DMADIR) &&
++	    dma_dir == DMA_FROM_DEVICE)
++		qc->tf.feature |= ATAPI_DMADIR;
++
+ 	qc->flags |= ATA_QCFLAG_RESULT_TF;
+ 	qc->dma_dir = dma_dir;
+ 	if (dma_dir != DMA_NONE) {
 
 
