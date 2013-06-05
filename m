@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933290Ab3FEVnP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:43:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38047 "EHLO
+	id S933151Ab3FEVnO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:43:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38051 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933070Ab3FEVgL (ORCPT
+	with ESMTP id S933094Ab3FEVgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:36:11 -0400
+	Wed, 5 Jun 2013 17:36:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: [ 107/127] mac80211: close AP_VLAN interfaces before unregistering all
-Date: Wed,  5 Jun 2013 14:34:34 -0700
-Message-Id: <20130605213230.191234158@linuxfoundation.org>
+        Wei Liu <wei.liu2@citrix.com>, Ian Campbell <ian.campbell@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 099/127] xen-netback: remove skb in xen_netbk_alloc_page
+Date: Wed,  5 Jun 2013 14:34:26 -0700
+Message-Id: <20130605213229.265371127@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -27,46 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Wei Liu <wei.liu2@citrix.com>
 
-commit c8aa22db0112f640ac6631347f850879c621840b upstream.
+commit 27f852282ab9a028f57da96d05c26f38c424a315 upstream.
 
-Since Eric's commit efe117ab8 ("Speedup ieee80211_remove_interfaces")
-there's a bug in mac80211 when it unregisters with AP_VLAN interfaces
-up. If the AP_VLAN interface was registered after the AP it belongs
-to (which is the typical case) and then we get into this code path,
-unregister_netdevice_many() will crash because it isn't prepared to
-deal with interfaces being closed in the middle of it. Exactly this
-happens though, because we iterate the list, find the AP master this
-AP_VLAN belongs to and dev_close() the dependent VLANs. After this,
-unregister_netdevice_many() won't pick up the fact that the AP_VLAN
-is already down and will do it again, causing a crash.
+This variable is never used.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Wei Liu <wei.liu2@citrix.com>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/iface.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/net/xen-netback/netback.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/net/mac80211/iface.c
-+++ b/net/mac80211/iface.c
-@@ -1649,6 +1649,15 @@ void ieee80211_remove_interfaces(struct
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -942,7 +942,6 @@ static int netbk_count_requests(struct x
+ }
  
- 	ASSERT_RTNL();
+ static struct page *xen_netbk_alloc_page(struct xen_netbk *netbk,
+-					 struct sk_buff *skb,
+ 					 u16 pending_idx)
+ {
+ 	struct page *page;
+@@ -976,7 +975,7 @@ static struct gnttab_copy *xen_netbk_get
  
-+	/*
-+	 * Close all AP_VLAN interfaces first, as otherwise they
-+	 * might be closed while the AP interface they belong to
-+	 * is closed, causing unregister_netdevice_many() to crash.
-+	 */
-+	list_for_each_entry(sdata, &local->interfaces, list)
-+		if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN)
-+			dev_close(sdata->dev);
-+
- 	mutex_lock(&local->iflist_mtx);
- 	list_for_each_entry_safe(sdata, tmp, &local->interfaces, list) {
- 		list_del(&sdata->list);
+ 		index = pending_index(netbk->pending_cons++);
+ 		pending_idx = netbk->pending_ring[index];
+-		page = xen_netbk_alloc_page(netbk, skb, pending_idx);
++		page = xen_netbk_alloc_page(netbk, pending_idx);
+ 		if (!page)
+ 			goto err;
+ 
+@@ -1381,7 +1380,7 @@ static unsigned xen_netbk_tx_build_gops(
+ 		}
+ 
+ 		/* XXX could copy straight to head */
+-		page = xen_netbk_alloc_page(netbk, skb, pending_idx);
++		page = xen_netbk_alloc_page(netbk, pending_idx);
+ 		if (!page) {
+ 			kfree_skb(skb);
+ 			netbk_tx_err(vif, &txreq, idx);
 
 
