@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932994Ab3FEVyi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:54:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37885 "EHLO
+	id S933352Ab3FEVyx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:54:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37879 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932874Ab3FEVfm (ORCPT
+	with ESMTP id S932835Ab3FEVfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Jun 2013 17:35:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolas Schichan <nschichan@freebox.fr>,
-        Brian Austin <brian.austin@cirrus.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 067/127] ASoC: cs42l52: fix default value for MASTERA_VOL.
-Date: Wed,  5 Jun 2013 14:33:54 -0700
-Message-Id: <20130605213225.547325527@linuxfoundation.org>
+        Julian Sikorski <belegdol@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 066/127] svcrpc: fix failures to handle -1 uids and gids
+Date: Wed,  5 Jun 2013 14:33:53 -0700
+Message-Id: <20130605213225.442658787@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -28,32 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Schichan <nschichan@freebox.fr>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 04d245b7899c020559402841d2f70ddd740a7704 upstream.
+commit afe3c3fd5392b2f0066930abc5dbd3f4b14a0f13 upstream.
 
-The default register value for MASTERA_VOL is 0x00, the same as
-MASTERB_VOL.
+As of f025adf191924e3a75ce80e130afcd2485b53bb8 "sunrpc: Properly decode
+kuids and kgids in RPC_AUTH_UNIX credentials" any rpc containing a -1
+(0xffff) uid or gid would fail with a badcred error.
 
-Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
-Acked-by: Brian Austin <brian.austin@cirrus.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Reported symptoms were xmbc clients failing on upgrade of the NFS
+server; examination of the network trace showed them sending -1 as the
+gid.
+
+Reported-by: Julian Sikorski <belegdol@gmail.com>
+Tested-by: Julian Sikorski <belegdol@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/cs42l52.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sunrpc/svcauth_unix.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/sound/soc/codecs/cs42l52.c
-+++ b/sound/soc/codecs/cs42l52.c
-@@ -86,7 +86,7 @@ static const struct reg_default cs42l52_
- 	{ CS42L52_BEEP_VOL, 0x00 },	/* r1D Beep Volume off Time */
- 	{ CS42L52_BEEP_TONE_CTL, 0x00 },	/* r1E Beep Tone Cfg. */
- 	{ CS42L52_TONE_CTL, 0x00 },	/* r1F Tone Ctl */
--	{ CS42L52_MASTERA_VOL, 0x88 },	/* r20 Master A Volume */
-+	{ CS42L52_MASTERA_VOL, 0x00 },	/* r20 Master A Volume */
- 	{ CS42L52_MASTERB_VOL, 0x00 },	/* r21 Master B Volume */
- 	{ CS42L52_HPA_VOL, 0x00 },	/* r22 Headphone A Volume */
- 	{ CS42L52_HPB_VOL, 0x00 },	/* r23 Headphone B Volume */
+--- a/net/sunrpc/svcauth_unix.c
++++ b/net/sunrpc/svcauth_unix.c
+@@ -810,11 +810,15 @@ svcauth_unix_accept(struct svc_rqst *rqs
+ 		goto badcred;
+ 	argv->iov_base = (void*)((__be32*)argv->iov_base + slen);	/* skip machname */
+ 	argv->iov_len -= slen*4;
+-
++	/*
++	 * Note: we skip uid_valid()/gid_valid() checks here for
++	 * backwards compatibility with clients that use -1 id's.
++	 * Instead, -1 uid or gid is later mapped to the
++	 * (export-specific) anonymous id by nfsd_setuser.
++	 * Supplementary gid's will be left alone.
++	 */
+ 	cred->cr_uid = make_kuid(&init_user_ns, svc_getnl(argv)); /* uid */
+ 	cred->cr_gid = make_kgid(&init_user_ns, svc_getnl(argv)); /* gid */
+-	if (!uid_valid(cred->cr_uid) || !gid_valid(cred->cr_gid))
+-		goto badcred;
+ 	slen = svc_getnl(argv);			/* gids length */
+ 	if (slen > 16 || (len -= (slen + 2)*4) < 0)
+ 		goto badcred;
+@@ -823,8 +827,6 @@ svcauth_unix_accept(struct svc_rqst *rqs
+ 		return SVC_CLOSE;
+ 	for (i = 0; i < slen; i++) {
+ 		kgid_t kgid = make_kgid(&init_user_ns, svc_getnl(argv));
+-		if (!gid_valid(kgid))
+-			goto badcred;
+ 		GROUP_AT(cred->cr_group_info, i) = kgid;
+ 	}
+ 	if (svc_getu32(argv) != htonl(RPC_AUTH_NULL) || svc_getu32(argv) != 0) {
 
 
