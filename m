@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933232Ab3FEVhy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:37:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38135 "EHLO
+	id S933180Ab3FEVgX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:36:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38069 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933185Ab3FEVgY (ORCPT
+	with ESMTP id S933115Ab3FEVgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:36:24 -0400
+	Wed, 5 Jun 2013 17:36:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Liu <wei.liu2@citrix.com>, Ian Campbell <ian.campbell@citrix.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 124/127] xen-netfront: reduce gso_max_size to account for max TCP header
-Date: Wed,  5 Jun 2013 14:34:51 -0700
-Message-Id: <20130605213232.066486098@linuxfoundation.org>
+Subject: [ 112/127] tg3: Add read dma workaround for 5720
+Date: Wed,  5 Jun 2013 14:34:39 -0700
+Message-Id: <20130605213230.730056457@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -27,83 +29,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Liu <wei.liu2@citrix.com>
+From: Nithin Sujir <nsujir@broadcom.com>
 
-commit 9ecd1a75d977e2e8c48139c7d3efed183f898d94 upstream.
+commit 9bc297ea0622bb2a6b3abfa2fa84f0a3b86ef8c8 upstream.
 
-The maximum packet including header that can be handled by netfront / netback
-wire format is 65535. Reduce gso_max_size accordingly.
+Commit 091f0ea30074bc43f9250961b3247af713024bc6 "tg3: Add New 5719 Read
+DMA workaround" added a workaround for TX DMA stall on the 5719. This
+workaround needs to be applied to the 5720 as well.
 
-Drop skb and print warning when skb->len > 65535. This can 1) save the effort
-to send malformed packet to netback, 2) help spotting misconfiguration of
-netfront in the future.
-
-Signed-off-by: Wei Liu <wei.liu2@citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Reported-by: Roland Dreier <roland@purestorage.com>
+Tested-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/xen-netfront.c       |   17 +++++++++++++++--
- include/xen/interface/io/netif.h |    1 +
- 2 files changed, 16 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c |   21 +++++++++++++++------
+ drivers/net/ethernet/broadcom/tg3.h |    5 +++--
+ 2 files changed, 18 insertions(+), 8 deletions(-)
 
---- a/drivers/net/xen-netfront.c
-+++ b/drivers/net/xen-netfront.c
-@@ -36,7 +36,7 @@
- #include <linux/skbuff.h>
- #include <linux/ethtool.h>
- #include <linux/if_ether.h>
--#include <linux/tcp.h>
-+#include <net/tcp.h>
- #include <linux/udp.h>
- #include <linux/moduleparam.h>
- #include <linux/mm.h>
-@@ -548,6 +548,16 @@ static int xennet_start_xmit(struct sk_b
- 	unsigned int len = skb_headlen(skb);
- 	unsigned long flags;
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -9093,6 +9093,14 @@ static void tg3_rss_write_indir_tbl(stru
+ 	}
+ }
  
-+	/* If skb->len is too big for wire format, drop skb and alert
-+	 * user about misconfiguration.
-+	 */
-+	if (unlikely(skb->len > XEN_NETIF_MAX_TX_SIZE)) {
-+		net_alert_ratelimited(
-+			"xennet: skb->len = %u, too big for wire format\n",
-+			skb->len);
-+		goto drop;
-+	}
++static inline u32 tg3_lso_rd_dma_workaround_bit(struct tg3 *tp)
++{
++	if (tg3_asic_rev(tp) == ASIC_REV_5719)
++		return TG3_LSO_RD_DMA_TX_LENGTH_WA_5719;
++	else
++		return TG3_LSO_RD_DMA_TX_LENGTH_WA_5720;
++}
 +
- 	slots = DIV_ROUND_UP(offset + len, PAGE_SIZE) +
- 		xennet_count_skb_frag_slots(skb);
- 	if (unlikely(slots > MAX_SKB_FRAGS + 1)) {
-@@ -1064,7 +1074,8 @@ err:
- 
- static int xennet_change_mtu(struct net_device *dev, int mtu)
+ /* tp->lock is held. */
+ static int tg3_reset_hw(struct tg3 *tp, int reset_phy)
  {
--	int max = xennet_can_sg(dev) ? 65535 - ETH_HLEN : ETH_DATA_LEN;
-+	int max = xennet_can_sg(dev) ?
-+		XEN_NETIF_MAX_TX_SIZE - MAX_TCP_HEADER : ETH_DATA_LEN;
+@@ -9772,16 +9780,17 @@ static int tg3_reset_hw(struct tg3 *tp,
+ 	tw32_f(RDMAC_MODE, rdmac_mode);
+ 	udelay(40);
  
- 	if (mtu > max)
- 		return -EINVAL;
-@@ -1368,6 +1379,8 @@ static struct net_device *xennet_create_
- 	SET_ETHTOOL_OPS(netdev, &xennet_ethtool_ops);
- 	SET_NETDEV_DEV(netdev, &dev->dev);
+-	if (tg3_asic_rev(tp) == ASIC_REV_5719) {
++	if (tg3_asic_rev(tp) == ASIC_REV_5719 ||
++	    tg3_asic_rev(tp) == ASIC_REV_5720) {
+ 		for (i = 0; i < TG3_NUM_RDMA_CHANNELS; i++) {
+ 			if (tr32(TG3_RDMA_LENGTH + (i << 2)) > TG3_MAX_MTU(tp))
+ 				break;
+ 		}
+ 		if (i < TG3_NUM_RDMA_CHANNELS) {
+ 			val = tr32(TG3_LSO_RD_DMA_CRPTEN_CTRL);
+-			val |= TG3_LSO_RD_DMA_TX_LENGTH_WA;
++			val |= tg3_lso_rd_dma_workaround_bit(tp);
+ 			tw32(TG3_LSO_RD_DMA_CRPTEN_CTRL, val);
+-			tg3_flag_set(tp, 5719_RDMA_BUG);
++			tg3_flag_set(tp, 5719_5720_RDMA_BUG);
+ 		}
+ 	}
  
-+	netif_set_gso_max_size(netdev, XEN_NETIF_MAX_TX_SIZE - MAX_TCP_HEADER);
-+
- 	np->netdev = netdev;
+@@ -10138,15 +10147,15 @@ static void tg3_periodic_fetch_stats(str
+ 	TG3_STAT_ADD32(&sp->tx_ucast_packets, MAC_TX_STATS_UCAST);
+ 	TG3_STAT_ADD32(&sp->tx_mcast_packets, MAC_TX_STATS_MCAST);
+ 	TG3_STAT_ADD32(&sp->tx_bcast_packets, MAC_TX_STATS_BCAST);
+-	if (unlikely(tg3_flag(tp, 5719_RDMA_BUG) &&
++	if (unlikely(tg3_flag(tp, 5719_5720_RDMA_BUG) &&
+ 		     (sp->tx_ucast_packets.low + sp->tx_mcast_packets.low +
+ 		      sp->tx_bcast_packets.low) > TG3_NUM_RDMA_CHANNELS)) {
+ 		u32 val;
  
- 	netif_carrier_off(netdev);
---- a/include/xen/interface/io/netif.h
-+++ b/include/xen/interface/io/netif.h
-@@ -65,6 +65,7 @@
- #define _XEN_NETTXF_extra_info		(3)
- #define  XEN_NETTXF_extra_info		(1U<<_XEN_NETTXF_extra_info)
+ 		val = tr32(TG3_LSO_RD_DMA_CRPTEN_CTRL);
+-		val &= ~TG3_LSO_RD_DMA_TX_LENGTH_WA;
++		val &= ~tg3_lso_rd_dma_workaround_bit(tp);
+ 		tw32(TG3_LSO_RD_DMA_CRPTEN_CTRL, val);
+-		tg3_flag_clear(tp, 5719_RDMA_BUG);
++		tg3_flag_clear(tp, 5719_5720_RDMA_BUG);
+ 	}
  
-+#define XEN_NETIF_MAX_TX_SIZE 0xFFFF
- struct xen_netif_tx_request {
-     grant_ref_t gref;      /* Reference to buffer page */
-     uint16_t offset;       /* Offset within buffer page */
+ 	TG3_STAT_ADD32(&sp->rx_octets, MAC_RX_STATS_OCTETS);
+--- a/drivers/net/ethernet/broadcom/tg3.h
++++ b/drivers/net/ethernet/broadcom/tg3.h
+@@ -1422,7 +1422,8 @@
+ #define TG3_LSO_RD_DMA_CRPTEN_CTRL	0x00004910
+ #define TG3_LSO_RD_DMA_CRPTEN_CTRL_BLEN_BD_4K	 0x00030000
+ #define TG3_LSO_RD_DMA_CRPTEN_CTRL_BLEN_LSO_4K	 0x000c0000
+-#define TG3_LSO_RD_DMA_TX_LENGTH_WA	 0x02000000
++#define TG3_LSO_RD_DMA_TX_LENGTH_WA_5719	 0x02000000
++#define TG3_LSO_RD_DMA_TX_LENGTH_WA_5720	 0x00200000
+ /* 0x4914 --> 0x4be0 unused */
+ 
+ #define TG3_NUM_RDMA_CHANNELS		4
+@@ -3043,7 +3044,7 @@ enum TG3_FLAGS {
+ 	TG3_FLAG_APE_HAS_NCSI,
+ 	TG3_FLAG_TX_TSTAMP_EN,
+ 	TG3_FLAG_4K_FIFO_LIMIT,
+-	TG3_FLAG_5719_RDMA_BUG,
++	TG3_FLAG_5719_5720_RDMA_BUG,
+ 	TG3_FLAG_RESET_TASK_PENDING,
+ 	TG3_FLAG_PTP_CAPABLE,
+ 	TG3_FLAG_5705_PLUS,
 
 
