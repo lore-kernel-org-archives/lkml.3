@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933281Ab3FEVmA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:42:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38077 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933127Ab3FEVgQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933129Ab3FEVgQ (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 5 Jun 2013 17:36:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38033 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933071Ab3FEVgJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 17:36:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 114/127] IB/iser: Return error to upper layers on EAGAIN registration failures
-Date: Wed,  5 Jun 2013 14:34:41 -0700
-Message-Id: <20130605213230.940017472@linuxfoundation.org>
+        Zhang Rui <rui.zhang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 103/127] ACPI / PM: Allow device power states to be used for CONFIG_PM unset
+Date: Wed,  5 Jun 2013 14:34:30 -0700
+Message-Id: <20130605213229.717237205@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605213217.966891866@linuxfoundation.org>
 References: <20130605213217.966891866@linuxfoundation.org>
@@ -27,36 +27,247 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Or Gerlitz <ogerlitz@mellanox.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 450d1e40d597dd71843457c73d372c4b4f2a83eb upstream.
+commit ec4602a9588a196fa1a9af46bfdd37cbf5792db4 upstream.
 
-Commit 819a087316a6 ("IB/iser: Avoid error prints on EAGAIN
-registration failures") not only eliminated the error print on that
-case, but rather also modified the code such that it doesn't return
-any error to upper layers.  As a result a wrong mapping was used.  Fix
-this to correctly return the error in that case.
+Currently, drivers/acpi/device_pm.c depends on CONFIG_PM and all of
+the functions defined in there are replaced with static inline stubs
+if that option is unset.  However, CONFIG_PM means, roughly, "runtime
+PM or suspend/hibernation support" and some of those functions are
+useful regardless of that.  For example, they are used by the ACPI
+fan driver for controlling fans and acpi_device_set_power() is called
+during device removal.  Moreover, device initialization may depend on
+setting device power states properly.
 
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+For these reasons, make the routines manipulating ACPI device power
+states defined in drivers/acpi/device_pm.c available for CONFIG_PM
+unset too.
+
+Reported-by: Zhang Rui <rui.zhang@intel.com>
+Reported-and-tested-by: Michel Lespinasse <walken@google.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/iser/iser_memory.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/acpi/Makefile    |    2 
+ drivers/acpi/device_pm.c |  126 +++++++++++++++++++++++------------------------
+ include/acpi/acpi_bus.h  |   40 +-------------
+ 3 files changed, 70 insertions(+), 98 deletions(-)
 
---- a/drivers/infiniband/ulp/iser/iser_memory.c
-+++ b/drivers/infiniband/ulp/iser/iser_memory.c
-@@ -416,8 +416,9 @@ int iser_reg_rdma_mem(struct iscsi_iser_
- 			for (i=0 ; i<ib_conn->page_vec->length ; i++)
- 				iser_err("page_vec[%d] = 0x%llx\n", i,
- 					 (unsigned long long) ib_conn->page_vec->pages[i]);
--			return err;
- 		}
-+		if (err)
-+			return err;
- 	}
- 	return 0;
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -24,7 +24,7 @@ acpi-y				+= nvs.o
+ # Power management related files
+ acpi-y				+= wakeup.o
+ acpi-y				+= sleep.o
+-acpi-$(CONFIG_PM)		+= device_pm.o
++acpi-y				+= device_pm.o
+ acpi-$(CONFIG_ACPI_SLEEP)	+= proc.o
+ 
+ 
+--- a/drivers/acpi/device_pm.c
++++ b/drivers/acpi/device_pm.c
+@@ -37,68 +37,6 @@
+ #define _COMPONENT	ACPI_POWER_COMPONENT
+ ACPI_MODULE_NAME("device_pm");
+ 
+-static DEFINE_MUTEX(acpi_pm_notifier_lock);
+-
+-/**
+- * acpi_add_pm_notifier - Register PM notifier for given ACPI device.
+- * @adev: ACPI device to add the notifier for.
+- * @context: Context information to pass to the notifier routine.
+- *
+- * NOTE: @adev need not be a run-wake or wakeup device to be a valid source of
+- * PM wakeup events.  For example, wakeup events may be generated for bridges
+- * if one of the devices below the bridge is signaling wakeup, even if the
+- * bridge itself doesn't have a wakeup GPE associated with it.
+- */
+-acpi_status acpi_add_pm_notifier(struct acpi_device *adev,
+-				 acpi_notify_handler handler, void *context)
+-{
+-	acpi_status status = AE_ALREADY_EXISTS;
+-
+-	mutex_lock(&acpi_pm_notifier_lock);
+-
+-	if (adev->wakeup.flags.notifier_present)
+-		goto out;
+-
+-	status = acpi_install_notify_handler(adev->handle,
+-					     ACPI_SYSTEM_NOTIFY,
+-					     handler, context);
+-	if (ACPI_FAILURE(status))
+-		goto out;
+-
+-	adev->wakeup.flags.notifier_present = true;
+-
+- out:
+-	mutex_unlock(&acpi_pm_notifier_lock);
+-	return status;
+-}
+-
+-/**
+- * acpi_remove_pm_notifier - Unregister PM notifier from given ACPI device.
+- * @adev: ACPI device to remove the notifier from.
+- */
+-acpi_status acpi_remove_pm_notifier(struct acpi_device *adev,
+-				    acpi_notify_handler handler)
+-{
+-	acpi_status status = AE_BAD_PARAMETER;
+-
+-	mutex_lock(&acpi_pm_notifier_lock);
+-
+-	if (!adev->wakeup.flags.notifier_present)
+-		goto out;
+-
+-	status = acpi_remove_notify_handler(adev->handle,
+-					    ACPI_SYSTEM_NOTIFY,
+-					    handler);
+-	if (ACPI_FAILURE(status))
+-		goto out;
+-
+-	adev->wakeup.flags.notifier_present = false;
+-
+- out:
+-	mutex_unlock(&acpi_pm_notifier_lock);
+-	return status;
+-}
+-
+ /**
+  * acpi_power_state_string - String representation of ACPI device power state.
+  * @state: ACPI device power state to return the string representation of.
+@@ -376,6 +314,69 @@ bool acpi_bus_power_manageable(acpi_hand
  }
+ EXPORT_SYMBOL(acpi_bus_power_manageable);
+ 
++#ifdef CONFIG_PM
++static DEFINE_MUTEX(acpi_pm_notifier_lock);
++
++/**
++ * acpi_add_pm_notifier - Register PM notifier for given ACPI device.
++ * @adev: ACPI device to add the notifier for.
++ * @context: Context information to pass to the notifier routine.
++ *
++ * NOTE: @adev need not be a run-wake or wakeup device to be a valid source of
++ * PM wakeup events.  For example, wakeup events may be generated for bridges
++ * if one of the devices below the bridge is signaling wakeup, even if the
++ * bridge itself doesn't have a wakeup GPE associated with it.
++ */
++acpi_status acpi_add_pm_notifier(struct acpi_device *adev,
++				 acpi_notify_handler handler, void *context)
++{
++	acpi_status status = AE_ALREADY_EXISTS;
++
++	mutex_lock(&acpi_pm_notifier_lock);
++
++	if (adev->wakeup.flags.notifier_present)
++		goto out;
++
++	status = acpi_install_notify_handler(adev->handle,
++					     ACPI_SYSTEM_NOTIFY,
++					     handler, context);
++	if (ACPI_FAILURE(status))
++		goto out;
++
++	adev->wakeup.flags.notifier_present = true;
++
++ out:
++	mutex_unlock(&acpi_pm_notifier_lock);
++	return status;
++}
++
++/**
++ * acpi_remove_pm_notifier - Unregister PM notifier from given ACPI device.
++ * @adev: ACPI device to remove the notifier from.
++ */
++acpi_status acpi_remove_pm_notifier(struct acpi_device *adev,
++				    acpi_notify_handler handler)
++{
++	acpi_status status = AE_BAD_PARAMETER;
++
++	mutex_lock(&acpi_pm_notifier_lock);
++
++	if (!adev->wakeup.flags.notifier_present)
++		goto out;
++
++	status = acpi_remove_notify_handler(adev->handle,
++					    ACPI_SYSTEM_NOTIFY,
++					    handler);
++	if (ACPI_FAILURE(status))
++		goto out;
++
++	adev->wakeup.flags.notifier_present = false;
++
++ out:
++	mutex_unlock(&acpi_pm_notifier_lock);
++	return status;
++}
++
+ bool acpi_bus_can_wakeup(acpi_handle handle)
+ {
+ 	struct acpi_device *device;
+@@ -1014,3 +1015,4 @@ void acpi_dev_pm_remove_dependent(acpi_h
+ 	mutex_unlock(&adev->physical_node_lock);
+ }
+ EXPORT_SYMBOL_GPL(acpi_dev_pm_remove_dependent);
++#endif /* CONFIG_PM */
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -352,7 +352,6 @@ acpi_status acpi_bus_get_status_handle(a
+ 				       unsigned long long *sta);
+ int acpi_bus_get_status(struct acpi_device *device);
+ 
+-#ifdef CONFIG_PM
+ int acpi_bus_set_power(acpi_handle handle, int state);
+ const char *acpi_power_state_string(int state);
+ int acpi_device_get_power(struct acpi_device *device, int *state);
+@@ -360,41 +359,12 @@ int acpi_device_set_power(struct acpi_de
+ int acpi_bus_init_power(struct acpi_device *device);
+ int acpi_bus_update_power(acpi_handle handle, int *state_p);
+ bool acpi_bus_power_manageable(acpi_handle handle);
++
++#ifdef CONFIG_PM
+ bool acpi_bus_can_wakeup(acpi_handle handle);
+-#else /* !CONFIG_PM */
+-static inline int acpi_bus_set_power(acpi_handle handle, int state)
+-{
+-	return 0;
+-}
+-static inline const char *acpi_power_state_string(int state)
+-{
+-	return "D0";
+-}
+-static inline int acpi_device_get_power(struct acpi_device *device, int *state)
+-{
+-	return 0;
+-}
+-static inline int acpi_device_set_power(struct acpi_device *device, int state)
+-{
+-	return 0;
+-}
+-static inline int acpi_bus_init_power(struct acpi_device *device)
+-{
+-	return 0;
+-}
+-static inline int acpi_bus_update_power(acpi_handle handle, int *state_p)
+-{
+-	return 0;
+-}
+-static inline bool acpi_bus_power_manageable(acpi_handle handle)
+-{
+-	return false;
+-}
+-static inline bool acpi_bus_can_wakeup(acpi_handle handle)
+-{
+-	return false;
+-}
+-#endif /* !CONFIG_PM */
++#else
++static inline bool acpi_bus_can_wakeup(acpi_handle handle) { return false; }
++#endif
+ 
+ #ifdef CONFIG_ACPI_PROC_EVENT
+ int acpi_bus_generate_proc_event(struct acpi_device *device, u8 type, int data);
 
 
