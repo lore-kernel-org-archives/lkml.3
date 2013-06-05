@@ -1,88 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656Ab3FEKf6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 06:35:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62615 "EHLO mx1.redhat.com"
+	id S1754399Ab3FEKe7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 06:34:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63851 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754597Ab3FEKfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 06:35:54 -0400
-Date: Wed, 5 Jun 2013 13:36:25 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sergei.shtylyov@cogentembedded.com
-Subject: Re: [net-next rfc V3 0/9] Multiqueue API for macvtap
-Message-ID: <20130605103625.GF31830@redhat.com>
-References: <1370414192-5830-1-git-send-email-jasowang@redhat.com>
+	id S1754327Ab3FEKe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 06:34:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,804,1363158000"; 
+   d="scan'208";a="348432313"
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Subject: [PATCH v9 net-next 5/7] net: simple poll/select low latency socket
+ poll
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <erdnetdev@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Wed, 05 Jun 2013 13:34:52 +0300
+Message-ID: <20130605103452.11172.31453.stgit@ladj378.jer.intel.com>
+In-Reply-To: <20130605103400.11172.49099.stgit@ladj378.jer.intel.com>
+References: <20130605103400.11172.49099.stgit@ladj378.jer.intel.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370414192-5830-1-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 02:36:23PM +0800, Jason Wang wrote:
-> Hi all:
-> 
-> This series implements a v3 of fully tuntap compatiable API which could be used
-> by userspace to manage multiple macvtap queues. The main parts is to add
-> TUNSETQUEUE ioctl support for macvtap.
-> 
-> Patch 1 - 5 was some tuntap compatibility and misc cleanups.
-> Patch 6 removes the linear search in macvtap by reshuffling the macvtaps array
-> each time a queue is removed. After this, we could store both enabled and
-> disabled queues in the same array without introducing extra data structure.
-> Patch 7 let TUNSETIFF can create multiqueue device, nothing but some check
-> were added.
-> Patch 8 implement TUNSETQUEUE ioctl
-> Patch 9 reports IFF_MULTI_QUEUE to userspace to notify the userspace that the
-> multiqueue API is completed.
-> 
-> Flow caches implememtation were missed in this version, since I am doing
-> rework on the tuntap flow caches. Have some some stress test with both netperf
-> and pktgen.
-> 
-> Please review, thanks.
+A very naive select/poll busy-poll support.
+Add busy-polling to sock_poll().
+When poll/select have nothing to report, call the low-level
+sock_poll() again until we are out of time or we find something.
+Right now we poll every socket once, this is suboptimal
+but improves latency when the number of sockets polled is not large.
 
-FYI by netdev rules RFC means "don't apply yet".
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Tested-by: Willem de Bruijn <willemb@google.com>
+Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+---
 
-> Changes from V2:
-> - Don't place disabled taps in the array and use a linked like to track all taps
-> - Remove unnecessary best-effort barriers
-> - Add ACCESS_ONCE() for vlan->numvtaps to prevent compiler generate unexpected
->   codes
-> - Add a comment to explain that numvtaps is just a hint in macvtap_get_queue()
-> - blank line fixes
-> 
-> Changes from V1:
-> - Drop the patch of "return -EBADFD when TUNGETIFF fails" to preserve backward
->   compatibility
-> - Add a small patch of optimizing macvtap_do_read() (see patch 1/8)
-> - Use different functions to do tap enabling and creating
-> - Use different functions to do tap disabling and closing
-> - Remove the emtpy line in patch 6/8
-> - Add a line in patch 3/8
-> - Add a comment to explain the checking when doing TUNSETIFF with
->   IFF_MULTI_QUEUE
-> - Add comments to explian the second swapping when moving taps between disabled
->   areas and enabled areas.
-> - Fix the commit log of patch 7/8 ( v1 says the linked list were used which is
->   wrong )
-> - Other minor bug fixes
-> 
-> Jason Wang (9):
->   macvtap: fix a possible race between queue selection and changing
->     queues
->   macvtap: do not add self to waitqueue if doing a nonblock read
->   macvlan: switch to use IS_ENABLED()
->   macvtap: introduce macvtap_get_vlan()
->   macvlan: change the max number of queues to 16
->   macvtap: eliminate linear search
->   macvtap: allow TUNSETIFF to create multiqueue device
->   macvtap: add TUNSETQUEUE ioctl
->   macvtap: enable multiqueue flag
-> 
->  drivers/net/macvtap.c      |  261 ++++++++++++++++++++++++++++++++------------
->  include/linux/if_macvlan.h |    8 +-
->  2 files changed, 197 insertions(+), 72 deletions(-)
+ fs/select.c  |    7 +++++++
+ net/socket.c |   10 +++++++++-
+ 2 files changed, 16 insertions(+), 1 deletions(-)
+
+diff --git a/fs/select.c b/fs/select.c
+index 8c1c96c..f116bf0 100644
+--- a/fs/select.c
++++ b/fs/select.c
+@@ -27,6 +27,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/hrtimer.h>
+ #include <linux/sched/rt.h>
++#include <net/ll_poll.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -400,6 +401,7 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+ 	poll_table *wait;
+ 	int retval, i, timed_out = 0;
+ 	unsigned long slack = 0;
++	cycles_t ll_time = ll_end_time();
+ 
+ 	rcu_read_lock();
+ 	retval = max_select_fd(n, fds);
+@@ -486,6 +488,8 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+ 			break;
+ 		}
+ 
++		if (can_poll_ll(ll_time))
++			continue;
+ 		/*
+ 		 * If this is the first loop and we have a timeout
+ 		 * given, then we convert to ktime_t and set the to
+@@ -750,6 +754,7 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
+ 	ktime_t expire, *to = NULL;
+ 	int timed_out = 0, count = 0;
+ 	unsigned long slack = 0;
++	cycles_t ll_time = ll_end_time();
+ 
+ 	/* Optimise the no-wait case */
+ 	if (end_time && !end_time->tv_sec && !end_time->tv_nsec) {
+@@ -795,6 +800,8 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
+ 		if (count || timed_out)
+ 			break;
+ 
++		if (can_poll_ll(ll_time))
++			continue;
+ 		/*
+ 		 * If this is the first loop and we have a timeout
+ 		 * given, then we convert to ktime_t and set the to
+diff --git a/net/socket.c b/net/socket.c
+index 721f4e7..c34dad0 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1148,13 +1148,21 @@ EXPORT_SYMBOL(sock_create_lite);
+ /* No kernel lock held - perfect */
+ static unsigned int sock_poll(struct file *file, poll_table *wait)
+ {
++	unsigned int poll_result;
+ 	struct socket *sock;
+ 
+ 	/*
+ 	 *      We can't return errors to poll, so it's either yes or no.
+ 	 */
+ 	sock = file->private_data;
+-	return sock->ops->poll(file, sock, wait);
++
++	poll_result = sock->ops->poll(file, sock, wait);
++
++	if (wait && !(poll_result & wait->_key) &&
++		sk_valid_ll(sock->sk) && sk_poll_ll(sock->sk, 1))
++			poll_result = sock->ops->poll(file, sock, NULL);
++
++	return poll_result;
+ }
+ 
+ static int sock_mmap(struct file *file, struct vm_area_struct *vma)
+
