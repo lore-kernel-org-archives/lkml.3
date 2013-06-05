@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932553Ab3FEVXD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 17:23:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36828 "EHLO
+	id S932584Ab3FEVXZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 17:23:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36824 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932499Ab3FEVMy (ORCPT
+	with ESMTP id S932492Ab3FEVMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 17:12:54 -0400
+	Wed, 5 Jun 2013 17:12:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 15/44] perf: net_dropmonitor: Fix trace parameter order
-Date: Wed,  5 Jun 2013 14:12:13 -0700
-Message-Id: <20130605211223.447931131@linuxfoundation.org>
+        Krzysztof Strasburger <strasbur@chkw386.ch.pwr.wroc.pl>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 14/44] fat: fix possible overflow for fat_clusters
+Date: Wed,  5 Jun 2013 14:12:12 -0700
+Message-Id: <20130605211223.355779383@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130605211221.858177087@linuxfoundation.org>
 References: <20130605211221.858177087@linuxfoundation.org>
@@ -27,30 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 
-commit 140c3c6a2bcd2c31e2f7f5a8d59689724776c8e5 upstream.
+commit 7b92d03c3239f43e5b86c9cc9630f026d36ee995 upstream.
 
-This works much better if we don't treat protocol numbers as addresses.
+Intermediate value of fat_clusters can be overflowed on 32bits arch.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Krzysztof Strasburger <strasbur@chkw386.ch.pwr.wroc.pl>
+Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/scripts/python/net_dropmonitor.py |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/fat/inode.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
---- a/tools/perf/scripts/python/net_dropmonitor.py
-+++ b/tools/perf/scripts/python/net_dropmonitor.py
-@@ -64,7 +64,7 @@ def trace_end():
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -1237,6 +1237,19 @@ static int fat_read_root(struct inode *i
+ 	return 0;
+ }
  
- # called from perf, when it finds a correspoinding event
- def skb__kfree_skb(name, context, cpu, sec, nsec, pid, comm,
--			skbaddr, protocol, location):
-+		   skbaddr, location, protocol):
- 	slocation = str(location)
- 	try:
- 		drop_log[slocation] = drop_log[slocation] + 1
++static unsigned long calc_fat_clusters(struct super_block *sb)
++{
++	struct msdos_sb_info *sbi = MSDOS_SB(sb);
++
++	/* Divide first to avoid overflow */
++	if (sbi->fat_bits != 12) {
++		unsigned long ent_per_sec = sb->s_blocksize * 8 / sbi->fat_bits;
++		return ent_per_sec * sbi->fat_length;
++	}
++
++	return sbi->fat_length * sb->s_blocksize * 8 / sbi->fat_bits;
++}
++
+ /*
+  * Read the super block of an MS-DOS FS.
+  */
+@@ -1433,7 +1446,7 @@ int fat_fill_super(struct super_block *s
+ 		sbi->fat_bits = (total_clusters > MAX_FAT12) ? 16 : 12;
+ 
+ 	/* check that FAT table does not overflow */
+-	fat_clusters = sbi->fat_length * sb->s_blocksize * 8 / sbi->fat_bits;
++	fat_clusters = calc_fat_clusters(sb);
+ 	total_clusters = min(total_clusters, fat_clusters - FAT_START_ENT);
+ 	if (total_clusters > MAX_FAT(sb)) {
+ 		if (!silent)
 
 
