@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756216Ab3FEOcr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 10:32:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38068 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754483Ab3FEOcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 10:32:46 -0400
-Date: Wed, 5 Jun 2013 16:32:44 +0200
-From: David Sterba <dsterba@suse.cz>
-To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: Arne Jansen <sensille@gmx.net>, Chris Mason <clmason@fusionio.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: [PATCH 1/2] list: add while_list_drain_entry
-Message-ID: <20130605143244.GC18160@twin.jikos.cz>
-Reply-To: dsterba@suse.cz
-Mail-Followup-To: dsterba@suse.cz,
-	=?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-	Arne Jansen <sensille@gmx.net>, Chris Mason <clmason@fusionio.com>,
-	Christoph Hellwig <hch@infradead.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-References: <1370280485-10047-1-git-send-email-joern@logfs.org>
- <20130603204930.GA28299@infradead.org>
- <20130603193647.GB10200@logfs.org>
- <20130603195555.GC10200@logfs.org>
- <20130604144856.GA12302@infradead.org>
- <20130604145322.4088.78915@localhost.localdomain>
- <51AE4969.8050709@gmx.net>
- <20130604184435.GA23436@logfs.org>
- <20130605020341.GA27240@logfs.org>
+	id S1756205Ab3FEOg5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 10:36:57 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:47849 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756063Ab3FEOgx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 10:36:53 -0400
+Date: Wed, 5 Jun 2013 15:36:48 +0100
+From: Gustavo Padovan <gustavo@padovan.org>
+To: "Cho, Yu-Chen" <acho@suse.com>
+Cc: marcel@holtmann.org, johan.hedberg@gmail.com,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        oneukum@suse.com, jlee@suse.com, jay.hung@mediatek.com
+Subject: Re: [PATCH] Bluetooth: Add support for Mediatek Bluetooth device
+ [0e8d:763f]
+Message-ID: <20130605143648.GB3043@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	"Cho, Yu-Chen" <acho@suse.com>, marcel@holtmann.org,
+	johan.hedberg@gmail.com, linux-bluetooth@vger.kernel.org,
+	linux-kernel@vger.kernel.org, oneukum@suse.com, jlee@suse.com,
+	jay.hung@mediatek.com
+References: <1370353226-11058-1-git-send-email-acho@suse.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130605020341.GA27240@logfs.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1370353226-11058-1-git-send-email-acho@suse.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 04, 2013 at 10:03:41PM -0400, Jörn Engel wrote:
-> I have seen a lot of boilerplate code that either follows the pattern of
-> 	while (!list_empty(head)) {
-> 		pos = list_entry(head->next, struct foo, list);
-> 		list_del(pos->list);
-> 		...
-> 	}
-> or some variant thereof.
+Hi Cho,
+
+* Cho, Yu-Chen <acho@suse.com> [2013-06-04 21:40:26 +0800]:
+
+> From: "Cho, Yu-Chen" <acho@suse.com>
 > 
-> With this patch in, people can use
-> 	while_list_drain_entry(pos, head, list) {
-> 		...
-> 	}
+> This patch adds support for Mediatek Bluetooth device
+> 
+> T:  Bus=02 Lev=01 Prnt=01 Port=03 Cnt=01 Dev#=  2 Spd=480  MxCh= 0
+> D:  Ver= 2.01 Cls=ef(misc ) Sub=02 Prot=01 MxPS=64 #Cfgs=  1
+> P:  Vendor=0e8d ProdID=763f Rev= 1.00
+> S:  Manufacturer=MediaTek
+> S:  Product=BT
+> S:  SerialNumber=1.0
+> C:* #Ifs= 2 Cfg#= 1 Atr=a0 MxPwr=450mA
+> A:  FirstIf#= 0 IfCount= 2 Cls=ff(vend.) Sub=ff Prot=ff
+> I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+> E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=125us
+> E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=125us
+> E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+> I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+> I:  If#= 1 Alt= 1 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+> I:  If#= 1 Alt= 2 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+> I:  If#= 1 Alt= 3 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+> I:  If#= 1 Alt= 4 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+> I:  If#= 1 Alt= 5 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+> I:  If#= 1 Alt= 6 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  63 Ivl=1ms
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  63 Ivl=1ms
+> 
+> Signed-off-by: Cho, Yu-Chen <acho@suse.com>
+> ---
+>  drivers/bluetooth/btusb.c | 3 +++
+>  1 file changed, 3 insertions(+)
 
-The while_list_drain_entry way changes the semantics: the list link is
-deleted before the {...} body starts, so it's not possible to access the
-list anymore. None of the code you've converted uses this, from that
-point it's safe, but if this is about to be a public interface, it
-should be (at least) documented.
+Patch has been applied to bluetooth.git. Thanks.
 
-Macro trickery to postpone list_del after the {...} finishes does not
-work if kfree/kmem_cache_free/rcu_string_free/... is used.
-
-
-david
+	Gustavo
