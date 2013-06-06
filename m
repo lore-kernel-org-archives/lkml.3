@@ -1,121 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539Ab3FEXzm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 19:55:42 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:60380 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753582Ab3FEXyt (ORCPT
+	id S1754317Ab3FFABU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 20:01:20 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:57412 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752894Ab3FFABT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 19:54:49 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, arm@kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Christopher Covington <cov@codeaurora.org>
-Subject: [PATCHv3 2/3] ARM: arch_timer: Move to generic sched_clock framework
-Date: Wed,  5 Jun 2013 16:54:44 -0700
-Message-Id: <1370476485-468-3-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.3.rc3.8.g5e49f30.dirty
-In-Reply-To: <1370476485-468-1-git-send-email-sboyd@codeaurora.org>
-References: <1370476485-468-1-git-send-email-sboyd@codeaurora.org>
+	Wed, 5 Jun 2013 20:01:19 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: "luke.leighton" <luke.leighton@gmail.com>,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        debian-kernel@lists.debian.org
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re: Uploading linux (3.9.4-1))
+Date: Thu, 06 Jun 2013 02:01:14 +0200
+Message-ID: <1733666.lHUBcfUXq9@flatron>
+User-Agent: KMail/4.10.4 (Linux/3.9.4-gentoo; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com> <1370475609.20454.44.camel@localhost> <CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register with the generic sched_clock framework now that it
-supports 64 bits. This fixes two problems with the current
-sched_clock support for machines using the architected timers.
-First off, we don't subtract the start value from subsequent
-sched_clock calls so we can potentially start off with
-sched_clock returning gigantic numbers. Second, there is no
-support for suspend/resume handling so problems such as discussed
-in 6a4dae5 (ARM: 7565/1: sched: stop sched_clock() during
-suspend, 2012-10-23) can happen without this patch.
+On Thursday 06 of June 2013 00:54:02 luke.leighton wrote:
+> On Thu, Jun 6, 2013 at 12:40 AM, Henrik Nordström
+> 
+> <henrik@henriknordstrom.net> wrote:
+> > tor 2013-06-06 klockan 00:26 +0100 skrev luke.leighton:
+> >>  no john - they've only added it to the multiplexed sections of the
+> >> 
+> >> drivers which they themselves have written.  such as
+> >> drivers/usb/sun{N}i_usb/*.[ch], drivers/block/nand/sun{N}_i,
+> >> arch/arm/mach-sun{N}i and so on.
+> > 
+> > And a number of SPI device drivers, USB device drivers, vendor
+> > provided
+> > device drivers, ......
+> > 
+> >> the script.fex system deals with the pinmux issue in a very neat way 
+that:
+> >>   a) has very little impact on the rest of the kernel tree [citation
+> >> 
+> >> needed!  i'm saying that: could someone please confirm if it's true]
+> > 
+> > Not really the case. Actually the opposite. DT have this as well, and
+> > integrated in device probing. Allwinner need to hack every driver used
+> > to add their gpio requests to have pinmuxing triggered.
+> 
+>  augh.  ok.  solutions.  what are the solutions here?
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/kernel/arch_timer.c | 14 ++------------
- include/linux/sched_clock.h  |  2 --
- kernel/time/sched_clock.c    | 13 ++++---------
- 3 files changed, 6 insertions(+), 23 deletions(-)
+I don't see any other solution here than moving all the Allwinner code to 
+DT (as it has been suggested in this thread several times already), as 
+this is the only hardware description method supported by ARM Linux.
 
-diff --git a/arch/arm/kernel/arch_timer.c b/arch/arm/kernel/arch_timer.c
-index 221f07b..2966288 100644
---- a/arch/arm/kernel/arch_timer.c
-+++ b/arch/arm/kernel/arch_timer.c
-@@ -22,13 +22,6 @@ static unsigned long arch_timer_read_counter_long(void)
- 	return arch_timer_read_counter();
- }
- 
--static u32 sched_clock_mult __read_mostly;
--
--static unsigned long long notrace arch_timer_sched_clock(void)
--{
--	return arch_timer_read_counter() * sched_clock_mult;
--}
--
- static struct delay_timer arch_delay_timer;
- 
- static void __init arch_timer_delay_timer_register(void)
-@@ -48,11 +41,8 @@ int __init arch_timer_arch_init(void)
- 
- 	arch_timer_delay_timer_register();
- 
--	/* Cache the sched_clock multiplier to save a divide in the hot path. */
--	sched_clock_mult = NSEC_PER_SEC / arch_timer_rate;
--	sched_clock_func = arch_timer_sched_clock;
--	pr_info("sched_clock: ARM arch timer >56 bits at %ukHz, resolution %uns\n",
--		arch_timer_rate / 1000, sched_clock_mult);
-+	/* 56 bits minimum, so we assume worst case rollover */
-+	sched_clock_setup(arch_timer_read_counter, 56, arch_timer_rate);
- 
- 	return 0;
- }
-diff --git a/include/linux/sched_clock.h b/include/linux/sched_clock.h
-index 81baaef..04cee83 100644
---- a/include/linux/sched_clock.h
-+++ b/include/linux/sched_clock.h
-@@ -17,6 +17,4 @@ static inline void sched_clock_postinit(void) { }
- extern void setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate);
- extern void sched_clock_setup(u64 (*read)(void), int bits, unsigned long rate);
- 
--extern unsigned long long (*sched_clock_func)(void);
--
- #endif
-diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
-index 3478b6d..f69addf 100644
---- a/kernel/time/sched_clock.c
-+++ b/kernel/time/sched_clock.c
-@@ -173,20 +173,15 @@ void __init setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate)
- 	sched_clock_setup(read_sched_clock_32_wrapper, bits, rate);
- }
- 
--static unsigned long long notrace sched_clock_32(void)
--{
--	u64 cyc = read_sched_clock();
--	return cyc_to_sched_clock(cyc, sched_clock_mask);
--}
--
--unsigned long long __read_mostly (*sched_clock_func)(void) = sched_clock_32;
--
- unsigned long long notrace sched_clock(void)
- {
-+	u64 cyc;
-+
- 	if (cd.suspended)
- 		return cd.epoch_ns;
- 
--	return sched_clock_func();
-+	cyc = read_sched_clock();
-+	return cyc_to_sched_clock(cyc, sched_clock_mask);
- }
- 
- void __init sched_clock_postinit(void)
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Best regards,
+Tomasz
 
