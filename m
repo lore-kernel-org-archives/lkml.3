@@ -1,134 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab3FFPa6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 11:30:58 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:17982 "EHLO mail.abilis.ch"
+	id S1752513Ab3FFPc1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 11:32:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37173 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752175Ab3FFPaz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 11:30:55 -0400
-Date: Thu, 6 Jun 2013 17:30:31 +0200
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Haojian Zhuang <haojian.zhuang@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
-Message-ID: <20130606153030.GA19876@ab42.lan>
-References: <51942472.9010402@wwwdotorg.org>
- <CACRpkdYtKr5w2=1sONG4Qn2TQue38nV7epWfzxNQz5rjSs0DZQ@mail.gmail.com>
- <20130522142824.GC4789@ab42.lan>
- <CAD6h2NT4FqmEsLvtTDwwDL2YVzXYNpw72hTOcSxSMvHLhWvFPQ@mail.gmail.com>
- <20130524115053.GB5203@ab42.lan>
- <CAD6h2NSh_4TNAGeFhg+va5QX2hGia+gkw-mPaeMezghsa=Zc6Q@mail.gmail.com>
- <20130603123001.GD31808@ab42.lan>
- <CAD6h2NQVKKvcoPdD4sm5rUM5G-FpF3abL=k+WfQsnKnm7qhREA@mail.gmail.com>
- <20130606141115.GA10345@ab42.lan>
- <CAD6h2NRNMQP-ZQ0Cc613tGThVEo7AzRExBmWsbtr1DXgiPwz7w@mail.gmail.com>
+	id S1751340Ab3FFPc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 11:32:26 -0400
+Date: Thu, 6 Jun 2013 11:31:36 -0400
+From: Dave Jones <davej@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: paulmck@linux.vnet.ibm.com, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: rcu_preempt running flat out on idle desktop.
+Message-ID: <20130606153136.GA12823@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	paulmck@linux.vnet.ibm.com,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Ingo Molnar <mingo@kernel.org>
+References: <20130508203042.GA18895@redhat.com>
+ <CAFTL4hwB3XZG+C9pQ0JD4h=n_ObNH6mCBRfLW3JaxohwwRDWRA@mail.gmail.com>
+ <20130509211026.GA22723@redhat.com>
+ <20130514012105.GB12749@somewhere>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <CAD6h2NRNMQP-ZQ0Cc613tGThVEo7AzRExBmWsbtr1DXgiPwz7w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20130514012105.GB12749@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 10:32:21PM +0800, Haojian Zhuang wrote:
-> On 6 June 2013 22:11, Christian Ruppert <christian.ruppert@abilis.com> wrote:
-> > On Wed, Jun 05, 2013 at 09:44:27AM +0800, Haojian Zhuang wrote:
-> >> On 3 June 2013 20:30, Christian Ruppert <christian.ruppert@abilis.com> wrote:
-> >> > OK, here's a simplified example of what we would like to do (this seems
-> >> > pretty common so I suppose there is a way I haven't understood). Our
-> >> > situation is slightly more complex but for the purpose of discussion
-> >> > let's assume a chip with 8 pins which can be configured for the
-> >> > following functions:
-> >> >
-> >> > Pin   GPIO-A    I2C    SPI0     SPI1
-> >> > ------------------------------------
-> >> >  1    GPIOA0    SDA             MISO1
-> >> >  2    GPIOA1    SCL             MOSI1
-> >> >  3    GPIOA2                    SS1_B
-> >> >  4    GPIOA3                    SCLK1
-> >> >  5    GPIOA4           MISO0
-> >> >  6    GPIOA5           MOSI0
-> >> >  7    GPIOA6           SS0_B
-> >> >  8    GPIOA7           SCLK0
-> >> >
-> >> > We can now define the following pinctrl-single:
-> >> >
-> >> > pinmux: pinmux@0xFFEE0000 {
-> >> >         compatible = "pinctrl-single";
-> >> >         reg = <0xFFEE0000 0x8>;
-> >> >         #address-cells = <1>;
-> >> >         #size-cells = <0>;
-> >> >         #gpio-range-cells = <3>;
-> >> >         pinctrl-single,register-width = <32>;
-> >> >         pinctrl-single,function-mask = <0xffffffff>;
-> >> >         pinctrl-single,gpio-range = <&range 1 8 0>;
-> >> >         gpioa_pins: pinmux_gpioa_pins {
-> >> >                 pinctrl-single,pins = <0x0 0 0x4 0>
-> >> >         };
-> >> >         i2c_pins: pinmux_i2c_pins {
-> >> >                 pinctrl-single,pins = <0x0 1>
-> >> >         };
-> >> >         spi0_pins: pinmux_spi0_pins {
-> >> >                 pinctrl-single,pins = <0x1 1>
-> >> <0x1 1>?
-> >>
-> >> If each pinmux register is only for one pin in your SoC.
-> >> I think that your definitions are wrong above. We use
-> >> register offset as the first argument, not pin number.
-> >> And the second argument should be pin function number.
-> >
-> > In our case each pinmux register (bit field) actually controls an entire
-> > group of pins.
-> >
-> >> If multiple pins are sharing one register with different bits,
-> >> you need to enable "pinctrl-single,bit-per-mux".
-> >
-> > Multiple pins are sharing the same bits in the same register. Do you
-> > think this prevents us from using pinctrl-single?
-> >
-> Could you give me your register definition? Then I can understand you
-> better.
+On Tue, May 14, 2013 at 03:21:07AM +0200, Frederic Weisbecker wrote:
+ > On Thu, May 09, 2013 at 05:10:26PM -0400, Dave Jones wrote:
+ > > On Thu, May 09, 2013 at 11:02:08PM +0200, Frederic Weisbecker wrote:
+ > > 
+ > >  > > RCU options for this build are..
+ > >  > >
+ > >  > I can't reproduce that issue even with the above setting. Could you
+ > >  > please send me your whole config?
+ > > 
+ > > http://paste.fedoraproject.org/11363/36813375/raw/
+ > 
+ > Sorry it took me some time to get that config booting, I ran into
+ > other unrelated crashes.
+ > 
+ > So I'm observing the exact opposite than you: the processes appear to
+ > have no load nor to consume cputime. Even if I use some dumb user loop.
+ > Top don't even show it.
+ > 
+ > I'm digging further and will tell you when I get more info.
 
-In our example, the register map would look a bit like the following.
-Note that every register configures four pins at a time.
+So I'm still seeing this on rc4.
 
-Register 0x0:
- Mode  GPIO-A    I2C    SPI1
- Value 0x0       0x1    0x2
- ---------------------------
- Pin1  GPIOA0    SDA    MISO1
- Pin2  GPIOA1    SCL    MOSI1
- Pin3  GPIOA2           SS1_B
- Pin4  GPIOA3           SCLK1
+Here's my 'idle' firewall, just routing packets:
 
-Register 0x4:
- Mode  GPIO-A    SPI0
- Value 0x0       0x1
- ---------------------
- Pin5  GPIOA4    MISO0
- Pin6  GPIOA5    MOSI0
- Pin7  GPIOA6    SS0_B
- Pin8  GPIOA7    SCLK0
+  PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM    TIME+  COMMAND                                                                                                          
+ 4405 root      20   0     0    0    0 S 400.0  0.0  52336:27 kworker/2:0                                                                                                      
+20968 davej     20   0  115m 1840 1092 R 400.0  0.1   2297:48 top                                                                                                              
+  964 named     20   0  383m  32m 2896 S 400.0  1.7  81384:54 named                                                                                                            
+   10 root      20   0     0    0    0 S 400.0  0.0 195403:05 rcu_preempt                                                                                                      
+20830 davej     20   0  125m 2172 1024 S 400.0  0.1 939:36.10 sshd                                                                                                             
+   11 root      20   0     0    0    0 S 400.0  0.0  42644:33 rcuop/0                                                                                                          
+   13 root      20   0     0    0    0 S 400.0  0.0  34729:04 rcuop/2                                                                                                          
+  754 lighttpd  20   0 54640 2692 1732 S 400.0  0.1  35286:11 lighttpd                                                                                                         
+  756 root      20   0  216m  10m 6116 S 400.0  0.5  34143:41 snmpd                                                                                                            
+   35 root      20   0     0    0    0 S 400.0  0.0  12790:56 ksoftirqd/2                                                                                                      
+19893 root      20   0     0    0    0 S 400.0  0.0  12570:49 kworker/0:1                                                                                                      
+20059 root      20   0     0    0    0 S 400.0  0.0   4666:30 kworker/1:1                                                                                                      
+   32 root      rt   0     0    0    0 S 400.0  0.0   8780:22 watchdog/2                                                                                                       
+  792 root      20   0 92220 2516  632 S 400.0  0.1   7821:28 sendmail                                                                                                         
+   25 root      rt   0     0    0    0 S 400.0  0.0   8780:21 watchdog/0                                                                                                       
+   26 root      rt   0     0    0    0 S 400.0  0.0   8780:22 watchdog/1                                                                                                       
+   38 root      rt   0     0    0    0 S 400.0  0.0   8780:22 watchdog/3                                                                                                       
+19167 root      20   0     0    0    0 S 400.0  0.0   7804:04 kworker/3:2     
 
-Greetings,
-  Christian
 
--- 
-  Christian Ruppert              ,          <christian.ruppert@abilis.com>
-                                /|
-  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
-                             _// | bilis Systems   CH-1228 Plan-les-Ouates
+Every process is either 400%, or 0%.
+
+Here's my desktop box, just writing this email:
+
+  PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM    TIME+  COMMAND                                                                                                          
+   10 root      20   0     0    0    0 S 200.0  0.0  35134:00 rcu_preempt                                                                                                      
+   12 root      20   0     0    0    0 S 200.0  0.0  14059:47 rcuop/1                                                                                                          
+12528 root      20   0     0    0    0 S 200.0  0.0   1012:56 kworker/0:1                                                                                                      
+12999 davej     20   0  115m 1700  956 R 200.0  0.1   1:09.10 top                                                                                                              
+ 4799 root      20   0     0    0    0 S 200.0  0.0   3510:40 kworker/1:1                                                                                                      
+    1 root      20   0 50760 5092 1648 S   0.0  0.2   3:14.96 systemd                                                                                                          
+    2 root      20   0     0    0    0 S   0.0  0.0   1:40.55 kthreadd      
+
+Every process 200% or 0%.
+
+	Dave
+
