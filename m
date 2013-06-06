@@ -1,60 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902Ab3FFHLT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 03:11:19 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33694 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754399Ab3FFHLR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 03:11:17 -0400
-Message-ID: <51B035C9.1070506@ti.com>
-Date: Thu, 6 Jun 2013 12:40:01 +0530
-From: Archit Taneja <archit@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1753420Ab3FFHNV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 03:13:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1024 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751292Ab3FFHNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 03:13:20 -0400
+Message-ID: <51B03674.2070400@redhat.com>
+Date: Thu, 06 Jun 2013 15:12:52 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Emil Goode <emilgoode@gmail.com>
-CC: <axel.lin@gmail.com>, <linux-omap@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <kernel-janitors@vger.kernel.org>,
-        "Valkeinen, Tomi" <tomi.valkeinen@ti.com>
-Subject: Re: [PATCH] OMAPDSS: Remove kfree for memory allocated with devm_kzalloc
-References: <1370453396-18043-1-git-send-email-emilgoode@gmail.com>
-In-Reply-To: <1370453396-18043-1-git-send-email-emilgoode@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sergei.shtylyov@cogentembedded.com
+Subject: Re: [net-next rfc V3 7/9] macvtap: allow TUNSETIFF to create multiqueue
+ device
+References: <1370414192-5830-1-git-send-email-jasowang@redhat.com> <1370414192-5830-8-git-send-email-jasowang@redhat.com> <20130605104306.GG31830@redhat.com> <51AFFE59.2010808@redhat.com> <20130606065905.GA5170@redhat.com>
+In-Reply-To: <20130606065905.GA5170@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.24.145.166]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 06/06/2013 02:59 PM, Michael S. Tsirkin wrote:
+> On Thu, Jun 06, 2013 at 11:13:29AM +0800, Jason Wang wrote:
+>> On 06/05/2013 06:43 PM, Michael S. Tsirkin wrote:
+>>> On Wed, Jun 05, 2013 at 02:36:30PM +0800, Jason Wang wrote:
+>>>> Though the queue were in fact created by open(), we still need to add this check
+>>>> to be compatible with tuntap which can let mgmt software use a single API to
+>>>> manage queues. This patch only validates the device name and moves the TUNSETIFF
+>>>> to a helper.
+>>>>
+>>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>>> The patch is OK, the description is confusing.
+>>> What you mean is simply:
+>>>
+>>> 	Allow IFF_MULTI_QUEUE in TUNSETIFF for macvtap, to match
+>>> 	tun behaviour.
+>>>
+>>> And if you put it like this, I would say make this
+>>> the last patch in the series, so userspace
+>>> can use IFF_MULTI_QUEUE to detect new versus old
+>>> behaviour.
 
-On Wednesday 05 June 2013 10:59 PM, Emil Goode wrote:
-> It's not necessary to free memory allocated with devm_kzalloc
-> in a remove function and using kfree leads to a double free.
-
-Looks fine to me. Tomi, could you take this for 3.11?
-
-Archit
-
+[...]
+>>>> @@ -887,6 +888,44 @@ static void macvtap_put_vlan(struct macvlan_dev *vlan)
+>>>>  	dev_put(vlan->dev);
+>>>>  }
+>>>>  
+>>>> +static int macvtap_set_iff(struct file *file, struct ifreq __user *ifr_u)
+>>>> +{
+>>>> +	struct macvtap_queue *q = file->private_data;
+>>>> +	struct net *net = current->nsproxy->net_ns;
+>>>> +	struct inode *inode = file_inode(file);
+>>>> +	struct net_device *dev, *dev2;
+>>>> +	struct ifreq ifr;
+>>>> +
+>>>> +	if (copy_from_user(&ifr, ifr_u, sizeof(struct ifreq)))
+>>>> +		return -EFAULT;
+>>>> +
+>>>> +	/* To keep the same behavior of tuntap, validate ifr_name */
+>>> So I'm not sure - why is it important to validate ifr_name here?
+>>> We ignore the name for all other flags - why is IFF_MULTI_QUEUE
+>>> special?
+>> It raises another question, why not validate ifname like tuntap? We
+>> should warn userspace about their error, otherwise they may create
+>> queues on the wrong device. In fact I want validate for both, but keep
+>> the behaviour w/o IFF_MULTI_QUEUE for backward compatibility.
+> Basically macvtap ignores ifr_name because it doesn't need it.
+> Making it ignore it without IFF_MULTI_QUEUE but
+> not with IFF_MULTI_QUEUE seems ugly.
 >
-> Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> ---
->   drivers/video/omap2/displays/panel-picodlp.c |    2 --
->   1 file changed, 2 deletions(-)
+> Do you think we'll need ifr_name at some point?
+> Why not validate then, when we actually do?
 >
-> diff --git a/drivers/video/omap2/displays/panel-picodlp.c b/drivers/video/omap2/displays/panel-picodlp.c
-> index 62f2db0..859e111 100644
-> --- a/drivers/video/omap2/displays/panel-picodlp.c
-> +++ b/drivers/video/omap2/displays/panel-picodlp.c
-> @@ -469,8 +469,6 @@ static void picodlp_panel_remove(struct omap_dss_device *dssdev)
->   	i2c_unregister_device(picod->picodlp_i2c_client);
->   	dev_set_drvdata(&dssdev->dev, NULL);
->   	dev_dbg(&dssdev->dev, "removing picodlp panel\n");
-> -
-> -	kfree(picod);
->   }
 >
->   static int picodlp_panel_enable(struct omap_dss_device *dssdev)
 >
 
+If we want to be more compatible with tuntap to simplify userspace codes.
+
+E.g: There's a userspace who want to create both taps and macvtaps using
+the same codes. For tuntap, we can let kernel name the device, so
+creating a mq device looks like:
+
+open()
+tunsetiff()
+if_name = tungetiff()
+tunsetiff(if_name)
+...
+tunsetiff(if_name)
+
+For tuntap, if we specifies a wrong ifr_name, kernel will complains.
+We'd better do the same for macvtap.
+
+[...]
