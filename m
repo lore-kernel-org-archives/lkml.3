@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab3FFT27 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 15:28:59 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:61450 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753094Ab3FFT2t (ORCPT
+	id S1753497Ab3FFT3o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 15:29:44 -0400
+Received: from lycasmtp.lycamobile.co.uk ([217.118.119.180]:33457 "EHLO
+	lycasmtp.lycamobile.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752721Ab3FFT3n convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 15:28:49 -0400
+	Thu, 6 Jun 2013 15:29:43 -0400
+Message-Id: <201306061913.r56IvEtv006869@lycasmtp.lycamobile.co.uk>
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-In-Reply-To: <1370542987.2209.18.camel@joe-AO722>
-References: <1370542251-27387-1-git-send-email-betty.dall@hp.com>
- <1370542251-27387-5-git-send-email-betty.dall@hp.com> <1370542987.2209.18.camel@joe-AO722>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 6 Jun 2013 13:28:28 -0600
-Message-ID: <CAErSpo56-AtgJzkJqK+8ggdPiPPvX_AVWhsirZRdNLhdAn8qVw@mail.gmail.com>
-Subject: Re: [PATCH v2 4/6] PCI/ACPI: Move AER severity defines to aer.h
-To: Joe Perches <joe@perches.com>
-Cc: Betty Dall <betty.dall@hp.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        "Pearson, Greg" <greg.pearson@hp.com>,
-        Huang Ying <ying.huang@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Confirmed Reciept.....Certified Winner.....
+To: Recipients <info@uk.net>
+From: info@uk.net
+Date: Fri, 07 Jun 2013 00:52:29 +0530
+Reply-To: claim.jonesgreene@hotmail.co.uk
+X-plintron-MailScanner-Information: Please contact the ISP for more information
+X-plintron-MailScanner-ID: r56IvEtv006869
+X-plintron-MailScanner: Found to be clean
+X-plintron-MailScanner-SpamScore: ssss
+X-plintron-MailScanner-From: info@uk.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 6, 2013 at 12:23 PM, Joe Perches <joe@perches.com> wrote:
-> On Thu, 2013-06-06 at 12:10 -0600, Betty Dall wrote:
->> The function aer_recover_queue() is a public interface and the
->> severity argument uses #defines that are in the private header
->> pci/pcie/aer/aerdrv.h.
->>
->> This patch moves the #defines from pci/pcie/aer/aerdrv.h to
->> include/linux/aer.h.
-> []
->> diff --git a/include/linux/aer.h b/include/linux/aer.h
-> []
->> -extern void cper_print_aer(const char *prefix, struct pci_dev *dev,
->> +void cper_print_aer(const char *prefix, struct pci_dev *dev,
->>                          int cper_severity, struct aer_capability_regs *aer);
->
-> Can you please also realign the arguments on subsequent
-> lines to the open parenthesis of the first line and reflow
-> then to 80 cols when appropriate?
+Uk National Lottery
+Ref: L/200-26937
+Batch: 2007MJL-01
 
-I can do this when I apply them, so don't bother reposting unless you
-have more substantive changes to make.
 
->> -extern void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
->> +void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
->>                             int severity);
->
->
+                     FINAL NOTIFICATION
+We are pleased to inform you today 6th  June, 2013 of the result 
+of the winners of the  UK NATIONAL LOTTERY ONLINE PROMO PROGRAMME, held 
+on the 30th of May, 2013.
+
+You have therefore been approved for a lump sum pay out of £1,000 000 
+(One Million Pounds Sterling) in cash credited to file XYL/26510460037/06.To file for your claim, 
+please contact our claims agent;
+
+Agents Name: Dr.Jones Greene
+Emai: claim.jonesgreene@hotmail.co.uk
+
+
+Provide him with the information below:
+
+1.Full Name:
+2.Full Address:
+3.Marital Status:
+4.Occupation:
+5.Age:
+6.Sex:
+7.Nationality:
+8.Country Of Residence:
+9.Telephone Number:
+
+Congratulations once more from all members and staff of this program.
+
+Sincerely, 
+Dr.Jones Greene
+UK NATIONAL LOTTERY
+
+
