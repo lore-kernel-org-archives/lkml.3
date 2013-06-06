@@ -1,94 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab3FFSPy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 14:15:54 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:20676 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144Ab3FFSPw (ORCPT
+	id S1752721Ab3FFSP6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 14:15:58 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:4099 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752571Ab3FFSP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 14:15:52 -0400
+	Thu, 6 Jun 2013 14:15:56 -0400
 From: Betty Dall <betty.dall@hp.com>
 To: rjw@sisk.pl, bhelgaas@google.com, gong.chen@linux.intel.com,
         greg.pearson@hp.com
 Cc: ying.huang@intel.com, linux-acpi@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         Betty Dall <betty.dall@hp.com>
-Subject: [PATCH v3 2/6] PCI/AER: Factor out HEST device type matching
-Date: Thu,  6 Jun 2013 12:10:47 -0600
-Message-Id: <1370542251-27387-3-git-send-email-betty.dall@hp.com>
+Subject: [PATCH v2 4/6] PCI/ACPI: Move AER severity defines to aer.h
+Date: Thu,  6 Jun 2013 12:10:49 -0600
+Message-Id: <1370542251-27387-5-git-send-email-betty.dall@hp.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1370542251-27387-1-git-send-email-betty.dall@hp.com>
 References: <1370542251-27387-1-git-send-email-betty.dall@hp.com>
-Author: Bjorn Helgaas <bhelgaas@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This factors out the matching of HEST structure type and PCIe device type
-to improve readability.  No functional change.
-    
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Tested-by: Betty Dall <betty.dall@hp.com>
+The function aer_recover_queue() is a public interface and the
+severity argument uses #defines that are in the private header
+pci/pcie/aer/aerdrv.h.
+
+This patch moves the #defines from pci/pcie/aer/aerdrv.h to 
+include/linux/aer.h.
+
+Signed-off-by: Betty Dall <betty.dall@hp.com>
 ---
 
- drivers/pci/pcie/aer/aerdrv_acpi.c |   35 +++++++++++++++++------------------
- 1 files changed, 17 insertions(+), 18 deletions(-)
+ drivers/pci/pcie/aer/aerdrv.h |    4 ----
+ include/linux/aer.h           |   16 ++++++++++------
+ 2 files changed, 10 insertions(+), 10 deletions(-)
 
 
-diff --git a/drivers/pci/pcie/aer/aerdrv_acpi.c b/drivers/pci/pcie/aer/aerdrv_acpi.c
-index 4f798ab..e7ea573 100644
---- a/drivers/pci/pcie/aer/aerdrv_acpi.c
-+++ b/drivers/pci/pcie/aer/aerdrv_acpi.c
-@@ -29,6 +29,22 @@ static inline int hest_match_pci(struct acpi_hest_aer_common *p,
- 		 p->function == PCI_FUNC(pci->devfn));
- }
+diff --git a/drivers/pci/pcie/aer/aerdrv.h b/drivers/pci/pcie/aer/aerdrv.h
+index d12c77c..90ea3e8 100644
+--- a/drivers/pci/pcie/aer/aerdrv.h
++++ b/drivers/pci/pcie/aer/aerdrv.h
+@@ -13,10 +13,6 @@
+ #include <linux/aer.h>
+ #include <linux/interrupt.h>
  
-+static inline bool hest_match_type(struct acpi_hest_header *hest_hdr,
-+				struct pci_dev *dev)
-+{
-+	u16 hest_type = hest_hdr->type;
-+	u8 pcie_type = pci_pcie_type(dev);
-+
-+	if ((hest_type == ACPI_HEST_TYPE_AER_ROOT_PORT &&
-+		pcie_type == PCI_EXP_TYPE_ROOT_PORT) ||
-+	    (hest_type == ACPI_HEST_TYPE_AER_ENDPOINT &&
-+		pcie_type == PCI_EXP_TYPE_ENDPOINT) ||
-+	    (hest_type == ACPI_HEST_TYPE_AER_BRIDGE &&
-+		(dev->class >> 16) == PCI_BASE_CLASS_BRIDGE))
-+		return true;
-+	return false;
-+}
-+
- struct aer_hest_parse_info {
- 	struct pci_dev *pci_dev;
- 	int firmware_first;
-@@ -38,28 +54,11 @@ static int aer_hest_parse(struct acpi_hest_header *hest_hdr, void *data)
- {
- 	struct aer_hest_parse_info *info = data;
- 	struct acpi_hest_aer_common *p;
--	u8 pcie_type = 0;
--	u8 bridge = 0;
- 	int ff = 0;
- 
--	switch (hest_hdr->type) {
--	case ACPI_HEST_TYPE_AER_ROOT_PORT:
--		pcie_type = PCI_EXP_TYPE_ROOT_PORT;
--		break;
--	case ACPI_HEST_TYPE_AER_ENDPOINT:
--		pcie_type = PCI_EXP_TYPE_ENDPOINT;
--		break;
--	case ACPI_HEST_TYPE_AER_BRIDGE:
--		if ((info->pci_dev->class >> 16) == PCI_BASE_CLASS_BRIDGE)
--			bridge = 1;
--		break;
--	default:
--		return 0;
--	}
+-#define AER_NONFATAL			0
+-#define AER_FATAL			1
+-#define AER_CORRECTABLE			2
 -
- 	p = (struct acpi_hest_aer_common *)(hest_hdr + 1);
- 	if (p->flags & ACPI_HEST_GLOBAL) {
--		if ((pci_pcie_type(info->pci_dev) == pcie_type) || bridge)
-+		if (hest_match_type(hest_hdr, info->pci_dev))
- 			ff = !!(p->flags & ACPI_HEST_FIRMWARE_FIRST);
- 	} else
- 		if (hest_match_pci(p, info->pci_dev))
+ #define SYSTEM_ERROR_INTR_ON_MESG_MASK	(PCI_EXP_RTCTL_SECEE|	\
+ 					PCI_EXP_RTCTL_SENFEE|	\
+ 					PCI_EXP_RTCTL_SEFEE)
+diff --git a/include/linux/aer.h b/include/linux/aer.h
+index ec10e1b..0f6a9e2 100644
+--- a/include/linux/aer.h
++++ b/include/linux/aer.h
+@@ -7,6 +7,10 @@
+ #ifndef _AER_H_
+ #define _AER_H_
+ 
++#define AER_NONFATAL			0
++#define AER_FATAL			1
++#define AER_CORRECTABLE			2
++
+ struct aer_header_log_regs {
+ 	unsigned int dw0;
+ 	unsigned int dw1;
+@@ -31,9 +35,9 @@ struct aer_capability_regs {
+ 
+ #if defined(CONFIG_PCIEAER)
+ /* pci-e port driver needs this function to enable aer */
+-extern int pci_enable_pcie_error_reporting(struct pci_dev *dev);
+-extern int pci_disable_pcie_error_reporting(struct pci_dev *dev);
+-extern int pci_cleanup_aer_uncorrect_error_status(struct pci_dev *dev);
++int pci_enable_pcie_error_reporting(struct pci_dev *dev);
++int pci_disable_pcie_error_reporting(struct pci_dev *dev);
++int pci_cleanup_aer_uncorrect_error_status(struct pci_dev *dev);
+ #else
+ static inline int pci_enable_pcie_error_reporting(struct pci_dev *dev)
+ {
+@@ -49,10 +53,10 @@ static inline int pci_cleanup_aer_uncorrect_error_status(struct pci_dev *dev)
+ }
+ #endif
+ 
+-extern void cper_print_aer(const char *prefix, struct pci_dev *dev,
++void cper_print_aer(const char *prefix, struct pci_dev *dev,
+ 			   int cper_severity, struct aer_capability_regs *aer);
+-extern int cper_severity_to_aer(int cper_severity);
+-extern void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
++int cper_severity_to_aer(int cper_severity);
++void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
+ 			      int severity);
+ #endif //_AER_H_
+ 
