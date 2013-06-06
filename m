@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab3FFJq3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 05:46:29 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:51491 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753744Ab3FFJq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 05:46:26 -0400
-Date: Thu, 6 Jun 2013 11:46:10 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Cc: dougthompson@xmission.com, bp@suse.de, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] edac: Add code to handle new MCE signatures for new
- models of Fam15h
-Message-ID: <20130606094610.GB20972@pd.tnic>
-References: <1370465403-2370-1-git-send-email-aravind.gopalakrishnan@amd.com>
- <20130605213249.GD29856@pd.tnic>
- <51AFB3DC.10308@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <51AFB3DC.10308@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932186Ab3FFJqk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 05:46:40 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:27768 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754634Ab3FFJqi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 05:46:38 -0400
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Nick Dyer <nick.dyer@itdev.co.uk>
+Subject: [PATCH] Fix null pointer dereference caused by sysfs_notify on binary attribute
+Date: Thu,  6 Jun 2013 10:45:20 +0100
+Message-Id: <1370511920-8628-1-git-send-email-nick.dyer@itdev.co.uk>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 04:55:40PM -0500, Aravind Gopalakrishnan wrote:
-> >Since "parity error" is already in the printk below, I'm guessing this
-> >string should be "Retire status queue" only?
-> 
->     Okay, that should convey the message too...
+It would be nice to have this work as expected but for now this is a minimal
+fix to prevent the kernel panic.
 
-Applied, thanks.
+Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
+---
+ fs/sysfs/file.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 602f56d..976819b 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -449,10 +449,12 @@ void sysfs_notify_dirent(struct sysfs_dirent *sd)
+ 
+ 	spin_lock_irqsave(&sysfs_open_dirent_lock, flags);
+ 
+-	od = sd->s_attr.open;
+-	if (od) {
+-		atomic_inc(&od->event);
+-		wake_up_interruptible(&od->poll);
++	if (sd->s_attr) {
++		od = sd->s_attr.open;
++		if (od) {
++			atomic_inc(&od->event);
++			wake_up_interruptible(&od->poll);
++		}
+ 	}
+ 
+ 	spin_unlock_irqrestore(&sysfs_open_dirent_lock, flags);
 -- 
-Regards/Gruss,
-    Boris.
+1.7.10.4
 
-Sent from a fat crate under my desk. Formatting is fine.
---
