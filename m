@@ -1,77 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449Ab3FFScT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 14:32:19 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:46976 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751870Ab3FFScR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 14:32:17 -0400
-Date: Thu, 6 Jun 2013 14:31:24 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-mm@kvack.org, Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Roman Gushchin <klamm@yandex-team.ru>, metin d <metdos@yahoo.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [patch 10/10] mm: workingset: keep shadow entries in check
-Message-ID: <20130606183124.GL15721@cmpxchg.org>
-References: <1369937046-27666-1-git-send-email-hannes@cmpxchg.org>
- <1369937046-27666-11-git-send-email-hannes@cmpxchg.org>
- <20130603082209.GG5910@twins.programming.kicks-ass.net>
- <20130603150154.GE15576@cmpxchg.org>
- <20130603171031.GD8923@twins.programming.kicks-ass.net>
+	id S1751990Ab3FFSlc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 14:41:32 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:50689 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab3FFSlb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 14:41:31 -0400
+Date: Thu, 6 Jun 2013 20:41:29 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Strange intermittent EIO error when writing to stdout since
+ v3.8.0
+Message-ID: <20130606184129.GA6854@x4>
+References: <20130606115417.GA520@x4>
+ <12790.1370539861@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130603171031.GD8923@twins.programming.kicks-ass.net>
+In-Reply-To: <12790.1370539861@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 03, 2013 at 07:10:31PM +0200, Peter Zijlstra wrote:
-> On Mon, Jun 03, 2013 at 11:01:54AM -0400, Johannes Weiner wrote:
-> > On Mon, Jun 03, 2013 at 10:22:09AM +0200, Peter Zijlstra wrote:
-> > > On Thu, May 30, 2013 at 02:04:06PM -0400, Johannes Weiner wrote:
-> > > > 2. a list of files that contain shadow entries is maintained.  If the
-> > > >    global number of shadows exceeds a certain threshold, a shrinker is
-> > > >    activated that reclaims old entries from the mappings.  This is
-> > > >    heavy-handed but it should not be a common case and is only there
-> > > >    to protect from accidentally/maliciously induced OOM kills.
-> > > 
-> > > Grrr.. another global files list. We've been trying rather hard to get
-> > > rid of the first one :/
-> > > 
-> > > I see why you want it but ugh.
-> > 
-> > I'll try to make it per-SB like the inode list.  It probably won't be
-> > per-SB shrinkers because of the global nature of the shadow limit, but
-> > at least per-SB inode lists should be doable.
+On 2013.06.06 at 18:31 +0100, David Howells wrote:
+> Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
 > 
-> per have per-cpu-per-sb lists, see file_sb_list_{add,del} and
-> do_file_list_for_each_entry()
-
-Ok, I'll give it a look.  Thanks.
-
-> > > I have similar worries for your global time counter, large machines
-> > > might thrash on that one cacheline.
+> > OSError: [Errno 5] Input/output error
 > > 
-> > Fair enough.
-> > 
-> > So I'm trying the following idea: instead of the global time counter,
-> > have per-zone time counters and store the zone along with those local
-> > timestamps in the shadow entries (nid | zid | time).  On refault, we
-> > can calculate the zone-local distance first and then use the inverse
-> > of the zone's eviction proportion to scale it to a global distance.
+> > Basically 'emerge' just writes the build output to stdout in a loop:
 > 
-> The thinking is since that's the same granularity as the zone lock,
-> you're likely to at least trash the zone lock in equal measure?
+> I've just upgraded to kernel-3.9.4-200.fc18.x86_64 and I'm now regularly
+> seeing something very similar from the tee run by "fedpkg local" to log its
+> output when building a cross-compiler gcc RPM:
+> 
+> 	tee: standard output: Input/output error
+> 	tee: write error
+> 
+> Slapping strace on tee after the "Input/output error" line has occurred shows
+> that tee is still running and still pushing lines from its stdin to the output
+> named on its command line, but has ceased writing to its stdout.
 
-Yeah, and prevent the cross-node bouncing.
+tee uses the same loop as portage, but keeps going in case of an EIO:
+
+  /* In the array of NFILES + 1 descriptors, make
+     the first one correspond to standard output.   */
+  descriptors[0] = stdout;
+  files[0] = _("standard output");
+  setvbuf (stdout, NULL, _IONBF, 0);
+
+  for (i = 1; i <= nfiles; i++)
+    {
+      descriptors[i] = (STREQ (files[i], "-")
+                        ? stdout
+                        : fopen (files[i], mode_string));
+      if (descriptors[i] == NULL)
+        {
+          error (0, errno, "%s", files[i]);
+          ok = false;
+        }
+      else
+        setvbuf (descriptors[i], NULL, _IONBF, 0);
+    }
+
+  while (1)
+    {
+      bytes_read = read (0, buffer, sizeof buffer);
+      if (bytes_read < 0 && errno == EINTR)
+        continue;
+      if (bytes_read <= 0)
+        break;
+
+      /* Write to all NFILES + 1 descriptors.
+         Standard output is the first one.  */
+      for (i = 0; i <= nfiles; i++)
+        if (descriptors[i]
+            && fwrite (buffer, bytes_read, 1, descriptors[i]) != 1)
+          {
+            error (0, errno, "%s", files[i]);
+            descriptors[i] = NULL;
+            ok = false;
+          }
+    }
+
+-- 
+Markus
