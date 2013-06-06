@@ -1,89 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754598Ab3FFGzE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 02:55:04 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:55492 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754198Ab3FFGzA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 02:55:00 -0400
-Date: Thu, 6 Jun 2013 08:54:45 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: linux-sh@vger.kernel.org
-cc: Magnus Damm <magnus.damm@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Vinod Koul <vinod.koul@intel.com>, Tony Lindgren <tony@atomide.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 4/4] OF: modify function stubs to match proper function
- declarations.
-In-Reply-To: <1367305883-2997-5-git-send-email-g.liakhovetski@gmx.de>
-Message-ID: <Pine.LNX.4.64.1306060852070.32566@axis700.grange>
-References: <1367305883-2997-1-git-send-email-g.liakhovetski@gmx.de>
- <1367305883-2997-5-git-send-email-g.liakhovetski@gmx.de>
+	id S1754619Ab3FFG6o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 02:58:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61584 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754198Ab3FFG6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 02:58:42 -0400
+Date: Thu, 6 Jun 2013 09:59:05 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sergei.shtylyov@cogentembedded.com
+Subject: Re: [net-next rfc V3 7/9] macvtap: allow TUNSETIFF to create
+ multiqueue device
+Message-ID: <20130606065905.GA5170@redhat.com>
+References: <1370414192-5830-1-git-send-email-jasowang@redhat.com>
+ <1370414192-5830-8-git-send-email-jasowang@redhat.com>
+ <20130605104306.GG31830@redhat.com>
+ <51AFFE59.2010808@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:Msuf5mM+lbcoUn8G3fjeNI2xnLX26pUtK6NL6xJTOjd
- pLbU2VeaY6nosjPtptPpWGc/j08BkONc5/AmdwPV22k2qMdKjx
- 7AufL/gPKmeVFaTauIr3Z4JDuprVSgWUqpwmPaj8e8FBGugZBh
- XTGTDcWnpYqFWhlI3XV7SQXGBTtWftZxyrAKFQz6+2Y5BU2khj
- 8C4igedAGp9kMP1Cf5N2P3kdFCvtVaJZlBj/fzTM5ZZtR9n5YU
- o0QP34lk0II1hnTB7Z9yOz0LNmam4qJKZwK2vQTdfAeGhitNxq
- 6krMShl55pUvFy53Ts8t2J2uDpwHb08nNYmCqlthy9CvbEulBc
- GdKsELWZBGCHuwcqGyOKc3jH35948lfw9nilsDLdGVUV5KkcAz
- zMOpdUc3f/L1A==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51AFFE59.2010808@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-On Tue, 30 Apr 2013, Guennadi Liakhovetski wrote:
-
-> of_parse_phandle_with_args() and of_count_phandle_with_args() functions
-> are declared with their first parameter as const. However, their
-> respective stubs, used when CONFIG_OF isn't defined, don't have the "const"
-> modifier. This patch adds it to fix the mismatch.
+On Thu, Jun 06, 2013 at 11:13:29AM +0800, Jason Wang wrote:
+> On 06/05/2013 06:43 PM, Michael S. Tsirkin wrote:
+> > On Wed, Jun 05, 2013 at 02:36:30PM +0800, Jason Wang wrote:
+> >> Though the queue were in fact created by open(), we still need to add this check
+> >> to be compatible with tuntap which can let mgmt software use a single API to
+> >> manage queues. This patch only validates the device name and moves the TUNSETIFF
+> >> to a helper.
+> >>
+> >> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> > The patch is OK, the description is confusing.
+> > What you mean is simply:
+> >
+> > 	Allow IFF_MULTI_QUEUE in TUNSETIFF for macvtap, to match
+> > 	tun behaviour.
+> >
+> > And if you put it like this, I would say make this
+> > the last patch in the series, so userspace
+> > can use IFF_MULTI_QUEUE to detect new versus old
+> > behaviour.
 > 
-> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-> ---
->  include/linux/of.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-
-This patch is a trivial fix and doesn't actually depend on others in this 
-series, any reason it hasn't been applied yet?
-
-Thanks
-Guennadi
-
-> diff --git a/include/linux/of.h b/include/linux/of.h
-> index 30ae71f..d9dbf73 100644
-> --- a/include/linux/of.h
-> +++ b/include/linux/of.h
-> @@ -466,7 +466,7 @@ static inline struct device_node *of_parse_phandle(const struct device_node *np,
->  	return NULL;
->  }
->  
-> -static inline int of_parse_phandle_with_args(struct device_node *np,
-> +static inline int of_parse_phandle_with_args(const struct device_node *np,
->  					     const char *list_name,
->  					     const char *cells_name,
->  					     int index,
-> @@ -485,7 +485,7 @@ static inline int of_parse_phandle_with_child_args(const struct device_node *np,
->  	return -ENOSYS;
->  }
->  
-> -static inline int of_count_phandle_with_args(struct device_node *np,
-> +static inline int of_count_phandle_with_args(const struct device_node *np,
->  					     const char *list_name,
->  					     const char *cells_name)
->  {
-> -- 
-> 1.7.2.5
+> Make sense, thanks.
+> >
+> >> ---
+> >>  drivers/net/macvtap.c |   51 ++++++++++++++++++++++++++++++++++++++----------
+> >>  1 files changed, 40 insertions(+), 11 deletions(-)
+> >>
+> >> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+> >> index 5ccba99..14764cc 100644
+> >> --- a/drivers/net/macvtap.c
+> >> +++ b/drivers/net/macvtap.c
+> >> @@ -869,6 +869,7 @@ out:
+> >>  	return ret;
+> >>  }
+> >>  
+> >> +
+> >>  static struct macvlan_dev *macvtap_get_vlan(struct macvtap_queue *q)
+> >>  {
+> >>  	struct macvlan_dev *vlan;
+> > Please don't.
 > 
+> Ok.
+> >
+> >> @@ -887,6 +888,44 @@ static void macvtap_put_vlan(struct macvlan_dev *vlan)
+> >>  	dev_put(vlan->dev);
+> >>  }
+> >>  
+> >> +static int macvtap_set_iff(struct file *file, struct ifreq __user *ifr_u)
+> >> +{
+> >> +	struct macvtap_queue *q = file->private_data;
+> >> +	struct net *net = current->nsproxy->net_ns;
+> >> +	struct inode *inode = file_inode(file);
+> >> +	struct net_device *dev, *dev2;
+> >> +	struct ifreq ifr;
+> >> +
+> >> +	if (copy_from_user(&ifr, ifr_u, sizeof(struct ifreq)))
+> >> +		return -EFAULT;
+> >> +
+> >> +	/* To keep the same behavior of tuntap, validate ifr_name */
+> > So I'm not sure - why is it important to validate ifr_name here?
+> > We ignore the name for all other flags - why is IFF_MULTI_QUEUE
+> > special?
+> 
+> It raises another question, why not validate ifname like tuntap? We
+> should warn userspace about their error, otherwise they may create
+> queues on the wrong device. In fact I want validate for both, but keep
+> the behaviour w/o IFF_MULTI_QUEUE for backward compatibility.
 
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+Basically macvtap ignores ifr_name because it doesn't need it.
+Making it ignore it without IFF_MULTI_QUEUE but
+not with IFF_MULTI_QUEUE seems ugly.
+
+Do you think we'll need ifr_name at some point?
+Why not validate then, when we actually do?
+
+
+> >
+> >> +	if (ifr.ifr_flags & IFF_MULTI_QUEUE) {
+> >> +		dev = __dev_get_by_name(net, ifr.ifr_name);
+> >> +		if (!dev)
+> >> +			return -EINVAL;
+> >> +
+> >> +		dev2 = dev_get_by_macvtap_minor(iminor(inode));
+> >> +		if (!dev2)
+> >> +			return -EINVAL;
+> >> +
+> >> +		if (dev != dev2) {
+> >> +			dev_put(dev2);
+> >> +			return -EINVAL;
+> >> +		}
+> >> +
+> >> +		dev_put(dev2);
+> >> +	}
+> >> +
+> >> +	if ((ifr.ifr_flags & ~(IFF_VNET_HDR | IFF_MULTI_QUEUE)) !=
+> >> +	    (IFF_NO_PI | IFF_TAP))
+> >> +		return -EINVAL;
+> >> +	else
+> >> +		q->flags = ifr.ifr_flags;
+> >> +
+> >> +	return 0;
+> >> +}
+> >> +
+> >>  /*
+> >>   * provide compatibility with generic tun/tap interface
+> >>   */
+> >> @@ -905,17 +944,7 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
+> >>  
+> >>  	switch (cmd) {
+> >>  	case TUNSETIFF:
+> >> -		/* ignore the name, just look at flags */
+> > This is actually a useful comment that you've removed.
+> 
+> Will get it back.
+> >
+> >> -		if (get_user(u, &ifr->ifr_flags))
+> >> -			return -EFAULT;
+> >> -
+> >> -		ret = 0;
+> >> -		if ((u & ~IFF_VNET_HDR) != (IFF_NO_PI | IFF_TAP))
+> >> -			ret = -EINVAL;
+> >> -		else
+> >> -			q->flags = u;
+> >> -
+> >> -		return ret;
+> >> +		return macvtap_set_iff(file, ifr);
+> >>  
+> >>  	case TUNGETIFF:
+> >>  		vlan = macvtap_get_vlan(q);
+> >> -- 
+> >> 1.7.1
