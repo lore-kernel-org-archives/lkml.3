@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab3FFQq4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 12:46:56 -0400
-Received: from cdw.me.uk ([91.203.57.136]:46588 "EHLO cdw.me.uk"
+	id S1753486Ab3FFQrS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 12:47:18 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:51124 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752482Ab3FFQqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 12:46:54 -0400
-Date: Thu, 6 Jun 2013 17:46:52 +0100
-From: Chris Webb <chris@arachsys.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Building a BSD-jail clone out of namespaces
-Message-ID: <20130606164651.GA24681@arachsys.com>
-References: <20130606161010.GI12062@arachsys.com>
- <87ehcf8aef.fsf@xmission.com>
+	id S1751353Ab3FFQrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 12:47:15 -0400
+Date: Thu, 6 Jun 2013 10:47:01 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, linux-doc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        John Stultz <john.stultz@linaro.org>, Rob Landley <rob@landley.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/6] Marvell Orion SoC irqchip and clocksource
+Message-ID: <20130606164701.GA24002@obsidianresearch.com>
+References: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87ehcf8aef.fsf@xmission.com>
+In-Reply-To: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.195
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Eric W. Biederman" <ebiederm@xmission.com> writes:
+On Thu, Jun 06, 2013 at 06:27:08PM +0200, Sebastian Hesselbarth wrote:
+> This patch set introduces DT-aware irqchip and clocksource drivers for
+> Marvell Orion SoCs (Kirkwood, Dove, Orion5x, MV78x00) and corresponding
+> patches for Dove and Kirkwood to enable them for DT-boards.
 
-> That will work, but you really don't want to run with uid == 0 mapped to
-> uid == 0.  There are too many things in /proc and /sys and similar that
-> grant access to uid == 0.
+Looks broadly good to me, based on a quick read through all the
+patches.
 
-Many thanks for the swift reply. If I map UID zero in the userns to a
-non-zero UID outside (say -1), is there any way to use the userns UIDs
-instead of host UIDs when accessing the container's root filesystem so I
-don't end up with strange file ownerships on disk? This would prevent me
-from using the same filesystem on physical hosts or in VMs.
-
-I don't think there's any kernel mechanism that lets me apply a UID
-translation layer as part of a bind mount is there?
-
-Cheers,
-
-Chris.
+Regards,
+Jason
