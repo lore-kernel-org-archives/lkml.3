@@ -1,94 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab3FFAil (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 20:38:41 -0400
-Received: from smtp.nfit.au.dk ([130.225.17.180]:46088 "EHLO nysmtp.nfit.au.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754119Ab3FFAik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 20:38:40 -0400
-X-Greylist: delayed 378 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Jun 2013 20:38:39 EDT
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: mremap: validate input before taking lock
-References: <1370000443-5906-1-git-send-email-linux@rasmusvillemoes.dk>
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Organization: D03
-Date: Thu, 06 Jun 2013 00:32:19 +0000
-In-Reply-To: <1370000443-5906-1-git-send-email-linux@rasmusvillemoes.dk> (Rasmus
- Villemoes's message of "Fri, 31 May 2013 11:40:43 +0000")
-Message-ID: <u0lk3m83wq4.fsf@orc02.imf.au.dk>
-User-Agent: Gnus/5.1002 (Gnus v5.10.2) Emacs/21.3 (gnu/linux)
+	id S1755620Ab3FFAjB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 20:39:01 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:47468 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755278Ab3FFAi7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 20:38:59 -0400
+Message-ID: <51AFDA20.8070501@linaro.org>
+Date: Wed, 05 Jun 2013 17:38:56 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, arm@kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Christopher Covington <cov@codeaurora.org>
+Subject: Re: [PATCHv3 1/3] sched_clock: Add support for >32 bit sched_clock
+References: <1370476485-468-1-git-send-email-sboyd@codeaurora.org> <1370476485-468-2-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1370476485-468-2-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping...
-
-Rasmus Villemoes <linux@rasmusvillemoes.dk> writes:
-
-> This patch is very similar to 84d96d897671: Perform some basic
-> validation of the input to mremap() before taking the
-> &current->mm->mmap_sem lock. This also makes the MREMAP_FIXED =>
-> MREMAP_MAYMOVE dependency slightly more explicit.
+On 06/05/2013 04:54 PM, Stephen Boyd wrote:
+> The ARM architected system counter has at least 56 useable bits.
+> Add support for counters with more than 32 bits to the generic
+> sched_clock implementation so we can avoid the complexity of
+> dealing with wrap-around on these devices while benefiting from
+> the irqtime accounting and suspend/resume handling that the
+> generic sched_clock code already has.
 >
-> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+> All users should switch over to the 64bit read function so we can
+> deprecate setup_sched_clock() in favor of sched_clock_setup().
+
+Minor nits below.
+
+>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 > ---
->  mm/mremap.c |   18 ++++++++++--------
->  1 file changed, 10 insertions(+), 8 deletions(-)
 >
-> diff --git a/mm/mremap.c b/mm/mremap.c
-> index 463a257..00b6905 100644
-> --- a/mm/mremap.c
-> +++ b/mm/mremap.c
-> @@ -456,13 +456,14 @@ SYSCALL_DEFINE5(mremap, unsigned long, addr, unsigned long, old_len,
->  	unsigned long charged = 0;
->  	bool locked = false;
->  
-> -	down_write(&current->mm->mmap_sem);
-> -
->  	if (flags & ~(MREMAP_FIXED | MREMAP_MAYMOVE))
-> -		goto out;
-> +		return ret;
-> +
-> +	if (flags & MREMAP_FIXED && !(flags & MREMAP_MAYMOVE))
-> +		return ret;
->  
->  	if (addr & ~PAGE_MASK)
-> -		goto out;
-> +		return ret;
->  
->  	old_len = PAGE_ALIGN(old_len);
->  	new_len = PAGE_ALIGN(new_len);
-> @@ -473,12 +474,13 @@ SYSCALL_DEFINE5(mremap, unsigned long, addr, unsigned long, old_len,
->  	 * a zero new-len is nonsensical.
->  	 */
->  	if (!new_len)
-> -		goto out;
-> +		return ret;
-> +
-> +	down_write(&current->mm->mmap_sem);
->  
->  	if (flags & MREMAP_FIXED) {
-> -		if (flags & MREMAP_MAYMOVE)
-> -			ret = mremap_to(addr, old_len, new_addr, new_len,
-> -					&locked);
-> +		ret = mremap_to(addr, old_len, new_addr, new_len,
-> +				&locked);
->  		goto out;
->  	}
->  
-> -- 
-> 1.7.9.5
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+> I've noticed that we probably need to update the mult/shift
+> calculation similar to how clocksources are done. Should we
+> just copy/paste the maxsec calculation code here or do something
+> smarter?
 
--- 
-Rasmus Villemoes
-<http://rasmusvillemoes.dk/>
+So, the clocksource calculation has an extra variable it has to balance, 
+which is the granularity of ntp adjustments being made (since with 
+higher shift values, we can make relatively smaller changes by +1 or -1 
+from mult).
+
+sched_clock doesn't have to deal with frequency adjustments, so the 
+shift value just needs to be high enough to be able to accurately 
+express the desired counter frequency.  Too high and you risk 
+multiplication overflows if there are large gaps between updates, too 
+low though and you run into possible accuracy issues (though I hope 
+there isn't much that's using sched_clock for long-term timing where 
+slight accuracy issues would be problematic).
+
+So I think its ok if the sched_clock code uses its own logic for 
+calculating the mult/shift pair, since the constraints are different 
+then what we expect from timekeeping.
+
+
+>
+>   include/linux/sched_clock.h |  1 +
+>   kernel/time/sched_clock.c   | 41 +++++++++++++++++++++++++++--------------
+>   2 files changed, 28 insertions(+), 14 deletions(-)
+>
+> diff --git a/include/linux/sched_clock.h b/include/linux/sched_clock.h
+> index fa7922c..81baaef 100644
+> --- a/include/linux/sched_clock.h
+> +++ b/include/linux/sched_clock.h
+> @@ -15,6 +15,7 @@ static inline void sched_clock_postinit(void) { }
+>   #endif
+>   
+>   extern void setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate);
+> +extern void sched_clock_setup(u64 (*read)(void), int bits, unsigned long rate);
+
+Eww. This sort of word-swizzled function names makes patch reviewing a pain.
+
+I know you're trying to deprecate the old function and provide a smooth 
+transition, but would you also consider including follow-on 
+patch/patches with this set that converts the existing setup_sched_clock 
+usage (at least just the ones in drivers/clocksource?) so it doesn't 
+stick around forever?
+
+And if not, at least add a clear comment here, and maybe some build 
+warnings to the old function so the driver owners know to make the 
+conversion happen quickly.
+
+
+
+>   extern unsigned long long (*sched_clock_func)(void);
+>   
+> diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
+> index aad1ae6..3478b6d 100644
+> --- a/kernel/time/sched_clock.c
+> +++ b/kernel/time/sched_clock.c
+> @@ -14,11 +14,12 @@
+>   #include <linux/syscore_ops.h>
+>   #include <linux/timer.h>
+>   #include <linux/sched_clock.h>
+> +#include <linux/bitops.h>
+>   
+>   struct clock_data {
+>   	u64 epoch_ns;
+> -	u32 epoch_cyc;
+> -	u32 epoch_cyc_copy;
+> +	u64 epoch_cyc;
+> +	u64 epoch_cyc_copy;
+>   	unsigned long rate;
+>   	u32 mult;
+>   	u32 shift;
+> @@ -35,24 +36,31 @@ static struct clock_data cd = {
+>   	.mult	= NSEC_PER_SEC / HZ,
+>   };
+>   
+> -static u32 __read_mostly sched_clock_mask = 0xffffffff;
+> +static u64 __read_mostly sched_clock_mask;
+>   
+> -static u32 notrace jiffy_sched_clock_read(void)
+> +static u64 notrace jiffy_sched_clock_read(void)
+>   {
+> -	return (u32)(jiffies - INITIAL_JIFFIES);
+> +	return (u64)(jiffies - INITIAL_JIFFIES);
+>   }
+
+Also, you might add a comment noting you register jiffies w/ 
+BITS_PER_LONG, to clarify don't have to use jiffies_64 here on 32bit 
+systems (despite the u64 cast)?
+
+
+thanks
+-john
+
