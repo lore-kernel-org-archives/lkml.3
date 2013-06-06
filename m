@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757690Ab3FFDvM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 23:51:12 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:38260 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756409Ab3FFDvK (ORCPT
+	id S1757717Ab3FFDy5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 23:54:57 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:37854 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756409Ab3FFDy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 23:51:10 -0400
-Message-ID: <51B00719.20406@candelatech.com>
-Date: Wed, 05 Jun 2013 20:50:49 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	Wed, 5 Jun 2013 23:54:56 -0400
+Date: Thu, 6 Jun 2013 03:54:55 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Aida Mynzhasova <aida.mynzhasova@skitlab.ru>
+cc: linux-omap@vger.kernel.org, tony@atomide.com, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] Broken DM816x support in Linux 3.10-rc4
+In-Reply-To: <1370446156-11788-1-git-send-email-aida.mynzhasova@skitlab.ru>
+Message-ID: <alpine.DEB.2.02.1306060346390.15042@utopia.booyaka.com>
+References: <1370446156-11788-1-git-send-email-aida.mynzhasova@skitlab.ru>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Joe Lawrence <joe.lawrence@stratus.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        Jouni Malinen <jouni@qca.qualcomm.com>,
-        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
-        Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: stop_machine lockup issue in 3.9.y.
-References: <51AE27D5.7050202@candelatech.com>   <87sj0xry1k.fsf@rustcorp.com.au> <20130605071539.GA3429@mtj.dyndns.org>   <51AF6E54.3050108@candelatech.com> <20130605184807.GD10693@mtj.dyndns.org>   <51AF8D4B.4090407@candelatech.com> <51AF91F5.6090801@candelatech.com>   <51AFA677.9010605@candelatech.com> <20130605211157.GK10693@mtj.dyndns.org>   <1370482492.24311.308.camel@edumazet-glaptop>   <20130606031444.GA12335@mtj.dyndns.org>  <1370489181.24311.318.camel@edumazet-glaptop>  <51B004CD.6080007@candelatech.com> <1370490403.24311.322.camel@edumazet-glaptop>
-In-Reply-To: <1370490403.24311.322.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="843723315-942192677-1370490748=:15042"
+Content-ID: <alpine.DEB.2.02.1306060352520.15042@utopia.booyaka.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2013 08:46 PM, Eric Dumazet wrote:
-> On Wed, 2013-06-05 at 20:41 -0700, Ben Greear wrote:
->> On 06/05/2013 08:26 PM, Eric Dumazet wrote:
->>> On Wed, 2013-06-05 at 20:14 -0700, Tejun Heo wrote:
->>>
->>>>
->>>> Ah, so, that's why it's showing up now.  We probably have had the same
->>>> issue all along but it used to be masked by the softirq limiting.  Do
->>>> you care to revive the 10 iterations limit so that it's limited by
->>>> both the count and timing?  We do wanna find out why softirq is
->>>> spinning indefinitely tho.
->>>
->>> Yes, no problem, I can do that.
->>
->> Limiting it to 5000 fixes my problem, so if you wanted it larger than 10, that would
->> be fine by me.
->>
->> I can send a version of my patch easily enough if we can agree on the max number of
->> loops (and if indeed my version of the patch is acceptable).
->
-> Well, 10 was the prior limit and seems really fine.
->
-> The non update on jiffies seems quite exceptional condition (I hope...)
->
-> We use in Google a patch triggering warning is a thread holds the cpu
-> without taking care to need_resched() for more than xx ms
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Well, I'm sure that patch works nicely until the clock stops moving
-forward :)
+--843723315-942192677-1370490748=:15042
+Content-Type: TEXT/PLAIN; CHARSET=KOI8-R
+Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-ID: <alpine.DEB.2.02.1306060352521.15042@utopia.booyaka.com>
 
-I'll post a patch with limit of 10 shortly.
+=DA=C4=D2=C1=D7=D3=D4=D7=D5=CA=D4=C5,
 
-Thanks,
-Ben
+On Wed, 5 Jun 2013, Aida Mynzhasova wrote:
+
+> Not so long ago I tried to boot Linux 3.10-rc4 kernel on DM816x EVM
+> board. Unfortunately, my attempts were failed by reason of poor
+> support of DM81xx-based devices in new kernels.
+
+Yeah, TI pretty much gave up on trying to get support for that chip=20
+upstream a few years ago.  Same for DM814x.
+
+> So, I suggest you this patch series, which fixes that kernel crush and=20
+> adds new functions/structures, required for early initialization on=20
+> DM816x (power and clock domains, hwmods). After applying these patches=20
+> the kernel is able to successfully continue booting till clock=20
+> initialization (will be added later).
+
+OK, it will be great to get my DM8168EVM booting on mainline.  But there=20
+are a few preliminary issues with the patches:
+
+1. All new chip and board support needs to be DT-only.  So, no new board=20
+files.  Also, all the hwmod data shouldn't have IRQ, DMA, etc. data - that=
+=20
+should come from DT.  See for example the recently posted patch "[PATCH=20
+13/14] ARM: AM33XX: hwmod data: irq, dma and addr info clean up"
+
+2. Looks like patch 2 is missing from the list.  If it's too big for the=20
+list, please break it down into smaller patches.
+
+3. Did you write this code and data, hwmods, etc., or did it come from a=20
+TI kernel?  Please note this clearly in the patch descriptions.
 
 
-
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+- Paul
+--843723315-942192677-1370490748=:15042--
