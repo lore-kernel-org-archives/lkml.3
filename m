@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864Ab3FFQSi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 12:18:38 -0400
-Received: from 8.mo5.mail-out.ovh.net ([178.32.116.78]:44535 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750910Ab3FFQSh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 12:18:37 -0400
-Date: Thu, 6 Jun 2013 18:14:21 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, manabian@gmail.com,
-        linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux@dominikbrodowski.net, fabio.porcedda@gmail.com,
-        Andrew Morton <akpm@linux-foundation.org>, laurent.navet@gmail.com,
-        linux-arm-kernel@lists.infradead.org
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH v3 0/7] pcmcia: at91_cf: clean up and add DT support
-Message-ID: <20130606161421.GM23653@game.jcrosoft.org>
-References: <cover.1370506678.git.nicolas.ferre@atmel.com>
+	id S1751371Ab3FFQTb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 12:19:31 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:64595 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750857Ab3FFQTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 12:19:30 -0400
+X-IronPort-AV: E=Sophos;i="4.87,816,1363132800"; 
+   d="scan'208";a="29677632"
+Date: Thu, 6 Jun 2013 17:19:13 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v3 5/6] arm64/xen: introduce CONFIG_XEN and hypercall.S
+ on ARM64
+In-Reply-To: <20130606144212.GK28479@arm.com>
+Message-ID: <alpine.DEB.2.02.1306061703570.4589@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1306041712100.4589@kaball.uk.xensource.com> <1370434530-22428-5-git-send-email-stefano.stabellini@eu.citrix.com> <1471793.18ZhhAHKN9@wuerfel> <20130606144212.GK28479@arm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1370506678.git.nicolas.ferre@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 13136718639938579308
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10:24 Thu 06 Jun     , Nicolas Ferre wrote:
-> These patches clean up at91_cf a bit and add DT bindings.
-> They are based on a previous series from Joachim Eastwood and other cleanup
-> patches by Fabio and Laurent.
-> I have collected them together as they are lying around for some time.
+On Thu, 6 Jun 2013, Catalin Marinas wrote:
+> Hi Arnd,
 > 
-> Greg kindly told me that he can take them through his char/misc driver
-> tree, so I resend the series.
+> On Wed, Jun 05, 2013 at 01:44:55PM +0100, Arnd Bergmann wrote:
+> > On Wednesday 05 June 2013 13:15:29 Stefano Stabellini wrote:
+> > > diff --git a/arch/arm64/Makefile b/arch/arm64/Makefile
+> > > index c95c5cb..79dd13d 100644
+> > > --- a/arch/arm64/Makefile
+> > > +++ b/arch/arm64/Makefile
+> > > @@ -37,6 +37,7 @@ TEXT_OFFSET := 0x00080000
+> > >  export TEXT_OFFSET GZFLAGS
+> > >  
+> > >  core-y         += arch/arm64/kernel/ arch/arm64/mm/
+> > > +core-$(CONFIG_XEN)             += arch/arm64/xen/
+> > >  libs-y         := arch/arm64/lib/ $(libs-y)
+> > >  libs-y         += $(LIBGCC)
+> > >  
+> > > diff --git a/arch/arm64/xen/Makefile b/arch/arm64/xen/Makefile
+> > > new file mode 100644
+> > > index 0000000..be24040
+> > > --- /dev/null
+> > > +++ b/arch/arm64/xen/Makefile
+> > > @@ -0,0 +1,2 @@
+> > > +xen-arm-y      += $(addprefix ../../arm/xen/, enlighten.o grant-table.o)
+> > > +obj-y          := xen-arm.o hypercall.o
+> > 
+> > I think it would be nicer to redirect the entire directory, not just
+> > the enlighten.o and grant-table.o files. You could do in arch/arm64/Makefile:
+> > 
+> > core-(CONFIG_XEN) += arch/arm/xen/
+> > 
+> > That leaves a small difference in hypercall.o, which I think you can
+> > handle with an #ifdef.
 > 
-> Thanks for your help, best regards.
-> 
-> v3: rebased on top of 3.10-rc4
-> 
-> v2: add 2 more cleanup patches:
-> 	- move to module_platform_driver_probe()
-> 	- little trivial indentation fix
-on all Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> Sorry, I missed this part. I want to keep the AArch64 assembly under
+> arm64, even if it is small.
 
-Best Regards,
-J.
-> 
-> Fabio Porcedda (1):
->   pcmcia: at91_cf: use module_platform_driver_probe()
-> 
-> Joachim Eastwood (5):
->   pcmcia: at91_cf: fix gpio_get_value in at91_cf_get_status
->   pcmcia: at91_cf: convert to dev_ print functions
->   pcmcia: at91_cf: use devm_ functions for allocations
->   pcmcia: at91_cf: clean up header includes
->   pcmcia: at91_cf: add support for DT
-> 
-> Laurent Navet (1):
->   pcmcia/trivial: at91_cf: fix checkpatch error
-> 
->  .../devicetree/bindings/ata/atmel-at91_cf.txt      |  19 +++
->  drivers/pcmcia/Kconfig                             |   2 +-
->  drivers/pcmcia/at91_cf.c                           | 176 ++++++++++-----------
->  3 files changed, 108 insertions(+), 89 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/ata/atmel-at91_cf.txt
-> 
-> -- 
-> 1.8.2.2
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+That's fine, I don't have a strong opinion on this, I am happy either way.
+
+In this case the v3 of the series is the one we want.
+I'll submit a pull request to you for it during the next couple of days.
