@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab3FFTwR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 15:52:17 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:47166 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753296Ab3FFTwP (ORCPT
+	id S1754611Ab3FFTwc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 15:52:32 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:63824 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194Ab3FFTwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 15:52:15 -0400
-Date: Thu, 6 Jun 2013 21:51:18 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-pci@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH v3 -tip x86/apic 1/2] PCI/MSI: Allocate as many
- multiple-MSIs as requested
-Message-ID: <20130606195118.GA6508@breakpoint.cc>
-References: <cover.1368431413.git.agordeev@redhat.com>
- <8575dc590b819892f366852fe50835efaf579f4f.1368431413.git.agordeev@redhat.com>
- <20130605205638.GA5816@breakpoint.cc>
- <20130606083019.GA28569@dhcp-26-207.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130606083019.GA28569@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 6 Jun 2013 15:52:30 -0400
+From: Aldo Iljazi <neonsync1@gmail.com>
+To: marek.belisko@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Aldo Iljazi <neonsync1@gmail.com>
+Subject: [PATCH] Staging: ft1000-pcmcia: ft1000_dnld.c: fixed four checkpatch
+Date: Thu,  6 Jun 2013 22:52:12 +0300
+Message-Id: <1370548332-18519-1-git-send-email-neonsync1@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 10:30:20AM +0200, Alexander Gordeev wrote:
-> Sebastian,
-Hi Alexander,
+Fixed four checkpatch error complains, specifically:
+ft1000_dnld.c:512: ERROR: space prohibited after that '&' (ctx:WxW)
+ft1000_dnld.c:514: ERROR: space prohibited after that '&' (ctx:WxW)
+ft1000_dnld.c:694: ERROR: space prohibited before that close parenthesis ')'
+ft1000_dnld.c:713: ERROR: space prohibited before that close parenthesis ')'
 
-> I re-read my comment few times and I admit it might be confusing. You are
-> right - 'multiple' is set by rounding up only. The part '...not necessarily
-> the closest power-of-two value...' implied an abstract PCI device rather than
-> the described code, but the wording is less than perfect, indeed. 
+Signed-off-by: Aldo Iljazi <neonsync1@gmail.com>
+---
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Good, so it is not just me :)
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
+index f892598..6311b2f 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
+@@ -509,9 +509,9 @@ int card_download(struct net_device *dev, const u8 *pFileStart,
+ 						(long)(info->DSPInfoBlklen + 1) / 2;
+ 					put_request_value(dev, word_length);
+ 					pMailBoxData =
+-						(struct drv_msg *) & info->DSPInfoBlk[0];
++						(struct drv_msg *) &info->DSPInfoBlk[0];
+ 					pUsData =
+-						(u16 *) & pMailBoxData->data[0];
++						(u16 *) &pMailBoxData->data[0];
+ 					/* Provide mutual exclusive access while reading ASIC registers. */
+ 					spin_lock_irqsave(&info->dpram_lock,
+ 							  flags);
+@@ -691,7 +691,7 @@ int card_download(struct net_device *dev, const u8 *pFileStart,
+ 
+ 			if (pHdr->portdest == 0x80	/* DspOAM */
+ 				&& (pHdr->portsrc == 0x00	/* Driver */
+-				|| pHdr->portsrc == 0x10 /* FMM */ )) {
++				|| pHdr->portsrc == 0x10 /* FMM */)) {
+ 				uiState = STATE_SECTION_PROV;
+ 			} else {
+ 				DEBUG(1,
+@@ -710,7 +710,7 @@ int card_download(struct net_device *dev, const u8 *pFileStart,
+ 			pHdr = (struct pseudo_hdr *) pUcFile;
+ 
+ 			if (pHdr->checksum == hdr_checksum(pHdr)) {
+-				if (pHdr->portdest != 0x80 /* Dsp OAM */ ) {
++				if (pHdr->portdest != 0x80 /* Dsp OAM */) {
+ 					uiState = STATE_DONE_PROV;
+ 					break;
+ 				}
+-- 
+1.7.10.4
 
-> In fact, at the moment of writing I kept in mind a follow-up patch that could
-> help with aforementioned devices. That would be a new interface:
-> 
-> 	int pci_enable_msi_block_partial(struct pci_dev *dev,
-> 					 unsigned int nvec_use,
-> 					 unsigned int nvec_init);
-> 
-> In this case 'nvec_use' would go to 'msi_desc::nvec_used' and 'nvec_init'
-> would translate to 'msi_desc::multiple' in case 'nvec_init' is not zero.
-> In case 'nvec_init' is zero, 'msi_desc::multiple' would be initialized
-> with the maximum possible value for the device (the way it is done now for
-> pci_enable_msi_block_auto() interface). So, for the AHCI device (Bjorn
-> mentioned) such a call would conserve on 10 of 16 vectors:
-> 
-> 	pci_enable_msi_block_partial(pdev, 6, 0);
-
-Ah okay. that makes sense.
-
-> 
-> What I am not sure is whether we need to read out the maximum possible
-> number of vectors like pci_enable_msi_block_auto() does:
-> 
-> 	int pci_enable_msi_block_partial(struct pci_dev *dev,
-> 					 unsigned int nvec_use,
-> 					 unsigned int nvec_init,
-> 					 unsigned int *maxvec);
-> 
-> I can not think of any use of 'maxvec' with this interface, but the second
-> variant completes the whole picture about a device...
-The user of pci_enable_msi_block_auto() does not know how many it will get
-so argument seems essential. Your new function on the other hand says exactly
-how many it requires. Anything less should be an error.
-
-Sebastian
