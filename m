@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab3FFQ2E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 12:28:04 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:49537 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752776Ab3FFQ1l (ORCPT
+	id S1752829Ab3FFQ1k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 12:27:40 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:39505 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752439Ab3FFQ1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 12:27:41 -0400
+	Thu, 6 Jun 2013 12:27:38 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
@@ -20,9 +20,9 @@ Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
         Gregory Clement <gregory.clement@free-electrons.com>,
         devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 6/6] ARM: kirkwood: convert to DT irqchip and clocksource
-Date: Thu,  6 Jun 2013 18:27:14 +0200
-Message-Id: <1370536034-23956-7-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH v3 1/6] irqchip: add support for Marvell Orion SoCs
+Date: Thu,  6 Jun 2013 18:27:09 +0200
+Message-Id: <1370536034-23956-2-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -30,11 +30,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With recent support for true irqchip and clocksource drivers for Orion
-SoCs, now make use of it on DT enabled Kirkwood boards.
-
-This also introduces a new Kconfig option for legacy (non-DT) Kirkwood
-where old code is moved out to and polishes DT board file a little bit.
+This patch adds an irqchip driver for the main interrupt controller found
+on Marvell Orion SoCs (Kirkwood, Dove, Orion5x, Discovery Innovation).
+Corresponding device tree documentation is also added.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -53,249 +51,295 @@ Cc: linux-doc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/mach-kirkwood/Kconfig    |   24 ++++++++++++++++++++++++
- arch/arm/mach-kirkwood/Makefile   |    4 ++--
- arch/arm/mach-kirkwood/board-dt.c |   28 +++++++++++++++++-----------
- 3 files changed, 43 insertions(+), 13 deletions(-)
+ .../interrupt-controller/marvell,orion-intc.txt    |   48 +++++
+ drivers/irqchip/Kconfig                            |    5 +
+ drivers/irqchip/Makefile                           |    1 +
+ drivers/irqchip/irq-orion.c                        |  193 ++++++++++++++++++++
+ 4 files changed, 247 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/marvell,orion-intc.txt
+ create mode 100644 drivers/irqchip/irq-orion.c
 
-diff --git a/arch/arm/mach-kirkwood/Kconfig b/arch/arm/mach-kirkwood/Kconfig
-index 2c95623..f14914f 100644
---- a/arch/arm/mach-kirkwood/Kconfig
-+++ b/arch/arm/mach-kirkwood/Kconfig
-@@ -2,62 +2,75 @@ if ARCH_KIRKWOOD
- 
- menu "Marvell Kirkwood Implementations"
- 
-+config KIRKWOOD_LEGACY
-+	bool
+diff --git a/Documentation/devicetree/bindings/interrupt-controller/marvell,orion-intc.txt b/Documentation/devicetree/bindings/interrupt-controller/marvell,orion-intc.txt
+new file mode 100644
+index 0000000..2c11ac7
+--- /dev/null
++++ b/Documentation/devicetree/bindings/interrupt-controller/marvell,orion-intc.txt
+@@ -0,0 +1,48 @@
++Marvell Orion SoC interrupt controllers
 +
- config MACH_D2NET_V2
- 	bool "LaCie d2 Network v2 NAS Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  LaCie d2 Network v2 NAS.
++* Main interrupt controller
++
++Required properties:
++- compatible: shall be "marvell,orion-intc"
++- reg: base address(es) of interrupt registers starting with CAUSE register
++- interrupt-controller: identifies the node as an interrupt controller
++- #interrupt-cells: number of cells to encode an interrupt source, shall be 1
++
++The interrupt sources map to the corresponding bits in the interrupt
++registers, i.e.
++- 0 maps to bit 0 of first base address,
++- 1 maps to bit 1 of first base address,
++- 32 maps to bit 0 of second base address, and so on.
++
++Example:
++	intc: interrupt-controller {
++		compatible = "marvell,orion-intc";
++		interrupt-controller;
++		#interrupt-cells = <1>;
++		 /* Dove has 64 first level interrupts */
++		reg = <0x20200 0x10>, <0x20210 0x10>;
++	};
++
++* Bridge interrupt controller
++
++Required properties:
++- compatible: shall be "marvell,orion-bridge-intc"
++- reg: base address of bridge interrupt registers starting with CAUSE register
++- interrupts: bridge interrupt of the main interrupt controller
++- interrupt-controller: identifies the node as an interrupt controller
++- #interrupt-cells: number of cells to encode an interrupt source, shall be 1
++
++Optional properties:
++- marvell,#interrupts: number of interrupts provided by bridge interrupt
++      controller, defaults to 32 if not set
++
++Example:
++	bridge_intc: interrupt-controller {
++		compatible = "marvell,orion-bridge-intc";
++		interrupt-controller;
++		#interrupt-cells = <1>;
++		reg = <0x20110 0x8>;
++		interrupts = <0>;
++		/* Dove bridge provides 5 interrupts */
++		marvell,#interrupts = <5>;
++	};
+diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+index 4a33351..68c3107 100644
+--- a/drivers/irqchip/Kconfig
++++ b/drivers/irqchip/Kconfig
+@@ -25,6 +25,11 @@ config ARM_VIC_NR
+ 	  The maximum number of VICs available in the system, for
+ 	  power management.
  
- config MACH_DOCKSTAR
- 	bool "Seagate FreeAgent DockStar"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Seagate FreeAgent DockStar.
- 
- config MACH_ESATA_SHEEVAPLUG
- 	bool "Marvell eSATA SheevaPlug Reference Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell eSATA SheevaPlug Reference Board.
- 
- config MACH_GURUPLUG
- 	bool "Marvell GuruPlug Reference Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell GuruPlug Reference Board.
- 
- config MACH_INETSPACE_V2
- 	bool "LaCie Internet Space v2 NAS Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  LaCie Internet Space v2 NAS.
- 
- config MACH_MV88F6281GTW_GE
- 	bool "Marvell 88F6281 GTW GE Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell 88F6281 GTW GE Board.
- 
- config MACH_NET2BIG_V2
- 	bool "LaCie 2Big Network v2 NAS Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  LaCie 2Big Network v2 NAS.
- 
- config MACH_NET5BIG_V2
- 	bool "LaCie 5Big Network v2 NAS Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  LaCie 5Big Network v2 NAS.
- 
- config MACH_NETSPACE_MAX_V2
- 	bool "LaCie Network Space Max v2 NAS Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  LaCie Network Space Max v2 NAS.
- 
- config MACH_NETSPACE_V2
- 	bool "LaCie Network Space v2 NAS Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  LaCie Network Space v2 NAS.
-@@ -67,6 +80,7 @@ config MACH_OPENRD
- 
- config MACH_OPENRD_BASE
- 	bool "Marvell OpenRD Base Board"
-+	select KIRKWOOD_LEGACY
- 	select MACH_OPENRD
- 	help
- 	  Say 'Y' here if you want your kernel to support the
-@@ -74,6 +88,7 @@ config MACH_OPENRD_BASE
- 
- config MACH_OPENRD_CLIENT
- 	bool "Marvell OpenRD Client Board"
-+	select KIRKWOOD_LEGACY
- 	select MACH_OPENRD
- 	help
- 	  Say 'Y' here if you want your kernel to support the
-@@ -81,6 +96,7 @@ config MACH_OPENRD_CLIENT
- 
- config MACH_OPENRD_ULTIMATE
- 	bool "Marvell OpenRD Ultimate Board"
-+	select KIRKWOOD_LEGACY
- 	select MACH_OPENRD
- 	help
- 	  Say 'Y' here if you want your kernel to support the
-@@ -88,30 +104,35 @@ config MACH_OPENRD_ULTIMATE
- 
- config MACH_RD88F6192_NAS
- 	bool "Marvell RD-88F6192-NAS Reference Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell RD-88F6192-NAS Reference Board.
- 
- config MACH_RD88F6281
- 	bool "Marvell RD-88F6281 Reference Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell RD-88F6281 Reference Board.
- 
- config MACH_SHEEVAPLUG
- 	bool "Marvell SheevaPlug Reference Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell SheevaPlug Reference Board.
- 
- config MACH_T5325
- 	bool "HP t5325 Thin Client"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  HP t5325 Thin Client.
- 
- config MACH_TS219
- 	bool "QNAP TS-110, TS-119, TS-119P+, TS-210, TS-219, TS-219P and TS-219P+ Turbo NAS"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  QNAP TS-110, TS-119, TS-119P+, TS-210, TS-219, TS-219P and
-@@ -119,6 +140,7 @@ config MACH_TS219
- 
- config MACH_TS41X
- 	bool "QNAP TS-410, TS-410U, TS-419P, TS-419P+ and TS-419U Turbo NAS"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  QNAP TS-410, TS-410U, TS-419P, TS-419P+ and TS-419U Turbo
-@@ -129,6 +151,8 @@ comment "Device tree entries"
- config ARCH_KIRKWOOD_DT
- 	bool "Marvell Kirkwood Flattened Device Tree"
- 	select KIRKWOOD_CLK
-+	select ORION_IRQCHIP
-+	select ORION_TIMER
- 	select POWER_SUPPLY
- 	select POWER_RESET
- 	select POWER_RESET_GPIO
-diff --git a/arch/arm/mach-kirkwood/Makefile b/arch/arm/mach-kirkwood/Makefile
-index 53caf14..91be973 100644
---- a/arch/arm/mach-kirkwood/Makefile
-+++ b/arch/arm/mach-kirkwood/Makefile
-@@ -1,5 +1,5 @@
--obj-y				+= common.o irq.o pcie.o mpp.o
--
-+obj-y				+= common.o pcie.o
-+obj-$(CONFIG_KIRKWOOD_LEGACY)	+= irq.o mpp.o
- obj-$(CONFIG_MACH_D2NET_V2)		+= d2net_v2-setup.o lacie_v2-common.o
- obj-$(CONFIG_MACH_DOCKSTAR)		+= dockstar-setup.o
- obj-$(CONFIG_MACH_ESATA_SHEEVAPLUG)	+= sheevaplug-setup.o
-diff --git a/arch/arm/mach-kirkwood/board-dt.c b/arch/arm/mach-kirkwood/board-dt.c
-index 1e4eac3..cec736b 100644
---- a/arch/arm/mach-kirkwood/board-dt.c
-+++ b/arch/arm/mach-kirkwood/board-dt.c
-@@ -15,6 +15,9 @@
- #include <linux/of.h>
- #include <linux/of_platform.h>
- #include <linux/clk-provider.h>
-+#include <linux/clocksource.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/irqchip.h>
- #include <linux/kexec.h>
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
-@@ -49,10 +52,6 @@ static void __init kirkwood_legacy_clk_init(void)
- 	orion_clkdev_add("1", "pcie",
- 			 of_clk_get_from_provider(&clkspec));
- 
--	clkspec.args[0] = CGC_BIT_SDIO;
--	orion_clkdev_add(NULL, "mvsdio",
--			 of_clk_get_from_provider(&clkspec));
--
- 	/*
- 	 * The ethernet interfaces forget the MAC address assigned by
- 	 * u-boot if the clocks are turned off. Until proper DT support
-@@ -67,10 +66,18 @@ static void __init kirkwood_legacy_clk_init(void)
- 	clk_prepare_enable(clk);
- }
- 
--static void __init kirkwood_of_clk_init(void)
-+static void __init kirkwood_dt_time_init(void)
- {
- 	of_clk_init(NULL);
--	kirkwood_legacy_clk_init();
-+	clocksource_of_init();
++config ORION_IRQCHIP
++	bool
++	select IRQ_DOMAIN
++	select MULTI_IRQ_HANDLER
++
+ config RENESAS_INTC_IRQPIN
+ 	bool
+ 	select IRQ_DOMAIN
+diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+index cda4cb5..55df3bd 100644
+--- a/drivers/irqchip/Makefile
++++ b/drivers/irqchip/Makefile
+@@ -7,6 +7,7 @@ obj-$(CONFIG_ARCH_MXS)			+= irq-mxs.o
+ obj-$(CONFIG_ARCH_S3C24XX)		+= irq-s3c24xx.o
+ obj-$(CONFIG_METAG)			+= irq-metag-ext.o
+ obj-$(CONFIG_METAG_PERFCOUNTER_IRQS)	+= irq-metag.o
++obj-$(CONFIG_ORION_IRQCHIP)		+= irq-orion.o
+ obj-$(CONFIG_ARCH_SUNXI)		+= irq-sun4i.o
+ obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-shirq.o
+ obj-$(CONFIG_ARM_GIC)			+= irq-gic.o
+diff --git a/drivers/irqchip/irq-orion.c b/drivers/irqchip/irq-orion.c
+new file mode 100644
+index 0000000..693ea20
+--- /dev/null
++++ b/drivers/irqchip/irq-orion.c
+@@ -0,0 +1,193 @@
++/*
++ * Marvell Orion SoCs IRQ chip driver.
++ *
++ * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/io.h>
++#include <linux/irq.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <asm/exception.h>
++#include <asm/mach/irq.h>
++
++#include "irqchip.h"
++
++/*
++ * Orion SoC main interrupt controller
++ */
++
++#define ORION_IRQS_PER_CHIP		32
++
++#define ORION_IRQ_CAUSE			0x00
++#define ORION_IRQ_MASK			0x04
++#define ORION_IRQ_FIQ_MASK		0x08
++#define ORION_IRQ_ENDP_MASK		0x0c
++
++static struct irq_domain *orion_irq_domain;
++
++static asmlinkage void __exception_irq_entry orion_handle_irq(
++	struct pt_regs *regs)
++{
++	struct irq_domain_chip_generic *dgc = orion_irq_domain->gc;
++	int n, base = 0;
++
++	for (n = 0; n < dgc->num_chips; n++, base += ORION_IRQS_PER_CHIP) {
++		struct irq_chip_generic *gc =
++			irq_get_domain_generic_chip(orion_irq_domain, base);
++		u32 stat = readl_relaxed(gc->reg_base + ORION_IRQ_CAUSE) &
++			gc->mask_cache;
++		while (stat) {
++			u32 hwirq = ffs(stat) - 1;
++			u32 irq = irq_find_mapping(orion_irq_domain,
++						   gc->irq_base + hwirq);
++			handle_IRQ(irq, regs);
++			stat &= ~(1 << hwirq);
++		}
++	}
 +}
 +
-+static void __init kirkwood_dt_init_early(void)
++static int __init orion_irq_init(struct device_node *np,
++				 struct device_node *parent)
 +{
-+	init_dma_coherent_pool_size(SZ_1M);
-+	mvebu_mbus_init("marvell,kirkwood-mbus",
-+			BRIDGE_WINS_BASE, BRIDGE_WINS_SZ,
-+			DDR_WINDOW_CPU_BASE, DDR_WINDOW_CPU_SZ);
- }
- 
- static void __init kirkwood_dt_init(void)
-@@ -91,8 +98,8 @@ static void __init kirkwood_dt_init(void)
- 
- 	kirkwood_cpufreq_init();
- 
--	/* Setup root of clk tree */
--	kirkwood_of_clk_init();
-+	/* setup clocks for legacy devices */
-+	kirkwood_legacy_clk_init();
- 
- 	kirkwood_cpuidle_init();
- 
-@@ -117,9 +124,8 @@ static const char * const kirkwood_dt_board_compat[] = {
- DT_MACHINE_START(KIRKWOOD_DT, "Marvell Kirkwood (Flattened Device Tree)")
- 	/* Maintainer: Jason Cooper <jason@lakedaemon.net> */
- 	.map_io		= kirkwood_map_io,
--	.init_early	= kirkwood_init_early,
--	.init_irq	= orion_dt_init_irq,
--	.init_time	= kirkwood_timer_init,
-+	.init_early	= kirkwood_dt_init_early,
-+	.init_time	= kirkwood_dt_time_init,
- 	.init_machine	= kirkwood_dt_init,
- 	.restart	= kirkwood_restart,
- 	.dt_compat	= kirkwood_dt_board_compat,
++	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
++	struct resource r;
++	int n, ret, base, num_chips = 0;
++
++	/* count number of irq chips by valid reg addresses */
++	while (of_address_to_resource(np, num_chips, &r) == 0)
++		num_chips++;
++
++	orion_irq_domain = irq_domain_add_linear(np,
++				num_chips * ORION_IRQS_PER_CHIP,
++				&irq_generic_chip_ops, NULL);
++	if (!orion_irq_domain)
++		panic("%s: unable to add irq domain\n", np->name);
++
++	ret = irq_alloc_domain_generic_chips(orion_irq_domain,
++				ORION_IRQS_PER_CHIP, 1, np->name,
++				handle_level_irq, clr, 0,
++				IRQ_GC_INIT_MASK_CACHE);
++	if (ret)
++		panic("%s: unable to alloc irq domain gc\n", np->name);
++
++	for (n = 0, base = 0; n < num_chips; n++, base += ORION_IRQS_PER_CHIP) {
++		struct irq_chip_generic *gc =
++			irq_get_domain_generic_chip(orion_irq_domain, base);
++
++		of_address_to_resource(np, n, &r);
++
++		if (!request_mem_region(r.start, resource_size(&r), np->name))
++			panic("%s: unable to request mem region %d",
++			      np->name, n);
++
++		gc->reg_base = ioremap(r.start, resource_size(&r));
++		if (!gc->reg_base)
++			panic("%s: unable to map resource %d", np->name, n);
++
++		gc->chip_types[0].regs.mask = ORION_IRQ_MASK;
++		gc->chip_types[0].chip.irq_mask = irq_gc_mask_clr_bit;
++		gc->chip_types[0].chip.irq_unmask = irq_gc_mask_set_bit;
++
++		/* mask all interrupts */
++		writel(0, gc->reg_base + ORION_IRQ_MASK);
++	}
++
++	set_handle_irq(orion_handle_irq);
++
++	return 0;
++}
++IRQCHIP_DECLARE(orion_intc, "marvell,orion-intc", orion_irq_init);
++
++/*
++ * Orion SoC bridge interrupt controller
++ */
++
++#define ORION_BRIDGE_IRQ_CAUSE	0x00
++#define ORION_BRIDGE_IRQ_MASK	0x04
++
++static void orion_bridge_irq_handler(unsigned int irq, struct irq_desc *desc)
++{
++	struct irq_domain *d = irq_get_handler_data(irq);
++	struct irq_chip_generic *gc = irq_get_domain_generic_chip(d, irq);
++	u32 stat = readl_relaxed(gc->reg_base + ORION_BRIDGE_IRQ_CAUSE) &
++		gc->mask_cache;
++
++	while (stat) {
++		u32 hwirq = ffs(stat) - 1;
++		generic_handle_irq(irq_find_mapping(d, gc->irq_base + hwirq));
++		stat &= ~(1 << hwirq);
++	}
++}
++
++static int __init orion_bridge_irq_init(struct device_node *np,
++					struct device_node *parent)
++{
++	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
++	struct resource r;
++	struct irq_domain *domain;
++	struct irq_chip_generic *gc;
++	int ret, irq, nrirqs = 32;
++
++	/* get optional number of interrupts provided */
++	of_property_read_u32(np, "marvell,#interrupts", &nrirqs);
++
++	domain = irq_domain_add_linear(np, nrirqs,
++				       &irq_generic_chip_ops, NULL);
++	if (!domain) {
++		pr_err("%s: unable to add irq domain\n", np->name);
++		return -ENOMEM;
++	}
++
++	ret = irq_alloc_domain_generic_chips(domain, nrirqs, 1, np->name,
++			     handle_level_irq, clr, 0, IRQ_GC_INIT_MASK_CACHE);
++	if (ret) {
++		pr_err("%s: unable to alloc irq domain gc\n", np->name);
++		return ret;
++	}
++
++	ret = of_address_to_resource(np, 0, &r);
++	if (ret) {
++		pr_err("%s: unable to get resource\n", np->name);
++		return ret;
++	}
++
++	if (!request_mem_region(r.start, resource_size(&r), np->name)) {
++		pr_err("%s: unable to request mem region\n", np->name);
++		return -ENOMEM;
++	}
++
++	irq = irq_of_parse_and_map(np, 0);
++	if (irq <= 0) {
++		pr_err("%s: unable to parse irq\n", np->name);
++		return -EINVAL;
++	}
++
++	gc = irq_get_domain_generic_chip(domain, 0);
++	gc->reg_base = ioremap(r.start, resource_size(&r));
++	if (!gc->reg_base) {
++		pr_err("%s: unable to map resource\n", np->name);
++		return -ENOMEM;
++	}
++
++	gc->chip_types[0].regs.ack = ORION_BRIDGE_IRQ_CAUSE;
++	gc->chip_types[0].regs.mask = ORION_BRIDGE_IRQ_MASK;
++	gc->chip_types[0].chip.irq_ack = irq_gc_ack_clr_bit;
++	gc->chip_types[0].chip.irq_mask = irq_gc_mask_clr_bit;
++	gc->chip_types[0].chip.irq_unmask = irq_gc_mask_set_bit;
++
++	/* mask all interrupts */
++	writel(0, gc->reg_base + ORION_BRIDGE_IRQ_MASK);
++
++	irq_set_handler_data(irq, domain);
++	irq_set_chained_handler(irq, orion_bridge_irq_handler);
++
++	return 0;
++}
++IRQCHIP_DECLARE(orion_bridge_intc,
++		"marvell,orion-bridge-intc", orion_bridge_irq_init);
 -- 
 1.7.2.5
 
