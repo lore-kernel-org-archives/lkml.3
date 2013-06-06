@@ -1,115 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756859Ab3FGUld (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 16:41:33 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:45206 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754831Ab3FGUlc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 16:41:32 -0400
-Date: Fri, 7 Jun 2013 13:40:43 -0700
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: mingo@kernel.org, Paul Mackerras <paulus@samba.org>
-Cc: Stephane Eranian <eranian@google.com>, michael@ellerman.id.au,
-        Anton Blanchard <anton@au1.ibm.com>, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] perf: Add support for the mem_xlvl field.
-Message-ID: <20130607204043.GB3281@us.ibm.com>
-References: <20130607204008.GA3281@us.ibm.com>
+	id S1756810Ab3FGUmT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 16:42:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17017 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756030Ab3FGUmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 16:42:18 -0400
+Date: Thu, 6 Jun 2013 18:43:13 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        David Sharp <dhsharp@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH V2 1/1] kvm/vmx: Add a tracepoint write_tsc_offset
+Message-ID: <20130606214313.GA9144@amt.cnet>
+References: <20130604083616.22713.24922.stgit@yunodevel>
+ <20130604083619.22713.25360.stgit@yunodevel>
+ <20130606002322.GA24351@amt.cnet>
+ <20130606113305.GB4725@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130607204008.GA3281@us.ibm.com>
-X-Operating-System: Linux 2.0.32 on an i486
+In-Reply-To: <20130606113305.GB4725@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060720-3620-0000-0000-000002FE970F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 9f1a8a16e0ef36447e343d1cd4797c2b6a81225f Mon Sep 17 00:00:00 2001
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Date: Fri, 7 Jun 2013 13:26:31 -0700
-Subject: [PATCH 2/2] perf: Add support for the mem_xlvl field.
+On Thu, Jun 06, 2013 at 02:33:06PM +0300, Gleb Natapov wrote:
+> On Wed, Jun 05, 2013 at 09:23:22PM -0300, Marcelo Tosatti wrote:
+> > On Tue, Jun 04, 2013 at 05:36:19PM +0900, Yoshihiro YUNOMAE wrote:
+> > > Add a tracepoint write_tsc_offset for tracing TSC offset change.
+> > > We want to merge ftrace's trace data of guest OSs and the host OS using
+> > > TSC for timestamp in chronological order. We need "TSC offset" values for
+> > > each guest when merge those because the TSC value on a guest is always the
+> > > host TSC plus guest's TSC offset. If we get the TSC offset values, we can
+> > > calculate the host TSC value for each guest events from the TSC offset and
+> > > the event TSC value. The host TSC values of the guest events are used when we
+> > > want to merge trace data of guests and the host in chronological order.
+> > > (Note: the trace_clock of both the host and the guest must be set x86-tsc in
+> > > this case)
+> > > 
+> > > TSC offset is stored in the VMCS by vmx_write_tsc_offset() or
+> > > vmx_adjust_tsc_offset(). KVM executes the former function when a guest boots.
+> > > The latter function is executed when kvm clock is updated. Only host can read
+> > > TSC offset value from VMCS, so a host needs to output TSC offset value
+> > > when TSC offset is changed.
+> > > 
+> > > Since the TSC offset is not often changed, it could be overwritten by other
+> > > frequent events while tracing. To avoid that, I recommend to use a special
+> > > instance for getting this event:
+> > > 
+> > > 1. set a instance before booting a guest
+> > >  # cd /sys/kernel/debug/tracing/instances
+> > >  # mkdir tsc_offset
+> > >  # cd tsc_offset
+> > >  # echo x86-tsc > trace_clock
+> > >  # echo 1 > events/kvm/kvm_write_tsc_offset/enable
+> > > 
+> > > 2. boot a guest
+> > > 
+> > > Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+> > > Cc: Marcelo Tosatti <mtosatti@redhat.com>
+> > > Cc: Gleb Natapov <gleb@redhat.com>
+> > > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > > Cc: Ingo Molnar <mingo@redhat.com>
+> > > Cc: "H. Peter Anvin" <hpa@zytor.com>
+> > > ---
+> > >  arch/x86/kvm/trace.h |   18 ++++++++++++++++++
+> > >  arch/x86/kvm/vmx.c   |    3 +++
+> > >  arch/x86/kvm/x86.c   |    1 +
+> > >  3 files changed, 22 insertions(+)
+> > > 
+> > > diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
+> > > index fe5e00e..9c22e39 100644
+> > > --- a/arch/x86/kvm/trace.h
+> > > +++ b/arch/x86/kvm/trace.h
+> > > @@ -815,6 +815,24 @@ TRACE_EVENT(kvm_track_tsc,
+> > >  		  __print_symbolic(__entry->host_clock, host_clocks))
+> > >  );
+> > >  
+> > > +TRACE_EVENT(kvm_write_tsc_offset,
+> > > +	TP_PROTO(__u64 previous_tsc_offset, __u64 next_tsc_offset),
+> > > +	TP_ARGS(previous_tsc_offset, next_tsc_offset),
+> > > +
+> > > +	TP_STRUCT__entry(
+> > > +		__field(	__u64,	previous_tsc_offset		)
+> > > +		__field(	__u64,	next_tsc_offset			)
+> > > +	),
+> > > +
+> > > +	TP_fast_assign(
+> > > +		__entry->previous_tsc_offset	= previous_tsc_offset;
+> > > +		__entry->next_tsc_offset	= next_tsc_offset;
+> > > +	),
+> > > +
+> > > +	TP_printk("previous=%llu next=%llu",
+> > > +		  __entry->previous_tsc_offset, __entry->next_tsc_offset)
+> > > +);
+> > > +
+> > 
+> > Yoshihiro YUNOMAE,
+> > 
+> > 1) Why is previous_tsc_offset necessary?
+> > 
+> > 2) The TSC offset traces should include vcpu number, so that its
+> > possible to correlate traces of SMP guests (the tool should use
+> > the individual vcpu tsc offsets when converting guests trace).
+> > 
+> Why PID is not enough? No other trace, except kvm_entry, outputs vcpu id.
 
-A follow-on patch to adding perf_mem_data_src support for Power7.
-At this point, this is only  touch-tested as am looking for feedback
-on the main kernel patch.
+Guest trace contains CPU ID. 
 
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
----
- tools/perf/util/sort.c |   31 ++++++++++++++++++++++++++++++-
- 1 files changed, 30 insertions(+), 1 deletions(-)
+If PID is exported it is necessary to perform an additional PID->VCPU
+translation, which might not be available by the time the trace is
+correlated by the tool (because guest is down).
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 5f52d49..24bbf4d 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -631,9 +631,11 @@ static int hist_entry__tlb_snprintf(struct hist_entry *self, char *bf,
- static int64_t
- sort__lvl_cmp(struct hist_entry *left, struct hist_entry *right)
- {
-+	int64_t rc;
- 	union perf_mem_data_src data_src_l;
- 	union perf_mem_data_src data_src_r;
- 
-+	data_src_l.val = data_src_r.val = (int64_t)0;
- 	if (left->mem_info)
- 		data_src_l = left->mem_info->data_src;
- 	else
-@@ -644,7 +646,11 @@ sort__lvl_cmp(struct hist_entry *left, struct hist_entry *right)
- 	else
- 		data_src_r.mem_lvl = PERF_MEM_LVL_NA;
- 
--	return (int64_t)(data_src_r.mem_lvl - data_src_l.mem_lvl);
-+	rc = data_src_r.mem_lvl - data_src_l.mem_lvl;
-+	if (!rc)
-+		rc = data_src_r.mem_xlvl - data_src_l.mem_xlvl;
-+		
-+	return rc;
- }
- 
- static const char * const mem_lvl[] = {
-@@ -663,7 +669,14 @@ static const char * const mem_lvl[] = {
- 	"I/O",
- 	"Uncached",
- };
-+
-+static const char * const mem_xlvl[] = {
-+	"Remote RAM (3 hops)",
-+	"Remote Cache (3 hops)",
-+};
-+
- #define NUM_MEM_LVL (sizeof(mem_lvl)/sizeof(const char *))
-+#define NUM_MEM_XLVL (sizeof(mem_xlvl)/sizeof(const char *))
- 
- static int hist_entry__lvl_snprintf(struct hist_entry *self, char *bf,
- 				    size_t size, unsigned int width)
-@@ -695,6 +708,22 @@ static int hist_entry__lvl_snprintf(struct hist_entry *self, char *bf,
- 		strncat(out, mem_lvl[i], sz - l);
- 		l += strlen(mem_lvl[i]);
- 	}
-+
-+	m = 0;
-+	if (self->mem_info)
-+		m = self->mem_info->data_src.mem_xlvl;
-+
-+	for (i = 0; m && i < NUM_MEM_XLVL; i++, m >>= 1) {
-+		if (!(m & 0x1))
-+			continue;
-+		if (l) {
-+			strcat(out, " or ");
-+			l += 4;
-+		}
-+		strncat(out, mem_xlvl[i], sz - l);
-+		l += strlen(mem_xlvl[i]);
-+	}
-+
- 	if (*out == '\0')
- 		strcpy(out, "N/A");
- 	if (hit)
--- 
-1.7.1
+So, PID is equivalent to VCPU as long as translation can be performed.
+
+What is the preference?
+
+
 
