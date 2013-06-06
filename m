@@ -1,97 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550Ab3FFWSn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 18:18:43 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:53360 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063Ab3FFWSl (ORCPT
+	id S1754576Ab3FFWTP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 18:19:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33754 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752146Ab3FFWTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 18:18:41 -0400
-Date: Thu, 6 Jun 2013 15:18:37 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] memcg: do not sleep on OOM waitqueue with full charge
- context
-In-Reply-To: <20130606215425.GM15721@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1306061507330.15503@chino.kir.corp.google.com>
-References: <1370488193-4747-1-git-send-email-hannes@cmpxchg.org> <1370488193-4747-2-git-send-email-hannes@cmpxchg.org> <alpine.DEB.2.02.1306052058340.25115@chino.kir.corp.google.com> <20130606053315.GB9406@cmpxchg.org> <20130606173355.GB27226@cmpxchg.org>
- <alpine.DEB.2.02.1306061308320.9493@chino.kir.corp.google.com> <20130606215425.GM15721@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 6 Jun 2013 18:19:11 -0400
+X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Aa0lt3D-HgIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=XNm7IlzWS18A:10 a=VwQbUJbxAAAA:8 a=sSGdn24nJPWUM8SqEsUA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130606221654.698742573@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 06 Jun 2013 18:16:54 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH 0/4] [GIT PULL] tracing: Fixes with dealing with RCU and context tracking
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="===============4923929107880628099=="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Jun 2013, Johannes Weiner wrote:
+--===============4923929107880628099==
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> > I don't understand why memcg is unique in this regard and it doesn't 
-> > affect the page allocator as well on system oom conditions.  Ignoring 
-> > memecg, all allocating processes will loop forever in the page allocator 
-> > unless there are atypical gfp flags waiting for memory to be available, 
-> > only one will call the oom killer at a time, a process is selected and 
-> > killed, and the oom killer defers until that process exists because it 
-> > finds TIF_MEMDIE.  Why is memcg charging any different?
-> 
-> The allocator wakes up kswapd, global OOMs are rarer, with physical
-> memory the line to OOM is blurrier than with the memcg hard limit?
-> 
-> Anyway, I'm not aware of bug reports in the global case, but there are
-> bug reports for the memcg case and we have a decent understanding of
-> those deadlocks.  So can we stay focussed and fix this, please?
-> 
 
-Could you point me to those bug reports?  As far as I know, we have never 
-encountered them so it would be surprising to me that we're running with a 
-potential landmine and have seemingly never hit it.
+Linus,
 
-Perhaps the answer is solely the stacktraces in your changelog, so I'd be 
-happy to review that separately from my patch.
+This includes the same patches as my last pull request with
+trace-fixes-v3.10-rc3-v2. I added two more fixes to this series.
 
-> > > Reported-by: Reported-by: azurIt <azurit@pobox.sk>
-> > > Debugged-by: Michal Hocko <mhocko@suse.cz>
-> > > Reported-by: David Rientjes <rientjes@google.com>
-> > 
-> > What exactly did I report?  This isn't at all what 
-> > memory.oom_delay_millisecs is about, which is a failure of userspace to 
-> > respond to the condition and react in time, not because it's stuck on any 
-> > lock.  We still need that addition regardless of what you're doing here.
-> 
-> Oh, tell me how getting stuck indefinitely on a lock will not result
-> in "a failure to react in time".  This is some seriously misguided
-> pedantry.
-> 
+This contains 4 fixes.
 
-It certainly would, but it's not the point that memory.oom_delay_millisecs 
-was intended to address.  memory.oom_delay_millisecs would simply delay 
-calling mem_cgroup_out_of_memory() unless userspace can't free memory or 
-increase the memory limit in time.  Obviously that delay isn't going to 
-magically address any lock dependency issues.
+The first two fix the case where full RCU debugging is enabled, enabling
+function tracing causes a live lock of the system. This is due to the added
+debug checks in rcu_dereference_raw() that is used by the function tracer.
+These checks are also traced by the function tracer as well as cause enough
+overhead to the function tracer to slow down the system enough that
+the time to finish an interrupt can take longer than when the next
+interrupt is triggered, causing a live lock from the timer interrupt.
 
-> And yes, you talked about deadlocking potential other than the handler
-> itself OOMing, I quote from
-> <alpine.DEB.2.02.1305301338430.20389@chino.kir.corp.google.com>:
-> 
-> "Unresponsiveness isn't necessarily only because of memory
->  constraints, you may have your oom notifier in a parent cgroup that
->  isn't oom.  If a process is stuck on mm->mmap_sem in the oom cgroup,
->  though, the oom notifier may not be able to scrape /proc/pid and
->  attain necessary information in making an oom kill decision."
-> 
-> These are your words, and my patch sets out to fix the described
-> problem,
+Talking this over with Paul McKenney, we came up with a fix that adds
+a new rcu_dereference_raw_notrace() that does not perform these added check=
+s,
+and let the function tracer use that.
 
-I can review this patch apart from memory.oom_delay_millisecs using the 
-examples in your changelog, but this isn't the problem statement for my 
-patch.  The paragraph above is describing one way that an oom handler may 
-encounter issues, it's not the only way and it's not a way that we have 
-ever faced on our production servers with memcg.  I just didn't think the 
-above was me reporting a bug, perhaps you took it that way.
+The third commit fixes a failed compile when branch tracing is enabled,
+due to the conversion of the trace_test_buffer() selftest that the
+branch trace wasn't converted for.
 
-The point I'm trying to make is that your patch doesn't reduce our need 
-for memory.oom_delay_millisecs as described in the thread for that patch.
+The forth patch fixes a bug caught by the RCU lockdep code where a
+rcu_read_lock() is performed when rcu is disabled (either going to
+or from idle, or user space). This happened on the irqsoff tracer
+as it calls task_uid(). The fix here was to use current_uid() when
+possible that doesn't use rcu locking. Which luckily, is always used
+when irqsoff calls this code.
+
+
+Please pull the latest trace-fixes-v3.10-rc3-v3 tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+trace-fixes-v3.10-rc3-v3
+
+Tag SHA1: 0e87101aa65ebfe736070474684d1b38fea4d805
+Head SHA1: f17a5194859a82afe4164e938b92035b86c55794
+
+
+Steven Rostedt (2):
+      rcu: Add _notrace variation of rcu_dereference_raw() and hlist_for_ea=
+ch_entry_rcu()
+      ftrace: Use the rcu _notrace variants for rcu_dereference_raw() and f=
+riends
+
+Steven Rostedt (Red Hat) (2):
+      tracing: Fix bad parameter passed in branch selftest
+      tracing: Use current_uid() for critical time tracing
+
+--===============4923929107880628099==--
+ include/linux/rculist.h       |   20 ++++++++++++++++++++
+ include/linux/rcupdate.h      |    9 +++++++++
+ kernel/trace/ftrace.c         |   18 +++++++++---------
+ kernel/trace/trace.c          |   10 +++++++++-
+ kernel/trace/trace_selftest.c |    2 +-
+ 5 files changed, 48 insertions(+), 11 deletions(-)
+
+--
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQEcBAABAgAGBQJRsQraAAoJEOdOSU1xswtMol8H/29q4+otWy8lUgW2I8lmMR+r
+Bu+iy5zR5L05Rrb5IWuEOgDxQRuKCQN95gI9O91Fc1Wqa9DglxC3lzMtHyOJppZH
+HtWOv7zspkI6cYjwH1hOiHY2ZtRVQqqHsHrq85JoFFQPptlj0GdyLPtWyRxhSuiM
+v4EEuPsr/FGc/gCkLkMfwBRs3UD/nrutfUIdo8++ajYSolA5VtQOqUZBtswskSKh
+x/PjhEfYy3BwQwRYYFYkZDs5Q5G87szPIyvdn1kVzQXzLwiUYn+J/7RAiLhGSsA8
+Wa4Jk5Ji2uZIiMCBVCEIzE+ZpXoD9U/MabSc7xYDY5vofu6nsxvdLySxU4YbsRU=
+=6lYd
+-----END PGP SIGNATURE-----
+
+----
