@@ -1,200 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932311Ab3FFJ7u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 05:59:50 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:48226 "EHLO
+	id S932275Ab3FFJ7s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 05:59:48 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:48214 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754464Ab3FFJ7q (ORCPT
+	with ESMTP id S1753592Ab3FFJ7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Jun 2013 05:59:46 -0400
 From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         devicetree-discuss@lists.ozlabs.org
-Cc: Pawel Moll <pawel.moll@arm.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Achin Gupta <achin.gupta@arm.com>,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <pawel.moll@arm.com>,
         Nicolas Pitre <nicolas.pitre@linaro.org>,
         Amit Kucheria <amit.kucheria@linaro.org>,
-        Jon Medhurst <tixy@linaro.org>
-Subject: [RFC PATCH v3 1/2] drivers: mfd: refactor the vexpress config bridge API
-Date: Thu,  6 Jun 2013 10:59:22 +0100
-Message-Id: <1370512763-32200-2-git-send-email-lorenzo.pieralisi@arm.com>
+        Jon Medhurst <tixy@linaro.org>, Achin Gupta <achin.gupta@arm.com>,
+        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Subject: [RFC PATCH v3 0/2] drivers: mfd: Versatile Express SPC support
+Date: Thu,  6 Jun 2013 10:59:21 +0100
+Message-Id: <1370512763-32200-1-git-send-email-lorenzo.pieralisi@arm.com>
 X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <1370512763-32200-1-git-send-email-lorenzo.pieralisi@arm.com>
-References: <1370512763-32200-1-git-send-email-lorenzo.pieralisi@arm.com>
-X-OriginalArrivalTime: 06 Jun 2013 09:59:43.0244 (UTC) FILETIME=[914C4CC0:01CE629C]
-X-MC-Unique: 113060610594409701
+X-OriginalArrivalTime: 06 Jun 2013 09:59:42.0697 (UTC) FILETIME=[90F8D590:01CE629C]
+X-MC-Unique: 113060610594400301
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r569xvbH009614
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r56A0HSE009622
 
-From: Pawel Moll <pawel.moll@arm.com>
+This patch is v3 of a previous posting:
 
-The introduction of Serial Power Controller (SPC) requires the vexpress
-config interface to change slightly since the SPC memory mapped interface
-can be used as configuration bus but also for operating points
-programming and retrieval. The helper that allocates the bridge functions
-requires an additional parameter allowing to request component specific
-functions that need not be initialized through device tree bindings but
-just using simple look-up and statically defined constants.
+http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/173464.html
 
-This patch introduces the necessary changes to the vexpress config layer
-to cater for the new vexpress bridge interface requirements.
+v3 changes:
 
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Achin Gupta <achin.gupta@arm.com>
-Cc: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Amit Kucheria <amit.kucheria@linaro.org>
-Cc: Jon Medhurst <tixy@linaro.org>
-Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-Acked-by: Nicolas Pitre <nico@linaro.org>
----
- drivers/mfd/vexpress-config.c | 61 ++++++----
- drivers/mfd/vexpress-sysreg.c |  2 +-
- include/linux/vexpress.h      | 16 ++-
- 3 files changed, 51 insertions(+), 28 deletions(-)
+- added __refdata to spc_check_loaded pointer
+- removed some exported symbols
+- added node pointer check in vexpress_spc_init()
 
-diff --git a/drivers/mfd/vexpress-config.c b/drivers/mfd/vexpress-config.c
-index 84ce6b9..1af2b0e 100644
---- a/drivers/mfd/vexpress-config.c
-+++ b/drivers/mfd/vexpress-config.c
-@@ -86,29 +86,13 @@ void vexpress_config_bridge_unregister(struct vexpress_config_bridge *bridge)
- }
- EXPORT_SYMBOL(vexpress_config_bridge_unregister);
- 
--
--struct vexpress_config_func {
--	struct vexpress_config_bridge *bridge;
--	void *func;
--};
--
--struct vexpress_config_func *__vexpress_config_func_get(struct device *dev,
--		struct device_node *node)
-+static struct vexpress_config_bridge *
-+		vexpress_config_bridge_find(struct device_node *node)
- {
--	struct device_node *bridge_node;
--	struct vexpress_config_func *func;
- 	int i;
-+	struct vexpress_config_bridge *res = NULL;
-+	struct device_node *bridge_node = of_node_get(node);
- 
--	if (WARN_ON(dev && node && dev->of_node != node))
--		return NULL;
--	if (dev && !node)
--		node = dev->of_node;
--
--	func = kzalloc(sizeof(*func), GFP_KERNEL);
--	if (!func)
--		return NULL;
--
--	bridge_node = of_node_get(node);
- 	while (bridge_node) {
- 		const __be32 *prop = of_get_property(bridge_node,
- 				"arm,vexpress,config-bridge", NULL);
-@@ -129,13 +113,46 @@ struct vexpress_config_func *__vexpress_config_func_get(struct device *dev,
- 
- 		if (test_bit(i, vexpress_config_bridges_map) &&
- 				bridge->node == bridge_node) {
--			func->bridge = bridge;
--			func->func = bridge->info->func_get(dev, node);
-+			res = bridge;
- 			break;
- 		}
- 	}
- 	mutex_unlock(&vexpress_config_bridges_mutex);
- 
-+	return res;
-+}
-+
-+
-+struct vexpress_config_func {
-+	struct vexpress_config_bridge *bridge;
-+	void *func;
-+};
-+
-+struct vexpress_config_func *__vexpress_config_func_get(
-+		struct vexpress_config_bridge *bridge,
-+		struct device *dev,
-+		struct device_node *node,
-+		const char *id)
-+{
-+	struct vexpress_config_func *func;
-+
-+	if (WARN_ON(dev && node && dev->of_node != node))
-+		return NULL;
-+	if (dev && !node)
-+		node = dev->of_node;
-+
-+	if (!bridge)
-+		bridge = vexpress_config_bridge_find(node);
-+	if (!bridge)
-+		return NULL;
-+
-+	func = kzalloc(sizeof(*func), GFP_KERNEL);
-+	if (!func)
-+		return NULL;
-+
-+	func->bridge = bridge;
-+	func->func = bridge->info->func_get(dev, node, id);
-+
- 	if (!func->func) {
- 		of_node_put(node);
- 		kfree(func);
-diff --git a/drivers/mfd/vexpress-sysreg.c b/drivers/mfd/vexpress-sysreg.c
-index 96a020b..d2599aa 100644
---- a/drivers/mfd/vexpress-sysreg.c
-+++ b/drivers/mfd/vexpress-sysreg.c
-@@ -165,7 +165,7 @@ static u32 *vexpress_sysreg_config_data;
- static int vexpress_sysreg_config_tries;
- 
- static void *vexpress_sysreg_config_func_get(struct device *dev,
--		struct device_node *node)
-+		struct device_node *node, const char *id)
- {
- 	struct vexpress_sysreg_config_func *config_func;
- 	u32 site;
-diff --git a/include/linux/vexpress.h b/include/linux/vexpress.h
-index 6e7980d..50368e0 100644
---- a/include/linux/vexpress.h
-+++ b/include/linux/vexpress.h
-@@ -68,7 +68,8 @@
-  */
- struct vexpress_config_bridge_info {
- 	const char *name;
--	void *(*func_get)(struct device *dev, struct device_node *node);
-+	void *(*func_get)(struct device *dev, struct device_node *node,
-+			  const char *id);
- 	void (*func_put)(void *func);
- 	int (*func_exec)(void *func, int offset, bool write, u32 *data);
- };
-@@ -87,12 +88,17 @@ void vexpress_config_complete(struct vexpress_config_bridge *bridge,
- 
- struct vexpress_config_func;
- 
--struct vexpress_config_func *__vexpress_config_func_get(struct device *dev,
--		struct device_node *node);
-+struct vexpress_config_func *__vexpress_config_func_get(
-+		struct vexpress_config_bridge *bridge,
-+		struct device *dev,
-+		struct device_node *node,
-+		const char *id);
-+#define vexpress_config_func_get(bridge, id) \
-+		__vexpress_config_func_get(bridge, NULL, NULL, id)
- #define vexpress_config_func_get_by_dev(dev) \
--		__vexpress_config_func_get(dev, NULL)
-+		__vexpress_config_func_get(NULL, dev, NULL, NULL)
- #define vexpress_config_func_get_by_node(node) \
--		__vexpress_config_func_get(NULL, node)
-+		__vexpress_config_func_get(NULL, NULL, node, NULL)
- void vexpress_config_func_put(struct vexpress_config_func *func);
- 
- /* Both may sleep! */
+v2 changes:
+
+- Dropped timeout interface patch
+- Converted interfaces to non-timeout ones, integrated and retested
+- Removed mutex used at init
+- Refactored code to work around init sections warning
+- Fixed two minor bugs
+
+This patch series introduces support for the Versatile Express Serial
+Power Controller (SPC) present in ARM Versatile Express TC2 core tiles.
+SPC driver is a fundamental component of TC2 power management and allows
+to carry out C-state management and DVFS for A15 and A7 clusters.
+
+First patch provides changes required by SPC to comply with the
+Versatile Express config API, second patch is the SPC driver implementation.
+
+Code extensively exercised through CPUidle and CPUfreq power states and
+operating point transitions.
+
+Lorenzo Pieralisi (1):
+  drivers: mfd: vexpress: add Serial Power Controller (SPC) support
+
+Pawel Moll (1):
+  drivers: mfd: refactor the vexpress config bridge API
+
+ Documentation/devicetree/bindings/mfd/vexpress-spc.txt |  35 +
+ drivers/mfd/Kconfig                                    |   7 +
+ drivers/mfd/Makefile                                   |   1 +
+ drivers/mfd/vexpress-config.c                          |  61 +-
+ drivers/mfd/vexpress-spc.c                             | 633 ++++++++++
+ drivers/mfd/vexpress-sysreg.c                          |   2 +-
+ include/linux/vexpress.h                               |  59 +-
+ 7 files changed, 770 insertions(+), 28 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/vexpress-spc.txt
+ create mode 100644 drivers/mfd/vexpress-spc.c
+
 -- 
 1.8.2.2
 
