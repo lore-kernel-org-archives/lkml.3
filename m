@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757688Ab3FFDs7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 23:48:59 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:51496 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756409Ab3FFDs4 (ORCPT
+	id S1757690Ab3FFDvM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 23:51:12 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:38260 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756409Ab3FFDvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 23:48:56 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlMMAEkGsFF5LKX1/2dsb2JhbABZgwm6QIUrBAF9F3SCIwEBBTocIxAIAxgJJQ8FJQMhE4gMvC8WjXiBHQeDWwOXPpFBgyEq
-Date: Thu, 6 Jun 2013 13:48:32 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, Waiman Long <waiman.long@hp.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ian Kent <raven@themaw.net>, Sage Weil <sage@inktank.com>,
-        Steve French <sfrench@samba.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Eric Paris <eparis@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH 0/3 v3] dcache: make it more scalable on large system
-Message-ID: <20130606034832.GV29338@dastard>
-References: <1369273048-60256-1-git-send-email-Waiman.Long@hp.com>
- <20130523094201.GA24543@dastard>
- <519E8B5F.3080905@hp.com>
- <20130527020903.GR29466@dastard>
- <51A624E2.3000301@hp.com>
- <20130529184640.GA3243@fieldses.org>
- <20130529203700.GM6123@two.firstfloor.org>
+	Wed, 5 Jun 2013 23:51:10 -0400
+Message-ID: <51B00719.20406@candelatech.com>
+Date: Wed, 05 Jun 2013 20:50:49 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130529203700.GM6123@two.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Joe Lawrence <joe.lawrence@stratus.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
+        Jouni Malinen <jouni@qca.qualcomm.com>,
+        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
+        Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: stop_machine lockup issue in 3.9.y.
+References: <51AE27D5.7050202@candelatech.com>   <87sj0xry1k.fsf@rustcorp.com.au> <20130605071539.GA3429@mtj.dyndns.org>   <51AF6E54.3050108@candelatech.com> <20130605184807.GD10693@mtj.dyndns.org>   <51AF8D4B.4090407@candelatech.com> <51AF91F5.6090801@candelatech.com>   <51AFA677.9010605@candelatech.com> <20130605211157.GK10693@mtj.dyndns.org>   <1370482492.24311.308.camel@edumazet-glaptop>   <20130606031444.GA12335@mtj.dyndns.org>  <1370489181.24311.318.camel@edumazet-glaptop>  <51B004CD.6080007@candelatech.com> <1370490403.24311.322.camel@edumazet-glaptop>
+In-Reply-To: <1370490403.24311.322.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 10:37:00PM +0200, Andi Kleen wrote:
-> > As Dave said before, is the last path component sufficient?  Or how
-> > about an inode number?
-> 
-> Neither works, the profiler needs to find the file and read it.
-> 
-> inode searching would be incredible expensive, unless the file system
-> provided a "open-by-inode" primitive
+On 06/05/2013 08:46 PM, Eric Dumazet wrote:
+> On Wed, 2013-06-05 at 20:41 -0700, Ben Greear wrote:
+>> On 06/05/2013 08:26 PM, Eric Dumazet wrote:
+>>> On Wed, 2013-06-05 at 20:14 -0700, Tejun Heo wrote:
+>>>
+>>>>
+>>>> Ah, so, that's why it's showing up now.  We probably have had the same
+>>>> issue all along but it used to be masked by the softirq limiting.  Do
+>>>> you care to revive the 10 iterations limit so that it's limited by
+>>>> both the count and timing?  We do wanna find out why softirq is
+>>>> spinning indefinitely tho.
+>>>
+>>> Yes, no problem, I can do that.
+>>
+>> Limiting it to 5000 fixes my problem, so if you wanted it larger than 10, that would
+>> be fine by me.
+>>
+>> I can send a version of my patch easily enough if we can agree on the max number of
+>> loops (and if indeed my version of the patch is acceptable).
+>
+> Well, 10 was the prior limit and seems really fine.
+>
+> The non update on jiffies seems quite exceptional condition (I hope...)
+>
+> We use in Google a patch triggering warning is a thread holds the cpu
+> without taking care to need_resched() for more than xx ms
 
-That's effectively what fs/fhandle.c gives you.
+Well, I'm sure that patch works nicely until the clock stops moving
+forward :)
 
-Cheers,
+I'll post a patch with limit of 10 shortly.
 
-Dave.
+Thanks,
+Ben
+
+
+
 -- 
-Dave Chinner
-david@fromorbit.com
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
+
