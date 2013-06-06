@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933157Ab3FFLrz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 07:47:55 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:41805 "EHLO relay.sgi.com"
+	id S933005Ab3FFLrl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 07:47:41 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:33800 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933077Ab3FFLrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 07:47:53 -0400
+	id S932351Ab3FFLre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 07:47:34 -0400
 From: Robin Holt <holt@sgi.com>
 To: akpm@linux-foundation.org
-Cc: Robin Holt <holt@sgi.com>, Russell King <rmk+kernel@arm.linux.org.uk>,
-        Russ Anderson <rja@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russ Anderson <rja@sgi.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Guan Xuetao <gxt@mprc.pku.edu.cn>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         the arch/x86 maintainers <x86@kernel.org>,
-        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH -v11 resend 09/11] arm, prepare reboot_mode for moving to generic kernel code.
-Date: Thu,  6 Jun 2013 06:47:22 -0500
-Message-Id: <1370519244-49918-10-git-send-email-holt@sgi.com>
+        Arm Mailing List <linux-arm-kernel@lists.infradead.org>,
+        <stable@vger.kernel.org>
+Subject: [PATCH -v11 resend 01/11] CPU hotplug: Provide a generic helper to disable/enable CPU hotplug
+Date: Thu,  6 Jun 2013 06:47:14 -0500
+Message-Id: <1370519244-49918-2-git-send-email-holt@sgi.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1370519244-49918-1-git-send-email-holt@sgi.com>
 References: <1370519244-49918-1-git-send-email-holt@sgi.com>
@@ -24,116 +27,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prepares for the moving the parsing of reboot= to the generic
-kernel code by making reboot_mode into a more generic form.
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 
+There are instances in the kernel where we would like to disable
+CPU hotplug (from sysfs) during some important operation. Today
+the freezer code depends on this and the code to do it was kinda
+tailor-made for that.
+
+Restructure the code and make it generic enough to be useful for
+other usecases too.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 Signed-off-by: Robin Holt <holt@sgi.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: H. Peter Anvin <hpa@zytor.com>
 Cc: Russ Anderson <rja@sgi.com>
 Cc: Robin Holt <holt@sgi.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
 Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: the arch/x86 maintainers <x86@kernel.org>
 Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
-
+Cc: <stable@vger.kernel.org>
 ---
+ include/linux/cpu.h |  4 ++++
+ kernel/cpu.c        | 55 ++++++++++++++++++++++-------------------------------
+ 2 files changed, 27 insertions(+), 32 deletions(-)
 
-Changes since -v10
- - Uncommented an accidentally commented out line.
-
-Changes since -v8
- - Switched from using REBOOT_WARM/COLD to HARD/SOFT.
----
- arch/arm/include/asm/mach/arch.h   | 3 ++-
- arch/arm/kernel/process.c          | 8 ++++----
- arch/arm/kernel/setup.c            | 6 +++---
- arch/arm/mach-footbridge/cats-hw.c | 2 +-
- 4 files changed, 10 insertions(+), 9 deletions(-)
-
-diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
-index 308ad7d..e2b551e 100644
---- a/arch/arm/include/asm/mach/arch.h
-+++ b/arch/arm/include/asm/mach/arch.h
-@@ -9,6 +9,7 @@
-  */
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index c6f6e08..9f3c7e8 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -175,6 +175,8 @@ extern struct bus_type cpu_subsys;
  
- #ifndef __ASSEMBLY__
-+#include <linux/reboot.h>
+ extern void get_online_cpus(void);
+ extern void put_online_cpus(void);
++extern void cpu_hotplug_disable(void);
++extern void cpu_hotplug_enable(void);
+ #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
+ #define register_hotcpu_notifier(nb)	register_cpu_notifier(nb)
+ #define unregister_hotcpu_notifier(nb)	unregister_cpu_notifier(nb)
+@@ -198,6 +200,8 @@ static inline void cpu_hotplug_driver_unlock(void)
  
- struct tag;
- struct meminfo;
-@@ -39,7 +40,7 @@ struct machine_desc {
- 	unsigned char		reserve_lp0 :1;	/* never has lp0	*/
- 	unsigned char		reserve_lp1 :1;	/* never has lp1	*/
- 	unsigned char		reserve_lp2 :1;	/* never has lp2	*/
--	char			restart_mode;	/* default restart mode	*/
-+	enum reboot_mode	reboot_mode;	/* default restart mode	*/
- 	struct smp_operations	*smp;		/* SMP operations	*/
- 	void			(*fixup)(struct tag *, char **,
- 					 struct meminfo *);
-diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index f219703..92b47df 100644
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -174,14 +174,14 @@ void arch_cpu_idle(void)
- 		default_idle();
+ #define get_online_cpus()	do { } while (0)
+ #define put_online_cpus()	do { } while (0)
++#define cpu_hotplug_disable()	do { } while (0)
++#define cpu_hotplug_enable()	do { } while (0)
+ #define hotcpu_notifier(fn, pri)	do { (void)(fn); } while (0)
+ /* These aren't inline functions due to a GCC bug. */
+ #define register_hotcpu_notifier(nb)	({ (void)(nb); 0; })
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index b5e4ab2..198a388 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -133,6 +133,27 @@ static void cpu_hotplug_done(void)
+ 	mutex_unlock(&cpu_hotplug.lock);
  }
  
--static char reboot_mode = 'h';
-+enum reboot_mode reboot_mode = REBOOT_HARD;
++/*
++ * Wait for currently running CPU hotplug operations to complete (if any) and
++ * disable future CPU hotplug (from sysfs). The 'cpu_add_remove_lock' protects
++ * the 'cpu_hotplug_disabled' flag. The same lock is also acquired by the
++ * hotplug path before performing hotplug operations. So acquiring that lock
++ * guarantees mutual exclusion from any currently running hotplug operations.
++ */
++void cpu_hotplug_disable(void)
++{
++	cpu_maps_update_begin();
++	cpu_hotplug_disabled = 1;
++	cpu_maps_update_done();
++}
++
++void cpu_hotplug_enable(void)
++{
++	cpu_maps_update_begin();
++	cpu_hotplug_disabled = 0;
++	cpu_maps_update_done();
++}
++
+ #else /* #if CONFIG_HOTPLUG_CPU */
+ static void cpu_hotplug_begin(void) {}
+ static void cpu_hotplug_done(void) {}
+@@ -541,36 +562,6 @@ static int __init alloc_frozen_cpus(void)
+ core_initcall(alloc_frozen_cpus);
  
--int __init reboot_setup(char *str)
-+static int __init reboot_setup(char *str)
- {
--	reboot_mode = str[0];
-+	if ('s' == str[0])
-+		reboot_mode = REBOOT_SOFT;
- 	return 1;
- }
+ /*
+- * Prevent regular CPU hotplug from racing with the freezer, by disabling CPU
+- * hotplug when tasks are about to be frozen. Also, don't allow the freezer
+- * to continue until any currently running CPU hotplug operation gets
+- * completed.
+- * To modify the 'cpu_hotplug_disabled' flag, we need to acquire the
+- * 'cpu_add_remove_lock'. And this same lock is also taken by the regular
+- * CPU hotplug path and released only after it is complete. Thus, we
+- * (and hence the freezer) will block here until any currently running CPU
+- * hotplug operation gets completed.
+- */
+-void cpu_hotplug_disable_before_freeze(void)
+-{
+-	cpu_maps_update_begin();
+-	cpu_hotplug_disabled = 1;
+-	cpu_maps_update_done();
+-}
 -
- __setup("reboot=", reboot_setup);
+-
+-/*
+- * When tasks have been thawed, re-enable regular CPU hotplug (which had been
+- * disabled while beginning to freeze tasks).
+- */
+-void cpu_hotplug_enable_after_thaw(void)
+-{
+-	cpu_maps_update_begin();
+-	cpu_hotplug_disabled = 0;
+-	cpu_maps_update_done();
+-}
+-
+-/*
+  * When callbacks for CPU hotplug notifications are being executed, we must
+  * ensure that the state of the system with respect to the tasks being frozen
+  * or not, as reported by the notification, remains unchanged *throughout the
+@@ -589,12 +580,12 @@ cpu_hotplug_pm_callback(struct notifier_block *nb,
  
- void machine_shutdown(void)
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 1522c7a..e05df42 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -73,7 +73,7 @@ __setup("fpe=", fpe_setup);
+ 	case PM_SUSPEND_PREPARE:
+ 	case PM_HIBERNATION_PREPARE:
+-		cpu_hotplug_disable_before_freeze();
++		cpu_hotplug_disable();
+ 		break;
  
- extern void paging_init(struct machine_desc *desc);
- extern void sanity_check_meminfo(void);
--extern void reboot_setup(char *str);
-+extern enum reboot_mode reboot_mode;
- extern void setup_dma_zone(struct machine_desc *desc);
+ 	case PM_POST_SUSPEND:
+ 	case PM_POST_HIBERNATION:
+-		cpu_hotplug_enable_after_thaw();
++		cpu_hotplug_enable();
+ 		break;
  
- unsigned int processor_id;
-@@ -769,8 +769,8 @@ void __init setup_arch(char **cmdline_p)
- 
- 	setup_dma_zone(mdesc);
- 
--	if (mdesc->restart_mode)
--		reboot_setup(&mdesc->restart_mode);
-+	if (mdesc->reboot_mode != REBOOT_HARD)
-+		reboot_mode = mdesc->reboot_mode;
- 
- 	init_mm.start_code = (unsigned long) _text;
- 	init_mm.end_code   = (unsigned long) _etext;
-diff --git a/arch/arm/mach-footbridge/cats-hw.c b/arch/arm/mach-footbridge/cats-hw.c
-index 6987a09..9669cc0 100644
---- a/arch/arm/mach-footbridge/cats-hw.c
-+++ b/arch/arm/mach-footbridge/cats-hw.c
-@@ -86,7 +86,7 @@ fixup_cats(struct tag *tags, char **cmdline, struct meminfo *mi)
- MACHINE_START(CATS, "Chalice-CATS")
- 	/* Maintainer: Philip Blundell */
- 	.atag_offset	= 0x100,
--	.restart_mode	= 's',
-+	.reboot_mode	= REBOOT_SOFT,
- 	.fixup		= fixup_cats,
- 	.map_io		= footbridge_map_io,
- 	.init_irq	= footbridge_init_irq,
+ 	default:
 -- 
 1.8.2.1
 
