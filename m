@@ -1,51 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933526Ab3FFMSR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 08:18:17 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:49678 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933457Ab3FFMSM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 08:18:12 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 24/33] ARM: ux500: Remove AUXDATA relating to GPIO clock-name bindings
-Date: Thu,  6 Jun 2013 13:17:12 +0100
-Message-Id: <1370521041-32318-25-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
-References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
+	id S933659Ab3FFMUT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 08:20:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52386 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933377Ab3FFMUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 08:20:16 -0400
+Date: Thu, 6 Jun 2013 15:20:39 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: netdev@vger.kernel.org
+Cc: Asias He <asias@redhat.com>, David Miller <davem@davemloft.net>,
+        Tommi Rantala <tt.rantala@gmail.com>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH net 1/2] vhost: check owner before we overwrite ubuf_info
+Message-ID: <1370521145-9723-2-git-send-email-mst@redhat.com>
+References: <1370521145-9723-1-git-send-email-mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370521145-9723-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/mach-ux500/cpu-db8500.c |    9 ---------
- 1 file changed, 9 deletions(-)
+If device has an owner, we shouldn't touch ubuf_info
+since it might be in use.
 
-diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-index 68a3918..8d72826 100644
---- a/arch/arm/mach-ux500/cpu-db8500.c
-+++ b/arch/arm/mach-ux500/cpu-db8500.c
-@@ -228,15 +228,6 @@ static struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
- 	OF_DEV_AUXDATA("arm,pl18x", 0x80005000, "sdi2",  &mop500_sdi2_data),
- 	OF_DEV_AUXDATA("arm,pl18x", 0x80114000, "sdi4",  &mop500_sdi4_data),
- 	/* Requires clock name bindings. */
--	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8012e000, "gpio.0", NULL),
--	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8012e080, "gpio.1", NULL),
--	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8000e000, "gpio.2", NULL),
--	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8000e080, "gpio.3", NULL),
--	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8000e100, "gpio.4", NULL),
--	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8000e180, "gpio.5", NULL),
--	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8011e000, "gpio.6", NULL),
--	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8011e080, "gpio.7", NULL),
--	OF_DEV_AUXDATA("st,nomadik-gpio", 0xa03fe000, "gpio.8", NULL),
- 	OF_DEV_AUXDATA("st,nomadik-i2c", 0x80004000, "nmk-i2c.0", NULL),
- 	OF_DEV_AUXDATA("st,nomadik-i2c", 0x80122000, "nmk-i2c.1", NULL),
- 	OF_DEV_AUXDATA("st,nomadik-i2c", 0x80128000, "nmk-i2c.2", NULL),
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/vhost/net.c   | 4 ++++
+ drivers/vhost/vhost.c | 8 +++++++-
+ drivers/vhost/vhost.h | 1 +
+ 3 files changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 2b51e23..6b00f64 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -1053,6 +1053,10 @@ static long vhost_net_set_owner(struct vhost_net *n)
+ 	int r;
+ 
+ 	mutex_lock(&n->dev.mutex);
++	if (vhost_dev_has_owner(&n->dev)) {
++		r = -EBUSY;
++		goto out;
++	}
+ 	r = vhost_net_set_ubuf_info(n);
+ 	if (r)
+ 		goto out;
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index beee7f5..60aa5ad 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -344,13 +344,19 @@ static int vhost_attach_cgroups(struct vhost_dev *dev)
+ }
+ 
+ /* Caller should have device mutex */
++bool vhost_dev_has_owner(struct vhost_dev *dev)
++{
++	return dev->mm;
++}
++
++/* Caller should have device mutex */
+ long vhost_dev_set_owner(struct vhost_dev *dev)
+ {
+ 	struct task_struct *worker;
+ 	int err;
+ 
+ 	/* Is there an owner already? */
+-	if (dev->mm) {
++	if (vhost_dev_has_owner(dev)) {
+ 		err = -EBUSY;
+ 		goto err_mm;
+ 	}
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index a7ad635..64adcf9 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -133,6 +133,7 @@ struct vhost_dev {
+ 
+ long vhost_dev_init(struct vhost_dev *, struct vhost_virtqueue **vqs, int nvqs);
+ long vhost_dev_set_owner(struct vhost_dev *dev);
++bool vhost_dev_has_owner(struct vhost_dev *dev);
+ long vhost_dev_check_owner(struct vhost_dev *);
+ struct vhost_memory *vhost_dev_reset_owner_prepare(void);
+ void vhost_dev_reset_owner(struct vhost_dev *, struct vhost_memory *);
 -- 
-1.7.10.4
+MST
 
