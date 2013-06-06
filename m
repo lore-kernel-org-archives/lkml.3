@@ -1,53 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752291Ab3FFEfa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 00:35:30 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:41050 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515Ab3FFEf2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 00:35:28 -0400
-Message-ID: <1370493325.24311.332.camel@edumazet-glaptop>
-Subject: Re: [PATCH 5/5] net: Block MSG_CMSG_COMPAT in send(m)msg and
- recv(m)msg
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Michael Neuling <mikey@neuling.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, trinity@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>, torvalds@linux-foundation.org
-Date: Wed, 05 Jun 2013 21:35:25 -0700
-In-Reply-To: <CAEjGV6xcF776C6N6VxeMY0Vyk+X51oNixdbN42-xkWjQOaMEQA@mail.gmail.com>
-References: <cover.1369177867.git.luto@amacapital.net>
-	 <aa015609319786835bcab445d507faa75c11f111.1369177867.git.luto@amacapital.net>
-	 <CAEjGV6xcF776C6N6VxeMY0Vyk+X51oNixdbN42-xkWjQOaMEQA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752442Ab3FFEgf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 00:36:35 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:46819 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751917Ab3FFEge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 00:36:34 -0400
+Date: Thu, 6 Jun 2013 00:36:20 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/2] arch: invoke oom-killer from page fault
+Message-ID: <20130606043620.GA9406@cmpxchg.org>
+References: <1370488193-4747-1-git-send-email-hannes@cmpxchg.org>
+ <alpine.DEB.2.02.1306052053360.25115@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1306052053360.25115@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-06 at 12:56 +1000, Michael Neuling wrote:
-> On Thu, May 23, 2013 at 7:07 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> > MSG_CMSG_COMPAT is (AFAIK) not intended to be part of the API --
-> > it's a hack that steals a bit to indicate to other networking code
-> > that a compat entry was used.  So don't allow it from a non-compat
-> > syscall.
+On Wed, Jun 05, 2013 at 08:57:44PM -0700, David Rientjes wrote:
+> On Wed, 5 Jun 2013, Johannes Weiner wrote:
 > 
-> Dave & Linus
+> > Since '1c0fe6e mm: invoke oom-killer from page fault', page fault
+> > handlers should not directly kill faulting tasks in an out of memory
+> > condition.
 > 
-> This is causing a regression on 64bit powerpc with 32bit usermode.
-> When I hit userspace, udev is broken and I suspect all networking is
-> broken as well.
+> I have no objection to the patch, but there's no explanation given here 
+> why exiting with a kill shouldn't be done.  Is it because of memory 
+> reserves and there is no guarantee that current will be able to exit?  Or 
+> is it just for consistency with other archs?
 > 
-> Can we please revert 1be374a0518a288147c6a7398792583200a67261 upstream?
+> > Instead, they should be invoking the OOM killer to pick
+> > the right task.  Convert the remaining architectures.
+> > 
 > 
+> If this is a matter of memory reserves, I guess you could point people who 
+> want the current behavior (avoiding the expensiveness of the tasklist scan 
+> in the oom killer for example) to /proc/sys/vm/oom_kill_allocating_task?
+> 
+> This changelog is a bit cryptic in its motivation.
 
-It seems to also break x86_64, if using 32bit usermode.
+Fixing copy-pasted bitrot^W^W^W^WHow about this?
 
+---
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: [patch] mm: invoke oom-killer from remaining unconverted page fault
+ handlers
 
+A few remaining architectures directly kill the page faulting task in
+an out of memory situation.  This is usually not a good idea since
+that task might not even use a significant amount of memory and so may
+not be the optimal victim to resolve the situation.
+
+Since '1c0fe6e mm: invoke oom-killer from page fault' (2.6.29) there
+is a hook that architecture page fault handlers are supposed to call
+to invoke the OOM killer and let it pick the right task to kill.
+Convert the remaining architectures over to this hook.
+
+To have the previous behavior of simply taking out the faulting task
+the vm.oom_kill_allocating_task sysctl can be set to 1.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ arch/arc/mm/fault.c      | 6 ++++--
+ arch/metag/mm/fault.c    | 6 ++++--
+ arch/mn10300/mm/fault.c  | 7 ++++---
+ arch/openrisc/mm/fault.c | 8 ++++----
+ arch/score/mm/fault.c    | 8 ++++----
+ arch/tile/mm/fault.c     | 8 ++++----
+ 6 files changed, 24 insertions(+), 19 deletions(-)
+
+diff --git a/arch/arc/mm/fault.c b/arch/arc/mm/fault.c
+index c0decc1..d5ec60a 100644
+--- a/arch/arc/mm/fault.c
++++ b/arch/arc/mm/fault.c
+@@ -207,8 +207,10 @@ out_of_memory:
+ 	}
+ 	up_read(&mm->mmap_sem);
+ 
+-	if (user_mode(regs))
+-		do_group_exit(SIGKILL);	/* This will never return */
++	if (user_mode(regs)) {
++		pagefault_out_of_memory();
++		return;
++	}
+ 
+ 	goto no_context;
+ 
+diff --git a/arch/metag/mm/fault.c b/arch/metag/mm/fault.c
+index 2c75bf7..8fddf46 100644
+--- a/arch/metag/mm/fault.c
++++ b/arch/metag/mm/fault.c
+@@ -224,8 +224,10 @@ do_sigbus:
+ 	 */
+ out_of_memory:
+ 	up_read(&mm->mmap_sem);
+-	if (user_mode(regs))
+-		do_group_exit(SIGKILL);
++	if (user_mode(regs)) {
++		pagefault_out_of_memory();
++		return 1;
++	}
+ 
+ no_context:
+ 	/* Are we prepared to handle this kernel fault?  */
+diff --git a/arch/mn10300/mm/fault.c b/arch/mn10300/mm/fault.c
+index d48a84f..8a2e6de 100644
+--- a/arch/mn10300/mm/fault.c
++++ b/arch/mn10300/mm/fault.c
+@@ -345,9 +345,10 @@ no_context:
+  */
+ out_of_memory:
+ 	up_read(&mm->mmap_sem);
+-	printk(KERN_ALERT "VM: killing process %s\n", tsk->comm);
+-	if ((fault_code & MMUFCR_xFC_ACCESS) == MMUFCR_xFC_ACCESS_USR)
+-		do_exit(SIGKILL);
++	if ((fault_code & MMUFCR_xFC_ACCESS) == MMUFCR_xFC_ACCESS_USR) {
++		pagefault_out_of_memory();
++		return;
++	}
+ 	goto no_context;
+ 
+ do_sigbus:
+diff --git a/arch/openrisc/mm/fault.c b/arch/openrisc/mm/fault.c
+index e2bfafc..4a41f84 100644
+--- a/arch/openrisc/mm/fault.c
++++ b/arch/openrisc/mm/fault.c
+@@ -267,10 +267,10 @@ out_of_memory:
+ 	__asm__ __volatile__("l.nop 1");
+ 
+ 	up_read(&mm->mmap_sem);
+-	printk("VM: killing process %s\n", tsk->comm);
+-	if (user_mode(regs))
+-		do_exit(SIGKILL);
+-	goto no_context;
++	if (!user_mode(regs))
++		goto no_context;
++	pagefault_out_of_memory();
++	return;
+ 
+ do_sigbus:
+ 	up_read(&mm->mmap_sem);
+diff --git a/arch/score/mm/fault.c b/arch/score/mm/fault.c
+index 47b600e..6b18fb0 100644
+--- a/arch/score/mm/fault.c
++++ b/arch/score/mm/fault.c
+@@ -172,10 +172,10 @@ out_of_memory:
+ 		down_read(&mm->mmap_sem);
+ 		goto survive;
+ 	}
+-	printk("VM: killing process %s\n", tsk->comm);
+-	if (user_mode(regs))
+-		do_group_exit(SIGKILL);
+-	goto no_context;
++	if (!user_mode(regs))
++		goto no_context;
++	pagefault_out_of_memory();
++	return;
+ 
+ do_sigbus:
+ 	up_read(&mm->mmap_sem);
+diff --git a/arch/tile/mm/fault.c b/arch/tile/mm/fault.c
+index 3d2b81c..f7f99f9 100644
+--- a/arch/tile/mm/fault.c
++++ b/arch/tile/mm/fault.c
+@@ -573,10 +573,10 @@ out_of_memory:
+ 		down_read(&mm->mmap_sem);
+ 		goto survive;
+ 	}
+-	pr_alert("VM: killing process %s\n", tsk->comm);
+-	if (!is_kernel_mode)
+-		do_group_exit(SIGKILL);
+-	goto no_context;
++	if (is_kernel_mode)
++		goto no_context;
++	pagefault_out_of_memory();
++	return 0;
+ 
+ do_sigbus:
+ 	up_read(&mm->mmap_sem);
+-- 
+1.8.2.3
 
