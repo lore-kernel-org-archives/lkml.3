@@ -1,164 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab3FFC1m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 22:27:42 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:30649 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755148Ab3FFC1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 22:27:40 -0400
-X-IronPort-AV: E=Sophos;i="4.87,810,1363104000"; 
-   d="scan'208";a="7473485"
-Message-ID: <51AFF2FB.6020007@cn.fujitsu.com>
-Date: Thu, 06 Jun 2013 10:24:59 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1755944Ab3FFCaE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 22:30:04 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35473 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754539Ab3FFCaC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 22:30:02 -0400
+Date: Thu, 6 Jun 2013 03:29:59 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] corner cases of open() on procfs symlinks
+Message-ID: <20130606022959.GF13110@ZenIV.linux.org.uk>
+References: <20130606012010.GE13110@ZenIV.linux.org.uk>
+ <CA+55aFxB9GRfxhCg+s3xMCUQ5Sjt+nViRHQA-DPJ_5DB+v57Uw@mail.gmail.com>
 MIME-Version: 1.0
-To: liguang <lig.fnst@cn.fujitsu.com>
-CC: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org,
-        =?ISO-8859-1?Q?Andreas_F=E4rber?= <afaerber@suse.de>,
-        Igor Mammedov <imammedo@redhat.com>
-Subject: Re: [PATCH RFC v2 1/3] drivers/platform/x86: add cpu physically hotplug
- driver
-References: <1370482835-764-1-git-send-email-lig.fnst@cn.fujitsu.com> <1370482835-764-2-git-send-email-lig.fnst@cn.fujitsu.com>
-In-Reply-To: <1370482835-764-2-git-send-email-lig.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/06 10:25:53,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/06 10:25:55,
-	Serialize complete at 2013/06/06 10:25:55
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxB9GRfxhCg+s3xMCUQ5Sjt+nViRHQA-DPJ_5DB+v57Uw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2013 09:40 AM, liguang wrote:
-
-> this driver will support cpu phyical add/removal automatically
-> after online/offline. if cpu hotpluged, cpu will not
-> online automatically, and for cpu offline, we try to
-> do actually eject if allowed for cpu like
-> "echo 1 > /sys/bus/acpi/devices/LNXCPU\:0X/eject"
-> this "echo ..." is only present for recent kernel
-> (sorry, can't figure out since when), for a little
-> older kernel, there's not such approach AFAICS.
+On Thu, Jun 06, 2013 at 10:38:31AM +0900, Linus Torvalds wrote:
+> On Thu, Jun 6, 2013 at 10:20 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >         I'm not sure whether to treat that as a bug or as a weird misfeature
+> > enshrined in userland ABI:
+> >         open("/tmp", O_CREAT, 0) => -EISDIR     // LAST_NORM case
+> >         open("/", O_CREAT, 0) => -EISDIR        // LAST_ROOT
+> >         open(".", O_CREAT, 0) => -EISDIR        // LAST_DOT
+> >         open("..", O_CREAT, 0) => -EISDIR       // LAST_DOTDOT
+> >         open("/proc/self/cwd", O_CREAT, 0) => success   // LAST_BIND
+> >         open("/proc/self/cwd/", O_CREAT, 0) => -EISDIR  // trailing slashes
 > 
-> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
-> ---
->  drivers/platform/x86/Kconfig              |    8 ++++
->  drivers/platform/x86/Makefile             |    1 +
->  drivers/platform/x86/cpu_physic_hotplug.c |   60 +++++++++++++++++++++++++++++
->  3 files changed, 69 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/platform/x86/cpu_physic_hotplug.c
+> Ok, that looks buggy. O_CREAT should definitely return EISDIR for
+> /proc/self/cwd too, since it's a directory. I don't think the
+> O_RDWR/O_WRONLY thing should matter.
 > 
-> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-> index 8577261..39b2392 100644
-> --- a/drivers/platform/x86/Kconfig
-> +++ b/drivers/platform/x86/Kconfig
-> @@ -789,4 +789,12 @@ config PVPANIC
->  	  a paravirtualized device provided by QEMU; it lets a virtual machine
->  	  (guest) communicate panic events to the host.
->  
-> +config QEMU_CPU_PHYSIC_HOTPLUG
-> +	tristate "physically add/remove cpu after cpu onlined/offlined"
-> +	depends on ACPI_HOTPLUG_CPU
-> +	---help---
-> +	  This driver will support physically remove a cpu after
-> +	  it offlined for QEMU automatically. someone may require this feature
-> +	  to do a physically removal for a cpu.
-> +
->  endif # X86_PLATFORM_DEVICES
-> diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
-> index ef0ec74..2e669b0 100644
-> --- a/drivers/platform/x86/Makefile
-> +++ b/drivers/platform/x86/Makefile
-> @@ -53,3 +53,4 @@ obj-$(CONFIG_APPLE_GMUX)	+= apple-gmux.o
->  obj-$(CONFIG_CHROMEOS_LAPTOP)	+= chromeos_laptop.o
->  
->  obj-$(CONFIG_PVPANIC)           += pvpanic.o
-> +obj-$(CONFIG_QEMU_CPU_PHYSIC_HOTPLUG)	+= cpu_physic_hotplug.o
-> diff --git a/drivers/platform/x86/cpu_physic_hotplug.c b/drivers/platform/x86/cpu_physic_hotplug.c
-> new file mode 100644
-> index 0000000..a52c042
-> --- /dev/null
-> +++ b/drivers/platform/x86/cpu_physic_hotplug.c
-> @@ -0,0 +1,60 @@
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/acpi.h>
-> +#include <linux/cpu.h>
-> +#include <linux/notifier.h>
-> +#include <acpi/processor.h>
-> +
-> +MODULE_AUTHOR("Li Guang");
-> +MODULE_DESCRIPTION("CPU physically hot-plug/unplug Driver");
-> +MODULE_LICENSE("GPL");
-> +
-> +static int cpu_logic_hotplug_notify(struct notifier_block *nfb,
-> +				unsigned long action, void *hcpu)
-> +{
-> +	unsigned int cpu = (unsigned long)hcpu;
-> +	struct acpi_processor *pr = per_cpu(processors, cpu);
-> +
-> +	if (pr) {
-> +		switch (action) {
-> +		case CPU_ONLINE:
-> +			break;
-> +		case CPU_DEAD:
-> +			break;
-> +		default:
-> +			break;
-> +		}
-> +	}
-> +	return NOTIFY_OK;
-> +}
-> +
-> +static struct notifier_block cpu_logic_hotplug_notifier =
-> +{
-> +	.notifier_call = cpu_logic_hotplug_notify,
-> +};
-> +
-> +static int cpu_physic_hotplug_notify(struct notifier_block *nfb,
-> +				 unsigned char *s)
-> +{
-> +}
+> >        I would obviously
+> > like to do that - do_last() is far too convoluted as it is; the only
+> > question is whether we can change the first weirdness...  Comments?
+> 
+> Exactly which cases does that change? I have no objections if it's
+> only the "LAST_BIND" case that now starts returning EISDIR. Is there
+> anything else it affects?
 
-Hi guang,
-	Maybe you need to define the callback function in the right format at the beginning,
-if so, no need to correct it later.:)
+LAST_BIND gets to go through the EISDIR and ENOTDIR checks that way, which
+fixes these two bugs.
 
-Thanks,
-Gu
+LAST_DOT/LAST_DOTDOT/LAST_ROOT end up checking whether we are at the
+directory or not; sure, we know that we are, so these tests are
+redundant, but I really don't think it's worth optimizing for.  We are
+not generating any data misses and arguably we reduce instruction cache
+footprint a bit, not that it would be noticable with the I$ horror
+do_last() still is...
 
+What really happens in that switch is that do_last() tries to be too smart
+and ends up skipping a few things too many.
 
-> +
-> +static struct notifier_block cpu_physic_hotplug_notifier =
-> +{
-> +	.notifier_call = cpu_physic_hotplug_notify,
-> +};
-> +
-> +static int __init cpu_qemu_hotplug_init(void)
-> +{
-> +	register_hotcpu_notifier(&cpu_logic_hotplug_notifier);
-> +	register_ec_gpe_notifier(&cpu_physic_hotplug_notifier);
+> That said, obviously if something breaks, we'd have to revert it, and
+> as a cleanup rather than some serious bug (ie this doesn't cause
+> crashes or security issues), I suspect this should wait until 3.11
+> regardless. No?
 
-
-As the [PATCH 2/3] has no dependence on this one, so you can set [PATCH 2/3] to [PATCH 1/3] and this one
-to [PATCH 2/3]. Then you can use the xxx_ec_space_notifier directly here.
-
-> +	return 0;
-> +}
-> +
-> +static void __exit cpu_qemu_hotplug_exit(void)
-> +{
-> +	unregister_hotcpu_notifier(&cpu_logic_hotplug_notifier);
-> +	unregister_ec_gpe_notifier(&cpu_physic_hotplug_notifier);
-> +}
-> +
-> +module_init(cpu_qemu_hotplug_init);
-> +module_exit(cpu_qemu_hotplug_exit);
-
-
+Probably...  procfs symlinks neutering O_DIRECTORY might, in theory, be usable
+to cook something nasty, but I don't see any obvious ways to exploit that.
+FWIW, resulting kernel seems to survive the minimal beating, but obviously
+more is needed.
