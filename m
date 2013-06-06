@@ -1,86 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757607Ab3FFD3r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 23:29:47 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:39506 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755363Ab3FFD3p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 23:29:45 -0400
-Date: Thu, 6 Jun 2013 13:29:26 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Anton Blanchard <anton@samba.org>
-Cc: Michael Neuling <mikey@neuling.org>, netdev@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>, trinity@vger.kernel.org,
-        torvalds@linux-foundation.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 5/5] net: Block MSG_CMSG_COMPAT in send(m)msg and
- recv(m)msg
-Message-Id: <20130606132926.f4161ddff87dc9a55e33a8ca@canb.auug.org.au>
-In-Reply-To: <20130606130105.6e51066f@kryten>
-References: <cover.1369177867.git.luto@amacapital.net>
-	<aa015609319786835bcab445d507faa75c11f111.1369177867.git.luto@amacapital.net>
-	<CAEjGV6xcF776C6N6VxeMY0Vyk+X51oNixdbN42-xkWjQOaMEQA@mail.gmail.com>
-	<20130606130105.6e51066f@kryten>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__6_Jun_2013_13_29_26_+1000_E=/fZZs.iIOzRqj+"
+	id S932163Ab3FFDeX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 23:34:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60513 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755824Ab3FFDeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 23:34:22 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: mst@redhat.com, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: sergei.shtylyov@cogentembedded.com, Jason Wang <jasowang@redhat.com>
+Subject: [PATCH V2] vhost_net: clear msg.control for non-zerocopy case during tx
+Date: Thu,  6 Jun 2013 11:24:02 +0800
+Message-Id: <1370489042-14318-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__6_Jun_2013_13_29_26_+1000_E=/fZZs.iIOzRqj+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+When we decide not use zero-copy, msg.control should be set to NULL otherwise
+macvtap/tap may set zerocopy callbacks which may decrease the kref of ubufs
+wrongly.
 
-Hi Anton,
+Bug were introduced by commit cedb9bdce099206290a2bdd02ce47a7b253b6a84
+(vhost-net: skip head management if no outstanding).
 
-On Thu, 6 Jun 2013 13:01:05 +1000 Anton Blanchard <anton@samba.org> wrote:
->
-> > This is causing a regression on 64bit powerpc with 32bit usermode.
-> > When I hit userspace, udev is broken and I suspect all networking is
-> > broken as well.
-> >=20
-> > Can we please revert 1be374a0518a288147c6a7398792583200a67261
-> > upstream?
-> >=20
-> > Found via bisect.
->=20
-> Doesn't this patch break compat_sys_sendmsg and compat_sys_recvmsg?
-> We'd need to move the guts of sys_* into compat_sys_* to fix it.
+This solves the following warnings:
 
-What you really need is a set of common functions that the sys_ and
-compat_sys_ functions can call - with the sys_ funtions forbidding
-MSG_CMSG_COMPAT and the compat_sys_ functions setting it.
+WARNING: at include/linux/kref.h:47 handle_tx+0x477/0x4b0 [vhost_net]()
+Modules linked in: vhost_net macvtap macvlan tun nfsd exportfs bridge stp llc openvswitch kvm_amd kvm bnx2 megaraid_sas [last unloaded: tun]
+CPU: 5 PID: 8670 Comm: vhost-8668 Not tainted 3.10.0-rc2+ #1566
+Hardware name: Dell Inc. PowerEdge R715/00XHKG, BIOS 1.5.2 04/19/2011
+ffffffffa0198323 ffff88007c9ebd08 ffffffff81796b73 ffff88007c9ebd48
+ffffffff8103d66b 000000007b773e20 ffff8800779f0000 ffff8800779f43f0
+ffff8800779f8418 000000000000015c 0000000000000062 ffff88007c9ebd58
+Call Trace:
+[<ffffffff81796b73>] dump_stack+0x19/0x1e
+[<ffffffff8103d66b>] warn_slowpath_common+0x6b/0xa0
+[<ffffffff8103d6b5>] warn_slowpath_null+0x15/0x20
+[<ffffffffa0197627>] handle_tx+0x477/0x4b0 [vhost_net]
+[<ffffffffa0197690>] handle_tx_kick+0x10/0x20 [vhost_net]
+[<ffffffffa019541e>] vhost_worker+0xfe/0x1a0 [vhost_net]
+[<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
+[<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
+[<ffffffff81061f46>] kthread+0xc6/0xd0
+[<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
+[<ffffffff817a1aec>] ret_from_fork+0x7c/0xb0
+[<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+The patch is needed for -stable.
 
---Signature=_Thu__6_Jun_2013_13_29_26_+1000_E=/fZZs.iIOzRqj+
-Content-Type: application/pgp-signature
+Changes from v1:
+- code style issue fix
+---
+ drivers/vhost/net.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 2b51e23..518622d 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -436,6 +436,8 @@ static void handle_tx(struct vhost_net *net)
+ 				kref_get(&ubufs->kref);
+ 			}
+ 			nvq->upend_idx = (nvq->upend_idx + 1) % UIO_MAXIOV;
++		} else {
++			msg.msg_control = NULL;
+ 		}
+ 		/* TODO: Check specific error and bomb out unless ENOBUFS? */
+ 		err = sock->ops->sendmsg(NULL, sock, &msg, len);
+-- 
+1.7.1
 
-iQIcBAEBCAAGBQJRsAIbAAoJEECxmPOUX5FEulUP/1n2sOt9T9cvEKjKvQvIUOaA
-flR2ZHEs+cLCuyYMxV2XHHYewc/3S7Fzfhl0ZncsiNrodGi21miZq/MEjHg6OoRX
-7/FSD1eFNoZ1YyNq6MtJ0lMGurIWML38bdjtxPZ3Z7f/eBffWk3YKKOC3GBRFKis
-ZdhBe89SqAqPSJsQEOAzBhuTmKGeQ44cxtIcxjIQiZeY/Wm0B3cV1Phvm3Zg4Zcb
-hoBDBbuQtV4QFymSH/r/HxusDknnf1Xoo4Rzdt3oEkgNCrI1cjc+NsXRXRJsHgkp
-kPnMC7bEpdFFvPTdr5dE779nTNQCJLX0YU4GWCRYsxdv/avUCAyaCG8/szKpxipi
-gnojDDyAdvVBoo0eqYNxLAoWk7TB+30eIljMwR8H2AEB6CME+t57M1BgfzwPFTQh
-YcRTXL/5Aj7mSETVuYyxcBOattf4Ct4kgVfZ2WAfUaBEDs6VYdJGUNgeKh9NzjBk
-+vitBg2l2hay8qIz1NpPivFclNhETBWxrMsJCXkpXDnAZu8f4LeDF8D6isB/qi48
-/WuBeDFvhBRtsZCr9LsLAOqWVBorirHOAdzUfATTpcECItsZFXBgcjLZL4Llyunt
-j9h/21GStCn+L1Pw5OxwCnl0Rj0PtBJBWOSFe+B90rTogwQnRddSoNmb+2cEpbTl
-8bn27c4NVilsk8z0vFsr
-=4vMC
------END PGP SIGNATURE-----
-
---Signature=_Thu__6_Jun_2013_13_29_26_+1000_E=/fZZs.iIOzRqj+--
