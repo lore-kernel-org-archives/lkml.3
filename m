@@ -1,109 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882Ab3FFPHc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 11:07:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16384 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750969Ab3FFPHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 11:07:31 -0400
-Message-ID: <51B0A5A1.1040805@redhat.com>
-Date: Thu, 06 Jun 2013 17:07:13 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1751848Ab3FFPMr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 11:12:47 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:58269 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733Ab3FFPMp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 11:12:45 -0400
+Message-ID: <51B0A6E8.20909@linaro.org>
+Date: Thu, 06 Jun 2013 17:12:40 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Jiang Liu <liuj97@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 10/10] zram: use atomic64_xxx() to replace zram_stat64_xxx()
-References: <1370361968-8764-1-git-send-email-jiang.liu@huawei.com> <1370361968-8764-10-git-send-email-jiang.liu@huawei.com> <51AF28C4.3040405@redhat.com> <51AF659F.9080205@gmail.com> <51B0584F.6080609@redhat.com> <51B09E83.9040606@gmail.com>
-In-Reply-To: <51B09E83.9040606@gmail.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCHv7 01/11] clockevents: Prefer CPU local devices over global
+ devices
+References: <1370291642-13259-1-git-send-email-sboyd@codeaurora.org> <1370291642-13259-2-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1370291642-13259-2-git-send-email-sboyd@codeaurora.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2013 04:36 PM, Jiang Liu wrote:
-> On Thu 06 Jun 2013 05:37:19 PM CST, Jerome Marchand wrote:
->> On 06/05/2013 06:21 PM, Jiang Liu wrote:
->>> On Wed 05 Jun 2013 08:02:12 PM CST, Jerome Marchand wrote:
->>>> On 06/04/2013 06:06 PM, Jiang Liu wrote:
->>>>> Use atomic64_xxx() to replace open-coded zram_stat64_xxx().
->>>>> Some architectures have native support of atomic64 operations,
->>>>> so we can get rid of the spin_lock() in zram_stat64_xxx().
->>>>> On the other hand, for platforms use generic version of atomic64
->>>>> implement, it may cause an extra save/restore of the interrupt
->>>>> flag.  So it's a tradeoff.
->>>>>
->>>>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->>>>
->>>> Before optimizing stats, I'd like to make sure that they're correct.
->>>> What makes 64 bits fields so different that they need atomicity while
->>>> 32 bits wouldn't? Actually all of them save compr_size only increase,
->>>> which would make a race less critical than for 32 bits fields that all
->>>> can go up and down (if a decrement overwrites a increment, the counter
->>>> can wrap around zero).
->>>>
->>>> Jerome
->>>>
->>> Hi Jerome,
->>>           I'm not sure about the design decision, but I could give a
->>> guess here.
->>> 1) All 32-bit counters are only modified by
->>> zram_bvec_write()/zram_page_free()
->>> and is/should be protected by down_write(&zram->lock).
->>
->> Good point!
->>
->>> 2) __zram_make_request() modifies some 64-bit counters without
->>> protection.
->>> 3) zram_bvec_write() modifies some 64-bit counters and it's protected
->>> with
->>>      down_read(&zram->lock).
->>
->> I assume you mean down_write().
-> Actually I mean "zram_bvec_read()" instead of "zram_bvec_write()".
-
-Indeed, failed_reads is updated there.
-
-> Read side is protected by down_read(&zram->lock).
-
-which does not prevent concurrent read access. The counter isn't 
-protected by zram_lock here.
-
-Jerome
-
-> Regards!
-> Gerry
+On 06/03/2013 10:33 PM, Stephen Boyd wrote:
+> On an SMP system with only one global clockevent and a dummy
+> clockevent per CPU we run into problems. We want the dummy
+> clockevents to be registered as the per CPU tick devices, but
+> we can only achieve that if we register the dummy clockevents
+> before the global clockevent or if we artificially inflate the
+> rating of the dummy clockevents to be higher than the rating
+> of the global clockevent. Failure to do so leads to boot
+> hangs when the dummy timers are registered on all other CPUs
+> besides the CPU that accepted the global clockevent as its tick
+> device and there is no broadcast timer to poke the dummy
+> devices.
 > 
->>
->>> 4) It's always safe for sysfs handler to read 32bit counters.
->>> 5) It's unsafe for sysfs handler to read 64bit counters on 32bit
->>> platforms.
->>
->> I was unaware of that.
->>
->>>
->>> So it does work with current design, but very hard to understand.
->>> Suggest to use atomic_t for 32bit counters too for maintainability,
->>> though may be a little slower.
->>> Any suggestion?
->>
->> If atomic counter aren't necessary, no need to use them, but a comment
->> in zram_stats definition would be nice. Could you add one in your next
->> version of this patch?
-> Sure!
+> If we're registering multiple clockevents and one clockevent is
+> global and the other is local to a particular CPU we should
+> choose to use the local clockevent regardless of the rating of
+> the device. This way, if the clockevent is a dummy it will take
+> the tick device duty as long as there isn't a higher rated tick
+> device and any global clockevent will be bumped out into
+> broadcast mode, fixing the problem described above.
+
+It is not clear the connection between the changelog, the patch and the
+comment. Could you clarify a bit ?
+
+Thanks
+  -- Daniel
+
+
+
+> Reported-by: Mark Rutland <mark.rutland@arm.com>
+> Tested-by: Mark Rutland <mark.rutland@arm.com>
+> Tested-by: Sören Brinkmann <soren.brinkmann@xilinx.com>
+> Acked-by: Marc Zyngier <marc.zyngier@arm.com>,
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  kernel/time/tick-common.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
 > 
->>
->> Thanks
->> Jerome
->>
->>> Regards!
->>> Gerry
->>>
->>
+> diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
+> index 5d3fb10..3da62de 100644
+> --- a/kernel/time/tick-common.c
+> +++ b/kernel/time/tick-common.c
+> @@ -254,9 +254,10 @@ static int tick_check_new_device(struct clock_event_device *newdev)
+>  		    !(newdev->features & CLOCK_EVT_FEAT_ONESHOT))
+>  			goto out_bc;
+>  		/*
+> -		 * Check the rating
+> +		 * Check the rating, but prefer CPU local devices
+>  		 */
+> -		if (curdev->rating >= newdev->rating)
+> +		if (curdev->rating >= newdev->rating &&
+> +		    cpumask_equal(curdev->cpumask, newdev->cpumask))
+>  			goto out_bc;
+>  	}
+>  
 > 
-> 
+
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
