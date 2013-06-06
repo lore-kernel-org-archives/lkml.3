@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758127Ab3FFI0E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 04:26:04 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:57213 "EHLO
+	id S932230Ab3FFI03 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 04:26:29 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:57281 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757892Ab3FFI0C (ORCPT
+	with ESMTP id S1758139Ab3FFI0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 04:26:02 -0400
+	Thu, 6 Jun 2013 04:26:25 -0400
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
@@ -14,9 +14,9 @@ CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <linux-pcmcia@lists.infradead.org>, <linux@dominikbrodowski.net>,
         <manabian@gmail.com>, <fabio.porcedda@gmail.com>,
         <laurent.navet@gmail.com>, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v3 4/7] pcmcia: at91_cf: clean up header includes
-Date: Thu, 6 Jun 2013 10:24:17 +0200
-Message-ID: <049152805bb97b6721b494bda83d4eeaebc66371.1370506678.git.nicolas.ferre@atmel.com>
+Subject: [PATCH v3 5/7] pcmcia: at91_cf: add support for DT
+Date: Thu, 6 Jun 2013 10:24:18 +0200
+Message-ID: <54777cd1abda5fb56975ea87b885625c6b071788.1370506678.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.8.2.2
 In-Reply-To: <cover.1370506678.git.nicolas.ferre@atmel.com>
 References: <cover.1370506678.git.nicolas.ferre@atmel.com>
@@ -28,35 +28,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Joachim Eastwood <manabian@gmail.com>
 
-Use includes from linux/ instead of asm/ and remove a
-unnecessary mach/ include.
-
 Signed-off-by: Joachim Eastwood <manabian@gmail.com>
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- drivers/pcmcia/at91_cf.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ .../devicetree/bindings/ata/atmel-at91_cf.txt      | 19 +++++++++
+ drivers/pcmcia/Kconfig                             |  2 +-
+ drivers/pcmcia/at91_cf.c                           | 45 +++++++++++++++++++++-
+ 3 files changed, 64 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/ata/atmel-at91_cf.txt
 
+diff --git a/Documentation/devicetree/bindings/ata/atmel-at91_cf.txt b/Documentation/devicetree/bindings/ata/atmel-at91_cf.txt
+new file mode 100644
+index 0000000..c1d22b3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/ata/atmel-at91_cf.txt
+@@ -0,0 +1,19 @@
++Atmel AT91RM9200 CompactFlash
++
++Required properties:
++- compatible : "atmel,at91rm9200-cf".
++- reg : should specify localbus address and size used.
++- gpios : specifies the gpio pins to control the CF device. Detect
++  and reset gpio's are mandatory while irq and vcc gpio's are
++  optional and may be set to 0 if not present.
++
++Example:
++compact-flash@50000000 {
++	compatible = "atmel,at91rm9200-cf";
++	reg = <0x50000000 0x30000000>;
++	gpios = <&pioC 13 0	/* irq */
++		 &pioC 15 0 	/* detect */
++		 0		/* vcc */
++		 &pioC  5 0	/* reset */
++		>;
++};
+diff --git a/drivers/pcmcia/Kconfig b/drivers/pcmcia/Kconfig
+index b90f85b..80faa56 100644
+--- a/drivers/pcmcia/Kconfig
++++ b/drivers/pcmcia/Kconfig
+@@ -288,7 +288,7 @@ config BFIN_CFPCMCIA
+ 
+ config AT91_CF
+ 	tristate "AT91 CompactFlash Controller"
+-	depends on PCMCIA && ARCH_AT91RM9200
++	depends on PCMCIA && ARCH_AT91
+ 	help
+ 	  Say Y here to support the CompactFlash controller on AT91 chips.
+ 	  Or choose M to compile the driver as a module named "at91_cf".
 diff --git a/drivers/pcmcia/at91_cf.c b/drivers/pcmcia/at91_cf.c
-index 43bc342..bce8a64 100644
+index bce8a64..149b95c 100644
 --- a/drivers/pcmcia/at91_cf.c
 +++ b/drivers/pcmcia/at91_cf.c
-@@ -18,13 +18,11 @@
- #include <linux/slab.h>
- #include <linux/gpio.h>
+@@ -20,6 +20,9 @@
  #include <linux/platform_data/atmel.h>
-+#include <linux/io.h>
-+#include <linux/sizes.h>
+ #include <linux/io.h>
+ #include <linux/sizes.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/of_gpio.h>
  
  #include <pcmcia/ss.h>
  
--#include <mach/hardware.h>
--#include <asm/io.h>
--#include <asm/sizes.h>
--
- #include <mach/at91rm9200_mc.h>
- #include <mach/at91_ramc.h>
+@@ -211,6 +214,37 @@ static struct pccard_operations at91_cf_ops = {
  
+ /*--------------------------------------------------------------------------*/
+ 
++#if defined(CONFIG_OF)
++static const struct of_device_id at91_cf_dt_ids[] = {
++	{ .compatible = "atmel,at91rm9200-cf" },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, at91_cf_dt_ids);
++
++static int at91_cf_dt_init(struct platform_device *pdev)
++{
++	struct at91_cf_data *board;
++
++	board = devm_kzalloc(&pdev->dev, sizeof(*board), GFP_KERNEL);
++	if (!board)
++		return -ENOMEM;
++
++	board->irq_pin = of_get_gpio(pdev->dev.of_node, 0);
++	board->det_pin = of_get_gpio(pdev->dev.of_node, 1);
++	board->vcc_pin = of_get_gpio(pdev->dev.of_node, 2);
++	board->rst_pin = of_get_gpio(pdev->dev.of_node, 3);
++
++	pdev->dev.platform_data = board;
++
++	return 0;
++}
++#else
++static int at91_cf_dt_init(struct platform_device *pdev)
++{
++	return -ENODEV;
++}
++#endif
++
+ static int __init at91_cf_probe(struct platform_device *pdev)
+ {
+ 	struct at91_cf_socket	*cf;
+@@ -218,7 +252,15 @@ static int __init at91_cf_probe(struct platform_device *pdev)
+ 	struct resource		*io;
+ 	int			status;
+ 
+-	if (!board || !gpio_is_valid(board->det_pin) || !gpio_is_valid(board->rst_pin))
++	if (!board) {
++		status = at91_cf_dt_init(pdev);
++		if (status)
++			return status;
++
++		board = pdev->dev.platform_data;
++	}
++
++	if (!gpio_is_valid(board->det_pin) || !gpio_is_valid(board->rst_pin))
+ 		return -ENODEV;
+ 
+ 	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+@@ -360,6 +402,7 @@ static struct platform_driver at91_cf_driver = {
+ 	.driver = {
+ 		.name		= "at91_cf",
+ 		.owner		= THIS_MODULE,
++		.of_match_table = of_match_ptr(at91_cf_dt_ids),
+ 	},
+ 	.remove		= __exit_p(at91_cf_remove),
+ 	.suspend	= at91_cf_suspend,
 -- 
 1.8.2.2
 
