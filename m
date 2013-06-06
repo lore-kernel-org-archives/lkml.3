@@ -1,82 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532Ab3FFPFL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 11:05:11 -0400
-Received: from mail-qe0-f45.google.com ([209.85.128.45]:61726 "EHLO
-	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857Ab3FFPFJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 11:05:09 -0400
+	id S1751882Ab3FFPHc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 11:07:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16384 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750969Ab3FFPHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 11:07:31 -0400
+Message-ID: <51B0A5A1.1040805@redhat.com>
+Date: Thu, 06 Jun 2013 17:07:13 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-X-Originating-IP: [2001:470:1f05:1640:55bd:10dd:64f4:fa4]
-In-Reply-To: <20130606140250.GA4839@thunk.org>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
-	<1370475609.20454.44.camel@localhost>
-	<CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
-	<1733666.lHUBcfUXq9@flatron>
-	<CAPweEDzYLDzh_-OWU61dtVhajZ40QpQgZKHFYDsh3FgF=r9_ag@mail.gmail.com>
-	<20130606140250.GA4839@thunk.org>
-Date: Thu, 6 Jun 2013 08:05:08 -0700
-Message-ID: <CAOesGMgukawVUN978xQARwOWBEhVQQXCPKYQ2eua8yAVgH5HCg@mail.gmail.com>
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
- Uploading linux (3.9.4-1))
-From: Olof Johansson <olof@lixom.net>
-To: "Theodore Ts'o" <tytso@mit.edu>, "luke.leighton" <luke.leighton@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        debian-kernel@lists.debian.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jiang Liu <liuj97@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 10/10] zram: use atomic64_xxx() to replace zram_stat64_xxx()
+References: <1370361968-8764-1-git-send-email-jiang.liu@huawei.com> <1370361968-8764-10-git-send-email-jiang.liu@huawei.com> <51AF28C4.3040405@redhat.com> <51AF659F.9080205@gmail.com> <51B0584F.6080609@redhat.com> <51B09E83.9040606@gmail.com>
+In-Reply-To: <51B09E83.9040606@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 6, 2013 at 7:02 AM, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Thu, Jun 06, 2013 at 01:24:57PM +0100, luke.leighton wrote:
->> On Thu, Jun 6, 2013 at 1:01 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+On 06/06/2013 04:36 PM, Jiang Liu wrote:
+> On Thu 06 Jun 2013 05:37:19 PM CST, Jerome Marchand wrote:
+>> On 06/05/2013 06:21 PM, Jiang Liu wrote:
+>>> On Wed 05 Jun 2013 08:02:12 PM CST, Jerome Marchand wrote:
+>>>> On 06/04/2013 06:06 PM, Jiang Liu wrote:
+>>>>> Use atomic64_xxx() to replace open-coded zram_stat64_xxx().
+>>>>> Some architectures have native support of atomic64 operations,
+>>>>> so we can get rid of the spin_lock() in zram_stat64_xxx().
+>>>>> On the other hand, for platforms use generic version of atomic64
+>>>>> implement, it may cause an extra save/restore of the interrupt
+>>>>> flag.  So it's a tradeoff.
+>>>>>
+>>>>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>>>>
+>>>> Before optimizing stats, I'd like to make sure that they're correct.
+>>>> What makes 64 bits fields so different that they need atomicity while
+>>>> 32 bits wouldn't? Actually all of them save compr_size only increase,
+>>>> which would make a race less critical than for 32 bits fields that all
+>>>> can go up and down (if a decrement overwrites a increment, the counter
+>>>> can wrap around zero).
+>>>>
+>>>> Jerome
+>>>>
+>>> Hi Jerome,
+>>>           I'm not sure about the design decision, but I could give a
+>>> guess here.
+>>> 1) All 32-bit counters are only modified by
+>>> zram_bvec_write()/zram_page_free()
+>>> and is/should be protected by down_write(&zram->lock).
 >>
->> > I don't see any other solution here than moving all the Allwinner code to
->> > DT (as it has been suggested in this thread several times already), as
->> > this is the only hardware description method supported by ARM Linux.
+>> Good point!
 >>
->>  i repeat again: please state, explicitly and unequivocably that you -
->> linux kernel developers - are happy that the reach of linux and
->> gnu/linux OSes is dramatically reduced due to this intransigent
->> position.
->
-> But that's not a true statement.  You've said that Allwinner is
-> perfectly happy to carry code out of tree, by constantly porting their
-> hacks from mainline kernels.
->
-> For some of their customers, this will be acceptable to them.  In
-> those cases, Linux will still be in use.  Great!  So claiming that the
-> reach of Linux will be "dramatically reduced" just is not a
-> supportable position.
->
-> For other (potential) customers, for whom mainline kernel support is
-> critically important, they will choose other hardware solutions that
-> are in the mainline kernel.
->
-> I don't see the problem here.
+>>> 2) __zram_make_request() modifies some 64-bit counters without
+>>> protection.
+>>> 3) zram_bvec_write() modifies some 64-bit counters and it's protected
+>>> with
+>>>      down_read(&zram->lock).
+>>
+>> I assume you mean down_write().
+> Actually I mean "zram_bvec_read()" instead of "zram_bvec_write()".
 
-This is all just a big storm in a cup. Mainline kernel support for
-allwinner SoCs are already happening through hobby development by
-Maxime Ripard and others. Allwinner are not yet actively
-participating, but they're aware of it. The whole situation is a
-non-issue.
+Indeed, failed_reads is updated there.
 
-If the vendor prefers to keep carrying their own code for a while,
-they're free to. It makes more sense for them to move over to the
-upstream code as they move forward with their kernel versions, but
-they can do that on their own schedule.
+> Read side is protected by down_read(&zram->lock).
 
-We've seen all this before, it tends to turn out OK in the longer run.
+which does not prevent concurrent read access. The counter isn't 
+protected by zram_lock here.
 
+Jerome
 
--Olof
+> Regards!
+> Gerry
+> 
+>>
+>>> 4) It's always safe for sysfs handler to read 32bit counters.
+>>> 5) It's unsafe for sysfs handler to read 64bit counters on 32bit
+>>> platforms.
+>>
+>> I was unaware of that.
+>>
+>>>
+>>> So it does work with current design, but very hard to understand.
+>>> Suggest to use atomic_t for 32bit counters too for maintainability,
+>>> though may be a little slower.
+>>> Any suggestion?
+>>
+>> If atomic counter aren't necessary, no need to use them, but a comment
+>> in zram_stats definition would be nice. Could you add one in your next
+>> version of this patch?
+> Sure!
+> 
+>>
+>> Thanks
+>> Jerome
+>>
+>>> Regards!
+>>> Gerry
+>>>
+>>
+> 
+> 
+
