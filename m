@@ -1,44 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486Ab3FFQrS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 12:47:18 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:51124 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751353Ab3FFQrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 12:47:15 -0400
-Date: Thu, 6 Jun 2013 10:47:01 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, linux-doc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        John Stultz <john.stultz@linaro.org>, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/6] Marvell Orion SoC irqchip and clocksource
-Message-ID: <20130606164701.GA24002@obsidianresearch.com>
-References: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1752734Ab3FFQu7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 12:50:59 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:42787 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003Ab3FFQu6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 12:50:58 -0400
+Date: Thu, 6 Jun 2013 17:50:53 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com
+Subject: Re: [PATCH 4/4] ARM: ux500: Remove call to u8500_of_init_devices() -
+ again
+Message-ID: <20130606165053.GU3370@gmail.com>
+References: <1370517676-10909-1-git-send-email-lee.jones@linaro.org>
+ <1370517676-10909-5-git-send-email-lee.jones@linaro.org>
+ <201306061758.25106.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201306061758.25106.arnd@arndb.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.195
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 06:27:08PM +0200, Sebastian Hesselbarth wrote:
-> This patch set introduces DT-aware irqchip and clocksource drivers for
-> Marvell Orion SoCs (Kirkwood, Dove, Orion5x, MV78x00) and corresponding
-> patches for Dove and Kirkwood to enable them for DT-boards.
+On Thu, 06 Jun 2013, Arnd Bergmann wrote:
 
-Looks broadly good to me, based on a quick read through all the
-patches.
+> On Thursday 06 June 2013, Lee Jones wrote:
+> > Somehow, probably due to a merge error the call to u8500_of_init_devices()
+> > has re-appeared in next, causing this error:
+> > 
+> > arch/arm/mach-ux500/cpu-db8500.c: In function ‘u8500_init_machine’:
+> > arch/arm/mach-ux500/cpu-db8500.c:268:2: error: implicit declaration of     \
+> >   function ‘u8500_of_init_devices’ [-Werror=implicit-function-declaration]
+> > arch/arm/mach-ux500/cpu-db8500.c:268:9: warning: assignment makes pointer  \
+> >   from integer without a cast [enabled by default]
+> > 
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  arch/arm/mach-ux500/cpu-db8500.c |    3 ---
+> >  1 file changed, 3 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
+> > index d8ee616..f391d08 100644
+> > --- a/arch/arm/mach-ux500/cpu-db8500.c
+> > +++ b/arch/arm/mach-ux500/cpu-db8500.c
+> > @@ -264,9 +264,6 @@ static void __init u8500_init_machine(void)
+> >  	else if (of_machine_is_compatible("st-ericsson,ccu9540")) {}
+> >  		/* TODO: Add pinmaps for ccu9540 board. */
+> >  
+> > -	/* TODO: Export SoC, USB, cpu-freq and DMA40 */
+> > -	parent = u8500_of_init_devices();
+> > -
+> >  	/* automatically probe child nodes of dbx5x0 devices */
+> >  	if (of_machine_is_compatible("st-ericsson,u8540"))
+> >  		of_platform_populate(NULL, u8500_local_bus_nodes,
+> 
+> In the code I'm looking at, the definition for that function is
+> 
+> /* TODO: Once all pieces are DT:ed, remove completely. */
+> static struct device * __init u8500_of_init_devices(void)
+> {
+>         struct device *parent = db8500_soc_device_init();
+>         db8500_add_usb(parent, usb_db8500_dma_cfg, usb_db8500_dma_cfg);
+>         return parent;
+> }
+> 
+> I'm not sure about the db8500_add_usb() call, but I think at least
+> db8500_soc_device_init() is required to get the root device for all
+> other devices.
 
-Regards,
-Jason
+Right:
+
+https://git.kernel.org/cgit/linux/kernel/git/linusw/linux-stericsson.git/commit/arch/arm/mach-ux500/cpu-db8500.c?h=next&id=1e74043a29cdec67279d6e4f494dd1674a1b2365
+
+For some reason (I suspect a merge error), u8500_of_init_devices
+reappeared.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
