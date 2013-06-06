@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835Ab3FFNw7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 09:52:59 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40939 "EHLO
+	id S1752948Ab3FFNxG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 09:53:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40947 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667Ab3FFNw4 (ORCPT
+	with ESMTP id S1752155Ab3FFNxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 09:52:56 -0400
+	Thu, 6 Jun 2013 09:53:03 -0400
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: Paul Walmsley <paul@pwsan.com>
 Cc: Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
         linux-omap@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
         Philip Avinash <avinashphilip@ti.com>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 1/4] ARM: AM33XX: clk: Add clock node for EHRPWM TBCLK
-Date: Thu,  6 Jun 2013 15:52:36 +0200
-Message-Id: <1370526759-31163-2-git-send-email-bigeasy@linutronix.de>
+Subject: [PATCH 2/4] ARM: dts: AM33XX: Add PWMSS device tree nodes
+Date: Thu,  6 Jun 2013 15:52:37 +0200
+Message-Id: <1370526759-31163-3-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1370526759-31163-1-git-send-email-bigeasy@linutronix.de>
 References: <1370526759-31163-1-git-send-email-bigeasy@linutronix.de>
@@ -28,84 +28,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Philip Avinash <avinashphilip@ti.com>
 
-EHRPWM module requires explicit clock gating of TBCLK from control
-module. Hence add TBCLK clock node in clock tree for EHRPWM modules.
+Add PWMSS device tree nodes in relation with ECAP & EHRPWM DT nodes to
+AM33XX SoC family. Also populates device tree nodes for ECAP & EHRPWM by
+adding necessary properties like pwm-cells, base reg & set disabled as
+status.
 
 Signed-off-by: Philip Avinash <avinashphilip@ti.com>
-[bigeasy: remove CK_AM33XX]
+Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- arch/arm/mach-omap2/cclock33xx_data.c |   30 ++++++++++++++++++++++++++++++
- arch/arm/mach-omap2/control.h         |    8 ++++++++
- 2 files changed, 38 insertions(+)
+ arch/arm/boot/dts/am33xx.dtsi |   84 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 84 insertions(+)
 
-diff --git a/arch/arm/mach-omap2/cclock33xx_data.c b/arch/arm/mach-omap2/cclock33xx_data.c
-index af3544c..0346de5 100644
---- a/arch/arm/mach-omap2/cclock33xx_data.c
-+++ b/arch/arm/mach-omap2/cclock33xx_data.c
-@@ -862,6 +862,33 @@ static struct clk_hw_omap wdt1_fck_hw = {
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index 1460d9b..7fa9c5f 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -343,6 +343,90 @@
+ 			ti,hwmods = "usb_otg_hs";
+ 		};
  
- DEFINE_STRUCT_CLK(wdt1_fck, wdt_ck_parents, gpio_fck_ops);
- 
-+static const char *pwmss_clk_parents[] = {
-+	"dpll_per_m2_ck",
-+};
++		epwmss0: epwmss@48300000 {
++			compatible = "ti,am33xx-pwmss";
++			reg = <0x48300000 0x10>;
++			ti,hwmods = "epwmss0";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			status = "disabled";
++			ranges = <0x48300100 0x48300100 0x80   /* ECAP */
++				  0x48300180 0x48300180 0x80   /* EQEP */
++				  0x48300200 0x48300200 0x80>; /* EHRPWM */
 +
-+static const struct clk_ops ehrpwm_tbclk_ops = {
-+	.enable		= &omap2_dflt_clk_enable,
-+	.disable	= &omap2_dflt_clk_disable,
-+};
++			ecap0: ecap@48300100 {
++				compatible = "ti,am33xx-ecap";
++				#pwm-cells = <3>;
++				reg = <0x48300100 0x80>;
++				ti,hwmods = "ecap0";
++				status = "disabled";
++			};
 +
-+DEFINE_CLK_OMAP_MUX_GATE(ehrpwm0_tbclk, "l4ls_clkdm",
-+			 NULL, NULL, 0,
-+			 AM33XX_CTRL_REGADDR(AM33XX_PWMSS_TBCLK_CLKCTRL),
-+			 AM33XX_PWMSS0_TBCLKEN_SHIFT,
-+			 NULL, pwmss_clk_parents, ehrpwm_tbclk_ops);
++			ehrpwm0: ehrpwm@48300200 {
++				compatible = "ti,am33xx-ehrpwm";
++				#pwm-cells = <3>;
++				reg = <0x48300200 0x80>;
++				ti,hwmods = "ehrpwm0";
++				status = "disabled";
++			};
++		};
 +
-+DEFINE_CLK_OMAP_MUX_GATE(ehrpwm1_tbclk, "l4ls_clkdm",
-+			 NULL, NULL, 0,
-+			 AM33XX_CTRL_REGADDR(AM33XX_PWMSS_TBCLK_CLKCTRL),
-+			 AM33XX_PWMSS1_TBCLKEN_SHIFT,
-+			 NULL, pwmss_clk_parents, ehrpwm_tbclk_ops);
++		epwmss1: epwmss@48302000 {
++			compatible = "ti,am33xx-pwmss";
++			reg = <0x48302000 0x10>;
++			ti,hwmods = "epwmss1";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			status = "disabled";
++			ranges = <0x48302100 0x48302100 0x80   /* ECAP */
++				  0x48302180 0x48302180 0x80   /* EQEP */
++				  0x48302200 0x48302200 0x80>; /* EHRPWM */
 +
-+DEFINE_CLK_OMAP_MUX_GATE(ehrpwm2_tbclk, "l4ls_clkdm",
-+			 NULL, NULL, 0,
-+			 AM33XX_CTRL_REGADDR(AM33XX_PWMSS_TBCLK_CLKCTRL),
-+			 AM33XX_PWMSS2_TBCLKEN_SHIFT,
-+			 NULL, pwmss_clk_parents, ehrpwm_tbclk_ops);
++			ecap1: ecap@48302100 {
++				compatible = "ti,am33xx-ecap";
++				#pwm-cells = <3>;
++				reg = <0x48302100 0x80>;
++				ti,hwmods = "ecap1";
++				status = "disabled";
++			};
 +
- /*
-  * clkdev
-  */
-@@ -942,6 +969,9 @@ static struct omap_clk am33xx_clks[] = {
- 	CLK(NULL,	"clkout2_div_ck",	&clkout2_div_ck),
- 	CLK(NULL,	"timer_32k_ck",		&clkdiv32k_ick),
- 	CLK(NULL,	"timer_sys_ck",		&sys_clkin_ck),
-+	CLK("48300200.ehrpwm",	"tbclk",	&ehrpwm0_tbclk),
-+	CLK("48302200.ehrpwm",	"tbclk",	&ehrpwm1_tbclk),
-+	CLK("48304200.ehrpwm",	"tbclk",	&ehrpwm2_tbclk),
- };
- 
- 
-diff --git a/arch/arm/mach-omap2/control.h b/arch/arm/mach-omap2/control.h
-index e6c3281..35d17a6 100644
---- a/arch/arm/mach-omap2/control.h
-+++ b/arch/arm/mach-omap2/control.h
-@@ -358,6 +358,14 @@
- #define AM33XX_CONTROL_STATUS_SYSBOOT1_WIDTH		0x2
- #define AM33XX_CONTROL_STATUS_SYSBOOT1_MASK		(0x3 << 22)
- 
-+/* AM33XX PWMSS Control register */
-+#define AM33XX_PWMSS_TBCLK_CLKCTRL			0x664
++			ehrpwm1: ehrpwm@48302200 {
++				compatible = "ti,am33xx-ehrpwm";
++				#pwm-cells = <3>;
++				reg = <0x48302200 0x80>;
++				ti,hwmods = "ehrpwm1";
++				status = "disabled";
++			};
++		};
 +
-+/* AM33XX  PWMSS Control bitfields */
-+#define AM33XX_PWMSS0_TBCLKEN_SHIFT			0
-+#define AM33XX_PWMSS1_TBCLKEN_SHIFT			1
-+#define AM33XX_PWMSS2_TBCLKEN_SHIFT			2
++		epwmss2: epwmss@48304000 {
++			compatible = "ti,am33xx-pwmss";
++			reg = <0x48304000 0x10>;
++			ti,hwmods = "epwmss2";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			status = "disabled";
++			ranges = <0x48304100 0x48304100 0x80   /* ECAP */
++				  0x48304180 0x48304180 0x80   /* EQEP */
++				  0x48304200 0x48304200 0x80>; /* EHRPWM */
 +
- /* CONTROL OMAP STATUS register to identify OMAP3 features */
- #define OMAP3_CONTROL_OMAP_STATUS	0x044c
- 
++			ecap2: ecap@48304100 {
++				compatible = "ti,am33xx-ecap";
++				#pwm-cells = <3>;
++				reg = <0x48304100 0x80>;
++				ti,hwmods = "ecap2";
++				status = "disabled";
++			};
++
++			ehrpwm2: ehrpwm@48304200 {
++				compatible = "ti,am33xx-ehrpwm";
++				#pwm-cells = <3>;
++				reg = <0x48304200 0x80>;
++				ti,hwmods = "ehrpwm2";
++				status = "disabled";
++			};
++		};
++
+ 		mac: ethernet@4a100000 {
+ 			compatible = "ti,cpsw";
+ 			ti,hwmods = "cpgmac0";
 -- 
 1.7.10.4
 
