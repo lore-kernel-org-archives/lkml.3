@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933476Ab3FFMY3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 08:24:29 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:37683 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933408Ab3FFMRz (ORCPT
+	id S933477Ab3FFMZB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 08:25:01 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:63126 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932403Ab3FFMY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 08:17:55 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 14/33] ARM: ux500: Supply the RTC clock lookup to the DBX500 DT
-Date: Thu,  6 Jun 2013 13:17:02 +0100
-Message-Id: <1370521041-32318-15-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
-References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
+	Thu, 6 Jun 2013 08:24:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <1733666.lHUBcfUXq9@flatron>
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
+	<1370475609.20454.44.camel@localhost>
+	<CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
+	<1733666.lHUBcfUXq9@flatron>
+Date: Thu, 6 Jun 2013 13:24:57 +0100
+Message-ID: <CAPweEDzYLDzh_-OWU61dtVhajZ40QpQgZKHFYDsh3FgF=r9_ag@mail.gmail.com>
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
+ Uploading linux (3.9.4-1))
+From: "luke.leighton" <luke.leighton@gmail.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        debian-kernel@lists.debian.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/boot/dts/dbx5x0.dtsi |    3 +++
- 1 file changed, 3 insertions(+)
+On Thu, Jun 6, 2013 at 1:01 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
 
-diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
-index a677521..edb53c63 100644
---- a/arch/arm/boot/dts/dbx5x0.dtsi
-+++ b/arch/arm/boot/dts/dbx5x0.dtsi
-@@ -73,6 +73,9 @@
- 			compatible = "arm,rtc-pl031", "arm,primecell";
- 			reg = <0x80154000 0x1000>;
- 			interrupts = <0 18 IRQ_TYPE_LEVEL_HIGH>;
-+
-+			clocks = <&rtc_clk>;
-+			clock-names = "apb_pclk";
- 		};
- 
- 		gpio0: gpio@8012e000 {
--- 
-1.7.10.4
+> I don't see any other solution here than moving all the Allwinner code to
+> DT (as it has been suggested in this thread several times already), as
+> this is the only hardware description method supported by ARM Linux.
 
+ i repeat again: please state, explicitly and unequivocably that you -
+linux kernel developers - are happy that the reach of linux and
+gnu/linux OSes is dramatically reduced due to this intransigent
+position.
+
+ or, tomasz, please state that you, tomasz, represent each and every
+one of the linux kernel developers so that i do not need to keep
+asking.
