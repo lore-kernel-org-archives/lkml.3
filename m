@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab3FFR6J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 13:58:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50945 "EHLO
+	id S1754075Ab3FFR63 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 13:58:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50948 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751625Ab3FFR6G (ORCPT
+	with ESMTP id S1751818Ab3FFR62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 13:58:06 -0400
-Date: Thu, 6 Jun 2013 10:58:05 -0700
+	Thu, 6 Jun 2013 13:58:28 -0400
+Date: Thu, 6 Jun 2013 10:58:27 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: [GIT PATCH] TTY/Serial fixes for 3.10-rc5
-Message-ID: <20130606175805.GA25986@kroah.com>
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: [GIT PATCH] Staging driver fixes for 3.10-rc5
+Message-ID: <20130606175827.GA26012@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -29,31 +28,53 @@ The following changes since commit e4aa937ec75df0eea0bee03bffa3303ad36c986b:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.10-rc4
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.10-rc4
 
-for you to fetch changes up to 317a68427d4b0a302ecff252fd83a00557947db8:
+for you to fetch changes up to 1f89b8fc41b66e5761bb8c3af5517fd42bf2067d:
 
-  Revert "serial: 8250: Make SERIAL_8250_RUNTIME_UARTS work correctly" (2013-06-03 10:08:28 -0700)
+  Merge tag 'iio-fixes-for-3.10b' of git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio into staging-linus (2013-06-04 12:30:11 -0700)
 
 ----------------------------------------------------------------
-TTY/Serial driver fixes for 3.10-rc4
 
-Here are some small bugfixes, and one revert, of serial driver issues
-that have been reported.
+Staging driver fixes for 3.10-rc5
+
+Here are some staging and IIO driver fixes for the 3.10-rc5 release.
+
+All of them are tiny, and fix a number of reported issues (build and
+runtime.)
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Chander Kashyap (1):
-      serial: samsung: enable clock before clearing pending interrupts during init
+Bob Liu (1):
+      drivers: staging: zcache: fix compile error
 
-Kyle McMartin (1):
-      Revert "serial: 8250: Make SERIAL_8250_RUNTIME_UARTS work correctly"
+Dan Carpenter (2):
+      staging: alarm-dev: information leak in alarm_ioctl()
+      staging: alarm-dev: information leak in alarm_compat_ioctl()
 
-Lucas Stach (1):
-      serial/imx: disable hardware flow control at startup
+Greg Kroah-Hartman (1):
+      Merge tag 'iio-fixes-for-3.10b' of git://git.kernel.org/.../jic23/iio into staging-linus
 
- drivers/tty/serial/8250/8250_core.c | 14 +++++++-------
- drivers/tty/serial/imx.c            |  2 ++
- drivers/tty/serial/samsung.c        | 13 +++++++++++++
- 3 files changed, 22 insertions(+), 7 deletions(-)
+Joe Perches (1):
+      inkern: iio_device_put after incorrect return/goto
+
+Jonathan Cameron (1):
+      iio:callback buffer: free the scan_mask
+
+Michael Hennerich (2):
+      iio: frequency: ad4350: Fix bug / typo in mask
+      iio:inkern: Fix typo/bug in convert raw to processed.
+
+Paul Zimmerman (1):
+      staging: dwc2: fix value of dma_mask
+
+ drivers/iio/buffer_cb.c                  | 5 ++++-
+ drivers/iio/frequency/adf4350.c          | 2 +-
+ drivers/iio/inkern.c                     | 4 ++--
+ drivers/staging/android/alarm-dev.c      | 8 ++++++--
+ drivers/staging/dwc2/hcd.c               | 5 ++---
+ drivers/staging/zcache/ramster.h         | 4 ----
+ drivers/staging/zcache/ramster/debug.c   | 2 ++
+ drivers/staging/zcache/ramster/ramster.c | 6 ++++--
+ 8 files changed, 21 insertions(+), 15 deletions(-)
