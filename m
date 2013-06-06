@@ -1,157 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab3FFCgc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 22:36:32 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:42243 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754539Ab3FFCgb (ORCPT
+	id S1756103Ab3FFCju (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 22:39:50 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:38902 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754539Ab3FFCjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 22:36:31 -0400
-From: Xiang Wang <wangxfdu@gmail.com>
-To: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
-        <linux-kernel@vger.kernel.org>
-CC: <wangxfdu@gmail.com>, <cxie4@marvell.com>, Xiang Wang <wangx@marvell.com>
-Subject: [PATCH v2 1/2] dma: mmp_pdma: add protect when alloc/free phy channels
-Date: Thu, 6 Jun 2013 10:24:22 +0800
-Message-ID: <1370485463-30731-2-git-send-email-wangxfdu@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1370485463-30731-1-git-send-email-wangxfdu@gmail.com>
-References: <1370485463-30731-1-git-send-email-wangxfdu@gmail.com>
+	Wed, 5 Jun 2013 22:39:49 -0400
+Message-ID: <51AFF66E.1070602@linux.vnet.ibm.com>
+Date: Thu, 06 Jun 2013 10:39:42 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH v2 2/3] sched: code refine in unthrottle_cfs_rq()
+References: <51AD87A8.6080608@linux.vnet.ibm.com> <51AD87EB.1070605@linux.vnet.ibm.com>
+In-Reply-To: <51AD87EB.1070605@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060602-5140-0000-0000-00000352D0CB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiang Wang <wangx@marvell.com>
+v2:
+	re-based on latest tip/master
 
-In mmp pdma, phy channels are allocated/freed dynamically
-and frequently. But no proper protection is added.
-Conflict will happen when multi-users are requesting phy
-channels at the same time. Use spinlock to protect.
+Directly use rq to save some code.
 
-Signed-off-by: Xiang Wang <wangx@marvell.com>
+CC: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
 ---
- drivers/dma/mmp_pdma.c |   42 ++++++++++++++++++++++++++----------------
- 1 files changed, 26 insertions(+), 16 deletions(-)
+ kernel/sched/fair.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
-index c26699f..84e51a1 100644
---- a/drivers/dma/mmp_pdma.c
-+++ b/drivers/dma/mmp_pdma.c
-@@ -121,6 +121,7 @@ struct mmp_pdma_device {
- 	struct device			*dev;
- 	struct dma_device		device;
- 	struct mmp_pdma_phy		*phy;
-+	spinlock_t phy_lock; /* protect alloc/free phy channels */
- };
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 143dcdb..0cea941 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2275,7 +2275,7 @@ static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
+ 	struct sched_entity *se;
+ 	long task_delta, dequeue = 1;
  
- #define tx_to_mmp_pdma_desc(tx) container_of(tx, struct mmp_pdma_desc_sw, async_tx)
-@@ -219,6 +220,7 @@ static struct mmp_pdma_phy *lookup_phy(struct mmp_pdma_chan *pchan)
- 	int prio, i;
- 	struct mmp_pdma_device *pdev = to_mmp_pdma_dev(pchan->chan.device);
- 	struct mmp_pdma_phy *phy;
-+	unsigned long flags;
+-	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
++	se = cfs_rq->tg->se[cpu_of(rq)];
  
- 	/*
- 	 * dma channel priorities
-@@ -227,6 +229,8 @@ static struct mmp_pdma_phy *lookup_phy(struct mmp_pdma_chan *pchan)
- 	 * ch 8 - 11, 24 - 27  <--> (2)
- 	 * ch 12 - 15, 28 - 31  <--> (3)
- 	 */
-+
-+	spin_lock_irqsave(&pdev->phy_lock, flags);
- 	for (prio = 0; prio <= (((pdev->dma_channels - 1) & 0xf) >> 2); prio++) {
- 		for (i = 0; i < pdev->dma_channels; i++) {
- 			if (prio != ((i & 0xf) >> 2))
-@@ -234,14 +238,30 @@ static struct mmp_pdma_phy *lookup_phy(struct mmp_pdma_chan *pchan)
- 			phy = &pdev->phy[i];
- 			if (!phy->vchan) {
- 				phy->vchan = pchan;
-+				spin_unlock_irqrestore(&pdev->phy_lock, flags);
- 				return phy;
- 			}
- 		}
- 	}
- 
-+	spin_unlock_irqrestore(&pdev->phy_lock, flags);
- 	return NULL;
- }
- 
-+static void free_phy(struct mmp_pdma_chan *pchan)
-+{
-+	struct mmp_pdma_device *pdev = to_mmp_pdma_dev(pchan->chan.device);
-+	unsigned long flags;
-+
-+	if (!pchan->phy)
-+		return;
-+
-+	spin_lock_irqsave(&pdev->phy_lock, flags);
-+	pchan->phy->vchan = NULL;
-+	pchan->phy = NULL;
-+	spin_unlock_irqrestore(&pdev->phy_lock, flags);
-+}
-+
- /* desc->tx_list ==> pending list */
- static void append_pending_queue(struct mmp_pdma_chan *chan,
- 					struct mmp_pdma_desc_sw *desc)
-@@ -277,10 +297,7 @@ static void start_pending_queue(struct mmp_pdma_chan *chan)
- 
- 	if (list_empty(&chan->chain_pending)) {
- 		/* chance to re-fetch phy channel with higher prio */
--		if (chan->phy) {
--			chan->phy->vchan = NULL;
--			chan->phy = NULL;
--		}
-+		free_phy(chan);
- 		dev_dbg(chan->dev, "no pending list\n");
- 		return;
- 	}
-@@ -377,10 +394,7 @@ static int mmp_pdma_alloc_chan_resources(struct dma_chan *dchan)
- 		dev_err(chan->dev, "unable to allocate descriptor pool\n");
- 		return -ENOMEM;
- 	}
--	if (chan->phy) {
--		chan->phy->vchan = NULL;
--		chan->phy = NULL;
--	}
-+	free_phy(chan);
- 	chan->idle = true;
- 	chan->dev_addr = 0;
- 	return 1;
-@@ -411,10 +425,7 @@ static void mmp_pdma_free_chan_resources(struct dma_chan *dchan)
- 	chan->desc_pool = NULL;
- 	chan->idle = true;
- 	chan->dev_addr = 0;
--	if (chan->phy) {
--		chan->phy->vchan = NULL;
--		chan->phy = NULL;
--	}
-+	free_phy(chan);
- 	return;
- }
- 
-@@ -581,10 +592,7 @@ static int mmp_pdma_control(struct dma_chan *dchan, enum dma_ctrl_cmd cmd,
- 	switch (cmd) {
- 	case DMA_TERMINATE_ALL:
- 		disable_chan(chan->phy);
--		if (chan->phy) {
--			chan->phy->vchan = NULL;
--			chan->phy = NULL;
--		}
-+		free_phy(chan);
- 		spin_lock_irqsave(&chan->desc_lock, flags);
- 		mmp_pdma_free_desc_list(chan, &chan->chain_pending);
- 		mmp_pdma_free_desc_list(chan, &chan->chain_running);
-@@ -777,6 +785,8 @@ static int mmp_pdma_probe(struct platform_device *op)
- 		return -ENOMEM;
- 	pdev->dev = &op->dev;
- 
-+	spin_lock_init(&pdev->phy_lock);
-+
- 	iores = platform_get_resource(op, IORESOURCE_MEM, 0);
- 	if (!iores)
- 		return -EINVAL;
+ 	/* freeze hierarchy runnable averages while throttled */
+ 	rcu_read_lock();
 -- 
-1.7.5.4
+1.7.4.1
 
