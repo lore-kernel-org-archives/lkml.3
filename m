@@ -1,49 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345Ab3FFJ4j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 05:56:39 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:49236 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932168Ab3FFJ4h (ORCPT
+	id S1754387Ab3FFJ6A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 05:58:00 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:36817 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753846Ab3FFJ56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 05:56:37 -0400
-From: naota@elisp.net
-To: Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] btrfs: Drop inode if inode root is NULL
-Date: Thu, 06 Jun 2013 18:56:34 +0900
-Message-ID: <87bo7jh8a5.fsf@elisp.net>
-User-Agent: Gnus/5.130006 (Ma Gnus v0.6) Emacs/24.3.50 (gnu/linux)
+	Thu, 6 Jun 2013 05:57:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130606095526.GB21181@pd.tnic>
+References: <51AF60D5.3080605@semaphore.gr>
+	<20130605161703.GA29958@pd.tnic>
+	<51AF6E39.2080307@verisign.com>
+	<20130606095526.GB21181@pd.tnic>
+Date: Thu, 6 Jun 2013 15:27:57 +0530
+Message-ID: <CAKohpo=g4Fn-wsgkmujZso_Du3XZHpwSvrFhcbXm72Ne828suw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of
+ target frequency
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Borislav Petkov <bp@suse.de>
+Cc: David C Niemi <dniemi@verisign.com>,
+        Stratos Karafotis <stratosk@semaphore.gr>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a path where btrfs_drop_inode() is called with its inode's root
-is NULL: In btrfs_new_inode(), when btrfs_set_inode_index() fails,
-iput() is called. We should handle this case before taking look at the
-root->root_item.
+On 6 June 2013 15:25, Borislav Petkov <bp@suse.de> wrote:
+> The correct "fix" for this whole deal is coupling cpufreq with
+> the scheduler, as it has been said so many times before. You need
+> "something" which can tell you whether raising the freq. is worth it or
+> not (i.e. the process is waiting on IO or is executing instructions).
 
-Signed-off-by: Naohiro Aota <naota@elisp.net>
----
- fs/btrfs/inode.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index af978f7..17f3064 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -8012,6 +8012,9 @@ int btrfs_drop_inode(struct inode *inode)
- {
- 	struct btrfs_root *root = BTRFS_I(inode)->root;
- 
-+	if (root == NULL)
-+		return 1;
-+
- 	/* the snap/subvol tree is on deleting */
- 	if (btrfs_root_refs(&root->root_item) == 0 &&
- 	    root != root->fs_info->tree_root)
--- 
-1.8.2.1
-
+Linaro has got a blueprint in this direction but doesn't have any
+proof of concept or RFC patches to share. But that will happen soon.
