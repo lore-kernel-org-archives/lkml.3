@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932861Ab3FFKIQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 06:08:16 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43696 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932576Ab3FFKIO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 06:08:14 -0400
-Date: Thu, 6 Jun 2013 12:07:52 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>, Dave Jones <davej@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH v2][RFC] tracing/context-tracking: Add
- preempt_schedule_context() for tracing
-Message-ID: <20130606100752.GG8923@twins.programming.kicks-ass.net>
-References: <1369943981.26799.43.camel@gandalf.local.home>
- <20130531134319.GE5932@somewhere>
- <1370013528.26799.49.camel@gandalf.local.home>
- <20130531160101.GB5910@twins.programming.kicks-ass.net>
- <1370050218.26799.87.camel@gandalf.local.home>
- <20130604122712.GE14973@somewhere>
- <1370355416.26799.119.camel@gandalf.local.home>
- <20130605114559.GE8923@twins.programming.kicks-ass.net>
- <1370439709.9844.17.camel@gandalf.local.home>
- <1370486988.9844.24.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370486988.9844.24.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S932607Ab3FFKFI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 06:05:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37961 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932079Ab3FFKFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 06:05:06 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: sergei.shtylyov@cogentembedded.com, Jason Wang <jasowang@redhat.com>
+Subject: [net-next PATCH 1/8] macvtap: fix a possible race between queue selection and changing queues
+Date: Thu,  6 Jun 2013 17:54:33 +0800
+Message-Id: <1370512480-14272-2-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1370512480-14272-1-git-send-email-jasowang@redhat.com>
+References: <1370512480-14272-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 10:49:48PM -0400, Steven Rostedt wrote:
-> Peter,
-> 
-> Are you fine with this answer, or do you still believe I should put it
-> into sched/core.c?
+Complier may generate codes that re-read the vlan->numvtaps during
+macvtap_get_queue(). This may lead a race if vlan->numvtaps were changed in the
+same time and which can lead unexpected result (e.g. very huge value).
 
-Its ok I suppose. I just had to wrap my head around this
-context_tracking muck; first time I ever looked at it.
+We need prevent the compiler from generating such codes by adding an
+ACCESS_ONCE() to make sure vlan->numvtaps were only read once.
 
-> I switched it to EXPORT_SYMBOL_GPL, so that only GPL modules may use
-> preempt_enable_notrace().
-> 
-> Are you OK with this?
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/macvtap.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Yep, applied.
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index 68efb91..5e485e3 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -172,7 +172,7 @@ static struct macvtap_queue *macvtap_get_queue(struct net_device *dev,
+ {
+ 	struct macvlan_dev *vlan = netdev_priv(dev);
+ 	struct macvtap_queue *tap = NULL;
+-	int numvtaps = vlan->numvtaps;
++	int numvtaps = ACCESS_ONCE(vlan->numvtaps);
+ 	__u32 rxq;
+ 
+ 	if (!numvtaps)
+-- 
+1.7.1
+
