@@ -1,51 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757571Ab3FFD00 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 23:26:26 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:59744 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756667Ab3FFD0Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 23:26:24 -0400
-Message-ID: <1370489181.24311.318.camel@edumazet-glaptop>
-Subject: Re: stop_machine lockup issue in 3.9.y.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Ben Greear <greearb@candelatech.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Joe Lawrence <joe.lawrence@stratus.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        Jouni Malinen <jouni@qca.qualcomm.com>,
-        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
-        Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Date: Wed, 05 Jun 2013 20:26:21 -0700
-In-Reply-To: <20130606031444.GA12335@mtj.dyndns.org>
-References: <51AE27D5.7050202@candelatech.com>
-	 <87sj0xry1k.fsf@rustcorp.com.au> <20130605071539.GA3429@mtj.dyndns.org>
-	 <51AF6E54.3050108@candelatech.com> <20130605184807.GD10693@mtj.dyndns.org>
-	 <51AF8D4B.4090407@candelatech.com> <51AF91F5.6090801@candelatech.com>
-	 <51AFA677.9010605@candelatech.com> <20130605211157.GK10693@mtj.dyndns.org>
-	 <1370482492.24311.308.camel@edumazet-glaptop>
-	 <20130606031444.GA12335@mtj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1757585Ab3FFD1l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 23:27:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44401 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756810Ab3FFD1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 23:27:40 -0400
+Message-ID: <51B00190.2050307@redhat.com>
+Date: Thu, 06 Jun 2013 11:27:12 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: mst@redhat.com, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vhost_net: clear msg.control for non-zerocopy case during
+ tx
+References: <1370418046-11851-1-git-send-email-jasowang@redhat.com> <51AF40CB.5030101@cogentembedded.com>
+In-Reply-To: <51AF40CB.5030101@cogentembedded.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-05 at 20:14 -0700, Tejun Heo wrote:
+On 06/05/2013 09:44 PM, Sergei Shtylyov wrote:
+> Hello.
+>
+> On 05-06-2013 11:40, Jason Wang wrote:
+>
+>> When we decide not use zero-copy, msg.control should be set to NULL
+>> otherwise
+>> macvtap/tap may set zerocopy callbacks which may decrease the kref of
+>> ubufs
+>> wrongly.
+>
+>> Bug were introduced by commit cedb9bdce099206290a2bdd02ce47a7b253b6a84
+>> (vhost-net: skip head management if no outstanding).
+>
+>> This solves the following warnings:
+>
+>> WARNING: at include/linux/kref.h:47 handle_tx+0x477/0x4b0 [vhost_net]()
+>> Modules linked in: vhost_net macvtap macvlan tun nfsd exportfs bridge
+>> stp llc openvswitch kvm_amd kvm bnx2 megaraid_sas [last unloaded: tun]
+>> CPU: 5 PID: 8670 Comm: vhost-8668 Not tainted 3.10.0-rc2+ #1566
+>> Hardware name: Dell Inc. PowerEdge R715/00XHKG, BIOS 1.5.2 04/19/2011
+>> ffffffffa0198323 ffff88007c9ebd08 ffffffff81796b73 ffff88007c9ebd48
+>> ffffffff8103d66b 000000007b773e20 ffff8800779f0000 ffff8800779f43f0
+>> ffff8800779f8418 000000000000015c 0000000000000062 ffff88007c9ebd58
+>> Call Trace:
+>> [<ffffffff81796b73>] dump_stack+0x19/0x1e
+>> [<ffffffff8103d66b>] warn_slowpath_common+0x6b/0xa0
+>> [<ffffffff8103d6b5>] warn_slowpath_null+0x15/0x20
+>> [<ffffffffa0197627>] handle_tx+0x477/0x4b0 [vhost_net]
+>> [<ffffffffa0197690>] handle_tx_kick+0x10/0x20 [vhost_net]
+>> [<ffffffffa019541e>] vhost_worker+0xfe/0x1a0 [vhost_net]
+>> [<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
+>> [<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
+>> [<ffffffff81061f46>] kthread+0xc6/0xd0
+>> [<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
+>> [<ffffffff817a1aec>] ret_from_fork+0x7c/0xb0
+>> [<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
+>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> ---
+>>   drivers/vhost/net.c |    3 ++-
+>>   1 files changed, 2 insertions(+), 1 deletions(-)
+>
+>> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+>> index 2b51e23..b07d96b 100644
+>> --- a/drivers/vhost/net.c
+>> +++ b/drivers/vhost/net.c
+>> @@ -436,7 +436,8 @@ static void handle_tx(struct vhost_net *net)
+>>                   kref_get(&ubufs->kref);
+>>               }
+>>               nvq->upend_idx = (nvq->upend_idx + 1) % UIO_MAXIOV;
+>> -        }
+>> +        } else
+>
+>    You have to use {} on the *else* branch if you have it of the *if*
+> branch (and vice versa), according to Documentation/CodingStyle.
 
-> 
-> Ah, so, that's why it's showing up now.  We probably have had the same
-> issue all along but it used to be masked by the softirq limiting.  Do
-> you care to revive the 10 iterations limit so that it's limited by
-> both the count and timing?  We do wanna find out why softirq is
-> spinning indefinitely tho.
+checkpatch.pl didn't complain this, will send v2.
 
-Yes, no problem, I can do that.
+Thanks
+>
+>> +            msg.msg_control = NULL;
+>
+> WBR, Sergei
+>
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
