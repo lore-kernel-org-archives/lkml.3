@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932487Ab3FFKB6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 06:01:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51330 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932104Ab3FFKBz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 06:01:55 -0400
-Date: Thu, 6 Jun 2013 12:01:38 +0200
-From: Borislav Petkov <bp@suse.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Stratos Karafotis <stratosk@semaphore.gr>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of
- target frequency
-Message-ID: <20130606100138.GC21181@pd.tnic>
-References: <51AF60D5.3080605@semaphore.gr>
- <20130605161703.GA29958@pd.tnic>
- <51AF71B6.6030408@semaphore.gr>
- <105446113.ZumbZWCbSi@vostro.rjw.lan>
+	id S1755797Ab3FFKCN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 06:02:13 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:40071 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753782Ab3FFKCL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 06:02:11 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "luke.leighton" <luke.leighton@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>,
+        debian-kernel@lists.debian.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re: Uploading linux (3.9.4-1))
+Date: Thu, 06 Jun 2013 12:02:06 +0200
+Message-ID: <3628961.Gph977QOV0@flatron>
+User-Agent: KMail/4.10.4 (Linux/3.9.4-gentoo; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <20130606112723.71ddd70c@skate>
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com> <1733666.lHUBcfUXq9@flatron> <20130606112723.71ddd70c@skate>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <105446113.ZumbZWCbSi@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 10:35:05PM +0200, Rafael J. Wysocki wrote:
-> On Wednesday, June 05, 2013 08:13:26 PM Stratos Karafotis wrote:
-> > Hi Borislav,
-> > 
-> > On 06/05/2013 07:17 PM, Borislav Petkov wrote:
-> > > On Wed, Jun 05, 2013 at 07:01:25PM +0300, Stratos Karafotis wrote:
-> > >> Ondemand calculates load in terms of frequency and increases it only
-> > >> if the load_freq is greater than up_threshold multiplied by current
-> > >> or average frequency. This seems to produce oscillations of frequency
-> > >> between min and max because, for example, a relatively small load can
-> > >> easily saturate minimum frequency and lead the CPU to max. Then, the
-> > >> CPU will decrease back to min due to a small load_freq.
-> > >
-> > > Right, and I think this is how we want it, no?
-> > >
-> > > The thing is, the faster you finish your work, the faster you can become
-> > > idle and save power.
-> > 
-> > This is exactly the goal of this patch. To use more efficiently middle
-> > frequencies to finish faster the work.
+Hi Thomas,
 
-Hold on, you say above "easily saturate minimum frequency and lead the
-CPU to max". I read this as we jump straight to max P-state where we
-even boost.
+On Thursday 06 of June 2013 11:27:23 Thomas Petazzoni wrote:
+> Dear Tomasz Figa,
+> 
+> On Thu, 06 Jun 2013 02:01:14 +0200, Tomasz Figa wrote:
+> > I don't see any other solution here than moving all the Allwinner
+> > code to DT (as it has been suggested in this thread several times
+> > already), as this is the only hardware description method supported
+> > by ARM Linux.
+> 
+> Have you noticed that it is already the case in mainline? My colleague
+> Maxime Ripard (Cc'ed) is the maintainer of the mainline Allwinner sunxi
+> effort. It already supports a number of boards, has a pinctrl driver, a
+> GPIO driver, serial port is working, network is working, I2C is
+> working.
+> 
+> All in mainline, completely Device Tree based.
+> 
+> So isn't this entire discussion completely moot? The mainline support
+> for sunxi has already started since 6 months or so, and has been Device
+> Tree based from day one.
 
-"CPU to max" finishes the work faster than middle frequencies, if you're
-CPU-bound.
+Sure, I've been observing the development of sunxi support since it 
+started.
 
-> > > If you switch frequencies in a staircase-like manner, you're going to
-> > > take longer to finish, in certain cases, and burn more power while doing
-> > > so.
-> > 
-> > This is not true with this patch. It switches to middle frequencies
-> > when the load < up_threshold.
+This is the reason why any remaining Allwinner drivers must be converted 
+to use DT instead of this proprietary stuff as well, if they want to 
+upstream any of them.
 
-This is worth investigating wrt hightened power consumption, as Rafael
-suggested.
+Best regards,
+Tomasz
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
