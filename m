@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160Ab3FFSnK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 14:43:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47643 "EHLO mx2.suse.de"
+	id S1752101Ab3FFSpf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 14:45:35 -0400
+Received: from vps1.hno.se ([31.192.227.87]:40339 "EHLO vps1.hno.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750971Ab3FFSnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 14:43:09 -0400
-Message-ID: <51B0D835.3050808@suse.cz>
-Date: Thu, 06 Jun 2013 20:43:01 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Kyle McMartin <kyle@redhat.com>, linux-kbuild@vger.kernel.org,
-        Rob Landley <rob@landley.net>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Kbuild: pass headers to headers_install.sh on stdin
-References: <20130606170557.GQ14762@redacted.bos.redhat.com> <51B0C9E5.7030105@suse.cz> <20130606175529.GT14762@redacted.bos.redhat.com> <CA+5PVA4uNNSXcJHZfoyEmqMsCwK6hC7e2ziSdz5TNXwiiUQ7CQ@mail.gmail.com>
-In-Reply-To: <CA+5PVA4uNNSXcJHZfoyEmqMsCwK6hC7e2ziSdz5TNXwiiUQ7CQ@mail.gmail.com>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1750971Ab3FFSpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 14:45:34 -0400
+Message-ID: <1370544282.31564.5.camel@localhost>
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
+ Uploading linux (3.9.4-1))
+From: Henrik =?ISO-8859-1?Q?Nordstr=F6m?= <henrik@henriknordstrom.net>
+To: Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>
+Cc: devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
+        debian-kernel@lists.debian.org
+Date: Thu, 06 Jun 2013 20:44:42 +0200
+In-Reply-To: <CAPweEDzrYL5c9v1T=nTcyv9RPrJ-TEnCyyjpHQnhXXJY-32=5g@mail.gmail.com>
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
+	 <CAKON4OxDD5orX2w-_+d5kawTGXbE3KKj2QLERo9m7=NiUSXhgQ@mail.gmail.com>
+	 <51AFA6DD.3000202@wwwdotorg.org>
+	 <CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com>
+	 <1370469574.18839.33.camel@localhost>
+	 <CAPweEDxMpeJc-w=Yd7d2OT=UisRBp2rxf-MPMDUCOG3EyJz1GQ@mail.gmail.com>
+	 <CAKON4OxwyV2f_iTEb5RnP_azc7EsSxPdku_TY5WLWxN7USiY1Q@mail.gmail.com>
+	 <CAPweEDw1BabE0cmT5fxZ3Z9p9EH508M3Nzcqk2VcO0oz-qYsvg@mail.gmail.com>
+	 <CAKON4Oz79hUE_ReAqjeynwL6ZWntX2W1uw3YOg0G2AiY7Gjs=g@mail.gmail.com>
+	 <CAPweEDyO+Sc1aQ64HBeh1OSzmPNsnwMwEo5kbHSan5vw_YEjXA@mail.gmail.com>
+	 <1370477756.20454.65.camel@localhost>
+	 <CAPweEDzrYL5c9v1T=nTcyv9RPrJ-TEnCyyjpHQnhXXJY-32=5g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 6.6.2013 19:59, Josh Boyer napsal(a):
-> On Thu, Jun 6, 2013 at 1:55 PM, Kyle McMartin <kyle@redhat.com> wrote:
->> On Thu, Jun 06, 2013 at 07:41:57PM +0200, Michal Marek wrote:
->>> Dne 6.6.2013 19:05, Kyle McMartin napsal(a):
->>>> While using make V=1 to test some things, I noticed on our builders that
->>>> headers_install was failing because the argument list to /bin/sh was too
->>>> long. Working around it is slightly kludgy...
->>>
->>> This is already fixed with
->>>
->>>
->>> commit c0ff68f1611d6855a06d672989ad5cfea160a4eb
->>> Author: Nicolas Dichtel <nicolas.dichtel@6wind.com>
->>> Date:   Mon Apr 29 14:15:51 2013 +0200
->>>
->>>     kbuild: fix make headers_install when path is too long
->>>
->>>
->>> in linux-next.
->>>
->>
->> OK, I guess.
-> 
-> Wait... not OK.  This is broken now.  People are clearly having to fix
-> it again and wasting their time because a fix is already available.
-> Why is a fix for it sitting in linux-next?  Please get that fix into
-> Linus' tree.
+tor 2013-06-06 klockan 13:19 +0100 skrev luke.leighton:
 
-This bug has been there for about five years (as far as I can tell, it
-was introduced by 7712401). It is a coincidence that two people report
-it now within a couple of weeks, but IMO this does not make the bug so
-urgent that it can't wait for the next -rc1.
+>  mass-volume tablet, mass-volume IPTV box.  android OS, nothing else.
 
-Michal
+Which still includes a number of possible configurations with different
+i2c, spi, usb etc devices connected on the board. Because Allwinner is
+not using mainline methods for configuration their customers are stuck
+in only selecting between a very limited set of "Allwinner compatible"
+auxillary chips (g-sensors, led controls, wifi modules, gps modules etc)
+in their designs.
+
+By using DT their customers are free to choose any device supported
+mainline.
+
+Regards
+Henrik
+
