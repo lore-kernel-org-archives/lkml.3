@@ -1,95 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757352Ab3FFDFu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 23:05:50 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:46788 "EHLO zene.cmpxchg.org"
+	id S932104Ab3FFDHf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 23:07:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36520 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753628Ab3FFDFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 23:05:48 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Glauber Costa <glommer@openvz.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch] memcg: clean up memcg->nodeinfo
-Date: Wed,  5 Jun 2013 23:05:34 -0400
-Message-Id: <1370487934-4547-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.8.2.3
+	id S1753628Ab3FFDHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 23:07:34 -0400
+Message-ID: <51AFFCDA.8030707@redhat.com>
+Date: Thu, 06 Jun 2013 11:07:06 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sergei.shtylyov@cogentembedded.com
+Subject: Re: [net-next rfc V3 0/9] Multiqueue API for macvtap
+References: <1370414192-5830-1-git-send-email-jasowang@redhat.com> <20130605103625.GF31830@redhat.com>
+In-Reply-To: <20130605103625.GF31830@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove struct mem_cgroup_lru_info and fold its single member, the
-variably sized nodeinfo[0], directly into struct mem_cgroup.  This
-should make it more obvious why it has to be the last member there.
+On 06/05/2013 06:36 PM, Michael S. Tsirkin wrote:
+> On Wed, Jun 05, 2013 at 02:36:23PM +0800, Jason Wang wrote:
+>> > Hi all:
+>> > 
+>> > This series implements a v3 of fully tuntap compatiable API which could be used
+>> > by userspace to manage multiple macvtap queues. The main parts is to add
+>> > TUNSETQUEUE ioctl support for macvtap.
+>> > 
+>> > Patch 1 - 5 was some tuntap compatibility and misc cleanups.
+>> > Patch 6 removes the linear search in macvtap by reshuffling the macvtaps array
+>> > each time a queue is removed. After this, we could store both enabled and
+>> > disabled queues in the same array without introducing extra data structure.
+>> > Patch 7 let TUNSETIFF can create multiqueue device, nothing but some check
+>> > were added.
+>> > Patch 8 implement TUNSETQUEUE ioctl
+>> > Patch 9 reports IFF_MULTI_QUEUE to userspace to notify the userspace that the
+>> > multiqueue API is completed.
+>> > 
+>> > Flow caches implememtation were missed in this version, since I am doing
+>> > rework on the tuntap flow caches. Have some some stress test with both netperf
+>> > and pktgen.
+>> > 
+>> > Please review, thanks.
+> FYI by netdev rules RFC means "don't apply yet".
+>
 
-Also move the comment that's above that special last member below it,
-so it is more visible to somebody that considers appending to the
-struct mem_cgroup.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c | 21 ++++++---------------
- 1 file changed, 6 insertions(+), 15 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index ff7b40d..d169a8d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -187,10 +187,6 @@ struct mem_cgroup_per_node {
- 	struct mem_cgroup_per_zone zoneinfo[MAX_NR_ZONES];
- };
- 
--struct mem_cgroup_lru_info {
--	struct mem_cgroup_per_node *nodeinfo[0];
--};
--
- /*
-  * Cgroups above their limits are maintained in a RB-Tree, independent of
-  * their hierarchy representation
-@@ -384,14 +380,9 @@ struct mem_cgroup {
- #endif
- 	/* when kmem shrinkers can sleep but can't proceed due to context */
- 	struct work_struct kmemcg_shrink_work;
--	/*
--	 * Per cgroup active and inactive list, similar to the
--	 * per zone LRU lists.
--	 *
--	 * WARNING: This has to be the last element of the struct. Don't
--	 * add new fields after this point.
--	 */
--	struct mem_cgroup_lru_info info;
-+
-+	struct mem_cgroup_per_node *nodeinfo[0];
-+	/* WARNING: nodeinfo has to be the last member here */
- };
- 
- static size_t memcg_size(void)
-@@ -777,7 +768,7 @@ static struct mem_cgroup_per_zone *
- mem_cgroup_zoneinfo(struct mem_cgroup *memcg, int nid, int zid)
- {
- 	VM_BUG_ON((unsigned)nid >= nr_node_ids);
--	return &memcg->info.nodeinfo[nid]->zoneinfo[zid];
-+	return &memcg->nodeinfo[nid]->zoneinfo[zid];
- }
- 
- struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *memcg)
-@@ -6595,13 +6586,13 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
- 		mz->on_tree = false;
- 		mz->memcg = memcg;
- 	}
--	memcg->info.nodeinfo[node] = pn;
-+	memcg->nodeinfo[node] = pn;
- 	return 0;
- }
- 
- static void free_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
- {
--	kfree(memcg->info.nodeinfo[node]);
-+	kfree(memcg->nodeinfo[node]);
- }
- 
- static struct mem_cgroup *mem_cgroup_alloc(void)
--- 
-1.8.2.3
-
+Ok, let me remove the rfc in next series.
