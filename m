@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797Ab3FFKCN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 06:02:13 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:40071 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753782Ab3FFKCL (ORCPT
+	id S932518Ab3FFKDL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 06:03:11 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:62163 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932104Ab3FFKDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 06:02:11 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "luke.leighton" <luke.leighton@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        debian-kernel@lists.debian.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re: Uploading linux (3.9.4-1))
-Date: Thu, 06 Jun 2013 12:02:06 +0200
-Message-ID: <3628961.Gph977QOV0@flatron>
-User-Agent: KMail/4.10.4 (Linux/3.9.4-gentoo; KDE/4.10.4; x86_64; ; )
-In-Reply-To: <20130606112723.71ddd70c@skate>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com> <1733666.lHUBcfUXq9@flatron> <20130606112723.71ddd70c@skate>
+	Thu, 6 Jun 2013 06:03:09 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <51B011C5.3070105@ti.com>
+References: <1369503576-22271-1-git-send-email-prabhakar.csengg@gmail.com>
+ <1369503576-22271-2-git-send-email-prabhakar.csengg@gmail.com> <51B011C5.3070105@ti.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Thu, 6 Jun 2013 15:32:46 +0530
+Message-ID: <CA+V-a8sz_Yz0oUB4s==uob4HxkW_6ShtsTx+Jut2LopmeErC1w@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] ARM: davinci: dm365 evm: remove init_enable from
+ ths7303 pdata
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+Hi Sekhar,
 
-On Thursday 06 of June 2013 11:27:23 Thomas Petazzoni wrote:
-> Dear Tomasz Figa,
-> 
-> On Thu, 06 Jun 2013 02:01:14 +0200, Tomasz Figa wrote:
-> > I don't see any other solution here than moving all the Allwinner
-> > code to DT (as it has been suggested in this thread several times
-> > already), as this is the only hardware description method supported
-> > by ARM Linux.
-> 
-> Have you noticed that it is already the case in mainline? My colleague
-> Maxime Ripard (Cc'ed) is the maintainer of the mainline Allwinner sunxi
-> effort. It already supports a number of boards, has a pinctrl driver, a
-> GPIO driver, serial port is working, network is working, I2C is
-> working.
-> 
-> All in mainline, completely Device Tree based.
-> 
-> So isn't this entire discussion completely moot? The mainline support
-> for sunxi has already started since 6 months or so, and has been Device
-> Tree based from day one.
+On Thu, Jun 6, 2013 at 10:06 AM, Sekhar Nori <nsekhar@ti.com> wrote:
+> On 5/25/2013 11:09 PM, Prabhakar Lad wrote:
+>> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>>
+>> remove init_enable from ths7303 pdata as it is being dropped
+>> from ths7303_platform_data.
+>>
+>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>> Cc: Sekhar Nori <nsekhar@ti.com>
+>> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+>> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+>> Cc: linux-kernel@vger.kernel.org
+>> Cc: davinci-linux-open-source@linux.davincidsp.com
+>
+> Acked-by: Sekhar Nori <nsekhar@ti.com>
+>
+Thanks for the ack.
 
-Sure, I've been observing the development of sunxi support since it 
-started.
+> I would prefer this be squashed into 2/4 but I leave it to you.
+>
+I would like to go as is :)
 
-This is the reason why any remaining Allwinner drivers must be converted 
-to use DT instead of this proprietary stuff as well, if they want to 
-upstream any of them.
-
-Best regards,
-Tomasz
-
+Regards,
+--Prabhakar Lad
