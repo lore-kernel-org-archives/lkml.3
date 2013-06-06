@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662Ab3FFNoJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 09:44:09 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:27312 "EHLO mail.abilis.ch"
+	id S1752035Ab3FFNoT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 09:44:19 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:27317 "EHLO mail.abilis.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751078Ab3FFNoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 09:44:07 -0400
+	id S1751862Ab3FFNoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 09:44:14 -0400
 From: Christian Ruppert <christian.ruppert@abilis.com>
 To: Wolfram Sang <wsa@the-dreams.de>,
         Mika Westerberg <mika.westerberg@linux.intel.com>
@@ -13,63 +13,41 @@ Cc: Jean Delvare <khali@linux-fr.org>,
         Pierrick Hascoet <pierrick.hascoet@abilis.com>,
         Christian Ruppert <christian.ruppert@abilis.com>,
         linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] i2c: designware: fix race between subsequent xfers
-Date: Thu,  6 Jun 2013 15:43:35 +0200
-Message-Id: <1370526216-10060-1-git-send-email-christian.ruppert@abilis.com>
+Subject: [PATCH 2/2] i2c: designware: make i2c xfers non-interruptible
+Date: Thu,  6 Jun 2013 15:43:36 +0200
+Message-Id: <1370526216-10060-2-git-send-email-christian.ruppert@abilis.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1370526216-10060-1-git-send-email-christian.ruppert@abilis.com>
+References: <1370526216-10060-1-git-send-email-christian.ruppert@abilis.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The designware block is not always properly disabled in the case of
-transfer errors. Interrupts from aborted transfers might be handled
-after the data structures for the following transfer are initialised but
-before the hardware is set up. This might corrupt the data structures to
-the point that the system is stuck in an infinite interrupt loop (where
-FIFOs are never emptied).
-This patch cleanly disables the designware-i2c hardware at the end of
-every transfer, successful or not.
+When the process at the source of an i2c transfer is killed in the
+middle of the transfer, the transfer is interrupted. Interrupted
+transfers might cause buggy slaves on the bus (or higher level drivers)
+to go haywire.
+This patch forces ongoing i2c transfers to finish properly, even if the
+initiating process is killed.
 
 Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
 ---
- drivers/i2c/busses/i2c-designware-core.c |   14 +++++++++++---
- 1 files changed, 11 insertions(+), 3 deletions(-)
+ drivers/i2c/busses/i2c-designware-core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-index 6c0e776..65c0c7a 100644
+index 65c0c7a..d903368 100644
 --- a/drivers/i2c/busses/i2c-designware-core.c
 +++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -588,10 +588,20 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
- 	ret = wait_for_completion_interruptible_timeout(&dev->cmd_complete, HZ);
+@@ -585,7 +585,7 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
+ 	i2c_dw_xfer_init(dev);
+ 
+ 	/* wait for tx to complete */
+-	ret = wait_for_completion_interruptible_timeout(&dev->cmd_complete, HZ);
++	ret = wait_for_completion_timeout(&dev->cmd_complete, HZ);
  	if (ret == 0) {
  		dev_err(dev->dev, "controller timed out\n");
-+		/* i2c_dw_init implicitly disables the adapter */
- 		i2c_dw_init(dev);
- 		ret = -ETIMEDOUT;
- 		goto done;
--	} else if (ret < 0)
-+	}
-+
-+	/*
-+	 * We must disable the adapter before unlocking the &dev->lock mutex
-+	 * below. Otherwise the hardware might continue generating interrupts
-+	 * which in turn causes a race condition with the following transfer.
-+	 */
-+	__i2c_dw_enable(dev, false);
-+
-+	if (ret < 0)
- 		goto done;
- 
- 	if (dev->msg_err) {
-@@ -601,8 +611,6 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
- 
- 	/* no error */
- 	if (likely(!dev->cmd_err)) {
--		/* Disable the adapter */
--		__i2c_dw_enable(dev, false);
- 		ret = num;
- 		goto done;
- 	}
+ 		/* i2c_dw_init implicitly disables the adapter */
 -- 
 1.7.1
 
