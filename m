@@ -1,127 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491Ab3FFTrx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 15:47:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52116 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754391Ab3FFTrv (ORCPT
+	id S1754539Ab3FFTs0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 15:48:26 -0400
+Received: from [213.199.154.185] ([213.199.154.185]:22249 "EHLO
+	db8outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1753656Ab3FFTrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 15:47:51 -0400
-Date: Thu, 6 Jun 2013 12:47:50 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH v1 3/4] firmware loader: allow distribution to choose
- default search paths
-Message-ID: <20130606194750.GA4526@kroah.com>
-References: <1370520110-32293-1-git-send-email-ming.lei@canonical.com>
- <1370520110-32293-4-git-send-email-ming.lei@canonical.com>
+	Thu, 6 Jun 2013 15:47:37 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1155h)
+X-WSS-ID: 0MNZLKM-01-HKP-02
+X-M-MSG: 
+From: Jacob Shin <jacob.shin@amd.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Borislav Petkov <bp@alien8.de>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>, Jacob Shin <jacob.shin@amd.com>
+Subject: [PATCH V2 2/2] x86/microcode/amd: allow multiple families' bin files appended together
+Date: Thu, 6 Jun 2013 14:45:51 -0500
+Message-ID: <1370547951-2701-3-git-send-email-jacob.shin@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1370547951-2701-1-git-send-email-jacob.shin@amd.com>
+References: <1370547951-2701-1-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370520110-32293-4-git-send-email-ming.lei@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 08:01:49PM +0800, Ming Lei wrote:
-> For some distributions(e.g. android), firmware images aren't put
-> under kernel built-in search paths, so introduce one Kconfig
-> option to allow distributions or users to choose its specific default
-> search paths, which are always tried before searching from kernel
-> built-in paths in direct loading.
-> 
-> Also this patch introduces fw_get_fw_file_from_paths to cover all
-> search paths, and fw_get_filesystem_firmware is simpified a bit.
-> 
-> Cc: Takashi Iwai <tiwai@suse.de>
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
-> ---
->  drivers/base/Kconfig          |   14 ++++++++++
->  drivers/base/firmware_class.c |   61 ++++++++++++++++++++++++++++++++++-------
->  2 files changed, 65 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-> index 07abd9d..2be10e4 100644
-> --- a/drivers/base/Kconfig
-> +++ b/drivers/base/Kconfig
-> @@ -156,6 +156,20 @@ config FW_LOADER_USER_HELPER
->  	  no longer required unless you have a special firmware file that
->  	  resides in a non-standard path.
->  
-> +config FW_CUSTOMIZED_PATH
-> +	string "default firmware search paths for direct loading"
-> +	help
-> +	  On some distribution(e.g. android), firmware images aren't
-> +	  put under kernel built-in search paths, so provide this option
-> +	  for distributions to choose a distribution specific firmware
-> +	  search path. The option allows to choose more than one path,
-> +	  and paths are seperated with colon like $PATH(e.g. on android,
-> +	  the option might look as "/etc/firmware:/vendor/firmware").
-> +	  Each path should be a absolute path, and relative path will be
-> +	  ignored.
-> +
-> +	  If you are unsure about this, don't choose here.
-> +
->  config DEBUG_DRIVER
->  	bool "Driver Core verbose debug messages"
->  	depends on DEBUG_KERNEL
-> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> index 6ede229..051db83 100644
-> --- a/drivers/base/firmware_class.c
-> +++ b/drivers/base/firmware_class.c
-> @@ -265,8 +265,13 @@ static void fw_free_buf(struct firmware_buf *buf)
->  
->  /* direct firmware loading support */
->  static char fw_path_para[256];
-> +
-> +/* search runtime paths first, then static pre-defined paths */
->  static const char * const fw_path[] = {
->  	fw_path_para,
-> +#ifdef CONFIG_FW_CUSTOMIZED_PATH
-> +	CONFIG_FW_CUSTOMIZED_PATH,
-> +#endif
->  	"/lib/firmware/updates/" UTS_RELEASE,
->  	"/lib/firmware/updates",
->  	"/lib/firmware/" UTS_RELEASE,
-> @@ -314,6 +319,50 @@ static bool fw_read_file_contents(struct file *file, struct firmware_buf *fw_buf
->  	return true;
->  }
->  
-> +static bool fw_get_file_firmware(const char *path,
-> +				 struct firmware_buf *buf)
-> +{
-> +	struct file *file;
-> +	bool success;
-> +
-> +	file = filp_open(path, O_RDONLY, 0);
-> +	if (IS_ERR(file))
-> +		return false;
-> +	success = fw_read_file_contents(file, buf);
-> +	fput(file);
-> +
-> +	return success;
-> +}
-> +
-> +/* The path in @paths is seperated by ';' */
+Add support for parsing through multiple families' microcode patch
+container binary files appended together when early loading. This is
+already supported on Intel.
 
-No it isn't.
+Reported-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+---
+ arch/x86/kernel/microcode_amd_early.c |   68 +++++++++++++++++++++++++++------
+ 1 file changed, 56 insertions(+), 12 deletions(-)
 
-> +static bool fw_get_file_fw_from_paths(const char *paths, char *path,
-> +				      struct firmware_buf *buf)
-> +{
-> +	int len, start, end = -1;
-> +	char *pos;
-> +
-> +	do {
-> +		start = end + 1;
-> +		pos = strchr(&paths[start], ':');
+diff --git a/arch/x86/kernel/microcode_amd_early.c b/arch/x86/kernel/microcode_amd_early.c
+index 52f647d..bf91feb 100644
+--- a/arch/x86/kernel/microcode_amd_early.c
++++ b/arch/x86/kernel/microcode_amd_early.c
+@@ -87,15 +87,21 @@ static void __cpuinit apply_ucode_in_initrd(void *ucode, size_t size)
+ 	struct equiv_cpu_entry *eq;
+ 	u32 *header;
+ 	u8  *data;
+-	u16 eq_id;
++	u16 eq_id = 0;
+ 	int offset, left;
+-	u32 rev, dummy;
++	u32 rev, eax;
+ 	u32 *new_rev;
++	unsigned long *uoffset;
++	size_t *usize;
+ 
+ #ifdef CONFIG_X86_32
+ 	new_rev = (u32 *)__pa_nodebug(&ucode_new_rev);
++	uoffset = (unsigned long *)__pa_nodebug(&ucode_offset);
++	usize   = (size_t *)__pa_nodebug(&ucode_size);
+ #else
+ 	new_rev = &ucode_new_rev;
++	uoffset = &ucode_offset;
++	usize   = &ucode_size;
+ #endif
+ 
+ 	data   = ucode;
+@@ -108,18 +114,50 @@ static void __cpuinit apply_ucode_in_initrd(void *ucode, size_t size)
+ 	    header[2] == 0)                            /* size */
+ 		return;
+ 
+-	eq     = (struct equiv_cpu_entry *)(data + CONTAINER_HDR_SZ);
+-	offset = header[2] + CONTAINER_HDR_SZ;
+-	data  += offset;
+-	left  -= offset;
++	eax = cpuid_eax(0x00000001);
++
++	while (left > 0) {
++		eq = (struct equiv_cpu_entry *)(data + CONTAINER_HDR_SZ);
++
++		offset = header[2] + CONTAINER_HDR_SZ;
++		data  += offset;
++		left  -= offset;
+ 
+-	eq_id  = find_equiv_id(eq, cpuid_eax(0x00000001));
+-	if (!eq_id)
++		eq_id = find_equiv_id(eq, eax);
++		if (eq_id)
++			break;
++
++		/*
++		 * support multiple container files appended together. if this
++		 * one does not have a matching equivalent cpu entry, we fast
++		 * forward to the next container file.
++		 */
++		while (left > 0) {
++			header = (u32 *)data;
++			if (header[0] == UCODE_MAGIC &&
++			    header[1] == UCODE_EQUIV_CPU_TABLE_TYPE)
++				break;
++
++			offset = header[1] + SECTION_HDR_SIZE;
++			data  += offset;
++			left  -= offset;
++		}
++
++		/* mark where the next microcode container file starts */
++		offset    = data - (u8 *)ucode;
++		*uoffset += offset;
++		*usize   -= offset;
++		ucode     = data;
++	}
++
++	if (!eq_id) {
++		*usize = 0;
+ 		return;
++	}
+ 
+ 	/* find ucode and update if needed */
+ 
+-	rdmsr(MSR_AMD64_PATCH_LEVEL, rev, dummy);
++	rdmsr(MSR_AMD64_PATCH_LEVEL, rev, eax);
+ 
+ 	while (left > 0) {
+ 		struct microcode_amd *mc;
+@@ -132,15 +170,21 @@ static void __cpuinit apply_ucode_in_initrd(void *ucode, size_t size)
+ 		mc = (struct microcode_amd *)(data + SECTION_HDR_SIZE);
+ 		if (eq_id == mc->hdr.processor_rev_id && rev < mc->hdr.patch_id)
+ 			if (__apply_microcode_amd(mc) == 0) {
+-				if (!(*new_rev))
+-					*new_rev = mc->hdr.patch_id;
+-				break;
++				rev = mc->hdr.patch_id;
++				*new_rev = rev;
+ 			}
+ 
+ 		offset  = header[1] + SECTION_HDR_SIZE;
+ 		data   += offset;
+ 		left   -= offset;
+ 	}
++
++	/* mark where this microcode container file ends */
++	offset  = *usize - (data - (u8 *)ucode);
++	*usize -= offset;
++
++	if (!(*new_rev))
++		*usize = 0;
+ }
+ 
+ void __init load_ucode_amd_bsp(void)
+-- 
+1.7.9.5
 
-As you have an array of paths now, why are you doing the ':' check
-still?  Don't do that, just allow the person building the kernel to add
-one path to the loader, that should be all that we need, right?
 
-thanks,
-
-greg k-h
