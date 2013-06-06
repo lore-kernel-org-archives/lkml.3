@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab3FFTf4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 15:35:56 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:38573 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753918Ab3FFTfx (ORCPT
+	id S1753172Ab3FFTgP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 15:36:15 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:64299 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753094Ab3FFTfv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 15:35:53 -0400
-Date: Thu, 6 Jun 2013 20:35:48 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Matt Fleming <matt@console-pimps.org>,
-        Linux EFI <linux-efi@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH 3/4] x86, efi: Add an efi= kernel command line parameter
-Message-ID: <20130606193548.GA2946@srcf.ucam.org>
-References: <1370177770-26661-1-git-send-email-bp@alien8.de>
- <1370177770-26661-4-git-send-email-bp@alien8.de>
- <20130606104224.GH30420@console-pimps.org>
- <20130606132603.GD20972@pd.tnic>
- <20130606175052.GA1285@srcf.ucam.org>
- <20130606185140.GK20972@pd.tnic>
+	Thu, 6 Jun 2013 15:35:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 4/4] ARM: ux500: Remove call to u8500_of_init_devices() - again
+Date: Thu, 6 Jun 2013 21:35:20 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com
+References: <1370517676-10909-1-git-send-email-lee.jones@linaro.org> <201306061758.25106.arnd@arndb.de> <20130606165053.GU3370@gmail.com>
+In-Reply-To: <20130606165053.GU3370@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130606185140.GK20972@pd.tnic>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201306062135.21047.arnd@arndb.de>
+X-Provags-ID: V02:K0:vJpTPrE4OTwhe9YcWZYww5QxO+UVLslxBm9R/F/npE6
+ AH6Nu1ie3KiFR+vw0y5bauJDzj/GqxGv5EtmVps5vFQIzegga8
+ Ge3bwoLUbIEB5Kr8SWwitC3C4giwx5qTkDQSbJZLJ326QMalkE
+ DtlF5ZOGPCFgXZjL2vXvtZm2TwGUbddM2YQ+DVOhAlIP4HIlZD
+ L6P1lWQAZA+nFr8bBONqKQvBppum1jbXaf7k6wNGXfClzb5DKk
+ a81q8HTKSxaGjaypSLZP1FPEtxJOIC+Ut1GMQN/wm8JeHacQ3Y
+ wpTcwQIipBCJbqMlkzE1B33j6IOQxKAYJLfPh10G6wecMb9eJd
+ spIzvv4AV9Vp/gmjLDNo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 08:51:40PM +0200, Borislav Petkov wrote:
-> On Thu, Jun 06, 2013 at 06:50:52PM +0100, Matthew Garrett wrote:
-> > On Thu, Jun 06, 2013 at 03:26:03PM +0200, Borislav Petkov wrote:
-> > 
-> > > This would break the Macs, remember?
-> > 
-> > I think the Macs will be fine as long as we're passing the high mappings 
-> > into SetVirtualAddressMap().
+On Thursday 06 June 2013, Lee Jones wrote:
+> https://git.kernel.org/cgit/linux/kernel/git/linusw/linux-stericsson.git/commit/arch/arm/mach-ux500/cpu-db8500.c?h=next&amp;id=1e74043a29cdec67279d6e4f494dd1674a1b2365
 > 
-> Right, on those we'll fall back to the current mappings and simply not
-> have the 1:1 thing.
+> For some reason (I suspect a merge error), u8500_of_init_devices
+> reappeared.
+> 
 
-No, I think that's the wrong thing to do. We should set up the current 
-mappings and the 1:1 mappings, and pass the current mappings through 
-SetVirtualAddressMap(). That matches the behaviour of Windows.
+>From what I can see, that match you cited has never made it into the mainline kernel.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+	Arnd
