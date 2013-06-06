@@ -1,156 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865Ab3FFQdn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 12:33:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50314 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574Ab3FFQdm (ORCPT
+	id S1752996Ab3FFQdw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 12:33:52 -0400
+Received: from 13.mo5.mail-out.ovh.net ([87.98.182.191]:32843 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752881Ab3FFQdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 12:33:42 -0400
-Date: Thu, 6 Jun 2013 09:33:40 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Tobias Winter <tobias@linuxdingsda.de>,
-        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        Rob Landley <rob@landley.net>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] USB: serial: make minor allocation dynamic
-Message-ID: <20130606163340.GA24144@kroah.com>
-References: <20130605175426.GA13461@kroah.com>
- <20130605175455.GB13461@kroah.com>
- <20130606121718.GJ2566@localhost>
+	Thu, 6 Jun 2013 12:33:50 -0400
+Date: Thu, 6 Jun 2013 18:29:43 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Alex Courbot <acourbot@nvidia.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Olof Johansson <olof@lixom.net>, "gnurou@gmail.org" <gnurou@gmail.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH] simplefb: add support for a8b8g8r8 pixel format
+Message-ID: <20130606162943.GX19468@game.jcrosoft.org>
+References: <1370503259-16618-1-git-send-email-acourbot@nvidia.com>
+ <3356BC4D-EEF6-4FCA-9310-5B0727EBF288@jcrosoft.com>
+ <51B0446A.4090305@nvidia.com>
+ <29610936-BB03-4844-888B-56E1C8E5DF4A@jcrosoft.com>
+ <51B047FD.4020400@nvidia.com>
+ <20130606145059.GU19468@game.jcrosoft.org>
+ <51B0B61C.2000008@wwwdotorg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130606121718.GJ2566@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51B0B61C.2000008@wwwdotorg.org>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 13396520042798295885
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 02:17:18PM +0200, Johan Hovold wrote:
-> On Wed, Jun 05, 2013 at 10:54:55AM -0700, Greg KH wrote:
-> > From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On 10:17 Thu 06 Jun     , Stephen Warren wrote:
+> On 06/06/2013 08:50 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > On 17:27 Thu 06 Jun     , Alex Courbot wrote:
+> >> On 06/06/2013 05:24 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> >>>
+> >>> On Jun 6, 2013, at 10:12 AM, Alex Courbot <acourbot@nvidia.com> wrote:
+> >>>
+> >>>> On 06/06/2013 04:59 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> >>>>>
+> >>>>> On Jun 6, 2013, at 9:20 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+> ...
+> >>>>>> static struct simplefb_format simplefb_formats[] = {
+> >>>>>> 	{ "r5g6b5", 16, {11, 5}, {5, 6}, {0, 5}, {0, 0} },
+> >>>>>> +	{ "a8b8g8r8", 32, {0, 8}, {8, 8}, {16, 8}, {31, 8} },
+> >>>>>
+> >>>>> why don't you parse the string?
+> 
+> Jean-Christophe, I'm afraid I can't tell exactly what you're arguing for.
+> 
+> Here, you want code added to parse the string ...
+> 
+> This has already been rejected as being over-engineered, and more than
+> this simple driver needs. Even if it were shared code, the only
+> practical use of such a parsing function would be to support this
+> driver, since presumably any other HW-specific driver already knows
+> exactly which format the FB is in, and hence wouldn't need to share this
+> code.
+> 
+> >>>>> so you will a real generic bindings
+> >>>>
+> >>>> Tried that already, got NACKed: https://lkml.org/lkml/2013/5/27/330
+> >>>>
+> >>>> The list of modes of this driver should not grow too big. Even in terms of footprint I'd say the list should remain smaller than the parsing code.
+> >>>>
+> >>>> What we can discuss though is whether we want to keep this a8b8g8r8 syntax or switch to something more standard, say "rgba8888".
+> >>>
+> >>> I'm going to be very honest I do not like the simplefb driver from the beginning
+> >>> but I do found it useful. And as said in it's name it need to be *SIMPLE*
+> >>>
+> >>> Then a huge list of compatible no way
+> >>> otherwise we drop this from the simplefb and make it a generic helper
+> >>>
+> >>> I do not want to see format parser in every drivers this need to handle at video framework level
+> 
+> ... yet here you appear to be arguing against using a format parser, or
+> including a format parser ...
+> 
+> Note that a lookup table isn't any kind of shared parser; it's just a
+> very tiny and simple table of static data. It seems quite unlikely that
+> this could be a maintenance issue, even if over time a few more entries
+> get added to the table.
+> 
+> >>> If I see that we start to increase again and again the simplefb I will not accept
+> >>> to merge the code as we must keep it simple
+> >>
+> >> In that case it's probably better to maintain a "simple" list of
+> >> supported modes, which is what this patch does.
 > > 
-> > This moves the allocation of minor device numbers from a static array to
-> > be dynamic, using the idr interface.  This means that you could
-> > potentially get "gaps" in a minor number range for a single USB serial
-> > device with multiple ports, but all should still work properly.
-> > 
-> > Note, we still have the limitation of 255 USB to serial devices in the
-> > system, as that is all we are registering with the TTY layer at this
-> > point in time.
-> > 
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > so get out it of the simplefb other drivers can use it
 > 
-> [...]
+> ... yet here you appear to want to move the list of modes into some
+> central location ...
 > 
-> > -static struct usb_serial *get_free_serial(struct usb_serial *serial,
-> > -					int num_ports, unsigned int *minor)
-> > +static int get_free_port(struct usb_serial_port *port)
-> >  {
-> > -	unsigned int i, j;
-> > -	int good_spot;
-> > -
-> > -	dev_dbg(&serial->interface->dev, "%s %d\n", __func__, num_ports);
-> > +	int i;
-> >  
-> > -	*minor = 0;
-> >  	mutex_lock(&table_lock);
-> > -	for (i = 0; i < SERIAL_TTY_MINORS; ++i) {
-> > -		if (serial_table[i])
-> > -			continue;
-> > +	i = idr_alloc(&serial_minors, port, 0, 0, GFP_KERNEL);
-> > +	if (i < 0)
-> > +		goto exit;
-> > +	port->minor = i;
-> > +exit:
-> > +	mutex_unlock(&table_lock);
-> > +	return i;
-> > +}
-> >  
-> > -		good_spot = 1;
-> > -		for (j = 1; j <= num_ports-1; ++j)
-> > -			if ((i+j >= SERIAL_TTY_MINORS) || (serial_table[i+j])) {
-> > -				good_spot = 0;
-> > -				i += j;
-> > -				break;
-> > -			}
-> > -		if (good_spot == 0)
-> > -			continue;
-> > +static int get_free_serial(struct usb_serial *serial, int num_ports,
-> > +			   unsigned int *minor)
-> > +{
-> > +	unsigned int i;
-> > +	unsigned int j;
-> > +	int x;
-> >  
-> > -		*minor = i;
-> > -		j = 0;
-> > -		dev_dbg(&serial->interface->dev, "%s - minor base = %d\n", __func__, *minor);
-> > -		for (i = *minor; (i < (*minor + num_ports)) && (i < SERIAL_TTY_MINORS); ++i, ++j) {
-> > -			serial_table[i] = serial;
-> > -			serial->port[j]->minor = i;
-> > -			serial->port[j]->port_number = i - *minor;
-> > -		}
-> > -		mutex_unlock(&table_lock);
-> > -		return serial;
-> > +	dev_dbg(&serial->interface->dev, "%s %d\n", __func__, num_ports);
-> > +
-> > +	*minor = 0xffffffff;
+> I don't think that's useful for the reason I mentioned above: presumably
+> any other HW-specific driver already knows exactly which format the FB
+> is in, and hence wouldn't need to share this code/table.
 > 
-> You could use SERIAL_TTY_NO_MINOR here -- if needed at all, as it has
-> already been set in create_serial.
-> 
-> > +	for (i = 0; i < num_ports; ++i) {
-> > +		x = get_free_port(serial->port[i]);
-> > +		if (x < 0)
-> > +			goto error;
-> > +		if (*minor == 0xffffffff)
-> > +			*minor = x;
-> 
-> We must not update *minor until all port minors have been allocated, or
-> idr_remove might get called for unallocated minors or even minor numbers
-> of other ports in return_serial when the serial struct is destroyed.
+> Why don't we simply take this patch to extend this table, and then *if*
+> any other FB driver needs to parse a format from DT, we can move the
+> code(table) to a common location at that time. That will be a trivial
+> change, and one this patch does nothing to make any harder. Making the
+> code/table common before then seems like over-engineering.
 
-Good point.  In looking at this further, I really need to drop the
-usb_serial structure's minor field completly, as it doesn't make sense
-anymore.
+that why I said *if I see that we start ....*
 
-I'll go rework all of that and post a v2 of this series, thanks.
+I did reject this patch but put a warning I do not want to see a huge table
+if so => factorisation or parser
 
-> > +		serial->port[i]->port_number = i;
-> >  	}
-> > -	mutex_unlock(&table_lock);
-> > -	return NULL;
-> > +	return 0;
-> > +error:
-> > +	/* unwind the already allocated minors */
-> > +	for (j = 0; j < i; ++j)
-> > +		idr_remove(&serial_minors, serial->port[j]->minor);
-> > +	return x;
-> 
-> table_lock?
-
-Good catch, now fixed.
-
-> >  }
-> >  
-> >  static void return_serial(struct usb_serial *serial)
-> > @@ -123,7 +128,7 @@ static void return_serial(struct usb_ser
-> >  
-> >  	mutex_lock(&table_lock);
-> >  	for (i = 0; i < serial->num_ports; ++i)
-> > -		serial_table[serial->minor + i] = NULL;
-> > +		idr_remove(&serial_minors, serial->port[i]->minor);
-> >  	mutex_unlock(&table_lock);
-> >  }
-> >  
-> 
-> [...]
-> 
-> Looks good otherwise.
-
-Thanks for the review, much appreciated.
-
-greg k-h
+Best Regards,
+J.
