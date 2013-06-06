@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757682Ab3FFISU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 04:18:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15271 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752337Ab3FFISP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 04:18:15 -0400
-From: Jan Vesely <jvesely@redhat.com>
-To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: James Bottomley <JBottomley@Parallels.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH] [SCSI] scsilun_to_int should ignore the highest 2 bits
-Date: Thu,  6 Jun 2013 10:18:11 +0200
-Message-Id: <1370506691-22933-1-git-send-email-jvesely@redhat.com>
+	id S1757880Ab3FFIY0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 04:24:26 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:56959 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755316Ab3FFIYY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 04:24:24 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-pcmcia@lists.infradead.org>, <linux@dominikbrodowski.net>,
+        <manabian@gmail.com>, <fabio.porcedda@gmail.com>,
+        <laurent.navet@gmail.com>, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v3 0/7] pcmcia: at91_cf: clean up and add DT support
+Date: Thu, 6 Jun 2013 10:24:13 +0200
+Message-ID: <cover.1370506678.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Vesely <jvesely@redhat.com>
+These patches clean up at91_cf a bit and add DT bindings.
+They are based on a previous series from Joachim Eastwood and other cleanup
+patches by Fabio and Laurent.
+I have collected them together as they are lying around for some time.
 
-The comment says the function does this but it does not.
-Reported luns change from weirdly high numbers (like 16640)
-to something saner (256), when using flat space addressing.
+Greg kindly told me that he can take them through his char/misc driver
+tree, so I resend the series.
 
-CC: James Bottomley <JBottomley@Parallels.com>
-CC: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: Jan Vesely <jvesely@redhat.com>
----
- drivers/scsi/scsi_scan.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks for your help, best regards.
 
-diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index 3e58b22..38dc093 100644
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -1244,7 +1244,7 @@ int scsilun_to_int(struct scsi_lun *scsilun)
- 
- 	lun = 0;
- 	for (i = 0; i < sizeof(lun); i += 2)
--		lun = lun | (((scsilun->scsi_lun[i] << 8) |
-+		lun = lun | ((((scsilun->scsi_lun[i] & 0x3f) << 8) |
- 			      scsilun->scsi_lun[i + 1]) << (i * 8));
- 	return lun;
- }
+v3: rebased on top of 3.10-rc4
+
+v2: add 2 more cleanup patches:
+	- move to module_platform_driver_probe()
+	- little trivial indentation fix
+
+Fabio Porcedda (1):
+  pcmcia: at91_cf: use module_platform_driver_probe()
+
+Joachim Eastwood (5):
+  pcmcia: at91_cf: fix gpio_get_value in at91_cf_get_status
+  pcmcia: at91_cf: convert to dev_ print functions
+  pcmcia: at91_cf: use devm_ functions for allocations
+  pcmcia: at91_cf: clean up header includes
+  pcmcia: at91_cf: add support for DT
+
+Laurent Navet (1):
+  pcmcia/trivial: at91_cf: fix checkpatch error
+
+ .../devicetree/bindings/ata/atmel-at91_cf.txt      |  19 +++
+ drivers/pcmcia/Kconfig                             |   2 +-
+ drivers/pcmcia/at91_cf.c                           | 176 ++++++++++-----------
+ 3 files changed, 108 insertions(+), 89 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/ata/atmel-at91_cf.txt
+
 -- 
-1.8.1.4
+1.8.2.2
 
