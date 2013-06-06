@@ -1,142 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753801Ab3FFFdc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 01:33:32 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:46834 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751670Ab3FFFd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 01:33:29 -0400
-Date: Thu, 6 Jun 2013 01:33:15 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] memcg: do not sleep on OOM waitqueue with full
- charge context
-Message-ID: <20130606053315.GB9406@cmpxchg.org>
-References: <1370488193-4747-1-git-send-email-hannes@cmpxchg.org>
- <1370488193-4747-2-git-send-email-hannes@cmpxchg.org>
- <alpine.DEB.2.02.1306052058340.25115@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1306052058340.25115@chino.kir.corp.google.com>
+	id S1753817Ab3FFFgP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 01:36:15 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:38485 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753094Ab3FFFgN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 01:36:13 -0400
+Date: Thu, 6 Jun 2013 15:36:00 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jason Cooper <jason@lakedaemon.net>, <andrew@lunn.ch>,
+        <gregory.clement@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: linux-next: manual merge of the mvebu tree with the imx-mxs tree
+Message-Id: <20130606153600.a23c3489dc8b30d0836cb8ea@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__6_Jun_2013_15_36_00_+1000_cipSAVLwCWoA0gEm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 09:10:51PM -0700, David Rientjes wrote:
-> On Wed, 5 Jun 2013, Johannes Weiner wrote:
-> 
-> > The memcg OOM handling is incredibly fragile because once a memcg goes
-> > OOM, one task (kernel or userspace) is responsible for resolving the
-> > situation.
-> 
-> Not sure what this means.  Are you referring to the case where the memcg 
-> is disabled from oom killing and we're relying on a userspace handler and 
-> it may be caught on the waitqueue itself?  Otherwise, are you referring to 
-> the task as eventually being the only one that takes the hierarchy oom 
-> lock and calls mem_cgroup_out_of_memory()?  I don't think you can make a 
-> case for the latter since the one that calls mem_cgroup_out_of_memory() 
-> should return and call memcg_wakeup_oom().  We obviously don't want to do 
-> any memory allocations in this path.
+--Signature=_Thu__6_Jun_2013_15_36_00_+1000_cipSAVLwCWoA0gEm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If the killing task or one of the sleeping tasks is holding a lock
-that the selected victim needs in order to exit no progress can be
-made.
+Hi all,
 
-The report we had a few months ago was that a task held the i_mutex
-when trying to charge a page cache page and then invoked the OOM
-handler and looped on CHARGE_RETRY.  Meanwhile, the selected victim
-was just entering truncate() and now stuck waiting for the i_mutex.
+Today's linux-next merge of the mvebu tree got a conflict in
+arch/arm/Kconfig.debug between commit 284166ffebc3 ("ARM: imx: enable
+low-level debug support for imx6sl") from the imx-mxs tree and commit
+5be22d8c29fd ("arm: mvebu: add another earlyprintk Kconfig option") from
+the mvebu tree.
 
-I'll add this scenario to the changelog, hopefully it will make the
-rest a little clearer.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-> > Every other task that gets caught trying to charge memory
-> > gets stuck in a waitqueue while potentially holding various filesystem
-> > and mm locks on which the OOM handling task may now deadlock.
-> > 
-> 
-> What locks?  The oom killer quite extensively needs task_lock() but we 
-> shouldn't be calling it in the case where we hold this since its a 
-> spinlock and mem_cgroup_do_charge() never gets to the point of handling 
-> the oom.
-> 
-> Again, are you referring only to a userspace handler here?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-No.  The OOM path (does not matter if user task or kernel) is
-currently entered from the charge context, which may hold filesystem
-and mm locks (look who charges page cache pages e.g.) and they are not
-released until the situation is resolved because the task either loops
-inside __mem_cgroup_try_charge() on CHARGE_RETRY or is stuck in the
-waitqueue.
+diff --cc arch/arm/Kconfig.debug
+index 29f7623,e6a6ab1..0000000
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@@ -639,9 -656,9 +664,10 @@@ config DEBUG_LL_INCLUD
+  				 DEBUG_IMX35_UART || \
+  				 DEBUG_IMX51_UART || \
+  				 DEBUG_IMX53_UART ||\
+ -				 DEBUG_IMX6Q_UART
+ +				 DEBUG_IMX6Q_UART || \
+ +				 DEBUG_IMX6SL_UART
+- 	default "debug/mvebu.S" if DEBUG_MVEBU_UART
++ 	default "debug/mvebu.S" if DEBUG_MVEBU_UART || \
++ 				   DEBUG_MVEBU_UART_ALTERNATE
+  	default "debug/mxs.S" if DEBUG_IMX23_UART || DEBUG_IMX28_UART
+  	default "debug/nomadik.S" if DEBUG_NOMADIK_UART
+  	default "debug/omap2plus.S" if DEBUG_OMAP2PLUS_UART
 
-And waiting for anybody else to make progress while holding mmap_sem,
-i_mutex etc. is the problem.
+--Signature=_Thu__6_Jun_2013_15_36_00_+1000_cipSAVLwCWoA0gEm
+Content-Type: application/pgp-signature
 
-> > Do two things:
-> > 
-> > 1. When OOMing in a system call (buffered IO and friends), invoke the
-> >    OOM killer but just return -ENOMEM, never sleep.  Userspace should
-> >    be able to handle this.
-> > 
-> 
-> The sleep should never occur for any significant duration currently, the 
-> current implementation ensures one process calls 
-> mem_cgroup_out_of_memory() while all others sit on a waitqueue until that 
-> process returns from the oom killer and then they all wakeup again so the 
-> killed process may exit and all others can retry their allocations now 
-> that something has been killed.  If that process hasn't exited yet, the 
-> next process that locks the memcg oom hierarchy will see the killed 
-> process with TIF_MEMDIE and the oom killer is deferred.  So this sleep is 
-> very temporary already, I don't see why you're trying to make it faster 
-> while another thread finds a candidate task, it works quite well already.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-It's not the amount of time slept on average, it's that going to sleep
-in this context may deadlock the killing or the killed task.  I don't
-see where you read "making it faster", but I'm trying to make it just
-slightly faster than a deadlock.
+iQIcBAEBCAAGBQJRsB/FAAoJEECxmPOUX5FEb/cP+wS0e+YvHo2BFiI4G5cExyKb
+Nbs+/1E9jwlHNsflLgD4ZkSzlHrmTA9PZLZ97b9rIqUqmBxo4lafQnaV18uHqQi1
+YHskEzJixNaIYkCJCJ4gLdgQgBvthz6UeHJtxMYAM1jw1NnZ4Nox5b4Iq8Cg7vrw
+GeDfw5TAW+Xr3pC5zt4P6R8ELVZuHKnD74HGJqQONlEc7joNrLkPCI+udGI6Ww48
+RU7lQqprSHXm6GNORK1yEliX0/TMBNXNaz28xKSiWZ2roHstH/Q+nrhp5kk0TSsa
+lvdDE+t97mtOIMYp5/WVlL4qwMhkuGJVPHU8wUAH1CPAcMGNAjj+twmhtEzugfqF
+0J6JH00rVPyo0yQ+e4bplBNM3oUvbGQuVpt55pkhZDWXAShbUDKXCIybe/O69Up3
+7DQ3FNIVnVtbAchR/H2AfYX9TIMOydjq3o1fkUBh1WlO5W5IZ+Po7WnCJ5mB66ie
+jmAd6TVGnZPC3xZpjVcJXzvGb7Me8v65zS+7OQ1S8hkSk4ubnZQa0IR1wJk9jX3i
+Vayz7np4aK3j9fe0QdSq3m11/44ERxFfEaKbssli6GmGWGadmemK70VqszicduWB
+b2VYZbEu6hwqe028I7YJ8BtYONT+AGHlxM5LMp3rT0LgPS4p+OPUwYa+1WtK1gi9
+DGv2OkctjPJ7eSM8xxlj
+=hdSn
+-----END PGP SIGNATURE-----
 
-> > 2. When OOMing in a page fault and somebody else is handling the
-> >    situation, do not sleep directly in the charging code.  Instead,
-> >    remember the OOMing memcg in the task struct and then fully unwind
-> >    the page fault stack first before going to sleep.
-> > 
-> 
-> Are you trying to address a situation here where the memcg oom handler 
-> takes too long to work?  We've quite extensively tried to improve that, 
-> especially by reducing its dependency on tasklist_lock which is contended 
-> from the writeside in the exit path and by only iterating processes that 
-> are attached to that memcg hierarchy and not all processes on the system 
-> like before.  I don't see the issue with scheduling other oom processes 
-> while one is doing mem_cgroup_out_of_memory().  (I would if the oom killer 
-> required things like mm->mmap_sem, but obviously it doesn't for reasons 
-> not related to memcg.)
-
-I really don't see where you read "performance optimization" in this
-changelog, the very first paragraph mentions "very fragile" and "may
-deadlock".
-
-> > While reworking the OOM routine, also remove a needless OOM waitqueue
-> > wakeup when invoking the killer.  Only uncharges and limit increases,
-> > things that actually change the memory situation, should do wakeups.
-> > 
-> 
-> It's not needless at all, it's vitally required!  The oom killed process 
-> needs to be removed from the waitqueue and scheduled now with TIF_MEMDIE 
-> that the memcg oom killer provided so the allocation succeeds in the page 
-> allocator and memcg bypasses the charge so it can exit.
-
-The OOM killer sets TIF_MEMDIE and then sends a fatal signal to the
-victim.  That reliably wakes it up, doesn't it?
-
-> Exactly what problem are you trying to address with this patch?  I don't 
-> see any description of the user-visible effects or a specific xample of 
-> the scenario you're trying to address here.
-
-I'll add the example scenarios.
-
-Thanks!
+--Signature=_Thu__6_Jun_2013_15_36_00_+1000_cipSAVLwCWoA0gEm--
