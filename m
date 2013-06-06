@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933114Ab3FFLWx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 07:22:53 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:30700 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932727Ab3FFLWv (ORCPT
+	id S933157Ab3FFLX0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 07:23:26 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34465 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932487Ab3FFLXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 07:22:51 -0400
-From: Kefeng Wang <wangkefeng.wang@huawei.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: <linux-kernel@vger.kernel.org>, <guohanjun@huawei.com>
-Subject: [PATCH 0/7] irq: fix checkpatch errors and warnings 
-Date: Thu, 6 Jun 2013 19:20:24 +0800
-Message-ID: <1370517631-8684-1-git-send-email-wangkefeng.wang@huawei.com>
-X-Mailer: git-send-email 1.8.3.msysgit.0
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.68.221]
-X-CFilter-Loop: Reflected
+	Thu, 6 Jun 2013 07:23:23 -0400
+From: Tanya Brokhman <tlinder@codeaurora.org>
+To: axboe@kernel.dk
+Cc: linux-arm-msm@vger.kernel.org, linux-mmc@vger.kernel.org,
+        Tanya Brokhman <tlinder@codeaurora.org>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v7 2/4] block: Extend cmd_flags in struct request
+Date: Thu,  6 Jun 2013 14:23:05 +0300
+Message-Id: <1370517789-6122-1-git-send-email-tlinder@codeaurora.org>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix all the checkpath errors in kernel/irq dir, and some warnings
-also fixed.
+At the moment no new request flags can be added to enum rq_flag_bits
+due to cmd_flags field size limitation. This commit adds a new filed to be used as
+an extensions to cmd_flags.
 
-Kefeng Wang (7):
-  irq: fix checkpatch warnings
-  irq: fix checkpatch error
-  irq: fix checkpatch error
-  irq: fix all checkpatch errors and warnings
-  irq: fix all checkpatch errors and warnings
-  irq: fix checkpatch warnings
-  irq: fix all checkpatch errors and warnings
+Signed-off-by: Tanya Brokhman <tlinder@codeaurora.org>
 
- kernel/irq/chip.c      |  6 ++++--
- kernel/irq/handle.c    |  7 ++++---
- kernel/irq/irqdesc.c   | 15 ++++++++++-----
- kernel/irq/irqdomain.c |  6 +++---
- kernel/irq/manage.c    | 31 +++++++++++++++++++------------
- kernel/irq/proc.c      | 11 ++++++-----
- kernel/irq/spurious.c  | 33 ++++++++++++++++-----------------
- 7 files changed, 62 insertions(+), 47 deletions(-)
+diff --git a/block/blk-core.c b/block/blk-core.c
+index fe3683c..3a14987 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -3226,6 +3226,8 @@ int __init blk_dev_init(void)
+ {
+ 	BUILD_BUG_ON(__REQ_NR_BITS > 8 *
+ 			sizeof(((struct request *)0)->cmd_flags));
++	BUILD_BUG_ON(__REQ_EXT_NR_BITS > 8 *
++			sizeof(((struct request *)0)->cmd_flags_ext));
+ 
+ 	/* used for unplugging and affects IO latency/throughput - HIGHPRI */
+ 	kblockd_workqueue = alloc_workqueue("kblockd",
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index fa1abeb..40a921f 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -181,6 +181,11 @@ enum rq_flag_bits {
+ 	__REQ_NR_BITS,		/* stops here */
+ };
+ 
++/* Request flags. For use in the cmd_flags_ext field of struct request */
++enum ext_rq_flag_bits {
++	__REQ_EXT_NR_BITS,	/* stops here */
++};
++
+ #define REQ_WRITE		(1 << __REQ_WRITE)
+ #define REQ_FAILFAST_DEV	(1 << __REQ_FAILFAST_DEV)
+ #define REQ_FAILFAST_TRANSPORT	(1 << __REQ_FAILFAST_TRANSPORT)
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 968720f..aa36278 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -100,6 +100,7 @@ struct request {
+ 	struct request_queue *q;
+ 
+ 	unsigned int cmd_flags;
++	unsigned int cmd_flags_ext;
+ 	enum rq_cmd_type_bits cmd_type;
+ 	unsigned long atomic_flags;
+ 
+-- 
+1.7.6
 
 -- 
-1.8.2.1
-
-
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
