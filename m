@@ -1,102 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932959Ab3FFLlU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 07:41:20 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:37727 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932592Ab3FFLlS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 07:41:18 -0400
-From: Michel Lespinasse <walken@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: [PATCH] x86: fix trigger_all_cpu_backtrace() implementation
-Date: Thu,  6 Jun 2013 04:41:15 -0700
-Message-Id: <1370518875-1346-1-git-send-email-walken@google.com>
-X-Mailer: git-send-email 1.8.3
+	id S932645Ab3FFLrc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 07:47:32 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:41757 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932351Ab3FFLrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 07:47:31 -0400
+From: Robin Holt <holt@sgi.com>
+To: akpm@linux-foundation.org
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Russ Anderson <rja@sgi.com>,
+        Robin Holt <holt@sgi.com>, Russell King <linux@arm.linux.org.uk>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH -v11 resend 00/11] Shutdown from reboot_cpuid without stopping other cpus.
+Date: Thu,  6 Jun 2013 06:47:13 -0500
+Message-Id: <1370519244-49918-1-git-send-email-holt@sgi.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following change fixes the x86 implementation of
-trigger_all_cpu_backtrace(), which was previously (accidentally, as
-far as I can tell) disabled to always return false as on architectures
-that do not implement this function.
+We recently noticed that reboot of a 1024 cpu machine takes approx 16
+minutes of just stopping the cpus.  The slowdown was tracked to commit
+f96972f.
 
-Is there any chance that we could get this in before v3.10 ?
+The current implementation does all the work of hot removing the cpus
+before halting the system.  We are switching to just migrating to the
+reboot_cpu and then continuing with shutdown/reboot.
 
----------------------------------8<---------------------------------
+The patch set is broken into eleven parts.  The first two are planned for
+the stable release.  The others move the halt/shutdown/reboot related
+functions to their own kernel/reboot.c file and then move the handling
+of the kernel reboot= kernel parameter to generic kernel code.
 
-trigger_all_cpu_backtrace(), as defined in include/linux/nmi.h,
-should call arch_trigger_all_cpu_backtrace() if available, or return
-false if the underlying arch doesn't implement this function.
+Changes since -v10
+ - Added Russell's Acked-by for arm.
 
-x86 did provide a suitable arch_trigger_all_cpu_backtrace() implementation,
-but it wasn't actually being used because it was declared in asm/nmi.h,
-which linux/nmi.h doesn't include. Also, linux/nmi.h couldn't easily
-be fixed by including asm/nmi.h, because that file is not available on
-all architectures.
+ - Fixed an accidentally commented out line in an arm header file.
 
-I am proposing to fix this by moving the x86 definition of
-arch_trigger_all_cpu_backtrace() to asm/irq.h.
+Changes since -v9
+ - Added Ingo's Acked-by for x86.
 
-Tested: echo l > /proc/sysrq-trigger
+ - Added Guan's Acked-by for unicore32.
 
-Before the change, this uses a fallback implementation which shows
-backtraces on active CPUs (using smp_call_function_interrupt() )
+ - Replaced first patch with updated patch from Srivatsa S. Bhat.
+   This compiles for alpha allmodconfig, all arm defconfigs, and a few
+   test x86_64 defconfigs.  I have not tried more.
 
-After the change, this shows NMI backtraces on all CPUs
+Changes since -v8
+ - Changes reboot_cpu on stack to cpu to fix bug noticed by Russell King.
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
----
- arch/x86/include/asm/irq.h    | 5 +++++
- arch/x86/include/asm/nmi.h    | 4 +---
- arch/x86/kernel/apic/hw_nmi.c | 1 +
- 3 files changed, 7 insertions(+), 3 deletions(-)
+ - Switched unicore32 and arm from using REBOOT_WARM/COLD to HARD/SOFT.
 
-diff --git a/arch/x86/include/asm/irq.h b/arch/x86/include/asm/irq.h
-index ba870bb6dd8e..57873beb3292 100644
---- a/arch/x86/include/asm/irq.h
-+++ b/arch/x86/include/asm/irq.h
-@@ -41,4 +41,9 @@ extern int vector_used_by_percpu_irq(unsigned int vector);
- 
- extern void init_ISA_irqs(void);
- 
-+#ifdef CONFIG_X86_LOCAL_APIC
-+void arch_trigger_all_cpu_backtrace(void);
-+#define arch_trigger_all_cpu_backtrace arch_trigger_all_cpu_backtrace
-+#endif
-+
- #endif /* _ASM_X86_IRQ_H */
-diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
-index c0fa356e90de..86f9301903c8 100644
---- a/arch/x86/include/asm/nmi.h
-+++ b/arch/x86/include/asm/nmi.h
-@@ -18,9 +18,7 @@ extern int proc_nmi_enabled(struct ctl_table *, int ,
- 			void __user *, size_t *, loff_t *);
- extern int unknown_nmi_panic;
- 
--void arch_trigger_all_cpu_backtrace(void);
--#define arch_trigger_all_cpu_backtrace arch_trigger_all_cpu_backtrace
--#endif
-+#endif /* CONFIG_X86_LOCAL_APIC */
- 
- #define NMI_FLAG_FIRST	1
- 
-diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index 31cb9ae992b7..a698d7165c96 100644
---- a/arch/x86/kernel/apic/hw_nmi.c
-+++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -9,6 +9,7 @@
-  *
-  */
- #include <asm/apic.h>
-+#include <asm/nmi.h>
- 
- #include <linux/cpumask.h>
- #include <linux/kdebug.h>
--- 
-1.8.3
+ - Fixed case statement bug.
+
+ - Went to using simple_strtoul for parsing reboot_cpu=smp###.
+
+ - Made parsing of reboot= not use any #ifdef'd code.
+
+Changes since -v7.
+ - Fixed authorship for first patch.
+
+ - Rebased to Linus' current tree (51a26ae7a).
+
+Changes since -v6.
+ - Cross compiled all arm architectures (using v3.9 kernel.  Fails with
+   current).
+
+ - Added a #define for non-hotplug case.
+
+ - Add #define for PF_THREAD_BOUND as compatibility to make stable easier.
+
+ - Fixup s/reboot_cpu_id/reboot_cpu/
+
+ - Add include of linux/uaccess.h to allow building on arm.
+
+ - Removed last remaining checkpatch.pl line length warning on
+   kernel/reboot.c.
+
+ - Fixed the duplicate handling or the reboot= kernel parameter.
+
+Changes since -v5.
+ - Moved the arch/x86 reboot= up to the generic kernel code.
+
+Changes since -v4.
+ - Integrated Srivatsa S. Bhat creating cpu_hotplug_disable()
+   function
+
+ - Integrated comments by Srivatsa S. Bhat.
+
+ - Made one more comment consistent with others in function.
+
+Changes since -v3.
+ - Added a tested-by for the original reporter.
+
+ - Fix compile failure found by Joe Perches.
+
+ - Integrated comments by Joe Perches.
+
+
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Russ Anderson <rja@sgi.com>
+Cc: Robin Holt <holt@sgi.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: the arch/x86 maintainers <x86@kernel.org>
+Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
