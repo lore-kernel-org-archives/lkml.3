@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932376Ab3FFJA5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 05:00:57 -0400
-Received: from oms-db03.r1000.mx.aol.com ([205.188.58.3]:37538 "EHLO
-	oms-db03.r1000.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932326Ab3FFJAs convert rfc822-to-8bit (ORCPT
+	id S932497Ab3FFJCM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 05:02:12 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:47148 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932381Ab3FFJCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 05:00:48 -0400
-X-MB-Message-Source: WebUI
-Content-Transfer-Encoding: 8BIT
-Subject: =?utf-8?Q?PROCES_A_ODKUPU_VA=C5=A0?=
- =?utf-8?Q?=C3=8D_VYHR=C3=81L_CENU_=C2=A3_7.?=
- =?utf-8?Q?500,000LIBRA_BRITSK=C3=81?=
- =?utf-8?Q?_LIBRA_{_GBP_}?=
-X-MB-Message-Type: User
+	Thu, 6 Jun 2013 05:02:09 -0400
+Date: Thu, 6 Jun 2013 11:02:04 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, pmatouse@redhat.com, meissner@suse.de,
+        security@kernel.org, oss-security@lists.openwall.com,
+        ak@linux.intel.com
+Subject: [PATCH] perf: fix hypervisor branch sampling permission check
+Message-ID: <20130606090204.GA3725@quad>
 MIME-Version: 1.0
-From: "www.swisslotto.ch" <sender@aol.jp>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-X-Mailer: AOL Webmail 37776-BASIC
-Message-Id: <8D030AB76842FE4-63C-80B3@webmail-vd016.sysops.aol.com>
-X-Originating-IP: [110.159.129.178]
-Date: Thu, 6 Jun 2013 05:00:44 -0400 (EDT)
-x-aol-global-disposition: S
-X-SPAM-FLAG: YES
-X-AOL-SCOLL-SCORE: 0:2:127871272:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-X-AOL-REROUTE: YES 
-x-aol-sid: 3039ac1d338e51b04fbc0d9a
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-www.swisslotto.ch 2013
-SWISSLOTTO
 
-Gratulujeme: Toto je oficiálně přinést do vaší pozornosti, že vaše 
-e-mailová adresa získal pro vás on-line elektronickou loterii o 
-probíhajícím Swisslotto platby loterie on-line přes náhodné 
-elektronickým systémem e-mailovou volební qualification.The součet 
-7.500,000libra Great British Pounds { CZK} má být udělena vás v 
-probíhajícím programu Swislotto, aby vám zpracovávat a využívat své 
-vyhrál cenu, musíte jít vykupitelské politiky a strážní linek z vaší 
-platební určené banky. V tomto nŘádek Vítězové loterie elektronických 
-cvičení se vynořila z 7 kontinentů světa a 2013 vydání Swisslotto je 
-zesílený vydání, přičemž vítězové vynořil ze seznamu kontinentech 
-Afrika, Antarktida, Asie, Austrálie, Evropy, Severní Ameriky
-Jižní Amerika.
+Commit 2b923c8 perf/x86: Check branch sampling priv level in generic code
+was missing the check for the hypervisor (HV) priv level, so add it back.
 
-Podle náhodné e-mailové adresy sčítací systém e-mailovou kvalifikaci 
-vaše e-mailová adresa získal pro Vás součet 7.500,000libra Great 
-British liber {GBP}  a získala cenu patří do Vaší tudíž vaše jsou 
-oprávněný uživatel e-mailové adresy se svou vítěznou viz níže:
+With this patch, we get the following correct behavior:
 
-Vítězné číslo: 46689 \ 67 \ 2013k
-Směrování číslo: Vítěz # 5657
-Výrobní kód: 56579Kl
+  # echo 2 >/proc/sys/kernel/perf_event_paranoid 
 
-Vaše přesto je třeba ještě zpracovat, je to vaše právo je šťastným 
-výhercem zpracovávat a využívat své vyhrál cenu přes normální 
-prohlašovat postupu sami právního příjemce, pro procesí a čerpání 
-vašeho vyhrál cenu posílat níže uvedené informace do centrální světa 
-Široká agent i.desk1@aol.com vám směrnic do průvodu a platební banku
+  $ perf record -j any,k noploop 1
+  Error:
+  You may not have permission to collect stats.
+  Consider tweaking /proc/sys/kernel/perf_event_paranoid:
+   -1 - Not paranoid at all
+    0 - Disallow raw tracepoint access for unpriv
+    1 - Disallow cpu events for unpriv
+    2 - Disallow kernel profiling for unpriv
 
-                                                                      
-POSKYTNĚTE NÍŽE UVEDENÉ INFORMACE
+   $ perf record -j any,hv noploop 1
+   Error:
+   You may not have permission to collect stats.
+   Consider tweaking /proc/sys/kernel/perf_event_paranoid:
+    -1 - Not paranoid at all
+     0 - Disallow raw tracepoint access for unpriv
+     1 - Disallow cpu events for unpriv
+     2 - Disallow kernel profiling for unpriv
 
-Příjmení:
-Jméno
-Druhé jméno:
-Pohlaví:
-Datum narození:
-Povolání:
-Číslo mobilního telefonu:
-Tel. Číslo:
-Národnost:
-Domovská adresa:
-Úřad nebo Poštovní adresa:
-Země:
-Současná Země:
-Výherní číslo:
-Směrovací číslo:
-Výrobní kód:
-
-kontakt : i.desk1@aol.com
-
-Jste zaslat požadované informace popsané výše procesí a využívat svých 
-mandátů získaly prize.Zákon, můžete jako právní příjemci této výhra v 
-loterii zpracovávat pro nároky vašeho získal fond od svého určeného 
-platebního banky tím, že cituje své vítězné údaje, jakož jak jdou podle 
-pravidel a regulace střežících vykupující procesu procedure.Your se 
-prosím doporučuje zkontrolovat e-maily denně, což nám pomáhá usnadnit 
-průvod vaší cenu.
-
-Poznámka: Není-li přesměrovat informace k této e-mailovou adresu 
-i.desk1@aol.com nebo zvážit sám automaticky diskvalifikován.
-
-
-Děkovat
-Paní Anna Van
--------------------------------------------------------------------------
--------------------------------------------------------------------------
--------------------------------------------------------------------------
-----------------
-Copyright © 2013 Swiss loterie! Všechna práva vyhrazena
-
-
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 95edd5a..f0880fb 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6501,8 +6501,8 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+ 			 */
+ 			attr->branch_sample_type = mask;
+ 		}
+-		/* kernel level capture: check permissions */
+-		if ((mask & PERF_SAMPLE_BRANCH_KERNEL)
++		/* privileged levels capture (kernel, hv): check permissions */
++		if ((mask & PERF_SAMPLE_BRANCH_PERM_PLM)
+ 		    && perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
+ 			return -EACCES;
+ 	}
