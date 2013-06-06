@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab3FFOAY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 10:00:24 -0400
-Received: from mga03.intel.com ([143.182.124.21]:1961 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751101Ab3FFOAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 10:00:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,815,1363158000"; 
-   d="scan'208";a="313226169"
-From: Jani Nikula <jani.nikula@intel.com>
-To: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: chris@chris-wilson.co.uk, daniel@ffwll.ch
-Subject: Re: [PATCH 0/3]
-In-Reply-To: <cover.1370525922.git.jani.nikula@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <cover.1370525922.git.jani.nikula@intel.com>
-User-Agent: Notmuch/0.15.2+173~g7bae869 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 06 Jun 2013 16:59:26 +0300
-Message-ID: <87d2rzl4qp.fsf@intel.com>
+	id S1751662Ab3FFODh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 10:03:37 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:55469 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750890Ab3FFODg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 10:03:36 -0400
+Date: Thu, 6 Jun 2013 10:02:50 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: "luke.leighton" <luke.leighton@gmail.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        debian-kernel@lists.debian.org
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
+ Uploading linux (3.9.4-1))
+Message-ID: <20130606140250.GA4839@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	"luke.leighton" <luke.leighton@gmail.com>,
+	Tomasz Figa <tomasz.figa@gmail.com>,
+	linux-arm-kernel@lists.infradead.org,
+	Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>,
+	devicetree-discuss <devicetree-discuss@ozlabs.org>,
+	Stephen Warren <swarren@wwwdotorg.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	debian-arm@lists.debian.org,
+	"jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+	debian-kernel@lists.debian.org
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
+ <1370475609.20454.44.camel@localhost>
+ <CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
+ <1733666.lHUBcfUXq9@flatron>
+ <CAPweEDzYLDzh_-OWU61dtVhajZ40QpQgZKHFYDsh3FgF=r9_ag@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPweEDzYLDzh_-OWU61dtVhajZ40QpQgZKHFYDsh3FgF=r9_ag@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 06, 2013 at 01:24:57PM +0100, luke.leighton wrote:
+> On Thu, Jun 6, 2013 at 1:01 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> 
+> > I don't see any other solution here than moving all the Allwinner code to
+> > DT (as it has been suggested in this thread several times already), as
+> > this is the only hardware description method supported by ARM Linux.
+> 
+>  i repeat again: please state, explicitly and unequivocably that you -
+> linux kernel developers - are happy that the reach of linux and
+> gnu/linux OSes is dramatically reduced due to this intransigent
+> position.
 
-With Greg's address fixed. Please drop the old one from any
-replies. Sorry for the noise.
+But that's not a true statement.  You've said that Allwinner is
+perfectly happy to carry code out of tree, by constantly porting their
+hacks from mainline kernels.
 
-On Thu, 06 Jun 2013, Jani Nikula <jani.nikula@intel.com> wrote:
-> Hi Greg, Andrew -
->
-> Patch 1 is for DMI, bugfixes in patches 2-3 for i915 and included for
-> completeness. After a tested-by they should be good for stable. I'll
-> leave it to Daniel to sort out how the last two get in.
->
-> BR,
-> Jani.
->
-> Chris Wilson (1):
->   drm/i915: Quirk away phantom LVDS on Intel's D510MO mainboard
->
-> Jani Nikula (2):
->   dmi: add support for exact DMI matches in addition to substring
->     matching
->   drm/i915: Quirk away phantom LVDS on Intel's D525MW mainboard
->
->  drivers/firmware/dmi_scan.c       |   12 +++++++++---
->  drivers/gpu/drm/i915/intel_lvds.c |   16 ++++++++++++++++
->  include/linux/mod_devicetable.h   |    6 ++++--
->  3 files changed, 29 insertions(+), 5 deletions(-)
->
-> -- 
-> 1.7.9.5
->
+For some of their customers, this will be acceptable to them.  In
+those cases, Linux will still be in use.  Great!  So claiming that the
+reach of Linux will be "dramatically reduced" just is not a
+supportable position.
 
--- 
-Jani Nikula, Intel Open Source Technology Center
+For other (potential) customers, for whom mainline kernel support is
+critically important, they will choose other hardware solutions that
+are in the mainline kernel.
+
+I don't see the problem here.
+
+						- Ted
