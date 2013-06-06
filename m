@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080Ab3FFE35 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 00:29:57 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:50284 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344Ab3FFE34 (ORCPT
+	id S1752203Ab3FFEcw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 00:32:52 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38158 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727Ab3FFEcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 00:29:56 -0400
-Message-ID: <1370492994.24311.331.camel@edumazet-glaptop>
-Subject: Re: [PATCH] Fix lockup related to stop_machine being stuck in
- __do_softirq.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: greearb@candelatech.com
-Cc: linux-kernel@vger.kernel.org, tj@kernel.org
-Date: Wed, 05 Jun 2013 21:29:54 -0700
-In-Reply-To: <1370492751-6886-1-git-send-email-greearb@candelatech.com>
-References: <1370492751-6886-1-git-send-email-greearb@candelatech.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Thu, 6 Jun 2013 00:32:51 -0400
+Message-ID: <51B010B2.10309@infradead.org>
+Date: Wed, 05 Jun 2013 21:31:46 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: akpm@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
+Subject: Re: mmotm 2013-06-05-17-24 uploaded (rtc)
+References: <20130606002636.6746F5A41AE@corp2gmr1-2.hot.corp.google.com>
+In-Reply-To: <20130606002636.6746F5A41AE@corp2gmr1-2.hot.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-05 at 21:25 -0700, greearb@candelatech.com wrote:
-> From: Ben Greear <greearb@candelatech.com>
+On 06/05/13 17:26, akpm@linux-foundation.org wrote:
+> The mm-of-the-moment snapshot 2013-06-05-17-24 has been uploaded to
+> 
+>    http://www.ozlabs.org/~akpm/mmotm/
+> 
+> mmotm-readme.txt says
+> 
+> README for mm-of-the-moment:
+> 
+> http://www.ozlabs.org/~akpm/mmotm/
+> 
 
-> diff --git a/kernel/softirq.c b/kernel/softirq.c
-> index 14d7758..f150ad6 100644
-> --- a/kernel/softirq.c
-> +++ b/kernel/softirq.c
-> @@ -204,6 +204,7 @@ EXPORT_SYMBOL(local_bh_enable_ip);
->   * should not be able to lock up the box.
+on i386 when CONFIG_PM is not enabled:
 
-Could you update the comment ?
+drivers/rtc/class.c:339:18: error: lvalue required as unary '&' operand
 
-I had the following :
-
-- * We restart softirq processing for at most 2 ms,
-- * and if need_resched() is not set.
-+ * We restart softirq processing for at most MAX_SOFTIRQ_RESTART times,
-+ * but break the loop if need_resched() is set or after 2 ms.
-
-
->   */
->  #define MAX_SOFTIRQ_TIME  msecs_to_jiffies(2)
-> +#define MAX_SOFTIRQ_RESTART 10
->  
->  asmlinkage void __do_softirq(void)
->  {
-> @@ -212,6 +213,7 @@ asmlinkage void __do_softirq(void)
->  	unsigned long end = jiffies + MAX_SOFTIRQ_TIME;
->  	int cpu;
->  	unsigned long old_flags = current->flags;
-> +	int max_restart = MAX_SOFTIRQ_RESTART;
->  
->  	/*
->  	 * Mask out PF_MEMALLOC s current task context is borrowed for the
-> @@ -265,7 +267,8 @@ restart:
->  
->  	pending = local_softirq_pending();
->  	if (pending) {
-> -		if (time_before(jiffies, end) && !need_resched())
-> +		if (time_before(jiffies, end) && !need_resched()
-> +		    && --max_restart)
->  			goto restart;
->  
->  		wakeup_softirqd();
+due to:
+#define rtc_class_dev_pm_ops	NULL
 
 
-if (cond1 && cond2 &&
-    cond3) ...
 
-or
-
-if (cond1 &&
-    cond2 &&
-    cond3) ...
-
-Thanks !
-
-
+-- 
+~Randy
