@@ -1,114 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338Ab3FFLaa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 07:30:30 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:50385 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200Ab3FFLa2 (ORCPT
+	id S932707Ab3FFLbS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 07:31:18 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:38451 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932536Ab3FFLbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 07:30:28 -0400
-X-Originating-IP: 108.223.40.66
-Date: Thu, 6 Jun 2013 04:31:10 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Johannes Thumshirn <johannes.thumshirn@men.de>
-Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Some problems with sysfs patch (was Re: [PATCH v6] watchdog: New
- watchdog driver for MEN A21 watchdogs)
-Message-ID: <20130606113110.GA5834@roeck-us.net>
-References: <20130531103654.GB5619@roeck-us.net>
- <20130531110846.GA15707@jtlinux>
- <20130531114037.GA13533@roeck-us.net>
- <20130531125519.GB8983@jtlinux>
- <20130601041523.GB4081@roeck-us.net>
- <20130603095026.GA21720@jtlinux>
- <20130606105103.GA25245@jtlinux>
+	Thu, 6 Jun 2013 07:31:17 -0400
+Date: Thu, 6 Jun 2013 13:31:06 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Tobias Winter <tobias@linuxdingsda.de>,
+        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        Rob Landley <rob@landley.net>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
+Subject: Re: [PATCH 1/3] USB: serial: ports: add minor and port number
+Message-ID: <20130606113106.GI2566@localhost>
+References: <20130605175426.GA13461@kroah.com>
+ <20130605175539.GD13461@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130606105103.GA25245@jtlinux>
+In-Reply-To: <20130605175539.GD13461@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 12:51:03PM +0200, Johannes Thumshirn wrote:
-> On Mon, Jun 03, 2013 at 11:50:26AM +0200, Johannes Thumshirn wrote:
-> > On Fri, May 31, 2013 at 09:15:23PM -0700, Guenter Roeck wrote:
-> > > On Fri, May 31, 2013 at 02:55:19PM +0200, Johannes Thumshirn wrote:
-> > > > Hi Guenther,
-> > > > On Fri, May 31, 2013 at 04:40:37AM -0700, Guenter Roeck wrote:
-> > > > > > +#define GPIO_WD_ENAB	169
-> > > > > > +#define GPIO_WD_FAST	170
-> > > > > > +#define GPIO_WD_TRIG	171
-> > > > > > +
-> > > > > > +#define GPIO_RST_CAUSE_BASE 166
-> > > > > > +
-> > > > >
-> > > > > I think I asked that before ... as you are supporting devicetree, gpio pins
-> > > > > should really be provided through devicetree properties and not be hardcoded.
-> > > > >
-> > > > Yes you did and I didn't come up with a solution to this problem yet. I understand
-> > > > and agree to your concerns but I'm lacking example code/documentation for it, maybe
-> > > > you can point me to an example on that and then I'll update my code accordingly.
-> > > >
-> > >
-> > > Have a look at Documentation/devicetree/bindings/gpio/gpio-fan.txt and
-> > > drivers/hwmon/gpio-fan.c.
-> >
-> > Thanks a lot, this really helped me out. Updated patch is comming today
-> > including the bindings document Arnd Bergmann requested. I only need to rebase
-> > the sysfs patch on top of that changes.
-> >
-> > Regards,
-> > Johannes
+On Wed, Jun 05, 2013 at 10:55:39AM -0700, Greg KH wrote:
+> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 > 
-> Regarding the sysfs patch, I have a funny effect in my (rebased) sysfs code.
+> The usb_serial_port structure had the number field, which was the minor
+> number for the port, which almost no one really cared about.  They
+> really wanted the number of the port within the device, which you had to
+> subtract from the minor of the parent usb_serial_device structure.  To
+> clean this up, provide the real minor number of the port, and the number
+> of the port within the serial device separately, as these numbers might
+> not be related in the future.
 > 
-> Given the following code:
+> Bonus is that this cleans up a lot of logic in the drivers, and saves
+> lines overall.
 > 
-> +static ssize_t rebootcause_show(struct device *dev,
-> +                               struct device_attribute *attr,
-> +                               char *buf)
-> +{
-> +       struct a21_wdt_drv *drv = dev_get_drvdata(dev);
-> +       unsigned int reset = 0;
-> +
-> +       if (!drv)
-> +               return -EIO;
-> +
-> +       reset = a21_wdt_get_bootstatus(drv);
-> +
-> +       return sprintf(buf, "%s\n", reset_causes[reset]);
-> +}
-> +static DEVICE_ATTR(rebootcause, S_IRUGO, rebootcause_show, NULL);
-> 
-> I actually need the check for if (!drv) to prevent an OOPS, as
-> dev_get_drvdata(dev) returns NULL., though it is set at the end of my probe
-> function via:
-> 
-> [...]
-> +       ret = watchdog_register_device(&a21_wdt);
-> +       if (ret) {
-> +               dev_err(&pdev->dev, "Cannot register watchdog device\n");
-> +               goto err_register_wd;
-> +       }
-> +
-> +       dev_set_drvdata(&pdev->dev, drv);
-> +
-> +       return 0;
-> [...]
-> 
-> The watchdog driver itself is working without any troubles.
-> 
-> Some advice here would be worth its weight in gold.
-> 
-It has to be set before the attribute is created. Are you doing that ? Also, is
-'dev' the same device pointer (ie is the 'dev' in your function the same as
-&pdev->dev) ?
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Guenter
+> --- a/drivers/usb/serial/io_edgeport.c
+> +++ b/drivers/usb/serial/io_edgeport.c
 
-> Thanks,
-> Johannes
-> 
+> @@ -2302,7 +2293,7 @@ static int send_cmd_write_baud_rate(stru
+>  
+>  	/* Restore original value to disable access to divisor latch */
+>  	MAKE_CMD_WRITE_REG(&currCmd, &cmdLen, number, LCR,
+> -						edge_port->shadowLCR);
+> +			   edge_port->shadowLCR);
+
+Unintended indentation change?
+
+>  	status = write_cmd_usb(edge_port, cmdBuffer, cmdLen);
+>  	if (status) {
+
+> --- a/drivers/usb/serial/whiteheat.c
+> +++ b/drivers/usb/serial/whiteheat.c
+
+> @@ -649,7 +649,7 @@ static void firm_setup_port(struct tty_s
+>  	struct whiteheat_port_settings port_settings;
+>  	unsigned int cflag = tty->termios.c_cflag;
+>  
+> -	port_settings.port = port->number + 1;
+> +	port_settings.port = port->port_number + 1;
+
+This is a bug that should be fixed separately and backported, as it
+prevents port configuration (e.g. set_termios) for ports with minor
+number greater than 0.
+
+I took the liberty to prepare a separate patch for v3.10, which you
+could rebase the series on.
+
+>  	/* get the byte size */
+>  	switch (cflag & CSIZE) {
+
+> --- a/include/linux/usb/serial.h
+> +++ b/include/linux/usb/serial.h
+> @@ -37,7 +37,8 @@
+>   * @serial: pointer back to the struct usb_serial owner of this port.
+>   * @port: pointer to the corresponding tty_port for this port.
+>   * @lock: spinlock to grab when updating portions of this structure.
+> - * @number: the number of the port (the minor number).
+> + * @minor: the minor number of the port
+> + * @port_number: the port number of this struct usb_serial_device (starts at 0)
+
+Maybe 
+
+	@port_number: the struct usb_serial port number of this port (starts at 0)
+
+or something similar, would be more clear?
+
+>   * @interrupt_in_buffer: pointer to the interrupt in buffer for this port.
+>   * @interrupt_in_urb: pointer to the interrupt in struct urb for this port.
+>   * @interrupt_in_endpointAddress: endpoint address for the interrupt in pipe
+
+Looks good otherwise.
+
+Thanks,
+Johan
