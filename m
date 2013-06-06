@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab3FFNww (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 09:52:52 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40934 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752309Ab3FFNwu (ORCPT
+	id S1752105Ab3FFNzn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 09:55:43 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:36787 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101Ab3FFNzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 09:52:50 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, Felipe Balbi <balbi@ti.com>
-Subject: Missing pieces for AM335x PWM / backlight support
-Date: Thu,  6 Jun 2013 15:52:35 +0200
-Message-Id: <1370526759-31163-1-git-send-email-bigeasy@linutronix.de>
+	Thu, 6 Jun 2013 09:55:42 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: hjk@hansjkoch.de, gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] uio: uio_pruss: Fix potential NULL pointer dereference
+Date: Thu,  6 Jun 2013 15:55:28 +0200
+Message-Id: <1370526928-20619-1-git-send-email-emilgoode@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit d683b96b072dc4680fc74964eca77e6a23d1fa6e:
+In function pruss_probe we free gdev and try to use
+it on the next line. I have moved the dereference to
+above the kfree of gdev.
 
-  Linux 3.10-rc4 (2013-06-02 17:11:17 +0900)
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+ drivers/uio/uio_pruss.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-are available in the git repository at:
+diff --git a/drivers/uio/uio_pruss.c b/drivers/uio/uio_pruss.c
+index 6e2ab00..21f7a72 100644
+--- a/drivers/uio/uio_pruss.c
++++ b/drivers/uio/uio_pruss.c
+@@ -136,9 +136,9 @@ static int pruss_probe(struct platform_device *dev)
+ 	gdev->pruss_clk = clk_get(&dev->dev, "pruss");
+ 	if (IS_ERR(gdev->pruss_clk)) {
+ 		dev_err(&dev->dev, "Failed to get clock\n");
++		ret = PTR_ERR(gdev->pruss_clk);
+ 		kfree(gdev->info);
+ 		kfree(gdev);
+-		ret = PTR_ERR(gdev->pruss_clk);
+ 		return ret;
+ 	} else {
+ 		clk_enable(gdev->pruss_clk);
+-- 
+1.7.10.4
 
-  git://git.breakpoint.cc/bigeasy/linux.git tags/am335x-pwm
-
-for you to fetch changes up to 6b319b16a27463c93ec36e59458448aae3ab94cd:
-
-  ARM: dts: AM33XX: Add PWM backlight DT data to am335x-evmsk (2013-06-06 14:59:18 +0200)
-
-----------------------------------------------------------------
-Collected patches from Philip Avinash to get PWM working on AM335x-evm.
-The series includes the TBCLK and device tree entries.
-
-----------------------------------------------------------------
-Philip Avinash (4):
-      ARM: AM33XX: clk: Add clock node for EHRPWM TBCLK
-      ARM: dts: AM33XX: Add PWMSS device tree nodes
-      ARM: dts: AM33XX: Add PWM backlight DT data to am335x-evm
-      ARM: dts: AM33XX: Add PWM backlight DT data to am335x-evmsk
-
- arch/arm/boot/dts/am335x-evm.dts      |   23 +++++++++
- arch/arm/boot/dts/am335x-evmsk.dts    |   23 +++++++++
- arch/arm/boot/dts/am33xx.dtsi         |   84 +++++++++++++++++++++++++++++++++
- arch/arm/mach-omap2/cclock33xx_data.c |   30 ++++++++++++
- arch/arm/mach-omap2/control.h         |    8 ++++
- 5 files changed, 168 insertions(+)
-
-Sebastian
