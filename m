@@ -1,102 +1,578 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876Ab3FFRbN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 13:31:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56819 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751353Ab3FFRbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 13:31:10 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20130606115417.GA520@x4>
-References: <20130606115417.GA520@x4>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Strange intermittent EIO error when writing to stdout since v3.8.0
-Date: Thu, 06 Jun 2013 18:31:01 +0100
-Message-ID: <12790.1370539861@warthog.procyon.org.uk>
+	id S1753448Ab3FFRb0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 13:31:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50815 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753078Ab3FFRbW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 13:31:22 -0400
+Date: Thu, 6 Jun 2013 10:31:21 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tobias Winter <tobias@linuxdingsda.de>,
+        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        Rob Landley <rob@landley.net>, Johan Hovold <jhovold@gmail.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 2/3] USB: serial: make minor allocation dynamic
+Message-ID: <20130606173121.GA1866@kroah.com>
+References: <20130606173103.GA1812@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130606173103.GA1812@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-> OSError: [Errno 5] Input/output error
-> 
-> Basically 'emerge' just writes the build output to stdout in a loop:
+This moves the allocation of minor device numbers from a static array to
+be dynamic, using the idr interface.  This means that you could
+potentially get "gaps" in a minor number range for a single USB serial
+device with multiple ports, but all should still work properly.
 
-I've just upgraded to kernel-3.9.4-200.fc18.x86_64 and I'm now regularly
-seeing something very similar from the tee run by "fedpkg local" to log its
-output when building a cross-compiler gcc RPM:
+We remove the 'minor' field from the usb_serial structure, as it no
+longer makes any sense for it (use the field in the usb_serial_port
+structure if you really want to know this number), and take the fact
+that we were overloading a number in this field to determine if we had
+initialized the minor numbers or not, and just use a flag variable
+instead.
 
-	tee: standard output: Input/output error
-	tee: write error
+Note, we still have the limitation of 255 USB to serial devices in the
+system, as that is all we are registering with the TTY layer at this
+point in time.
 
-Slapping strace on tee after the "Input/output error" line has occurred shows
-that tee is still running and still pushing lines from its stdin to the output
-named on its command line, but has ceased writing to its stdout.
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-The stdout is (or was) a TTY that's either the communications channel to an
-xterm or the channel to an emacs buffer.  With the xterm, the process can be
-suspended (CTRL+Z) stuff can be written to the tty and then the process can be
-rstarted.  Indeed, stderr for tee goes to the same tty - and must still be
-functional otherwise I wouldn't see the aforementioned error messages...
+---
+ drivers/staging/serqt_usb2/serqt_usb2.c |   15 +--
+ drivers/usb/serial/ark3116.c            |    2 
+ drivers/usb/serial/f81232.c             |    2 
+ drivers/usb/serial/io_edgeport.c        |    2 
+ drivers/usb/serial/io_ti.c              |    2 
+ drivers/usb/serial/mos7720.c            |    2 
+ drivers/usb/serial/mos7840.c            |    7 -
+ drivers/usb/serial/opticon.c            |    2 
+ drivers/usb/serial/pl2303.c             |    2 
+ drivers/usb/serial/quatech2.c           |    2 
+ drivers/usb/serial/ssu100.c             |    2 
+ drivers/usb/serial/ti_usb_3410_5052.c   |    2 
+ drivers/usb/serial/usb-serial.c         |  123 +++++++++++++++-----------------
+ drivers/usb/serial/usb_wwan.c           |    2 
+ drivers/usb/serial/whiteheat.c          |    2 
+ include/linux/usb/serial.h              |    6 -
+ 16 files changed, 85 insertions(+), 90 deletions(-)
 
-In ps fax, the tee process can be seen at the bottom of the subtree:
-
- 5158 ?        S      0:06  \_ /usr/bin/xterm
- 5198 pts/3    Ss+    0:00  |   \_ bash
- 5386 pts/3    Sl     4:50  |       \_ emacs -geometry 100x77
-10258 pts/8    SNs+   0:00  |           \_ /usr/bin/python /usr/bin/fedpkg local
-10267 pts/8    SN+    0:00  |               \_ rpmbuild --define _sourcedir /dat
-10462 pts/8    SN+    0:00  |               |   \_ /bin/sh -e /var/tmp/rpm-tmp.x
-16248 pts/8    SN+    0:00  |               |       \_ make -j12
-16249 pts/8    SN+    0:00  |               |           \_ /bin/sh -c fail= fail
-16253 pts/8    SN+    0:00  |               |               \_ /bin/sh -c fail= 
-16254 pts/8    SN+    0:00  |               |                   \_ make all-am
-16256 pts/8    SN+    0:00  |               |                       \_ /bin/sh -
-16265 pts/8    SN+    0:00  |               |                       |   \_ /bin/
-16688 pts/8    SN+    0:00  |               |                       |       \_ /
-16700 pts/8    RN+    0:00  |               |                       |           
-16704 pts/8    SN+    0:00  |               |                       |           
-16267 pts/8    SN+    0:00  |               |                       \_ /bin/sh -
-16279 pts/8    SN+    0:00  |               |                       |   \_ /bin/
-16694 pts/8    SN+    0:00  |               |                       |       \_ /
-16707 pts/8    RN+    0:00  |               |                       |           
-16713 pts/8    SN+    0:00  |               |                       |           
-16289 pts/8    SN+    0:00  |               |                       \_ /bin/sh -
-16306 pts/8    SN+    0:00  |               |                       |   \_ /bin/
-17045 pts/8    SN+    0:00  |               |                       |       \_ /
-17046 pts/8    RN+    0:00  |               |                       |           
-17047 pts/8    SN+    0:00  |               |                       |           
-16799 pts/8    SN+    0:00  |               |                       \_ /bin/sh -
-16801 pts/8    SN+    0:00  |               |                       |   \_ /bin/
-17051 pts/8    SN+    0:00  |               |                       |       \_ /
-17053 pts/8    RN+    0:00  |               |                       |           
-16819 pts/8    SN+    0:00  |               |                       \_ /bin/sh -
-16822 pts/8    SN+    0:00  |               |                       |   \_ /bin/
-16943 pts/8    SN+    0:00  |               |                       |       \_ /
-16950 pts/8    RN+    0:00  |               |                       |           
-16951 pts/8    SN+    0:00  |               |                       |           
-16903 pts/8    SN+    0:00  |               |                       \_ /bin/sh -
-16915 pts/8    SN+    0:00  |               |                           \_ /bin/
-17024 pts/8    SN+    0:00  |               |                               \_ /
-17026 pts/8    RN+    0:00  |               |                                   
-17028 pts/8    SN+    0:00  |               |                                   
-10268 pts/8    SN+    0:00  |               \_ tee .build-4.8.1-1.1.fc20.log
-
-tee's fds look like:
-
-warthog>ls -l /proc/10268/fd/
-total 0
-lr-x------. 1 dhowells dhowells 64 Jun  6 18:24 0 -> pipe:[1595614]
-lrwx------. 1 dhowells dhowells 64 Jun  6 18:24 1 -> /dev/pts/8
-lrwx------. 1 dhowells dhowells 64 Jun  6 18:23 2 -> /dev/pts/8
-l-wx------. 1 dhowells dhowells 64 Jun  6 18:24 3 -> /data/fedora/cros
-
-David
+--- a/drivers/staging/serqt_usb2/serqt_usb2.c
++++ b/drivers/staging/serqt_usb2/serqt_usb2.c
+@@ -906,7 +906,7 @@ static int qt_open(struct tty_struct *tt
+ 			qt_submit_urb_from_open(serial, port);
+ 	}
+ 
+-	dev_dbg(&port->dev, "serial number is %d\n", port->serial->minor);
++	dev_dbg(&port->dev, "minor number is %d\n", port->minor);
+ 	dev_dbg(&port->dev,
+ 		"Bulkin endpoint is %d\n", port->bulk_in_endpointAddress);
+ 	dev_dbg(&port->dev,
+@@ -1002,7 +1002,7 @@ static void qt_close(struct usb_serial_p
+ 	status = 0;
+ 
+ 	tty = tty_port_tty_get(&port->port);
+-	index = tty->index - serial->minor;
++	index = port->port_number;
+ 
+ 	qt_port = qt_get_port_private(port);
+ 	port0 = qt_get_port_private(serial->port[0]);
+@@ -1129,12 +1129,11 @@ static int qt_ioctl(struct tty_struct *t
+ {
+ 	struct usb_serial_port *port = tty->driver_data;
+ 	struct quatech_port *qt_port = qt_get_port_private(port);
+-	struct usb_serial *serial = get_usb_serial(port, __func__);
+ 	unsigned int index;
+ 
+ 	dev_dbg(&port->dev, "%s cmd 0x%04x\n", __func__, cmd);
+ 
+-	index = tty->index - serial->minor;
++	index = port->port_number;
+ 
+ 	if (cmd == TIOCMIWAIT) {
+ 		while (qt_port != NULL) {
+@@ -1180,7 +1179,7 @@ static void qt_set_termios(struct tty_st
+ 	int baud, divisor, remainder;
+ 	int status;
+ 
+-	index = tty->index - port->serial->minor;
++	index = port->port_number;
+ 
+ 	switch (cflag & CSIZE) {
+ 	case CS5:
+@@ -1296,7 +1295,7 @@ static void qt_break(struct tty_struct *
+ 	u16 index, onoff;
+ 	unsigned int result;
+ 
+-	index = tty->index - serial->minor;
++	index = port->port_number;
+ 
+ 	qt_port = qt_get_port_private(port);
+ 
+@@ -1325,7 +1324,7 @@ static inline int qt_real_tiocmget(struc
+ 	int status;
+ 	unsigned int index;
+ 
+-	index = tty->index - serial->minor;
++	index = port->port_number;
+ 	status =
+ 	    BoxGetRegister(port->serial, index, MODEM_CONTROL_REGISTER, &mcr);
+ 	if (status >= 0) {
+@@ -1364,7 +1363,7 @@ static inline int qt_real_tiocmset(struc
+ 	int status;
+ 	unsigned int index;
+ 
+-	index = tty->index - serial->minor;
++	index = port->port_number;
+ 	status =
+ 	    BoxGetRegister(port->serial, index, MODEM_CONTROL_REGISTER, &mcr);
+ 	if (status < 0)
+--- a/drivers/usb/serial/ark3116.c
++++ b/drivers/usb/serial/ark3116.c
+@@ -413,7 +413,7 @@ static int ark3116_ioctl(struct tty_stru
+ 		/* XXX: Some of these values are probably wrong. */
+ 		memset(&serstruct, 0, sizeof(serstruct));
+ 		serstruct.type = PORT_16654;
+-		serstruct.line = port->serial->minor;
++		serstruct.line = port->minor;
+ 		serstruct.port = port->port_number;
+ 		serstruct.custom_divisor = 0;
+ 		serstruct.baud_base = 460800;
+--- a/drivers/usb/serial/f81232.c
++++ b/drivers/usb/serial/f81232.c
+@@ -294,7 +294,7 @@ static int f81232_ioctl(struct tty_struc
+ 	case TIOCGSERIAL:
+ 		memset(&ser, 0, sizeof ser);
+ 		ser.type = PORT_16654;
+-		ser.line = port->serial->minor;
++		ser.line = port->minor;
+ 		ser.port = port->port_number;
+ 		ser.baud_base = 460800;
+ 
+--- a/drivers/usb/serial/io_edgeport.c
++++ b/drivers/usb/serial/io_edgeport.c
+@@ -1569,7 +1569,7 @@ static int get_serial_info(struct edgepo
+ 	memset(&tmp, 0, sizeof(tmp));
+ 
+ 	tmp.type		= PORT_16550A;
+-	tmp.line		= edge_port->port->serial->minor;
++	tmp.line		= edge_port->port->minor;
+ 	tmp.port		= edge_port->port->port_number;
+ 	tmp.irq			= 0;
+ 	tmp.flags		= ASYNC_SKIP_TEST | ASYNC_AUTO_IRQ;
+--- a/drivers/usb/serial/io_ti.c
++++ b/drivers/usb/serial/io_ti.c
+@@ -2363,7 +2363,7 @@ static int get_serial_info(struct edgepo
+ 	memset(&tmp, 0, sizeof(tmp));
+ 
+ 	tmp.type		= PORT_16550A;
+-	tmp.line		= edge_port->port->serial->minor;
++	tmp.line		= edge_port->port->minor;
+ 	tmp.port		= edge_port->port->port_number;
+ 	tmp.irq			= 0;
+ 	tmp.flags		= ASYNC_SKIP_TEST | ASYNC_AUTO_IRQ;
+--- a/drivers/usb/serial/mos7720.c
++++ b/drivers/usb/serial/mos7720.c
+@@ -1854,7 +1854,7 @@ static int get_serial_info(struct moschi
+ 	memset(&tmp, 0, sizeof(tmp));
+ 
+ 	tmp.type		= PORT_16550A;
+-	tmp.line		= mos7720_port->port->serial->minor;
++	tmp.line		= mos7720_port->port->minor;
+ 	tmp.port		= mos7720_port->port->port_number;
+ 	tmp.irq			= 0;
+ 	tmp.flags		= ASYNC_SKIP_TEST | ASYNC_AUTO_IRQ;
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -1057,7 +1057,7 @@ static int mos7840_open(struct tty_struc
+ 	 * structures were not set up at that time.)   */
+ 
+ 	dev_dbg(&port->dev, "port number is %d\n", port->port_number);
+-	dev_dbg(&port->dev, "minor number is %d\n", port->serial->minor);
++	dev_dbg(&port->dev, "minor number is %d\n", port->minor);
+ 	dev_dbg(&port->dev, "Bulkin endpoint is %d\n", port->bulk_in_endpointAddress);
+ 	dev_dbg(&port->dev, "BulkOut endpoint is %d\n", port->bulk_out_endpointAddress);
+ 	dev_dbg(&port->dev, "Interrupt endpoint is %d\n", port->interrupt_in_endpointAddress);
+@@ -2068,7 +2068,7 @@ static int mos7840_get_serial_info(struc
+ 	memset(&tmp, 0, sizeof(tmp));
+ 
+ 	tmp.type = PORT_16550A;
+-	tmp.line = mos7840_port->port->serial->minor;
++	tmp.line = mos7840_port->port->minor;
+ 	tmp.port = mos7840_port->port->port_number;
+ 	tmp.irq = 0;
+ 	tmp.flags = ASYNC_SKIP_TEST | ASYNC_AUTO_IRQ;
+@@ -2246,9 +2246,8 @@ static int mos7840_port_probe(struct usb
+ 	 * usb-serial.c:get_free_serial() and cannot therefore be used
+ 	 * to index device instances */
+ 	mos7840_port->port_num = pnum + 1;
+-	dev_dbg(&port->dev, "port->serial->minor = %d\n", port->serial->minor);
++	dev_dbg(&port->dev, "port->minor = %d\n", port->minor);
+ 	dev_dbg(&port->dev, "mos7840_port->port_num = %d\n", mos7840_port->port_num);
+-	dev_dbg(&port->dev, "serial->minor = %d\n", serial->minor);
+ 
+ 	if (mos7840_port->port_num == 1) {
+ 		mos7840_port->SpRegOffset = 0x0;
+--- a/drivers/usb/serial/opticon.c
++++ b/drivers/usb/serial/opticon.c
+@@ -348,7 +348,7 @@ static int get_serial_info(struct usb_se
+ 
+ 	/* fake emulate a 16550 uart to make userspace code happy */
+ 	tmp.type		= PORT_16550A;
+-	tmp.line		= port->serial->minor;
++	tmp.line		= port->minor;
+ 	tmp.port		= 0;
+ 	tmp.irq			= 0;
+ 	tmp.flags		= ASYNC_SKIP_TEST | ASYNC_AUTO_IRQ;
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -641,7 +641,7 @@ static int pl2303_ioctl(struct tty_struc
+ 	case TIOCGSERIAL:
+ 		memset(&ser, 0, sizeof ser);
+ 		ser.type = PORT_16654;
+-		ser.line = port->serial->minor;
++		ser.line = port->minor;
+ 		ser.port = port->port_number;
+ 		ser.baud_base = 460800;
+ 
+--- a/drivers/usb/serial/quatech2.c
++++ b/drivers/usb/serial/quatech2.c
+@@ -465,7 +465,7 @@ static int get_serial_info(struct usb_se
+ 		return -EFAULT;
+ 
+ 	memset(&tmp, 0, sizeof(tmp));
+-	tmp.line		= port->serial->minor;
++	tmp.line		= port->minor;
+ 	tmp.port		= 0;
+ 	tmp.irq			= 0;
+ 	tmp.flags		= ASYNC_SKIP_TEST | ASYNC_AUTO_IRQ;
+--- a/drivers/usb/serial/ssu100.c
++++ b/drivers/usb/serial/ssu100.c
+@@ -323,7 +323,7 @@ static int get_serial_info(struct usb_se
+ 		return -EFAULT;
+ 
+ 	memset(&tmp, 0, sizeof(tmp));
+-	tmp.line		= port->serial->minor;
++	tmp.line		= port->minor;
+ 	tmp.port		= 0;
+ 	tmp.irq			= 0;
+ 	tmp.flags		= ASYNC_SKIP_TEST | ASYNC_AUTO_IRQ;
+--- a/drivers/usb/serial/ti_usb_3410_5052.c
++++ b/drivers/usb/serial/ti_usb_3410_5052.c
+@@ -1308,7 +1308,7 @@ static int ti_get_serial_info(struct ti_
+ 	memset(&ret_serial, 0, sizeof(ret_serial));
+ 
+ 	ret_serial.type = PORT_16550A;
+-	ret_serial.line = port->serial->minor;
++	ret_serial.line = port->minor;
+ 	ret_serial.port = port->port_number;
+ 	ret_serial.flags = tport->tp_flags;
+ 	ret_serial.xmit_fifo_size = TI_WRITE_BUF_SIZE;
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -37,6 +37,7 @@
+ #include <linux/usb.h>
+ #include <linux/usb/serial.h>
+ #include <linux/kfifo.h>
++#include <linux/idr.h>
+ #include "pl2303.h"
+ 
+ #define DRIVER_AUTHOR "Greg Kroah-Hartman <gregkh@linuxfoundation.org>"
+@@ -49,72 +50,75 @@
+    drivers depend on it.
+ */
+ 
+-static struct usb_serial *serial_table[SERIAL_TTY_MINORS];
++static DEFINE_IDR(serial_minors);
+ static DEFINE_MUTEX(table_lock);
+ static LIST_HEAD(usb_serial_driver_list);
+ 
+ /*
+- * Look up the serial structure.  If it is found and it hasn't been
++ * Look up the serial port structure.  If it is found and it hasn't been
+  * disconnected, return with its disc_mutex held and its refcount
+  * incremented.  Otherwise return NULL.
+  */
+-struct usb_serial *usb_serial_get_by_index(unsigned index)
++struct usb_serial_port *usb_serial_port_get_by_minor(unsigned minor)
+ {
+-	struct usb_serial *serial;
++	struct usb_serial *serial = NULL;
++	struct usb_serial_port *port;
+ 
+ 	mutex_lock(&table_lock);
+-	serial = serial_table[index];
++	port = idr_find(&serial_minors, minor);
++	if (!port)
++		goto exit;
+ 
+-	if (serial) {
+-		mutex_lock(&serial->disc_mutex);
+-		if (serial->disconnected) {
+-			mutex_unlock(&serial->disc_mutex);
+-			serial = NULL;
+-		} else {
+-			kref_get(&serial->kref);
+-		}
++	serial = port->serial;
++	mutex_lock(&serial->disc_mutex);
++	if (serial->disconnected) {
++		mutex_unlock(&serial->disc_mutex);
++		serial = NULL;
++	} else {
++		kref_get(&serial->kref);
+ 	}
++exit:
+ 	mutex_unlock(&table_lock);
+-	return serial;
++	return port;
+ }
+ 
+-static struct usb_serial *get_free_serial(struct usb_serial *serial,
+-					int num_ports, unsigned int *minor)
++static int get_free_port(struct usb_serial_port *port)
+ {
+-	unsigned int i, j;
+-	int good_spot;
+-
+-	dev_dbg(&serial->interface->dev, "%s %d\n", __func__, num_ports);
++	int i;
+ 
+-	*minor = 0;
+ 	mutex_lock(&table_lock);
+-	for (i = 0; i < SERIAL_TTY_MINORS; ++i) {
+-		if (serial_table[i])
+-			continue;
++	i = idr_alloc(&serial_minors, port, 0, 0, GFP_KERNEL);
++	if (i < 0)
++		goto exit;
++	port->minor = i;
++exit:
++	mutex_unlock(&table_lock);
++	return i;
++}
+ 
+-		good_spot = 1;
+-		for (j = 1; j <= num_ports-1; ++j)
+-			if ((i+j >= SERIAL_TTY_MINORS) || (serial_table[i+j])) {
+-				good_spot = 0;
+-				i += j;
+-				break;
+-			}
+-		if (good_spot == 0)
+-			continue;
++static int get_free_serial(struct usb_serial *serial, int num_ports)
++{
++	unsigned int i;
++	unsigned int j;
++	int x;
+ 
+-		*minor = i;
+-		j = 0;
+-		dev_dbg(&serial->interface->dev, "%s - minor base = %d\n", __func__, *minor);
+-		for (i = *minor; (i < (*minor + num_ports)) && (i < SERIAL_TTY_MINORS); ++i, ++j) {
+-			serial_table[i] = serial;
+-			serial->port[j]->minor = i;
+-			serial->port[j]->port_number = i - *minor;
+-		}
+-		mutex_unlock(&table_lock);
+-		return serial;
++	dev_dbg(&serial->interface->dev, "%s %d\n", __func__, num_ports);
++
++	for (i = 0; i < num_ports; ++i) {
++		x = get_free_port(serial->port[i]);
++		if (x < 0)
++			goto error;
++		serial->port[i]->port_number = i;
+ 	}
++	serial->minors_reserved = 1;
++	return 0;
++error:
++	/* unwind the already allocated minors */
++	mutex_lock(&table_lock);
++	for (j = 0; j < i; ++j)
++		idr_remove(&serial_minors, serial->port[j]->minor);
+ 	mutex_unlock(&table_lock);
+-	return NULL;
++	return x;
+ }
+ 
+ static void return_serial(struct usb_serial *serial)
+@@ -123,8 +127,9 @@ static void return_serial(struct usb_ser
+ 
+ 	mutex_lock(&table_lock);
+ 	for (i = 0; i < serial->num_ports; ++i)
+-		serial_table[serial->minor + i] = NULL;
++		idr_remove(&serial_minors, serial->port[i]->minor);
+ 	mutex_unlock(&table_lock);
++	serial->minors_reserved = 0;
+ }
+ 
+ static void destroy_serial(struct kref *kref)
+@@ -136,7 +141,7 @@ static void destroy_serial(struct kref *
+ 	serial = to_usb_serial(kref);
+ 
+ 	/* return the minor range that this device had */
+-	if (serial->minor != SERIAL_TTY_NO_MINOR)
++	if (serial->minors_reserved)
+ 		return_serial(serial);
+ 
+ 	if (serial->attached && serial->type->release)
+@@ -186,13 +191,11 @@ static int serial_install(struct tty_dri
+ 	struct usb_serial_port *port;
+ 	int retval = -ENODEV;
+ 
+-	serial = usb_serial_get_by_index(idx);
+-	if (!serial)
++	port = usb_serial_port_get_by_minor(idx);
++	if (!port)
+ 		return retval;
+ 
+-	port = serial->port[idx - serial->minor];
+-	if (!port)
+-		goto error_no_port;
++	serial = port->serial;
+ 	if (!try_module_get(serial->type->driver.owner))
+ 		goto error_module_get;
+ 
+@@ -219,7 +222,6 @@ static int serial_install(struct tty_dri
+  error_get_interface:
+ 	module_put(serial->type->driver.owner);
+  error_module_get:
+- error_no_port:
+ 	usb_serial_put(serial);
+ 	mutex_unlock(&serial->disc_mutex);
+ 	return retval;
+@@ -453,14 +455,16 @@ static int serial_break(struct tty_struc
+ static int serial_proc_show(struct seq_file *m, void *v)
+ {
+ 	struct usb_serial *serial;
++	struct usb_serial_port *port;
+ 	int i;
+ 	char tmp[40];
+ 
+ 	seq_puts(m, "usbserinfo:1.0 driver:2.0\n");
+ 	for (i = 0; i < SERIAL_TTY_MINORS; ++i) {
+-		serial = usb_serial_get_by_index(i);
+-		if (serial == NULL)
++		port = usb_serial_port_get_by_minor(i);
++		if (port == NULL)
+ 			continue;
++		serial = port->serial;
+ 
+ 		seq_printf(m, "%d:", i);
+ 		if (serial->type->driver.owner)
+@@ -472,7 +476,7 @@ static int serial_proc_show(struct seq_f
+ 			le16_to_cpu(serial->dev->descriptor.idVendor),
+ 			le16_to_cpu(serial->dev->descriptor.idProduct));
+ 		seq_printf(m, " num_ports:%d", serial->num_ports);
+-		seq_printf(m, " port:%d", i - serial->minor + 1);
++		seq_printf(m, " port:%d", port->port_number);
+ 		usb_make_path(serial->dev, tmp, sizeof(tmp));
+ 		seq_printf(m, " path:%s", tmp);
+ 
+@@ -614,7 +618,7 @@ static struct usb_serial *create_serial(
+ 	serial->interface = usb_get_intf(interface);
+ 	kref_init(&serial->kref);
+ 	mutex_init(&serial->disc_mutex);
+-	serial->minor = SERIAL_TTY_NO_MINOR;
++	serial->minors_reserved = 0;
+ 
+ 	return serial;
+ }
+@@ -1040,11 +1044,10 @@ static int usb_serial_probe(struct usb_i
+ 	 */
+ 	serial->disconnected = 1;
+ 
+-	if (get_free_serial(serial, num_ports, &minor) == NULL) {
++	if (get_free_serial(serial, num_ports)) {
+ 		dev_err(ddev, "No more free serial devices\n");
+ 		goto probe_error;
+ 	}
+-	serial->minor = minor;
+ 
+ 	/* register all of the individual ports with the driver core */
+ 	for (i = 0; i < num_ports; ++i) {
+@@ -1224,7 +1227,6 @@ static struct usb_driver usb_serial_driv
+ 
+ static int __init usb_serial_init(void)
+ {
+-	int i;
+ 	int result;
+ 
+ 	usb_serial_tty_driver = alloc_tty_driver(SERIAL_TTY_MINORS);
+@@ -1232,9 +1234,6 @@ static int __init usb_serial_init(void)
+ 		return -ENOMEM;
+ 
+ 	/* Initialize our global data */
+-	for (i = 0; i < SERIAL_TTY_MINORS; ++i)
+-		serial_table[i] = NULL;
+-
+ 	result = bus_register(&usb_serial_bus_type);
+ 	if (result) {
+ 		pr_err("%s - registering bus driver failed\n", __func__);
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -124,7 +124,7 @@ static int get_serial_info(struct usb_se
+ 		return -EFAULT;
+ 
+ 	memset(&tmp, 0, sizeof(tmp));
+-	tmp.line            = port->serial->minor;
++	tmp.line            = port->minor;
+ 	tmp.port            = port->port_number;
+ 	tmp.baud_base       = tty_get_baud_rate(port->port.tty);
+ 	tmp.close_delay	    = port->port.close_delay / 10;
+--- a/drivers/usb/serial/whiteheat.c
++++ b/drivers/usb/serial/whiteheat.c
+@@ -461,7 +461,7 @@ static int whiteheat_ioctl(struct tty_st
+ 	case TIOCGSERIAL:
+ 		memset(&serstruct, 0, sizeof(serstruct));
+ 		serstruct.type = PORT_16654;
+-		serstruct.line = port->serial->minor;
++		serstruct.line = port->minor;
+ 		serstruct.port = port->port_number;
+ 		serstruct.flags = ASYNC_SKIP_TEST | ASYNC_AUTO_IRQ;
+ 		serstruct.xmit_fifo_size = kfifo_size(&port->write_fifo);
+--- a/include/linux/usb/serial.h
++++ b/include/linux/usb/serial.h
+@@ -21,7 +21,6 @@
+ 
+ #define SERIAL_TTY_MAJOR	188	/* Nice legal number now */
+ #define SERIAL_TTY_MINORS	254	/* loads of devices :) */
+-#define SERIAL_TTY_NO_MINOR	255	/* No minor was assigned */
+ 
+ /* The maximum number of ports one device can grab at once */
+ #define MAX_NUM_PORTS		8
+@@ -142,7 +141,6 @@ static inline void usb_set_serial_port_d
+  * @dev: pointer to the struct usb_device for this device
+  * @type: pointer to the struct usb_serial_driver for this device
+  * @interface: pointer to the struct usb_interface for this device
+- * @minor: the starting minor number for this device
+  * @num_ports: the number of ports this device has
+  * @num_interrupt_in: number of interrupt in endpoints we have
+  * @num_interrupt_out: number of interrupt out endpoints we have
+@@ -161,7 +159,7 @@ struct usb_serial {
+ 	unsigned char			disconnected:1;
+ 	unsigned char			suspending:1;
+ 	unsigned char			attached:1;
+-	unsigned char			minor;
++	unsigned char			minors_reserved:1;
+ 	unsigned char			num_ports;
+ 	unsigned char			num_port_pointers;
+ 	char				num_interrupt_in;
+@@ -321,7 +319,7 @@ static inline void usb_serial_console_di
+ #endif
+ 
+ /* Functions needed by other parts of the usbserial core */
+-extern struct usb_serial *usb_serial_get_by_index(unsigned int minor);
++extern struct usb_serial_port *usb_serial_port_get_by_minor(unsigned int minor);
+ extern void usb_serial_put(struct usb_serial *serial);
+ extern int usb_serial_generic_open(struct tty_struct *tty,
+ 	struct usb_serial_port *port);
