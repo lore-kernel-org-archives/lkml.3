@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab3FFX2J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 19:28:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54604 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395Ab3FFX2G (ORCPT
+	id S1754149Ab3FFXfJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 19:35:09 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:34407 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753622Ab3FFXfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 19:28:06 -0400
-Date: Thu, 6 Jun 2013 16:28:05 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: usbutils 006 release
-Message-ID: <20130606232805.GA8875@kroah.com>
-References: <20120706203547.GA28678@kroah.com>
- <Pine.LNX.4.44L0.1207091121060.1954-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1207091121060.1954-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 6 Jun 2013 19:35:08 -0400
+Date: Thu, 06 Jun 2013 16:35:06 -0700 (PDT)
+Message-Id: <20130606.163506.962150797885004652.davem@davemloft.net>
+To: Alexey.Brodkin@synopsys.com
+Cc: netdev@vger.kernel.org, Vineet.Gupta1@synopsys.com,
+        Mischa.Jonker@synopsys.com, grant.likely@linaro.org,
+        rob.herring@calxeda.com, paul.gortmaker@windriver.com, sjhill@mips.com,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] ethernet/arc/arc_emac - Add new driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1370348510-23754-1-git-send-email-abrodkin@synopsys.com>
+References: <1370348510-23754-1-git-send-email-abrodkin@synopsys.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 09, 2012 at 11:22:22AM -0400, Alan Stern wrote:
-> On Fri, 6 Jul 2012, Greg KH wrote:
-> 
-> > Here's the 006 release of usbutils.
-> > 
-> > Some USB 3.0 updates, a new usb.ids file update, and a number of other
-> > fixes and updates for annoying problems that people had reported.  Full
-> > shortlog information is below if people are curious.
-> > 
-> > The package can be downladed from kernel.org:
-> >         http://www.kernel.org/pub/linux/utils/usb/usbutils/
-> > 
-> > We've switched over to using git for development now, which makes things
-> > much easier than the old cvs tree.  The tree can be found on both
-> > kernel.org and github.com if you want to fork it and send us changes
-> > easier:
-> > 	http://git.kernel.org/?p=linux/kernel/git/gregkh/usbutils.git
-> 
-> This link doesn't work for me.  Are you sure the repository is 
-> installed at git.kernel.org?
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Date: Tue, 4 Jun 2013 16:21:50 +0400
 
-It wasn't, sorry, I've pushed it there now, and should show up in a few
-hours.
+> +{
+> +	struct arc_emac_priv *priv = netdev_priv(net_dev);
+> +	struct phy_device *phydev = priv->phy_dev;
+> +	u32 reg;
+> +
+> +	int status_change = 0;
 
-thanks,
+Do not add empty lines amongst the top-level variable declarations
+of a function.  Fix this in the entire driver, as needed.
 
-greg k-h
+> +			netdev_warn(net_dev,
+> +				"Speed (%d) is not 10/100?\n", phydev->speed);
+
+Functions calls on multiple lines must have the arguments
+aligned properly on the second and subsequent lines, this
+means:
+
+		function(arg1, arg2,
+			 arg3, arg4);
+
+You must use the appropriate number of TAB and space characters
+to achieve this proper column alignment, rather than only using
+TAB characters as you have done here.
+
+Audit and fix this in your entire driver.
+
+> +static int arc_emac_get_settings(struct net_device *net_dev,
+> +		struct ethtool_cmd *cmd)
+
+The argument indention rules above apply to function definitions
+as well.
