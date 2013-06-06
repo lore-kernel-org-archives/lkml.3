@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab3FFRM1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 13:12:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44037 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752318Ab3FFRMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 13:12:15 -0400
-Date: Thu, 6 Jun 2013 19:11:52 +0200
-From: Borislav Petkov <bp@suse.de>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of
- target frequency
-Message-ID: <20130606171152.GF21181@pd.tnic>
-References: <51AF60D5.3080605@semaphore.gr>
- <20130605161703.GA29958@pd.tnic>
- <51AF71B6.6030408@semaphore.gr>
- <105446113.ZumbZWCbSi@vostro.rjw.lan>
- <20130606100138.GC21181@pd.tnic>
- <CAKohpo=cwxvcicw4svcvyKJOzGD9j+gzTyg=4yYg4EsY89C3EQ@mail.gmail.com>
- <20130606121012.GD21181@pd.tnic>
- <51B0BCD9.6030308@semaphore.gr>
+	id S1753582Ab3FFRMr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 13:12:47 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:43765 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693Ab3FFRMo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 13:12:44 -0400
+Message-ID: <51B0C312.7020903@cogentembedded.com>
+Date: Thu, 06 Jun 2013 21:12:50 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <51B0BCD9.6030308@semaphore.gr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jason Wang <jasowang@redhat.com>
+CC: mst@redhat.com, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vhost_net: clear msg.control for non-zerocopy case during
+ tx
+References: <1370418046-11851-1-git-send-email-jasowang@redhat.com> <51AF40CB.5030101@cogentembedded.com> <51B00190.2050307@redhat.com>
+In-Reply-To: <51B00190.2050307@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 07:46:17PM +0300, Stratos Karafotis wrote:
-> Apologies for top-posting. I was able to send email only from my phone.
-> 
-> Thanks for you hint about turbostat.
-> 
-> As you most probably understood, I'm individual amateur kernel developer.
-> I could provide some numbers from x86 architecture as Rafael suggested.
-> But unfortunately, I don't have access to more sources/infrastructure.
-> So, I will not be able to provide numbers from different platform(s).
-> 
-> I've already provided some benchmarks from x86 (3.10-rc3) and also
-> tested the patch in 3.4.47 kernel (ARM, Nexus 4 phone, ~1000 installations)
-> and in 3.0.80 kernel (ARM, Samsung Galaxy S phone, ~1500 installations).
-> 
-> Kindly let me know if "couple of platforms/vendors" is a show stopper
-> for this patch series. If yes, please ignore this patch and accept
-> my apologies for wasting your time. I am just trying to contribute
-> on this project (I believe there is space here for amateur developers).
+Hello.
 
-I'm in no way discouraging you in contributing to the kernel - on the
-opposite: you should continue doing that.
+On 06/06/2013 07:27 AM, Jason Wang wrote:
 
-I'm just trying to make sure that a change like that doesn't hurt
-existing systems, thus the request to test on a couple of platforms. If
-you don't have other platforms, that's fine, we'll find them somewhere. :-)
+>>> When we decide not use zero-copy, msg.control should be set to NULL
+>>> otherwise
+>>> macvtap/tap may set zerocopy callbacks which may decrease the kref of
+>>> ubufs
+>>> wrongly.
+>>> Bug were introduced by commit cedb9bdce099206290a2bdd02ce47a7b253b6a84
+>>> (vhost-net: skip head management if no outstanding).
+>>> This solves the following warnings:
+>>> WARNING: at include/linux/kref.h:47 handle_tx+0x477/0x4b0 [vhost_net]()
+>>> Modules linked in: vhost_net macvtap macvlan tun nfsd exportfs bridge
+>>> stp llc openvswitch kvm_amd kvm bnx2 megaraid_sas [last unloaded: tun]
+>>> CPU: 5 PID: 8670 Comm: vhost-8668 Not tainted 3.10.0-rc2+ #1566
+>>> Hardware name: Dell Inc. PowerEdge R715/00XHKG, BIOS 1.5.2 04/19/2011
+>>> ffffffffa0198323 ffff88007c9ebd08 ffffffff81796b73 ffff88007c9ebd48
+>>> ffffffff8103d66b 000000007b773e20 ffff8800779f0000 ffff8800779f43f0
+>>> ffff8800779f8418 000000000000015c 0000000000000062 ffff88007c9ebd58
+>>> Call Trace:
+>>> [<ffffffff81796b73>] dump_stack+0x19/0x1e
+>>> [<ffffffff8103d66b>] warn_slowpath_common+0x6b/0xa0
+>>> [<ffffffff8103d6b5>] warn_slowpath_null+0x15/0x20
+>>> [<ffffffffa0197627>] handle_tx+0x477/0x4b0 [vhost_net]
+>>> [<ffffffffa0197690>] handle_tx_kick+0x10/0x20 [vhost_net]
+>>> [<ffffffffa019541e>] vhost_worker+0xfe/0x1a0 [vhost_net]
+>>> [<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
+>>> [<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
+>>> [<ffffffff81061f46>] kthread+0xc6/0xd0
+>>> [<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
+>>> [<ffffffff817a1aec>] ret_from_fork+0x7c/0xb0
+>>> [<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
+>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>>> ---
+>>>    drivers/vhost/net.c |    3 ++-
+>>>    1 files changed, 2 insertions(+), 1 deletions(-)
+>>> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+>>> index 2b51e23..b07d96b 100644
+>>> --- a/drivers/vhost/net.c
+>>> +++ b/drivers/vhost/net.c
+>>> @@ -436,7 +436,8 @@ static void handle_tx(struct vhost_net *net)
+>>>                    kref_get(&ubufs->kref);
+>>>                }
+>>>                nvq->upend_idx = (nvq->upend_idx + 1) % UIO_MAXIOV;
+>>> -        }
+>>> +        } else
+>>     You have to use {} on the *else* branch if you have it of the *if*
+>> branch (and vice versa), according to Documentation/CodingStyle.
+> checkpatch.pl didn't complain this, will send v2.
 
-I'm hoping you can understand my aspect too, though - how would you feel
-if a patch shows improvement on my box but slows down yours - you won't
-be very happy with it, right? That's why we generally want to test such
-power/performance tweaks on a wider range of machines.
+     Yes, this check is what it seems to lack still.
 
-But you said you have a i7-3770 CPU on which, I think, turbostat should
-be able to show you how the power consumption looks like.
+> Thanks
+>
 
-And if so, you could measure that consumption once with, and once
-without your patch. This will give us initial numbers, at least.
+WBR, Sergei
 
-How does that sound?
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
