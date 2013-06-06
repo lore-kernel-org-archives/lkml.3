@@ -1,302 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab3FFFsy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 01:48:54 -0400
-Received: from ozlabs.org ([203.10.76.45]:36380 "EHLO ozlabs.org"
+	id S1753987Ab3FFF6W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 01:58:22 -0400
+Received: from mga14.intel.com ([143.182.124.37]:28278 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753142Ab3FFFsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 01:48:52 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Andy Lutomirski <luto@amacapital.net>
-cc: x86@kernel.org, torvalds@linux-foundation.org,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        trinity@vger.kernel.org
-Subject: Re: [PATCH] net: Unbreak compat_sys_{send,recv}msg
-In-reply-to: <e3bf421e44c6d27817c15a8683612a49e093b419.1370496702.git.luto@amacapital.net>
-References: <20130606132926.f4161ddff87dc9a55e33a8ca@canb.auug.org.au> <e3bf421e44c6d27817c15a8683612a49e093b419.1370496702.git.luto@amacapital.net>
-Comments: In-reply-to Andy Lutomirski <luto@amacapital.net>
-   message dated "Wed, 05 Jun 2013 22:38:26 -0700."
-X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
-Date: Thu, 06 Jun 2013 15:48:50 +1000
-Message-ID: <27619.1370497730@ale.ozlabs.ibm.com>
+	id S1753808Ab3FFF6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 01:58:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,812,1363158000"; 
+   d="scan'208";a="313052939"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, eranian@google.com,
+        ak@linux.intel.com, "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH] perf: Update event buffer tail when overwriting old events
+Date: Thu,  6 Jun 2013 13:58:06 +0800
+Message-Id: <1370498286-12801-1-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Lutomirski <luto@amacapital.net> wrote:
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-> I broke them in this commit:
-> 
->     commit 1be374a0518a288147c6a7398792583200a67261
->     Author: Andy Lutomirski <luto@amacapital.net>
->     Date:   Wed May 22 14:07:44 2013 -0700
-> 
->         net: Block MSG_CMSG_COMPAT in send(m)msg and recv(m)msg
-> 
-> This patch adds __sys_sendmsg and __sys_sendmsg as common helpers that accept
-> MSG_CMSG_COMPAT and blocks MSG_CMSG_COMPAT at the syscall entrypoints.  It
-> also reverts some unnecessary checks in sys_socketcall.
-> 
-> Apparently I was suffering from underscore blindness the first time around.
+If perf event buffer is in overwrite mode, the kernel only updates
+the data head when it overwrites old samples. The program that owns
+the buffer need periodically check the buffer and update a variable
+that tracks the date tail. If the program fails to do this in time,
+the data tail can be overwritted by new samples. The program has to
+rewind the buffer because it does not know where is the first vaild
+sample.
 
-FWIW This fixes the problem I was seeing with powerpc 32bit user on 64
-bit kernel.
+This patch makes the kernel update the date tail when it overwrites
+old events. So the program that owns the event buffer can always
+read the latest samples. This is convenient for programs that use
+perf to do branch tracing. One use case is GDB branch tracing:
+(http://sourceware.org/ml/gdb-patches/2012-06/msg00172.html)
+It uses perf interface to read BTS, but only cares the branches
+before the ptrace event.
 
-Mikey
+I added code to perf_output_{begin/end} to count how many cycles
+are spent by sample output, then ran "perf record" to profile kernel
+compilation 10 times on IvyBridge-EP. (perf record -a make -j 60)
+The first number is scaled to 1000, the rest numbers are scaled by
+the same factor.
 
-> 
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
-> 
-> I've tested this a little, but I'm not sure I have a great test case.
-> 
-> If the decision is that it's better to leave this for the 3.11, I can send
-> a squashed version.  Note that the oops that this fixes is only an oops if
-> the other patches in the original series are applied.
-> 
-> (FWIW, I wasn't sure how to submit this stuff in the first place.  I submitted
-> some kernel hardening patches for the x86 tree that converted an access_ok
-> oddity in the net code into an actual oops.  In a bit of looking, I couldn't
-> find any failure mode other than a -EFAULT return without the other patches
-> applied.  This was clear in the patch series description but not in the
-> change log message for the net part.)
-> 
->  include/linux/socket.h |  3 +++
->  net/compat.c           | 13 +++++++--
->  net/socket.c           | 72 +++++++++++++++++++++++---------------------------
->  3 files changed, 47 insertions(+), 41 deletions(-)
-> 
-> diff --git a/include/linux/socket.h b/include/linux/socket.h
-> index 2b9f74b..e897bdc 100644
-> --- a/include/linux/socket.h
-> +++ b/include/linux/socket.h
-> @@ -321,6 +321,9 @@ extern int put_cmsg(struct msghdr*, int level, int type, int len, void *data);
->  
->  struct timespec;
->  
-> +/* The __sys_...msg variants allow MSG_CMSG_COMPAT */
-> +extern long __sys_recvmsg(int fd, struct msghdr __user *msg, unsigned flags);
-> +extern long __sys_sendmsg(int fd, struct msghdr __user *msg, unsigned flags);
->  extern int __sys_recvmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
->  			  unsigned int flags, struct timespec *timeout);
->  extern int __sys_sendmmsg(int fd, struct mmsghdr __user *mmsg,
-> diff --git a/net/compat.c b/net/compat.c
-> index 79ae884..f0a1ba6 100644
-> --- a/net/compat.c
-> +++ b/net/compat.c
-> @@ -734,19 +734,25 @@ static unsigned char nas[21] = {
->  
->  asmlinkage long compat_sys_sendmsg(int fd, struct compat_msghdr __user *msg, unsigned int flags)
->  {
-> -	return sys_sendmsg(fd, (struct msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
-> +	if (flags & MSG_CMSG_COMPAT)
-> +		return -EINVAL;
-> +	return __sys_sendmsg(fd, (struct msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
->  }
->  
->  asmlinkage long compat_sys_sendmmsg(int fd, struct compat_mmsghdr __user *mmsg,
->  				    unsigned int vlen, unsigned int flags)
->  {
-> +	if (flags & MSG_CMSG_COMPAT)
-> +		return -EINVAL;
->  	return __sys_sendmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
->  			      flags | MSG_CMSG_COMPAT);
->  }
->  
->  asmlinkage long compat_sys_recvmsg(int fd, struct compat_msghdr __user *msg, unsigned int flags)
->  {
-> -	return sys_recvmsg(fd, (struct msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
-> +	if (flags & MSG_CMSG_COMPAT)
-> +		return -EINVAL;
-> +	return __sys_recvmsg(fd, (struct msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
->  }
->  
->  asmlinkage long compat_sys_recv(int fd, void __user *buf, size_t len, unsigned int flags)
-> @@ -768,6 +774,9 @@ asmlinkage long compat_sys_recvmmsg(int fd, struct compat_mmsghdr __user *mmsg,
->  	int datagrams;
->  	struct timespec ktspec;
->  
-> +	if (flags & MSG_CMSG_COMPAT)
-> +		return -EINVAL;
-> +
->  	if (COMPAT_USE_64BIT_TIME)
->  		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
->  				      flags | MSG_CMSG_COMPAT,
-> diff --git a/net/socket.c b/net/socket.c
-> index 0e16888..e216502 100644
-> --- a/net/socket.c
-> +++ b/net/socket.c
-> @@ -1978,7 +1978,7 @@ struct used_address {
->  	unsigned int name_len;
->  };
->  
-> -static int __sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
-> +static int ___sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
->  			 struct msghdr *msg_sys, unsigned int flags,
->  			 struct used_address *used_address)
->  {
-> @@ -2093,26 +2093,30 @@ out:
->   *	BSD sendmsg interface
->   */
->  
-> -SYSCALL_DEFINE3(sendmsg, int, fd, struct msghdr __user *, msg, unsigned int, flags)
-> +long __sys_sendmsg(int fd, struct msghdr __user *msg, unsigned flags)
->  {
->  	int fput_needed, err;
->  	struct msghdr msg_sys;
->  	struct socket *sock;
->  
-> -	if (flags & MSG_CMSG_COMPAT)
-> -		return -EINVAL;
-> -
->  	sock = sockfd_lookup_light(fd, &err, &fput_needed);
->  	if (!sock)
->  		goto out;
->  
-> -	err = __sys_sendmsg(sock, msg, &msg_sys, flags, NULL);
-> +	err = ___sys_sendmsg(sock, msg, &msg_sys, flags, NULL);
->  
->  	fput_light(sock->file, fput_needed);
->  out:
->  	return err;
->  }
->  
-> +SYSCALL_DEFINE3(sendmsg, int, fd, struct msghdr __user *, msg, unsigned int, flags)
-> +{
-> +	if (flags & MSG_CMSG_COMPAT)
-> +		return -EINVAL;
-> +	return __sys_sendmsg(fd, msg, flags);
-> +}
-> +
->  /*
->   *	Linux sendmmsg interface
->   */
-> @@ -2143,15 +2147,16 @@ int __sys_sendmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
->  
->  	while (datagrams < vlen) {
->  		if (MSG_CMSG_COMPAT & flags) {
-> -			err = __sys_sendmsg(sock, (struct msghdr __user *)compat_entry,
-> -					    &msg_sys, flags, &used_address);
-> +			err = ___sys_sendmsg(sock, (struct msghdr __user *)compat_entry,
-> +					     &msg_sys, flags, &used_address);
->  			if (err < 0)
->  				break;
->  			err = __put_user(err, &compat_entry->msg_len);
->  			++compat_entry;
->  		} else {
-> -			err = __sys_sendmsg(sock, (struct msghdr __user *)entry,
-> -					    &msg_sys, flags, &used_address);
-> +			err = ___sys_sendmsg(sock,
-> +					     (struct msghdr __user *)entry,
-> +					     &msg_sys, flags, &used_address);
->  			if (err < 0)
->  				break;
->  			err = put_user(err, &entry->msg_len);
-> @@ -2180,7 +2185,7 @@ SYSCALL_DEFINE4(sendmmsg, int, fd, struct mmsghdr __user *, mmsg,
->  	return __sys_sendmmsg(fd, mmsg, vlen, flags);
->  }
->  
-> -static int __sys_recvmsg(struct socket *sock, struct msghdr __user *msg,
-> +static int ___sys_recvmsg(struct socket *sock, struct msghdr __user *msg,
->  			 struct msghdr *msg_sys, unsigned int flags, int nosec)
->  {
->  	struct compat_msghdr __user *msg_compat =
-> @@ -2272,27 +2277,31 @@ out:
->   *	BSD recvmsg interface
->   */
->  
-> -SYSCALL_DEFINE3(recvmsg, int, fd, struct msghdr __user *, msg,
-> -		unsigned int, flags)
-> +long __sys_recvmsg(int fd, struct msghdr __user *msg, unsigned flags)
->  {
->  	int fput_needed, err;
->  	struct msghdr msg_sys;
->  	struct socket *sock;
->  
-> -	if (flags & MSG_CMSG_COMPAT)
-> -		return -EINVAL;
-> -
->  	sock = sockfd_lookup_light(fd, &err, &fput_needed);
->  	if (!sock)
->  		goto out;
->  
-> -	err = __sys_recvmsg(sock, msg, &msg_sys, flags, 0);
-> +	err = ___sys_recvmsg(sock, msg, &msg_sys, flags, 0);
->  
->  	fput_light(sock->file, fput_needed);
->  out:
->  	return err;
->  }
->  
-> +SYSCALL_DEFINE3(recvmsg, int, fd, struct msghdr __user *, msg,
-> +		unsigned int, flags)
-> +{
-> +	if (flags & MSG_CMSG_COMPAT)
-> +		return -EINVAL;
-> +	return __sys_recvmsg(fd, msg, flags);
-> +}
-> +
->  /*
->   *     Linux recvmmsg interface
->   */
-> @@ -2330,17 +2339,18 @@ int __sys_recvmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
->  		 * No need to ask LSM for more than the first datagram.
->  		 */
->  		if (MSG_CMSG_COMPAT & flags) {
-> -			err = __sys_recvmsg(sock, (struct msghdr __user *)compat_entry,
-> -					    &msg_sys, flags & ~MSG_WAITFORONE,
-> -					    datagrams);
-> +			err = ___sys_recvmsg(sock, (struct msghdr __user *)compat_entry,
-> +					     &msg_sys, flags & ~MSG_WAITFORONE,
-> +					     datagrams);
->  			if (err < 0)
->  				break;
->  			err = __put_user(err, &compat_entry->msg_len);
->  			++compat_entry;
->  		} else {
-> -			err = __sys_recvmsg(sock, (struct msghdr __user *)entry,
-> -					    &msg_sys, flags & ~MSG_WAITFORONE,
-> -					    datagrams);
-> +			err = ___sys_recvmsg(sock,
-> +					     (struct msghdr __user *)entry,
-> +					     &msg_sys, flags & ~MSG_WAITFORONE,
-> +					     datagrams);
->  			if (err < 0)
->  				break;
->  			err = put_user(err, &entry->msg_len);
-> @@ -2525,31 +2535,15 @@ SYSCALL_DEFINE2(socketcall, int, call, unsigned long __user *, args)
->  				   (int __user *)a[4]);
->  		break;
->  	case SYS_SENDMSG:
-> -		if (a[2] & MSG_CMSG_COMPAT) {
-> -			err = -EINVAL;
-> -			break;
-> -		}
->  		err = sys_sendmsg(a0, (struct msghdr __user *)a1, a[2]);
->  		break;
->  	case SYS_SENDMMSG:
-> -		if (a[3] & MSG_CMSG_COMPAT) {
-> -			err = -EINVAL;
-> -			break;
-> -		}
->  		err = sys_sendmmsg(a0, (struct mmsghdr __user *)a1, a[2], a[3]);
->  		break;
->  	case SYS_RECVMSG:
-> -		if (a[2] & MSG_CMSG_COMPAT) {
-> -			err = -EINVAL;
-> -			break;
-> -		}
->  		err = sys_recvmsg(a0, (struct msghdr __user *)a1, a[2]);
->  		break;
->  	case SYS_RECVMMSG:
-> -		if (a[3] & MSG_CMSG_COMPAT) {
-> -			err = -EINVAL;
-> -			break;
-> -		}
->  		err = sys_recvmmsg(a0, (struct mmsghdr __user *)a1, a[2], a[3],
->  				   (struct timespec __user *)a[4]);
->  		break;
-> -- 
-> 1.8.1.4
-> 
+        before   overwrite mode      after   overwrite mode
+AVG      1000        999             1046        1044
+STDEV    19.4        19.5            17.1        17.9
+
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+---
+ kernel/events/internal.h    |  2 ++
+ kernel/events/ring_buffer.c | 74 ++++++++++++++++++++++++---------------------
+ 2 files changed, 42 insertions(+), 34 deletions(-)
+
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index eb675c4..c6d7539 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -20,6 +20,8 @@ struct ring_buffer {
+ 
+ 	atomic_t			poll;		/* POLL_ for wakeups */
+ 
++	local_t				tail;		/* read position     */
++	local_t				next_tail;	/* next read position */
+ 	local_t				head;		/* write position    */
+ 	local_t				nest;		/* nested writers    */
+ 	local_t				events;		/* event limit       */
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index cd55144..2d5b15e 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -15,28 +15,9 @@
+ 
+ #include "internal.h"
+ 
+-static bool perf_output_space(struct ring_buffer *rb, unsigned long tail,
+-			      unsigned long offset, unsigned long head)
++static bool perf_output_space(unsigned long tail, unsigned long offset,
++			      unsigned long head, unsigned long mask)
+ {
+-	unsigned long sz = perf_data_size(rb);
+-	unsigned long mask = sz - 1;
+-
+-	/*
+-	 * check if user-writable
+-	 * overwrite : over-write its own tail
+-	 * !overwrite: buffer possibly drops events.
+-	 */
+-	if (rb->overwrite)
+-		return true;
+-
+-	/*
+-	 * verify that payload is not bigger than buffer
+-	 * otherwise masking logic may fail to detect
+-	 * the "not enough space" condition
+-	 */
+-	if ((head - offset) > sz)
+-		return false;
+-
+ 	offset = (offset - tail) & mask;
+ 	head   = (head   - tail) & mask;
+ 
+@@ -113,7 +94,7 @@ int perf_output_begin(struct perf_output_handle *handle,
+ 		      struct perf_event *event, unsigned int size)
+ {
+ 	struct ring_buffer *rb;
+-	unsigned long tail, offset, head;
++	unsigned long tail, offset, head, max_size;
+ 	int have_lost;
+ 	struct perf_sample_data sample_data;
+ 	struct {
+@@ -136,7 +117,8 @@ int perf_output_begin(struct perf_output_handle *handle,
+ 	handle->rb	= rb;
+ 	handle->event	= event;
+ 
+-	if (!rb->nr_pages)
++	max_size = perf_data_size(rb);
++	if (size > max_size)
+ 		goto out;
+ 
+ 	have_lost = local_read(&rb->lost);
+@@ -149,19 +131,43 @@ int perf_output_begin(struct perf_output_handle *handle,
+ 
+ 	perf_output_get_handle(handle);
+ 
+-	do {
++	if (rb->overwrite) {
++		do {
++			tail = local_read(&rb->tail);
++			offset = local_read(&rb->head);
++			head = offset + size;
++			if (unlikely(!perf_output_space(tail, offset, head,
++						        max_size - 1))) {
++				tail = local_read(&rb->next_tail);
++				local_set(&rb->tail, tail);
++				rb->user_page->data_tail = tail;
++			}
++		} while (local_cmpxchg(&rb->head, offset, head) != offset);
++
+ 		/*
+-		 * Userspace could choose to issue a mb() before updating the
+-		 * tail pointer. So that all reads will be completed before the
+-		 * write is issued.
++		 * Save the start of next event when half of the buffer
++		 * has been filled. Later when the event buffer overflows,
++		 * update the tail pointer to point to it.
+ 		 */
+-		tail = ACCESS_ONCE(rb->user_page->data_tail);
+-		smp_rmb();
+-		offset = head = local_read(&rb->head);
+-		head += size;
+-		if (unlikely(!perf_output_space(rb, tail, offset, head)))
+-			goto fail;
+-	} while (local_cmpxchg(&rb->head, offset, head) != offset);
++		if (tail == local_read(&rb->next_tail) &&
++		    head - tail >= (max_size >> 1))
++			local_cmpxchg(&rb->next_tail, tail, head);
++	} else {
++		do {
++			/*
++			 * Userspace could choose to issue a mb() before
++			 * updating the tail pointer. So that all reads will
++			 * be completed before the write is issued.
++			 */
++			tail = ACCESS_ONCE(rb->user_page->data_tail);
++			smp_rmb();
++			offset = local_read(&rb->head);
++			head = offset + size;
++			if (unlikely(!perf_output_space(tail, offset, head,
++							max_size - 1)))
++				goto fail;
++		} while (local_cmpxchg(&rb->head, offset, head) != offset);
++	}
+ 
+ 	if (head - local_read(&rb->wakeup) > rb->watermark)
+ 		local_add(rb->watermark, &rb->wakeup);
+-- 
+1.8.1.4
+
