@@ -1,104 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932707Ab3FFLbS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 07:31:18 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:38451 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932536Ab3FFLbR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 07:31:17 -0400
-Date: Thu, 6 Jun 2013 13:31:06 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Tobias Winter <tobias@linuxdingsda.de>,
-        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        Rob Landley <rob@landley.net>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
-Subject: Re: [PATCH 1/3] USB: serial: ports: add minor and port number
-Message-ID: <20130606113106.GI2566@localhost>
-References: <20130605175426.GA13461@kroah.com>
- <20130605175539.GD13461@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130605175539.GD13461@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932763Ab3FFLch (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 07:32:37 -0400
+Received: from mga03.intel.com ([143.182.124.21]:4917 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932536Ab3FFLcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 07:32:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,814,1363158000"; 
+   d="scan'208";a="313181017"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hitoshi Mitake <h.mitake@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH] perf bench: fix memory allocation fail check in mem{set,cpy} workloads
+Date: Thu,  6 Jun 2013 14:35:03 +0300
+Message-Id: <1370518503-4230-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 10:55:39AM -0700, Greg KH wrote:
-> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> The usb_serial_port structure had the number field, which was the minor
-> number for the port, which almost no one really cared about.  They
-> really wanted the number of the port within the device, which you had to
-> subtract from the minor of the parent usb_serial_device structure.  To
-> clean this up, provide the real minor number of the port, and the number
-> of the port within the serial device separately, as these numbers might
-> not be related in the future.
-> 
-> Bonus is that this cleans up a lot of logic in the drivers, and saves
-> lines overall.
-> 
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-> --- a/drivers/usb/serial/io_edgeport.c
-> +++ b/drivers/usb/serial/io_edgeport.c
+Addresses of allocated memory areas saved to '*src' and '*dst', so we
+need to check them for NULL, not 'src' and 'dst'.
 
-> @@ -2302,7 +2293,7 @@ static int send_cmd_write_baud_rate(stru
->  
->  	/* Restore original value to disable access to divisor latch */
->  	MAKE_CMD_WRITE_REG(&currCmd, &cmdLen, number, LCR,
-> -						edge_port->shadowLCR);
-> +			   edge_port->shadowLCR);
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ tools/perf/bench/mem-memcpy.c |    4 ++--
+ tools/perf/bench/mem-memset.c |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-Unintended indentation change?
+diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
+index 93c83e3..25fd3f1 100644
+--- a/tools/perf/bench/mem-memcpy.c
++++ b/tools/perf/bench/mem-memcpy.c
+@@ -111,11 +111,11 @@ static double timeval2double(struct timeval *ts)
+ static void alloc_mem(void **dst, void **src, size_t length)
+ {
+ 	*dst = zalloc(length);
+-	if (!dst)
++	if (!*dst)
+ 		die("memory allocation failed - maybe length is too large?\n");
+ 
+ 	*src = zalloc(length);
+-	if (!src)
++	if (!*src)
+ 		die("memory allocation failed - maybe length is too large?\n");
+ }
+ 
+diff --git a/tools/perf/bench/mem-memset.c b/tools/perf/bench/mem-memset.c
+index c6e4bc5..4a2f120 100644
+--- a/tools/perf/bench/mem-memset.c
++++ b/tools/perf/bench/mem-memset.c
+@@ -111,7 +111,7 @@ static double timeval2double(struct timeval *ts)
+ static void alloc_mem(void **dst, size_t length)
+ {
+ 	*dst = zalloc(length);
+-	if (!dst)
++	if (!*dst)
+ 		die("memory allocation failed - maybe length is too large?\n");
+ }
+ 
+-- 
+1.7.10.4
 
->  	status = write_cmd_usb(edge_port, cmdBuffer, cmdLen);
->  	if (status) {
-
-> --- a/drivers/usb/serial/whiteheat.c
-> +++ b/drivers/usb/serial/whiteheat.c
-
-> @@ -649,7 +649,7 @@ static void firm_setup_port(struct tty_s
->  	struct whiteheat_port_settings port_settings;
->  	unsigned int cflag = tty->termios.c_cflag;
->  
-> -	port_settings.port = port->number + 1;
-> +	port_settings.port = port->port_number + 1;
-
-This is a bug that should be fixed separately and backported, as it
-prevents port configuration (e.g. set_termios) for ports with minor
-number greater than 0.
-
-I took the liberty to prepare a separate patch for v3.10, which you
-could rebase the series on.
-
->  	/* get the byte size */
->  	switch (cflag & CSIZE) {
-
-> --- a/include/linux/usb/serial.h
-> +++ b/include/linux/usb/serial.h
-> @@ -37,7 +37,8 @@
->   * @serial: pointer back to the struct usb_serial owner of this port.
->   * @port: pointer to the corresponding tty_port for this port.
->   * @lock: spinlock to grab when updating portions of this structure.
-> - * @number: the number of the port (the minor number).
-> + * @minor: the minor number of the port
-> + * @port_number: the port number of this struct usb_serial_device (starts at 0)
-
-Maybe 
-
-	@port_number: the struct usb_serial port number of this port (starts at 0)
-
-or something similar, would be more clear?
-
->   * @interrupt_in_buffer: pointer to the interrupt in buffer for this port.
->   * @interrupt_in_urb: pointer to the interrupt in struct urb for this port.
->   * @interrupt_in_endpointAddress: endpoint address for the interrupt in pipe
-
-Looks good otherwise.
-
-Thanks,
-Johan
