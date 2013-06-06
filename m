@@ -1,39 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab3FFTst (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 15:48:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52120 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754388Ab3FFTss (ORCPT
+	id S1754333Ab3FFTtY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 15:49:24 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:33800 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752449Ab3FFTtW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 15:48:48 -0400
-Date: Thu, 6 Jun 2013 12:48:47 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>
-Subject: Re: [RFC PATCH v1 4/4] firmware loader: don't allow to request
- firmware via relative path
-Message-ID: <20130606194847.GB4526@kroah.com>
-References: <1370520110-32293-1-git-send-email-ming.lei@canonical.com>
- <1370520110-32293-5-git-send-email-ming.lei@canonical.com>
+	Thu, 6 Jun 2013 15:49:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370520110-32293-5-git-send-email-ming.lei@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130606181248.GA17707@logfs.org>
+References: <1370280485-10047-1-git-send-email-joern@logfs.org>
+	<1370280485-10047-2-git-send-email-joern@logfs.org>
+	<CAHp75VczX+tjqJgNv4uv=BRekm2Gc2i8WHL91vJFWSXWS8-J_A@mail.gmail.com>
+	<20130606181248.GA17707@logfs.org>
+Date: Thu, 6 Jun 2013 22:49:22 +0300
+Message-ID: <CAHp75VfFvirRvN8FwNey4=9GvMKmPvaM5PBThbEBwZYwL_pt-A@mail.gmail.com>
+Subject: Re: [PATCH 1/2] list: add list_for_each_entry_del
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: =?UTF-8?Q?J=C3=B6rn_Engel?= <joern@logfs.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 08:01:50PM +0800, Ming Lei wrote:
-> It isn't a good pratice to request firmware via relative path, also
-> might have security issue, so don't do it.
+On Thu, Jun 6, 2013 at 9:12 PM, Jörn Engel <joern@logfs.org> wrote:
+> On Thu, 6 June 2013 22:32:55 +0300, Andy Shevchenko wrote:
+>> On Mon, Jun 3, 2013 at 8:28 PM, Joern Engel <joern@logfs.org> wrote:
+>> > I have seen a lot of boilerplate code that either follows the pattern of
+>> >         while (!list_empty(head)) {
+>> >                 pos = list_entry(head->next, struct foo, list);
+>> >                 list_del(pos->list);
+>> >                 ...
+>> >         }
+>> > or some variant thereof.
+>>
+>> What the problem to use list_for_each_safe()?
+>
+> The loop may terminate with elements left on the list.  There is more,
+> but I would consider this the main problem.
 
-What would the security issue be?  You are letting the person who build
-the kernel specify this, so they can put whatever they want in here, a
-'..' isn't going to keep them from being able to do "bad" things if they
-really want to.
+I didn't quite get what you mean.
 
-thanks,
+list_for_each_safe() and list_for_each_entry_safe() traverse across
+list. User actually decides when the proper time to remove an element
+from the list.
 
-greg k-h
+I'm sorry, I didn't see any advantages from list_for_each_del() (or
+entry variant).
+
+--
+With Best Regards,
+Andy Shevchenko
