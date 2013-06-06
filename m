@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753622Ab3FFQLk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 12:11:40 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:47566 "EHLO
+	id S1753766Ab3FFQLz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 12:11:55 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:47590 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753344Ab3FFQLf (ORCPT
+	by vger.kernel.org with ESMTP id S1753280Ab3FFQLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 12:11:35 -0400
+	Thu, 6 Jun 2013 12:11:40 -0400
 From: Johannes Schilling <of82ecuq@cip.cs.fau.de>
 To: linux-kernel@vger.kernel.org
 Cc: linux-kernel@i4.cs.fau.de, Al Cho <acho@novell.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@i4.cs.fau.de, Al Cho <acho@novell.com>,
         Laura Lawniczak <laura.lawniczak@googlemail.com>,
         Johannes Schilling <of82ecuq@cip.cs.fau.de>,
         Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [PATCH 1/6] keucr: remove some unneccesary typedefs
-Date: Thu,  6 Jun 2013 18:10:45 +0200
-Message-Id: <1370535050-7167-2-git-send-email-of82ecuq@cip.cs.fau.de>
+Subject: [PATCH 6/6] keucr: fix some alignment- and whitespace-problems
+Date: Thu,  6 Jun 2013 18:10:50 +0200
+Message-Id: <1370535050-7167-7-git-send-email-of82ecuq@cip.cs.fau.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1370535050-7167-1-git-send-email-of82ecuq@cip.cs.fau.de>
 References: <20130605094517.GS28112@mwanda>
@@ -27,188 +27,380 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-resolves checkpatch.pl warning "do not add new typedefs" and renames allcaps
-structures.
+resolves checkpatch errors and warnings regarding whitespace around
+operators, line lengths and indentation.
 
 Signed-off-by: Laura Lawniczak <laura.lawniczak@googlemail.com>
 Signed-off-by: Johannes Schilling <of82ecuq@cip.cs.fau.de>
 ---
- drivers/staging/keucr/init.c    |    2 +-
- drivers/staging/keucr/smil.h    |   28 ++++++----------------------
- drivers/staging/keucr/smilsub.c |    6 +++---
- drivers/staging/keucr/usb.c     |    4 ++--
- drivers/staging/keucr/usb.h     |   18 +++++++++---------
- 5 files changed, 21 insertions(+), 37 deletions(-)
+ drivers/staging/keucr/init.c      |   24 +++++---
+ drivers/staging/keucr/scsiglue.c  |    5 +-
+ drivers/staging/keucr/smilmain.c  |  122 ++++++++++++++++++-------------------
+ drivers/staging/keucr/transport.c |   31 ++++++----
+ drivers/staging/keucr/usb.c       |   10 +--
+ drivers/staging/keucr/usb.h       |   12 ++--
+ 6 files changed, 106 insertions(+), 98 deletions(-)
 
 diff --git a/drivers/staging/keucr/init.c b/drivers/staging/keucr/init.c
-index cb50eb2..ce25405 100644
+index 53478e1..f5d41e0 100644
 --- a/drivers/staging/keucr/init.c
 +++ b/drivers/staging/keucr/init.c
-@@ -89,7 +89,7 @@ int ENE_SMInit(struct us_data *us)
+@@ -98,11 +98,16 @@ int ENE_SMInit(struct us_data *us)
+ 	us->SM_CardID   = buf[2];
+ 
+ 	if (us->SM_Status.Insert && us->SM_Status.Ready) {
+-		dev_info(&us->pusb_dev->dev, "Insert     = %x\n", us->SM_Status.Insert);
+-		dev_info(&us->pusb_dev->dev, "Ready      = %x\n", us->SM_Status.Ready);
+-		dev_info(&us->pusb_dev->dev, "WtP        = %x\n", us->SM_Status.WtP);
+-		dev_info(&us->pusb_dev->dev, "DeviceID   = %x\n", us->SM_DeviceID);
+-		dev_info(&us->pusb_dev->dev, "CardID     = %x\n", us->SM_CardID);
++		dev_info(&us->pusb_dev->dev, "Insert     = %x\n",
++					     us->SM_Status.Insert);
++		dev_info(&us->pusb_dev->dev, "Ready      = %x\n",
++					     us->SM_Status.Ready);
++		dev_info(&us->pusb_dev->dev, "WtP        = %x\n",
++					     us->SM_Status.WtP);
++		dev_info(&us->pusb_dev->dev, "DeviceID   = %x\n",
++					     us->SM_DeviceID);
++		dev_info(&us->pusb_dev->dev, "CardID     = %x\n",
++					     us->SM_CardID);
+ 		MediaChange = 1;
+ 		Check_D_MediaFmt(us);
+ 	} else {
+@@ -174,7 +179,8 @@ int ENE_SendScsiCmd(struct us_data *us, BYTE fDir, void *buf, int use_sg)
+ 	result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe,
+ 					    bcb, US_BULK_CB_WRAP_LEN, NULL);
+ 	if (result != USB_STOR_XFER_GOOD) {
+-		dev_err(&us->pusb_dev->dev, "send cmd to out endpoint fail ---\n");
++		dev_err(&us->pusb_dev->dev,
++				"send cmd to out endpoint fail ---\n");
  		return USB_STOR_TRANSPORT_ERROR;
  	}
  
--	us->SM_Status = *(PSM_STATUS)&buf[0];
-+	us->SM_Status = *(struct keucr_sm_status *)&buf[0];
+@@ -203,14 +209,16 @@ int ENE_SendScsiCmd(struct us_data *us, BYTE fDir, void *buf, int use_sg)
+ 						US_BULK_CS_WRAP_LEN, &cswlen);
  
- 	us->SM_DeviceID = buf[1];
- 	us->SM_CardID   = buf[2];
-diff --git a/drivers/staging/keucr/smil.h b/drivers/staging/keucr/smil.h
-index 24a636a..1538d7b 100644
---- a/drivers/staging/keucr/smil.h
-+++ b/drivers/staging/keucr/smil.h
-@@ -168,7 +168,7 @@ SmartMedia Model & Attribute
- /***************************************************************************
- Struct Definition
- ***************************************************************************/
--struct SSFDCTYPE {
-+struct keucr_media_info {
- 	BYTE Model;
- 	BYTE Attribute;
- 	BYTE MaxZones;
-@@ -177,30 +177,14 @@ struct SSFDCTYPE {
- 	WORD MaxLogBlocks;
- };
+ 	if (result == USB_STOR_XFER_SHORT && cswlen == 0) {
+-		dev_warn(&us->pusb_dev->dev, "Received 0-length CSW; retrying...\n");
++		dev_warn(&us->pusb_dev->dev,
++				"Received 0-length CSW; retrying...\n");
+ 		result = usb_stor_bulk_transfer_buf(us, us->recv_bulk_pipe,
+ 					bcs, US_BULK_CS_WRAP_LEN, &cswlen);
+ 	}
  
--typedef struct SSFDCTYPE_T {
--	BYTE Model;
--	BYTE Attribute;
--	BYTE MaxZones;
--	BYTE MaxSectors;
--	WORD MaxBlocks;
--	WORD MaxLogBlocks;
--} *SSFDCTYPE_T;
+ 	if (result == USB_STOR_XFER_STALLED) {
+ 		/* get the status again */
+-		dev_warn(&us->pusb_dev->dev, "Attempting to get CSW (2nd try)...\n");
++		dev_warn(&us->pusb_dev->dev,
++				"Attempting to get CSW (2nd try)...\n");
+ 		result = usb_stor_bulk_transfer_buf(us, us->recv_bulk_pipe,
+ 						bcs, US_BULK_CS_WRAP_LEN, NULL);
+ 	}
+diff --git a/drivers/staging/keucr/scsiglue.c b/drivers/staging/keucr/scsiglue.c
+index 54a89ff..afb00d8 100644
+--- a/drivers/staging/keucr/scsiglue.c
++++ b/drivers/staging/keucr/scsiglue.c
+@@ -322,8 +322,9 @@ static ssize_t store_max_sectors(struct device *dev,
+ 
+ static DEVICE_ATTR(max_sectors, S_IRUGO | S_IWUSR, show_max_sectors,
+ 							store_max_sectors);
+-static struct device_attribute *sysfs_device_attr_list[] =
+-					{&dev_attr_max_sectors, NULL, };
++static struct device_attribute *sysfs_device_attr_list[] = {
++	&dev_attr_max_sectors, NULL,
++};
+ 
+ /* this defines our host template, with which we'll allocate hosts */
+ 
+diff --git a/drivers/staging/keucr/smilmain.c b/drivers/staging/keucr/smilmain.c
+index dd73f88..2786808 100644
+--- a/drivers/staging/keucr/smilmain.c
++++ b/drivers/staging/keucr/smilmain.c
+@@ -302,7 +302,7 @@ int Media_D_ReadOneSect(struct us_data *us, WORD count, BYTE *buf)
+ 		return ERROR;
+ 
+ #ifdef RDERR_REASSIGN
+-	if (Ssfdc.Attribute &MWP) {
++	if (Ssfdc.Attribute & MWP) {
+ 		if (ErrCode == ERR_CorReadErr)
+ 			return SMSUCCESS;
+ 		return ERROR;
+@@ -675,90 +675,84 @@ int Make_D_LogTable(struct us_data *us)
+ 
+ 	Media.Sector = 0;
+ 
+-	{
+-		/* pr_info("Make_D_LogTable --- MediaZone = 0x%x\n",
+-							Media.Zone); */
+-		for (Media.LogBlock = 0; Media.LogBlock < Ssfdc.MaxLogBlocks;
+-							Media.LogBlock++)
+-			Log2Phy[Media.Zone][Media.LogBlock] = NO_ASSIGN;
 -
--struct ADDRESS {
-+struct keucr_media_address {
- 	BYTE Zone;	/* Zone Number */
- 	BYTE Sector;	/* Sector(512byte) Number on Block */
- 	WORD PhyBlock;	/* Physical Block Number on Zone */
- 	WORD LogBlock;	/* Logical Block Number of Zone */
- };
- 
--typedef struct ADDRESS_T {
--	BYTE Zone;	/* Zone Number */
--	BYTE Sector;	/* Sector(512byte) Number on Block */
--	WORD PhyBlock;	/* Physical Block Number on Zone */
--	WORD LogBlock;	/* Logical Block Number of Zone */
--} *ADDRESS_T;
+-		for (Media.PhyBlock = 0; Media.PhyBlock < (MAX_BLOCKNUM / 8);
+-							Media.PhyBlock++)
+-			Assign[Media.Zone][Media.PhyBlock] = 0x00;
 -
--struct CIS_AREA {
-+struct keucr_media_area {
- 	BYTE Sector;	/* Sector(512byte) Number on Block */
- 	WORD PhyBlock;	/* Physical Block Number on Zone 0 */
- };
-@@ -215,9 +199,9 @@ extern WORD	ReadBlock;
- extern WORD	WriteBlock;
- extern DWORD	MediaChange;
+-		for (Media.PhyBlock = 0; Media.PhyBlock < Ssfdc.MaxBlocks;
+-							Media.PhyBlock++) {
+-			if ((!Media.Zone) &&
+-					(Media.PhyBlock <= CisArea.PhyBlock)) {
+-				Set_D_Bit(Assign[Media.Zone], Media.PhyBlock);
+-				continue;
+-			}
++	/* pr_info("Make_D_LogTable --- MediaZone = 0x%x\n",
++						Media.Zone); */
++	for (Media.LogBlock = 0; Media.LogBlock < Ssfdc.MaxLogBlocks;
++						Media.LogBlock++)
++		Log2Phy[Media.Zone][Media.LogBlock] = NO_ASSIGN;
  
--extern struct SSFDCTYPE  Ssfdc;
--extern struct ADDRESS    Media;
--extern struct CIS_AREA   CisArea;
-+extern struct keucr_media_info    Ssfdc;
-+extern struct keucr_media_address Media;
-+extern struct keucr_media_area    CisArea;
+-			if (Ssfdc_D_ReadRedtData(us, Redundant)) {
+-				Ssfdc_D_Reset(us);
+-				return ERROR;
+-			}
+-
+-			if (!Check_D_DataBlank(Redundant))
+-				continue;
++	for (Media.PhyBlock = 0; Media.PhyBlock < (MAX_BLOCKNUM / 8);
++						Media.PhyBlock++)
++		Assign[Media.Zone][Media.PhyBlock] = 0x00;
  
- /*
-  * SMILMain.c
-diff --git a/drivers/staging/keucr/smilsub.c b/drivers/staging/keucr/smilsub.c
-index b10e8c2..815be93 100644
---- a/drivers/staging/keucr/smilsub.c
-+++ b/drivers/staging/keucr/smilsub.c
-@@ -33,9 +33,9 @@ void   _Set_D_ECCdata(BYTE, BYTE *);
- void   _Calc_D_ECCdata(BYTE *);
++	for (Media.PhyBlock = 0; Media.PhyBlock < Ssfdc.MaxBlocks;
++						Media.PhyBlock++) {
++		if ((!Media.Zone) && (Media.PhyBlock <= CisArea.PhyBlock)) {
+ 			Set_D_Bit(Assign[Media.Zone], Media.PhyBlock);
++			continue;
++		}
  
+-			if (Check_D_FailBlock(Redundant))
+-				continue;
++		if (Ssfdc_D_ReadRedtData(us, Redundant)) {
++			Ssfdc_D_Reset(us);
++			return ERROR;
++		}
++
++		if (!Check_D_DataBlank(Redundant))
++			continue;
  
--struct SSFDCTYPE                Ssfdc;
--struct ADDRESS                  Media;
--struct CIS_AREA                 CisArea;
-+struct keucr_media_info         Ssfdc;
-+struct keucr_media_address      Media;
-+struct keucr_media_area         CisArea;
+-			if (Load_D_LogBlockAddr(Redundant))
+-				continue;
++		Set_D_Bit(Assign[Media.Zone], Media.PhyBlock);
  
- static BYTE                            EccBuf[6];
- extern PBYTE                    SMHostAddr;
+-			if (Media.LogBlock >= Ssfdc.MaxLogBlocks)
+-				continue;
++		if (Check_D_FailBlock(Redundant))
++			continue;
+ 
+-			if (Log2Phy[Media.Zone][Media.LogBlock] == NO_ASSIGN) {
+-				Log2Phy[Media.Zone][Media.LogBlock] =
+-								Media.PhyBlock;
+-				continue;
+-			}
++		if (Load_D_LogBlockAddr(Redundant))
++			continue;
+ 
+-			phyblock     = Media.PhyBlock;
+-			logblock     = Media.LogBlock;
+-			Media.Sector = (BYTE)(Ssfdc.MaxSectors - 1);
++		if (Media.LogBlock >= Ssfdc.MaxLogBlocks)
++			continue;
++
++		if (Log2Phy[Media.Zone][Media.LogBlock] == NO_ASSIGN) {
++			Log2Phy[Media.Zone][Media.LogBlock] = Media.PhyBlock;
++			continue;
++		}
++
++		phyblock     = Media.PhyBlock;
++		logblock     = Media.LogBlock;
++		Media.Sector = (BYTE)(Ssfdc.MaxSectors - 1);
++
++		if (Ssfdc_D_ReadRedtData(us, Redundant)) {
++			Ssfdc_D_Reset(us);
++			return ERROR;
++		}
++
++		if (!Load_D_LogBlockAddr(Redundant) &&
++				(Media.LogBlock == logblock)) {
++			Media.PhyBlock = Log2Phy[Media.Zone][logblock];
+ 
+ 			if (Ssfdc_D_ReadRedtData(us, Redundant)) {
+ 				Ssfdc_D_Reset(us);
+ 				return ERROR;
+ 			}
+ 
++			Media.PhyBlock = phyblock;
++
+ 			if (!Load_D_LogBlockAddr(Redundant)) {
+-				if (Media.LogBlock == logblock) {
++				if (Media.LogBlock != logblock) {
+ 					Media.PhyBlock =
+ 						Log2Phy[Media.Zone][logblock];
+-
+-					if (Ssfdc_D_ReadRedtData(us,
+-								Redundant)) {
+-						Ssfdc_D_Reset(us);
+-						return ERROR;
+-					}
+-
+-					Media.PhyBlock = phyblock;
+-
+-					if (!Load_D_LogBlockAddr(Redundant)) {
+-						if (Media.LogBlock != logblock) {
+-							Media.PhyBlock = Log2Phy[Media.Zone][logblock];
+-							Log2Phy[Media.Zone][logblock] = phyblock;
+-						}
+-					} else {
+-						Media.PhyBlock = Log2Phy[Media.Zone][logblock];
+-						Log2Phy[Media.Zone][logblock] = phyblock;
+-					}
++					Log2Phy[Media.Zone][logblock] =
++								phyblock;
+ 				}
++			} else {
++				Media.PhyBlock = Log2Phy[Media.Zone][logblock];
++				Log2Phy[Media.Zone][logblock] = phyblock;
+ 			}
++		}
+ 
+-			Media.Sector = 0;
+-			Media.PhyBlock = phyblock;
+-
+-		} /* End for (Media.PhyBlock<Ssfdc.MaxBlocks) */
++		Media.Sector = 0;
++		Media.PhyBlock = phyblock;
+ 
+-		AssignStart[Media.Zone] = 0;
++	AssignStart[Media.Zone] = 0;
+ 
+ 	} /* End for (Media.Zone<MAX_ZONENUM) */
+ 
+diff --git a/drivers/staging/keucr/transport.c b/drivers/staging/keucr/transport.c
+index b3c25d0..1f9ea58 100644
+--- a/drivers/staging/keucr/transport.c
++++ b/drivers/staging/keucr/transport.c
+@@ -93,33 +93,38 @@ static void usb_stor_print_cmd(struct us_data *us, struct scsi_cmnd *srb)
+ 
+ 	switch (cmd) {
+ 	case TEST_UNIT_READY:
+-		/* dev_dbg(
+-			   &us->pusb_dev->dev, "scsi cmd %X --- SCSIOP_TEST_UNIT_READY\n", cmd); */
++		/* dev_dbg(&us->pusb_dev->dev,
++			"scsi cmd %X --- SCSIOP_TEST_UNIT_READY\n", cmd); */
+ 		break;
+ 	case INQUIRY:
+-		dev_dbg(&us->pusb_dev->dev, "scsi cmd %X --- SCSIOP_INQUIRY\n", cmd);
++		dev_dbg(&us->pusb_dev->dev,
++				"scsi cmd %X --- SCSIOP_INQUIRY\n", cmd);
+ 		break;
+ 	case MODE_SENSE:
+-		dev_dbg(&us->pusb_dev->dev, "scsi cmd %X --- SCSIOP_MODE_SENSE\n", cmd);
++		dev_dbg(&us->pusb_dev->dev,
++				"scsi cmd %X --- SCSIOP_MODE_SENSE\n", cmd);
+ 		break;
+ 	case START_STOP:
+-		dev_dbg(&us->pusb_dev->dev, "scsi cmd %X --- SCSIOP_START_STOP\n", cmd);
++		dev_dbg(&us->pusb_dev->dev,
++				"scsi cmd %X --- SCSIOP_START_STOP\n", cmd);
+ 		break;
+ 	case READ_CAPACITY:
+-		dev_dbg(&us->pusb_dev->dev, "scsi cmd %X --- SCSIOP_READ_CAPACITY\n", cmd);
++		dev_dbg(&us->pusb_dev->dev,
++				"scsi cmd %X --- SCSIOP_READ_CAPACITY\n", cmd);
+ 		break;
+ 	case READ_10:
+-		/*  dev_dbg(
+-			    &us->pusb_dev->dev, "scsi cmd %X --- SCSIOP_READ,bn = %X, blen = %X\n"
+-			    cmd, bn, blen); */
++		/*  dev_dbg(&us->pusb_dev->dev,
++			"scsi cmd %X --- SCSIOP_READ,bn = %X, blen = %X\n"
++			cmd, bn, blen); */
+ 		break;
+ 	case WRITE_10:
+-		/* dev_dbg(
+-			   &us->pusb_dev->dev, "scsi cmd %X --- SCSIOP_WRITE,
+-			   bn = %X, blen = %X\n" , cmd, bn, blen); */
++		/* dev_dbg(&us->pusb_dev->dev,
++			"scsi cmd %X --- SCSIOP_WRITE, bn = %X, blen = %X\n",
++			cmd, bn, blen); */
+ 		break;
+ 	case ALLOW_MEDIUM_REMOVAL:
+-		dev_dbg(&us->pusb_dev->dev, "scsi cmd %X --- SCSIOP_ALLOW_MEDIUM_REMOVAL\n", cmd);
++		dev_dbg(&us->pusb_dev->dev,
++			"scsi cmd %X --- SCSIOP_ALLOW_MEDIUM_REMOVAL\n", cmd);
+ 		break;
+ 	default:
+ 		dev_dbg(&us->pusb_dev->dev, "scsi cmd %X --- Other cmd\n", cmd);
 diff --git a/drivers/staging/keucr/usb.c b/drivers/staging/keucr/usb.c
-index 0608a5c..f18b1c2 100644
+index f18b1c2..ddd2e73 100644
 --- a/drivers/staging/keucr/usb.c
 +++ b/drivers/staging/keucr/usb.c
-@@ -65,7 +65,7 @@ static int eucr_resume(struct usb_interface *iface)
- 
- 	us->Power_IsResum = true;
- 
--	us->SM_Status = *(PSM_STATUS)&tmp;
-+	us->SM_Status = *(struct keucr_sm_status *)&tmp;
- 
- 	return 0;
+@@ -150,7 +150,7 @@ void fill_inquiry_response(struct us_data *us, unsigned char *data,
+ 	usb_stor_set_xfer_buf(us, data, data_len, us->srb, TO_XFER_BUF);
  }
-@@ -87,7 +87,7 @@ static int eucr_reset_resume(struct usb_interface *iface)
  
- 	us->Power_IsResum = true;
- 
--	us->SM_Status = *(PSM_STATUS)&tmp;
-+	us->SM_Status = *(struct keucr_sm_status *)&tmp;
- 
- 	return 0;
+-static int usb_stor_control_thread(void * __us)
++static int usb_stor_control_thread(void *__us)
+ {
+ 	struct us_data *us = (struct us_data *)__us;
+ 	struct Scsi_Host *host = us_to_host(us);
+@@ -493,7 +493,7 @@ static void release_everything(struct us_data *us)
+ 	scsi_host_put(us_to_host(us));
  }
+ 
+-static int usb_stor_scan_thread(void * __us)
++static int usb_stor_scan_thread(void *__us)
+ {
+ 	struct us_data *us = (struct us_data *)__us;
+ 
+@@ -604,9 +604,9 @@ static int eucr_probe(struct usb_interface *intf,
+ 	if (!(MiscReg03 & 0x02)) {
+ 		result = -ENODEV;
+ 		quiesce_and_remove_host(us);
+-		pr_info("keucr: The driver only supports SM/MS card.\
+-			To use SD card, \
+-			please build driver/usb/storage/ums-eneub6250.ko\n");
++		pr_info("keucr: The driver only supports SM/MS card. "
++			"To use SD card, "
++			"please build driver/usb/storage/ums-eneub6250.ko\n");
+ 		goto BadDevice;
+ 	}
+ 
 diff --git a/drivers/staging/keucr/usb.h b/drivers/staging/keucr/usb.h
-index 2dc75b0..c724cf7 100644
+index c724cf7..d665af1 100644
 --- a/drivers/staging/keucr/usb.h
 +++ b/drivers/staging/keucr/usb.h
-@@ -51,7 +51,7 @@ struct us_unusual_dev {
- #define FDIR_WRITE        0
- #define FDIR_READ         1
+@@ -19,8 +19,8 @@ struct scsi_cmnd;
+  */
  
--typedef struct _SD_STATUS {
-+struct keucr_sd_status {
- 	BYTE    Insert:1;
- 	BYTE    Ready:1;
- 	BYTE    MediaChange:1;
-@@ -60,9 +60,9 @@ typedef struct _SD_STATUS {
- 	BYTE    HiSpeed:1;
- 	BYTE    WtP:1;
- 	BYTE    Reserved:1;
--} SD_STATUS, *PSD_STATUS;
-+};
+ struct us_unusual_dev {
+-	const char* vendorName;
+-	const char* productName;
++	const char *vendorName;
++	const char *productName;
+ 	__u8  useProtocol;
+ 	__u8  useTransport;
+ 	int (*initFunction)(struct us_data *);
+@@ -108,9 +108,9 @@ struct keucr_sm_status {
+ #define US_IOBUF_SIZE		64	/* Size of the DMA-mapped I/O buffer */
+ #define US_SENSE_SIZE		18	/* Size of the autosense data buffer */
  
--typedef struct _MS_STATUS {
-+struct keucr_ms_status {
- 	BYTE    Insert:1;
- 	BYTE    Ready:1;
- 	BYTE    MediaChange:1;
-@@ -71,16 +71,16 @@ typedef struct _MS_STATUS {
- 	BYTE    Reserved1:1;
- 	BYTE    WtP:1;
- 	BYTE    Reserved2:1;
--} MS_STATUS, *PMS_STATUS;
-+};
+-typedef int (*trans_cmnd)(struct scsi_cmnd *, struct us_data*);
+-typedef int (*trans_reset)(struct us_data*);
+-typedef void (*proto_cmnd)(struct scsi_cmnd*, struct us_data*);
++typedef int (*trans_cmnd)(struct scsi_cmnd *, struct us_data *);
++typedef int (*trans_reset)(struct us_data *);
++typedef void (*proto_cmnd)(struct scsi_cmnd *, struct us_data *);
+ typedef void (*extra_data_destructor)(void *);	/* extra data destructor */
+ typedef void (*pm_hook)(struct us_data *, int);	/* power management hook */
  
--typedef struct _SM_STATUS {
-+struct keucr_sm_status {
- 	BYTE    Insert:1;
- 	BYTE    Ready:1;
- 	BYTE    MediaChange:1;
- 	BYTE    Reserved:3;
- 	BYTE    WtP:1;
- 	BYTE    IsMS:1;
--} SM_STATUS, *PSM_STATUS;
-+};
+@@ -215,7 +215,7 @@ struct us_data {
+ 	int		SrbStatus;
  
- /* SD Block Length */
- #define SD_BLOCK_LEN		9	/* 2^9 = 512 Bytes,
-@@ -178,9 +178,9 @@ struct us_data {
- 	pm_hook			suspend_resume_hook;
- #endif
- 	/* for 6250 code */
--	SD_STATUS   SD_Status;
--	MS_STATUS   MS_Status;
--	SM_STATUS   SM_Status;
-+	struct keucr_sd_status   SD_Status;
-+	struct keucr_ms_status   MS_Status;
-+	struct keucr_sm_status   SM_Status;
+ 	/* ------Power Managerment --------------- */
+-	BOOLEAN         Power_IsResum;	
++	BOOLEAN         Power_IsResum;
+ };
  
- 	/* ----- SD Control Data ---------------- */
- 	/* SD_REGISTER SD_Regs; */
+ /* Convert between us_data and the corresponding Scsi_Host */
 -- 
 1.7.10.4
 
