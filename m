@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933355Ab3FFMRo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 08:17:44 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:45430 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933199Ab3FFMRl (ORCPT
+	id S933410Ab3FFM0K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 08:26:10 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:55736 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932742Ab3FFMRn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 08:17:41 -0400
+	Thu, 6 Jun 2013 08:17:43 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 06/33] ARM: ux500: Supply the USB clock lookup to the DBX500 DT
-Date: Thu,  6 Jun 2013 13:16:54 +0100
-Message-Id: <1370521041-32318-7-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 07/33] ARM: ux500: Supply the Ethernet clock lookup to Snowball's DT
+Date: Thu,  6 Jun 2013 13:16:55 +0100
+Message-Id: <1370521041-32318-8-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
 References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
@@ -23,22 +23,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/boot/dts/dbx5x0.dtsi |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/boot/dts/snowball.dts |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
-index 928ef56..d3cc575c 100644
---- a/arch/arm/boot/dts/dbx5x0.dtsi
-+++ b/arch/arm/boot/dts/dbx5x0.dtsi
-@@ -241,6 +241,8 @@
- 				    "iep_6_14", "oep_6_14",
- 				    "iep_7_15", "oep_7_15",
- 				    "iep_8",    "oep_8";
+diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/snowball.dts
+index fb9dce5..e20e8ae 100644
+--- a/arch/arm/boot/dts/snowball.dts
++++ b/arch/arm/boot/dts/snowball.dts
+@@ -110,12 +110,13 @@
+ 				vdd33a-supply = <&en_3v3_reg>;
+ 				vddvario-supply = <&db8500_vape_reg>;
+ 
+-
+ 				reg-shift = <1>;
+ 				reg-io-width = <2>;
+ 				smsc,force-internal-phy;
+ 				smsc,irq-active-high;
+ 				smsc,irq-push-pull;
 +
-+			clocks = <&prcc_pclk 5 0>;
++				clocks = <&prcc_pclk 3 0>;
+ 			};
  		};
  
- 		dma: dma-controller@801C0000 {
 -- 
 1.7.10.4
 
