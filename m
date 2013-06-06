@@ -1,76 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755620Ab3FFCW6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 22:22:58 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:47322 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753887Ab3FFCW5 (ORCPT
+	id S1756784Ab3FFCZK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 22:25:10 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:34239 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753887Ab3FFCZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 22:22:57 -0400
-Message-ID: <51AFF279.2070104@linux.vnet.ibm.com>
-Date: Thu, 06 Jun 2013 10:22:49 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Wed, 5 Jun 2013 22:25:09 -0400
+From: Xiang Wang <wangxfdu@gmail.com>
+To: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
+        <linux-kernel@vger.kernel.org>
+CC: <wangxfdu@gmail.com>, <cxie4@marvell.com>, Xiang Wang <wangx@marvell.com>
+Subject: [PATCH v2 0/2] dma: mmp_pdma: Fix phy channels not protected issue 
+Date: Thu, 6 Jun 2013 10:24:21 +0800
+Message-ID: <1370485463-30731-1-git-send-email-wangxfdu@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 2/3] sched: code refine in unthrottle_cfs_rq()
-References: <51AD87A8.6080608@linux.vnet.ibm.com> <51AD87EB.1070605@linux.vnet.ibm.com> <20130605111544.GA8923@twins.programming.kicks-ass.net>
-In-Reply-To: <20130605111544.GA8923@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060602-8878-0000-0000-0000076A9C2A
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2013 07:15 PM, Peter Zijlstra wrote:
-> On Tue, Jun 04, 2013 at 02:23:39PM +0800, Michael Wang wrote:
->> Directly use rq to save some code.
->>
->> CC: Ingo Molnar <mingo@kernel.org>
->> CC: Peter Zijlstra <peterz@infradead.org>
->> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
-> 
-> Please send patches against tip/master; the below didn't apply cleanly.
-> It was a trivial conflict so I applied force and made it fit.
+From: Xiang Wang <wangx@marvell.com>
 
-My sincere apologies on that, please allow me to resend the accepted
-patches based on latest tip/master, forgive me for create extra work
-like that...
+This patch set deals with the issues that 1) phy channels are not protected
+in mmp_pdma. 2) dma request<->channel mapping is not cleared when a phy chan
+is freed.
 
-Regards,
-Michael Wang
+Xiang Wang (2):
+  dma: mmp_pdma: add protect when alloc/free phy channels
+  dma: mmp_pdma: clear DRCMR when free a phy channel
 
-> 
-> Thanks!
-> 
->> ---
->>  kernel/sched/fair.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index c61a614..1e10911 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -2298,7 +2298,7 @@ void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
->>  	int enqueue = 1;
->>  	long task_delta;
->>  
->> -	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
->> +	se = cfs_rq->tg->se[cpu_of(rq)];
->>  
->>  	cfs_rq->throttled = 0;
->>  	raw_spin_lock(&cfs_b->lock);
->> -- 
->> 1.7.4.1
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+ drivers/dma/mmp_pdma.c |   48 ++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 32 insertions(+), 16 deletions(-)
+
+-- 
+1.7.5.4
 
