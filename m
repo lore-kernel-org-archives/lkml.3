@@ -1,75 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab3FFNNA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 09:13:00 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37455 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756168Ab3FFNMm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 09:12:42 -0400
-Date: Thu, 6 Jun 2013 14:10:42 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "luke.leighton" <luke.leighton@gmail.com>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        linux-arm-kernel@lists.infradead.org, debian-kernel@lists.debian.org
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
-	Uploading linux (3.9.4-1))
-Message-ID: <20130606131042.GN18614@n2100.arm.linux.org.uk>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com> <1370475609.20454.44.camel@localhost> <CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com> <1733666.lHUBcfUXq9@flatron> <CAPweEDzYLDzh_-OWU61dtVhajZ40QpQgZKHFYDsh3FgF=r9_ag@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPweEDzYLDzh_-OWU61dtVhajZ40QpQgZKHFYDsh3FgF=r9_ag@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1755620Ab3FFNMh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 09:12:37 -0400
+Received: from mga09.intel.com ([134.134.136.24]:52160 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750941Ab3FFNMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 09:12:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,814,1363158000"; 
+   d="scan'208";a="325223454"
+Message-ID: <1370524350.23133.11.camel@intelbox>
+Subject: Re: [PATCH 1/3] lib/scatterlist: introduce sg_pcopy_from_buffer()
+ and sg_pcopy_to_buffer()
+From: Imre Deak <imre.deak@intel.com>
+Reply-To: imre.deak@intel.com
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Tejun Heo <tj@kernel.org>, Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Douglas Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org
+Date: Thu, 06 Jun 2013 16:12:30 +0300
+In-Reply-To: <1370523178-5437-2-git-send-email-akinobu.mita@gmail.com>
+References: <1370523178-5437-1-git-send-email-akinobu.mita@gmail.com>
+	 <1370523178-5437-2-git-send-email-akinobu.mita@gmail.com>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 01:24:57PM +0100, luke.leighton wrote:
-> On Thu, Jun 6, 2013 at 1:01 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+On Thu, 2013-06-06 at 21:52 +0900, Akinobu Mita wrote:
+> The only difference between sg_pcopy_{from,to}_buffer() and
+> sg_copy_{from,to}_buffer() is an additional argument that specifies
+> the number of bytes to skip the SG list before copying.
 > 
-> > I don't see any other solution here than moving all the Allwinner code to
-> > DT (as it has been suggested in this thread several times already), as
-> > this is the only hardware description method supported by ARM Linux.
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Imre Deak <imre.deak@intel.com>
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: linux-crypto@vger.kernel.org
+> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+> Cc: Douglas Gilbert <dgilbert@interlog.com>
+> Cc: linux-scsi@vger.kernel.org
+> ---
+>  include/linux/scatterlist.h |   5 ++
+>  lib/scatterlist.c           | 109 ++++++++++++++++++++++++++++++++++++--------
+>  2 files changed, 94 insertions(+), 20 deletions(-)
 > 
->  i repeat again: please state, explicitly and unequivocably that you -
-> linux kernel developers - are happy that the reach of linux and
-> gnu/linux OSes is dramatically reduced due to this intransigent
-> position.
+> diff --git a/include/linux/scatterlist.h b/include/linux/scatterlist.h
+> index 5951e3f..f5dee42 100644
+> --- a/include/linux/scatterlist.h
+> +++ b/include/linux/scatterlist.h
+> @@ -241,6 +241,11 @@ size_t sg_copy_from_buffer(struct scatterlist *sgl, unsigned int nents,
+>  size_t sg_copy_to_buffer(struct scatterlist *sgl, unsigned int nents,
+>  			 void *buf, size_t buflen);
+>  
+> +size_t sg_pcopy_from_buffer(struct scatterlist *sgl, unsigned int nents,
+> +			    void *buf, size_t buflen, off_t skip);
+> +size_t sg_pcopy_to_buffer(struct scatterlist *sgl, unsigned int nents,
+> +			  void *buf, size_t buflen, off_t skip);
+> +
+>  /*
+>   * Maximum number of entries that will be allocated in one piece, if
+>   * a list larger than this is required then chaining will be utilized.
+> diff --git a/lib/scatterlist.c b/lib/scatterlist.c
+> index a1cf8ca..3b40b72 100644
+> --- a/lib/scatterlist.c
+> +++ b/lib/scatterlist.c
+> @@ -453,6 +453,47 @@ void sg_miter_start(struct sg_mapping_iter *miter, struct scatterlist *sgl,
+>  }
+>  EXPORT_SYMBOL(sg_miter_start);
+>  
+> +static bool sg_miter_get_next_page(struct sg_mapping_iter *miter)
+> +{
+> +	if (!miter->__remaining) {
+> +		struct scatterlist *sg;
+> +		unsigned long pgoffset;
+> +
+> +		if (!__sg_page_iter_next(&miter->piter))
+> +			return false;
+> +
+> +		sg = miter->piter.sg;
+> +		pgoffset = miter->piter.sg_pgoffset;
+> +
+> +		miter->__offset = pgoffset ? 0 : sg->offset;
+> +		miter->__remaining = sg->offset + sg->length -
+> +				(pgoffset << PAGE_SHIFT) - miter->__offset;
+> +		miter->__remaining = min_t(unsigned long, miter->__remaining,
+> +					   PAGE_SIZE - miter->__offset);
+> +	}
+> +
+> +	return true;
+> +}
+> +
+> +static bool sg_miter_seek(struct sg_mapping_iter *miter, off_t offset)
+> +{
+> +	WARN_ON(miter->addr);
+> +
+> +	while (offset) {
+> +		off_t consumed;
+> +
+> +		if (!sg_miter_get_next_page(miter))
+> +			return false;
+> +
+> +		consumed = min_t(off_t, offset, miter->__remaining);
+> +		miter->__offset += consumed;
+> +		miter->__remaining -= consumed;
+> +		offset -= consumed;
+> +	}
+> +
+> +	return true;
+> +}
+> +
+>  /**
+>   * sg_miter_next - proceed mapping iterator to the next mapping
+>   * @miter: sg mapping iter to proceed
+> @@ -478,22 +519,9 @@ bool sg_miter_next(struct sg_mapping_iter *miter)
+>  	 * Get to the next page if necessary.
+>  	 * __remaining, __offset is adjusted by sg_miter_stop
+>  	 */
+> -	if (!miter->__remaining) {
+> -		struct scatterlist *sg;
+> -		unsigned long pgoffset;
+> -
+> -		if (!__sg_page_iter_next(&miter->piter))
+> -			return false;
+> -
+> -		sg = miter->piter.sg;
+> -		pgoffset = miter->piter.sg_pgoffset;
+> +	if (!sg_miter_get_next_page(miter))
+> +		return false;
+>  
+> -		miter->__offset = pgoffset ? 0 : sg->offset;
+> -		miter->__remaining = sg->offset + sg->length -
+> -				(pgoffset << PAGE_SHIFT) - miter->__offset;
+> -		miter->__remaining = min_t(unsigned long, miter->__remaining,
+> -					   PAGE_SIZE - miter->__offset);
+> -	}
+>  	miter->page = sg_page_iter_page(&miter->piter);
+>  	miter->consumed = miter->length = miter->__remaining;
+>  
+> @@ -552,14 +580,16 @@ EXPORT_SYMBOL(sg_miter_stop);
+>   * @nents:		 Number of SG entries
+>   * @buf:		 Where to copy from
+>   * @buflen:		 The number of bytes to copy
+> - * @to_buffer: 		 transfer direction (non zero == from an sg list to a
+> - * 			 buffer, 0 == from a buffer to an sg list
+> + * @skip:		 Number of bytes to skip before copying
+> + * @to_buffer:		 transfer direction (true == from an sg list to a
+> + *			 buffer, false == from a buffer to an sg list
+>   *
+>   * Returns the number of copied bytes.
+>   *
+>   **/
+>  static size_t sg_copy_buffer(struct scatterlist *sgl, unsigned int nents,
+> -			     void *buf, size_t buflen, int to_buffer)
+> +			     void *buf, size_t buflen, off_t skip,
+> +			     bool to_buffer)
+>  {
+>  	unsigned int offset = 0;
+>  	struct sg_mapping_iter miter;
+> @@ -573,6 +603,9 @@ static size_t sg_copy_buffer(struct scatterlist *sgl, unsigned int nents,
+>  
+>  	sg_miter_start(&miter, sgl, nents, sg_flags);
+>  
+> +	if (!sg_miter_seek(&miter, skip))
+> +		return false;
 
-If companies are going to go off and invent the square wheel, and that
-makes *them* suffer the loss of being able to merge back into the
-mainline kernel, thereby making *their* job of moving forward with
-their kernel versions much harder, then yes, we *are* happy.
+Looks ok to me, perhaps adding the seek functionality to the mapping
+iterator would make things more generic and the mapping iterator more
+resemble the page iterator. So we'd have a new sg_miter_start_offset and
+call it here something like:
 
-Companies will always do idiotic things; it's *them* and their users
-who have to live with the results of that bad decision making process.
+sg_miter_start_offset(&miter, sgl, nents, sg_flags, skip);
 
-Eventually, the pain of being outside the mainline kernel will become
-too great, especially if their users demand things like kernel upgrades
-from them.  Eventually, they will change.
+Just my 2 cents,
+Imre
 
-And no, this isn't an intransigent position.  This is reality given
-that ARM already has way too much code in the Linux kernel and we're
-trying to reduce that through the use of technologies like DT.  The
-last thing we need right now is for another "DT" like implementation
-to come along which is only used on a minority of platforms - even if
-the platform it is used on is successful.
+> +
+>  	local_irq_save(flags);
+>  
+>  	while (sg_miter_next(&miter) && offset < buflen) {
+> @@ -607,7 +640,7 @@ static size_t sg_copy_buffer(struct scatterlist *sgl, unsigned int nents,
+>  size_t sg_copy_from_buffer(struct scatterlist *sgl, unsigned int nents,
+>  			   void *buf, size_t buflen)
+>  {
+> -	return sg_copy_buffer(sgl, nents, buf, buflen, 0);
+> +	return sg_copy_buffer(sgl, nents, buf, buflen, 0, false);
+>  }
+>  EXPORT_SYMBOL(sg_copy_from_buffer);
+>  
+> @@ -624,6 +657,42 @@ EXPORT_SYMBOL(sg_copy_from_buffer);
+>  size_t sg_copy_to_buffer(struct scatterlist *sgl, unsigned int nents,
+>  			 void *buf, size_t buflen)
+>  {
+> -	return sg_copy_buffer(sgl, nents, buf, buflen, 1);
+> +	return sg_copy_buffer(sgl, nents, buf, buflen, 0, true);
+>  }
+>  EXPORT_SYMBOL(sg_copy_to_buffer);
+> +
+> +/**
+> + * sg_pcopy_from_buffer - Copy from a linear buffer to an SG list
+> + * @sgl:		 The SG list
+> + * @nents:		 Number of SG entries
+> + * @buf:		 Where to copy from
+> + * @skip:		 Number of bytes to skip before copying
+> + * @buflen:		 The number of bytes to copy
+> + *
+> + * Returns the number of copied bytes.
+> + *
+> + **/
+> +size_t sg_pcopy_from_buffer(struct scatterlist *sgl, unsigned int nents,
+> +			    void *buf, size_t buflen, off_t skip)
+> +{
+> +	return sg_copy_buffer(sgl, nents, buf, buflen, skip, false);
+> +}
+> +EXPORT_SYMBOL(sg_pcopy_from_buffer);
+> +
+> +/**
+> + * sg_pcopy_to_buffer - Copy from an SG list to a linear buffer
+> + * @sgl:		 The SG list
+> + * @nents:		 Number of SG entries
+> + * @buf:		 Where to copy to
+> + * @skip:		 Number of bytes to skip before copying
+> + * @buflen:		 The number of bytes to copy
+> + *
+> + * Returns the number of copied bytes.
+> + *
+> + **/
+> +size_t sg_pcopy_to_buffer(struct scatterlist *sgl, unsigned int nents,
+> +			  void *buf, size_t buflen, off_t skip)
+> +{
+> +	return sg_copy_buffer(sgl, nents, buf, buflen, skip, true);
+> +}
+> +EXPORT_SYMBOL(sg_pcopy_to_buffer);
 
-The way this works is this:
-- you either go with the policies which are set, or
-- you change the policy as a whole because you have a technically
-  superior solution
 
-What that means in this case is either you adopt DT, or you convince
-everyone that DT isn't the solution, but your solution is, and we adopt
-your solution for *everything* instead.
-
-If neither of those are possible, then that's really not our problem,
-and it's not _us_ who are being "intransigent".
