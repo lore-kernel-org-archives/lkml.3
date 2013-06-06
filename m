@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947Ab3FFQKx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 12:10:53 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:48558 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326Ab3FFQKv (ORCPT
+	id S1753035Ab3FFQK6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 12:10:58 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:64754 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752991Ab3FFQK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 12:10:51 -0400
+	Thu, 6 Jun 2013 12:10:56 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
         Jerome Marchand <jmarchan@redhat.com>
 Cc: Jiang Liu <jiang.liu@huawei.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 00/10] Bugfixes and minor improvements for zram
-Date: Fri,  7 Jun 2013 00:07:21 +0800
-Message-Id: <1370534851-26056-1-git-send-email-jiang.liu@huawei.com>
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: [PATCH v3 01/10] zram: avoid invalid memory access in zram_exit()
+Date: Fri,  7 Jun 2013 00:07:22 +0800
+Message-Id: <1370534851-26056-2-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1370534851-26056-1-git-send-email-jiang.liu@huawei.com>
+References: <1370534851-26056-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We found some issues in zram by code inspection, so generate this set
-of patches for bugfixes and minor code improvements.
-The first six patches are bugfixes, and should target the mainline
-and even stable trees. The last 4 patches are code cleanup and
-performance optimization, but not sure whether Greg is kind enough
-to accept them:)
+Memory for zram->disk object may have already been freed after returning
+from destroy_device(zram), then it's unsafe for zram_reset_device(zram)
+to access zram->disk again.
 
-Great thanks to Minchan and Jerome for code review!
+We can't solve this bug by flipping the order of destroy_device(zram)
+and zram_reset_device(zram), that will cause deadlock issues to the
+zram sysfs handler.
 
-V2->V3:
-1) reorder patches so bugfixes go first
-2) rewrite valid_io_request()
-3) enhance comments and commit messages
+So fix it by holding an extra reference to zram->disk before calling
+destroy_device(zram).
 
-Jiang Liu (10):
-  zram: avoid invalid memory access in zram_exit()
-  zram: use zram->lock to protect zram_free_page() in swap free notify
-    path
-  zram: destroy all devices on error recovery path in zram_init()
-  zram: avoid double free in function zram_bvec_write()
-  zram: avoid access beyond the zram device
-  zram: protect sysfs handler from invalid memory access
-  zram: simplify and optimize dev_to_zram()
-  zram: kill unused zram_get_num_devices()
-  zram: optimize memory operations with clear_page()/copy_page()
-  zram: use atomic64_xxx() to replace zram_stat64_xxx()
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: stable@vger.kernel.org
+---
+ drivers/staging/zram/zram_drv.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
- drivers/staging/zram/zram_drv.c   | 109 +++++++++++++++++---------------------
- drivers/staging/zram/zram_drv.h   |  26 ++++-----
- drivers/staging/zram/zram_sysfs.c |  36 ++++---------
- 3 files changed, 73 insertions(+), 98 deletions(-)
-
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index e34e3fe..ee6b67d 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -727,8 +727,10 @@ static void __exit zram_exit(void)
+ 	for (i = 0; i < num_devices; i++) {
+ 		zram = &zram_devices[i];
+ 
++		get_disk(zram->disk);
+ 		destroy_device(zram);
+ 		zram_reset_device(zram);
++		put_disk(zram->disk);
+ 	}
+ 
+ 	unregister_blkdev(zram_major, "zram");
 -- 
 1.8.1.2
 
