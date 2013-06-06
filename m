@@ -1,68 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754357Ab3FFTrp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 15:47:45 -0400
-Received: from mercuryimc.plus.com ([80.229.200.144]:58333 "EHLO
-	centos1.newflow.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753015Ab3FFTrn (ORCPT
+	id S1754491Ab3FFTrx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 15:47:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52116 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754391Ab3FFTrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 15:47:43 -0400
-X-Greylist: delayed 1771 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Jun 2013 15:47:43 EDT
-Message-ID: <51B0E071.70909@newflow.co.uk>
-Date: Thu, 06 Jun 2013 20:18:09 +0100
-From: Mark Jackson <mpfj-list@newflow.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 6 Jun 2013 15:47:51 -0400
+Date: Thu, 6 Jun 2013 12:47:50 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>
+Subject: Re: [PATCH v1 3/4] firmware loader: allow distribution to choose
+ default search paths
+Message-ID: <20130606194750.GA4526@kroah.com>
+References: <1370520110-32293-1-git-send-email-ming.lei@canonical.com>
+ <1370520110-32293-4-git-send-email-ming.lei@canonical.com>
 MIME-Version: 1.0
-To: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
-CC: lkml <linux-kernel@vger.kernel.org>
-Subject: General question regarding multiple partitions on a single NOR device
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370520110-32293-4-git-send-email-ming.lei@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On one of our products, we have 2 64Mbit NOR devices:- one to hold the
-kernel, filesystem, etc, and the other to store "user" data.
+On Thu, Jun 06, 2013 at 08:01:49PM +0800, Ming Lei wrote:
+> For some distributions(e.g. android), firmware images aren't put
+> under kernel built-in search paths, so introduce one Kconfig
+> option to allow distributions or users to choose its specific default
+> search paths, which are always tried before searching from kernel
+> built-in paths in direct loading.
+> 
+> Also this patch introduces fw_get_fw_file_from_paths to cover all
+> search paths, and fw_get_filesystem_firmware is simpified a bit.
+> 
+> Cc: Takashi Iwai <tiwai@suse.de>
+> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> ---
+>  drivers/base/Kconfig          |   14 ++++++++++
+>  drivers/base/firmware_class.c |   61 ++++++++++++++++++++++++++++++++++-------
+>  2 files changed, 65 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+> index 07abd9d..2be10e4 100644
+> --- a/drivers/base/Kconfig
+> +++ b/drivers/base/Kconfig
+> @@ -156,6 +156,20 @@ config FW_LOADER_USER_HELPER
+>  	  no longer required unless you have a special firmware file that
+>  	  resides in a non-standard path.
+>  
+> +config FW_CUSTOMIZED_PATH
+> +	string "default firmware search paths for direct loading"
+> +	help
+> +	  On some distribution(e.g. android), firmware images aren't
+> +	  put under kernel built-in search paths, so provide this option
+> +	  for distributions to choose a distribution specific firmware
+> +	  search path. The option allows to choose more than one path,
+> +	  and paths are seperated with colon like $PATH(e.g. on android,
+> +	  the option might look as "/etc/firmware:/vendor/firmware").
+> +	  Each path should be a absolute path, and relative path will be
+> +	  ignored.
+> +
+> +	  If you are unsure about this, don't choose here.
+> +
+>  config DEBUG_DRIVER
+>  	bool "Driver Core verbose debug messages"
+>  	depends on DEBUG_KERNEL
+> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> index 6ede229..051db83 100644
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -265,8 +265,13 @@ static void fw_free_buf(struct firmware_buf *buf)
+>  
+>  /* direct firmware loading support */
+>  static char fw_path_para[256];
+> +
+> +/* search runtime paths first, then static pre-defined paths */
+>  static const char * const fw_path[] = {
+>  	fw_path_para,
+> +#ifdef CONFIG_FW_CUSTOMIZED_PATH
+> +	CONFIG_FW_CUSTOMIZED_PATH,
+> +#endif
+>  	"/lib/firmware/updates/" UTS_RELEASE,
+>  	"/lib/firmware/updates",
+>  	"/lib/firmware/" UTS_RELEASE,
+> @@ -314,6 +319,50 @@ static bool fw_read_file_contents(struct file *file, struct firmware_buf *fw_buf
+>  	return true;
+>  }
+>  
+> +static bool fw_get_file_firmware(const char *path,
+> +				 struct firmware_buf *buf)
+> +{
+> +	struct file *file;
+> +	bool success;
+> +
+> +	file = filp_open(path, O_RDONLY, 0);
+> +	if (IS_ERR(file))
+> +		return false;
+> +	success = fw_read_file_contents(file, buf);
+> +	fput(file);
+> +
+> +	return success;
+> +}
+> +
+> +/* The path in @paths is seperated by ';' */
 
-The gotcha is that the "user" data is stored using our own wear
-levelling code, with read / write / erase operations being carried out
-on the raw flash device.
+No it isn't.
 
-We are now designing a new CPU board with a single 1Gbit Spansion NOR
-part on it, rather than the 2 separate devices.
+> +static bool fw_get_file_fw_from_paths(const char *paths, char *path,
+> +				      struct firmware_buf *buf)
+> +{
+> +	int len, start, end = -1;
+> +	char *pos;
+> +
+> +	do {
+> +		start = end + 1;
+> +		pos = strchr(&paths[start], ':');
 
-I am planning to allocate 512Mbit to the "system" partitions (eg
-bootloader, kernel, filesystem) and have the other 512Mbit as the "data"
-partition.
+As you have an array of paths now, why are you doing the ':' check
+still?  Don't do that, just allow the person building the kernel to add
+one path to the loader, that should be all that we need, right?
 
-Currently our wear levelling code uses mmap() to gain direct access to
-the flash chip, which is not an issue, since all filesystem updates etc
-are all carried out on the completely separate chip (via jffs2).
+thanks,
 
-What I would like to know is, when the "system" and "user" partitions
-reside on the *same" flash device, if I read/write directly to the
-"user" partition, how do I maintain the jffs2 integrity on other
-"system" partitions that may be doing their own read/write/erase
-operations ?
-
-If I can't read/write directly, can the same be achieved using the mtd
-character device using something like:-
-
-fd = open("/dev/mtd4", ..);
-seek(fd, 1234);
-write(fd, buff, ...);
-...etc...
-
-If I need to "manually" erase a sector on our custom data partition, how
-can that be handled without disrupting any jffs2 flash access on the
-other "system" partitions ?
-
-Do the mtd ioctl() functions handle all the flash locking for me ?
-
-Or is this a bit hole I'm digging for myself ?
-
-Thanks for any help anyone can offer.
-
-Regards
-Mark J.
+greg k-h
