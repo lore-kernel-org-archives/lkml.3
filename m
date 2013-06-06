@@ -1,111 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499Ab3FFA1U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 20:27:20 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:19056 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755092Ab3FFA1R (ORCPT
+	id S1755319Ab3FFAfY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 20:35:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41633 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754106Ab3FFAfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 20:27:17 -0400
-Message-ID: <51AFD75C.3030705@oracle.com>
-Date: Thu, 06 Jun 2013 08:27:08 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Wed, 5 Jun 2013 20:35:23 -0400
+Date: Wed, 5 Jun 2013 17:35:53 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm@lists.debian.org,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>,
+        debian-kernel@lists.debian.org
+Subject: Re: getting allwinner SoC support upstream (was Re: Uploading linux
+ (3.9.4-1))
+Message-ID: <20130606003553.GA7017@kroah.com>
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
+ <CAKON4OyyRF4Z46RyJFDWUwo4L52Z8bgSH0CzDr2gDerw4iDwcw@mail.gmail.com>
+ <3619282.JgdgeGHudI@flatron>
+ <CAPweEDwyX4=Sme9kyDU64k9h3SPUHuErD8gEqfdYLGwBOocZDQ@mail.gmail.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Viresh Kumar <viresh.kumar@linaro.org>, Neil Gu <qing.gu@oracle.com>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ACPI: update user_policy.max when _PPC updated
-References: <51AE8BE4.8050409@oracle.com> <31897041.QcNuTieHbo@vostro.rjw.lan>
-In-Reply-To: <31897041.QcNuTieHbo@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPweEDwyX4=Sme9kyDU64k9h3SPUHuErD8gEqfdYLGwBOocZDQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/13 04:40, Rafael J. Wysocki wrote:
-> On Wednesday, June 05, 2013 08:52:52 AM Joe Jin wrote:
->> When _PPC changed dynamically the user_policy.max will not be updated,
->> this prevent CPU run on the highest frequency.
-> 
-> Why should the user setting be always related to the current maximum available
-> frequency?  What if the user sets the limit for power capping purposes?
+On Wed, Jun 05, 2013 at 11:56:43PM +0100, Luke Kenneth Casson Leighton wrote:
+> so there's a lot of factors which i believe the linux kernel
+> developers are not aware of, and haven't taken into account, and to
+> place blame onto the SoC vendors for not working with *you* when *you*
+> haven't made an effort to understand their situation is, i feel, not
+> really helping anyone.  not that i'm one to talk about understanding
+> people, but hey... :)
 
-cpufreq_update_policy() get policy->max from user_policy.max:
+Wait, everyone in the world knows where we (Linux kernel developers)
+are, and how to contact us, how are we supposed to know we are supposed
+to go after these various companies and contact them directly?
 
-1782 int cpufreq_update_policy(unsigned int cpu)
-1783 {
-[...]
-1800         policy.min = data->user_policy.min;
-1801         policy.max = data->user_policy.max;
-1802         policy.policy = data->user_policy.policy;
-1803         policy.governor = data->user_policy.governor;
-[...]
-1819         ret = __cpufreq_set_policy(data, &policy);
-[...]
+So this SoC vendor doesn't want to merge their code upstream, fine, we
+(kernel community) don't really care, and it's obvious the company
+doesn't care, so what really is the issue here?
 
-/sys/devices/system/cpu/cpu$/cpufreq/scaling_max_freq using policy->max 
-and user_policy->max, when update it, so I think _PPC changes also need
-to update these two?
+Eventually, the SoC will realize that they do need to get their code
+merged, and we will still be here, as we aren't going anywhere.  At that
+point in time, we will be glad to review patches and code like we do
+every day for all of the thousands of other companies we deal with on a
+weekly basis.
 
-Thanks,
-Joe
- 
-> 
-> Rafael
-> 
-> 
->> Signed-off-by: Joe Jin <joe.jin@oracle.com>
->> Cc: Rafael J. Wysocki <rjw@sisk.pl>
->> Cc: Viresh Kumar <viresh.kumar@linaro.org>
->> ---
->>  drivers/acpi/processor_perflib.c | 17 ++++++++++++++++-
->>  1 file changed, 16 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
->> index e854582..e01aa7d 100644
->> --- a/drivers/acpi/processor_perflib.c
->> +++ b/drivers/acpi/processor_perflib.c
->> @@ -180,6 +180,7 @@ static void acpi_processor_ppc_ost(acpi_handle handle, int status)
->>  int acpi_processor_ppc_has_changed(struct acpi_processor *pr, int event_flag)
->>  {
->>  	int ret;
->> +	unsigned int saved = (unsigned int)pr->performance_platform_limit;
->>  
->>  	if (ignore_ppc) {
->>  		/*
->> @@ -204,8 +205,22 @@ int acpi_processor_ppc_has_changed(struct acpi_processor *pr, int event_flag)
->>  	}
->>  	if (ret < 0)
->>  		return (ret);
->> -	else
->> +	else {
->> +		unsigned int ppc = (unsigned int)pr->performance_platform_limit;
->> +
->> +		if (saved != ppc) {
->> +			struct cpufreq_policy *policy;
->> +
->> +			policy = cpufreq_cpu_get(pr->id);
->> +			if (likely(policy))
->> +				policy->user_policy.max =
->> +					pr->performance->states[ppc].
->> +					core_frequency * 1000;
->> +			cpufreq_cpu_put(policy);
->> +		}
->> +
->>  		return cpufreq_update_policy(pr->id);
->> +	}
->>  }
->>  
->>  int acpi_processor_get_bios_limit(int cpu, unsigned int *limit)
->>
+I don't see the problem here, do you?
 
-
--- 
-Oracle <http://www.oracle.com>
-Joe Jin | Software Development Senior Manager | +8610.6106.5624
-ORACLE | Linux and Virtualization
-No. 24 Zhongguancun Software Park, Haidian District | 100193 Beijing 
+greg k-h
