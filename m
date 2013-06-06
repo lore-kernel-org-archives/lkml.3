@@ -1,34 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab3FFQja (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 12:39:30 -0400
-Received: from 6.mo5.mail-out.ovh.net ([178.32.119.138]:46891 "EHLO
+	id S1753098Ab3FFQoa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 12:44:30 -0400
+Received: from 11.mo5.mail-out.ovh.net ([46.105.47.167]:33854 "EHLO
 	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751625Ab3FFQj3 (ORCPT
+	with ESMTP id S1751146Ab3FFQo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 12:39:29 -0400
-Date: Thu, 6 Jun 2013 18:15:44 +0200
+	Thu, 6 Jun 2013 12:44:29 -0400
+Date: Thu, 6 Jun 2013 18:23:36 +0200
 From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, manabian@gmail.com,
-        linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux@dominikbrodowski.net, fabio.porcedda@gmail.com,
-        Andrew Morton <akpm@linux-foundation.org>, laurent.navet@gmail.com,
-        linux-arm-kernel@lists.infradead.org
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
+        Arnd Bergmann <arnd@arndb.de>, Timur Tabi <timur@tabi.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-fbdev@vger.kernel.org,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
 X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH v3 1/7] pcmcia: at91_cf: fix gpio_get_value in
- at91_cf_get_status
-Message-ID: <20130606161544.GN23653@game.jcrosoft.org>
-References: <cover.1370506678.git.nicolas.ferre@atmel.com>
- <cc6a02cb9d55ba52b48adca688fef362b8bea373.1370506678.git.nicolas.ferre@atmel.com>
+Subject: Re: [PATCH v4 0/7] xilinxfb changes
+Message-ID: <20130606162336.GW19468@game.jcrosoft.org>
+References: <cover.1370254386.git.michal.simek@xilinx.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cc6a02cb9d55ba52b48adca688fef362b8bea373.1370506678.git.nicolas.ferre@atmel.com>
+In-Reply-To: <cover.1370254386.git.michal.simek@xilinx.com>
 X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
 X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 13160081063166585708
+X-Ovh-Tracer-Id: 13292937250751359903
 X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
@@ -37,52 +36,63 @@ X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeejucetufdoteggodetrfcurfh
 X-Spam-Check: DONE|U 0.5/N
 X-VR-SPAMSTATE: OK
 X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10:24 Thu 06 Jun     , Nicolas Ferre wrote:
-> From: Joachim Eastwood <manabian@gmail.com>
+On 12:13 Mon 03 Jun     , Michal Simek wrote:
+> Hi,
 > 
-> Commit 80af9e6d (pcmcia at91_cf: fix raw gpio number usage) forgot
-> to change the parameter in gpio_get_value after adding gpio
-> validation.
 
-this is a fix so should for in stable tree too
+Arnd can you take look on it again please
 
-since #3.4
+I'll take a look on it next week
 
 Best Regards,
 J.
+> I have done more changes in the driver to support probing
+> on little and big endian system where detection is done
+> directly on the hardware.
+> I have also done some cleanups to get it to the better shape.
 > 
-> Signed-off-by: Joachim Eastwood <manabian@gmail.com>
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
->  drivers/pcmcia/at91_cf.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+> Thanks for your review,
+> Michal
 > 
-> diff --git a/drivers/pcmcia/at91_cf.c b/drivers/pcmcia/at91_cf.c
-> index 01463c7..1b2c631 100644
-> --- a/drivers/pcmcia/at91_cf.c
-> +++ b/drivers/pcmcia/at91_cf.c
-> @@ -100,9 +100,9 @@ static int at91_cf_get_status(struct pcmcia_socket *s, u_int *sp)
->  		int vcc	= gpio_is_valid(cf->board->vcc_pin);
->  
->  		*sp = SS_DETECT | SS_3VCARD;
-> -		if (!rdy || gpio_get_value(rdy))
-> +		if (!rdy || gpio_get_value(cf->board->irq_pin))
->  			*sp |= SS_READY;
-> -		if (!vcc || gpio_get_value(vcc))
-> +		if (!vcc || gpio_get_value(cf->board->vcc_pin))
->  			*sp |= SS_POWERON;
->  	} else
->  		*sp = 0;
-> -- 
-> 1.8.2.2
+> Changes in v4:
+> - Acked by Arnd
+> - Remove "video: xilinxfb: Fix sparse warnings"
+>   patch because it is trying to fix incorrect API
+>   usage and sparse should warn about it.
 > 
+> Changes in v3:
+> - fix commit message
+> - Remove out_be IO name from function name
+> - Change patch subject from "Do not use out_be32 IO function"
+>   to "Do not name out_be32 in function name"
+> - New patch in this patchset based on discussions
+> - New patch in this patchset based on discussions
+> - New patch in this patchset
+> - New patch in this patchset based on discussions
 > 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> Changes in v2:
+> - use of_property_read_u32 helper function
+> 
+> Michal Simek (7):
+>   video: xilinxfb: Fix OF probing on little-endian systems
+>   video: xilinxfb: Do not name out_be32 in function name
+>   video: xilinxfb: Rename PLB_ACCESS_FLAG to BUS_ACCESS_FLAG
+>   video: xilinxfb: Use drvdata->regs_phys instead of physaddr
+>   video: xilinxfb: Group bus initialization
+>   video: xilinxfb: Add support for little endian accesses
+>   video: xilinxfb: Use driver for Xilinx ARM Zynq
+> 
+>  drivers/video/Kconfig    |   2 +-
+>  drivers/video/xilinxfb.c | 135 +++++++++++++++++++++++------------------------
+>  2 files changed, 68 insertions(+), 69 deletions(-)
+> 
+> --
+> 1.8.2.3
+> 
+
+
