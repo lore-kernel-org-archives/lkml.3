@@ -1,57 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab3FFHXQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 03:23:16 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:57198 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754879Ab3FFHXL (ORCPT
+	id S932111Ab3FFHXW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 03:23:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59354 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754448Ab3FFHXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 03:23:11 -0400
+	Thu, 6 Jun 2013 03:23:19 -0400
+Message-ID: <51B038E3.30800@canonical.com>
+Date: Thu, 06 Jun 2013 09:23:15 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <20130606120455.bd86a4c0ac009482db80f634@canb.auug.org.au>
-References: <20130606002636.6746F5A41AE@corp2gmr1-2.hot.corp.google.com>
-	<20130606120455.bd86a4c0ac009482db80f634@canb.auug.org.au>
-Date: Thu, 6 Jun 2013 09:23:10 +0200
-X-Google-Sender-Auth: NJaE0sZBeWdj4cGAdPvUkepqrZE
-Message-ID: <CAMuHMdUKvJBS9u4qjDDKRhAMv9ikrxYSBgobLSSDWL1VmeV9wA@mail.gmail.com>
-Subject: Re: mmotm 2013-06-05-17-24 uploaded
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: mm-commits@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux-Next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [vt_console_print/cirrus_dirty_update] WARNING: at kernel/mutex.c:858
+ mutex_trylock()
+References: <20130606013518.GA9092@localhost>
+In-Reply-To: <20130606013518.GA9092@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+Hey,
 
-On Thu, Jun 6, 2013 at 4:04 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> On Wed, 05 Jun 2013 17:26:36 -0700 akpm@linux-foundation.org wrote:
->>
->>   linux-next-git-rejects.patch
+Op 06-06-13 03:35, Fengguang Wu schreef:
+> Greetings,
 >
-> We must figure out why you sometimes get rejects that I do not get when I
-> import your series into a git tree.  However in this case you resolution
-> is not quite right.  It leaves 2 continue statements in
-> net/mac80211/iface.c at line 191 which will unconditionally short circuit
-> the enclosing loop.  The version that will be in linux-next today is
-> correct (and git did it automatically as part of the merge of the old
-> linux-next tree).
+> I got the below dmesg and the first bad commit is
+>
+> commit 3d71c6ed43d838e593538176a9a59debe228cfb0
+> Author: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+> Date:   Tue Apr 2 12:33:01 2013 +0200
+>
+>     drm/ttm: convert to the reservation api
+>     
+>     Now that the code is compatible in semantics, flip the switch.
+>     Use ww_mutex instead of the homegrown implementation.
+>     
+>     Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+>
+> [   13.044298] printing local APIC contents on CPU#0/0:
+> [   13.044313] ------------[ cut here ]------------
+> [   13.044367] WARNING: at /c/kernel-tests/src/tip/kernel/mutex.c:858 mutex_trylock+0x87/0x220()
+> [   13.044378] DEBUG_LOCKS_WARN_ON(in_interrupt())
+> [   13.044378] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.10.0-rc4-00296-ga2963dd #20
+> [   13.044379] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+> [   13.044390]  0000000000000009 ffff88000de039f8 ffffffff81fc86d5 ffff88000de03a38
+> [   13.044395]  ffffffff810d511b ffff880000000018 ffff88000f33c690 0000000000000001
+> [   13.044398]  00000000000003f0 ffff88000f4677c8 0000000000000000 ffff88000de03a98
+> [   13.044400] Call Trace:
+> [   13.044412]  <IRQ>  [<ffffffff81fc86d5>] dump_stack+0x19/0x1b
+> [   13.044441]  [<ffffffff810d511b>] warn_slowpath_common+0x6b/0x90
+> [   13.044445]  [<ffffffff810d51a6>] warn_slowpath_fmt+0x46/0x50
+> [   13.044448]  [<ffffffff81fd34d7>] mutex_trylock+0x87/0x220
+> [   13.044482]  [<ffffffff8186484d>] cirrus_dirty_update+0x1cd/0x330
+> [   13.044486]  [<ffffffff818649e8>] cirrus_imageblit+0x38/0x50
+> [   13.044506]  [<ffffffff8165782e>] soft_cursor+0x22e/0x240
+> [   13.044510]  [<ffffffff81656c31>] bit_cursor+0x581/0x5b0
+> [   13.044525]  [<ffffffff815de9f4>] ? vsnprintf+0x124/0x670
+> [   13.044529]  [<ffffffff81651333>] ? get_color.isra.16+0x43/0x130
+> [   13.044532]  [<ffffffff81653fca>] fbcon_cursor+0x18a/0x1d0
+> [   13.044535]  [<ffffffff816566b0>] ? update_attr.isra.2+0xa0/0xa0
+> [   13.044556]  [<ffffffff81754b82>] hide_cursor+0x32/0xa0
+> [   13.044565]  [<ffffffff81755bd3>] vt_console_print+0x103/0x3b0
+> [   13.044569]  [<ffffffff810d58ac>] ? print_time+0x9c/0xb0
+> [   13.044576]  [<ffffffff810d5960>] ? print_prefix+0xa0/0xc0
+> [   13.044580]  [<ffffffff810d63f6>] call_console_drivers.constprop.6+0x146/0x1f0
+> [   13.044593]  [<ffffffff815f9b38>] ? do_raw_spin_unlock+0xc8/0x100
+> [   13.044597]  [<ffffffff810d6f27>] console_unlock+0x2f7/0x460
+> [   13.044600]  [<ffffffff810d787a>] vprintk_emit+0x59a/0x5e0
+> [   13.044615]  [<ffffffff81fb676c>] printk+0x4d/0x4f
+> [   13.044650]  [<ffffffff82ba5511>] print_local_APIC+0x28/0x41c
+> [   13.044672]  [<ffffffff8114db55>] generic_smp_call_function_single_interrupt+0x145/0x2b0
+> [   13.044688]  [<ffffffff8106f9e7>] smp_call_function_single_interrupt+0x27/0x40
+> [   13.044697]  [<ffffffff81fd8f72>] call_function_single_interrupt+0x72/0x80
+> [   13.044707]  <EOI>  [<ffffffff81078166>] ? native_safe_halt+0x6/0x10
+> [   13.044717]  [<ffffffff811425cd>] ? trace_hardirqs_on+0xd/0x10
+> [   13.044738]  [<ffffffff8104f669>] default_idle+0x59/0x120
+> [   13.044742]  [<ffffffff810501e8>] arch_cpu_idle+0x18/0x40
+> [   13.044754]  [<ffffffff811320c5>] cpu_startup_entry+0x235/0x410
+> [   13.044763]  [<ffffffff81f9e781>] rest_init+0xd1/0xe0
+> [   13.044766]  [<ffffffff81f9e6b5>] ? rest_init+0x5/0xe0
+> [   13.044778]  [<ffffffff82b93ec2>] start_kernel+0x425/0x493
+> [   13.044781]  [<ffffffff82b93810>] ? repair_env_string+0x5e/0x5e
+> [   13.044786]  [<ffffffff82b93595>] x86_64_start_reservations+0x2a/0x2c
+> [   13.044789]  [<ffffffff82b93688>] x86_64_start_kernel+0xf1/0x100
+> [   13.044799] ---[ end trace 113ad28772af4058 ]---
+Thanks for catching this, I'm uncertain how to proceed here. Can you try below patch?
 
-Do you have "git rerere" enabled?
+diff --git a/drivers/gpu/drm/cirrus/cirrus_fbdev.c b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
+index 3541b56..b27e956 100644
+--- a/drivers/gpu/drm/cirrus/cirrus_fbdev.c
++++ b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
+@@ -25,7 +25,7 @@ static void cirrus_dirty_update(struct cirrus_fbdev *afbdev,
+ 	struct cirrus_bo *bo;
+ 	int src_offset, dst_offset;
+ 	int bpp = (afbdev->gfb.base.bits_per_pixel + 7)/8;
+-	int ret;
++	int ret = -EBUSY;
+ 	bool unmap = false;
+ 	bool store_for_later = false;
+ 	int x2, y2;
+@@ -39,7 +39,8 @@ static void cirrus_dirty_update(struct cirrus_fbdev *afbdev,
+ 	 * then the BO is being moved and we should
+ 	 * store up the damage until later.
+ 	 */
+-	ret = cirrus_bo_reserve(bo, true);
++	if (!in_interrupt())
++		ret = cirrus_bo_reserve(bo, true);
+ 	if (ret) {
+ 		if (ret != -EBUSY)
+ 			return;
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
