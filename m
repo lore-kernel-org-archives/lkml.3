@@ -1,103 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709Ab3FFQcj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 12:32:39 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:43677 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144Ab3FFQch (ORCPT
+	id S1752415Ab3FFQd0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 12:33:26 -0400
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:59185 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab3FFQdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 12:32:37 -0400
-Message-ID: <51B0B99C.4020009@gmail.com>
-Date: Fri, 07 Jun 2013 00:32:28 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	Thu, 6 Jun 2013 12:33:25 -0400
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <20130606162011.GV19468@game.jcrosoft.org>
+References: <1370503259-16618-1-git-send-email-acourbot@nvidia.com>
+	<3356BC4D-EEF6-4FCA-9310-5B0727EBF288@jcrosoft.com>
+	<51B0446A.4090305@nvidia.com>
+	<51B0B4A2.4010104@wwwdotorg.org>
+	<20130606162011.GV19468@game.jcrosoft.org>
+Date: Thu, 6 Jun 2013 09:33:24 -0700
+Message-ID: <CAOesGMgybYe_BBb0M4YS8tmM2C5jawf91OOyOuwwS5HSiUjPpQ@mail.gmail.com>
+Subject: Re: [PATCH] simplefb: add support for a8b8g8r8 pixel format
+From: Olof Johansson <olof@lixom.net>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Alex Courbot <acourbot@nvidia.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        "gnurou@gmail.org" <gnurou@gmail.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        xen-devel <xen-devel@lists.xensource.com>
-Subject: Re: [PATCH v3, part1 04/10] PCI: mark pci_scan_bus_parented() as
- __deprecated
-References: <1369489718-25869-1-git-send-email-jiang.liu@huawei.com> <1369489718-25869-5-git-send-email-jiang.liu@huawei.com> <CAErSpo5bysp-s-twUWgZEyJD01skjW=vXkcQBYkn_TALP83r1g@mail.gmail.com>
-In-Reply-To: <CAErSpo5bysp-s-twUWgZEyJD01skjW=vXkcQBYkn_TALP83r1g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 06 Jun 2013 04:04:36 AM CST, Bjorn Helgaas wrote:
-> [+cc Konrad, Jeremy, xen-devel (users of interface you're deprecating)]
->
-> On Sat, May 25, 2013 at 7:48 AM, Jiang Liu <liuj97@gmail.com> wrote:
->> Mark pci_scan_bus_parented() as __deprecated and clean up outdated
->> comments.
+On Thu, Jun 6, 2013 at 9:20 AM, Jean-Christophe PLAGNIOL-VILLARD
+<plagnioj@jcrosoft.com> wrote:
+> On 10:11 Thu 06 Jun     , Stephen Warren wrote:
+>> On 06/06/2013 02:12 AM, Alex Courbot wrote:
+>> > On 06/06/2013 04:59 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>> >>
+>> >> On Jun 6, 2013, at 9:20 AM, Alexandre Courbot <acourbot@nvidia.com>
+>> >> wrote:
+>> >>
+>> >>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 >>
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> Cc: Chris Metcalf <cmetcalf@tilera.com>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Cc: Thierry Reding <thierry.reding@avionic-design.de>
->> Cc: linux-kernel@vger.kernel.org
->> Cc: linux-pci@vger.kernel.org
->> ---
->>  arch/tile/kernel/pci.c | 3 ---
->>  include/linux/pci.h    | 4 ++--
->>  2 files changed, 2 insertions(+), 5 deletions(-)
+>> No commit description? It'd be useful to at least justify this by
+>> mentioning that some platform will actually use this...
 >>
->> diff --git a/arch/tile/kernel/pci.c b/arch/tile/kernel/pci.c
->> index 67237d3..936e087 100644
->> --- a/arch/tile/kernel/pci.c
->> +++ b/arch/tile/kernel/pci.c
->> @@ -309,9 +309,6 @@ int __init pcibios_init(void)
->>                          *
->>                          * It reads the PCI tree for this bus into the Linux
->>                          * data structures.
->> -                        *
->> -                        * This is inlined in linux/pci.h and calls into
->> -                        * pci_scan_bus_parented() in probe.c.
->>                          */
->>                         pci_add_resource(&resources, &ioport_resource);
->>                         pci_add_resource(&resources, &iomem_resource);
->> diff --git a/include/linux/pci.h b/include/linux/pci.h
->> index b0f4a82..7b23fa0 100644
->> --- a/include/linux/pci.h
->> +++ b/include/linux/pci.h
->> @@ -720,8 +720,8 @@ void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
->>  void pcibios_scan_specific_bus(int busn);
->>  struct pci_bus *pci_find_bus(int domain, int busnr);
->>  void pci_bus_add_devices(const struct pci_bus *bus);
->> -struct pci_bus *pci_scan_bus_parented(struct device *parent, int bus,
->> -                                     struct pci_ops *ops, void *sysdata);
->> +struct pci_bus * __deprecated pci_scan_bus_parented(struct device *parent,
->> +                       int bus, struct pci_ops *ops, void *sysdata);
->>  struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops, void *sysdata);
->>  struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
->>                                     struct pci_ops *ops, void *sysdata,
+>> ...
+>> >>> static struct simplefb_format simplefb_formats[] = {
+>> >>>     { "r5g6b5", 16, {11, 5}, {5, 6}, {0, 5}, {0, 0} },
+>> >>> +    { "a8b8g8r8", 32, {0, 8}, {8, 8}, {16, 8}, {31, 8} },
+>> >>
+>> >> why don't you parse the string?
+>> >>
+>> >> so you will a real generic bindings
+>> >
+>> > Tried that already, got NACKed: https://lkml.org/lkml/2013/5/27/330
+>> >
+>> > The list of modes of this driver should not grow too big. Even in terms
+>> > of footprint I'd say the list should remain smaller than the parsing code.
+>> >
+>> > What we can discuss though is whether we want to keep this a8b8g8r8
+>> > syntax or switch to something more standard, say "rgba8888".
+>>
+>> I would prefer to keep the syntax of the new formats consistent, so that
+>> if we ever do add format-parsing code rather than table-based lookup,
+>> all the existing formats will continue to work unchanged, without any
+>> kind of fallback lookup table.
 >
-> I think this patch is a good idea, but I think we need to change the
-> only existing user of pci_scan_bus_parented() (pcifront_scan_root() in
-> drivers/pci/xen-pcifront.c) at the same time, so xen doesn't start
-> getting build warnings.  The deprecation warnings are really intended
-> for out-of-tree users that we aren't able to fix ourselves.
->
-> I'm getting this series queued up in
-> http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/jiang-bus-lock-v3,
-> so if you want to send a patch just for xen, I can fold that in.
->
-> Bjorn
-Hi Bjorn,
-        I have posted a big patch for that, but still need help from 
-Xen experts to review it.
-Please refer to https://patchwork.kernel.org/patch/2578551/
-Thanks!
-Gerry
+> I do prefer a format-parsing than any long lookup table that take time at boot
+> time
+
+We're talking about adding a bunch of code instead of one line in a
+table. Sorry, I NACK your NACK. If we get more entries we'll add the
+parser, but not just for this.
+
+If you want to make a framebuffer-subsystem generic and shared helper,
+go ahead. I'm sure simplefb will move over to it when it's available.
+
+Until then:
+
+Acked-by: Olof Johansson <olof@lixom.net>
+
+
+
+-Olof
