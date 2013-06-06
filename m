@@ -1,123 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933157Ab3FFMtk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 08:49:40 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:43836 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932817Ab3FFMti (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 08:49:38 -0400
-From: =?UTF-8?q?Diego=20Elio=20Petten=C3=B2?= <flameeyes@flameeyes.eu>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] Use menuconfig instead of creating menus with an enabler first entry.
-Date: Thu,  6 Jun 2013 05:49:35 -0700
-Message-Id: <1370522975-451527-1-git-send-email-flameeyes@flameeyes.eu>
-X-Mailer: git-send-email 1.8.2.1
+	id S933206Ab3FFMuu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 08:50:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:15667 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932902Ab3FFMus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 08:50:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,814,1363158000"; 
+   d="scan'208";a="345771591"
+Message-ID: <51B085A2.5090306@linux.intel.com>
+Date: Thu, 06 Jun 2013 15:50:42 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH v9 net-next 2/7] net: add low latency socket poll
+References: <20130605103400.11172.49099.stgit@ladj378.jer.intel.com>    <20130605103421.11172.82925.stgit@ladj378.jer.intel.com>   <1370445714.24311.268.camel@edumazet-glaptop>   <51AF59B0.6080101@linux.intel.com>  <1370446760.24311.275.camel@edumazet-glaptop>  <51AF5D5A.8030907@linux.intel.com> <1370447966.24311.284.camel@edumazet-glaptop>
+In-Reply-To: <1370447966.24311.284.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This seems to be what most of the other drivers subdirectories do, and
-makes menuconfig friendlier.
+On 05/06/2013 18:59, Eric Dumazet wrote:
+> On Wed, 2013-06-05 at 18:46 +0300, Eliezer Tamir wrote:
+>> On 05/06/2013 18:39, Eric Dumazet wrote:
+>>> On Wed, 2013-06-05 at 18:30 +0300, Eliezer Tamir wrote:
+>>>> On 05/06/2013 18:21, Eric Dumazet wrote:
+>>
+>>>>> It would also make sense to give end_time as a parameter, so that the
+>>>>> polling() code could really give  a end_time for the whole duration of
+>>>>> poll().
+>>>>>
+>>>>> (You then should test can_poll_ll(end_time) _before_ call to
+>>>>> ndo_ll_poll())
+>>>>
+>>>> how would you handle a nonblocking operation in that case?
+>>>> I guess if we have a socket option, then we don't need to handle none
+>>>> blocking any diffrent, since the user specified exactly how much time to
+>>>> waste polling. right?
+>>>
+>>> If the thread already spent 50us in the poll() system call, it for sure
+>>> should not call any ndo_ll_poll(). This makes no more sense at this
+>>> point.
+>>
+>> what about a non-blocking read from a socket?
+>> Right now we assume this means poll only once since the application will
+>> repeat as needed.
+>>
+>> maybe add a "once" parameter that will cause sk_poll_ll() to ignore end
+>> time and only try once?
+>
+> extern bool __sk_poll_ll(struct sock *sk, cycles_t end);
+>
+> static inline bool sk_poll_ll(struct sock *sk, bool nonblock)
+> {
+> 	return __sk_poll_ll(sk, nonblock, ll_end_time());
+> }
+>
+> In the poll() code, we should call ll_end_time() once, even if we poll
+> 1000 fds.
 
-Signed-off-by: Diego Elio Pettenò <flameeyes@flameeyes.eu>
----
- drivers/bcma/Kconfig | 9 ++++-----
- drivers/pps/Kconfig  | 8 ++------
- drivers/ssb/Kconfig  | 9 ++++-----
- 3 files changed, 10 insertions(+), 16 deletions(-)
+Right now we have three uses for sk_poll_ll
 
-diff --git a/drivers/bcma/Kconfig b/drivers/bcma/Kconfig
-index 8b4221c..fee9b9f 100644
---- a/drivers/bcma/Kconfig
-+++ b/drivers/bcma/Kconfig
-@@ -3,16 +3,15 @@ config BCMA_POSSIBLE
- 	depends on HAS_IOMEM && HAS_DMA
- 	default y
- 
--menu "Broadcom specific AMBA"
--	depends on BCMA_POSSIBLE
--
--config BCMA
-+menuconfig BCMA
- 	tristate "BCMA support"
- 	depends on BCMA_POSSIBLE
- 	help
- 	  Bus driver for Broadcom specific Advanced Microcontroller Bus
- 	  Architecture.
- 
-+if BCMA
-+
- # Support for Block-I/O. SELECT this from the driver that needs it.
- config BCMA_BLOCKIO
- 	bool
-@@ -81,4 +80,4 @@ config BCMA_DEBUG
- 
- 	  If unsure, say N
- 
--endmenu
-+endif
-diff --git a/drivers/pps/Kconfig b/drivers/pps/Kconfig
-index 7512e98..abfceb6 100644
---- a/drivers/pps/Kconfig
-+++ b/drivers/pps/Kconfig
-@@ -2,9 +2,7 @@
- # PPS support configuration
- #
- 
--menu "PPS support"
--
--config PPS
-+menuconfig PPS
- 	tristate "PPS support"
- 	---help---
- 	  PPS (Pulse Per Second) is a special pulse provided by some GPS
-@@ -38,10 +36,8 @@ config NTP_PPS
- 
- 	  It doesn't work on tickless systems at the moment.
- 
--endif
--
- source drivers/pps/clients/Kconfig
- 
- source drivers/pps/generators/Kconfig
- 
--endmenu
-+endif
-diff --git a/drivers/ssb/Kconfig b/drivers/ssb/Kconfig
-index 5ff3a4f..c3b8357 100644
---- a/drivers/ssb/Kconfig
-+++ b/drivers/ssb/Kconfig
-@@ -3,10 +3,7 @@ config SSB_POSSIBLE
- 	depends on HAS_IOMEM && HAS_DMA
- 	default y
- 
--menu "Sonics Silicon Backplane"
--	depends on SSB_POSSIBLE
--
--config SSB
-+menuconfig SSB
- 	tristate "Sonics Silicon Backplane support"
- 	depends on SSB_POSSIBLE
- 	help
-@@ -21,6 +18,8 @@ config SSB
- 
- 	  If unsure, say N.
- 
-+if SSB
-+
- # Common SPROM support routines
- config SSB_SPROM
- 	bool
-@@ -173,4 +172,4 @@ config SSB_DRIVER_GPIO
- 
- 	  If unsure, say N
- 
--endmenu
-+endif
--- 
-1.8.2.1
+1. blocking read - In this case we loop until:
+   a !skb_queue_empty(&sk->sk_receive_queue)
+or
+   b !can_poll_ll(end_time)
 
+2. non-blocking read - only try once, ignoring end time.
+
+3. poll/select - for each socket we only try once (nonblock==1),
+  we loop in poll/select until we are lucky or run out of time.
+
+For 1 we want to loop inside sk_poll_ll() but for 3 we loop in poll/select.
+
+So it seems all we need is for sk_poll_ll() to not call ll_end_time() if 
+nonblock is set.
+
+( something like cycles_t end_time = nonblock ? 0 : ll_end_time(); )
+
+Or we could move out looping in all cases to the calling function.
+Does this mean we should push out rcu_read_lock_bh() into the caller
+  as well?
+
+-Eliezer
