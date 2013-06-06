@@ -1,90 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757238Ab3FFDAF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 23:00:05 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:42662 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756518Ab3FFDAD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 23:00:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAK7N6vp4e6ZFyM3vwGmL3_GUYzzC-vapb4NCtgw9EsRtsRrGjQ@mail.gmail.com>
-References: <1370167987-14252-1-git-send-email-anish198519851985@gmail.com>
-	<20130603152725.GA2644@roeck-us.net>
-	<CAK7N6vrO4yFmEDotNnneG8EFgYOND9_iOXV5LnTPdCW0CMO10A@mail.gmail.com>
-	<20130603222514.GA9082@roeck-us.net>
-	<CAK7N6vpZB-bYohKFAjS55GVZO0MP8bHrLwBEja7EpqOXeqSW3g@mail.gmail.com>
-	<CAK7N6vp4e6ZFyM3vwGmL3_GUYzzC-vapb4NCtgw9EsRtsRrGjQ@mail.gmail.com>
-Date: Thu, 6 Jun 2013 08:30:01 +0530
-Message-ID: <CAK7N6vp_ZDa4aB63-KbY3sUvhxUztt_cGM-0G+=ohkWN8cAAuA@mail.gmail.com>
-Subject: Re: [PATCH] [RFC]Watchdog:core: constant pinging until userspace
- timesout when delay very less
-From: anish singh <anish198519851985@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>, randy.dunlap@oracle.com,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-watchdog@vger.kernel.org,
-        linux-kernel-mail <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1757361Ab3FFDBI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 23:01:08 -0400
+Received: from ozlabs.org ([203.10.76.45]:56117 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756671Ab3FFDBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 23:01:06 -0400
+Date: Thu, 6 Jun 2013 13:01:05 +1000
+From: Anton Blanchard <anton@samba.org>
+To: Michael Neuling <mikey@neuling.org>
+Cc: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, trinity@vger.kernel.org, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>, torvalds@linux-foundation.org
+Subject: Re: [PATCH 5/5] net: Block MSG_CMSG_COMPAT in send(m)msg and
+ recv(m)msg
+Message-ID: <20130606130105.6e51066f@kryten>
+In-Reply-To: <CAEjGV6xcF776C6N6VxeMY0Vyk+X51oNixdbN42-xkWjQOaMEQA@mail.gmail.com>
+References: <cover.1369177867.git.luto@amacapital.net>
+	<aa015609319786835bcab445d507faa75c11f111.1369177867.git.luto@amacapital.net>
+	<CAEjGV6xcF776C6N6VxeMY0Vyk+X51oNixdbN42-xkWjQOaMEQA@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Wim Van,
-Can you look into below?
+Hi,
 
-On Wed, Jun 5, 2013 at 8:39 AM, anish singh <anish198519851985@gmail.com> wrote:
-> Hello Wim Van Sabroeck,
-> Can I get your inputs on this?
->
-> On Tue, Jun 4, 2013 at 8:39 AM, anish singh <anish198519851985@gmail.com> wrote:
->> On Tue, Jun 4, 2013 at 3:55 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->>> On Mon, Jun 03, 2013 at 10:23:04PM +0530, anish singh wrote:
->>>> On Mon, Jun 3, 2013 at 8:57 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->>>> > On Sun, Jun 02, 2013 at 03:43:07PM +0530, anish kumar wrote:
->>>> >> Certain watchdog drivers use a timer to keep kicking the watchdog at
->>>> >> a rate of 0.5s (HZ/2) untill userspace times out.They do this as
->>>> >> we can't guarantee that watchdog will be pinged fast enough
->>>> >> for all system loads, especially if timeout is configured for
->>>> >> less than or equal to 1 second(basically small values).
->>>> >>
->>>> >> As suggested by Wim Van Sebroeck & Guenter Roeck we should
->>>> >> add this functionality of individual watchdog drivers in the core
->>>> >> watchdog core.
->>>> >>
->>>> >> Signed-off-by: anish kumar <anish198519851985@gmail.com>
->>>> >
->>>> > Not exactly what I had in mind. My idea was to enable the softdog only if
->>>> > the hardware watchdog's maximum timeout was low (say, less than a couple
->>>> > of minutes), and if a timeout larger than its maximum value was configured.
->>>>
->>>> watchdog_timeout_invalid wouldn't this check will fail if the user space tries
->>>> to set maximum timeout more that what driver can support?It would work
->>>> for pika_wdt.c as it is old watchdog driver and doesn't register with watchdog
->>>> framwork but new drivers has to pass this api.
->>>>
->>>> OR
->>>>
->>>> Do you want to remove this check and go as explained by you?I would
->>>> favour this approach though.
->>>>
->>> One would still have a check, but the enforced limits would no longer be
->>> the driver limits, but larger limits implemented in the watchdog core.
->> How much larger would be the big question here?Should it be configurable
->> property(sysfs?) or some hardcoding based on existing drivers?
->>
->> Before going for next patch, it would be better for me to wait for some
->> more comments.
->>>
->>>> > In that case, I would have set the hardware watchdog to its maximum value
->>>> > and use the softdog to ping it at a rate of, say, 50% of this maximum.
->>>> >
->>>> > If userspace would not ping the watchdog within its configured value,
->>>> > I would stop pinging the hardware watchdog and let it time out.
->>>>
->>>> One more question.Why is the return value of watchdog_ping int? Anyway
->>>> we discard it.
->>>
->>> I can not answer that question.
->>>
->>> Guenter
+> This is causing a regression on 64bit powerpc with 32bit usermode.
+> When I hit userspace, udev is broken and I suspect all networking is
+> broken as well.
+> 
+> Can we please revert 1be374a0518a288147c6a7398792583200a67261
+> upstream?
+> 
+> Found via bisect.
+
+Doesn't this patch break compat_sys_sendmsg and compat_sys_recvmsg?
+We'd need to move the guts of sys_* into compat_sys_* to fix it.
+
+Anton
