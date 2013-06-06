@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755801Ab3FFJDo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 05:03:44 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:10654 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932329Ab3FFJDm (ORCPT
+	id S1756621Ab3FFJHM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 05:07:12 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:62737 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752986Ab3FFJHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 05:03:42 -0400
-X-IronPort-AV: E=Sophos;i="4.87,814,1363132800"; 
-   d="scan'208";a="5384016"
-Message-ID: <1370509419.24512.224.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH v4 5/6] arm64/xen: introduce CONFIG_XEN on
- ARM64
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <xen-devel@lists.xensource.com>,
-        <catalin.marinas@arm.com>, <konrad.wilk@oracle.com>,
-        <will.deacon@arm.com>, <linux-kernel@vger.kernel.org>
-Date: Thu, 6 Jun 2013 10:03:39 +0100
-In-Reply-To: <1370451727-26826-5-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <alpine.DEB.2.02.1306051605030.4589@kaball.uk.xensource.com>
-	 <1370451727-26826-5-git-send-email-stefano.stabellini@eu.citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Thu, 6 Jun 2013 05:07:08 -0400
+Message-ID: <51B05135.3020006@linaro.org>
+Date: Thu, 06 Jun 2013 14:37:01 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+CC: arnd@arndb.de, kgene.kim@samsung.com, olof@lixom.net, patches@linaro.org
+Subject: Re: [PATCH v2 1/3] ARM: EXYNOS: uncompress - print debug messages
+ if DEBUG_LL is defined
+References: <1370319552-17694-1-git-send-email-tushar.behera@linaro.org> <1370319552-17694-2-git-send-email-tushar.behera@linaro.org>
+In-Reply-To: <1370319552-17694-2-git-send-email-tushar.behera@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-05 at 18:02 +0100, Stefano Stabellini wrote:
-> Changes in v4:
-> - build the entire arch/arm/xen directory under arch/arm64, ifdef
-> hypercall.S appropriately.
+On 06/04/2013 09:49 AM, Tushar Behera wrote:
+> Printing low-level debug messages make an assumption that the specified
+> UART port has been preconfigured by the bootloader. Incorrectly
+> specified UART port results in system getting stalled while printing the
+> message "Uncompressing Linux... done, booting the kernel"
+> This UART port number is specified through S3C_LOWLEVEL_UART_PORT. Since
+> the UART port might different for different board, it is not possible to
+> specify it correctly for every board that use a common defconfig file.
+> 
+> Calling this print subroutine only when DEBUG_LL fixes the problem. By
+> disabling DEBUG_LL in default config file, we would be able to boot
+> multiple boards with different default UART ports.
+> 
+> With this current approach, we miss the print "Uncompressing Linux...
+> done, booting the kernel." when DEBUG_LL is not defined.
+> 
+> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> ---
+> Change for v2:
+> * Instead of checking value of uart_base, now check if DEBUG_LL
+> is enabled. This removes the ifdef's from mach/uncompress.h
+> 
+> 
+>  arch/arm/plat-samsung/include/plat/uncompress.h |   10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
+> 
 
-This is probably the best (or equal first) of a bunch of bad options :-/
+If there are no concerns, would it be possible to queue this patch [1/3]
+for 3.10?
 
-> + * The Xen hypercall calling convention is very similar to the ARM/ARM64
-> + * procedure calling convention: the first paramter is passed in r0/x0,
+The other two patches can wait for 3.11.
 
-"parameter"
-
-> + * the second in r1/x1, the third in r2/x2 and the fourth in r3/x3.
-> + * Considering that Xen hypercalls have 5 arguments at most, the fifth
-> + * paramter is always passed in r4/x4, differently from the ARM
-> + * procedure calling convention of using the stack for that case.
-
-and "parameter" again.
-
-Strictly speaking the fifth argument handling only differs from the
-32-bit PCS, not the 64-bit one. Splitting hairs a bit there.
-
-If you fix the typo and clarify the fifth argument or not as you wish:
-
-        Acked-by: Ian Campbell <ian.campbell@citrix.com>
-
-Ian.
-
-
+-- 
+Tushar Behera
