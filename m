@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944Ab3FFSQa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 14:16:30 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:62616 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab3FFSQ1 (ORCPT
+	id S1753087Ab3FFSQp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 14:16:45 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:10671 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752597Ab3FFSP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 14:16:27 -0400
-Message-ID: <51B0D1F6.5060202@linaro.org>
-Date: Thu, 06 Jun 2013 20:16:22 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel Tang <dt.tangr@gmail.com>,
-        Lu Jingchang-B35083 <B35083@freescale.com>,
-        Baruch Siach <baruch@tkos.co.il>
-Subject: [GIT PULL] Clockevents/clocksources: new drivers and fix
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Thu, 6 Jun 2013 14:15:57 -0400
+From: Betty Dall <betty.dall@hp.com>
+To: rjw@sisk.pl, bhelgaas@google.com, gong.chen@linux.intel.com,
+        greg.pearson@hp.com
+Cc: ying.huang@intel.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Betty Dall <betty.dall@hp.com>
+Subject: [PATCH v3 5/6] ACPI/APEI: Force fatal AER severity when bus has been reset
+Date: Thu,  6 Jun 2013 12:10:50 -0600
+Message-Id: <1370542251-27387-6-git-send-email-betty.dall@hp.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1370542251-27387-1-git-send-email-betty.dall@hp.com>
+References: <1370542251-27387-1-git-send-email-betty.dall@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 1eaff67266b6b6c97bbd33cf2c20577822836413:
+The CPER error record has a reset bit that indicates that the platform
+has reset the bus. The reset bit can be set for any severity error
+including recoverable.  From the AER code path's perspective,
+any error is fatal if the bus has been reset. This patch upgrades the
+severity of the AER recovery to AER_FATAL whenever the CPER error record
+indicates that the bus has been reset.
 
-  clocksource: Implement clocksource_select_fallback() for
-CONFIG_ARCH_USES_GETTIMEOFFSET=y (2013-05-28 09:48:46 +0200)
+Changes since v1:
+Fixed a typo in comment.
 
-are available in the git repository at:
+Changes since v2:
+Set the aer_severity to AER_FATAL rather than using cper_severity_to_aer().
+Simplified the comment.
 
-  git://git.linaro.org/people/dlezcano/clockevents.git timers/clockevents
+Signed-off-by: Betty Dall <betty.dall@hp.com>
+---
 
-The following changes since commit 1eaff67266b6b6c97bbd33cf2c20577822836413:
+ drivers/acpi/apei/ghes.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-  clocksource: Implement clocksource_select_fallback() for
-CONFIG_ARCH_USES_GETTIMEOFFSET=y (2013-05-28 09:48:46 +0200)
 
-are available in the git repository at:
-
-  git://git.linaro.org/people/dlezcano/clockevents.git timers/clockevents
-
-for you to fetch changes up to 77ba83bb1bb1cdabd522d32536f8eee65a870145:
-
-  clocksource: Add TI-Nspire timer support (2013-06-06 17:23:13 +0200)
-
-----------------------------------------------------------------
-Baruch Siach (1):
-      clocksource: dw_apb: Fix error check
-
-Daniel Tang (1):
-      clocksource: Add TI-Nspire timer support
-
-Jingchang Lu (1):
-      clocksource: Add Freescale Vybrid pit timer support
-
- .../devicetree/bindings/timer/lsi,zevio-timer.txt  |   33 +++
- drivers/clocksource/Kconfig                        |    5 +
- drivers/clocksource/Makefile                       |    2 +
- drivers/clocksource/dw_apb_timer_of.c              |    2 +-
- drivers/clocksource/vf_pit_timer.c                 |  194
-++++++++++++++++++
- drivers/clocksource/zevio-timer.c                  |  215
-++++++++++++++++++++
- 6 files changed, 450 insertions(+), 1 deletion(-)
- create mode 100644
-Documentation/devicetree/bindings/timer/lsi,zevio-timer.txt
- create mode 100644 drivers/clocksource/vf_pit_timer.c
- create mode 100644 drivers/clocksource/zevio-timer.c
-
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+index d668a8a..ab31551 100644
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -449,9 +449,19 @@ static void ghes_do_proc(struct ghes *ghes,
+ 			    pcie_err->validation_bits & CPER_PCIE_VALID_AER_INFO) {
+ 				unsigned int devfn;
+ 				int aer_severity;
++
+ 				devfn = PCI_DEVFN(pcie_err->device_id.device,
+ 						  pcie_err->device_id.function);
+ 				aer_severity = cper_severity_to_aer(sev);
++
++				/*
++				 * If firmware reset the component to contain
++				 * the error, we must reinitialize it before
++				 * use, so treat it as a fatal AER error.
++				 */
++				if (gdata->flags & CPER_SEC_RESET)
++					aer_severity = AER_FATAL;
++
+ 				aer_recover_queue(pcie_err->device_id.segment,
+ 						  pcie_err->device_id.bus,
+ 						  devfn, aer_severity);
