@@ -1,101 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711Ab3FFPnS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 11:43:18 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:62583 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033Ab3FFPnR (ORCPT
+	id S1752784Ab3FFPqj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 11:46:39 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:47701 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752600Ab3FFPqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 11:43:17 -0400
-Date: Thu, 6 Jun 2013 17:43:13 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Dave Jones <davej@redhat.com>, paulmck@linux.vnet.ibm.com,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: rcu_preempt running flat out on idle desktop.
-Message-ID: <20130606154311.GA5688@somewhere>
-References: <20130508203042.GA18895@redhat.com>
- <CAFTL4hwB3XZG+C9pQ0JD4h=n_ObNH6mCBRfLW3JaxohwwRDWRA@mail.gmail.com>
- <20130509211026.GA22723@redhat.com>
- <20130514012105.GB12749@somewhere>
- <20130606153136.GA12823@redhat.com>
+	Thu, 6 Jun 2013 11:46:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130606153136.GA12823@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130606134903.5f69b8fb@amdc308.digital.local>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+	<1370502472-7249-3-git-send-email-l.majewski@samsung.com>
+	<CAKohpok3KTfSWDU6PdDd4_VW4Pp+6J80yn5cLrYr5RuBNH-agA@mail.gmail.com>
+	<20130606134903.5f69b8fb@amdc308.digital.local>
+Date: Thu, 6 Jun 2013 21:16:35 +0530
+Message-ID: <CAKohpo=jCuLwhB+3pC0NLRBDmfPpGr=hRgxTT4rXzSwM4BndaQ@mail.gmail.com>
+Subject: Re: [PATCH 2/5] cpufreq:boost: Add support for software based CPU
+ frequency boost
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 11:31:36AM -0400, Dave Jones wrote:
-> On Tue, May 14, 2013 at 03:21:07AM +0200, Frederic Weisbecker wrote:
->  > On Thu, May 09, 2013 at 05:10:26PM -0400, Dave Jones wrote:
->  > > On Thu, May 09, 2013 at 11:02:08PM +0200, Frederic Weisbecker wrote:
->  > > 
->  > >  > > RCU options for this build are..
->  > >  > >
->  > >  > I can't reproduce that issue even with the above setting. Could you
->  > >  > please send me your whole config?
->  > > 
->  > > http://paste.fedoraproject.org/11363/36813375/raw/
->  > 
->  > Sorry it took me some time to get that config booting, I ran into
->  > other unrelated crashes.
->  > 
->  > So I'm observing the exact opposite than you: the processes appear to
->  > have no load nor to consume cputime. Even if I use some dumb user loop.
->  > Top don't even show it.
->  > 
->  > I'm digging further and will tell you when I get more info.
-> 
-> So I'm still seeing this on rc4.
-> 
-> Here's my 'idle' firewall, just routing packets:
-> 
->   PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM    TIME+  COMMAND                                                                                                          
->  4405 root      20   0     0    0    0 S 400.0  0.0  52336:27 kworker/2:0                                                                                                      
-> 20968 davej     20   0  115m 1840 1092 R 400.0  0.1   2297:48 top                                                                                                              
->   964 named     20   0  383m  32m 2896 S 400.0  1.7  81384:54 named                                                                                                            
->    10 root      20   0     0    0    0 S 400.0  0.0 195403:05 rcu_preempt                                                                                                      
-> 20830 davej     20   0  125m 2172 1024 S 400.0  0.1 939:36.10 sshd                                                                                                             
->    11 root      20   0     0    0    0 S 400.0  0.0  42644:33 rcuop/0                                                                                                          
->    13 root      20   0     0    0    0 S 400.0  0.0  34729:04 rcuop/2                                                                                                          
->   754 lighttpd  20   0 54640 2692 1732 S 400.0  0.1  35286:11 lighttpd                                                                                                         
->   756 root      20   0  216m  10m 6116 S 400.0  0.5  34143:41 snmpd                                                                                                            
->    35 root      20   0     0    0    0 S 400.0  0.0  12790:56 ksoftirqd/2                                                                                                      
-> 19893 root      20   0     0    0    0 S 400.0  0.0  12570:49 kworker/0:1                                                                                                      
-> 20059 root      20   0     0    0    0 S 400.0  0.0   4666:30 kworker/1:1                                                                                                      
->    32 root      rt   0     0    0    0 S 400.0  0.0   8780:22 watchdog/2                                                                                                       
->   792 root      20   0 92220 2516  632 S 400.0  0.1   7821:28 sendmail                                                                                                         
->    25 root      rt   0     0    0    0 S 400.0  0.0   8780:21 watchdog/0                                                                                                       
->    26 root      rt   0     0    0    0 S 400.0  0.0   8780:22 watchdog/1                                                                                                       
->    38 root      rt   0     0    0    0 S 400.0  0.0   8780:22 watchdog/3                                                                                                       
-> 19167 root      20   0     0    0    0 S 400.0  0.0   7804:04 kworker/3:2     
-> 
-> 
-> Every process is either 400%, or 0%.
-> 
-> Here's my desktop box, just writing this email:
-> 
->   PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM    TIME+  COMMAND                                                                                                          
->    10 root      20   0     0    0    0 S 200.0  0.0  35134:00 rcu_preempt                                                                                                      
->    12 root      20   0     0    0    0 S 200.0  0.0  14059:47 rcuop/1                                                                                                          
-> 12528 root      20   0     0    0    0 S 200.0  0.0   1012:56 kworker/0:1                                                                                                      
-> 12999 davej     20   0  115m 1700  956 R 200.0  0.1   1:09.10 top                                                                                                              
->  4799 root      20   0     0    0    0 S 200.0  0.0   3510:40 kworker/1:1                                                                                                      
->     1 root      20   0 50760 5092 1648 S   0.0  0.2   3:14.96 systemd                                                                                                          
->     2 root      20   0     0    0    0 S   0.0  0.0   1:40.55 kthreadd      
-> 
-> Every process 200% or 0%.
+On 6 June 2013 17:19, Lukasz Majewski <l.majewski@samsung.com> wrote:
+>> On 6 June 2013 12:37, Lukasz Majewski <l.majewski@samsung.com> wrote:
 
-I see, would you mind testing this branch?
+>> > cpufreq_driver->boost->attr))
+>>
+>> Why is this required? Why do we want platforms to add some files
+>> in sysfs?
+>
+> There are two kinds of attributes, which are exported by boost:
+>
+> 1. global boost (/sys/devices/system/cpu/cpufreq/boost)
+>
+> 2. attributes describing cpufreq abilities when boost is available
+> (/sys/devices/syste/cpu/cpu0/cpufreq/):
+>         - scaling_boost_frequencies - which will show over clocked
+>           frequencies
+>         - the scaling_available_frequencies will also display boosted
+>           frequency (when boost enabled)
+>
+> Information from 2. is cpufreq_driver dependent. And that information
+> shouldn't been displayed when boost is not available
 
-git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
-	timers/urgent
+This is not how I wanted this to be coded. Lets keep things simple:
+- Implement it in the way cpufreq_freq_attr_scaling_available_freqs
+  is implemented. And then drivers which need to see boost freqs
+  can add it in their attr.
 
-It might help, I specially think about 45eacc692771bd2b1ea3d384e6345cab3da10861
-("vtime: Use consistent clocks among nohz accounting") which fixes an issue
-with cputime accounting that resulted in similar symptoms.
+>> > +       policy->boost = cpufreq_boost = cpufreq_driver->boost;
+>>
+>> Why are we copying same pointer to policy->boost? Driver is
+>> passing pointer to a single memory location, just save it globally.
+>
+> This needs some explanation.
+>
+> The sysfs entry presented at [1] doesn't bring any useful information
+> to reuse (like *policy). For this reason the global cpufreq_boost
+> pointer is needed.
+>
+> However to efficiently manage the boost, it is necessary to keep per
+> policy pointer to the only struct cpufreq_boost instance (defined at
+> cpufreq_driver code).
 
-Thanks.
+No we don't need to screw struct cpufreq_policy with it.
+Just need two variables here:
+- cpufreq_driver->boost: If driver supports boost or not.
+- If above is true then a global bool variable that will say boost is
+  enabled from sysfs or not.
+
+>> > +       /* disable boost for newly created policy - as we e.g.
+>> > change
+>> > +          governor */
+>> > +       policy->boost->status = CPUFREQ_BOOST_DIS;
+>>
+>> Drivers supporting boost may want boost to be enabled by default,
+>> maybe without any sysfs calls.
+>
+> This can be done by setting the struct cpufreq_boost status field to
+> CPUFREQ_BOOST_EN at cpufreq driver code (when boost structure is
+> defined)
+
+This really isn't driver dependent.. But user dependent. Maybe lets
+keep it disabled and people can enable it from sysfs.
+
+>> Why do we need to maintain a list of boost here? notifiers? complex :(
+>
+> Notifier is needed to disable boost when policy is changed (for
+> example when we change from ondemand/lab to performance governor).
+>
+> I wanted to avoid the situation when boost stays enabled across
+> different governors.
+>
+> The list of in system available policies is defined to allow boost
+> enable/disable for all policies available (by changing for example
+> policy->max field).
+>
+> If we decide, that we will support only one policy (as it is now at
+> e.g. Exynos), the list is unnecessary here.
+
+What we discussed last in your earlier patchset was:
+- Keep boost feature separate from governors.
+- If it is enabled, then any governor can use it (if they want).
+- Lets not disable it if governor is changed. user must do it explicitly.
+
+>> > +static int cpufreq_frequency_table_skip_boost(struct
+>> > cpufreq_policy *policy,
+>> > +                                             unsigned int index)
+>> > +{
+>> > +       if (index == CPUFREQ_BOOST)
+>> > +               if (!policy->boost ||
+>>
+>> This shouldn't be true. If index has got CPUFREQ_BOOST, then driver
+>> has to support boost.
+>
+> Correct me if I'm wrong here, but in my understanding the boost shall be
+> only supported when both CPUFREQ_BOOST index is defined in a freq_table
+> and boost.state = CPUFREQ_BOOST_EN is set.
+>
+> Setting of CPUFREQ_BOOST shouldn't by default allow to use over
+> clocking frequency.
+
+For cpufreq core boost is enabled as soon as cpufreq_driver->boost is
+true. We can have additional checks to see if there is atleast one
+boost frequency but can skip this too.
+
+>> why do we need this?
+>
+> To evaluate the maximal boost frequency from the frequency table. It is
+> then used as a delimiter (when LAB cooperates with thermal framework).
+
+Introduce this with LAB then.. Lets keep it as simple as possible for now.
+One step at a time.
+
+>> > +struct cpufreq_boost {
+>> > +       unsigned int            max_boost_freq; /* maximum value of
+>> > +                                                * boosted freq */
+>> > +       unsigned int            max_normal_freq; /* non boost max
+>> > freq */
+>> > +       int                     status; /* status of boost */
+>> > +
+>> > +       /* boost sysfs attributies */
+>> > +       struct freq_attr        **attr;
+>> > +
+>> > +       /* low-level trigger for boost */
+>> > +       int (*low_level_boost) (struct cpufreq_policy *policy, int
+>> > state); +
+>> > +       struct list_head        policies;
+>> > +};
+>>
+>> We don't need it. Just add two more fields to cpufreq_driver:
+>> - have_boost_freqs and low_level_boost (maybe a better name.
+>> What's its use?)
+>
+> The separate struct cpufreq_boost was created to explicitly separate
+> boost fields from cpufreq_driver structure.
+>
+> If in your opinion this structure is redundant, I can remove it and
+> extend cpufreq_driver structure.
+
+I am not against a structure (as putting related stuff in a struct is always
+better), but against so many fields in it to make things complicated.
+
+I will only keep have_boost_freqs and low_level_boost. Remove
+everything else.
+
+> *boost pointer is necessary when one wants to enable/disable boost from
+> e.g governor code (which operates mostly on struct cpufreq_policy
+> *policy pointers).
+
+We don't need to do this. boost can only be disabled from userspace by
+user. No intervention from governor.
