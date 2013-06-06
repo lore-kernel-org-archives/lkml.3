@@ -1,175 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765Ab3FFFci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 01:32:38 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43364 "EHLO comal.ext.ti.com"
+	id S1753801Ab3FFFdc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 01:33:32 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:46834 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751670Ab3FFFch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 01:32:37 -0400
-From: J Keerthy <j-keerthy@ti.com>
-To: <linux-kernel@vger.kernel.org>, <grant.likely@secretlab.ca>
-CC: <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <swarren@wwwdotorg.org>, <swarren@nvidia.com>,
-        <rob.herring@calxeda.com>, <rob@landley.net>, <sameo@linux.intel.com>,
-        <wim@iguana.be>, <lgirdwood@gmail.com>, <gg@slimlogic.co.uk>,
-        <t-kristo@ti.com>, <lee.jones@linaro.org>,
-        J Keerthy <j-keerthy@ti.com>, Ian Lartey <ian@slimlogic.co.uk>
-Subject: [PATCH v3] mfd: DT bindings for the palmas family MFD
-Date: Thu, 6 Jun 2013 10:57:21 +0530
-Message-ID: <1370496441-24620-1-git-send-email-j-keerthy@ti.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1751670Ab3FFFd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 01:33:29 -0400
+Date: Thu, 6 Jun 2013 01:33:15 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] memcg: do not sleep on OOM waitqueue with full
+ charge context
+Message-ID: <20130606053315.GB9406@cmpxchg.org>
+References: <1370488193-4747-1-git-send-email-hannes@cmpxchg.org>
+ <1370488193-4747-2-git-send-email-hannes@cmpxchg.org>
+ <alpine.DEB.2.02.1306052058340.25115@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1306052058340.25115@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the various binding files for the palmas family of chips. There is a
-top level MFD binding then a seperate binding for regulators IP blocks on chips.
+On Wed, Jun 05, 2013 at 09:10:51PM -0700, David Rientjes wrote:
+> On Wed, 5 Jun 2013, Johannes Weiner wrote:
+> 
+> > The memcg OOM handling is incredibly fragile because once a memcg goes
+> > OOM, one task (kernel or userspace) is responsible for resolving the
+> > situation.
+> 
+> Not sure what this means.  Are you referring to the case where the memcg 
+> is disabled from oom killing and we're relying on a userspace handler and 
+> it may be caught on the waitqueue itself?  Otherwise, are you referring to 
+> the task as eventually being the only one that takes the hierarchy oom 
+> lock and calls mem_cgroup_out_of_memory()?  I don't think you can make a 
+> case for the latter since the one that calls mem_cgroup_out_of_memory() 
+> should return and call memcg_wakeup_oom().  We obviously don't want to do 
+> any memory allocations in this path.
 
-Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-Signed-off-by: J Keerthy <j-keerthy@ti.com>
-Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
-Reviewed-by: Stephen Warren <swarren@nvidia.com> 
----
- Documentation/devicetree/bindings/mfd/palmas.txt   |   49 +++++++++++++
- .../devicetree/bindings/regulator/palmas-pmic.txt  |   72 ++++++++++++++++++++
- 2 files changed, 121 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/palmas.txt
- create mode 100644 Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+If the killing task or one of the sleeping tasks is holding a lock
+that the selected victim needs in order to exit no progress can be
+made.
 
-diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt b/Documentation/devicetree/bindings/mfd/palmas.txt
-new file mode 100644
-index 0000000..7bcd59c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/palmas.txt
-@@ -0,0 +1,49 @@
-+* palmas device tree bindings
-+
-+The TI palmas family current members :-
-+twl6035 (palmas)
-+twl6037 (palmas)
-+tps65913 (palmas)
-+tps65914 (palmas)
-+
-+Required properties:
-+- compatible : Should be from the list
-+  ti,twl6035
-+  ti,twl6036
-+  ti,twl6037
-+  ti,tps65913
-+  ti,tps65914
-+  ti,tps80036
-+and also the generic series names
-+  ti,palmas
-+- interrupt-controller : palmas has its own internal IRQs
-+- #interrupt-cells : should be set to 2 for IRQ number and flags
-+  The first cell is the IRQ number.
-+  The second cell is the flags, encoded as the trigger masks from
-+  Documentation/devicetree/bindings/interrupts.txt
-+- interrupt-parent : The parent interrupt controller.
-+
-+Optional properties:
-+  ti,mux-padX : set the pad register X (1-2) to the correct muxing for the
-+  		hardware, if not set will use muxing in OTP.
-+
-+Example:
-+
-+palmas {
-+	compatible = "ti,twl6035", "ti,palmas";
-+	reg = <0x48>
-+	interrupt-parent = <&intc>;
-+	interrupt-controller;
-+	#interrupt-cells = <2>;
-+
-+	ti,mux-pad1 = <0>;
-+	ti,mux-pad2 = <0>;
-+
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+
-+	pmic {
-+		compatible = "ti,twl6035-pmic", "ti,palmas-pmic";
-+		....
-+	};
-+}
-diff --git a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
-new file mode 100644
-index 0000000..d5a3086
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
-@@ -0,0 +1,72 @@
-+* palmas regulator IP block devicetree bindings
-+
-+Required properties:
-+- compatible : Should be from the list
-+  ti,twl6035-pmic
-+  ti,twl6036-pmic
-+  ti,twl6037-pmic
-+  ti,tps65913-pmic
-+  ti,tps65914-pmic
-+and also the generic series names
-+  ti,palmas-pmic
-+- interrupt-parent : The parent interrupt controller which is palmas.
-+- interrupts : The interrupt number and the type which can be looked up here:
-+	       arch/arm/boot/dts/include/dt-bindings/interrupt-controller/irq.h
-+- interrupts-name: The names of the individual interrupts.
-+
-+Optional properties:
-+- ti,ldo6-vibrator : ldo6 is in vibrator mode
-+
-+Optional nodes:
-+- regulators : Must contain a sub-node per regulator from the list below.
-+	       Each sub-node should contain the constraints and initialization
-+	       information for that regulator. See regulator.txt for a
-+	       description of standard properties for these sub-nodes.
-+	       Additional custom properties  are listed below.
-+
-+	       For ti,palmas-pmic - smps12, smps123, smps3 depending on OTP,
-+	       smps45, smps457, smps7 depending on variant, smps6, smps[8-10],
-+	       ldo[1-9], ldoln, ldousb.
-+
-+	       Optional sub-node properties:
-+	       ti,warm-reset - maintain voltage during warm reset(boolean)
-+	       ti,roof-floor - control voltage selection by pin(boolean)
-+	       ti,sleep-mode - mode to adopt in pmic sleep 0 - off, 1 - auto,
-+	       2 - eco, 3 - forced pwm
-+	       ti,tstep - slope control 0 - Jump, 1 10mV/us, 2 5mV/us, 3 2.5mV/us
-+	       ti,smps-range - OTP has the wrong range set for the hardware so override
-+	       0 - low range, 1 - high range.
-+
-+Example:
-+
-+#include <dt-bindings/interrupt-controller/irq.h>
-+
-+pmic {
-+	compatible = "ti,twl6035-pmic", "ti,palmas-pmic";
-+	interrupt-parent = <&palmas>;
-+	interrupts = <14 IRQ_TYPE_NONE>;
-+	interrupts-name = "short-irq";
-+
-+	ti,ldo6-vibrator;
-+
-+	regulators {
-+		smps12_reg : smps12 {
-+			regulator-name = "smps12";
-+			regulator-min-microvolt = < 600000>;
-+			regulator-max-microvolt = <1500000>;
-+			regulator-always-on;
-+			regulator-boot-on;
-+			ti,warm-reset;
-+			ti,roof-floor;
-+			ti,mode-sleep = <0>;
-+			ti,tstep = <0>;
-+			ti,smps-range = <1>;
-+		};
-+
-+		ldo1_reg: ldo1 {
-+			regulator-name = "ldo1";
-+			regulator-min-microvolt = <2800000>;
-+			regulator-max-microvolt = <2800000>;
-+		};
-+	};
-+};
--- 
-1.7.5.4
+The report we had a few months ago was that a task held the i_mutex
+when trying to charge a page cache page and then invoked the OOM
+handler and looped on CHARGE_RETRY.  Meanwhile, the selected victim
+was just entering truncate() and now stuck waiting for the i_mutex.
+
+I'll add this scenario to the changelog, hopefully it will make the
+rest a little clearer.
+
+> > Every other task that gets caught trying to charge memory
+> > gets stuck in a waitqueue while potentially holding various filesystem
+> > and mm locks on which the OOM handling task may now deadlock.
+> > 
+> 
+> What locks?  The oom killer quite extensively needs task_lock() but we 
+> shouldn't be calling it in the case where we hold this since its a 
+> spinlock and mem_cgroup_do_charge() never gets to the point of handling 
+> the oom.
+> 
+> Again, are you referring only to a userspace handler here?
+
+No.  The OOM path (does not matter if user task or kernel) is
+currently entered from the charge context, which may hold filesystem
+and mm locks (look who charges page cache pages e.g.) and they are not
+released until the situation is resolved because the task either loops
+inside __mem_cgroup_try_charge() on CHARGE_RETRY or is stuck in the
+waitqueue.
+
+And waiting for anybody else to make progress while holding mmap_sem,
+i_mutex etc. is the problem.
+
+> > Do two things:
+> > 
+> > 1. When OOMing in a system call (buffered IO and friends), invoke the
+> >    OOM killer but just return -ENOMEM, never sleep.  Userspace should
+> >    be able to handle this.
+> > 
+> 
+> The sleep should never occur for any significant duration currently, the 
+> current implementation ensures one process calls 
+> mem_cgroup_out_of_memory() while all others sit on a waitqueue until that 
+> process returns from the oom killer and then they all wakeup again so the 
+> killed process may exit and all others can retry their allocations now 
+> that something has been killed.  If that process hasn't exited yet, the 
+> next process that locks the memcg oom hierarchy will see the killed 
+> process with TIF_MEMDIE and the oom killer is deferred.  So this sleep is 
+> very temporary already, I don't see why you're trying to make it faster 
+> while another thread finds a candidate task, it works quite well already.
+
+It's not the amount of time slept on average, it's that going to sleep
+in this context may deadlock the killing or the killed task.  I don't
+see where you read "making it faster", but I'm trying to make it just
+slightly faster than a deadlock.
+
+> > 2. When OOMing in a page fault and somebody else is handling the
+> >    situation, do not sleep directly in the charging code.  Instead,
+> >    remember the OOMing memcg in the task struct and then fully unwind
+> >    the page fault stack first before going to sleep.
+> > 
+> 
+> Are you trying to address a situation here where the memcg oom handler 
+> takes too long to work?  We've quite extensively tried to improve that, 
+> especially by reducing its dependency on tasklist_lock which is contended 
+> from the writeside in the exit path and by only iterating processes that 
+> are attached to that memcg hierarchy and not all processes on the system 
+> like before.  I don't see the issue with scheduling other oom processes 
+> while one is doing mem_cgroup_out_of_memory().  (I would if the oom killer 
+> required things like mm->mmap_sem, but obviously it doesn't for reasons 
+> not related to memcg.)
+
+I really don't see where you read "performance optimization" in this
+changelog, the very first paragraph mentions "very fragile" and "may
+deadlock".
+
+> > While reworking the OOM routine, also remove a needless OOM waitqueue
+> > wakeup when invoking the killer.  Only uncharges and limit increases,
+> > things that actually change the memory situation, should do wakeups.
+> > 
+> 
+> It's not needless at all, it's vitally required!  The oom killed process 
+> needs to be removed from the waitqueue and scheduled now with TIF_MEMDIE 
+> that the memcg oom killer provided so the allocation succeeds in the page 
+> allocator and memcg bypasses the charge so it can exit.
+
+The OOM killer sets TIF_MEMDIE and then sends a fatal signal to the
+victim.  That reliably wakes it up, doesn't it?
+
+> Exactly what problem are you trying to address with this patch?  I don't 
+> see any description of the user-visible effects or a specific xample of 
+> the scenario you're trying to address here.
+
+I'll add the example scenarios.
+
+Thanks!
