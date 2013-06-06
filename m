@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab3FFCZl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 22:25:41 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:49997 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755021Ab3FFCZk (ORCPT
+	id S1756979Ab3FFCZq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 22:25:46 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:35500 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755346Ab3FFCZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 22:25:40 -0400
-From: Xiang Wang <wangxfdu@gmail.com>
-To: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
-        <linux-kernel@vger.kernel.org>
-CC: <wangxfdu@gmail.com>, <cxie4@marvell.com>, Xiang Wang <wangx@marvell.com>
-Subject: [PATCH v2 2/2] dma: mmp_pdma: clear DRCMR when free a phy channel
-Date: Thu, 6 Jun 2013 10:24:23 +0800
-Message-ID: <1370485463-30731-3-git-send-email-wangxfdu@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1370485463-30731-1-git-send-email-wangxfdu@gmail.com>
-References: <1370485463-30731-1-git-send-email-wangxfdu@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 5 Jun 2013 22:25:41 -0400
+Subject: Re: [PATCH] Modify UEFI anti-bricking code
+From: joeyli <jlee@suse.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        "Fleming, Matt" <matt.fleming@intel.com>, "rja@sgi.com" <rja@sgi.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "bp@alien8.de" <bp@alien8.de>, "jkosina@suse.cz" <jkosina@suse.cz>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "oneukum@suse.de" <oneukum@suse.de>
+In-Reply-To: <1370448519.6315.36.camel@x230.lan>
+References: <1370117180-1712-1-git-send-email-matthew.garrett@nebula.com>
+	 <1370276021.30695.4.camel@linux-s257.site>
+	 <1370277079.6315.14.camel@x230.lan>
+	 <1370316933.30695.7.camel@linux-s257.site>
+	 <CAL01qptzxe5L6Vq+nBZLq+bQNxbe_i_2OdKMNJGZQDfMihaHOw@mail.gmail.com>
+	 <1370444007.6315.32.camel@x230.lan>
+	 <20130605155904.GC30420@console-pimps.org>
+	 <1370448519.6315.36.camel@x230.lan>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 06 Jun 2013 10:24:20 +0800
+Message-ID: <1370485460.6523.30.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiang Wang <wangx@marvell.com>
+於 三，2013-06-05 於 16:08 +0000，Matthew Garrett 提到：
+> On Wed, 2013-06-05 at 16:59 +0100, Matt Fleming wrote:
+> 
+> > +	/* clean DUMMY object */
+> > +	efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID, 0, 0, NULL);
+> 
+> Hm. Actually, is that going to work? From the spec:
+> 
 
-In mmp pdma, phy channels are allocated/freed dynamically.
-The mapping from DMA request to DMA channel number in DRCMR
-should be cleared when a phy channel is freed. Otherwise
-conflicts will happen when:
-1. A is using channel 2 and free it after finished, but A
-still maps to channel 2 in DRCMR of A.
-2. Now another one B gets channel 2. So B maps to channel 2
-too in DRCMR of B.
-In the datasheet, it is described that "Do not map two active
-requests to the same channel since it produces unpredictable
-results" and we can observe that during test.
+The patch I tested on OVMF, it can delete DUMMY object when system boot.
 
-Signed-off-by: Xiang Wang <wangx@marvell.com>
----
- drivers/dma/mmp_pdma.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+> If a preexisting variable is rewritten with different attributes,
+> SetVariable()shall not modify the variable and shall return
+> EFI_INVALID_PARAMETER. 
+> 
+> So I think we probably need to fix the attributes to NV|RT|BS for both
+> this call and the one in query_variable_store. We should probably also
+> only do the workaround if the NV bit is set in the original query.
+> 
+> -- 
+> Matthew Garrett | mjg59@srcf.ucam.org
 
-diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
-index 84e51a1..410dc26 100644
---- a/drivers/dma/mmp_pdma.c
-+++ b/drivers/dma/mmp_pdma.c
-@@ -252,10 +252,16 @@ static void free_phy(struct mmp_pdma_chan *pchan)
- {
- 	struct mmp_pdma_device *pdev = to_mmp_pdma_dev(pchan->chan.device);
- 	unsigned long flags;
-+	u32 reg;
- 
- 	if (!pchan->phy)
- 		return;
- 
-+	/* clear the channel mapping in DRCMR */
-+	reg = pchan->phy->vchan->drcmr;
-+	reg = ((reg < 64) ? 0x0100 : 0x1100) + ((reg & 0x3f) << 2);
-+	writel(0, pchan->phy->base + reg);
-+
- 	spin_lock_irqsave(&pdev->phy_lock, flags);
- 	pchan->phy->vchan = NULL;
- 	pchan->phy = NULL;
--- 
-1.7.5.4
+Yes, I think that more safe for fix the attributes.
+
+
+Thanks a lot!
+Joey Lee
+
+
 
