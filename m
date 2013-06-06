@@ -1,145 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab3FFULj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 16:11:39 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:34914 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752876Ab3FFULe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 16:11:34 -0400
-Date: Thu, 6 Jun 2013 13:11:32 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] memcg: do not sleep on OOM waitqueue with full charge
- context
-In-Reply-To: <20130606173355.GB27226@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1306061308320.9493@chino.kir.corp.google.com>
-References: <1370488193-4747-1-git-send-email-hannes@cmpxchg.org> <1370488193-4747-2-git-send-email-hannes@cmpxchg.org> <alpine.DEB.2.02.1306052058340.25115@chino.kir.corp.google.com> <20130606053315.GB9406@cmpxchg.org> <20130606173355.GB27226@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753441Ab3FFUMi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 16:12:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39918 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752449Ab3FFUMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 16:12:37 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAE9FiQUoWvKN6MYZE0Uwo+L+zv0mDn8u6KHjF_BJ58KLssa=Ng@mail.gmail.com>
+References: <1370547951-2701-1-git-send-email-jacob.shin@amd.com> <1370547951-2701-2-git-send-email-jacob.shin@amd.com> <CAE9FiQUoWvKN6MYZE0Uwo+L+zv0mDn8u6KHjF_BJ58KLssa=Ng@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH V2 1/2] x86/microcode/amd: make find_ucode_in_initrd() __init
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 06 Jun 2013 13:11:56 -0700
+To: Yinghai Lu <yinghai@kernel.org>, Jacob Shin <jacob.shin@amd.com>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Borislav Petkov <bp@alien8.de>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <2191357d-9fa9-4017-931c-78a23a209df1@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Jun 2013, Johannes Weiner wrote:
+The parentheses are redundant too.
 
-> > If the killing task or one of the sleeping tasks is holding a lock
-> > that the selected victim needs in order to exit no progress can be
-> > made.
-> > 
-> > The report we had a few months ago was that a task held the i_mutex
-> > when trying to charge a page cache page and then invoked the OOM
-> > handler and looped on CHARGE_RETRY.  Meanwhile, the selected victim
-> > was just entering truncate() and now stuck waiting for the i_mutex.
-> > 
-> > I'll add this scenario to the changelog, hopefully it will make the
-> > rest a little clearer.
-> 
-> David, is the updated patch below easier to understand?
-> 
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-I don't understand why memcg is unique in this regard and it doesn't 
-affect the page allocator as well on system oom conditions.  Ignoring 
-memecg, all allocating processes will loop forever in the page allocator 
-unless there are atypical gfp flags waiting for memory to be available, 
-only one will call the oom killer at a time, a process is selected and 
-killed, and the oom killer defers until that process exists because it 
-finds TIF_MEMDIE.  Why is memcg charging any different?
+>On Thu, Jun 6, 2013 at 12:45 PM, Jacob Shin <jacob.shin@amd.com> wrote:
+>> Change find_ucode_in_initrd() to __init and only let BSP call it
+>> during cold boot. This is the right thing to do because only BSP will
+>> see initrd loaded by the boot loader. APs will offset into
+>> initrd_start to find the microcode patch binary.
+>>
+>> Reported-by: Yinghai Lu <yinghai@kernel.org>
+>> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+>> ---
+>>  arch/x86/kernel/microcode_amd_early.c |  110
+>+++++++++++++++++++++++----------
+>>  1 file changed, 79 insertions(+), 31 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/microcode_amd_early.c
+>b/arch/x86/kernel/microcode_amd_early.c
+>> index 9618805..52f647d 100644
+>> --- a/arch/x86/kernel/microcode_amd_early.c
+>> +++ b/arch/x86/kernel/microcode_amd_early.c
+>> @@ -9,6 +9,7 @@
+>>   */
+>>
+>>  #include <linux/earlycpio.h>
+>> +#include <linux/initrd.h>
+>>
+>>  #include <asm/cpu.h>
+>>  #include <asm/setup.h>
+>> @@ -16,40 +17,59 @@
+>>
+>>  static bool ucode_loaded;
+>>  static u32 ucode_new_rev;
+>> +static unsigned long ucode_offset;
+>> +static size_t ucode_size;
+>>
+>>  /*
+>>   * Microcode patch container file is prepended to the initrd in cpio
+>format.
+>>   * See Documentation/x86/early-microcode.txt
+>>   */
+>> -static __cpuinitdata char ucode_path[] =
+>"kernel/x86/microcode/AuthenticAMD.bin";
+>> +static __initdata char ucode_path[] =
+>"kernel/x86/microcode/AuthenticAMD.bin";
+>>
+>> -static struct cpio_data __cpuinit find_ucode_in_initrd(void)
+>> +static struct cpio_data __init find_ucode_in_initrd(void)
+>>  {
+>>         long offset = 0;
+>> +       char *path;
+>> +       void *start;
+>> +       size_t size;
+>> +       unsigned long *uoffset;
+>> +       size_t *usize;
+>>         struct cpio_data cd;
+>>
+>>  #ifdef CONFIG_X86_32
+>> +       struct boot_params *p;
+>> +
+>>         /*
+>>          * On 32-bit, early load occurs before paging is turned on so
+>we need
+>>          * to use physical addresses.
+>>          */
+>> -       if (!(read_cr0() & X86_CR0_PG)) {
+>> -               struct boot_params *p;
+>> -               p  = (struct boot_params
+>*)__pa_nodebug(&boot_params);
+>> -               cd = find_cpio_data((char *)__pa_nodebug(ucode_path),
+>> -                       (void *)p->hdr.ramdisk_image,
+>p->hdr.ramdisk_size,
+>> -                       &offset);
+>> -       } else
+>> +       p       = (struct boot_params *)__pa_nodebug(&boot_params);
+>> +       path    = (char *)__pa_nodebug(ucode_path);
+>> +       start   = (void *)p->hdr.ramdisk_image;
+>> +       size    = p->hdr.ramdisk_size;
+>> +       uoffset = (unsigned long *)__pa_nodebug(&ucode_offset);
+>> +       usize   = (size_t *)__pa_nodebug(&ucode_size);
+>> +#else
+>> +       path    = ucode_path;
+>> +       start   = (void *)(boot_params.hdr.ramdisk_image +
+>PAGE_OFFSET);
+>> +       size    = boot_params.hdr.ramdisk_size;
+>> +       uoffset = &ucode_offset;
+>> +       usize   = &ucode_size;
+>>  #endif
+>> -               cd = find_cpio_data(ucode_path,
+>> -                       (void *)(boot_params.hdr.ramdisk_image +
+>PAGE_OFFSET),
+>> -                       boot_params.hdr.ramdisk_size, &offset);
+>> +
+>> +       cd = find_cpio_data(path, start, size, &offset);
+>> +       if (!cd.data)
+>> +               return cd;
+>>
+>>         if (*(u32 *)cd.data != UCODE_MAGIC) {
+>>                 cd.data = NULL;
+>>                 cd.size = 0;
+>> +               return cd;
+>>         }
+>>
+>> +       *uoffset = (u8 *)cd.data - (u8 *)start;
+>> +       *usize   = cd.size;
+>> +
+>>         return cd;
+>>  }
+>>
+>> @@ -62,9 +82,8 @@ static struct cpio_data __cpuinit
+>find_ucode_in_initrd(void)
+>>   * load_microcode_amd() to save equivalent cpu table and microcode
+>patches in
+>>   * kernel heap memory.
+>>   */
+>> -static void __cpuinit apply_ucode_in_initrd(void)
+>> +static void __cpuinit apply_ucode_in_initrd(void *ucode, size_t
+>size)
+>>  {
+>> -       struct cpio_data cd;
+>>         struct equiv_cpu_entry *eq;
+>>         u32 *header;
+>>         u8  *data;
+>> @@ -78,12 +97,9 @@ static void __cpuinit apply_ucode_in_initrd(void)
+>>  #else
+>>         new_rev = &ucode_new_rev;
+>>  #endif
+>> -       cd = find_ucode_in_initrd();
+>> -       if (!cd.data)
+>> -               return;
+>>
+>> -       data   = cd.data;
+>> -       left   = cd.size;
+>> +       data   = ucode;
+>> +       left   = size;
+>>         header = (u32 *)data;
+>>
+>>         /* find equiv cpu table */
+>> @@ -129,7 +145,11 @@ static void __cpuinit
+>apply_ucode_in_initrd(void)
+>>
+>>  void __init load_ucode_amd_bsp(void)
+>>  {
+>> -       apply_ucode_in_initrd();
+>> +       struct cpio_data cd = find_ucode_in_initrd();
+>> +       if (!cd.data)
+>> +               return;
+>> +
+>> +       apply_ucode_in_initrd(cd.data, cd.size);
+>>  }
+>>
+>>  #ifdef CONFIG_X86_32
+>> @@ -145,12 +165,29 @@ u8 amd_bsp_mpb[MPB_MAX_SIZE];
+>>  void __cpuinit load_ucode_amd_ap(void)
+>>  {
+>>         struct microcode_amd *mc;
+>> +       unsigned long *initrd;
+>> +       unsigned long *uoffset;
+>> +       size_t *usize;
+>> +       void *ucode;
+>>
+>> -       mc = (struct microcode_amd *)__pa_nodebug(amd_bsp_mpb);
+>> -       if (mc->hdr.patch_id && mc->hdr.processor_rev_id)
+>> +       mc = (struct microcode_amd *)__pa(amd_bsp_mpb);
+>> +       if (mc->hdr.patch_id && mc->hdr.processor_rev_id) {
+>>                 __apply_microcode_amd(mc);
+>> -       else
+>> -               apply_ucode_in_initrd();
+>> +               return;
+>> +       }
+>> +
+>> +       initrd  = (unsigned long *)__pa(&initrd_start);
+>> +       uoffset = (unsigned long *)__pa(&ucode_offset);
+>> +       usize   = (size_t *)__pa(&ucode_size);
+>> +
+>> +       if (!(*usize))
+>> +               return;
+>> +
+>> +       if (!(*initrd))
+>> +               return;
+>
+>could be save three lines if use
+>       if (!(*initrd) || !(*usize))
+>               return;
+>
+>> +
+>> +       ucode = (void *)((unsigned long)__pa(*initrd) + *uoffset);
+>> +       apply_ucode_in_initrd(ucode, *usize);
+>>  }
+>>
+>>  static void __init collect_cpu_sig_on_bsp(void *arg)
+>> @@ -181,8 +218,16 @@ void __cpuinit load_ucode_amd_ap(void)
+>>         collect_cpu_info_amd_early(&cpu_data(cpu), ucode_cpu_info +
+>cpu);
+>>
+>>         if (cpu && !ucode_loaded) {
+>> -               struct cpio_data cd = find_ucode_in_initrd();
+>> -               if (load_microcode_amd(0, cd.data, cd.size) !=
+>UCODE_OK)
+>> +               void *ucode;
+>> +
+>> +               if (!ucode_size)
+>> +                       return;
+>> +
+>> +               if (!initrd_start)
+>> +                       return;
+>
+>same
+>
+>> +
+>> +               ucode = (void *)(initrd_start + ucode_offset);
+>> +               if (load_microcode_amd(0, ucode, ucode_size) !=
+>UCODE_OK)
+>>                         return;
+>>                 ucode_loaded = true;
+>>         }
+>> @@ -194,7 +239,7 @@ void __cpuinit load_ucode_amd_ap(void)
+>>  int __init save_microcode_in_initrd_amd(void)
+>>  {
+>>         enum ucode_state ret;
+>> -       struct cpio_data cd;
+>> +       void *ucode;
+>>  #ifdef CONFIG_X86_32
+>>         unsigned int bsp = boot_cpu_data.cpu_index;
+>>         struct ucode_cpu_info *uci = ucode_cpu_info + bsp;
+>> @@ -209,11 +254,14 @@ int __init save_microcode_in_initrd_amd(void)
+>>         if (ucode_loaded)
+>>                 return 0;
+>>
+>> -       cd = find_ucode_in_initrd();
+>> -       if (!cd.data)
+>> -               return -EINVAL;
+>> +       if (!ucode_size)
+>> +               return 0;
+>> +
+>> +       if (!initrd_start)
+>> +               return 0;
+>
+>same
+>
+>>
+>> -       ret = load_microcode_amd(0, cd.data, cd.size);
+>> +       ucode = (void *)(initrd_start + ucode_offset);
+>> +       ret = load_microcode_amd(0, ucode, ucode_size);
+>>         if (ret != UCODE_OK)
+>>                 return -EINVAL;
+>>
+>> --
+>> 1.7.9.5
+>>
+>>
 
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Subject: [patch] memcg: do not trap chargers with full callstack on OOM
-> 
-> The memcg OOM handling is incredibly fragile and can deadlock.  When a
-> task fails to charge memory, it invokes the OOM killer and loops right
-> there in the charge code until it succeeds.  Comparably, any other
-> task that enters the charge path at this point will go to a waitqueue
-> right then and there and sleep until the OOM situation is resolved.
-> The problem is that these tasks may hold filesystem locks and the
-> mmap_sem; locks that the selected OOM victim may need to exit.
-> 
-> For example, in one reported case, the task invoking the OOM killer
-> was about to charge a page cache page during a write(), which holds
-> the i_mutex.  The OOM killer selected a task that was just entering
-> truncate() and trying to acquire the i_mutex:
-> 
-> OOM invoking task:
-> [<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
-> [<ffffffff8110b5ab>] T.1146+0x5ab/0x5c0
-> [<ffffffff8110c22e>] mem_cgroup_cache_charge+0xbe/0xe0
-> [<ffffffff810ca28c>] add_to_page_cache_locked+0x4c/0x140
-> [<ffffffff810ca3a2>] add_to_page_cache_lru+0x22/0x50
-> [<ffffffff810ca45b>] grab_cache_page_write_begin+0x8b/0xe0
-> [<ffffffff81193a18>] ext3_write_begin+0x88/0x270
-> [<ffffffff810c8fc6>] generic_file_buffered_write+0x116/0x290
-> [<ffffffff810cb3cc>] __generic_file_aio_write+0x27c/0x480
-> [<ffffffff810cb646>] generic_file_aio_write+0x76/0xf0           # takes ->i_mutex
-> [<ffffffff8111156a>] do_sync_write+0xea/0x130
-> [<ffffffff81112183>] vfs_write+0xf3/0x1f0
-> [<ffffffff81112381>] sys_write+0x51/0x90
-> [<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> 
-> OOM kill victim:
-> [<ffffffff811109b8>] do_truncate+0x58/0xa0              # takes i_mutex
-> [<ffffffff81121c90>] do_last+0x250/0xa30
-> [<ffffffff81122547>] path_openat+0xd7/0x440
-> [<ffffffff811229c9>] do_filp_open+0x49/0xa0
-> [<ffffffff8110f7d6>] do_sys_open+0x106/0x240
-> [<ffffffff8110f950>] sys_open+0x20/0x30
-> [<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> 
-> The OOM handling task will retry the charge indefinitely while the OOM
-> killed task is not releasing any resources.
-> 
-> A similar scenario can happen when the kernel OOM killer for a memcg
-> is disabled and a userspace task is in charge of resolving OOM
-> situations.  In this case, ALL tasks that enter the OOM path will be
-> made to sleep on the OOM waitqueue and wait for userspace to free
-> resources or increase the group's limit.  But a userspace OOM handler
-> is prone to deadlock itself on the locks held by the waiting tasks.
-> For example one of the sleeping tasks may be stuck in a brk() call
-> with the mmap_sem held for writing but the userspace handler, in order
-> to pick an optimal victim, may need to read files from /proc/<pid>,
-> which tries to acquire the same mmap_sem for reading and deadlocks.
-> 
-> This patch changes the way tasks behave after detecting an OOM and
-> makes sure nobody loops or sleeps on OOM with locks held:
-> 
-> 1. When OOMing in a system call (buffered IO and friends), invoke the
->    OOM killer but just return -ENOMEM, never sleep on a OOM waitqueue.
->    Userspace should be able to handle this and it prevents anybody
->    from looping or waiting with locks held.
-> 
-> 2. When OOMing in a page fault, invoke the OOM killer and restart the
->    fault instead of looping on the charge attempt.  This way, the OOM
->    victim can not get stuck on locks the looping task may hold.
-> 
-> 3. When detecting an OOM in a page fault but somebody else is handling
->    it (either the kernel OOM killer or a userspace handler), don't go
->    to sleep in the charge context.  Instead, remember the OOMing memcg
->    in the task struct and then fully unwind the page fault stack with
->    -ENOMEM.  pagefault_out_of_memory() will then call back into the
->    memcg code to check if the -ENOMEM came from the memcg, and then
->    either put the task to sleep on the memcg's OOM waitqueue or just
->    restart the fault.  The OOM victim can no longer get stuck on any
->    lock a sleeping task may hold.
-> 
-> While reworking the OOM routine, also remove a needless OOM waitqueue
-> wakeup when invoking the killer.  Only uncharges and limit increases,
-> things that actually change the memory situation, should do wakeups.
-> 
-> Reported-by: Reported-by: azurIt <azurit@pobox.sk>
-> Debugged-by: Michal Hocko <mhocko@suse.cz>
-> Reported-by: David Rientjes <rientjes@google.com>
-
-What exactly did I report?  This isn't at all what 
-memory.oom_delay_millisecs is about, which is a failure of userspace to 
-respond to the condition and react in time, not because it's stuck on any 
-lock.  We still need that addition regardless of what you're doing here.
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
