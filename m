@@ -1,105 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932342Ab3FFKbJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 06:31:09 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:56583 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752203Ab3FFKbH (ORCPT
+	id S932345Ab3FFKcB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 06:32:01 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:60280 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932163Ab3FFKb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 06:31:07 -0400
-Date: Thu, 6 Jun 2013 11:30:32 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Illia Smyrnov <x0194613@ti.com>
-Cc: Illia Smyrnov <illia.smyrnov@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Daniel Mack <zonque@gmail.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net
-Message-ID: <20130606103032.GR31367@sirena.org.uk>
-References: <1370432398-7796-1-git-send-email-illia.smyrnov@ti.com>
- <1370432398-7796-3-git-send-email-illia.smyrnov@ti.com>
- <20130605120346.GZ31367@sirena.org.uk>
- <51B05FB8.6050903@ti.com>
+	Thu, 6 Jun 2013 06:31:59 -0400
+Message-ID: <51B0651D.3090902@itdev.co.uk>
+Date: Thu, 06 Jun 2013 11:31:57 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="q32ofrQ8UfzBLMEG"
-Content-Disposition: inline
-In-Reply-To: <51B05FB8.6050903@ti.com>
-X-Cookie: Are you a turtle?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] spi: omap2-mcspi: Add FIFO buffer support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Mark Brown <broonie@kernel.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
+Subject: Re: [PATCH 10/53] Input: atmel_mxt_ts - Add memory access interface
+ via sysfs
+References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk> <7380889.l4hHqCT0mm@dtor-d630.eng.vmware.com> <51AF8730.4010507@itdev.co.uk> <1717403.GgHsbyUkDZ@dtor-d630.eng.vmware.com> <51AFA02B.3000604@itdev.co.uk> <20130605210715.GA16013@core.coreip.homeip.net> <51AFAF6D.7050204@itdev.co.uk> <20130606100346.GC1883@sirena.org.uk>
+In-Reply-To: <20130606100346.GC1883@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mark Brown wrote:
+> On Wed, Jun 05, 2013 at 10:36:45PM +0100, Nick Dyer wrote:
+>> Run-time examples would be adjusting noise suppression or touch suppression
+>> parameters based on something going on in the app layer (eg having
+>> different parameters during unlock screen), or tuning report rates based on
+>> application requirements, ot to inspect debug data if the touch sensor is
+>> faulty. You might say, well we should implement an kernel driver interface
+>> for these requirements, but they will vary hugely between different
+>> products. We are trying to keep the driver as generic as possible and push
+> 
+> If this interface varies dramatically between products then that sounds
+> like a badly designed interface.  Obviously the way the interface is
+> being used would be likely to vary between products but what you're
+> talking about sounds like parameter get/set stuff which sounds pretty
+> generic to me.  What userspace chooses to do with the parameters is of
+> course another story.
 
---q32ofrQ8UfzBLMEG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The underlying design is called Object Protocol by Atmel, and defines a
+method where the the i2c address space starts with a table defining the
+types and locations of various objects. Each object contains many
+parameters, most of them are simple get/set as you describe, but many
+objects have considerably more dynamic behaviours and interactions.
 
-On Thu, Jun 06, 2013 at 01:08:56PM +0300, Illia Smyrnov wrote:
-> On 06/05/2013 03:03 PM, Mark Brown wrote:
+The Object Protocol itself is generic, but the objects themselves are
+different on different maXTouch chips and firmware versions. The objects
+may change in size, or be added/removed. The protocol is designed to be
+flexible and allow rapid firmware development without having to
+continuously update tools.
 
-> >Why is this defined for slaves?  Surely the size of the FIFO in the
-> >controller is a property of the controller not the slave?
+Having to define every parameter in each object (there are thousands) in
+the kernel driver would be impractically technically, since it would result
+in a huge, and constantly updating API, which would be always out-of-date,
+and impossible to support.
 
-> According to OMAP TRM [1] the FIFO buffer can be used by only one
-> channel at a time. If several channels are selected and several FIFO
-> enable bit fields are set to 1, the controller forces the buffer not
-> to be used.
+Also, I'm afraid it would also be impractical legally, since it would
+breach the NDA terms that Atmel require on these parameter definitions.
 
-The controller ought to be able to figure this out for itself.  As a
-first pass just grabbing the FIFO on a first come first served basis
-will probably work well most of the time, the device would have to be
-very active for it to constantly be doing transfers on all channels.
+>> product-specific complexity to user space. Hence exposing the register map
+>> and implementing user-space libraries to deal with this kind of customisation.
+> 
+> This sounds like a bad design decision for Linux, it's just asking for
+> fragility if userspace can go randomly poking round the entire register
+> map of the device with nothing coordinating with the driver code.
 
-If there's more contention than that we probably ought to be looking at
-how we handle this in general, it seems like we'd have more problems
-than just the FIFO to worry about.
-
-> If there are several slaves on the controller we must select which
-> of slaves will use the FIFO for SPI transfers. Also, optimal FIFO
-
-A single controller is only going to be able to talk to one slave at
-once, everything on the bus except chip select is shared.
-
-> size is heavily dependent of the SPI transfers length specific for
-> certain slave.
-
-The transfer length doesn't seem like something that we want to be
-encoding in DT, particularly not indirectly - it is obviously readily
-available at runtime, variable during runtime (eg, firmware download may
-do large transfers on a device that only does small transfers most of
-the time) and is something that updates to the drivers could change.
-
---q32ofrQ8UfzBLMEG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRsGTAAAoJELSic+t+oim9dfEQAJArV1dyQATWzmsuwfEfsXXg
-ZNXsuLuPBaZ/jzt342a/MBDaSNeLyuxpq/w2XqP09zhydPozG00pOZJsSJgXxF9W
-2mWXtDv7lo/BBbDzGjSSmocGD7fhoHkJZbF4dSVuDNQNEXB+eIkUxQJhUYi/N1k6
-EmR43XboKn7FIA7eD/GPWFZ3flnx2ANygXisMpnGaAU+36hxX5CJHcQHK41+9SFx
-5ZB18Qqwv8xOwdXobe/4CtDDBTKgKIn2JWQUwEAzzuE8BG1Wb95W/aQ7EhCrtJQE
-tGdoLqAAS6fGSPZzpbCUZepbCswtTWqoGIY3SBt09wCBvSpysgn8SJtbkxRaeMTD
-2LFzYN6xsZJ7chC1r1GAPyUxDhU01pUywApOUbF3j20n0uBhagv9gL0z51Fwnrrq
-vOogf8CwC1DlQA2X+8up9YyHeZX4BQ6Y6lHv9uFSOkOw7SzD2TTxcI8+0g6JhU/5
-SqZt0/E7WyDq5hjL/MfTao+uEq6dirjBQyAa0yazWo+nDS4sYPxBEXTcSmSzokI6
-hFzXtGM85IB2UJiat0XgUTwUCGpVgWI2FkzoRDMs/w813I+Yd0SLHzFXdhLclKiM
-4/7RkdF8hhxqLcf/1z8tPagKjOXkV1u5P4PYxsCSGA2/FR/PShwst59zcKgSJ7Ak
-pRq9JpQyIwVCThfo8QPq
-=gKwp
------END PGP SIGNATURE-----
-
---q32ofrQ8UfzBLMEG--
+It works very well in practice. This same abstraction is used across
+maXTouch products on many platforms to provide tool support. I agree that
+its use should be restricted to system programs.
