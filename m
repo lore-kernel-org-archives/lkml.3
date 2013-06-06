@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab3FFVb5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 17:31:57 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:35029 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908Ab3FFVbz (ORCPT
+	id S1753701Ab3FFVcU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 17:32:20 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:62592 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753219Ab3FFVcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 17:31:55 -0400
-From: Nicolas Palix <nicolas.palix@imag.fr>
-To: Julia Lawall <Julia.Lawall@lip6.fr>, Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <nicolas.palix@imag.fr>, Michal Marek <mmarek@suse.cz>,
-        cocci@systeme.lip6.fr, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] Coccinelle: Update the Coccinelle section of MAINTAINERS
-Date: Thu,  6 Jun 2013 23:30:57 +0200
-Message-Id: <1370554257-8864-2-git-send-email-nicolas.palix@imag.fr>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1370554257-8864-1-git-send-email-nicolas.palix@imag.fr>
-References: <1370554257-8864-1-git-send-email-nicolas.palix@imag.fr>
+	Thu, 6 Jun 2013 17:32:18 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: vgoyal@redhat.com, ebiederm@xmission.com, akpm@linux-foundation.org,
+        cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com, linux-mm@kvack.org,
+        riel@redhat.com, walken@google.com, hughd@google.com,
+        kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [PATCH v8 9/9] vmcore: support mmap() on /proc/vmcore
+Date: Thu, 06 Jun 2013 23:31:41 +0200
+Message-ID: <10307835.fkACLi6FUD@wuerfel>
+User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
+In-Reply-To: <20130523052547.13864.83306.stgit@localhost6.localdomain6>
+References: <20130523052421.13864.83978.stgit@localhost6.localdomain6> <20130523052547.13864.83306.stgit@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:/OP5U+LFbE1UyXG0Tuic557hGGGIrntovwtUXnR0cT4
+ DRQdn1pEimRlkhrMIV038RIr5f95lFvaXMn94G/RMDGpLNc8k7
+ SkbQlpQk73WUA1KjOdjVnUpVY1xP+Ar3BUkkI/5tWdlQFkMxtx
+ 6cmpNZVkG9khOW1LvNF1EXj1r3z80YxfsP3vf2JhuIVECROm1A
+ 8ggK1HF3ddVjNxM3kboDNCoSv9+wiL4tXyXM1O0cluS9jeOK9S
+ y+4UcXLMm9TewRbVjadANmuD1WL+5mTBSM399xqQbCiuuYdSU6
+ IJu9FX2K04gED57QiHLXoH4k1XQ9l3VbMVHxhc311YvRxwfV5B
+ H360S4gDDJHQ4qV2g/Ts=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Michal Marek and the misc branch of the kbuild tree
-in the Coccinelle section of MAINTAINERS.
----
- MAINTAINERS | 2 ++
- 1 file changed, 2 insertions(+)
+On Thursday 23 May 2013 14:25:48 HATAYAMA Daisuke wrote:
+> This patch introduces mmap_vmcore().
+> 
+> Don't permit writable nor executable mapping even with mprotect()
+> because this mmap() is aimed at reading crash dump memory.
+> Non-writable mapping is also requirement of remap_pfn_range() when
+> mapping linear pages on non-consecutive physical pages; see
+> is_cow_mapping().
+> 
+> Set VM_MIXEDMAP flag to remap memory by remap_pfn_range and by
+> remap_vmalloc_range_pertial at the same time for a single
+> vma. do_munmap() can correctly clean partially remapped vma with two
+> functions in abnormal case. See zap_pte_range(), vm_normal_page() and
+> their comments for details.
+> 
+> On x86-32 PAE kernels, mmap() supports at most 16TB memory only. This
+> limitation comes from the fact that the third argument of
+> remap_pfn_range(), pfn, is of 32-bit length on x86-32: unsigned long.
+> 
+> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+> Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 3d7782b..73b1b3a 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2098,7 +2098,9 @@ COCCINELLE/Semantic Patches (SmPL)
- M:	Julia Lawall <Julia.Lawall@lip6.fr>
- M:	Gilles Muller <Gilles.Muller@lip6.fr>
- M:	Nicolas Palix <nicolas.palix@imag.fr>
-+M:	Michal Marek <mmarek@suse.cz>
- L:	cocci@systeme.lip6.fr (moderated for non-subscribers)
-+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git misc
- W:	http://coccinelle.lip6.fr/
- S:	Supported
- F:	scripts/coccinelle/
--- 
-1.8.1.2
+I get build errors on 'make randconfig' from this, when building
+NOMMU kernels on ARM. I suppose the new feature should be hidden
+in #ifdef CONFIG_MMU.
 
+	Arnd
