@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932321Ab3FFI1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 04:27:14 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:57424 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932296Ab3FFI1L (ORCPT
+	id S932358Ab3FFI1r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 04:27:47 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:49764 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932326Ab3FFI1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 04:27:11 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <linux-pcmcia@lists.infradead.org>, <linux@dominikbrodowski.net>,
-        <manabian@gmail.com>, <fabio.porcedda@gmail.com>,
-        <laurent.navet@gmail.com>, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v3 7/7] pcmcia/trivial: at91_cf: fix checkpatch error
-Date: Thu, 6 Jun 2013 10:24:20 +0200
-Message-ID: <a132c622362cc90434f2a744a5cf2c3b22e86b58.1370506678.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <cover.1370506678.git.nicolas.ferre@atmel.com>
-References: <cover.1370506678.git.nicolas.ferre@atmel.com>
+	Thu, 6 Jun 2013 04:27:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1370502472-7249-2-git-send-email-l.majewski@samsung.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+	<1370502472-7249-2-git-send-email-l.majewski@samsung.com>
+Date: Thu, 6 Jun 2013 13:57:34 +0530
+Message-ID: <CAKohpokYdwutUX-zkHLs3bKmLg=Fb7WvKcwvfek9Q8k=XXs3bw@mail.gmail.com>
+Subject: Re: [PATCH 1/5] cpufreq: Define cpufreq_set_drv_attr_files() to add
+ per CPU sysfs attributes
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Laurent Navet <laurent.navet@gmail.com>
+On 6 June 2013 12:37, Lukasz Majewski <l.majewski@samsung.com> wrote:
 
-fix this checkpatch error:
-- ERROR: switch and case should be at the same indent
+> Subject: cpufreq: Define cpufreq_set_drv_attr_files() to add per CPU sysfs attributes
 
-Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/pcmcia/at91_cf.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+Its not per-cpu. We just add it for policy->cpu and other routines
+actually create links.
 
-diff --git a/drivers/pcmcia/at91_cf.c b/drivers/pcmcia/at91_cf.c
-index 8ddc57c..b8f5acf 100644
---- a/drivers/pcmcia/at91_cf.c
-+++ b/drivers/pcmcia/at91_cf.c
-@@ -119,14 +119,14 @@ at91_cf_set_socket(struct pcmcia_socket *sock, struct socket_state_t *s)
- 	/* switch Vcc if needed and possible */
- 	if (gpio_is_valid(cf->board->vcc_pin)) {
- 		switch (s->Vcc) {
--			case 0:
--				gpio_set_value(cf->board->vcc_pin, 0);
--				break;
--			case 33:
--				gpio_set_value(cf->board->vcc_pin, 1);
--				break;
--			default:
--				return -EINVAL;
-+		case 0:
-+			gpio_set_value(cf->board->vcc_pin, 0);
-+			break;
-+		case 33:
-+			gpio_set_value(cf->board->vcc_pin, 1);
-+			break;
-+		default:
-+			return -EINVAL;
- 		}
- 	}
- 
--- 
-1.8.2.2
+> The cpufreq_set_drv_attr_files() function creates sysfs file entry for
+> each available CPU. With it in place it is possible to add different
+> set of attributes without code duplication.
 
+Not for each available cpu but are linked to a policy->kobj and so
+shows up on each policy->cpus.
+
+> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+> ---
+>  drivers/cpufreq/cpufreq.c |   23 +++++++++++++++--------
+>  1 file changed, 15 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 1b8a48e..ca74e27 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -730,12 +730,23 @@ static int cpufreq_add_dev_symlink(unsigned int cpu,
+>         return ret;
+>  }
+>
+> +static int cpufreq_set_drv_attr_files(struct cpufreq_policy *policy,
+> +                                     struct freq_attr **drv_attr)
+> +{
+> +       while ((drv_attr) && (*drv_attr)) {
+> +               if (sysfs_create_file(&policy->kobj, &((*drv_attr)->attr)))
+> +                       return 1;
+
+You are changing the semantics here. We used to return error
+value from sysfs_create_file() and you are returning 1.
+
+> +               drv_attr++;
+
+If drv_attr was valid initially, then drv_attr++ can't make it NULL.
+So, we don't need to check validity of drv_attr for every loop.
