@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582Ab3FFRMr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 13:12:47 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:43765 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751693Ab3FFRMo (ORCPT
+	id S1753344Ab3FFROZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 13:14:25 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:40512 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147Ab3FFROX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 13:12:44 -0400
-Message-ID: <51B0C312.7020903@cogentembedded.com>
-Date: Thu, 06 Jun 2013 21:12:50 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Thu, 6 Jun 2013 13:14:23 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18uk+KhGcCU/ld3ufvyQImv7NfIhN2uciw=
+Date: Thu, 6 Jun 2013 13:13:47 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] Marvell Orion SoC irqchip and clocksource
+Message-ID: <20130606171347.GJ23859@titan.lakedaemon.net>
+References: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>
-CC: mst@redhat.com, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vhost_net: clear msg.control for non-zerocopy case during
- tx
-References: <1370418046-11851-1-git-send-email-jasowang@redhat.com> <51AF40CB.5030101@cogentembedded.com> <51B00190.2050307@redhat.com>
-In-Reply-To: <51B00190.2050307@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Thu, Jun 06, 2013 at 06:27:08PM +0200, Sebastian Hesselbarth wrote:
+> This patch set introduces DT-aware irqchip and clocksource drivers for
+> Marvell Orion SoCs (Kirkwood, Dove, Orion5x, MV78x00) and corresponding
+> patches for Dove and Kirkwood to enable them for DT-boards.
+> 
+> The irqchip driver, of course, depends on Thomas Gleixner's work on
+> irqdomain support for generic chip (tip irq/core).
 
-On 06/06/2013 07:27 AM, Jason Wang wrote:
+Ah, this is why I wanted to look at the diffstat.  The dependencies
+aren't nearly as complicated as I imagined.  :-)
 
->>> When we decide not use zero-copy, msg.control should be set to NULL
->>> otherwise
->>> macvtap/tap may set zerocopy callbacks which may decrease the kref of
->>> ubufs
->>> wrongly.
->>> Bug were introduced by commit cedb9bdce099206290a2bdd02ce47a7b253b6a84
->>> (vhost-net: skip head management if no outstanding).
->>> This solves the following warnings:
->>> WARNING: at include/linux/kref.h:47 handle_tx+0x477/0x4b0 [vhost_net]()
->>> Modules linked in: vhost_net macvtap macvlan tun nfsd exportfs bridge
->>> stp llc openvswitch kvm_amd kvm bnx2 megaraid_sas [last unloaded: tun]
->>> CPU: 5 PID: 8670 Comm: vhost-8668 Not tainted 3.10.0-rc2+ #1566
->>> Hardware name: Dell Inc. PowerEdge R715/00XHKG, BIOS 1.5.2 04/19/2011
->>> ffffffffa0198323 ffff88007c9ebd08 ffffffff81796b73 ffff88007c9ebd48
->>> ffffffff8103d66b 000000007b773e20 ffff8800779f0000 ffff8800779f43f0
->>> ffff8800779f8418 000000000000015c 0000000000000062 ffff88007c9ebd58
->>> Call Trace:
->>> [<ffffffff81796b73>] dump_stack+0x19/0x1e
->>> [<ffffffff8103d66b>] warn_slowpath_common+0x6b/0xa0
->>> [<ffffffff8103d6b5>] warn_slowpath_null+0x15/0x20
->>> [<ffffffffa0197627>] handle_tx+0x477/0x4b0 [vhost_net]
->>> [<ffffffffa0197690>] handle_tx_kick+0x10/0x20 [vhost_net]
->>> [<ffffffffa019541e>] vhost_worker+0xfe/0x1a0 [vhost_net]
->>> [<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
->>> [<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
->>> [<ffffffff81061f46>] kthread+0xc6/0xd0
->>> [<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
->>> [<ffffffff817a1aec>] ret_from_fork+0x7c/0xb0
->>> [<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
->>> Signed-off-by: Jason Wang <jasowang@redhat.com>
->>> ---
->>>    drivers/vhost/net.c |    3 ++-
->>>    1 files changed, 2 insertions(+), 1 deletions(-)
->>> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
->>> index 2b51e23..b07d96b 100644
->>> --- a/drivers/vhost/net.c
->>> +++ b/drivers/vhost/net.c
->>> @@ -436,7 +436,8 @@ static void handle_tx(struct vhost_net *net)
->>>                    kref_get(&ubufs->kref);
->>>                }
->>>                nvq->upend_idx = (nvq->upend_idx + 1) % UIO_MAXIOV;
->>> -        }
->>> +        } else
->>     You have to use {} on the *else* branch if you have it of the *if*
->> branch (and vice versa), according to Documentation/CodingStyle.
-> checkpatch.pl didn't complain this, will send v2.
+> The ARM part of this patch set has a quite ridiculuous dependency havoc
+> of mv643xx_eth DT support (current net-next) that will add to both irqchip
+> and clocksource branches respectively. Therefore, I suggest that irq
+> and clocksource maintainers take in the mere drivers (Patches 1+2) and
+> Jason Cooper handles the remaining patches when all three drivers have
+> surfaced on mainline linux.
 
-     Yes, this check is what it seems to lack still.
+The suggested approach is correct, but it should be pretty easy to apply
+#3-6 once v3.11-rc1 drops.
 
-> Thanks
->
+thx,
 
-WBR, Sergei
-
+Jason.
