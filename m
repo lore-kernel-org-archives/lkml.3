@@ -1,322 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756466Ab3FFH2c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 03:28:32 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2304 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754872Ab3FFH2a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 03:28:30 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 06 Jun 2013 00:27:46 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>, Joseph Lo <josephl@nvidia.com>,
-        Karan Jhavar <kjhavar@nvidia.com>, Varun Wadekar <vwadekar@nvidia.com>,
-        Chris Johnson <CJohnson@nvidia.com>,
-        Matthew Longnecker <MLongnecker@nvidia.com>
-CC: <gnurou@gmail.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH] ARM: tegra: add basic SecureOS support
-Date: Thu, 6 Jun 2013 16:28:07 +0900
-Message-ID: <1370503687-17767-1-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.8.3
-X-NVConfidentiality: public
+	id S1757495Ab3FFH3E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 03:29:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:18329 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754539Ab3FFH3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 03:29:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,813,1363158000"; 
+   d="scan'208";a="345654681"
+Date: Thu, 6 Jun 2013 15:28:56 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [vt_console_print/cirrus_dirty_update] WARNING: at
+ kernel/mutex.c:858 mutex_trylock()
+Message-ID: <20130606072856.GA32274@localhost>
+References: <20130606013518.GA9092@localhost>
+ <51B038E3.30800@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51B038E3.30800@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Boot loaders on some Tegra devices can be unlocked but do not let the
-system operate without SecureOS. SecureOS prevents access to some
-registers and requires the operating system to perform certain
-operations through Secure Monitor Calls instead of directly accessing
-the hardware.
+Hi Maarten,
 
-This patch introduces basic SecureOS support for Tegra. SecureOS support
-can be enabled by adding a "nvidia,secure-os" property to the "chosen"
-node of the device tree.
+Thanks for the patch! I'll queue it for the tests.
 
-Currently, only the bringup of secondary CPUs is performed by SMCs, but
-more operations will be added later.
+Thanks,
+Fengguang
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
----
- Documentation/devicetree/bindings/arm/tegra.txt |  8 +++
- arch/arm/configs/tegra_defconfig                |  1 +
- arch/arm/mach-tegra/Kconfig                     | 11 ++++
- arch/arm/mach-tegra/Makefile                    |  2 +
- arch/arm/mach-tegra/common.c                    |  2 +
- arch/arm/mach-tegra/reset.c                     | 30 +++++++----
- arch/arm/mach-tegra/secureos.c                  | 70 +++++++++++++++++++++++++
- arch/arm/mach-tegra/secureos.h                  | 31 +++++++++++
- 8 files changed, 145 insertions(+), 10 deletions(-)
- create mode 100644 arch/arm/mach-tegra/secureos.c
- create mode 100644 arch/arm/mach-tegra/secureos.h
-
-diff --git a/Documentation/devicetree/bindings/arm/tegra.txt b/Documentation/devicetree/bindings/arm/tegra.txt
-index ed9c853..b543091 100644
---- a/Documentation/devicetree/bindings/arm/tegra.txt
-+++ b/Documentation/devicetree/bindings/arm/tegra.txt
-@@ -32,3 +32,11 @@ board-specific compatible values:
-   nvidia,whistler
-   toradex,colibri_t20-512
-   toradex,iris
-+
-+Global properties
-+-------------------------------------------
-+
-+The following properties can be specified into the "chosen" root
-+node:
-+
-+  nvidia,secure-os: enable SecureOS.
-diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
-index f7ba3161..f6ed0f5 100644
---- a/arch/arm/configs/tegra_defconfig
-+++ b/arch/arm/configs/tegra_defconfig
-@@ -28,6 +28,7 @@ CONFIG_ARCH_TEGRA_3x_SOC=y
- CONFIG_ARCH_TEGRA_114_SOC=y
- CONFIG_TEGRA_PCI=y
- CONFIG_TEGRA_EMC_SCALING_ENABLE=y
-+CONFIG_TEGRA_SECUREOS=y
- CONFIG_SMP=y
- CONFIG_PREEMPT=y
- CONFIG_AEABI=y
-diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
-index 84d72fc..acb5d0a 100644
---- a/arch/arm/mach-tegra/Kconfig
-+++ b/arch/arm/mach-tegra/Kconfig
-@@ -87,4 +87,15 @@ config TEGRA_AHB
- config TEGRA_EMC_SCALING_ENABLE
- 	bool "Enable scaling the memory frequency"
- 
-+config TEGRA_SECUREOS
-+	bool "Enable SecureOS support"
-+	help
-+	  Support for Tegra devices which bootloader sets up a
-+	  SecureOS environment. This will use Secure Monitor Calls
-+	  instead of directly accessing the hardware for some protected
-+	  operations.
-+
-+	  SecureOS support is enabled by declaring a "nvidia,secure-os"
-+	  property into the "chosen" node of the device tree.
-+
- endmenu
-diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
-index d011f0a..3adafe6 100644
---- a/arch/arm/mach-tegra/Makefile
-+++ b/arch/arm/mach-tegra/Makefile
-@@ -37,3 +37,5 @@ endif
- obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= board-harmony-pcie.o
- 
- obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= board-paz00.o
-+
-+obj-$(CONFIG_TEGRA_SECUREOS)		+= secureos.o
-diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
-index 9f852c6..b7eea02 100644
---- a/arch/arm/mach-tegra/common.c
-+++ b/arch/arm/mach-tegra/common.c
-@@ -37,6 +37,7 @@
- #include "sleep.h"
- #include "pm.h"
- #include "reset.h"
-+#include "secureos.h"
- 
- /*
-  * Storage for debug-macro.S's state.
-@@ -97,6 +98,7 @@ static void __init tegra_init_cache(void)
- 
- void __init tegra_init_early(void)
- {
-+	tegra_init_secureos();
- 	tegra_cpu_reset_handler_init();
- 	tegra_apb_io_init();
- 	tegra_init_fuse();
-diff --git a/arch/arm/mach-tegra/reset.c b/arch/arm/mach-tegra/reset.c
-index 1ac434e..4b9ebf9 100644
---- a/arch/arm/mach-tegra/reset.c
-+++ b/arch/arm/mach-tegra/reset.c
-@@ -21,38 +21,32 @@
- 
- #include <asm/cacheflush.h>
- #include <asm/hardware/cache-l2x0.h>
-+#include <asm/firmware.h>
- 
- #include "iomap.h"
- #include "irammap.h"
- #include "reset.h"
- #include "sleep.h"
- #include "fuse.h"
-+#include "secureos.h"
- 
- #define TEGRA_IRAM_RESET_BASE (TEGRA_IRAM_BASE + \
- 				TEGRA_IRAM_RESET_HANDLER_OFFSET)
- 
- static bool is_enabled;
- 
--static void __init tegra_cpu_reset_handler_enable(void)
-+static void __init tegra_cpu_reset_handler_set(const u32 reset_address)
- {
--	void __iomem *iram_base = IO_ADDRESS(TEGRA_IRAM_RESET_BASE);
- 	void __iomem *evp_cpu_reset =
- 		IO_ADDRESS(TEGRA_EXCEPTION_VECTORS_BASE + 0x100);
- 	void __iomem *sb_ctrl = IO_ADDRESS(TEGRA_SB_BASE);
- 	u32 reg;
- 
--	BUG_ON(is_enabled);
--	BUG_ON(tegra_cpu_reset_handler_size > TEGRA_IRAM_RESET_HANDLER_SIZE);
--
--	memcpy(iram_base, (void *)__tegra_cpu_reset_handler_start,
--			tegra_cpu_reset_handler_size);
--
- 	/*
- 	 * NOTE: This must be the one and only write to the EVP CPU reset
- 	 *       vector in the entire system.
- 	 */
--	writel(TEGRA_IRAM_RESET_BASE + tegra_cpu_reset_handler_offset,
--			evp_cpu_reset);
-+	writel(reset_address, evp_cpu_reset);
- 	wmb();
- 	reg = readl(evp_cpu_reset);
- 
-@@ -66,6 +60,22 @@ static void __init tegra_cpu_reset_handler_enable(void)
- 		writel(reg, sb_ctrl);
- 		wmb();
- 	}
-+}
-+
-+static void __init tegra_cpu_reset_handler_enable(void)
-+{
-+	void __iomem *iram_base = IO_ADDRESS(TEGRA_IRAM_RESET_BASE);
-+	const u32 reset_address = TEGRA_IRAM_RESET_BASE +
-+						tegra_cpu_reset_handler_offset;
-+
-+	BUG_ON(is_enabled);
-+	BUG_ON(tegra_cpu_reset_handler_size > TEGRA_IRAM_RESET_HANDLER_SIZE);
-+
-+	memcpy(iram_base, (void *)__tegra_cpu_reset_handler_start,
-+			tegra_cpu_reset_handler_size);
-+
-+	if (call_firmware_op(set_cpu_boot_addr, 0, reset_address) == -ENOSYS)
-+		tegra_cpu_reset_handler_set(reset_address);
- 
- 	is_enabled = true;
- }
-diff --git a/arch/arm/mach-tegra/secureos.c b/arch/arm/mach-tegra/secureos.c
-new file mode 100644
-index 0000000..44c3514
---- /dev/null
-+++ b/arch/arm/mach-tegra/secureos.c
-@@ -0,0 +1,70 @@
-+/*
-+ * SecureOS support for Tegra CPUs
-+ *
-+ * Copyright (c) 2013, NVIDIA Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/of.h>
-+#include <asm/firmware.h>
-+
-+static int __attribute__((used)) __tegra_smc_stack[10];
-+
-+/*
-+ * With EABI, subtype and arg already end up in r0, r1 and r2 as they are
-+ * function arguments, but we prefer to play safe here and explicitly move
-+ * these values into the expected registers anyway. mov instructions without
-+ * any side-effect are turned into nops by the assembler, which limits
-+ * overhead.
-+ */
-+static void tegra_generic_smc(u32 type, u32 subtype, u32 arg)
-+{
-+	asm volatile(
-+		".arch_extension	sec\n\t"
-+		"ldr	r3, =__tegra_smc_stack\n\t"
-+		"stmia	r3, {r4-r12, lr}\n\t"
-+		"mov	r0, %[type]\n\t"
-+		"mov	r1, %[subtype]\n\t"
-+		"mov	r2, %[arg]\n\t"
-+		"mov	r3, #0\n\t"
-+		"mov	r4, #0\n\t"
-+		"dsb\n\t"
-+		"smc	#0\n\t"
-+		"ldr	r3, =__tegra_smc_stack\n\t"
-+		"ldmia	r3, {r4-r12, lr}"
-+			:
-+			: [type]    "r" (type),
-+			  [subtype] "r" (subtype),
-+			  [arg]     "r" (arg)
-+			: "r0", "r1", "r2", "r3", "r4", "memory");
-+}
-+
-+static int tegra_set_cpu_boot_addr(int cpu, unsigned long boot_addr)
-+{
-+	tegra_generic_smc(0xfffff200, boot_addr, 0);
-+
-+	return 0;
-+}
-+
-+static const struct firmware_ops tegra_firmware_ops = {
-+	.set_cpu_boot_addr = tegra_set_cpu_boot_addr,
-+};
-+
-+void __init tegra_init_secureos(void)
-+{
-+	struct device_node *node = of_find_node_by_path("/chosen");
-+
-+	if (node && of_property_read_bool(node, "nvidia,secure-os"))
-+		register_firmware_ops(&tegra_firmware_ops);
-+}
-diff --git a/arch/arm/mach-tegra/secureos.h b/arch/arm/mach-tegra/secureos.h
-new file mode 100644
-index 0000000..5388cc5
---- /dev/null
-+++ b/arch/arm/mach-tegra/secureos.h
-@@ -0,0 +1,31 @@
-+/*
-+ * Copyright (c) 2013, NVIDIA Corporation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ */
-+
-+#ifndef __TEGRA_SECUREOS_H
-+#define __TEGRA_SECUREOS_H
-+
-+#ifdef CONFIG_TEGRA_SECUREOS
-+
-+#include <linux/types.h>
-+
-+void tegra_init_secureos(void);
-+
-+#else
-+
-+static inline void tegra_init_secureos(void)
-+{
-+}
-+
-+#endif
-+
-+#endif
--- 
-1.8.3
-
+On Thu, Jun 06, 2013 at 09:23:15AM +0200, Maarten Lankhorst wrote:
+> Hey,
+> 
+> Op 06-06-13 03:35, Fengguang Wu schreef:
+> > Greetings,
+> >
+> > I got the below dmesg and the first bad commit is
+> >
+> > commit 3d71c6ed43d838e593538176a9a59debe228cfb0
+> > Author: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+> > Date:   Tue Apr 2 12:33:01 2013 +0200
+> >
+> >     drm/ttm: convert to the reservation api
+> >     
+> >     Now that the code is compatible in semantics, flip the switch.
+> >     Use ww_mutex instead of the homegrown implementation.
+> >     
+> >     Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+> >
+> > [   13.044298] printing local APIC contents on CPU#0/0:
+> > [   13.044313] ------------[ cut here ]------------
+> > [   13.044367] WARNING: at /c/kernel-tests/src/tip/kernel/mutex.c:858 mutex_trylock+0x87/0x220()
+> > [   13.044378] DEBUG_LOCKS_WARN_ON(in_interrupt())
+> > [   13.044378] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.10.0-rc4-00296-ga2963dd #20
+> > [   13.044379] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+> > [   13.044390]  0000000000000009 ffff88000de039f8 ffffffff81fc86d5 ffff88000de03a38
+> > [   13.044395]  ffffffff810d511b ffff880000000018 ffff88000f33c690 0000000000000001
+> > [   13.044398]  00000000000003f0 ffff88000f4677c8 0000000000000000 ffff88000de03a98
+> > [   13.044400] Call Trace:
+> > [   13.044412]  <IRQ>  [<ffffffff81fc86d5>] dump_stack+0x19/0x1b
+> > [   13.044441]  [<ffffffff810d511b>] warn_slowpath_common+0x6b/0x90
+> > [   13.044445]  [<ffffffff810d51a6>] warn_slowpath_fmt+0x46/0x50
+> > [   13.044448]  [<ffffffff81fd34d7>] mutex_trylock+0x87/0x220
+> > [   13.044482]  [<ffffffff8186484d>] cirrus_dirty_update+0x1cd/0x330
+> > [   13.044486]  [<ffffffff818649e8>] cirrus_imageblit+0x38/0x50
+> > [   13.044506]  [<ffffffff8165782e>] soft_cursor+0x22e/0x240
+> > [   13.044510]  [<ffffffff81656c31>] bit_cursor+0x581/0x5b0
+> > [   13.044525]  [<ffffffff815de9f4>] ? vsnprintf+0x124/0x670
+> > [   13.044529]  [<ffffffff81651333>] ? get_color.isra.16+0x43/0x130
+> > [   13.044532]  [<ffffffff81653fca>] fbcon_cursor+0x18a/0x1d0
+> > [   13.044535]  [<ffffffff816566b0>] ? update_attr.isra.2+0xa0/0xa0
+> > [   13.044556]  [<ffffffff81754b82>] hide_cursor+0x32/0xa0
+> > [   13.044565]  [<ffffffff81755bd3>] vt_console_print+0x103/0x3b0
+> > [   13.044569]  [<ffffffff810d58ac>] ? print_time+0x9c/0xb0
+> > [   13.044576]  [<ffffffff810d5960>] ? print_prefix+0xa0/0xc0
+> > [   13.044580]  [<ffffffff810d63f6>] call_console_drivers.constprop.6+0x146/0x1f0
+> > [   13.044593]  [<ffffffff815f9b38>] ? do_raw_spin_unlock+0xc8/0x100
+> > [   13.044597]  [<ffffffff810d6f27>] console_unlock+0x2f7/0x460
+> > [   13.044600]  [<ffffffff810d787a>] vprintk_emit+0x59a/0x5e0
+> > [   13.044615]  [<ffffffff81fb676c>] printk+0x4d/0x4f
+> > [   13.044650]  [<ffffffff82ba5511>] print_local_APIC+0x28/0x41c
+> > [   13.044672]  [<ffffffff8114db55>] generic_smp_call_function_single_interrupt+0x145/0x2b0
+> > [   13.044688]  [<ffffffff8106f9e7>] smp_call_function_single_interrupt+0x27/0x40
+> > [   13.044697]  [<ffffffff81fd8f72>] call_function_single_interrupt+0x72/0x80
+> > [   13.044707]  <EOI>  [<ffffffff81078166>] ? native_safe_halt+0x6/0x10
+> > [   13.044717]  [<ffffffff811425cd>] ? trace_hardirqs_on+0xd/0x10
+> > [   13.044738]  [<ffffffff8104f669>] default_idle+0x59/0x120
+> > [   13.044742]  [<ffffffff810501e8>] arch_cpu_idle+0x18/0x40
+> > [   13.044754]  [<ffffffff811320c5>] cpu_startup_entry+0x235/0x410
+> > [   13.044763]  [<ffffffff81f9e781>] rest_init+0xd1/0xe0
+> > [   13.044766]  [<ffffffff81f9e6b5>] ? rest_init+0x5/0xe0
+> > [   13.044778]  [<ffffffff82b93ec2>] start_kernel+0x425/0x493
+> > [   13.044781]  [<ffffffff82b93810>] ? repair_env_string+0x5e/0x5e
+> > [   13.044786]  [<ffffffff82b93595>] x86_64_start_reservations+0x2a/0x2c
+> > [   13.044789]  [<ffffffff82b93688>] x86_64_start_kernel+0xf1/0x100
+> > [   13.044799] ---[ end trace 113ad28772af4058 ]---
+> Thanks for catching this, I'm uncertain how to proceed here. Can you try below patch?
+> 
+> diff --git a/drivers/gpu/drm/cirrus/cirrus_fbdev.c b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
+> index 3541b56..b27e956 100644
+> --- a/drivers/gpu/drm/cirrus/cirrus_fbdev.c
+> +++ b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
+> @@ -25,7 +25,7 @@ static void cirrus_dirty_update(struct cirrus_fbdev *afbdev,
+>  	struct cirrus_bo *bo;
+>  	int src_offset, dst_offset;
+>  	int bpp = (afbdev->gfb.base.bits_per_pixel + 7)/8;
+> -	int ret;
+> +	int ret = -EBUSY;
+>  	bool unmap = false;
+>  	bool store_for_later = false;
+>  	int x2, y2;
+> @@ -39,7 +39,8 @@ static void cirrus_dirty_update(struct cirrus_fbdev *afbdev,
+>  	 * then the BO is being moved and we should
+>  	 * store up the damage until later.
+>  	 */
+> -	ret = cirrus_bo_reserve(bo, true);
+> +	if (!in_interrupt())
+> +		ret = cirrus_bo_reserve(bo, true);
+>  	if (ret) {
+>  		if (ret != -EBUSY)
+>  			return;
