@@ -1,93 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070Ab3FFB3Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 21:29:24 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:36657 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755561Ab3FFB3X (ORCPT
+	id S1756146Ab3FFBbr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 21:31:47 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:64403 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755950Ab3FFBbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 21:29:23 -0400
-Date: Wed, 5 Jun 2013 18:29:21 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] ARM: avoid mis-detecting some V7 cores in the
- decompressor
-Message-ID: <20130606012921.GO599@codeaurora.org>
-References: <51AD0703.6050408@codeaurora.org>
- <20130603222321.GP18614@n2100.arm.linux.org.uk>
- <51AD1AB3.9050908@codeaurora.org>
- <20130603224555.GR18614@n2100.arm.linux.org.uk>
- <51AD1FE9.80709@codeaurora.org>
- <alpine.LFD.2.03.1306040032510.1200@syhkavp.arg>
- <20130604194705.GK599@codeaurora.org>
- <alpine.LFD.2.03.1306041559440.1200@syhkavp.arg>
- <20130604214501.GL599@codeaurora.org>
- <alpine.LFD.2.03.1306041751470.1200@syhkavp.arg>
+	Wed, 5 Jun 2013 21:31:45 -0400
+Message-ID: <51AFE67C.5030807@gmail.com>
+Date: Wed, 05 Jun 2013 19:31:40 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.03.1306041751470.1200@syhkavp.arg>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH v3 1/4] perf util: Add parse_nsec_time() function
+References: <51ACBA6C.9010902@gmail.com> <1370310629-9642-1-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1370310629-9642-1-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04, Nicolas Pitre wrote:
-> 
-> The LC0 area should be considered read-only as it may be located in 
-> flash.
-> 
-> Here's what I came with instead:
-> 
-> From: Nicolas Pitre <nicolas.pitre@linaro.org>
-> Date: Tue, 4 Jun 2013 17:01:30 -0400
-> Subject: [PATCH] ARM: zImage: don't overwrite ourself with a page table
-> 
-> When zImage is loaded into RAM at a low address but TEXT_OFFSET
-> is set higher, we risk overwriting ourself with the page table
-> needed to turn on the cache as it is located relative to the relocation
-> address.  Let's defer the cache setup after relocation in that case.
-> 
-> Signed-off-by: Nicolas Pitre <nico@linaro.org>
+On 6/3/13 7:50 PM, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+>
+> The parse_nsec_time() function is for parsing a string of time into
+> 64-bit nsec value.  It's a preparation of time filtering in some of
+> perf commands.
+>
+> Cc: David Ahern <dsahern@gmail.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 
-Reported-by: Stephen Boyd <sboyd@codeurora.org>
-Tested-by: Stephen Boyd <sboyd@codeurora.org>
+Acked-Tested-by: David Ahern <dsahern@gmail.com>
 
-This one passes testing on my two platforms with and without the
-2Mb reservation at the beginning of ram. Seems like a good enough
-compromise for me.
+> ---
+>   tools/perf/util/util.c | 33 +++++++++++++++++++++++++++++++++
+>   tools/perf/util/util.h |  2 ++
+>   2 files changed, 35 insertions(+)
+>
+> diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+> index 59d868add275..205972f6addb 100644
+> --- a/tools/perf/util/util.c
+> +++ b/tools/perf/util/util.c
+> @@ -269,3 +269,36 @@ void perf_debugfs_set_path(const char *mntpt)
+>   	snprintf(debugfs_mountpoint, strlen(debugfs_mountpoint), "%s", mntpt);
+>   	set_tracing_events_path(mntpt);
+>   }
+> +
+> +int parse_nsec_time(const char *str, u64 *ptime)
+> +{
+> +	u64 time_sec, time_nsec;
+> +	char *end;
+> +
+> +	time_sec = strtoul(str, &end, 10);
+> +	if (*end != '.' && *end != '\0')
+> +		return -1;
+> +
+> +	if (*end == '.') {
+> +		int i;
+> +		char nsec_buf[10];
+> +
+> +		if (strlen(++end) > 9)
+> +			return -1;
+> +
+> +		strncpy(nsec_buf, end, 9);
+> +		nsec_buf[9] = '\0';
+> +
+> +		/* make it nsec precision */
+> +		for (i = strlen(nsec_buf); i < 9; i++)
+> +			nsec_buf[i] = '0';
+> +
+> +		time_nsec = strtoul(nsec_buf, &end, 10);
+> +		if (*end != '\0')
+> +			return -1;
+> +	} else
+> +		time_nsec = 0;
+> +
+> +	*ptime = time_sec * NSEC_PER_SEC + time_nsec;
+> +	return 0;
+> +}
+> diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+> index 7a484c97e500..6c8baf312c8a 100644
+> --- a/tools/perf/util/util.h
+> +++ b/tools/perf/util/util.h
+> @@ -204,6 +204,8 @@ static inline int has_extension(const char *filename, const char *ext)
+>   #define NSEC_PER_MSEC	1000000L
+>   #endif
+>
+> +int parse_nsec_time(const char *str, u64 *ptime);
+> +
+>   extern unsigned char sane_ctype[256];
+>   #define GIT_SPACE		0x01
+>   #define GIT_DIGIT		0x02
+>
 
-> 
-> diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
-> index 9a94f344df..aa909393f2 100644
-> --- a/arch/arm/boot/compressed/head.S
-> +++ b/arch/arm/boot/compressed/head.S
-> @@ -182,7 +182,19 @@ not_angel:
->  		ldr	r4, =zreladdr
->  #endif
->  
-> -		bl	cache_on
-> +		/*
-> +		 * Set up a page table only if it won't overwrite ourself.
-> +		 * That means r4 < pc && r4 - 16k page directory > &_end.
-> +		 * Given that r4 > &_en is most unfrequent, we add a rough
-
-/s/_en/_end/
-
-> +		 * additional 1MB of room for a possible appended DTB.
-> +		 */
-> +		mov	r0, pc
-> +		cmp	r0, r4
-> +		ldrcc	r0, LC0+32
-> +		addcc	r0, r0, pc
-> +		cmpcc	r4, r0
-> +		orrcc	r4, r4, #1		@ remember we skipped cache_on
-> +		blcs	cache_on
->  
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
