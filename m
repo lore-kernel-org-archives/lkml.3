@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932298Ab3FFJzt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 05:55:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50985 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932168Ab3FFJzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 05:55:46 -0400
-Date: Thu, 6 Jun 2013 11:55:26 +0200
-From: Borislav Petkov <bp@suse.de>
-To: David C Niemi <dniemi@verisign.com>
-Cc: Stratos Karafotis <stratosk@semaphore.gr>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of
- target frequency
-Message-ID: <20130606095526.GB21181@pd.tnic>
-References: <51AF60D5.3080605@semaphore.gr>
- <20130605161703.GA29958@pd.tnic>
- <51AF6E39.2080307@verisign.com>
+	id S932345Ab3FFJ4j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 05:56:39 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:49236 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932168Ab3FFJ4h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 05:56:37 -0400
+From: naota@elisp.net
+To: Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] btrfs: Drop inode if inode root is NULL
+Date: Thu, 06 Jun 2013 18:56:34 +0900
+Message-ID: <87bo7jh8a5.fsf@elisp.net>
+User-Agent: Gnus/5.130006 (Ma Gnus v0.6) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <51AF6E39.2080307@verisign.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please do not top-post.
+There is a path where btrfs_drop_inode() is called with its inode's root
+is NULL: In btrfs_new_inode(), when btrfs_set_inode_index() fails,
+iput() is called. We should handle this case before taking look at the
+root->root_item.
 
-On Wed, Jun 05, 2013 at 12:58:33PM -0400, David C Niemi wrote:
-> When you are doing a locally-originated truly CPU-bound task, "race to
-> idle" does make some sense. But I can think of a couple of caveats.
->
-> 1) If you care about power consumption, you want to avoid
-> super-power-hungry turbo states, as you get less done per watt-hour
-> than in some of the middle states.
->
-> 2) CPU usage that is related to I/O (network, disk, video) doesn't
-> necessarily let you go to idle sooner if at all. In this case if you
-> want to minimize power consumption you may want to use middle states a
-> lot. But if you care more about responsiveness or latency than power
-> consumption, you might want to go to a high state anyway; that is why
-> we have tunables -- so we can configure based on the actual priorities
-> for the machine.
+Signed-off-by: Naohiro Aota <naota@elisp.net>
+---
+ fs/btrfs/inode.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-No, users don't always know about tunables - this should Just Work(tm).
-
-The correct "fix" for this whole deal is coupling cpufreq with
-the scheduler, as it has been said so many times before. You need
-"something" which can tell you whether raising the freq. is worth it or
-not (i.e. the process is waiting on IO or is executing instructions).
-
-Btw, recent AMD CPUs have something called frequency feedback interface
-which can tell you how much performance you would get if you would raise
-the frequency to the next P-state.
-
-I don't know though how reliable this heuristic is, and, besides,
-we need this addressed for all hw out there, which means, a sw-only
-solution would be the way to go.
-
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index af978f7..17f3064 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -8012,6 +8012,9 @@ int btrfs_drop_inode(struct inode *inode)
+ {
+ 	struct btrfs_root *root = BTRFS_I(inode)->root;
+ 
++	if (root == NULL)
++		return 1;
++
+ 	/* the snap/subvol tree is on deleting */
+ 	if (btrfs_root_refs(&root->root_item) == 0 &&
+ 	    root != root->fs_info->tree_root)
 -- 
-Regards/Gruss,
-    Boris.
+1.8.2.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
