@@ -1,105 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902Ab3FFOST (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 10:18:19 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:60334 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751120Ab3FFOSS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 10:18:18 -0400
-Message-ID: <51B09A26.3080603@hurleysoftware.com>
-Date: Thu, 06 Jun 2013 10:18:14 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752198Ab3FFOTt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 10:19:49 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:55477 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751120Ab3FFOTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 10:19:47 -0400
+Date: Thu, 6 Jun 2013 10:19:41 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ext4: add check to io_submit_init_bio
+Message-ID: <20130606141941.GA5382@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+References: <20130606115653.a21b0c6a7bdbbbac23164b85@canb.auug.org.au>
 MIME-Version: 1.0
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-CC: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Strange intermittent EIO error when writing to stdout since v3.8.0
-References: <20130606115417.GA520@x4>
-In-Reply-To: <20130606115417.GA520@x4>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130606115653.a21b0c6a7bdbbbac23164b85@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2013 07:54 AM, Markus Trippelsdorf wrote:
-> Since v3.8.0 several people reported intermittent IO errors that happen
-> during high system load while using "emerge" under Gentoo:
-> ...
->    File "/usr/lib64/portage/pym/portage/util/_eventloop/EventLoop.py", line 260, in iteration
->      if not x.callback(f, event, *x.args):
->    File "/usr/lib64/portage/pym/portage/util/_async/PipeLogger.py", line 99, in _output_handler
->      stdout_buf[os.write(stdout_fd, stdout_buf):]
->    File "/usr/lib64/portage/pym/portage/__init__.py", line 246, in __call__
->      rval = self._func(*wrapped_args, **wrapped_kwargs)
-> OSError: [Errno 5] Input/output error
+On Thu, Jun 06, 2013 at 11:56:53AM +1000, Stephen Rothwell wrote:
+> 
+> In tracking this down, I followed the call chains and discovered that
+> io_submit_init_bio() only ever returned 0.  Switching that to return
+> void and following back up the chain lead to the following patch.
 
-Looks to me like a user-space bug: EIO is returned when the other
-end of the "pipe" has been closed.
+Actually, that's a bug.  We're missing an check in that function.
+Thanks for looking at this code.  (I'll fix the uninitialized err
+warning another way.)
 
-FWIW, I didn't see where the OP tried to revert
-    'SpawnProcess: stdout_fd FD_CLOEXEC'
+						- Ted
 
-The only non-emerge related comment (#21 in the link provided) refers to
-   'a similar issue sometimes happened when I built Firefox by hand [..snip..]
-    And it would randomly crash during the build.
+commit 7745883f99c0e81e6bc71527d23ca363eb125a3f
+Author: Theodore Ts'o <tytso@mit.edu>
+Date:   Thu Jun 6 10:18:22 2013 -0400
 
-    Since I've recompiled Python with gcc-4.6 this issue also never occurred
-    again.'
+    ext4: add check to io_submit_init_bio
+    
+    The bio_alloc() function can return NULL if the memory allocation
+    fails.  So we need to check for this.
+    
+    Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 
-That comment doesn't really corroborate the reported bug.
+diff --git a/fs/ext4/page-io.c b/fs/ext4/page-io.c
+index ce8c15a..48786cd 100644
+--- a/fs/ext4/page-io.c
++++ b/fs/ext4/page-io.c
+@@ -372,6 +372,8 @@ static int io_submit_init_bio(struct ext4_io_submit *io,
+ 	struct bio *bio;
+ 
+ 	bio = bio_alloc(GFP_NOIO, min(nvecs, BIO_MAX_PAGES));
++	if (!bio)
++		return -ENOMEM;
+ 	bio->bi_sector = bh->b_blocknr * (bh->b_size >> 9);
+ 	bio->bi_bdev = bh->b_bdev;
+ 	bio->bi_end_io = ext4_end_bio;
 
-Regards,
-Peter Hurley
 
-> Basically 'emerge' just writes the build output to stdout in a loop:
-> ...
-> def _output_handler(self, fd, event):
->
->         background = self.background
->         stdout_fd = self.stdout_fd
->         log_file = self._log_file
->
->         while True:
->                 buf = self._read_buf(fd, event)
->
->                 if buf is None:
->                         # not a POLLIN event, EAGAIN, etc...
->                         break
->
->                 if not buf:
->                         # EOF
->                         self._unregister()
->                         self.wait()
->                         break
->
->                 else:
->                         if not background and stdout_fd is not None:
->                                 failures = 0
->                                 stdout_buf = buf
->                                 while stdout_buf:
->                                         try:
->                                                 stdout_buf = \
->                                                         stdout_buf[os.write(stdout_fd, stdout_buf):]
->                                         except OSError as e:
->                                                 if e.errno != errno.EAGAIN:
->                                                         raise
-> 				...
->
-> see: https://bugs.gentoo.org/show_bug.cgi?id=459674
->
-> (A similar issue also happens when building Firefox since v3.8.0. But
-> because Firefox's build process doesn't raise an exception it just dies
-> at random points without giving a clue.)
->
-> Now the question is: Could this be a kernel bug? Maybe in the TTY layer?
->
-> Unfortunately the issue is not easily reproducible and a git-bisect is
-> out of the question.
->
+
 
