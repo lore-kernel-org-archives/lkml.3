@@ -1,101 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933680Ab3FFMUZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 08:20:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15243 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933377Ab3FFMUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 08:20:21 -0400
-Date: Thu, 6 Jun 2013 15:20:46 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: netdev@vger.kernel.org
-Cc: Asias He <asias@redhat.com>, David Miller <davem@davemloft.net>,
-        Tommi Rantala <tt.rantala@gmail.com>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH net 2/2] vhost: fix ubuf_info cleanup
-Message-ID: <1370521145-9723-3-git-send-email-mst@redhat.com>
-References: <1370521145-9723-1-git-send-email-mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370521145-9723-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+	id S933574Ab3FFMVP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 08:21:15 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:43772 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933428Ab3FFMSP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 08:18:15 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 26/33] ARM: ux500: Remove AUXDATA relating to SDI (MMC) clock-name bindings
+Date: Thu,  6 Jun 2013 13:17:14 +0100
+Message-Id: <1370521041-32318-27-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
+References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vhost_net_clear_ubuf_info didn't clear ubuf_info
-after kfree, this could trigger double free.
-Fix this and simplify this code to make it more robust: make sure
-ubuf info is always freed through vhost_net_clear_ubuf_info.
-
-Reported-by: Tommi Rantala <tt.rantala@gmail.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/vhost/net.c | 22 +++++++---------------
- 1 file changed, 7 insertions(+), 15 deletions(-)
+ arch/arm/mach-ux500/cpu-db8500.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 6b00f64..7fc47f7 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -155,14 +155,11 @@ static void vhost_net_ubuf_put_and_wait(struct vhost_net_ubuf_ref *ubufs)
- 
- static void vhost_net_clear_ubuf_info(struct vhost_net *n)
- {
--
--	bool zcopy;
- 	int i;
- 
--	for (i = 0; i < n->dev.nvqs; ++i) {
--		zcopy = vhost_net_zcopy_mask & (0x1 << i);
--		if (zcopy)
--			kfree(n->vqs[i].ubuf_info);
-+	for (i = 0; i < VHOST_NET_VQ_MAX; ++i) {
-+		kfree(n->vqs[i].ubuf_info);
-+		n->vqs[i].ubuf_info = NULL;
- 	}
- }
- 
-@@ -171,7 +168,7 @@ int vhost_net_set_ubuf_info(struct vhost_net *n)
- 	bool zcopy;
- 	int i;
- 
--	for (i = 0; i < n->dev.nvqs; ++i) {
-+	for (i = 0; i < VHOST_NET_VQ_MAX; ++i) {
- 		zcopy = vhost_net_zcopy_mask & (0x1 << i);
- 		if (!zcopy)
- 			continue;
-@@ -183,12 +180,7 @@ int vhost_net_set_ubuf_info(struct vhost_net *n)
- 	return 0;
- 
- err:
--	while (i--) {
--		zcopy = vhost_net_zcopy_mask & (0x1 << i);
--		if (!zcopy)
--			continue;
--		kfree(n->vqs[i].ubuf_info);
--	}
-+	vhost_net_clear_ubuf_info(n);
- 	return -ENOMEM;
- }
- 
-@@ -196,12 +188,12 @@ void vhost_net_vq_reset(struct vhost_net *n)
- {
- 	int i;
- 
-+	vhost_net_clear_ubuf_info(n);
-+
- 	for (i = 0; i < VHOST_NET_VQ_MAX; i++) {
- 		n->vqs[i].done_idx = 0;
- 		n->vqs[i].upend_idx = 0;
- 		n->vqs[i].ubufs = NULL;
--		kfree(n->vqs[i].ubuf_info);
--		n->vqs[i].ubuf_info = NULL;
- 		n->vqs[i].vhost_hlen = 0;
- 		n->vqs[i].sock_hlen = 0;
- 	}
+diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
+index 3efb326..aa325d8 100644
+--- a/arch/arm/mach-ux500/cpu-db8500.c
++++ b/arch/arm/mach-ux500/cpu-db8500.c
+@@ -220,10 +220,6 @@ static struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
+ 	OF_DEV_AUXDATA("arm,cortex-a9-pmu", 0, "arm-pmu", &db8500_pmu_platdata),
+ 	/* Requires DMA bindings. */
+ 	OF_DEV_AUXDATA("arm,pl022", 0x80002000, "ssp0",  &ssp0_plat),
+-	OF_DEV_AUXDATA("arm,pl18x", 0x80126000, "sdi0",  &mop500_sdi0_data),
+-	OF_DEV_AUXDATA("arm,pl18x", 0x80118000, "sdi1",  &mop500_sdi1_data),
+-	OF_DEV_AUXDATA("arm,pl18x", 0x80005000, "sdi2",  &mop500_sdi2_data),
+-	OF_DEV_AUXDATA("arm,pl18x", 0x80114000, "sdi4",  &mop500_sdi4_data),
+ 	/* Requires clock name bindings. */
+ 	OF_DEV_AUXDATA("st,nomadik-i2c", 0x80004000, "nmk-i2c.0", NULL),
+ 	OF_DEV_AUXDATA("st,nomadik-i2c", 0x80122000, "nmk-i2c.1", NULL),
 -- 
-MST
+1.7.10.4
 
