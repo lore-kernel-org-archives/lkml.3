@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab3FFXk7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 19:40:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54624 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab3FFXk6 (ORCPT
+	id S1753312Ab3FFXsg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 19:48:36 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:48936 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab3FFXsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 19:40:58 -0400
-Date: Thu, 6 Jun 2013 16:40:57 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: usbutils 007 release
-Message-ID: <20130606234057.GA14840@kroah.com>
+	Thu, 6 Jun 2013 19:48:35 -0400
+Date: Thu, 6 Jun 2013 16:48:32 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@openvz.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, devel@openvz.org
+Subject: Re: [PATCH v7 07/11] sched: account guest time per-cgroup as well.
+Message-ID: <20130606234832.GQ5045@htj.dyndns.org>
+References: <1369825402-31046-1-git-send-email-glommer@openvz.org>
+ <1369825402-31046-8-git-send-email-glommer@openvz.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1369825402-31046-8-git-send-email-glommer@openvz.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's the 007 release of usbutils.
+On Wed, May 29, 2013 at 03:03:18PM +0400, Glauber Costa wrote:
+> We already track multiple tick statistics per-cgroup, using
+> the task_group_account_field facility. This patch accounts
+> guest_time in that manner as well.
+> 
+> Signed-off-by: Glauber Costa <glommer@openvz.org>
+> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> CC: Paul Turner <pjt@google.com>
+> ---
+>  kernel/sched/cputime.c | 10 ++++------
+>  1 file changed, 4 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+> index 74a44ef..e653e52 100644
+> --- a/kernel/sched/cputime.c
+> +++ b/kernel/sched/cputime.c
+> @@ -183,8 +183,6 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
+>  static void account_guest_time(struct task_struct *p, cputime_t cputime,
+>  			       cputime_t cputime_scaled)
+>  {
+> -	u64 *cpustat = kcpustat_this_cpu->cpustat;
+> -
+>  	/* Add guest time to process. */
+>  	p->utime += cputime;
+>  	p->utimescaled += cputime_scaled;
+> @@ -193,11 +191,11 @@ static void account_guest_time(struct task_struct *p, cputime_t cputime,
+>  
+>  	/* Add guest time to cpustat. */
+>  	if (TASK_NICE(p) > 0) {
+> -		cpustat[CPUTIME_NICE] += (__force u64) cputime;
+> -		cpustat[CPUTIME_GUEST_NICE] += (__force u64) cputime;
+> +		task_group_account_field(p, CPUTIME_NICE, (__force u64) cputime);
+> +		task_group_account_field(p, CPUTIME_GUEST, (__force u64) cputime);
+>  	} else {
+> -		cpustat[CPUTIME_USER] += (__force u64) cputime;
+> -		cpustat[CPUTIME_GUEST] += (__force u64) cputime;
+> +		task_group_account_field(p, CPUTIME_USER, (__force u64) cputime);
+> +		task_group_account_field(p, CPUTIME_GUEST, (__force u64) cputime);
 
-Nothing major over the 006 release, just a bunch of tiny bug fixes that
-have trickled in over the past year.  The short changelog can be found
-below.
+This is a behavior change, right?  It seems sane to me but maybe the
+patch description should be more explicit?
 
-The package can be downladed from kernel.org:
-        http://www.kernel.org/pub/linux/utils/usb/usbutils/
+Thanks.
 
-The source tree for usbutils can be found on both kernel.org and
-github.com if you want to fork it and send us changes easier:
-	http://git.kernel.org/?p=linux/kernel/git/gregkh/usbutils.git
-	http://github.com/gregkh/usbutils/tree/master
-
-thanks,
-
-greg k-h
-
------------
-
-Aurelien Jarno (1):
-      usb-devices: correctly quote driver path
-
-Bjørn Mork (4):
-      lsusb: decode CDC MBIM descriptor
-      lsusb: decode CDC NCM functional descriptor
-      lsusb: decode CDC Command Set descriptor
-      usb-devices: avoid numbers being seen as octal by printf
-
-Daniel Mack (1):
-      lsusb: parse bmFormats inside UAC2 interface headers as hex
-
-Greg Kroah-Hartman (12):
-      do_release notes
-      Merge pull request #11 from bmork/mbim
-      update of usb.ids file from upstream
-      Merge pull request #13 from bmork/for-greg
-      remove devtree logic
-      Merge pull request #14 from SpecLad/master
-      Merge pull request #16 from zonque/uac2
-      Merge pull request #15 from lnykryn/master
-      Merge pull request #17 from hegge/uac1-misplaced-endpoint
-      Merge pull request #18 from jethrogb/master
-      usb.ids update
-      usb.ids add BlueZ Host stack device id.
-
-Jethro Beekman (1):
-      Fix lsusb -t potentially not listing all devices
-
-Lukas Nykryn (1):
-      lsusb-t: make sure that interfaces are added to lists only once
-
-Sarah Sharp (2):
-      lsusb: Fix USB 3.0 link state reporting.
-      lsusb: Fix bug in USB 2.0 extended caps descriptor.
-
-Torstein Hegge (1):
-      lsusb: Parse misplaced UAC1 AudioControl Endpoint Descriptor
-
-Роман Донченко (1):
-      lsusb: Support non-ASCII string descriptors.
-
+-- 
+tejun
