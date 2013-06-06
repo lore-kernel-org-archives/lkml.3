@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab3FFUHF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 16:07:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52276 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752101Ab3FFUHD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 16:07:03 -0400
-Date: Thu, 6 Jun 2013 13:07:01 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: mmotm 2013-06-05-17-24 uploaded (rtc)
-Message-Id: <20130606130701.a17b25ed7cabde2fc9621800@linux-foundation.org>
-In-Reply-To: <51B010B2.10309@infradead.org>
-References: <20130606002636.6746F5A41AE@corp2gmr1-2.hot.corp.google.com>
-	<51B010B2.10309@infradead.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753913Ab3FFUHh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 16:07:37 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50000 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752101Ab3FFUHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 16:07:22 -0400
+Date: Thu, 6 Jun 2013 22:07:05 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Linux EFI <linux-efi@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
+        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH 3/4] x86, efi: Add an efi= kernel command line parameter
+Message-ID: <20130606200705.GO20972@pd.tnic>
+References: <1370177770-26661-1-git-send-email-bp@alien8.de>
+ <1370177770-26661-4-git-send-email-bp@alien8.de>
+ <20130606104224.GH30420@console-pimps.org>
+ <20130606132603.GD20972@pd.tnic>
+ <20130606175052.GA1285@srcf.ucam.org>
+ <20130606185140.GK20972@pd.tnic>
+ <20130606193548.GA2946@srcf.ucam.org>
+ <20130606194134.GN20972@pd.tnic>
+ <20130606195450.GA3252@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130606195450.GA3252@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 05 Jun 2013 21:31:46 -0700 Randy Dunlap <rdunlap@infradead.org> wrote:
+On Thu, Jun 06, 2013 at 08:54:50PM +0100, Matthew Garrett wrote:
+> We want both to be available when we're making the call, but I think
+> we should probably enter via the high addresses. The only reason we're
+> doing this at all is that some systems don't update all of their
+> pointers from physical mode, and we'd prefer them to work rather than
+> fault...
 
-> On 06/05/13 17:26, akpm@linux-foundation.org wrote:
-> > The mm-of-the-moment snapshot 2013-06-05-17-24 has been uploaded to
-> > 
-> >    http://www.ozlabs.org/~akpm/mmotm/
-> > 
-> > mmotm-readme.txt says
-> > 
-> > README for mm-of-the-moment:
-> > 
-> > http://www.ozlabs.org/~akpm/mmotm/
-> > 
-> 
-> on i386 when CONFIG_PM is not enabled:
-> 
-> drivers/rtc/class.c:339:18: error: lvalue required as unary '&' operand
-> 
-> due to:
-> #define rtc_class_dev_pm_ops	NULL
+Actually, we do the 1:1 thing so that EFI runtime works in a kexec
+kernel too. Which won't work if we use the high addresses.
 
-hm, OK, thanks.  Shuah's "drivers/rtc/class: convert from Legacy pm ops
-to dev_pm_ops" is busted and I'm not seeing a quick fix - the ifdeffery
-in drivers/rtc/class.c is a bit odd (uses CONFIG_PM instead of
-CONFIG_PM_SLEEP, for a start).  I'll drop it.
+However, if we can use the 1:1 map *after* SetVirtualAddressMap() has
+been called with the high mappings, then my issue is solved - we drop
+to using 1:1 in the kexec kernel only. But I don't think that is the
+case...
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
