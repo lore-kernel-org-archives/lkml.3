@@ -1,321 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933193Ab3FFMwp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 08:52:45 -0400
-Received: from smtp89.ord1c.emailsrvr.com ([108.166.43.89]:49601 "EHLO
-	smtp89.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932996Ab3FFMwm (ORCPT
+	id S933281Ab3FFMxa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 08:53:30 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:59350 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933121Ab3FFMx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 08:52:42 -0400
-From: Mark Langsdorf <mark.langsdorf@calxeda.com>
-To: tj@kernel.org, linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        grant.likely@linaro.org, rob.herring@calxeda.com,
-        devicetree-discuss@lists.ozlabs.org
-Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Subject: [PATCH 2/2 v4] sata highbank: add bit-banged SGPIO driver support
-Date: Thu,  6 Jun 2013 07:52:41 -0500
-Message-Id: <1370523161-32449-1-git-send-email-mark.langsdorf@calxeda.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1369945051-2582-2-git-send-email-mark.langsdorf@calxeda.com>
-References: <1369945051-2582-2-git-send-email-mark.langsdorf@calxeda.com>
+	Thu, 6 Jun 2013 08:53:27 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Imre Deak <imre.deak@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Douglas Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org
+Subject: [PATCH 1/3] lib/scatterlist: introduce sg_pcopy_from_buffer() and sg_pcopy_to_buffer()
+Date: Thu,  6 Jun 2013 21:52:56 +0900
+Message-Id: <1370523178-5437-2-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1370523178-5437-1-git-send-email-akinobu.mita@gmail.com>
+References: <1370523178-5437-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Highbank supports SGPIO by bit-banging out the SGPIO signals over
-three GPIO pins defined in the DTB. Add support for this SGPIO
-functionality.
+The only difference between sg_pcopy_{from,to}_buffer() and
+sg_copy_{from,to}_buffer() is an additional argument that specifies
+the number of bytes to skip the SG list before copying.
 
-Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Imre Deak <imre.deak@intel.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: linux-crypto@vger.kernel.org
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Douglas Gilbert <dgilbert@interlog.com>
+Cc: linux-scsi@vger.kernel.org
 ---
-Changes from v3:
-	Correctly mask the activity bits to clear bits in ecx_parse_sgpio()
-Changes from v2:
-	Added plat_data to ahci_host_priv
-	Moved driver specific data to plat_data and got rid of ecx_host_priv
-	Corrected order of operations in ecx_transmit_led_message
-	Standardized bit operations in ecx_parse_sgpio
-Changes from v1:
-	Moved all global variables to a private structure
-	Replaced all magic numbers with defined symbols
-	Added some comments
-	Removed the default ordering of ports to LEDs
-	Fixed several bugs in the code to read led-order
-	Made highbank_set_em_messages static
+ include/linux/scatterlist.h |   5 ++
+ lib/scatterlist.c           | 109 ++++++++++++++++++++++++++++++++++++--------
+ 2 files changed, 94 insertions(+), 20 deletions(-)
 
- .../devicetree/bindings/ata/ahci-platform.txt      |   5 +
- arch/arm/boot/dts/ecx-common.dtsi                  |   2 +
- drivers/ata/ahci.h                                 |   1 +
- drivers/ata/sata_highbank.c                        | 161 ++++++++++++++++++++-
- 4 files changed, 163 insertions(+), 6 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-index b519f9b..3ec0c5c 100644
---- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
-+++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-@@ -12,6 +12,11 @@ Optional properties:
- - calxeda,port-phys: phandle-combophy and lane assignment, which maps each
- 			SATA port to a combophy and a lane within that
- 			combophy
-+- calxeda,sgpio-gpio: phandle-gpio bank, bit offset, and default on or off,
-+			which indicates that the driver supports SGPIO
-+			indicator lights using the indicated GPIOs
-+- calxeda,led-order : a u32 array that map port numbers to offsets within the
-+			SGPIO bitstream.
- - dma-coherent      : Present if dma operations are coherent
+diff --git a/include/linux/scatterlist.h b/include/linux/scatterlist.h
+index 5951e3f..f5dee42 100644
+--- a/include/linux/scatterlist.h
++++ b/include/linux/scatterlist.h
+@@ -241,6 +241,11 @@ size_t sg_copy_from_buffer(struct scatterlist *sgl, unsigned int nents,
+ size_t sg_copy_to_buffer(struct scatterlist *sgl, unsigned int nents,
+ 			 void *buf, size_t buflen);
  
- Example:
-diff --git a/arch/arm/boot/dts/ecx-common.dtsi b/arch/arm/boot/dts/ecx-common.dtsi
-index d61b535..e8559b7 100644
---- a/arch/arm/boot/dts/ecx-common.dtsi
-+++ b/arch/arm/boot/dts/ecx-common.dtsi
-@@ -33,6 +33,8 @@
- 			calxeda,port-phys = <&combophy5 0 &combophy0 0
- 					     &combophy0 1 &combophy0 2
- 					     &combophy0 3>;
-+			calxeda,sgpio-gpio =<&gpioh 5 1 &gpioh 6 1 &gpioh 7 1>;
-+			calxeda,led-order = <4 0 1 2 3>;
- 		};
- 
- 		sdhci@ffe0e000 {
-diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-index 10b14d4..6144b93 100644
---- a/drivers/ata/ahci.h
-+++ b/drivers/ata/ahci.h
-@@ -321,6 +321,7 @@ struct ahci_host_priv {
- 	u32			em_buf_sz;	/* EM buffer size in byte */
- 	u32			em_msg_type;	/* EM message type */
- 	struct clk		*clk;		/* Only for platforms supporting clk */
-+	void			*plat_data;	/* Other platform data */
- };
- 
- extern int ahci_ignore_sss;
-diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
-index b20aa96..8de8ac8 100644
---- a/drivers/ata/sata_highbank.c
-+++ b/drivers/ata/sata_highbank.c
-@@ -33,6 +33,9 @@
- #include <linux/interrupt.h>
- #include <linux/delay.h>
- #include <linux/export.h>
-+#include <linux/gpio.h>
-+#include <linux/of_gpio.h>
++size_t sg_pcopy_from_buffer(struct scatterlist *sgl, unsigned int nents,
++			    void *buf, size_t buflen, off_t skip);
++size_t sg_pcopy_to_buffer(struct scatterlist *sgl, unsigned int nents,
++			  void *buf, size_t buflen, off_t skip);
 +
- #include "ahci.h"
+ /*
+  * Maximum number of entries that will be allocated in one piece, if
+  * a list larger than this is required then chaining will be utilized.
+diff --git a/lib/scatterlist.c b/lib/scatterlist.c
+index a1cf8ca..3b40b72 100644
+--- a/lib/scatterlist.c
++++ b/lib/scatterlist.c
+@@ -453,6 +453,47 @@ void sg_miter_start(struct sg_mapping_iter *miter, struct scatterlist *sgl,
+ }
+ EXPORT_SYMBOL(sg_miter_start);
  
- #define CPHY_MAP(dev, addr) ((((dev) & 0x1f) << 7) | (((addr) >> 9) & 0x7f))
-@@ -66,6 +69,146 @@ struct phy_lane_info {
- };
- static struct phy_lane_info port_data[CPHY_PORT_COUNT];
- 
-+static DEFINE_SPINLOCK(sgpio_lock);
-+#define SCLOCK				0
-+#define SLOAD				1
-+#define SDATA				2
-+#define SGPIO_PINS			3
-+#define SGPIO_PORTS			8
-+
-+/* can be cast as an ahci_host_priv for compatibility with most functions */
-+struct ecx_plat_data {
-+	u32		n_ports;
-+	unsigned	sgpio_gpio[SGPIO_PINS];
-+	u32		sgpio_pattern;
-+	u32		port_to_sgpio[SGPIO_PORTS];
-+};
-+
-+#define SGPIO_SIGNALS			3
-+#define ECX_ACTIVITY_BITS		0x300000
-+#define ECX_ACTIVITY_SHIFT		2
-+#define ECX_LOCATE_BITS			0x80000
-+#define ECX_LOCATE_SHIFT		1
-+#define ECX_FAULT_BITS			0x400000
-+#define ECX_FAULT_SHIFT			0
-+static inline int sgpio_bit_shift(struct ecx_plat_data *pdata, u32 port,
-+				u32 shift)
++static bool sg_miter_get_next_page(struct sg_mapping_iter *miter)
 +{
-+	return 1 << (3 * pdata->port_to_sgpio[port] + shift);
-+}
++	if (!miter->__remaining) {
++		struct scatterlist *sg;
++		unsigned long pgoffset;
 +
-+static void ecx_parse_sgpio(struct ecx_plat_data *pdata, u32 port, u32 state)
-+{
-+	if (state & ECX_ACTIVITY_BITS)
-+		pdata->sgpio_pattern |= sgpio_bit_shift(pdata, port,
-+						ECX_ACTIVITY_SHIFT);
-+	else
-+		pdata->sgpio_pattern &= ~sgpio_bit_shift(pdata, port,
-+						ECX_ACTIVITY_SHIFT);
-+	if (state & ECX_LOCATE_BITS)
-+		pdata->sgpio_pattern |= sgpio_bit_shift(pdata, port,
-+						ECX_LOCATE_SHIFT);
-+	else
-+		pdata->sgpio_pattern &= ~sgpio_bit_shift(pdata, port,
-+						ECX_LOCATE_SHIFT);
-+	if (state & ECX_FAULT_BITS)
-+		pdata->sgpio_pattern |= sgpio_bit_shift(pdata, port,
-+						ECX_FAULT_SHIFT);
-+	else
-+		pdata->sgpio_pattern &= ~sgpio_bit_shift(pdata, port,
-+						ECX_FAULT_SHIFT);
-+}
++		if (!__sg_page_iter_next(&miter->piter))
++			return false;
 +
-+/*
-+ * Tell the LED controller that the signal has changed by raising the clock
-+ * line for 50 uS and then lowering it for 50 uS.
-+ */
-+static void ecx_led_cycle_clock(struct ecx_plat_data *pdata)
-+{
-+	gpio_set_value(pdata->sgpio_gpio[SCLOCK], 1);
-+	udelay(50);
-+	gpio_set_value(pdata->sgpio_gpio[SCLOCK], 0);
-+	udelay(50);
-+}
++		sg = miter->piter.sg;
++		pgoffset = miter->piter.sg_pgoffset;
 +
-+static ssize_t ecx_transmit_led_message(struct ata_port *ap, u32 state,
-+					ssize_t size)
-+{
-+	struct ahci_host_priv *hpriv =  ap->host->private_data;
-+	struct ecx_plat_data *pdata = (struct ecx_plat_data *) hpriv->plat_data;
-+	struct ahci_port_priv *pp = ap->private_data;
-+	unsigned long flags;
-+	int pmp, i;
-+	struct ahci_em_priv *emp;
-+	u32 sgpio_out;
-+
-+	/* get the slot number from the message */
-+	pmp = (state & EM_MSG_LED_PMP_SLOT) >> 8;
-+	if (pmp < EM_MAX_SLOTS)
-+		emp = &pp->em_priv[pmp];
-+	else
-+		return -EINVAL;
-+
-+	if (!(hpriv->em_msg_type & EM_MSG_TYPE_LED))
-+		return size;
-+
-+	spin_lock_irqsave(&sgpio_lock, flags);
-+	ecx_parse_sgpio(pdata, ap->port_no, state);
-+	sgpio_out = pdata->sgpio_pattern;
-+	gpio_set_value(pdata->sgpio_gpio[SLOAD], 1);
-+	ecx_led_cycle_clock(pdata);
-+	gpio_set_value(pdata->sgpio_gpio[SLOAD], 0);
-+	/*
-+	 * bit-bang out the SGPIO pattern, by consuming a bit and then
-+	 * clocking it out.
-+	 */
-+	for (i = 0; i < (SGPIO_SIGNALS * pdata->n_ports); i++) {
-+		gpio_set_value(pdata->sgpio_gpio[SDATA], sgpio_out & 1);
-+		sgpio_out >>= 1;
-+		ecx_led_cycle_clock(pdata);
++		miter->__offset = pgoffset ? 0 : sg->offset;
++		miter->__remaining = sg->offset + sg->length -
++				(pgoffset << PAGE_SHIFT) - miter->__offset;
++		miter->__remaining = min_t(unsigned long, miter->__remaining,
++					   PAGE_SIZE - miter->__offset);
 +	}
 +
-+	/* save off new led state for port/slot */
-+	emp->led_state = state;
-+
-+	spin_unlock_irqrestore(&sgpio_lock, flags);
-+	return size;
++	return true;
 +}
 +
-+static void highbank_set_em_messages(struct device *dev,
-+					struct ahci_host_priv *hpriv,
-+					struct ata_port_info *pi)
++static bool sg_miter_seek(struct sg_mapping_iter *miter, off_t offset)
 +{
-+	struct device_node *np = dev->of_node;
-+	struct ecx_plat_data *pdata = hpriv->plat_data;
-+	int i;
-+	int err;
++	WARN_ON(miter->addr);
 +
-+	for (i = 0; i < SGPIO_PINS; i++) {
-+		err = of_get_named_gpio(np, "calxeda,sgpio-gpio", i);
-+		if (IS_ERR_VALUE(err))
-+			return;
++	while (offset) {
++		off_t consumed;
 +
-+		pdata->sgpio_gpio[i] = err;
-+		err = gpio_request(pdata->sgpio_gpio[i], "CX SGPIO");
-+		if (err) {
-+			pr_err("sata_highbank gpio_request %d failed: %d\n",
-+					i, err);
-+			return;
-+		}
-+		gpio_direction_output(pdata->sgpio_gpio[i], 1);
++		if (!sg_miter_get_next_page(miter))
++			return false;
++
++		consumed = min_t(off_t, offset, miter->__remaining);
++		miter->__offset += consumed;
++		miter->__remaining -= consumed;
++		offset -= consumed;
 +	}
-+	of_property_read_u32_array(np, "calxeda,led-order",
-+						pdata->port_to_sgpio,
-+						pdata->n_ports);
 +
-+	/* store em_loc */
-+	hpriv->em_loc = 0;
-+	hpriv->em_buf_sz = 4;
-+	hpriv->em_msg_type = EM_MSG_TYPE_LED;
-+	pi->flags |= ATA_FLAG_EM | ATA_FLAG_SW_ACTIVITY;
++	return true;
 +}
 +
- static u32 __combo_phy_reg_read(u8 sata_port, u32 addr)
- {
- 	u32 data;
-@@ -241,6 +384,7 @@ static int ahci_highbank_hardreset(struct ata_link *link, unsigned int *class,
- static struct ata_port_operations ahci_highbank_ops = {
- 	.inherits		= &ahci_ops,
- 	.hardreset		= ahci_highbank_hardreset,
-+	.transmit_led_message   = ecx_transmit_led_message,
- };
- 
- static const struct ata_port_info ahci_highbank_port_info = {
-@@ -264,12 +408,13 @@ static int ahci_highbank_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
- 	struct ahci_host_priv *hpriv;
-+	struct ecx_plat_data *pdata;
- 	struct ata_host *host;
- 	struct resource *mem;
- 	int irq;
--	int n_ports;
- 	int i;
- 	int rc;
-+	u32 n_ports;
- 	struct ata_port_info pi = ahci_highbank_port_info;
- 	const struct ata_port_info *ppi[] = { &pi, NULL };
- 
-@@ -290,6 +435,11 @@ static int ahci_highbank_probe(struct platform_device *pdev)
- 		dev_err(dev, "can't alloc ahci_host_priv\n");
- 		return -ENOMEM;
- 	}
-+	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata) {
-+		dev_err(dev, "can't alloc ecx_plat_data\n");
-+		return -ENOMEM;
-+	}
- 
- 	hpriv->flags |= (unsigned long)pi.private_data;
- 
-@@ -313,8 +463,6 @@ static int ahci_highbank_probe(struct platform_device *pdev)
- 	if (hpriv->cap & HOST_CAP_PMP)
- 		pi.flags |= ATA_FLAG_PMP;
- 
--	ahci_set_em_messages(hpriv, &pi);
--
- 	/* CAP.NP sometimes indicate the index of the last enabled
- 	 * port, at other times, that of the last possible port, so
- 	 * determining the maximum port number requires looking at
-@@ -322,6 +470,10 @@ static int ahci_highbank_probe(struct platform_device *pdev)
+ /**
+  * sg_miter_next - proceed mapping iterator to the next mapping
+  * @miter: sg mapping iter to proceed
+@@ -478,22 +519,9 @@ bool sg_miter_next(struct sg_mapping_iter *miter)
+ 	 * Get to the next page if necessary.
+ 	 * __remaining, __offset is adjusted by sg_miter_stop
  	 */
- 	n_ports = max(ahci_nr_ports(hpriv->cap), fls(hpriv->port_map));
- 
-+	pdata->n_ports = n_ports;
-+	hpriv->plat_data = pdata;
-+	highbank_set_em_messages(dev, hpriv, &pi);
-+
- 	host = ata_host_alloc_pinfo(dev, ppi, n_ports);
- 	if (!host) {
- 		rc = -ENOMEM;
-@@ -333,9 +485,6 @@ static int ahci_highbank_probe(struct platform_device *pdev)
- 	if (!(hpriv->cap & HOST_CAP_SSS) || ahci_ignore_sss)
- 		host->flags |= ATA_HOST_PARALLEL_SCAN;
- 
--	if (pi.flags & ATA_FLAG_EM)
--		ahci_reset_em(host);
+-	if (!miter->__remaining) {
+-		struct scatterlist *sg;
+-		unsigned long pgoffset;
 -
- 	for (i = 0; i < host->n_ports; i++) {
- 		struct ata_port *ap = host->ports[i];
+-		if (!__sg_page_iter_next(&miter->piter))
+-			return false;
+-
+-		sg = miter->piter.sg;
+-		pgoffset = miter->piter.sg_pgoffset;
++	if (!sg_miter_get_next_page(miter))
++		return false;
  
+-		miter->__offset = pgoffset ? 0 : sg->offset;
+-		miter->__remaining = sg->offset + sg->length -
+-				(pgoffset << PAGE_SHIFT) - miter->__offset;
+-		miter->__remaining = min_t(unsigned long, miter->__remaining,
+-					   PAGE_SIZE - miter->__offset);
+-	}
+ 	miter->page = sg_page_iter_page(&miter->piter);
+ 	miter->consumed = miter->length = miter->__remaining;
+ 
+@@ -552,14 +580,16 @@ EXPORT_SYMBOL(sg_miter_stop);
+  * @nents:		 Number of SG entries
+  * @buf:		 Where to copy from
+  * @buflen:		 The number of bytes to copy
+- * @to_buffer: 		 transfer direction (non zero == from an sg list to a
+- * 			 buffer, 0 == from a buffer to an sg list
++ * @skip:		 Number of bytes to skip before copying
++ * @to_buffer:		 transfer direction (true == from an sg list to a
++ *			 buffer, false == from a buffer to an sg list
+  *
+  * Returns the number of copied bytes.
+  *
+  **/
+ static size_t sg_copy_buffer(struct scatterlist *sgl, unsigned int nents,
+-			     void *buf, size_t buflen, int to_buffer)
++			     void *buf, size_t buflen, off_t skip,
++			     bool to_buffer)
+ {
+ 	unsigned int offset = 0;
+ 	struct sg_mapping_iter miter;
+@@ -573,6 +603,9 @@ static size_t sg_copy_buffer(struct scatterlist *sgl, unsigned int nents,
+ 
+ 	sg_miter_start(&miter, sgl, nents, sg_flags);
+ 
++	if (!sg_miter_seek(&miter, skip))
++		return false;
++
+ 	local_irq_save(flags);
+ 
+ 	while (sg_miter_next(&miter) && offset < buflen) {
+@@ -607,7 +640,7 @@ static size_t sg_copy_buffer(struct scatterlist *sgl, unsigned int nents,
+ size_t sg_copy_from_buffer(struct scatterlist *sgl, unsigned int nents,
+ 			   void *buf, size_t buflen)
+ {
+-	return sg_copy_buffer(sgl, nents, buf, buflen, 0);
++	return sg_copy_buffer(sgl, nents, buf, buflen, 0, false);
+ }
+ EXPORT_SYMBOL(sg_copy_from_buffer);
+ 
+@@ -624,6 +657,42 @@ EXPORT_SYMBOL(sg_copy_from_buffer);
+ size_t sg_copy_to_buffer(struct scatterlist *sgl, unsigned int nents,
+ 			 void *buf, size_t buflen)
+ {
+-	return sg_copy_buffer(sgl, nents, buf, buflen, 1);
++	return sg_copy_buffer(sgl, nents, buf, buflen, 0, true);
+ }
+ EXPORT_SYMBOL(sg_copy_to_buffer);
++
++/**
++ * sg_pcopy_from_buffer - Copy from a linear buffer to an SG list
++ * @sgl:		 The SG list
++ * @nents:		 Number of SG entries
++ * @buf:		 Where to copy from
++ * @skip:		 Number of bytes to skip before copying
++ * @buflen:		 The number of bytes to copy
++ *
++ * Returns the number of copied bytes.
++ *
++ **/
++size_t sg_pcopy_from_buffer(struct scatterlist *sgl, unsigned int nents,
++			    void *buf, size_t buflen, off_t skip)
++{
++	return sg_copy_buffer(sgl, nents, buf, buflen, skip, false);
++}
++EXPORT_SYMBOL(sg_pcopy_from_buffer);
++
++/**
++ * sg_pcopy_to_buffer - Copy from an SG list to a linear buffer
++ * @sgl:		 The SG list
++ * @nents:		 Number of SG entries
++ * @buf:		 Where to copy to
++ * @skip:		 Number of bytes to skip before copying
++ * @buflen:		 The number of bytes to copy
++ *
++ * Returns the number of copied bytes.
++ *
++ **/
++size_t sg_pcopy_to_buffer(struct scatterlist *sgl, unsigned int nents,
++			  void *buf, size_t buflen, off_t skip)
++{
++	return sg_copy_buffer(sgl, nents, buf, buflen, skip, true);
++}
++EXPORT_SYMBOL(sg_pcopy_to_buffer);
 -- 
 1.8.1.4
 
