@@ -1,169 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933261Ab3FFLt5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 07:49:57 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:33824 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933024Ab3FFLrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 07:47:43 -0400
-From: Robin Holt <holt@sgi.com>
-To: akpm@linux-foundation.org
-Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russ Anderson <rja@sgi.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH -v11 resend 05/11] checkpatch.pl the new kernel/reboot.c file.
-Date: Thu,  6 Jun 2013 06:47:18 -0500
-Message-Id: <1370519244-49918-6-git-send-email-holt@sgi.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1370519244-49918-1-git-send-email-holt@sgi.com>
-References: <1370519244-49918-1-git-send-email-holt@sgi.com>
+	id S933074Ab3FFLuk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 07:50:40 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:42587 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932857Ab3FFLrj convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Thu, 6 Jun 2013 07:47:39 -0400
+Message-Id: <51B092F702000078000DBDA8@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Thu, 06 Jun 2013 12:47:35 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: <david.vrabel@citrix.com>, <roger.pau@citrix.com>,
+        "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>,
+        <stable@vger.kernel.org>
+Subject: Re: [PATCH] xen/blkback: Check for insane amounts of request
+ on the ring.
+References: <1370375826-7311-1-git-send-email-konrad.wilk@oracle.com>
+ <51AF7A7502000078000DB95C@nat28.tlf.novell.com>
+ <20130605173541.GA12812@phenom.dumpdata.com>
+In-Reply-To: <20130605173541.GA12812@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get the new file to pass scripts/checkpatch.pl
+>>> On 05.06.13 at 19:35, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> @@ -230,6 +231,7 @@ static int xen_blkif_map(struct xen_blkif *blkif, unsigned long shared_page,
+>  static void xen_blkif_disconnect(struct xen_blkif *blkif)
+>  {
+>  	if (blkif->xenblkd) {
+> +		wake_up(&blkif->shutdown_wq);
+>  		kthread_stop(blkif->xenblkd);
+>  		blkif->xenblkd = NULL;
+>  	}
 
-Signed-off-by: Robin Holt <holt@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Russ Anderson <rja@sgi.com>
-Cc: Robin Holt <holt@sgi.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: the arch/x86 maintainers <x86@kernel.org>
-Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+Btw., wouldn't the wake_up() better be done after the kthread_stop(),
+so that when the corresponding wait_event_interruptible() checks
+whether to exit the terminating kthread_should_stop() is guaranteed
+to evaluate to true (otherwise I think there's potential for it to never
+exit)?
 
----
-
-Changes since v6:
- - Removed last remaining line length warning.
----
- include/linux/reboot.h |  2 +-
- kernel/reboot.c        | 28 +++++++++++++---------------
- 2 files changed, 14 insertions(+), 16 deletions(-)
-
-diff --git a/include/linux/reboot.h b/include/linux/reboot.h
-index 23b3630..c6eba21 100644
---- a/include/linux/reboot.h
-+++ b/include/linux/reboot.h
-@@ -26,7 +26,7 @@ extern void machine_shutdown(void);
- struct pt_regs;
- extern void machine_crash_shutdown(struct pt_regs *);
- 
--/* 
-+/*
-  * Architecture independent implemenations of sys_reboot commands.
-  */
- 
-diff --git a/kernel/reboot.c b/kernel/reboot.c
-index 0616483..abb6a04 100644
---- a/kernel/reboot.c
-+++ b/kernel/reboot.c
-@@ -4,6 +4,8 @@
-  *  Copyright (C) 2013  Linus Torvalds
-  */
- 
-+#define pr_fmt(fmt)	"reboot: " fmt
-+
- #include <linux/export.h>
- #include <linux/kexec.h>
- #include <linux/kmod.h>
-@@ -114,9 +116,9 @@ void kernel_restart(char *cmd)
- 	migrate_to_reboot_cpu();
- 	syscore_shutdown();
- 	if (!cmd)
--		printk(KERN_EMERG "Restarting system.\n");
-+		pr_emerg("Restarting system\n");
- 	else
--		printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
-+		pr_emerg("Restarting system with command '%s'\n", cmd);
- 	kmsg_dump(KMSG_DUMP_RESTART);
- 	machine_restart(cmd);
- }
-@@ -125,7 +127,7 @@ EXPORT_SYMBOL_GPL(kernel_restart);
- static void kernel_shutdown_prepare(enum system_states state)
- {
- 	blocking_notifier_call_chain(&reboot_notifier_list,
--		(state == SYSTEM_HALT)?SYS_HALT:SYS_POWER_OFF, NULL);
-+		(state == SYSTEM_HALT) ? SYS_HALT : SYS_POWER_OFF, NULL);
- 	system_state = state;
- 	usermodehelper_disable();
- 	device_shutdown();
-@@ -140,11 +142,10 @@ void kernel_halt(void)
- 	kernel_shutdown_prepare(SYSTEM_HALT);
- 	migrate_to_reboot_cpu();
- 	syscore_shutdown();
--	printk(KERN_EMERG "System halted.\n");
-+	pr_emerg("System halted\n");
- 	kmsg_dump(KMSG_DUMP_HALT);
- 	machine_halt();
- }
--
- EXPORT_SYMBOL_GPL(kernel_halt);
- 
- /**
-@@ -159,7 +160,7 @@ void kernel_power_off(void)
- 		pm_power_off_prepare();
- 	migrate_to_reboot_cpu();
- 	syscore_shutdown();
--	printk(KERN_EMERG "Power down.\n");
-+	pr_emerg("Power down\n");
- 	kmsg_dump(KMSG_DUMP_POWEROFF);
- 	machine_power_off();
- }
-@@ -188,10 +189,10 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
- 
- 	/* For safety, we require "magic" arguments. */
- 	if (magic1 != LINUX_REBOOT_MAGIC1 ||
--	    (magic2 != LINUX_REBOOT_MAGIC2 &&
--	                magic2 != LINUX_REBOOT_MAGIC2A &&
-+			(magic2 != LINUX_REBOOT_MAGIC2 &&
-+			magic2 != LINUX_REBOOT_MAGIC2A &&
- 			magic2 != LINUX_REBOOT_MAGIC2B &&
--	                magic2 != LINUX_REBOOT_MAGIC2C))
-+			magic2 != LINUX_REBOOT_MAGIC2C))
- 		return -EINVAL;
- 
- 	/*
-@@ -234,7 +235,8 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
- 		break;
- 
- 	case LINUX_REBOOT_CMD_RESTART2:
--		if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0) {
-+		ret = strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1);
-+		if (ret < 0) {
- 			ret = -EFAULT;
- 			break;
- 		}
-@@ -282,7 +284,6 @@ void ctrl_alt_del(void)
- 	else
- 		kill_cad_pid(SIGINT, 1);
- }
--	
- 
- char poweroff_cmd[POWEROFF_CMD_PATH_LEN] = "/sbin/poweroff";
- 
-@@ -301,14 +302,11 @@ static int __orderly_poweroff(bool force)
- 		ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
- 		argv_free(argv);
- 	} else {
--		printk(KERN_WARNING "%s failed to allocate memory for \"%s\"\n",
--					 __func__, poweroff_cmd);
- 		ret = -ENOMEM;
- 	}
- 
- 	if (ret && force) {
--		printk(KERN_WARNING "Failed to start orderly shutdown: "
--					"forcing the issue\n");
-+		pr_warn("Failed to start orderly shutdown: forcing the issue\n");
- 		/*
- 		 * I guess this should try to kick off some daemon to sync and
- 		 * poweroff asap.  Or not even bother syncing if we're doing an
--- 
-1.8.2.1
+Jan
 
