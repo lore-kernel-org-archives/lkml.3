@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101Ab3FFSpf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 14:45:35 -0400
-Received: from vps1.hno.se ([31.192.227.87]:40339 "EHLO vps1.hno.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750971Ab3FFSpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 14:45:34 -0400
-Message-ID: <1370544282.31564.5.camel@localhost>
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
- Uploading linux (3.9.4-1))
-From: Henrik =?ISO-8859-1?Q?Nordstr=F6m?= <henrik@henriknordstrom.net>
-To: Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>
-Cc: devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
-        debian-kernel@lists.debian.org
-Date: Thu, 06 Jun 2013 20:44:42 +0200
-In-Reply-To: <CAPweEDzrYL5c9v1T=nTcyv9RPrJ-TEnCyyjpHQnhXXJY-32=5g@mail.gmail.com>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
-	 <CAKON4OxDD5orX2w-_+d5kawTGXbE3KKj2QLERo9m7=NiUSXhgQ@mail.gmail.com>
-	 <51AFA6DD.3000202@wwwdotorg.org>
-	 <CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com>
-	 <1370469574.18839.33.camel@localhost>
-	 <CAPweEDxMpeJc-w=Yd7d2OT=UisRBp2rxf-MPMDUCOG3EyJz1GQ@mail.gmail.com>
-	 <CAKON4OxwyV2f_iTEb5RnP_azc7EsSxPdku_TY5WLWxN7USiY1Q@mail.gmail.com>
-	 <CAPweEDw1BabE0cmT5fxZ3Z9p9EH508M3Nzcqk2VcO0oz-qYsvg@mail.gmail.com>
-	 <CAKON4Oz79hUE_ReAqjeynwL6ZWntX2W1uw3YOg0G2AiY7Gjs=g@mail.gmail.com>
-	 <CAPweEDyO+Sc1aQ64HBeh1OSzmPNsnwMwEo5kbHSan5vw_YEjXA@mail.gmail.com>
-	 <1370477756.20454.65.camel@localhost>
-	 <CAPweEDzrYL5c9v1T=nTcyv9RPrJ-TEnCyyjpHQnhXXJY-32=5g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752413Ab3FFSqe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 14:46:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51357 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab3FFSqd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 14:46:33 -0400
+Date: Thu, 6 Jun 2013 11:46:32 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [char-misc 3.10] mei: nfc: fix nfc device freeing
+Message-ID: <20130606184632.GA7475@kroah.com>
+References: <1370240910-16411-1-git-send-email-tomas.winkler@intel.com>
+ <20130603142654.GD7024@kroah.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B028BCE64@HASMSX106.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B028BCE64@HASMSX106.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tor 2013-06-06 klockan 13:19 +0100 skrev luke.leighton:
+On Thu, Jun 06, 2013 at 07:57:24AM +0000, Winkler, Tomas wrote:
+> 
+> > 
+> > On Mon, Jun 03, 2013 at 09:28:30AM +0300, Tomas Winkler wrote:
+> > > The nfc_dev is a static variable and is not cleaned properly upon
+> > > reset mainly ndev->cl and ndev->cl_info are not set to NULL after
+> > > freeing which
+> > 
+> > Then it needs to be made dynamic, don't paper over the bug by zeroing it
+> > out, you really have a much larger issue here that just hasn't hit you yet.
+> > 
+> > No 'struct device' should ever be in a static variable, please fix this properly.
+> 
+> Greg,  I was looking into it and as in realistic configuration is we
+> are fine as there is only one possible MEI NFC device on whole system.
+> nfc_dev is also not 'a struct device' type is a singleton then holds NFC configuration.
 
->  mass-volume tablet, mass-volume IPTV box.  android OS, nothing else.
+Ah, you are right, my mistake, I would have expected something that
+ended with _dev to be a device :)
 
-Which still includes a number of possible configurations with different
-i2c, spi, usb etc devices connected on the board. Because Allwinner is
-not using mainline methods for configuration their customers are stuck
-in only selecting between a very limited set of "Allwinner compatible"
-auxillary chips (g-sensors, led controls, wifi modules, gps modules etc)
-in their designs.
+> Currently changing the behavior would require rather a larger fix and
+> this oneliner  effectively fixes the crash.
+> 
+> I don't mind to fix it properly but we are already in rc3, let us know
+> what path to go. 
 
-By using DT their customers are free to choose any device supported
-mainline.
+Can you resend this so I can apply it?
 
-Regards
-Henrik
+thanks,
 
+greg k-h
