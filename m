@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754611Ab3FFTwc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 15:52:32 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:63824 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753194Ab3FFTwa (ORCPT
+	id S1753701Ab3FFTyz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 15:54:55 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:38949 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818Ab3FFTyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 15:52:30 -0400
-From: Aldo Iljazi <neonsync1@gmail.com>
-To: marek.belisko@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Aldo Iljazi <neonsync1@gmail.com>
-Subject: [PATCH] Staging: ft1000-pcmcia: ft1000_dnld.c: fixed four checkpatch
-Date: Thu,  6 Jun 2013 22:52:12 +0300
-Message-Id: <1370548332-18519-1-git-send-email-neonsync1@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 6 Jun 2013 15:54:53 -0400
+Date: Thu, 6 Jun 2013 20:54:50 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Linux EFI <linux-efi@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
+        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH 3/4] x86, efi: Add an efi= kernel command line parameter
+Message-ID: <20130606195450.GA3252@srcf.ucam.org>
+References: <1370177770-26661-1-git-send-email-bp@alien8.de>
+ <1370177770-26661-4-git-send-email-bp@alien8.de>
+ <20130606104224.GH30420@console-pimps.org>
+ <20130606132603.GD20972@pd.tnic>
+ <20130606175052.GA1285@srcf.ucam.org>
+ <20130606185140.GK20972@pd.tnic>
+ <20130606193548.GA2946@srcf.ucam.org>
+ <20130606194134.GN20972@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130606194134.GN20972@pd.tnic>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed four checkpatch error complains, specifically:
-ft1000_dnld.c:512: ERROR: space prohibited after that '&' (ctx:WxW)
-ft1000_dnld.c:514: ERROR: space prohibited after that '&' (ctx:WxW)
-ft1000_dnld.c:694: ERROR: space prohibited before that close parenthesis ')'
-ft1000_dnld.c:713: ERROR: space prohibited before that close parenthesis ')'
+On Thu, Jun 06, 2013 at 09:41:34PM +0200, Borislav Petkov wrote:
+> On Thu, Jun 06, 2013 at 08:35:48PM +0100, Matthew Garrett wrote:
+> > No, I think that's the wrong thing to do. We should set up the current
+> > mappings and the 1:1 mappings, and pass the current mappings through
+> > SetVirtualAddressMap(). That matches the behaviour of Windows.
+> 
+> And when do we use the 1:1 mappings and when the current mappings when
+> doing runtime calls?
 
-Signed-off-by: Aldo Iljazi <neonsync1@gmail.com>
----
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+We want both to be available when we're making the call, but I think we 
+should probably enter via the high addresses. The only reason we're 
+doing this at all is that some systems don't update all of their 
+pointers from physical mode, and we'd prefer them to work rather than 
+fault...
 
-diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
-index f892598..6311b2f 100644
---- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
-+++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
-@@ -509,9 +509,9 @@ int card_download(struct net_device *dev, const u8 *pFileStart,
- 						(long)(info->DSPInfoBlklen + 1) / 2;
- 					put_request_value(dev, word_length);
- 					pMailBoxData =
--						(struct drv_msg *) & info->DSPInfoBlk[0];
-+						(struct drv_msg *) &info->DSPInfoBlk[0];
- 					pUsData =
--						(u16 *) & pMailBoxData->data[0];
-+						(u16 *) &pMailBoxData->data[0];
- 					/* Provide mutual exclusive access while reading ASIC registers. */
- 					spin_lock_irqsave(&info->dpram_lock,
- 							  flags);
-@@ -691,7 +691,7 @@ int card_download(struct net_device *dev, const u8 *pFileStart,
- 
- 			if (pHdr->portdest == 0x80	/* DspOAM */
- 				&& (pHdr->portsrc == 0x00	/* Driver */
--				|| pHdr->portsrc == 0x10 /* FMM */ )) {
-+				|| pHdr->portsrc == 0x10 /* FMM */)) {
- 				uiState = STATE_SECTION_PROV;
- 			} else {
- 				DEBUG(1,
-@@ -710,7 +710,7 @@ int card_download(struct net_device *dev, const u8 *pFileStart,
- 			pHdr = (struct pseudo_hdr *) pUcFile;
- 
- 			if (pHdr->checksum == hdr_checksum(pHdr)) {
--				if (pHdr->portdest != 0x80 /* Dsp OAM */ ) {
-+				if (pHdr->portdest != 0x80 /* Dsp OAM */) {
- 					uiState = STATE_DONE_PROV;
- 					break;
- 				}
 -- 
-1.7.10.4
-
+Matthew Garrett | mjg59@srcf.ucam.org
