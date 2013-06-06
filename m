@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157Ab3FFOMH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 10:12:07 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:36023 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751751Ab3FFOMF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 10:12:05 -0400
-Date: Thu, 6 Jun 2013 10:12:02 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Zoran Markovic <zoran.markovic@linaro.org>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Colin Cross <ccross@android.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Benoit Goby <benoit@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Todd Poynor <toddpoynor@google.com>, San Mehat <san@google.com>,
-        John Stultz <john.stultz@linaro.org>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [RFC PATCHv2 1/2] drivers: power: Add watchdog timer to catch
- drivers which lockup during suspend/resume.
-In-Reply-To: <CAME+o4mkBknj0jiUW=Z77fG1bJYy1jHF7=shNQ_ixeL_oJDjFg@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1306061006070.1069-100000@iolanthe.rowland.org>
+	id S1752035Ab3FFOOG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 10:14:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30659 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751412Ab3FFOOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 10:14:04 -0400
+Date: Thu, 6 Jun 2013 11:13:58 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Luiz Capitulino <lcapitulino@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2] virtio_balloon: leak_balloon(): only tell host if we
+ got pages deflated
+Message-ID: <20130606141357.GD30387@optiplex.redhat.com>
+References: <20130605211837.1fc9b902@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130605211837.1fc9b902@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Jun 2013, Zoran Markovic wrote:
-
-> > It does block in my environment, AFAICS. Looking a bit further in the
-> > code, it looks like dpm_suspend() does an async_synchronize_full()
-> > which would wait for all async tasks to complete. This is a
-> > show-stopper because (under the circumstances) the assumption that
-> > every async suspend routine eventually completes doesn't hold.
-> >
-> > We could possibly select which async tasks to wait for, but this would
-> > add unnecessary complexity to a feature targeted for debugging. It
-> > seems that this approach - although sounding reasonable - needs to
-> > wait until we have a mechanism to cancel an async task.
+On Wed, Jun 05, 2013 at 09:18:37PM -0400, Luiz Capitulino wrote:
+> The balloon_page_dequeue() function can return NULL. If it does for
+> the first page being freed, then leak_balloon() will create a
+> scatter list with len=0. Which in turn seems to generate an invalid
+> virtio request.
 > 
-> Looks like the implementation of proposal for an async suspend +
-> wait_for_completion_timeout is quite complex due to above limitations.
-> How do we proceed from here? We have the following options:
-> 1. Give up on the idea of having a suspend/resume watchdog.
-> 2. Use the timer implementation (with possible modifications).
-> 3. Wait for the implementation of (or implement) killing of an already
-> running async work.
+> I didn't get this in practice, I found it by code review. On the other
+> hand, such an invalid virtio request will cause errors in QEMU and
+> fill_balloon() also performs the same check implemented by this commit.
 > 
-> Are there any other ideas floating around?
+> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+> Acked-by: Rafael Aquini <aquini@redhat.com>
+> ---
+> 
+> o v2
+> 
+>  - Improve changelog
+> 
+>  drivers/virtio/virtio_balloon.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+> index bd3ae32..71af7b5 100644
+> --- a/drivers/virtio/virtio_balloon.c
+> +++ b/drivers/virtio/virtio_balloon.c
+> @@ -191,7 +191,8 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
+>  	 * virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
+>  	 * is true, we *have* to do it in this order
+>  	 */
+> -	tell_host(vb, vb->deflate_vq);
 
-In general, the kernel is not designed to operate when kernel threads 
-get killed at random times.  It's also not designed to operate normally 
-while in the middle of a system suspend.
+Luiz, sorry for not being clearer before. I was referring to add a commentary on
+code, to explain in short words why we should not get rid of this check point.
 
-This means there is basically no hope of recovering from a hung async 
-suspend task.  (In much the same way, there is no hope of recovering 
-from any hung kernel thread.)  The best you can accomplish is to store 
-some useful information somewhere and either panic or force a reboot.
+> +	if (vb->num_pfns != 0)
+> +		tell_host(vb, vb->deflate_vq);
+>  	mutex_unlock(&vb->balloon_lock);
 
-Given that the usual storage media may be inaccessible, it may not be 
-easy to find a place to store the information.
+If the comment is regarded as unnecessary, then just ignore my suggestion. I'm
+OK with your patch. :)
 
-(By the way, what do you do if a _synchronous_ suspend routine hangs?  
-The two problems are fairly similar.)
-
-Alan Stern
+Cheers!
+-- Rafael
 
