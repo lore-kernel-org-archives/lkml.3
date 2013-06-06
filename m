@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932645Ab3FFKFL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 06:05:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27240 "EHLO mx1.redhat.com"
+	id S932675Ab3FFKFP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 06:05:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9662 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932079Ab3FFKFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 06:05:09 -0400
+	id S932079Ab3FFKFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 06:05:12 -0400
 From: Jason Wang <jasowang@redhat.com>
 To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: sergei.shtylyov@cogentembedded.com, Jason Wang <jasowang@redhat.com>
-Subject: [net-next PATCH 2/8] macvtap: do not add self to waitqueue if doing a nonblock read
-Date: Thu,  6 Jun 2013 17:54:34 +0800
-Message-Id: <1370512480-14272-3-git-send-email-jasowang@redhat.com>
+Subject: [net-next PATCH 3/8] macvlan: switch to use IS_ENABLED()
+Date: Thu,  6 Jun 2013 17:54:35 +0800
+Message-Id: <1370512480-14272-4-git-send-email-jasowang@redhat.com>
 In-Reply-To: <1370512480-14272-1-git-send-email-jasowang@redhat.com>
 References: <1370512480-14272-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's no need to add self to waitqueue if doing a nonblock read. This could
-help to avoid the spinlock contention.
-
 Acked-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- drivers/net/macvtap.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ include/linux/if_macvlan.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index 5e485e3..8949631 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -845,7 +845,9 @@ static ssize_t macvtap_do_read(struct macvtap_queue *q, struct kiocb *iocb,
- 	ssize_t ret = 0;
+diff --git a/include/linux/if_macvlan.h b/include/linux/if_macvlan.h
+index 84dde1d..e47ad46 100644
+--- a/include/linux/if_macvlan.h
++++ b/include/linux/if_macvlan.h
+@@ -8,7 +8,7 @@
+ #include <net/netlink.h>
+ #include <linux/u64_stats_sync.h>
  
- 	while (len) {
--		prepare_to_wait(sk_sleep(&q->sk), &wait, TASK_INTERRUPTIBLE);
-+		if (!noblock)
-+			prepare_to_wait(sk_sleep(&q->sk), &wait,
-+					TASK_INTERRUPTIBLE);
- 
- 		/* Read frames from the queue */
- 		skb = skb_dequeue(&q->sk.sk_receive_queue);
-@@ -867,7 +869,8 @@ static ssize_t macvtap_do_read(struct macvtap_queue *q, struct kiocb *iocb,
- 		break;
- 	}
- 
--	finish_wait(sk_sleep(&q->sk), &wait);
-+	if (!noblock)
-+		finish_wait(sk_sleep(&q->sk), &wait);
- 	return ret;
- }
- 
+-#if defined(CONFIG_MACVTAP) || defined(CONFIG_MACVTAP_MODULE)
++#if IS_ENABLED(CONFIG_MACVTAP)
+ struct socket *macvtap_get_socket(struct file *);
+ #else
+ #include <linux/err.h>
 -- 
 1.7.1
 
