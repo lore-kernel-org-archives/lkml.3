@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035Ab3FFNoT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 09:44:19 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:27317 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751862Ab3FFNoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 09:44:14 -0400
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Wolfram Sang <wsa@the-dreams.de>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] i2c: designware: make i2c xfers non-interruptible
-Date: Thu,  6 Jun 2013 15:43:36 +0200
-Message-Id: <1370526216-10060-2-git-send-email-christian.ruppert@abilis.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1370526216-10060-1-git-send-email-christian.ruppert@abilis.com>
-References: <1370526216-10060-1-git-send-email-christian.ruppert@abilis.com>
+	id S1751990Ab3FFNpl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 09:45:41 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:60635 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab3FFNpj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 09:45:39 -0400
+Message-ID: <1370526337.24311.335.camel@edumazet-glaptop>
+Subject: Re: [PATCH] net: Unbreak compat_sys_{send,recv}msg
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: luto@amacapital.net, x86@kernel.org, torvalds@linux-foundation.org,
+        mikey@neuling.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        trinity@vger.kernel.org
+Date: Thu, 06 Jun 2013 06:45:37 -0700
+In-Reply-To: <20130606.002625.223430401087826901.davem@davemloft.net>
+References: <20130606132926.f4161ddff87dc9a55e33a8ca@canb.auug.org.au>
+	 <e3bf421e44c6d27817c15a8683612a49e093b419.1370496702.git.luto@amacapital.net>
+	 <20130606.002625.223430401087826901.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the process at the source of an i2c transfer is killed in the
-middle of the transfer, the transfer is interrupted. Interrupted
-transfers might cause buggy slaves on the bus (or higher level drivers)
-to go haywire.
-This patch forces ongoing i2c transfers to finish properly, even if the
-initiating process is killed.
+On Thu, 2013-06-06 at 00:26 -0700, David Miller wrote:
+> From: Andy Lutomirski <luto@amacapital.net>
+> Date: Wed,  5 Jun 2013 22:38:26 -0700
+> 
+> > I broke them in this commit:
+> > 
+> >     commit 1be374a0518a288147c6a7398792583200a67261
+> >     Author: Andy Lutomirski <luto@amacapital.net>
+> >     Date:   Wed May 22 14:07:44 2013 -0700
+> > 
+> >         net: Block MSG_CMSG_COMPAT in send(m)msg and recv(m)msg
+> > 
+> > This patch adds __sys_sendmsg and __sys_sendmsg as common helpers that accept
+> > MSG_CMSG_COMPAT and blocks MSG_CMSG_COMPAT at the syscall entrypoints.  It
+> > also reverts some unnecessary checks in sys_socketcall.
+> > 
+> > Apparently I was suffering from underscore blindness the first time around.
+> > 
+> > Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> 
+> Eric, can you test this patch too?
 
-Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
----
- drivers/i2c/busses/i2c-designware-core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Yes, this fixes the problem as well on x86_64
 
-diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-index 65c0c7a..d903368 100644
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -585,7 +585,7 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
- 	i2c_dw_xfer_init(dev);
- 
- 	/* wait for tx to complete */
--	ret = wait_for_completion_interruptible_timeout(&dev->cmd_complete, HZ);
-+	ret = wait_for_completion_timeout(&dev->cmd_complete, HZ);
- 	if (ret == 0) {
- 		dev_err(dev->dev, "controller timed out\n");
- 		/* i2c_dw_init implicitly disables the adapter */
--- 
-1.7.1
+Tested-by: Eric Dumazet <edumazet@google.com>
+
+Thanks !
+
+PS: I had following fuzz while applying on Linus tree :
+
+patching file include/linux/socket.h
+Hunk #1 succeeded at 320 (offset -1 lines).
+patching file net/compat.c
+patching file net/socket.c
+Hunk #1 succeeded at 1956 (offset -22 lines).
+Hunk #2 succeeded at 2071 (offset -22 lines).
+Hunk #3 succeeded at 2125 (offset -22 lines).
+Hunk #4 succeeded at 2163 (offset -22 lines).
+Hunk #5 succeeded at 2255 (offset -22 lines).
+Hunk #6 succeeded at 2317 (offset -22 lines).
+Hunk #7 succeeded at 2515 (offset -20 lines).
+
 
