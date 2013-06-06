@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab3FFVgl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 17:36:41 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:58346 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326Ab3FFVgj (ORCPT
+	id S1752991Ab3FFVkK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 17:40:10 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:42291 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326Ab3FFVkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 17:36:39 -0400
-Date: Thu, 6 Jun 2013 14:36:36 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Jones <davej@redhat.com>,
-        David Howells <dhowells@redhat.com>, Imre Deak <imre.deak@intel.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Lukas Czerner <lczerner@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Thu, 6 Jun 2013 17:40:09 -0400
+From: Nicolas Palix <nicolas.palix@imag.fr>
+To: Julia Lawall <Julia.Lawall@lip6.fr>, Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>, Michal Marek <mmarek@suse.cz>,
+        Brice Goglin <Brice.Goglin@inria.fr>, cocci@systeme.lip6.fr,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] wait: introduce prepare_to_wait_event()
-Message-ID: <20130606213636.GJ5045@htj.dyndns.org>
-References: <20130606200257.GA23628@redhat.com>
- <20130606200334.GC23628@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130606200334.GC23628@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: [PATCH 1/2] Coccinelle: Make 'report' the default mode
+Date: Thu,  6 Jun 2013 23:39:52 +0200
+Message-Id: <1370554793-9152-1-git-send-email-nicolas.palix@imag.fr>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Oleg.
+It appears that the 'report' mode is the one always
+provided by the semantic patches included in the kernel.
+It is thus more natural to select it by default.
 
-On Thu, Jun 06, 2013 at 10:03:34PM +0200, Oleg Nesterov wrote:
-> Add the new helper, prepare_to_wait_event() which should only be used
-> by wait_event_common/etc.
-> 
-> prepare_to_wait_event() returns -ERESTARTSYS if signal_pending_state()
-> is true, otherwise it calls prepare_to_wait(). This allows to uninline
-> the signal-pending checks in wait_event_*.
-> 
-> Also, it can initialize wait->private/func. We do not care they were
-> already initialized, the values are the same. This also shaves a couple
-> of insns from the inlined code.
-> 
-> Unlike the previous change, this patch "reliably" shrinks the size of
-> generated code for every wait_event*() call.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+The 'chain' mode is however kept and the 'patch' mode
+is still the first tried in that case.
 
-Which tree are the patches based on?  I'm getting conflicts on
-linus#master, mmotd and next.
+Signed-off-by: Nicolas Palix <nicolas.palix@imag.fr>
+---
 
-Reviewed-by: Tejun Heo <tj@kernel.org>
+I forgot to sign the previous emails. 
 
-But a couple nits.
+ scripts/coccicheck | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
-> +int
-
-I don't think we need to keep the unnecessary line break here.  All
-other functions in the file don't do it except for the two
-prepare_to_wait functions.  No need to give the weirdos more power. :)
-
-> +prepare_to_wait_event(wait_queue_head_t *q, wait_queue_t *wait, int state)
-> +{
-> +	if (signal_pending_state(state, current))
-> +		return -ERESTARTSYS;
-> +
-> +	wait->private = current;
-> +	wait->func = autoremove_wake_function;
-> +	prepare_to_wait(q, wait, state);
-
-I wonder whether it'd be worthwhile to make prepare_to_wait() inline
-so that it can be inlined into the above.  I think gcc is smart enough
-to emit inline for in-file stuff and then build a proper function for
-external references.  No biggie.  Just wondering.
-
-Thanks.
-
+diff --git a/scripts/coccicheck b/scripts/coccicheck
+index 06fcb33..9d8780c 100755
+--- a/scripts/coccicheck
++++ b/scripts/coccicheck
+@@ -44,11 +44,19 @@ fi
+ 
+ if [ "$MODE" = "" ] ; then
+     if [ "$ONLINE" = "0" ] ; then
+-	echo 'You have not explicitly specified the mode to use. Using default "chain" mode.'
+-	echo 'All available modes will be tried (in that order): patch, report, context, org'
++	echo 'You have not explicitly specified the mode to use. Using default "report" mode.'
++	echo 'Available modes are the following: patch, report, context, org'
+ 	echo 'You can specify the mode with "make coccicheck MODE=<mode>"'
++	echo 'Note however that some modes are not implemented by some semantic patches.'
++    fi
++    MODE="report"
++fi
++
++if [ "$MODE" = "chain" ] ; then
++    if [ "$ONLINE" = "0" ] ; then
++	echo 'You have selected the "chain" mode.'
++	echo 'All available modes will be tried (in that order): patch, report, context, org'
+     fi
+-    MODE="chain"
+ elif [ "$MODE" = "report" -o "$MODE" = "org" ] ; then
+     FLAGS="$FLAGS -no_show_diff"
+ fi
 -- 
-tejun
+1.8.1.2
+
