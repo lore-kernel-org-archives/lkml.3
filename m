@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab3FFTlw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 15:41:52 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:57837 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752830Ab3FFTlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 15:41:50 -0400
-Date: Thu, 6 Jun 2013 21:41:34 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Matt Fleming <matt@console-pimps.org>,
-        Linux EFI <linux-efi@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH 3/4] x86, efi: Add an efi= kernel command line parameter
-Message-ID: <20130606194134.GN20972@pd.tnic>
-References: <1370177770-26661-1-git-send-email-bp@alien8.de>
- <1370177770-26661-4-git-send-email-bp@alien8.de>
- <20130606104224.GH30420@console-pimps.org>
- <20130606132603.GD20972@pd.tnic>
- <20130606175052.GA1285@srcf.ucam.org>
- <20130606185140.GK20972@pd.tnic>
- <20130606193548.GA2946@srcf.ucam.org>
+	id S1754266Ab3FFTmE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 15:42:04 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59430 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753949Ab3FFTmA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 15:42:00 -0400
+Date: Thu, 6 Jun 2013 14:12:48 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 1/2] list: add list_for_each_entry_del
+Message-ID: <20130606181248.GA17707@logfs.org>
+References: <1370280485-10047-1-git-send-email-joern@logfs.org>
+ <1370280485-10047-2-git-send-email-joern@logfs.org>
+ <CAHp75VczX+tjqJgNv4uv=BRekm2Gc2i8WHL91vJFWSXWS8-J_A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130606193548.GA2946@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAHp75VczX+tjqJgNv4uv=BRekm2Gc2i8WHL91vJFWSXWS8-J_A@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 08:35:48PM +0100, Matthew Garrett wrote:
-> No, I think that's the wrong thing to do. We should set up the current
-> mappings and the 1:1 mappings, and pass the current mappings through
-> SetVirtualAddressMap(). That matches the behaviour of Windows.
+On Thu, 6 June 2013 22:32:55 +0300, Andy Shevchenko wrote:
+> On Mon, Jun 3, 2013 at 8:28 PM, Joern Engel <joern@logfs.org> wrote:
+> > I have seen a lot of boilerplate code that either follows the pattern of
+> >         while (!list_empty(head)) {
+> >                 pos = list_entry(head->next, struct foo, list);
+> >                 list_del(pos->list);
+> >                 ...
+> >         }
+> > or some variant thereof.
+> 
+> What the problem to use list_for_each_safe()?
 
-And when do we use the 1:1 mappings and when the current mappings when
-doing runtime calls?
+The loop may terminate with elements left on the list.  There is more,
+but I would consider this the main problem.
 
-Also, would the 1:1 mappings even work if not passed through
-SetVirtualAddressMap? I'm sensing a "yes" but I don't know...
+Jörn
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
 --
+If you're willing to restrict the flexibility of your approach,
+you can almost always do something better.
+-- John Carmack
