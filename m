@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab3FFUxc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 16:53:32 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:34767 "EHLO smtp.outflux.net"
+	id S1755144Ab3FFUx4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 16:53:56 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:36470 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754729Ab3FFUx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753194Ab3FFUx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Jun 2013 16:53:27 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
@@ -15,9 +15,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         David Woodhouse <dwmw2@infradead.org>, Anton Vorontsov <cbou@mail.ru>,
         Karsten Keil <isdn@linux-pingi.de>, Kees Cook <keescook@chromium.org>,
         stable@vger.kernel.org
-Subject: [PATCH 4/8] power: ensure event is not used as format string
-Date: Thu,  6 Jun 2013 13:52:21 -0700
-Message-Id: <1370551945-8444-5-git-send-email-keescook@chromium.org>
+Subject: [PATCH 1/8] block: do not pass disk names as format strings
+Date: Thu,  6 Jun 2013 13:52:18 -0700
+Message-Id: <1370551945-8444-2-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1370551945-8444-1-git-send-email-keescook@chromium.org>
 References: <1370551945-8444-1-git-send-email-keescook@chromium.org>
@@ -26,31 +26,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The exposed interface for cm_notify_event() could result in the event
-msg string being parsed as a format string. Make sure it is only used
-as a literal string.
+Disk names may contain arbitrary strings, so they must not be interpreted
+as format strings. It seems that only md allows arbitrary strings to be
+used for disk names, but this could allow for a local memory corruption
+from uid 0 into ring 0.
+
+CVE-2013-2851
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
 Cc: stable@vger.kernel.org
-Cc: Anton Vorontsov <cbou@mail.ru>
-Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Jens Axboe <axboe@kernel.dk>
 ---
- drivers/power/charger-manager.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ block/genhd.c              |    2 +-
+ drivers/block/nbd.c        |    3 ++-
+ drivers/scsi/osd/osd_uld.c |    2 +-
+ 3 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-index fefc39f..98de1dd 100644
---- a/drivers/power/charger-manager.c
-+++ b/drivers/power/charger-manager.c
-@@ -450,7 +450,7 @@ static void uevent_notify(struct charger_manager *cm, const char *event)
- 	strncpy(env_str, event, UEVENT_BUF_SIZE);
- 	kobject_uevent(&cm->dev->kobj, KOBJ_CHANGE);
+diff --git a/block/genhd.c b/block/genhd.c
+index 20625ee..cdeb527 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -512,7 +512,7 @@ static void register_disk(struct gendisk *disk)
  
--	dev_info(cm->dev, event);
-+	dev_info(cm->dev, "%s", event);
- }
+ 	ddev->parent = disk->driverfs_dev;
  
- /**
+-	dev_set_name(ddev, disk->disk_name);
++	dev_set_name(ddev, "%s", disk->disk_name);
+ 
+ 	/* delay uevents, until we scanned partition table */
+ 	dev_set_uevent_suppress(ddev, 1);
+diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+index 037288e..46b35f7 100644
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -714,7 +714,8 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
+ 		else
+ 			blk_queue_flush(nbd->disk->queue, 0);
+ 
+-		thread = kthread_create(nbd_thread, nbd, nbd->disk->disk_name);
++		thread = kthread_create(nbd_thread, nbd, "%s",
++					nbd->disk->disk_name);
+ 		if (IS_ERR(thread)) {
+ 			mutex_lock(&nbd->tx_lock);
+ 			return PTR_ERR(thread);
+diff --git a/drivers/scsi/osd/osd_uld.c b/drivers/scsi/osd/osd_uld.c
+index 0fab6b5..9d86947 100644
+--- a/drivers/scsi/osd/osd_uld.c
++++ b/drivers/scsi/osd/osd_uld.c
+@@ -485,7 +485,7 @@ static int osd_probe(struct device *dev)
+ 	oud->class_dev.class = &osd_uld_class;
+ 	oud->class_dev.parent = dev;
+ 	oud->class_dev.release = __remove;
+-	error = dev_set_name(&oud->class_dev, disk->disk_name);
++	error = dev_set_name(&oud->class_dev, "%s", disk->disk_name);
+ 	if (error) {
+ 		OSD_ERR("dev_set_name failed => %d\n", error);
+ 		goto err_put_cdev;
 -- 
 1.7.9.5
 
