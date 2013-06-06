@@ -1,131 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533Ab3FFUIm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 16:08:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14215 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753111Ab3FFUIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 16:08:41 -0400
-Date: Thu, 6 Jun 2013 22:03:34 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Jones <davej@redhat.com>,
-        David Howells <dhowells@redhat.com>, Imre Deak <imre.deak@intel.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Lukas Czerner <lczerner@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] wait: introduce prepare_to_wait_event()
-Message-ID: <20130606200334.GC23628@redhat.com>
-References: <20130606200257.GA23628@redhat.com>
+	id S1754584Ab3FFUIr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 16:08:47 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:36074 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753742Ab3FFUIo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 16:08:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130606200257.GA23628@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1370547951-2701-2-git-send-email-jacob.shin@amd.com>
+References: <1370547951-2701-1-git-send-email-jacob.shin@amd.com>
+	<1370547951-2701-2-git-send-email-jacob.shin@amd.com>
+Date: Thu, 6 Jun 2013 13:08:43 -0700
+X-Google-Sender-Auth: TAr_i7kfV1jNyjOiLPsMaGFje-I
+Message-ID: <CAE9FiQUoWvKN6MYZE0Uwo+L+zv0mDn8u6KHjF_BJ58KLssa=Ng@mail.gmail.com>
+Subject: Re: [PATCH V2 1/2] x86/microcode/amd: make find_ucode_in_initrd() __init
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Borislav Petkov <bp@alien8.de>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the new helper, prepare_to_wait_event() which should only be used
-by wait_event_common/etc.
+On Thu, Jun 6, 2013 at 12:45 PM, Jacob Shin <jacob.shin@amd.com> wrote:
+> Change find_ucode_in_initrd() to __init and only let BSP call it
+> during cold boot. This is the right thing to do because only BSP will
+> see initrd loaded by the boot loader. APs will offset into
+> initrd_start to find the microcode patch binary.
+>
+> Reported-by: Yinghai Lu <yinghai@kernel.org>
+> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+> ---
+>  arch/x86/kernel/microcode_amd_early.c |  110 +++++++++++++++++++++++----------
+>  1 file changed, 79 insertions(+), 31 deletions(-)
+>
+> diff --git a/arch/x86/kernel/microcode_amd_early.c b/arch/x86/kernel/microcode_amd_early.c
+> index 9618805..52f647d 100644
+> --- a/arch/x86/kernel/microcode_amd_early.c
+> +++ b/arch/x86/kernel/microcode_amd_early.c
+> @@ -9,6 +9,7 @@
+>   */
+>
+>  #include <linux/earlycpio.h>
+> +#include <linux/initrd.h>
+>
+>  #include <asm/cpu.h>
+>  #include <asm/setup.h>
+> @@ -16,40 +17,59 @@
+>
+>  static bool ucode_loaded;
+>  static u32 ucode_new_rev;
+> +static unsigned long ucode_offset;
+> +static size_t ucode_size;
+>
+>  /*
+>   * Microcode patch container file is prepended to the initrd in cpio format.
+>   * See Documentation/x86/early-microcode.txt
+>   */
+> -static __cpuinitdata char ucode_path[] = "kernel/x86/microcode/AuthenticAMD.bin";
+> +static __initdata char ucode_path[] = "kernel/x86/microcode/AuthenticAMD.bin";
+>
+> -static struct cpio_data __cpuinit find_ucode_in_initrd(void)
+> +static struct cpio_data __init find_ucode_in_initrd(void)
+>  {
+>         long offset = 0;
+> +       char *path;
+> +       void *start;
+> +       size_t size;
+> +       unsigned long *uoffset;
+> +       size_t *usize;
+>         struct cpio_data cd;
+>
+>  #ifdef CONFIG_X86_32
+> +       struct boot_params *p;
+> +
+>         /*
+>          * On 32-bit, early load occurs before paging is turned on so we need
+>          * to use physical addresses.
+>          */
+> -       if (!(read_cr0() & X86_CR0_PG)) {
+> -               struct boot_params *p;
+> -               p  = (struct boot_params *)__pa_nodebug(&boot_params);
+> -               cd = find_cpio_data((char *)__pa_nodebug(ucode_path),
+> -                       (void *)p->hdr.ramdisk_image, p->hdr.ramdisk_size,
+> -                       &offset);
+> -       } else
+> +       p       = (struct boot_params *)__pa_nodebug(&boot_params);
+> +       path    = (char *)__pa_nodebug(ucode_path);
+> +       start   = (void *)p->hdr.ramdisk_image;
+> +       size    = p->hdr.ramdisk_size;
+> +       uoffset = (unsigned long *)__pa_nodebug(&ucode_offset);
+> +       usize   = (size_t *)__pa_nodebug(&ucode_size);
+> +#else
+> +       path    = ucode_path;
+> +       start   = (void *)(boot_params.hdr.ramdisk_image + PAGE_OFFSET);
+> +       size    = boot_params.hdr.ramdisk_size;
+> +       uoffset = &ucode_offset;
+> +       usize   = &ucode_size;
+>  #endif
+> -               cd = find_cpio_data(ucode_path,
+> -                       (void *)(boot_params.hdr.ramdisk_image + PAGE_OFFSET),
+> -                       boot_params.hdr.ramdisk_size, &offset);
+> +
+> +       cd = find_cpio_data(path, start, size, &offset);
+> +       if (!cd.data)
+> +               return cd;
+>
+>         if (*(u32 *)cd.data != UCODE_MAGIC) {
+>                 cd.data = NULL;
+>                 cd.size = 0;
+> +               return cd;
+>         }
+>
+> +       *uoffset = (u8 *)cd.data - (u8 *)start;
+> +       *usize   = cd.size;
+> +
+>         return cd;
+>  }
+>
+> @@ -62,9 +82,8 @@ static struct cpio_data __cpuinit find_ucode_in_initrd(void)
+>   * load_microcode_amd() to save equivalent cpu table and microcode patches in
+>   * kernel heap memory.
+>   */
+> -static void __cpuinit apply_ucode_in_initrd(void)
+> +static void __cpuinit apply_ucode_in_initrd(void *ucode, size_t size)
+>  {
+> -       struct cpio_data cd;
+>         struct equiv_cpu_entry *eq;
+>         u32 *header;
+>         u8  *data;
+> @@ -78,12 +97,9 @@ static void __cpuinit apply_ucode_in_initrd(void)
+>  #else
+>         new_rev = &ucode_new_rev;
+>  #endif
+> -       cd = find_ucode_in_initrd();
+> -       if (!cd.data)
+> -               return;
+>
+> -       data   = cd.data;
+> -       left   = cd.size;
+> +       data   = ucode;
+> +       left   = size;
+>         header = (u32 *)data;
+>
+>         /* find equiv cpu table */
+> @@ -129,7 +145,11 @@ static void __cpuinit apply_ucode_in_initrd(void)
+>
+>  void __init load_ucode_amd_bsp(void)
+>  {
+> -       apply_ucode_in_initrd();
+> +       struct cpio_data cd = find_ucode_in_initrd();
+> +       if (!cd.data)
+> +               return;
+> +
+> +       apply_ucode_in_initrd(cd.data, cd.size);
+>  }
+>
+>  #ifdef CONFIG_X86_32
+> @@ -145,12 +165,29 @@ u8 amd_bsp_mpb[MPB_MAX_SIZE];
+>  void __cpuinit load_ucode_amd_ap(void)
+>  {
+>         struct microcode_amd *mc;
+> +       unsigned long *initrd;
+> +       unsigned long *uoffset;
+> +       size_t *usize;
+> +       void *ucode;
+>
+> -       mc = (struct microcode_amd *)__pa_nodebug(amd_bsp_mpb);
+> -       if (mc->hdr.patch_id && mc->hdr.processor_rev_id)
+> +       mc = (struct microcode_amd *)__pa(amd_bsp_mpb);
+> +       if (mc->hdr.patch_id && mc->hdr.processor_rev_id) {
+>                 __apply_microcode_amd(mc);
+> -       else
+> -               apply_ucode_in_initrd();
+> +               return;
+> +       }
+> +
+> +       initrd  = (unsigned long *)__pa(&initrd_start);
+> +       uoffset = (unsigned long *)__pa(&ucode_offset);
+> +       usize   = (size_t *)__pa(&ucode_size);
+> +
+> +       if (!(*usize))
+> +               return;
+> +
+> +       if (!(*initrd))
+> +               return;
 
-prepare_to_wait_event() returns -ERESTARTSYS if signal_pending_state()
-is true, otherwise it calls prepare_to_wait(). This allows to uninline
-the signal-pending checks in wait_event_*.
+could be save three lines if use
+       if (!(*initrd) || !(*usize))
+               return;
 
-Also, it can initialize wait->private/func. We do not care they were
-already initialized, the values are the same. This also shaves a couple
-of insns from the inlined code.
+> +
+> +       ucode = (void *)((unsigned long)__pa(*initrd) + *uoffset);
+> +       apply_ucode_in_initrd(ucode, *usize);
+>  }
+>
+>  static void __init collect_cpu_sig_on_bsp(void *arg)
+> @@ -181,8 +218,16 @@ void __cpuinit load_ucode_amd_ap(void)
+>         collect_cpu_info_amd_early(&cpu_data(cpu), ucode_cpu_info + cpu);
+>
+>         if (cpu && !ucode_loaded) {
+> -               struct cpio_data cd = find_ucode_in_initrd();
+> -               if (load_microcode_amd(0, cd.data, cd.size) != UCODE_OK)
+> +               void *ucode;
+> +
+> +               if (!ucode_size)
+> +                       return;
+> +
+> +               if (!initrd_start)
+> +                       return;
 
-Unlike the previous change, this patch "reliably" shrinks the size of
-generated code for every wait_event*() call.
+same
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/wait.h |   22 +++++++++++-----------
- kernel/wait.c        |   14 ++++++++++++++
- 2 files changed, 25 insertions(+), 11 deletions(-)
+> +
+> +               ucode = (void *)(initrd_start + ucode_offset);
+> +               if (load_microcode_amd(0, ucode, ucode_size) != UCODE_OK)
+>                         return;
+>                 ucode_loaded = true;
+>         }
+> @@ -194,7 +239,7 @@ void __cpuinit load_ucode_amd_ap(void)
+>  int __init save_microcode_in_initrd_amd(void)
+>  {
+>         enum ucode_state ret;
+> -       struct cpio_data cd;
+> +       void *ucode;
+>  #ifdef CONFIG_X86_32
+>         unsigned int bsp = boot_cpu_data.cpu_index;
+>         struct ucode_cpu_info *uci = ucode_cpu_info + bsp;
+> @@ -209,11 +254,14 @@ int __init save_microcode_in_initrd_amd(void)
+>         if (ucode_loaded)
+>                 return 0;
+>
+> -       cd = find_ucode_in_initrd();
+> -       if (!cd.data)
+> -               return -EINVAL;
+> +       if (!ucode_size)
+> +               return 0;
+> +
+> +       if (!initrd_start)
+> +               return 0;
 
-diff --git a/include/linux/wait.h b/include/linux/wait.h
-index 392c54d..a2314dd 100644
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -176,28 +176,27 @@ wait_queue_head_t *bit_waitqueue(void *, int);
- #define __wait_no_timeout(tout)	\
- 	(__builtin_constant_p(tout) && (tout) == MAX_SCHEDULE_TIMEOUT)
- 
--/* uglified signal_pending_state() optimized for constant state */
--#define __wait_signal_pending(state)					\
--	((state == TASK_INTERRUPTIBLE) ? signal_pending(current) :	\
--	 (state == TASK_KILLABLE) ? fatal_signal_pending(current) :	\
--	  0)
-+#define __wait_interruptible(state)					\
-+	(!__builtin_constant_p(state) ||				\
-+	 	state == TASK_INTERRUPTIBLE || state == TASK_KILLABLE)
- 
- #define __wait_event_common(wq, condition, state, tout)			\
- ({									\
--	DEFINE_WAIT(__wait);						\
--	long __ret = 0, __tout = tout;					\
-+	long __ret, __tout = tout;					\
-+	wait_queue_t __wait;						\
-+									\
-+	INIT_LIST_HEAD(&__wait.task_list);				\
-+	__wait.flags = 0;						\
- 									\
- 	for (;;) {							\
--		prepare_to_wait(&wq, &__wait, state);			\
-+		__ret = prepare_to_wait_event(&wq, &__wait, state);	\
- 		if (condition) {					\
- 			__ret = __wait_no_timeout(tout) ?: __tout ?: 1;	\
- 			break;						\
- 		}							\
- 									\
--		if (__wait_signal_pending(state)) {			\
--			__ret = -ERESTARTSYS;				\
-+		if (__wait_interruptible(state) && __ret)		\
- 			break;						\
--		}							\
- 									\
- 		if (__wait_no_timeout(tout))				\
- 			schedule();					\
-@@ -781,6 +780,7 @@ extern long interruptible_sleep_on_timeout(wait_queue_head_t *q,
-  * Waitqueues which are removed from the waitqueue_head at wakeup time
-  */
- void prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait, int state);
-+int prepare_to_wait_event(wait_queue_head_t *q, wait_queue_t *wait, int state);
- void prepare_to_wait_exclusive(wait_queue_head_t *q, wait_queue_t *wait, int state);
- void finish_wait(wait_queue_head_t *q, wait_queue_t *wait);
- void abort_exclusive_wait(wait_queue_head_t *q, wait_queue_t *wait,
-diff --git a/kernel/wait.c b/kernel/wait.c
-index 6698e0c..57cc6e7 100644
---- a/kernel/wait.c
-+++ b/kernel/wait.c
-@@ -78,6 +78,20 @@ prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait, int state)
- }
- EXPORT_SYMBOL(prepare_to_wait);
- 
-+int
-+prepare_to_wait_event(wait_queue_head_t *q, wait_queue_t *wait, int state)
-+{
-+	if (signal_pending_state(state, current))
-+		return -ERESTARTSYS;
-+
-+	wait->private = current;
-+	wait->func = autoremove_wake_function;
-+	prepare_to_wait(q, wait, state);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(prepare_to_wait_event);
-+
- void
- prepare_to_wait_exclusive(wait_queue_head_t *q, wait_queue_t *wait, int state)
- {
--- 
-1.5.5.1
+same
 
-
+>
+> -       ret = load_microcode_amd(0, cd.data, cd.size);
+> +       ucode = (void *)(initrd_start + ucode_offset);
+> +       ret = load_microcode_amd(0, ucode, ucode_size);
+>         if (ret != UCODE_OK)
+>                 return -EINVAL;
+>
+> --
+> 1.7.9.5
+>
+>
