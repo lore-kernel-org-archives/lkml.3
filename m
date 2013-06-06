@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960Ab3FFP6l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 11:58:41 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:57755 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752895Ab3FFP6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 11:58:38 -0400
-Date: Thu, 6 Jun 2013 17:58:22 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Linux EFI <linux-efi@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Jiri Kosina <jkosina@suse.cz>,
-        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH 4/4] x86, efi: Map runtime services 1:1
-Message-ID: <20130606155822.GH20972@pd.tnic>
-References: <1370177770-26661-1-git-send-email-bp@alien8.de>
- <1370177770-26661-5-git-send-email-bp@alien8.de>
- <20130606131439.GI30420@console-pimps.org>
- <20130606132908.GE20972@pd.tnic>
+	id S1752853Ab3FFQAE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 12:00:04 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:46693 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360Ab3FFQAB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 12:00:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130606132908.GE20972@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <CAKON4OxPDpN3BTc9GWP44exDSkAZGJ5OeCpUP37vRnnvxwUnmw@mail.gmail.com>
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
+	<CAKON4OxDD5orX2w-_+d5kawTGXbE3KKj2QLERo9m7=NiUSXhgQ@mail.gmail.com>
+	<51AFA6DD.3000202@wwwdotorg.org>
+	<CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com>
+	<1370469574.18839.33.camel@localhost>
+	<CAPweEDxMpeJc-w=Yd7d2OT=UisRBp2rxf-MPMDUCOG3EyJz1GQ@mail.gmail.com>
+	<CAKON4OxwyV2f_iTEb5RnP_azc7EsSxPdku_TY5WLWxN7USiY1Q@mail.gmail.com>
+	<CAPweEDw1BabE0cmT5fxZ3Z9p9EH508M3Nzcqk2VcO0oz-qYsvg@mail.gmail.com>
+	<1370475609.20454.44.camel@localhost>
+	<CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
+	<CAKON4OxPDpN3BTc9GWP44exDSkAZGJ5OeCpUP37vRnnvxwUnmw@mail.gmail.com>
+Date: Thu, 6 Jun 2013 09:00:00 -0700
+Message-ID: <CAOesGMgqxhG45NyCfpHc_0uHS+_Gn-hGZm-+CRvK2EEf1AGTow@mail.gmail.com>
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
+ Uploading linux (3.9.4-1))
+From: Olof Johansson <olof@lixom.net>
+To: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
+Cc: "luke.leighton" <luke.leighton@gmail.com>,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm <debian-arm@lists.debian.org>,
+        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
+        debian-kernel <debian-kernel@lists.debian.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 03:29:08PM +0200, Borislav Petkov wrote:
-> On Thu, Jun 06, 2013 at 02:14:39PM +0100, Matt Fleming wrote:
-> > This patch makes my TunnelMountain machine spin in handle_pte_fault()
-> > when triggering one of the "firmware makes references to physical
-> > addresses" code paths.
-> >
-> > I'll try and dig into this tomorrow to figure out what's going on.
-> 
-> Hmmm, looks like we have forgotten to map an EFI region and we do a #PF
-> when executing the EFI code.
+On Thu, Jun 6, 2013 at 8:13 AM, jonsmirl@gmail.com <jonsmirl@gmail.com> wrote:
+> On Wed, Jun 5, 2013 at 7:54 PM, luke.leighton <luke.leighton@gmail.com> wrote:
+>>  augh.  ok.  solutions.  what are the solutions here?
+>
+> Luke if you really want to fix this a good solution is to have
+> Allwinner join Linaro and provide an engineer to the Linaro effort.
+> That engineer will get educated on the right way to do kernel
+> development and he can pass that knowledge back to Allwinner each day
+> as he learns it.
 
-How about this one - I don't know whether it would flood dmesg, I guess
-you'll have to try.
+There's no need for anybody to join Linaro to contribute upstream.
+That's a crazy notion.
 
-We could try using blockconsole to catch dmesg to an usb drive, though,
-even if you don't have serial or netconsole or such. :-).
+Listen, Allwinner isn't working in a vacuum, believe it or not. I've
+talked to them, so has Arnd and other people working on ARM, including
+Maxime Ripard, who's been reimplementing upstream support for their
+platform. Everybody is interested in the right things happening, it's
+just a matter of figuring out how to do it. The right people are
+already talking.
 
---
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 654be4ae3047..7a6129afdff1 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -1021,6 +1021,9 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
- 	/* Get the faulting address: */
- 	address = read_cr2();
- 
-+	if (read_cr3() == (unsigned long)real_mode_header->trampoline_pgd)
-+		pr_err("%s: #PF addr: 0x%lx\n", __func__, address);
-+
- 	/*
- 	 * Detect and handle instructions that would cause a page fault for
- 	 * both a tracked kernel page and a userspace page.
+> Allwinner has expressed interest in the past in joining Linaro but the
+> price was too high. I believe there are cheaper options now for
+> joining. The benefits Allwinner receives from joining will far exceed
+> the cost of joining. The net result will likely be a reduction in the
+> amount they need to spend on in-house development since they will
+> learn how to better leverage other developer's work.
 
--- 
-Regards/Gruss,
-    Boris.
+Uh, you're listing the benefits of doing upstream work, not of joining Linaro.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+
+-Olof
