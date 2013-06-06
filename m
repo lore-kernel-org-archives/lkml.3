@@ -1,127 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab3FFPar (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 11:30:47 -0400
-Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:33226 "EHLO
-	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752Ab3FFPaq (ORCPT
+	id S1752667Ab3FFPa6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 11:30:58 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:17982 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752175Ab3FFPaz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 11:30:46 -0400
-From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
-Date: Thu, 6 Jun 2013 11:30:44 -0400
-To: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        debian-kernel@lists.debian.org
-Subject: Re: getting allwinner SoC support upstream (was Re: Uploading
- linux (3.9.4-1))
-Message-ID: <20130606153044.GZ11182@csclub.uwaterloo.ca>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
- <CAKON4OxDD5orX2w-_+d5kawTGXbE3KKj2QLERo9m7=NiUSXhgQ@mail.gmail.com>
- <CAPweEDzDC87KmOQ=0hyPcjPtPsRuXHxNTs97vbEqVNNnix69rA@mail.gmail.com>
- <19865137.ey1FePPnmD@flatron>
- <CAPweEDzk0T+fZ1aW16D8K4XpvRR2GRrOFtfcjzstnmEJWxmREg@mail.gmail.com>
+	Thu, 6 Jun 2013 11:30:55 -0400
+Date: Thu, 6 Jun 2013 17:30:31 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Haojian Zhuang <haojian.zhuang@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
+Message-ID: <20130606153030.GA19876@ab42.lan>
+References: <51942472.9010402@wwwdotorg.org>
+ <CACRpkdYtKr5w2=1sONG4Qn2TQue38nV7epWfzxNQz5rjSs0DZQ@mail.gmail.com>
+ <20130522142824.GC4789@ab42.lan>
+ <CAD6h2NT4FqmEsLvtTDwwDL2YVzXYNpw72hTOcSxSMvHLhWvFPQ@mail.gmail.com>
+ <20130524115053.GB5203@ab42.lan>
+ <CAD6h2NSh_4TNAGeFhg+va5QX2hGia+gkw-mPaeMezghsa=Zc6Q@mail.gmail.com>
+ <20130603123001.GD31808@ab42.lan>
+ <CAD6h2NQVKKvcoPdD4sm5rUM5G-FpF3abL=k+WfQsnKnm7qhREA@mail.gmail.com>
+ <20130606141115.GA10345@ab42.lan>
+ <CAD6h2NRNMQP-ZQ0Cc613tGThVEo7AzRExBmWsbtr1DXgiPwz7w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CAPweEDzk0T+fZ1aW16D8K4XpvRR2GRrOFtfcjzstnmEJWxmREg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAD6h2NRNMQP-ZQ0Cc613tGThVEo7AzRExBmWsbtr1DXgiPwz7w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 11:38:52PM +0100, Luke Kenneth Casson Leighton wrote:
->  their sheer overwhelming success provides us with mass-volume
-> ultra-low cost hardware.  to not make an effort to accommodate them
-> would in this specific instance be a huge missed opportunity,
-> responsibility for which currently falls on the shoulders of the sunxi
-> community, where that small community is in no way considered
-> "authoritative" as an upstream source and thus every single GNU/Linux
-> Distro is left in a position of forcing people to follow insane
-> non-standard build procedures that are *way* outside of the capability
-> of the average person.
+On Thu, Jun 06, 2013 at 10:32:21PM +0800, Haojian Zhuang wrote:
+> On 6 June 2013 22:11, Christian Ruppert <christian.ruppert@abilis.com> wrote:
+> > On Wed, Jun 05, 2013 at 09:44:27AM +0800, Haojian Zhuang wrote:
+> >> On 3 June 2013 20:30, Christian Ruppert <christian.ruppert@abilis.com> wrote:
+> >> > OK, here's a simplified example of what we would like to do (this seems
+> >> > pretty common so I suppose there is a way I haven't understood). Our
+> >> > situation is slightly more complex but for the purpose of discussion
+> >> > let's assume a chip with 8 pins which can be configured for the
+> >> > following functions:
+> >> >
+> >> > Pin   GPIO-A    I2C    SPI0     SPI1
+> >> > ------------------------------------
+> >> >  1    GPIOA0    SDA             MISO1
+> >> >  2    GPIOA1    SCL             MOSI1
+> >> >  3    GPIOA2                    SS1_B
+> >> >  4    GPIOA3                    SCLK1
+> >> >  5    GPIOA4           MISO0
+> >> >  6    GPIOA5           MOSI0
+> >> >  7    GPIOA6           SS0_B
+> >> >  8    GPIOA7           SCLK0
+> >> >
+> >> > We can now define the following pinctrl-single:
+> >> >
+> >> > pinmux: pinmux@0xFFEE0000 {
+> >> >         compatible = "pinctrl-single";
+> >> >         reg = <0xFFEE0000 0x8>;
+> >> >         #address-cells = <1>;
+> >> >         #size-cells = <0>;
+> >> >         #gpio-range-cells = <3>;
+> >> >         pinctrl-single,register-width = <32>;
+> >> >         pinctrl-single,function-mask = <0xffffffff>;
+> >> >         pinctrl-single,gpio-range = <&range 1 8 0>;
+> >> >         gpioa_pins: pinmux_gpioa_pins {
+> >> >                 pinctrl-single,pins = <0x0 0 0x4 0>
+> >> >         };
+> >> >         i2c_pins: pinmux_i2c_pins {
+> >> >                 pinctrl-single,pins = <0x0 1>
+> >> >         };
+> >> >         spi0_pins: pinmux_spi0_pins {
+> >> >                 pinctrl-single,pins = <0x1 1>
+> >> <0x1 1>?
+> >>
+> >> If each pinmux register is only for one pin in your SoC.
+> >> I think that your definitions are wrong above. We use
+> >> register offset as the first argument, not pin number.
+> >> And the second argument should be pin function number.
+> >
+> > In our case each pinmux register (bit field) actually controls an entire
+> > group of pins.
+> >
+> >> If multiple pins are sharing one register with different bits,
+> >> you need to enable "pinctrl-single,bit-per-mux".
+> >
+> > Multiple pins are sharing the same bits in the same register. Do you
+> > think this prevents us from using pinctrl-single?
+> >
+> Could you give me your register definition? Then I can understand you
+> better.
 
-Who cares what their sales volume is.
+In our example, the register map would look a bit like the following.
+Note that every register configures four pins at a time.
 
-If they are that successful perhaps they could afford to spend some
-resources to fix the mess they have created.
+Register 0x0:
+ Mode  GPIO-A    I2C    SPI1
+ Value 0x0       0x1    0x2
+ ---------------------------
+ Pin1  GPIOA0    SDA    MISO1
+ Pin2  GPIOA1    SCL    MOSI1
+ Pin3  GPIOA2           SS1_B
+ Pin4  GPIOA3           SCLK1
 
->  so by the linux kernel developers intransigent position, the reach of
-> free software as a whole is greatly reduced.  simple logical
-> unavoidable conclusion.
+Register 0x4:
+ Mode  GPIO-A    SPI0
+ Value 0x0       0x1
+ ---------------------
+ Pin5  GPIOA4    MISO0
+ Pin6  GPIOA5    MOSI0
+ Pin7  GPIOA6    SS0_B
+ Pin8  GPIOA7    SCLK0
 
-Long term having maintainable code is important.  Companies like the
-maker of the allwinner come and go.  Maybe in a yaer or two they will be
-irrelevant after some much better design from another company takes over
-the market.  Perhaps even one sensible enough to work with the community
-in the first place, rather than violate the GPL for a long time.
-
->  please feel free - linux kernel developers - to maintain this
-> intransigent position for as long as you find it useful to you to do
-> so.  btw, that is a sincere statement, devoid and completely free of
-> all and any implicit or explicit additional statements and
-> implications.
-
-I have not seen anything mentioned that the allwinner proprietary fex
-system does that devicetree does not already do.  So there is no benefit
-to anyone (except perhaps allwinner) to adding their system, and a lot
-of disadvantages in terms of changes to lots of drivers.  Life would
-become much easier for allwinner customers if they did change to
-devicetree.  Suddenly a much larger selection of hardware becomes trivial
-to include in designs.  Upgrades to new kernels become easier.  Life in
-general becomes easier.
-
->  yeahh, that's rather unfortunate.  i went to some lengths to avoid
-> mentioning eoma [*1] until there was a natural point at which it
-> became difficult *not* to bring it up, not least because i didn't hear
-> anyone else presenting any actual real workable solutions.
-> 
-> but, you have to bear in mind a couple of things:
-> 
-> a) i'm a free software developer and advocate.  "business", "lobbying"
-> etc. do not come naturally to me.  my associates scream at me
-> regularly.
-> 
-> b) i've been thinking about this incredibly hard problem for at least
-> 4 years and almost *all* of my background in computing of the past 30
-> years leads me naturally towards actually coming up with a solution
-> 
-> c) i'm actually really, really really and truly going about *actively*
-> implementing that solution rather than just complaining about it *and*
-> i'm inviting free software developers to participate, why, because see
-> first sentence of a) above.
-
-Well making a tool to convert the fex stuff to devicetree sure sounds
-like it could be helpful to allwinner customers.
-
-And if there is anything you know if that can't be represented in
-devicetree, I am sure some people would like to know about it.  I doubt
-you can come up with anything though.
-
-Clearly adding fex to the upstream kernel isn't a good idea and isn't
-going to happen, so any "solution" has to involve getting allwinner to
-use devicetree and making doing that as easy as possible.
-
-> [*1] which is an open standard, not a proprietary locked one.
-
-It will be interesting to see if it ever turns into anything, or gets
-stuck as just an interesting idea that never took off.
-
-I just checked for my freescale i.mx53, and it has devicetree support
-as of 3.3 kernels.  The TI chips I have looked at recently all use
-devicetree, even the ones that have not yet been merged upstream.
-The marvell armada 370 and xp both appear to have devicetree support.
-Nvidia tegras appear to have devicetree support.  not sure if any of
-the qualcomm snapdragons have devicetree support yet.
-
-It seems to me almost everyone else is getting on with doing devicetree,
-and allwinner is the odd one out that just can't be bothered to get with
-the program.
+Greetings,
+  Christian
 
 -- 
-Len Sorensen
+  Christian Ruppert              ,          <christian.ruppert@abilis.com>
+                                /|
+  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
+                             _// | bilis Systems   CH-1228 Plan-les-Ouates
