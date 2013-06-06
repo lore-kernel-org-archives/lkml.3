@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639Ab3FFUSj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 16:18:39 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:39196 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754450Ab3FFUSd (ORCPT
+	id S1754507Ab3FFUUo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 16:20:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52595 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752101Ab3FFUUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 16:18:33 -0400
-Date: Thu, 6 Jun 2013 21:18:28 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Matt Fleming <matt@console-pimps.org>,
-        Linux EFI <linux-efi@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH 3/4] x86, efi: Add an efi= kernel command line parameter
-Message-ID: <20130606201828.GA3950@srcf.ucam.org>
-References: <1370177770-26661-1-git-send-email-bp@alien8.de>
- <1370177770-26661-4-git-send-email-bp@alien8.de>
- <20130606104224.GH30420@console-pimps.org>
- <20130606132603.GD20972@pd.tnic>
- <20130606175052.GA1285@srcf.ucam.org>
- <20130606185140.GK20972@pd.tnic>
- <20130606193548.GA2946@srcf.ucam.org>
- <20130606194134.GN20972@pd.tnic>
- <20130606195450.GA3252@srcf.ucam.org>
- <20130606200705.GO20972@pd.tnic>
+	Thu, 6 Jun 2013 16:20:42 -0400
+Date: Thu, 6 Jun 2013 13:20:41 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ferruh Yigit <fery@cypress.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, ttdrivers@cypress.com,
+        Javier Martinez Canillas <javier@dowhile0.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Simon Budig <simon.budig@kernelconcepts.de>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Shawn Landden <shawnlandden@gmail.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Olivier Sobrie <olivier@sobrie.be>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH v3 1/4] Input: cyttsp - I2C driver split into two modules
+Message-ID: <20130606202041.GB18075@kroah.com>
+References: <1370338484-26573-1-git-send-email-fery@cypress.com>
+ <1370338484-26573-2-git-send-email-fery@cypress.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130606200705.GO20972@pd.tnic>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1370338484-26573-2-git-send-email-fery@cypress.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 10:07:05PM +0200, Borislav Petkov wrote:
-> On Thu, Jun 06, 2013 at 08:54:50PM +0100, Matthew Garrett wrote:
-> > We want both to be available when we're making the call, but I think
-> > we should probably enter via the high addresses. The only reason we're
-> > doing this at all is that some systems don't update all of their
-> > pointers from physical mode, and we'd prefer them to work rather than
-> > fault...
+On Tue, Jun 04, 2013 at 12:34:41PM +0300, Ferruh Yigit wrote:
+> Existing I2C code is for TrueTouch Gen3 devices
 > 
-> Actually, we do the 1:1 thing so that EFI runtime works in a kexec
-> kernel too. Which won't work if we use the high addresses.
+> TrueTouch Gen4 device is using same protocol, will split driver into
+> two pieces to use common code with both drivers.
+> 
+> Read/Write functions parameter list modified, since shared code will
+> be used by two separate drivers and these drivers are not sharing same
+> structs, parameters updated to use common structures.
+> 
+> Signed-off-by: Ferruh Yigit <fery@cypress.com>
+> ---
 
-kexec seems like a lower priority than compatibility. Perhaps keep the 
-efi argument for people who want to use kexec? hpa suggested allocating 
-a fixed high area for UEFI mappings, which would also solve this.
-
-> However, if we can use the 1:1 map *after* SetVirtualAddressMap() has
-> been called with the high mappings, then my issue is solved - we drop
-> to using 1:1 in the kexec kernel only. But I don't think that is the
-> case...
-
-Yeah, calling SetVirtualAddressMap() with high addresses is going to 
-result in the firmware having a bunch of pointers to high addresses.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
