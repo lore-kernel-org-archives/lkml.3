@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756456Ab3FFCE7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 22:04:59 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:45552 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752846Ab3FFCE6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 22:04:58 -0400
-Date: Thu, 6 Jun 2013 12:04:55 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Subject: Re: mmotm 2013-06-05-17-24 uploaded
-Message-Id: <20130606120455.bd86a4c0ac009482db80f634@canb.auug.org.au>
-In-Reply-To: <20130606002636.6746F5A41AE@corp2gmr1-2.hot.corp.google.com>
-References: <20130606002636.6746F5A41AE@corp2gmr1-2.hot.corp.google.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__6_Jun_2013_12_04_55_+1000_4uFTmUaO3h/okSgd"
+	id S1754464Ab3FFCRu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 22:17:50 -0400
+Received: from mail-db9lp0253.outbound.messaging.microsoft.com ([213.199.154.253]:8482
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753059Ab3FFCRt convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 22:17:49 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzc89bhzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6h1082kz8dhzz2dh2a8h668h839h941hd25he5bhf0ah1269h1288h12a5h12a9h12bdh12e1h1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
+Message-ID: <51AFF1FB.1070100@freescale.com>
+Date: Thu, 6 Jun 2013 10:20:43 +0800
+From: Huang Shijie <b32955@freescale.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Brian Norris <computersforpeace@gmail.com>
+CC: Artem Bityutskiy <dedekind1@gmail.com>, <linux-mtd@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Kevin Cernekee <cernekee@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Imre Deak <imre.deak@intel.com>
+Subject: Re: [PATCH 3/3] mtd: cfi_cmdset_0002: increase do_write_buffer()
+ timeout
+References: <1370310406-413-1-git-send-email-computersforpeace@gmail.com>	<1370310406-413-3-git-send-email-computersforpeace@gmail.com>	<51AD9140.90500@freescale.com>	<CAN8TOE9UDGuQd9AbE-4UVcAiqCFpqhY=fX+LbrDybdgr16THdQ@mail.gmail.com> <CAN8TOE8FRtQupXwvAtrVSN-C-nQz-XgOW7OA5C=XRs9YmCwTkg@mail.gmail.com>
+In-Reply-To: <CAN8TOE8FRtQupXwvAtrVSN-C-nQz-XgOW7OA5C=XRs9YmCwTkg@mail.gmail.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__6_Jun_2013_12_04_55_+1000_4uFTmUaO3h/okSgd
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+于 2013年06月06日 05:08, Brian Norris 写道:
+> Note that a 2-jiffy timeout does not, in fact, totally resolve my
+> problems; with a timeout of 2 jiffies, I still get a timeout that
+> (according to getnstimeofday()) occurs after only 56us. It does
+since the 2-jiffy does not resolve your problem, i suggest you try the
+latest linux-next
+tree.
 
-Hi Andrew,
 
-On Wed, 05 Jun 2013 17:26:36 -0700 akpm@linux-foundation.org wrote:
->
->   linux-next-git-rejects.patch
+thanks
+Huang Shijie
 
-We must figure out why you sometimes get rejects that I do not get when I
-import your series into a git tree.  However in this case you resolution
-is not quite right.  It leaves 2 continue statements in
-net/mac80211/iface.c at line 191 which will unconditionally short circuit
-the enclosing loop.  The version that will be in linux-next today is
-correct (and git did it automatically as part of the merge of the old
-linux-next tree).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__6_Jun_2013_12_04_55_+1000_4uFTmUaO3h/okSgd
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRr+5HAAoJEECxmPOUX5FEOo8P/RnG5/O6F33VHBHkewwwihE2
-Ba9P9wfOy2DsgdIBvdSOcRaDE//2SFMheEbBdt1oFKWrPY1iycjn5NW1nqv4w051
-o+3JUcIJM8ApjhO4oXBuLoZdHI9MrGg8l57GoOqOvZSANHhJfHovEXTGVw/xKRHk
-p3cQ2YcnpwXiSf4BCWs/DniF7Ux3ETLomaEBwdd0Bg4Oqk64hfmXz3VDb9gJBCAT
-eCQ1wu6cLd/rAGOJuxHHpx2cNPp7xr+fhEWRi0krEhAOlRkn1qQLCPkNRx9DpB7m
-q0NTEf2nKzSwhYsKtspFJnl6aLyN91axuVF7m2nIa7E3BddJRCdCQIn5jlpB0ZwF
-xGX9lO2jM/fWoNMgadjeqmyrzlAFtUvLliTQSANz4GMoalhnGBuzIcols0OPjjcf
-1tHM2VGNVJ+6MpyN+KRsoIvfCCwnSKTh5m1DlWC/aLcCgJwTo3FbyK0WaBywErl9
-FthIRpYQOUo3c93MZyJzsvSywXCRgzujpvcetMqFP9XVWPLDJRdfxZ7owkDVsGwN
-r2xRegCCLWZIXlQpNsX6yJ67b8YkMJ5o2+62qW71N0CRDI/LVfNMST9K7W3/7OPR
-oJ/VE9PreIPeJiFsQuRDW4X4RvoRxr9m8hLb5FkVnteyVmvaMTObSKKrGK3ZeJoa
-B8g7q9rCyMcQmA9PPJA5
-=5k0P
------END PGP SIGNATURE-----
-
---Signature=_Thu__6_Jun_2013_12_04_55_+1000_4uFTmUaO3h/okSgd--
