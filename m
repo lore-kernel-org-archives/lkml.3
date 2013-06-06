@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab3FFUI0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 16:08:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50689 "EHLO mx1.redhat.com"
+	id S1754533Ab3FFUIm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 16:08:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14215 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753084Ab3FFUIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 16:08:24 -0400
-Date: Thu, 6 Jun 2013 22:03:16 +0200
+	id S1753111Ab3FFUIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 16:08:41 -0400
+Date: Thu, 6 Jun 2013 22:03:34 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Jones <davej@redhat.com>,
@@ -17,9 +17,8 @@ To: Andrew Morton <akpm@linux-foundation.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Tejun Heo <tj@kernel.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] wait: introduce wait_event_common(wq, condition,
-	state, timeout)
-Message-ID: <20130606200316.GB23628@redhat.com>
+Subject: [PATCH 2/2] wait: introduce prepare_to_wait_event()
+Message-ID: <20130606200334.GC23628@redhat.com>
 References: <20130606200257.GA23628@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -30,277 +29,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. wait_event_timeout(wq, true, 0) returns zero, I think this is
-   wrong and should be fixed.
+Add the new helper, prepare_to_wait_event() which should only be used
+by wait_event_common/etc.
 
-   __wait_event_timeout() was already changed by 4c663cfc but we
-   need the same logic in wait_event_timeout() if the fast-path
-   check succeeds.
+prepare_to_wait_event() returns -ERESTARTSYS if signal_pending_state()
+is true, otherwise it calls prepare_to_wait(). This allows to uninline
+the signal-pending checks in wait_event_*.
 
-2. wait_event_timeout/__wait_event_timeout interface do not match
-   wait_event(), you can't use __wait_event_timeout() instead of
-   wait_event_timeout() if you do not need the fast-path check.
+Also, it can initialize wait->private/func. We do not care they were
+already initialized, the values are the same. This also shaves a couple
+of insns from the inlined code.
 
-3. wait_event_* macros duplicate the same code.
-
-This patch adds a single helper wait_event_common() which hopefully
-does everything right. Compiler optimizes out the "dead" code when
-we do not need signal_pending/schedule_timeout.
-
-With this patch "size vmlinux" reports that .text/data shrinks but
-I think this depends on gcc/config.
+Unlike the previous change, this patch "reliably" shrinks the size of
+generated code for every wait_event*() call.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: Tejun Heo <tj@kernel.org>
 ---
- include/linux/wait.h |  181 +++++++++++++++++++------------------------------
- 1 files changed, 70 insertions(+), 111 deletions(-)
+ include/linux/wait.h |   22 +++++++++++-----------
+ kernel/wait.c        |   14 ++++++++++++++
+ 2 files changed, 25 insertions(+), 11 deletions(-)
 
 diff --git a/include/linux/wait.h b/include/linux/wait.h
-index 1133695..392c54d 100644
+index 392c54d..a2314dd 100644
 --- a/include/linux/wait.h
 +++ b/include/linux/wait.h
-@@ -173,18 +173,52 @@ wait_queue_head_t *bit_waitqueue(void *, int);
- #define wake_up_interruptible_sync_poll(x, m)				\
- 	__wake_up_sync_key((x), TASK_INTERRUPTIBLE, 1, (void *) (m))
+@@ -176,28 +176,27 @@ wait_queue_head_t *bit_waitqueue(void *, int);
+ #define __wait_no_timeout(tout)	\
+ 	(__builtin_constant_p(tout) && (tout) == MAX_SCHEDULE_TIMEOUT)
  
--#define __wait_event(wq, condition) 					\
--do {									\
-+#define __wait_no_timeout(tout)	\
-+	(__builtin_constant_p(tout) && (tout) == MAX_SCHEDULE_TIMEOUT)
-+
-+/* uglified signal_pending_state() optimized for constant state */
-+#define __wait_signal_pending(state)					\
-+	((state == TASK_INTERRUPTIBLE) ? signal_pending(current) :	\
-+	 (state == TASK_KILLABLE) ? fatal_signal_pending(current) :	\
-+	  0)
-+
-+#define __wait_event_common(wq, condition, state, tout)			\
-+({									\
- 	DEFINE_WAIT(__wait);						\
-+	long __ret = 0, __tout = tout;					\
+-/* uglified signal_pending_state() optimized for constant state */
+-#define __wait_signal_pending(state)					\
+-	((state == TASK_INTERRUPTIBLE) ? signal_pending(current) :	\
+-	 (state == TASK_KILLABLE) ? fatal_signal_pending(current) :	\
+-	  0)
++#define __wait_interruptible(state)					\
++	(!__builtin_constant_p(state) ||				\
++	 	state == TASK_INTERRUPTIBLE || state == TASK_KILLABLE)
+ 
+ #define __wait_event_common(wq, condition, state, tout)			\
+ ({									\
+-	DEFINE_WAIT(__wait);						\
+-	long __ret = 0, __tout = tout;					\
++	long __ret, __tout = tout;					\
++	wait_queue_t __wait;						\
++									\
++	INIT_LIST_HEAD(&__wait.task_list);				\
++	__wait.flags = 0;						\
  									\
  	for (;;) {							\
--		prepare_to_wait(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
--		if (condition)						\
-+		prepare_to_wait(&wq, &__wait, state);			\
-+		if (condition) {					\
-+			__ret = __wait_no_timeout(tout) ?: __tout ?: 1;	\
-+			break;						\
-+		}							\
-+									\
-+		if (__wait_signal_pending(state)) {			\
-+			__ret = -ERESTARTSYS;				\
-+			break;						\
-+		}							\
-+									\
-+		if (__wait_no_timeout(tout))				\
-+			schedule();					\
-+		else if (__tout)					\
-+			__tout = schedule_timeout(__tout);		\
-+		else							\
+-		prepare_to_wait(&wq, &__wait, state);			\
++		__ret = prepare_to_wait_event(&wq, &__wait, state);	\
+ 		if (condition) {					\
+ 			__ret = __wait_no_timeout(tout) ?: __tout ?: 1;	\
  			break;						\
--		schedule();						\
- 	}								\
- 	finish_wait(&wq, &__wait);					\
--} while (0)
-+	__ret;								\
-+})
+ 		}							\
+ 									\
+-		if (__wait_signal_pending(state)) {			\
+-			__ret = -ERESTARTSYS;				\
++		if (__wait_interruptible(state) && __ret)		\
+ 			break;						\
+-		}							\
+ 									\
+ 		if (__wait_no_timeout(tout))				\
+ 			schedule();					\
+@@ -781,6 +780,7 @@ extern long interruptible_sleep_on_timeout(wait_queue_head_t *q,
+  * Waitqueues which are removed from the waitqueue_head at wakeup time
+  */
+ void prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait, int state);
++int prepare_to_wait_event(wait_queue_head_t *q, wait_queue_t *wait, int state);
+ void prepare_to_wait_exclusive(wait_queue_head_t *q, wait_queue_t *wait, int state);
+ void finish_wait(wait_queue_head_t *q, wait_queue_t *wait);
+ void abort_exclusive_wait(wait_queue_head_t *q, wait_queue_t *wait,
+diff --git a/kernel/wait.c b/kernel/wait.c
+index 6698e0c..57cc6e7 100644
+--- a/kernel/wait.c
++++ b/kernel/wait.c
+@@ -78,6 +78,20 @@ prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait, int state)
+ }
+ EXPORT_SYMBOL(prepare_to_wait);
+ 
++int
++prepare_to_wait_event(wait_queue_head_t *q, wait_queue_t *wait, int state)
++{
++	if (signal_pending_state(state, current))
++		return -ERESTARTSYS;
 +
-+#define wait_event_common(wq, condition, state, tout)			\
-+({									\
-+	long __ret;							\
-+	if (condition)							\
-+		__ret = __wait_no_timeout(tout) ?: (tout) ?: 1;		\
-+	else								\
-+		__ret = __wait_event_common(wq, condition, state, tout);\
-+	__ret;								\
-+})
- 
- /**
-  * wait_event - sleep until a condition gets true
-@@ -198,29 +232,13 @@ do {									\
-  * wake_up() has to be called after changing any variable that could
-  * change the result of the wait condition.
-  */
--#define wait_event(wq, condition) 					\
--do {									\
--	if (condition)	 						\
--		break;							\
--	__wait_event(wq, condition);					\
--} while (0)
-+#define __wait_event(wq, condition) 					\
-+	__wait_event_common(wq, condition,				\
-+			TASK_UNINTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT)	\
- 
--#define __wait_event_timeout(wq, condition, ret)			\
--do {									\
--	DEFINE_WAIT(__wait);						\
--									\
--	for (;;) {							\
--		prepare_to_wait(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
--		if (condition)						\
--			break;						\
--		ret = schedule_timeout(ret);				\
--		if (!ret)						\
--			break;						\
--	}								\
--	if (!ret && (condition))					\
--		ret = 1;						\
--	finish_wait(&wq, &__wait);					\
--} while (0)
-+#define wait_event(wq, condition) 					\
-+	wait_event_common(wq, condition,				\
-+			TASK_UNINTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT)	\
- 
- /**
-  * wait_event_timeout - sleep until a condition gets true or a timeout elapses
-@@ -239,31 +257,13 @@ do {									\
-  * jiffies (at least 1) if the @condition evaluated to %true before
-  * the @timeout elapsed.
-  */
--#define wait_event_timeout(wq, condition, timeout)			\
--({									\
--	long __ret = timeout;						\
--	if (!(condition)) 						\
--		__wait_event_timeout(wq, condition, __ret);		\
--	__ret;								\
--})
-+#define __wait_event_timeout(wq, condition, timeout)			\
-+	__wait_event_common(wq, condition,				\
-+			TASK_UNINTERRUPTIBLE, timeout)
- 
--#define __wait_event_interruptible(wq, condition, ret)			\
--do {									\
--	DEFINE_WAIT(__wait);						\
--									\
--	for (;;) {							\
--		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
--		if (condition)						\
--			break;						\
--		if (!signal_pending(current)) {				\
--			schedule();					\
--			continue;					\
--		}							\
--		ret = -ERESTARTSYS;					\
--		break;							\
--	}								\
--	finish_wait(&wq, &__wait);					\
--} while (0)
-+#define wait_event_timeout(wq, condition, timeout)			\
-+	wait_event_common(wq, condition,				\
-+			TASK_UNINTERRUPTIBLE, timeout)
- 
- /**
-  * wait_event_interruptible - sleep until a condition gets true
-@@ -280,35 +280,13 @@ do {									\
-  * The function will return -ERESTARTSYS if it was interrupted by a
-  * signal and 0 if @condition evaluated to true.
-  */
--#define wait_event_interruptible(wq, condition)				\
--({									\
--	int __ret = 0;							\
--	if (!(condition))						\
--		__wait_event_interruptible(wq, condition, __ret);	\
--	__ret;								\
--})
-+#define __wait_event_interruptible(wq, condition)			\
-+	__wait_event_common(wq, condition,				\
-+			TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT)
- 
--#define __wait_event_interruptible_timeout(wq, condition, ret)		\
--do {									\
--	DEFINE_WAIT(__wait);						\
--									\
--	for (;;) {							\
--		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
--		if (condition)						\
--			break;						\
--		if (!signal_pending(current)) {				\
--			ret = schedule_timeout(ret);			\
--			if (!ret)					\
--				break;					\
--			continue;					\
--		}							\
--		ret = -ERESTARTSYS;					\
--		break;							\
--	}								\
--	if (!ret && (condition))					\
--		ret = 1;						\
--	finish_wait(&wq, &__wait);					\
--} while (0)
-+#define wait_event_interruptible(wq, condition)				\
-+	wait_event_common(wq, condition,				\
-+			TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT)
- 
- /**
-  * wait_event_interruptible_timeout - sleep until a condition gets true or a timeout elapses
-@@ -328,13 +306,13 @@ do {									\
-  * a signal, or the remaining jiffies (at least 1) if the @condition
-  * evaluated to %true before the @timeout elapsed.
-  */
-+#define __wait_event_interruptible_timeout(wq, condition, timeout)	\
-+	__wait_event_common(wq, condition,				\
-+			TASK_INTERRUPTIBLE, timeout)
++	wait->private = current;
++	wait->func = autoremove_wake_function;
++	prepare_to_wait(q, wait, state);
 +
- #define wait_event_interruptible_timeout(wq, condition, timeout)	\
--({									\
--	long __ret = timeout;						\
--	if (!(condition))						\
--		__wait_event_interruptible_timeout(wq, condition, __ret); \
--	__ret;								\
--})
-+	wait_event_common(wq, condition,				\
-+			TASK_INTERRUPTIBLE, timeout)
- 
- #define __wait_event_hrtimeout(wq, condition, timeout, state)		\
- ({									\
-@@ -601,24 +579,6 @@ do {									\
- 
- 
- 
--#define __wait_event_killable(wq, condition, ret)			\
--do {									\
--	DEFINE_WAIT(__wait);						\
--									\
--	for (;;) {							\
--		prepare_to_wait(&wq, &__wait, TASK_KILLABLE);		\
--		if (condition)						\
--			break;						\
--		if (!fatal_signal_pending(current)) {			\
--			schedule();					\
--			continue;					\
--		}							\
--		ret = -ERESTARTSYS;					\
--		break;							\
--	}								\
--	finish_wait(&wq, &__wait);					\
--} while (0)
--
- /**
-  * wait_event_killable - sleep until a condition gets true
-  * @wq: the waitqueue to wait on
-@@ -634,14 +594,13 @@ do {									\
-  * The function will return -ERESTARTSYS if it was interrupted by a
-  * signal and 0 if @condition evaluated to true.
-  */
--#define wait_event_killable(wq, condition)				\
--({									\
--	int __ret = 0;							\
--	if (!(condition))						\
--		__wait_event_killable(wq, condition, __ret);		\
--	__ret;								\
--})
-+#define __wait_event_killable(wq, condition)				\
-+	__wait_event_common(wq, condition,				\
-+			TASK_KILLABLE, MAX_SCHEDULE_TIMEOUT)
- 
-+#define wait_event_killable(wq, condition)				\
-+	wait_event_common(wq, condition,				\
-+			TASK_KILLABLE, MAX_SCHEDULE_TIMEOUT)
- 
- #define __wait_event_lock_irq(wq, condition, lock, cmd)			\
- do {									\
++	return 0;
++}
++EXPORT_SYMBOL(prepare_to_wait_event);
++
+ void
+ prepare_to_wait_exclusive(wait_queue_head_t *q, wait_queue_t *wait, int state)
+ {
 -- 
 1.5.5.1
 
