@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932917Ab3FFKKS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 06:10:18 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:55321 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932588Ab3FFKKO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 06:10:14 -0400
+	id S932892Ab3FFKMu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 06:12:50 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:58043 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932552Ab3FFKMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 06:12:48 -0400
+X-IronPort-AV: E=Sophos;i="4.87,814,1363104000"; 
+   d="scan'208";a="7479369"
+Message-ID: <51B060E1.7050509@cn.fujitsu.com>
+Date: Thu, 06 Jun 2013 18:13:53 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <20130606100138.GC21181@pd.tnic>
-References: <51AF60D5.3080605@semaphore.gr>
-	<20130605161703.GA29958@pd.tnic>
-	<51AF71B6.6030408@semaphore.gr>
-	<105446113.ZumbZWCbSi@vostro.rjw.lan>
-	<20130606100138.GC21181@pd.tnic>
-Date: Thu, 6 Jun 2013 15:40:13 +0530
-Message-ID: <CAKohpo=cwxvcicw4svcvyKJOzGD9j+gzTyg=4yYg4EsY89C3EQ@mail.gmail.com>
-Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of
- target frequency
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Borislav Petkov <bp@suse.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Stratos Karafotis <stratosk@semaphore.gr>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: naota@elisp.net
+CC: Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] btrfs: Drop inode if inode root is NULL
+References: <87bo7jh8a5.fsf@elisp.net>
+In-Reply-To: <87bo7jh8a5.fsf@elisp.net>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/06 18:11:03,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/06 18:11:03,
+	Serialize complete at 2013/06/06 18:11:03
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 June 2013 15:31, Borislav Petkov <bp@suse.de> wrote:
+On 	thu, 06 Jun 2013 18:56:34 +0900, naota@elisp.net wrote:
+> There is a path where btrfs_drop_inode() is called with its inode's root
+> is NULL: In btrfs_new_inode(), when btrfs_set_inode_index() fails,
+> iput() is called. We should handle this case before taking look at the
+> root->root_item.
+> 
+> Signed-off-by: Naohiro Aota <naota@elisp.net>
 
-> Hold on, you say above "easily saturate minimum frequency and lead the
-> CPU to max". I read this as we jump straight to max P-state where we
-> even boost.
+Reviewed-by: Miao Xie <miaox@cn.fujitsu.com>
 
-Probably he meant: "At lowest levels of frequencies, a small load on system
-may look like a huge one. like: 20-30% load on max freq can be 95% load
-on min freq. And so we jump to max freq even for this load and return back
-pretty quickly as this load doesn't sustain for longer. over that we wait for
-load to go over up_threshold to increase freq."
+> ---
+>  fs/btrfs/inode.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+> index af978f7..17f3064 100644
+> --- a/fs/btrfs/inode.c
+> +++ b/fs/btrfs/inode.c
+> @@ -8012,6 +8012,9 @@ int btrfs_drop_inode(struct inode *inode)
+>  {
+>  	struct btrfs_root *root = BTRFS_I(inode)->root;
+>  
+> +	if (root == NULL)
+> +		return 1;
+> +
+>  	/* the snap/subvol tree is on deleting */
+>  	if (btrfs_root_refs(&root->root_item) == 0 &&
+>  	    root != root->fs_info->tree_root)
+> 
 
-> "CPU to max" finishes the work faster than middle frequencies, if you're
-> CPU-bound.
-
-He isn't removing this feature at all.
-
-Current code is:
-
-if (load > up_threshold)
-   goto maxfreq.
-else
-   don't increase freq, maybe decrease it in steps
-
-What he is doing is:
-
-if (load > up_threshold)
-   goto maxfreq.
-else
-   increase/decrease freq based on current load.
-
-So, if up_threshold is 95 and load remains < 95, his patch will
-give significant improvement both power & performance wise.
-
-Else, it shouldn't decrease it.
