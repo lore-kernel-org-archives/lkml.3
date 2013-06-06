@@ -1,83 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932533Ab3FFKrQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 06:47:16 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50814 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932141Ab3FFKrO (ORCPT
+	id S932570Ab3FFKsl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 06:48:41 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.116]:32770 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932141Ab3FFKsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 06:47:14 -0400
-Date: Thu, 6 Jun 2013 11:46:51 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Nick Dyer <nick.dyer@itdev.co.uk>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
-Message-ID: <20130606104651.GS31367@sirena.org.uk>
-References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
- <7380889.l4hHqCT0mm@dtor-d630.eng.vmware.com>
- <51AF8730.4010507@itdev.co.uk>
- <1717403.GgHsbyUkDZ@dtor-d630.eng.vmware.com>
- <51AFA02B.3000604@itdev.co.uk>
- <20130605210715.GA16013@core.coreip.homeip.net>
- <20130606094822.GB1883@sirena.org.uk>
- <51B06732.2050701@itdev.co.uk>
+	Thu, 6 Jun 2013 06:48:38 -0400
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-8.tower-194.messagelabs.com!1370515714!12681379!1
+X-Originating-IP: [83.171.138.125]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.6; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Thu, 06 Jun 2013 12:48:34 +0200
+Date: Thu, 6 Jun 2013 12:51:03 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Guenter Roeck <linux@roeck-us.net>, <wim@iguana.be>
+CC: <linux-watchdog@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <johannes.thumshirn@men.de>
+Subject: Some problems with sysfs patch (was Re: [PATCH v6] watchdog: New
+ watchdog driver for MEN A21 watchdogs)
+Message-ID: <20130606105103.GA25245@jtlinux>
+References: <20130531103654.GB5619@roeck-us.net>
+ <20130531110846.GA15707@jtlinux>
+ <20130531114037.GA13533@roeck-us.net>
+ <20130531125519.GB8983@jtlinux>
+ <20130601041523.GB4081@roeck-us.net>
+ <20130603095026.GA21720@jtlinux>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jobRqqe4Hp8P9iE7"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <51B06732.2050701@itdev.co.uk>
-X-Cookie: Are you a turtle?
+In-Reply-To: <20130603095026.GA21720@jtlinux>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 10/53] Input: atmel_mxt_ts - Add memory access interface
- via sysfs
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+X-Originating-IP: [192.1.1.31]
+X-OriginalArrivalTime: 06 Jun 2013 10:48:33.0968 (UTC) FILETIME=[64254B00:01CE62A3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 03, 2013 at 11:50:26AM +0200, Johannes Thumshirn wrote:
+> On Fri, May 31, 2013 at 09:15:23PM -0700, Guenter Roeck wrote:
+> > On Fri, May 31, 2013 at 02:55:19PM +0200, Johannes Thumshirn wrote:
+> > > Hi Guenther,
+> > > On Fri, May 31, 2013 at 04:40:37AM -0700, Guenter Roeck wrote:
+> > > > > +#define GPIO_WD_ENAB	169
+> > > > > +#define GPIO_WD_FAST	170
+> > > > > +#define GPIO_WD_TRIG	171
+> > > > > +
+> > > > > +#define GPIO_RST_CAUSE_BASE 166
+> > > > > +
+> > > >
+> > > > I think I asked that before ... as you are supporting devicetree, gpio pins
+> > > > should really be provided through devicetree properties and not be hardcoded.
+> > > >
+> > > Yes you did and I didn't come up with a solution to this problem yet. I understand
+> > > and agree to your concerns but I'm lacking example code/documentation for it, maybe
+> > > you can point me to an example on that and then I'll update my code accordingly.
+> > >
+> >
+> > Have a look at Documentation/devicetree/bindings/gpio/gpio-fan.txt and
+> > drivers/hwmon/gpio-fan.c.
+>
+> Thanks a lot, this really helped me out. Updated patch is comming today
+> including the bindings document Arnd Bergmann requested. I only need to rebase
+> the sysfs patch on top of that changes.
+>
+> Regards,
+> Johannes
 
---jobRqqe4Hp8P9iE7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Regarding the sysfs patch, I have a funny effect in my (rebased) sysfs code.
 
-On Thu, Jun 06, 2013 at 11:40:50AM +0100, Nick Dyer wrote:
+Given the following code:
 
-> I am more worried about the address pointer handling and the I2C retries.
++static ssize_t rebootcause_show(struct device *dev,
++                               struct device_attribute *attr,
++                               char *buf)
++{
++       struct a21_wdt_drv *drv = dev_get_drvdata(dev);
++       unsigned int reset = 0;
++
++       if (!drv)
++               return -EIO;
++
++       reset = a21_wdt_get_bootstatus(drv);
++
++       return sprintf(buf, "%s\n", reset_causes[reset]);
++}
++static DEVICE_ATTR(rebootcause, S_IRUGO, rebootcause_show, NULL);
 
-The retries can just be done further up the stack?  All regmap is doing
-with I/O errors is punting them straight back up to the caller so the
-caller can retry just as well using regmap as it can using the raw I/O
-protocol.
+I actually need the check for if (!drv) to prevent an OOPS, as
+dev_get_drvdata(dev) returns NULL., though it is set at the end of my probe
+function via:
 
-Without seeing the address thing it's hard to comment.
+[...]
++       ret = watchdog_register_device(&a21_wdt);
++       if (ret) {
++               dev_err(&pdev->dev, "Cannot register watchdog device\n");
++               goto err_register_wd;
++       }
++
++       dev_set_drvdata(&pdev->dev, drv);
++
++       return 0;
+[...]
 
---jobRqqe4Hp8P9iE7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The watchdog driver itself is working without any troubles.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Some advice here would be worth its weight in gold.
 
-iQIcBAEBAgAGBQJRsGiYAAoJELSic+t+oim9xsoP/jcQvo/QMsM9846ltzkPoNLz
-xcRCeEF+gYgR9ubx1mLeLTyyPnZttUbWJ/WMnVihaghjQ6kezanUXNWj2WhXXaLI
-GnOBLSqOR20IoaK9yEq5pAH9YdCpR7PyanOur+L82U6flrIFB8AJycxq8nHWXgAZ
-0AIlOo4ua7OCXFC2H4TIgpGdY0akQwyw3NYIbjU2d9vGAS+oMa9LJrEcltbdhWbw
-uYCtQuL+rTEAXQS6nQeHqJT+Ou6Es2S0z3DkIihou8YmsCP+9kHG7sEFwEKC6mai
-5ICZMlWrimjnsPej1/ASrUTRdzzUeAVzOIQ47MiF2TsJpYJrXj+rqYLYepduA+Qf
-whzTTGgzgYFBp3VOoQ5XZJZL6mHNNot06gr9I9Po5jB35KrGuza2zHdfAFSW+elX
-OA4WrrA/HJ9CXqNNiTT27ZEF6g1wJkqrXzBjZAXpgK1DpaTiQTszqYMWV7ihUsho
-OEbL47damSWp3eOW/kC9JmCsbmqy4gyLnMQ38ls3jq8THYLqGXZX1EtEBMROFS9/
-WSG/roJAW+4btBsNqMs6/fnMIOq1qxl3d29LgrKaY/Dy0ojR3WfUwZlsZbEGNjjz
-C6imF73xC2i/O4qL4LZDtyY3No5Zo0uLLfAPfAZaveFC57kNIGwWguMBqXgbZ+Zd
-FzudAS7vo/wMFjfYCOdt
-=w3YI
------END PGP SIGNATURE-----
-
---jobRqqe4Hp8P9iE7--
+Thanks,
+Johannes
