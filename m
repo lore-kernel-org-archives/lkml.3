@@ -1,143 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755620Ab3FFAjB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 20:39:01 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:47468 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755278Ab3FFAi7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 20:38:59 -0400
-Message-ID: <51AFDA20.8070501@linaro.org>
-Date: Wed, 05 Jun 2013 17:38:56 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1755662Ab3FFAje (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 20:39:34 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:54271 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755017Ab3FFAjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 20:39:33 -0400
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RFC 3/3] clk: dt: binding for basic divider clock
+Date: Thu, 6 Jun 2013 02:09:43 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Mike Turquette <mturquette@linaro.org>, Matt Sealey <neko@bakuhatsu.net>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+References: <1370281990-15090-1-git-send-email-mturquette@linaro.org> <CAHCPf3tZAbdVZPuKOjxJbCOAE76Pa6wMVHjnBRPhSpj0aMBMHg@mail.gmail.com> <20130604192243.10233.76496@quantum>
+In-Reply-To: <20130604192243.10233.76496@quantum>
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, arm@kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Christopher Covington <cov@codeaurora.org>
-Subject: Re: [PATCHv3 1/3] sched_clock: Add support for >32 bit sched_clock
-References: <1370476485-468-1-git-send-email-sboyd@codeaurora.org> <1370476485-468-2-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1370476485-468-2-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201306060209.43486.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2013 04:54 PM, Stephen Boyd wrote:
-> The ARM architected system counter has at least 56 useable bits.
-> Add support for counters with more than 32 bits to the generic
-> sched_clock implementation so we can avoid the complexity of
-> dealing with wrap-around on these devices while benefiting from
-> the irqtime accounting and suspend/resume handling that the
-> generic sched_clock code already has.
->
-> All users should switch over to the 64bit read function so we can
-> deprecate setup_sched_clock() in favor of sched_clock_setup().
+Am Dienstag, 4. Juni 2013, 21:22:43 schrieb Mike Turquette:
+> Quoting Matt Sealey (2013-06-04 10:39:53)
+> 
+> > On Tue, Jun 4, 2013 at 12:11 PM, Stephen Boyd <sboyd@codeaurora.org> 
+wrote:
+> > > On 06/03/13 10:53, Mike Turquette wrote:
+> > >> +Required properties:
+> > >> +- compatible : shall be "divider-clock".
+> > >> +- #clock-cells : from common clock binding; shall be set to 0.
+> > >> +- clocks : link to phandle of parent clock
+> > >> +- reg : base address for register controlling adjustable divider
+> > >> +- mask : arbitrary bitmask for programming the adjustable divider
+> > >> +
+> > >> +Optional properties:
+> > >> +- clock-output-names : From common clock binding.
+> > >> +- table : array of integer pairs defining divisors & bitfield values
+> > >> +- shift : number of bits to shift the mask, defaults to 0 if not
+> > >> present +- index_one : valid divisor programming starts at 1, not
+> > >> zero +- index_power_of_two : valid divisor programming must be a
+> > >> power of two +- allow_zero : implies index_one, and programming zero
+> > >> results in +  divide-by-one
+> > > 
+> > > It's preferred that property names have dashes instead of underscores.
+> > 
+> > I think I have a suggestion or two here..
+> > 
+> > I mailed one to Mike earlier, I have had some mailing list problems
+> > which I think are solved now..
+> > 
+> > If you provide a mask for programming the divider, surely the "shift"
+> > property is therefore redundant. Unless some device has a completely
+> > strange way of doing things and uses two seperated bitfields for
+> > programming in the same register, the shift value is simply a function
+> > of ffs() on the mask, isn't it? It is nice to put the information
+> > specifically in the device tree, but where a shift is not specified
+> > it'd probably be a good idea to go about deriving that value that way
+> > anyway, right, and if we're doing that.. why specify it?
+> 
+> Shift is optional.  Also I think the integer values in a DTS are
+> 32-bits, so if some day someone had a clock driver that needed to write
+> to a 64-bit register then shift might be useful there, combined with a
+> 32-bit mask.  Or perhaps dtc will have a 64-bit value for that case?  I
+> don't know.
+> 
+> I certainly do see your point about only using the mask, and the
+> original clock basic types did this a while back before the shift+width
+> style came into vogue.
+> 
+> If other reviewers also want to use a pure 32-bit mask and no shift then
+> I'll drop it in the next round.
 
-Minor nits below.
+I would object to dropping the shift :-)
 
->
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->
-> I've noticed that we probably need to update the mult/shift
-> calculation similar to how clocksources are done. Should we
-> just copy/paste the maxsec calculation code here or do something
-> smarter?
+If you look at the two clk extensions in my rockchip patches you can see that 
+they use a different regiment to set values.
 
-So, the clocksource calculation has an extra variable it has to balance, 
-which is the granularity of ntp adjustments being made (since with 
-higher shift values, we can make relatively smaller changes by +1 or -1 
-from mult).
+Using the lower 16 bits to set the value and the upper 16 bit to mark which 
+values are changed, i.e. (mask << shift + 16) | (val << shift).
 
-sched_clock doesn't have to deal with frequency adjustments, so the 
-shift value just needs to be high enough to be able to accurately 
-express the desired counter frequency.  Too high and you risk 
-multiplication overflows if there are large gaps between updates, too 
-low though and you run into possible accuracy issues (though I hope 
-there isn't much that's using sched_clock for long-term timing where 
-slight accuracy issues would be problematic).
-
-So I think its ok if the sched_clock code uses its own logic for 
-calculating the mult/shift pair, since the constraints are different 
-then what we expect from timekeeping.
-
-
->
->   include/linux/sched_clock.h |  1 +
->   kernel/time/sched_clock.c   | 41 +++++++++++++++++++++++++++--------------
->   2 files changed, 28 insertions(+), 14 deletions(-)
->
-> diff --git a/include/linux/sched_clock.h b/include/linux/sched_clock.h
-> index fa7922c..81baaef 100644
-> --- a/include/linux/sched_clock.h
-> +++ b/include/linux/sched_clock.h
-> @@ -15,6 +15,7 @@ static inline void sched_clock_postinit(void) { }
->   #endif
->   
->   extern void setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate);
-> +extern void sched_clock_setup(u64 (*read)(void), int bits, unsigned long rate);
-
-Eww. This sort of word-swizzled function names makes patch reviewing a pain.
-
-I know you're trying to deprecate the old function and provide a smooth 
-transition, but would you also consider including follow-on 
-patch/patches with this set that converts the existing setup_sched_clock 
-usage (at least just the ones in drivers/clocksource?) so it doesn't 
-stick around forever?
-
-And if not, at least add a clear comment here, and maybe some build 
-warnings to the old function so the driver owners know to make the 
-conversion happen quickly.
+(I'm not sure, if the naming or solution could be improved though)
 
 
-
->   extern unsigned long long (*sched_clock_func)(void);
->   
-> diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
-> index aad1ae6..3478b6d 100644
-> --- a/kernel/time/sched_clock.c
-> +++ b/kernel/time/sched_clock.c
-> @@ -14,11 +14,12 @@
->   #include <linux/syscore_ops.h>
->   #include <linux/timer.h>
->   #include <linux/sched_clock.h>
-> +#include <linux/bitops.h>
->   
->   struct clock_data {
->   	u64 epoch_ns;
-> -	u32 epoch_cyc;
-> -	u32 epoch_cyc_copy;
-> +	u64 epoch_cyc;
-> +	u64 epoch_cyc_copy;
->   	unsigned long rate;
->   	u32 mult;
->   	u32 shift;
-> @@ -35,24 +36,31 @@ static struct clock_data cd = {
->   	.mult	= NSEC_PER_SEC / HZ,
->   };
->   
-> -static u32 __read_mostly sched_clock_mask = 0xffffffff;
-> +static u64 __read_mostly sched_clock_mask;
->   
-> -static u32 notrace jiffy_sched_clock_read(void)
-> +static u64 notrace jiffy_sched_clock_read(void)
->   {
-> -	return (u32)(jiffies - INITIAL_JIFFIES);
-> +	return (u64)(jiffies - INITIAL_JIFFIES);
->   }
-
-Also, you might add a comment noting you register jiffies w/ 
-BITS_PER_LONG, to clarify don't have to use jiffies_64 here on 32bit 
-systems (despite the u64 cast)?
-
-
-thanks
--john
-
+Heiko
