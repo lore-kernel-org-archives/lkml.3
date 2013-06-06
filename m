@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757113Ab3FFImW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 04:42:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46735 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750976Ab3FFImT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 04:42:19 -0400
-Message-ID: <51B04B68.8080001@suse.de>
-Date: Thu, 06 Jun 2013 10:42:16 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Jan Vesely <jvesely@redhat.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        James Bottomley <JBottomley@Parallels.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [PATCH] [SCSI] scsilun_to_int should ignore the highest 2 bits
-References: <1370506691-22933-1-git-send-email-jvesely@redhat.com>
-In-Reply-To: <1370506691-22933-1-git-send-email-jvesely@redhat.com>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	id S1757945Ab3FFImj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 04:42:39 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:34243 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757504Ab3FFImg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 04:42:36 -0400
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: mturquette@linaro.org, kgene.kim@samsung.com, patches@linaro.org
+Subject: [PATCH] clk: exynos5250: Add CLK_IGNORE_UNUSED flag for pmu clock
+Date: Thu,  6 Jun 2013 13:58:18 +0530
+Message-Id: <1370507298-9230-1-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2013 10:18 AM, Jan Vesely wrote:
-> From: Jan Vesely <jvesely@redhat.com>
-> 
-> The comment says the function does this but it does not.
-> Reported luns change from weirdly high numbers (like 16640)
-> to something saner (256), when using flat space addressing.
-> 
-> CC: James Bottomley <JBottomley@Parallels.com>
-> CC: Dan Williams <dan.j.williams@intel.com>
-> Signed-off-by: Jan Vesely <jvesely@redhat.com>
-> ---
->  drivers/scsi/scsi_scan.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-> index 3e58b22..38dc093 100644
-> --- a/drivers/scsi/scsi_scan.c
-> +++ b/drivers/scsi/scsi_scan.c
-> @@ -1244,7 +1244,7 @@ int scsilun_to_int(struct scsi_lun *scsilun)
->  
->  	lun = 0;
->  	for (i = 0; i < sizeof(lun); i += 2)
-> -		lun = lun | (((scsilun->scsi_lun[i] << 8) |
-> +		lun = lun | ((((scsilun->scsi_lun[i] & 0x3f) << 8) |
->  			      scsilun->scsi_lun[i + 1]) << (i * 8));
->  	return lun;
->  }
-> 
-Bzzt. It's not that simple.
+Currently 'pmu' clock is not handled by any of the drivers.
+Also before the introduction of CCF, this clock was not defined,
+hence was left enabled always.
 
-For SCSI-3 _all_ numbers are valid, and doesn't know of any
-addressing scheme. It's only SPC-2 which introduced the addressing
-scheme. So at the very least you should be checking the scsi
-revision before attempting something like this.
+When this clock is disabled, software reset register becomes
+inaccessible and system reboot doesn't work.
 
-But in general doing a sequential scan past 256 is criminally
-dangerous. Any array / device attempting to is in most cases
-misconfigured or does not have the correct BLIST flag set.
+Upon restoring the default behaviour, system reboot starts working.
 
-I know of some older Hitachi and EMC firmware which would pretend to
-be SCSI-2, but supporting more than 256 LUNs per host.
-Which, of course, it totally bonkers.
+Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+---
+ drivers/clk/samsung/clk-exynos5250.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I'll be posting my 64-bit LUN patchset, that should fix this issue.
-
-Cheers,
-
-Hannes
+diff --git a/drivers/clk/samsung/clk-exynos5250.c b/drivers/clk/samsung/clk-exynos5250.c
+index 5c97e75..3853da9 100644
+--- a/drivers/clk/samsung/clk-exynos5250.c
++++ b/drivers/clk/samsung/clk-exynos5250.c
+@@ -378,7 +378,7 @@ struct samsung_gate_clock exynos5250_gate_clks[] __initdata = {
+ 	GATE(hsi2c3, "hsi2c3", "aclk66", GATE_IP_PERIC, 31, 0, 0),
+ 	GATE(chipid, "chipid", "aclk66", GATE_IP_PERIS, 0, 0, 0),
+ 	GATE(sysreg, "sysreg", "aclk66", GATE_IP_PERIS, 1, 0, 0),
+-	GATE(pmu, "pmu", "aclk66", GATE_IP_PERIS, 2, 0, 0),
++	GATE(pmu, "pmu", "aclk66", GATE_IP_PERIS, 2, CLK_IGNORE_UNUSED, 0),
+ 	GATE(tzpc0, "tzpc0", "aclk66", GATE_IP_PERIS, 6, 0, 0),
+ 	GATE(tzpc1, "tzpc1", "aclk66", GATE_IP_PERIS, 7, 0, 0),
+ 	GATE(tzpc2, "tzpc2", "aclk66", GATE_IP_PERIS, 8, 0, 0),
 -- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+1.7.9.5
+
