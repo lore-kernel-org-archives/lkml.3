@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423Ab3FFXtx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 19:49:53 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:33681 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908Ab3FFXtv (ORCPT
+	id S1753913Ab3FFX4x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 19:56:53 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:40348 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147Ab3FFX4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 19:49:51 -0400
-Date: Fri, 7 Jun 2013 09:49:40 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ext4: add check to io_submit_init_bio
-Message-Id: <20130607094940.d4a0056025f1c3ad32c35155@canb.auug.org.au>
-In-Reply-To: <20130606141941.GA5382@thunk.org>
-References: <20130606115653.a21b0c6a7bdbbbac23164b85@canb.auug.org.au>
-	<20130606141941.GA5382@thunk.org>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__7_Jun_2013_09_49_40_+1000_.py8XxszQ1LcfX.u"
+	Thu, 6 Jun 2013 19:56:51 -0400
+Date: Thu, 6 Jun 2013 16:56:47 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@openvz.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, devel@openvz.org
+Subject: Re: [PATCH v7 08/11] sched: Push put_prev_task() into
+ pick_next_task()
+Message-ID: <20130606235647.GR5045@htj.dyndns.org>
+References: <1369825402-31046-1-git-send-email-glommer@openvz.org>
+ <1369825402-31046-9-git-send-email-glommer@openvz.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369825402-31046-9-git-send-email-glommer@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__7_Jun_2013_09_49_40_+1000_.py8XxszQ1LcfX.u
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, May 29, 2013 at 03:03:19PM +0400, Glauber Costa wrote:
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> 
+> In order to avoid having to do put/set on a whole cgroup hierarchy
+> when we context switch, push the put into pick_next_task() so that
+> both operations are in the same function. Further changes then allow
+> us to possibly optimize away redundant work.
 
-Hi Ted,
+I suppose this is to optimize out css_put/get() if the previous and
+next tasks are in the same group?  css refcnt will soon (this week) be
+converted to percpu reference counter, so the optimization might not
+be as meaningful unless there are other things which are being
+optimized.
 
-On Thu, 6 Jun 2013 10:19:41 -0400 Theodore Ts'o <tytso@mit.edu> wrote:
->
-> On Thu, Jun 06, 2013 at 11:56:53AM +1000, Stephen Rothwell wrote:
-> >=20
-> > In tracking this down, I followed the call chains and discovered that
-> > io_submit_init_bio() only ever returned 0.  Switching that to return
-> > void and following back up the chain lead to the following patch.
->=20
-> Actually, that's a bug.  We're missing an check in that function.
-> Thanks for looking at this code.  (I'll fix the uninitialized err
-> warning another way.)
+Thanks.
 
-Glad to be of service.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__7_Jun_2013_09_49_40_+1000_.py8XxszQ1LcfX.u
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRsSAYAAoJEECxmPOUX5FESGYP/RPUQO39eFs1JGS/FEWd9Ciz
-JsSe2/e3+mx8dQXNYz8EsvNGBglkA4ViclVFPT7Mv+hPzcblLpL+p4NLGnzhB64f
-b5iSYtWpEGfgXCj387cxtjtGeuMbB8jTyYB45RcFD119Yr4oUo70E0ixZSRw0FOw
-LN2mVd6hZiC/lU8IKXU4ZybDCxa8B46V+DSQf7m+LvVacx/Igr2HokfyHXVeNdA1
-fInfcYpSsb7zCVaXktdqOBRVGGlbFw3XhoC9r3IxNRKm4k417flYXNjQBsByG/de
-vMuf6DCUzckc48st7Zxrf0dI28uOPDW8z7FfGbDU6jw8rRLOQqpZEigbdg1fQ6hf
-aIRmKbGL1E4wPea3tQwhRGZspR1WEYjqmOxoPcSQ1Mvg/Y8ufRp1U0xVguPCzWo7
-NJ45Y85yk+CaCZAwURda6hGBvA3BK689DyiBz8Y8hcnXKQucE4LadGZM2RJEsQ0y
-PmvtgY0ISIe11KPBDli7RP0udruN6/uyazh7cRg0RJRQ8QIsW7nKqOBzG6LaWVc2
-4cBPaTW2sr2UITTs8VBoKfmgDAFKLLHOX12VdXmCjw8QukUf2ktkapDjMtQJbd16
-Bx+/hlemk1/M2bUG2q585fMmwRU13DbunWamDh4YfrZEuyUgW3+P7rI38y62qD+s
-TOenNVRrmbulelx/PNMz
-=OSN6
------END PGP SIGNATURE-----
-
---Signature=_Fri__7_Jun_2013_09_49_40_+1000_.py8XxszQ1LcfX.u--
+-- 
+tejun
