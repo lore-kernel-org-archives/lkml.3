@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757771Ab3FFD5u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 23:57:50 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:59918 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756595Ab3FFD5s (ORCPT
+	id S1751254Ab3FFEIR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 00:08:17 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:49811 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750698Ab3FFEIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 23:57:48 -0400
-Date: Wed, 5 Jun 2013 20:57:44 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/2] arch: invoke oom-killer from page fault
-In-Reply-To: <1370488193-4747-1-git-send-email-hannes@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1306052053360.25115@chino.kir.corp.google.com>
-References: <1370488193-4747-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 6 Jun 2013 00:08:14 -0400
+Message-ID: <1370491691.24311.326.camel@edumazet-glaptop>
+Subject: Re: stop_machine lockup issue in 3.9.y.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ben Greear <greearb@candelatech.com>
+Cc: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Joe Lawrence <joe.lawrence@stratus.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
+        Jouni Malinen <jouni@qca.qualcomm.com>,
+        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
+        Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Date: Wed, 05 Jun 2013 21:08:11 -0700
+In-Reply-To: <51B00719.20406@candelatech.com>
+References: <51AE27D5.7050202@candelatech.com>
+	   <87sj0xry1k.fsf@rustcorp.com.au> <20130605071539.GA3429@mtj.dyndns.org>
+	   <51AF6E54.3050108@candelatech.com>
+	 <20130605184807.GD10693@mtj.dyndns.org>
+	   <51AF8D4B.4090407@candelatech.com> <51AF91F5.6090801@candelatech.com>
+	   <51AFA677.9010605@candelatech.com>
+	 <20130605211157.GK10693@mtj.dyndns.org>
+	   <1370482492.24311.308.camel@edumazet-glaptop>
+	   <20130606031444.GA12335@mtj.dyndns.org>
+	  <1370489181.24311.318.camel@edumazet-glaptop>
+	  <51B004CD.6080007@candelatech.com>
+	 <1370490403.24311.322.camel@edumazet-glaptop>
+	 <51B00719.20406@candelatech.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Jun 2013, Johannes Weiner wrote:
-
-> Since '1c0fe6e mm: invoke oom-killer from page fault', page fault
-> handlers should not directly kill faulting tasks in an out of memory
-> condition.
-
-I have no objection to the patch, but there's no explanation given here 
-why exiting with a kill shouldn't be done.  Is it because of memory 
-reserves and there is no guarantee that current will be able to exit?  Or 
-is it just for consistency with other archs?
-
-> Instead, they should be invoking the OOM killer to pick
-> the right task.  Convert the remaining architectures.
+On Wed, 2013-06-05 at 20:50 -0700, Ben Greear wrote:
+> On 06/05/2013 08:46 PM, Eric Dumazet wrote:
+> >
+> > We use in Google a patch triggering warning is a thread holds the cpu
+> > without taking care to need_resched() for more than xx ms
+> 
+> Well, I'm sure that patch works nicely until the clock stops moving
+> forward :)
 > 
 
-If this is a matter of memory reserves, I guess you could point people who 
-want the current behavior (avoiding the expensiveness of the tasklist scan 
-in the oom killer for example) to /proc/sys/vm/oom_kill_allocating_task?
+This is not using jiffies, but the clock used in kernel/sched/core.c,
+with ns resolution ;)
 
-This changelog is a bit cryptic in its motivation.
+> I'll post a patch with limit of 10 shortly.
+
+ok
+
+
