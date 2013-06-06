@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932733Ab3FFKuo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 06:50:44 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10120 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932390Ab3FFKuk (ORCPT
+	id S932779Ab3FFKvH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 06:51:07 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:7928 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932390Ab3FFKvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 06:50:40 -0400
+	Thu, 6 Jun 2013 06:51:03 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 06 Jun 2013 03:49:32 -0700
+	by hqnvupgp07.nvidia.com on Thu, 06 Jun 2013 03:49:54 -0700
 From: Peter De Schrijver <pdeschrijver@nvidia.com>
 To: Peter De Schrijver <pdeschrijver@nvidia.com>
 CC: <linux-arm-kernel@lists.infradead.org>, <mturquette@linaro.org>,
@@ -16,9 +16,9 @@ CC: <linux-arm-kernel@lists.infradead.org>, <mturquette@linaro.org>,
         Prashant Gaikwad <pgaikwad@nvidia.com>,
         Thierry Reding <thierry.reding@gmail.com>,
         <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 2/4] clk: tegra: override bits for Tegra114 PLLM
-Date: Thu, 6 Jun 2013 13:47:29 +0300
-Message-ID: <1370515677-6807-3-git-send-email-pdeschrijver@nvidia.com>
+Subject: [PATCH v2 3/4] clk: tegra: override bits for Tegra30 PLLM
+Date: Thu, 6 Jun 2013 13:47:30 +0300
+Message-ID: <1370515677-6807-4-git-send-email-pdeschrijver@nvidia.com>
 X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
 In-Reply-To: <1370515677-6807-1-git-send-email-pdeschrijver@nvidia.com>
 References: <1370515677-6807-1-git-send-email-pdeschrijver@nvidia.com>
@@ -29,51 +29,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define override bits for Tegra114 PLLM.
+Define override bits for Tegra30 PLLM.
 
 Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
- drivers/clk/tegra/clk-tegra114.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+ drivers/clk/tegra/clk-tegra30.c |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
-index d29ad1d..5b61a51 100644
---- a/drivers/clk/tegra/clk-tegra114.c
-+++ b/drivers/clk/tegra/clk-tegra114.c
-@@ -254,6 +254,10 @@
- /* Tegra CPU clock and reset control regs */
- #define CLK_RST_CONTROLLER_CPU_CMPLX_STATUS	0x470
+diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
+index b62e140..e598656 100644
+--- a/drivers/clk/tegra/clk-tegra30.c
++++ b/drivers/clk/tegra/clk-tegra30.c
+@@ -252,6 +252,9 @@
+ #define CLK_RESET_CCLK_RUN_POLICY		2
+ #define CLK_RESET_CCLK_BURST_POLICY_PLLX	8
  
 +/* PLLM override registers */
 +#define PMC_PLLM_WB0_OVERRIDE 0x1dc
-+#define PMC_PLLM_WB0_OVERRIDE_2 0x2b0
 +
- static int periph_clk_enb_refcnt[CLK_OUT_ENB_NUM * 32];
+ #ifdef CONFIG_PM_SLEEP
+ static struct cpu_clk_suspend_context {
+ 	u32 pllx_misc;
+@@ -563,6 +566,18 @@ static struct tegra_clk_pll_params pll_c_params = {
+ 	.lock_delay = 300,
+ };
  
- static void __iomem *clk_base;
-@@ -398,10 +402,13 @@ static struct tegra_clk_pll_params pll_c3_params = {
- static struct div_nmp pllm_nmp = {
- 	.divm_shift = 0,
- 	.divm_width = 8,
++static struct div_nmp pllm_nmp = {
++	.divn_shift = 8,
++	.divn_width = 10,
++	.override_divn_shift = 5,
++	.divm_shift = 0,
++	.divm_width = 5,
 +	.override_divm_shift = 0,
- 	.divn_shift = 8,
- 	.divn_width = 8,
-+	.override_divn_shift = 8,
- 	.divp_shift = 20,
- 	.divp_width = 1,
-+	.override_divp_shift = 27,
- };
- 
- static struct pdiv_map pllm_p[] = {
-@@ -434,6 +441,8 @@ static struct tegra_clk_pll_params pll_m_params = {
- 	.max_p = 2,
- 	.pdiv_tohw = pllm_p,
- 	.div_nmp = &pllm_nmp,
++	.divp_shift = 20,
++	.divp_width = 3,
++	.override_divp_shift = 15,
++};
++
+ static struct tegra_clk_pll_params pll_m_params = {
+ 	.input_min = 2000000,
+ 	.input_max = 31000000,
+@@ -575,6 +590,9 @@ static struct tegra_clk_pll_params pll_m_params = {
+ 	.lock_mask = PLL_BASE_LOCK,
+ 	.lock_enable_bit_idx = PLL_MISC_LOCK_ENABLE,
+ 	.lock_delay = 300,
++	.div_nmp = &pllm_nmp,
 +	.pmc_divnm_reg = PMC_PLLM_WB0_OVERRIDE,
-+	.pmc_divp_reg = PMC_PLLM_WB0_OVERRIDE_2,
++	.pmc_divp_reg = PMC_PLLM_WB0_OVERRIDE,
  };
  
- static struct div_nmp pllp_nmp = {
+ static struct tegra_clk_pll_params pll_p_params = {
 -- 
 1.7.7.rc0.72.g4b5ea.dirty
 
