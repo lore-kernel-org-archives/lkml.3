@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab3FFVCT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 17:02:19 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23749 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754761Ab3FFVCS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 17:02:18 -0400
-X-Authority-Analysis: v=2.0 cv=BcJaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=MWvAT0ojoM8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=ITzkURZ2-D4A:10 a=cZp-jb_gqwpYs19iVgcA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1370552535.9844.49.camel@gandalf.local.home>
-Subject: Re: [PATCH v14 3/3] trace,x86: Add irq vector tracepoints
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>, "bp@alien8.de" <bp@alien8.de>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Date: Thu, 06 Jun 2013 17:02:15 -0400
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D41B03198C@USINDEM103.corp.hds.com>
-References: <51B0A90F.7030309@hds.com> <51B0A9B4.4080703@hds.com>
-	 <1370546299.9844.40.camel@gandalf.local.home>
-	 <1370548859.9844.41.camel@gandalf.local.home>
-	 <A5ED84D3BB3A384992CBB9C77DEDA4D41B03198C@USINDEM103.corp.hds.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755600Ab3FFVCg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 17:02:36 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53650 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755255Ab3FFVCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 17:02:34 -0400
+Date: Thu, 6 Jun 2013 23:02:18 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Linux EFI <linux-efi@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
+        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH 3/4] x86, efi: Add an efi= kernel command line parameter
+Message-ID: <20130606210218.GR20972@pd.tnic>
+References: <20130606185140.GK20972@pd.tnic>
+ <20130606193548.GA2946@srcf.ucam.org>
+ <20130606194134.GN20972@pd.tnic>
+ <20130606195450.GA3252@srcf.ucam.org>
+ <20130606200705.GO20972@pd.tnic>
+ <20130606201828.GA3950@srcf.ucam.org>
+ <20130606202717.GP20972@pd.tnic>
+ <20130606203057.GA4237@srcf.ucam.org>
+ <20130606204410.GQ20972@pd.tnic>
+ <20130606205057.GA4363@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130606205057.GA4363@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-06 at 20:52 +0000, Seiji Aguchi wrote:
-> Steven,
-> 
-> Thank you for reviewing.
-> 
-> I will create a patch just renaming variables and adding the is_debug_idt_enabled() and load_debug_idt().
-> 
+On Thu, Jun 06, 2013 at 09:50:57PM +0100, Matthew Garrett wrote:
+> What do you mean by "call them"? I don't think we ever want to call by
+> physical address, other than maybe in the kexec case. The only reason
+> we really care about the physical addresses being mapped 1:1 is that
+> some pointers may not have been updated.
 
-Thanks, and you can have the code use those functions as well.
+I want to be able to call the runtime services in the kexec kernel.
+Which means, the kexec kernel would simply map the runtime code/data
+regions 1:1 and then use the physical addresses to call the runtime
+services.
 
--- Steve
+Question is: would that work even if SetVirtualAddressMap has already
+run in the original kernel and with virtual addresses?
 
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
