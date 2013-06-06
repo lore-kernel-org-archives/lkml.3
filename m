@@ -1,112 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696Ab3FFKu1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 06:50:27 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:58829 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932390Ab3FFKuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 06:50:23 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: liguang <lig.fnst@cn.fujitsu.com>
-Cc: Len Brown <lenb@kernel.org>, Matthew Garrett <matthew.garrett@nebula.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org,
-        Andreas =?ISO-8859-1?Q?F=E4rber?= <afaerber@suse.de>,
-        Igor Mammedov <imammedo@redhat.com>
-Subject: Re: [PATCH RFC v2 2/3] ec: add ec space notifier
-Date: Thu, 06 Jun 2013 12:59:28 +0200
-Message-ID: <10739719.ouMOhAfYPv@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1370482835-764-3-git-send-email-lig.fnst@cn.fujitsu.com>
-References: <1370482835-764-1-git-send-email-lig.fnst@cn.fujitsu.com> <1370482835-764-3-git-send-email-lig.fnst@cn.fujitsu.com>
+	id S932733Ab3FFKuo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 06:50:44 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10120 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932390Ab3FFKuk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 06:50:40 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 06 Jun 2013 03:49:32 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 2/4] clk: tegra: override bits for Tegra114 PLLM
+Date: Thu, 6 Jun 2013 13:47:29 +0300
+Message-ID: <1370515677-6807-3-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1370515677-6807-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1370515677-6807-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, June 06, 2013 09:40:34 AM liguang wrote:
-> add a notifier for anyone who are instresting in
-> ec space changing.
-> 
-> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
+Define override bits for Tegra114 PLLM.
 
-I'm not going to apply this anyway, but can you please explain what's the
-problem you're trying to solve here?
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ drivers/clk/tegra/clk-tegra114.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-Rafael
-
-
-> ---
->  drivers/acpi/ec.c    |   32 ++++++++++++++++++++++++++++++++
->  include/linux/acpi.h |    2 ++
->  2 files changed, 34 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-> index edc0081..dee3417 100644
-> --- a/drivers/acpi/ec.c
-> +++ b/drivers/acpi/ec.c
-> @@ -124,6 +124,35 @@ static int EC_FLAGS_MSI; /* Out-of-spec MSI controller */
->  static int EC_FLAGS_VALIDATE_ECDT; /* ASUStec ECDTs need to be validated */
->  static int EC_FLAGS_SKIP_DSDT_SCAN; /* Not all BIOS survive early DSDT scan */
->  
-> +/* notifier chain for who are intresting in ec space changing */
-> +static RAW_NOTIFIER_HEAD(ec_space_chain);
-> +
-> +int __ref register_ec_space_notifier(struct notifier_block *nb)
-> +{
-> +        int ret;
-> +
-> +        ret = raw_notifier_chain_register(&ec_space_chain, nb);
-> +
-> +        return ret;
-> +}
-> +EXPORT_SYMBOL(register_ec_space_notifier);
-> +
-> +void __ref unregister_ec_space_notifier(struct notifier_block *nb)
-> +{
-> +
-> +        raw_notifier_chain_unregister(&ec_space_chain, nb);
-> +}
-> +EXPORT_SYMBOL(unregister_ec_space_notifier);
-> +
-> +static int ec_space_notify(void *data)
-> +{
-> +    int ret;
-> +
-> +    ret = __raw_notifier_call_chain(&ec_space_chain, 0, data, -1, NULL);
-> +
-> +     return notifier_to_errno(ret);
-> +}
-> +
->  /* --------------------------------------------------------------------------
->                               Transaction Management
->     -------------------------------------------------------------------------- */
-> @@ -638,6 +667,9 @@ static u32 acpi_ec_gpe_handler(acpi_handle gpe_device,
->  		wake_up(&ec->wait);
->  		ec_check_sci(ec, acpi_ec_read_status(ec));
->  	}
-> +
-> +	ec_space_notify(data);
-> +
->  	return ACPI_INTERRUPT_HANDLED | ACPI_REENABLE_GPE;
->  }
->  
-> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-> index 17b5b59..4fe2247 100644
-> --- a/include/linux/acpi.h
-> +++ b/include/linux/acpi.h
-> @@ -158,6 +158,8 @@ extern int ec_transaction(u8 command,
->                            const u8 *wdata, unsigned wdata_len,
->                            u8 *rdata, unsigned rdata_len);
->  extern acpi_handle ec_get_handle(void);
-> +extern int register_ec_space_notifier(struct notifier_block *nb);
-> +extern void unregister_ec_space_notifier(struct notifier_block *nb);
->  
->  #if defined(CONFIG_ACPI_WMI) || defined(CONFIG_ACPI_WMI_MODULE)
->  
-> 
+diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
+index d29ad1d..5b61a51 100644
+--- a/drivers/clk/tegra/clk-tegra114.c
++++ b/drivers/clk/tegra/clk-tegra114.c
+@@ -254,6 +254,10 @@
+ /* Tegra CPU clock and reset control regs */
+ #define CLK_RST_CONTROLLER_CPU_CMPLX_STATUS	0x470
+ 
++/* PLLM override registers */
++#define PMC_PLLM_WB0_OVERRIDE 0x1dc
++#define PMC_PLLM_WB0_OVERRIDE_2 0x2b0
++
+ static int periph_clk_enb_refcnt[CLK_OUT_ENB_NUM * 32];
+ 
+ static void __iomem *clk_base;
+@@ -398,10 +402,13 @@ static struct tegra_clk_pll_params pll_c3_params = {
+ static struct div_nmp pllm_nmp = {
+ 	.divm_shift = 0,
+ 	.divm_width = 8,
++	.override_divm_shift = 0,
+ 	.divn_shift = 8,
+ 	.divn_width = 8,
++	.override_divn_shift = 8,
+ 	.divp_shift = 20,
+ 	.divp_width = 1,
++	.override_divp_shift = 27,
+ };
+ 
+ static struct pdiv_map pllm_p[] = {
+@@ -434,6 +441,8 @@ static struct tegra_clk_pll_params pll_m_params = {
+ 	.max_p = 2,
+ 	.pdiv_tohw = pllm_p,
+ 	.div_nmp = &pllm_nmp,
++	.pmc_divnm_reg = PMC_PLLM_WB0_OVERRIDE,
++	.pmc_divp_reg = PMC_PLLM_WB0_OVERRIDE_2,
+ };
+ 
+ static struct div_nmp pllp_nmp = {
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.7.rc0.72.g4b5ea.dirty
+
