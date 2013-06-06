@@ -1,83 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab3FFJuM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 05:50:12 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:38153 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751473Ab3FFJuK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 05:50:10 -0400
-Date: Thu, 6 Jun 2013 10:49:32 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        "luke.leighton" <luke.leighton@gmail.com>,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        debian-kernel@lists.debian.org
-Message-ID: <20130606094932.GN31367@sirena.org.uk>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
- <1370475609.20454.44.camel@localhost>
- <CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
- <1733666.lHUBcfUXq9@flatron>
+	id S932163Ab3FFJyq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 05:54:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48387 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751102Ab3FFJyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 05:54:44 -0400
+Date: Thu, 6 Jun 2013 12:55:09 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jason Wang <jasowang@redhat.com>, Cong Wang <amwang@redhat.com>,
+        Amos Kong <akong@redhat.com>, Dave Jones <davej@redhat.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: qemu-devel@nongnu.org
+Subject: [PATCH] virtio-net: put virtio net header inline with data
+Message-ID: <20130606095456.GA7865@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5vxz5YoITinLs0qm"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1733666.lHUBcfUXq9@flatron>
-X-Cookie: Are you a turtle?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
- Uploading linux (3.9.4-1))
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+For small packets we can simplify xmit processing by linearizing buffers
+with the header: most packets seem to have enough head room we can use
+for this purpose.
 
---5vxz5YoITinLs0qm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Since some older hypervisors (e.g. qemu before version 1.5)
+required that header is the first s/g element,
+we need a feature bit for this.
 
-On Thu, Jun 06, 2013 at 02:01:14AM +0200, Tomasz Figa wrote:
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
-> I don't see any other solution here than moving all the Allwinner code to=
-=20
-> DT (as it has been suggested in this thread several times already), as=20
-> this is the only hardware description method supported by ARM Linux.
+This is a repost of my old patch, rebased to latest kernel.
 
-Well, the server guys are working on ACPI - people could contribute to
-that effort instead if they preferred (though I can see that they might
-not!).
+Before:
+Thu Jun  6 05:24:59 EDT 2013
+TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to
+11.0.0.4 (11.0.0.4) port 0 AF_INET : demo
+Local /Remote
+Socket Size   Request  Resp.   Elapsed  Trans.
+Send   Recv   Size     Size    Time     Rate         
+bytes  Bytes  bytes    bytes   secs.    per sec   
 
---5vxz5YoITinLs0qm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+16384  87380  1        1       10.00    12931.13   
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRsFsoAAoJELSic+t+oim9GjEQAJT+tHVIRENdSTOdCMUrwjWf
-leW7rvKEvns8wQ4KhMO7w0pnIABxAc6ZniX8X/MjawpXVSBDOpN5H422PnS8zAPV
-A9gZL6uvnuuUa9nLb64a5YAl4Gc4BP2V/KyS8k7cXnYPvKBOdQLBZRd5H/cWdhBV
-J3dR3N00vR17qoO/kGsjUGotdqyRG83fCm4xrsbkZ3Sl7C0CU9UQma/rPuIZ5qzR
-YLZ0BHJFrZ21x9CSrPaQsPYC18ajaEHCP6BpGhev0iqyNHZJz2y+kdC2Rr1qZeek
-Rul5YjWk998U9AnfO9EQeqbQy4UdKwSK5kFBx/IXcXtI3gNT2eTfxXpXFa2BARLu
-nWwY4cqhuP8MxT42aFVNYjGQdDDmdYYzf2wQCV8bjSycGMz6JibFUvHQF/gMFk3w
-qkAONnIaekxtixATQg7vl/Va+wZvGlEBNvHQN6TvwdhaVjjDw/OTlDIGLcle138z
-8O2ygNxbgVY7iw17iLzkwIivPkM7xTSfQsLW685WWUnjXgr/xjJ4qyq6ow5t9isI
-hGZxc6yIOiOme8Vvn+jxKKe/uN6IkRf4PuV/LqqHTrdtNHX7vfLxsTIEpc5y/Vs8
-EYUzeVT1+Pnz7b1rGxs1LRtm1POt6VRuL/8+5e64G+CXsJ5VJdiWDlLYPusaVzEo
-aF38P8FQ2r272NbSedfi
-=fs+B
------END PGP SIGNATURE-----
+After:
+TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to
+11.0.0.4 (11.0.0.4) port 0 AF_INET : demo
+Local /Remote
+Socket Size   Request  Resp.   Elapsed  Trans.
+Send   Recv   Size     Size    Time     Rate         
+bytes  Bytes  bytes    bytes   secs.    per sec   
 
---5vxz5YoITinLs0qm--
+16384  87380  1        1       10.00    14151.12
+
+
+ drivers/net/virtio_net.c        | 42 +++++++++++++++++++++++++++++++++--------
+ include/uapi/linux/virtio_net.h |  6 +++++-
+ 2 files changed, 39 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index c9e0038..d35a097 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -106,6 +106,9 @@ struct virtnet_info {
+ 	/* Has control virtqueue */
+ 	bool has_cvq;
+ 
++	/* Host can handle any s/g split between our header and packet data */
++	bool any_header_sg;
++
+ 	/* enable config space updates */
+ 	bool config_enable;
+ 
+@@ -668,12 +671,28 @@ static void free_old_xmit_skbs(struct send_queue *sq)
+ 
+ static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
+ {
+-	struct skb_vnet_hdr *hdr = skb_vnet_hdr(skb);
++	struct skb_vnet_hdr *hdr;
+ 	const unsigned char *dest = ((struct ethhdr *)skb->data)->h_dest;
+ 	struct virtnet_info *vi = sq->vq->vdev->priv;
+ 	unsigned num_sg;
++	unsigned hdr_len;
++	bool can_push;
+ 
+ 	pr_debug("%s: xmit %p %pM\n", vi->dev->name, skb, dest);
++	if (vi->mergeable_rx_bufs)
++		hdr_len = sizeof hdr->mhdr;
++	else
++		hdr_len = sizeof hdr->hdr;
++
++	can_push = vi->any_header_sg &&
++		!((unsigned long)skb->data & (__alignof__(*hdr) - 1)) &&
++		!skb_header_cloned(skb) && skb_headroom(skb) >= hdr_len;
++	/* Even if we can, don't push here yet as this would skew
++	 * csum_start offset below. */
++	if (can_push)
++		hdr = (struct skb_vnet_hdr *)(skb->data - hdr_len);
++	else
++		hdr = skb_vnet_hdr(skb);
+ 
+ 	if (skb->ip_summed == CHECKSUM_PARTIAL) {
+ 		hdr->hdr.flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
+@@ -702,15 +721,18 @@ static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
+ 		hdr->hdr.gso_size = hdr->hdr.hdr_len = 0;
+ 	}
+ 
+-	hdr->mhdr.num_buffers = 0;
+-
+-	/* Encode metadata header at front. */
+ 	if (vi->mergeable_rx_bufs)
+-		sg_set_buf(sq->sg, &hdr->mhdr, sizeof hdr->mhdr);
+-	else
+-		sg_set_buf(sq->sg, &hdr->hdr, sizeof hdr->hdr);
++		hdr->mhdr.num_buffers = 0;
+ 
+-	num_sg = skb_to_sgvec(skb, sq->sg + 1, 0, skb->len) + 1;
++	if (can_push) {
++		__skb_push(skb, hdr_len);
++		num_sg = skb_to_sgvec(skb, sq->sg, 0, skb->len);
++		/* Pull header back to avoid skew in tx bytes calculations. */
++		__skb_pull(skb, hdr_len);
++	} else {
++		sg_set_buf(sq->sg, hdr, hdr_len);
++		num_sg = skb_to_sgvec(skb, sq->sg + 1, 0, skb->len) + 1;
++	}
+ 	return virtqueue_add_outbuf(sq->vq, sq->sg, num_sg, skb, GFP_ATOMIC);
+ }
+ 
+@@ -1554,6 +1576,9 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
+ 		vi->mergeable_rx_bufs = true;
+ 
++	if (virtio_has_feature(vdev, VIRTIO_NET_F_ANY_HEADER_SG))
++		vi->any_header_sg = true;
++
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
+ 		vi->has_cvq = true;
+ 
+@@ -1729,6 +1754,7 @@ static unsigned int features[] = {
+ 	VIRTIO_NET_F_CTRL_RX, VIRTIO_NET_F_CTRL_VLAN,
+ 	VIRTIO_NET_F_GUEST_ANNOUNCE, VIRTIO_NET_F_MQ,
+ 	VIRTIO_NET_F_CTRL_MAC_ADDR,
++	VIRTIO_NET_F_ANY_HEADER_SG,
+ };
+ 
+ static struct virtio_driver virtio_net_driver = {
+diff --git a/include/uapi/linux/virtio_net.h b/include/uapi/linux/virtio_net.h
+index c520203..9c98b7d 100644
+--- a/include/uapi/linux/virtio_net.h
++++ b/include/uapi/linux/virtio_net.h
+@@ -55,6 +55,8 @@
+ 					 * Steering */
+ #define VIRTIO_NET_F_CTRL_MAC_ADDR 23	/* Set MAC address */
+ 
++#define VIRTIO_NET_F_ANY_HEADER_SG 25	/* Host can handle any header s/g */
++
+ #define VIRTIO_NET_S_LINK_UP	1	/* Link is up */
+ #define VIRTIO_NET_S_ANNOUNCE	2	/* Announcement is needed */
+ 
+@@ -70,7 +72,9 @@ struct virtio_net_config {
+ 	__u16 max_virtqueue_pairs;
+ } __attribute__((packed));
+ 
+-/* This is the first element of the scatter-gather list.  If you don't
++/* This header comes first in the scatter-gather list.
++ * If VIRTIO_NET_F_ANY_HEADER_SG is not negotiated, it must
++ * be the first element of the scatter-gather list.  If you don't
+  * specify GSO or CSUM features, you can simply ignore the header. */
+ struct virtio_net_hdr {
+ #define VIRTIO_NET_HDR_F_NEEDS_CSUM	1	// Use csum_start, csum_offset
+-- 
+MST
