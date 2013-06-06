@@ -1,46 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361Ab3FFDBI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 23:01:08 -0400
-Received: from ozlabs.org ([203.10.76.45]:56117 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756671Ab3FFDBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 23:01:06 -0400
-Date: Thu, 6 Jun 2013 13:01:05 +1000
-From: Anton Blanchard <anton@samba.org>
-To: Michael Neuling <mikey@neuling.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, trinity@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>, torvalds@linux-foundation.org
-Subject: Re: [PATCH 5/5] net: Block MSG_CMSG_COMPAT in send(m)msg and
- recv(m)msg
-Message-ID: <20130606130105.6e51066f@kryten>
-In-Reply-To: <CAEjGV6xcF776C6N6VxeMY0Vyk+X51oNixdbN42-xkWjQOaMEQA@mail.gmail.com>
-References: <cover.1369177867.git.luto@amacapital.net>
-	<aa015609319786835bcab445d507faa75c11f111.1369177867.git.luto@amacapital.net>
-	<CAEjGV6xcF776C6N6VxeMY0Vyk+X51oNixdbN42-xkWjQOaMEQA@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+	id S1757318Ab3FFDE6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 23:04:58 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:9355 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753628Ab3FFDE4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 23:04:56 -0400
+X-IronPort-AV: E=Sophos;i="4.87,811,1363104000"; 
+   d="scan'208";a="7473930"
+Subject: Re: [PATCH RFC v2 1/3] drivers/platform/x86: add cpu physically
+ hotplug driver
+From: li guang <lig.fnst@cn.fujitsu.com>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org,
+        Andreas =?ISO-8859-1?Q?F=E4rber?= <afaerber@suse.de>,
+        Igor Mammedov <imammedo@redhat.com>
+In-Reply-To: <51AFF2FB.6020007@cn.fujitsu.com>
+References: <1370482835-764-1-git-send-email-lig.fnst@cn.fujitsu.com>
+	 <1370482835-764-2-git-send-email-lig.fnst@cn.fujitsu.com>
+	 <51AFF2FB.6020007@cn.fujitsu.com>
+Date: Thu, 06 Jun 2013 11:03:47 +0800
+Message-ID: <1370487827.17798.89.camel@liguang.fnst.cn.fujitsu.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/06 11:03:11,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/06 11:03:11,
+	Serialize complete at 2013/06/06 11:03:11
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-> This is causing a regression on 64bit powerpc with 32bit usermode.
-> When I hit userspace, udev is broken and I suspect all networking is
-> broken as well.
+在 2013-06-06四的 10:24 +0800，Gu Zheng写道：
+> On 06/06/2013 09:40 AM, liguang wrote:
 > 
-> Can we please revert 1be374a0518a288147c6a7398792583200a67261
-> upstream?
+> > this driver will support cpu phyical add/removal automatically
+> > after online/offline. if cpu hotpluged, cpu will not
+> > online automatically, and for cpu offline, we try to
+> > do actually eject if allowed for cpu like
+> > "echo 1 > /sys/bus/acpi/devices/LNXCPU\:0X/eject"
+> > this "echo ..." is only present for recent kernel
+> > (sorry, can't figure out since when), for a little
+> > older kernel, there's not such approach AFAICS.
+> > 
+> > Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
+> > ---
+> >  drivers/platform/x86/Kconfig              |    8 ++++
+> >  drivers/platform/x86/Makefile             |    1 +
+> >  drivers/platform/x86/cpu_physic_hotplug.c |   60 +++++++++++++++++++++++++++++
+> >  3 files changed, 69 insertions(+), 0 deletions(-)
+> >  create mode 100644 drivers/platform/x86/cpu_physic_hotplug.c
+> > 
+> > diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+> > index 8577261..39b2392 100644
+> > --- a/drivers/platform/x86/Kconfig
+> > +++ b/drivers/platform/x86/Kconfig
+> > @@ -789,4 +789,12 @@ config PVPANIC
+> >  	  a paravirtualized device provided by QEMU; it lets a virtual machine
+> >  	  (guest) communicate panic events to the host.
+> >  
+> > +config QEMU_CPU_PHYSIC_HOTPLUG
+> > +	tristate "physically add/remove cpu after cpu onlined/offlined"
+> > +	depends on ACPI_HOTPLUG_CPU
+> > +	---help---
+> > +	  This driver will support physically remove a cpu after
+> > +	  it offlined for QEMU automatically. someone may require this feature
+> > +	  to do a physically removal for a cpu.
+> > +
+> >  endif # X86_PLATFORM_DEVICES
+> > diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+> > index ef0ec74..2e669b0 100644
+> > --- a/drivers/platform/x86/Makefile
+> > +++ b/drivers/platform/x86/Makefile
+> > @@ -53,3 +53,4 @@ obj-$(CONFIG_APPLE_GMUX)	+= apple-gmux.o
+> >  obj-$(CONFIG_CHROMEOS_LAPTOP)	+= chromeos_laptop.o
+> >  
+> >  obj-$(CONFIG_PVPANIC)           += pvpanic.o
+> > +obj-$(CONFIG_QEMU_CPU_PHYSIC_HOTPLUG)	+= cpu_physic_hotplug.o
+> > diff --git a/drivers/platform/x86/cpu_physic_hotplug.c b/drivers/platform/x86/cpu_physic_hotplug.c
+> > new file mode 100644
+> > index 0000000..a52c042
+> > --- /dev/null
+> > +++ b/drivers/platform/x86/cpu_physic_hotplug.c
+> > @@ -0,0 +1,60 @@
+> > +#include <linux/kernel.h>
+> > +#include <linux/module.h>
+> > +#include <linux/acpi.h>
+> > +#include <linux/cpu.h>
+> > +#include <linux/notifier.h>
+> > +#include <acpi/processor.h>
+> > +
+> > +MODULE_AUTHOR("Li Guang");
+> > +MODULE_DESCRIPTION("CPU physically hot-plug/unplug Driver");
+> > +MODULE_LICENSE("GPL");
+> > +
+> > +static int cpu_logic_hotplug_notify(struct notifier_block *nfb,
+> > +				unsigned long action, void *hcpu)
+> > +{
+> > +	unsigned int cpu = (unsigned long)hcpu;
+> > +	struct acpi_processor *pr = per_cpu(processors, cpu);
+> > +
+> > +	if (pr) {
+> > +		switch (action) {
+> > +		case CPU_ONLINE:
+> > +			break;
+> > +		case CPU_DEAD:
+> > +			break;
+> > +		default:
+> > +			break;
+> > +		}
+> > +	}
+> > +	return NOTIFY_OK;
+> > +}
+> > +
+> > +static struct notifier_block cpu_logic_hotplug_notifier =
+> > +{
+> > +	.notifier_call = cpu_logic_hotplug_notify,
+> > +};
+> > +
+> > +static int cpu_physic_hotplug_notify(struct notifier_block *nfb,
+> > +				 unsigned char *s)
+> > +{
+> > +}
 > 
-> Found via bisect.
+> Hi guang,
+> 	Maybe you need to define the callback function in the right format at the beginning,
+> if so, no need to correct it later.:)
+> 
 
-Doesn't this patch break compat_sys_sendmsg and compat_sys_recvmsg?
-We'd need to move the guts of sys_* into compat_sys_* to fix it.
+right,
 
-Anton
+Thanks!
+
+> 
+> > +
+> > +static struct notifier_block cpu_physic_hotplug_notifier =
+> > +{
+> > +	.notifier_call = cpu_physic_hotplug_notify,
+> > +};
+> > +
+> > +static int __init cpu_qemu_hotplug_init(void)
+> > +{
+> > +	register_hotcpu_notifier(&cpu_logic_hotplug_notifier);
+> > +	register_ec_gpe_notifier(&cpu_physic_hotplug_notifier);
+> 
+> 
+> As the [PATCH 2/3] has no dependence on this one, so you can set [PATCH 2/3] to [PATCH 1/3] and this one
+> to [PATCH 2/3]. Then you can use the xxx_ec_space_notifier directly here.
+> 
+> > +	return 0;
+> > +}
+> > +
+> > +static void __exit cpu_qemu_hotplug_exit(void)
+> > +{
+> > +	unregister_hotcpu_notifier(&cpu_logic_hotplug_notifier);
+> > +	unregister_ec_gpe_notifier(&cpu_physic_hotplug_notifier);
+> > +}
+> > +
+> > +module_init(cpu_qemu_hotplug_init);
+> > +module_exit(cpu_qemu_hotplug_exit);
+> 
+> 
+
+
