@@ -1,88 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817Ab3FFFgP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 01:36:15 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:38485 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753094Ab3FFFgN (ORCPT
+	id S1753744Ab3FFFik (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 01:38:40 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:60163 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752660Ab3FFFii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 01:36:13 -0400
-Date: Thu, 6 Jun 2013 15:36:00 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jason Cooper <jason@lakedaemon.net>, <andrew@lunn.ch>,
-        <gregory.clement@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: linux-next: manual merge of the mvebu tree with the imx-mxs tree
-Message-Id: <20130606153600.a23c3489dc8b30d0836cb8ea@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__6_Jun_2013_15_36_00_+1000_cipSAVLwCWoA0gEm"
+	Thu, 6 Jun 2013 01:38:38 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: x86@kernel.org, torvalds@linux-foundation.org,
+        "David S. Miller" <davem@davemloft.net>
+Cc: Michael Neuling <mikey@neuling.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>, trinity@vger.kernel.org
+Subject: [PATCH] net: Unbreak compat_sys_{send,recv}msg
+Date: Wed,  5 Jun 2013 22:38:26 -0700
+Message-Id: <e3bf421e44c6d27817c15a8683612a49e093b419.1370496702.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <20130606132926.f4161ddff87dc9a55e33a8ca@canb.auug.org.au>
+References: <20130606132926.f4161ddff87dc9a55e33a8ca@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__6_Jun_2013_15_36_00_+1000_cipSAVLwCWoA0gEm
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I broke them in this commit:
 
-Hi all,
+    commit 1be374a0518a288147c6a7398792583200a67261
+    Author: Andy Lutomirski <luto@amacapital.net>
+    Date:   Wed May 22 14:07:44 2013 -0700
 
-Today's linux-next merge of the mvebu tree got a conflict in
-arch/arm/Kconfig.debug between commit 284166ffebc3 ("ARM: imx: enable
-low-level debug support for imx6sl") from the imx-mxs tree and commit
-5be22d8c29fd ("arm: mvebu: add another earlyprintk Kconfig option") from
-the mvebu tree.
+        net: Block MSG_CMSG_COMPAT in send(m)msg and recv(m)msg
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+This patch adds __sys_sendmsg and __sys_sendmsg as common helpers that accept
+MSG_CMSG_COMPAT and blocks MSG_CMSG_COMPAT at the syscall entrypoints.  It
+also reverts some unnecessary checks in sys_socketcall.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Apparently I was suffering from underscore blindness the first time around.
 
-diff --cc arch/arm/Kconfig.debug
-index 29f7623,e6a6ab1..0000000
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@@ -639,9 -656,9 +664,10 @@@ config DEBUG_LL_INCLUD
-  				 DEBUG_IMX35_UART || \
-  				 DEBUG_IMX51_UART || \
-  				 DEBUG_IMX53_UART ||\
- -				 DEBUG_IMX6Q_UART
- +				 DEBUG_IMX6Q_UART || \
- +				 DEBUG_IMX6SL_UART
-- 	default "debug/mvebu.S" if DEBUG_MVEBU_UART
-+ 	default "debug/mvebu.S" if DEBUG_MVEBU_UART || \
-+ 				   DEBUG_MVEBU_UART_ALTERNATE
-  	default "debug/mxs.S" if DEBUG_IMX23_UART || DEBUG_IMX28_UART
-  	default "debug/nomadik.S" if DEBUG_NOMADIK_UART
-  	default "debug/omap2plus.S" if DEBUG_OMAP2PLUS_UART
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
 
---Signature=_Thu__6_Jun_2013_15_36_00_+1000_cipSAVLwCWoA0gEm
-Content-Type: application/pgp-signature
+I've tested this a little, but I'm not sure I have a great test case.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+If the decision is that it's better to leave this for the 3.11, I can send
+a squashed version.  Note that the oops that this fixes is only an oops if
+the other patches in the original series are applied.
 
-iQIcBAEBCAAGBQJRsB/FAAoJEECxmPOUX5FEb/cP+wS0e+YvHo2BFiI4G5cExyKb
-Nbs+/1E9jwlHNsflLgD4ZkSzlHrmTA9PZLZ97b9rIqUqmBxo4lafQnaV18uHqQi1
-YHskEzJixNaIYkCJCJ4gLdgQgBvthz6UeHJtxMYAM1jw1NnZ4Nox5b4Iq8Cg7vrw
-GeDfw5TAW+Xr3pC5zt4P6R8ELVZuHKnD74HGJqQONlEc7joNrLkPCI+udGI6Ww48
-RU7lQqprSHXm6GNORK1yEliX0/TMBNXNaz28xKSiWZ2roHstH/Q+nrhp5kk0TSsa
-lvdDE+t97mtOIMYp5/WVlL4qwMhkuGJVPHU8wUAH1CPAcMGNAjj+twmhtEzugfqF
-0J6JH00rVPyo0yQ+e4bplBNM3oUvbGQuVpt55pkhZDWXAShbUDKXCIybe/O69Up3
-7DQ3FNIVnVtbAchR/H2AfYX9TIMOydjq3o1fkUBh1WlO5W5IZ+Po7WnCJ5mB66ie
-jmAd6TVGnZPC3xZpjVcJXzvGb7Me8v65zS+7OQ1S8hkSk4ubnZQa0IR1wJk9jX3i
-Vayz7np4aK3j9fe0QdSq3m11/44ERxFfEaKbssli6GmGWGadmemK70VqszicduWB
-b2VYZbEu6hwqe028I7YJ8BtYONT+AGHlxM5LMp3rT0LgPS4p+OPUwYa+1WtK1gi9
-DGv2OkctjPJ7eSM8xxlj
-=hdSn
------END PGP SIGNATURE-----
+(FWIW, I wasn't sure how to submit this stuff in the first place.  I submitted
+some kernel hardening patches for the x86 tree that converted an access_ok
+oddity in the net code into an actual oops.  In a bit of looking, I couldn't
+find any failure mode other than a -EFAULT return without the other patches
+applied.  This was clear in the patch series description but not in the
+change log message for the net part.)
 
---Signature=_Thu__6_Jun_2013_15_36_00_+1000_cipSAVLwCWoA0gEm--
+ include/linux/socket.h |  3 +++
+ net/compat.c           | 13 +++++++--
+ net/socket.c           | 72 +++++++++++++++++++++++---------------------------
+ 3 files changed, 47 insertions(+), 41 deletions(-)
+
+diff --git a/include/linux/socket.h b/include/linux/socket.h
+index 2b9f74b..e897bdc 100644
+--- a/include/linux/socket.h
++++ b/include/linux/socket.h
+@@ -321,6 +321,9 @@ extern int put_cmsg(struct msghdr*, int level, int type, int len, void *data);
+ 
+ struct timespec;
+ 
++/* The __sys_...msg variants allow MSG_CMSG_COMPAT */
++extern long __sys_recvmsg(int fd, struct msghdr __user *msg, unsigned flags);
++extern long __sys_sendmsg(int fd, struct msghdr __user *msg, unsigned flags);
+ extern int __sys_recvmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
+ 			  unsigned int flags, struct timespec *timeout);
+ extern int __sys_sendmmsg(int fd, struct mmsghdr __user *mmsg,
+diff --git a/net/compat.c b/net/compat.c
+index 79ae884..f0a1ba6 100644
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -734,19 +734,25 @@ static unsigned char nas[21] = {
+ 
+ asmlinkage long compat_sys_sendmsg(int fd, struct compat_msghdr __user *msg, unsigned int flags)
+ {
+-	return sys_sendmsg(fd, (struct msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
++	if (flags & MSG_CMSG_COMPAT)
++		return -EINVAL;
++	return __sys_sendmsg(fd, (struct msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
+ }
+ 
+ asmlinkage long compat_sys_sendmmsg(int fd, struct compat_mmsghdr __user *mmsg,
+ 				    unsigned int vlen, unsigned int flags)
+ {
++	if (flags & MSG_CMSG_COMPAT)
++		return -EINVAL;
+ 	return __sys_sendmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
+ 			      flags | MSG_CMSG_COMPAT);
+ }
+ 
+ asmlinkage long compat_sys_recvmsg(int fd, struct compat_msghdr __user *msg, unsigned int flags)
+ {
+-	return sys_recvmsg(fd, (struct msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
++	if (flags & MSG_CMSG_COMPAT)
++		return -EINVAL;
++	return __sys_recvmsg(fd, (struct msghdr __user *)msg, flags | MSG_CMSG_COMPAT);
+ }
+ 
+ asmlinkage long compat_sys_recv(int fd, void __user *buf, size_t len, unsigned int flags)
+@@ -768,6 +774,9 @@ asmlinkage long compat_sys_recvmmsg(int fd, struct compat_mmsghdr __user *mmsg,
+ 	int datagrams;
+ 	struct timespec ktspec;
+ 
++	if (flags & MSG_CMSG_COMPAT)
++		return -EINVAL;
++
+ 	if (COMPAT_USE_64BIT_TIME)
+ 		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
+ 				      flags | MSG_CMSG_COMPAT,
+diff --git a/net/socket.c b/net/socket.c
+index 0e16888..e216502 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1978,7 +1978,7 @@ struct used_address {
+ 	unsigned int name_len;
+ };
+ 
+-static int __sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
++static int ___sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
+ 			 struct msghdr *msg_sys, unsigned int flags,
+ 			 struct used_address *used_address)
+ {
+@@ -2093,26 +2093,30 @@ out:
+  *	BSD sendmsg interface
+  */
+ 
+-SYSCALL_DEFINE3(sendmsg, int, fd, struct msghdr __user *, msg, unsigned int, flags)
++long __sys_sendmsg(int fd, struct msghdr __user *msg, unsigned flags)
+ {
+ 	int fput_needed, err;
+ 	struct msghdr msg_sys;
+ 	struct socket *sock;
+ 
+-	if (flags & MSG_CMSG_COMPAT)
+-		return -EINVAL;
+-
+ 	sock = sockfd_lookup_light(fd, &err, &fput_needed);
+ 	if (!sock)
+ 		goto out;
+ 
+-	err = __sys_sendmsg(sock, msg, &msg_sys, flags, NULL);
++	err = ___sys_sendmsg(sock, msg, &msg_sys, flags, NULL);
+ 
+ 	fput_light(sock->file, fput_needed);
+ out:
+ 	return err;
+ }
+ 
++SYSCALL_DEFINE3(sendmsg, int, fd, struct msghdr __user *, msg, unsigned int, flags)
++{
++	if (flags & MSG_CMSG_COMPAT)
++		return -EINVAL;
++	return __sys_sendmsg(fd, msg, flags);
++}
++
+ /*
+  *	Linux sendmmsg interface
+  */
+@@ -2143,15 +2147,16 @@ int __sys_sendmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
+ 
+ 	while (datagrams < vlen) {
+ 		if (MSG_CMSG_COMPAT & flags) {
+-			err = __sys_sendmsg(sock, (struct msghdr __user *)compat_entry,
+-					    &msg_sys, flags, &used_address);
++			err = ___sys_sendmsg(sock, (struct msghdr __user *)compat_entry,
++					     &msg_sys, flags, &used_address);
+ 			if (err < 0)
+ 				break;
+ 			err = __put_user(err, &compat_entry->msg_len);
+ 			++compat_entry;
+ 		} else {
+-			err = __sys_sendmsg(sock, (struct msghdr __user *)entry,
+-					    &msg_sys, flags, &used_address);
++			err = ___sys_sendmsg(sock,
++					     (struct msghdr __user *)entry,
++					     &msg_sys, flags, &used_address);
+ 			if (err < 0)
+ 				break;
+ 			err = put_user(err, &entry->msg_len);
+@@ -2180,7 +2185,7 @@ SYSCALL_DEFINE4(sendmmsg, int, fd, struct mmsghdr __user *, mmsg,
+ 	return __sys_sendmmsg(fd, mmsg, vlen, flags);
+ }
+ 
+-static int __sys_recvmsg(struct socket *sock, struct msghdr __user *msg,
++static int ___sys_recvmsg(struct socket *sock, struct msghdr __user *msg,
+ 			 struct msghdr *msg_sys, unsigned int flags, int nosec)
+ {
+ 	struct compat_msghdr __user *msg_compat =
+@@ -2272,27 +2277,31 @@ out:
+  *	BSD recvmsg interface
+  */
+ 
+-SYSCALL_DEFINE3(recvmsg, int, fd, struct msghdr __user *, msg,
+-		unsigned int, flags)
++long __sys_recvmsg(int fd, struct msghdr __user *msg, unsigned flags)
+ {
+ 	int fput_needed, err;
+ 	struct msghdr msg_sys;
+ 	struct socket *sock;
+ 
+-	if (flags & MSG_CMSG_COMPAT)
+-		return -EINVAL;
+-
+ 	sock = sockfd_lookup_light(fd, &err, &fput_needed);
+ 	if (!sock)
+ 		goto out;
+ 
+-	err = __sys_recvmsg(sock, msg, &msg_sys, flags, 0);
++	err = ___sys_recvmsg(sock, msg, &msg_sys, flags, 0);
+ 
+ 	fput_light(sock->file, fput_needed);
+ out:
+ 	return err;
+ }
+ 
++SYSCALL_DEFINE3(recvmsg, int, fd, struct msghdr __user *, msg,
++		unsigned int, flags)
++{
++	if (flags & MSG_CMSG_COMPAT)
++		return -EINVAL;
++	return __sys_recvmsg(fd, msg, flags);
++}
++
+ /*
+  *     Linux recvmmsg interface
+  */
+@@ -2330,17 +2339,18 @@ int __sys_recvmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
+ 		 * No need to ask LSM for more than the first datagram.
+ 		 */
+ 		if (MSG_CMSG_COMPAT & flags) {
+-			err = __sys_recvmsg(sock, (struct msghdr __user *)compat_entry,
+-					    &msg_sys, flags & ~MSG_WAITFORONE,
+-					    datagrams);
++			err = ___sys_recvmsg(sock, (struct msghdr __user *)compat_entry,
++					     &msg_sys, flags & ~MSG_WAITFORONE,
++					     datagrams);
+ 			if (err < 0)
+ 				break;
+ 			err = __put_user(err, &compat_entry->msg_len);
+ 			++compat_entry;
+ 		} else {
+-			err = __sys_recvmsg(sock, (struct msghdr __user *)entry,
+-					    &msg_sys, flags & ~MSG_WAITFORONE,
+-					    datagrams);
++			err = ___sys_recvmsg(sock,
++					     (struct msghdr __user *)entry,
++					     &msg_sys, flags & ~MSG_WAITFORONE,
++					     datagrams);
+ 			if (err < 0)
+ 				break;
+ 			err = put_user(err, &entry->msg_len);
+@@ -2525,31 +2535,15 @@ SYSCALL_DEFINE2(socketcall, int, call, unsigned long __user *, args)
+ 				   (int __user *)a[4]);
+ 		break;
+ 	case SYS_SENDMSG:
+-		if (a[2] & MSG_CMSG_COMPAT) {
+-			err = -EINVAL;
+-			break;
+-		}
+ 		err = sys_sendmsg(a0, (struct msghdr __user *)a1, a[2]);
+ 		break;
+ 	case SYS_SENDMMSG:
+-		if (a[3] & MSG_CMSG_COMPAT) {
+-			err = -EINVAL;
+-			break;
+-		}
+ 		err = sys_sendmmsg(a0, (struct mmsghdr __user *)a1, a[2], a[3]);
+ 		break;
+ 	case SYS_RECVMSG:
+-		if (a[2] & MSG_CMSG_COMPAT) {
+-			err = -EINVAL;
+-			break;
+-		}
+ 		err = sys_recvmsg(a0, (struct msghdr __user *)a1, a[2]);
+ 		break;
+ 	case SYS_RECVMMSG:
+-		if (a[3] & MSG_CMSG_COMPAT) {
+-			err = -EINVAL;
+-			break;
+-		}
+ 		err = sys_recvmmsg(a0, (struct mmsghdr __user *)a1, a[2], a[3],
+ 				   (struct timespec __user *)a[4]);
+ 		break;
+-- 
+1.8.1.4
+
