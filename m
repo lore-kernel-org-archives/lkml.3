@@ -1,84 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab3FFP6a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 11:58:30 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:50024 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab3FFP63 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 11:58:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 4/4] ARM: ux500: Remove call to u8500_of_init_devices() - again
-Date: Thu, 6 Jun 2013 17:58:24 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com
-References: <1370517676-10909-1-git-send-email-lee.jones@linaro.org> <1370517676-10909-5-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1370517676-10909-5-git-send-email-lee.jones@linaro.org>
+	id S1752882Ab3FFP6f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 11:58:35 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57740 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751728Ab3FFP6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 11:58:31 -0400
+Date: Thu, 6 Jun 2013 17:58:15 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocky" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH 5/5] cpufreq:boost:Kconfig: Enable boost support at
+ Kconfig
+Message-ID: <20130606155815.GB21272@pd.tnic>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1370502472-7249-6-git-send-email-l.majewski@samsung.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201306061758.25106.arnd@arndb.de>
-X-Provags-ID: V02:K0:viullcW38CxnKMFtXu6jfPelyJ7Srg7RwDBz9PlGtZK
- ilWyLRu5/iGgKjbVJHvuwfNdPrGSGRA+Y7RPHhP0U2tLHfSUQr
- ZoBmNiVX7duHiuuoczTjaKNNKYG4w2Ei91pszvNPQNg35L3/+G
- d56ylFQZugUuTVxKPN22IA5qGELmuHSKWcEH01GAtv50SMYDiK
- tG0Ceuawf/tVlhOcGyIOadP70T26hdqH8TrjhYsnyKG9Nw0EFW
- 2UjHWvp7sktsMEHq6xmDDv1KSBKqYJX0O0JJR1CQkDeNEU+jVF
- 55z5NuRzzVBlWEGYkX6YtbaqXIH4GTv8mjCzlVh3NiEgm9Fhx5
- BYn9ntLEDucR7advDcps=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1370502472-7249-6-git-send-email-l.majewski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 06 June 2013, Lee Jones wrote:
-> Somehow, probably due to a merge error the call to u8500_of_init_devices()
-> has re-appeared in next, causing this error:
-> 
-> arch/arm/mach-ux500/cpu-db8500.c: In function ‘u8500_init_machine’:
-> arch/arm/mach-ux500/cpu-db8500.c:268:2: error: implicit declaration of     \
->   function ‘u8500_of_init_devices’ [-Werror=implicit-function-declaration]
-> arch/arm/mach-ux500/cpu-db8500.c:268:9: warning: assignment makes pointer  \
->   from integer without a cast [enabled by default]
-> 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  arch/arm/mach-ux500/cpu-db8500.c |    3 ---
->  1 file changed, 3 deletions(-)
-> 
-> diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-> index d8ee616..f391d08 100644
-> --- a/arch/arm/mach-ux500/cpu-db8500.c
-> +++ b/arch/arm/mach-ux500/cpu-db8500.c
-> @@ -264,9 +264,6 @@ static void __init u8500_init_machine(void)
->  	else if (of_machine_is_compatible("st-ericsson,ccu9540")) {}
->  		/* TODO: Add pinmaps for ccu9540 board. */
->  
-> -	/* TODO: Export SoC, USB, cpu-freq and DMA40 */
-> -	parent = u8500_of_init_devices();
-> -
->  	/* automatically probe child nodes of dbx5x0 devices */
->  	if (of_machine_is_compatible("st-ericsson,u8540"))
->  		of_platform_populate(NULL, u8500_local_bus_nodes,
-> -- 
-> 1.7.10.4
-> 
-> 
+On Thu, Jun 06, 2013 at 09:07:52AM +0200, Lukasz Majewski wrote:
+> Enable/disable support for BOOST. New flag - CPU_FREQ_BOOST has been
+> defined for that.
 
-In the code I'm looking at, the definition for that function is
+What's the reason for this? Why would you want to not compile-in the
+boosting code?
 
-/* TODO: Once all pieces are DT:ed, remove completely. */
-static struct device * __init u8500_of_init_devices(void)
-{
-        struct device *parent = db8500_soc_device_init();
-        db8500_add_usb(parent, usb_db8500_dma_cfg, usb_db8500_dma_cfg);
-        return parent;
-}
+Also, at least on x86, even with this feature disabled, the CPU will
+boost by default unless you fiddle with it through the MSRs as root.
 
-I'm not sure about the db8500_add_usb() call, but I think at least
-db8500_soc_device_init() is required to get the root device for all
-other devices.
+-- 
+Regards/Gruss,
+    Boris.
 
-	Arnd
+Sent from a fat crate under my desk. Formatting is fine.
+--
