@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab3FFRRi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 13:17:38 -0400
-Received: from mx2.dkit.ie ([193.1.42.16]:46182 "EHLO mx2.dkit.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751147Ab3FFRRh convert rfc822-to-8bit (ORCPT
+	id S1752577Ab3FFR2Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 13:28:16 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:44599 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190Ab3FFR2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 13:17:37 -0400
-X-Greylist: delayed 1425 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Jun 2013 13:17:37 EDT
-From: William Mc Carthy <William.McCarthy@dkit.ie>
-Subject: WARNING (size quota exceeded)
-Thread-Topic: WARNING (size quota exceeded)
-Thread-Index: Ac5i1Qx5DqFe9BpLTESFqSAoRPYgzg==
-Date: Thu, 6 Jun 2013 16:44:01 +0000
-Message-ID: <1417ABE365E8A84A86C9831C032A82752E0BAF60@EXCH-MBX-02.ad.dkit.ie>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [193.1.40.36]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 6 Jun 2013 13:28:15 -0400
+Date: Thu, 6 Jun 2013 19:28:10 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "luke.leighton" <luke.leighton@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm <debian-arm@lists.debian.org>,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>,
+        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
+        debian-kernel <debian-kernel@lists.debian.org>
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
+ Uploading linux (3.9.4-1))
+Message-ID: <20130606172810.GE14209@lukather>
+References: <51AFA6DD.3000202@wwwdotorg.org>
+ <CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com>
+ <1370469574.18839.33.camel@localhost>
+ <CAPweEDxMpeJc-w=Yd7d2OT=UisRBp2rxf-MPMDUCOG3EyJz1GQ@mail.gmail.com>
+ <CAKON4OxwyV2f_iTEb5RnP_azc7EsSxPdku_TY5WLWxN7USiY1Q@mail.gmail.com>
+ <CAPweEDw1BabE0cmT5fxZ3Z9p9EH508M3Nzcqk2VcO0oz-qYsvg@mail.gmail.com>
+ <1370475609.20454.44.camel@localhost>
+ <CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
+ <CAKON4OxPDpN3BTc9GWP44exDSkAZGJ5OeCpUP37vRnnvxwUnmw@mail.gmail.com>
+ <CAOesGMgqxhG45NyCfpHc_0uHS+_Gn-hGZm-+CRvK2EEf1AGTow@mail.gmail.com>
 MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMgqxhG45NyCfpHc_0uHS+_Gn-hGZm-+CRvK2EEf1AGTow@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Email User;
+Hi everyone,
 
-You have exceeded the limit of 23432 storage on your mailbox set by your
-WEB IT-SERVICE/Administrator, and you will be having problems in sending
-and receiving mails Until You Re-Validate. You have to update by clicking on
-the below link and fill out the information to validate your account.
+On Thu, Jun 06, 2013 at 09:00:00AM -0700, Olof Johansson wrote:
+> On Thu, Jun 6, 2013 at 8:13 AM, jonsmirl@gmail.com <jonsmirl@gmail.com> wrote:
+> > On Wed, Jun 5, 2013 at 7:54 PM, luke.leighton <luke.leighton@gmail.com> wrote:
+> >>  augh.  ok.  solutions.  what are the solutions here?
+> >
+> > Luke if you really want to fix this a good solution is to have
+> > Allwinner join Linaro and provide an engineer to the Linaro effort.
+> > That engineer will get educated on the right way to do kernel
+> > development and he can pass that knowledge back to Allwinner each day
+> > as he learns it.
+> 
+> There's no need for anybody to join Linaro to contribute upstream.
+> That's a crazy notion.
+> 
+> Listen, Allwinner isn't working in a vacuum, believe it or not. I've
+> talked to them, so has Arnd and other people working on ARM, including
+> Maxime Ripard, who's been reimplementing upstream support for their
+> platform. Everybody is interested in the right things happening, it's
+> just a matter of figuring out how to do it. The right people are
+> already talking.
 
-Please Click the link Below or copy paste to your browser To Validate Your
-Mailbox
+I should also add that Allwinner not only talked to us already, but also
+expressed interest in doing actual modern kernel development (like using
+"recently" introduced kernel frameworks, like the clk framework).
 
-http://form.thinkpositiveworld.com/use/review/form1.html
+I've received patches from them already for private reviews, they began
+to show up on the kernel mailing lists, they asked to be CCed on the
+patches I send upstream, they're even the one that reached out to me
+when the early support for their chips was released. So, like Olof said,
+they aren't in a vacuum, they are very aware of the mainline kernel and
+speak a decent english.
 
-Warning!!!
-Failure to do this, will result in limited access to your mailbox.
-failure to update your account within Three days of this update
-notification, your account will be closed permanently.
-
-Sincerely,
-IT Service
-System Administrator
+So yes, Allwinner has an evil vendor tree (c), with a solution similar yet
+inferior (because not generic enough) to the device tree, but they show
+interest on going down the mainline road.
