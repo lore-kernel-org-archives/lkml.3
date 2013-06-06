@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932757Ab3FFLxI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 07:53:08 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:44292 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754752Ab3FFLxG (ORCPT
+	id S932882Ab3FFLyV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 07:54:21 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:46975 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932403Ab3FFLyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 07:53:06 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH] firmware loader: fix compile warning
-Date: Thu,  6 Jun 2013 19:52:54 +0800
-Message-Id: <1370519574-32107-1-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 6 Jun 2013 07:54:20 -0400
+Date: Thu, 6 Jun 2013 13:54:17 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Strange intermittent EIO error when writing to stdout since v3.8.0
+Message-ID: <20130606115417.GA520@x4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit ddf1f0648e8c("firmware loader: fix build failure
-with !CONFIG_FW_LOADER_USER_HELPER") introduces the below
-warning:
+Since v3.8.0 several people reported intermittent IO errors that happen
+during high system load while using "emerge" under Gentoo:
+...
+  File "/usr/lib64/portage/pym/portage/util/_eventloop/EventLoop.py", line 260, in iteration
+    if not x.callback(f, event, *x.args):
+  File "/usr/lib64/portage/pym/portage/util/_async/PipeLogger.py", line 99, in _output_handler
+    stdout_buf[os.write(stdout_fd, stdout_buf):]
+  File "/usr/lib64/portage/pym/portage/__init__.py", line 246, in __call__
+    rval = self._func(*wrapped_args, **wrapped_kwargs)
+OSError: [Errno 5] Input/output error
 
-drivers/base/firmware_class.c:921:13: warning:
-'kill_requests_without_uevent' defined but not used [-Wunused-function]
+Basically 'emerge' just writes the build output to stdout in a loop:
+...
+def _output_handler(self, fd, event):
 
-So fix it by defining kill_requests_without_uevent() only if
-CONFIG_PM_SLEEP is set.
+       background = self.background
+       stdout_fd = self.stdout_fd
+       log_file = self._log_file 
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- drivers/base/firmware_class.c |    4 ++++
- 1 file changed, 4 insertions(+)
+       while True:
+               buf = self._read_buf(fd, event)
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index c31fc29..47e3a22 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -917,6 +917,7 @@ static int fw_load_from_user_helper(struct firmware *firmware,
- 	return _request_firmware_load(fw_priv, uevent, timeout);
- }
- 
-+#ifdef CONFIG_PM_SLEEP
- /* kill pending requests without uevent to avoid blocking suspend */
- static void kill_requests_without_uevent(void)
- {
-@@ -930,6 +931,7 @@ static void kill_requests_without_uevent(void)
- 	}
- 	mutex_unlock(&fw_lock);
- }
-+#endif
- 
- #else /* CONFIG_FW_LOADER_USER_HELPER */
- static inline int
-@@ -943,7 +945,9 @@ fw_load_from_user_helper(struct firmware *firmware, const char *name,
- /* No abort during direct loading */
- #define is_fw_load_aborted(buf) false
- 
-+#ifdef CONFIG_PM_SLEEP
- static inline void kill_requests_without_uevent(void) { }
-+#endif
- 
- #endif /* CONFIG_FW_LOADER_USER_HELPER */
- 
+               if buf is None:
+                       # not a POLLIN event, EAGAIN, etc...
+                       break
+
+               if not buf:
+                       # EOF
+                       self._unregister()
+                       self.wait()
+                       break
+
+               else:
+                       if not background and stdout_fd is not None:
+                               failures = 0
+                               stdout_buf = buf
+                               while stdout_buf:
+                                       try:
+                                               stdout_buf = \
+                                                       stdout_buf[os.write(stdout_fd, stdout_buf):]
+                                       except OSError as e:
+                                               if e.errno != errno.EAGAIN:
+                                                       raise
+				...
+
+see: https://bugs.gentoo.org/show_bug.cgi?id=459674
+
+(A similar issue also happens when building Firefox since v3.8.0. But
+because Firefox's build process doesn't raise an exception it just dies
+at random points without giving a clue.)
+
+Now the question is: Could this be a kernel bug? Maybe in the TTY layer?
+
+Unfortunately the issue is not easily reproducible and a git-bisect is
+out of the question.
+
 -- 
-1.7.9.5
-
+Markus
