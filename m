@@ -1,47 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab3FFUBE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 16:01:04 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13734 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830Ab3FFUBC (ORCPT
+	id S1754599Ab3FFUBY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 16:01:24 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:38367 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754277Ab3FFUBW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 16:01:02 -0400
-X-Authority-Analysis: v=2.0 cv=H8VZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=MWvAT0ojoM8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=ITzkURZ2-D4A:10 a=NT8Ab2geWARtfnoThroA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1370548859.9844.41.camel@gandalf.local.home>
-Subject: Re: [PATCH v14 3/3] trace,x86: Add irq vector tracepoints
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, tglx@linutronix.de,
-        mingo@elte.hu, bp@alien8.de, linux-edac@vger.kernel.org,
-        tony.luck@intel.com, dle-develop@lists.sourceforge.net,
-        tomoki.sekiyama@hds.com
-Date: Thu, 06 Jun 2013 16:00:59 -0400
-In-Reply-To: <1370546299.9844.40.camel@gandalf.local.home>
-References: <51B0A90F.7030309@hds.com> <51B0A9B4.4080703@hds.com>
-	 <1370546299.9844.40.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Jun 2013 16:01:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <201306030059.03783.heiko@sntech.de>
+References: <201306030055.15413.heiko@sntech.de>
+	<201306030059.03783.heiko@sntech.de>
+Date: Thu, 6 Jun 2013 23:01:21 +0300
+Message-ID: <CAHp75VdpdP6Xtrv3o0EAKMPBvsMDROTVRQqbb54jpAH=LjFx1A@mail.gmail.com>
+Subject: Re: [PATCH 06/10] mmc: dw_mmc-pltfm: add Rockchip variant
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Turquette <mturquette@linaro.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-06 at 15:18 -0400, Steven Rostedt wrote:
-> On Thu, 2013-06-06 at 11:24 -0400, Seiji Aguchi wrote:
+On Mon, Jun 3, 2013 at 1:59 AM, Heiko Stübner <heiko@sntech.de> wrote:
+> Cortex-A9 SoCs from Rockchip use a slightly modified variant of dw_mmc
+> controllers that seems to require the SDMMC_CMD_USE_HOLD_REG bit to
+> always be set.
+>
+> There also seem to be no other modifications (additional register etc)
+> present, so to keep the footprint low, add this small variant to the
+> pltfm driver.
 
-> Since we are basically down to cosmetic changes, can you make the
-> renames of these variables into a separate patch. As they are now more
-> about the debug IDT than a NMI idt, it should have been done before, and
-> is a separate change to what you are doing here.
+Few comments below.
 
-I would even add the is_debug_idt_enabled() and load_debug_idt()
-interface to that patch as well.
+> --- a/drivers/mmc/host/dw_mmc-pltfm.c
+> +++ b/drivers/mmc/host/dw_mmc-pltfm.c
+> @@ -24,6 +24,16 @@
+>
+>  #include "dw_mmc.h"
+>
+> +
 
--- Steve
+No need to add extra empty line here.
 
+> +static void dw_mci_rockchip_prepare_command(struct dw_mci *host, u32 *cmdr)
 
+> @@ -63,20 +73,6 @@ int dw_mci_pltfm_register(struct platform_device *pdev,
+>  }
+>  EXPORT_SYMBOL_GPL(dw_mci_pltfm_register);
+>
+> -static int dw_mci_pltfm_probe(struct platform_device *pdev)
+> -{
+> -       return dw_mci_pltfm_register(pdev, NULL);
+> -}
+> -
+> -int dw_mci_pltfm_remove(struct platform_device *pdev)
+> -{
+> -       struct dw_mci *host = platform_get_drvdata(pdev);
+> -
+> -       dw_mci_remove(host);
+> -       return 0;
+> -}
+> -EXPORT_SYMBOL_GPL(dw_mci_pltfm_remove);
+> -
+
+If you want to move those through code, please do separate patch.
+
+--
+With Best Regards,
+Andy Shevchenko
