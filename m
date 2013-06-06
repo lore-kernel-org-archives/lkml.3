@@ -1,105 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab3FFRGH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 13:06:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1398 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751693Ab3FFRGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 13:06:05 -0400
-Date: Thu, 6 Jun 2013 13:05:58 -0400
-From: Kyle McMartin <kyle@redhat.com>
-To: linux-kbuild@vger.kernel.org
-Cc: mmarek@suse.cz, rob@landley.net, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: [PATCH] Kbuild: pass headers to headers_install.sh on stdin
-Message-ID: <20130606170557.GQ14762@redacted.bos.redhat.com>
+	id S1753331Ab3FFRHr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 13:07:47 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:61413 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752337Ab3FFRHp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 13:07:45 -0400
+X-Originating-IP: 108.223.40.66
+Date: Thu, 6 Jun 2013 10:08:28 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Johannes Thumshirn <johannes.thumshirn@men.de>
+Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Some problems with sysfs patch (was Re: [PATCH v6] watchdog: New
+ watchdog driver for MEN A21 watchdogs)
+Message-ID: <20130606170828.GA30898@roeck-us.net>
+References: <20130531103654.GB5619@roeck-us.net>
+ <20130531110846.GA15707@jtlinux>
+ <20130531114037.GA13533@roeck-us.net>
+ <20130531125519.GB8983@jtlinux>
+ <20130601041523.GB4081@roeck-us.net>
+ <20130603095026.GA21720@jtlinux>
+ <20130606105103.GA25245@jtlinux>
+ <20130606113110.GA5834@roeck-us.net>
+ <20130606130055.GA27244@jtlinux>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130606130055.GA27244@jtlinux>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While using make V=1 to test some things, I noticed on our builders that
-headers_install was failing because the argument list to /bin/sh was too
-long. Working around it is slightly kludgy...
+On Thu, Jun 06, 2013 at 03:00:55PM +0200, Johannes Thumshirn wrote:
+> On Thu, Jun 06, 2013 at 04:31:10AM -0700, Guenter Roeck wrote:
+> > On Thu, Jun 06, 2013 at 12:51:03PM +0200, Johannes Thumshirn wrote:
+> > > On Mon, Jun 03, 2013 at 11:50:26AM +0200, Johannes Thumshirn wrote:
+> > > > On Fri, May 31, 2013 at 09:15:23PM -0700, Guenter Roeck wrote:
+> > > > > On Fri, May 31, 2013 at 02:55:19PM +0200, Johannes Thumshirn wrote:
+> > > > > > Hi Guenther,
+> > > > > > On Fri, May 31, 2013 at 04:40:37AM -0700, Guenter Roeck wrote:
+> > > > > > > > +#define GPIO_WD_ENAB	169
+> > > > > > > > +#define GPIO_WD_FAST	170
+> > > > > > > > +#define GPIO_WD_TRIG	171
+> > > > > > > > +
+> > > > > > > > +#define GPIO_RST_CAUSE_BASE 166
+> > > > > > > > +
+> > > > > > >
+> > > > > > > I think I asked that before ... as you are supporting devicetree, gpio pins
+> > > > > > > should really be provided through devicetree properties and not be hardcoded.
+> > > > > > >
+> > > > > > Yes you did and I didn't come up with a solution to this problem yet. I understand
+> > > > > > and agree to your concerns but I'm lacking example code/documentation for it, maybe
+> > > > > > you can point me to an example on that and then I'll update my code accordingly.
+> > > > > >
+> > > > >
+> > > > > Have a look at Documentation/devicetree/bindings/gpio/gpio-fan.txt and
+> > > > > drivers/hwmon/gpio-fan.c.
+> > > >
+> > > > Thanks a lot, this really helped me out. Updated patch is comming today
+> > > > including the bindings document Arnd Bergmann requested. I only need to rebase
+> > > > the sysfs patch on top of that changes.
+> > > >
+> > > > Regards,
+> > > > Johannes
+> > >
+> > > Regarding the sysfs patch, I have a funny effect in my (rebased) sysfs code.
+> > >
+> > > Given the following code:
+> > >
+> > > +static ssize_t rebootcause_show(struct device *dev,
+> > > +                               struct device_attribute *attr,
+> > > +                               char *buf)
+> > > +{
+> > > +       struct a21_wdt_drv *drv = dev_get_drvdata(dev);
+> > > +       unsigned int reset = 0;
+> > > +
+> > > +       if (!drv)
+> > > +               return -EIO;
+> > > +
+> > > +       reset = a21_wdt_get_bootstatus(drv);
+> > > +
+> > > +       return sprintf(buf, "%s\n", reset_causes[reset]);
+> > > +}
+> > > +static DEVICE_ATTR(rebootcause, S_IRUGO, rebootcause_show, NULL);
+> > >
+> > > I actually need the check for if (!drv) to prevent an OOPS, as
+> > > dev_get_drvdata(dev) returns NULL., though it is set at the end of my probe
+> > > function via:
+> > >
+> > > [...]
+> > > +       ret = watchdog_register_device(&a21_wdt);
+> > > +       if (ret) {
+> > > +               dev_err(&pdev->dev, "Cannot register watchdog device\n");
+> > > +               goto err_register_wd;
+> > > +       }
+> > > +
+> > > +       dev_set_drvdata(&pdev->dev, drv);
+> > > +
+> > > +       return 0;
+> > > [...]
+> > >
+> > > The watchdog driver itself is working without any troubles.
+> > >
+> > > Some advice here would be worth its weight in gold.
+> > >
+> > It has to be set before the attribute is created. Are you doing that ? Also, is
+> > 'dev' the same device pointer (ie is the 'dev' in your function the same as
+> > &pdev->dev) ?
+> >
+> > Guenter
+> 
+> Hi Guenter,
+> 
+> Thanks for the quick reply. Indeed 'dev' in my function is a struct
+> watchdog_device's dev (for device_create_file) and not &pdev->dev. Which in turn
+> are not the same.
+> 
+> A call to dev_set_drvdata(a21_wdt.dev, drv); solved the NULL pointer access. So
+> last question, is it save to set the drvdata of a dev inside the struct
+> watchdog_device or do I break something vital that way?
+> 
+Good question. At issue is if your driver 'owns' struct watchdog_device,
+or if the watchdog core owns it.
 
-First, passing the args list to headers_install.sh via stdin instead of
-as arguments.
-Secondly, filtering $srctree out of $input-files to reduce the length of
-the args list to the subshell.
-Lastly, re-add $srctree when we loop over $input-files and pass the file
-list back through to headers_install.sh.
+However, since you know that a21_wdt.dev is the device, you can use
+container_of() to get a reference to a21_wdt, and watchdog_get_drvdata
+to get access to drv from a21_wdt. So you should not really need it.
 
-You can reproduce the issue locally by putting your build dir in a
-long path.
-
-make[2]: execvp: /bin/sh: Argument list too long
-make[2]: ***
-[/home/kyle/A(lots of times)/linux/usr/include/linux/.install]
-Error 127
-make[1]: *** [linux] Error 2
-make: *** [headers_install] Error 2
-
-Signed-off-by: Kyle McMartin <kyle@redhat.com>
-
---- a/scripts/Makefile.headersinst
-+++ b/scripts/Makefile.headersinst
-@@ -59,6 +59,8 @@ input-files   := $(foreach hdr, $(header-y), \
- 			$(wildcard $(gendir)/$(hdr)), \
- 			$(error Missing generated UAPI file $(gendir)/$(hdr)) \
- 		   ))
-+input-files    := $(foreach hdr, $(input-files), \
-+		    $(subst $(srctree)/,,$(hdr)))
- 
- # Work out what needs to be removed
- oldheaders    := $(patsubst $(installdir)/%,%,$(wildcard $(installdir)/*.h))
-@@ -72,7 +74,9 @@ printdir = $(patsubst $(INSTALL_HDR_PATH)/%/,%,$(dir $@))
- quiet_cmd_install = INSTALL $(printdir) ($(words $(all-files))\
-                             file$(if $(word 2, $(all-files)),s))
-       cmd_install = \
--        $(CONFIG_SHELL) $< $(installdir) $(input-files); \
-+        for f in $(input-files); do \
-+                echo "$(srctree)/$$f"; \
-+        done | $(CONFIG_SHELL) $< $(installdir); \
-         for F in $(wrapper-files); do                                   \
-                 echo "\#include <asm-generic/$$F>" > $(installdir)/$$F;    \
-         done;                                                           \
-diff --git a/scripts/headers_install.sh b/scripts/headers_install.sh
-index 643764f..4e53688 100644
---- a/scripts/headers_install.sh
-+++ b/scripts/headers_install.sh
-@@ -2,7 +2,7 @@
- 
- if [ $# -lt 1 ]
- then
--	echo "Usage: headers_install.sh OUTDIR [FILES...]
-+	echo "Usage: FILES | headers_install.sh OUTDIR
- 	echo
- 	echo "Prepares kernel header files for use by user space, by removing"
- 	echo "all compiler.h definitions and #includes, removing any"
-@@ -10,7 +10,7 @@ then
- 	echo "asm/inline/volatile keywords."
- 	echo
- 	echo "OUTDIR: directory to write each userspace header FILE to."
--	echo "FILES:  list of header files to operate on."
-+	echo "FILES:  list of header files to operate on, passed stdin."
- 
- 	exit 1
- fi
-@@ -18,13 +18,12 @@ fi
- # Grab arguments
- 
- OUTDIR="$1"
--shift
- 
- # Iterate through files listed on command line
- 
- FILE=
- trap 'rm -f "$OUTDIR/$FILE" "$OUTDIR/$FILE.sed"' EXIT
--for i in "$@"
-+while read i
- do
- 	FILE="$(basename "$i")"
- 	sed -r \
+Thanks,
+Guenter
