@@ -1,99 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751904Ab3FFQXF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 12:23:05 -0400
-Received: from gmmr3.centrum.cz ([46.255.225.251]:40248 "EHLO gmmr3.centrum.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751147Ab3FFQXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 12:23:03 -0400
-X-Greylist: delayed 386 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Jun 2013 12:23:03 EDT
-To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
-Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=2E34=5D_memcg=3A_do_not_trigger_OOM_if_PF=5FNO=5FMEMCG=5FOOM_is_set?=
-Date: Thu, 06 Jun 2013 18:16:33 +0200
-From: "azurIt" <azurit@pobox.sk>
-Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
-        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
-        =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
-References: <20130208123854.GB7557@dhcp22.suse.cz>, <20130208145616.FB78CE24@pobox.sk>, <20130208152402.GD7557@dhcp22.suse.cz>, <20130208165805.8908B143@pobox.sk>, <20130208171012.GH7557@dhcp22.suse.cz>, <20130208220243.EDEE0825@pobox.sk>, <20130210150310.GA9504@dhcp22.suse.cz>, <20130210174619.24F20488@pobox.sk>, <20130211112240.GC19922@dhcp22.suse.cz>, <20130222092332.4001E4B6@pobox.sk> <20130606160446.GE24115@dhcp22.suse.cz>
-In-Reply-To: <20130606160446.GE24115@dhcp22.suse.cz>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
+	id S1752039Ab3FFQXm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 12:23:42 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:56839 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207Ab3FFQXk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 12:23:40 -0400
+Message-ID: <51B0B785.5080707@linaro.org>
+Date: Thu, 06 Jun 2013 18:23:33 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Message-Id: <20130606181633.BCC3E02E@pobox.sk>
-X-Maser: oho
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: linux-arm-kernel@lists.infradead.org, Mark Rutland <mark.rutland@arm.com>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCHv7 02/11] clocksource: add generic dummy timer driver
+References: <1370291642-13259-1-git-send-email-sboyd@codeaurora.org> <1370291642-13259-3-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1370291642-13259-3-git-send-email-sboyd@codeaurora.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Michal,
+On 06/03/2013 10:33 PM, Stephen Boyd wrote:
+> From: Mark Rutland <mark.rutland@arm.com>
+> 
+> Several architectures have a dummy timer driver tightly coupled with
+> their broadcast code to support machines without cpu-local timers (or
+> where there is a lack of driver support).
+> 
+> Since 12ad100046: "clockevents: Add generic timer broadcast function"
+> it's been possible to write broadcast-capable timer drivers decoupled
+> from the broadcast mechanism. We can use this functionality to implement
+> a generic dummy timer driver that can be shared by all architectures
+> with generic tick broadcast (ARCH_HAS_TICK_BROADCAST).
+> 
+> This patch implements a generic dummy timer using this facility.
+> 
+> Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+> Acked-by: Marc Zyngier <marc.zyngier@arm.com>,
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> [sboyd: Make percpu data static, use __this_cpu_ptr(), move to
+>         early_initcall to properly register on each CPU, only
+> 	register if more than one CPU possible]
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
 
-nice to read you! :) Yes, i'm still on 3.2. Could you be so kind and try to backport it? Thank you very much!
+Except the missing first letter capitalization, in the patch description
+'add' => 'Add'.
 
-azur
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+
+>  drivers/clocksource/Makefile      |  1 +
+>  drivers/clocksource/dummy_timer.c | 69 +++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 70 insertions(+)
+>  create mode 100644 drivers/clocksource/dummy_timer.c
+> 
+> diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+> index 8d979c7..1a17d76 100644
+> --- a/drivers/clocksource/Makefile
+> +++ b/drivers/clocksource/Makefile
+> @@ -29,3 +29,4 @@ obj-$(CONFIG_CLKSRC_SAMSUNG_PWM)	+= samsung_pwm_timer.o
+>  
+>  obj-$(CONFIG_ARM_ARCH_TIMER)		+= arm_arch_timer.o
+>  obj-$(CONFIG_CLKSRC_METAG_GENERIC)	+= metag_generic.o
+> +obj-$(CONFIG_ARCH_HAS_TICK_BROADCAST)	+= dummy_timer.o
+> diff --git a/drivers/clocksource/dummy_timer.c b/drivers/clocksource/dummy_timer.c
+> new file mode 100644
+> index 0000000..1f55f96
+> --- /dev/null
+> +++ b/drivers/clocksource/dummy_timer.c
+> @@ -0,0 +1,69 @@
+> +/*
+> + *  linux/drivers/clocksource/dummy_timer.c
+> + *
+> + *  Copyright (C) 2013 ARM Ltd.
+> + *  All Rights Reserved
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +#include <linux/clockchips.h>
+> +#include <linux/cpu.h>
+> +#include <linux/init.h>
+> +#include <linux/percpu.h>
+> +#include <linux/cpumask.h>
+> +
+> +static DEFINE_PER_CPU(struct clock_event_device, dummy_timer_evt);
+> +
+> +static void dummy_timer_set_mode(enum clock_event_mode mode,
+> +			   struct clock_event_device *evt)
+> +{
+> +	/*
+> +	 * Core clockevents code will call this when exchanging timer devices.
+> +	 * We don't need to do anything here.
+> +	 */
+> +}
+> +
+> +static void __cpuinit dummy_timer_setup(void)
+> +{
+> +	int cpu = smp_processor_id();
+> +	struct clock_event_device *evt = __this_cpu_ptr(&dummy_timer_evt);
+> +
+> +	evt->name	= "dummy_timer";
+> +	evt->features	= CLOCK_EVT_FEAT_PERIODIC |
+> +			  CLOCK_EVT_FEAT_ONESHOT |
+> +			  CLOCK_EVT_FEAT_DUMMY;
+> +	evt->rating	= 100;
+> +	evt->set_mode	= dummy_timer_set_mode;
+> +	evt->cpumask	= cpumask_of(cpu);
+> +
+> +	clockevents_register_device(evt);
+> +}
+> +
+> +static int __cpuinit dummy_timer_cpu_notify(struct notifier_block *self,
+> +				      unsigned long action, void *hcpu)
+> +{
+> +	if ((action & ~CPU_TASKS_FROZEN) == CPU_STARTING)
+> +		dummy_timer_setup();
+> +
+> +	return NOTIFY_OK;
+> +}
+> +
+> +static struct notifier_block dummy_timer_cpu_nb __cpuinitdata = {
+> +	.notifier_call = dummy_timer_cpu_notify,
+> +};
+> +
+> +static int __init dummy_timer_register(void)
+> +{
+> +	int err = register_cpu_notifier(&dummy_timer_cpu_nb);
+> +	if (err)
+> +		return err;
+> +
+> +	/* We won't get a call on the boot CPU, so register immediately */
+> +	if (num_possible_cpus() > 1)
+> +		dummy_timer_setup();
+> +
+> +	return 0;
+> +}
+> +early_initcall(dummy_timer_register);
+> 
 
 
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-______________________________________________________________
-> Od: "Michal Hocko" <mhocko@suse.cz>
-> Komu: azurIt <azurit@pobox.sk>
-> Dátum: 06.06.2013 18:04
-> Predmet: Re: [PATCH for 3.2.34] memcg: do not trigger OOM if PF_NO_MEMCG_OOM is set
->
-> CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, "cgroups mailinglist" <cgroups@vger.kernel.org>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "Johannes Weiner" <hannes@cmpxchg.org>
->Hi,
->
->I am really sorry it took so long but I was constantly preempted by
->other stuff. I hope I have a good news for you, though. Johannes has
->found a nice way how to overcome deadlock issues from memcg OOM which
->might help you. Would you be willing to test with his patch
->(http://permalink.gmane.org/gmane.linux.kernel.mm/101437). Unlike my
->patch which handles just the i_mutex case his patch solved all possible
->locks.
->
->I can backport the patch for your kernel (are you still using 3.2 kernel
->or you have moved to a newer one?).
->
->On Fri 22-02-13 09:23:32, azurIt wrote:
->> >Unfortunately I am not able to reproduce this behavior even if I try
->> >to hammer OOM like mad so I am afraid I cannot help you much without
->> >further debugging patches.
->> >I do realize that experimenting in your environment is a problem but I
->> >do not many options left. Please do not use strace and rather collect
->> >/proc/pid/stack instead. It would be also helpful to get group/tasks
->> >file to have a full list of tasks in the group
->> 
->> 
->> 
->> Hi Michal,
->> 
->> 
->> sorry that i didn't response for a while. Today i installed kernel with your two patches and i'm running it now. I'm still having problems with OOM which is not able to handle low memory and is not killing processes. Here is some info:
->> 
->> - data from cgroup 1258 while it was under OOM and no processes were killed (so OOM don't stop and cgroup was freezed)
->> http://watchdog.sk/lkml/memcg-bug-6.tar.gz
->> 
->> I noticed problem about on 8:39 and waited until 8:57 (nothing happend). Then i killed process 19864 which seems to help and other processes probably ends and cgroup started to work. But problem accoured again about 20 seconds later, so i killed all processes at 8:58. The problem is occuring all the time since then. All processes (in that cgroup) are always in state 'D' when it occurs.
->> 
->> 
->> - kernel log from boot until now
->> http://watchdog.sk/lkml/kern3.gz
->> 
->> 
->> Btw, something probably happened also at about 3:09 but i wasn't able to gather any data because my 'load check script' killed all apache processes (load was more than 100).
->> 
->> 
->> 
->> azur
->> --
->> To unsubscribe from this list: send the line "unsubscribe cgroups" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->-- 
->Michal Hocko
->SUSE Labs
->
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
