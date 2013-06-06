@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab3FFTSy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 15:18:54 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:39731 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab3FFTSw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 15:18:52 -0400
-Date: Thu, 6 Jun 2013 12:18:48 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>
-Cc: Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org,
-        Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: Re: Atmel updates to atmel_mxt_ts touch controller driver - v5
- Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
- Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
- linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
- pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
-Message-ID: <20130606191847.GB4542@core.coreip.homeip.net>
-References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
+	id S1753016Ab3FFT2r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 15:28:47 -0400
+Received: from mga14.intel.com ([143.182.124.37]:58527 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751412Ab3FFT2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 15:28:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,816,1363158000"; 
+   d="scan'208";a="345939200"
+Date: Thu, 6 Jun 2013 11:33:46 -0700
+From: Bin Gao <bin.gao@linux.intel.com>
+To: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: i2c: introduce i2c helper i2c_find_client_by_name()
+Message-ID: <20130606183346.GA13259@bingao-desk1.fm.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 06:36:53PM +0100, Nick Dyer wrote:
-> The following patches are an updated series of patches to the atmel_mxt_ts
-> touch driver. They should apply cleanly to input/next.
-> 
-> This is a combined patchset, I've been working to merge my changes with the
-> changes from the Chromium team. It's undergone a lot of testing and review
-> over the last few months and I believe it is now ready to go upstream.
-> 
-> Most of these changes have been maintained and tested out-of-tree in some form
-> for a long time. I apologise for the backlog.
-> 
-> We also provide a set of user-space utilities as open source which are
-> available from github and work well with this driver:
->   https://github.com/atmel-maxtouch/obp-utils
-> 
-> You can see the in-between versions at
->   https://github.com/ndyer/linux/
-> 
+i2c: introduce i2c helper i2c_find_client_by_name()
 
-Daniel, Henrik,
+There is a requirement to get the i2c_client pointer dynamically without
+knowing the bus and slave address. But we do know the client name,
+i.e. the name in the i2c_board_info. This patch is to fit this requirement.
 
-Any comments befroe I start pulling parts of this in?
+A good example is that an ISP(Imaging Signal Processor) driver needs
+register i2c camera sensor devices via v4l2, so it has to unregister
+all i2c clients that were previously registered by calling
+i2c_register_board_info(), and then re-register. For this case we
+can use this helper to get i2c_client by passing the client name.
 
-Thanks.
+Signed-off-by: Bin Gao <bin.gao@linux.intel.com>
+---
+ drivers/i2c/i2c-core.c |   17 +++++++++++++++++
+ include/linux/i2c.h    |    1 +
+ 2 files changed, 18 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index 48e31ed..17683de6 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -2326,6 +2326,23 @@ s32 i2c_smbus_xfer(struct i2c_adapter *adapter, u16 addr, unsigned short flags,
+ }
+ EXPORT_SYMBOL(i2c_smbus_xfer);
+ 
++static int match_name(struct device *dev, void *data)
++{
++	const char *name = data;
++	struct i2c_client *client = to_i2c_client(dev);
++
++	return !strncmp(client->name, name, strlen(client->name));
++}
++
++struct i2c_client *i2c_find_client_by_name(char *name)
++{
++	struct device *dev;
++
++	dev = bus_find_device(&i2c_bus_type, NULL, name, match_name);
++	return dev ? to_i2c_client(dev) : NULL;
++}
++EXPORT_SYMBOL_GPL(i2c_find_client_by_name);
++
+ MODULE_AUTHOR("Simon G. Vogl <simon@tk.uni-linz.ac.at>");
+ MODULE_DESCRIPTION("I2C-Bus main module");
+ MODULE_LICENSE("GPL");
+diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+index e988fa9..7d8bf02 100644
+--- a/include/linux/i2c.h
++++ b/include/linux/i2c.h
+@@ -509,6 +509,7 @@ extern void i2c_clients_command(struct i2c_adapter *adap,
+ extern struct i2c_adapter *i2c_get_adapter(int nr);
+ extern void i2c_put_adapter(struct i2c_adapter *adap);
+ 
++extern struct i2c_client *i2c_find_client_by_name(char *name);
+ 
+ /* Return the functionality mask */
+ static inline u32 i2c_get_functionality(struct i2c_adapter *adap)
 -- 
-Dmitry
+1.7.4.4
+
