@@ -1,64 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab3FFWck (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 18:32:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17885 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198Ab3FFWbo (ORCPT
+	id S1752767Ab3FFWhe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 18:37:34 -0400
+Received: from forward3.mail.yandex.net ([77.88.46.8]:41835 "EHLO
+	forward3.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab3FFWhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 18:31:44 -0400
-X-Authority-Analysis: v=2.0 cv=BcJaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=7q1wy9L8wJoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=0tthgu-yfQ4A:10 a=VwQbUJbxAAAA:8 a=QyXUC8HyAAAA:8 a=rp8sQ_PGhaDcVZ7OaiUA:9 a=jeBq3FmKZ4MA:10 a=dGJ0OcVc7YAA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130606223142.328223027@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 06 Jun 2013 18:29:27 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: [PATCH 3/4 (no gpg)] tracing: Fix bad parameter passed in branch selftest
-References: <20130606222924.366792086@goodmis.org>
-Content-Disposition: inline; filename=0003-tracing-Fix-bad-parameter-passed-in-branch-selftest.patch
+	Thu, 6 Jun 2013 18:37:32 -0400
+X-Greylist: delayed 350 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Jun 2013 18:37:31 EDT
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH]sched/rt: Simplify pull_rt_task() logic and remove .leaf_rt_rq_list
+MIME-Version: 1.0
+Message-Id: <287571370557898@web7d.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Fri, 07 Jun 2013 02:31:38 +0400
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Based on the patch by Steven Rostedt from previous year:
 
-The branch selftest calls trace_test_buffer(), but with the new code
-it expects the first parameter to be a pointer to a struct trace_buffer.
-All self tests were changed but the branch selftest was missed.
+https://lkml.org/lkml/2012/4/18/517
 
-This caused either a crash or failed test when the branch selftest was
-enabled.
+1)Simplify pull_rt_task() logic: search in pushable tasks of dest runqueue.
+The only pullable tasks are the tasks which are pushable in their local rq,
+and no others.
 
-Link: http://lkml.kernel.org/r/20130529141333.GA24064@localhost
+2)Remove .leaf_rt_rq_list member of struct rt_rq and functions connected
+with it: nobody uses it since now.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>
 ---
- kernel/trace/trace_selftest.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
-index 55e2cf6..2901e3b 100644
---- a/kernel/trace/trace_selftest.c
-+++ b/kernel/trace/trace_selftest.c
-@@ -1159,7 +1159,7 @@ trace_selftest_startup_branch(struct tracer *trace, struct trace_array *tr)
- 	/* stop the tracing. */
- 	tracing_stop();
- 	/* check the trace buffer */
--	ret = trace_test_buffer(tr, &count);
-+	ret = trace_test_buffer(&tr->trace_buffer, &count);
- 	trace->reset(tr);
- 	tracing_start();
+ kernel/sched/rt.c    |   82 ++++++++++----------------------------------------
+ kernel/sched/sched.h |    1 -
+ 2 files changed, 16 insertions(+), 67 deletions(-)
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 127a2c4..75286d6 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -399,20 +399,6 @@ static inline struct task_group *next_task_group(struct task_group *tg)
+ 		(iter = next_task_group(iter)) &&			\
+ 		(rt_rq = iter->rt_rq[cpu_of(rq)]);)
  
--- 
-1.7.10.4
-
-
+-static inline void list_add_leaf_rt_rq(struct rt_rq *rt_rq)
+-{
+-	list_add_rcu(&rt_rq->leaf_rt_rq_list,
+-			&rq_of_rt_rq(rt_rq)->leaf_rt_rq_list);
+-}
+-
+-static inline void list_del_leaf_rt_rq(struct rt_rq *rt_rq)
+-{
+-	list_del_rcu(&rt_rq->leaf_rt_rq_list);
+-}
+-
+-#define for_each_leaf_rt_rq(rt_rq, rq) \
+-	list_for_each_entry_rcu(rt_rq, &rq->leaf_rt_rq_list, leaf_rt_rq_list)
+-
+ #define for_each_sched_rt_entity(rt_se) \
+ 	for (; rt_se; rt_se = rt_se->parent)
+ 
+@@ -509,17 +495,6 @@ typedef struct rt_rq *rt_rq_iter_t;
+ #define for_each_rt_rq(rt_rq, iter, rq) \
+ 	for ((void) iter, rt_rq = &rq->rt; rt_rq; rt_rq = NULL)
+ 
+-static inline void list_add_leaf_rt_rq(struct rt_rq *rt_rq)
+-{
+-}
+-
+-static inline void list_del_leaf_rt_rq(struct rt_rq *rt_rq)
+-{
+-}
+-
+-#define for_each_leaf_rt_rq(rt_rq, rq) \
+-	for (rt_rq = &rq->rt; rt_rq; rt_rq = NULL)
+-
+ #define for_each_sched_rt_entity(rt_se) \
+ 	for (; rt_se; rt_se = NULL)
+ 
+@@ -1106,9 +1081,6 @@ static void __enqueue_rt_entity(struct sched_rt_entity *rt_se, bool head)
+ 	if (group_rq && (rt_rq_throttled(group_rq) || !group_rq->rt_nr_running))
+ 		return;
+ 
+-	if (!rt_rq->rt_nr_running)
+-		list_add_leaf_rt_rq(rt_rq);
+-
+ 	if (head)
+ 		list_add(&rt_se->run_list, queue);
+ 	else
+@@ -1128,8 +1100,6 @@ static void __dequeue_rt_entity(struct sched_rt_entity *rt_se)
+ 		__clear_bit(rt_se_prio(rt_se), array->bitmap);
+ 
+ 	dec_rt_tasks(rt_se, rt_rq);
+-	if (!rt_rq->rt_nr_running)
+-		list_del_leaf_rt_rq(rt_rq);
+ }
+ 
+ /*
+@@ -1434,42 +1404,24 @@ static int pick_rt_task(struct rq *rq, struct task_struct *p, int cpu)
+ 	return 0;
+ }
+ 
+-/* Return the second highest RT task, NULL otherwise */
+-static struct task_struct *pick_next_highest_task_rt(struct rq *rq, int cpu)
++/*
++ * Return the highest pushable rq's task, which is suitable to be executed
++ * on the cpu, NULL otherwise
++ */
++static struct task_struct *pick_highest_pushable_task(struct rq *rq, int cpu)
+ {
+-	struct task_struct *next = NULL;
+-	struct sched_rt_entity *rt_se;
+-	struct rt_prio_array *array;
+-	struct rt_rq *rt_rq;
+-	int idx;
+-
+-	for_each_leaf_rt_rq(rt_rq, rq) {
+-		array = &rt_rq->active;
+-		idx = sched_find_first_bit(array->bitmap);
+-next_idx:
+-		if (idx >= MAX_RT_PRIO)
+-			continue;
+-		if (next && next->prio <= idx)
+-			continue;
+-		list_for_each_entry(rt_se, array->queue + idx, run_list) {
+-			struct task_struct *p;
++	struct plist_head *head = &rq->rt.pushable_tasks;
++	struct task_struct *p;
+ 
+-			if (!rt_entity_is_task(rt_se))
+-				continue;
++	if (!has_pushable_tasks(rq))
++		return NULL;
+ 
+-			p = rt_task_of(rt_se);
+-			if (pick_rt_task(rq, p, cpu)) {
+-				next = p;
+-				break;
+-			}
+-		}
+-		if (!next) {
+-			idx = find_next_bit(array->bitmap, MAX_RT_PRIO, idx+1);
+-			goto next_idx;
+-		}
++	plist_for_each_entry(p, head, pushable_tasks) {
++		if (pick_rt_task(rq, p, cpu))
++			return p;
+ 	}
+ 
+-	return next;
++	return NULL;
+ }
+ 
+ static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask);
+@@ -1743,12 +1695,10 @@ static int pull_rt_task(struct rq *this_rq)
+ 		double_lock_balance(this_rq, src_rq);
+ 
+ 		/*
+-		 * Are there still pullable RT tasks?
++		 * We can pull only a task, which is pushable
++		 * on its rq, and no others.
+ 		 */
+-		if (src_rq->rt.rt_nr_running <= 1)
+-			goto skip;
+-
+-		p = pick_next_highest_task_rt(src_rq, this_cpu);
++		p = pick_highest_pushable_task(src_rq, this_cpu);
+ 
+ 		/*
+ 		 * Do we have an RT task that preempts
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index ce39224..a7ddf72 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -353,7 +353,6 @@ struct rt_rq {
+ 	unsigned long rt_nr_boosted;
+ 
+ 	struct rq *rq;
+-	struct list_head leaf_rt_rq_list;
+ 	struct task_group *tg;
+ #endif
+ };
