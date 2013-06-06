@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094Ab3FFPVS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 11:21:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57833 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750760Ab3FFPVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 11:21:16 -0400
-Date: Thu, 6 Jun 2013 11:21:04 -0400
-From: Dave Jones <davej@redhat.com>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocky" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH 5/5] cpufreq:boost:Kconfig: Enable boost support at
- Kconfig
-Message-ID: <20130606152104.GA11015@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Lukasz Majewski <l.majewski@samsung.com>,
-	Viresh Kumar <viresh.kumar@linaro.org>,
-	"Rafael J. Wysocky" <rjw@sisk.pl>,
-	"cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-	Linux PM list <linux-pm@vger.kernel.org>,
-	Vincent Guittot <vincent.guittot@linaro.org>,
-	Jonghwa Lee <jonghwa3.lee@samsung.com>,
-	Myungjoo Ham <myungjoo.ham@samsung.com>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	Lukasz Majewski <l.majewski@majess.pl>,
-	Andre Przywara <andre.przywara@linaro.org>,
-	Daniel Lezcano <daniel.lezcano@linaro.org>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1370502472-7249-6-git-send-email-l.majewski@samsung.com>
- <20130606144910.GA1194@redhat.com>
- <20130606171431.41d63591@amdc308.digital.local>
+	id S1752305Ab3FFPVd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 11:21:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49329 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752160Ab3FFPVc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 11:21:32 -0400
+Date: Thu, 6 Jun 2013 08:21:31 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dave Jones <davej@redhat.com>, Tobias Winter <tobias@linuxdingsda.de>,
+        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        Rob Landley <rob@landley.net>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Increase the number of USB to serial devices we can
+ support at once
+Message-ID: <20130606152131.GA6935@kroah.com>
+References: <20130605175426.GA13461@kroah.com>
+ <20130606150112.GA22984@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130606171431.41d63591@amdc308.digital.local>
+In-Reply-To: <20130606150112.GA22984@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 05:14:31PM +0200, Lukasz Majewski wrote:
- > Hi Dave,
- > 
- > > On Thu, Jun 06, 2013 at 09:07:52AM +0200, Lukasz Majewski wrote:
- > > 
- > >  > +config CPU_FREQ_BOOST
- > >  > +	bool "CPU frequency boost support"
- > >  > +	help
- > >  > +	  Switch to enable support for frequency boost
- > >  > +
- > >  > +	  If in doubt, say N.
- > >  > +
- > > 
- > > This help text is devoid of any useful information.
- > > 
- > > On what platforms ? What's the upside/downside ? Why is it an option ?
- > 
- > I shall be more verbose here.
- > 
- > The boost option is supposed to provide one solution to control
- > software based (like is is done with Samsung Exynos4 SoC) and hardware
- > based (like Intel's Turbo Boost feature) boost.
- > 
- > Support for Intel's boost is already in mainline. Therefore I aimed to
- > extend cpufreq to also manage software based solutions (e.g. Exynos).
+On Thu, Jun 06, 2013 at 11:01:12AM -0400, Dave Jones wrote:
+> On Wed, Jun 05, 2013 at 10:54:26AM -0700, Greg KH wrote:
+>  > Here are 3 patches that I've tested out on my system with only a small
+>  > number of devices, but it seems to work, so why not let others try it
+>  > out...
+>  > 
+>  > These patches make the USB to serial core have the ability to support up
+>  > to 3000 devices at once now.  
+> 
+> I'm curious how this works. What systems have 3000 usb ports ?
+> Or are there some kind of multiplexer devices out there ?
+> (If so, I'd like a link, I could use one of those).
 
-Given CPUFREQ is available on more platforms than X86/ARM, this option
-could also use a depends.
+You don't need a multiplexer, you can have a bunch of different USB root
+hubs in PCI slots, with USB hubs plugged into them, and lots of
+multi-port USB devices connected to them.  Tobias has such a system with
+272 single-port USB to serial devices connected, so it's not impossible
+to create.
 
-	Dave
+In thinking about it some more, I'll change that number to 500 for now,
+as it's a static array within the tty layer, and then work on making
+that dynamic so we don't have any limitations other than the number of
+minor numbers for a single major.
 
+thanks,
+
+greg k-h
