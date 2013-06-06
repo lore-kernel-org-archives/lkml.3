@@ -1,172 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757318Ab3FFDE6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 23:04:58 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:9355 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753628Ab3FFDE4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 23:04:56 -0400
-X-IronPort-AV: E=Sophos;i="4.87,811,1363104000"; 
-   d="scan'208";a="7473930"
-Subject: Re: [PATCH RFC v2 1/3] drivers/platform/x86: add cpu physically
- hotplug driver
-From: li guang <lig.fnst@cn.fujitsu.com>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org,
-        Andreas =?ISO-8859-1?Q?F=E4rber?= <afaerber@suse.de>,
-        Igor Mammedov <imammedo@redhat.com>
-In-Reply-To: <51AFF2FB.6020007@cn.fujitsu.com>
-References: <1370482835-764-1-git-send-email-lig.fnst@cn.fujitsu.com>
-	 <1370482835-764-2-git-send-email-lig.fnst@cn.fujitsu.com>
-	 <51AFF2FB.6020007@cn.fujitsu.com>
-Date: Thu, 06 Jun 2013 11:03:47 +0800
-Message-ID: <1370487827.17798.89.camel@liguang.fnst.cn.fujitsu.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/06 11:03:11,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/06 11:03:11,
-	Serialize complete at 2013/06/06 11:03:11
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="UTF-8"
+	id S1757352Ab3FFDFu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 23:05:50 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:46788 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753628Ab3FFDFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 23:05:48 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Glauber Costa <glommer@openvz.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch] memcg: clean up memcg->nodeinfo
+Date: Wed,  5 Jun 2013 23:05:34 -0400
+Message-Id: <1370487934-4547-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.8.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-在 2013-06-06四的 10:24 +0800，Gu Zheng写道：
-> On 06/06/2013 09:40 AM, liguang wrote:
-> 
-> > this driver will support cpu phyical add/removal automatically
-> > after online/offline. if cpu hotpluged, cpu will not
-> > online automatically, and for cpu offline, we try to
-> > do actually eject if allowed for cpu like
-> > "echo 1 > /sys/bus/acpi/devices/LNXCPU\:0X/eject"
-> > this "echo ..." is only present for recent kernel
-> > (sorry, can't figure out since when), for a little
-> > older kernel, there's not such approach AFAICS.
-> > 
-> > Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
-> > ---
-> >  drivers/platform/x86/Kconfig              |    8 ++++
-> >  drivers/platform/x86/Makefile             |    1 +
-> >  drivers/platform/x86/cpu_physic_hotplug.c |   60 +++++++++++++++++++++++++++++
-> >  3 files changed, 69 insertions(+), 0 deletions(-)
-> >  create mode 100644 drivers/platform/x86/cpu_physic_hotplug.c
-> > 
-> > diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-> > index 8577261..39b2392 100644
-> > --- a/drivers/platform/x86/Kconfig
-> > +++ b/drivers/platform/x86/Kconfig
-> > @@ -789,4 +789,12 @@ config PVPANIC
-> >  	  a paravirtualized device provided by QEMU; it lets a virtual machine
-> >  	  (guest) communicate panic events to the host.
-> >  
-> > +config QEMU_CPU_PHYSIC_HOTPLUG
-> > +	tristate "physically add/remove cpu after cpu onlined/offlined"
-> > +	depends on ACPI_HOTPLUG_CPU
-> > +	---help---
-> > +	  This driver will support physically remove a cpu after
-> > +	  it offlined for QEMU automatically. someone may require this feature
-> > +	  to do a physically removal for a cpu.
-> > +
-> >  endif # X86_PLATFORM_DEVICES
-> > diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
-> > index ef0ec74..2e669b0 100644
-> > --- a/drivers/platform/x86/Makefile
-> > +++ b/drivers/platform/x86/Makefile
-> > @@ -53,3 +53,4 @@ obj-$(CONFIG_APPLE_GMUX)	+= apple-gmux.o
-> >  obj-$(CONFIG_CHROMEOS_LAPTOP)	+= chromeos_laptop.o
-> >  
-> >  obj-$(CONFIG_PVPANIC)           += pvpanic.o
-> > +obj-$(CONFIG_QEMU_CPU_PHYSIC_HOTPLUG)	+= cpu_physic_hotplug.o
-> > diff --git a/drivers/platform/x86/cpu_physic_hotplug.c b/drivers/platform/x86/cpu_physic_hotplug.c
-> > new file mode 100644
-> > index 0000000..a52c042
-> > --- /dev/null
-> > +++ b/drivers/platform/x86/cpu_physic_hotplug.c
-> > @@ -0,0 +1,60 @@
-> > +#include <linux/kernel.h>
-> > +#include <linux/module.h>
-> > +#include <linux/acpi.h>
-> > +#include <linux/cpu.h>
-> > +#include <linux/notifier.h>
-> > +#include <acpi/processor.h>
-> > +
-> > +MODULE_AUTHOR("Li Guang");
-> > +MODULE_DESCRIPTION("CPU physically hot-plug/unplug Driver");
-> > +MODULE_LICENSE("GPL");
-> > +
-> > +static int cpu_logic_hotplug_notify(struct notifier_block *nfb,
-> > +				unsigned long action, void *hcpu)
-> > +{
-> > +	unsigned int cpu = (unsigned long)hcpu;
-> > +	struct acpi_processor *pr = per_cpu(processors, cpu);
-> > +
-> > +	if (pr) {
-> > +		switch (action) {
-> > +		case CPU_ONLINE:
-> > +			break;
-> > +		case CPU_DEAD:
-> > +			break;
-> > +		default:
-> > +			break;
-> > +		}
-> > +	}
-> > +	return NOTIFY_OK;
-> > +}
-> > +
-> > +static struct notifier_block cpu_logic_hotplug_notifier =
-> > +{
-> > +	.notifier_call = cpu_logic_hotplug_notify,
-> > +};
-> > +
-> > +static int cpu_physic_hotplug_notify(struct notifier_block *nfb,
-> > +				 unsigned char *s)
-> > +{
-> > +}
-> 
-> Hi guang,
-> 	Maybe you need to define the callback function in the right format at the beginning,
-> if so, no need to correct it later.:)
-> 
+Remove struct mem_cgroup_lru_info and fold its single member, the
+variably sized nodeinfo[0], directly into struct mem_cgroup.  This
+should make it more obvious why it has to be the last member there.
 
-right,
+Also move the comment that's above that special last member below it,
+so it is more visible to somebody that considers appending to the
+struct mem_cgroup.
 
-Thanks!
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/memcontrol.c | 21 ++++++---------------
+ 1 file changed, 6 insertions(+), 15 deletions(-)
 
-> 
-> > +
-> > +static struct notifier_block cpu_physic_hotplug_notifier =
-> > +{
-> > +	.notifier_call = cpu_physic_hotplug_notify,
-> > +};
-> > +
-> > +static int __init cpu_qemu_hotplug_init(void)
-> > +{
-> > +	register_hotcpu_notifier(&cpu_logic_hotplug_notifier);
-> > +	register_ec_gpe_notifier(&cpu_physic_hotplug_notifier);
-> 
-> 
-> As the [PATCH 2/3] has no dependence on this one, so you can set [PATCH 2/3] to [PATCH 1/3] and this one
-> to [PATCH 2/3]. Then you can use the xxx_ec_space_notifier directly here.
-> 
-> > +	return 0;
-> > +}
-> > +
-> > +static void __exit cpu_qemu_hotplug_exit(void)
-> > +{
-> > +	unregister_hotcpu_notifier(&cpu_logic_hotplug_notifier);
-> > +	unregister_ec_gpe_notifier(&cpu_physic_hotplug_notifier);
-> > +}
-> > +
-> > +module_init(cpu_qemu_hotplug_init);
-> > +module_exit(cpu_qemu_hotplug_exit);
-> 
-> 
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index ff7b40d..d169a8d 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -187,10 +187,6 @@ struct mem_cgroup_per_node {
+ 	struct mem_cgroup_per_zone zoneinfo[MAX_NR_ZONES];
+ };
+ 
+-struct mem_cgroup_lru_info {
+-	struct mem_cgroup_per_node *nodeinfo[0];
+-};
+-
+ /*
+  * Cgroups above their limits are maintained in a RB-Tree, independent of
+  * their hierarchy representation
+@@ -384,14 +380,9 @@ struct mem_cgroup {
+ #endif
+ 	/* when kmem shrinkers can sleep but can't proceed due to context */
+ 	struct work_struct kmemcg_shrink_work;
+-	/*
+-	 * Per cgroup active and inactive list, similar to the
+-	 * per zone LRU lists.
+-	 *
+-	 * WARNING: This has to be the last element of the struct. Don't
+-	 * add new fields after this point.
+-	 */
+-	struct mem_cgroup_lru_info info;
++
++	struct mem_cgroup_per_node *nodeinfo[0];
++	/* WARNING: nodeinfo has to be the last member here */
+ };
+ 
+ static size_t memcg_size(void)
+@@ -777,7 +768,7 @@ static struct mem_cgroup_per_zone *
+ mem_cgroup_zoneinfo(struct mem_cgroup *memcg, int nid, int zid)
+ {
+ 	VM_BUG_ON((unsigned)nid >= nr_node_ids);
+-	return &memcg->info.nodeinfo[nid]->zoneinfo[zid];
++	return &memcg->nodeinfo[nid]->zoneinfo[zid];
+ }
+ 
+ struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *memcg)
+@@ -6595,13 +6586,13 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
+ 		mz->on_tree = false;
+ 		mz->memcg = memcg;
+ 	}
+-	memcg->info.nodeinfo[node] = pn;
++	memcg->nodeinfo[node] = pn;
+ 	return 0;
+ }
+ 
+ static void free_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
+ {
+-	kfree(memcg->info.nodeinfo[node]);
++	kfree(memcg->nodeinfo[node]);
+ }
+ 
+ static struct mem_cgroup *mem_cgroup_alloc(void)
+-- 
+1.8.2.3
 
