@@ -1,114 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276Ab3FFS0S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 14:26:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23373 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab3FFS0Q (ORCPT
+	id S1752250Ab3FFS3U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 14:29:20 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46525 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367Ab3FFS3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 14:26:16 -0400
-X-Authority-Analysis: v=2.0 cv=H8VZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=pfG7SM-LSxcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=hKTq1750SWgA:10 a=8e4ATIvWVOZOZawKBZoA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1370543173.9844.37.camel@gandalf.local.home>
-Subject: Re: [PATCH v14 2/3] trace,x86: Introduce entering/exiting_irq()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, tglx@linutronix.de,
-        mingo@elte.hu, bp@alien8.de, linux-edac@vger.kernel.org,
-        tony.luck@intel.com, dle-develop@lists.sourceforge.net,
-        tomoki.sekiyama@hds.com
-Date: Thu, 06 Jun 2013 14:26:13 -0400
-In-Reply-To: <51B0A965.3070806@hds.com>
-References: <51B0A90F.7030309@hds.com> <51B0A965.3070806@hds.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	Thu, 6 Jun 2013 14:29:19 -0400
+Message-ID: <51B0D4FA.5070500@wwwdotorg.org>
+Date: Thu, 06 Jun 2013 12:29:14 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Dave Martin <Dave.Martin@arm.com>
+CC: gnurou@gmail.com, devicetree-discuss@lists.ozlabs.org,
+        Chris Johnson <CJohnson@nvidia.com>, linux-kernel@vger.kernel.org,
+        Karan Jhavar <kjhavar@nvidia.com>,
+        Matthew Longnecker <MLongnecker@nvidia.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Joseph Lo <josephl@nvidia.com>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: tegra: add basic SecureOS support
+References: <1370503687-17767-1-git-send-email-acourbot@nvidia.com> <51B0BC80.9040007@wwwdotorg.org> <20130606180824.GC3320@localhost.localdomain>
+In-Reply-To: <20130606180824.GC3320@localhost.localdomain>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-06 at 11:23 -0400, Seiji Aguchi wrote:
-> ---
->  arch/x86/include/asm/apic.h |   27 +++++++++++++++++++++++++++
->  1 files changed, 27 insertions(+), 0 deletions(-)
+On 06/06/2013 12:08 PM, Dave Martin wrote:
+> On Thu, Jun 06, 2013 at 10:44:48AM -0600, Stephen Warren wrote:
+>> On 06/06/2013 01:28 AM, Alexandre Courbot wrote:
+>>> Boot loaders on some Tegra devices can be unlocked but do not let the
+>>> system operate without SecureOS. SecureOS prevents access to some
+>>> registers and requires the operating system to perform certain
+>>> operations through Secure Monitor Calls instead of directly accessing
+>>> the hardware.
+>>>
+>>> This patch introduces basic SecureOS support for Tegra. SecureOS support
+>>> can be enabled by adding a "nvidia,secure-os" property to the "chosen"
+>>> node of the device tree.
+...
+> So, something like
 > 
-> diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-> index 3388034..f8119b5 100644
-> --- a/arch/x86/include/asm/apic.h
-> +++ b/arch/x86/include/asm/apic.h
-> @@ -12,6 +12,7 @@
->  #include <asm/fixmap.h>
->  #include <asm/mpspec.h>
->  #include <asm/msr.h>
-> +#include <asm/idle.h>
->  
->  #define ARCH_APICTIMER_STOPS_ON_C3	1
->  
-> @@ -687,5 +688,31 @@ extern int default_check_phys_apicid_present(int phys_apicid);
->  #endif
->  
->  #endif /* CONFIG_X86_LOCAL_APIC */
-> +extern void irq_enter(void);
-> +extern void irq_exit(void);
-> +
-> +static inline void entering_irq(void)
-> +{
-> +	irq_enter();
-> +	exit_idle();
-> +}
-> +
-> +static inline void entering_ack_irq(void)
-> +{
-> +	ack_APIC_irq();
-> +	entering_irq();
-> +}
-> +
-> +static inline void exiting_irq(void)
-> +{
-> +	irq_exit();
-> +}
-> +
-> +static inline void exiting_ack_irq(void)
-> +{
-> +	irq_exit();
-> +	/* Ack only at the end to avoid potential reentry */
-> +	ack_APIC_irq();
-> +}
->  
->  #endif /* _ASM_X86_APIC_H */
+> 	foo-firmware {
+> 		compatible = "vendor1,foo-firmware-1.0", "vendor1,foo-firmware";
+> 		method = "smc";
+> 
+> 		// ...
+> 	};
+> 
+> 	bar-firmware {
+> 		compatible = "vendor2,bar-firmware-1.6", "vendor2,bar-firmware";
+> 		method = "smc";
+> 
+> 		// ...
+> 	};
+> 
+> Could make sense.
 
-I think it also makes sense to use these in this patch as well. That is,
-go ahead and make the changes likes this:
+I'm not sure if the method property is useful in most cases. For generic
+ABIs such as PSCI that actually support multiple communication paths,
+yes, it makes sense. However, it seems like for most custom ABIs, such
+as is presumably implemented by whatever "SecureOS" is on Tegra, the
+firmware type (or compatible value) directly implies that it operates
+over SMC not HVC. After all, presumably if the kernel was virtualized,
+it wouldn't have access to the raw secure monitor? I suppose you could
+argue that the hypervisor might end up emulating the same ABI over HVC
+instead? I'm not sure how likely that is. A compromise might be to
+assume SMC if no property was present, which would allow it to be
+optionally added later if it turned out to be useful.
 
-@@ -919,17 +919,14 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
- 	/*
- 	 * NOTE! We'd better ACK the irq immediately,
- 	 * because timer handling can be slow.
--	 */
--	ack_APIC_irq();
--	/*
-+	 *
- 	 * update_process_times() expects us to have done irq_enter().
- 	 * Besides, if we don't timer interrupts ignore the global
- 	 * interrupt lock, which is the WrongThing (tm) to do.
- 	 */
--	irq_enter();
--	exit_idle();
-+	entering_ack_irq();
- 	local_apic_timer_interrupt();
--	irq_exit();
-+	exiting_irq();
- 
- 	set_irq_regs(old_regs);
- }
+> ...where we would require all new firmware interface bindings to
+> include the "-firmware" in their node names and compatible strings
+> (with a version suffix encouraged for the compatible strings, where
+> relevant).
 
-And do that with all the interrupts.
-
-I think this is getting close for adding to 3.11 queue.
-
--- Steve
-
-
+That's probably a good convention, but I'm not sure it should be
+required (or at least validated by code). Requiring this by code review
+might be OK. Node names aren't meant to be interpreted semantically.
