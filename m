@@ -1,110 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180Ab3FFK5m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 06:57:42 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:58842 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753924Ab3FFK5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 06:57:40 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Joe Jin <joe.jin@oracle.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, Neil Gu <qing.gu@oracle.com>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ACPI: update user_policy.max when _PPC updated
-Date: Thu, 06 Jun 2013 13:06:45 +0200
-Message-ID: <42861210.QMFsUVH8RU@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51AFD75C.3030705@oracle.com>
-References: <51AE8BE4.8050409@oracle.com> <31897041.QcNuTieHbo@vostro.rjw.lan> <51AFD75C.3030705@oracle.com>
+	id S932518Ab3FFLA6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 07:00:58 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:8616 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751521Ab3FFLA5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 07:00:57 -0400
+Message-ID: <51B06BE6.80909@itdev.co.uk>
+Date: Thu, 06 Jun 2013 12:00:54 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Mark Brown <broonie@kernel.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
+Subject: Re: [PATCH 10/53] Input: atmel_mxt_ts - Add memory access interface
+ via sysfs
+References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk> <7380889.l4hHqCT0mm@dtor-d630.eng.vmware.com> <51AF8730.4010507@itdev.co.uk> <1717403.GgHsbyUkDZ@dtor-d630.eng.vmware.com> <51AFA02B.3000604@itdev.co.uk> <20130605210715.GA16013@core.coreip.homeip.net> <20130606094822.GB1883@sirena.org.uk> <51B06732.2050701@itdev.co.uk> <20130606104651.GS31367@sirena.org.uk>
+In-Reply-To: <20130606104651.GS31367@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, June 06, 2013 08:27:08 AM Joe Jin wrote:
-> On 06/06/13 04:40, Rafael J. Wysocki wrote:
-> > On Wednesday, June 05, 2013 08:52:52 AM Joe Jin wrote:
-> >> When _PPC changed dynamically the user_policy.max will not be updated,
-> >> this prevent CPU run on the highest frequency.
-> > 
-> > Why should the user setting be always related to the current maximum available
-> > frequency?  What if the user sets the limit for power capping purposes?
+Mark Brown wrote:
+> On Thu, Jun 06, 2013 at 11:40:50AM +0100, Nick Dyer wrote:
 > 
-> cpufreq_update_policy() get policy->max from user_policy.max:
+>> I am more worried about the address pointer handling and the I2C retries.
 > 
-> 1782 int cpufreq_update_policy(unsigned int cpu)
-> 1783 {
-> [...]
-> 1800         policy.min = data->user_policy.min;
-> 1801         policy.max = data->user_policy.max;
-> 1802         policy.policy = data->user_policy.policy;
-> 1803         policy.governor = data->user_policy.governor;
-> [...]
-> 1819         ret = __cpufreq_set_policy(data, &policy);
-> [...]
-> 
-> /sys/devices/system/cpu/cpu$/cpufreq/scaling_max_freq using policy->max 
-> and user_policy->max, when update it, so I think _PPC changes also need
-> to update these two?
+> The retries can just be done further up the stack?  All regmap is doing
+> with I/O errors is punting them straight back up to the caller so the
+> caller can retry just as well using regmap as it can using the raw I/O
+> protocol.
 
-Yes, if policy.max happens to be greater that the maximum available frequency,
-then (and only then) it probably should be updated.  It should never be bumped
-up, though.
+It would have to be put into users of the debugfs interface as well.
+There's quite tight timing required to make it work properly (see patch
+[40/53]).
 
-Thanks,
-Rafael
+> Without seeing the address thing it's hard to comment.
 
+Patch [36/53]. If the T5 message processor is from address 100-110, you can
+do a read of 50 bytes starting at address 100, and it will return 10
+messages, but anything in regmap that tries to do bounds checking would get
+confused, I think.
 
-> >> Signed-off-by: Joe Jin <joe.jin@oracle.com>
-> >> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> >> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> >> ---
-> >>  drivers/acpi/processor_perflib.c | 17 ++++++++++++++++-
-> >>  1 file changed, 16 insertions(+), 1 deletion(-)
-> >>
-> >> diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
-> >> index e854582..e01aa7d 100644
-> >> --- a/drivers/acpi/processor_perflib.c
-> >> +++ b/drivers/acpi/processor_perflib.c
-> >> @@ -180,6 +180,7 @@ static void acpi_processor_ppc_ost(acpi_handle handle, int status)
-> >>  int acpi_processor_ppc_has_changed(struct acpi_processor *pr, int event_flag)
-> >>  {
-> >>  	int ret;
-> >> +	unsigned int saved = (unsigned int)pr->performance_platform_limit;
-> >>  
-> >>  	if (ignore_ppc) {
-> >>  		/*
-> >> @@ -204,8 +205,22 @@ int acpi_processor_ppc_has_changed(struct acpi_processor *pr, int event_flag)
-> >>  	}
-> >>  	if (ret < 0)
-> >>  		return (ret);
-> >> -	else
-> >> +	else {
-> >> +		unsigned int ppc = (unsigned int)pr->performance_platform_limit;
-> >> +
-> >> +		if (saved != ppc) {
-> >> +			struct cpufreq_policy *policy;
-> >> +
-> >> +			policy = cpufreq_cpu_get(pr->id);
-> >> +			if (likely(policy))
-> >> +				policy->user_policy.max =
-> >> +					pr->performance->states[ppc].
-> >> +					core_frequency * 1000;
-> >> +			cpufreq_cpu_put(policy);
-> >> +		}
-> >> +
-> >>  		return cpufreq_update_policy(pr->id);
-> >> +	}
-> >>  }
-> >>  
-> >>  int acpi_processor_get_bios_limit(int cpu, unsigned int *limit)
-> >>
-> 
-> 
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Also, we would like to implement address pointer caching. maXTouch allows
+us to skip the address part of the i2c transaction if the address pointer
+in the chip hasn't changed. This speeds up interrupt handler slightly. But
+it requires extra housekeeping at a low level to remember what the address
+pointer was on the previous transaction to know whether to send it or not.
