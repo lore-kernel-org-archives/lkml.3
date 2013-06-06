@@ -1,55 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932316Ab3FFJAm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 05:00:42 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:48313 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab3FFJAk (ORCPT
+	id S932376Ab3FFJA5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 05:00:57 -0400
+Received: from oms-db03.r1000.mx.aol.com ([205.188.58.3]:37538 "EHLO
+	oms-db03.r1000.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932326Ab3FFJAs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 05:00:40 -0400
+	Thu, 6 Jun 2013 05:00:48 -0400
+X-MB-Message-Source: WebUI
+Content-Transfer-Encoding: 8BIT
+Subject: =?utf-8?Q?PROCES_A_ODKUPU_VA=C5=A0?=
+ =?utf-8?Q?=C3=8D_VYHR=C3=81L_CENU_=C2=A3_7.?=
+ =?utf-8?Q?500,000LIBRA_BRITSK=C3=81?=
+ =?utf-8?Q?_LIBRA_{_GBP_}?=
+X-MB-Message-Type: User
 MIME-Version: 1.0
-In-Reply-To: <20130606105814.3495e3a9@amdc308.digital.local>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
-	<1370502472-7249-2-git-send-email-l.majewski@samsung.com>
-	<CAKohpokYdwutUX-zkHLs3bKmLg=Fb7WvKcwvfek9Q8k=XXs3bw@mail.gmail.com>
-	<20130606105814.3495e3a9@amdc308.digital.local>
-Date: Thu, 6 Jun 2013 14:30:39 +0530
-Message-ID: <CAKohpo=fLmDog5KVjijEZNakpjLvrKy=S+nv+GQyCc2brcnO1w@mail.gmail.com>
-Subject: Re: [PATCH 1/5] cpufreq: Define cpufreq_set_drv_attr_files() to add
- per CPU sysfs attributes
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+From: "www.swisslotto.ch" <sender@aol.jp>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+X-Mailer: AOL Webmail 37776-BASIC
+Message-Id: <8D030AB76842FE4-63C-80B3@webmail-vd016.sysops.aol.com>
+X-Originating-IP: [110.159.129.178]
+Date: Thu, 6 Jun 2013 05:00:44 -0400 (EDT)
+x-aol-global-disposition: S
+X-SPAM-FLAG: YES
+X-AOL-SCOLL-SCORE: 0:2:127871272:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+X-AOL-REROUTE: YES 
+x-aol-sid: 3039ac1d338e51b04fbc0d9a
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 June 2013 14:28, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> I'm confused here.
->
-> So you want to check dev_attr for NULL just after:
-> drv_attr = cpufreq_driver->attr;
-> if (!drv_attr)
->         goto error;
->
-> and skip the check at the while loop:
-> while ((drv_attr) && (*drv_attr))
->
-> to
->
-> while ((*drv_attr))
->
-> Am I correct?
+www.swisslotto.ch 2013
+SWISSLOTTO
 
-Bingo!!
+Gratulujeme: Toto je oficiálně přinést do vaší pozornosti, že vaše 
+e-mailová adresa získal pro vás on-line elektronickou loterii o 
+probíhajícím Swisslotto platby loterie on-line přes náhodné 
+elektronickým systémem e-mailovou volební qualification.The součet 
+7.500,000libra Great British Pounds { CZK} má být udělena vás v 
+probíhajícím programu Swislotto, aby vám zpracovávat a využívat své 
+vyhrál cenu, musíte jít vykupitelské politiky a strážní linek z vaší 
+platební určené banky. V tomto nŘádek Vítězové loterie elektronických 
+cvičení se vynořila z 7 kontinentů světa a 2013 vydání Swisslotto je 
+zesílený vydání, přičemž vítězové vynořil ze seznamu kontinentech 
+Afrika, Antarktida, Asie, Austrálie, Evropy, Severní Ameriky
+Jižní Amerika.
+
+Podle náhodné e-mailové adresy sčítací systém e-mailovou kvalifikaci 
+vaše e-mailová adresa získal pro Vás součet 7.500,000libra Great 
+British liber {GBP}  a získala cenu patří do Vaší tudíž vaše jsou 
+oprávněný uživatel e-mailové adresy se svou vítěznou viz níže:
+
+Vítězné číslo: 46689 \ 67 \ 2013k
+Směrování číslo: Vítěz # 5657
+Výrobní kód: 56579Kl
+
+Vaše přesto je třeba ještě zpracovat, je to vaše právo je šťastným 
+výhercem zpracovávat a využívat své vyhrál cenu přes normální 
+prohlašovat postupu sami právního příjemce, pro procesí a čerpání 
+vašeho vyhrál cenu posílat níže uvedené informace do centrální světa 
+Široká agent i.desk1@aol.com vám směrnic do průvodu a platební banku
+
+                                                                      
+POSKYTNĚTE NÍŽE UVEDENÉ INFORMACE
+
+Příjmení:
+Jméno
+Druhé jméno:
+Pohlaví:
+Datum narození:
+Povolání:
+Číslo mobilního telefonu:
+Tel. Číslo:
+Národnost:
+Domovská adresa:
+Úřad nebo Poštovní adresa:
+Země:
+Současná Země:
+Výherní číslo:
+Směrovací číslo:
+Výrobní kód:
+
+kontakt : i.desk1@aol.com
+
+Jste zaslat požadované informace popsané výše procesí a využívat svých 
+mandátů získaly prize.Zákon, můžete jako právní příjemci této výhra v 
+loterii zpracovávat pro nároky vašeho získal fond od svého určeného 
+platebního banky tím, že cituje své vítězné údaje, jakož jak jdou podle 
+pravidel a regulace střežících vykupující procesu procedure.Your se 
+prosím doporučuje zkontrolovat e-maily denně, což nám pomáhá usnadnit 
+průvod vaší cenu.
+
+Poznámka: Není-li přesměrovat informace k této e-mailovou adresu 
+i.desk1@aol.com nebo zvážit sám automaticky diskvalifikován.
+
+
+Děkovat
+Paní Anna Van
+-------------------------------------------------------------------------
+-------------------------------------------------------------------------
+-------------------------------------------------------------------------
+----------------
+Copyright © 2013 Swiss loterie! Všechna práva vyhrazena
+
+
