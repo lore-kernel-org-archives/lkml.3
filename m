@@ -1,69 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587Ab3FFPX5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 11:23:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40106 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752171Ab3FFPXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 11:23:43 -0400
-Date: Thu, 6 Jun 2013 17:23:40 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] memcg: do not sleep on OOM waitqueue with full
- charge context
-Message-ID: <20130606152340.GC24115@dhcp22.suse.cz>
-References: <1370488193-4747-1-git-send-email-hannes@cmpxchg.org>
- <1370488193-4747-2-git-send-email-hannes@cmpxchg.org>
- <alpine.DEB.2.02.1306052058340.25115@chino.kir.corp.google.com>
+	id S1752633Ab3FFPYH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 11:24:07 -0400
+Received: from usindpps04.hds.com ([207.126.252.17]:43166 "EHLO
+	usindpps04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552Ab3FFPYD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 11:24:03 -0400
+Message-ID: <51B0A965.3070806@hds.com>
+Date: Thu, 06 Jun 2013 11:23:17 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1306052058340.25115@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org, rostedt@goodmis.org, hpa@zytor.com
+CC: tglx@linutronix.de, mingo@elte.hu, bp@alien8.de,
+        linux-edac@vger.kernel.org, tony.luck@intel.com,
+        dle-develop@lists.sourceforge.net, tomoki.sekiyama@hds.com
+Subject: [PATCH v14 2/3] trace,x86: Introduce entering/exiting_irq()
+References: <51B0A90F.7030309@hds.com>
+In-Reply-To: <51B0A90F.7030309@hds.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8626,1.0.431,0.0.0000
+ definitions=2013-06-06_07:2013-06-06,2013-06-06,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 ipscore=0
+ suspectscore=0 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
+ adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1306060114
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 05-06-13 21:10:51, David Rientjes wrote:
-> On Wed, 5 Jun 2013, Johannes Weiner wrote:
-[...]
-> > While reworking the OOM routine, also remove a needless OOM waitqueue
-> > wakeup when invoking the killer.  Only uncharges and limit increases,
-> > things that actually change the memory situation, should do wakeups.
-> > 
-> 
-> It's not needless at all, it's vitally required!  The oom killed process 
-> needs to be removed from the waitqueue and scheduled now with TIF_MEMDIE 
-> that the memcg oom killer provided so the allocation succeeds in the page 
-> allocator and memcg bypasses the charge so it can exit.
+When implementing tracepoints in interrupt handers, if the tracepoints are
+simply added in the performance sensitive path of interrupt handers,
+it may cause potential performance problem due to the time penalty.
 
-The tasks are waiting with TASK_KILLABLE flags so it gets woken up and
-the bypass happens. Calling memcg_wakeup_oom is actually wrong here
-because it wakes all tasks up despite there is no reason for that. No
-charges have been released yet so another retry loop could be pointless.
-We need to be patient and wait for wake up from a uncharge path.
+To solve the problem, an idea is to prepare non-trace/trace irq handers and
+switch their IDTs at the enabling/disabling time.
 
-> Exactly what problem are you trying to address with this patch?  I don't 
-> see any description of the user-visible effects or a specific xample of 
-> the scenario you're trying to address here.
+To do this, this patch introduces entering_irq()/exiting_irq() for pre/post-
+processing of each irq handler.
 
-Maybe I am biased because I've tried to handle the same problem some time
-ago, but the changelog clearly says that memcg oom handling is fragile
-and deadlock prone because of locks that are held while memory is
-charged and oom handled and so oom targets might not get killed because
-they are stuck at the same lock which will not get released until the
-charge succeeds.
-It addresses the problem by moving oom handling outside of any locks
-which solves this category of dead locks. I agree that the changelog
-could better (well, each one can be). It could use some examples (e.g.
-the i_mutex we have seen few months ago or a simple unkillable brk which
-is hanging on mmap_sem for writing while a page fault is handled and
-memcg oom triggered).
+A way to use them is as follows.
+
+Non-trace irq handler:
+smp_irq_handler()
+{
+	entering_irq();		/* pre-processing of this handler */
+	__smp_irq_handler();	/*
+				 * common logic between non-trace and trace handlers
+				 * in a vector.
+				 */
+	exiting_irq();		/* post-processing of this handler */
+
+}
+
+Trace irq_handler:
+smp_trace_irq_handler()
+{
+	entering_irq();		/* pre-processing of this handler */
+	trace_irq_entry();	/* tracepoint for irq entry */
+	__smp_irq_handler();	/*
+				 * common logic between non-trace and trace handlers
+				 * in a vector.
+				 */
+	trace_irq_exit();	/* tracepoint for irq exit */
+	exiting_irq();		/* post-processing of this handler */
+
+}
+
+If tracepoints can place outside entering_irq()/exiting_irq() as follows,
+it looks cleaner.
+
+smp_trace_irq_handler()
+{
+	trace_irq_entry();
+	smp_irq_handler();
+	trace_irq_exit();
+}
+
+But it doesn't work.
+The problem is with irq_enter/exit() being called. They must be called before
+trace_irq_enter/exit(),  because of the rcu_irq_enter() must be called before
+any tracepoints are used, as tracepoints use  rcu to synchronize.
+
+As a possible alternative, we may be able to call irq_enter() first as follows
+if irq_enter() can nest.
+
+smp_trace_irq_hander()
+{
+	irq_entry();
+	trace_irq_entry();
+	smp_irq_handler();
+	trace_irq_exit();
+	irq_exit();
+}
+
+But it doesn't work, either.
+If irq_enter() is nested, it may have a time penalty because it has to check if it
+was already called or not. The time penalty is not desired in performance sensitive
+paths even if it is tiny.
+
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+---
+ arch/x86/include/asm/apic.h |   27 +++++++++++++++++++++++++++
+ 1 files changed, 27 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index 3388034..f8119b5 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -12,6 +12,7 @@
+ #include <asm/fixmap.h>
+ #include <asm/mpspec.h>
+ #include <asm/msr.h>
++#include <asm/idle.h>
+ 
+ #define ARCH_APICTIMER_STOPS_ON_C3	1
+ 
+@@ -687,5 +688,31 @@ extern int default_check_phys_apicid_present(int phys_apicid);
+ #endif
+ 
+ #endif /* CONFIG_X86_LOCAL_APIC */
++extern void irq_enter(void);
++extern void irq_exit(void);
++
++static inline void entering_irq(void)
++{
++	irq_enter();
++	exit_idle();
++}
++
++static inline void entering_ack_irq(void)
++{
++	ack_APIC_irq();
++	entering_irq();
++}
++
++static inline void exiting_irq(void)
++{
++	irq_exit();
++}
++
++static inline void exiting_ack_irq(void)
++{
++	irq_exit();
++	/* Ack only at the end to avoid potential reentry */
++	ack_APIC_irq();
++}
+ 
+ #endif /* _ASM_X86_APIC_H */
 -- 
-Michal Hocko
-SUSE Labs
+1.7.1
+
+
