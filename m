@@ -1,151 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab3FFIsH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 04:48:07 -0400
-Received: from 9.mo5.mail-out.ovh.net ([178.32.96.204]:47042 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757750Ab3FFIsE (ORCPT
+	id S932247Ab3FFI6F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 04:58:05 -0400
+Received: from kamaji.grokhost.net ([87.117.218.43]:59844 "EHLO
+	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818Ab3FFI6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 04:48:04 -0400
-Date: Thu, 6 Jun 2013 10:43:53 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [RFC 18/42] drivers/pinctrl: don't check resource with
- devm_ioremap_resource
-Message-ID: <20130606084353.GK23653@game.jcrosoft.org>
-References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
- <1368173847-5661-19-git-send-email-wsa@the-dreams.de>
+	Thu, 6 Jun 2013 04:58:01 -0400
+Message-ID: <51B04F0F.6070307@bootc.net>
+Date: Thu, 06 Jun 2013 09:57:51 +0100
+From: Chris Boot <bootc@bootc.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130520 Icedove/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368173847-5661-19-git-send-email-wsa@the-dreams.de>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 5529294444593458029
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+To: Timo Teras <timo.teras@iki.fi>
+CC: Fan Du <fan.du@windriver.com>, Jean Sacren <sakiwit@gmail.com>,
+        steffen.klassert@secunet.com, herbert@gondor.hengli.com.au,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: PANIC at net/xfrm/xfrm_output.c:125 (3.9.4)
+References: <51AFB204.8070009@bootc.net> <20130606010416.GF26681@mail.gmail.com> <51AFE4C2.1000604@windriver.com> <51B03EAC.6080508@bootc.net> <20130606113840.511a72c3@vostro>
+In-Reply-To: <20130606113840.511a72c3@vostro>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10:17 Fri 10 May     , Wolfram Sang wrote:
-> devm_ioremap_resource does sanity checks on the given resource. No need to
-> duplicate this in the driver.
+On 06/06/13 09:38, Timo Teras wrote:
+> On Thu, 06 Jun 2013 08:47:56 +0100
+> Chris Boot <bootc@bootc.net> wrote:
 > 
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-> ---
->  drivers/pinctrl/pinctrl-at91.c       |    7 +------
-for at91
+>> On 06/06/13 02:24, Fan Du wrote:
+>>> Hello Chris/Jean
+>>>
+>>> This issue might have already been fixed by this:
+>>> https://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/net/xfrm/xfrm_output.c?id=497574c72c9922cf20c12aed15313c389f722fa0
+>>>
+>>>
+>>> Hope it helps.
+>>
+>> Hi Fan, Jean,
+>>
+>> Thanks, that looks like it's the patch for exactly my problem.
+>> Unfortunately I can't test it until next week now. :-/
+>>
+>> Timo/Dave: are there any plans to push this into 3.10-rc and/or
+>> stable? I seem to be able to hit the issue pretty reliably.
+> 
+> It is already present in 3.10-rc3 [1], and Dave has it queued for
+> 3.9-stable [2].
+> 
+> - Timo
+> 
+> [1] http://lwn.net/Articles/551922/
+> [2] http://patchwork.ozlabs.org/patch/245594/
 
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Thank you!
 
-Best Regards,
-J.
->  drivers/pinctrl/pinctrl-coh901.c     |    5 -----
->  drivers/pinctrl/pinctrl-exynos5440.c |    5 -----
->  drivers/pinctrl/pinctrl-samsung.c    |    5 -----
->  drivers/pinctrl/pinctrl-xway.c       |    4 ----
->  5 files changed, 1 insertion(+), 25 deletions(-)
-> 
-> diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
-> index 5d7529e..b90a3a0 100644
-> --- a/drivers/pinctrl/pinctrl-at91.c
-> +++ b/drivers/pinctrl/pinctrl-at91.c
-> @@ -1543,12 +1543,6 @@ static int at91_gpio_probe(struct platform_device *pdev)
->  		goto err;
->  	}
->  
-> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (!res) {
-> -		ret = -ENOENT;
-> -		goto err;
-> -	}
-> -
->  	irq = platform_get_irq(pdev, 0);
->  	if (irq < 0) {
->  		ret = irq;
-> @@ -1561,6 +1555,7 @@ static int at91_gpio_probe(struct platform_device *pdev)
->  		goto err;
->  	}
->  
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	at91_chip->regbase = devm_ioremap_resource(&pdev->dev, res);
->  	if (IS_ERR(at91_chip->regbase)) {
->  		ret = PTR_ERR(at91_chip->regbase);
-> diff --git a/drivers/pinctrl/pinctrl-coh901.c b/drivers/pinctrl/pinctrl-coh901.c
-> index edde3ac..a67af41 100644
-> --- a/drivers/pinctrl/pinctrl-coh901.c
-> +++ b/drivers/pinctrl/pinctrl-coh901.c
-> @@ -713,11 +713,6 @@ static int __init u300_gpio_probe(struct platform_device *pdev)
->  	gpio->dev = &pdev->dev;
->  
->  	memres = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (!memres) {
-> -		dev_err(gpio->dev, "could not get GPIO memory resource\n");
-> -		return -ENODEV;
-> -	}
-> -
->  	gpio->base = devm_ioremap_resource(&pdev->dev, memres);
->  	if (IS_ERR(gpio->base))
->  		return PTR_ERR(gpio->base);
-> diff --git a/drivers/pinctrl/pinctrl-exynos5440.c b/drivers/pinctrl/pinctrl-exynos5440.c
-> index 6038503..32a48f4 100644
-> --- a/drivers/pinctrl/pinctrl-exynos5440.c
-> +++ b/drivers/pinctrl/pinctrl-exynos5440.c
-> @@ -1000,11 +1000,6 @@ static int exynos5440_pinctrl_probe(struct platform_device *pdev)
->  	}
->  
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (!res) {
-> -		dev_err(dev, "cannot find IO resource\n");
-> -		return -ENOENT;
-> -	}
-> -
->  	priv->reg_base = devm_ioremap_resource(&pdev->dev, res);
->  	if (IS_ERR(priv->reg_base))
->  		return PTR_ERR(priv->reg_base);
-> diff --git a/drivers/pinctrl/pinctrl-samsung.c b/drivers/pinctrl/pinctrl-samsung.c
-> index 9763668..055d016 100644
-> --- a/drivers/pinctrl/pinctrl-samsung.c
-> +++ b/drivers/pinctrl/pinctrl-samsung.c
-> @@ -932,11 +932,6 @@ static int samsung_pinctrl_probe(struct platform_device *pdev)
->  	drvdata->dev = dev;
->  
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (!res) {
-> -		dev_err(dev, "cannot find IO resource\n");
-> -		return -ENOENT;
-> -	}
-> -
->  	drvdata->virt_base = devm_ioremap_resource(&pdev->dev, res);
->  	if (IS_ERR(drvdata->virt_base))
->  		return PTR_ERR(drvdata->virt_base);
-> diff --git a/drivers/pinctrl/pinctrl-xway.c b/drivers/pinctrl/pinctrl-xway.c
-> index f2977cf..e92132c 100644
-> --- a/drivers/pinctrl/pinctrl-xway.c
-> +++ b/drivers/pinctrl/pinctrl-xway.c
-> @@ -716,10 +716,6 @@ static int pinmux_xway_probe(struct platform_device *pdev)
->  
->  	/* get and remap our register range */
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (!res) {
-> -		dev_err(&pdev->dev, "Failed to get resource\n");
-> -		return -ENOENT;
-> -	}
->  	xway_info.membase[0] = devm_ioremap_resource(&pdev->dev, res);
->  	if (IS_ERR(xway_info.membase[0]))
->  		return PTR_ERR(xway_info.membase[0]);
-> -- 
-> 1.7.10.4
-> 
+Cheers,
+Cheers
+
+-- 
+Chris Boot
+bootc@bootc.net
