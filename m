@@ -1,118 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933341Ab3FFMxv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 08:53:51 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:35573 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933044Ab3FFMx3 (ORCPT
+	id S933146Ab3FFMx1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 08:53:27 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:40340 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932403Ab3FFMxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 08:53:29 -0400
+	Thu, 6 Jun 2013 08:53:24 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Imre Deak <imre.deak@intel.com>,
         Herbert Xu <herbert@gondor.hengli.com.au>,
-        Horia Geanta <horia.geanta@freescale.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org
-Subject: [PATCH 2/3] crypto: talitos: use sg_pcopy_to_buffer()
-Date: Thu,  6 Jun 2013 21:52:57 +0900
-Message-Id: <1370523178-5437-3-git-send-email-akinobu.mita@gmail.com>
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Douglas Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org
+Subject: [PATCH 0/3] introduce sg_pcopy_from_buffer() and sg_pcopy_to_buffer()
+Date: Thu,  6 Jun 2013 21:52:55 +0900
+Message-Id: <1370523178-5437-1-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1370523178-5437-1-git-send-email-akinobu.mita@gmail.com>
-References: <1370523178-5437-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use sg_pcopy_to_buffer() which is better than the function previously used.
-Because it doesn't do kmap/kunmap for skipped pages.
+This patch set introduces sg_pcopy_from_buffer() and sg_pcopy_to_buffer(),
+which copy data between a linear buffer and an SG list.
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+The only difference between sg_pcopy_{from,to}_buffer() and
+sg_copy_{from,to}_buffer() is an additional argument that specifies
+the number of bytes to skip the SG list before copying.
+
+The main reason for introducing these functions is to fix a problem
+in scsi_debug module.  And there is a local function in crypto/talitos
+module, which can be replaced by sg_pcopy_to_buffer().
+
+Akinobu Mita (3):
+  lib/scatterlist: introduce sg_pcopy_from_buffer() and
+    sg_pcopy_to_buffer()
+  crypto: talitos: use sg_pcopy_to_buffer()
+  scsi_debug: fix do_device_access() with wrap around range
+
+ drivers/crypto/talitos.c    |  60 +-----------------------
+ drivers/scsi/scsi_debug.c   |  43 ++++++++++++++---
+ include/linux/scatterlist.h |   5 ++
+ lib/scatterlist.c           | 109 ++++++++++++++++++++++++++++++++++++--------
+ 4 files changed, 131 insertions(+), 86 deletions(-)
+
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Imre Deak <imre.deak@intel.com>
 Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Horia Geanta <horia.geanta@freescale.com>
 Cc: "David S. Miller" <davem@davemloft.net>
 Cc: linux-crypto@vger.kernel.org
----
- drivers/crypto/talitos.c | 60 +-----------------------------------------------
- 1 file changed, 1 insertion(+), 59 deletions(-)
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Douglas Gilbert <dgilbert@interlog.com>
+Cc: linux-scsi@vger.kernel.org
 
-diff --git a/drivers/crypto/talitos.c b/drivers/crypto/talitos.c
-index 5b2b5e6..661dc3e 100644
---- a/drivers/crypto/talitos.c
-+++ b/drivers/crypto/talitos.c
-@@ -1112,64 +1112,6 @@ static int sg_count(struct scatterlist *sg_list, int nbytes, bool *chained)
- 	return sg_nents;
- }
- 
--/**
-- * sg_copy_end_to_buffer - Copy end data from SG list to a linear buffer
-- * @sgl:		 The SG list
-- * @nents:		 Number of SG entries
-- * @buf:		 Where to copy to
-- * @buflen:		 The number of bytes to copy
-- * @skip:		 The number of bytes to skip before copying.
-- *                       Note: skip + buflen should equal SG total size.
-- *
-- * Returns the number of copied bytes.
-- *
-- **/
--static size_t sg_copy_end_to_buffer(struct scatterlist *sgl, unsigned int nents,
--				    void *buf, size_t buflen, unsigned int skip)
--{
--	unsigned int offset = 0;
--	unsigned int boffset = 0;
--	struct sg_mapping_iter miter;
--	unsigned long flags;
--	unsigned int sg_flags = SG_MITER_ATOMIC;
--	size_t total_buffer = buflen + skip;
--
--	sg_flags |= SG_MITER_FROM_SG;
--
--	sg_miter_start(&miter, sgl, nents, sg_flags);
--
--	local_irq_save(flags);
--
--	while (sg_miter_next(&miter) && offset < total_buffer) {
--		unsigned int len;
--		unsigned int ignore;
--
--		if ((offset + miter.length) > skip) {
--			if (offset < skip) {
--				/* Copy part of this segment */
--				ignore = skip - offset;
--				len = miter.length - ignore;
--				if (boffset + len > buflen)
--					len = buflen - boffset;
--				memcpy(buf + boffset, miter.addr + ignore, len);
--			} else {
--				/* Copy all of this segment (up to buflen) */
--				len = miter.length;
--				if (boffset + len > buflen)
--					len = buflen - boffset;
--				memcpy(buf + boffset, miter.addr, len);
--			}
--			boffset += len;
--		}
--		offset += miter.length;
--	}
--
--	sg_miter_stop(&miter);
--
--	local_irq_restore(flags);
--	return boffset;
--}
--
- /*
-  * allocate and map the extended descriptor
-  */
-@@ -1800,7 +1742,7 @@ static int ahash_process_req(struct ahash_request *areq, unsigned int nbytes)
- 
- 	if (to_hash_later) {
- 		int nents = sg_count(areq->src, nbytes, &chained);
--		sg_copy_end_to_buffer(areq->src, nents,
-+		sg_pcopy_to_buffer(areq->src, nents,
- 				      req_ctx->bufnext,
- 				      to_hash_later,
- 				      nbytes - to_hash_later);
 -- 
 1.8.1.4
 
