@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab3FFUS1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 16:18:27 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:36426 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753094Ab3FFUS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 16:18:26 -0400
-Message-ID: <51B0EE85.1000905@linux.vnet.ibm.com>
-Date: Thu, 06 Jun 2013 15:18:13 -0500
-From: Jesse Larrew <jlarrew@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1754639Ab3FFUSj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 16:18:39 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:39196 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754450Ab3FFUSd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 16:18:33 -0400
+Date: Thu, 6 Jun 2013 21:18:28 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Linux EFI <linux-efi@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
+        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH 3/4] x86, efi: Add an efi= kernel command line parameter
+Message-ID: <20130606201828.GA3950@srcf.ucam.org>
+References: <1370177770-26661-1-git-send-email-bp@alien8.de>
+ <1370177770-26661-4-git-send-email-bp@alien8.de>
+ <20130606104224.GH30420@console-pimps.org>
+ <20130606132603.GD20972@pd.tnic>
+ <20130606175052.GA1285@srcf.ucam.org>
+ <20130606185140.GK20972@pd.tnic>
+ <20130606193548.GA2946@srcf.ucam.org>
+ <20130606194134.GN20972@pd.tnic>
+ <20130606195450.GA3252@srcf.ucam.org>
+ <20130606200705.GO20972@pd.tnic>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jason Wang <jasowang@redhat.com>, Cong Wang <amwang@redhat.com>,
-        Amos Kong <akong@redhat.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, qemu-devel@nongnu.org
-Subject: Re: [Qemu-devel] [PATCH] virtio-net: put virtio net header inline
- with data
-References: <20130606095456.GA7865@redhat.com> <51B0EA30.3020804@linux.vnet.ibm.com> <20130606200932.GB3837@redhat.com>
-In-Reply-To: <20130606200932.GB3837@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060620-5806-0000-0000-00002192DFDD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130606200705.GO20972@pd.tnic>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2013 03:09 PM, Dave Jones wrote:
-> On Thu, Jun 06, 2013 at 02:59:44PM -0500, Jesse Larrew wrote:
+On Thu, Jun 06, 2013 at 10:07:05PM +0200, Borislav Petkov wrote:
+> On Thu, Jun 06, 2013 at 08:54:50PM +0100, Matthew Garrett wrote:
+> > We want both to be available when we're making the call, but I think
+> > we should probably enter via the high addresses. The only reason we're
+> > doing this at all is that some systems don't update all of their
+> > pointers from physical mode, and we'd prefer them to work rather than
+> > fault...
 > 
->  > >  	pr_debug("%s: xmit %p %pM\n", vi->dev->name, skb, dest);
->  > > +	if (vi->mergeable_rx_bufs)
->  > > +		hdr_len = sizeof hdr->mhdr;
->  > > +	else
->  > > +		hdr_len = sizeof hdr->hdr;
->  > 
->  > All conditionals need braces.
-> 
-> Documentation/CodingStyle disagrees:
-> 
->  "Do not unnecessarily use braces where a single statement will do."
-> 
-> 	Dave 
-> 
+> Actually, we do the 1:1 thing so that EFI runtime works in a kexec
+> kernel too. Which won't work if we use the high addresses.
 
-Ah, yes. This is kernel code. My mistake. :)
+kexec seems like a lower priority than compatibility. Perhaps keep the 
+efi argument for people who want to use kexec? hpa suggested allocating 
+a fixed high area for UEFI mappings, which would also solve this.
 
-Jesse Larrew
-Software Engineer, KVM Team
-IBM Linux Technology Center
-Phone: (512) 973-2052 (T/L: 363-2052)
-jlarrew@linux.vnet.ibm.com
+> However, if we can use the 1:1 map *after* SetVirtualAddressMap() has
+> been called with the high mappings, then my issue is solved - we drop
+> to using 1:1 in the kexec kernel only. But I don't think that is the
+> case...
 
+Yeah, calling SetVirtualAddressMap() with high addresses is going to 
+result in the firmware having a bunch of pointers to high addresses.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
