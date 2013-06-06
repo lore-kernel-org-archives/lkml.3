@@ -1,103 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002Ab3FFRMQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 13:12:16 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:32922 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751959Ab3FFRMO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 13:12:14 -0400
-From: James King <james.king@linaro.org>
-To: grant.likely@linaro.org, rob.herring@calxeda.com, rob@landley.net,
-        linux@arm.linux.org.uk, lorenzo.pieralisi@arm.com, nico@linaro.org,
-        vincent.guittot@linaro.org, namhyung@kernel.org,
-        a.p.zijlstra@chello.nl, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: james.king@linaro.org, patches@linaro.org, linaro-kernel@lists.linaro.org
-Subject: [PATCH] arm/dt: Don't add disabled CPUs to system topology
-Date: Thu,  6 Jun 2013 18:11:25 +0100
-Message-Id: <1370538685-22386-1-git-send-email-james.king@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
+	id S1753464Ab3FFRM1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 13:12:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44037 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752318Ab3FFRMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 13:12:15 -0400
+Date: Thu, 6 Jun 2013 19:11:52 +0200
+From: Borislav Petkov <bp@suse.de>
+To: Stratos Karafotis <stratosk@semaphore.gr>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of
+ target frequency
+Message-ID: <20130606171152.GF21181@pd.tnic>
+References: <51AF60D5.3080605@semaphore.gr>
+ <20130605161703.GA29958@pd.tnic>
+ <51AF71B6.6030408@semaphore.gr>
+ <105446113.ZumbZWCbSi@vostro.rjw.lan>
+ <20130606100138.GC21181@pd.tnic>
+ <CAKohpo=cwxvcicw4svcvyKJOzGD9j+gzTyg=4yYg4EsY89C3EQ@mail.gmail.com>
+ <20130606121012.GD21181@pd.tnic>
+ <51B0BCD9.6030308@semaphore.gr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <51B0BCD9.6030308@semaphore.gr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CPUs are marked as disabled in the devicetree, make sure they do
-not exist in the system CPU information and CPU topology information.
-In this case these CPUs will not be able to be added to the system later
-using hot-plug. This allows a single chip with many CPUs to be easily
-used in a variety of hardware devices where they may have different
-actual processing requirements (eg for thermal/cost reasons).
+On Thu, Jun 06, 2013 at 07:46:17PM +0300, Stratos Karafotis wrote:
+> Apologies for top-posting. I was able to send email only from my phone.
+> 
+> Thanks for you hint about turbostat.
+> 
+> As you most probably understood, I'm individual amateur kernel developer.
+> I could provide some numbers from x86 architecture as Rafael suggested.
+> But unfortunately, I don't have access to more sources/infrastructure.
+> So, I will not be able to provide numbers from different platform(s).
+> 
+> I've already provided some benchmarks from x86 (3.10-rc3) and also
+> tested the patch in 3.4.47 kernel (ARM, Nexus 4 phone, ~1000 installations)
+> and in 3.0.80 kernel (ARM, Samsung Galaxy S phone, ~1500 installations).
+> 
+> Kindly let me know if "couple of platforms/vendors" is a show stopper
+> for this patch series. If yes, please ignore this patch and accept
+> my apologies for wasting your time. I am just trying to contribute
+> on this project (I believe there is space here for amateur developers).
 
-- Change devicetree.c to ignore any cpu nodes marked as disabled,
-  this effectively limits the number of active cpu cores so no need
-  for the max_cpus=x in the chosen node.
-- Change topology.c to ignore any cpu nodes marked as disabled, this
-  is where the scheduler would learn about big/LITTLE cores so this
-  effectively keeps the scheduler in sync.
+I'm in no way discouraging you in contributing to the kernel - on the
+opposite: you should continue doing that.
 
-Signed-off-by: James King <james.king@linaro.org>
----
- Documentation/devicetree/bindings/arm/cpus.txt | 5 +++++
- arch/arm/kernel/devtree.c                      | 6 ++++++
- arch/arm/kernel/topology.c                     | 4 ++++
- 3 files changed, 15 insertions(+)
+I'm just trying to make sure that a change like that doesn't hurt
+existing systems, thus the request to test on a couple of platforms. If
+you don't have other platforms, that's fine, we'll find them somewhere. :-)
 
-diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
-index f32494d..9fbcbc5 100644
---- a/Documentation/devicetree/bindings/arm/cpus.txt
-+++ b/Documentation/devicetree/bindings/arm/cpus.txt
-@@ -45,6 +45,10 @@ For the ARM architecture every CPU node must contain the following properties:
- 		"marvell,xsc3"
- 		"marvell,xscale"
- 
-+And optionally set the following properties:
-+
-+- status:	can be set to "disabled" to remove that CPU from the system CPU topology
-+
- Example:
- 
- 	cpus {
-@@ -73,5 +77,6 @@ Example:
- 			device_type = "cpu";
- 			compatible = "arm,cortex-a7";
- 			reg = <0x101>;
-+			status = "disabled";
- 		};
- 	};
-diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
-index 5af04f6..f4ba8ee 100644
---- a/arch/arm/kernel/devtree.c
-+++ b/arch/arm/kernel/devtree.c
-@@ -112,6 +112,12 @@ void __init arm_dt_init_cpu_maps(void)
- 			return;
- 
- 		/*
-+		 * Check if the cpu is marked as "disabled", if so ignore.
-+		 */
-+		if (!of_device_is_available(cpu))
-+			continue;
-+
-+		/*
- 		 * Duplicate MPIDRs are a recipe for disaster.
- 		 * Scan all initialized entries and check for
- 		 * duplicates. If any is found just bail out.
-diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
-index f10316b..90f8fb3 100644
---- a/arch/arm/kernel/topology.c
-+++ b/arch/arm/kernel/topology.c
-@@ -116,6 +116,10 @@ static void __init parse_dt_topology(void)
- 		if (cpu_eff->compatible == NULL)
- 			continue;
- 
-+		/* Check if the cpu is marked as "disabled", if so ignore. */
-+		if (!of_device_is_available(cn))
-+			continue;
-+
- 		rate = of_get_property(cn, "clock-frequency", &len);
- 		if (!rate || len != 4) {
- 			pr_err("%s missing clock-frequency property\n",
+I'm hoping you can understand my aspect too, though - how would you feel
+if a patch shows improvement on my box but slows down yours - you won't
+be very happy with it, right? That's why we generally want to test such
+power/performance tweaks on a wider range of machines.
+
+But you said you have a i7-3770 CPU on which, I think, turbostat should
+be able to show you how the power consumption looks like.
+
+And if so, you could measure that consumption once with, and once
+without your patch. This will give us initial numbers, at least.
+
+How does that sound?
+
 -- 
-1.8.1.2
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
