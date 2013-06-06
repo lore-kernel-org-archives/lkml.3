@@ -1,188 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932418Ab3FFI3v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 04:29:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46237 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932110Ab3FFI3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 04:29:48 -0400
-Date: Thu, 6 Jun 2013 10:29:47 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] mm: memcontrol: factor out reclaim iterator loading
- and updating
-Message-ID: <20130606082947.GD7909@dhcp22.suse.cz>
-References: <1370472826-29959-1-git-send-email-hannes@cmpxchg.org>
- <1370472826-29959-2-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370472826-29959-2-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932424Ab3FFIa1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 04:30:27 -0400
+Received: from 10.mo1.mail-out.ovh.net ([178.32.96.102]:43972 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932110Ab3FFIaX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 04:30:23 -0400
+X-Greylist: delayed 1833 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Jun 2013 04:30:23 EDT
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: Re: [PATCH] simplefb: add support for a8b8g8r8 pixel format
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+In-Reply-To: <51B0446A.4090305@nvidia.com>
+Date: Thu, 6 Jun 2013 10:24:17 +0200
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Olof Johansson <olof@lixom.net>, "gnurou@gmail.org" <gnurou@gmail.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <29610936-BB03-4844-888B-56E1C8E5DF4A@jcrosoft.com>
+References: <1370503259-16618-1-git-send-email-acourbot@nvidia.com> <3356BC4D-EEF6-4FCA-9310-5B0727EBF288@jcrosoft.com> <51B0446A.4090305@nvidia.com>
+To: Alex Courbot <acourbot@nvidia.com>
+X-Mailer: Apple Mail (2.1503)
+X-Ovh-Tracer-Id: 5132414726662695912
+X-Ovh-Remote: 90.37.12.95 (amarseille-152-1-106-95.w90-37.abo.wanadoo.fr)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 05-06-13 18:53:46, Johannes Weiner wrote:
-> mem_cgroup_iter() is too hard to follow.  Factor out the lockless
-> reclaim iterator loading and updating so it's easier to follow the big
-> picture.
-> 
-> Also document the iterator invalidation mechanism a bit more
-> extensively.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-I like this
-Acked-by: Michal Hocko <mhocko@suse.cz>
+On Jun 6, 2013, at 10:12 AM, Alex Courbot <acourbot@nvidia.com> wrote:
 
-> ---
->  mm/memcontrol.c | 86 ++++++++++++++++++++++++++++++++++++++-------------------
->  1 file changed, 57 insertions(+), 29 deletions(-)
+> On 06/06/2013 04:59 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>> 
+>> On Jun 6, 2013, at 9:20 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>> 
+>>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>>> ---
+>>> Documentation/devicetree/bindings/video/simple-framebuffer.txt | 1 +
+>>> drivers/video/simplefb.c                                       | 1 +
+>>> 2 files changed, 2 insertions(+)
+>>> 
+>>> diff --git a/Documentation/devicetree/bindings/video/simple-framebuffer.txt b/Documentation/devicetree/bindings/video/simple-framebuffer.txt
+>>> index 3ea4605..70c26f3 100644
+>>> --- a/Documentation/devicetree/bindings/video/simple-framebuffer.txt
+>>> +++ b/Documentation/devicetree/bindings/video/simple-framebuffer.txt
+>>> @@ -12,6 +12,7 @@ Required properties:
+>>> - stride: The number of bytes in each line of the framebuffer.
+>>> - format: The format of the framebuffer surface. Valid values are:
+>>>   - r5g6b5 (16-bit pixels, d[15:11]=r, d[10:5]=g, d[4:0]=b).
+>>> +  - a8b8g8r8 (32-bit pixels, d[31:24]=a, d[23:16]=b, d[15:8]=g, d[7:0]=r).
+>>> 
+>>> Example:
+>>> 
+>>> diff --git a/drivers/video/simplefb.c b/drivers/video/simplefb.c
+>>> index e2e9e3e..d7041aa 100644
+>>> --- a/drivers/video/simplefb.c
+>>> +++ b/drivers/video/simplefb.c
+>>> @@ -84,6 +84,7 @@ struct simplefb_format {
+>>> 
+>>> static struct simplefb_format simplefb_formats[] = {
+>>> 	{ "r5g6b5", 16, {11, 5}, {5, 6}, {0, 5}, {0, 0} },
+>>> +	{ "a8b8g8r8", 32, {0, 8}, {8, 8}, {16, 8}, {31, 8} },
+>> 
+>> why don't you parse the string?
+>> 
+>> so you will a real generic bindings
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index e2cbb44..23a9236 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1148,6 +1148,58 @@ skip_node:
->  	return NULL;
->  }
->  
-> +static void mem_cgroup_iter_invalidate(struct mem_cgroup *root)
-> +{
-> +	/*
-> +	 * When a group in the hierarchy below root is destroyed, the
-> +	 * hierarchy iterator can no longer be trusted since it might
-> +	 * have pointed to the destroyed group.  Invalidate it.
-> +	 */
-> +	atomic_inc(&root->dead_count);
-> +}
-> +
-> +static struct mem_cgroup *
-> +mem_cgroup_iter_load(struct mem_cgroup_reclaim_iter *iter,
-> +		     struct mem_cgroup *root,
-> +		     int *sequence)
-> +{
-> +	struct mem_cgroup *position = NULL;
-> +	/*
-> +	 * A cgroup destruction happens in two stages: offlining and
-> +	 * release.  They are separated by a RCU grace period.
-> +	 *
-> +	 * If the iterator is valid, we may still race with an
-> +	 * offlining.  The RCU lock ensures the object won't be
-> +	 * released, tryget will fail if we lost the race.
-> +	 */
-> +	*sequence = atomic_read(&root->dead_count);
-> +	if (iter->last_dead_count == *sequence) {
-> +		smp_rmb();
-> +		position = iter->last_visited;
-> +		if (position && !css_tryget(&position->css))
-> +			position = NULL;
-> +	}
-> +	return position;
-> +}
-> +
-> +static void mem_cgroup_iter_update(struct mem_cgroup_reclaim_iter *iter,
-> +				   struct mem_cgroup *last_visited,
-> +				   struct mem_cgroup *new_position,
-> +				   int sequence)
-> +{
-> +	if (last_visited)
-> +		css_put(&last_visited->css);
-> +	/*
-> +	 * We store the sequence count from the time @last_visited was
-> +	 * loaded successfully instead of rereading it here so that we
-> +	 * don't lose destruction events in between.  We could have
-> +	 * raced with the destruction of @new_position after all.
-> +	 */
-> +	iter->last_visited = new_position;
-> +	smp_wmb();
-> +	iter->last_dead_count = sequence;
-> +}
-> +
->  /**
->   * mem_cgroup_iter - iterate over memory cgroup hierarchy
->   * @root: hierarchy root
-> @@ -1171,7 +1223,6 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
->  {
->  	struct mem_cgroup *memcg = NULL;
->  	struct mem_cgroup *last_visited = NULL;
-> -	unsigned long uninitialized_var(dead_count);
->  
->  	if (mem_cgroup_disabled())
->  		return NULL;
-> @@ -1191,6 +1242,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
->  	rcu_read_lock();
->  	while (!memcg) {
->  		struct mem_cgroup_reclaim_iter *uninitialized_var(iter);
-> +		int uninitialized_var(seq);
->  
->  		if (reclaim) {
->  			int nid = zone_to_nid(reclaim->zone);
-> @@ -1204,37 +1256,13 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
->  				goto out_unlock;
->  			}
->  
-> -			/*
-> -			 * If the dead_count mismatches, a destruction
-> -			 * has happened or is happening concurrently.
-> -			 * If the dead_count matches, a destruction
-> -			 * might still happen concurrently, but since
-> -			 * we checked under RCU, that destruction
-> -			 * won't free the object until we release the
-> -			 * RCU reader lock.  Thus, the dead_count
-> -			 * check verifies the pointer is still valid,
-> -			 * css_tryget() verifies the cgroup pointed to
-> -			 * is alive.
-> -			 */
-> -			dead_count = atomic_read(&root->dead_count);
-> -			if (dead_count == iter->last_dead_count) {
-> -				smp_rmb();
-> -				last_visited = iter->last_visited;
-> -				if (last_visited &&
-> -				    !css_tryget(&last_visited->css))
-> -					last_visited = NULL;
-> -			}
-> +			last_visited = mem_cgroup_iter_load(iter, root, &seq);
->  		}
->  
->  		memcg = __mem_cgroup_iter_next(root, last_visited);
->  
->  		if (reclaim) {
-> -			if (last_visited)
-> -				css_put(&last_visited->css);
-> -
-> -			iter->last_visited = memcg;
-> -			smp_wmb();
-> -			iter->last_dead_count = dead_count;
-> +			mem_cgroup_iter_update(iter, last_visited, memcg, seq);
->  
->  			if (!memcg)
->  				iter->generation++;
-> @@ -6319,14 +6347,14 @@ static void mem_cgroup_invalidate_reclaim_iterators(struct mem_cgroup *memcg)
->  	struct mem_cgroup *parent = memcg;
->  
->  	while ((parent = parent_mem_cgroup(parent)))
-> -		atomic_inc(&parent->dead_count);
-> +		mem_cgroup_iter_invalidate(parent);
->  
->  	/*
->  	 * if the root memcg is not hierarchical we have to check it
->  	 * explicitely.
->  	 */
->  	if (!root_mem_cgroup->use_hierarchy)
-> -		atomic_inc(&root_mem_cgroup->dead_count);
-> +		mem_cgroup_iter_invalidate(root_mem_cgroup);
->  }
->  
->  static void mem_cgroup_css_offline(struct cgroup *cont)
-> -- 
-> 1.8.3
+> Tried that already, got NACKed: https://lkml.org/lkml/2013/5/27/330
 > 
+> The list of modes of this driver should not grow too big. Even in terms of footprint I'd say the list should remain smaller than the parsing code.
+> 
+> What we can discuss though is whether we want to keep this a8b8g8r8 syntax or switch to something more standard, say "rgba8888".
 
--- 
-Michal Hocko
-SUSE Labs
+I'm going to be very honest I do not like the simplefb driver from the beginning
+but I do found it useful. And as said in it's name it need to be *SIMPLE*
+
+Then a huge list of compatible no way
+otherwise we drop this from the simplefb and make it a generic helper
+
+I do not want to see format parser in every drivers this need to handle at video framework level
+
+If I see that we start to increase again and again the simplefb I will not accept
+to merge the code as we must keep it simple
+
+Best Regards,
+J.
+
