@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755122Ab3FFUfX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 16:35:23 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:62858 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754926Ab3FFUfI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 16:35:08 -0400
+	id S1753720Ab3FFUo2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 16:44:28 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45613 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751989Ab3FFUo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 16:44:27 -0400
+Date: Thu, 6 Jun 2013 22:44:10 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Linux EFI <linux-efi@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
+        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH 3/4] x86, efi: Add an efi= kernel command line parameter
+Message-ID: <20130606204410.GQ20972@pd.tnic>
+References: <20130606132603.GD20972@pd.tnic>
+ <20130606175052.GA1285@srcf.ucam.org>
+ <20130606185140.GK20972@pd.tnic>
+ <20130606193548.GA2946@srcf.ucam.org>
+ <20130606194134.GN20972@pd.tnic>
+ <20130606195450.GA3252@srcf.ucam.org>
+ <20130606200705.GO20972@pd.tnic>
+ <20130606201828.GA3950@srcf.ucam.org>
+ <20130606202717.GP20972@pd.tnic>
+ <20130606203057.GA4237@srcf.ucam.org>
 MIME-Version: 1.0
-In-Reply-To: <201306062111.06694.heiko@sntech.de>
-References: <201306062107.58875.heiko@sntech.de>
-	<201306062111.06694.heiko@sntech.de>
-Date: Thu, 6 Jun 2013 23:35:07 +0300
-Message-ID: <CAHp75VdTYuXBu0Xu_BKZiBW9afjYprMBtBhSnNYjws-7b6hYmw@mail.gmail.com>
-Subject: Re: [PATCH v2 4/8] mmc: dw_mmc-pltfm: add Rockchip variant
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130606203057.GA4237@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 6, 2013 at 10:11 PM, Heiko Stübner <heiko@sntech.de> wrote:
-> Cortex-A9 SoCs from Rockchip use a slightly modified variant of dw_mmc
-> controllers that seems to require the SDMMC_CMD_USE_HOLD_REG bit to
-> always be set.
->
-> There also seem to be no other modifications (additional register etc)
-> present, so to keep the footprint low, add this small variant to the
-> pltfm driver.
+On Thu, Jun 06, 2013 at 09:30:57PM +0100, Matthew Garrett wrote:
+> Well, we want the 1:1 mappings to exist all the time. The only
+> thing the option should change is whether they're passed to
+> SetVirtualAddressMap() or not.
 
-My comments against v1 of this patch are still valid.
+But can you call them even if they haven't been passed through
+SetVirtualAddressMap, *after* SetVirtualAddressMap has been called?
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
 --
-With Best Regards,
-Andy Shevchenko
