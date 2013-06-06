@@ -1,46 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464Ab3FFCRu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 22:17:50 -0400
-Received: from mail-db9lp0253.outbound.messaging.microsoft.com ([213.199.154.253]:8482
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753059Ab3FFCRt convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 22:17:49 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzc89bhzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6h1082kz8dhzz2dh2a8h668h839h941hd25he5bhf0ah1269h1288h12a5h12a9h12bdh12e1h1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-Message-ID: <51AFF1FB.1070100@freescale.com>
-Date: Thu, 6 Jun 2013 10:20:43 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1754888Ab3FFCTY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 22:19:24 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:35596 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753347Ab3FFCTW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 22:19:22 -0400
+Message-ID: <51AFF19F.4010604@linux.vnet.ibm.com>
+Date: Thu, 06 Jun 2013 10:19:11 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Brian Norris <computersforpeace@gmail.com>
-CC: Artem Bityutskiy <dedekind1@gmail.com>, <linux-mtd@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Kevin Cernekee <cernekee@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Imre Deak <imre.deak@intel.com>
-Subject: Re: [PATCH 3/3] mtd: cfi_cmdset_0002: increase do_write_buffer()
- timeout
-References: <1370310406-413-1-git-send-email-computersforpeace@gmail.com>	<1370310406-413-3-git-send-email-computersforpeace@gmail.com>	<51AD9140.90500@freescale.com>	<CAN8TOE9UDGuQd9AbE-4UVcAiqCFpqhY=fX+LbrDybdgr16THdQ@mail.gmail.com> <CAN8TOE8FRtQupXwvAtrVSN-C-nQz-XgOW7OA5C=XRs9YmCwTkg@mail.gmail.com>
-In-Reply-To: <CAN8TOE8FRtQupXwvAtrVSN-C-nQz-XgOW7OA5C=XRs9YmCwTkg@mail.gmail.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Peter Zijlstra <peterz@infradead.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Turner <pjt@google.com>
+Subject: Re: [PATCH v2 1/3] sched: don't repeat the initialization in sched_init()
+References: <51AD87A8.6080608@linux.vnet.ibm.com> <51AD87D0.7020300@linux.vnet.ibm.com> <51AEA152.1050609@linux.vnet.ibm.com> <20130605110657.GZ8923@twins.programming.kicks-ass.net>
+In-Reply-To: <20130605110657.GZ8923@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060602-5816-0000-0000-0000084C28E3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年06月06日 05:08, Brian Norris 写道:
-> Note that a 2-jiffy timeout does not, in fact, totally resolve my
-> problems; with a timeout of 2 jiffies, I still get a timeout that
-> (according to getnstimeofday()) occurs after only 56us. It does
-since the 2-jiffy does not resolve your problem, i suggest you try the
-latest linux-next
-tree.
+On 06/05/2013 07:06 PM, Peter Zijlstra wrote:
+> On Wed, Jun 05, 2013 at 10:24:18AM +0800, Michael Wang wrote:
+>> v2:
+>> 	Move comments back before init_tg_cfs_entry(). (Thanks for the notify from pjt)
+>>
+>> In sched_init(), there is no need to initialize 'root_task_group.shares' and
+>> 'root_task_group.cfs_bandwidth' repeatedly.
+>>
+>> CC: Paul Tuner <pjt@google.com>
+>> CC: Ingo Molnar <mingo@kernel.org>
+>> CC: Peter Zijlstra <peterz@infradead.org>
+>> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+>> ---
+>>  kernel/sched/core.c |    7 +++++--
+>>  1 files changed, 5 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index 58453b8..96f69da 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -6955,6 +6955,11 @@ void __init sched_init(void)
+>>  
+>>  #endif /* CONFIG_CGROUP_SCHED */
+>>  
+>> +#ifdef CONFIG_FAIR_GROUP_SCHED
+>> +	root_task_group.shares = ROOT_TASK_GROUP_LOAD;
+>> +	init_cfs_bandwidth(&root_task_group.cfs_bandwidth);
+>> +#endif
+>> +
+>>  	for_each_possible_cpu(i) {
+>>  		struct rq *rq;
+>>  
+>> @@ -6966,7 +6971,6 @@ void __init sched_init(void)
+>>  		init_cfs_rq(&rq->cfs);
+>>  		init_rt_rq(&rq->rt, rq);
+>>  #ifdef CONFIG_FAIR_GROUP_SCHED
+>> -		root_task_group.shares = ROOT_TASK_GROUP_LOAD;
+>>  		INIT_LIST_HEAD(&rq->leaf_cfs_rq_list);
+>>  		/*
+>>  		 * How much cpu bandwidth does root_task_group get?
+>> @@ -6987,7 +6991,6 @@ void __init sched_init(void)
+>>  		 * We achieve this by letting root_task_group's tasks sit
+>>  		 * directly in rq->cfs (i.e root_task_group->se[] = NULL).
+>>  		 */
+>> -		init_cfs_bandwidth(&root_task_group.cfs_bandwidth);
+>>  		init_tg_cfs_entry(&root_task_group, &rq->cfs, NULL, i, NULL);
+>>  #endif /* CONFIG_FAIR_GROUP_SCHED */
+> 
+> I would actually like a patch reducing the #ifdef forest there, not
+> adding to it.
 
+I see :)
 
-thanks
-Huang Shijie
+> 
+> There's no actual harm in doing the initialization mutliple times,
+> right?
+
+Yeah, it's safe to redo the init, cost some cycles but not so expensive.
+
+Regards,
+Michael Wang
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
