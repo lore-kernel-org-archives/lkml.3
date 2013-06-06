@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab3FFTmE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 15:42:04 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59430 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753949Ab3FFTmA (ORCPT
+	id S1753913Ab3FFTnn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 15:43:43 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:40801 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752482Ab3FFTnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 15:42:00 -0400
-Date: Thu, 6 Jun 2013 14:12:48 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 1/2] list: add list_for_each_entry_del
-Message-ID: <20130606181248.GA17707@logfs.org>
-References: <1370280485-10047-1-git-send-email-joern@logfs.org>
- <1370280485-10047-2-git-send-email-joern@logfs.org>
- <CAHp75VczX+tjqJgNv4uv=BRekm2Gc2i8WHL91vJFWSXWS8-J_A@mail.gmail.com>
+	Thu, 6 Jun 2013 15:43:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAHp75VczX+tjqJgNv4uv=BRekm2Gc2i8WHL91vJFWSXWS8-J_A@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1370291306-3276-1-git-send-email-wsa@the-dreams.de>
+References: <1370291306-3276-1-git-send-email-wsa@the-dreams.de>
+Date: Thu, 6 Jun 2013 22:43:41 +0300
+Message-ID: <CAHp75Vcvhz892D4gytneptB4wLWPjfKmf5OXgnChXw338nLBAA@mail.gmail.com>
+Subject: Re: [PATCH] pwm: devm: alloc correct pointer size
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 June 2013 22:32:55 +0300, Andy Shevchenko wrote:
-> On Mon, Jun 3, 2013 at 8:28 PM, Joern Engel <joern@logfs.org> wrote:
-> > I have seen a lot of boilerplate code that either follows the pattern of
-> >         while (!list_empty(head)) {
-> >                 pos = list_entry(head->next, struct foo, list);
-> >                 list_del(pos->list);
-> >                 ...
-> >         }
-> > or some variant thereof.
-> 
-> What the problem to use list_for_each_safe()?
+On Mon, Jun 3, 2013 at 11:27 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
+> The allocated object should be the size of what the pointer is pointing
+> to and not the size of the pointer itself.
 
-The loop may terminate with elements left on the list.  There is more,
-but I would consider this the main problem.
-
-Jörn
+All devm_* functions in this module use **ptr as a parameter (except
+allocation).
+May be we first should understand why it so?
+If it wrong approach, than probably you have to change **ptr -> *ptr.
+But without answer on first question I don't know if it proper solution or not.
 
 --
-If you're willing to restrict the flexibility of your approach,
-you can almost always do something better.
--- John Carmack
+With Best Regards,
+Andy Shevchenko
