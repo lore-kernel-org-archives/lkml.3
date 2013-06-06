@@ -1,84 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab3FFIF2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 04:05:28 -0400
-Received: from 11.mo1.mail-out.ovh.net ([188.165.48.29]:49375 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756827Ab3FFIFX convert rfc822-to-8bit (ORCPT
+	id S1757818Ab3FFIGs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 04:06:48 -0400
+Received: from smtp-out003.kontent.com ([81.88.40.217]:57165 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757477Ab3FFIGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 04:05:23 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: Re: [PATCH] simplefb: add support for a8b8g8r8 pixel format
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-In-Reply-To: <1370503259-16618-1-git-send-email-acourbot@nvidia.com>
-Date: Thu, 6 Jun 2013 09:59:48 +0200
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Olof Johansson <olof@lixom.net>, <gnurou@gmail.org>,
-        <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <3356BC4D-EEF6-4FCA-9310-5B0727EBF288@jcrosoft.com>
-References: <1370503259-16618-1-git-send-email-acourbot@nvidia.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-X-Mailer: Apple Mail (2.1503)
-X-Ovh-Tracer-Id: 4718646511133305832
-X-Ovh-Remote: 90.37.12.95 (amarseille-152-1-106-95.w90-37.abo.wanadoo.fr)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 6 Jun 2013 04:06:43 -0400
+From: Oliver Neukum <oliver@neukum.org>
+To: Andreas Mohr <andi@lisas.de>
+Cc: Ming Lei <ming.lei@canonical.com>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        OndrejZary <linux@rainbow-software.org>
+Subject: Re: [PATCH] usbnet: improve/fix status interrupt endpoint interval
+Date: Thu, 06 Jun 2013 10:07:53 +0200
+Message-ID: <1596215.OGj7DxpsL0@linux-5eaq.site>
+User-Agent: KMail/4.10.3 (Linux/3.7.10-1.11-desktop; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <20130605163426.GA18818@rhlx01.hs-esslingen.de>
+References: <20130604182830.GA13186@rhlx01.hs-esslingen.de> <CACVXFVOYMGjGLmyGy=pQwkcuFshLmdNcLZKfqUDazge45GMBPA@mail.gmail.com> <20130605163426.GA18818@rhlx01.hs-esslingen.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 05 June 2013 18:34:26 Andreas Mohr wrote:
+> Hi,
+> 
+> On Wed, Jun 05, 2013 at 09:22:25AM +0800, Ming Lei wrote:
+> > On Wed, Jun 5, 2013 at 2:28 AM, Andreas Mohr <andi@lisas.de> wrote:
 
-On Jun 6, 2013, at 9:20 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+> > >   Value 8 now managed to reduce powertop wakeups from ~ 540 to ~ 155
+> > 
+> > It means that your device only returns current link status instead of link
+> > change. IMO, it isn't a good behaviour for the device.
+> 
+> I don't quite understand that.
+> The way I see it is that there's the "20 times same value" averaging,
+> and once that was successful, a link change gets communicated
+> (usbnet_link_change()). Thus that merely results in a *delay*
+> in signalling the link change...
 
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
-> Documentation/devicetree/bindings/video/simple-framebuffer.txt | 1 +
-> drivers/video/simplefb.c                                       | 1 +
-> 2 files changed, 2 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/video/simple-framebuffer.txt b/Documentation/devicetree/bindings/video/simple-framebuffer.txt
-> index 3ea4605..70c26f3 100644
-> --- a/Documentation/devicetree/bindings/video/simple-framebuffer.txt
-> +++ b/Documentation/devicetree/bindings/video/simple-framebuffer.txt
-> @@ -12,6 +12,7 @@ Required properties:
-> - stride: The number of bytes in each line of the framebuffer.
-> - format: The format of the framebuffer surface. Valid values are:
->   - r5g6b5 (16-bit pixels, d[15:11]=r, d[10:5]=g, d[4:0]=b).
-> +  - a8b8g8r8 (32-bit pixels, d[31:24]=a, d[23:16]=b, d[15:8]=g, d[7:0]=r).
-> 
-> Example:
-> 
-> diff --git a/drivers/video/simplefb.c b/drivers/video/simplefb.c
-> index e2e9e3e..d7041aa 100644
-> --- a/drivers/video/simplefb.c
-> +++ b/drivers/video/simplefb.c
-> @@ -84,6 +84,7 @@ struct simplefb_format {
-> 
-> static struct simplefb_format simplefb_formats[] = {
-> 	{ "r5g6b5", 16, {11, 5}, {5, 6}, {0, 5}, {0, 0} },
-> +	{ "a8b8g8r8", 32, {0, 8}, {8, 8}, {16, 8}, {31, 8} },
+The device should not deliver data unless the connection state has
+changed. Unless your connection is incredibly flaky, your device also
+delivers data on other occasions.
+If no data is delivered, no interrupt will be raised. The original intent
+of the code was to save bandwidth on the bus, not interrupt mitigation.
 
-why don't you parse the string?
+Yet, you tested it and it helps, so it is a good idea.
 
-so you will a real generic bindings
+> I believe this number is meant to be a hard demand by the *device*,
+> since a device is the authoritative party to know best about its
+> own servicing requirements.
+> Or, IOW, the thing that is a USB descriptor is to be seen as a *protocol*
+> where a device signals its requirements (hopefully accurately, though!).
+> And if it indicates a 1ms bInterval (which is "the requested maximum(!!)
+> number of milliseconds between transaction attempts" [lvr usbfaq]),
+> then one could argue that the servicing party (the kernel) damn well
+> ought to follow through (unless it reliably knows that it can violate
+> some parts of these demands without getting caught).
 
-Best Regards,
-J.
-> };
-> 
-> struct simplefb_params {
-> -- 
-> 1.8.3
-> 
+Yes, we hope to catch bogus values, but we need to be conservative.
+
+	Regards
+		Oliver
 
