@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755144Ab3FFUx4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 16:53:56 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:36470 "EHLO smtp.outflux.net"
+	id S1755228Ab3FFUy0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 16:54:26 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:46531 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753194Ab3FFUx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 16:53:27 -0400
+	id S1754784Ab3FFUyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 16:54:24 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -13,75 +13,39 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Jens Axboe <axboe@kernel.dk>, "David S. Miller" <davem@davemloft.net>,
         Herbert Xu <herbert@gondor.hengli.com.au>,
         David Woodhouse <dwmw2@infradead.org>, Anton Vorontsov <cbou@mail.ru>,
-        Karsten Keil <isdn@linux-pingi.de>, Kees Cook <keescook@chromium.org>,
-        stable@vger.kernel.org
-Subject: [PATCH 1/8] block: do not pass disk names as format strings
-Date: Thu,  6 Jun 2013 13:52:18 -0700
-Message-Id: <1370551945-8444-2-git-send-email-keescook@chromium.org>
+        Karsten Keil <isdn@linux-pingi.de>
+Subject: [PATCH 0/8] format string usage clean ups
+Date: Thu,  6 Jun 2013 13:52:17 -0700
+Message-Id: <1370551945-8444-1-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370551945-8444-1-git-send-email-keescook@chromium.org>
-References: <1370551945-8444-1-git-send-email-keescook@chromium.org>
 X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disk names may contain arbitrary strings, so they must not be interpreted
-as format strings. It seems that only md allows arbitrary strings to be
-used for disk names, but this could allow for a local memory corruption
-from uid 0 into ring 0.
+Hello,
 
-CVE-2013-2851
+This series is a result of an audit of format string uses in the
+kernel. Of two exploitable flaws, the first fix is now in the wireless
+tree:
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: stable@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>
----
- block/genhd.c              |    2 +-
- drivers/block/nbd.c        |    3 ++-
- drivers/scsi/osd/osd_uld.c |    2 +-
- 3 files changed, 4 insertions(+), 3 deletions(-)
+http://git.kernel.org/cgit/linux/kernel/git/linville/wireless.git/commit/?id=9538cbaab6e8b8046039b4b2eb6c9d614dc782bd
 
-diff --git a/block/genhd.c b/block/genhd.c
-index 20625ee..cdeb527 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -512,7 +512,7 @@ static void register_disk(struct gendisk *disk)
- 
- 	ddev->parent = disk->driverfs_dev;
- 
--	dev_set_name(ddev, disk->disk_name);
-+	dev_set_name(ddev, "%s", disk->disk_name);
- 
- 	/* delay uevents, until we scanned partition table */
- 	dev_set_uevent_suppress(ddev, 1);
-diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index 037288e..46b35f7 100644
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -714,7 +714,8 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
- 		else
- 			blk_queue_flush(nbd->disk->queue, 0);
- 
--		thread = kthread_create(nbd_thread, nbd, nbd->disk->disk_name);
-+		thread = kthread_create(nbd_thread, nbd, "%s",
-+					nbd->disk->disk_name);
- 		if (IS_ERR(thread)) {
- 			mutex_lock(&nbd->tx_lock);
- 			return PTR_ERR(thread);
-diff --git a/drivers/scsi/osd/osd_uld.c b/drivers/scsi/osd/osd_uld.c
-index 0fab6b5..9d86947 100644
---- a/drivers/scsi/osd/osd_uld.c
-+++ b/drivers/scsi/osd/osd_uld.c
-@@ -485,7 +485,7 @@ static int osd_probe(struct device *dev)
- 	oud->class_dev.class = &osd_uld_class;
- 	oud->class_dev.parent = dev;
- 	oud->class_dev.release = __remove;
--	error = dev_set_name(&oud->class_dev, disk->disk_name);
-+	error = dev_set_name(&oud->class_dev, "%s", disk->disk_name);
- 	if (error) {
- 		OSD_ERR("dev_set_name failed => %d\n", error);
- 		goto err_put_cdev;
--- 
-1.7.9.5
+The second fix is here as patch 1 ("block: do not pass disk names               as format strings"). All the rest are either interface clean ups or
+preventative measures to avoid accidents in the future.
+
+There is still more needed before we can do something like this in 
+the Makefile:
+
++# Enable format-security when it can stop the build, otherwise disable.
++KBUILD_CFLAGS  += $(call cc-option,\
++                       -Wformat -Wformat-security -Werror=format-security,\
++                       -Wno-format-security)
+
+but I think this series covers the majority of potentially sensitive 
+exposed infrastructure. 
+
+Thanks,
+
+-Kees
 
