@@ -1,78 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916Ab3FFSDp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 14:03:45 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:50743 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750971Ab3FFSDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 14:03:44 -0400
-Message-ID: <1370541822.2209.16.camel@joe-AO722>
-Subject: Re: [PATCH 6/6] keucr: fix some alignment- and whitespace-problems
-From: Joe Perches <joe@perches.com>
-To: Johannes Schilling <of82ecuq@cip.cs.fau.de>
-Cc: linux-kernel@vger.kernel.org, linux-kernel@i4.cs.fau.de,
-        Al Cho <acho@novell.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Amarjargal Gundjalam <amarjargal16@gmail.com>,
-        Kurt Kanzenbach <shifty91@gmail.com>, devel@driverdev.osuosl.org,
-        Laura Lawniczak <laura.lawniczak@googlemail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Date: Thu, 06 Jun 2013 11:03:42 -0700
-In-Reply-To: <1370535050-7167-7-git-send-email-of82ecuq@cip.cs.fau.de>
-References: <20130605094517.GS28112@mwanda>
-	 <1370535050-7167-1-git-send-email-of82ecuq@cip.cs.fau.de>
-	 <1370535050-7167-7-git-send-email-of82ecuq@cip.cs.fau.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751700Ab3FFSE2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 14:04:28 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:33166 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857Ab3FFSE0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 14:04:26 -0400
+Date: Thu, 6 Jun 2013 11:04:25 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCHv7 01/11] clockevents: Prefer CPU local devices over
+ global devices
+Message-ID: <20130606180425.GQ599@codeaurora.org>
+References: <1370291642-13259-1-git-send-email-sboyd@codeaurora.org>
+ <1370291642-13259-2-git-send-email-sboyd@codeaurora.org>
+ <51B0A6E8.20909@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51B0A6E8.20909@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-06 at 18:10 +0200, Johannes Schilling wrote:
-> resolves checkpatch errors and warnings regarding whitespace around
-> operators, line lengths and indentation.
+On 06/06, Daniel Lezcano wrote:
+> On 06/03/2013 10:33 PM, Stephen Boyd wrote:
+> > On an SMP system with only one global clockevent and a dummy
+> > clockevent per CPU we run into problems. We want the dummy
+> > clockevents to be registered as the per CPU tick devices, but
+> > we can only achieve that if we register the dummy clockevents
+> > before the global clockevent or if we artificially inflate the
+> > rating of the dummy clockevents to be higher than the rating
+> > of the global clockevent. Failure to do so leads to boot
+> > hangs when the dummy timers are registered on all other CPUs
+> > besides the CPU that accepted the global clockevent as its tick
+> > device and there is no broadcast timer to poke the dummy
+> > devices.
+> > 
+> > If we're registering multiple clockevents and one clockevent is
+> > global and the other is local to a particular CPU we should
+> > choose to use the local clockevent regardless of the rating of
+> > the device. This way, if the clockevent is a dummy it will take
+> > the tick device duty as long as there isn't a higher rated tick
+> > device and any global clockevent will be bumped out into
+> > broadcast mode, fixing the problem described above.
+> 
+> It is not clear the connection between the changelog, the patch and the
+> comment. Could you clarify a bit ?
+> 
 
-I suggest adding --strict to your checkpatch runs to
-report a few more style usage elements.
+There is one tick device per-cpu and one broadcast device. The
+broadcast device can only be a global clockevent, whereas the
+per-cpu tick device can be a global clockevent or a per-cpu
+clockevent. The code tries hard to keep per-cpu clockevents in
+the tick device slots but it has an ordering/rating requirement
+that doesn't work when there are only dummy per-cpu devices and
+one global device.
 
-> diff --git a/drivers/staging/keucr/init.c b/drivers/staging/keucr/init.c
-[]
-> @@ -98,11 +98,16 @@ int ENE_SMInit(struct us_data *us)
-[]
->  	if (us->SM_Status.Insert && us->SM_Status.Ready) {
-> -		dev_info(&us->pusb_dev->dev, "Insert     = %x\n", us->SM_Status.Insert);
-[]
-> +		dev_info(&us->pusb_dev->dev, "Insert     = %x\n",
-> +					     us->SM_Status.Insert);
+Perhaps an example will help. Let's say you only have one global
+clockevent such as the sp804, and you have SMP enabled. To
+support SMP we have to register dummy clockevents on each CPU so
+that the sp804 can go into broadcast mode. If we don't do this,
+only the CPU that registered the sp804 will get interrupts while
+the other CPUs will be left with no tick device and thus no
+scheduling. To fix this we register dummy clockevents on all the
+CPUs _before_ we register the sp804 to force the sp804 into the
+broadcast slot. Or we give the dummy clockevents a higher rating
+than the sp804 so that when we register them after the sp804 the
+sp804 is bumped out to broadcast duty.
 
-I think this would be nicer aligning the arguments
-to the open parenthesis like:
+If the dummy devices are registered before the sp804 we can give
+the dummies a low rating and the sp804 will still go into the
+broadcast slot due to this code:
 
-		dev_info(&us->pusb_dev->dev, "Insert     = %x\n",
-			 us->SM_Status.Insert);
+	/*
+	 * If we have a cpu local device already, do not replace it
+	 * by a non cpu local device
+	 */
+	if (curdev && cpumask_equal(curdev->cpumask, cpumask_of(cpu)))
+		goto out_bc;
 
-but using
+If we register the sp804 before the dummies we're also fine as
+long as the rating of the dummy is more than the sp804.  Playing
+games with the dummy rating is not very nice so this patch fixes
+it by allowing the per-cpu device to replace the global device no
+matter what the rating of the global device is.
 
-		us_info(us, "Insert     = %x\n", us->SM_Status.Insert);
+This fixes the sp804 case when the dummy is rated lower than
+sp804 and it removes any ordering requirement from the
+registration of clockevents. It also completes the logic above
+where we prefer cpu local devices over non cpu local devices.
 
-would be nicer still and fit 80 cols, etc...
-
-Another option would be to use a macro like:
-
-#define us_show_status(us, field)				\
-	us_info(us, "%-11s= %x\n", #field, us->SM_Status.field)
-
-And these become
-
-	us_show_status(us, "Insert");
-	us_show_status(us, "Ready");
-	us_show_status(us, "WtP");
-
-etc...
-
-It depends on how many of these actually exist whether
-or not a macro is appropriate.
-
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
