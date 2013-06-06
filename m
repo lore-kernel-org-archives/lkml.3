@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757223Ab3FFJQT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 05:16:19 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:27373 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab3FFJQP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 05:16:15 -0400
-X-AuditID: cbfee61b-b7f8e6d00000524c-4b-51b0535e4028
-Date: Thu, 06 Jun 2013 11:16:06 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH 1/5] cpufreq: Define cpufreq_set_drv_attr_files() to add
- per CPU sysfs attributes
-Message-id: <20130606111606.38f9a074@amdc308.digital.local>
-In-reply-to: <CAKohpo=fLmDog5KVjijEZNakpjLvrKy=S+nv+GQyCc2brcnO1w@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1370502472-7249-2-git-send-email-l.majewski@samsung.com>
- <CAKohpokYdwutUX-zkHLs3bKmLg=Fb7WvKcwvfek9Q8k=XXs3bw@mail.gmail.com>
- <20130606105814.3495e3a9@amdc308.digital.local>
- <CAKohpo=fLmDog5KVjijEZNakpjLvrKy=S+nv+GQyCc2brcnO1w@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42I5/e+xgG5c8IZAg/W7+Cz+vF3OavG06Qe7
-	xbzPshadZ58wW7x5xG3x/tAzZovLu+awWXzuPcJocbtxBZtF/8JeJouOI9+YLTZ+9XDg8bhz
-	bQ+bx+1/j5k91k17y+zRt2UVo8ejxS2MHp83yQWwRXHZpKTmZJalFunbJXBlXPi0iKlgGUvF
-	hK5jbA2MU5m7GDk5JARMJJa2nWGEsMUkLtxbz9bFyMUhJLCIUaJn7UYop51Jov/aURaQKhYB
-	VYlNF0+CdbMJ6El8vvuUqYuRg0NEQEvi5c1UkHpmgV/MEi2vFjCDxIUF0iVebbMAKecVsJZY
-	OXEJ2BhOgWCJ1q5nrCC2kMBBJon5r8FsfgFJifZ/P6COs5M492kDO0SvoMSPyffAepmBVm3e
-	1sQKYctLbF7zlnkCo+AsJGWzkJTNQlK2gJF5FaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZw
-	zDyT3sG4qsHiEKMAB6MSD69EwPpAIdbEsuLK3EOMEhzMSiK8u3w2BArxpiRWVqUW5ccXleak
-	Fh9ilOZgURLnPdhqHSgkkJ5YkpqdmlqQWgSTZeLglGpgnJvJILtuuf6XyxEONrr7P/I/0jzK
-	u+H+CTMJK/dw4xv55u3muUu1Uoq3CPacyTmo4/7JYNP/VU+0r6jPjrRkm7nz5ekZ15fIbNz8
-	11cik+9/tiJTZtzlyAfTlxUvZPW1n9r9M8U8ZXMUX6FvuJmM2dzp8j2/8//LJHg/Ya5/1LXf
-	T6fEa36pEktxRqKhFnNRcSIADbhl8pUCAAA=
+	id S1757767Ab3FFJYW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 05:24:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58645 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752807Ab3FFJYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 05:24:21 -0400
+Subject: Re: [PATCH] GFS2: fix error propagation in init_threads()
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+In-Reply-To: <1370467744-4533-1-git-send-email-khoroshilov@ispras.ru>
+References: <1370467744-4533-1-git-send-email-khoroshilov@ispras.ru>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Thu, 06 Jun 2013 10:21:48 +0100
+Message-ID: <1370510508.2744.2.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
+Hi,
 
-> On 6 June 2013 14:28, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> > I'm confused here.
-> >
-> > So you want to check dev_attr for NULL just after:
-> > drv_attr = cpufreq_driver->attr;
-> > if (!drv_attr)
-> >         goto error;
-> >
-> > and skip the check at the while loop:
-> > while ((drv_attr) && (*drv_attr))
-> >
-> > to
-> >
-> > while ((*drv_attr))
-> >
-> > Am I correct?
+Now in the -nmw tree. Thanks,
+
+Steve.
+
+On Thu, 2013-06-06 at 01:29 +0400, Alexey Khoroshilov wrote:
+> If kthread_run() fails, init_threads() returns
+> IS_ERR(p) instead of PTR_ERR(p).
 > 
-> Bingo!!
+> Found by Linux Driver Verification project (linuxtesting.org).
+> 
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+> ---
+>  fs/gfs2/ops_fstype.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/gfs2/ops_fstype.c b/fs/gfs2/ops_fstype.c
+> index 60ede2a..0262c19 100644
+> --- a/fs/gfs2/ops_fstype.c
+> +++ b/fs/gfs2/ops_fstype.c
+> @@ -916,16 +916,16 @@ static int init_threads(struct gfs2_sbd *sdp, int undo)
+>  		goto fail_quotad;
+>  
+>  	p = kthread_run(gfs2_logd, sdp, "gfs2_logd");
+> -	error = IS_ERR(p);
+> -	if (error) {
+> +	if (IS_ERR(p)) {
+> +		error = PTR_ERR(p);
+>  		fs_err(sdp, "can't start logd thread: %d\n", error);
+>  		return error;
+>  	}
+>  	sdp->sd_logd_process = p;
+>  
+>  	p = kthread_run(gfs2_quotad, sdp, "gfs2_quotad");
+> -	error = IS_ERR(p);
+> -	if (error) {
+> +	if (IS_ERR(p)) {
+> +		error = PTR_ERR(p);
+>  		fs_err(sdp, "can't start quotad thread: %d\n", error);
+>  		goto fail;
+>  	}
 
-Ok, no problem :-)
 
--- 
-Best regards,
-
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
