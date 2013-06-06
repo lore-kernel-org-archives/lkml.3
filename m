@@ -1,62 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab3FFHGR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 03:06:17 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:58835 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752895Ab3FFHGP (ORCPT
+	id S1754761Ab3FFHIh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 03:08:37 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:30086 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752998Ab3FFHIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 03:06:15 -0400
-Date: Thu, 6 Jun 2013 08:06:10 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: J Keerthy <j-keerthy@ti.com>
-Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        swarren@wwwdotorg.org, swarren@nvidia.com, rob.herring@calxeda.com,
-        rob@landley.net, sameo@linux.intel.com, wim@iguana.be,
-        lgirdwood@gmail.com, gg@slimlogic.co.uk, t-kristo@ti.com,
-        Ian Lartey <ian@slimlogic.co.uk>
-Subject: Re: [PATCH v3] mfd: DT bindings for the palmas family MFD
-Message-ID: <20130606070610.GS3370@gmail.com>
-References: <1370496441-24620-1-git-send-email-j-keerthy@ti.com>
- <20130606070210.GR3370@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130606070210.GR3370@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 6 Jun 2013 03:08:35 -0400
+X-AuditID: cbfee61a-b7f3b6d000006edd-f8-51b03571a3a0
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocky" <rjw@sisk.pl>
+Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: [PATCH 0/5] cpufreq:boost: CPU Boost mode support
+Date: Thu, 06 Jun 2013 09:07:47 +0200
+Message-id: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+X-Mailer: git-send-email 1.7.10
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprALMWRmVeSWpSXmKPExsVy+t9jQd1C0w2BBndeC1v8ebuc1eJp0w92
+	i3mfZS06zz5htnjziNvizcPNjBaXd81hs/jce4TR4nbjCjaL/oW9TBYdR74xW2z86uHA43Hn
+	2h42j3XT3jJ79G1ZxejxaHELo8fnTXIBrFFcNimpOZllqUX6dglcGauntLIVLBWsmDb/F3sD
+	40/eLkZODgkBE4mzp1uZIGwxiQv31rN1MXJxCAlMZ5Rou/GBFSQhJNDFJLF2gS6IzSagJ/H5
+	7lOwBhEBX4meZYfAbGaBk8wSd48FgtjCAlYSJxZ+ZOxi5OBgEVCVaD2WCxLmFXCVeH3nA9Qu
+	eYmn9/vYJjByL2BkWMUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHE7PpHYwrmywOMQowMGo
+	xMMrEbA+UIg1say4MvcQowQHs5IIb6zIhkAh3pTEyqrUovz4otKc1OJDjNIcLErivAdarQOF
+	BNITS1KzU1MLUotgskwcnFINjJMXCO1hbs3c4hN+xCjO73leDde7BwvZ+Jfw66yKi5dsvX7Q
+	7qjgN82bgjevxQSzX19/gUvaJGj6sX1r1+6Lr9QXfXdzkllB9/Xdqot1Fua9SdBYKKhhbBNU
+	fVjbpmnv42MVuUaTLgdFWT5Q3Ww/8R6HvX+CactXg0N5FxbuX1N8Ndhq10rvTUosxRmJhlrM
+	RcWJAAWVZRMjAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 06 Jun 2013, Lee Jones wrote:
+This patch series introduces support for CPU overclocking technique 
+called Boost. 
 
-> On Thu, 06 Jun 2013, J Keerthy wrote:
-> 
-> > Add the various binding files for the palmas family of chips. There is a
-> > top level MFD binding then a seperate binding for regulators IP blocks on chips.
-> > 
-> > Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-> > Signed-off-by: J Keerthy <j-keerthy@ti.com>
-> > Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
-> > Reviewed-by: Stephen Warren <swarren@nvidia.com> 
-> > ---
-> >  Documentation/devicetree/bindings/mfd/palmas.txt   |   49 +++++++++++++
-> >  .../devicetree/bindings/regulator/palmas-pmic.txt  |   72 ++++++++++++++++++++
-> >  2 files changed, 121 insertions(+), 0 deletions(-)
-> >  create mode 100644 Documentation/devicetree/bindings/mfd/palmas.txt
-> >  create mode 100644
-> > Documentation/devicetree/bindings/regulator/palmas-pmic.tx
-> 
-> Applied, thanks.
+It is a follow up of a LAB governor proposal. Boost is a LAB component:
+http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
 
-Ah wait. It appears Grant wants to take this.
+Boost unifies hardware based solution (e.g. Intel Nehalem) with
+software oriented one (like the one done at Exynos).
+For this reason cpufreq/freq_table code has been reorganized to exclude
+common code.
 
-Unapplied, thanks. :)
+Important design decisions:
+
+- Boost related code is compiled-in unconditionally. I wanted to avoid
+situation when a lot of #ifdef CONFIG_CPU_FREQ_BOOST are scattered at
+cpufreq code (especially cpufreq.c large file)
+
+- Only one cpufreq_boost instance is created at cpufreq driver file. 
+
+- Boost can manage overclocking when many policies are istalled in
+the system (this is a preparation for b.L)
+
+- Boost sysfs attributies are seen only when cpufreq driver supports them.
+They will not show up until either CONFIG_CPU_FREQ_BOOST or device tree
+cpufreq "boost_mode" attribute is defined.
+
+- No special spin_lock for Boost was created. The one from cpufreq was
+reused.
+
+- Low level boost trigger function (*low_level_boost function callback) is
+necessary to "glue" together acpi-cpufreq boost with software based one.
+
+
+
+Tested at: HW: Exynos 4412 3.10 linux
+	   Compile tested x86_64 defconfig (acpi) - help with HW test 
+		needed
+
+Lukasz Majewski (5):
+  cpufreq: Define cpufreq_set_drv_attr_files() to add per CPU sysfs
+    attributes
+  cpufreq:boost: Add support for software based CPU frequency boost
+  cpufreq:acpi:x86: Adjust the acpi-cpufreq.c code to work with common
+    boost solution
+  cpufreq:exynos:Extend exynos cpufreq driver to support boost
+  cpufreq:boost:Kconfig: Enable boost support at Kconfig
+
+ drivers/cpufreq/Kconfig          |    7 ++
+ drivers/cpufreq/acpi-cpufreq.c   |   64 ++++++--------
+ drivers/cpufreq/cpufreq.c        |  175 ++++++++++++++++++++++++++++++++++++--
+ drivers/cpufreq/exynos-cpufreq.c |   48 +++++++++++
+ drivers/cpufreq/freq_table.c     |   87 ++++++++++++++++++-
+ include/linux/cpufreq.h          |   35 +++++++-
+ 6 files changed, 369 insertions(+), 47 deletions(-)
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.10.4
+
