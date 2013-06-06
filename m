@@ -1,299 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932972Ab3FFLGV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 07:06:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47794 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932589Ab3FFLGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 07:06:18 -0400
-Date: Thu, 6 Jun 2013 14:06:47 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sergei.shtylyov@cogentembedded.com
-Subject: Re: [net-next PATCH 7/8] macvtap: add TUNSETQUEUE ioctl
-Message-ID: <20130606110647.GG8626@redhat.com>
-References: <1370512480-14272-1-git-send-email-jasowang@redhat.com>
- <1370512480-14272-8-git-send-email-jasowang@redhat.com>
+	id S932642Ab3FFLIg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 07:08:36 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:42870 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932345Ab3FFLIe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 07:08:34 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19GaVnZifz2HZIlxRNTCfyEBaV4DSmaf9E=
+Date: Thu, 6 Jun 2013 07:08:06 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: andrew@lunn.ch, gregory.clement@free-electrons.com,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: linux-next: manual merge of the mvebu tree with the imx-mxs
+ tree
+Message-ID: <20130606110806.GA23859@titan.lakedaemon.net>
+References: <20130606153600.a23c3489dc8b30d0836cb8ea@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370512480-14272-8-git-send-email-jasowang@redhat.com>
+In-Reply-To: <20130606153600.a23c3489dc8b30d0836cb8ea@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 05:54:39PM +0800, Jason Wang wrote:
-> This patch adds TUNSETQUEUE ioctl to let userspace can temporarily disable or
-> enable a queue of macvtap. This is used to be compatible at API layer of tuntap
-> to simplify the userspace to manage the queues. This is done through introducing
-> a linked list to track all taps while using vlan->taps array to only track
-> active taps.
+On Thu, Jun 06, 2013 at 03:36:00PM +1000, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-
-> ---
->  drivers/net/macvtap.c      |  135 +++++++++++++++++++++++++++++++++++++------
->  include/linux/if_macvlan.h |    4 +
->  2 files changed, 120 insertions(+), 19 deletions(-)
+> Today's linux-next merge of the mvebu tree got a conflict in
+> arch/arm/Kconfig.debug between commit 284166ffebc3 ("ARM: imx: enable
+> low-level debug support for imx6sl") from the imx-mxs tree and commit
+> 5be22d8c29fd ("arm: mvebu: add another earlyprintk Kconfig option") from
+> the mvebu tree.
 > 
-> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> index 5ccba99..d2d1d55 100644
-> --- a/drivers/net/macvtap.c
-> +++ b/drivers/net/macvtap.c
-> @@ -45,6 +45,8 @@ struct macvtap_queue {
->  	struct file *file;
->  	unsigned int flags;
->  	u16 queue_index;
-> +	bool enabled;
-> +	struct list_head next;
->  };
->  
->  static struct proto macvtap_proto = {
-> @@ -85,14 +87,36 @@ static const struct proto_ops macvtap_socket_ops;
->   */
->  static DEFINE_SPINLOCK(macvtap_lock);
->  
-> -static int macvtap_set_queue(struct net_device *dev, struct file *file,
-> +static int macvtap_enable_queue(struct net_device *dev, struct file *file,
->  				struct macvtap_queue *q)
->  {
->  	struct macvlan_dev *vlan = netdev_priv(dev);
-> +	int err = -EINVAL;
-> +
-> +	spin_lock(&macvtap_lock);
-> +
-> +	if (q->enabled)
-> +		goto out;
-> +
-> +	err = 0;
-> +	rcu_assign_pointer(vlan->taps[vlan->numvtaps], q);
-> +	q->queue_index = vlan->numvtaps;
-> +	q->enabled = true;
-> +
-> +	vlan->numvtaps++;
-> +out:
-> +	spin_unlock(&macvtap_lock);
-> +	return err;
-> +}
-> +
-> +static int macvtap_set_queue(struct net_device *dev, struct file *file,
-> +			     struct macvtap_queue *q)
-> +{
-> +	struct macvlan_dev *vlan = netdev_priv(dev);
->  	int err = -EBUSY;
->  
->  	spin_lock(&macvtap_lock);
-> -	if (vlan->numvtaps == MAX_MACVTAP_QUEUES)
-> +	if (vlan->numqueues == MAX_MACVTAP_QUEUES)
->  		goto out;
->  
->  	err = 0;
-> @@ -102,15 +126,57 @@ static int macvtap_set_queue(struct net_device *dev, struct file *file,
->  
->  	q->file = file;
->  	q->queue_index = vlan->numvtaps;
-> +	q->enabled = true;
->  	file->private_data = q;
-> +	list_add_tail(&q->next, &vlan->queue_list);
->  
->  	vlan->numvtaps++;
-> +	vlan->numqueues++;
->  
->  out:
->  	spin_unlock(&macvtap_lock);
->  	return err;
->  }
->  
-> +static int __macvtap_disable_queue(struct macvtap_queue *q)
-> +{
-> +	struct macvlan_dev *vlan;
-> +	struct macvtap_queue *nq;
-> +
-> +	vlan = rcu_dereference_protected(q->vlan,
-> +					 lockdep_is_held(&macvtap_lock));
-> +
-> +	if (!q->enabled)
-> +		return -EINVAL;
-> +
-> +	if (vlan) {
-> +		int index = q->queue_index;
-> +		BUG_ON(index >= vlan->numvtaps);
-> +		nq = rcu_dereference_protected(vlan->taps[vlan->numvtaps - 1],
-> +					       lockdep_is_held(&macvtap_lock));
-> +		nq->queue_index = index;
-> +
-> +		rcu_assign_pointer(vlan->taps[index], nq);
-> +		RCU_INIT_POINTER(vlan->taps[vlan->numvtaps - 1], NULL);
-> +		q->enabled = false;
-> +
-> +		vlan->numvtaps--;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int macvtap_disable_queue(struct macvtap_queue *q)
-> +{
-> +	int err;
-> +
-> +	spin_lock(&macvtap_lock);
-> +	err = __macvtap_disable_queue(q);
-> +	spin_unlock(&macvtap_lock);
-> +
-> +	return err;
-> +}
-> +
->  /*
->   * The file owning the queue got closed, give up both
->   * the reference that the files holds as well as the
-> @@ -121,25 +187,19 @@ out:
->   */
->  static void macvtap_put_queue(struct macvtap_queue *q)
->  {
-> -	struct macvtap_queue *nq;
->  	struct macvlan_dev *vlan;
->  
->  	spin_lock(&macvtap_lock);
->  	vlan = rcu_dereference_protected(q->vlan,
->  					 lockdep_is_held(&macvtap_lock));
->  	if (vlan) {
-> -		int index = q->queue_index;
-> -		BUG_ON(index >= vlan->numvtaps);
-> -
-> -		nq = rcu_dereference_protected(vlan->taps[vlan->numvtaps - 1],
-> -					       lockdep_is_held(&macvtap_lock));
-> -		rcu_assign_pointer(vlan->taps[index], nq);
-> -		nq->queue_index = index;
-> +		if (q->enabled)
-> +			BUG_ON(__macvtap_disable_queue(q));
->  
-> -		RCU_INIT_POINTER(vlan->taps[vlan->numvtaps - 1], NULL);
-> +		vlan->numqueues--;
->  		RCU_INIT_POINTER(q->vlan, NULL);
->  		sock_put(&q->sk);
-> -		--vlan->numvtaps;
-> +		list_del_init(&q->next);
->  	}
->  
->  	spin_unlock(&macvtap_lock);
-> @@ -160,6 +220,11 @@ static struct macvtap_queue *macvtap_get_queue(struct net_device *dev,
->  {
->  	struct macvlan_dev *vlan = netdev_priv(dev);
->  	struct macvtap_queue *tap = NULL;
-> +	/* Access to taps array is protected by rcu, but access to numvtaps
-> +	 * isn't. Below we use it to lookup a queue, but treat it as a hint
-> +	 * and validate that the result isn't NULL - in case we are
-> +	 * racing against queue removal.
-> +	 */
->  	int numvtaps = ACCESS_ONCE(vlan->numvtaps);
->  	__u32 rxq;
->  
-> @@ -196,18 +261,22 @@ out:
->  static void macvtap_del_queues(struct net_device *dev)
->  {
->  	struct macvlan_dev *vlan = netdev_priv(dev);
-> -	struct macvtap_queue *q, *qlist[MAX_MACVTAP_QUEUES];
-> +	struct macvtap_queue *q, *tmp, *qlist[MAX_MACVTAP_QUEUES];
->  	int i, j = 0;
->  
->  	spin_lock(&macvtap_lock);
-> -	for (i = 0; i < vlan->numvtaps; i++) {
-> -		q = rcu_dereference_protected(vlan->taps[i],
-> -					      lockdep_is_held(&macvtap_lock));
-> -		BUG_ON(q == NULL);
-> +	list_for_each_entry_safe(q, tmp, &vlan->queue_list, next) {
-> +		list_del_init(&q->next);
->  		qlist[j++] = q;
-> -		RCU_INIT_POINTER(vlan->taps[i], NULL);
->  		RCU_INIT_POINTER(q->vlan, NULL);
-> +		if (q->enabled)
-> +			vlan->numvtaps--;
-> +		vlan->numqueues--;
->  	}
-> +	for (i = 0; i < vlan->numvtaps; i++)
-> +		RCU_INIT_POINTER(vlan->taps[i], NULL);
-> +	BUG_ON(vlan->numvtaps);
-> +	BUG_ON(vlan->numqueues);
->  	/* guarantee that any future macvtap_set_queue will fail */
->  	vlan->numvtaps = MAX_MACVTAP_QUEUES;
->  	spin_unlock(&macvtap_lock);
-> @@ -298,6 +367,9 @@ static int macvtap_newlink(struct net *src_net,
->  			   struct nlattr *tb[],
->  			   struct nlattr *data[])
->  {
-> +	struct macvlan_dev *vlan = netdev_priv(dev);
-> +	INIT_LIST_HEAD(&vlan->queue_list);
-> +
->  	/* Don't put anything that may fail after macvlan_common_newlink
->  	 * because we can't undo what it does.
->  	 */
-> @@ -887,6 +959,25 @@ static void macvtap_put_vlan(struct macvlan_dev *vlan)
->  	dev_put(vlan->dev);
->  }
->  
-> +static int macvtap_ioctl_set_queue(struct file *file, unsigned int flags)
-> +{
-> +	struct macvtap_queue *q = file->private_data;
-> +	struct macvlan_dev *vlan;
-> +	int ret;
-> +
-> +	vlan = macvtap_get_vlan(q);
-> +	if (!vlan)
-> +		return -EINVAL;
-> +
-> +	if (flags & IFF_ATTACH_QUEUE)
-> +		ret = macvtap_enable_queue(vlan->dev, file, q);
-> +	else if (flags & IFF_DETACH_QUEUE)
-> +		ret = macvtap_disable_queue(q);
-> +
-> +	macvtap_put_vlan(vlan);
-> +	return ret;
-> +}
-> +
->  /*
->   * provide compatibility with generic tun/tap interface
->   */
-> @@ -910,7 +1001,8 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
->  			return -EFAULT;
->  
->  		ret = 0;
-> -		if ((u & ~IFF_VNET_HDR) != (IFF_NO_PI | IFF_TAP))
-> +		if ((u & ~(IFF_VNET_HDR | IFF_MULTI_QUEUE)) !=
-> +		    (IFF_NO_PI | IFF_TAP))
->  			ret = -EINVAL;
->  		else
->  			q->flags = u;
-> @@ -929,6 +1021,11 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
->  		macvtap_put_vlan(vlan);
->  		return ret;
->  
-> +	case TUNSETQUEUE:
-> +		if (get_user(u, &ifr->ifr_flags))
-> +			return -EFAULT;
-> +		return macvtap_ioctl_set_queue(file, u);
-> +
->  	case TUNGETFEATURES:
->  		if (put_user(IFF_TAP | IFF_NO_PI | IFF_VNET_HDR, up))
->  			return -EFAULT;
-> diff --git a/include/linux/if_macvlan.h b/include/linux/if_macvlan.h
-> index 62d8bda..1912133 100644
-> --- a/include/linux/if_macvlan.h
-> +++ b/include/linux/if_macvlan.h
-> @@ -69,8 +69,12 @@ struct macvlan_dev {
->  	u16			flags;
->  	int (*receive)(struct sk_buff *skb);
->  	int (*forward)(struct net_device *dev, struct sk_buff *skb);
-> +	/* This array tracks active taps. */
->  	struct macvtap_queue	*taps[MAX_MACVTAP_QUEUES];
-> +	/* This list tracks all taps (both enabled and disabled) */
-> +	struct list_head	queue_list;
->  	int			numvtaps;
-> +	int			numqueues;
->  	int			minor;
->  };
->  
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+
+Looks good, thanks Stephen!
+
+thx,
+
+Jason.
+
+> 
 > -- 
-> 1.7.1
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc arch/arm/Kconfig.debug
+> index 29f7623,e6a6ab1..0000000
+> --- a/arch/arm/Kconfig.debug
+> +++ b/arch/arm/Kconfig.debug
+> @@@ -639,9 -656,9 +664,10 @@@ config DEBUG_LL_INCLUD
+>   				 DEBUG_IMX35_UART || \
+>   				 DEBUG_IMX51_UART || \
+>   				 DEBUG_IMX53_UART ||\
+>  -				 DEBUG_IMX6Q_UART
+>  +				 DEBUG_IMX6Q_UART || \
+>  +				 DEBUG_IMX6SL_UART
+> - 	default "debug/mvebu.S" if DEBUG_MVEBU_UART
+> + 	default "debug/mvebu.S" if DEBUG_MVEBU_UART || \
+> + 				   DEBUG_MVEBU_UART_ALTERNATE
+>   	default "debug/mxs.S" if DEBUG_IMX23_UART || DEBUG_IMX28_UART
+>   	default "debug/nomadik.S" if DEBUG_NOMADIK_UART
+>   	default "debug/omap2plus.S" if DEBUG_OMAP2PLUS_UART
+
+
