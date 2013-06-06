@@ -1,90 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755662Ab3FFAje (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jun 2013 20:39:34 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:54271 "EHLO gloria.sntech.de"
+	id S1755596Ab3FFBAf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jun 2013 21:00:35 -0400
+Received: from gate.crashing.org ([63.228.1.57]:41774 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755017Ab3FFAjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jun 2013 20:39:33 -0400
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RFC 3/3] clk: dt: binding for basic divider clock
-Date: Thu, 6 Jun 2013 02:09:43 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Mike Turquette <mturquette@linaro.org>, Matt Sealey <neko@bakuhatsu.net>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-References: <1370281990-15090-1-git-send-email-mturquette@linaro.org> <CAHCPf3tZAbdVZPuKOjxJbCOAE76Pa6wMVHjnBRPhSpj0aMBMHg@mail.gmail.com> <20130604192243.10233.76496@quantum>
-In-Reply-To: <20130604192243.10233.76496@quantum>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1754119Ab3FFBAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jun 2013 21:00:34 -0400
+Message-ID: <1370480404.3766.260.camel@pasglop>
+Subject: Re: [PATCH] powerpc/pci: Improve device hotplug initialization
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Chen Yuanquan-B41889 <B41889@freescale.com>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org,
+        Yuanquan Chen <Yuanquan.Chen@freescale.com>,
+        Hiroo Matsumoto <matsumoto.hiroo@jp.fujitsu.com>
+Date: Thu, 06 Jun 2013 11:00:04 +1000
+In-Reply-To: <20130601135809.GA6395@roeck-us.net>
+References: <1369762514-27352-1-git-send-email-linux@roeck-us.net>
+	 <51A5CAC1.6030800@freescale.com> <20130531051423.GA15505@roeck-us.net>
+	 <1369979047.3928.112.camel@pasglop> <20130601135809.GA6395@roeck-us.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306060209.43486.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 4. Juni 2013, 21:22:43 schrieb Mike Turquette:
-> Quoting Matt Sealey (2013-06-04 10:39:53)
+On Sat, 2013-06-01 at 06:58 -0700, Guenter Roeck wrote:
+> the comment was actuially directed towards Yuanquan.
 > 
-> > On Tue, Jun 4, 2013 at 12:11 PM, Stephen Boyd <sboyd@codeaurora.org> 
-wrote:
-> > > On 06/03/13 10:53, Mike Turquette wrote:
-> > >> +Required properties:
-> > >> +- compatible : shall be "divider-clock".
-> > >> +- #clock-cells : from common clock binding; shall be set to 0.
-> > >> +- clocks : link to phandle of parent clock
-> > >> +- reg : base address for register controlling adjustable divider
-> > >> +- mask : arbitrary bitmask for programming the adjustable divider
-> > >> +
-> > >> +Optional properties:
-> > >> +- clock-output-names : From common clock binding.
-> > >> +- table : array of integer pairs defining divisors & bitfield values
-> > >> +- shift : number of bits to shift the mask, defaults to 0 if not
-> > >> present +- index_one : valid divisor programming starts at 1, not
-> > >> zero +- index_power_of_two : valid divisor programming must be a
-> > >> power of two +- allow_zero : implies index_one, and programming zero
-> > >> results in +  divide-by-one
-> > > 
-> > > It's preferred that property names have dashes instead of underscores.
-> > 
-> > I think I have a suggestion or two here..
-> > 
-> > I mailed one to Mike earlier, I have had some mailing list problems
-> > which I think are solved now..
-> > 
-> > If you provide a mask for programming the divider, surely the "shift"
-> > property is therefore redundant. Unless some device has a completely
-> > strange way of doing things and uses two seperated bitfields for
-> > programming in the same register, the shift value is simply a function
-> > of ffs() on the mask, isn't it? It is nice to put the information
-> > specifically in the device tree, but where a shift is not specified
-> > it'd probably be a good idea to go about deriving that value that way
-> > anyway, right, and if we're doing that.. why specify it?
+> No problem, take your time. I did my best to test it, but I agree that this is a
+> critical area of the code, and it would be desirable to get additional scrutiny
+> and test feedback.
 > 
-> Shift is optional.  Also I think the integer values in a DTS are
-> 32-bits, so if some day someone had a clock driver that needed to write
-> to a 64-bit register then shift might be useful there, combined with a
-> 32-bit mask.  Or perhaps dtc will have a 64-bit value for that case?  I
-> don't know.
-> 
-> I certainly do see your point about only using the mask, and the
-> original clock basic types did this a while back before the shift+width
-> style came into vogue.
-> 
-> If other reviewers also want to use a pure 32-bit mask and no shift then
-> I'll drop it in the next round.
+> The code has been running in our system (P2020 and P5040) for several months.
+> I was preparing a patch for upstream submission when I noticed commit 37f02195b.
+> After testing ithis commit, I noticed the problems with it and wrote this patch,
+> which aligns the code with our initial patch. I tested it as good as I could on
+> our systems as well as with a P5040 evaluation board and an Intel GE PCIe
+> card.
 
-I would object to dropping the shift :-)
+Ok, so I like this very much. So much that I was considering still sneaking it
+into 3.10, until I hit a snag...
 
-If you look at the two clk extensions in my rockchip patches you can see that 
-they use a different regiment to set values.
+[ Basically, the previous patch that moved the setup to pcibios_enable_device()
+always made me nervous. It did regress at least one platform (mac stuff) due
+to missed IRQ fixup, which I worked around later on, and I'm still not terribly
+happy about it. Your approach is much cleaner. ]
 
-Using the lower 16 bits to set the value and the upper 16 bit to mark which 
-values are changed, i.e. (mask << shift + 16) | (val << shift).
+I suppose that when I wrote the original setup stuff there wasn't an add
+hook or I didn't see it...
 
-(I'm not sure, if the naming or solution could be improved though)
+In fact I would go further and completely remove pcibios_setup_bus_devices()
+which is now empty since it's only called by the powerpc code, it's not
+a generic hook.
+
+However, here's the snag. Unless I missed something, we now setup the devices
+DMA before we call pcibios_fixup_bus(). And *that* is going to break some
+pseries.
+
+We have an assumption in there that the bus fixup is done first, because in
+some cases, the DMA windows are established at the bus level, and the "dev"
+setup just picks up the bits.
+
+Now looking at that code, it's not unfixable but it won't make 3.10. Maybe
+we need a new pre-scan hook for busses... we can use the pcibios_add_device()
+hook of the bridge itself for P2P but that won't do for the root bus and I
+don't like having two different path here...
+
+Cheers,
+Ben.
 
 
-Heiko
