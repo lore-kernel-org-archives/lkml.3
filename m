@@ -1,82 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab3FFVxM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 17:53:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36039 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908Ab3FFVxL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 17:53:11 -0400
-Date: Thu, 6 Jun 2013 16:52:55 -0500
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        eparis@redhat.com, linux-audit@redhat.com, ebiederm@xmission.com,
-        davem@davemloft.net
-Subject: Re: [PATCH RFC 00/48] Add namespace support for audit
-Message-ID: <20130606215255.GA28978@tp>
-References: <1367893269-9308-1-git-send-email-gaofeng@cn.fujitsu.com>
- <519B3B4E.1070405@cn.fujitsu.com>
+	id S1754260Ab3FFVyk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 17:54:40 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:46988 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751908Ab3FFVyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 17:54:38 -0400
+Date: Thu, 6 Jun 2013 17:54:25 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] memcg: do not sleep on OOM waitqueue with full
+ charge context
+Message-ID: <20130606215425.GM15721@cmpxchg.org>
+References: <1370488193-4747-1-git-send-email-hannes@cmpxchg.org>
+ <1370488193-4747-2-git-send-email-hannes@cmpxchg.org>
+ <alpine.DEB.2.02.1306052058340.25115@chino.kir.corp.google.com>
+ <20130606053315.GB9406@cmpxchg.org>
+ <20130606173355.GB27226@cmpxchg.org>
+ <alpine.DEB.2.02.1306061308320.9493@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <519B3B4E.1070405@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.02.1306061308320.9493@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Gao feng (gaofeng@cn.fujitsu.com):
-> On 05/07/2013 10:20 AM, Gao feng wrote:
-> > This patchset try to add namespace support for audit.
+On Thu, Jun 06, 2013 at 01:11:32PM -0700, David Rientjes wrote:
+> On Thu, 6 Jun 2013, Johannes Weiner wrote:
+> 
+> > > If the killing task or one of the sleeping tasks is holding a lock
+> > > that the selected victim needs in order to exit no progress can be
+> > > made.
+> > > 
+> > > The report we had a few months ago was that a task held the i_mutex
+> > > when trying to charge a page cache page and then invoked the OOM
+> > > handler and looped on CHARGE_RETRY.  Meanwhile, the selected victim
+> > > was just entering truncate() and now stuck waiting for the i_mutex.
+> > > 
+> > > I'll add this scenario to the changelog, hopefully it will make the
+> > > rest a little clearer.
 > > 
-> > I choose to assign audit to the user namespace.
-> > Right now,there are six kinds of namespaces, such as
-> > net, mount, ipc, pid, uts and user. the first five
-> > namespaces have special usage. the audit isn't suitable to
-> > belong to these five namespaces, so the user namespace
-> > may be the best choice.
+> > David, is the updated patch below easier to understand?
 > > 
-> > Through I decide to make audit related resources per user
-> > namespace, but audit uses netlink to communicate between kernel
-> > space and user space, and the netlink is a private resource
-> > of per net namespace. So we need the capability to allow the
-> > netlink sockets to communicate with each other in the same user
-> > namespace even they are in different net namespace. [PATCH 2/48]
-> > does this job, it adds a new function "compare" for per netlink
-> > table to compare two sockets. it means the netlink protocols can
-> > has its own compare fuction, For other protocols, two netlink
-> > sockets are different if they belong to the different net namespace.
-> > For audit protocol, two sockets can be the same even they in different
-> > net namespace,we use user namespace not net namespace to make the
-> > decision.
-> > 
-> > There is one point that some people may dislike,in [PATCH 1/48],
-> > the kernel side audit netlink socket is created only when we create
-> > the first netns for the userns, and this userns will hold the netns
-> > until we destroy this userns.
-> > 
-> > The other patches just make the audit related resources per
-> > user namespace.
-> > 
-> > This patchset is sent as an RFC,any comments are welcome.
+> 
+> I don't understand why memcg is unique in this regard and it doesn't 
+> affect the page allocator as well on system oom conditions.  Ignoring 
+> memecg, all allocating processes will loop forever in the page allocator 
+> unless there are atypical gfp flags waiting for memory to be available, 
+> only one will call the oom killer at a time, a process is selected and 
+> killed, and the oom killer defers until that process exists because it 
+> finds TIF_MEMDIE.  Why is memcg charging any different?
 
-Hi,
+The allocator wakes up kswapd, global OOMs are rarer, with physical
+memory the line to OOM is blurrier than with the memcg hard limit?
 
-thanks for sending this.  I think you need to ping the selinux folks
-for comment though.  It appears to me that, after this patchset, the
-kernel with CONFIG_USER_NS=y could not be LSPP-compliant, because
-the selinux-generated audit messages do not always go to init_user_ns.
+Anyway, I'm not aware of bug reports in the global case, but there are
+bug reports for the memcg case and we have a decent understanding of
+those deadlocks.  So can we stay focussed and fix this, please?
 
-Additionally, the only type of namespacing selinux wants is where it
-is enforced by policy compiler and installer using typenames - i.e.
-'container1.user_t' vs 'user_t'.  Selinux does not want user namespaces
-to affect selinux enforcement at all.  (at least last I knew, several
-years ago at a mini-summit, I believe this was from Stephen Smalley).
+> > Reported-by: Reported-by: azurIt <azurit@pobox.sk>
+> > Debugged-by: Michal Hocko <mhocko@suse.cz>
+> > Reported-by: David Rientjes <rientjes@google.com>
+> 
+> What exactly did I report?  This isn't at all what 
+> memory.oom_delay_millisecs is about, which is a failure of userspace to 
+> respond to the condition and react in time, not because it's stuck on any 
+> lock.  We still need that addition regardless of what you're doing here.
 
-I think it's good to have userspace-generated audit messages (i.e.
-auditctl -m 'hi there') sent to the same user namespace.  But the
-selinux messages, near as I can tell, need to all go to init_user_ns.
+Oh, tell me how getting stuck indefinitely on a lock will not result
+in "a failure to react in time".  This is some seriously misguided
+pedantry.
 
-thanks,
--serge
+And yes, you talked about deadlocking potential other than the handler
+itself OOMing, I quote from
+<alpine.DEB.2.02.1305301338430.20389@chino.kir.corp.google.com>:
+
+"Unresponsiveness isn't necessarily only because of memory
+ constraints, you may have your oom notifier in a parent cgroup that
+ isn't oom.  If a process is stuck on mm->mmap_sem in the oom cgroup,
+ though, the oom notifier may not be able to scrape /proc/pid and
+ attain necessary information in making an oom kill decision."
+
+These are your words, and my patch sets out to fix the described
+problem, so I figured the Reported-by: might be appropriate.  But I
+can remove it if you like.
