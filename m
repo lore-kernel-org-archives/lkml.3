@@ -1,99 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933206Ab3FFMuu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 08:50:50 -0400
-Received: from mga02.intel.com ([134.134.136.20]:15667 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932902Ab3FFMus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 08:50:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,814,1363158000"; 
-   d="scan'208";a="345771591"
-Message-ID: <51B085A2.5090306@linux.intel.com>
-Date: Thu, 06 Jun 2013 15:50:42 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S933238Ab3FFMvY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 08:51:24 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:44613 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932403Ab3FFMvW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 08:51:22 -0400
+Message-ID: <51B085C6.3000605@gmail.com>
+Date: Thu, 06 Jun 2013 14:51:18 +0200
+From: Vladimir Pantelic <vladoman@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:20.0) Gecko/20100101 Firefox/20.0 SeaMonkey/2.17
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH v9 net-next 2/7] net: add low latency socket poll
-References: <20130605103400.11172.49099.stgit@ladj378.jer.intel.com>    <20130605103421.11172.82925.stgit@ladj378.jer.intel.com>   <1370445714.24311.268.camel@edumazet-glaptop>   <51AF59B0.6080101@linux.intel.com>  <1370446760.24311.275.camel@edumazet-glaptop>  <51AF5D5A.8030907@linux.intel.com> <1370447966.24311.284.camel@edumazet-glaptop>
-In-Reply-To: <1370447966.24311.284.camel@edumazet-glaptop>
+To: Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>
+CC: devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
+        debian-kernel@lists.debian.org
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
+ Uploading linux (3.9.4-1))
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com> <CAKON4OxDD5orX2w-_+d5kawTGXbE3KKj2QLERo9m7=NiUSXhgQ@mail.gmail.com> <51AFA6DD.3000202@wwwdotorg.org> <CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com> <1370469574.18839.33.camel@localhost> <CAPweEDxMpeJc-w=Yd7d2OT=UisRBp2rxf-MPMDUCOG3EyJz1GQ@mail.gmail.com> <CAKON4OxwyV2f_iTEb5RnP_azc7EsSxPdku_TY5WLWxN7USiY1Q@mail.gmail.com> <CAPweEDw1BabE0cmT5fxZ3Z9p9EH508M3Nzcqk2VcO0oz-qYsvg@mail.gmail.com> <1370475609.20454.44.camel@localhost> <CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com> <1370477958.20454.68.camel@localhost> <CAPweEDyPffcN9cNJ10ZHt+AZJHTRdU0LMfCGM_756uAbf+NEBQ@mail.gmail.com>
+In-Reply-To: <CAPweEDyPffcN9cNJ10ZHt+AZJHTRdU0LMfCGM_756uAbf+NEBQ@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2013 18:59, Eric Dumazet wrote:
-> On Wed, 2013-06-05 at 18:46 +0300, Eliezer Tamir wrote:
->> On 05/06/2013 18:39, Eric Dumazet wrote:
->>> On Wed, 2013-06-05 at 18:30 +0300, Eliezer Tamir wrote:
->>>> On 05/06/2013 18:21, Eric Dumazet wrote:
+luke.leighton wrote:
+> On Thu, Jun 6, 2013 at 1:19 AM, Henrik Nordström
+> <henrik@henriknordstrom.net> wrote:
+>> tor 2013-06-06 klockan 00:54 +0100 skrev luke.leighton:
 >>
->>>>> It would also make sense to give end_time as a parameter, so that the
->>>>> polling() code could really give  a end_time for the whole duration of
->>>>> poll().
->>>>>
->>>>> (You then should test can_poll_ll(end_time) _before_ call to
->>>>> ndo_ll_poll())
->>>>
->>>> how would you handle a nonblocking operation in that case?
->>>> I guess if we have a socket option, then we don't need to handle none
->>>> blocking any diffrent, since the user specified exactly how much time to
->>>> waste polling. right?
+>>> > Not really the case. Actually the opposite. DT have this as well, and
+>>> > integrated in device probing. Allwinner need to hack every driver used
+>>> > to add their gpio requests to have pinmuxing triggered.
 >>>
->>> If the thread already spent 50us in the poll() system call, it for sure
->>> should not call any ndo_ll_poll(). This makes no more sense at this
->>> point.
+>>>  augh.  ok.  solutions.  what are the solutions here?
 >>
->> what about a non-blocking read from a socket?
->> Right now we assume this means poll only once since the application will
->> repeat as needed.
->>
->> maybe add a "once" parameter that will cause sk_poll_ll() to ignore end
->> time and only try once?
+>> What I said before.
 >
-> extern bool __sk_poll_ll(struct sock *sk, cycles_t end);
+>   idea: hook into devicetree gpio functions to allow script-fex gpio
+> functions to gain access in a separate module?  that sort of thing.
 >
-> static inline bool sk_poll_ll(struct sock *sk, bool nonblock)
-> {
-> 	return __sk_poll_ll(sk, nonblock, ll_end_time());
-> }
+>> Go with DT for the kernel. There is no need for two configuration
+>> mechanisms doing the same thing. Disguise it in fex form (and
+>> translator) if too hard for people with a DOS editior to configure.
 >
-> In the poll() code, we should call ll_end_time() once, even if we poll
-> 1000 fds.
+>   what methods for doing that.  i need proposals.  4 days on the clock.
 
-Right now we have three uses for sk_poll_ll
+4 days? WTF? since when did setting an ultimatum to the kernel
+community work?
 
-1. blocking read - In this case we loop until:
-   a !skb_queue_empty(&sk->sk_receive_queue)
-or
-   b !can_poll_ll(end_time)
 
-2. non-blocking read - only try once, ignoring end time.
-
-3. poll/select - for each socket we only try once (nonblock==1),
-  we loop in poll/select until we are lucky or run out of time.
-
-For 1 we want to loop inside sk_poll_ll() but for 3 we loop in poll/select.
-
-So it seems all we need is for sk_poll_ll() to not call ll_end_time() if 
-nonblock is set.
-
-( something like cycles_t end_time = nonblock ? 0 : ll_end_time(); )
-
-Or we could move out looping in all cases to the calling function.
-Does this mean we should push out rcu_read_lock_bh() into the caller
-  as well?
-
--Eliezer
