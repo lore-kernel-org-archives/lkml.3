@@ -1,101 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932424Ab3FFIa1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 04:30:27 -0400
-Received: from 10.mo1.mail-out.ovh.net ([178.32.96.102]:43972 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932110Ab3FFIaX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 04:30:23 -0400
-X-Greylist: delayed 1833 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Jun 2013 04:30:23 EDT
-Content-Type: text/plain; charset=US-ASCII
-Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: Re: [PATCH] simplefb: add support for a8b8g8r8 pixel format
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-In-Reply-To: <51B0446A.4090305@nvidia.com>
-Date: Thu, 6 Jun 2013 10:24:17 +0200
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Olof Johansson <olof@lixom.net>, "gnurou@gmail.org" <gnurou@gmail.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <29610936-BB03-4844-888B-56E1C8E5DF4A@jcrosoft.com>
-References: <1370503259-16618-1-git-send-email-acourbot@nvidia.com> <3356BC4D-EEF6-4FCA-9310-5B0727EBF288@jcrosoft.com> <51B0446A.4090305@nvidia.com>
-To: Alex Courbot <acourbot@nvidia.com>
-X-Mailer: Apple Mail (2.1503)
-X-Ovh-Tracer-Id: 5132414726662695912
-X-Ovh-Remote: 90.37.12.95 (amarseille-152-1-106-95.w90-37.abo.wanadoo.fr)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S932434Ab3FFIbp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 04:31:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58296 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932229Ab3FFIbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 04:31:43 -0400
+Date: Thu, 6 Jun 2013 10:30:20 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-pci@vger.kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joro@8bytes.org>,
+        Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH v3 -tip x86/apic 1/2] PCI/MSI: Allocate as many
+ multiple-MSIs as requested
+Message-ID: <20130606083019.GA28569@dhcp-26-207.brq.redhat.com>
+References: <cover.1368431413.git.agordeev@redhat.com>
+ <8575dc590b819892f366852fe50835efaf579f4f.1368431413.git.agordeev@redhat.com>
+ <20130605205638.GA5816@breakpoint.cc>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130605205638.GA5816@breakpoint.cc>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Jun 6, 2013, at 10:12 AM, Alex Courbot <acourbot@nvidia.com> wrote:
-
-> On 06/06/2013 04:59 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->> 
->> On Jun 6, 2013, at 9:20 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
->> 
->>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->>> ---
->>> Documentation/devicetree/bindings/video/simple-framebuffer.txt | 1 +
->>> drivers/video/simplefb.c                                       | 1 +
->>> 2 files changed, 2 insertions(+)
->>> 
->>> diff --git a/Documentation/devicetree/bindings/video/simple-framebuffer.txt b/Documentation/devicetree/bindings/video/simple-framebuffer.txt
->>> index 3ea4605..70c26f3 100644
->>> --- a/Documentation/devicetree/bindings/video/simple-framebuffer.txt
->>> +++ b/Documentation/devicetree/bindings/video/simple-framebuffer.txt
->>> @@ -12,6 +12,7 @@ Required properties:
->>> - stride: The number of bytes in each line of the framebuffer.
->>> - format: The format of the framebuffer surface. Valid values are:
->>>   - r5g6b5 (16-bit pixels, d[15:11]=r, d[10:5]=g, d[4:0]=b).
->>> +  - a8b8g8r8 (32-bit pixels, d[31:24]=a, d[23:16]=b, d[15:8]=g, d[7:0]=r).
->>> 
->>> Example:
->>> 
->>> diff --git a/drivers/video/simplefb.c b/drivers/video/simplefb.c
->>> index e2e9e3e..d7041aa 100644
->>> --- a/drivers/video/simplefb.c
->>> +++ b/drivers/video/simplefb.c
->>> @@ -84,6 +84,7 @@ struct simplefb_format {
->>> 
->>> static struct simplefb_format simplefb_formats[] = {
->>> 	{ "r5g6b5", 16, {11, 5}, {5, 6}, {0, 5}, {0, 0} },
->>> +	{ "a8b8g8r8", 32, {0, 8}, {8, 8}, {16, 8}, {31, 8} },
->> 
->> why don't you parse the string?
->> 
->> so you will a real generic bindings
+On Wed, Jun 05, 2013 at 10:56:38PM +0200, Sebastian Andrzej Siewior wrote:
+> On Mon, May 13, 2013 at 11:05:48AM +0200, Alexander Gordeev wrote:
+> > Note, although the existing 'msi_desc::multiple' field might seem
+> > redundant, in fact in does not. In general case the number of MSIs a
+> > PCI device is initialized with is not necessarily the closest power-
+> > of-two value of the number of MSIs the device will send. Thus, in
+> > theory it would not be always possible to derive the former from the
+> > latter and we need to keep them both, to stress this corner case.
+> > Besides, since 'msi_desc::multiple' is a bitfield, throwing it out
+> > would not save us any space.
 > 
-> Tried that already, got NACKed: https://lkml.org/lkml/2013/5/27/330
-> 
-> The list of modes of this driver should not grow too big. Even in terms of footprint I'd say the list should remain smaller than the parsing code.
-> 
-> What we can discuss though is whether we want to keep this a8b8g8r8 syntax or switch to something more standard, say "rgba8888".
+> The last paragraph makes me curious. The only place where 'multiple' is set is
+> in do_setup_msi_irqs() and this uses the next power of two for it. And since a
+> device is not enabled twice, it is not overridden.
+> So it should be possible to compute 'multiple' out of 'nvec' but it saves
+> cycles not do to so. I agree to keep 'multiple' but your argument does not
+> seem to make sense.
+> While nitpicking, 'nvec' might deserve a better comment than 'number of
+> messages' since it holds the number of allocated interrupts. :)
 
-I'm going to be very honest I do not like the simplefb driver from the beginning
-but I do found it useful. And as said in it's name it need to be *SIMPLE*
+Sebastian,
 
-Then a huge list of compatible no way
-otherwise we drop this from the simplefb and make it a generic helper
+I re-read my comment few times and I admit it might be confusing. You are
+right - 'multiple' is set by rounding up only. The part '...not necessarily
+the closest power-of-two value...' implied an abstract PCI device rather than
+the described code, but the wording is less than perfect, indeed. 
 
-I do not want to see format parser in every drivers this need to handle at video framework level
+In fact, at the moment of writing I kept in mind a follow-up patch that could
+help with aforementioned devices. That would be a new interface:
 
-If I see that we start to increase again and again the simplefb I will not accept
-to merge the code as we must keep it simple
+	int pci_enable_msi_block_partial(struct pci_dev *dev,
+					 unsigned int nvec_use,
+					 unsigned int nvec_init);
 
-Best Regards,
-J.
+In this case 'nvec_use' would go to 'msi_desc::nvec_used' and 'nvec_init'
+would translate to 'msi_desc::multiple' in case 'nvec_init' is not zero.
+In case 'nvec_init' is zero, 'msi_desc::multiple' would be initialized
+with the maximum possible value for the device (the way it is done now for
+pci_enable_msi_block_auto() interface). So, for the AHCI device (Bjorn
+mentioned) such a call would conserve on 10 of 16 vectors:
 
+	pci_enable_msi_block_partial(pdev, 6, 0);
+
+What I am not sure is whether we need to read out the maximum possible
+number of vectors like pci_enable_msi_block_auto() does:
+
+	int pci_enable_msi_block_partial(struct pci_dev *dev,
+					 unsigned int nvec_use,
+					 unsigned int nvec_init,
+					 unsigned int *maxvec);
+
+I can not think of any use of 'maxvec' with this interface, but the second
+variant completes the whole picture about a device...
+
+> Sebastian
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
