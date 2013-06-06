@@ -1,120 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765Ab3FFWbs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 18:31:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21465 "EHLO
+	id S1753543Ab3FFWbr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 18:31:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17885 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063Ab3FFWbn (ORCPT
+	with ESMTP id S1752147Ab3FFWbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Jun 2013 18:31:43 -0400
-X-Authority-Analysis: v=2.0 cv=Et5QXFgA c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=eGo5SJWoawIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=ges4Yvr3Cq4A:10 a=VwQbUJbxAAAA:8 a=VnNF1IyMAAAA:8 a=2AScbALsEEuzOGVbEEsA:9 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=BcJaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=9kMiDnTzODEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=q8xrcSTsJ_cA:10 a=B7GdaOoYfAgkVU2bxyEA:9 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130606223142.179268469@goodmis.org>
+Message-Id: <20130606223142.475202234@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 06 Jun 2013 18:29:26 -0400
+Date: Thu, 06 Jun 2013 18:29:28 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 2/4 (no gpg)] ftrace: Use the rcu _notrace variants for rcu_dereference_raw() and
- friends
+Subject: [PATCH 4/4 (no gpg)] tracing: Use current_uid() for critical time tracing
 References: <20130606222924.366792086@goodmis.org>
-Content-Disposition: inline; filename=0002-ftrace-Use-the-rcu-_notrace-variants-for-rcu_derefer.patch
+Content-Disposition: inline; filename=0004-tracing-Use-current_uid-for-critical-time-tracing.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-As rcu_dereference_raw() under RCU debug config options can add quite a
-bit of checks, and that tracing uses rcu_dereference_raw(), these checks
-happen with the function tracer. The function tracer also happens to trace
-these debug checks too. This added overhead can livelock the system.
+The irqsoff tracer records the max time that interrupts are disabled.
+There are hooks in the assembly code that calls back into the tracer when
+interrupts are disabled or enabled.
 
-Have the function tracer use the new RCU _notrace equivalents that do
-not do the debug checks for RCU.
+When they are enabled, the tracer checks if the amount of time they
+were disabled is larger than the previous recorded max interrupts off
+time. If it is, it creates a snapshot of the currently running trace
+to store where the last largest interrupts off time was held and how
+it happened.
 
-Link: http://lkml.kernel.org/r/20130528184209.467603904@goodmis.org
+During testing, this RCU lockdep dump appeared:
 
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+[ 1257.829021] ===============================
+[ 1257.829021] [ INFO: suspicious RCU usage. ]
+[ 1257.829021] 3.10.0-rc1-test+ #171 Tainted: G        W
+[ 1257.829021] -------------------------------
+[ 1257.829021] /home/rostedt/work/git/linux-trace.git/include/linux/rcupdate.h:780 rcu_read_lock() used illegally while idle!
+[ 1257.829021]
+[ 1257.829021] other info that might help us debug this:
+[ 1257.829021]
+[ 1257.829021]
+[ 1257.829021] RCU used illegally from idle CPU!
+[ 1257.829021] rcu_scheduler_active = 1, debug_locks = 0
+[ 1257.829021] RCU used illegally from extended quiescent state!
+[ 1257.829021] 2 locks held by trace-cmd/4831:
+[ 1257.829021]  #0:  (max_trace_lock){......}, at: [<ffffffff810e2b77>] stop_critical_timing+0x1a3/0x209
+[ 1257.829021]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff810dae5a>] __update_max_tr+0x88/0x1ee
+[ 1257.829021]
+[ 1257.829021] stack backtrace:
+[ 1257.829021] CPU: 3 PID: 4831 Comm: trace-cmd Tainted: G        W    3.10.0-rc1-test+ #171
+[ 1257.829021] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
+[ 1257.829021]  0000000000000001 ffff880065f49da8 ffffffff8153dd2b ffff880065f49dd8
+[ 1257.829021]  ffffffff81092a00 ffff88006bd78680 ffff88007add7500 0000000000000003
+[ 1257.829021]  ffff88006bd78680 ffff880065f49e18 ffffffff810daebf ffffffff810dae5a
+[ 1257.829021] Call Trace:
+[ 1257.829021]  [<ffffffff8153dd2b>] dump_stack+0x19/0x1b
+[ 1257.829021]  [<ffffffff81092a00>] lockdep_rcu_suspicious+0x109/0x112
+[ 1257.829021]  [<ffffffff810daebf>] __update_max_tr+0xed/0x1ee
+[ 1257.829021]  [<ffffffff810dae5a>] ? __update_max_tr+0x88/0x1ee
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810dbf85>] update_max_tr_single+0x11d/0x12d
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810e2b15>] stop_critical_timing+0x141/0x209
+[ 1257.829021]  [<ffffffff8109569a>] ? trace_hardirqs_on+0xd/0xf
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810e3057>] time_hardirqs_on+0x2a/0x2f
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff8109550c>] trace_hardirqs_on_caller+0x16/0x197
+[ 1257.829021]  [<ffffffff8109569a>] trace_hardirqs_on+0xd/0xf
+[ 1257.829021]  [<ffffffff811002b9>] user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810029b4>] do_notify_resume+0x92/0x97
+[ 1257.829021]  [<ffffffff8154bdca>] int_signal+0x12/0x17
+
+What happened was entering into the user code, the interrupts were enabled
+and a max interrupts off was recorded. The trace buffer was saved along with
+various information about the task: comm, pid, uid, priority, etc.
+
+The uid is recorded with task_uid(tsk). But this is a macro that uses rcu_read_lock()
+to retrieve the data, and this happened to happen where RCU is blind (user_enter).
+
+As only the preempt and irqs off tracers can have this happen, and they both
+only have the tsk == current, if tsk == current, use current_uid() instead of
+task_uid(), as current_uid() does not use RCU as only current can change its uid.
+
+This fixes the RCU suspicious splat.
+
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ kernel/trace/trace.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index b549b0f..6c508ff 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -120,22 +120,22 @@ static void ftrace_ops_no_ops(unsigned long ip, unsigned long parent_ip);
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 4d79485..1a41023 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -843,7 +843,15 @@ __update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
  
- /*
-  * Traverse the ftrace_global_list, invoking all entries.  The reason that we
-- * can use rcu_dereference_raw() is that elements removed from this list
-+ * can use rcu_dereference_raw_notrace() is that elements removed from this list
-  * are simply leaked, so there is no need to interact with a grace-period
-- * mechanism.  The rcu_dereference_raw() calls are needed to handle
-+ * mechanism.  The rcu_dereference_raw_notrace() calls are needed to handle
-  * concurrent insertions into the ftrace_global_list.
-  *
-  * Silly Alpha and silly pointer-speculation compiler optimizations!
-  */
- #define do_for_each_ftrace_op(op, list)			\
--	op = rcu_dereference_raw(list);			\
-+	op = rcu_dereference_raw_notrace(list);			\
- 	do
- 
- /*
-  * Optimized for just a single item in the list (as that is the normal case).
-  */
- #define while_for_each_ftrace_op(op)				\
--	while (likely(op = rcu_dereference_raw((op)->next)) &&	\
-+	while (likely(op = rcu_dereference_raw_notrace((op)->next)) &&	\
- 	       unlikely((op) != &ftrace_list_end))
- 
- static inline void ftrace_ops_init(struct ftrace_ops *ops)
-@@ -779,7 +779,7 @@ ftrace_find_profiled_func(struct ftrace_profile_stat *stat, unsigned long ip)
- 	if (hlist_empty(hhd))
- 		return NULL;
- 
--	hlist_for_each_entry_rcu(rec, hhd, node) {
-+	hlist_for_each_entry_rcu_notrace(rec, hhd, node) {
- 		if (rec->ip == ip)
- 			return rec;
- 	}
-@@ -1165,7 +1165,7 @@ ftrace_lookup_ip(struct ftrace_hash *hash, unsigned long ip)
- 
- 	hhd = &hash->buckets[key];
- 
--	hlist_for_each_entry_rcu(entry, hhd, hlist) {
-+	hlist_for_each_entry_rcu_notrace(entry, hhd, hlist) {
- 		if (entry->ip == ip)
- 			return entry;
- 	}
-@@ -1422,8 +1422,8 @@ ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip)
- 	struct ftrace_hash *notrace_hash;
- 	int ret;
- 
--	filter_hash = rcu_dereference_raw(ops->filter_hash);
--	notrace_hash = rcu_dereference_raw(ops->notrace_hash);
-+	filter_hash = rcu_dereference_raw_notrace(ops->filter_hash);
-+	notrace_hash = rcu_dereference_raw_notrace(ops->notrace_hash);
- 
- 	if ((ftrace_hash_empty(filter_hash) ||
- 	     ftrace_lookup_ip(filter_hash, ip)) &&
-@@ -2920,7 +2920,7 @@ static void function_trace_probe_call(unsigned long ip, unsigned long parent_ip,
- 	 * on the hash. rcu_read_lock is too dangerous here.
- 	 */
- 	preempt_disable_notrace();
--	hlist_for_each_entry_rcu(entry, hhd, node) {
-+	hlist_for_each_entry_rcu_notrace(entry, hhd, node) {
- 		if (entry->ip == ip)
- 			entry->ops->func(ip, parent_ip, &entry->data);
- 	}
+ 	memcpy(max_data->comm, tsk->comm, TASK_COMM_LEN);
+ 	max_data->pid = tsk->pid;
+-	max_data->uid = task_uid(tsk);
++	/*
++	 * If tsk == current, then use current_uid(), as that does not use
++	 * RCU. The irq tracer can be called out of RCU scope.
++	 */
++	if (tsk == current)
++		max_data->uid = current_uid();
++	else
++		max_data->uid = task_uid(tsk);
++
+ 	max_data->nice = tsk->static_prio - 20 - MAX_RT_PRIO;
+ 	max_data->policy = tsk->policy;
+ 	max_data->rt_priority = tsk->rt_priority;
 -- 
 1.7.10.4
 
