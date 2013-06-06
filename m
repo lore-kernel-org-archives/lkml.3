@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab3FFUcJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 16:32:09 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:47956 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753286Ab3FFUcH (ORCPT
+	id S1755122Ab3FFUfX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 16:35:23 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:62858 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754926Ab3FFUfI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 16:32:07 -0400
+	Thu, 6 Jun 2013 16:35:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130606183346.GA13259@bingao-desk1.fm.intel.com>
-References: <20130606183346.GA13259@bingao-desk1.fm.intel.com>
-Date: Thu, 6 Jun 2013 23:32:06 +0300
-Message-ID: <CAHp75VcYgpUVpOnKOzkYoZXbEPO_0QG7=WUXza55wpOyRwcKCA@mail.gmail.com>
-Subject: Re: i2c: introduce i2c helper i2c_find_client_by_name()
+In-Reply-To: <201306062111.06694.heiko@sntech.de>
+References: <201306062107.58875.heiko@sntech.de>
+	<201306062111.06694.heiko@sntech.de>
+Date: Thu, 6 Jun 2013 23:35:07 +0300
+Message-ID: <CAHp75VdTYuXBu0Xu_BKZiBW9afjYprMBtBhSnNYjws-7b6hYmw@mail.gmail.com>
+Subject: Re: [PATCH v2 4/8] mmc: dw_mmc-pltfm: add Rockchip variant
 From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Bin Gao <bin.gao@linux.intel.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 6, 2013 at 9:33 PM, Bin Gao <bin.gao@linux.intel.com> wrote:
-> There is a requirement to get the i2c_client pointer dynamically without
-> knowing the bus and slave address. But we do know the client name,
-> i.e. the name in the i2c_board_info. This patch is to fit this requirement.
+On Thu, Jun 6, 2013 at 10:11 PM, Heiko Stübner <heiko@sntech.de> wrote:
+> Cortex-A9 SoCs from Rockchip use a slightly modified variant of dw_mmc
+> controllers that seems to require the SDMMC_CMD_USE_HOLD_REG bit to
+> always be set.
 >
-> A good example is that an ISP(Imaging Signal Processor) driver needs
-> register i2c camera sensor devices via v4l2, so it has to unregister
-> all i2c clients that were previously registered by calling
-> i2c_register_board_info(), and then re-register. For this case we
-> can use this helper to get i2c_client by passing the client name.
+> There also seem to be no other modifications (additional register etc)
+> present, so to keep the footprint low, add this small variant to the
+> pltfm driver.
 
-Why ISP driver would like to register sensor drivers in the first place?
-That seems the task of platform code, or DT, or ACPI5
-
-Why do you need to re-register them at run time?
+My comments against v1 of this patch are still valid.
 
 --
 With Best Regards,
