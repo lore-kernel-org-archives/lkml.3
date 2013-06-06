@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933074Ab3FFLuk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 07:50:40 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:42587 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932857Ab3FFLrj convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Thu, 6 Jun 2013 07:47:39 -0400
-Message-Id: <51B092F702000078000DBDA8@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Thu, 06 Jun 2013 12:47:35 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: <david.vrabel@citrix.com>, <roger.pau@citrix.com>,
-        "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>
-Subject: Re: [PATCH] xen/blkback: Check for insane amounts of request
- on the ring.
-References: <1370375826-7311-1-git-send-email-konrad.wilk@oracle.com>
- <51AF7A7502000078000DB95C@nat28.tlf.novell.com>
- <20130605173541.GA12812@phenom.dumpdata.com>
-In-Reply-To: <20130605173541.GA12812@phenom.dumpdata.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S933149Ab3FFLuy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 07:50:54 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:41767 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932892Ab3FFLri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 07:47:38 -0400
+From: Robin Holt <holt@sgi.com>
+To: akpm@linux-foundation.org
+Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russ Anderson <rja@sgi.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH -v11 resend 03/11] Remove -stable friendly PF_THREAD_BOUND define
+Date: Thu,  6 Jun 2013 06:47:16 -0500
+Message-Id: <1370519244-49918-4-git-send-email-holt@sgi.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1370519244-49918-1-git-send-email-holt@sgi.com>
+References: <1370519244-49918-1-git-send-email-holt@sgi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 05.06.13 at 19:35, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> @@ -230,6 +231,7 @@ static int xen_blkif_map(struct xen_blkif *blkif, unsigned long shared_page,
->  static void xen_blkif_disconnect(struct xen_blkif *blkif)
->  {
->  	if (blkif->xenblkd) {
-> +		wake_up(&blkif->shutdown_wq);
->  		kthread_stop(blkif->xenblkd);
->  		blkif->xenblkd = NULL;
->  	}
+Remove the prior patch's #define for easier backporting to the stable
+releases.
 
-Btw., wouldn't the wake_up() better be done after the kthread_stop(),
-so that when the corresponding wait_event_interruptible() checks
-whether to exit the terminating kthread_should_stop() is guaranteed
-to evaluate to true (otherwise I think there's potential for it to never
-exit)?
+Signed-off-by: Robin Holt <holt@sgi.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Russ Anderson <rja@sgi.com>
+Cc: Robin Holt <holt@sgi.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: the arch/x86 maintainers <x86@kernel.org>
+Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+---
+ kernel/sys.c | 5 -----
+ 1 file changed, 5 deletions(-)
 
-Jan
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 2bbd9a7..17bb8d3 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -362,11 +362,6 @@ int unregister_reboot_notifier(struct notifier_block *nb)
+ }
+ EXPORT_SYMBOL(unregister_reboot_notifier);
+ 
+-/* Add backwards compatibility for stable trees. */
+-#ifndef PF_NO_SETAFFINITY
+-#define PF_NO_SETAFFINITY		PF_THREAD_BOUND
+-#endif
+-
+ static void migrate_to_reboot_cpu(void)
+ {
+ 	/* The boot cpu is always logical cpu 0 */
+-- 
+1.8.2.1
 
