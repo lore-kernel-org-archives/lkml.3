@@ -1,63 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751254Ab3FFEIR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 00:08:17 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:49811 "EHLO
+	id S1751429Ab3FFEK6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 00:10:58 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:58610 "EHLO
 	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750698Ab3FFEIO (ORCPT
+	with ESMTP id S1750760Ab3FFEKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 00:08:14 -0400
-Message-ID: <1370491691.24311.326.camel@edumazet-glaptop>
-Subject: Re: stop_machine lockup issue in 3.9.y.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ben Greear <greearb@candelatech.com>
-Cc: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Joe Lawrence <joe.lawrence@stratus.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        Jouni Malinen <jouni@qca.qualcomm.com>,
-        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
-        Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Date: Wed, 05 Jun 2013 21:08:11 -0700
-In-Reply-To: <51B00719.20406@candelatech.com>
-References: <51AE27D5.7050202@candelatech.com>
-	   <87sj0xry1k.fsf@rustcorp.com.au> <20130605071539.GA3429@mtj.dyndns.org>
-	   <51AF6E54.3050108@candelatech.com>
-	 <20130605184807.GD10693@mtj.dyndns.org>
-	   <51AF8D4B.4090407@candelatech.com> <51AF91F5.6090801@candelatech.com>
-	   <51AFA677.9010605@candelatech.com>
-	 <20130605211157.GK10693@mtj.dyndns.org>
-	   <1370482492.24311.308.camel@edumazet-glaptop>
-	   <20130606031444.GA12335@mtj.dyndns.org>
-	  <1370489181.24311.318.camel@edumazet-glaptop>
-	  <51B004CD.6080007@candelatech.com>
-	 <1370490403.24311.322.camel@edumazet-glaptop>
-	 <51B00719.20406@candelatech.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 6 Jun 2013 00:10:54 -0400
+Date: Wed, 5 Jun 2013 21:10:51 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] memcg: do not sleep on OOM waitqueue with full charge
+ context
+In-Reply-To: <1370488193-4747-2-git-send-email-hannes@cmpxchg.org>
+Message-ID: <alpine.DEB.2.02.1306052058340.25115@chino.kir.corp.google.com>
+References: <1370488193-4747-1-git-send-email-hannes@cmpxchg.org> <1370488193-4747-2-git-send-email-hannes@cmpxchg.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-05 at 20:50 -0700, Ben Greear wrote:
-> On 06/05/2013 08:46 PM, Eric Dumazet wrote:
-> >
-> > We use in Google a patch triggering warning is a thread holds the cpu
-> > without taking care to need_resched() for more than xx ms
+On Wed, 5 Jun 2013, Johannes Weiner wrote:
+
+> The memcg OOM handling is incredibly fragile because once a memcg goes
+> OOM, one task (kernel or userspace) is responsible for resolving the
+> situation.
+
+Not sure what this means.  Are you referring to the case where the memcg 
+is disabled from oom killing and we're relying on a userspace handler and 
+it may be caught on the waitqueue itself?  Otherwise, are you referring to 
+the task as eventually being the only one that takes the hierarchy oom 
+lock and calls mem_cgroup_out_of_memory()?  I don't think you can make a 
+case for the latter since the one that calls mem_cgroup_out_of_memory() 
+should return and call memcg_wakeup_oom().  We obviously don't want to do 
+any memory allocations in this path.
+
+> Every other task that gets caught trying to charge memory
+> gets stuck in a waitqueue while potentially holding various filesystem
+> and mm locks on which the OOM handling task may now deadlock.
 > 
-> Well, I'm sure that patch works nicely until the clock stops moving
-> forward :)
+
+What locks?  The oom killer quite extensively needs task_lock() but we 
+shouldn't be calling it in the case where we hold this since its a 
+spinlock and mem_cgroup_do_charge() never gets to the point of handling 
+the oom.
+
+Again, are you referring only to a userspace handler here?
+
+> Do two things:
+> 
+> 1. When OOMing in a system call (buffered IO and friends), invoke the
+>    OOM killer but just return -ENOMEM, never sleep.  Userspace should
+>    be able to handle this.
 > 
 
-This is not using jiffies, but the clock used in kernel/sched/core.c,
-with ns resolution ;)
+The sleep should never occur for any significant duration currently, the 
+current implementation ensures one process calls 
+mem_cgroup_out_of_memory() while all others sit on a waitqueue until that 
+process returns from the oom killer and then they all wakeup again so the 
+killed process may exit and all others can retry their allocations now 
+that something has been killed.  If that process hasn't exited yet, the 
+next process that locks the memcg oom hierarchy will see the killed 
+process with TIF_MEMDIE and the oom killer is deferred.  So this sleep is 
+very temporary already, I don't see why you're trying to make it faster 
+while another thread finds a candidate task, it works quite well already.
 
-> I'll post a patch with limit of 10 shortly.
+> 2. When OOMing in a page fault and somebody else is handling the
+>    situation, do not sleep directly in the charging code.  Instead,
+>    remember the OOMing memcg in the task struct and then fully unwind
+>    the page fault stack first before going to sleep.
+> 
 
-ok
+Are you trying to address a situation here where the memcg oom handler 
+takes too long to work?  We've quite extensively tried to improve that, 
+especially by reducing its dependency on tasklist_lock which is contended 
+from the writeside in the exit path and by only iterating processes that 
+are attached to that memcg hierarchy and not all processes on the system 
+like before.  I don't see the issue with scheduling other oom processes 
+while one is doing mem_cgroup_out_of_memory().  (I would if the oom killer 
+required things like mm->mmap_sem, but obviously it doesn't for reasons 
+not related to memcg.)
 
+> While reworking the OOM routine, also remove a needless OOM waitqueue
+> wakeup when invoking the killer.  Only uncharges and limit increases,
+> things that actually change the memory situation, should do wakeups.
+> 
 
+It's not needless at all, it's vitally required!  The oom killed process 
+needs to be removed from the waitqueue and scheduled now with TIF_MEMDIE 
+that the memcg oom killer provided so the allocation succeeds in the page 
+allocator and memcg bypasses the charge so it can exit.
+
+Exactly what problem are you trying to address with this patch?  I don't 
+see any description of the user-visible effects or a specific xample of 
+the scenario you're trying to address here.
