@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932331Ab3FFIDR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 04:03:17 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48537 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932235Ab3FFIDG (ORCPT
+	id S1757356Ab3FFIF2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 04:05:28 -0400
+Received: from 11.mo1.mail-out.ovh.net ([188.165.48.29]:49375 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756827Ab3FFIFX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 04:03:06 -0400
-Date: Thu, 6 Jun 2013 10:03:00 +0200
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        devicetree-discuss@lists.ozlabs.org, Rob Landley <rob@landley.net>,
-        kernel@pengutronix.de
-Subject: Re: [PATCH v3] pwm: add pca9685 driver
-Message-ID: <20130606080300.GG21522@pengutronix.de>
-References: <1369900212-14368-1-git-send-email-s.trumtrar@pengutronix.de>
-MIME-Version: 1.0
+	Thu, 6 Jun 2013 04:05:23 -0400
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369900212-14368-1-git-send-email-s.trumtrar@pengutronix.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:01:44 up 88 days, 17:42, 24 users,  load average: 0.41, 0.44,
- 0.36
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: Re: [PATCH] simplefb: add support for a8b8g8r8 pixel format
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+In-Reply-To: <1370503259-16618-1-git-send-email-acourbot@nvidia.com>
+Date: Thu, 6 Jun 2013 09:59:48 +0200
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Olof Johansson <olof@lixom.net>, <gnurou@gmail.org>,
+        <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <3356BC4D-EEF6-4FCA-9310-5B0727EBF288@jcrosoft.com>
+References: <1370503259-16618-1-git-send-email-acourbot@nvidia.com>
+To: Alexandre Courbot <acourbot@nvidia.com>
+X-Mailer: Apple Mail (2.1503)
+X-Ovh-Tracer-Id: 4718646511133305832
+X-Ovh-Remote: 90.37.12.95 (amarseille-152-1-106-95.w90-37.abo.wanadoo.fr)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 30, 2013 at 09:50:12AM +0200, Steffen Trumtrar wrote:
-> Add pwm driver for the NXP pca9685 16 channel pwm-led controller.
-> 
-> The driver is really barebones at this stage. E.g. the OE' pin and
-> therefore the corresponding registers are not supported.
-> The driver was tested on a HW where this pin is tied to GND.
-> 
-> Signed-off-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+
+On Jun 6, 2013, at 9:20 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 > ---
-> Changes since v2:
-> 	- s/pwm-pca9685-led/pwm-pca9685/g
-> 	- replace DT properties with booleans
-> 	- whitespace/blank line cleanup
-> 	- add "depends on REGMAP_I2C" in Kconfig
-> 	- rework code readability
-> 	- add pwm_ops.free function
-> 	- set SLEEP bit on request/free/remove
+> Documentation/devicetree/bindings/video/simple-framebuffer.txt | 1 +
+> drivers/video/simplefb.c                                       | 1 +
+> 2 files changed, 2 insertions(+)
 > 
-> Changes since v1:
-> 	- fix typo in documentation example
+> diff --git a/Documentation/devicetree/bindings/video/simple-framebuffer.txt b/Documentation/devicetree/bindings/video/simple-framebuffer.txt
+> index 3ea4605..70c26f3 100644
+> --- a/Documentation/devicetree/bindings/video/simple-framebuffer.txt
+> +++ b/Documentation/devicetree/bindings/video/simple-framebuffer.txt
+> @@ -12,6 +12,7 @@ Required properties:
+> - stride: The number of bytes in each line of the framebuffer.
+> - format: The format of the framebuffer surface. Valid values are:
+>   - r5g6b5 (16-bit pixels, d[15:11]=r, d[10:5]=g, d[4:0]=b).
+> +  - a8b8g8r8 (32-bit pixels, d[31:24]=a, d[23:16]=b, d[15:8]=g, d[7:0]=r).
 > 
->  .../devicetree/bindings/pwm/nxp,pca9685-pwm.txt    |  27 ++
->  drivers/pwm/Kconfig                                |   9 +
->  drivers/pwm/Makefile                               |   1 +
->  drivers/pwm/pwm-pca9685.c                          | 291 +++++++++++++++++++++
->  4 files changed, 328 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/pwm/nxp,pca9685-pwm.txt
->  create mode 100644 drivers/pwm/pwm-pca9685.c
+> Example:
+> 
+> diff --git a/drivers/video/simplefb.c b/drivers/video/simplefb.c
+> index e2e9e3e..d7041aa 100644
+> --- a/drivers/video/simplefb.c
+> +++ b/drivers/video/simplefb.c
+> @@ -84,6 +84,7 @@ struct simplefb_format {
+> 
+> static struct simplefb_format simplefb_formats[] = {
+> 	{ "r5g6b5", 16, {11, 5}, {5, 6}, {0, 5}, {0, 0} },
+> +	{ "a8b8g8r8", 32, {0, 8}, {8, 8}, {16, 8}, {31, 8} },
+
+why don't you parse the string?
+
+so you will a real generic bindings
+
+Best Regards,
+J.
+> };
+> 
+> struct simplefb_params {
+> -- 
+> 1.8.3
 > 
 
-Ping ?!
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
