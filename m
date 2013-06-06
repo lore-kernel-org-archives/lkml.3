@@ -1,89 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab3FFQEw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 12:04:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41703 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751728Ab3FFQEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 12:04:50 -0400
-Date: Thu, 6 Jun 2013 18:04:46 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM if PF_NO_MEMCG_OOM
- is set
-Message-ID: <20130606160446.GE24115@dhcp22.suse.cz>
-References: <20130208123854.GB7557@dhcp22.suse.cz>
- <20130208145616.FB78CE24@pobox.sk>
- <20130208152402.GD7557@dhcp22.suse.cz>
- <20130208165805.8908B143@pobox.sk>
- <20130208171012.GH7557@dhcp22.suse.cz>
- <20130208220243.EDEE0825@pobox.sk>
- <20130210150310.GA9504@dhcp22.suse.cz>
- <20130210174619.24F20488@pobox.sk>
- <20130211112240.GC19922@dhcp22.suse.cz>
- <20130222092332.4001E4B6@pobox.sk>
+	id S1752914Ab3FFQFc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 12:05:32 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55922 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752414Ab3FFQFb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 12:05:31 -0400
+Message-ID: <51B0B347.7010807@wwwdotorg.org>
+Date: Thu, 06 Jun 2013 10:05:27 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130222092332.4001E4B6@pobox.sk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: linux-arm-kernel@lists.infradead.org, mturquette@linaro.org,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/4] Override bits for PLLM
+References: <1370515677-6807-1-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1370515677-6807-1-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 06/06/2013 04:47 AM, Peter De Schrijver wrote:
+> PLLM has override bits on Tegra30 and Tegra114. This patchset implements
+> support for them for both Tegra30 and Tegra114.
+> 
+> Changes since v1:
+>  * Remove some stray lines from 'clk: tegra: override bits for Tegra114 PLLM'
 
-I am really sorry it took so long but I was constantly preempted by
-other stuff. I hope I have a good news for you, though. Johannes has
-found a nice way how to overcome deadlock issues from memcg OOM which
-might help you. Would you be willing to test with his patch
-(http://permalink.gmane.org/gmane.linux.kernel.mm/101437). Unlike my
-patch which handles just the i_mutex case his patch solved all possible
-locks.
+Recall that for V1, I said:
 
-I can backport the patch for your kernel (are you still using 3.2 kernel
-or you have moved to a newer one?).
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
-On Fri 22-02-13 09:23:32, azurIt wrote:
-> >Unfortunately I am not able to reproduce this behavior even if I try
-> >to hammer OOM like mad so I am afraid I cannot help you much without
-> >further debugging patches.
-> >I do realize that experimenting in your environment is a problem but I
-> >do not many options left. Please do not use strace and rather collect
-> >/proc/pid/stack instead. It would be also helpful to get group/tasks
-> >file to have a full list of tasks in the group
-> 
-> 
-> 
-> Hi Michal,
-> 
-> 
-> sorry that i didn't response for a while. Today i installed kernel with your two patches and i'm running it now. I'm still having problems with OOM which is not able to handle low memory and is not killing processes. Here is some info:
-> 
-> - data from cgroup 1258 while it was under OOM and no processes were killed (so OOM don't stop and cgroup was freezed)
-> http://watchdog.sk/lkml/memcg-bug-6.tar.gz
-> 
-> I noticed problem about on 8:39 and waited until 8:57 (nothing happend). Then i killed process 19864 which seems to help and other processes probably ends and cgroup started to work. But problem accoured again about 20 seconds later, so i killed all processes at 8:58. The problem is occuring all the time since then. All processes (in that cgroup) are always in state 'D' when it occurs.
-> 
-> 
-> - kernel log from boot until now
-> http://watchdog.sk/lkml/kern3.gz
-> 
-> 
-> Btw, something probably happened also at about 3:09 but i wasn't able to gather any data because my 'load check script' killed all apache processes (load was more than 100).
-> 
-> 
-> 
-> azur
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+(assuming the one comment I already made is fixed)
 
--- 
-Michal Hocko
-SUSE Labs
+(and according to the changelog above, it has been)
