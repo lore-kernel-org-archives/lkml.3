@@ -1,84 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932358Ab3FFKWj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 06:22:39 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:49607 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751102Ab3FFKWh (ORCPT
+	id S932476Ab3FFKYP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 06:24:15 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:7415 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752442Ab3FFKYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 06:22:37 -0400
-Date: Thu, 6 Jun 2013 11:22:33 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Linux EFI <linux-efi@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Jiri Kosina <jkosina@suse.cz>,
-        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH 2/4] x86, cpa: Map in an arbitrary pgd
-Message-ID: <20130606102233.GG30420@console-pimps.org>
-References: <1370177770-26661-1-git-send-email-bp@alien8.de>
- <1370177770-26661-3-git-send-email-bp@alien8.de>
+	Thu, 6 Jun 2013 06:24:12 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 06 Jun 2013 03:22:57 -0700
+Message-ID: <51B06327.5030508@nvidia.com>
+Date: Thu, 6 Jun 2013 19:23:35 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370177770-26661-3-git-send-email-bp@alien8.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Stephen Warren <swarren@wwwdotorg.org>, Joseph Lo <josephl@nvidia.com>,
+        Karan Jhavar <kjhavar@nvidia.com>, Varun Wadekar <vwadekar@nvidia.com>,
+        Chris Johnson <CJohnson@nvidia.com>,
+        Matthew Longnecker <MLongnecker@nvidia.com>,
+        "gnurou@gmail.com" <gnurou@gmail.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: tegra: add basic SecureOS support
+References: <1370503687-17767-1-git-send-email-acourbot@nvidia.com> <20130606093524.GM18614@n2100.arm.linux.org.uk>
+In-Reply-To: <20130606093524.GM18614@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 02 Jun, at 02:56:08PM, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
-> 
-> Add the ability to map pages in an arbitrary pgd.
-> 
-> Signed-off-by: Borislav Petkov <bp@suse.de>
-> ---
->  arch/x86/include/asm/pgtable_types.h |  3 +-
->  arch/x86/mm/pageattr.c               | 80 ++++++++++++++++++++++++++++--------
->  2 files changed, 65 insertions(+), 18 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-> index e6423002c10b..0613e147f083 100644
-> --- a/arch/x86/include/asm/pgtable_types.h
-> +++ b/arch/x86/include/asm/pgtable_types.h
-> @@ -352,7 +352,8 @@ static inline void update_page_count(int level, unsigned long pages) { }
->   */
->  extern pte_t *lookup_address(unsigned long address, unsigned int *level);
->  extern phys_addr_t slow_virt_to_phys(void *__address);
-> -
-> +extern void kernel_map_pages_in_pgd(pgd_t *pgd, unsigned long address,
-> +				    unsigned numpages, unsigned long page_flags);
->  #endif	/* !__ASSEMBLY__ */
->  
->  #endif /* _ASM_X86_PGTABLE_DEFS_H */
-> diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-> index bb32480c2d71..3d64e5fc2adc 100644
-> --- a/arch/x86/mm/pageattr.c
-> +++ b/arch/x86/mm/pageattr.c
-> @@ -30,6 +30,7 @@
->   */
->  struct cpa_data {
->  	unsigned long	*vaddr;
-> +	pgd_t		*pgd;
->  	pgprot_t	mask_set;
->  	pgprot_t	mask_clr;
->  	int		numpages;
+On 06/06/2013 06:35 PM, Russell King - ARM Linux wrote:
+> On Thu, Jun 06, 2013 at 04:28:07PM +0900, Alexandre Courbot wrote:
+>> +static int __attribute__((used)) __tegra_smc_stack[10];
+>> +
+>> +/*
+>> + * With EABI, subtype and arg already end up in r0, r1 and r2 as they are
+>> + * function arguments, but we prefer to play safe here and explicitly move
+>> + * these values into the expected registers anyway. mov instructions without
+>> + * any side-effect are turned into nops by the assembler, which limits
+>> + * overhead.
+>
+> No they aren't.  They will be preserved as:
+> 	mov r0, r0
+> 	mov r1, r1
+> 	mov r2, r2
 
-[...]
+I'm pretty sure I checked with objdump and saw these replaced by nops at 
+some point, but for some reason I cannot get that behavior again. So 
+simply put, my statement is wrong indeed.
 
-> @@ -697,7 +714,10 @@ static int __change_page_attr(struct cpa_data *cpa, int primary)
->  	else
->  		address = *cpa->vaddr;
->  repeat:
-> -	kpte = lookup_address(address, &level);
-> +	if (cpa->pgd)
-> +		kpte = __lookup_address_in_pgd(cpa->pgd, address, &level);
-> +	else
-> +		kpte = _lookup_address_cpa(cpa, address, &level);
+> Moreover, things will go wrong if the compiler decides for whatever reason
+> to move 'arg' into r0 before calling your code sequence.  So really this
+> is quite fragile.
+>
+> There's also no point in mentioning EABI in the above paragraph; all ARM
+> ABIs under Linux have always placed the arguments in r0..r3 and then on
+> the stack.  You can assert that this is always true by using the __asmeq()
+> macro.
 
-Don't you also need to initialise .pgd in __set_pages_p() and
-__set_pages_np()?
+Good to know, thanks.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+> Also...
+>
+>> + */
+>> +static void tegra_generic_smc(u32 type, u32 subtype, u32 arg)
+>> +{
+>> +	asm volatile(
+>> +		".arch_extension	sec\n\t"
+>> +		"ldr	r3, =__tegra_smc_stack\n\t"
+>> +		"stmia	r3, {r4-r12, lr}\n\t"
+>
+> using a statically allocated area to save the registers in this way is
+> probably a bad move; although the hotplug code guarantees that there
+> will be no concurrency between CPU hotplug operations, this sets a
+> precident for it being used in places where no such protection exists.
+
+Indeed. This function will be called from other places in the future, 
+and for these we cannot assume there will be no concurrency.
+
+> What is wrong with stacking r4-r12, lr onto the SVC stack?
+
+Nothing, actually. /o\
+
+> You don't
+> save the SVC stack pointer, so one can only assume that your SMC
+> implmentation preserves this (if it doesn't, that's yet another bug
+> with this assembly code.)
+
+SVC stack pointer is ok AFAICT.
+
+> Combining these two issues, you're probably far better off using an
+> __attribute__((naked)) function for this - which means you get to
+> write the entire function in assembly code without any compiler
+> interference:
+ >
+> static void __attribute__((naked)) tegra_generic_smc(u32 type, u32 subtype, u32 arg)
+> {
+> 	asm volatile(
+> 		".arch_extension	sec\n\t"
+> 		"stmfd	sp!, {r4 - r12, lr}\n\t"
+> 		__asmeq("%0", "r0")
+> 		__asmeq("%1", "r1")
+> 		__asmeq("%2", "r2")
+> 		"mov	r3, #0\n\t"
+> 		"mov	r4, #0\n\t"
+> 		"dsb\n\t"
+> 		"smc	#0\n\t"
+> 		"ldmfd	sp!, {r4 - r12, pc}"
+> 		:
+> 		: "r" (type), "r" (subtype), "r" (arg)
+> 		: "memory");
+> }
+
+Well, that works beautifully indeed, and results in a much smaller 
+function that does nothing more beyond what's needed. On top of that, I 
+feel enlightened.
+
+Thanks, I will resubmit a fixed version soon.
+Alex.
+
