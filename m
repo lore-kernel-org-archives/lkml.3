@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490Ab3FFNaP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 09:30:15 -0400
-Received: from mga02.intel.com ([134.134.136.20]:22976 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751146Ab3FFNaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 09:30:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,815,1363158000"; 
-   d="scan'208";a="349215595"
-From: Alex Shi <alex.shi@intel.com>
-To: akpm@linux-foundation.org
-Cc: sgruszka@redhat.com, fweisbec@gmail.com, alex.shi@intel.com,
-        mingo@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] math64: add div64_ul
-Date: Thu,  6 Jun 2013 21:30:09 +0800
-Message-Id: <1370525409-17123-1-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1757047Ab3FFNaa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 09:30:30 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:37246 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751929Ab3FFNa2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 09:30:28 -0400
+Date: Thu, 6 Jun 2013 14:30:23 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Linux EFI <linux-efi@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Jiri Kosina <jkosina@suse.cz>,
+        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH 2/4] x86, cpa: Map in an arbitrary pgd
+Message-ID: <20130606133023.GJ30420@console-pimps.org>
+References: <1370177770-26661-1-git-send-email-bp@alien8.de>
+ <1370177770-26661-3-git-send-email-bp@alien8.de>
+ <20130606102233.GG30420@console-pimps.org>
+ <20130606132406.GC20972@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130606132406.GC20972@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are div64_long() to handle the s64/long division. But no
-micro do u64/ul division in kernel.
-It is necessary on some scenarios. So add this function.
+On Thu, 06 Jun, at 03:24:06PM, Borislav Petkov wrote:
+> On Thu, Jun 06, 2013 at 11:22:33AM +0100, Matt Fleming wrote:
+> > > @@ -697,7 +714,10 @@ static int __change_page_attr(struct cpa_data *cpa, int primary)
+> > >  	else
+> > >  		address = *cpa->vaddr;
+> > >  repeat:
+> > > -	kpte = lookup_address(address, &level);
+> > > +	if (cpa->pgd)
+> > > +		kpte = __lookup_address_in_pgd(cpa->pgd, address, &level);
+> > > +	else
+> > > +		kpte = _lookup_address_cpa(cpa, address, &level);
+> > 
+> > Don't you also need to initialise .pgd in __set_pages_p() and
+> > __set_pages_np()?
+> 
+> Hmm, I don't think so. The idea is to leave the current functionality in
+> pageattr.c untouched. Currently, it maps PTEs in init_mm.pgd by default
+> because this is the kernel PGD.
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- include/linux/math64.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+I meant because the .pgd member is uninitialised and contains garbage.
 
-diff --git a/include/linux/math64.h b/include/linux/math64.h
-index b8ba855..f0afe9c 100644
---- a/include/linux/math64.h
-+++ b/include/linux/math64.h
-@@ -7,6 +7,7 @@
- #if BITS_PER_LONG == 64
- 
- #define div64_long(x,y) div64_s64((x),(y))
-+#define div64_ul(x,y)   div64_u64((x),(y))
- 
- /**
-  * div_u64_rem - unsigned 64bit divide with 32bit divisor with remainder
-@@ -48,6 +49,7 @@ static inline s64 div64_s64(s64 dividend, s64 divisor)
- #elif BITS_PER_LONG == 32
- 
- #define div64_long(x,y) div_s64((x),(y))
-+#define div64_ul(x,y)   div_u64((x),(y))
- 
- #ifndef div_u64_rem
- static inline u64 div_u64_rem(u64 dividend, u32 divisor, u32 *remainder)
 -- 
-1.7.5.4
-
+Matt Fleming, Intel Open Source Technology Center
