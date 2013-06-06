@@ -1,96 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848Ab3FFPMr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 11:12:47 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:58269 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab3FFPMp (ORCPT
+	id S1752063Ab3FFPN6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 11:13:58 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:42587 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978Ab3FFPN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 11:12:45 -0400
-Message-ID: <51B0A6E8.20909@linaro.org>
-Date: Thu, 06 Jun 2013 17:12:40 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 6 Jun 2013 11:13:57 -0400
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCHv7 01/11] clockevents: Prefer CPU local devices over global
- devices
-References: <1370291642-13259-1-git-send-email-sboyd@codeaurora.org> <1370291642-13259-2-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1370291642-13259-2-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
+	<CAKON4OxDD5orX2w-_+d5kawTGXbE3KKj2QLERo9m7=NiUSXhgQ@mail.gmail.com>
+	<51AFA6DD.3000202@wwwdotorg.org>
+	<CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com>
+	<1370469574.18839.33.camel@localhost>
+	<CAPweEDxMpeJc-w=Yd7d2OT=UisRBp2rxf-MPMDUCOG3EyJz1GQ@mail.gmail.com>
+	<CAKON4OxwyV2f_iTEb5RnP_azc7EsSxPdku_TY5WLWxN7USiY1Q@mail.gmail.com>
+	<CAPweEDw1BabE0cmT5fxZ3Z9p9EH508M3Nzcqk2VcO0oz-qYsvg@mail.gmail.com>
+	<1370475609.20454.44.camel@localhost>
+	<CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
+Date: Thu, 6 Jun 2013 11:13:55 -0400
+Message-ID: <CAKON4OxPDpN3BTc9GWP44exDSkAZGJ5OeCpUP37vRnnvxwUnmw@mail.gmail.com>
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
+ Uploading linux (3.9.4-1))
+From: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
+To: "luke.leighton" <luke.leighton@gmail.com>
+Cc: Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm@lists.debian.org,
+        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
+        debian-kernel@lists.debian.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2013 10:33 PM, Stephen Boyd wrote:
-> On an SMP system with only one global clockevent and a dummy
-> clockevent per CPU we run into problems. We want the dummy
-> clockevents to be registered as the per CPU tick devices, but
-> we can only achieve that if we register the dummy clockevents
-> before the global clockevent or if we artificially inflate the
-> rating of the dummy clockevents to be higher than the rating
-> of the global clockevent. Failure to do so leads to boot
-> hangs when the dummy timers are registered on all other CPUs
-> besides the CPU that accepted the global clockevent as its tick
-> device and there is no broadcast timer to poke the dummy
-> devices.
-> 
-> If we're registering multiple clockevents and one clockevent is
-> global and the other is local to a particular CPU we should
-> choose to use the local clockevent regardless of the rating of
-> the device. This way, if the clockevent is a dummy it will take
-> the tick device duty as long as there isn't a higher rated tick
-> device and any global clockevent will be bumped out into
-> broadcast mode, fixing the problem described above.
+On Wed, Jun 5, 2013 at 7:54 PM, luke.leighton <luke.leighton@gmail.com> wrote:
+>  augh.  ok.  solutions.  what are the solutions here?
 
-It is not clear the connection between the changelog, the patch and the
-comment. Could you clarify a bit ?
+Luke if you really want to fix this a good solution is to have
+Allwinner join Linaro and provide an engineer to the Linaro effort.
+That engineer will get educated on the right way to do kernel
+development and he can pass that knowledge back to Allwinner each day
+as he learns it.
 
-Thanks
-  -- Daniel
+Allwinner has expressed interest in the past in joining Linaro but the
+price was too high. I believe there are cheaper options now for
+joining. The benefits Allwinner receives from joining will far exceed
+the cost of joining. The net result will likely be a reduction in the
+amount they need to spend on in-house development since they will
+learn how to better leverage other developer's work.
 
-
-
-> Reported-by: Mark Rutland <mark.rutland@arm.com>
-> Tested-by: Mark Rutland <mark.rutland@arm.com>
-> Tested-by: Sören Brinkmann <soren.brinkmann@xilinx.com>
-> Acked-by: Marc Zyngier <marc.zyngier@arm.com>,
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  kernel/time/tick-common.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-> index 5d3fb10..3da62de 100644
-> --- a/kernel/time/tick-common.c
-> +++ b/kernel/time/tick-common.c
-> @@ -254,9 +254,10 @@ static int tick_check_new_device(struct clock_event_device *newdev)
->  		    !(newdev->features & CLOCK_EVT_FEAT_ONESHOT))
->  			goto out_bc;
->  		/*
-> -		 * Check the rating
-> +		 * Check the rating, but prefer CPU local devices
->  		 */
-> -		if (curdev->rating >= newdev->rating)
-> +		if (curdev->rating >= newdev->rating &&
-> +		    cpumask_equal(curdev->cpumask, newdev->cpumask))
->  			goto out_bc;
->  	}
->  
-> 
-
-
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+--
+Jon Smirl
+jonsmirl@gmail.com
