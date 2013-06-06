@@ -1,446 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933234Ab3FFLs1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 07:48:27 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:41815 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933077Ab3FFLr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 07:47:57 -0400
-From: Robin Holt <holt@sgi.com>
-To: akpm@linux-foundation.org
-Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, Russ Anderson <rja@sgi.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH -v11 resend 11/11] Move arch/x86 reboot= handling to generic kernel.
-Date: Thu,  6 Jun 2013 06:47:24 -0500
-Message-Id: <1370519244-49918-12-git-send-email-holt@sgi.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1370519244-49918-1-git-send-email-holt@sgi.com>
-References: <1370519244-49918-1-git-send-email-holt@sgi.com>
+	id S933212Ab3FFLsY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 07:48:24 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38231 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933168Ab3FFLr7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 07:47:59 -0400
+Date: Thu, 6 Jun 2013 13:47:46 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Wang YanQing <udknight@gmail.com>, gregkh@linuxfoundation.org,
+        sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] TTY:vt: convert remain take_over_console's users to
+ do_take_over_console
+Message-ID: <20130606114746.GA3659@amd.pavel.ucw.cz>
+References: <20130521051511.GA11435@udknight>
+ <20130604201317.GA16303@amd.pavel.ucw.cz>
+ <20130606012312.GA2001@udknight>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130606012312.GA2001@udknight>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merge together the unicore32, arm, and x86 reboot= command line
-parameter handling.
+On Thu 2013-06-06 09:23:13, Wang YanQing wrote:
+> On Tue, Jun 04, 2013 at 10:13:18PM +0200, Pavel Machek wrote:
+> > On Tue 2013-05-21 13:15:12, Wang YanQing wrote:
+> > > Impact:
+> > > 1:convert all remain take_over_console to do_take_over_console
+> > 
+> > This is step backwards.
+> 
+> What is step backwards? do_take_over_console appear MUCH MUCH later in kernel
+> than take_over_console, do_take_over_console is the new API, I can't understand
+> what is step backwards.
 
-Signed-off-by: Robin Holt <holt@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Cc: Russ Anderson <rja@sgi.com>
-Cc: Robin Holt <holt@sgi.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: the arch/x86 maintainers <x86@kernel.org>
-Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+"do_*" is internal api, "*" is external api. You sprinkle internal api
+all over the place.
 
----
-Changes since -v8
- - Add missing break statements.
+> > > --- a/arch/alpha/kernel/console.c
+> > > +++ b/arch/alpha/kernel/console.c
+> > > @@ -61,7 +61,9 @@ locate_and_init_vga(void *(*sel_func)(void *, void *))
+> > >  
+> > >  	/* Set the VGA hose and init the new console. */
+> > >  	pci_vga_hose = hose;
+> > > -	take_over_console(&vga_con, 0, MAX_NR_CONSOLES-1, 1);
+> > > +	console_lock();
+> > > +	do_take_over_console(&vga_con, 0, MAX_NR_CONSOLES-1, 1);
+> > > +	console_unlock();
+> > >  }
+> > 
+> > Original was better.
+> 
+> Except reduce some console_lock/unlock scatter scattered in kernel, I 
+> can't see the "BETTER", and it is not a BIG problem for the benefit to
+> unify the API.
 
- - Change parsing so #ifdef's are no longer needed.
+You replaced "calling exported function" with "calling
+internal-sounding function and adding locking too".
 
- - Switch to using simple_strtoul to make parsing cleaner.
 
- - Add handling of REBOOT_HARD/SOFT
----
- Documentation/kernel-parameters.txt      |  14 +++-
- arch/arm/kernel/process.c                |  10 ---
- arch/unicore32/kernel/process.c          |  10 ---
- arch/x86/include/asm/emergency-restart.h |  12 ----
- arch/x86/kernel/apic/x2apic_uv_x.c       |   2 +-
- arch/x86/kernel/reboot.c                 | 111 +------------------------------
- include/linux/reboot.h                   |  17 +++++
- kernel/reboot.c                          |  76 ++++++++++++++++++++-
- 8 files changed, 107 insertions(+), 145 deletions(-)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index c3bfacb..b2945ce 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2677,9 +2677,17 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			Run specified binary instead of /init from the ramdisk,
- 			used for early userspace startup. See initrd.
- 
--	reboot=		[BUGS=X86-32,BUGS=ARM,BUGS=IA-64] Rebooting mode
--			Format: <reboot_mode>[,<reboot_mode2>[,...]]
--			See arch/*/kernel/reboot.c or arch/*/kernel/process.c
-+	reboot=		[KNL]
-+			Format (x86 or x86_64):
-+				[w[arm] | c[old] | h[ard] | s[oft] | g[pio]] \
-+				[[,]s[mp]#### \
-+				[[,]b[ios] | a[cpi] | k[bd] | t[riple] | e[fi] | p[ci]] \
-+				[[,]f[orce]
-+			Where reboot_mode is one of warm (soft) or cold (hard) or gpio,
-+			      reboot_type is one of bios, acpi, kbd, triple, efi, or pci,
-+			      reboot_force is either force or not specified,
-+			      reboot_cpu is s[mp]#### with #### being the processor
-+					to be used for rebooting.
- 
- 	relax_domain_level=
- 			[KNL, SMP] Set scheduler's default relax_domain_level.
-diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index 42856fc..304b102 100644
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -175,16 +175,6 @@ void arch_cpu_idle(void)
- 		default_idle();
- }
- 
--enum reboot_mode reboot_mode = REBOOT_HARD;
--
--static int __init reboot_setup(char *str)
--{
--	if ('s' == str[0])
--		reboot_mode = REBOOT_SOFT;
--	return 1;
--}
--__setup("reboot=", reboot_setup);
--
- void machine_shutdown(void)
- {
- #ifdef CONFIG_SMP
-diff --git a/arch/unicore32/kernel/process.c b/arch/unicore32/kernel/process.c
-index 93dd035..778ebba 100644
---- a/arch/unicore32/kernel/process.c
-+++ b/arch/unicore32/kernel/process.c
-@@ -51,16 +51,6 @@ void arch_cpu_idle(void)
- 	local_irq_enable();
- }
- 
--static enum reboot_mode reboot_mode = REBOOT_HARD;
--
--int __init reboot_setup(char *str)
--{
--	if ('s' == str[0])
--		reboot_mode = REBOOT_SOFT;
--	return 1;
--}
--__setup("reboot=", reboot_setup);
--
- void machine_halt(void)
- {
- 	gpio_set_value(GPO_SOFT_OFF, 0);
-diff --git a/arch/x86/include/asm/emergency-restart.h b/arch/x86/include/asm/emergency-restart.h
-index 75ce3f4..77a99ac 100644
---- a/arch/x86/include/asm/emergency-restart.h
-+++ b/arch/x86/include/asm/emergency-restart.h
-@@ -1,18 +1,6 @@
- #ifndef _ASM_X86_EMERGENCY_RESTART_H
- #define _ASM_X86_EMERGENCY_RESTART_H
- 
--enum reboot_type {
--	BOOT_TRIPLE = 't',
--	BOOT_KBD = 'k',
--	BOOT_BIOS = 'b',
--	BOOT_ACPI = 'a',
--	BOOT_EFI = 'e',
--	BOOT_CF9 = 'p',
--	BOOT_CF9_COND = 'q',
--};
--
--extern enum reboot_type reboot_type;
--
- extern void machine_emergency_restart(void);
- 
- #endif /* _ASM_X86_EMERGENCY_RESTART_H */
-diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
-index 794f6eb..958e3e4 100644
---- a/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -25,6 +25,7 @@
- #include <linux/kdebug.h>
- #include <linux/delay.h>
- #include <linux/crash_dump.h>
-+#include <linux/reboot.h>
- 
- #include <asm/uv/uv_mmrs.h>
- #include <asm/uv/uv_hub.h>
-@@ -36,7 +37,6 @@
- #include <asm/ipi.h>
- #include <asm/smp.h>
- #include <asm/x86_init.h>
--#include <asm/emergency-restart.h>
- #include <asm/nmi.h>
- 
- /* BMC sets a bit this MMR non-zero before sending an NMI */
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index f770340..563ed91 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -36,22 +36,6 @@ void (*pm_power_off)(void);
- EXPORT_SYMBOL(pm_power_off);
- 
- static const struct desc_ptr no_idt = {};
--static enum reboot_mode reboot_mode;
--enum reboot_type reboot_type = BOOT_ACPI;
--int reboot_force;
--
--/*
-- * This variable is used privately to keep track of whether or not
-- * reboot_type is still set to its default value (i.e., reboot= hasn't
-- * been set on the command line).  This is needed so that we can
-- * suppress DMI scanning for reboot quirks.  Without it, it's
-- * impossible to override a faulty reboot quirk without recompiling.
-- */
--static int reboot_default = 1;
--
--#ifdef CONFIG_SMP
--static int reboot_cpu = -1;
--#endif
- 
- /*
-  * This is set if we need to go through the 'emergency' path.
-@@ -64,79 +48,6 @@ static int reboot_emergency;
- bool port_cf9_safe = false;
- 
- /*
-- * reboot=b[ios] | s[mp] | t[riple] | k[bd] | e[fi] [, [w]arm | [c]old] | p[ci]
-- * warm   Don't set the cold reboot flag
-- * cold   Set the cold reboot flag
-- * bios   Reboot by jumping through the BIOS
-- * smp    Reboot by executing reset on BSP or other CPU
-- * triple Force a triple fault (init)
-- * kbd    Use the keyboard controller. cold reset (default)
-- * acpi   Use the RESET_REG in the FADT
-- * efi    Use efi reset_system runtime service
-- * pci    Use the so-called "PCI reset register", CF9
-- * force  Avoid anything that could hang.
-- */
--static int __init reboot_setup(char *str)
--{
--	for (;;) {
--		/*
--		 * Having anything passed on the command line via
--		 * reboot= will cause us to disable DMI checking
--		 * below.
--		 */
--		reboot_default = 0;
--
--		switch (*str) {
--		case 'w':
--			reboot_mode = REBOOT_WARM;
--			break;
--
--		case 'c':
--			reboot_mode = REBOOT_COLD;
--			break;
--
--#ifdef CONFIG_SMP
--		case 's':
--			if (isdigit(*(str+1))) {
--				reboot_cpu = (int) (*(str+1) - '0');
--				if (isdigit(*(str+2)))
--					reboot_cpu = reboot_cpu*10 + (int)(*(str+2) - '0');
--			}
--			/*
--			 * We will leave sorting out the final value
--			 * when we are ready to reboot, since we might not
--			 * have detected BSP APIC ID or smp_num_cpu
--			 */
--			break;
--#endif /* CONFIG_SMP */
--
--		case 'b':
--		case 'a':
--		case 'k':
--		case 't':
--		case 'e':
--		case 'p':
--			reboot_type = *str;
--			break;
--
--		case 'f':
--			reboot_force = 1;
--			break;
--		}
--
--		str = strchr(str, ',');
--		if (str)
--			str++;
--		else
--			break;
--	}
--	return 1;
--}
--
--__setup("reboot=", reboot_setup);
--
--
--/*
-  * Reboot options and system auto-detection code provided by
-  * Dell Inc. so their systems "just work". :-)
-  */
-@@ -616,26 +527,10 @@ void native_machine_shutdown(void)
- {
- 	/* Stop the cpus and apics */
- #ifdef CONFIG_SMP
--
--	/* The boot cpu is always logical cpu 0 */
--	int reboot_cpu_id = 0;
--
--	/* See if there has been given a command line override */
--	if ((reboot_cpu != -1) && (reboot_cpu < nr_cpu_ids) &&
--		cpu_online(reboot_cpu))
--		reboot_cpu_id = reboot_cpu;
--
--	/* Make certain the cpu I'm about to reboot on is online */
--	if (!cpu_online(reboot_cpu_id))
--		reboot_cpu_id = smp_processor_id();
--
--	/* Make certain I only run on the appropriate processor */
--	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
--
- 	/*
--	 * O.K Now that I'm on the appropriate processor, stop all of the
--	 * others. Also disable the local irq to not receive the per-cpu
--	 * timer interrupt which may trigger scheduler's load balance.
-+	 * Stop all of the others. Also disable the local irq to
-+	 * not receive the per-cpu timer interrupt which may trigger
-+	 * scheduler's load balance.
- 	 */
- 	local_irq_disable();
- 	stop_other_cpus();
-diff --git a/include/linux/reboot.h b/include/linux/reboot.h
-index 5a5d7f7..8e00f9f 100644
---- a/include/linux/reboot.h
-+++ b/include/linux/reboot.h
-@@ -17,6 +17,23 @@ enum reboot_mode {
- 	REBOOT_SOFT,
- 	REBOOT_GPIO,
- };
-+extern enum reboot_mode reboot_mode;
-+
-+enum reboot_type {
-+	BOOT_TRIPLE = 't',
-+	BOOT_KBD = 'k',
-+	BOOT_BIOS = 'b',
-+	BOOT_ACPI = 'a',
-+	BOOT_EFI = 'e',
-+	BOOT_CF9 = 'p',
-+	BOOT_CF9_COND = 'q',
-+};
-+extern enum reboot_type reboot_type;
-+
-+extern int reboot_default;
-+extern int reboot_cpu;
-+extern int reboot_force;
-+
- 
- extern int register_reboot_notifier(struct notifier_block *);
- extern int unregister_reboot_notifier(struct notifier_block *);
-diff --git a/kernel/reboot.c b/kernel/reboot.c
-index abb6a04..269ed93 100644
---- a/kernel/reboot.c
-+++ b/kernel/reboot.c
-@@ -6,6 +6,7 @@
- 
- #define pr_fmt(fmt)	"reboot: " fmt
- 
-+#include <linux/ctype.h>
- #include <linux/export.h>
- #include <linux/kexec.h>
- #include <linux/kmod.h>
-@@ -24,6 +25,18 @@ int C_A_D = 1;
- struct pid *cad_pid;
- EXPORT_SYMBOL(cad_pid);
- 
-+#if defined(CONFIG_ARM) || defined(CONFIG_UNICORE32)
-+#define DEFAULT_REBOOT_MODE		= REBOOT_HARD
-+#else
-+#define DEFAULT_REBOOT_MODE
-+#endif
-+enum reboot_mode reboot_mode DEFAULT_REBOOT_MODE;
-+
-+int reboot_default;
-+int reboot_cpu;
-+enum reboot_type reboot_type = BOOT_ACPI;
-+int reboot_force;
-+
- /*
-  * If set, this is used for preparing the system to power off.
-  */
-@@ -87,7 +100,7 @@ EXPORT_SYMBOL(unregister_reboot_notifier);
- static void migrate_to_reboot_cpu(void)
- {
- 	/* The boot cpu is always logical cpu 0 */
--	int cpu = 0;
-+	int cpu = reboot_cpu;
- 
- 	cpu_hotplug_disable();
- 
-@@ -343,3 +356,64 @@ int orderly_poweroff(bool force)
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(orderly_poweroff);
-+
-+static int __init reboot_setup(char *str)
-+{
-+	for (;;) {
-+		/*
-+		 * Having anything passed on the command line via
-+		 * reboot= will cause us to disable DMI checking
-+		 * below.
-+		 */
-+		reboot_default = 0;
-+
-+		switch (*str) {
-+		case 'w':
-+			reboot_mode = REBOOT_WARM;
-+			break;
-+
-+		case 'c':
-+			reboot_mode = REBOOT_COLD;
-+			break;
-+
-+		case 'h':
-+			reboot_mode = REBOOT_HARD;
-+			break;
-+
-+		case 's':
-+			if (isdigit(*(str+1)))
-+				reboot_cpu = simple_strtoul(str+1, NULL, 0);
-+			else if (str[1] == 'm' && str[2] == 'p' &&
-+							isdigit(*(str+3)))
-+				reboot_cpu = simple_strtoul(str+3, NULL, 0);
-+			else
-+				reboot_mode = REBOOT_SOFT;
-+			break;
-+
-+		case 'g':
-+			reboot_mode = REBOOT_GPIO;
-+			break;
-+
-+		case 'b':
-+		case 'a':
-+		case 'k':
-+		case 't':
-+		case 'e':
-+		case 'p':
-+			reboot_type = *str;
-+			break;
-+
-+		case 'f':
-+			reboot_force = 1;
-+			break;
-+		}
-+
-+		str = strchr(str, ',');
-+		if (str)
-+			str++;
-+		else
-+			break;
-+	}
-+	return 1;
-+}
-+__setup("reboot=", reboot_setup);
+									Pavel
 -- 
-1.8.2.1
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
