@@ -1,90 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990Ab3FFSlc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 14:41:32 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:50689 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971Ab3FFSlb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 14:41:31 -0400
-Date: Thu, 6 Jun 2013 20:41:29 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Strange intermittent EIO error when writing to stdout since
- v3.8.0
-Message-ID: <20130606184129.GA6854@x4>
-References: <20130606115417.GA520@x4>
- <12790.1370539861@warthog.procyon.org.uk>
+	id S1752160Ab3FFSnK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 14:43:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47643 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750971Ab3FFSnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 14:43:09 -0400
+Message-ID: <51B0D835.3050808@suse.cz>
+Date: Thu, 06 Jun 2013 20:43:01 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <12790.1370539861@warthog.procyon.org.uk>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: Kyle McMartin <kyle@redhat.com>, linux-kbuild@vger.kernel.org,
+        Rob Landley <rob@landley.net>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Kbuild: pass headers to headers_install.sh on stdin
+References: <20130606170557.GQ14762@redacted.bos.redhat.com> <51B0C9E5.7030105@suse.cz> <20130606175529.GT14762@redacted.bos.redhat.com> <CA+5PVA4uNNSXcJHZfoyEmqMsCwK6hC7e2ziSdz5TNXwiiUQ7CQ@mail.gmail.com>
+In-Reply-To: <CA+5PVA4uNNSXcJHZfoyEmqMsCwK6hC7e2ziSdz5TNXwiiUQ7CQ@mail.gmail.com>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013.06.06 at 18:31 +0100, David Howells wrote:
-> Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
+Dne 6.6.2013 19:59, Josh Boyer napsal(a):
+> On Thu, Jun 6, 2013 at 1:55 PM, Kyle McMartin <kyle@redhat.com> wrote:
+>> On Thu, Jun 06, 2013 at 07:41:57PM +0200, Michal Marek wrote:
+>>> Dne 6.6.2013 19:05, Kyle McMartin napsal(a):
+>>>> While using make V=1 to test some things, I noticed on our builders that
+>>>> headers_install was failing because the argument list to /bin/sh was too
+>>>> long. Working around it is slightly kludgy...
+>>>
+>>> This is already fixed with
+>>>
+>>>
+>>> commit c0ff68f1611d6855a06d672989ad5cfea160a4eb
+>>> Author: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+>>> Date:   Mon Apr 29 14:15:51 2013 +0200
+>>>
+>>>     kbuild: fix make headers_install when path is too long
+>>>
+>>>
+>>> in linux-next.
+>>>
+>>
+>> OK, I guess.
 > 
-> > OSError: [Errno 5] Input/output error
-> > 
-> > Basically 'emerge' just writes the build output to stdout in a loop:
-> 
-> I've just upgraded to kernel-3.9.4-200.fc18.x86_64 and I'm now regularly
-> seeing something very similar from the tee run by "fedpkg local" to log its
-> output when building a cross-compiler gcc RPM:
-> 
-> 	tee: standard output: Input/output error
-> 	tee: write error
-> 
-> Slapping strace on tee after the "Input/output error" line has occurred shows
-> that tee is still running and still pushing lines from its stdin to the output
-> named on its command line, but has ceased writing to its stdout.
+> Wait... not OK.  This is broken now.  People are clearly having to fix
+> it again and wasting their time because a fix is already available.
+> Why is a fix for it sitting in linux-next?  Please get that fix into
+> Linus' tree.
 
-tee uses the same loop as portage, but keeps going in case of an EIO:
+This bug has been there for about five years (as far as I can tell, it
+was introduced by 7712401). It is a coincidence that two people report
+it now within a couple of weeks, but IMO this does not make the bug so
+urgent that it can't wait for the next -rc1.
 
-  /* In the array of NFILES + 1 descriptors, make
-     the first one correspond to standard output.   */
-  descriptors[0] = stdout;
-  files[0] = _("standard output");
-  setvbuf (stdout, NULL, _IONBF, 0);
-
-  for (i = 1; i <= nfiles; i++)
-    {
-      descriptors[i] = (STREQ (files[i], "-")
-                        ? stdout
-                        : fopen (files[i], mode_string));
-      if (descriptors[i] == NULL)
-        {
-          error (0, errno, "%s", files[i]);
-          ok = false;
-        }
-      else
-        setvbuf (descriptors[i], NULL, _IONBF, 0);
-    }
-
-  while (1)
-    {
-      bytes_read = read (0, buffer, sizeof buffer);
-      if (bytes_read < 0 && errno == EINTR)
-        continue;
-      if (bytes_read <= 0)
-        break;
-
-      /* Write to all NFILES + 1 descriptors.
-         Standard output is the first one.  */
-      for (i = 0; i <= nfiles; i++)
-        if (descriptors[i]
-            && fwrite (buffer, bytes_read, 1, descriptors[i]) != 1)
-          {
-            error (0, errno, "%s", files[i]);
-            descriptors[i] = NULL;
-            ok = false;
-          }
-    }
-
--- 
-Markus
+Michal
