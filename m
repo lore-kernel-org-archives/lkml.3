@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751396Ab3FFNgO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 09:36:14 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:60373 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750971Ab3FFNgN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 09:36:13 -0400
-Date: Thu, 6 Jun 2013 14:36:09 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Linux EFI <linux-efi@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Jiri Kosina <jkosina@suse.cz>,
-        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH 3/4] x86, efi: Add an efi= kernel command line parameter
-Message-ID: <20130606133609.GK30420@console-pimps.org>
-References: <1370177770-26661-1-git-send-email-bp@alien8.de>
- <1370177770-26661-4-git-send-email-bp@alien8.de>
- <20130606104224.GH30420@console-pimps.org>
- <20130606132603.GD20972@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130606132603.GD20972@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751662Ab3FFNoJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 09:44:09 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:27312 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751078Ab3FFNoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 09:44:07 -0400
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Wolfram Sang <wsa@the-dreams.de>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Jean Delvare <khali@linux-fr.org>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] i2c: designware: fix race between subsequent xfers
+Date: Thu,  6 Jun 2013 15:43:35 +0200
+Message-Id: <1370526216-10060-1-git-send-email-christian.ruppert@abilis.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 06 Jun, at 03:26:03PM, Borislav Petkov wrote:
-> On Thu, Jun 06, 2013 at 11:42:24AM +0100, Matt Fleming wrote:
-> > On Sun, 02 Jun, at 02:56:09PM, Borislav Petkov wrote:
-> > > +
-> > > +static int __init parse_efi_cmdline(char *str)
-> > > +{
-> > > +	if (*str == '=')
-> > > +		str++;
-> > > +	if (!strncmp(str, "1:1_map", 7))
-> > > +		efi_config |= EFI_CFG_MAP11;
-> > > +
-> > > +	return 0;
-> > > +}
-> > > +early_param("efi", parse_efi_cmdline);
-> > 
-> > This is fine for testing, but I genuinely think that this should be on
-> > by default once these patches are final.
-> 
-> This would break the Macs, remember?
-> 
-> We could make it be the default though and flip the logic so that users
-> can fall back to the current ioremap functionality, i.e. boot with
-> "efi=no_1:1_map".
+The designware block is not always properly disabled in the case of
+transfer errors. Interrupts from aborted transfers might be handled
+after the data structures for the following transfer are initialised but
+before the hardware is set up. This might corrupt the data structures to
+the point that the system is stuck in an infinite interrupt loop (where
+FIFOs are never emptied).
+This patch cleanly disables the designware-i2c hardware at the end of
+every transfer, successful or not.
 
-Yeah, or white/blacklist them. We've already had enough of "Oh, your
-machine used to work but now it's bust? Yeah, turn on this cmdline
-parameter to get things working again".
+Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+---
+ drivers/i2c/busses/i2c-designware-core.c |   14 +++++++++++---
+ 1 files changed, 11 insertions(+), 3 deletions(-)
 
-But the point is that the funnies that have been seen on the Macs should
-be treated as the unusual case. The number of machines I've seen that
-require this 1:1 map is staggering, especially once you start poking at
-some of the other runtime services, like UpdateCapsule().
-
+diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+index 6c0e776..65c0c7a 100644
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -588,10 +588,20 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
+ 	ret = wait_for_completion_interruptible_timeout(&dev->cmd_complete, HZ);
+ 	if (ret == 0) {
+ 		dev_err(dev->dev, "controller timed out\n");
++		/* i2c_dw_init implicitly disables the adapter */
+ 		i2c_dw_init(dev);
+ 		ret = -ETIMEDOUT;
+ 		goto done;
+-	} else if (ret < 0)
++	}
++
++	/*
++	 * We must disable the adapter before unlocking the &dev->lock mutex
++	 * below. Otherwise the hardware might continue generating interrupts
++	 * which in turn causes a race condition with the following transfer.
++	 */
++	__i2c_dw_enable(dev, false);
++
++	if (ret < 0)
+ 		goto done;
+ 
+ 	if (dev->msg_err) {
+@@ -601,8 +611,6 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
+ 
+ 	/* no error */
+ 	if (likely(!dev->cmd_err)) {
+-		/* Disable the adapter */
+-		__i2c_dw_enable(dev, false);
+ 		ret = num;
+ 		goto done;
+ 	}
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.7.1
+
