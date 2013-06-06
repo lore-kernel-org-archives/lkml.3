@@ -1,55 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab3FFF3u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 01:29:50 -0400
-Received: from nskntmtas04p.mx.bigpond.com ([61.9.168.146]:45903 "EHLO
-	nskntmtas04p.mx.bigpond.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751670Ab3FFF3t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 01:29:49 -0400
-X-Authority-Analysis: v=2.0 cv=FNSZNpUs c=1 sm=1
- a=tpHzvNDyw14p4wpd1xf5Bw==:17 a=hcL0yXZxyVYA:10 a=aFTPlZ8mLXYA:10
- a=abLpnCq0AAAA:8 a=H5rnqBSDAAAA:8 a=YHs6QXYjAiwA:10 a=VwQbUJbxAAAA:8
- a=-cu4q2W9Il6JQi-XGMgA:9 a=tpHzvNDyw14p4wpd1xf5Bw==:117
-Date: Thu, 6 Jun 2013 15:30:38 +1000
-From: Greg Ungerer <gerg@uclinux.org>
-Message-Id: <201306060530.r565UceA013254@goober.accelcon.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-m68k@vger.kernel.org>,
-        <uclinux-dev@uclinux.org>, <geert@linux-m68k.org>
-Subject: [git pull] m68knommu follow up fixes for 3.10
-To: <torvalds@linux-foundation.org>
-X-Mailer: mail (GNU Mailutils 2.1)
+	id S1753765Ab3FFFci (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 01:32:38 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:43364 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751670Ab3FFFch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 01:32:37 -0400
+From: J Keerthy <j-keerthy@ti.com>
+To: <linux-kernel@vger.kernel.org>, <grant.likely@secretlab.ca>
+CC: <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <swarren@wwwdotorg.org>, <swarren@nvidia.com>,
+        <rob.herring@calxeda.com>, <rob@landley.net>, <sameo@linux.intel.com>,
+        <wim@iguana.be>, <lgirdwood@gmail.com>, <gg@slimlogic.co.uk>,
+        <t-kristo@ti.com>, <lee.jones@linaro.org>,
+        J Keerthy <j-keerthy@ti.com>, Ian Lartey <ian@slimlogic.co.uk>
+Subject: [PATCH v3] mfd: DT bindings for the palmas family MFD
+Date: Thu, 6 Jun 2013 10:57:21 +0530
+Message-ID: <1370496441-24620-1-git-send-email-j-keerthy@ti.com>
+X-Mailer: git-send-email 1.7.5.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Add the various binding files for the palmas family of chips. There is a
+top level MFD binding then a seperate binding for regulators IP blocks on chips.
 
-Can you please pull the m68knommu git tree, for-linus branch.
+Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+Signed-off-by: J Keerthy <j-keerthy@ti.com>
+Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
+Reviewed-by: Stephen Warren <swarren@nvidia.com> 
+---
+ Documentation/devicetree/bindings/mfd/palmas.txt   |   49 +++++++++++++
+ .../devicetree/bindings/regulator/palmas-pmic.txt  |   72 ++++++++++++++++++++
+ 2 files changed, 121 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/palmas.txt
+ create mode 100644 Documentation/devicetree/bindings/regulator/palmas-pmic.txt
 
-It contains only a single fix for compilation breakage to many of the
-ColdFire CPU targets.
-
-Regards
-Greg
-
-
-
-The following changes since commit e4aa937ec75df0eea0bee03bffa3303ad36c986b:
-
-  Linux 3.10-rc3 (2013-05-26 16:00:47 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-linus
-
-for you to fetch changes up to cf6c31fc5c3de225348742c95cc6185fca20a2f2:
-
-  m68k: only use local gpio_request_one if not using GPIOLIB (2013-05-29 16:56:45 +1000)
-
-----------------------------------------------------------------
-Greg Ungerer (1):
-      m68k: only use local gpio_request_one if not using GPIOLIB
-
- arch/m68k/include/asm/gpio.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt b/Documentation/devicetree/bindings/mfd/palmas.txt
+new file mode 100644
+index 0000000..7bcd59c
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/palmas.txt
+@@ -0,0 +1,49 @@
++* palmas device tree bindings
++
++The TI palmas family current members :-
++twl6035 (palmas)
++twl6037 (palmas)
++tps65913 (palmas)
++tps65914 (palmas)
++
++Required properties:
++- compatible : Should be from the list
++  ti,twl6035
++  ti,twl6036
++  ti,twl6037
++  ti,tps65913
++  ti,tps65914
++  ti,tps80036
++and also the generic series names
++  ti,palmas
++- interrupt-controller : palmas has its own internal IRQs
++- #interrupt-cells : should be set to 2 for IRQ number and flags
++  The first cell is the IRQ number.
++  The second cell is the flags, encoded as the trigger masks from
++  Documentation/devicetree/bindings/interrupts.txt
++- interrupt-parent : The parent interrupt controller.
++
++Optional properties:
++  ti,mux-padX : set the pad register X (1-2) to the correct muxing for the
++  		hardware, if not set will use muxing in OTP.
++
++Example:
++
++palmas {
++	compatible = "ti,twl6035", "ti,palmas";
++	reg = <0x48>
++	interrupt-parent = <&intc>;
++	interrupt-controller;
++	#interrupt-cells = <2>;
++
++	ti,mux-pad1 = <0>;
++	ti,mux-pad2 = <0>;
++
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	pmic {
++		compatible = "ti,twl6035-pmic", "ti,palmas-pmic";
++		....
++	};
++}
+diff --git a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+new file mode 100644
+index 0000000..d5a3086
+--- /dev/null
++++ b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+@@ -0,0 +1,72 @@
++* palmas regulator IP block devicetree bindings
++
++Required properties:
++- compatible : Should be from the list
++  ti,twl6035-pmic
++  ti,twl6036-pmic
++  ti,twl6037-pmic
++  ti,tps65913-pmic
++  ti,tps65914-pmic
++and also the generic series names
++  ti,palmas-pmic
++- interrupt-parent : The parent interrupt controller which is palmas.
++- interrupts : The interrupt number and the type which can be looked up here:
++	       arch/arm/boot/dts/include/dt-bindings/interrupt-controller/irq.h
++- interrupts-name: The names of the individual interrupts.
++
++Optional properties:
++- ti,ldo6-vibrator : ldo6 is in vibrator mode
++
++Optional nodes:
++- regulators : Must contain a sub-node per regulator from the list below.
++	       Each sub-node should contain the constraints and initialization
++	       information for that regulator. See regulator.txt for a
++	       description of standard properties for these sub-nodes.
++	       Additional custom properties  are listed below.
++
++	       For ti,palmas-pmic - smps12, smps123, smps3 depending on OTP,
++	       smps45, smps457, smps7 depending on variant, smps6, smps[8-10],
++	       ldo[1-9], ldoln, ldousb.
++
++	       Optional sub-node properties:
++	       ti,warm-reset - maintain voltage during warm reset(boolean)
++	       ti,roof-floor - control voltage selection by pin(boolean)
++	       ti,sleep-mode - mode to adopt in pmic sleep 0 - off, 1 - auto,
++	       2 - eco, 3 - forced pwm
++	       ti,tstep - slope control 0 - Jump, 1 10mV/us, 2 5mV/us, 3 2.5mV/us
++	       ti,smps-range - OTP has the wrong range set for the hardware so override
++	       0 - low range, 1 - high range.
++
++Example:
++
++#include <dt-bindings/interrupt-controller/irq.h>
++
++pmic {
++	compatible = "ti,twl6035-pmic", "ti,palmas-pmic";
++	interrupt-parent = <&palmas>;
++	interrupts = <14 IRQ_TYPE_NONE>;
++	interrupts-name = "short-irq";
++
++	ti,ldo6-vibrator;
++
++	regulators {
++		smps12_reg : smps12 {
++			regulator-name = "smps12";
++			regulator-min-microvolt = < 600000>;
++			regulator-max-microvolt = <1500000>;
++			regulator-always-on;
++			regulator-boot-on;
++			ti,warm-reset;
++			ti,roof-floor;
++			ti,mode-sleep = <0>;
++			ti,tstep = <0>;
++			ti,smps-range = <1>;
++		};
++
++		ldo1_reg: ldo1 {
++			regulator-name = "ldo1";
++			regulator-min-microvolt = <2800000>;
++			regulator-max-microvolt = <2800000>;
++		};
++	};
++};
+-- 
+1.7.5.4
