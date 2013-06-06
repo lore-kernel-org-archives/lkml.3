@@ -1,41 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387Ab3FFJ6A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 05:58:00 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:36817 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753846Ab3FFJ56 (ORCPT
+	id S932311Ab3FFJ7u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 05:59:50 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:48226 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754464Ab3FFJ7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 05:57:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130606095526.GB21181@pd.tnic>
-References: <51AF60D5.3080605@semaphore.gr>
-	<20130605161703.GA29958@pd.tnic>
-	<51AF6E39.2080307@verisign.com>
-	<20130606095526.GB21181@pd.tnic>
-Date: Thu, 6 Jun 2013 15:27:57 +0530
-Message-ID: <CAKohpo=g4Fn-wsgkmujZso_Du3XZHpwSvrFhcbXm72Ne828suw@mail.gmail.com>
-Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of
- target frequency
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Borislav Petkov <bp@suse.de>
-Cc: David C Niemi <dniemi@verisign.com>,
-        Stratos Karafotis <stratosk@semaphore.gr>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 6 Jun 2013 05:59:46 -0400
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org
+Cc: Pawel Moll <pawel.moll@arm.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Achin Gupta <achin.gupta@arm.com>,
+        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jon Medhurst <tixy@linaro.org>
+Subject: [RFC PATCH v3 1/2] drivers: mfd: refactor the vexpress config bridge API
+Date: Thu,  6 Jun 2013 10:59:22 +0100
+Message-Id: <1370512763-32200-2-git-send-email-lorenzo.pieralisi@arm.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <1370512763-32200-1-git-send-email-lorenzo.pieralisi@arm.com>
+References: <1370512763-32200-1-git-send-email-lorenzo.pieralisi@arm.com>
+X-OriginalArrivalTime: 06 Jun 2013 09:59:43.0244 (UTC) FILETIME=[914C4CC0:01CE629C]
+X-MC-Unique: 113060610594409701
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r569xvbH009614
 
-On 6 June 2013 15:25, Borislav Petkov <bp@suse.de> wrote:
-> The correct "fix" for this whole deal is coupling cpufreq with
-> the scheduler, as it has been said so many times before. You need
-> "something" which can tell you whether raising the freq. is worth it or
-> not (i.e. the process is waiting on IO or is executing instructions).
+From: Pawel Moll <pawel.moll@arm.com>
 
-Linaro has got a blueprint in this direction but doesn't have any
-proof of concept or RFC patches to share. But that will happen soon.
+The introduction of Serial Power Controller (SPC) requires the vexpress
+config interface to change slightly since the SPC memory mapped interface
+can be used as configuration bus but also for operating points
+programming and retrieval. The helper that allocates the bridge functions
+requires an additional parameter allowing to request component specific
+functions that need not be initialized through device tree bindings but
+just using simple look-up and statically defined constants.
+
+This patch introduces the necessary changes to the vexpress config layer
+to cater for the new vexpress bridge interface requirements.
+
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Achin Gupta <achin.gupta@arm.com>
+Cc: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>
+Cc: Jon Medhurst <tixy@linaro.org>
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+Acked-by: Nicolas Pitre <nico@linaro.org>
+---
+ drivers/mfd/vexpress-config.c | 61 ++++++----
+ drivers/mfd/vexpress-sysreg.c |  2 +-
+ include/linux/vexpress.h      | 16 ++-
+ 3 files changed, 51 insertions(+), 28 deletions(-)
+
+diff --git a/drivers/mfd/vexpress-config.c b/drivers/mfd/vexpress-config.c
+index 84ce6b9..1af2b0e 100644
+--- a/drivers/mfd/vexpress-config.c
++++ b/drivers/mfd/vexpress-config.c
+@@ -86,29 +86,13 @@ void vexpress_config_bridge_unregister(struct vexpress_config_bridge *bridge)
+ }
+ EXPORT_SYMBOL(vexpress_config_bridge_unregister);
+ 
+-
+-struct vexpress_config_func {
+-	struct vexpress_config_bridge *bridge;
+-	void *func;
+-};
+-
+-struct vexpress_config_func *__vexpress_config_func_get(struct device *dev,
+-		struct device_node *node)
++static struct vexpress_config_bridge *
++		vexpress_config_bridge_find(struct device_node *node)
+ {
+-	struct device_node *bridge_node;
+-	struct vexpress_config_func *func;
+ 	int i;
++	struct vexpress_config_bridge *res = NULL;
++	struct device_node *bridge_node = of_node_get(node);
+ 
+-	if (WARN_ON(dev && node && dev->of_node != node))
+-		return NULL;
+-	if (dev && !node)
+-		node = dev->of_node;
+-
+-	func = kzalloc(sizeof(*func), GFP_KERNEL);
+-	if (!func)
+-		return NULL;
+-
+-	bridge_node = of_node_get(node);
+ 	while (bridge_node) {
+ 		const __be32 *prop = of_get_property(bridge_node,
+ 				"arm,vexpress,config-bridge", NULL);
+@@ -129,13 +113,46 @@ struct vexpress_config_func *__vexpress_config_func_get(struct device *dev,
+ 
+ 		if (test_bit(i, vexpress_config_bridges_map) &&
+ 				bridge->node == bridge_node) {
+-			func->bridge = bridge;
+-			func->func = bridge->info->func_get(dev, node);
++			res = bridge;
+ 			break;
+ 		}
+ 	}
+ 	mutex_unlock(&vexpress_config_bridges_mutex);
+ 
++	return res;
++}
++
++
++struct vexpress_config_func {
++	struct vexpress_config_bridge *bridge;
++	void *func;
++};
++
++struct vexpress_config_func *__vexpress_config_func_get(
++		struct vexpress_config_bridge *bridge,
++		struct device *dev,
++		struct device_node *node,
++		const char *id)
++{
++	struct vexpress_config_func *func;
++
++	if (WARN_ON(dev && node && dev->of_node != node))
++		return NULL;
++	if (dev && !node)
++		node = dev->of_node;
++
++	if (!bridge)
++		bridge = vexpress_config_bridge_find(node);
++	if (!bridge)
++		return NULL;
++
++	func = kzalloc(sizeof(*func), GFP_KERNEL);
++	if (!func)
++		return NULL;
++
++	func->bridge = bridge;
++	func->func = bridge->info->func_get(dev, node, id);
++
+ 	if (!func->func) {
+ 		of_node_put(node);
+ 		kfree(func);
+diff --git a/drivers/mfd/vexpress-sysreg.c b/drivers/mfd/vexpress-sysreg.c
+index 96a020b..d2599aa 100644
+--- a/drivers/mfd/vexpress-sysreg.c
++++ b/drivers/mfd/vexpress-sysreg.c
+@@ -165,7 +165,7 @@ static u32 *vexpress_sysreg_config_data;
+ static int vexpress_sysreg_config_tries;
+ 
+ static void *vexpress_sysreg_config_func_get(struct device *dev,
+-		struct device_node *node)
++		struct device_node *node, const char *id)
+ {
+ 	struct vexpress_sysreg_config_func *config_func;
+ 	u32 site;
+diff --git a/include/linux/vexpress.h b/include/linux/vexpress.h
+index 6e7980d..50368e0 100644
+--- a/include/linux/vexpress.h
++++ b/include/linux/vexpress.h
+@@ -68,7 +68,8 @@
+  */
+ struct vexpress_config_bridge_info {
+ 	const char *name;
+-	void *(*func_get)(struct device *dev, struct device_node *node);
++	void *(*func_get)(struct device *dev, struct device_node *node,
++			  const char *id);
+ 	void (*func_put)(void *func);
+ 	int (*func_exec)(void *func, int offset, bool write, u32 *data);
+ };
+@@ -87,12 +88,17 @@ void vexpress_config_complete(struct vexpress_config_bridge *bridge,
+ 
+ struct vexpress_config_func;
+ 
+-struct vexpress_config_func *__vexpress_config_func_get(struct device *dev,
+-		struct device_node *node);
++struct vexpress_config_func *__vexpress_config_func_get(
++		struct vexpress_config_bridge *bridge,
++		struct device *dev,
++		struct device_node *node,
++		const char *id);
++#define vexpress_config_func_get(bridge, id) \
++		__vexpress_config_func_get(bridge, NULL, NULL, id)
+ #define vexpress_config_func_get_by_dev(dev) \
+-		__vexpress_config_func_get(dev, NULL)
++		__vexpress_config_func_get(NULL, dev, NULL, NULL)
+ #define vexpress_config_func_get_by_node(node) \
+-		__vexpress_config_func_get(NULL, node)
++		__vexpress_config_func_get(NULL, NULL, node, NULL)
+ void vexpress_config_func_put(struct vexpress_config_func *func);
+ 
+ /* Both may sleep! */
+-- 
+1.8.2.2
+
+
