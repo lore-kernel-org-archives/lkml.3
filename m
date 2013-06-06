@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101Ab3FFQYR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 12:24:17 -0400
-Received: from 10.mo5.mail-out.ovh.net ([46.105.52.148]:38480 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751115Ab3FFQYQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 12:24:16 -0400
-Date: Thu, 6 Jun 2013 18:20:11 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Alex Courbot <acourbot@nvidia.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Olof Johansson <olof@lixom.net>, "gnurou@gmail.org" <gnurou@gmail.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH] simplefb: add support for a8b8g8r8 pixel format
-Message-ID: <20130606162011.GV19468@game.jcrosoft.org>
-References: <1370503259-16618-1-git-send-email-acourbot@nvidia.com>
- <3356BC4D-EEF6-4FCA-9310-5B0727EBF288@jcrosoft.com>
- <51B0446A.4090305@nvidia.com>
- <51B0B4A2.4010104@wwwdotorg.org>
+	id S1751968Ab3FFQYg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 12:24:36 -0400
+Received: from linuxdingsda.de ([87.106.20.67]:50727 "EHLO serverteil.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751638Ab3FFQYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 12:24:35 -0400
+Message-ID: <51B0B7B2.7080400@linuxdingsda.de>
+Date: Thu, 06 Jun 2013 18:24:18 +0200
+From: Tobias Winter <tobias@linuxdingsda.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51B0B4A2.4010104@wwwdotorg.org>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 13235516355212258125
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+To: Dave Jones <davej@redhat.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>,
+        Rob Landley <rob@landley.net>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Increase the number of USB to serial devices we can
+ support at once
+References: <20130605175426.GA13461@kroah.com> <20130606150112.GA22984@redhat.com> <20130606152131.GA6935@kroah.com>
+In-Reply-To: <20130606152131.GA6935@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10:11 Thu 06 Jun     , Stephen Warren wrote:
-> On 06/06/2013 02:12 AM, Alex Courbot wrote:
-> > On 06/06/2013 04:59 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> >>
-> >> On Jun 6, 2013, at 9:20 AM, Alexandre Courbot <acourbot@nvidia.com>
-> >> wrote:
-> >>
-> >>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+On 06.06.2013 17:21, Greg KH wrote:
+> On Thu, Jun 06, 2013 at 11:01:12AM -0400, Dave Jones wrote:
+>> On Wed, Jun 05, 2013 at 10:54:26AM -0700, Greg KH wrote:
+>>  > These patches make the USB to serial core have the ability to support up
+>>  > to 3000 devices at once now.  
+>>
+>> I'm curious how this works. What systems have 3000 usb ports ?
+Surely no one thought that a system could have 255 devices of that sort
+~15 years ago. Isn't the idea always to support more that what is possible?
+>> Or are there some kind of multiplexer devices out there ?
+>> (If so, I'd like a link, I could use one of those).
 > 
-> No commit description? It'd be useful to at least justify this by
-> mentioning that some platform will actually use this...
-> 
-> ...
-> >>> static struct simplefb_format simplefb_formats[] = {
-> >>>     { "r5g6b5", 16, {11, 5}, {5, 6}, {0, 5}, {0, 0} },
-> >>> +    { "a8b8g8r8", 32, {0, 8}, {8, 8}, {16, 8}, {31, 8} },
-> >>
-> >> why don't you parse the string?
-> >>
-> >> so you will a real generic bindings
-> > 
-> > Tried that already, got NACKed: https://lkml.org/lkml/2013/5/27/330
-> > 
-> > The list of modes of this driver should not grow too big. Even in terms
-> > of footprint I'd say the list should remain smaller than the parsing code.
-> > 
-> > What we can discuss though is whether we want to keep this a8b8g8r8
-> > syntax or switch to something more standard, say "rgba8888".
-> 
-> I would prefer to keep the syntax of the new formats consistent, so that
-> if we ever do add format-parsing code rather than table-based lookup,
-> all the existing formats will continue to work unchanged, without any
-> kind of fallback lookup table.
+> You don't need a multiplexer, you can have a bunch of different USB root
+> hubs in PCI slots, with USB hubs plugged into them, and lots of
+> multi-port USB devices connected to them.  Tobias has such a system with
+> 272 single-port USB to serial devices connected, so it's not impossible
+> to create.
+Correct. Since you can only have 127 devices on a single USB root-hub,
+the trick is to spread the devices over many root-hubs. Most mainboards
+already come with 3-5 root-hubs on-board and you of course can expand
+that via pci/pcie cards, but be warned, for reasons beyond my
+imagination, the XHCI specification lets the root-hub vendor decice on
+how many devices it can support, so you could end up having XHCI
+root-hubs that support lets say 20 devices.
 
-I do prefer a format-parsing than any long lookup table that take time at boot
-time
+> In thinking about it some more, I'll change that number to 500 for now,
+> as it's a static array within the tty layer, and then work on making
+> that dynamic so we don't have any limitations other than the number of
+> minor numbers for a single major.
+I also thought about it and I'd say 512 devices is about as high as I
+would go in any real-world application, otherwise the fallout of a
+broken system is slowly getting to big, depending on what you do over
+the serial ports. Also 512 is a nice number. ;)
 
-Best Regards,
-J.
+Tobias
+
