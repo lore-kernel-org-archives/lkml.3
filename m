@@ -1,88 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182Ab3FFJhf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 05:37:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51450 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754464Ab3FFJhc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 05:37:32 -0400
-Message-ID: <51B0584F.6080609@redhat.com>
-Date: Thu, 06 Jun 2013 11:37:19 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1752600Ab3FFJif (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 05:38:35 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:25807 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305Ab3FFJid (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 05:38:33 -0400
+X-Spam-Score: -100.8
+Message-ID: <51B05865.30305@asianux.com>
+Date: Thu, 06 Jun 2013 17:37:41 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Jiang Liu <liuj97@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 10/10] zram: use atomic64_xxx() to replace zram_stat64_xxx()
-References: <1370361968-8764-1-git-send-email-jiang.liu@huawei.com> <1370361968-8764-10-git-send-email-jiang.liu@huawei.com> <51AF28C4.3040405@redhat.com> <51AF659F.9080205@gmail.com>
-In-Reply-To: <51AF659F.9080205@gmail.com>
+To: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Linux-Arch <linux-arch@vger.kernel.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v3] arch/*/asm/include/bitops.h: api issue, find_*_bit() defination
+ are different with each other
+References: <51AE8FEF.1020809@asianux.com> <51AE903C.6010806@asianux.com> <51AE909D.9080006@asianux.com> <20130605071915.GK23140@pengutronix.de> <51AF225A.5020703@asianux.com>
+In-Reply-To: <51AF225A.5020703@asianux.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2013 06:21 PM, Jiang Liu wrote:
-> On Wed 05 Jun 2013 08:02:12 PM CST, Jerome Marchand wrote:
->> On 06/04/2013 06:06 PM, Jiang Liu wrote:
->>> Use atomic64_xxx() to replace open-coded zram_stat64_xxx().
->>> Some architectures have native support of atomic64 operations,
->>> so we can get rid of the spin_lock() in zram_stat64_xxx().
->>> On the other hand, for platforms use generic version of atomic64
->>> implement, it may cause an extra save/restore of the interrupt
->>> flag.  So it's a tradeoff.
->>>
->>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->>
->> Before optimizing stats, I'd like to make sure that they're correct.
->> What makes 64 bits fields so different that they need atomicity while
->> 32 bits wouldn't? Actually all of them save compr_size only increase,
->> which would make a race less critical than for 32 bits fields that all
->> can go up and down (if a decrement overwrites a increment, the counter
->> can wrap around zero).
->>
->> Jerome
->>
-> Hi Jerome,
->           I'm not sure about the design decision, but I could give a 
-> guess here.
-> 1) All 32-bit counters are only modified by 
-> zram_bvec_write()/zram_page_free()
-> and is/should be protected by down_write(&zram->lock).
 
-Good point!
+For arm and m68k, they customize find_*_bit(), but the API is different
+with 'generic'.
 
-> 2) __zram_make_request() modifies some 64-bit counters without 
-> protection.
-> 3) zram_bvec_write() modifies some 64-bit counters and it's protected 
-> with
->      down_read(&zram->lock).
+avr32, s390, and unicore32 also customize find_*_bit(), but the API is
+the same with 'generic', and the left architectures all use 'generic'.
 
-I assume you mean down_write().
+So need change arm and m68k related API to match the 'generic', then
+all another modules can face same public API for various architectures.
 
-> 4) It's always safe for sysfs handler to read 32bit counters.
-> 5) It's unsafe for sysfs handler to read 64bit counters on 32bit 
-> platforms.
+Also beautify code and comments to pass "./scripts/checkpatch.pl"
 
-I was unaware of that.
 
-> 
-> So it does work with current design, but very hard to understand.
-> Suggest to use atomic_t for 32bit counters too for maintainability,
-> though may be a little slower.
-> Any suggestion?
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/arm/include/asm/bitops.h  |   26 ++++++++++++++++++--------
+ arch/arm/lib/findbit.S         |   14 ++++++++++----
+ arch/m68k/include/asm/bitops.h |   25 ++++++++++++++-----------
+ 3 files changed, 42 insertions(+), 23 deletions(-)
 
-If atomic counter aren't necessary, no need to use them, but a comment
-in zram_stats definition would be nice. Could you add one in your next
-version of this patch?
-
-Thanks
-Jerome
-
-> Regards!
-> Gerry
-> 
-
+diff --git a/arch/arm/include/asm/bitops.h b/arch/arm/include/asm/bitops.h
+index e691ec9..83e4d3a 100644
+--- a/arch/arm/include/asm/bitops.h
++++ b/arch/arm/include/asm/bitops.h
+@@ -161,18 +161,28 @@ extern int _test_and_change_bit(int nr, volatile unsigned long * p);
+ /*
+  * Little endian assembly bitops.  nr = 0 -> byte 0 bit 0.
+  */
+-extern int _find_first_zero_bit_le(const void * p, unsigned size);
+-extern int _find_next_zero_bit_le(const void * p, int size, int offset);
+-extern int _find_first_bit_le(const unsigned long *p, unsigned size);
+-extern int _find_next_bit_le(const unsigned long *p, int size, int offset);
++extern unsigned long _find_first_zero_bit_le(const void *p,
++						unsigned long size);
++extern unsigned long _find_next_zero_bit_le(const void *p, unsigned long size,
++						unsigned long offset);
++extern unsigned long _find_first_bit_le(const unsigned long *p,
++						unsigned long size);
++extern unsigned long _find_next_bit_le(const unsigned long *p,
++						unsigned long size,
++						unsigned long offset);
+ 
+ /*
+  * Big endian assembly bitops.  nr = 0 -> byte 3 bit 0.
+  */
+-extern int _find_first_zero_bit_be(const void * p, unsigned size);
+-extern int _find_next_zero_bit_be(const void * p, int size, int offset);
+-extern int _find_first_bit_be(const unsigned long *p, unsigned size);
+-extern int _find_next_bit_be(const unsigned long *p, int size, int offset);
++extern unsigned long _find_first_zero_bit_be(const void *p,
++						unsigned long size);
++extern unsigned long _find_next_zero_bit_be(const void *p, unsigned long size,
++						unsigned long offset);
++extern unsigned long _find_first_bit_be(const unsigned long *p,
++						unsigned long size);
++extern unsigned long _find_next_bit_be(const unsigned long *p,
++						unsigned long size,
++						unsigned long offset);
+ 
+ #ifndef CONFIG_SMP
+ /*
+diff --git a/arch/arm/lib/findbit.S b/arch/arm/lib/findbit.S
+index 64f6bc1..817dd70 100644
+--- a/arch/arm/lib/findbit.S
++++ b/arch/arm/lib/findbit.S
+@@ -19,7 +19,8 @@
+ 
+ /*
+  * Purpose  : Find a 'zero' bit
+- * Prototype: int find_first_zero_bit(void *addr, unsigned int maxbit);
++ * Prototype: unsigned long find_first_zero_bit(const void *p,
++ *						unsigned long size);
+  */
+ ENTRY(_find_first_zero_bit_le)
+ 		teq	r1, #0	
+@@ -40,7 +41,9 @@ ENDPROC(_find_first_zero_bit_le)
+ 
+ /*
+  * Purpose  : Find next 'zero' bit
+- * Prototype: int find_next_zero_bit(void *addr, unsigned int maxbit, int offset)
++ * Prototype: unsigned long find_next_zero_bit(const void *p,
++ *						unsigned long size,
++ *						unsigned long offset);
+  */
+ ENTRY(_find_next_zero_bit_le)
+ 		teq	r1, #0
+@@ -60,7 +63,8 @@ ENDPROC(_find_next_zero_bit_le)
+ 
+ /*
+  * Purpose  : Find a 'one' bit
+- * Prototype: int find_first_bit(const unsigned long *addr, unsigned int maxbit);
++ * Prototype: unsigned long find_first_bit(const unsigned long *p,
++ *					unsigned long size);
+  */
+ ENTRY(_find_first_bit_le)
+ 		teq	r1, #0	
+@@ -81,7 +85,9 @@ ENDPROC(_find_first_bit_le)
+ 
+ /*
+  * Purpose  : Find next 'one' bit
+- * Prototype: int find_next_zero_bit(void *addr, unsigned int maxbit, int offset)
++ * Prototype: unsigned long find_next_bit(const unsigned long *p,
++ *					unsigned long size,
++ *					unsigned long offset);
+  */
+ ENTRY(_find_next_bit_le)
+ 		teq	r1, #0
+diff --git a/arch/m68k/include/asm/bitops.h b/arch/m68k/include/asm/bitops.h
+index c6baa91..b1d8752 100644
+--- a/arch/m68k/include/asm/bitops.h
++++ b/arch/m68k/include/asm/bitops.h
+@@ -320,11 +320,11 @@ static inline int bfchg_mem_test_and_change_bit(int nr,
+ #include <asm-generic/bitops/ffz.h>
+ #else
+ 
+-static inline int find_first_zero_bit(const unsigned long *vaddr,
+-				      unsigned size)
++static inline unsigned long find_first_zero_bit(const unsigned long *vaddr,
++				      unsigned long size)
+ {
+ 	const unsigned long *p = vaddr;
+-	int res = 32;
++	unsigned int res = 32;
+ 	unsigned int words;
+ 	unsigned long num;
+ 
+@@ -346,11 +346,12 @@ out:
+ }
+ #define find_first_zero_bit find_first_zero_bit
+ 
+-static inline int find_next_zero_bit(const unsigned long *vaddr, int size,
+-				     int offset)
++static inline unsigned long find_next_zero_bit(const unsigned long *vaddr,
++						unsigned long size,
++						unsigned long offset)
+ {
+ 	const unsigned long *p = vaddr + (offset >> 5);
+-	int bit = offset & 31UL, res;
++	unsigned int bit = offset & 31UL, res;
+ 
+ 	if (offset >= size)
+ 		return size;
+@@ -376,10 +377,11 @@ static inline int find_next_zero_bit(const unsigned long *vaddr, int size,
+ }
+ #define find_next_zero_bit find_next_zero_bit
+ 
+-static inline int find_first_bit(const unsigned long *vaddr, unsigned size)
++static inline unsigned long find_first_bit(const unsigned long *vaddr,
++						unsigned long size)
+ {
+ 	const unsigned long *p = vaddr;
+-	int res = 32;
++	unsigned int res = 32;
+ 	unsigned int words;
+ 	unsigned long num;
+ 
+@@ -401,11 +403,12 @@ out:
+ }
+ #define find_first_bit find_first_bit
+ 
+-static inline int find_next_bit(const unsigned long *vaddr, int size,
+-				int offset)
++static inline unsigned long find_next_bit(const unsigned long *vaddr,
++						unsigned long size,
++						unsigned long offset)
+ {
+ 	const unsigned long *p = vaddr + (offset >> 5);
+-	int bit = offset & 31UL, res;
++	unsigned int bit = offset & 31UL, res;
+ 
+ 	if (offset >= size)
+ 		return size;
+-- 
+1.7.7.6
