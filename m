@@ -1,142 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab3FFVMm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 17:12:42 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4725 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989Ab3FFVMk (ORCPT
+	id S1754931Ab3FFVMu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 17:12:50 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:30557 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754720Ab3FFVMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 17:12:40 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 06 Jun 2013 14:11:55 -0700
-From: Andrew Chew <achew@nvidia.com>
-To: <rklein@nvidia.com>, <cbou@mail.ru>, <dwmw2@infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        <achew@nvidia.com>
-Subject: [PATCH 1/1] tps65090-charger: Fix AC detect
-Date: Thu, 6 Jun 2013 14:12:43 -0700
-Message-ID: <1370553163-31804-1-git-send-email-achew@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
+	Thu, 6 Jun 2013 17:12:46 -0400
+Date: Fri, 7 Jun 2013 00:11:37 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Joe Perches <joe@perches.com>
+Cc: Johannes Schilling <of82ecuq@cip.cs.fau.de>, devel@driverdev.osuosl.org,
+        Kurt Kanzenbach <shifty91@gmail.com>, linux-kernel@i4.cs.fau.de,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Al Cho <acho@novell.com>,
+        Amarjargal Gundjalam <amarjargal16@gmail.com>,
+        Laura Lawniczak <laura.lawniczak@googlemail.com>
+Subject: Re: [PATCH 3/6] keucr: migrate printk to dev_dbg/info/warn/err
+Message-ID: <20130606211137.GC28112@mwanda>
+References: <20130605094517.GS28112@mwanda>
+ <1370535050-7167-1-git-send-email-of82ecuq@cip.cs.fau.de>
+ <1370535050-7167-4-git-send-email-of82ecuq@cip.cs.fau.de>
+ <1370541200.2209.6.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370541200.2209.6.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The VACG interrupt was not being enabled.  Thus, interrupts were never
-generated when AC status changes.  In addition, interrupts were never
-cleared after taking and processing the interrupt.
+On Thu, Jun 06, 2013 at 10:53:20AM -0700, Joe Perches wrote:
+> On Thu, 2013-06-06 at 18:10 +0200, Johannes Schilling wrote:
+> > From: Laura Lawniczak <laura.lawniczak@googlemail.com>
+> []
+> > diff --git a/drivers/staging/keucr/init.c b/drivers/staging/keucr/init.c
+> []
+> > @@ -19,13 +19,13 @@ int ENE_InitMedia(struct us_data *us)
+> []
+> > -	printk(KERN_INFO "MiscReg03 = %x\n", MiscReg03);
+> > +	dev_info(&us->pusb_dev->dev, "MiscReg03 = %x\n", MiscReg03);
+> 
+> I suggest adding a few convenience macros to make
+> this a bit shorter and more likely to fit on a single
+> line without exceeding 80 cols.
+> 
+> Adding something like:
+> 
+> #define us_<level>(us, fmt, ...)				\
+> 	dev_<level>(&us->pusb_dev->dev, fmt, ##__VA_ARGS__)
+> 
+> so these uses become
+> 
+> 	us_info(us, "MiscReg03\n", MiscReg03);
+> 
+> which is shorter and more readable.
+> 
 
-Added the register offset for the INTR_MASK register, since this is needed
-to unmask the VACG interrupt.
+Wait what?  That's not a readable example.  Why are we passing the
+MiscReg03 variable when there is no %d in the string?
 
-Enabled the VACG interrupt in tps65090_config_charger().
+You're a big fan of custom printk macros but it's better if people
+can stick the to the normal ones if possible.  In this case, just
+using a local variable is enough:
 
-Cleared interrupts after processing, in tps65090_charger_isr().
 
-Also removed unused variable "enable" in tps65090_enable_charging(),
-and fixed a typo in one of the dev_err() prints.
+	dev_dbg(us_dev, "scsi cmd %X --- SCSIOP_ALLOW_MEDIUM_REMOVAL\n", cmd);
 
-Signed-off-by: Andrew Chew <achew@nvidia.com>
----
- drivers/power/tps65090-charger.c | 35 ++++++++++++++++++++++++++++++-----
- 1 file changed, 30 insertions(+), 5 deletions(-)
+79 characters.
 
-diff --git a/drivers/power/tps65090-charger.c b/drivers/power/tps65090-charger.c
-index 9fbca31..a09f8c4 100644
---- a/drivers/power/tps65090-charger.c
-+++ b/drivers/power/tps65090-charger.c
-@@ -27,6 +27,7 @@
- #include <linux/mfd/tps65090.h>
- 
- #define TPS65090_REG_INTR_STS	0x00
-+#define TPS65090_REG_INTR_MASK	0x02
- #define TPS65090_REG_CG_CTRL0	0x04
- #define TPS65090_REG_CG_CTRL1	0x05
- #define TPS65090_REG_CG_CTRL2	0x06
-@@ -67,8 +68,7 @@ static int tps65090_low_chrg_current(struct tps65090_charger *charger)
- 	return 0;
- }
- 
--static int tps65090_enable_charging(struct tps65090_charger *charger,
--	uint8_t enable)
-+static int tps65090_enable_charging(struct tps65090_charger *charger)
- {
- 	int ret;
- 	uint8_t ctrl0 = 0;
-@@ -84,7 +84,7 @@ static int tps65090_enable_charging(struct tps65090_charger *charger,
- 	ret = tps65090_write(charger->dev->parent, TPS65090_REG_CG_CTRL0,
- 				(ctrl0 | TPS65090_CHARGER_ENABLE));
- 	if (ret < 0) {
--		dev_err(charger->dev, "%s(): error reading in register 0x%x\n",
-+		dev_err(charger->dev, "%s(): error writing in register 0x%x\n",
- 				__func__, TPS65090_REG_CG_CTRL0);
- 		return ret;
- 	}
-@@ -93,6 +93,7 @@ static int tps65090_enable_charging(struct tps65090_charger *charger,
- 
- static int tps65090_config_charger(struct tps65090_charger *charger)
- {
-+	uint8_t intrmask = 0;
- 	int ret;
- 
- 	if (charger->pdata->enable_low_current_chrg) {
-@@ -104,6 +105,23 @@ static int tps65090_config_charger(struct tps65090_charger *charger)
- 		}
- 	}
- 
-+	/* Enable the VACG interrupt for AC power detect */
-+	ret = tps65090_read(charger->dev->parent, TPS65090_REG_INTR_MASK,
-+			    &intrmask);
-+	if (ret < 0) {
-+		dev_err(charger->dev, "%s(): error reading in register 0x%x\n",
-+			__func__, TPS65090_REG_INTR_MASK);
-+		return ret;
-+	}
-+
-+	ret = tps65090_write(charger->dev->parent, TPS65090_REG_INTR_MASK,
-+			     (intrmask | TPS65090_VACG));
-+	if (ret < 0) {
-+		dev_err(charger->dev, "%s(): error writing in register 0x%x\n",
-+			__func__, TPS65090_REG_CG_CTRL0);
-+		return ret;
-+	}
-+
- 	return 0;
- }
- 
-@@ -146,7 +164,7 @@ static irqreturn_t tps65090_charger_isr(int irq, void *dev_id)
- 	}
- 
- 	if (intrsts & TPS65090_VACG) {
--		ret = tps65090_enable_charging(charger, 1);
-+		ret = tps65090_enable_charging(charger);
- 		if (ret < 0)
- 			return IRQ_HANDLED;
- 		charger->ac_online = 1;
-@@ -154,6 +172,13 @@ static irqreturn_t tps65090_charger_isr(int irq, void *dev_id)
- 		charger->ac_online = 0;
- 	}
- 
-+	/* Clear interrupts. */
-+	ret = tps65090_write(charger->dev->parent, TPS65090_REG_INTR_STS, 0x00);
-+	if (ret < 0) {
-+		dev_err(charger->dev, "%s(): Error in writing reg 0x%x\n",
-+				__func__, TPS65090_REG_INTR_STS);
-+	}
-+
- 	if (charger->prev_ac_online != charger->ac_online)
- 		power_supply_changed(&charger->ac);
- 
-@@ -270,7 +295,7 @@ static int tps65090_charger_probe(struct platform_device *pdev)
- 	}
- 
- 	if (status1 != 0) {
--		ret = tps65090_enable_charging(cdata, 1);
-+		ret = tps65090_enable_charging(cdata);
- 		if (ret < 0) {
- 			dev_err(cdata->dev, "error enabling charger\n");
- 			goto fail_free_irq;
--- 
-1.8.1.5
+Anyway this could fixed in a later patch.
 
+regards,
+dan carpenter
