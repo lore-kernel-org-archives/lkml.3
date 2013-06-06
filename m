@@ -1,104 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab3FFEkt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 00:40:49 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:64048 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347Ab3FFEkr (ORCPT
+	id S1752786Ab3FFEnK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 00:43:10 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:34124 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347Ab3FFEnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 00:40:47 -0400
-X-Originating-IP: 108.223.40.66
-Date: Wed, 5 Jun 2013 21:41:29 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: anish singh <anish198519851985@gmail.com>
-Cc: randy.dunlap@oracle.com,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        linux-kernel-mail <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [RFC]Watchdog:core: constant pinging until userspace
- timesout when delay very less
-Message-ID: <20130606044129.GA1655@roeck-us.net>
-References: <1370167987-14252-1-git-send-email-anish198519851985@gmail.com>
- <20130603152725.GA2644@roeck-us.net>
- <CAK7N6vrO4yFmEDotNnneG8EFgYOND9_iOXV5LnTPdCW0CMO10A@mail.gmail.com>
- <20130603222514.GA9082@roeck-us.net>
- <CAK7N6vpZB-bYohKFAjS55GVZO0MP8bHrLwBEja7EpqOXeqSW3g@mail.gmail.com>
- <CAK7N6vp4e6ZFyM3vwGmL3_GUYzzC-vapb4NCtgw9EsRtsRrGjQ@mail.gmail.com>
- <CAK7N6vp_ZDa4aB63-KbY3sUvhxUztt_cGM-0G+=ohkWN8cAAuA@mail.gmail.com>
+	Thu, 6 Jun 2013 00:43:07 -0400
+Date: Wed, 5 Jun 2013 21:43:04 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/2] arch: invoke oom-killer from page fault
+In-Reply-To: <20130606043620.GA9406@cmpxchg.org>
+Message-ID: <alpine.DEB.2.02.1306052142490.27104@chino.kir.corp.google.com>
+References: <1370488193-4747-1-git-send-email-hannes@cmpxchg.org> <alpine.DEB.2.02.1306052053360.25115@chino.kir.corp.google.com> <20130606043620.GA9406@cmpxchg.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK7N6vp_ZDa4aB63-KbY3sUvhxUztt_cGM-0G+=ohkWN8cAAuA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 08:30:01AM +0530, anish singh wrote:
-> Hello Wim Van,
-> Can you look into below?
-> 
-Please be patient. Wim tends to be busy.
+On Thu, 6 Jun 2013, Johannes Weiner wrote:
 
-Guenter
-
-> On Wed, Jun 5, 2013 at 8:39 AM, anish singh <anish198519851985@gmail.com> wrote:
-> > Hello Wim Van Sabroeck,
-> > Can I get your inputs on this?
-> >
-> > On Tue, Jun 4, 2013 at 8:39 AM, anish singh <anish198519851985@gmail.com> wrote:
-> >> On Tue, Jun 4, 2013 at 3:55 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> >>> On Mon, Jun 03, 2013 at 10:23:04PM +0530, anish singh wrote:
-> >>>> On Mon, Jun 3, 2013 at 8:57 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> >>>> > On Sun, Jun 02, 2013 at 03:43:07PM +0530, anish kumar wrote:
-> >>>> >> Certain watchdog drivers use a timer to keep kicking the watchdog at
-> >>>> >> a rate of 0.5s (HZ/2) untill userspace times out.They do this as
-> >>>> >> we can't guarantee that watchdog will be pinged fast enough
-> >>>> >> for all system loads, especially if timeout is configured for
-> >>>> >> less than or equal to 1 second(basically small values).
-> >>>> >>
-> >>>> >> As suggested by Wim Van Sebroeck & Guenter Roeck we should
-> >>>> >> add this functionality of individual watchdog drivers in the core
-> >>>> >> watchdog core.
-> >>>> >>
-> >>>> >> Signed-off-by: anish kumar <anish198519851985@gmail.com>
-> >>>> >
-> >>>> > Not exactly what I had in mind. My idea was to enable the softdog only if
-> >>>> > the hardware watchdog's maximum timeout was low (say, less than a couple
-> >>>> > of minutes), and if a timeout larger than its maximum value was configured.
-> >>>>
-> >>>> watchdog_timeout_invalid wouldn't this check will fail if the user space tries
-> >>>> to set maximum timeout more that what driver can support?It would work
-> >>>> for pika_wdt.c as it is old watchdog driver and doesn't register with watchdog
-> >>>> framwork but new drivers has to pass this api.
-> >>>>
-> >>>> OR
-> >>>>
-> >>>> Do you want to remove this check and go as explained by you?I would
-> >>>> favour this approach though.
-> >>>>
-> >>> One would still have a check, but the enforced limits would no longer be
-> >>> the driver limits, but larger limits implemented in the watchdog core.
-> >> How much larger would be the big question here?Should it be configurable
-> >> property(sysfs?) or some hardcoding based on existing drivers?
-> >>
-> >> Before going for next patch, it would be better for me to wait for some
-> >> more comments.
-> >>>
-> >>>> > In that case, I would have set the hardware watchdog to its maximum value
-> >>>> > and use the softdog to ping it at a rate of, say, 50% of this maximum.
-> >>>> >
-> >>>> > If userspace would not ping the watchdog within its configured value,
-> >>>> > I would stop pinging the hardware watchdog and let it time out.
-> >>>>
-> >>>> One more question.Why is the return value of watchdog_ping int? Anyway
-> >>>> we discard it.
-> >>>
-> >>> I can not answer that question.
-> >>>
-> >>> Guenter
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Subject: [patch] mm: invoke oom-killer from remaining unconverted page fault
+>  handlers
 > 
+> A few remaining architectures directly kill the page faulting task in
+> an out of memory situation.  This is usually not a good idea since
+> that task might not even use a significant amount of memory and so may
+> not be the optimal victim to resolve the situation.
+> 
+> Since '1c0fe6e mm: invoke oom-killer from page fault' (2.6.29) there
+> is a hook that architecture page fault handlers are supposed to call
+> to invoke the OOM killer and let it pick the right task to kill.
+> Convert the remaining architectures over to this hook.
+> 
+> To have the previous behavior of simply taking out the faulting task
+> the vm.oom_kill_allocating_task sysctl can be set to 1.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+
+Acked-by: David Rientjes <rientjes@google.com>
