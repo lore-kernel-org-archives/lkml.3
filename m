@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823Ab3FFHRD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 03:17:03 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:24595 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421Ab3FFHRA (ORCPT
+	id S1754594Ab3FFHV2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 03:21:28 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4395 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190Ab3FFHV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 03:17:00 -0400
-Message-ID: <51B037FE.2020402@oracle.com>
-Date: Thu, 06 Jun 2013 15:19:26 +0800
-From: vaughan <vaughan.cao@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Thu, 6 Jun 2013 03:21:27 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 06 Jun 2013 00:20:23 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Olof Johansson <olof@lixom.net>
+CC: <gnurou@gmail.org>, <linux-kernel@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH] simplefb: add support for a8b8g8r8 pixel format
+Date: Thu, 6 Jun 2013 16:20:59 +0900
+Message-ID: <1370503259-16618-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.8.3
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>
-CC: dgilbert@interlog.com, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sg: atomize check and set sdp->exclude in sg_open
-References: <51AF0269.9070900@oracle.com> <20130605132746.GA1690@logfs.org> <51AF646D.7030903@oracle.com> <20130605154106.GA2737@logfs.org>
-In-Reply-To: <20130605154106.GA2737@logfs.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年06月05日 23:41, Jörn Engel 写道:
-> On Thu, 6 June 2013 00:16:45 +0800, vaughan wrote:
->> 于 2013年06月05日 21:27, Jörn Engel 写道:
->>> On Wed, 5 June 2013 17:18:33 +0800, vaughan wrote:
->>>>
->>>> Check and set sdp->exclude should be atomic when set in sg_open().
->>>
->>> The patch is line-wrapped.  More importantly, it doesn't seem to do
->> It's shorter than the original line, so I just leave it like this...
->
-> Sure.  What I meant by line-wrapped is that your mailer mangled the
-> patch.  Those two lines should have been one:
->>>> -                       ((!sfds_list_empty(sdp) || get_exclude(sdp))
->>>> ? 0 : set_exclude(sdp, 1)));
->
->>> what your description indicates it should do.  And lastly, does this
->>> fix a bug, possibly even one you have a testcase for, or was it found
->>> by code inspection?
->> I found it by code inspection. A race condition may happen with the
->> old code if two threads are both trying to open the same sg with
->> O_EXCL simultaneously. It's possible that they both find fsds list
->> is empty and get_exclude(sdp) returns 0, then they both call
->> set_exclude() and break out from wait_event_interruptible and resume
->> open. So it's necessary to check again with sg_open_exclusive_lock
->> held to ensure only one can set sdp->exclude and return >0 to break
->> out from wait_event loop.
->
-> Makes sense.  And reading the code again, I have to wonder what monkey
-> came up with the get_exclude/set_exclude functions.
->
-> Can I sucker you into a slightly larger cleanup?  I think the entire
-> "get_exclude(sdp)) ? 0 : set_exclude(sdp, 1)" should be simplified.
-> And once you add the try_set_exclude(), set_exclude will only ever do
-> clear_exclude, so you might as well rename and simplify that as well.
-I find my patch is not enough to avoid this race condition said above. 
-Since sg_add_sfp() just do an add_to_list without check and wait_event 
-check don't set a sign to announce a future add_to_list is on going, the 
-time window between wait_event and sg_add_sfp gives others to open sg 
-before the prechecked sg_add_sfp() called.
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+ Documentation/devicetree/bindings/video/simple-framebuffer.txt | 1 +
+ drivers/video/simplefb.c                                       | 1 +
+ 2 files changed, 2 insertions(+)
 
-The same case also happens when one shared and one exclude open occur 
-simultaneously. If the shared open pass the precheck stage and ready to 
-sg_add_sfp(). At this time another exclude open will also pass the check:
-   ((!sfds_list_empty(sdp) || get_exclude(sdp)) ? 0 : 
-try_set_exclude(sdp)));
-Then, both open can succeed.
+diff --git a/Documentation/devicetree/bindings/video/simple-framebuffer.txt b/Documentation/devicetree/bindings/video/simple-framebuffer.txt
+index 3ea4605..70c26f3 100644
+--- a/Documentation/devicetree/bindings/video/simple-framebuffer.txt
++++ b/Documentation/devicetree/bindings/video/simple-framebuffer.txt
+@@ -12,6 +12,7 @@ Required properties:
+ - stride: The number of bytes in each line of the framebuffer.
+ - format: The format of the framebuffer surface. Valid values are:
+   - r5g6b5 (16-bit pixels, d[15:11]=r, d[10:5]=g, d[4:0]=b).
++  - a8b8g8r8 (32-bit pixels, d[31:24]=a, d[23:16]=b, d[15:8]=g, d[7:0]=r).
+ 
+ Example:
+ 
+diff --git a/drivers/video/simplefb.c b/drivers/video/simplefb.c
+index e2e9e3e..d7041aa 100644
+--- a/drivers/video/simplefb.c
++++ b/drivers/video/simplefb.c
+@@ -84,6 +84,7 @@ struct simplefb_format {
+ 
+ static struct simplefb_format simplefb_formats[] = {
+ 	{ "r5g6b5", 16, {11, 5}, {5, 6}, {0, 5}, {0, 0} },
++	{ "a8b8g8r8", 32, {0, 8}, {8, 8}, {16, 8}, {31, 8} },
+ };
+ 
+ struct simplefb_params {
+-- 
+1.8.3
 
-I think the point is we separate the check&add routine and haven't set 
-an sign to let others wait until the whole actions complete. I suppose 
-we may change the steps a bit to avoid trouble like this. If we can 
-malloc&initialize sfp at first, and then check&add sfp under the 
-protection of sg_index_lock, everything seems to be quite simple.
-
-
-Regards,
-Vaughan
-
->
-> Let no good deed go unpunished.
->
-> Jörn
->
-> --
-> It's just what we asked for, but not what we want!
-> -- anonymous
->
