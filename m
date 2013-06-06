@@ -1,64 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991Ab3FFFmS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 01:42:18 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:55645 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752773Ab3FFFls (ORCPT
+	id S1754149Ab3FFFmb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 01:42:31 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:51340 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754083Ab3FFFm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 01:41:48 -0400
-From: Matt Porter <matt.porter@linaro.org>
-To: Christian Daudt <csd@broadcom.com>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: [PATCH 1/2] ARM: dts: bcm281xx: use #include for device tree files
-Date: Thu,  6 Jun 2013 01:41:34 -0400
-Message-Id: <1370497295-12682-2-git-send-email-matt.porter@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370497295-12682-1-git-send-email-matt.porter@linaro.org>
-References: <1370497295-12682-1-git-send-email-matt.porter@linaro.org>
+	Thu, 6 Jun 2013 01:42:29 -0400
+Subject: Re: [PATCH] Modify UEFI anti-bricking code
+From: joeyli <jlee@suse.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        "Fleming, Matt" <matt.fleming@intel.com>, "rja@sgi.com" <rja@sgi.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "bp@alien8.de" <bp@alien8.de>, "jkosina@suse.cz" <jkosina@suse.cz>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "oneukum@suse.de" <oneukum@suse.de>
+In-Reply-To: <1370495110.6523.35.camel@linux-s257.site>
+References: <1370117180-1712-1-git-send-email-matthew.garrett@nebula.com>
+	 <1370276021.30695.4.camel@linux-s257.site>
+	 <1370277079.6315.14.camel@x230.lan>
+	 <1370316933.30695.7.camel@linux-s257.site>
+	 <CAL01qptzxe5L6Vq+nBZLq+bQNxbe_i_2OdKMNJGZQDfMihaHOw@mail.gmail.com>
+	 <1370444007.6315.32.camel@x230.lan>
+	 <20130605155904.GC30420@console-pimps.org>
+	 <1370495110.6523.35.camel@linux-s257.site>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 06 Jun 2013 13:41:06 +0800
+Message-ID: <1370497266.6523.39.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace /include/ by #include for bcm281xx device tree
-files, enabling use of the C preprocessor.
+於 四，2013-06-06 於 13:05 +0800，joeyli 提到：
+> 於 三，2013-06-05 於 16:59 +0100，Matt Fleming 提到：
+> > On Wed, 05 Jun, at 02:53:27PM, Matthew Garrett wrote:
+> > > On Wed, 2013-06-05 at 15:49 +0100, Fleming, Matt wrote:
+> > > 
+> > > > Folks, what do you want me to do with this? Merge it with Matthew's patch?
+> > > 
+> > > Do that and add Joey's signed-off-by?
+> > 
+> > Right, this is what I've got queued up.
+> > 
+> > ---
+> > 
+> > >From 380dcc12ba82f4e10feb6a72207b2e4771d16d8d Mon Sep 17 00:00:00 2001
+> > From: Matthew Garrett <matthew.garrett@nebula.com>
+> > Date: Sat, 1 Jun 2013 16:06:20 -0400
+> > Subject: [PATCH] Modify UEFI anti-bricking code
+> > 
+> > This patch reworks the UEFI anti-bricking code, including an effective
+> > reversion of cc5a080c and 31ff2f20. It turns out that calling
+> > QueryVariableInfo() from boot services results in some firmware
+> > implementations jumping to physical addresses even after entering virtual
+> > mode, so until we have 1:1 mappings for UEFI runtime space this isn't
+> > going to work so well.
+> [...]
+> 
+> The follow diff change is base on 380dcc12 patch queued in efi git tree,
+> it included Matthew and hpa's suggestions. I fix the attributes of DUMMY
+> object to NV/BS/RT and introduced a #define of the minimum reserve flash
+> space.
+> 
+> This change works to me on OVMF.
+> 
+> 
+> 
+> Thanks a lot!
+> Joey Lee
+> 
 
-Signed-off-by: Matt Porter <matt.porter@linaro.org>
----
- arch/arm/boot/dts/bcm11351-brt.dts |    2 +-
- arch/arm/boot/dts/bcm11351.dtsi    |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Sorry for attached a wrong diff result, it lost a NV/BS/RT attributes
+changed in efi_query_variable_store(). The right diff change is
+following.
 
-diff --git a/arch/arm/boot/dts/bcm11351-brt.dts b/arch/arm/boot/dts/bcm11351-brt.dts
-index 248067c..3392f64 100644
---- a/arch/arm/boot/dts/bcm11351-brt.dts
-+++ b/arch/arm/boot/dts/bcm11351-brt.dts
-@@ -13,7 +13,7 @@
+
+Thanks a lot!
+Joey Lee
+
+
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index cc3cfe8..ec8ac97 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -53,6 +53,8 @@
  
- /dts-v1/;
+ #define EFI_DEBUG	1
  
--/include/ "bcm11351.dtsi"
-+#include "bcm11351.dtsi"
++#define EFI_MIN_RESERVE 5120
++
+ #define EFI_DUMMY_GUID \
+ 	EFI_GUID(0x4424ac57, 0xbe4b, 0x47dd, 0x9e, 0x97, 0xed, 0x50, 0xf0, 0x9f, 0x92, 0xa9)
  
- / {
- 	model = "BCM11351 BRT board";
-diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
-index 41b2c6c..c08810e 100644
---- a/arch/arm/boot/dts/bcm11351.dtsi
-+++ b/arch/arm/boot/dts/bcm11351.dtsi
-@@ -11,7 +11,7 @@
-  * GNU General Public License for more details.
-  */
+@@ -988,7 +990,11 @@ void __init efi_enter_virtual_mode(void)
+ 	kfree(new_memmap);
  
--/include/ "skeleton.dtsi"
-+#include "skeleton.dtsi"
+ 	/* clean DUMMY object */
+-	efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID, 0, 0, NULL);
++	efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
++			 EFI_VARIABLE_NON_VOLATILE |
++			 EFI_VARIABLE_BOOTSERVICE_ACCESS |
++			 EFI_VARIABLE_RUNTIME_ACCESS,
++			 0, NULL);
+ }
  
- / {
- 	model = "BCM11351 SoC";
--- 
-1.7.9.5
+ /*
+@@ -1051,7 +1057,12 @@ efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
+ 	 * write if permitting it would reduce the available space to under
+ 	 * 5KB. This figure was provided by Samsung, so should be safe.
+ 	 */
+-	if ((remaining_size - size < 5120) && !efi_no_storage_paranoia) {
++	if ((remaining_size - size < EFI_MIN_RESERVE) &&
++		!efi_no_storage_paranoia) {
++
++		if (!(attributes & EFI_VARIABLE_NON_VOLATILE))
++			return EFI_OUT_OF_RESOURCES;
++
+ 		/*
+ 		 * Triggering garbage collection may require that the firmware
+ 		 * generate a real EFI_OUT_OF_RESOURCES error. We can force
+@@ -1061,7 +1072,10 @@ efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
+ 		void *dummy = kmalloc(dummy_size, GFP_ATOMIC);
+ 
+ 		status = efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
+-					  attributes, dummy_size, dummy);
++					  EFI_VARIABLE_NON_VOLATILE |
++					  EFI_VARIABLE_BOOTSERVICE_ACCESS |
++					  EFI_VARIABLE_RUNTIME_ACCESS,
++					  dummy_size, dummy);
+ 
+ 		if (status == EFI_SUCCESS) {
+ 			/*
+@@ -1069,7 +1083,10 @@ efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
+ 			 * that we delete it...
+ 			 */
+ 			efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
+-					 attributes, 0, dummy);
++					 EFI_VARIABLE_NON_VOLATILE |
++					 EFI_VARIABLE_BOOTSERVICE_ACCESS |
++					 EFI_VARIABLE_RUNTIME_ACCESS,
++					 0, dummy);
+ 		}
+ 
+ 		/*
+@@ -1085,7 +1102,7 @@ efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
+ 		/*
+ 		 * There still isn't enough room, so return an error
+ 		 */
+-		if (remaining_size - size < 5120)
++		if (remaining_size - size < EFI_MIN_RESERVE)
+ 			return EFI_OUT_OF_RESOURCES;
+ 	}
+ 
 
