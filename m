@@ -1,59 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932769Ab3FFL4M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 07:56:12 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:51222 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932398Ab3FFL4K (ORCPT
+	id S932966Ab3FFMAU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 08:00:20 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:14749 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932584Ab3FFMAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 07:56:10 -0400
+	Thu, 6 Jun 2013 08:00:18 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhcPAGd4sFF5LKX1/2dsb2JhbABZgwm6RYUrBAF2F3SCIwEBBTocMwgDGAklDwUlAyEBEh6HbrtEFo1/gSSCemEDlz6RQYMhKg
+Date: Thu, 6 Jun 2013 22:00:15 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Dave Jones <davej@redhat.com>, xfs@oss.sgi.com,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.10-rc3 xfs mount/recovery failure & ext fsck hang.
+Message-ID: <20130606120015.GA29338@dastard>
+References: <20130528161230.GA7577@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <51B04AA9.4070803@monstr.eu>
-References: <6aa29b1d109a46278a7f37b598defe07d6edfe60.1369921774.git.michal.simek@xilinx.com>
- <20130530201714.GE19834@game.jcrosoft.org> <51A85BEE.4000009@monstr.eu>
- <20130531110045.GF19834@game.jcrosoft.org> <51A8AC4B.906@monstr.eu>
- <20130531151601.GG19834@game.jcrosoft.org> <51A8D3A3.5030200@monstr.eu>
- <20130606082941.GH19834@game.jcrosoft.org> <51B04AA9.4070803@monstr.eu>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Thu, 6 Jun 2013 12:55:47 +0100
-X-Google-Sender-Auth: VWPLC-aRbI_uVduS8S2WRUxRM94
-Message-ID: <CACxGe6synO5mksUPF4bG3NGnkS7HB47m8u_O+WVb6GG-0153Yw@mail.gmail.com>
-Subject: Re: [PATCH] of: Export of_irq_count for using in modules
-To: Michal Simek <monstr@monstr.eu>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130528161230.GA7577@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 6, 2013 at 9:39 AM, Michal Simek <monstr@monstr.eu> wrote:
-> On 06/06/2013 10:29 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->> On 18:45 Fri 31 May     , Michal Simek wrote:
->>> ok. good to know. Btw: Let's return to my origin point why not to
->>> export of_irq_count for modules?
->>> Or opposite question if platform_get_resource is correct way
->>> why to export of_irq_to_resource for modules?
->>
->> for old ppc drivers that are not converted yet to pdev
->>
->> if you can do so just use pdev resource I should have fix the pb or irq_domain
->> hopefully for 3.11
->
-> ok. It means it is currently deprecated.
-> I just wanted to be sure that I understand it correctly.
+On Tue, May 28, 2013 at 12:12:30PM -0400, Dave Jones wrote:
+> box crashed, and needed rebooting. On next bootup, when it found the dirty partition,
+> xfs chose to spew and then hang instead of replaying the journal and mounting :(
+> 
+> 	Dave
 
-It's deprecated for platform_devices, but should still be used for
-other bus types that don't provide the device driver with a list of
-irqs. For platform devices it is best to use the platform_bus irq
-table since that is portable regardless of how the device is
-instantiated.
+Dave kindly provided me with a metadump of the filesystem yesterday
+after reproducing the problem, and I've worked out the cause of the
+verification issue being triggered by log reovery.
 
-As for not exporting of_irq_count(), I don't have a problem with it,
-but only if there is a user. It sounds like with the rework you
-discussed with Jean-Christophe that it is no longer the case.
+It's good and it's bad.
 
-g.
+It's good in that there is no on-disk corruption either in the log
+or on disk before log recovery takes place so it's not a bug in the
+directory code.
+
+It's bad because log recovery is causing the buffer to go through an
+intermediate corrupt state on disk.
+
+It's good because if log recovery completes successfully, there is
+no on-disk corruption on disk.
+
+It's bad because this verification error is something I've long
+suspected causes on-disk corruption when log recovery fails for some
+other reason.
+
+It's good because this is the confirmation I've been looking
+for that that log recovery can cause on-disk corruption when it
+fails. Score another win for the verifier infrastructure....
+
+And finally, it's good because this failure just completely
+justified the LSN I'm stamping in every piece of metadata when it is
+written to disk in the new on-disk format, because this is *exactly*
+the problem it enables us to avoid completely.
+
+So, what is the problem? Well, quite simply this: the on-disk
+metadata is more recent that some of the changes in the log. That
+is, we have buffer @ bno = 0x88 modified in checkpoint @ LSN
+87/25163, and again in the subsequent checkpoint @ LSN 87/25192.
+The on-disk version of the buffer matches the changes that are in
+the second checkpoint @ LSN 87/25192.
+
+IOWs, the directory buffer has been written to disk after the last
+change, but there is some other metadata that still pins the tail of
+the log @ 87/25163. Hence log recovery comes along and -assumes-
+that the buffer it is replaying the changes into does not have any
+of the changes in this transaction or subsequent transactions in it.
+
+It replays the modified regions over the top of the buffer, which
+results in parts of the buffer matching the changes from 87/25163,
+while the rest matches the changes in 87/25192. After the checkpoint
+@ 87/25163 is fully replayed, the buffer is then written to disk,
+the verifier is run, and the verifier (rightly) detects that the
+buffer contents are inconsistent and that's where the EFSCORRUPTED
+error comes from.
+
+Now, if we ignore this inconsistent state (i.e. don't run the
+verifier), the replay of the dirty regions in the chekpoint at
+87/25192 will return the buffer to a consistent state. This - I
+*think* - is guaranteed because of the relogging that we do for
+items that are in the AIL - it covers all the regions from the
+previous changes (i.e. those in 87/25163) as well as any newly
+dirtied regions. Hence replaying the later transaction then returns
+the buffer to a consistent state.
+
+The real problem is the intermediate corrupt state that log recovery
+makes the buffer go through. For non-CRC enabled filesystems, we can
+probably just ignore this and live with the problem because it's
+fairly rare that log recovery gets interrupted in a way that results
+in this intermediate corrupt state being exposed. In general, anyone
+who hits a failed log recovery is going to need to run repair to
+blow away the log anyway, but this problem will result in there
+potentially being more damage that needs to be fixed than there
+should have been...
+
+Essentially, the fix for non-CRC filesystems is simply to stop
+running the verifiers as part of log recovery as we simply cannot
+safely avoid this false positive corruption detection. We might be
+able to turn errors into warnings (we can check if log recovery is
+active) so we still have some idea about potential corruptions
+coming through log recovery, though that requires more work.
+
+For CRC enabled filesystems, though, the fix is *simple*. If the
+object being recovery is of the correct type (i.e. it's already been
+initialised) and the LSN in the object is more recent that then
+current transaction being replayed, just skip replaying of the
+changes. That way the object never goes through an inconsistent
+state during log recovery.
+
+This is exactly why I put the LSN in every object - so we could
+ensure log recovery never tries to take objects backwards in
+time. I haven't implemented that checking in log recovery yet, but
+it's not that hard to do and will be done in the not-to-distant
+future...
+
+Anyway, I'll have a think about the best way to fix the non-CRC
+filesystems, as this fix will need to be backported to the
+3.9-stable kernel as well as this is one of the problems Cai has
+been reporting during his 3.9.x testing...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
