@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412Ab3FFPAp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 11:00:45 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:36048 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750875Ab3FFPAo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 11:00:44 -0400
-Date: Thu, 6 Jun 2013 16:00:39 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Russ Anderson <rja@sgi.com>
-Cc: joeyli <jlee@suse.com>, Matthew Garrett <matthew.garrett@nebula.com>,
-        "Fleming, Matt" <matt.fleming@intel.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "bp@alien8.de" <bp@alien8.de>, "jkosina@suse.cz" <jkosina@suse.cz>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "oneukum@suse.de" <oneukum@suse.de>
-Subject: Re: [PATCH] Modify UEFI anti-bricking code
-Message-ID: <20130606150039.GL30420@console-pimps.org>
-References: <1370277079.6315.14.camel@x230.lan>
- <1370316933.30695.7.camel@linux-s257.site>
- <CAL01qptzxe5L6Vq+nBZLq+bQNxbe_i_2OdKMNJGZQDfMihaHOw@mail.gmail.com>
- <1370444007.6315.32.camel@x230.lan>
- <20130605155904.GC30420@console-pimps.org>
- <1370495110.6523.35.camel@linux-s257.site>
- <1370497321.6315.44.camel@x230.lan>
- <1370504426.6523.49.camel@linux-s257.site>
- <20130606092542.GE30420@console-pimps.org>
- <20130606144846.GA10393@sgi.com>
+	id S1751474Ab3FFPBk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 11:01:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19968 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750870Ab3FFPBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 11:01:39 -0400
+Date: Thu, 6 Jun 2013 11:01:12 -0400
+From: Dave Jones <davej@redhat.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Tobias Winter <tobias@linuxdingsda.de>,
+        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        Rob Landley <rob@landley.net>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Increase the number of USB to serial devices we can
+ support at once
+Message-ID: <20130606150112.GA22984@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Tobias Winter <tobias@linuxdingsda.de>,
+	=?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+	Rob Landley <rob@landley.net>, linux-usb@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20130605175426.GA13461@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130606144846.GA10393@sgi.com>
+In-Reply-To: <20130605175426.GA13461@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 06 Jun, at 09:48:46AM, Russ Anderson wrote:
-> This looks like it will try to allocate more than the remaining size.
-> Is that intended?
+On Wed, Jun 05, 2013 at 10:54:26AM -0700, Greg KH wrote:
+ > Here are 3 patches that I've tested out on my system with only a small
+ > number of devices, but it seems to work, so why not let others try it
+ > out...
+ > 
+ > These patches make the USB to serial core have the ability to support up
+ > to 3000 devices at once now.  
 
-Yes, the intention is to trigger garbage collection.
+I'm curious how this works. What systems have 3000 usb ports ?
+Or are there some kind of multiplexer devices out there ?
+(If so, I'd like a link, I could use one of those).
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+	Dave
+
