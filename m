@@ -1,103 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751429Ab3FFEK6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 00:10:58 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:58610 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760Ab3FFEKy (ORCPT
+	id S1751380Ab3FFEO3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 00:14:29 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:53419 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750698Ab3FFEO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 00:10:54 -0400
-Date: Wed, 5 Jun 2013 21:10:51 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] memcg: do not sleep on OOM waitqueue with full charge
- context
-In-Reply-To: <1370488193-4747-2-git-send-email-hannes@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1306052058340.25115@chino.kir.corp.google.com>
-References: <1370488193-4747-1-git-send-email-hannes@cmpxchg.org> <1370488193-4747-2-git-send-email-hannes@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 6 Jun 2013 00:14:27 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAD6zSYO=2pNmYb2gofZpRYViQEbvMMPxH_MqPsOo-yPj0-OFmA@mail.gmail.com>
+References: <000301ce5b82$4fa829e0$eef87da0$@samsung.com>
+	<CAD6zSYO=2pNmYb2gofZpRYViQEbvMMPxH_MqPsOo-yPj0-OFmA@mail.gmail.com>
+Date: Thu, 6 Jun 2013 09:44:26 +0530
+X-Google-Sender-Auth: sX_RomNyB3Tp87LddX6oEHcT18s
+Message-ID: <CAD6zSYOQdxHZMJ8wiLqMqqP_Mt8bdvFyeVibtC4LArY7bGxTRg@mail.gmail.com>
+Subject: Fwd: [PATCH] usb: phy: samsung: Add support for EXYNOS4210
+From: Praveen Paneri <p.paneri@samsung.com>
+To: linux-usb@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        Jingoo Han <jg1.han@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Vivek Gautam <gautam.vivek@samsung.com>,
+        Praveen Paneri <p.paneri@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Jun 2013, Johannes Weiner wrote:
+Hi,
 
-> The memcg OOM handling is incredibly fragile because once a memcg goes
-> OOM, one task (kernel or userspace) is responsible for resolving the
-> situation.
+On Tue, May 28, 2013 at 2:34 PM, Jingoo Han <jg1.han@samsung.com> wrote:
+> Add support for EXYNOS4210 that includes USB EHCI/OHCI.
+> Previous PHY initialization code is not correct; thus, it is modifed
+                                                     ^^^^^ You might
+want to say "previous PHY init code does not support HOST and HSIC
+PHY."
 
-Not sure what this means.  Are you referring to the case where the memcg 
-is disabled from oom killing and we're relying on a userspace handler and 
-it may be caught on the waitqueue itself?  Otherwise, are you referring to 
-the task as eventually being the only one that takes the hierarchy oom 
-lock and calls mem_cgroup_out_of_memory()?  I don't think you can make a 
-case for the latter since the one that calls mem_cgroup_out_of_memory() 
-should return and call memcg_wakeup_oom().  We obviously don't want to do 
-any memory allocations in this path.
+> to support EXYNOS4210 PHY. Also, after common clock framework for
+> Samsung is added, clock name is defined as 'usb_device'.
+>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+> Tested on Exynos4210.
+>
+>  drivers/usb/phy/phy-samsung-usb.h  |   35 ++++++++++++++---
+>  drivers/usb/phy/phy-samsung-usb2.c |   74 +++++++++++++++++++++++++++++++++---
+>  2 files changed, 98 insertions(+), 11 deletions(-)
+>
+> diff --git a/drivers/usb/phy/phy-samsung-usb.h b/drivers/usb/phy/phy-samsung-usb.h
+> index 70a9cae..34c35e8 100644
+> --- a/drivers/usb/phy/phy-samsung-usb.h
+> +++ b/drivers/usb/phy/phy-samsung-usb.h
+> @@ -22,13 +22,22 @@
+>
+>  #define SAMSUNG_PHYPWR                         (0x00)
+>
+> +#define PHYPWR_PHY1_HSIC_NORMAL_MASK           (0xf << 9)
+> +#define PHYPWR_PHY1_HSIC1_SLEEP                        (1 << 12)
+> +#define PHYPWR_PHY1_HSIC1_FORCE_SUSPEND                (1 << 11)
+> +#define PHYPWR_PHY1_HSIC0_SLEEP                        (1 << 10)
+> +#define PHYPWR_PHY1_HSIC0_FORCE_SUSPEND                (1 << 9)
+> +#define PHYPWR_PHY1_STD_NORMAL_MASK            (0x7 << 6)
+> +#define PHYPWR_PHY1_STD_SLEEP                  (1 << 8)
+> +#define PHYPWR_PHY1_STD_ANALOG_POWERDOWN       (1 << 7)
+> +#define PHYPWR_PHY1_STD_FORCE_SUSPEND          (1 << 6)
+>  #define PHYPWR_NORMAL_MASK                     (0x19 << 0)
+>  #define PHYPWR_OTG_DISABLE                     (0x1 << 4)
+>  #define PHYPWR_ANALOG_POWERDOWN                        (0x1 << 3)
+>  #define PHYPWR_FORCE_SUSPEND                   (0x1 << 1)
+>  /* For Exynos4 */
+This comment is misplaced?
 
-> Every other task that gets caught trying to charge memory
-> gets stuck in a waitqueue while potentially holding various filesystem
-> and mm locks on which the OOM handling task may now deadlock.
-> 
+> -#define PHYPWR_NORMAL_MASK_PHY0                        (0x39 << 0)
+> -#define PHYPWR_SLEEP_PHY0                      (0x1 << 5)
+> +#define PHYPWR_PHY0_NORMAL_MASK                        (0x39 << 0)
+> +#define PHYPWR_PHY0_SLEEP                      (0x1 << 5)
+>
+>  #define SAMSUNG_PHYCLK                         (0x04)
+>
+> @@ -43,9 +52,25 @@
+>
+>  #define SAMSUNG_RSTCON                         (0x08)
+>
+> -#define RSTCON_PHYLINK_SWRST                   (0x1 << 2)
+> -#define RSTCON_HLINK_SWRST                     (0x1 << 1)
+> -#define RSTCON_SWRST                           (0x1 << 0)
+> +#define RSTCON_HOST_LINK_PORT_SWRST_MASK       (0xf << 6)
+> +#define RSTCON_HOST_LINK_PORT2_SWRST           (0x1 << 9)
+> +#define RSTCON_HOST_LINK_PORT1_SWRST           (0x1 << 8)
+> +#define RSTCON_HOST_LINK_PORT0_SWRST           (0x1 << 7)
+> +#define RSTCON_HOST_LINK_ALL_SWRST             (0x1 << 6)
+> +#define RSTCON_PHY1_SWRST_MASK                 (0x7 << 3)
+> +#define RSTCON_PHY1_HSIC_SWRST                 (0x1 << 5)
+> +#define RSTCON_PHY1_STD_SWRST                  (0x1 << 4)
+> +#define RSTCON_PHY1_ALL_SWRST                  (0x1 << 3)
+> +#define RSTCON_PHY0_SWRST_MASK                 (0x7 << 0)
+> +#define RSTCON_PHY0_PHYLINK_SWRST              (0x1 << 2)
+> +#define RSTCON_PHY0_HLINK_SWRST                        (0x1 << 1)
+> +#define RSTCON_PHY0_SWRST                      (0x1 << 0)
+> +
+> +/* EXYNOS4 */
+> +#define EXYNOS4_PHY1CON                                (0x34)
+> +
+> +#define PHY1CON_FPENABLEN                      (0x1 << 0)
+> +
+>
+>  /* EXYNOS5 */
+>  #define EXYNOS5_PHY_HOST_CTRL0                 (0x00)
+> diff --git a/drivers/usb/phy/phy-samsung-usb2.c b/drivers/usb/phy/phy-samsung-usb2.c
+> index 9d5e273..4f93d84 100644
+> --- a/drivers/usb/phy/phy-samsung-usb2.c
+> +++ b/drivers/usb/phy/phy-samsung-usb2.c
+> @@ -158,6 +158,15 @@ static void samsung_exynos5_usb2phy_enable(struct samsung_usbphy *sphy)
+>         writel(ohcictrl, regs + EXYNOS5_PHY_HOST_OHCICTRL);
+>  }
+>
+> +static bool exynos4_phyhost_is_on(void __iomem *regs)
+> +{
+> +       u32 reg;
+> +
+> +       reg = readl(regs + SAMSUNG_PHYPWR);
+> +
+> +       return !(reg & PHYPWR_PHY1_STD_ANALOG_POWERDOWN);
+> +}
+> +
+>  static void samsung_usb2phy_enable(struct samsung_usbphy *sphy)
+>  {
+>         void __iomem *regs = sphy->regs;
+> @@ -165,6 +174,18 @@ static void samsung_usb2phy_enable(struct samsung_usbphy *sphy)
+>         u32 phyclk;
+>         u32 rstcon;
+>
+> +       switch (sphy->drv_data->cpu_type) {
+> +       case TYPE_EXYNOS4210:
+> +               atomic_inc(&sphy->phy_usage);
+> +
+> +               if (exynos4_phyhost_is_on(regs)) {
+> +                       dev_info(sphy->dev, "Already power on PHY\n");
+> +                       return;
+> +               }
+> +       default:
+> +               break;
+> +       }
+> +
+>         /* set clock frequency for PLL */
+>         phyclk = sphy->ref_clk_freq;
+>         phypwr = readl(regs + SAMSUNG_PHYPWR);
+> @@ -174,22 +195,48 @@ static void samsung_usb2phy_enable(struct samsung_usbphy *sphy)
+>         case TYPE_S3C64XX:
+>                 phyclk &= ~PHYCLK_COMMON_ON_N;
+>                 phypwr &= ~PHYPWR_NORMAL_MASK;
+> -               rstcon |= RSTCON_SWRST;
+> +               rstcon |= RSTCON_PHY0_SWRST;
+>                 break;
+>         case TYPE_EXYNOS4210:
+> -               phypwr &= ~PHYPWR_NORMAL_MASK_PHY0;
+> -               rstcon |= RSTCON_SWRST;
+> +               phypwr &= ~(PHYPWR_PHY0_NORMAL_MASK |
+Is it not possible to have separate initialization for PHY0? That
+would save some power in case it is not used. we can make use of
+sphy->phy_type.
 
-What locks?  The oom killer quite extensively needs task_lock() but we 
-shouldn't be calling it in the case where we hold this since its a 
-spinlock and mem_cgroup_do_charge() never gets to the point of handling 
-the oom.
+> +                               PHYPWR_PHY1_STD_NORMAL_MASK |
+> +                               PHYPWR_PHY1_HSIC_NORMAL_MASK);
+> +               rstcon |= (RSTCON_PHY0_SWRST_MASK |
+> +                               RSTCON_PHY1_SWRST_MASK |
+> +                               RSTCON_HOST_LINK_PORT_SWRST_MASK);
+>         default:
+>                 break;
+>         }
+>
+>         writel(phyclk, regs + SAMSUNG_PHYCLK);
+> -       /* Configure PHY0 for normal operation*/
+> +
+> +       switch (sphy->drv_data->cpu_type) {
+> +       case TYPE_EXYNOS4210:
+> +               /* floating prevention logic: disable */
+> +               writel((readl(regs + EXYNOS4_PHY1CON) | PHY1CON_FPENABLEN),
+> +                       regs + EXYNOS4_PHY1CON);
+> +       default:
+> +               break;
+> +       }
+> +
+> +       /* Configure PHY0, PHY1 and HSIC for normal operation*/
+>         writel(phypwr, regs + SAMSUNG_PHYPWR);
+> +
+>         /* reset all ports of PHY and Link */
+>         writel(rstcon, regs + SAMSUNG_RSTCON);
+>         udelay(10);
+> -       rstcon &= ~RSTCON_SWRST;
+> +
+> +       switch (sphy->drv_data->cpu_type) {
+> +       case TYPE_S3C64XX:
+> +               rstcon &= ~RSTCON_PHY0_SWRST;
+> +               break;
+> +       case TYPE_EXYNOS4210:
+> +               rstcon &= ~(RSTCON_PHY0_SWRST_MASK |
+> +                               RSTCON_PHY1_SWRST_MASK |
+> +                               RSTCON_HOST_LINK_PORT_SWRST_MASK);
+> +       default:
+> +               break;
+> +       }
+>         writel(rstcon, regs + SAMSUNG_RSTCON);
+How about saving the rstcon mask value in the previous switch case and
+reuse it here to avoid the second switch case?
+>  }
+>
+> @@ -233,6 +280,16 @@ static void samsung_usb2phy_disable(struct samsung_usbphy *sphy)
+>         void __iomem *regs = sphy->regs;
+>         u32 phypwr;
+>
+> +       switch (sphy->drv_data->cpu_type) {
+> +       case TYPE_EXYNOS4210:
+> +               if (atomic_dec_return(&sphy->phy_usage) > 0) {
+> +                       dev_info(sphy->dev, "still being used\n");
+> +                       return;
+> +               }
+> +       default:
+> +               break;
+> +       }
+> +
+>         phypwr = readl(regs + SAMSUNG_PHYPWR);
+>
+>         switch (sphy->drv_data->cpu_type) {
+> @@ -240,7 +297,9 @@ static void samsung_usb2phy_disable(struct samsung_usbphy *sphy)
+>                 phypwr |= PHYPWR_NORMAL_MASK;
+>                 break;
+>         case TYPE_EXYNOS4210:
+> -               phypwr |= PHYPWR_NORMAL_MASK_PHY0;
+> +               phypwr |= (PHYPWR_PHY0_NORMAL_MASK |
+Here as well...what if EHCI calls phy_shutdown and s3c-hsotg is still
+operational?
+> +                               PHYPWR_PHY1_STD_NORMAL_MASK |
+> +                               PHYPWR_PHY1_HSIC_NORMAL_MASK);
+>         default:
+>                 break;
+>         }
+> @@ -379,6 +438,8 @@ static int samsung_usb2phy_probe(struct platform_device *pdev)
+>
+>         if (drv_data->cpu_type == TYPE_EXYNOS5250)
+>                 clk = devm_clk_get(dev, "usbhost");
+> +       else if (drv_data->cpu_type == TYPE_EXYNOS4210)
+> +               clk = devm_clk_get(dev, "usb_device");
+Why to add another else if here when we still have the freedom to give
+clock names in DT node. If we change the name here same has to be done
+in s3c-hsotg driver as well. It will be too much to handle as older
+SoCs are still using the name otg.
 
-Again, are you referring only to a userspace handler here?
-
-> Do two things:
-> 
-> 1. When OOMing in a system call (buffered IO and friends), invoke the
->    OOM killer but just return -ENOMEM, never sleep.  Userspace should
->    be able to handle this.
-> 
-
-The sleep should never occur for any significant duration currently, the 
-current implementation ensures one process calls 
-mem_cgroup_out_of_memory() while all others sit on a waitqueue until that 
-process returns from the oom killer and then they all wakeup again so the 
-killed process may exit and all others can retry their allocations now 
-that something has been killed.  If that process hasn't exited yet, the 
-next process that locks the memcg oom hierarchy will see the killed 
-process with TIF_MEMDIE and the oom killer is deferred.  So this sleep is 
-very temporary already, I don't see why you're trying to make it faster 
-while another thread finds a candidate task, it works quite well already.
-
-> 2. When OOMing in a page fault and somebody else is handling the
->    situation, do not sleep directly in the charging code.  Instead,
->    remember the OOMing memcg in the task struct and then fully unwind
->    the page fault stack first before going to sleep.
-> 
-
-Are you trying to address a situation here where the memcg oom handler 
-takes too long to work?  We've quite extensively tried to improve that, 
-especially by reducing its dependency on tasklist_lock which is contended 
-from the writeside in the exit path and by only iterating processes that 
-are attached to that memcg hierarchy and not all processes on the system 
-like before.  I don't see the issue with scheduling other oom processes 
-while one is doing mem_cgroup_out_of_memory().  (I would if the oom killer 
-required things like mm->mmap_sem, but obviously it doesn't for reasons 
-not related to memcg.)
-
-> While reworking the OOM routine, also remove a needless OOM waitqueue
-> wakeup when invoking the killer.  Only uncharges and limit increases,
-> things that actually change the memory situation, should do wakeups.
-> 
-
-It's not needless at all, it's vitally required!  The oom killed process 
-needs to be removed from the waitqueue and scheduled now with TIF_MEMDIE 
-that the memcg oom killer provided so the allocation succeeds in the page 
-allocator and memcg bypasses the charge so it can exit.
-
-Exactly what problem are you trying to address with this patch?  I don't 
-see any description of the user-visible effects or a specific xample of 
-the scenario you're trying to address here.
+Regards,
+Praveen
+>         else
+>                 clk = devm_clk_get(dev, "otg");
+>
+> @@ -444,6 +505,7 @@ static const struct samsung_usbphy_drvdata usb2phy_exynos4 = {
+>         .cpu_type               = TYPE_EXYNOS4210,
+>         .devphy_en_mask         = EXYNOS_USBPHY_ENABLE,
+>         .hostphy_en_mask        = EXYNOS_USBPHY_ENABLE,
+> +       .hostphy_reg_offset     = EXYNOS_USBHOST_PHY_CTRL_OFFSET,
+>  };
+>
+>  static struct samsung_usbphy_drvdata usb2phy_exynos5 = {
+> --
+> 1.7.10.4
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
