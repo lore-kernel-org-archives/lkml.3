@@ -1,65 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933129Ab3FFLYd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 07:24:33 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:31460 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932487Ab3FFLYb (ORCPT
+	id S932757Ab3FFLVW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 07:21:22 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34275 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932230Ab3FFLVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 07:24:31 -0400
-From: Kefeng Wang <wangkefeng.wang@huawei.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: <linux-kernel@vger.kernel.org>, <guohanjun@huawei.com>
-Subject: [PATCH 2/7] irq: fix checkpatch error
-Date: Thu, 6 Jun 2013 19:20:26 +0800
-Message-ID: <1370517631-8684-3-git-send-email-wangkefeng.wang@huawei.com>
-X-Mailer: git-send-email 1.8.3.msysgit.0
-In-Reply-To: <1370517631-8684-1-git-send-email-wangkefeng.wang@huawei.com>
-References: <1370517631-8684-1-git-send-email-wangkefeng.wang@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.68.221]
-X-CFilter-Loop: Reflected
+	Thu, 6 Jun 2013 07:21:20 -0400
+From: Tanya Brokhman <tlinder@codeaurora.org>
+To: axboe@kernel.dk
+Cc: linux-arm-msm@vger.kernel.org, linux-mmc@vger.kernel.org,
+        Tanya Brokhman <tlinder@codeaurora.org>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v7 1/4] block: Add support for reinsert a dispatched req
+Date: Thu,  6 Jun 2013 14:20:47 +0300
+Message-Id: <1370517657-5710-1-git-send-email-tlinder@codeaurora.org>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change printk(KERN_WARNING ... to pr_warn(...
-Fix ERROR: space required after that ',' (ctx:VxV)
+Add support for reinserting a dispatched request back to the
+scheduler's internal data structures.
+This capability is used by the device driver when it chooses to
+interrupt the current request transmission and execute another (more
+urgent) pending request. For example: interrupting long write in order
+to handle pending read. The device driver re-inserts the
+remaining write request back to the scheduler, to be rescheduled
+for transmission later on.
 
-Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
----
- kernel/irq/handle.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+Add API for verifying whether the current scheduler
+supports reinserting requests mechanism. If reinsert mechanism isn't
+supported by the scheduler, this code path will never be activated.
 
-diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
-index 131ca17..07a1c15 100644
---- a/kernel/irq/handle.c
-+++ b/kernel/irq/handle.c
-@@ -47,7 +47,7 @@ static void warn_no_thread(unsigned int irq, struct irqaction *action)
- 	if (test_and_set_bit(IRQTF_WARNED, &action->thread_flags))
- 		return;
+Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 0852e5d..fe3683c 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1183,6 +1183,29 @@ struct request *blk_make_request(struct request_queue *q, struct bio *bio,
+ }
+ EXPORT_SYMBOL(blk_make_request);
  
--	printk(KERN_WARNING "IRQ %d device %s returned IRQ_WAKE_THREAD "
-+	pr_warn("IRQ %d device %s returned IRQ_WAKE_THREAD "
- 	       "but no thread function available.", irq, action->name);
++static void __blk_put_back_rq(struct request_queue *q, struct request *rq)
++{
++	blk_delete_timer(rq);
++	blk_clear_rq_complete(rq);
++
++	if (blk_rq_tagged(rq))
++		blk_queue_end_tag(q, rq);
++
++	BUG_ON(blk_queued_rq(rq));
++
++	if (rq->cmd_flags_ext & REQ_URGENT) {
++		/*
++		 * It's not compliant with the design to re-insert
++		 * urgent requests. We want to be able to track this
++		 * down.
++		 */
++		pr_debug("%s(): requeueing/reinserting an URGENT request",
++			__func__);
++		WARN_ON(!q->dispatched_urgent);
++		q->dispatched_urgent = false;
++	}
++}
++
+ /**
+  * blk_requeue_request - put a request back on queue
+  * @q:		request queue where request should be inserted
+@@ -1195,19 +1218,45 @@ EXPORT_SYMBOL(blk_make_request);
+  */
+ void blk_requeue_request(struct request_queue *q, struct request *rq)
+ {
+-	blk_delete_timer(rq);
+-	blk_clear_rq_complete(rq);
++	__blk_put_back_rq(q, rq);
+ 	trace_block_rq_requeue(q, rq);
+-
+-	if (blk_rq_tagged(rq))
+-		blk_queue_end_tag(q, rq);
+-
+-	BUG_ON(blk_queued_rq(rq));
+-
+ 	elv_requeue_request(q, rq);
+ }
+ EXPORT_SYMBOL(blk_requeue_request);
+ 
++/**
++ * blk_reinsert_request() - Insert a request back to the scheduler
++ * @q:		request queue
++ * @rq:		request to be inserted
++ *
++ * This function inserts the request back to the scheduler as if
++ * it was never dispatched.
++ *
++ * Return: 0 on success, error code on fail
++ */
++int blk_reinsert_request(struct request_queue *q, struct request *rq)
++{
++	__blk_put_back_rq(q, rq);
++	return elv_reinsert_request(q, rq);
++}
++EXPORT_SYMBOL(blk_reinsert_request);
++
++/**
++ * blk_reinsert_req_sup() - check whether the scheduler supports
++ *          reinsertion of requests
++ * @q:		request queue
++ *
++ * Returns true if the current scheduler supports reinserting
++ * request. False otherwise
++ */
++bool blk_reinsert_req_sup(struct request_queue *q)
++{
++	if (unlikely(!q))
++		return false;
++	return q->elevator->type->ops.elevator_reinsert_req_fn ? true : false;
++}
++EXPORT_SYMBOL(blk_reinsert_req_sup);
++
+ static void add_acct_request(struct request_queue *q, struct request *rq,
+ 			     int where)
+ {
+diff --git a/block/elevator.c b/block/elevator.c
+index eba5b04c..e28011b 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -577,6 +577,41 @@ void elv_requeue_request(struct request_queue *q, struct request *rq)
+ 	__elv_add_request(q, rq, ELEVATOR_INSERT_REQUEUE);
  }
  
-@@ -142,8 +142,9 @@ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
- 		res = action->handler(irq, action->dev_id);
- 		trace_irq_handler_exit(irq, action, res);
++/**
++ * elv_reinsert_request() - Insert a request back to the scheduler
++ * @q:		request queue where request should be inserted
++ * @rq:		request to be inserted
++ *
++ * This function returns the request back to the scheduler to be
++ * inserted as if it was never dispatched
++ *
++ * Return: 0 on success, error code on failure
++ */
++int elv_reinsert_request(struct request_queue *q, struct request *rq)
++{
++	int res;
++
++	if (!q->elevator->type->ops.elevator_reinsert_req_fn)
++		return -EPERM;
++
++	res = q->elevator->type->ops.elevator_reinsert_req_fn(q, rq);
++	if (!res) {
++		/*
++		 * it already went through dequeue, we need to decrement the
++		 * in_flight count again
++		 */
++		if (blk_account_rq(rq)) {
++			q->in_flight[rq_is_sync(rq)]--;
++			if (rq->cmd_flags & REQ_SORTED)
++				elv_deactivate_rq(q, rq);
++		}
++		rq->cmd_flags &= ~REQ_STARTED;
++		q->nr_sorted++;
++	}
++
++	return res;
++}
++
+ void elv_drain_elevator(struct request_queue *q)
+ {
+ 	static int printed;
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 2fdb4a4..968720f 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -738,6 +738,8 @@ extern struct request *blk_get_request(struct request_queue *, int, gfp_t);
+ extern struct request *blk_make_request(struct request_queue *, struct bio *,
+ 					gfp_t);
+ extern void blk_requeue_request(struct request_queue *, struct request *);
++extern int blk_reinsert_request(struct request_queue *q, struct request *rq);
++extern bool blk_reinsert_req_sup(struct request_queue *q);
+ extern void blk_add_request_payload(struct request *rq, struct page *page,
+ 		unsigned int len);
+ extern int blk_rq_check_limits(struct request_queue *q, struct request *rq);
+diff --git a/include/linux/elevator.h b/include/linux/elevator.h
+index acd0312..d703f94 100644
+--- a/include/linux/elevator.h
++++ b/include/linux/elevator.h
+@@ -23,6 +23,8 @@ typedef void (elevator_bio_merged_fn) (struct request_queue *,
+ typedef int (elevator_dispatch_fn) (struct request_queue *, int);
  
--		if (WARN_ONCE(!irqs_disabled(),"irq %u handler %pF enabled interrupts\n",
--			      irq, action->handler))
-+		if (WARN_ONCE(!irqs_disabled(),
-+				"irq %u handler %pF enabled interrupts\n",
-+				irq, action->handler))
- 			local_irq_disable();
+ typedef void (elevator_add_req_fn) (struct request_queue *, struct request *);
++typedef int (elevator_reinsert_req_fn) (struct request_queue *,
++					struct request *);
+ typedef struct request *(elevator_request_list_fn) (struct request_queue *, struct request *);
+ typedef void (elevator_completed_req_fn) (struct request_queue *, struct request *);
+ typedef int (elevator_may_queue_fn) (struct request_queue *, int);
+@@ -48,6 +50,8 @@ struct elevator_ops
  
- 		switch (res) {
+ 	elevator_dispatch_fn *elevator_dispatch_fn;
+ 	elevator_add_req_fn *elevator_add_req_fn;
++	elevator_reinsert_req_fn *elevator_reinsert_req_fn;
++
+ 	elevator_activate_req_fn *elevator_activate_req_fn;
+ 	elevator_deactivate_req_fn *elevator_deactivate_req_fn;
+ 
+@@ -126,6 +130,7 @@ extern void elv_merged_request(struct request_queue *, struct request *, int);
+ extern void elv_bio_merged(struct request_queue *q, struct request *,
+ 				struct bio *);
+ extern void elv_requeue_request(struct request_queue *, struct request *);
++extern int elv_reinsert_request(struct request_queue *, struct request *);
+ extern struct request *elv_former_request(struct request_queue *, struct request *);
+ extern struct request *elv_latter_request(struct request_queue *, struct request *);
+ extern int elv_register_queue(struct request_queue *q);
 -- 
-1.8.2.1
+1.7.6
 
-
+-- 
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
