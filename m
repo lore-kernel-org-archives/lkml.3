@@ -1,208 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab3FFJif (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 05:38:35 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:25807 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab3FFJid (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 05:38:33 -0400
-X-Spam-Score: -100.8
-Message-ID: <51B05865.30305@asianux.com>
-Date: Thu, 06 Jun 2013 17:37:41 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S932079Ab3FFJjj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 05:39:39 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:20220 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751102Ab3FFJjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 05:39:37 -0400
+X-IronPort-AV: E=Sophos;i="4.87,814,1363104000"; 
+   d="scan'208";a="7478931"
+Message-ID: <51B05983.5060009@cn.fujitsu.com>
+Date: Thu, 06 Jun 2013 17:42:27 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Linux-Arch <linux-arch@vger.kernel.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v3] arch/*/asm/include/bitops.h: api issue, find_*_bit() defination
- are different with each other
-References: <51AE8FEF.1020809@asianux.com> <51AE903C.6010806@asianux.com> <51AE909D.9080006@asianux.com> <20130605071915.GK23140@pengutronix.de> <51AF225A.5020703@asianux.com>
-In-Reply-To: <51AF225A.5020703@asianux.com>
-Content-Type: text/plain; charset=UTF-8
+To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+CC: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, tj@kernel.org,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, lwoodman@redhat.com, riel@redhat.com,
+        jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v3 07/13] x86, numa, mem-hotplug: Mark nodes which the
+ kernel resides in.
+References: <1369387762-17865-1-git-send-email-tangchen@cn.fujitsu.com> <1369387762-17865-8-git-send-email-tangchen@cn.fujitsu.com> <20130531162401.GA31139@dhcp-192-168-178-175.profitbricks.localdomain> <51AC4759.6090101@cn.fujitsu.com> <20130603131823.GA4729@dhcp-192-168-178-175.profitbricks.localdomain>
+In-Reply-To: <20130603131823.GA4729@dhcp-192-168-178-175.profitbricks.localdomain>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/06 17:37:49,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/06 17:37:52,
+	Serialize complete at 2013/06/06 17:37:52
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Vasilis,
 
-For arm and m68k, they customize find_*_bit(), but the API is different
-with 'generic'.
+On 06/03/2013 09:18 PM, Vasilis Liaskovitis wrote:
+......
+>>
+>> In such an early time, I think we can only get nid from
+>> numa_meminfo. So as I
+>> said above, I'd like to fix this problem by making memblock has correct nid.
+>>
+>> And I read the patch below. I think if we get nid from numa_meminfo,
+>> than we
+>> don't need to call memblock_get_region_node().
+>>
+>
+> ok. If we update the memblock nid fields from numa_meminfo,
+> memblock_get_region_node will always return the correct node id.
+>
 
-avr32, s390, and unicore32 also customize find_*_bit(), but the API is
-the same with 'generic', and the left architectures all use 'generic'.
+I have fixed this problem in this way. And I'll send the new patches 
+next week.
 
-So need change arm and m68k related API to match the 'generic', then
-all another modules can face same public API for various architectures.
+Thanks. :)
 
-Also beautify code and comments to pass "./scripts/checkpatch.pl"
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/arm/include/asm/bitops.h  |   26 ++++++++++++++++++--------
- arch/arm/lib/findbit.S         |   14 ++++++++++----
- arch/m68k/include/asm/bitops.h |   25 ++++++++++++++-----------
- 3 files changed, 42 insertions(+), 23 deletions(-)
-
-diff --git a/arch/arm/include/asm/bitops.h b/arch/arm/include/asm/bitops.h
-index e691ec9..83e4d3a 100644
---- a/arch/arm/include/asm/bitops.h
-+++ b/arch/arm/include/asm/bitops.h
-@@ -161,18 +161,28 @@ extern int _test_and_change_bit(int nr, volatile unsigned long * p);
- /*
-  * Little endian assembly bitops.  nr = 0 -> byte 0 bit 0.
-  */
--extern int _find_first_zero_bit_le(const void * p, unsigned size);
--extern int _find_next_zero_bit_le(const void * p, int size, int offset);
--extern int _find_first_bit_le(const unsigned long *p, unsigned size);
--extern int _find_next_bit_le(const unsigned long *p, int size, int offset);
-+extern unsigned long _find_first_zero_bit_le(const void *p,
-+						unsigned long size);
-+extern unsigned long _find_next_zero_bit_le(const void *p, unsigned long size,
-+						unsigned long offset);
-+extern unsigned long _find_first_bit_le(const unsigned long *p,
-+						unsigned long size);
-+extern unsigned long _find_next_bit_le(const unsigned long *p,
-+						unsigned long size,
-+						unsigned long offset);
- 
- /*
-  * Big endian assembly bitops.  nr = 0 -> byte 3 bit 0.
-  */
--extern int _find_first_zero_bit_be(const void * p, unsigned size);
--extern int _find_next_zero_bit_be(const void * p, int size, int offset);
--extern int _find_first_bit_be(const unsigned long *p, unsigned size);
--extern int _find_next_bit_be(const unsigned long *p, int size, int offset);
-+extern unsigned long _find_first_zero_bit_be(const void *p,
-+						unsigned long size);
-+extern unsigned long _find_next_zero_bit_be(const void *p, unsigned long size,
-+						unsigned long offset);
-+extern unsigned long _find_first_bit_be(const unsigned long *p,
-+						unsigned long size);
-+extern unsigned long _find_next_bit_be(const unsigned long *p,
-+						unsigned long size,
-+						unsigned long offset);
- 
- #ifndef CONFIG_SMP
- /*
-diff --git a/arch/arm/lib/findbit.S b/arch/arm/lib/findbit.S
-index 64f6bc1..817dd70 100644
---- a/arch/arm/lib/findbit.S
-+++ b/arch/arm/lib/findbit.S
-@@ -19,7 +19,8 @@
- 
- /*
-  * Purpose  : Find a 'zero' bit
-- * Prototype: int find_first_zero_bit(void *addr, unsigned int maxbit);
-+ * Prototype: unsigned long find_first_zero_bit(const void *p,
-+ *						unsigned long size);
-  */
- ENTRY(_find_first_zero_bit_le)
- 		teq	r1, #0	
-@@ -40,7 +41,9 @@ ENDPROC(_find_first_zero_bit_le)
- 
- /*
-  * Purpose  : Find next 'zero' bit
-- * Prototype: int find_next_zero_bit(void *addr, unsigned int maxbit, int offset)
-+ * Prototype: unsigned long find_next_zero_bit(const void *p,
-+ *						unsigned long size,
-+ *						unsigned long offset);
-  */
- ENTRY(_find_next_zero_bit_le)
- 		teq	r1, #0
-@@ -60,7 +63,8 @@ ENDPROC(_find_next_zero_bit_le)
- 
- /*
-  * Purpose  : Find a 'one' bit
-- * Prototype: int find_first_bit(const unsigned long *addr, unsigned int maxbit);
-+ * Prototype: unsigned long find_first_bit(const unsigned long *p,
-+ *					unsigned long size);
-  */
- ENTRY(_find_first_bit_le)
- 		teq	r1, #0	
-@@ -81,7 +85,9 @@ ENDPROC(_find_first_bit_le)
- 
- /*
-  * Purpose  : Find next 'one' bit
-- * Prototype: int find_next_zero_bit(void *addr, unsigned int maxbit, int offset)
-+ * Prototype: unsigned long find_next_bit(const unsigned long *p,
-+ *					unsigned long size,
-+ *					unsigned long offset);
-  */
- ENTRY(_find_next_bit_le)
- 		teq	r1, #0
-diff --git a/arch/m68k/include/asm/bitops.h b/arch/m68k/include/asm/bitops.h
-index c6baa91..b1d8752 100644
---- a/arch/m68k/include/asm/bitops.h
-+++ b/arch/m68k/include/asm/bitops.h
-@@ -320,11 +320,11 @@ static inline int bfchg_mem_test_and_change_bit(int nr,
- #include <asm-generic/bitops/ffz.h>
- #else
- 
--static inline int find_first_zero_bit(const unsigned long *vaddr,
--				      unsigned size)
-+static inline unsigned long find_first_zero_bit(const unsigned long *vaddr,
-+				      unsigned long size)
- {
- 	const unsigned long *p = vaddr;
--	int res = 32;
-+	unsigned int res = 32;
- 	unsigned int words;
- 	unsigned long num;
- 
-@@ -346,11 +346,12 @@ out:
- }
- #define find_first_zero_bit find_first_zero_bit
- 
--static inline int find_next_zero_bit(const unsigned long *vaddr, int size,
--				     int offset)
-+static inline unsigned long find_next_zero_bit(const unsigned long *vaddr,
-+						unsigned long size,
-+						unsigned long offset)
- {
- 	const unsigned long *p = vaddr + (offset >> 5);
--	int bit = offset & 31UL, res;
-+	unsigned int bit = offset & 31UL, res;
- 
- 	if (offset >= size)
- 		return size;
-@@ -376,10 +377,11 @@ static inline int find_next_zero_bit(const unsigned long *vaddr, int size,
- }
- #define find_next_zero_bit find_next_zero_bit
- 
--static inline int find_first_bit(const unsigned long *vaddr, unsigned size)
-+static inline unsigned long find_first_bit(const unsigned long *vaddr,
-+						unsigned long size)
- {
- 	const unsigned long *p = vaddr;
--	int res = 32;
-+	unsigned int res = 32;
- 	unsigned int words;
- 	unsigned long num;
- 
-@@ -401,11 +403,12 @@ out:
- }
- #define find_first_bit find_first_bit
- 
--static inline int find_next_bit(const unsigned long *vaddr, int size,
--				int offset)
-+static inline unsigned long find_next_bit(const unsigned long *vaddr,
-+						unsigned long size,
-+						unsigned long offset)
- {
- 	const unsigned long *p = vaddr + (offset >> 5);
--	int bit = offset & 31UL, res;
-+	unsigned int bit = offset & 31UL, res;
- 
- 	if (offset >= size)
- 		return size;
--- 
-1.7.7.6
