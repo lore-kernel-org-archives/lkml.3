@@ -1,159 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481Ab3FFTRA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 15:17:00 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:42165 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160Ab3FFTQ6 (ORCPT
+	id S1753194Ab3FFTSX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 15:18:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5085 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818Ab3FFTSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 15:16:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <1370185130-15332-2-git-send-email-oliver+list@schinagl.nl>
-References: <1370185130-15332-1-git-send-email-oliver+list@schinagl.nl>
-	<1370185130-15332-2-git-send-email-oliver+list@schinagl.nl>
-Date: Thu, 6 Jun 2013 22:16:56 +0300
-Message-ID: <CAHp75Vdqc9xiPBvQUB3Hfb4EBFUsoVxyuH8MK=9spJ4+rieoDQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Oliver Schinagl <oliver+list@schinagl.nl>
-Cc: maxime.ripard@free-electrons.com, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm Mailing List <linux-arm-kernel@lists.infradead.org>,
-        Oliver Schinagl <oliver@schinagl.nl>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 6 Jun 2013 15:18:22 -0400
+X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=MWvAT0ojoM8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=ITzkURZ2-D4A:10 a=U7ibqblIsD4McFB2XyEA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1370546299.9844.40.camel@gandalf.local.home>
+Subject: Re: [PATCH v14 3/3] trace,x86: Add irq vector tracepoints
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, tglx@linutronix.de,
+        mingo@elte.hu, bp@alien8.de, linux-edac@vger.kernel.org,
+        tony.luck@intel.com, dle-develop@lists.sourceforge.net,
+        tomoki.sekiyama@hds.com
+Date: Thu, 06 Jun 2013 15:18:19 -0400
+In-Reply-To: <51B0A9B4.4080703@hds.com>
+References: <51B0A90F.7030309@hds.com> <51B0A9B4.4080703@hds.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 2, 2013 at 5:58 PM, Oliver Schinagl <oliver+list@schinagl.nl> wrote:
-> From: Oliver Schinagl <oliver@schinagl.nl>
->
-> Allwinner has electric fuses (efuse) on their line of chips. This driver
-> reads those fuses, seeds the kernel entropy and exports them as a sysfs node.
->
-> These fuses are most likly to be programmed at the factory, encoding
-> things like Chip ID, some sort of serial number etc and appear to be
-> reasonable unique.
-> While in theory, these should be writeable by the user, it will probably
-> be inconvinient to do so. Allwinner recommends that a certain input pin,
-> labeled 'efuse_vddq', be connected to GND. From the name however it is
-> highly likly that this name is the programming voltage, required to
-> write these fuses.
-> Even so, they can still be used to generate a board-unique mac from, board
-> unique RSA key and seed the kernel RNG.
->
-> Currently supported are the following known chips:
-> Allwinner sun4i (A10)
-> Allwinner sun5i (A13)
+On Thu, 2013-06-06 at 11:24 -0400, Seiji Aguchi wrote:
 
-Few commets below.
-
-> +++ b/drivers/misc/eeprom/sunxi_sid.c
-> @@ -0,0 +1,172 @@
-
-> +#define DRV_NAME "sunxi-sid"
-> +#define DRV_VERSION "1.0"
-
-
-> +static void __iomem *p_sid_reg_base;
-So, why it's global?
-
-
-> +/* We read the entire key, but only return the requested byte. This is of
-> + * course slower then it could be and uses 4 times more reads as needed but
-> + * keeps code a simpler.
-> + */
-> +u8 sunxi_sid_read_byte(const int offset)
+> --- a/arch/x86/include/asm/desc.h
+> +++ b/arch/x86/include/asm/desc.h
+> @@ -36,8 +36,8 @@ static inline void fill_ldt(struct desc_struct *desc, const struct user_desc *in
+>  
+>  extern struct desc_ptr idt_descr;
+>  extern gate_desc idt_table[];
+> -extern struct desc_ptr nmi_idt_descr;
+> -extern gate_desc nmi_idt_table[];
+> +extern struct desc_ptr debug_idt_descr;
+> +extern gate_desc debug_idt_table[];
+>  
+>  struct gdt_page {
+>  	struct desc_struct gdt[GDT_ENTRIES];
+> @@ -316,7 +316,20 @@ static inline void set_nmi_gate(int gate, void *addr)
+>  	gate_desc s;
+>  
+>  	pack_gate(&s, GATE_INTERRUPT, (unsigned long)addr, 0, 0, __KERNEL_CS);
+> -	write_idt_entry(nmi_idt_table, gate, &s);
+> +	write_idt_entry(debug_idt_table, gate, &s);
+> +}
+> +#endif
+> +
+> +#ifdef CONFIG_TRACING
+> +extern struct desc_ptr trace_idt_descr;
+> +extern gate_desc trace_idt_table[];
+> +static inline void write_trace_idt_entry(int entry, const gate_desc *gate)
 > +{
-> +       u32 sid_key;
-> +       u8 ret;
-> +
-> +       ret = 0;
-
-ret is redundant variable in this function.
-
-> +       if (likely((SID_SIZE))) {
-
-Extra braces.
-Use antipattern here.
-
-> +               sid_key = ioread32be(p_sid_reg_base + round_down(offset, 4));
-> +               sid_key >>= (offset % 4) * 8;
-> +               ret = sid_key & 0xff;
-
-No need to do & 0xff, since return type is byte.
-
-> +static ssize_t sid_read(struct file *fd, struct kobject *kobj,
-> +                       struct bin_attribute *attr, char *buf,
-> +                       loff_t pos, size_t size)
+> +	write_idt_entry(trace_idt_table, entry, gate);
+> +}
+> +#else
+> +static inline void write_trace_idt_entry(int entry, const gate_desc *gate)
 > +{
-> +       ssize_t ret;
-> +       int i;
-> +
-> +       ret = -EPERM;
+>  }
+>  #endif
 
-When will it happen?
-Moreover, ret is redundant.
+Since we are basically down to cosmetic changes, can you make the
+renames of these variables into a separate patch. As they are now more
+about the debug IDT than a NMI idt, it should have been done before, and
+is a separate change to what you are doing here.
 
-> +
-> +       if ((likely(size > 0)) && ((size + pos) <= SID_SIZE)) {
 
-Extra braces in second part of condition.
-Use antipattern.
+>  
+> @@ -331,6 +344,7 @@ static inline void _set_gate(int gate, unsigned type, void *addr,
+>  	 * setup time
+>  	 */
+>  	write_idt_entry(idt_table, gate, &s);
+> +	write_trace_idt_entry(gate, &s);
+>  }
+>  
+>  /*
+> @@ -360,12 +374,39 @@ static inline void alloc_system_vector(int vector)
+>  	}
+>  }
+>  
 
-> +static int __init sunxi_sid_probe(struct platform_device *pdev)
-> +{
-> +       int entropy[SID_SIZE], i, ret;
+-- Steve
 
-Usually ret variable is located at the end of definition block.
-Moreover, there is no relationship between those three. It means one
-line per variable.
 
-> +       struct device *dev;
-> +       struct resource *res;
-> +       void __iomem *sid_reg_base;
-> +
-> +       dev = &pdev->dev;
-
-Please, be consistent, somewhere you still use &pdev->dev.
-I recomend to use &pdev->dev everywhere in probe(), since we don't
-know if the device will be probed successfully.
-
-> +       if (unlikely(!pdev->dev.of_node)) {
-> +               dev_err(dev, "No devicetree data available\n");
-> +               ret = -EFAULT;
-> +               goto exit;
-
-Plain return here and in entire function where it applies.
-
-> +       }
-> +
-> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +       sid_reg_base = devm_ioremap_resource(&pdev->dev, res);
-> +       if (IS_ERR(sid_reg_base)) {
-> +               dev_err(dev, "Unable to obtain resource\n");
-
-Redundant message. You have not to duplicate this.
-
-> +               ret = PTR_ERR(sid_reg_base);
-> +               goto exit;
-> +       }
-> +       platform_set_drvdata(pdev, sid_reg_base);
-> +       p_sid_reg_base = sid_reg_base;
-> +
-> +       ret = device_create_bin_file(dev, &sid_bin_attr);
-> +       if (unlikely(ret)) {
-
-Any benifit of (un)likely in probe()?
-
-> +
-> +
-> +exit:
-> +       return ret;
-
-Remove those two and empty lines.
-
---
-With Best Regards,
-Andy Shevchenko
