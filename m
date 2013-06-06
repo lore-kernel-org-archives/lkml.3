@@ -1,73 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757898Ab3FFJeU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 05:34:20 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:55726 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755254Ab3FFJeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 05:34:18 -0400
-Date: Thu, 6 Jun 2013 11:34:02 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: liguang <lig.fnst@cn.fujitsu.com>
-Cc: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org,
-        Andreas =?utf-8?Q?F=C3=A4rber?= <afaerber@suse.de>,
-        Igor Mammedov <imammedo@redhat.com>
-Subject: Re: [PATCH RFC v2 1/3] drivers/platform/x86: add cpu physically
- hotplug driver
-Message-ID: <20130606093402.GA21272@pd.tnic>
-References: <1370482835-764-1-git-send-email-lig.fnst@cn.fujitsu.com>
- <1370482835-764-2-git-send-email-lig.fnst@cn.fujitsu.com>
+	id S1757995Ab3FFJhJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 05:37:09 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37248 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752550Ab3FFJhG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 05:37:06 -0400
+Date: Thu, 6 Jun 2013 10:35:25 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Joseph Lo <josephl@nvidia.com>,
+        Karan Jhavar <kjhavar@nvidia.com>, Varun Wadekar <vwadekar@nvidia.com>,
+        Chris Johnson <CJohnson@nvidia.com>,
+        Matthew Longnecker <MLongnecker@nvidia.com>, gnurou@gmail.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: tegra: add basic SecureOS support
+Message-ID: <20130606093524.GM18614@n2100.arm.linux.org.uk>
+References: <1370503687-17767-1-git-send-email-acourbot@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370482835-764-2-git-send-email-lig.fnst@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1370503687-17767-1-git-send-email-acourbot@nvidia.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 09:40:33AM +0800, liguang wrote:
-> this driver will support cpu phyical add/removal automatically
-> after online/offline. if cpu hotpluged, cpu will not
-> online automatically, and for cpu offline, we try to
-> do actually eject if allowed for cpu like
-> "echo 1 > /sys/bus/acpi/devices/LNXCPU\:0X/eject"
-> this "echo ..." is only present for recent kernel
-> (sorry, can't figure out since when), for a little
-> older kernel, there's not such approach AFAICS.
-> 
-> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
-> ---
->  drivers/platform/x86/Kconfig              |    8 ++++
->  drivers/platform/x86/Makefile             |    1 +
->  drivers/platform/x86/cpu_physic_hotplug.c |   60 +++++++++++++++++++++++++++++
->  3 files changed, 69 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/platform/x86/cpu_physic_hotplug.c
-> 
-> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-> index 8577261..39b2392 100644
-> --- a/drivers/platform/x86/Kconfig
-> +++ b/drivers/platform/x86/Kconfig
-> @@ -789,4 +789,12 @@ config PVPANIC
->  	  a paravirtualized device provided by QEMU; it lets a virtual machine
->  	  (guest) communicate panic events to the host.
->  
-> +config QEMU_CPU_PHYSIC_HOTPLUG
+On Thu, Jun 06, 2013 at 04:28:07PM +0900, Alexandre Courbot wrote:
+> +static int __attribute__((used)) __tegra_smc_stack[10];
+> +
+> +/*
+> + * With EABI, subtype and arg already end up in r0, r1 and r2 as they are
+> + * function arguments, but we prefer to play safe here and explicitly move
+> + * these values into the expected registers anyway. mov instructions without
+> + * any side-effect are turned into nops by the assembler, which limits
+> + * overhead.
 
-This is hillarious: have you actually checked the dictionary on the
-meaning of "physic"?
+No they aren't.  They will be preserved as:
+	mov r0, r0
+	mov r1, r1
+	mov r2, r2
 
-Yep, "laxative" because the kernel is constipated and can't hold its
-CPUs anymore.
+Moreover, things will go wrong if the compiler decides for whatever reason
+to move 'arg' into r0 before calling your code sequence.  So really this
+is quite fragile.
 
-LOOOL :-).
+There's also no point in mentioning EABI in the above paragraph; all ARM
+ABIs under Linux have always placed the arguments in r0..r3 and then on
+the stack.  You can assert that this is always true by using the __asmeq()
+macro.
 
--- 
-Regards/Gruss,
-    Boris.
+Also...
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+> + */
+> +static void tegra_generic_smc(u32 type, u32 subtype, u32 arg)
+> +{
+> +	asm volatile(
+> +		".arch_extension	sec\n\t"
+> +		"ldr	r3, =__tegra_smc_stack\n\t"
+> +		"stmia	r3, {r4-r12, lr}\n\t"
+
+using a statically allocated area to save the registers in this way is
+probably a bad move; although the hotplug code guarantees that there
+will be no concurrency between CPU hotplug operations, this sets a
+precident for it being used in places where no such protection exists.
+
+What is wrong with stacking r4-r12, lr onto the SVC stack?  You don't
+save the SVC stack pointer, so one can only assume that your SMC
+implmentation preserves this (if it doesn't, that's yet another bug
+with this assembly code.)
+
+Combining these two issues, you're probably far better off using an
+__attribute__((naked)) function for this - which means you get to
+write the entire function in assembly code without any compiler
+interference:
+
+static void __attribute__((naked)) tegra_generic_smc(u32 type, u32 subtype, u32 arg)
+{
+	asm volatile(
+		".arch_extension	sec\n\t"
+		"stmfd	sp!, {r4 - r12, lr}\n\t"
+		__asmeq("%0", "r0")
+		__asmeq("%1", "r1")
+		__asmeq("%2", "r2")
+		"mov	r3, #0\n\t"
+		"mov	r4, #0\n\t"
+		"dsb\n\t"
+		"smc	#0\n\t"
+		"ldmfd	sp!, {r4 - r12, pc}"
+		:
+		: "r" (type), "r" (subtype), "r" (arg)
+		: "memory");
+}
