@@ -1,49 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab3FFN30 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 09:29:26 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:35982 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751268Ab3FFN3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 09:29:24 -0400
-Date: Thu, 6 Jun 2013 15:29:08 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Linux EFI <linux-efi@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Jiri Kosina <jkosina@suse.cz>,
-        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH 4/4] x86, efi: Map runtime services 1:1
-Message-ID: <20130606132908.GE20972@pd.tnic>
-References: <1370177770-26661-1-git-send-email-bp@alien8.de>
- <1370177770-26661-5-git-send-email-bp@alien8.de>
- <20130606131439.GI30420@console-pimps.org>
+	id S1756597Ab3FFN3m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 09:29:42 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:18089 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117Ab3FFN3k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 09:29:40 -0400
+Message-ID: <51B08EB7.8080702@oracle.com>
+Date: Thu, 06 Jun 2013 21:29:27 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130606131439.GI30420@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Viresh Kumar <viresh.kumar@linaro.org>, Neil Gu <qing.gu@oracle.com>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ACPI: update user_policy.max when _PPC updated
+References: <51AE8BE4.8050409@oracle.com> <31897041.QcNuTieHbo@vostro.rjw.lan> <51AFD75C.3030705@oracle.com> <42861210.QMFsUVH8RU@vostro.rjw.lan>
+In-Reply-To: <42861210.QMFsUVH8RU@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 02:14:39PM +0100, Matt Fleming wrote:
-> This patch makes my TunnelMountain machine spin in handle_pte_fault()
-> when triggering one of the "firmware makes references to physical
-> addresses" code paths.
->
-> I'll try and dig into this tomorrow to figure out what's going on.
+On 06/06/13 19:06, Rafael J. Wysocki wrote:
+> On Thursday, June 06, 2013 08:27:08 AM Joe Jin wrote:
+>> On 06/06/13 04:40, Rafael J. Wysocki wrote:
+>>> On Wednesday, June 05, 2013 08:52:52 AM Joe Jin wrote:
+>>>> When _PPC changed dynamically the user_policy.max will not be updated,
+>>>> this prevent CPU run on the highest frequency.
+>>>
+>>> Why should the user setting be always related to the current maximum available
+>>> frequency?  What if the user sets the limit for power capping purposes?
+>>
+>> cpufreq_update_policy() get policy->max from user_policy.max:
+>>
+>> 1782 int cpufreq_update_policy(unsigned int cpu)
+>> 1783 {
+>> [...]
+>> 1800         policy.min = data->user_policy.min;
+>> 1801         policy.max = data->user_policy.max;
+>> 1802         policy.policy = data->user_policy.policy;
+>> 1803         policy.governor = data->user_policy.governor;
+>> [...]
+>> 1819         ret = __cpufreq_set_policy(data, &policy);
+>> [...]
+>>
+>> /sys/devices/system/cpu/cpu$/cpufreq/scaling_max_freq using policy->max 
+>> and user_policy->max, when update it, so I think _PPC changes also need
+>> to update these two?
+> 
+> Yes, if policy.max happens to be greater that the maximum available frequency,
+> then (and only then) it probably should be updated.  It should never be bumped
+> up, though.
 
-Hmmm, looks like we have forgotten to map an EFI region and we do a #PF
-when executing the EFI code.
+Does this means if I enabled hardcap before kernel boot up, and later system brought
+up and I disabled hardcap, I has to enlarge the max frequency manually?
 
-If so, I'm thinking we don't want to touch the #PF code and teach it
-about EFI so maybe we should make sure we've mapped *everything* EFI
-runtime would need before we switch PGDs...
+Thanks,
+Joe
+
+> 
+> Thanks,
+> Rafael
+> 
+> 
+>>>> Signed-off-by: Joe Jin <joe.jin@oracle.com>
+>>>> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+>>>> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+>>>> ---
+>>>>  drivers/acpi/processor_perflib.c | 17 ++++++++++++++++-
+>>>>  1 file changed, 16 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
+>>>> index e854582..e01aa7d 100644
+>>>> --- a/drivers/acpi/processor_perflib.c
+>>>> +++ b/drivers/acpi/processor_perflib.c
+>>>> @@ -180,6 +180,7 @@ static void acpi_processor_ppc_ost(acpi_handle handle, int status)
+>>>>  int acpi_processor_ppc_has_changed(struct acpi_processor *pr, int event_flag)
+>>>>  {
+>>>>  	int ret;
+>>>> +	unsigned int saved = (unsigned int)pr->performance_platform_limit;
+>>>>  
+>>>>  	if (ignore_ppc) {
+>>>>  		/*
+>>>> @@ -204,8 +205,22 @@ int acpi_processor_ppc_has_changed(struct acpi_processor *pr, int event_flag)
+>>>>  	}
+>>>>  	if (ret < 0)
+>>>>  		return (ret);
+>>>> -	else
+>>>> +	else {
+>>>> +		unsigned int ppc = (unsigned int)pr->performance_platform_limit;
+>>>> +
+>>>> +		if (saved != ppc) {
+>>>> +			struct cpufreq_policy *policy;
+>>>> +
+>>>> +			policy = cpufreq_cpu_get(pr->id);
+>>>> +			if (likely(policy))
+>>>> +				policy->user_policy.max =
+>>>> +					pr->performance->states[ppc].
+>>>> +					core_frequency * 1000;
+>>>> +			cpufreq_cpu_put(policy);
+>>>> +		}
+>>>> +
+>>>>  		return cpufreq_update_policy(pr->id);
+>>>> +	}
+>>>>  }
+>>>>  
+>>>>  int acpi_processor_get_bios_limit(int cpu, unsigned int *limit)
+>>>>
+>>
+>>
+>>
+
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Oracle <http://www.oracle.com>
+Joe Jin | Software Development Senior Manager | +8610.6106.5624
+ORACLE | Linux and Virtualization
+No. 24 Zhongguancun Software Park, Haidian District | 100193 Beijing 
