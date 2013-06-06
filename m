@@ -1,41 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751200Ab3FFNXb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 09:23:31 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:46943 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab3FFNXa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 09:23:30 -0400
-Message-ID: <51B08D4E.7020806@intel.com>
-Date: Thu, 06 Jun 2013 14:23:26 +0100
-From: Matt Fleming <matt.fleming@intel.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1754902Ab3FFNYY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 09:24:24 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43157 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750975Ab3FFNYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 09:24:22 -0400
+Date: Thu, 6 Jun 2013 15:24:06 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Linux EFI <linux-efi@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Jiri Kosina <jkosina@suse.cz>,
+        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH 2/4] x86, cpa: Map in an arbitrary pgd
+Message-ID: <20130606132406.GC20972@pd.tnic>
+References: <1370177770-26661-1-git-send-email-bp@alien8.de>
+ <1370177770-26661-3-git-send-email-bp@alien8.de>
+ <20130606102233.GG30420@console-pimps.org>
 MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] UEFI: Don't pass boot services regions to SetVirtualAddressMap()
-References: <1370211145-7273-1-git-send-email-matthew.garrett@nebula.com>
-In-Reply-To: <1370211145-7273-1-git-send-email-matthew.garrett@nebula.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130606102233.GG30420@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/13 23:12, Matthew Garrett wrote:
-> We need to map boot services regions during startup in order to avoid
-> firmware bugs, but we shouldn't be passing those regions to
-> SetVirtualAddressMap(). Ensure that we're only passing regions that are
-> marked as being mapped at runtime.
+On Thu, Jun 06, 2013 at 11:22:33AM +0100, Matt Fleming wrote:
+> > @@ -697,7 +714,10 @@ static int __change_page_attr(struct cpa_data *cpa, int primary)
+> >  	else
+> >  		address = *cpa->vaddr;
+> >  repeat:
+> > -	kpte = lookup_address(address, &level);
+> > +	if (cpa->pgd)
+> > +		kpte = __lookup_address_in_pgd(cpa->pgd, address, &level);
+> > +	else
+> > +		kpte = _lookup_address_cpa(cpa, address, &level);
 > 
-> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-> ---
->  arch/x86/platform/efi/efi.c | 7 +++++++
->  1 file changed, 7 insertions(+)
+> Don't you also need to initialise .pgd in __set_pages_p() and
+> __set_pages_np()?
 
-This doesn't fix a crash or regression, right? If it's a "this just
-makes more sense" patch, I'll queue it up in the 'next' branch for
-v3.11.
+Hmm, I don't think so. The idea is to leave the current functionality in
+pageattr.c untouched. Currently, it maps PTEs in init_mm.pgd by default
+because this is the kernel PGD.
+
+For EFI, we switch the PGD and we want to map the PTEs in this other
+PGD, thus we have our own kernel_map_pages_in_pgd() which passes in the
+PGD we want to map in through struct cpa_data.
+
+Then, we differentiate the PGD down that code by looking at cpa->pgd.
+
+This was at least the idea.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
