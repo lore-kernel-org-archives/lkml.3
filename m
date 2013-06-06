@@ -1,116 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933424Ab3FFM0e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 08:26:34 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:36596 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933317Ab3FFMRk (ORCPT
+	id S933452Ab3FFM04 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 08:26:56 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:48104 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933344Ab3FFM0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 08:17:40 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 05/33] ARM: ux500: Supply the GPIO clocks lookup to the DBX500 DT
-Date: Thu,  6 Jun 2013 13:16:53 +0100
-Message-Id: <1370521041-32318-6-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
-References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
+	Thu, 6 Jun 2013 08:26:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <1370503687-17767-1-git-send-email-acourbot@nvidia.com>
+References: <1370503687-17767-1-git-send-email-acourbot@nvidia.com>
+Date: Thu, 6 Jun 2013 17:56:53 +0530
+Message-ID: <CABb+yY2SFfejMbbYOebMCUuMtAZF3u-yc+6z_MJTG2oOeSwL_g@mail.gmail.com>
+Subject: Re: [PATCH] ARM: tegra: add basic SecureOS support
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Joseph Lo <josephl@nvidia.com>,
+        Karan Jhavar <kjhavar@nvidia.com>, Varun Wadekar <vwadekar@nvidia.com>,
+        Chris Johnson <CJohnson@nvidia.com>,
+        Matthew Longnecker <MLongnecker@nvidia.com>, gnurou@gmail.com,
+        devicetree-discuss@lists.ozlabs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-tegra@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/boot/dts/dbx5x0.dtsi |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+On Thu, Jun 6, 2013 at 12:58 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+> Boot loaders on some Tegra devices can be unlocked but do not let the
+> system operate without SecureOS. SecureOS prevents access to some
+> registers and requires the operating system to perform certain
+> operations through Secure Monitor Calls instead of directly accessing
+> the hardware.
+>
+IOW, some critical h/w controls on Tegra are accessible only from
+Secure mode (not unusual). So if we(Linux) run in NS mode we need to
+make calls to the SecureOS, over SMC, to do things for us?
 
-diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
-index 18c5c27..928ef56 100644
---- a/arch/arm/boot/dts/dbx5x0.dtsi
-+++ b/arch/arm/boot/dts/dbx5x0.dtsi
-@@ -78,6 +78,8 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			gpio-bank = <0>;
-+
-+			clocks = <&prcc_pclk 1 9>;
- 		};
- 
- 		gpio1: gpio@8012e080 {
-@@ -91,6 +93,8 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			gpio-bank = <1>;
-+
-+			clocks = <&prcc_pclk 1 9>;
- 		};
- 
- 		gpio2: gpio@8000e000 {
-@@ -104,6 +108,8 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			gpio-bank = <2>;
-+
-+			clocks = <&prcc_pclk 3 8>;
- 		};
- 
- 		gpio3: gpio@8000e080 {
-@@ -117,6 +123,8 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			gpio-bank = <3>;
-+
-+			clocks = <&prcc_pclk 3 8>;
- 		};
- 
- 		gpio4: gpio@8000e100 {
-@@ -130,6 +138,8 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			gpio-bank = <4>;
-+
-+			clocks = <&prcc_pclk 3 8>;
- 		};
- 
- 		gpio5: gpio@8000e180 {
-@@ -143,6 +153,8 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			gpio-bank = <5>;
-+
-+			clocks = <&prcc_pclk 3 8>;
- 		};
- 
- 		gpio6: gpio@8011e000 {
-@@ -156,6 +168,8 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			gpio-bank = <6>;
-+
-+			clocks = <&prcc_pclk 2 1>;
- 		};
- 
- 		gpio7: gpio@8011e080 {
-@@ -169,6 +183,8 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			gpio-bank = <7>;
-+
-+			clocks = <&prcc_pclk 2 1>;
- 		};
- 
- 		gpio8: gpio@a03fe000 {
-@@ -182,6 +198,8 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			gpio-bank = <8>;
-+
-+			clocks = <&prcc_pclk 6 1>;
- 		};
- 
- 		pinctrl {
--- 
-1.7.10.4
+> This patch introduces basic SecureOS support for Tegra. SecureOS support
+> can be enabled by adding a "nvidia,secure-os" property to the "chosen"
+> node of the device tree.
+>
+Probably just a nit, but shouldn't it be "nvidia,nonsecure-os"
+instead, denoting the mode Linux is going to run?  (and then I wonder
+if we could detect the mode (S or NS) at runtime and avoid this flag
+at all).
 
+Cheers,
+-Jassi
