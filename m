@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697Ab3FGIwO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 04:52:14 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:48917 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754631Ab3FGIwJ (ORCPT
+	id S1754524Ab3FGIwA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 04:52:00 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:43042 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754156Ab3FGIvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 04:52:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAAVeFuKxRuLdhO+-+YHG=c-TNGUUJbDj5AHj+K5e8y1JDEDksg@mail.gmail.com>
-References: <1370503687-17767-1-git-send-email-acourbot@nvidia.com>
-	<CABb+yY2SFfejMbbYOebMCUuMtAZF3u-yc+6z_MJTG2oOeSwL_g@mail.gmail.com>
-	<CAAVeFuKxRuLdhO+-+YHG=c-TNGUUJbDj5AHj+K5e8y1JDEDksg@mail.gmail.com>
-Date: Fri, 7 Jun 2013 14:22:08 +0530
-Message-ID: <CABb+yY38wSqfju0HOfMDpGQxgr1pFYkJGH3aa5fPOz2YpCCGaw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: tegra: add basic SecureOS support
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Joseph Lo <josephl@nvidia.com>,
-        Karan Jhavar <kjhavar@nvidia.com>, Varun Wadekar <vwadekar@nvidia.com>,
-        Chris Johnson <CJohnson@nvidia.com>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 7 Jun 2013 04:51:51 -0400
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+To: gleb@redhat.com
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH v3 1/6] KVM: MMU: retain more available bits on mmio spte
+Date: Fri,  7 Jun 2013 16:51:23 +0800
+Message-Id: <1370595088-3315-2-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060708-8256-0000-0000-000007D497EF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 7, 2013 at 12:43 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
-> On Thu, Jun 6, 2013 at 9:26 PM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
->> On Thu, Jun 6, 2013 at 12:58 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
->>> Boot loaders on some Tegra devices can be unlocked but do not let the
->>> system operate without SecureOS. SecureOS prevents access to some
->>> registers and requires the operating system to perform certain
->>> operations through Secure Monitor Calls instead of directly accessing
->>> the hardware.
->>>
->> IOW, some critical h/w controls on Tegra are accessible only from
->> Secure mode (not unusual). So if we(Linux) run in NS mode we need to
->> make calls to the SecureOS, over SMC, to do things for us?
->
-> Exactly.
->
-OK so this just an instance of a situation that is going to be more
-common in future - most modern cpus (CortexA based at least) support
-TrustZone and it's a matter of device functionality before a board
-designer chucks the Linux kernel (that we usually run in Secure mode
-while development) into NS mode and have some
-SecureOS/TrustedOS/Hypervisor et al control access to the secure
-peripherals from Secure Mode.
+Let mmio spte only use bit62 and bit63 on upper 32 bits, then bit 52 ~ bit 61
+can be used for other purposes
 
->>> This patch introduces basic SecureOS support for Tegra. SecureOS support
->>> can be enabled by adding a "nvidia,secure-os" property to the "chosen"
->>> node of the device tree.
->>>
->> Probably just a nit, but shouldn't it be "nvidia,nonsecure-os"
->> instead, denoting the mode Linux is going to run?  (and then I wonder
->> if we could detect the mode (S or NS) at runtime and avoid this flag
->> at all).
->
-> Detection of the secure mode at runtime would only solve half of the
-> issue: we would know that we are running in non-secure mode, but we
-> would still not know what monitor is operating. Detecting that part is
-> impossible AFAIK, so I'm afraid we need to pass that information
-> through the DT here.
->
-Yes, Stephen's suggestion is far more generally applicable. We should
-go for it, just bearing in mind that ABI need and type is going to be
-board specific.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/vmx.c | 4 ++--
+ arch/x86/kvm/x86.c | 8 +++++++-
+ 2 files changed, 9 insertions(+), 3 deletions(-)
 
-Cheers,
--Jassi
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 260a919..78ee123 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -4176,10 +4176,10 @@ static void ept_set_mmio_spte_mask(void)
+ 	/*
+ 	 * EPT Misconfigurations can be generated if the value of bits 2:0
+ 	 * of an EPT paging-structure entry is 110b (write/execute).
+-	 * Also, magic bits (0xffull << 49) is set to quickly identify mmio
++	 * Also, magic bits (0x3ull << 62) is set to quickly identify mmio
+ 	 * spte.
+ 	 */
+-	kvm_mmu_set_mmio_spte_mask(0xffull << 49 | 0x6ull);
++	kvm_mmu_set_mmio_spte_mask((0x3ull << 62) | 0x6ull);
+ }
+ 
+ /*
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 6402951..54059ba 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5263,7 +5263,13 @@ static void kvm_set_mmio_spte_mask(void)
+ 	 * Set the reserved bits and the present bit of an paging-structure
+ 	 * entry to generate page fault with PFER.RSV = 1.
+ 	 */
+-	mask = ((1ull << (62 - maxphyaddr + 1)) - 1) << maxphyaddr;
++	 /* Mask the reserved physical address bits. */
++	mask = ((1ull << (51 - maxphyaddr + 1)) - 1) << maxphyaddr;
++
++	/* Bit 62 is always reserved for 32bit host. */
++	mask |= 0x3ull << 62;
++
++	/* Set the present bit. */
+ 	mask |= 1ull;
+ 
+ #ifdef CONFIG_X86_64
+-- 
+1.8.1.4
+
