@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab3FGJJc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 05:09:32 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:48789 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255Ab3FGJJ3 (ORCPT
+	id S1754297Ab3FGJJm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 05:09:42 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:38685 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752105Ab3FGJJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 05:09:29 -0400
-Date: Fri, 7 Jun 2013 10:09:23 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Paul Walmsley <pwalmsley@nvidia.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, Andrew Chew <achew@nvidia.com>,
-        Matthew Longnecker <mlongnecker@nvidia.com>
-Message-ID: <20130607090923.GH31367@sirena.org.uk>
-References: <alpine.DEB.2.02.1306070753420.32163@utopia.booyaka.com>
+	Fri, 7 Jun 2013 05:09:37 -0400
+Message-ID: <51B1A33C.1020708@huawei.com>
+Date: Fri, 7 Jun 2013 17:09:16 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+plSmdOTvOCX/8Oy"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1306070753420.32163@utopia.booyaka.com>
-X-Cookie: Are you a turtle?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: core: add regulator_get_linear_step()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        <torvalds@linux-foundation.org>, <stable@vger.kernel.org>,
+        <lwn@lwn.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Linux 3.0.80
+References: <20130524182347.GA3110@kroah.com>
+In-Reply-To: <20130524182347.GA3110@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2013/5/25 2:23, Greg KH wrote:
+> I'm announcing the release of the 3.0.80 kernel.
+> 
+> All users of the 3.0 kernel series must upgrade.
+> 
+> The updated 3.0.y git tree can be found at:
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
+> and can be browsed at the normal kernel.org git web browser:
+> 	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
+> 
+> thanks,
+> 
+> greg k-h
+> 
+> ------------
+> 
+>  Makefile                              |    2 +-
+>  drivers/hwmon/abituguru.c             |   16 ++++++++++------
+>  drivers/media/dvb/mantis/mantis_dvb.c |    6 ++++--
+>  fs/btrfs/ioctl.c                      |   10 +++++-----
+>  4 files changed, 20 insertions(+), 14 deletions(-)
+> 
 
---+plSmdOTvOCX/8Oy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.0.80 failed to boot, and looks like the culprit is blkcg, so I disabled
+CONFIG_CGROUP and it boot successfully.
 
-On Fri, Jun 07, 2013 at 08:06:56AM +0000, Paul Walmsley wrote:
+I haven't tried 3.0.81, as it's not released yet.
 
-> Applies on v3.10-rc4.  Will be used by the upcoming Tegra DFLL clocksourc=
-e=20
-> driver, which will build its own table of voltage-to-VSEL values by=20
-> querying the regulator framework.
-
-Can you show the code please?
-
---+plSmdOTvOCX/8Oy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRsaM6AAoJELSic+t+oim9s+EQAIo1T9CipQV4RuC0ONe6h/yh
-erpT87tehwzWJLstitDRsh26EVt523IEv55yV/P8OE4Z2cG6lhzrNMTR+KfJQQtE
-ahU6DjoxtCFlclJJ+5jnFFRzAQnsZopeK3WgAh0FReYde18VUUg9PL1A8iRIOwH8
-nVoIkuSl6gH3IcFMZxwExSo2g/cZjcKBfP12RD4Ajko757suGmVWwJnlG3GXw7pr
-2auSB8EFqn2q6YzHaZ8wGwMnPYSb4CKGAQ3Yn5V0rA5MmmzKLRwWZ/7IyP+IxHKz
-urg0pCeXFHuN4qOiQrK2Ua8DPpAoEi2akgp/TN3sZOHX9cv4M1I0RBaLZldyYeZN
-LP3lW57xAVyBUEDKMr9V95VkE3OcmD7wB7pVma2IfbOIGWAJUMXLDbC2BzHAkRC/
-zhNRWkRguO6MTj/9lR2tnv+5rDBFYayFzXLZaMiusLR/xVO/2q9FBeUA1IBwqFry
-tRK09sBQqVP9J4WVUYQQx9Nu8ygke/BivJuhqNbf657zMSNCzjgwzg1rRXvYr1VR
-y1ujDUFEiq9KqzhhjyulVVE4OirWKT5MvNXKTS/nKeu5gvjBbg73CkVj5nQGLIgu
-nExxyQp8SALyTgNqgn/QC287CYXuFuW2QC557D3Of7d9oEU+Zv9GzLrh6Y5x+DPy
-NzAS6GSdnJlmqmdDGoP9
-=D1qQ
------END PGP SIGNATURE-----
-
---+plSmdOTvOCX/8Oy--
