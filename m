@@ -1,77 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756971Ab3FGTE1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 15:04:27 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:39441 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754298Ab3FGTE0 (ORCPT
+	id S1757190Ab3FGTGB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 15:06:01 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:44570 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756012Ab3FGTF5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 15:04:26 -0400
+	Fri, 7 Jun 2013 15:05:57 -0400
+Message-ID: <51B22F01.3030905@arm.com>
+Date: Fri, 07 Jun 2013 20:05:37 +0100
+From: Jonathan Austin <jonathan.austin@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <CAOesGMg+Xk5yy2W3n__QYEkrXb5FP6eruOWvZPNHkOVHf2+pDA@mail.gmail.com>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
-	<CAKON4OxDD5orX2w-_+d5kawTGXbE3KKj2QLERo9m7=NiUSXhgQ@mail.gmail.com>
-	<51AFA6DD.3000202@wwwdotorg.org>
-	<CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com>
-	<1370469574.18839.33.camel@localhost>
-	<CAPweEDxMpeJc-w=Yd7d2OT=UisRBp2rxf-MPMDUCOG3EyJz1GQ@mail.gmail.com>
-	<CAKON4OxwyV2f_iTEb5RnP_azc7EsSxPdku_TY5WLWxN7USiY1Q@mail.gmail.com>
-	<CAPweEDw1BabE0cmT5fxZ3Z9p9EH508M3Nzcqk2VcO0oz-qYsvg@mail.gmail.com>
-	<1370475609.20454.44.camel@localhost>
-	<CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
-	<CAKON4OxPDpN3BTc9GWP44exDSkAZGJ5OeCpUP37vRnnvxwUnmw@mail.gmail.com>
-	<CAOesGMgqxhG45NyCfpHc_0uHS+_Gn-hGZm-+CRvK2EEf1AGTow@mail.gmail.com>
-	<CAPweEDwU+RzTCGb20uh7jxAzjbrX_yHVa4sy_ATr7MWpBb4WcQ@mail.gmail.com>
-	<CAOesGMg+Xk5yy2W3n__QYEkrXb5FP6eruOWvZPNHkOVHf2+pDA@mail.gmail.com>
-Date: Fri, 7 Jun 2013 20:04:26 +0100
-Message-ID: <CAPweEDzeyJh+DKX=8tzrT9AnG9NqLp8nWkWFmB2Wy+JnBkqEdg@mail.gmail.com>
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
- Uploading linux (3.9.4-1))
-From: "luke.leighton" <luke.leighton@gmail.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm <debian-arm@lists.debian.org>,
-        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
-        debian-kernel <debian-kernel@lists.debian.org>
-Content-Type: text/plain; charset=UTF-8
+To: =?UTF-8?B?QW5kcsOpIEhlbnRzY2hlbA==?= <nerv@dawncrow.de>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH v5] arm: Preserve the user r/w register TPIDRURW on context
+ switch and fork
+References: <519D32E2.5050102@dawncrow.de>
+In-Reply-To: <519D32E2.5050102@dawncrow.de>
+X-OriginalArrivalTime: 07 Jun 2013 19:05:52.0593 (UTC) FILETIME=[07C3E410:01CE63B2]
+X-MC-Unique: 113060720055500201
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 7, 2013 at 7:54 PM, Olof Johansson <olof@lixom.net> wrote:
-> Luke,
->
-> I want only one thing from you at this time. See below.
->
->
-> On Fri, Jun 7, 2013 at 11:45 AM, luke.leighton <luke.leighton@gmail.com> wrote:
->>  .... but the Directors of Allwinner aren't been kept in the loop,
->> here: that's my job, to get them up-to-speed.
->
-> The one job I would love for you to do instead of all this trolling
-> and time-wasting that's being done by _everybody_ involved, is to just
-> extract yourself from the situation and let us go on with our work.
-> You're causing nothing but confusion and extra work. Literally. You
-> represent nobody that matters in this discussion.
+Hi André
 
- absolutely correct.  i am nobody, who is in the right place at the
-right time.  i'm just a messenger.  so - what message do you wish to
-take to the Directors of Allwinner (if any).
+This looks good to go - I've tested this version of the patch too (on 
+Versatile Express)
 
-> By demanding
+The next step is to put it in to Russell's patch system. This is the way 
+Russell manages (small/non-pull-request) things that need to go in to 
+his tree.
 
- a-a-ah, no demands made.
+There are instructions on using the patch-system here:
+http://www.arm.linux.org.uk/developer/patches/info.php
 
-> us to spend time and effort bringing you personally up to
-> speed on a subject that both we (ARM kernel community) and them
-> (Allwinner) are already having discussions about, it's nothing but a
-> distraction and waste of energy.
+If you're using git-format-patch and git-send-email then the main point 
+to note is the need to add the KernelVersion: tag described in that 
+documentation and also that Russell doesn't want '[Patch]' tags in 
+subject lines.
+
+There's a form for creating yourself an account on the patch system at 
+http://www.arm.linux.org.uk/developer/patches/add.php - I'm not actually 
+sure that an account is necessary to submit via email - but I *do* have 
+one and I've only ever used email so I suspect it might be!
+
+Hope that helps,
+
+Jonny
+
+On 22/05/13 22:04, André Hentschel wrote:
+> From: André Hentschel <nerv@dawncrow.de>
 >
-> And yes, Allwinner knows about this public email thread
+> Since commit 6a1c53124aa1 the user writeable TLS register was zeroed to
+> prevent it from being used as a covert channel between two tasks.
+>
+> There are more and more applications coming to Windows RT,
+> Wine could support them, but mostly they expect to have
+> the thread environment block (TEB) in TPIDRURW.
+>
+> This patch preserves that register per thread instead of clearing it.
+> Unlike the TPIDRURO, which is already switched, the TPIDRURW
+> can be updated from userspace so needs careful treatment in the case that we
+> modify TPIDRURW and call fork(). To avoid this we must always read
+> TPIDRURW in copy_thread.
+>
+> Signed-off-by: André Hentschel <nerv@dawncrow.de>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Jonathan Austin <jonathan.austin@arm.com>
+>
+> ---
+> This patch is against Linux 3.10-rc2 (c7788792a5e7b0d5d7f96d0766b4cb6112d47d75)
+>
+> v2: rework and fixup of v1, based on a suggested patch by Will Deacon
+> v3: total rework and fixup of v2
+> v4: removed condition on assembler instruction,
+>      adapted my code to kernel-style, both based on comments by Will Deacon
+> v5: rebased v4 on 3.10-rc2 and adding this version history
+>
+> As suggested by Jonathan Austin, i'll send this patch to RMK's patch tracker in
+> case there are no more comments on it.
+>
+> Why so much Signed-off-bys? Some History:
+> The first patch had performance issues pointed out by Russel King,
+> so Will Deacon jumped in to help me with that. The second one again
+> had performance issues and the missing copy_thread part was uncovered.
+> After some iterations by me, Jonathan Austin proposed a patch and
+> Russel King sent his idea of the assembler part. All this was finally
+> merged and refined into this patch.
+> Thanks to everyone!
+>
+>   arch/arm/include/asm/thread_info.h |  2 +-
+>   arch/arm/include/asm/tls.h         | 40 +++++++++++++++++++++++++-------------
+>   arch/arm/kernel/entry-armv.S       |  4 ++--
+>   arch/arm/kernel/process.c          |  4 +++-
+>   arch/arm/kernel/ptrace.c           |  2 +-
+>   arch/arm/kernel/traps.c            |  4 ++--
+>   6 files changed, 36 insertions(+), 20 deletions(-)
+>
+> diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
+> index 1995d1a..214d415 100644
+> --- a/arch/arm/include/asm/thread_info.h
+> +++ b/arch/arm/include/asm/thread_info.h
+> @@ -58,7 +58,7 @@ struct thread_info {
+>   	struct cpu_context_save	cpu_context;	/* cpu context */
+>   	__u32			syscall;	/* syscall number */
+>   	__u8			used_cp[16];	/* thread used copro */
+> -	unsigned long		tp_value;
+> +	unsigned long		tp_value[2];	/* TLS registers */
+>   #ifdef CONFIG_CRUNCH
+>   	struct crunch_state	crunchstate;
+>   #endif
+> diff --git a/arch/arm/include/asm/tls.h b/arch/arm/include/asm/tls.h
+> index 73409e6..83259b8 100644
+> --- a/arch/arm/include/asm/tls.h
+> +++ b/arch/arm/include/asm/tls.h
+> @@ -2,27 +2,30 @@
+>   #define __ASMARM_TLS_H
+>
+>   #ifdef __ASSEMBLY__
+> -	.macro set_tls_none, tp, tmp1, tmp2
+> +#include <asm/asm-offsets.h>
+> +	.macro switch_tls_none, base, tp, tpuser, tmp1, tmp2
+>   	.endm
+>
+> -	.macro set_tls_v6k, tp, tmp1, tmp2
+> +	.macro switch_tls_v6k, base, tp, tpuser, tmp1, tmp2
+> +	mrc	p15, 0, \tmp2, c13, c0, 2	@ get the user r/w register
+>   	mcr	p15, 0, \tp, c13, c0, 3		@ set TLS register
+> -	mov	\tmp1, #0
+> -	mcr	p15, 0, \tmp1, c13, c0, 2	@ clear user r/w TLS register
+> +	mcr	p15, 0, \tpuser, c13, c0, 2	@ and the user r/w register
+> +	str	\tmp2, [\base, #TI_TP_VALUE + 4] @ save it
+>   	.endm
+>
+> -	.macro set_tls_v6, tp, tmp1, tmp2
+> +	.macro switch_tls_v6, base, tp, tpuser, tmp1, tmp2
+>   	ldr	\tmp1, =elf_hwcap
+>   	ldr	\tmp1, [\tmp1, #0]
+>   	mov	\tmp2, #0xffff0fff
+>   	tst	\tmp1, #HWCAP_TLS		@ hardware TLS available?
+> -	mcrne	p15, 0, \tp, c13, c0, 3		@ yes, set TLS register
+> -	movne	\tmp1, #0
+> -	mcrne	p15, 0, \tmp1, c13, c0, 2	@ clear user r/w TLS register
+>   	streq	\tp, [\tmp2, #-15]		@ set TLS value at 0xffff0ff0
+> +	mrcne	p15, 0, \tmp2, c13, c0, 2	@ get the user r/w register
+> +	mcrne	p15, 0, \tp, c13, c0, 3		@ yes, set TLS register
+> +	mcrne	p15, 0, \tpuser, c13, c0, 2	@ set user r/w register
+> +	strne	\tmp2, [\base, #TI_TP_VALUE + 4] @ save it
+>   	.endm
+>
+> -	.macro set_tls_software, tp, tmp1, tmp2
+> +	.macro switch_tls_software, base, tp, tpuser, tmp1, tmp2
+>   	mov	\tmp1, #0xffff0fff
+>   	str	\tp, [\tmp1, #-15]		@ set TLS value at 0xffff0ff0
+>   	.endm
+> @@ -31,19 +34,30 @@
+>   #ifdef CONFIG_TLS_REG_EMUL
+>   #define tls_emu		1
+>   #define has_tls_reg		1
+> -#define set_tls		set_tls_none
+> +#define switch_tls	switch_tls_none
+>   #elif defined(CONFIG_CPU_V6)
+>   #define tls_emu		0
+>   #define has_tls_reg		(elf_hwcap & HWCAP_TLS)
+> -#define set_tls		set_tls_v6
+> +#define switch_tls	switch_tls_v6
+>   #elif defined(CONFIG_CPU_32v6K)
+>   #define tls_emu		0
+>   #define has_tls_reg		1
+> -#define set_tls		set_tls_v6k
+> +#define switch_tls	switch_tls_v6k
+>   #else
+>   #define tls_emu		0
+>   #define has_tls_reg		0
+> -#define set_tls		set_tls_software
+> +#define switch_tls	switch_tls_software
+>   #endif
+>
+> +#ifndef __ASSEMBLY__
+> +static inline unsigned long get_tpuser(void)
+> +{
+> +	unsigned long reg = 0;
+> +
+> +	if (has_tls_reg && !tls_emu)
+> +		__asm__("mrc p15, 0, %0, c13, c0, 2" : "=r" (reg));
+> +
+> +	return reg;
+> +}
+> +#endif
+>   #endif	/* __ASMARM_TLS_H */
+> diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+> index 582b405..ee1d257 100644
+> --- a/arch/arm/kernel/entry-armv.S
+> +++ b/arch/arm/kernel/entry-armv.S
+> @@ -685,15 +685,15 @@ ENTRY(__switch_to)
+>    UNWIND(.fnstart	)
+>    UNWIND(.cantunwind	)
+>   	add	ip, r1, #TI_CPU_SAVE
+> -	ldr	r3, [r2, #TI_TP_VALUE]
+>    ARM(	stmia	ip!, {r4 - sl, fp, sp, lr} )	@ Store most regs on stack
+>    THUMB(	stmia	ip!, {r4 - sl, fp}	   )	@ Store most regs on stack
+>    THUMB(	str	sp, [ip], #4		   )
+>    THUMB(	str	lr, [ip], #4		   )
+> +	ldrd	r4, r5, [r2, #TI_TP_VALUE]
+>   #ifdef CONFIG_CPU_USE_DOMAINS
+>   	ldr	r6, [r2, #TI_CPU_DOMAIN]
+>   #endif
+> -	set_tls	r3, r4, r5
+> +	switch_tls r1, r4, r5, r3, r7
+>   #if defined(CONFIG_CC_STACKPROTECTOR) && !defined(CONFIG_SMP)
+>   	ldr	r7, [r2, #TI_TASK]
+>   	ldr	r8, =__stack_chk_guard
+> diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+> index f219703..0870641 100644
+> --- a/arch/arm/kernel/process.c
+> +++ b/arch/arm/kernel/process.c
+> @@ -39,6 +39,7 @@
+>   #include <asm/thread_notify.h>
+>   #include <asm/stacktrace.h>
+>   #include <asm/mach/time.h>
+> +#include <asm/tls.h>
+>
+>   #ifdef CONFIG_CC_STACKPROTECTOR
+>   #include <linux/stackprotector.h>
+> @@ -343,7 +344,8 @@ copy_thread(unsigned long clone_flags, unsigned long stack_start,
+>   	clear_ptrace_hw_breakpoint(p);
+>
+>   	if (clone_flags & CLONE_SETTLS)
+> -		thread->tp_value = childregs->ARM_r3;
+> +		thread->tp_value[0] = childregs->ARM_r3;
+> +	thread->tp_value[1] = get_tpuser();
+>
+>   	thread_notify(THREAD_NOTIFY_COPY, thread);
+>
+> diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
+> index 03deeff..2bc1514 100644
+> --- a/arch/arm/kernel/ptrace.c
+> +++ b/arch/arm/kernel/ptrace.c
+> @@ -849,7 +849,7 @@ long arch_ptrace(struct task_struct *child, long request,
+>   #endif
+>
+>   		case PTRACE_GET_THREAD_AREA:
+> -			ret = put_user(task_thread_info(child)->tp_value,
+> +			ret = put_user(task_thread_info(child)->tp_value[0],
+>   				       datap);
+>   			break;
+>
+> diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+> index 18b32e8..517bfd4 100644
+> --- a/arch/arm/kernel/traps.c
+> +++ b/arch/arm/kernel/traps.c
+> @@ -581,7 +581,7 @@ asmlinkage int arm_syscall(int no, struct pt_regs *regs)
+>   		return regs->ARM_r0;
+>
+>   	case NR(set_tls):
+> -		thread->tp_value = regs->ARM_r0;
+> +		thread->tp_value[0] = regs->ARM_r0;
+>   		if (tls_emu)
+>   			return 0;
+>   		if (has_tls_reg) {
+> @@ -699,7 +699,7 @@ static int get_tp_trap(struct pt_regs *regs, unsigned int instr)
+>   	int reg = (instr >> 12) & 15;
+>   	if (reg == 15)
+>   		return 1;
+> -	regs->uregs[reg] = current_thread_info()->tp_value;
+> +	regs->uregs[reg] = current_thread_info()->tp_value[0];
+>   	regs->ARM_pc += 4;
+>   	return 0;
+>   }
+>
 
- that's good!
+
