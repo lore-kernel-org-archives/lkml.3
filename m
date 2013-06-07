@@ -1,73 +1,336 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749Ab3FGOU2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 10:20:28 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:47204 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753911Ab3FGOU0 (ORCPT
+	id S1754902Ab3FGO2Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 10:28:16 -0400
+Received: from 19.mo1.mail-out.ovh.net ([178.32.97.206]:34910 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753333Ab3FGO2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 10:20:26 -0400
-Date: Fri, 7 Jun 2013 15:20:20 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>, Loic PALLARDY <loic.pallardy@st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Subject: Re: [PATCH 2/4] mfd: dbx500-prcmu: Correctly reorder PRCMU clock
- identifiers
-Message-ID: <20130607142020.GB24958@gmail.com>
-References: <1370517676-10909-1-git-send-email-lee.jones@linaro.org>
- <1370517676-10909-3-git-send-email-lee.jones@linaro.org>
- <CACRpkdYLB-_JjEd69vVub_Z3L+avQRrFBt1fGuyR0D_owcLWvA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdYLB-_JjEd69vVub_Z3L+avQRrFBt1fGuyR0D_owcLWvA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 7 Jun 2013 10:28:14 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Mike Turquette <mturquette@linaro.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Andrew Victor <linux@maxim.org.za>, Felipe Balbi <balbi@ti.com>
+Cc: Boris BREZILLON <b.brezillon@overkiz.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: [RFC PATCH 01/50] ARM: at91: move at91_pmc.h to include/linux/clk/at91.h
+Date: Fri,  7 Jun 2013 16:24:09 +0200
+Message-Id: <1370615115-16979-2-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1370615115-16979-1-git-send-email-b.brezillon@overkiz.com>
+References: <1370615115-16979-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 17110582361292715036
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 07 Jun 2013, Linus Walleij wrote:
+This patch moves at91_pmc.h header from machine specific directory
+(arch/arm/mach-at91/include/mach/at91_pmc.h) to clk include directory
+(include/linux/clk/at91.h).
+We need this to avoid reference to machine specific headers in clk
+drivers.
+ 
 
-> On Thu, Jun 6, 2013 at 1:21 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > ... as stipulated by the Hardware Specification document.
-> >
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> I think you need Ulf (as ux500 clock author) and Loic (as PRCMU
-> developer) to have a look at this.
-> 
-> > -enum prcmu_clock {
-> > -       PRCMU_SGACLK,
-> (...)
-> > +#define ARMCLK                 0
-> > +#define PRCMU_ACLK             1
-> (...)
-> 
-> It seems the enum and the defines want to do two different things?
-> 
-> The first is a kernel-internal representation of the clocks, whereas
-> the latter is a HW-centric representation for a certain PRCMU
-> variant (I guess?)
-> 
-> Does one actually exclude the other?
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ arch/arm/mach-at91/at91rm9200.c                    |    2 +-
+ arch/arm/mach-at91/at91sam9260.c                   |    2 +-
+ arch/arm/mach-at91/at91sam9261.c                   |    2 +-
+ arch/arm/mach-at91/at91sam9263.c                   |    2 +-
+ arch/arm/mach-at91/at91sam9g45.c                   |    2 +-
+ arch/arm/mach-at91/at91sam9n12.c                   |    2 +-
+ arch/arm/mach-at91/at91sam9rl.c                    |    2 +-
+ arch/arm/mach-at91/at91sam9x5.c                    |    2 +-
+ arch/arm/mach-at91/clock.c                         |    2 +-
+ arch/arm/mach-at91/pm.c                            |    2 +-
+ arch/arm/mach-at91/pm_slowclock.S                  |    2 +-
+ arch/arm/mach-at91/sama5d3.c                       |    2 +-
+ arch/arm/mach-at91/setup.c                         |    2 +-
+ drivers/usb/gadget/atmel_usba_udc.c                |    2 +-
+ .../mach/at91_pmc.h => include/linux/clk/at91.h    |    2 +-
+ 15 files changed, 15 insertions(+), 15 deletions(-)
 
->From what I can tell, they're non-ordered values which are used as
-read-ins to the clk_mgt array. So long as they are unique I'm not sure
-the order matters. The current order seems 'made up', unless I'm
-mistaken.
-
-I agree that Ulf should take a look and confirm/deny my findings.
-
+diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
+index d193a40..6ea6de7 100644
+--- a/arch/arm/mach-at91/at91rm9200.c
++++ b/arch/arm/mach-at91/at91rm9200.c
+@@ -11,13 +11,13 @@
+  */
+ 
+ #include <linux/module.h>
++#include <linux/clk/at91.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+ #include <asm/system_misc.h>
+ #include <mach/at91rm9200.h>
+-#include <mach/at91_pmc.h>
+ #include <mach/at91_st.h>
+ #include <mach/cpu.h>
+ 
+diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
+index a8ce245..df32768 100644
+--- a/arch/arm/mach-at91/at91sam9260.c
++++ b/arch/arm/mach-at91/at91sam9260.c
+@@ -11,6 +11,7 @@
+  */
+ 
+ #include <linux/module.h>
++#include <linux/clk/at91.h>
+ 
+ #include <asm/proc-fns.h>
+ #include <asm/irq.h>
+@@ -20,7 +21,6 @@
+ #include <mach/cpu.h>
+ #include <mach/at91_dbgu.h>
+ #include <mach/at91sam9260.h>
+-#include <mach/at91_pmc.h>
+ 
+ #include "at91_aic.h"
+ #include "at91_rstc.h"
+diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
+index 25efb5a..8a63b81 100644
+--- a/arch/arm/mach-at91/at91sam9261.c
++++ b/arch/arm/mach-at91/at91sam9261.c
+@@ -11,6 +11,7 @@
+  */
+ 
+ #include <linux/module.h>
++#include <linux/clk/at91.h>
+ 
+ #include <asm/proc-fns.h>
+ #include <asm/irq.h>
+@@ -19,7 +20,6 @@
+ #include <asm/system_misc.h>
+ #include <mach/cpu.h>
+ #include <mach/at91sam9261.h>
+-#include <mach/at91_pmc.h>
+ 
+ #include "at91_aic.h"
+ #include "at91_rstc.h"
+diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
+index f44ffd2..77b3c24 100644
+--- a/arch/arm/mach-at91/at91sam9263.c
++++ b/arch/arm/mach-at91/at91sam9263.c
+@@ -11,6 +11,7 @@
+  */
+ 
+ #include <linux/module.h>
++#include <linux/clk/at91.h>
+ 
+ #include <asm/proc-fns.h>
+ #include <asm/irq.h>
+@@ -18,7 +19,6 @@
+ #include <asm/mach/map.h>
+ #include <asm/system_misc.h>
+ #include <mach/at91sam9263.h>
+-#include <mach/at91_pmc.h>
+ 
+ #include "at91_aic.h"
+ #include "at91_rstc.h"
+diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
+index 8b7fce0..31a1304 100644
+--- a/arch/arm/mach-at91/at91sam9g45.c
++++ b/arch/arm/mach-at91/at91sam9g45.c
+@@ -12,13 +12,13 @@
+ 
+ #include <linux/module.h>
+ #include <linux/dma-mapping.h>
++#include <linux/clk/at91.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+ #include <asm/system_misc.h>
+ #include <mach/at91sam9g45.h>
+-#include <mach/at91_pmc.h>
+ #include <mach/cpu.h>
+ 
+ #include "at91_aic.h"
+diff --git a/arch/arm/mach-at91/at91sam9n12.c b/arch/arm/mach-at91/at91sam9n12.c
+index 13cdbcd..f9ff4d2 100644
+--- a/arch/arm/mach-at91/at91sam9n12.c
++++ b/arch/arm/mach-at91/at91sam9n12.c
+@@ -8,12 +8,12 @@
+ 
+ #include <linux/module.h>
+ #include <linux/dma-mapping.h>
++#include <linux/clk/at91.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+ #include <mach/at91sam9n12.h>
+-#include <mach/at91_pmc.h>
+ #include <mach/cpu.h>
+ 
+ #include "board.h"
+diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
+index f77fae5..6fbda1a 100644
+--- a/arch/arm/mach-at91/at91sam9rl.c
++++ b/arch/arm/mach-at91/at91sam9rl.c
+@@ -10,6 +10,7 @@
+  */
+ 
+ #include <linux/module.h>
++#include <linux/clk/at91.h>
+ 
+ #include <asm/proc-fns.h>
+ #include <asm/irq.h>
+@@ -19,7 +20,6 @@
+ #include <mach/cpu.h>
+ #include <mach/at91_dbgu.h>
+ #include <mach/at91sam9rl.h>
+-#include <mach/at91_pmc.h>
+ 
+ #include "at91_aic.h"
+ #include "at91_rstc.h"
+diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
+index e631fec..83fc6b3 100644
+--- a/arch/arm/mach-at91/at91sam9x5.c
++++ b/arch/arm/mach-at91/at91sam9x5.c
+@@ -8,12 +8,12 @@
+ 
+ #include <linux/module.h>
+ #include <linux/dma-mapping.h>
++#include <linux/clk/at91.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+ #include <mach/at91sam9x5.h>
+-#include <mach/at91_pmc.h>
+ #include <mach/cpu.h>
+ 
+ #include "board.h"
+diff --git a/arch/arm/mach-at91/clock.c b/arch/arm/mach-at91/clock.c
+index da84188..191e9e4 100644
+--- a/arch/arm/mach-at91/clock.c
++++ b/arch/arm/mach-at91/clock.c
+@@ -24,9 +24,9 @@
+ #include <linux/clk.h>
+ #include <linux/io.h>
+ #include <linux/of_address.h>
++#include <linux/clk/at91.h>
+ 
+ #include <mach/hardware.h>
+-#include <mach/at91_pmc.h>
+ #include <mach/cpu.h>
+ 
+ #include <asm/proc-fns.h>
+diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+index 530db30..d29702f 100644
+--- a/arch/arm/mach-at91/pm.c
++++ b/arch/arm/mach-at91/pm.c
+@@ -19,13 +19,13 @@
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
++#include <linux/clk/at91.h>
+ 
+ #include <asm/irq.h>
+ #include <linux/atomic.h>
+ #include <asm/mach/time.h>
+ #include <asm/mach/irq.h>
+ 
+-#include <mach/at91_pmc.h>
+ #include <mach/cpu.h>
+ 
+ #include "at91_aic.h"
+diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
+index 098c28d..76387e0 100644
+--- a/arch/arm/mach-at91/pm_slowclock.S
++++ b/arch/arm/mach-at91/pm_slowclock.S
+@@ -13,8 +13,8 @@
+  */
+ 
+ #include <linux/linkage.h>
++#include <linux/clk/at91.h>
+ #include <mach/hardware.h>
+-#include <mach/at91_pmc.h>
+ #include <mach/at91_ramc.h>
+ 
+ 
+diff --git a/arch/arm/mach-at91/sama5d3.c b/arch/arm/mach-at91/sama5d3.c
+index 4012797..32e0522 100644
+--- a/arch/arm/mach-at91/sama5d3.c
++++ b/arch/arm/mach-at91/sama5d3.c
+@@ -9,12 +9,12 @@
+ 
+ #include <linux/module.h>
+ #include <linux/dma-mapping.h>
++#include <linux/clk/at91.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+ #include <mach/sama5d3.h>
+-#include <mach/at91_pmc.h>
+ #include <mach/cpu.h>
+ 
+ #include "soc.h"
+diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+index e2f4bdd..7af1bbf 100644
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -11,6 +11,7 @@
+ #include <linux/pm.h>
+ #include <linux/of_address.h>
+ #include <linux/pinctrl/machine.h>
++#include <linux/clk/at91.h>
+ 
+ #include <asm/system_misc.h>
+ #include <asm/mach/map.h>
+@@ -18,7 +19,6 @@
+ #include <mach/hardware.h>
+ #include <mach/cpu.h>
+ #include <mach/at91_dbgu.h>
+-#include <mach/at91_pmc.h>
+ 
+ #include "at91_shdwc.h"
+ #include "soc.h"
+diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
+index f2a970f..846a363 100644
+--- a/drivers/usb/gadget/atmel_usba_udc.c
++++ b/drivers/usb/gadget/atmel_usba_udc.c
+@@ -328,7 +328,7 @@ static int vbus_is_present(struct usba_udc *udc)
+ 
+ #if defined(CONFIG_ARCH_AT91SAM9RL)
+ 
+-#include <mach/at91_pmc.h>
++#include <linux/clk/at91.h>
+ 
+ static void toggle_bias(int is_on)
+ {
+diff --git a/arch/arm/mach-at91/include/mach/at91_pmc.h b/include/linux/clk/at91.h
+similarity index 99%
+rename from arch/arm/mach-at91/include/mach/at91_pmc.h
+rename to include/linux/clk/at91.h
+index 31df120..58b1eba 100644
+--- a/arch/arm/mach-at91/include/mach/at91_pmc.h
++++ b/include/linux/clk/at91.h
+@@ -1,5 +1,5 @@
+ /*
+- * arch/arm/mach-at91/include/mach/at91_pmc.h
++ * include/linux/clk/at91.h
+  *
+  * Copyright (C) 2005 Ivan Kokshaysky
+  * Copyright (C) SAN People
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
