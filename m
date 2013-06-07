@@ -1,94 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab3FGPVE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 11:21:04 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:52379 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753982Ab3FGPVB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 11:21:01 -0400
+	id S1756085Ab3FGPXU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 11:23:20 -0400
+Received: from mga03.intel.com ([143.182.124.21]:19146 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753453Ab3FGPXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 11:23:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,822,1363158000"; 
+   d="scan'208";a="252002841"
+Message-ID: <51B1FAE4.2070700@linux.intel.com>
+Date: Fri, 07 Jun 2013 08:23:16 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <201306071427.20512.heiko@sntech.de>
-References: <201306062107.58875.heiko@sntech.de>
-	<201306062108.38587.heiko@sntech.de>
-	<CACRpkda+QwnhCHBhQ3d-zUE9dD75Rv0_qt02h6prrzCBzNm5zw@mail.gmail.com>
-	<201306071427.20512.heiko@sntech.de>
-Date: Fri, 7 Jun 2013 23:21:00 +0800
-Message-ID: <CAD6h2NRBHh-4XNnDvyWmVPSpLzLCG32=xuwGZg4nu+WAD6r=Kg@mail.gmail.com>
-Subject: Re: [PATCH v2 1/8] clk: flag to use upper half of the register as
- change indicator
-From: Haojian Zhuang <haojian.zhuang@linaro.org>
-To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>, alex.shi@intel.com,
+        peterz@infradead.org, vincent.guittot@linaro.org, efault@gmx.de,
+        pjt@google.com, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, len.brown@intel.com, corbet@lwn.net,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, tglx@linutronix.de
+Subject: Re: power-efficient scheduling design
+References: <20130530134718.GB32728@e103034-lin> <20130531105204.GE30394@gmail.com> <51B177AA.1000600@linux.vnet.ibm.com>
+In-Reply-To: <51B177AA.1000600@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 June 2013 20:27, Heiko Stübner <heiko@sntech.de> wrote:
-> Am Freitag, 7. Juni 2013, 13:46:32 schrieb Linus Walleij:
->> On Thu, Jun 6, 2013 at 9:08 PM, Heiko Stübner <heiko@sntech.de> wrote:
->> > There exist platforms, namely at least all Rockchip Cortex-A9 based ones,
->> > that don't use the paradigm of reading-changing-writing the register
->> > contents, but instead only write the changes to the register with a mask
->> > that indicates the changed bits.
->> >
->> > This patch adds flags and code to support the case where the lower 16 bit
->> > of hold the information and the upper 16 bit are used as mask to
->> > indicate the written changes.
->> >
->> > As hardware-specific flags should not be added to the common clk flags,
->> > the flags are added to gate, mux and divider clocks individually.
->> >
->> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+On 6/6/2013 11:03 PM, Preeti U Murthy wrote:
+> Hi,
+>
+> On 05/31/2013 04:22 PM, Ingo Molnar wrote:
+>> PeterZ and me tried to point out the design requirements previously, but
+>> it still does not appear to be clear enough to people, so let me spell it
+>> out again, in a hopefully clearer fashion.
 >>
->> (...)
+>> The scheduler has valuable power saving information available:
 >>
->> > +       if ((clk_gate_flags & CLK_GATE_MASK_UPPER_HALF) && bit_idx > 15)
->> > { +               pr_err("%s: bit_idx %d invalid\n", __func__, bit_idx);
->> > +               return ERR_PTR(-EINVAL);
->> > +       }
+>>   - when a CPU is busy: about how long the current task expects to run
 >>
->> Now this looks *EXTREMELY* familiar to a patch just sent by Haojian
->> for HiSilicon.
+>>   - when a CPU is idle: how long the current CPU expects _not_ to run
 >>
->> "[PATCH v2 3/6] clk: divider: add CLK_DIVIDER_HIWORD_MASK flag"
->> http://marc.info/?l=linux-arm-kernel&m=137035873916777&w=2
->>
->> What kind of coincidence is this? Are Rockchip and HiSilicon using
->> the same silicon IP or are they of a common origin? (It is a small
->> world after all.)
->
-> Now this is really interesting :-) and the handling really seems to follow the
-> same pattern.
->
->
->> I think you two guys need to read each others patch sets closely
->> here. I'd like Haojian to look at Heiko's patches and Heiko to look
->> at Haojian's patches, just to make sure you're not actually writing
->> two drivers for the same hardware in the end.
->
-> I'll take a look
->
->
-> Heiko
+>>   - topology: it knows how the CPUs and caches interrelate and already
+>>     optimizes based on that
 
-Me too :)
+and I will argue we do too much of this already; various caches (and tlbs) get flushed
+(on x86 at least) much much more than you'd think.
 
-Regards
-Haojian
+>>
+>> so the scheduler is in an _ideal_ position to do a judgement call about
+>> the near future
+
+this part I will buy
+
+>> and estimate how deep an idle state a CPU core should
+>> enter into and what frequency it should run at.
+
+this part I cannot buy.
+First of all, we really need to stop thinking about choosing frequency (at least for x86).
+that concept basically died for x86 6 years ago.
+
+Second, the interactions between these two, and the "what does it mean if I chose something"
+is highly hardware specific and complex nowadays, and going forward is going to be increasingly so.
+If anything, we've been moving AWAY from centralized infrastructure there, going towards
+CPU specific drivers/policies. And hardware rules are very different between platforms here.
+On Intel, asking for different performance is just an MSR write, and going idle is usually just one instruction.
+On some ARM, this might involve a long complex interaction calculations, or even *blocking* operation manipulating VRs and PLLs directly... depending
+on the platform and the states you want to pick. (Hence the CPUFREQ design of requiring changes to be
+done in a kernel thread)
+
+Now, I would like the scheduler to give some notifications at certain events (like migrations,
+starting realtime tasks)...but a few atomic notifier chains will do for that.
+
+The policies will be very hardware specific, and thus will live outside the scheduler, no matter which way you
+put it. Now, the scheduler can and should participate more in terms of sharing information in both directions...
+that I think we can all agree on.
+
+
