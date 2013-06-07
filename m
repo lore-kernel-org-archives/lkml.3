@@ -1,147 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756755Ab3FGV4Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 17:56:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21095 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752999Ab3FGV4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 17:56:15 -0400
-Date: Fri, 7 Jun 2013 18:55:42 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, David Sharp <dhsharp@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Re: [PATCH V2 1/1] kvm/vmx: Add a tracepoint write_tsc_offset
-Message-ID: <20130607215542.GA22131@amt.cnet>
-References: <20130604083616.22713.24922.stgit@yunodevel>
- <20130604083619.22713.25360.stgit@yunodevel>
- <20130606002322.GA24351@amt.cnet>
- <20130606113305.GB4725@redhat.com>
- <51B16E0E.5020208@hitachi.com>
+	id S1756447Ab3FGWDU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 18:03:20 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:35386 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752900Ab3FGWDS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 18:03:18 -0400
+Message-ID: <51B258A1.2060107@linaro.org>
+Date: Sat, 08 Jun 2013 00:03:13 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51B16E0E.5020208@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/6] clocksource: add Marvell Orion SoC timer
+References: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com> <1370536034-23956-3-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1370536034-23956-3-git-send-email-sebastian.hesselbarth@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 02:22:22PM +0900, Yoshihiro YUNOMAE wrote:
-> (2013/06/06 20:33), Gleb Natapov wrote:
-> >On Wed, Jun 05, 2013 at 09:23:22PM -0300, Marcelo Tosatti wrote:
-> >>On Tue, Jun 04, 2013 at 05:36:19PM +0900, Yoshihiro YUNOMAE wrote:
-> >>>Add a tracepoint write_tsc_offset for tracing TSC offset change.
-> >>>We want to merge ftrace's trace data of guest OSs and the host OS using
-> >>>TSC for timestamp in chronological order. We need "TSC offset" values for
-> >>>each guest when merge those because the TSC value on a guest is always the
-> >>>host TSC plus guest's TSC offset. If we get the TSC offset values, we can
-> >>>calculate the host TSC value for each guest events from the TSC offset and
-> >>>the event TSC value. The host TSC values of the guest events are used when we
-> >>>want to merge trace data of guests and the host in chronological order.
-> >>>(Note: the trace_clock of both the host and the guest must be set x86-tsc in
-> >>>this case)
-> >>>
-> >>>TSC offset is stored in the VMCS by vmx_write_tsc_offset() or
-> >>>vmx_adjust_tsc_offset(). KVM executes the former function when a guest boots.
-> >>>The latter function is executed when kvm clock is updated. Only host can read
-> >>>TSC offset value from VMCS, so a host needs to output TSC offset value
-> >>>when TSC offset is changed.
-> >>>
-> >>>Since the TSC offset is not often changed, it could be overwritten by other
-> >>>frequent events while tracing. To avoid that, I recommend to use a special
-> >>>instance for getting this event:
-> >>>
-> >>>1. set a instance before booting a guest
-> >>>  # cd /sys/kernel/debug/tracing/instances
-> >>>  # mkdir tsc_offset
-> >>>  # cd tsc_offset
-> >>>  # echo x86-tsc > trace_clock
-> >>>  # echo 1 > events/kvm/kvm_write_tsc_offset/enable
-> >>>
-> >>>2. boot a guest
-> >>>
-> >>>Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-> >>>Cc: Marcelo Tosatti <mtosatti@redhat.com>
-> >>>Cc: Gleb Natapov <gleb@redhat.com>
-> >>>Cc: Thomas Gleixner <tglx@linutronix.de>
-> >>>Cc: Ingo Molnar <mingo@redhat.com>
-> >>>Cc: "H. Peter Anvin" <hpa@zytor.com>
-> >>>---
-> >>>  arch/x86/kvm/trace.h |   18 ++++++++++++++++++
-> >>>  arch/x86/kvm/vmx.c   |    3 +++
-> >>>  arch/x86/kvm/x86.c   |    1 +
-> >>>  3 files changed, 22 insertions(+)
-> >>>
-> >>>diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
-> >>>index fe5e00e..9c22e39 100644
-> >>>--- a/arch/x86/kvm/trace.h
-> >>>+++ b/arch/x86/kvm/trace.h
-> >>>@@ -815,6 +815,24 @@ TRACE_EVENT(kvm_track_tsc,
-> >>>  		  __print_symbolic(__entry->host_clock, host_clocks))
-> >>>  );
-> >>>
-> >>>+TRACE_EVENT(kvm_write_tsc_offset,
-> >>>+	TP_PROTO(__u64 previous_tsc_offset, __u64 next_tsc_offset),
-> >>>+	TP_ARGS(previous_tsc_offset, next_tsc_offset),
-> >>>+
-> >>>+	TP_STRUCT__entry(
-> >>>+		__field(	__u64,	previous_tsc_offset		)
-> >>>+		__field(	__u64,	next_tsc_offset			)
-> >>>+	),
-> >>>+
-> >>>+	TP_fast_assign(
-> >>>+		__entry->previous_tsc_offset	= previous_tsc_offset;
-> >>>+		__entry->next_tsc_offset	= next_tsc_offset;
-> >>>+	),
-> >>>+
-> >>>+	TP_printk("previous=%llu next=%llu",
-> >>>+		  __entry->previous_tsc_offset, __entry->next_tsc_offset)
-> >>>+);
-> >>>+
-> >>
-> >>Yoshihiro YUNOMAE,
-> >>
-> >>1) Why is previous_tsc_offset necessary?
+On 06/06/2013 06:27 PM, Sebastian Hesselbarth wrote:
+> This patch add a DT enabled driver for timers found on Marvell Orion SoCs
+> (Kirkwood, Dove, Orion5x, and Discovery Innovation). It installs a free-
+> running clocksource on timer0 and a clockevent source on timer1.
+> Corresponding device tree documentation is also added.
 > 
-> I was considering the situations where we did not enable
-> kvm_write_tsc_offset event before booting a guest or where we did not
-> use multiple buffers. Here, we will need another new I/F to get current
-> TSC offset of a given VCPU. For example, if kvm_write_tsc_offset is not
-> included in the host's trace data, we get the current TSC offset from
-> the new I/F and apply it to all guest events. On the other hand, if
-> kvm_write_tsc_offset event appears more than once, we apply the
-> previous offset to guest events before the first TSC offset change.
-
-OK.
-
-> Since we support only for using multiple buffers now, we don't need to
-> record previous TSC offset at this time. But I'm conscious that we have
-> to change the format of kvm_write_tsc_offset event when we support
-> those situations.
-
-OK, feel free to keep prev_tsc_offset.
-
-> >>2) The TSC offset traces should include vcpu number, so that its
-> >>possible to correlate traces of SMP guests (the tool should use
-> >>the individual vcpu tsc offsets when converting guests trace).
-> >>
-> >Why PID is not enough? No other trace, except kvm_entry, outputs vcpu id.
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Cc: Gregory Clement <gregory.clement@free-electrons.com>
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  .../bindings/timer/marvell,orion-timer.txt         |   17 +++
+>  drivers/clocksource/Kconfig                        |    5 +
+>  drivers/clocksource/Makefile                       |    1 +
+>  drivers/clocksource/time-orion.c                   |  143 ++++++++++++++++++++
+>  4 files changed, 166 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/timer/marvell,orion-timer.txt
+>  create mode 100644 drivers/clocksource/time-orion.c
 > 
-> As Gleb mentioned, a tool can understand TSC offset for each vcpu from
-> PID and vcpu number of kvm_entry. IMO, that is indirect way, so I would
-> be better off including vcpu number.
+> diff --git a/Documentation/devicetree/bindings/timer/marvell,orion-timer.txt b/Documentation/devicetree/bindings/timer/marvell,orion-timer.txt
+> new file mode 100644
+> index 0000000..62bb826
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/timer/marvell,orion-timer.txt
+> @@ -0,0 +1,17 @@
+> +Marvell Orion SoC timer
+> +
+> +Required properties:
+> +- compatible: shall be "marvell,orion-timer"
+> +- reg: base address of the timer register starting with TIMERS CONTROL register
+> +- interrupt-parent: phandle of the bridge interrupt controller
+> +- interrupts: should contain the interrupts for Timer0 and Timer1
+> +- clocks: phandle of timer reference clock (tclk)
+> +
+> +Example:
+> +	timer: timer {
+> +		compatible = "marvell,orion-timer";
+> +		reg = <0x20300 0x20>;
+> +		interrupt-parent = <&bridge_intc>;
+> +		interrupts = <1>, <2>;
+> +		clocks = <&core_clk 0>;
+> +	};
+> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+> index f151c6c..2404869 100644
+> --- a/drivers/clocksource/Kconfig
+> +++ b/drivers/clocksource/Kconfig
+> @@ -25,6 +25,11 @@ config DW_APB_TIMER_OF
+>  config ARMADA_370_XP_TIMER
+>  	bool
+>  
+> +config ORION_TIMER
+> +	select CLKSRC_OF
+> +	select CLKSRC_MMIO
+> +	bool
+> +
+>  config SUN4I_TIMER
+>  	bool
 
-Yes.
+[ ... ]
 
-> >>3) Please add traces for svm.c.
+> +
+> +static irqreturn_t orion_clkevt_irq_handler(int irq, void *dev_id)
+> +{
+> +	orion_clkevt.event_handler(&orion_clkevt);
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static struct irqaction orion_clkevt_irq = {
+> +	.name		= "orion_event",
+> +	.flags		= IRQF_DISABLED | IRQF_TIMER,
+
+IRQF_DISABLED is deprecated, it is a noop, you shall remove it.
+
+> +	.handler	= orion_clkevt_irq_handler,
+> +};
+> +
+> +static void __init orion_timer_init(struct device_node *np)
+> +{
+
+[ ... ]
+
+> +	/* setup timer1 as clockevent timer */
+> +	if (setup_irq(irq, &orion_clkevt_irq))
+> +		panic("%s: unable to setup irq\n", np->name);
+> +
+> +	ticks_per_jiffy = (clk_get_rate(clk) + HZ/2) / HZ;
+> +	orion_clkevt.cpumask = cpumask_of(0);
+
+        orion_clkevt.irq = irq;
+
+> +	clockevents_config_and_register(&orion_clkevt, clk_get_rate(clk),
+> +					ORION_ONESHOT_MIN, ORION_ONESHOT_MAX);
+> +}
+> +CLOCKSOURCE_OF_DECLARE(orion_timer, "marvell,orion-timer", orion_timer_init);
 > 
-> Sure, I'll add the tracepoint for SVM.
 
-OK, no further comments for now.
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
