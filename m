@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185Ab3FGPtb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 11:49:31 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:50229 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756018Ab3FGPt1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 11:49:27 -0400
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
-        David Marlin <dmarlin@redhat.com>, linux-kernel@vger.kernel.org,
-        Zbigniew Bodek <zbb@semihalf.com>
-Subject: [PATCH 2/2] i2c-mv64xxx: Abort the mv64xxx_of_config if clock-frequency is not provided
-Date: Fri,  7 Jun 2013 17:49:00 +0200
-Message-Id: <1370620140-17177-3-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1370620140-17177-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1370620140-17177-1-git-send-email-gregory.clement@free-electrons.com>
+	id S1756199Ab3FGPuF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 11:50:05 -0400
+Received: from 1wt.eu ([62.212.114.60]:36173 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753556Ab3FGPuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 11:50:02 -0400
+Date: Fri, 7 Jun 2013 17:49:50 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [ 157/184] inet: add RCU protection to inet->opt
+Message-ID: <20130607154950.GI19006@1wt.eu>
+References: <20130604172136.807153289@1wt.eu> <1370585517.4021.94.camel@deadeye.wl.decadent.org.uk>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370585517.4021.94.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zbigniew Bodek <zbb@semihalf.com>
+On Fri, Jun 07, 2013 at 07:11:57AM +0100, Ben Hutchings wrote:
+> On Tue, 2013-06-04 at 19:24 +0200, Willy Tarreau wrote:
+> > 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Eric Dumazet <eric.dumazet@gmail.com>
+> > 
+> > commit f6d8bd051c391c1c0458a30b2a7abcd939329259 upstream.
+> > 
+> > We lack proper synchronization to manipulate inet->opt ip_options
+> > 
+> > Problem is ip_make_skb() calls ip_setup_cork() and
+> > ip_setup_cork() possibly makes a copy of ipc->opt (struct ip_options),
+> > without any protection against another thread manipulating inet->opt.
+> > 
+> > Another thread can change inet->opt pointer and free old one under us.
+> > 
+> > Use RCU to protect inet->opt (changed to inet->inet_opt).
+> > 
+> > Instead of handling atomic refcounts, just copy ip_options when
+> > necessary, to avoid cache line dirtying.
+> > 
+> > We cant insert an rcu_head in struct ip_options since its included in
+> > skb->cb[], so this patch is large because I had to introduce a new
+> > ip_options_rcu structure.
+> > 
+> > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> > Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> > Signed-off-by: David S. Miller <davem@davemloft.net>
+> > [dannf/bwh: backported to Debian's 2.6.32]
+> 
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 
-This commit adds checking whether clock-frequency property acquisition
-has succeeded. Do not waste time to find baud factors if there is no
-information about the desired bus frequency in dts.
+added, thank you.
 
-[gregory.clement@free-electrons.com: Reword the commit log]
-
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Signed-off-by: Zbigniew Bodek <zbb@semihalf.com>
----
- drivers/i2c/busses/i2c-mv64xxx.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/i2c/busses/i2c-mv64xxx.c b/drivers/i2c/busses/i2c-mv64xxx.c
-index 60cac9f..88c2dd0 100644
---- a/drivers/i2c/busses/i2c-mv64xxx.c
-+++ b/drivers/i2c/busses/i2c-mv64xxx.c
-@@ -593,7 +593,9 @@ mv64xxx_of_config(struct mv64xxx_i2c_data *drv_data,
- 		goto out;
- 	}
- 	tclk = clk_get_rate(drv_data->clk);
--	of_property_read_u32(np, "clock-frequency", &bus_freq);
-+	if ((rc = of_property_read_u32(np, "clock-frequency", &bus_freq)) != 0)
-+		goto out;
-+
- 	if (!mv64xxx_find_baud_factors(bus_freq, tclk,
- 				       &drv_data->freq_n, &drv_data->freq_m)) {
- 		rc = -EINVAL;
--- 
-1.8.1.2
+willy
 
