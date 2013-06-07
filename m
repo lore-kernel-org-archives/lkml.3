@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865Ab3FGTpo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 15:45:44 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:38288 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755360Ab3FGTpn (ORCPT
+	id S1756681Ab3FGTu1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 15:50:27 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6097 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752105Ab3FGTu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 15:45:43 -0400
-Date: Fri, 7 Jun 2013 15:45:34 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        bob.liu@oracle.com
-Cc: dan.magenheimer@oracle.com
-Subject: Re: [PATCH] xen/tmem: Don't over-write tmem_frontswap_poolid after
- tmem_frontswap_init set it.
-Message-ID: <20130607194534.GB21543@phenom.dumpdata.com>
-References: <1370633355-21201-1-git-send-email-konrad.wilk@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370633355-21201-1-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Fri, 7 Jun 2013 15:50:26 -0400
+X-Authority-Analysis: v=2.0 cv=BcJaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=1zmUxmkzHqYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=870DaT8apj8A:10 a=i0EeH86SAAAA:8 a=PbuX-FOqpHMND3aeZCIA:9 a=QEXdDO2ut3YA:10 a=hPjdaMEvmhQA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1370634624.9844.93.camel@gandalf.local.home>
+Subject: Re: [PATCH] ftrace: Remove ftrace_regex_lseek()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 07 Jun 2013 15:50:24 -0400
+In-Reply-To: <51B1A1BD.40905@huawei.com>
+References: <51B1A1BD.40905@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 12:29:15PM -0700, Konrad Rzeszutek Wilk wrote:
+On Fri, 2013-06-07 at 17:02 +0800, Li Zefan wrote:
+> This is a leftover after ftrace_regex_lseek() was renamed to
+> ftrace_filter_lseek() and then ftrace_filter_lseek() was moved
+> out side of CONFIG_DYNAMIC_FTRACE.
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-CC-ing Bob.
+Thanks! I queued this up for 3.11, as it's not important enough for a
+later -rc release.
 
-> Commit 10a7a0771399a57a297fca9615450dbb3f88081a ("xen: tmem: enable Xen
-> tmem shim to be built/loaded as a module") allows the tmem module
-> to be loaded any time. For this work the frontswap API had to
-> be able to asynchronously to call tmem_frontswap_init before
-> or after the swap image had been set. That was added in git
-> commit 905cd0e1bf9ffe82d6906a01fd974ea0f70be97a
-> ("mm: frontswap: lazy initialization to allow tmem backends to build/run as modules").
-> 
-> Which means we could do this (The common case):
-> 
->  modprobe tmem		[so calls frontswap_register_ops, no ->init]
-> 			 modifies tmem_frontswap_poolid = -1
->  swapon /dev/xvda1	[__frontswap_init, calls -> init, tmem_frontswap_poolid is
-> 			 < 0 so tmem hypercall done]
-> 
-> Or the failing one:
-> 
->  swapon /dev/xvda1	[calls __frontswap_init, sets the need_init bitmap]
->  modprobe tmem		[calls frontswap_register_ops, -->init calls, finds out
-> 			tmem_frontswap_poolid is 0, does not make a hypercall.
-> 			Later in the module_init, sets tmem_frontswap_poolid=-1]
-> 
-> Which meant that in the failing case we would not call the hypercall
-> to initialize the pool and never be able to make any frontswap
-> backend calls.
-> 
-> Moving the frontswap_register_ops after setting the tmem_frontswap_poolid
-> fixes it.
-> 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+-- Steve
+
 > ---
->  drivers/xen/tmem.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>  include/linux/ftrace.h | 4 ----
+>  1 file changed, 4 deletions(-)
 > 
-> diff --git a/drivers/xen/tmem.c b/drivers/xen/tmem.c
-> index cc072c6..0f0493c 100644
-> --- a/drivers/xen/tmem.c
-> +++ b/drivers/xen/tmem.c
-> @@ -379,10 +379,10 @@ static int xen_tmem_init(void)
->  #ifdef CONFIG_FRONTSWAP
->  	if (tmem_enabled && frontswap) {
->  		char *s = "";
-> -		struct frontswap_ops *old_ops =
-> -			frontswap_register_ops(&tmem_frontswap_ops);
-> +		struct frontswap_ops *old_ops;
->  
->  		tmem_frontswap_poolid = -1;
-> +		old_ops = frontswap_register_ops(&tmem_frontswap_ops);
->  		if (IS_ERR(old_ops) || old_ops) {
->  			if (IS_ERR(old_ops))
->  				return PTR_ERR(old_ops);
-> -- 
-> 1.8.1.4
-> 
+> diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+> index 99d0fbc..e48ed1d 100644
+> --- a/include/linux/ftrace.h
+> +++ b/include/linux/ftrace.h
+> @@ -566,10 +566,6 @@ static inline ssize_t ftrace_filter_write(struct file *file, const char __user *
+>  			    size_t cnt, loff_t *ppos) { return -ENODEV; }
+>  static inline ssize_t ftrace_notrace_write(struct file *file, const char __user *ubuf,
+>  			     size_t cnt, loff_t *ppos) { return -ENODEV; }
+> -static inline loff_t ftrace_regex_lseek(struct file *file, loff_t offset, int whence)
+> -{
+> -	return -ENODEV;
+> -}
+>  static inline int
+>  ftrace_regex_release(struct inode *inode, struct file *file) { return -ENODEV; }
+>  #endif /* CONFIG_DYNAMIC_FTRACE */
+
+
