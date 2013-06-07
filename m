@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab3FGHOd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 03:14:33 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:36677 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871Ab3FGHOU (ORCPT
+	id S1752519Ab3FGHVI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 03:21:08 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:46799 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471Ab3FGHVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 03:14:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <1370440690-21898-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1370440690-21898-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Fri, 7 Jun 2013 09:14:19 +0200
-Message-ID: <CACRpkdYoP+9GokBEjHS_v3z1rh5V+07XXfnCmQ7Yqi2VdWfaSg@mail.gmail.com>
-Subject: Re: [PATCH v1.2] gpiolib: append SFI helpers for GPIO API
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>,
-        Len Brown <lenb@kernel.org>,
+	Fri, 7 Jun 2013 03:21:06 -0400
+Date: Fri, 7 Jun 2013 09:21:03 +0200
+From: "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>
+To: Juergen Beisert <jbe@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Hector Palacios <hector.palacios@digi.com>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
+        "brian@crystalfontz.com" <brian@crystalfontz.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Cohen <david.a.cohen@intel.com>,
-        Grant Likely <grant.likely@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: Re: mxsfb: DATA_FORMAT_24_BIT flag outputs invalid colours
+Message-ID: <20130607072103.GF14209@lukather>
+References: <519E03B0.1080006@digi.com>
+ <519F4435.5010703@digi.com>
+ <201305241300.25461.jbe@pengutronix.de>
+ <201305241533.19941.jbe@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201305241533.19941.jbe@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 5, 2013 at 3:58 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
+Hi Hector,
 
-> To support some (legacy) firmwares and platforms let's make life easier for
-> their customers.
->
-> This patch extracts SFI GPIO API from arch/x86/platform/mrst/mrst.c.
->
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Acked-by: Len Brown <len.brown@intel.com>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> Since v1.1:
->  - use container_of
->  - switch to kmemdup
+On Fri, May 24, 2013 at 03:33:19PM +0200, Juergen Beisert wrote:
+> Someone told me, Qt5 cannot handle this special RGB666 mode (even not the 
+> def_rgb666_shift memory layout mentioned above). My test are based on Qt4. 
+> Qt5 needs a regular RGB888 mode, which should silently be converted 
+> internally to RGB666 in the hardware.
+> 
+> So, your patch to always use the RGB888 memory layout seems to be the right 
+> way to go.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Do you plan on submitting this patch? (Or did you already submit it and
+I overlooked it?)
 
-Yours,
-Linus Walleij
+Thanks,
+Maxime
