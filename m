@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab3FGOyv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 10:54:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40852 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752432Ab3FGOyu (ORCPT
+	id S1754584Ab3FGO5J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 10:57:09 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:24145 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753372Ab3FGO5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 10:54:50 -0400
+	Fri, 7 Jun 2013 10:57:08 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+CC: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v2 0/2] dmaengine: at_hdmac: dt dma bindings update
+Date: Fri, 7 Jun 2013 16:57:03 +0200
+Message-ID: <cover.1370615665.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
 MIME-Version: 1.0
-In-Reply-To: <s5hmwr2qwwh.wl%tiwai@suse.de>
-References: <1370520110-32293-1-git-send-email-ming.lei@canonical.com>
-	<1370520110-32293-5-git-send-email-ming.lei@canonical.com>
-	<20130606194847.GB4526@kroah.com>
-	<CACVXFVPtLHCNhuybkgUiHEYEcaB6BdCZs6M7QLHHsNdMfCtzug@mail.gmail.com>
-	<s5hmwr2qwwh.wl%tiwai@suse.de>
-Date: Fri, 7 Jun 2013 22:54:47 +0800
-Message-ID: <CACVXFVPMLqXr-9OFQqSBi9rKhN2475fw_LND1Tt+fx4cTrqBfA@mail.gmail.com>
-Subject: Re: [RFC PATCH v1 4/4] firmware loader: don't allow to request
- firmware via relative path
-From: Ming Lei <ming.lei@canonical.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 7, 2013 at 2:04 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Fri, 7 Jun 2013 09:30:09 +0800,
-> Ming Lei wrote:
->>
->> On Fri, Jun 7, 2013 at 3:48 AM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->> > On Thu, Jun 06, 2013 at 08:01:50PM +0800, Ming Lei wrote:
->> >> It isn't a good pratice to request firmware via relative path, also
->> >> might have security issue, so don't do it.
->> >
->> > What would the security issue be?  You are letting the person who build
->> > the kernel specify this, so they can put whatever they want in here, a
->> > '..' isn't going to keep them from being able to do "bad" things if they
->> > really want to.
->>
->> In VM case, guest kernel might access host filesystem files via this trick,
->> but not sure if it is possible.
->>
->> Takashi, could you explain the security issue of relative path?
->
-> Well, I don't know, too.  My original question was what happens if you
-> pass a relative path to firmware_class.fw_path_para module option
-> (or the new kconfig)...
+Vinod,
 
-OK, so please ignore the patch.
+This is the patch series that has already been sent by Ludovic. It is the part
+of the series that is dedicated to dmaengine. It is based on slave-dma/next. I
+plan to submit an additional patch through arm-soc as the .dtsi updates are
+dependent on a "cleanup" branch that is already stacked there.
 
-Thanks
---
-Ming Lei
+This set of patches update the dt dma binding for at_hdmac since we need one
+more parameter. In order to keep backward compatibility, an existing cell will
+be used to add this parameter. Since the content of that cell will become a
+magic value due to the concatenation of the two parameters, it is time to
+use macros.
+
+Thanks, best regards,
+
+Ludovic Desroches (2):
+  ARM: at91: dt: add header to define at_hdmac configuration
+  at_hdmac: add FIFO configuration parameter to DMA DT binding
+
+ .../devicetree/bindings/dma/atmel-dma.txt          |  7 ++++--
+ drivers/dma/at_hdmac.c                             | 25 ++++++++++++++++----
+ include/dt-bindings/dma/at91.h                     | 27 ++++++++++++++++++++++
+ 3 files changed, 53 insertions(+), 6 deletions(-)
+ create mode 100644 include/dt-bindings/dma/at91.h
+
+-- 
+1.8.2.2
+
