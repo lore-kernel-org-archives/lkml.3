@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755731Ab3FGCPU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 22:15:20 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:38291 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755357Ab3FGCPS (ORCPT
+	id S1755760Ab3FGCQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 22:16:57 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:64127 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755357Ab3FGCQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 22:15:18 -0400
+	Thu, 6 Jun 2013 22:16:56 -0400
 MIME-Version: 1.0
-Date: Fri, 7 Jun 2013 10:15:16 +0800
-Message-ID: <CAPgLHd-SNBaS_T=FV3ov6-AtBPExMOOGP7dQ3RHG_FupUCcn0A@mail.gmail.com>
-Subject: [PATCH] memstick: fix error return code in r592_probe()
+Date: Fri, 7 Jun 2013 10:16:54 +0800
+Message-ID: <CAPgLHd-1y9xLM_0roXvO0ASOWSOWZHWB+MUTfHL2s3m-RO9T1g@mail.gmail.com>
+Subject: [PATCH] pcmcia: pd6729: fix error return code in pd6729_pci_probe()
 From: Wei Yongjun <weiyj.lk@gmail.com>
-To: maximlevitsky@gmail.com
-Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+To: wfp5p@virginia.edu, gregkh@linuxfoundation.org, eric.y.miao@gmail.com
+Cc: yongjun_wei@trendmicro.com.cn, linux-pcmcia@lists.infradead.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +27,27 @@ case instead of 0, as done elsewhere in this function.
 
 Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/memstick/host/r592.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/pcmcia/pd6729.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/memstick/host/r592.c b/drivers/memstick/host/r592.c
-index 1b6e913..aa1dd24 100644
---- a/drivers/memstick/host/r592.c
-+++ b/drivers/memstick/host/r592.c
-@@ -761,8 +761,10 @@ static int r592_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 		goto error3;
+diff --git a/drivers/pcmcia/pd6729.c b/drivers/pcmcia/pd6729.c
+index b29d97e..a4c16ee 100644
+--- a/drivers/pcmcia/pd6729.c
++++ b/drivers/pcmcia/pd6729.c
+@@ -644,6 +644,7 @@ static int pd6729_pci_probe(struct pci_dev *dev,
+ 	if (!pci_resource_start(dev, 0)) {
+ 		dev_warn(&dev->dev, "refusing to load the driver as the "
+ 			"io_base is NULL.\n");
++		ret = -ENOMEM;
+ 		goto err_out_disable;
+ 	}
  
- 	dev->mmio = pci_ioremap_bar(pdev, 0);
--	if (!dev->mmio)
-+	if (!dev->mmio) {
-+		error = -ENOMEM;
- 		goto error4;
-+	}
+@@ -673,6 +674,7 @@ static int pd6729_pci_probe(struct pci_dev *dev,
+ 	mask = pd6729_isa_scan();
+ 	if (irq_mode == 0 && mask == 0) {
+ 		dev_warn(&dev->dev, "no ISA interrupt is available.\n");
++		ret = -ENODEV;
+ 		goto err_out_free_res;
+ 	}
  
- 	dev->irq = pdev->irq;
- 	spin_lock_init(&dev->irq_lock);
-@@ -789,12 +791,13 @@ static int r592_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 		&dev->dummy_dma_page_physical_address);
- 	r592_stop_dma(dev , 0);
- 
--	if (request_irq(dev->irq, &r592_irq, IRQF_SHARED,
--			  DRV_NAME, dev))
-+	error = request_irq(dev->irq, &r592_irq, IRQF_SHARED, DRV_NAME, dev);
-+	if (error)
- 		goto error6;
- 
- 	r592_update_card_detect(dev);
--	if (memstick_add_host(host))
-+	error = memstick_add_host(host);
-+	if (error)
- 		goto error7;
- 
- 	message("driver successfully loaded");
 
