@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756931Ab3FGW2v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 18:28:51 -0400
-Received: from na3sys010aog110.obsmtp.com ([74.125.245.88]:52094 "HELO
-	na3sys010aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753181Ab3FGW2t (ORCPT
+	id S932091Ab3FGWbk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 18:31:40 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:21946 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756072Ab3FGWbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 18:28:49 -0400
-From: Roland Dreier <roland@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] please pull infiniband.git
-Date: Fri,  7 Jun 2013 15:28:39 -0700
-Message-Id: <1370644119-15200-1-git-send-email-roland@kernel.org>
-X-Mailer: git-send-email 1.8.1.2
+	Fri, 7 Jun 2013 18:31:38 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org
+Subject: [PATCH v3 06/27] ia64, irq: Add dummy create_irq_nr()
+Date: Fri,  7 Jun 2013 15:30:52 -0700
+Message-Id: <1370644273-10495-7-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1370644273-10495-1-git-send-email-yinghai@kernel.org>
+References: <1370644273-10495-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+create_irq() will return -1 when fail to allocate.
+create_irq_nr() will return 0 when fail to allocate.
 
-Please pull from
+Will use it to fix one return value checking for dmar_msi irq.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/rdma-for-linus
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-ia64@vger.kernel.org
+---
+ arch/ia64/kernel/irq_ia64.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-----------------------------------------------------------------
+diff --git a/arch/ia64/kernel/irq_ia64.c b/arch/ia64/kernel/irq_ia64.c
+index 1034884..38e46df 100644
+--- a/arch/ia64/kernel/irq_ia64.c
++++ b/arch/ia64/kernel/irq_ia64.c
+@@ -429,6 +429,16 @@ int create_irq(void)
+ 	return irq;
+ }
+ 
++unsigned int create_irq_nr(unsigned int from, int node)
++{
++	int irq = create_irq();
++
++	if (irq < 0)
++		irq = 0;
++
++	return irq;
++}
++
+ void destroy_irq(unsigned int irq)
+ {
+ 	dynamic_irq_cleanup(irq);
+-- 
+1.8.1.4
 
-InfiniBand fixes for 3.10-rc:
- - qib RCU/lockdep fix
- - iser device removal fix, plus doc fixes
-
-----------------------------------------------------------------
-Mike Marciniszyn (1):
-      IB/qib: Fix lockdep splat in qib_alloc_lkey()
-
-Or Gerlitz (2):
-      IB/iser: Add Mellanox copyright
-      MAINTAINERS: Add entry for iSCSI Extensions for RDMA (iSER) initiator
-
-Roi Dayan (1):
-      IB/iser: Fix device removal flow
-
-Roland Dreier (1):
-      Merge branches 'iser' and 'qib' into for-next
-
- MAINTAINERS                                  | 10 ++++++++++
- drivers/infiniband/hw/qib/qib_keys.c         |  2 +-
- drivers/infiniband/ulp/iser/iscsi_iser.c     |  1 +
- drivers/infiniband/ulp/iser/iscsi_iser.h     |  1 +
- drivers/infiniband/ulp/iser/iser_initiator.c |  1 +
- drivers/infiniband/ulp/iser/iser_memory.c    |  1 +
- drivers/infiniband/ulp/iser/iser_verbs.c     | 16 +++++++++-------
- 7 files changed, 24 insertions(+), 8 deletions(-)
