@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757665Ab3FGXDv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 19:03:51 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:59627 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756046Ab3FGXDq (ORCPT
+	id S1757854Ab3FGXEE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 19:04:04 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:61101 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757614Ab3FGXDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 19:03:46 -0400
+	Fri, 7 Jun 2013 19:03:50 -0400
 From: David Daney <ddaney.cavm@gmail.com>
 To: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
         Sanjay Lal <sanjayl@kymasys.com>
-Cc: linux-kernel@vger.kernel.org, David Daney <ddaney@caviumnetworks.com>
-Subject: [PATCH 01/31] MIPS: Move allocate_kscratch to cpu-probe.c and make it public.
-Date: Fri,  7 Jun 2013 16:03:05 -0700
-Message-Id: <1370646215-6543-2-git-send-email-ddaney.cavm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: [PATCH 11/31] MIPS: Rearrange branch.c so it can be used by kvm code.
+Date: Fri,  7 Jun 2013 16:03:15 -0700
+Message-Id: <1370646215-6543-12-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com>
 References: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com>
@@ -21,103 +21,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <ddaney@caviumnetworks.com>
+From: David Daney <david.daney@cavium.com>
 
-Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+Introduce __compute_return_epc_for_insn0() entry point.
+
+Signed-off-by: David Daney <david.daney@cavium.com>
 ---
- arch/mips/include/asm/mipsregs.h |  2 ++
- arch/mips/kernel/cpu-probe.c     | 29 +++++++++++++++++++++++++++++
- arch/mips/mm/tlbex.c             | 20 +-------------------
- 3 files changed, 32 insertions(+), 19 deletions(-)
+ arch/mips/include/asm/branch.h |  7 +++++
+ arch/mips/kernel/branch.c      | 63 +++++++++++++++++++++++++++++++-----------
+ 2 files changed, 54 insertions(+), 16 deletions(-)
 
-diff --git a/arch/mips/include/asm/mipsregs.h b/arch/mips/include/asm/mipsregs.h
-index 87e6207..6e0da5aa 100644
---- a/arch/mips/include/asm/mipsregs.h
-+++ b/arch/mips/include/asm/mipsregs.h
-@@ -1806,6 +1806,8 @@ __BUILD_SET_C0(brcm_cmt_ctrl)
- __BUILD_SET_C0(brcm_config)
- __BUILD_SET_C0(brcm_mode)
+diff --git a/arch/mips/include/asm/branch.h b/arch/mips/include/asm/branch.h
+index e28a3e0..b3de685 100644
+--- a/arch/mips/include/asm/branch.h
++++ b/arch/mips/include/asm/branch.h
+@@ -37,6 +37,13 @@ static inline unsigned long exception_epc(struct pt_regs *regs)
  
-+int allocate_kscratch(void);
+ #define BRANCH_LIKELY_TAKEN 0x0001
+ 
++extern int __compute_return_epc(struct pt_regs *regs);
++extern int __compute_return_epc_for_insn(struct pt_regs *regs,
++					 union mips_instruction insn);
++extern int __compute_return_epc_for_insn0(struct pt_regs *regs,
++					  union mips_instruction insn,
++					  unsigned int (*get_fcr31)(void));
 +
- #endif /* !__ASSEMBLY__ */
- 
- #endif /* _ASM_MIPSREGS_H */
-diff --git a/arch/mips/kernel/cpu-probe.c b/arch/mips/kernel/cpu-probe.c
-index c6568bf..ee1014e 100644
---- a/arch/mips/kernel/cpu-probe.c
-+++ b/arch/mips/kernel/cpu-probe.c
-@@ -1064,3 +1064,32 @@ __cpuinit void cpu_report(void)
- 	if (c->options & MIPS_CPU_FPU)
- 		printk(KERN_INFO "FPU revision is: %08x\n", c->fpu_id);
+ static inline int compute_return_epc(struct pt_regs *regs)
+ {
+ 	if (get_isa16_mode(regs->cp0_epc)) {
+diff --git a/arch/mips/kernel/branch.c b/arch/mips/kernel/branch.c
+index 46c2ad0..e47145b 100644
+--- a/arch/mips/kernel/branch.c
++++ b/arch/mips/kernel/branch.c
+@@ -195,17 +195,18 @@ int __MIPS16e_compute_return_epc(struct pt_regs *regs)
  }
-+
-+static DEFINE_SPINLOCK(kscratch_used_lock);
-+
-+static unsigned int kscratch_used_mask;
-+
-+int allocate_kscratch(void)
+ 
+ /**
+- * __compute_return_epc_for_insn - Computes the return address and do emulate
++ * __compute_return_epc_for_insn0 - Computes the return address and do emulate
+  *				    branch simulation, if required.
+  *
+  * @regs:	Pointer to pt_regs
+  * @insn:	branch instruction to decode
+- * @returns:	-EFAULT on error and forces SIGBUS, and on success
++ * @returns:	-EFAULT on error, and on success
+  *		returns 0 or BRANCH_LIKELY_TAKEN as appropriate after
+  *		evaluating the branch.
+  */
+-int __compute_return_epc_for_insn(struct pt_regs *regs,
+-				   union mips_instruction insn)
++int __compute_return_epc_for_insn0(struct pt_regs *regs,
++				   union mips_instruction insn,
++				   unsigned int (*get_fcr31)(void))
+ {
+ 	unsigned int bit, fcr31, dspcontrol;
+ 	long epc = regs->cp0_epc;
+@@ -281,7 +282,7 @@ int __compute_return_epc_for_insn(struct pt_regs *regs,
+ 
+ 		case bposge32_op:
+ 			if (!cpu_has_dsp)
+-				goto sigill;
++				return -EFAULT;
+ 
+ 			dspcontrol = rddsp(0x01);
+ 
+@@ -364,13 +365,7 @@ int __compute_return_epc_for_insn(struct pt_regs *regs,
+ 	 * And now the FPA/cp1 branch instructions.
+ 	 */
+ 	case cop1_op:
+-		preempt_disable();
+-		if (is_fpu_owner())
+-			asm volatile("cfc1\t%0,$31" : "=r" (fcr31));
+-		else
+-			fcr31 = current->thread.fpu.fcr31;
+-		preempt_enable();
+-
++		fcr31 = get_fcr31();
+ 		bit = (insn.i_format.rt >> 2);
+ 		bit += (bit != 0);
+ 		bit += 23;
+@@ -434,11 +429,47 @@ int __compute_return_epc_for_insn(struct pt_regs *regs,
+ 	}
+ 
+ 	return ret;
++}
++EXPORT_SYMBOL_GPL(__compute_return_epc_for_insn0);
+ 
+-sigill:
+-	printk("%s: DSP branch but not DSP ASE - sending SIGBUS.\n", current->comm);
+-	force_sig(SIGBUS, current);
+-	return -EFAULT;
++static unsigned int __get_fcr31(void)
 +{
-+	int r;
-+	unsigned int a;
++	unsigned int fcr31;
 +
-+	spin_lock(&kscratch_used_lock);
++	preempt_disable();
++	if (is_fpu_owner())
++		asm volatile(
++			".set push\n"
++			"\t.set mips1\n"
++			"\tcfc1\t%0,$31\n"
++			"\t.set pop" : "=r" (fcr31));
++	else
++		fcr31 = current->thread.fpu.fcr31;
++	preempt_enable();
++	return fcr31;
++}
 +
-+	a = cpu_data[0].kscratch_mask & ~kscratch_used_mask;
++/**
++ * __compute_return_epc_for_insn - Computes the return address and do emulate
++ *				    branch simulation, if required.
++ *
++ * @regs:	Pointer to pt_regs
++ * @insn:	branch instruction to decode
++ * @returns:	-EFAULT on error and forces SIGBUS, and on success
++ *		returns 0 or BRANCH_LIKELY_TAKEN as appropriate after
++ *		evaluating the branch.
++ */
++int __compute_return_epc_for_insn(struct pt_regs *regs,
++				   union mips_instruction insn)
++{
++	int r =  __compute_return_epc_for_insn0(regs, insn, __get_fcr31);
 +
-+	r = ffs(a);
-+
-+	if (r == 0) {
-+		r = -1;
-+		goto out;
++	if (r < 0) {
++		printk("%s: DSP branch but not DSP ASE - sending SIGBUS.\n", current->comm);
++		force_sig(SIGBUS, current);
 +	}
 +
-+	r--; /* make it zero based */
-+
-+	kscratch_used_mask |= (1 << r);
-+out:
-+	spin_unlock(&kscratch_used_lock);
-+
 +	return r;
-+}
-diff --git a/arch/mips/mm/tlbex.c b/arch/mips/mm/tlbex.c
-index ce9818e..001b87c 100644
---- a/arch/mips/mm/tlbex.c
-+++ b/arch/mips/mm/tlbex.c
-@@ -30,6 +30,7 @@
- #include <linux/cache.h>
+ }
+ EXPORT_SYMBOL_GPL(__compute_return_epc_for_insn);
  
- #include <asm/cacheflush.h>
-+#include <asm/mipsregs.h>
- #include <asm/pgtable.h>
- #include <asm/war.h>
- #include <asm/uasm.h>
-@@ -307,25 +308,6 @@ static int check_for_high_segbits __cpuinitdata;
- 
- static int check_for_high_segbits __cpuinitdata;
- 
--static unsigned int kscratch_used_mask __cpuinitdata;
--
--static int __cpuinit allocate_kscratch(void)
--{
--	int r;
--	unsigned int a = cpu_data[0].kscratch_mask & ~kscratch_used_mask;
--
--	r = ffs(a);
--
--	if (r == 0)
--		return -1;
--
--	r--; /* make it zero based */
--
--	kscratch_used_mask |= (1 << r);
--
--	return r;
--}
--
- static int scratch_reg __cpuinitdata;
- static int pgd_reg __cpuinitdata;
- enum vmalloc64_mode {not_refill, refill_scratch, refill_noscratch};
 -- 
 1.7.11.7
 
