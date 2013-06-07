@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236Ab3FGRGc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 13:06:32 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:47097 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755731Ab3FGRGa (ORCPT
+	id S1755399Ab3FGRJZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 13:09:25 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:39436 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab3FGRJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 13:06:30 -0400
-Date: Fri, 7 Jun 2013 17:06:29 +0000 (UTC)
-From: Paul Walmsley <pwalmsley@nvidia.com>
-To: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-cc: linux-tegra@vger.kernel.org, mturquette@linaro.org,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Aleksandr Frid <afrid@nvidia.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/3] clk: tegra: T114: add DFLL DVCO reset control
-In-Reply-To: <51B21105.1080301@wwwdotorg.org>
-Message-ID: <alpine.DEB.2.02.1306071703050.7753@utopia.booyaka.com>
-References: <20130607121505.21868.72360.stgit@dusk.lan> <20130607121901.21868.65416.stgit@dusk.lan> <51B21105.1080301@wwwdotorg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 7 Jun 2013 13:09:23 -0400
+USER-AGENT: Mutt/1.5.21 (2010-09-15)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="843723315-1307264298-1370624789=:7753"
+Message-ID: <20130607170706.GB3730@phenom.dumpdata.com>
+Date: Fri, 7 Jun 2013 10:07:06 -0700 (PDT)
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [RFC PATCH v2, part3 07/11] PCI, xen-pcifront: use new PCI
+ interfaces to simplify implementation
+References: <1368719459-24800-1-git-send-email-jiang.liu@huawei.com>
+ <1368719459-24800-8-git-send-email-jiang.liu@huawei.com>
+ <20130607145024.GA16631@phenom.dumpdata.com>
+ <20130607153822.GA24882@phenom.dumpdata.com> <51B20F57.7050100@gmail.com>
+In-Reply-To: <51B20F57.7050100@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Sat, Jun 08, 2013 at 12:50:31AM +0800, Jiang Liu wrote:
+> On 06/07/2013 11:38 PM, Konrad Rzeszutek Wilk wrote:
+> > On Fri, Jun 07, 2013 at 10:50:24AM -0400, Konrad Rzeszutek Wilk wrote:
+> >> On Thu, May 16, 2013 at 11:50:55PM +0800, Jiang Liu wrote:
+> >>> Use new PCI interfaces to simplify xen-pcifront implementation:
+> >>> 1) Use pci_create_root_bus() instead of pci_scan_bus_parented()
+> >>>    because pci_scan_bus_parented() is marked as __deprecated.This
+> >>>    also gets rid of a duplicated call of pci_bus_start_devices().
+> >>> 2) Use pci_stop_root_bus() and pci_remove_root_bus() instead of
+> >>>    open-coded private implementation.
+> >>> 3) Use pci_set_host_bridge_release() to release data structures
+> >>>    associated with PCI root buses.
+> >>> 4) Use pci_bus_get()/pci_bus_put() to manage PCI root bus reference
+> >>>    count.
+> >>>
+> >>> This is also a preparation for coming PCI bus lock enhancement.
+> > 
+> > With this patch from :
+> > 
+> >  Merge branch 'pci_lock_v3' of https://github.com/jiangliu/linux into testing
+> > 
+> > 
+> > it blows up when detaching the device.
+> Hi Konrad,
+>    Thanks for testing! According to the log messages, this issue should
+> be related to pci bus reference counter management. Seems we have done
+> an extra(unbalanced) release of pci bus device.
+>    Will investigate it tomorrow!
 
---843723315-1307264298-1370624789=:7753
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-
-Hi Stephen,
-
-On Fri, 7 Jun 2013, Stephen Warren wrote:
-
-> On 06/07/2013 06:19 AM, Paul Walmsley wrote:
-> > Add DFLL DVCO reset line control functions to the CAR IP block driver.
-> >=20
-> > The DVCO present in the DFLL IP block has a separate reset line,
-> > exposed via the CAR IP block.  This reset line is asserted upon SoC
-> > reset.  Unless something (such as the DFLL driver) deasserts this
-> > line, the DVCO will not oscillate, although reads and writes to the
-> > DFLL IP block will complete.
-> >=20
-> > Thanks to Aleksandr Frid <afrid@nvidia.com> for identifying this and
-> > saving hours of debugging time.
->=20
-> > diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
->=20
-> >  void tegra114_clock_tune_cpu_trimmers_high(void);
-> >  void tegra114_clock_tune_cpu_trimmers_low(void);
-> >  void tegra114_clock_tune_cpu_trimmers_init(void);
-> > +void tegra114_clock_assert_dfll_dvco_reset(void);
-> > +void tegra114_clock_deassert_dfll_dvco_reset(void);
->=20
-> Where/what is the code that will call these new APIs? If it's going to
-> be something in drivers/clk, that seems fine.
-
-That's correct - they'll be used by the DFLL clocksource code, which will=
-=20
-live in drivers/clk/tegra.  You've seen the patches already ;-)
-
-> The reset assert/de-assert functions at least might be worth exposing
-> using the new generic module reset API. I believe Prashant Gaikwad is
-> working on converting the Tegra clock driver to be a module reset
-> provider, hence removing the existing custom
-> tegra_periph_reset_{de,}assert() APIs.
-
-OK, will take a look to see if this can be done without getting in the way=
-=20
-of Prashant's work.  I'd na=C3=AFvely assume that it might be best to conve=
-rt=20
-these as part of his series - that way we won't duplicate effort.
-
-Prashant, what stage are you at in the conversion?  If you're close to=20
-completion, maybe we can just add this functionality in with your patches?
-
-
-- Paul
---843723315-1307264298-1370624789=:7753--
+That is quite commendable that you are willing to look over this on
+the weekend but I am not going to be able to rerun this test until
+some time in the week. You could enjoy the weekend and just look at
+this during the week.
