@@ -1,91 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675Ab3FGKAE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 06:00:04 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:49421 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694Ab3FGKAB (ORCPT
+	id S1754507Ab3FGKAs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 06:00:48 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.168]:30491 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753221Ab3FGKAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 06:00:01 -0400
-Date: Fri, 7 Jun 2013 10:59:36 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Paul Walmsley <pwalmsley@nvidia.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, Andrew Chew <achew@nvidia.com>,
-        Matthew Longnecker <mlongnecker@nvidia.com>
-Message-ID: <20130607095936.GK31367@sirena.org.uk>
-References: <alpine.DEB.2.02.1306070753420.32163@utopia.booyaka.com>
- <20130607090923.GH31367@sirena.org.uk>
- <alpine.DEB.2.02.1306070920010.32163@utopia.booyaka.com>
+	Fri, 7 Jun 2013 06:00:46 -0400
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-11.tower-38.messagelabs.com!1370598777!15207439!1
+X-Originating-IP: [83.171.138.125]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.6; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Fri, 07 Jun 2013 11:52:57 +0200
+Date: Fri, 7 Jun 2013 11:55:31 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: <wim@iguana.be>
+CC: <linux-kernel@vger.kernel.org>, <linux-watchdog@vger.kernel.org>,
+        <guenter@roeck-us.net>, <johannes.thumshirn@men.de>
+Subject: [PATCH v8 2/2] watchdog: Sysfs interface for MEN A21 watchdog
+Message-ID: <20130607095531.GA19431@jtlinux>
+References: <20130603143453.GA14251@jtlinux>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="k6SrlR5F+BMzH45x"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1306070920010.32163@utopia.booyaka.com>
-X-Cookie: Are you a turtle?
+In-Reply-To: <20130603143453.GA14251@jtlinux>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: core: add regulator_get_linear_step()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+X-Originating-IP: [192.1.1.31]
+X-OriginalArrivalTime: 07 Jun 2013 09:52:57.0157 (UTC) FILETIME=[C9AA1750:01CE6364]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds a sysfs interface for the watchdog
+device found on MEN A21 Boards.
 
---k6SrlR5F+BMzH45x
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The newly generated files are:
+* rebootcause:
+Can be one of:
+Power on Reset,
+CPU Reset Request,
+Push Button,
+FPGA Reset Request,
+Watchdog,
+Local Power Bad,
+Invalid or
+BDI
+and shows the reason of the boards last reboot.
 
-On Fri, Jun 07, 2013 at 09:38:10AM +0000, Paul Walmsley wrote:
+* active:
+Shows if the watchdog CPLD is actually running
 
-> +static int get_cvb_voltage(struct platform_device *pdev, int c0, int c1,
-> +			   int c2)
-> +{
-> +	struct tegra_dfll *td = dev_get_drvdata(&pdev->dev);
-> +	/* apply only speedo scale: output mv = cvb_mv * v_scale */
-> +	int mv;
-> +
-> +	/* combined: apply voltage scale and round to cvb alignment step */
-> +	mv = DIV_ROUND_CLOSEST(c2 * td->speedo_value, td->cvb_speedo_scale);
-> +	mv = DIV_ROUND_CLOSEST((mv + c1) * td->speedo_value,
-> +			       td->cvb_speedo_scale) + c0;
-> +
-> +	/* XXX Bring back cvb_alignment_uv; put it in the board dfll DT */
-> +	return DIV_ROUND_UP(mv * 1000,
-> +			    td->cvb_voltage_scale * td->vdd_step) *
-> +		td->vdd_step / 1000;
-> +}
+* allow_disable:
+Shows if the watchdog is allowed to be disabled (NOWAYOUT disabled)
 
-Hrm, right.  So I guess for this the question is why you need the steps
-at all - can't the driver just ask for the voltage it wants with
-whatever tolerance is appropriate (or just specify the maximum tolerable
-voltage if that's better)?  I'm not sure what cvb_voltage_scale is.
+* fastmode:
+Shows if the CPLD is running in fast mode (1s timeout), once it is in
+fastmode it can't be switched back to slow mode (30s timeout) until the
+next reboot.
 
-I guess the problem here is that you have to hit some fairly tight
-tolerances on the voltage?
+Revision 2:
+* Re-worked sysfs patch to apply on re-worked base
 
---k6SrlR5F+BMzH45x
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Revision 3:
+* Re-worked sysfs patch to apply on re-worked base
+Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+---
+ drivers/watchdog/mena21_wdt.c |   88 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 88 insertions(+)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+diff --git a/drivers/watchdog/mena21_wdt.c b/drivers/watchdog/mena21_wdt.c
+index 29f9c0d..cae5462 100644
+--- a/drivers/watchdog/mena21_wdt.c
++++ b/drivers/watchdog/mena21_wdt.c
+@@ -20,6 +20,17 @@
+ #include <linux/delay.h>
+ #include <linux/bitops.h>
 
-iQIcBAEBAgAGBQJRsa8FAAoJELSic+t+oim9nxkP/iWcC1owc/5TFBkzaoPDtpfQ
-GXaZXiSG81A4xcFzB6grKuAKUK60jChYDg8//zAes9W2JqmadrWKkjNbFq547bvT
-0ymynTwBHIUjE/DPTyT0n74SUkQYolhcM3WhRJvFSetc1PPxW7X6QIzprBqATKgQ
-uBYyLPGs3AqmtDXSSJAHyZDCxhObTSyns1OrqYmVx/MxCTjrx9JwqTOMAlE4bufl
-J2vlUaGzTQ86dH2KFx0/G2UcIEgp3NzD0q6htfrfl1hW6CozEGCcJwJ3zr5mZGEU
-IjdpKoxYHnSKnv8pOLVVquQ19PUonYN861+VVMd+1QxNXvogK0xUtgrmxHS9t/Qr
-VD3vcioAwwoD8g/pJJQSuNjkEzMmqGoqI5QyPs6yM4CS7clnwUGZXQC4ZHpIs77M
-OlyrdFCIttu7t+8K/F+QsEvmIyBmIW22kjI56Mj/XNvMZKV2B+4ArhR9aB6sUzut
-2d33YfNsweLCB8SvMSu+3ocwbVq+KLu8GfCmUIqIYftQVbDYB+jbQpGTia8pmt75
-VIhfnLiBzdS9W9bMjzWeyqiQU+BgEROzOrc3Hk6AqxXktfDdWrVHhnptlvBzAsrx
-5hGKs4xO6NEE93EHRUQ5O10chfiHMoMa2PlMFs4qHz+z2Fsj3F1DjOE625VdQZaS
-neTYnE5ZapNJtWz2Mlbu
-=DyEh
------END PGP SIGNATURE-----
++static char *reset_causes[] = {
++	"Power On Reset",
++	"CPU Reset Request",
++	"Push Button",
++	"FPGA Reset Request",
++	"Watchdog",
++	"Local Power Bad",
++	"Invalid",
++	"BDI",
++};
++
+ enum a21_wdt_gpios {
+ 	GPIO_WD_ENAB,
+ 	GPIO_WD_FAST,
+@@ -52,6 +63,73 @@ static unsigned int a21_wdt_get_bootstatus(struct a21_wdt_drv *drv)
+ 	return reset;
+ }
 
---k6SrlR5F+BMzH45x--
++static ssize_t rebootcause_show(struct device *dev,
++				struct device_attribute *attr,
++				char *buf)
++{
++	struct a21_wdt_drv *drv = dev_get_drvdata(dev);
++	unsigned int reset = 0;
++
++	reset = a21_wdt_get_bootstatus(drv);
++
++	return sprintf(buf, "%s\n", reset_causes[reset]);
++}
++static DEVICE_ATTR(rebootcause, S_IRUGO, rebootcause_show, NULL);
++
++static ssize_t active_show(struct device *dev, struct device_attribute *attr,
++			   char *buf)
++{
++	struct a21_wdt_drv *drv = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", !!gpio_get_value(drv->gpios[GPIO_WD_ENAB]));
++}
++static DEVICE_ATTR(active, S_IRUGO, active_show, NULL);
++
++static ssize_t allow_disable_show(struct device *dev,
++				  struct device_attribute *attr,
++				  char *buf)
++{
++	return sprintf(buf, "%d\n", !nowayout);
++}
++static DEVICE_ATTR(allow_disable, S_IRUGO, allow_disable_show, NULL);
++
++static ssize_t fastmode_show(struct device *dev, struct device_attribute *attr,
++			     char *buf)
++{
++	struct a21_wdt_drv *drv = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", !!gpio_get_value(drv->gpios[GPIO_WD_FAST]));
++}
++static DEVICE_ATTR(fastmode, S_IRUGO, fastmode_show, NULL);
++
++static int a21_wdt_create_files(struct watchdog_device *wdev)
++{
++	int ret;
++
++	ret = device_create_file(wdev->dev, &dev_attr_rebootcause);
++	if (ret)
++		return ret;
++	ret = device_create_file(wdev->dev, &dev_attr_active);
++	if (ret)
++		return ret;
++	ret = device_create_file(wdev->dev, &dev_attr_allow_disable);
++	if (ret)
++		return ret;
++	ret = device_create_file(wdev->dev, &dev_attr_fastmode);
++	if (ret)
++		return ret;
++
++	return 0;
++}
++
++static void a21_wdt_remove_files(struct watchdog_device *wdev)
++{
++	device_remove_file(wdev->dev, &dev_attr_rebootcause);
++	device_remove_file(wdev->dev, &dev_attr_active);
++	device_remove_file(wdev->dev, &dev_attr_allow_disable);
++	device_remove_file(wdev->dev, &dev_attr_fastmode);
++}
++
+ static int a21_wdt_start(struct watchdog_device *wdt)
+ {
+ 	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
+@@ -223,9 +301,18 @@ static int a21_wdt_probe(struct platform_device *pdev)
+ 	}
+
+ 	dev_set_drvdata(&pdev->dev, drv);
++	dev_set_drvdata(a21_wdt.dev, drv);
++
++	ret = a21_wdt_create_files(&a21_wdt);
++	if (ret) {
++		dev_err(&pdev->dev, "Cannot create sysfs entries\n");
++		goto err_create_sysfs;
++	}
+
+ 	return 0;
+
++err_create_sysfs:
++	watchdog_unregister_device(&drv->wdt);
+ err_register_wd:
+ 	mutex_destroy(&drv->lock);
+
+@@ -239,6 +326,7 @@ static int a21_wdt_remove(struct platform_device *pdev)
+ 	dev_warn(&pdev->dev,
+ 		"Unregistering A21 watchdog driver, board may reboot\n");
+
++	a21_wdt_remove_files(&drv->wdt);
+
+ 	watchdog_unregister_device(&drv->wdt);
+
+--
+1.7.9.5
+
