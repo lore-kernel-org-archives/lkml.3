@@ -1,212 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755121Ab3FGI6K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 04:58:10 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:63123 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754819Ab3FGI6C (ORCPT
+	id S1754946Ab3FGI6q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 04:58:46 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:55800 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753893Ab3FGIvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 04:58:02 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: "luke.leighton" <luke.leighton@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        debian-kernel@lists.debian.org, Arnd Bergmann <arnd@arndb.de>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Olof Johansson <olof@lixom.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re: Uploading linux (3.9.4-1))
-Date: Fri, 07 Jun 2013 10:57:57 +0200
-Message-ID: <4466665.6pIGCIdISn@flatron>
-User-Agent: KMail/4.10.4 (Linux/3.9.4-gentoo; KDE/4.10.4; x86_64; ; )
-In-Reply-To: <CAPweEDx_1fvAv9sROtPreoyyj_yDAuYb040fM2zPc+tf22d=YA@mail.gmail.com>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com> <1622862.fXQWv0YWGV@flatron> <CAPweEDx_1fvAv9sROtPreoyyj_yDAuYb040fM2zPc+tf22d=YA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Fri, 7 Jun 2013 04:51:48 -0400
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+To: gleb@redhat.com
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH v3 2/6] KVM: MMU: store generation-number into mmio spte
+Date: Fri,  7 Jun 2013 16:51:24 +0800
+Message-Id: <1370595088-3315-3-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060708-5816-0000-0000-00000851DDBF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 of June 2013 08:52:43 luke.leighton wrote:
-> On Thu, Jun 6, 2013 at 2:02 PM, Tomasz Figa <tomasz.figa@gmail.com> 
-wrote:
-> > On Thursday 06 of June 2013 13:49:38 luke.leighton wrote:
-> >> On Thu, Jun 6, 2013 at 1:43 PM, Tomasz Figa <tomasz.figa@gmail.com>
-> > 
-> > wrote:
-> >> > Luke,
-> >> > 
-> >> > On Thursday 06 of June 2013 13:24:57 luke.leighton wrote:
-> >> >> On Thu, Jun 6, 2013 at 1:01 AM, Tomasz Figa
-> >> >> <tomasz.figa@gmail.com>
-> >> > 
-> >> > wrote:
-> >> >> > I don't see any other solution here than moving all the
-> >> >> > Allwinner
-> >> >> > code
-> >> >> > to DT (as it has been suggested in this thread several times
-> >> >> > already), as this is the only hardware description method
-> >> >> > supported
-> >> >> > by ARM Linux.
-> >> >>  
-> >> >>  i repeat again: please state, explicitly and unequivocably that
-> >> >>  you
-> >> >>  -
-> >> >> 
-> >> >> linux kernel developers - are happy that the reach of linux and
-> >> >> gnu/linux OSes is dramatically reduced due to this intransigent
-> >> >> position.
-> >> >> 
-> >> >>  or, tomasz, please state that you, tomasz, represent each and
-> >> >>  every
-> >> >> 
-> >> >> one of the linux kernel developers so that i do not need to keep
-> >> >> asking.
-> >> > 
-> >> > I do not represent all linux kernel developers by any means. I am
-> >> > just
-> >> > stating current policy of SoC/board support maintained by ARM
-> >> > Linux,
-> >> > which is common for all Linux kernel devlopers, or at least ARM
-> >> > Linux
-> >> > kernel developers.
-> >> > 
-> >> > Personally I am happy with numerous companies backing this policy
-> >> > and
-> >> > not making problems like this with Allwinner and I am really
-> >> > surprised that you are supporting a troublesome company like this.
-> >>  
-> >>  you've not read what i've written tomasz.
-> > 
-> > I have.
-> > 
-> >> > There are many other SoC vendors making low cost SoCs, like
-> >> > Rockchip,
-> >> > Boxchip,
-> >>  
-> >>  boxchip *is* allwinner.
-> > 
-> > Right, sorry. I am not really into this low cost hardware.
-> 
->  i've been tracking it for several years.
-> 
-> > There is also AMLogic, though.
-> 
->  they're *definitely* GPL-violators.
-> 
-> >> > Telechips. Maybe they would be better candidates for being
-> >> > promoted as vendors of choice for hardware running free software?
-> >>  
-> >>  no, because they're not selling at a low-enough price with
-> >> 
-> >> high-enough integration.  telechips and rockchip don't have the
-> >> market
-> >> penetration.
-> > 
-> > I do not have access to any numbers, so I am left to believe in what
-> > you say.
-> 
->  well... none of us do :)  that report (was it from IDC? it was in
-> earlier messages) is a good analysis.
-> 
-> > (Although here in Poland the cheap tablet market is almost evenly
-> > divided between all those companies, you can find almost same amount
-> > of
-> > tablets based on SoCs from each vendor.)
-> 
->  most likely.
-> 
->  allwinner is the one that's actually expressed an interest, at
-> Director (Board) Level, of being GPL-compliant.  the software
-> engineers understand that; their immediate Manager does not [and is
-> causing considerable disruption].
-> 
->  AMLogic stone-walled and cost us money and a large client due to
-> their GPL violations. which they till have not resolved [in over 2
-> years].  i will not work with them, ever again.
-> 
->  Telechips are korean-based: they haven't responded to communications.
-> 
->  Nufront got themselves in a muddle [late on silicon] so we ruled them
-> out - we'll come back to them later.
-> 
->  there's a number of others, but allwinner's the only one that is
-> actively communicating.
-> 
->  so.
-> 
->  coming back to what you said earlier: i'm formulating what to say to
-> allwinner [and need to pre-send something by monday so that they can
-> consider it before the meeting].  so far, it consists of:
-> 
-> * device-tree is what the linux kernel community has come up with, it
-> is equivalent to FEX.
+Store the generation-number into bit3 ~ bit11 and bit52 ~ bit61, totally
+19 bits can be used, it should be enough for nearly all most common cases
 
-...before FEX ever existed...
+In this patch, the generation-number is always 0, it will be changed in
+the later patch
 
-> * the linux kernel community would like to apologise for not
-> consulting with you (allwinner) on the decision to only accept device
-> tree
-> 
-> [bear in mind that if this kind of thing isn't said, they risk just
-> continuing to make the sunxi community's life absolute hell by
-> continuing to work in isolation and continuing to duplicate drivers
-> etc. etc. ]
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/mmu.c         | 58 ++++++++++++++++++++++++++++++++++++++--------
+ arch/x86/kvm/mmutrace.h    | 10 ++++----
+ arch/x86/kvm/paging_tmpl.h |  3 ++-
+ 3 files changed, 56 insertions(+), 15 deletions(-)
 
-So basically you are making sure that they think they decision to reinvent 
-the wheel by using proprietary FEX was correct and our decision to use 
-generic, extensive and standard-based DeviceTree was self-oriented.
-
-In addition you are telling them something completely opposite from how 
-the Linux kernel community (and probably any other open source community 
-works). This is _THEIR_ responsibility to consult things they do with us, 
-_NOT_ the other way around, if they want to work with upstream.
-
-> * work is being done by the free software community, they are
-> beginning to integrate allwinner's work into the upstream kernel, and
-> you (allwinner) will begin to see this when you get round to doing
-> linux kernel 3.9
-
->From what I could read from other posts in this thread they already know 
-this.
-
-> * allwinner and the linux and sunxi community therefore need to work
-> closer together, we propose:
-
- - joining the mailing lists by Allwinner people to remove any messengers 
-from the way (don't say here that they don't speak English, as several 
-people clearly confirmed that they do...)
-
- - adjusting their workflow to comply with rules of Linux kernel open 
-source community (i.e. sending RFCs, getting code reviewed, addressing 
-comments)
-
- - reworking existing code to use widely-accepted, standard solutions 
-available in upstream Linux kernel (although this is already mostly done 
-by sunxi community)
-
-> 3 days left on the clock.
-
-By the way, I haven't seen any explanation from you who (and by what 
-means) gave you any authorization to speak on behalf of Allwinner or to 
-represent Linux kernel community for them.
-
-Seeing from your posts you don't have any knowledge on how Linux kernel 
-development works and even on how Allwinner's cooperation with our 
-community looks (and seem to be completely closed to our effort of showing 
-you the reality), so I'm not sure if you are the right person to take any 
-of those roles...
-
-I'd suggest Maxime Ripard or someone else from Free Electrons to be 
-responsible for communication with Allwinner instead.
-
-Best regards,
-Tomasz
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 6941fa7..eca91bd 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -197,15 +197,52 @@ void kvm_mmu_set_mmio_spte_mask(u64 mmio_mask)
+ }
+ EXPORT_SYMBOL_GPL(kvm_mmu_set_mmio_spte_mask);
+ 
+-static void mark_mmio_spte(u64 *sptep, u64 gfn, unsigned access)
++/*
++ * spte bits of bit 3 ~ bit 11 are used as low 9 bits of generation number,
++ * the bits of bits 52 ~ bit 61 are used as high 10 bits of generation
++ * number.
++ */
++#define MMIO_SPTE_GEN_LOW_SHIFT		3
++#define MMIO_SPTE_GEN_HIGH_SHIFT	52
++
++#define MMIO_GEN_LOW_SHIFT		9
++#define MMIO_GEN_LOW_MASK		((1 << MMIO_GEN_LOW_SHIFT) - 1)
++#define MMIO_MAX_GEN			((1 << 19) - 1)
++
++static u64 generation_mmio_spte_mask(unsigned int gen)
++{
++	u64 mask;
++
++	WARN_ON(gen > MMIO_MAX_GEN);
++
++	mask = (gen & MMIO_GEN_LOW_MASK) << MMIO_SPTE_GEN_LOW_SHIFT;
++	mask |= ((u64)gen >> MMIO_GEN_LOW_SHIFT) << MMIO_SPTE_GEN_HIGH_SHIFT;
++	return mask;
++}
++
++static unsigned int get_mmio_spte_generation(u64 spte)
++{
++	unsigned int gen;
++
++	spte &= ~shadow_mmio_mask;
++
++	gen = (spte >> MMIO_SPTE_GEN_LOW_SHIFT) & MMIO_GEN_LOW_MASK;
++	gen |= (spte >> MMIO_SPTE_GEN_HIGH_SHIFT) << MMIO_GEN_LOW_SHIFT;
++	return gen;
++}
++
++static void mark_mmio_spte(struct kvm *kvm, u64 *sptep, u64 gfn,
++			   unsigned access)
+ {
+ 	struct kvm_mmu_page *sp =  page_header(__pa(sptep));
++	u64 mask = generation_mmio_spte_mask(0);
+ 
+ 	access &= ACC_WRITE_MASK | ACC_USER_MASK;
+-
++	mask |= shadow_mmio_mask | access | gfn << PAGE_SHIFT;
+ 	sp->mmio_cached = true;
+-	trace_mark_mmio_spte(sptep, gfn, access);
+-	mmu_spte_set(sptep, shadow_mmio_mask | access | gfn << PAGE_SHIFT);
++
++	trace_mark_mmio_spte(sptep, gfn, access, 0);
++	mmu_spte_set(sptep, mask);
+ }
+ 
+ static bool is_mmio_spte(u64 spte)
+@@ -223,10 +260,11 @@ static unsigned get_mmio_spte_access(u64 spte)
+ 	return (spte & ~shadow_mmio_mask) & ~PAGE_MASK;
+ }
+ 
+-static bool set_mmio_spte(u64 *sptep, gfn_t gfn, pfn_t pfn, unsigned access)
++static bool set_mmio_spte(struct kvm *kvm, u64 *sptep, gfn_t gfn,
++			  pfn_t pfn, unsigned access)
+ {
+ 	if (unlikely(is_noslot_pfn(pfn))) {
+-		mark_mmio_spte(sptep, gfn, access);
++		mark_mmio_spte(kvm, sptep, gfn, access);
+ 		return true;
+ 	}
+ 
+@@ -2364,7 +2402,7 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 	u64 spte;
+ 	int ret = 0;
+ 
+-	if (set_mmio_spte(sptep, gfn, pfn, pte_access))
++	if (set_mmio_spte(vcpu->kvm, sptep, gfn, pfn, pte_access))
+ 		return 0;
+ 
+ 	spte = PT_PRESENT_MASK;
+@@ -3427,8 +3465,8 @@ static inline void protect_clean_gpte(unsigned *access, unsigned gpte)
+ 	*access &= mask;
+ }
+ 
+-static bool sync_mmio_spte(u64 *sptep, gfn_t gfn, unsigned access,
+-			   int *nr_present)
++static bool sync_mmio_spte(struct kvm *kvm, u64 *sptep, gfn_t gfn,
++			   unsigned access, int *nr_present)
+ {
+ 	if (unlikely(is_mmio_spte(*sptep))) {
+ 		if (gfn != get_mmio_spte_gfn(*sptep)) {
+@@ -3437,7 +3475,7 @@ static bool sync_mmio_spte(u64 *sptep, gfn_t gfn, unsigned access,
+ 		}
+ 
+ 		(*nr_present)++;
+-		mark_mmio_spte(sptep, gfn, access);
++		mark_mmio_spte(kvm, sptep, gfn, access);
+ 		return true;
+ 	}
+ 
+diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
+index eb444dd..ad24757 100644
+--- a/arch/x86/kvm/mmutrace.h
++++ b/arch/x86/kvm/mmutrace.h
+@@ -199,23 +199,25 @@ DEFINE_EVENT(kvm_mmu_page_class, kvm_mmu_prepare_zap_page,
+ 
+ TRACE_EVENT(
+ 	mark_mmio_spte,
+-	TP_PROTO(u64 *sptep, gfn_t gfn, unsigned access),
+-	TP_ARGS(sptep, gfn, access),
++	TP_PROTO(u64 *sptep, gfn_t gfn, unsigned access, unsigned int gen),
++	TP_ARGS(sptep, gfn, access, gen),
+ 
+ 	TP_STRUCT__entry(
+ 		__field(void *, sptep)
+ 		__field(gfn_t, gfn)
+ 		__field(unsigned, access)
++		__field(unsigned int, gen)
+ 	),
+ 
+ 	TP_fast_assign(
+ 		__entry->sptep = sptep;
+ 		__entry->gfn = gfn;
+ 		__entry->access = access;
++		__entry->gen = gen;
+ 	),
+ 
+-	TP_printk("sptep:%p gfn %llx access %x", __entry->sptep, __entry->gfn,
+-		  __entry->access)
++	TP_printk("sptep:%p gfn %llx access %x gen %x", __entry->sptep,
++		  __entry->gfn, __entry->access, __entry->gen)
+ );
+ 
+ TRACE_EVENT(
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index da20860..fb50fa6 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -792,7 +792,8 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+ 		pte_access &= gpte_access(vcpu, gpte);
+ 		protect_clean_gpte(&pte_access, gpte);
+ 
+-		if (sync_mmio_spte(&sp->spt[i], gfn, pte_access, &nr_present))
++		if (sync_mmio_spte(vcpu->kvm, &sp->spt[i], gfn, pte_access,
++		      &nr_present))
+ 			continue;
+ 
+ 		if (gfn != sp->gfns[i]) {
+-- 
+1.8.1.4
 
