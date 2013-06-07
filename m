@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422Ab3FGAGm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 20:06:42 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:60953 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752944Ab3FGAGl (ORCPT
+	id S1753416Ab3FGAWO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 20:22:14 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:62858 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab3FGAWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 20:06:41 -0400
-Date: Thu, 6 Jun 2013 17:06:37 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@openvz.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, devel@openvz.org
-Subject: Re: [PATCH v7 00/11] per-cgroup cpu-stat
-Message-ID: <20130607000637.GT5045@htj.dyndns.org>
-References: <1369825402-31046-1-git-send-email-glommer@openvz.org>
+	Thu, 6 Jun 2013 20:22:13 -0400
+Date: Thu, 6 Jun 2013 17:17:57 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'David Woodhouse'" <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        "'Jett.Zhou'" <jtzhou@marvell.com>
+Subject: Re: [PATCH 1/8] 88pm860x_battery: remove unnecessary
+ platform_set_drvdata()
+Message-ID: <20130607001756.GA7052@lizard.sbx05280.losalca.wayport.net>
+References: <003601ce4a10$7c1adaf0$745090d0$@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1369825402-31046-1-git-send-email-glommer@openvz.org>
+In-Reply-To: <003601ce4a10$7c1adaf0$745090d0$@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 03:03:11PM +0400, Glauber Costa wrote:
-> I am coming again with this series, hoping this is a better time for you all to
-> look at it.
+On Mon, May 06, 2013 at 01:16:30PM +0900, Jingoo Han wrote:
+> The driver core clears the driver data to NULL after device_release
+> or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
+> (device-core: Ensure drvdata = NULL when no driver is bound).
+> Thus, it is not needed to manually clear the device driver data to NULL.
 > 
-> I am *not* going as far as marking cpuacct deprecated, because I think it
-> deserves a special discussion (even though my position in this matter is widely
-> known), but all the infrastructure to make it happen is here. But after this,
-> it should be a matter of setting a flag (or not).
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-Things look generally good to me upto patch 6.  Maybe we can combine
-"adding cpuacct stats to cpu" and "re-using schedstats" but no strong
-opinion.  Peter, what do you think?
+1-8 applied, thanks a lot!
 
-Thanks.
+Anton
 
--- 
-tejun
+> ---
+>  drivers/power/88pm860x_battery.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/power/88pm860x_battery.c b/drivers/power/88pm860x_battery.c
+> index d338c1c..dfcda3a 100644
+> --- a/drivers/power/88pm860x_battery.c
+> +++ b/drivers/power/88pm860x_battery.c
+> @@ -992,7 +992,6 @@ static int pm860x_battery_remove(struct platform_device *pdev)
+>  	free_irq(info->irq_batt, info);
+>  	free_irq(info->irq_cc, info);
+>  	power_supply_unregister(&info->battery);
+> -	platform_set_drvdata(pdev, NULL);
+>  	return 0;
+>  }
+>  
+> -- 
+> 1.7.2.5
