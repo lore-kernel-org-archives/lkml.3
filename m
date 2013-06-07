@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756377Ab3FGRaO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 13:30:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34834 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453Ab3FGRaK (ORCPT
+	id S932072Ab3FGRap (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 13:30:45 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47951 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756353Ab3FGRan (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 13:30:10 -0400
-Date: Fri, 7 Jun 2013 10:30:09 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Lotfi Manseur <lotfi.manseur@gmail.com>
-Cc: stable@vger.kernel.org, Wojciech M Zabolotny <W.Zabolotny@elka.pw.edu.pl>,
-        Nicolas Palix <nicolas.palix@imag.fr>,
-        Lotfi Manseur <lotfi.manseur@imag.fr>, Willy Tarreau <w@1wt.eu>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: serial/ftdi_sio.c Fix kernel oops
-Message-ID: <20130607173009.GC29371@kroah.com>
-References: <1370610872-1309-1-git-send-email-lotfi.manseur@imag.fr>
+	Fri, 7 Jun 2013 13:30:43 -0400
+Message-ID: <51B218BF.60002@wwwdotorg.org>
+Date: Fri, 07 Jun 2013 11:30:39 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370610872-1309-1-git-send-email-lotfi.manseur@imag.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "luke.leighton" <luke.leighton@gmail.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>,
+        linux-arm-kernel@lists.infradead.org, debian-kernel@lists.debian.org
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
+ Uploading linux (3.9.4-1))
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com> <1370475609.20454.44.camel@localhost> <CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com> <1733666.lHUBcfUXq9@flatron> <CAPweEDzYLDzh_-OWU61dtVhajZ40QpQgZKHFYDsh3FgF=r9_ag@mail.gmail.com> <20130606131042.GN18614@n2100.arm.linux.org.uk> <CAPweEDyYt+pN+UaFuqWL5RrHpyuq_4So-tArmx3dr=0wLS+hwQ@mail.gmail.com>
+In-Reply-To: <CAPweEDyYt+pN+UaFuqWL5RrHpyuq_4So-tArmx3dr=0wLS+hwQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 03:14:32PM +0200, Lotfi Manseur wrote:
-> Handle null termios in ftdi_set_termios(), introduced in
-> commit 552f6bf1bb0eda0011c0525dd587aa9e7ba5b846
-> This has been corrected in the mainline by
-> commits c515598e0f5769916c31c00392cc2bfe6af74e55 and
-> a816e3113b63753c330ca4751ea1d208e93e3015.
+On 06/07/2013 02:02 AM, luke.leighton wrote:
+> On Thu, Jun 6, 2013 at 2:10 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> 
+>> If companies are going to go off and invent the square wheel, and that
+>> makes *them* suffer the loss of being able to merge back into the
+>> mainline kernel, thereby making *their* job of moving forward with
+>> their kernel versions much harder, then yes, we *are* happy.
+> 
+>  russell: they have more employees than sense :)  they also don't have
+> any idea of what they *should* be doing, so this is an opportunity to
+> educate them.
 
-Then why shouldn't we just include those commit instead of your patch,
-which looks much different from these?
-
-I'd much rather take the originals, not something else.
-
-greg k-h
+You know, they're probably reading this thread, and if not, they
+certainly can in the list archives. It's probably not a good idea to
+slag them off like that, and like other comments in this thread...
