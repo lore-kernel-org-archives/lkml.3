@@ -1,77 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932081Ab3FGQev (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 12:34:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33468 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756469Ab3FGQet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 12:34:49 -0400
-Subject: [PATCH v2 2/2] pci: Differentiate ACS controllable from enabled
-To: bhelgaas@google.com
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-pci@vger.kernel.org, ddutile@redhat.com,
-        linux-kernel@vger.kernel.org
-Date: Fri, 07 Jun 2013 10:34:47 -0600
-Message-ID: <20130607163447.7733.70375.stgit@bling.home>
-In-Reply-To: <20130607162732.7733.17758.stgit@bling.home>
-References: <20130607162732.7733.17758.stgit@bling.home>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1756703Ab3FGQfb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 12:35:31 -0400
+Received: from 6.mo1.mail-out.ovh.net ([46.105.43.205]:51257 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756396Ab3FGQfa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 12:35:30 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Mike Turquette <mturquette@linaro.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: [RFC PATCH 28/50] ASoC: atmel-ssc: prepare clk before calling enable
+Date: Fri,  7 Jun 2013 18:26:09 +0200
+Message-Id: <1370622370-19614-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1370615115-16979-1-git-send-email-b.brezillon@overkiz.com>
+References: <1370615115-16979-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 662873572094539804
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We currently misinterpret that in order for an ACS feature to be
-enabled it must be set in the control field.  In reality, this means
-that the feature is not only enabled, but controllable.  Many of the
-ACS capability bits are not required if the device behaves by default
-in the way specified when both the capability and control bit are set
-and does not support or allow the alternate mode.  We therefore need
-to check the capabilities and mask out flags that are enabled but not
-controllable.  Egress control seems to be the only flag which is
-purely optional.
+Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
+avoid common clk framework warnings.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 ---
- drivers/pci/pci.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ drivers/misc/atmel-ssc.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 457ae51..8b8504c 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -2357,12 +2357,20 @@ void pci_enable_acs(struct pci_dev *dev)
- static bool pci_acs_flags_enabled(struct pci_dev *pdev, u16 acs_flags)
- {
- 	int pos;
--	u16 ctrl;
-+	u16 cap, ctrl;
+diff --git a/drivers/misc/atmel-ssc.c b/drivers/misc/atmel-ssc.c
+index c09c28f..e619197 100644
+--- a/drivers/misc/atmel-ssc.c
++++ b/drivers/misc/atmel-ssc.c
+@@ -58,7 +58,7 @@ struct ssc_device *ssc_request(unsigned int ssc_num)
+ 	ssc->user++;
+ 	spin_unlock(&user_lock);
  
- 	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_ACS);
- 	if (!pos)
- 		return false;
+-	clk_enable(ssc->clk);
++	clk_prepare_enable(ssc->clk);
  
-+	/*
-+	 * Except for egress control, capabilities are either required
-+	 * or only required if controllable.  Features missing from the
-+	 * capability field can therefore be assumed as hard-wired enabled.
-+	 */
-+	pci_read_config_word(pdev, pos + PCI_ACS_CAP, &cap);
-+	acs_flags &= (cap | PCI_ACS_EC);
-+
- 	pci_read_config_word(pdev, pos + PCI_ACS_CTRL, &ctrl);
- 	return (ctrl & acs_flags) == acs_flags;
+ 	return ssc;
  }
-@@ -2412,9 +2420,6 @@ bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags)
- 		if (!pdev->multifunction)
- 			break;
- 
--		acs_flags &= (PCI_ACS_RR | PCI_ACS_CR |
--			      PCI_ACS_EC | PCI_ACS_DT);
--
- 		return pci_acs_flags_enabled(pdev, acs_flags);
+@@ -69,7 +69,7 @@ void ssc_free(struct ssc_device *ssc)
+ 	spin_lock(&user_lock);
+ 	if (ssc->user) {
+ 		ssc->user--;
+-		clk_disable(ssc->clk);
++		clk_disable_unprepare(ssc->clk);
+ 	} else {
+ 		dev_dbg(&ssc->pdev->dev, "device already free\n");
+ 	}
+@@ -172,10 +172,10 @@ static int ssc_probe(struct platform_device *pdev)
  	}
  
+ 	/* disable all interrupts */
+-	clk_enable(ssc->clk);
++	clk_prepare_enable(ssc->clk);
+ 	ssc_writel(ssc->regs, IDR, -1);
+ 	ssc_readl(ssc->regs, SR);
+-	clk_disable(ssc->clk);
++	clk_disable_unprepare(ssc->clk);
+ 
+ 	ssc->irq = platform_get_irq(pdev, 0);
+ 	if (!ssc->irq) {
+-- 
+1.7.9.5
 
