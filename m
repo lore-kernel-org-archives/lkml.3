@@ -1,83 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757046Ab3FGVxa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 17:53:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48785 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756046Ab3FGVx3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 17:53:29 -0400
-Date: Fri, 7 Jun 2013 23:53:23 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: John Stultz <john.stultz@linaro.org>
-cc: Tobias Waldekranz <tobias@waldekranz.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] timekeeping: handle epoch roll-over (2038) on 32-bit
- systems
-In-Reply-To: <51ACE8AE.2090809@linaro.org>
-Message-ID: <alpine.LFD.2.02.1306072308040.24812@ionos>
-References: <CAFaRD2FP0rrQstV1GszP_URO+cZZuQdyRxOYUEmA+5BvopUAvQ@mail.gmail.com> <alpine.LFD.2.02.1306031622520.2905@ionos> <51ACE8AE.2090809@linaro.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1756755Ab3FGV4Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 17:56:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21095 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752999Ab3FGV4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 17:56:15 -0400
+Date: Fri, 7 Jun 2013 18:55:42 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, David Sharp <dhsharp@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Re: [PATCH V2 1/1] kvm/vmx: Add a tracepoint write_tsc_offset
+Message-ID: <20130607215542.GA22131@amt.cnet>
+References: <20130604083616.22713.24922.stgit@yunodevel>
+ <20130604083619.22713.25360.stgit@yunodevel>
+ <20130606002322.GA24351@amt.cnet>
+ <20130606113305.GB4725@redhat.com>
+ <51B16E0E.5020208@hitachi.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51B16E0E.5020208@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Jun 2013, John Stultz wrote:
-> On 06/03/2013 07:34 AM, Thomas Gleixner wrote:
-> > Though even if we fix that we still need to twist our brains around
-> > the timespec/timeval based user space interfaces. That's going to be
-> > the way more interesting challenge.
+On Fri, Jun 07, 2013 at 02:22:22PM +0900, Yoshihiro YUNOMAE wrote:
+> (2013/06/06 20:33), Gleb Natapov wrote:
+> >On Wed, Jun 05, 2013 at 09:23:22PM -0300, Marcelo Tosatti wrote:
+> >>On Tue, Jun 04, 2013 at 05:36:19PM +0900, Yoshihiro YUNOMAE wrote:
+> >>>Add a tracepoint write_tsc_offset for tracing TSC offset change.
+> >>>We want to merge ftrace's trace data of guest OSs and the host OS using
+> >>>TSC for timestamp in chronological order. We need "TSC offset" values for
+> >>>each guest when merge those because the TSC value on a guest is always the
+> >>>host TSC plus guest's TSC offset. If we get the TSC offset values, we can
+> >>>calculate the host TSC value for each guest events from the TSC offset and
+> >>>the event TSC value. The host TSC values of the guest events are used when we
+> >>>want to merge trace data of guests and the host in chronological order.
+> >>>(Note: the trace_clock of both the host and the guest must be set x86-tsc in
+> >>>this case)
+> >>>
+> >>>TSC offset is stored in the VMCS by vmx_write_tsc_offset() or
+> >>>vmx_adjust_tsc_offset(). KVM executes the former function when a guest boots.
+> >>>The latter function is executed when kvm clock is updated. Only host can read
+> >>>TSC offset value from VMCS, so a host needs to output TSC offset value
+> >>>when TSC offset is changed.
+> >>>
+> >>>Since the TSC offset is not often changed, it could be overwritten by other
+> >>>frequent events while tracing. To avoid that, I recommend to use a special
+> >>>instance for getting this event:
+> >>>
+> >>>1. set a instance before booting a guest
+> >>>  # cd /sys/kernel/debug/tracing/instances
+> >>>  # mkdir tsc_offset
+> >>>  # cd tsc_offset
+> >>>  # echo x86-tsc > trace_clock
+> >>>  # echo 1 > events/kvm/kvm_write_tsc_offset/enable
+> >>>
+> >>>2. boot a guest
+> >>>
+> >>>Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+> >>>Cc: Marcelo Tosatti <mtosatti@redhat.com>
+> >>>Cc: Gleb Natapov <gleb@redhat.com>
+> >>>Cc: Thomas Gleixner <tglx@linutronix.de>
+> >>>Cc: Ingo Molnar <mingo@redhat.com>
+> >>>Cc: "H. Peter Anvin" <hpa@zytor.com>
+> >>>---
+> >>>  arch/x86/kvm/trace.h |   18 ++++++++++++++++++
+> >>>  arch/x86/kvm/vmx.c   |    3 +++
+> >>>  arch/x86/kvm/x86.c   |    1 +
+> >>>  3 files changed, 22 insertions(+)
+> >>>
+> >>>diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
+> >>>index fe5e00e..9c22e39 100644
+> >>>--- a/arch/x86/kvm/trace.h
+> >>>+++ b/arch/x86/kvm/trace.h
+> >>>@@ -815,6 +815,24 @@ TRACE_EVENT(kvm_track_tsc,
+> >>>  		  __print_symbolic(__entry->host_clock, host_clocks))
+> >>>  );
+> >>>
+> >>>+TRACE_EVENT(kvm_write_tsc_offset,
+> >>>+	TP_PROTO(__u64 previous_tsc_offset, __u64 next_tsc_offset),
+> >>>+	TP_ARGS(previous_tsc_offset, next_tsc_offset),
+> >>>+
+> >>>+	TP_STRUCT__entry(
+> >>>+		__field(	__u64,	previous_tsc_offset		)
+> >>>+		__field(	__u64,	next_tsc_offset			)
+> >>>+	),
+> >>>+
+> >>>+	TP_fast_assign(
+> >>>+		__entry->previous_tsc_offset	= previous_tsc_offset;
+> >>>+		__entry->next_tsc_offset	= next_tsc_offset;
+> >>>+	),
+> >>>+
+> >>>+	TP_printk("previous=%llu next=%llu",
+> >>>+		  __entry->previous_tsc_offset, __entry->next_tsc_offset)
+> >>>+);
+> >>>+
+> >>
+> >>Yoshihiro YUNOMAE,
+> >>
+> >>1) Why is previous_tsc_offset necessary?
 > 
-> I'm curious if there are any there other ideas that folks are considering?
+> I was considering the situations where we did not enable
+> kvm_write_tsc_offset event before booting a guest or where we did not
+> use multiple buffers. Here, we will need another new I/F to get current
+> TSC offset of a given VCPU. For example, if kvm_write_tsc_offset is not
+> included in the host's trace data, we get the current TSC offset from
+> the new I/F and apply it to all guest events. On the other hand, if
+> kvm_write_tsc_offset event appears more than once, we apply the
+> previous offset to guest events before the first TSC offset change.
 
-Honestly, we have almost 25 years ahead of us to solve that. So why
-hurry? If Tobias thinks that his embedded system of today needs to
-survive 2038 without updating the kernel and all of userspace, then
-all I can do is wish him good luck. Albeit we should not waste 25
-years and run into another Y2K horror. :)
+OK.
 
-The only solid solution is to implement a new set of syscalls (and
-there are not that many which are affected by this). The new syscalls
-should use a nanosecond based scalar time value and get rid of the
-timespec /timeval / time_t nonsense alltogether. That reduces the
-number of new syscalls significantly.
+> Since we support only for using multiple buffers now, we don't need to
+> record previous TSC offset at this time. But I'm conscious that we have
+> to change the format of kvm_write_tsc_offset event when we support
+> those situations.
 
-That time value should be 64bit, also people might argue, that we are
-creating a new issue for the year 2554, i.e 541 years from now. I
-don't think we need to worry about that really. We have to leave our
-grand-grand-grand..grandchildren (~20 generations from now) a few
-unsolved problems!
+OK, feel free to keep prev_tsc_offset.
 
-The evil plan to make this happen looks like this:
+> >>2) The TSC offset traces should include vcpu number, so that its
+> >>possible to correlate traces of SMP guests (the tool should use
+> >>the individual vcpu tsc offsets when converting guests trace).
+> >>
+> >Why PID is not enough? No other trace, except kvm_entry, outputs vcpu id.
+> 
+> As Gleb mentioned, a tool can understand TSC offset for each vcpu from
+> PID and vcpu number of kvm_entry. IMO, that is indirect way, so I would
+> be better off including vcpu number.
 
-    1) Convert the core code to u64 with a timespec based shadow
-       infrastruture to avoid performance regressions in the first
-       place.
+Yes.
 
-    2) Add new u64 based syscalls
+> >>3) Please add traces for svm.c.
+> 
+> Sure, I'll add the tracepoint for SVM.
 
-    3) Disable the timespec based shadow infrastructure five years
-       from now to force all lazy buggers who ignored the new syscalls
-       to fix their crap.
-
-    4) Deprecate the old syscalls 10 years from now
-
-    5) Remove the old syscalls 100 years from now so Linus won't hunt
-       us for breaking userspace :)
-
-Thanks,
-
-	tglx
-
-    
-
-
-
-
+OK, no further comments for now.
 
