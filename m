@@ -1,147 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531Ab3FGEwu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 00:52:50 -0400
-Received: from mga14.intel.com ([143.182.124.37]:31189 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751004Ab3FGEwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 00:52:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,819,1363158000"; 
-   d="scan'208";a="346196288"
-Message-ID: <1370580895.4432.64.camel@ymzhang.sh.intel.com>
-Subject: Re: [PATCH] irq: add a new function irq_in_progress to check
- pending IRQ handlers
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Reply-To: yanmin_zhang@linux.intel.com
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Liu ShuoX <shuox.liu@intel.com>,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        sedat.dilek@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
-        Zhang Yanmin <yanmin.zhang@intel.com>
-Date: Fri, 07 Jun 2013 12:54:55 +0800
-In-Reply-To: <20130607041922.GA3603@kroah.com>
-References: <1370504296-24389-1-git-send-email-shuox.liu@intel.com>
-	 <alpine.LFD.2.02.1306061505210.2905@ionos>
-	 <1370566409.4432.41.camel@ymzhang.sh.intel.com>
-	 <20130607010225.GA28256@kroah.com>
-	 <1370572672.4432.49.camel@ymzhang.sh.intel.com>
-	 <20130607030853.GA2827@kroah.com>
-	 <1370575086.4432.52.camel@ymzhang.sh.intel.com>
-	 <20130607041922.GA3603@kroah.com>
-Organization: Intel.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751698Ab3FGExW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 00:53:22 -0400
+Received: from mail-ve0-f201.google.com ([209.85.128.201]:58154 "EHLO
+	mail-ve0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab3FGExU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 00:53:20 -0400
+X-Greylist: delayed 377 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Jun 2013 00:53:20 EDT
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Ball <cjb@laptop.org>
+Cc: Olof Johansson <olof@lixom.net>, Andrew Bresticker <abrestic@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Will Newton <will.newton@imgtec.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: [PATCH 1/2] mmc: dw_mmc: Handle late vmmc regulator with EPROBE_DEFER
+Date: Thu,  6 Jun 2013 21:46:45 -0700
+Message-Id: <1370580406-10254-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-06 at 21:19 -0700, Greg KH wrote:
-> On Fri, Jun 07, 2013 at 11:18:06AM +0800, Yanmin Zhang wrote:
-> > On Thu, 2013-06-06 at 20:08 -0700, Greg KH wrote:
-> > > On Fri, Jun 07, 2013 at 10:37:52AM +0800, Yanmin Zhang wrote:
-> > > > On Thu, 2013-06-06 at 18:02 -0700, Greg KH wrote:
-> > > > > On Fri, Jun 07, 2013 at 08:53:29AM +0800, Yanmin Zhang wrote:
-> > > > > > On Thu, 2013-06-06 at 15:18 +0200, Thomas Gleixner wrote:
-> > > > > > > On Thu, 6 Jun 2013, shuox.liu@intel.com wrote:
-> > > > > > > > From: Zhang Yanmin <yanmin.zhang@intel.com>
-> > > > > > > > 
-> > > > > > > > synchronize_irq waits pending IRQ handlers to be finished. If using this
-> > > > > > > > function while holding a resource, the IRQ handler may cause deadlock.
-> > > > > > > > 
-> > > > > > > > Here we add a new function irq_in_progress which doesn't wait for the handlers
-> > > > > > > > to be finished.
-> > > > > > > > 
-> > > > > > > > A typical use case at suspend-to-ram:
-> > > > > > > > 
-> > > > > > > > device driver's irq handler is complicated and might hold a mutex at rare cases.
-> > > > > > > > Its suspend function is called and a suspended flag is set.
-> > > > > > > > In case its IRQ handler is running, suspend function calls irq_in_progress. if
-> > > > > > > > handler is running, abort suspend.
-> > > > > > > > The irq handler checks the suspended flag. If the device is suspended, irq handler
-> > > > > > > > either ignores the interrupt, or wakes up the whole system, and the driver's
-> > > > > > > > resume function could deal with the delayed interrupt handling.
-> > > > > > > 
-> > > > > > > This is as wrong as it can be. Fix the driver instead of hacking racy
-> > > > > > > functions into the core code.
-> > > > > > > 
-> > > > > > > So your problem looks like this:
-> > > > > > > 
-> > > > > > > CPU 0				CPU 1
-> > > > > > > irq_handler_thread()		suspend()
-> > > > > > >    .....			mutex_lock(&m);
-> > > > > > >    mutex_lock(&m);		synchronize_irq();
-> > > > > > > 
-> > > > > > > So why needs the mutex to be taken before synchronize_irq()? Why not
-> > > > > > > doing the obvious?
-> > > > > > > 
-> > > > > > > suspend()
-> > > > > > >   disable_irq(); (Implies synchronize_irq)
-> > > > > > >   mutex_lock(&m);
-> > > > > > >   ....
-> > > > > > >   mutex_unlock(&m);
-> > > > > > >   enable_irq();
-> > > > > > Thanks for the kind comment.
-> > > > > > 
-> > > > > > We do consider your solution before and it works well indeed with some specific
-> > > > > > simple drivers. For example, some drives use GPIO pin as interrupt source.
-> > > > > > 
-> > > > > > On one specific platform, disable_irq would really disable the irq at RTE entry,
-> > > > > > which means we lose the wakeup capability of this device.
-> > > > > > synchronize_irq can be another solution. But we did hit 'DPM device timeout' issue
-> > > > > > reported by dpm_wd_handler at suspend-to-ram.
-> > > > > > 
-> > > > > > The driver is complicated. We couldn't change too many functions to optimize it.
-> > > > > > In addition, we have to use the driver instead of throwing it away.
-> > > > > 
-> > > > > What is preventing you from rewriting it to work properly?
-> > > > It's complicated.
-> > > 
-> > > That sounds like your issue, not ours, so please don't push the problem
-> > > onto someone else.  Take ownership of the driver, fix it up, and all
-> > > will be good.
-> > > 
-> > > 
-> > > > > > With irq_in_progress, we can resolve this issue and it does work, although it
-> > > > > > looks like ugly.
-> > > > > 
-> > > > > Don't paper over driver bugs in the core kernel, fix the driver.
-> > > > It's hard to say it's a driver bug. Could generic kernel provide some
-> > > > flexibility for such complicated drivers?
-> > > 
-> > > Please post the code for the driver, and then we will be glad to
-> > > continue the dicussion.
-> > Greg,
-> > 
-> > Thanks for your enthusiasm. It's a private driver for products.
-> 
-> What do you mean "private driver"?  All drivers need to be merged into
-> the mainline kernel, it saves you time and money, and we will fix your
-> bugs for you.
-> 
-> You know that, your bosses know that, your management knows that, so why
-> are you trying to hide things?
-> 
-> totally confused,
-They are embedded device drivers, highly depending on specific devices which runs
-its own firmware in devices. Here the kernel drivers run at AP side.
+It is possible to specify a regulator that should be turned on when
+dw_mmc is probed.  This regulator is optional, though a warning will
+be printed if it's missing.  The fact that the regulator is optional
+means that (at the moment) it's not possible to use a regulator that
+probes _after_ dw_mmc.
 
-One example is Graphics driver, which is very big and coding is not friendly. Kernel
-experts can raise tons of questions against the driver, but we have to make the driver
-work well on real products.
+Fix this limitation by adding the ability to make vmmc required.  If a
+vmmc-supply is specified in the device tree we'll assume that vmmc is
+required.
 
-Another reason is drivers need workaround many hardware issues. That makes it
-hard to implement kernel drivers in good shape sometimes.
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ .../devicetree/bindings/mmc/synopsis-dw-mshc.txt   |  3 +++
+ drivers/mmc/host/dw_mmc.c                          | 22 ++++++++++++++++++++--
+ include/linux/mmc/dw_mmc.h                         |  3 +++
+ 3 files changed, 26 insertions(+), 2 deletions(-)
 
-We need support all cases.
-
-We fixed lots of hard issues on embedded products and think if kernel could be more
-flexible to support complicated cases.
-
-Anyway, thanks.
-
-Yanmin
-
+diff --git a/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt
+index 726fd21..b09d2d0 100644
+--- a/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt
++++ b/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt
+@@ -55,6 +55,9 @@ Optional properties:
+ 
+ * broken-cd: as documented in mmc core bindings.
+ 
++* vmmc-supply: The phandle to the regulator to use for vmmc.  If this is
++  specified we'll defer probe until we can find this regulator.
++
+ Aliases:
+ 
+ - All the MSHC controller nodes should be represented in the aliases node using
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index bc3a1bc..d3a0f8a 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -1987,8 +1987,17 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+ 
+ 	host->vmmc = devm_regulator_get(mmc_dev(mmc), "vmmc");
+ 	if (IS_ERR(host->vmmc)) {
+-		pr_info("%s: no vmmc regulator found\n", mmc_hostname(mmc));
++		ret = PTR_ERR(host->vmmc);
+ 		host->vmmc = NULL;
++
++		if (host->pdata->vmmc_required) {
++			if (ret != -EPROBE_DEFER)
++				pr_err("%s: vmmc required: %d\n",
++					mmc_hostname(mmc), ret);
++			goto err_setup_bus;
++		}
++		pr_info("%s: no vmmc regulator found %d\n", mmc_hostname(mmc),
++			ret);
+ 	} else {
+ 		ret = regulator_enable(host->vmmc);
+ 		if (ret) {
+@@ -2026,7 +2035,7 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+ 
+ err_setup_bus:
+ 	mmc_free_host(mmc);
+-	return -EINVAL;
++	return ret;
+ }
+ 
+ static void dw_mci_cleanup_slot(struct dw_mci_slot *slot, unsigned int id)
+@@ -2162,6 +2171,13 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
+ 	if (of_find_property(np, "enable-sdio-wakeup", NULL))
+ 		pdata->pm_caps |= MMC_PM_WAKE_SDIO_IRQ;
+ 
++	/*
++	 * If vmmc is directly specified in the device tree then we'll assume
++	 * it's required and honor EPROBE_DEFER so it can show up late.
++	 */
++	if (of_find_property(np, "vmmc-supply", NULL))
++		pdata->vmmc_required = 1;
++
+ 	return pdata;
+ }
+ 
+@@ -2352,6 +2368,8 @@ int dw_mci_probe(struct dw_mci *host)
+ 	/* We need at least one slot to succeed */
+ 	for (i = 0; i < host->num_slots; i++) {
+ 		ret = dw_mci_init_slot(host, i);
++		if (ret == -EPROBE_DEFER)
++			goto err_workqueue;
+ 		if (ret)
+ 			dev_dbg(host->dev, "slot %d init failed\n", i);
+ 		else
+diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
+index 198f0fa..e84d288 100644
+--- a/include/linux/mmc/dw_mmc.h
++++ b/include/linux/mmc/dw_mmc.h
+@@ -244,6 +244,9 @@ struct dw_mci_board {
+ 	/* delay in mS before detecting cards after interrupt */
+ 	u32 detect_delay_ms;
+ 
++	/* If true then we won't probe until vmmc is available */
++	bool vmmc_required;
++
+ 	int (*init)(u32 slot_id, irq_handler_t , void *);
+ 	int (*get_ro)(u32 slot_id);
+ 	int (*get_cd)(u32 slot_id);
+-- 
+1.8.3
 
