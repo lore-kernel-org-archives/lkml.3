@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab3FGQwr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 12:52:47 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52583 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755107Ab3FGQwq (ORCPT
+	id S1756276Ab3FGQxo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 12:53:44 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43036 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755299Ab3FGQxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 12:52:46 -0400
-Date: Fri, 7 Jun 2013 17:52:27 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, broonie@linaro.org
-Message-ID: <20130607165227.GZ31367@sirena.org.uk>
-References: <1370621488-18130-1-git-send-email-lee.jones@linaro.org>
- <1370621488-18130-8-git-send-email-lee.jones@linaro.org>
+	Fri, 7 Jun 2013 12:53:42 -0400
+Message-ID: <51B21012.2030302@wwwdotorg.org>
+Date: Fri, 07 Jun 2013 10:53:38 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zqQqHHTowamqwYc0"
-Content-Disposition: inline
-In-Reply-To: <1370621488-18130-8-git-send-email-lee.jones@linaro.org>
-X-Cookie: Are you a turtle?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 07/10] regulator: ab8500-ext: Provide a set_voltage
- call-back operation
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Paul Walmsley <pwalmsley@nvidia.com>, Hiroshi Doyu <hdoyu@nvidia.com>
+CC: linux-tegra@vger.kernel.org, mturquette@linaro.org,
+        Andrew Chew <achew@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        linux-kernel@vger.kernel.org,
+        Matthew Longnecker <mlongnecker@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/3] clk: tegra: T114: add DFLL source clocks
+References: <20130607121505.21868.72360.stgit@dusk.lan> <20130607121858.21868.73882.stgit@dusk.lan>
+In-Reply-To: <20130607121858.21868.73882.stgit@dusk.lan>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/07/2013 06:19 AM, Paul Walmsley wrote:
+> Add the input clocks needed by the DFLL IP blocks.  Initialize them to
+> 51MHz (as required by the DFLL GFD) and to use the PLL_P clock source.
+> 
+> This patch is a collaboration with Peter De Schrijver
+> <pdeschrijver@nvidia.com>.
+> 
+> Thanks to Laxman Dewangan <ldewangan@nvidia.com> for identifying the
+> requirement to keep the DFLL clocks enabled to resolve PWR_I2C timeout
+> issues.
 
---zqQqHHTowamqwYc0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
 
-On Fri, Jun 07, 2013 at 05:11:25PM +0100, Lee Jones wrote:
-> When registering regulators which have a single voltage through Device
-> Tree, the framework insists that the specified voltage is actually set.
-> Well in order to do that we need to provide this call-back, where we
-> check that the value is sane and return without error. Not that the
-> selector isn't populated, but in our case list_voltage doesn't actually
-> use it, so we're good.
+> @@ -792,6 +794,7 @@ enum tegra114_clk {
+>  	audio1, audio2, audio3, audio4, spdif, clk_out_1, clk_out_2, clk_out_3,
+>  	blink, xusb_host_src = 252, xusb_falcon_src, xusb_fs_src, xusb_ss_src,
+>  	xusb_dev_src, xusb_dev, xusb_hs_src, sclk, hclk, pclk, cclk_g, cclk_lp,
+> +	dfll_ref = 264, dfll_soc,
 
-Applied, thanks.
+Those values need to be added to the DT binding documentation, or rather
+the header file that now defines the constants for that binding.
 
---zqQqHHTowamqwYc0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+BTW, I was rather hoping that Hiroshi would have converted the clock
+drivers to actually use that header file by now... Then this requirement
+would have been a lot more obvious. Hiroshi, are patches for that coming
+soon? Paul, if not, are you able to do that?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRsg/IAAoJELSic+t+oim9vHgQAJ1M1ZSJyKukm/+t/AMrfDRt
-Kc1Q/N9mLyJkWBV1jaH3fzVb+B29lnO4c3pwNO+LzaxADndYlQCmJtIiYJShg847
-UYFyihYXEegkxlhnHv8Z2F/5i/MLSNzV2O/42oaLCLAm7CLd8lL3ck5edotxcJ6L
-AkivE+LGIF9BGcaPBE+//0pztKipIU/cyL/gmva7rOAtfXQLd/duCMAe3eXkRJmb
-IXcMcfYSMTgU+69GoqzE23daiIbiWeqHscewnrBwwo0DibjhWTaNmYurz649x+ZN
-A5YecdTgzaxmgFX2QyeNrFHM8HRBlPRfhYMV1rp4HzJ1sv9PvAsuzxZsXEYMmpgN
-l7FsKzIytGpFPDLIc6w3Fdr4463mMmCREp5jNNWjAUym3w7C+IcN6yLkbt85zqLZ
-azFrCL0YRkx7zRWruzRn/3kzBbXycuqXDj/yEu1Ui8Luo4YN6PcxdnuripyJU2c6
-djfjChGno8e7lZrvYgIIESfu7PdxZ//Guft8Vm6ji5M0/9QV6JKP4CSuYVyxfzBV
-EsMA6fSyxu0EOh/am3f8gvQcNSH5RL8MBdRDFx818yYR7OQ1brYoH/shDmeNbGnB
-xice+Z+KzbdDL62wSC9mjW5wxU/WbIzGJafq/ZTgAPrt1jSdQLknShimXeEbDL1/
-fiY5FbbGQmW9d7MWksdd
-=6bYD
------END PGP SIGNATURE-----
-
---zqQqHHTowamqwYc0--
+For reference, include/dt-bindings/clock/tegra*-car.h.
