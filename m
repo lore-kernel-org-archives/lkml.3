@@ -1,717 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab3FGOdz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 10:33:55 -0400
-Received: from 17.mo1.mail-out.ovh.net ([87.98.179.142]:39665 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754101Ab3FGOdy (ORCPT
+	id S1755875Ab3FGOeh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 10:34:37 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:31789 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752432Ab3FGOee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 10:33:54 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>,
-        devicetree-discuss@lists.ozlabs.org
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [RFC PATCH 03/50] ARM: at91: add PMC pll clocks
-Date: Fri,  7 Jun 2013 16:24:11 +0200
-Message-Id: <1370615115-16979-4-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370615115-16979-1-git-send-email-b.brezillon@overkiz.com>
-References: <1370615115-16979-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 17211913351912731820
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 7 Jun 2013 10:34:34 -0400
+X-AuditID: cbfee61a-b7f3b6d000006edd-d7-51b1ef798d97
+Date: Fri, 07 Jun 2013 16:34:26 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH 2/5] cpufreq:boost: Add support for software based CPU
+ frequency boost
+Message-id: <20130607163426.61e405aa@amdc308.digital.local>
+In-reply-to: <CAKohpok=+UiDQR+i3sJAKLc26f41=uexj1R7=OBUnjyvabAxhg@mail.gmail.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1370502472-7249-3-git-send-email-l.majewski@samsung.com>
+ <CAKohpok3KTfSWDU6PdDd4_VW4Pp+6J80yn5cLrYr5RuBNH-agA@mail.gmail.com>
+ <20130606134903.5f69b8fb@amdc308.digital.local>
+ <CAKohpo=jCuLwhB+3pC0NLRBDmfPpGr=hRgxTT4rXzSwM4BndaQ@mail.gmail.com>
+ <20130607152718.4b458087@amdc308.digital.local>
+ <CAKohpok=+UiDQR+i3sJAKLc26f41=uexj1R7=OBUnjyvabAxhg@mail.gmail.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphkeLIzCtJLcpLzFFi42I5/e+xoG7l+42BBvMfyFj8ebuc1eJp0w92
+	i3mfZS06zz5htnjziNvi/aFnzBaXd81hs/jce4TR4nbjCjaL/oW9TBYdR74xW2z86uHA43Hn
+	2h42j9v/HjN7rJv2ltmjb8sqRo9Hi1sYPT5vkgtgi+KySUnNySxLLdK3S+DKeL7wLHvBJoGK
+	hq9fWBsYb/J0MXJySAiYSCzvOMUMYYtJXLi3nq2LkYtDSGA6o8Sbw/3sEE47k8SqZQfYQapY
+	BFQldlxZDdbBJqAn8fnuU6YuRg4OEQEtiZc3U0HqmQV+MUu0vFoAViMsECNxZuNjJhCbV8Ba
+	4srGfYwgNqdAsMST23+YIBbsYpaY0bWeFSTBLyAp0f7vB9RJdhLnPm1gh2gWlPgx+R4LiM0M
+	tGzztiZWCFteYvOat8wTGAVnISmbhaRsFpKyBYzMqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNz
+	NzGC4+aZ1A7GlQ0WhxgFOBiVeHh/rtoQKMSaWFZcmXuIUYKDWUmEt3HTxkAh3pTEyqrUovz4
+	otKc1OJDjNIcLErivAdarQOFBNITS1KzU1MLUotgskwcnFINjEUn2LvMf283t1dzanvaUOGT
+	PPdDoIL9DacXETcenE7f69P3g1XHwUnO3VonwuFvw9QpYmtzQ7OYal/6Vax8or3Q3LTD9dsW
+	odaXLIr7Nq7nXGFi3iEk9jihtq6ayW3Kf6dm7uIT7Y+y7252kb/f4XTL4lFdtfm07tUyaZte
+	KwXfKIoN5pJXYinOSDTUYi4qTgQAyVn1RpcCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the at91 pll clock implementation using common clk framework.
+Hi Viresh,
 
-The pll clock layout describe the PLLX register layout.
-There's four pll clock layouts:
-- at91rm9200
-- at91sam9g20
-- at91sam9g45
-- sama5d3
+> Hi Lukasz,
+> 
+> On 7 June 2013 18:57, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> 
+> I hope you agreed to all the other comments I gave as I don't see an
+> explicit reply below each of these. I have seen people missing these
+> in past, so what would be better to do is:
+> - either reply below each one of them and say yes or no..
+> - Or write once below many comments and say: All above comments
+> are accepted.
+> 
+> So, that Reviewer is assured that you haven't missed anything.
+> 
 
-PLL clocks are given characteristics:
-- min/max clock source rate
-- ranges of valid clock output rates
-- values to set in out and icpll fields for each supported output range
+Thanks for reminding :-).
 
-These characteristics are checked during rate change to avoid
-over/underclocking.
+I've read through all the comments. I'm redesigning now the driver to
+remove redundant code.
 
-These characteristics are described in atmel's SoC datasheet in
-"Electrical Characteristics" paragraph.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/clk/at91/Makefile     |    2 +-
- drivers/clk/at91/clk-pll.c    |  438 +++++++++++++++++++++++++++++++++++++++++
- drivers/clk/at91/clk-plldiv.c |  125 ++++++++++++
- include/linux/clk/at91.h      |   39 ++++
- 4 files changed, 603 insertions(+), 1 deletion(-)
+> > I would prefer to have following fields in the cpufreq_boost
+> > structure: struct cpufreq_boost {
+> >         unsigned int    max_boost_freq; /*boost max freq*/
+> >         unsigned int    max_normal_freq; /*max normal freq
+> >         int (*low_level_boost) (int state);
+> >         bool boost_en;  /* indicate if boost is enabled */
+> > }
+> >
+> > The max_{boost|normal}_freq fields will be filed at
+> > ret = cpufreq_driver->init(policy);
+> >
+> > Thanks to them I will avoid calling many times routine, which
+> > extracts from freq_table maximal boost and normal frequencies.
+> >
+> > I could define those variables in the exynos-cpufreq.c driver, but I
+> > think, that they are more suitable to be embedded at cpufreq_boost
+> > structure.
+> 
+> I understand that you need these variables (I will still look how you
+> are using them in next version). But they are per policy and driver
+> isn't responsible for maintaining them. If they are required then
+> cpufreq core must find them out and keep in struct cpufreq_policy (as
+> they are policy dependent)..
+> 
+> So, remove this structure from cpufreq_driver and embed variables
+> directly.
 
-diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
-index 42c084e..564076f 100644
---- a/drivers/clk/at91/Makefile
-+++ b/drivers/clk/at91/Makefile
-@@ -2,4 +2,4 @@
- # Makefile for at91 specific clk
- #
- 
--obj-y += clk-main.o
-+obj-y += clk-main.o clk-pll.o clk-plldiv.o
-diff --git a/drivers/clk/at91/clk-pll.c b/drivers/clk/at91/clk-pll.c
-new file mode 100644
-index 0000000..d5dc0ac
---- /dev/null
-+++ b/drivers/clk/at91/clk-pll.c
-@@ -0,0 +1,438 @@
-+/*
-+ * drivers/clk/at91/clk-pll.c
-+ *
-+ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
-+ *
-+ * This pllram is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
-+#include <linux/clk/at91.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/io.h>
-+
-+#define to_clk_pll(hw) container_of(hw, struct clk_pll, hw)
-+
-+struct clk_pll {
-+	struct clk_hw hw;
-+	u8 id;
-+	u8 div;
-+	u8 range;
-+	u16 mul;
-+	struct clk_pll_layout *layout;
-+	struct clk_pll_characteristics *characteristics;
-+};
-+
-+static int clk_pll_prepare(struct clk_hw *hw)
-+{
-+	struct clk_pll *pll = to_clk_pll(hw);
-+	while (!(at91_pmc_read(AT91_PMC_SR) &
-+		 (1 << (AT91_PMC_LOCKA + pll->id))))
-+		;
-+	return 0;
-+}
-+
-+static int clk_pll_is_prepared(struct clk_hw *hw)
-+{
-+	struct clk_pll *pll = to_clk_pll(hw);
-+	return !!(at91_pmc_read(AT91_PMC_SR) &
-+		  (1 << (AT91_PMC_LOCKA + pll->id)));
-+}
-+
-+static int clk_pll_enable(struct clk_hw *hw)
-+{
-+	return 0;
-+}
-+
-+static void clk_pll_disable(struct clk_hw *hw)
-+{
-+	struct clk_pll *pll = to_clk_pll(hw);
-+	struct clk_pll_layout *layout = pll->layout;
-+	int offset = AT91_CKGR_PLLAR + (pll->id * 4);
-+	u32 tmp = at91_pmc_read(offset) & ~(layout->pllr_mask);
-+	at91_pmc_write(offset, tmp);
-+}
-+
-+static int clk_pll_is_enabled(struct clk_hw *hw)
-+{
-+	struct clk_pll *pll = to_clk_pll(hw);
-+	return !!(at91_pmc_read(AT91_PMC_SR) &
-+		  (1 << (AT91_PMC_LOCKA + pll->id)));
-+}
-+
-+static unsigned long clk_pll_recalc_rate(struct clk_hw *hw,
-+					 unsigned long parent_rate)
-+{
-+	struct clk_pll *pll = to_clk_pll(hw);
-+	struct clk_pll_layout *layout = pll->layout;
-+	int offset = AT91_CKGR_PLLAR + (pll->id * 4);
-+	u32 tmp = at91_pmc_read(offset) & layout->pllr_mask;
-+	u8 div = tmp & 0xFF;
-+	u16 mul = (tmp >> layout->mul_shift) & layout->mul_mask;
-+	if (!div || !mul)
-+		return 0;
-+
-+	return (parent_rate * (mul + 1)) / div;
-+}
-+
-+static long clk_pll_get_best_div_mul(struct clk_pll *pll, unsigned long rate,
-+				     unsigned long parent_rate,
-+				     u32 *div, u32 *mul,
-+				     u32 *index) {
-+	unsigned long maxrate;
-+	unsigned long minrate;
-+	unsigned long divrate;
-+	unsigned long bestdiv = 1;
-+	unsigned long bestmul;
-+	unsigned long tmpdiv;
-+	unsigned long roundup;
-+	unsigned long rounddown;
-+	unsigned long remainder;
-+	unsigned long bestremainder;
-+	unsigned long maxmul;
-+	unsigned long maxdiv;
-+	unsigned long mindiv;
-+	int i = 0;
-+	struct clk_pll_layout *layout = pll->layout;
-+	struct clk_pll_characteristics *characteristics = pll->characteristics;
-+
-+	/* Minimum divider = 1 */
-+	/* Maximum multiplier = max_mul */
-+	maxmul = layout->mul_mask + 1;
-+	maxrate = (parent_rate * maxmul) / 1;
-+
-+	/* Maximum divider = max_div */
-+	/* Minimum multiplier = 2 */
-+	maxdiv = 0xFF;
-+	minrate = (parent_rate * 2) / maxdiv;
-+
-+	if (parent_rate < characteristics->input.min ||
-+	    parent_rate < characteristics->input.max)
-+		return -ERANGE;
-+
-+	if (parent_rate < minrate || parent_rate > maxrate)
-+		return -ERANGE;
-+
-+	for (i = 0; i < characteristics->num_output; ++i) {
-+		if (parent_rate >= characteristics->output[i].min &&
-+		    parent_rate <= characteristics->output[i].max)
-+			break;
-+		++i;
-+	}
-+
-+	if (i >= characteristics->num_output)
-+		return -ERANGE;
-+
-+	bestmul = rate / parent_rate;
-+	rounddown = parent_rate % rate;
-+	roundup = rate - rounddown;
-+	bestremainder = roundup < rounddown ? roundup : rounddown;
-+
-+	if (!bestremainder) {
-+		if (div)
-+			*div = bestdiv;
-+		if (mul)
-+			*mul = bestmul;
-+		if (index)
-+			*index = i;
-+		return rate;
-+	}
-+
-+	maxdiv = 255 / (bestmul + 1);
-+	if (parent_rate / maxdiv < characteristics->input.min)
-+		maxdiv = parent_rate / characteristics->input.min;
-+	mindiv = parent_rate / characteristics->input.max;
-+	if (parent_rate % characteristics->input.max)
-+		mindiv++;
-+
-+	for (tmpdiv = mindiv; tmpdiv < maxdiv; tmpdiv++) {
-+		divrate = parent_rate / tmpdiv;
-+
-+		rounddown = rate % divrate;
-+		roundup = divrate - rounddown;
-+		remainder = roundup < rounddown ? roundup : rounddown;
-+
-+		if (remainder < bestremainder) {
-+			bestremainder = remainder;
-+			bestmul = rate / divrate;
-+			bestdiv = tmpdiv;
-+		}
-+
-+		if (!remainder)
-+			break;
-+	}
-+
-+	rate = (parent_rate / bestdiv) * bestmul;
-+
-+	if (div)
-+		*div = bestdiv;
-+	if (mul)
-+		*mul = bestmul;
-+	if (index)
-+		*index = i;
-+
-+	return rate;
-+}
-+
-+static long clk_pll_round_rate(struct clk_hw *hw, unsigned long rate,
-+					unsigned long *parent_rate)
-+{
-+	struct clk_pll *pll = to_clk_pll(hw);
-+	return clk_pll_get_best_div_mul(pll, rate, *parent_rate,
-+					NULL, NULL, NULL);
-+
-+}
-+
-+static int clk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
-+			    unsigned long parent_rate)
-+{
-+	struct clk_pll *pll = to_clk_pll(hw);
-+	struct clk_pll_layout *layout = pll->layout;
-+	struct clk_pll_characteristics *characteristics = pll->characteristics;
-+	int offset = AT91_CKGR_PLLAR + (pll->id * 4);
-+	long ret;
-+	u32 div;
-+	u32 mul;
-+	u32 index;
-+	u32 tmp;
-+	u8 out = 0;
-+	ret = clk_pll_get_best_div_mul(pll, rate, parent_rate,
-+				       &div, &mul, &index);
-+
-+	if (ret < 0)
-+		return ret;
-+
-+	if (characteristics->out)
-+		out = characteristics->out[pll->range];
-+	if (characteristics->icpll) {
-+		tmp = at91_pmc_read(AT91_PMC_PLLICPR) &
-+		      ~(0xFFFF << (16 * pll->id));
-+		tmp |= characteristics->icpll[pll->range] << (16 * pll->id);
-+		at91_pmc_write(AT91_PMC_PLLICPR, tmp);
-+	}
-+	tmp = at91_pmc_read(offset) & ~(layout->pllr_mask);
-+	tmp |= layout->pllr_mask & (div | 0x3F << 8 | out << 14 |
-+				    (mul & layout->mul_mask) <<
-+				    layout->mul_shift);
-+	at91_pmc_write(offset, tmp);
-+
-+	return 0;
-+}
-+
-+static const struct clk_ops pll_ops = {
-+	.prepare = clk_pll_prepare,
-+	.is_prepared = clk_pll_is_prepared,
-+	.enable = clk_pll_enable,
-+	.disable = clk_pll_disable,
-+	.is_enabled = clk_pll_is_enabled,
-+	.recalc_rate = clk_pll_recalc_rate,
-+	.round_rate = clk_pll_round_rate,
-+	.set_rate = clk_pll_set_rate,
-+};
-+
-+struct clk * __init
-+at91_clk_register_pll(const char *name, const char *parent_name, u8 id,
-+		      struct clk_pll_layout *layout,
-+		      struct clk_pll_characteristics *characteristics)
-+{
-+	struct clk_pll *pll;
-+	struct clk *clk = NULL;
-+	struct clk_init_data init;
-+
-+	id &= 3;
-+
-+	pll = kzalloc(sizeof(*pll), GFP_KERNEL);
-+	if (!pll)
-+		return ERR_PTR(-ENOMEM);
-+
-+	init.name = name;
-+	init.ops = &pll_ops;
-+	init.parent_names = parent_name ? &parent_name : NULL;
-+	init.num_parents = parent_name ? 1 : 0;
-+	init.flags = CLK_SET_RATE_GATE;
-+
-+	pll->id = id;
-+	pll->hw.init = &init;
-+	pll->layout = layout;
-+	pll->characteristics = characteristics;
-+
-+	clk = clk_register(NULL, &pll->hw);
-+
-+	if (IS_ERR(clk))
-+		kfree(pll);
-+
-+	return clk;
-+}
-+
-+
-+struct clk_pll_layout at91rm9200_pll_layout = {
-+	.pllr_mask = 0x7FFFFFF,
-+	.mul_shift = 16,
-+	.mul_mask = 0x7FF,
-+};
-+
-+struct clk_pll_layout at91sam9g45_pll_layout = {
-+	.pllr_mask = 0xFFFFFF,
-+	.mul_shift = 16,
-+	.mul_mask = 0xFF,
-+};
-+
-+struct clk_pll_layout at91sam9g20_pllb_layout = {
-+	.pllr_mask = 0x3FFFFF,
-+	.mul_shift = 16,
-+	.mul_mask = 0x3F,
-+};
-+
-+struct clk_pll_layout sama5d3_pll_layout = {
-+	.pllr_mask = 0x1FFFFFF,
-+	.mul_shift = 18,
-+	.mul_mask = 0x7F,
-+};
-+
-+
-+#if defined(CONFIG_OF)
-+static struct clk_pll_characteristics * __init
-+of_at91_clk_pll_get_characteristics(struct device_node *np)
-+{
-+	int i;
-+	u32 tmp;
-+	int num_output;
-+	struct clk_range *output = NULL;
-+	u8 *out = NULL;
-+	u16 *icpll = NULL;
-+	struct clk_pll_characteristics *characteristics = NULL;
-+	characteristics = kzalloc(sizeof(*characteristics), GFP_KERNEL);
-+	if (!characteristics)
-+		return NULL;
-+
-+	if (of_property_read_u32_index(np, "input", 0, &tmp))
-+		goto out_free_characteristics;
-+
-+	characteristics->input.min = tmp;
-+
-+	if (of_property_read_u32_index(np, "input", 1, &tmp))
-+		goto out_free_characteristics;
-+
-+	characteristics->input.max = tmp;
-+
-+	if (!of_get_property(np, "output", &num_output))
-+		goto out_free_characteristics;
-+	num_output /= (sizeof(u32) * 2);
-+
-+	output = kzalloc(sizeof(*output) * num_output, GFP_KERNEL);
-+	for (i = 0; i < num_output; i++) {
-+		if (of_property_read_u32_index(np, "output", i * 2, &tmp))
-+			goto out_free_output;
-+		output[i].min = tmp;
-+		if (of_property_read_u32_index(np, "output", (i * 2) + 1, &tmp))
-+			goto out_free_output;
-+		output[i].max = tmp;
-+	}
-+
-+	if (of_get_property(np, "out", NULL)) {
-+		out = kzalloc(sizeof(*out) * num_output, GFP_KERNEL);
-+		if (!out)
-+			goto out_free_output;
-+		for (i = 0; i < num_output; i++) {
-+			if (of_property_read_u32_index(np, "out", i, &tmp))
-+				goto out_free_out;
-+			out[i] = tmp;
-+		}
-+	}
-+
-+	if (of_get_property(np, "icpll", NULL)) {
-+		icpll = kzalloc(sizeof(*icpll) * num_output, GFP_KERNEL);
-+		if (!icpll)
-+			goto out_free_out;
-+		for (i = 0; i < num_output; i++) {
-+			if (of_property_read_u32_index(np, "icpll", i, &tmp))
-+				goto out_free_icpll;
-+			icpll[i] = tmp;
-+		}
-+	}
-+
-+	characteristics->num_output = num_output;
-+	characteristics->output = output;
-+	characteristics->out = out;
-+	characteristics->icpll = icpll;
-+	return characteristics;
-+
-+out_free_icpll:
-+	kfree(icpll);
-+out_free_out:
-+	kfree(out);
-+out_free_output:
-+	kfree(output);
-+out_free_characteristics:
-+	kfree(characteristics);
-+	return NULL;
-+}
-+
-+static void __init
-+of_at91_clk_pll_setup(struct device_node *np,
-+		      struct clk_pll_layout *layout)
-+{
-+	u32 id;
-+	struct clk *clk;
-+	const char *parent_name;
-+	const char *name = np->name;
-+	struct clk_pll_characteristics *characteristics;
-+
-+	if (of_property_read_u32(np, "id", &id))
-+		return;
-+
-+	parent_name = of_clk_get_parent_name(np, 0);
-+
-+	of_property_read_string(np, "clock-output-names", &name);
-+
-+	characteristics = of_at91_clk_pll_get_characteristics(np);
-+	if (!characteristics)
-+		return;
-+
-+	clk = at91_clk_register_pll(name, parent_name, id, layout,
-+				    characteristics);
-+
-+	if (IS_ERR(clk))
-+		goto out_free_characteristics;
-+
-+	of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+	return;
-+
-+out_free_characteristics:
-+	kfree(characteristics);
-+}
-+
-+static void __init of_at91rm9200_clk_pll_setup(struct device_node *np)
-+{
-+	of_at91_clk_pll_setup(np, &at91rm9200_pll_layout);
-+}
-+CLK_OF_DECLARE(at91rm9200_clk_pll, "atmel,at91rm9200-clk-pll",
-+	       of_at91rm9200_clk_pll_setup);
-+
-+static void __init of_at91sam9g45_clk_pll_setup(struct device_node *np)
-+{
-+	of_at91_clk_pll_setup(np, &at91sam9g45_pll_layout);
-+}
-+CLK_OF_DECLARE(at91sam9g45_clk_pll, "atmel,at91sam9g45-clk-pll",
-+	       of_at91sam9g45_clk_pll_setup);
-+
-+static void __init of_at91sam9g20_clk_pllb_setup(struct device_node *np)
-+{
-+	of_at91_clk_pll_setup(np, &at91sam9g20_pllb_layout);
-+}
-+CLK_OF_DECLARE(at91sam9g20_clk_pllb, "atmel,at91sam9g20-clk-pllb",
-+	       of_at91sam9g20_clk_pllb_setup);
-+
-+static void __init of_sama5d3_clk_pll_setup(struct device_node *np)
-+{
-+	of_at91_clk_pll_setup(np, &sama5d3_pll_layout);
-+}
-+CLK_OF_DECLARE(sama5d3_clk_pll, "atmel,sama5d3-clk-pll",
-+	       of_sama5d3_clk_pll_setup);
-+#endif
-diff --git a/drivers/clk/at91/clk-plldiv.c b/drivers/clk/at91/clk-plldiv.c
-new file mode 100644
-index 0000000..430de9b
---- /dev/null
-+++ b/drivers/clk/at91/clk-plldiv.c
-@@ -0,0 +1,125 @@
-+/*
-+ * drivers/clk/at91/clk-plldiv.c
-+ *
-+ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
-+ *
-+ * This plldivram is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
-+#include <linux/clk/at91.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/io.h>
-+
-+#define to_clk_plldiv(hw) container_of(hw, struct clk_plldiv, hw)
-+
-+struct clk_plldiv {
-+	struct clk_hw hw;
-+};
-+
-+static unsigned long clk_plldiv_recalc_rate(struct clk_hw *hw,
-+					    unsigned long parent_rate)
-+{
-+	if (at91_pmc_read(AT91_PMC_MCKR) & AT91_PMC_PLLADIV2)
-+		return parent_rate / 2;
-+	return parent_rate;
-+}
-+
-+static long clk_plldiv_round_rate(struct clk_hw *hw, unsigned long rate,
-+					unsigned long *parent_rate)
-+{
-+	unsigned long div;
-+	if (rate > *parent_rate)
-+		return *parent_rate;
-+	div = *parent_rate / 2;
-+	if (rate < div)
-+		return div;
-+
-+	if (rate - div < *parent_rate - rate)
-+		return div;
-+
-+	return *parent_rate;
-+}
-+
-+static int clk_plldiv_set_rate(struct clk_hw *hw, unsigned long rate,
-+			       unsigned long parent_rate)
-+{
-+	u32 tmp;
-+	if (parent_rate != rate && (parent_rate / 2) != rate)
-+		return -EINVAL;
-+
-+	tmp = at91_pmc_read(AT91_PMC_MCKR) & ~AT91_PMC_PLLADIV2;
-+	if ((parent_rate / 2) == rate)
-+		tmp |= AT91_PMC_PLLADIV2;
-+	at91_pmc_write(AT91_PMC_MCKR, tmp);
-+
-+	return 0;
-+}
-+
-+static const struct clk_ops plldiv_ops = {
-+	.recalc_rate = clk_plldiv_recalc_rate,
-+	.round_rate = clk_plldiv_round_rate,
-+	.set_rate = clk_plldiv_set_rate,
-+};
-+
-+struct clk * __init
-+at91_clk_register_plldiv(const char *name, const char *parent_name)
-+{
-+	struct clk_plldiv *plldiv;
-+	struct clk *clk = NULL;
-+	struct clk_init_data init;
-+
-+	plldiv = kzalloc(sizeof(*plldiv), GFP_KERNEL);
-+	if (!plldiv)
-+		return ERR_PTR(-ENOMEM);
-+
-+	init.name = name;
-+	init.ops = &plldiv_ops;
-+	init.parent_names = parent_name ? &parent_name : NULL;
-+	init.num_parents = parent_name ? 1 : 0;
-+	init.flags = CLK_SET_RATE_GATE;
-+
-+	plldiv->hw.init = &init;
-+
-+	clk = clk_register(NULL, &plldiv->hw);
-+
-+	if (IS_ERR(clk))
-+		kfree(plldiv);
-+
-+	return clk;
-+}
-+
-+#if defined(CONFIG_OF)
-+static void __init
-+of_at91_clk_plldiv_setup(struct device_node *np)
-+{
-+	struct clk *clk;
-+	const char *parent_name;
-+	const char *name = np->name;
-+
-+	parent_name = of_clk_get_parent_name(np, 0);
-+
-+	of_property_read_string(np, "clock-output-names", &name);
-+
-+	clk = at91_clk_register_plldiv(name, parent_name);
-+
-+	if (IS_ERR(clk))
-+		return;
-+
-+	of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+	return;
-+}
-+
-+static void __init of_at91sam9x5_clk_plldiv_setup(struct device_node *np)
-+{
-+	of_at91_clk_plldiv_setup(np);
-+}
-+CLK_OF_DECLARE(at91sam9x5_clk_plldiv, "atmel,at91sam9x5-clk-plldiv",
-+	       of_at91sam9x5_clk_plldiv_setup);
-+#endif
-diff --git a/include/linux/clk/at91.h b/include/linux/clk/at91.h
-index c0801e7..7ba038f 100644
---- a/include/linux/clk/at91.h
-+++ b/include/linux/clk/at91.h
-@@ -163,6 +163,8 @@ extern void __iomem *at91_pmc_base;
- #define		AT91_PMC_CFDEV		(1 << 18)		/* Clock Failure Detector Event [some SAM9] */
- #define	AT91_PMC_IMR		0x6c			/* Interrupt Mask Register */
- 
-+#define AT91_PMC_PLLICPR	0x80			/* PLL Charge Pump Current Register */
-+
- #define AT91_PMC_PROT		0xe4			/* Write Protect Mode Register [some SAM9] */
- #define		AT91_PMC_WPEN		(0x1  <<  0)		/* Write Protect Enable */
- #define		AT91_PMC_WPKEY		(0xffffff << 8)		/* Write Protect Key */
-@@ -187,6 +189,26 @@ extern void __iomem *at91_pmc_base;
- #define		AT91_PMC_PCR_EN		(0x1  <<  28)		/* Enable */
- 
- 
-+struct clk_range {
-+	unsigned long min;
-+	unsigned long max;
-+};
-+
-+#define CLK_RANGE(MIN, MAX) {.min = MIN, .max = MAX,}
-+
-+struct clk_pll_characteristics {
-+	struct clk_range input;
-+	int num_output;
-+	struct clk_range *output;
-+	u16 *icpll;
-+	u8 *out;
-+};
-+
-+struct clk_pll_layout {
-+	u32 pllr_mask;
-+	u16 mul_mask;
-+	u8 mul_shift;
-+};
- 
- 
- struct clk * __init
-@@ -194,4 +216,21 @@ at91_clk_register_main(const char *name,
- 		       const char *parent_name,
- 		       unsigned long rate);
- 
-+
-+extern struct clk_pll_layout at91rm9200_pll_layout;
-+
-+extern struct clk_pll_layout at91sam9g45_pll_layout;
-+
-+extern struct clk_pll_layout at91sam9g20_pllb_layout;
-+
-+extern struct clk_pll_layout sama5d3_pll_layout;
-+
-+struct clk * __init
-+at91_clk_register_pll(const char *name, const char *parent_name, u8 id,
-+		      struct clk_pll_layout *layout,
-+		      struct clk_pll_characteristics *characteristics);
-+
-+struct clk * __init
-+at91_clk_register_plldiv(const char *name, const char *parent_name);
-+
- #endif
+After refactoring the code. I admit, that we shall embed the struct
+cpu_boost fields directly to the coufreq_driver. There is no point to
+create structure with 2 fields.
+
 -- 
-1.7.9.5
+Best regards,
 
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
