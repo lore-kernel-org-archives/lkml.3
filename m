@@ -1,272 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161052Ab3FGXJp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 19:09:45 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:49233 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932091Ab3FGXDv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 19:03:51 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
-        Sanjay Lal <sanjayl@kymasys.com>
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH 15/31] mips/kvm: Exception handling to leave and reenter guest mode.
-Date: Fri,  7 Jun 2013 16:03:19 -0700
-Message-Id: <1370646215-6543-16-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com>
+	id S1757699Ab3FGXKV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 19:10:21 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:59709 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756680Ab3FGXKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 19:10:18 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Aaron Lu <aaron.lu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: [GIT PULL] Power management and ACPI fixes for v3.10-rc5
+Date: Sat, 08 Jun 2013 01:19:23 +0200
+Message-ID: <5684767.k0MV6s4nnb@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CA+8MBbJC9hKCjcZVK1tvpjr9DAwY_wAPmarqCWa7X-cq7Bph0A@mail.gmail.com>
+References: <3863425.93Oeg2bhJF@vostro.rjw.lan> <CA+8MBb+NAHvTCc-NMz4+HqkDc=VUWJ8gDz7ji=HtFiDbcpWo4Q@mail.gmail.com> <CA+8MBbJC9hKCjcZVK1tvpjr9DAwY_wAPmarqCWa7X-cq7Bph0A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On Friday, June 07, 2013 04:02:11 PM Tony Luck wrote:
+> On Fri, Jun 7, 2013 at 3:23 PM, Tony Luck <tony.luck@gmail.com> wrote:
+> > So please don't pull.
+> 
+> Bother. I see I was a few hours late finding this, and commit 9f29ab11ddb
+> is already in Linus' tree.
+> 
+> That's what happens when I get busy and skip a couple of days testing
+> linux-next :-(
+> 
+> So my problem comes from
+> arch/ia64/hp/common/sba_iommu.c
+> 
+> where the code in sba_init() says:
+> 
+>         acpi_bus_register_driver(&acpi_sba_ioc_driver);
+>         if (!ioc_list) {
+> 
+> but because of this change we never managed to call ioc_init()
+> so ioc_list doesn't get set up, and we die.
+> Before this commit, the call chain looked like this:
+> 
+>  [<a0000001011c3710>] ioc_init+0x40/0xd00
+>  [<a0000001011c4560>] acpi_sba_ioc_add+0x190/0x1c0
+>  [<a0000001005b3b40>] acpi_device_probe+0xa0/0x280
+>  [<a000000100850060>] really_probe+0xe0/0x520
+>  [<a0000001008504d0>] driver_probe_device+0x30/0x60
+>  [<a000000100850610>] __driver_attach+0x110/0x160
+>  [<a00000010084c550>] bus_for_each_dev+0x110/0x180
+>  [<a00000010084fcc0>] driver_attach+0x40/0x60
+>  [<a00000010084da90>] bus_add_driver+0x230/0x580
+>  [<a000000100851090>] driver_register+0xf0/0x400
+>  [<a0000001005b8670>] acpi_bus_register_driver+0x50/0x80
+>  [<a0000001011c45c0>] sba_init+0x30/0x2d0
+> 
+> Is my problem that this driver has (or attaches) a "scan handler"
+> where it shouldn't ... and I just need to stop it doing that?
 
-Currently this is a little complex, here are the facts about how it works:
+Looking into that.
 
-o When running in Guest mode we set the high bit of CP0_XCONTEXT.  If
-  this bit is clear, we don't do anything special on an exception.
-
-o If we are in guest mode, upon an exception we:
-
-  1) load the stack pointer from the mips_kvm_rootsp array instead of
-     kernelsp.
-
-  2) Clear GuestCtl[GM] and high bit of CP0_XCONTEXT.
-
-  3) Restore host ASID and PGD pointer.
-
-o Upon restarting from an exception we test the task TIF_GUESTMODE
-  flag if it is clear, nothing special is done.
-
-o If Guest mode is active for the thread we:
-
-  1) Compare the stack pointer to mips_kvm_rootsp, if it doesn't match
-     we are not reentering guest mode, so no more special processing
-     is done.
-
-  2) If reentering guest mode:
-
-  2a) Set high bit of CP0_XCONTEXT and GuestCtl[GM].
-
-  2b) Set Guest mode ASID and PGD pointer.
-
-This allows a single set of exception handlers to be used for both
-host and guest mode operation.
-
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- arch/mips/include/asm/stackframe.h | 135 ++++++++++++++++++++++++++++++++++++-
- 1 file changed, 132 insertions(+), 3 deletions(-)
-
-diff --git a/arch/mips/include/asm/stackframe.h b/arch/mips/include/asm/stackframe.h
-index 20627b2..bf2ec48 100644
---- a/arch/mips/include/asm/stackframe.h
-+++ b/arch/mips/include/asm/stackframe.h
-@@ -17,6 +17,7 @@
- #include <asm/asmmacro.h>
- #include <asm/mipsregs.h>
- #include <asm/asm-offsets.h>
-+#include <asm/thread_info.h>
- 
- /*
-  * For SMTC kernel, global IE should be left set, and interrupts
-@@ -98,7 +99,9 @@
- #define CPU_ID_REG CP0_CONTEXT
- #define CPU_ID_MFC0 MFC0
- #endif
--		.macro	get_saved_sp	/* SMP variation */
-+#define CPU_ID_MASK ((1 << 13) - 1)
-+
-+		.macro	get_saved_sp_for_save_some	/* SMP variation */
- 		CPU_ID_MFC0	k0, CPU_ID_REG
- #if defined(CONFIG_32BIT) || defined(KBUILD_64BIT_SYM32)
- 		lui	k1, %hi(kernelsp)
-@@ -110,15 +113,49 @@
- 		dsll	k1, 16
- #endif
- 		LONG_SRL	k0, PTEBASE_SHIFT
-+#ifdef CONFIG_KVM_MIPSVZ
-+		andi	k0, CPU_ID_MASK /* high bits indicate guest mode. */
-+#endif
- 		LONG_ADDU	k1, k0
- 		LONG_L	k1, %lo(kernelsp)(k1)
- 		.endm
- 
-+		.macro get_saved_sp
-+		CPU_ID_MFC0	k0, CPU_ID_REG
-+		get_saved_sp_for_save_some
-+		.endm
-+
-+		.macro	get_mips_kvm_rootsp	/* SMP variation */
-+#if defined(CONFIG_32BIT) || defined(KBUILD_64BIT_SYM32)
-+		lui	k1, %hi(mips_kvm_rootsp)
-+#else
-+		lui	k1, %highest(mips_kvm_rootsp)
-+		daddiu	k1, %higher(mips_kvm_rootsp)
-+		dsll	k1, 16
-+		daddiu	k1, %hi(mips_kvm_rootsp)
-+		dsll	k1, 16
-+#endif
-+		LONG_SRL	k0, PTEBASE_SHIFT
-+		andi	k0, CPU_ID_MASK /* high bits indicate guest mode. */
-+		LONG_ADDU	k1, k0
-+		LONG_L	k1, %lo(mips_kvm_rootsp)(k1)
-+		.endm
-+
- 		.macro	set_saved_sp stackp temp temp2
- 		CPU_ID_MFC0	\temp, CPU_ID_REG
- 		LONG_SRL	\temp, PTEBASE_SHIFT
-+#ifdef CONFIG_KVM_MIPSVZ
-+		andi	k0, CPU_ID_MASK /* high bits indicate guest mode. */
-+#endif
- 		LONG_S	\stackp, kernelsp(\temp)
- 		.endm
-+
-+		.macro	set_mips_kvm_rootsp stackp temp
-+		CPU_ID_MFC0	\temp, CPU_ID_REG
-+		LONG_SRL	\temp, PTEBASE_SHIFT
-+		andi	k0, CPU_ID_MASK /* high bits indicate guest mode. */
-+		LONG_S	\stackp, mips_kvm_rootsp(\temp)
-+		.endm
- #else
- 		.macro	get_saved_sp	/* Uniprocessor variation */
- #ifdef CONFIG_CPU_JUMP_WORKAROUNDS
-@@ -152,9 +189,27 @@
- 		LONG_L	k1, %lo(kernelsp)(k1)
- 		.endm
- 
-+		.macro	get_mips_kvm_rootsp	/* Uniprocessor variation */
-+#if defined(CONFIG_32BIT) || defined(KBUILD_64BIT_SYM32)
-+		lui	k1, %hi(mips_kvm_rootsp)
-+#else
-+		lui	k1, %highest(mips_kvm_rootsp)
-+		daddiu	k1, %higher(mips_kvm_rootsp)
-+		dsll	k1, k1, 16
-+		daddiu	k1, %hi(mips_kvm_rootsp)
-+		dsll	k1, k1, 16
-+#endif
-+		LONG_L	k1, %lo(mips_kvm_rootsp)(k1)
-+		.endm
-+
-+
- 		.macro	set_saved_sp stackp temp temp2
- 		LONG_S	\stackp, kernelsp
- 		.endm
-+
-+		.macro	set_mips_kvm_rootsp stackp temp
-+		LONG_S	\stackp, mips_kvm_rootsp
-+		.endm
- #endif
- 
- 		.macro	SAVE_SOME
-@@ -164,11 +219,21 @@
- 		mfc0	k0, CP0_STATUS
- 		sll	k0, 3		/* extract cu0 bit */
- 		.set	noreorder
-+#ifdef CONFIG_KVM_MIPSVZ
-+		bgez	k0, 7f
-+		 CPU_ID_MFC0	k0, CPU_ID_REG
-+		bgez	k0, 8f
-+		 move	k1, sp
-+		get_mips_kvm_rootsp
-+		b	8f
-+		 nop
-+#else
- 		bltz	k0, 8f
- 		 move	k1, sp
-+#endif
- 		.set	reorder
- 		/* Called from user mode, new stack. */
--		get_saved_sp
-+7:		get_saved_sp_for_save_some
- #ifndef CONFIG_CPU_DADDI_WORKAROUNDS
- 8:		move	k0, sp
- 		PTR_SUBU sp, k1, PT_SIZE
-@@ -227,6 +292,35 @@
- 		LONG_S	$31, PT_R31(sp)
- 		ori	$28, sp, _THREAD_MASK
- 		xori	$28, _THREAD_MASK
-+#ifdef CONFIG_KVM_MIPSVZ
-+		CPU_ID_MFC0	k0, CPU_ID_REG
-+		.set	noreorder
-+		bgez	k0, 8f
-+		/* Must clear GuestCtl0[GM] */
-+		 dins	k0, zero, 63, 1
-+		.set	reorder
-+		dmtc0	k0, CPU_ID_REG
-+		mfc0	k0, CP0_GUESTCTL0
-+		ins	k0, zero, MIPS_GUESTCTL0B_GM, 1
-+		mtc0	k0, CP0_GUESTCTL0
-+		LONG_L	v0, TI_TASK($28)
-+		lw	v1, THREAD_MM_ASID(v0)
-+		dmtc0	v1, CP0_ENTRYHI
-+		LONG_L	v1, TASK_MM(v0)
-+		.set	noreorder
-+		jal	tlbmiss_handler_setup_pgd_array
-+		 LONG_L	a0, MM_PGD(v1)
-+		.set	reorder
-+		/*
-+		 * With KVM_MIPSVZ, we must not clobber k0/k1
-+		 * they were saved before they were used
-+		 */
-+8:
-+		MFC0	k0, CP0_KSCRATCH1
-+		MFC0	v1, CP0_KSCRATCH2
-+		LONG_S	k0, PT_R26(sp)
-+		LONG_S	v1, PT_R27(sp)
-+#endif
- #ifdef CONFIG_CPU_CAVIUM_OCTEON
- 		.set	mips64
- 		pref	0, 0($28)	/* Prefetch the current pointer */
-@@ -439,10 +533,45 @@
- 		.set	mips0
- #endif /* CONFIG_MIPS_MT_SMTC */
- 		LONG_L	v1, PT_EPC(sp)
-+		LONG_L	$25, PT_R25(sp)
- 		MTC0	v1, CP0_EPC
-+#ifdef CONFIG_KVM_MIPSVZ
-+	/*
-+	 * Only if TIF_GUESTMODE && sp is the saved KVM sp, return to
-+	 * guest mode.
-+	 */
-+		LONG_L	v0, TI_FLAGS($28)
-+		li	k1, _TIF_GUESTMODE
-+		and	v0, v0, k1
-+		beqz	v0, 8f
-+		CPU_ID_MFC0	k0, CPU_ID_REG
-+		get_mips_kvm_rootsp
-+		PTR_SUBU k1, k1, PT_SIZE
-+		bne	k1, sp, 8f
-+	/* Set the high order bit of CPU_ID_REG to indicate guest mode. */
-+		dli	v0, 1
-+		dmfc0	v1, CPU_ID_REG
-+		dins	v1, v0, 63, 1
-+		dmtc0	v1, CPU_ID_REG
-+		/* Must set GuestCtl0[GM] */
-+		mfc0	v1, CP0_GUESTCTL0
-+		ins	v1, v0, MIPS_GUESTCTL0B_GM, 1
-+		mtc0	v1, CP0_GUESTCTL0
-+
-+		LONG_L	v0, TI_TASK($28)
-+		lw	v1, THREAD_GUEST_ASID(v0)
-+		dmtc0	v1, CP0_ENTRYHI
-+		LONG_L	v1, THREAD_VCPU(v0)
-+		LONG_L	v1, KVM_VCPU_KVM(v1)
-+		LONG_L	v1, KVM_ARCH_IMPL(v1)
-+		.set	noreorder
-+		jal	tlbmiss_handler_setup_pgd_array
-+		 LONG_L	a0, KVM_MIPS_VZ_PGD(v1)
-+		.set	reorder
-+8:
-+#endif
- 		LONG_L	$31, PT_R31(sp)
- 		LONG_L	$28, PT_R28(sp)
--		LONG_L	$25, PT_R25(sp)
- #ifdef CONFIG_64BIT
- 		LONG_L	$8, PT_R8(sp)
- 		LONG_L	$9, PT_R9(sp)
--- 
-1.7.11.7
+Thanks,
+Rafael
 
