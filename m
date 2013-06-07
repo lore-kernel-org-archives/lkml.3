@@ -1,100 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932169Ab3FGSpQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 14:45:16 -0400
-Received: from mail.lang.hm ([64.81.33.126]:60794 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932142Ab3FGSpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 14:45:11 -0400
-X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Jun 2013 14:45:11 EDT
-Date: Fri, 7 Jun 2013 10:36:59 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-cc: Catalin Marinas <catalin.marinas@arm.com>, Ingo Molnar <mingo@kernel.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>, alex.shi@intel.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Mike Galbraith <efault@gmx.de>, pjt@google.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>, arjan@linux.intel.com,
-        len.brown@intel.com, corbet@lwn.net,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: power-efficient scheduling design
-In-Reply-To: <51B221AF.9070906@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.02.1306071030470.11669@nftneq.ynat.uz>
-References: <20130530134718.GB32728@e103034-lin> <20130531105204.GE30394@gmail.com> <51B177AA.1000600@linux.vnet.ibm.com> <CAHkRjk5BzoyB0EPbKOU3UZ+zOkhb-u5Tf_pSgO-7JdjW=HCvgQ@mail.gmail.com> <51B221AF.9070906@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S932152Ab3FGSqb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 14:46:31 -0400
+Received: from cassarossa.samfundet.no ([193.35.52.29]:50807 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756079Ab3FGSq3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 14:46:29 -0400
+Date: Fri, 7 Jun 2013 20:46:22 +0200
+From: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Pravin B Shelar <pshelar@nicira.com>
+Subject: Re: NULL pointer dereference when loading the gre module (3.10.0-rc4)
+Message-ID: <20130607184622.GA24906@uio.no>
+References: <20130607030648.GA28618@home.goodmis.org>
+ <20130607085421.GF15083@uio.no>
+ <1370612441.24311.411.camel@edumazet-glaptop>
+ <1370618100.9844.73.camel@gandalf.local.home>
+ <20130607154634.GA7529@uio.no>
+ <1370621543.9844.78.camel@gandalf.local.home>
+ <20130607175233.GA20230@uio.no>
+ <1370629568.9844.87.camel@gandalf.local.home>
+ <20130607183438.GA23064@uio.no>
+ <1370630659.9844.89.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1370630659.9844.89.camel@gandalf.local.home>
+X-Operating-System: Linux 3.9.0+sesse01 on a x86_64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Jun 2013, Preeti U Murthy wrote:
+On Fri, Jun 07, 2013 at 02:44:19PM -0400, Steven Rostedt wrote:
+> Do know if you have CONFIG_NET_NS set in your .config?
 
-> Hi Catalin,
->
-> On 06/07/2013 08:21 PM, Catalin Marinas wrote:
-<SNIP>
->> Take the cpuidle example, it uses the load average of the CPUs,
->> however this load average is currently controlled by the scheduler
->> (load balance). Rather than using a load average that degrades over
->> time and gradually putting the CPU into deeper sleep states, the
->> scheduler could predict more accurately that a run-queue won't have
->> any work over the next x ms and ask for a deeper sleep state from the
->> beginning.
->
-> How will the scheduler know that there will not be work in the near
-> future? How will the scheduler ask for a deeper sleep state?
->
-> My answer to the above two questions are, the scheduler cannot know how
-> much work will come up. All it knows is the current load of the
-> runqueues and the nature of the task (thanks to the PJT's metric). It
-> can then match the task load to the cpu capacity and schedule the tasks
-> on the appropriate cpus.
+Sorry, I forgot to answer this: No, it is not set.
 
-how will the cpuidle govenor know what will come up in the future?
-
-the scheduler knows more than the current load on the runqueus, it tracks some 
-information about the past behavior of the process that it uses for it's 
-decisions. This is information that cpuidle doesn't have.
-
-<SNIP>
-> I don't see what the problem is with the cpuidle governor waiting for
-> the load to degrade before putting that cpu to sleep. In my opinion,
-> putting a cpu to deeper sleep states should happen gradually.
-
-remember that it takes power and time to wake up a cpu to put it in a deeper 
-sleep state.
-
->> Of course, you could export more scheduler information to cpuidle,
->> various hooks (task wakeup etc.) but then we have another framework,
->> cpufreq. It also decides the CPU parameters (frequency) based on the
->> load controlled by the scheduler. Can cpufreq decide whether it's
->> better to keep the CPU at higher frequency so that it gets to idle
->> quicker and therefore deeper sleep states? I don't think it has enough
->> information because there are at least three deciding factors
->> (cpufreq, cpuidle and scheduler's load balancing) which are not
->> unified.
->
-> Why not? When the cpu load is high, cpu frequency governor knows it has
-> to boost the frequency of that CPU. The task gets over quickly, the CPU
-> goes idle. Then the cpuidle governor kicks in to put the CPU to deeper
-> sleep state gradually.
->
-> Meanwhile the scheduler should ensure that the tasks are retained on
-> that CPU,whose frequency is boosted and should not load balance it, so
-> that they can get over quickly. This I think is what is missing. Again
-> this comes down to the scheduler taking feedback from the CPU frequency
-> governors which is not currently happening.
-
-how should the scheduler know that the cpufreq governor decided to boost the 
-speed of one CPU to handle an important process as opposed to handling multiple 
-smaller processes?
-
-the communication between the two is starting to sound really messy
-
-David Lang
+/* Steinar */
+-- 
+Homepage: http://www.sesse.net/
