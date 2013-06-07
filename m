@@ -1,79 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757168Ab3FGXt0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 19:49:26 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:60657 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756287Ab3FGXtZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 19:49:25 -0400
-Message-ID: <51B27182.8010506@linaro.org>
-Date: Fri, 07 Jun 2013 16:49:22 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1757332Ab3FGXuI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 19:50:08 -0400
+Received: from mga01.intel.com ([192.55.52.88]:5003 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757213Ab3FGXuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 19:50:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,825,1363158000"; 
+   d="scan'208";a="346610094"
+Date: Sat, 8 Jun 2013 07:50:03 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, kbuild-all@01.org,
+        Christopher Li <sparse@chrisli.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: kernel/workqueue.c:4435:61: sparse: expression using sizeof bool
+Message-ID: <20130607235003.GA7234@localhost>
+References: <51afd3ac.1kKgJcnM4PAV+Agb%fengguang.wu@intel.com>
+ <20130607141521.4000962d5ac0d7fcd54800cf@linux-foundation.org>
+ <20130607220351.GE14781@mtj.dyndns.org>
 MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>
-CC: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: adjusting the monotonic system time (from inside the kernel)
-References: <5187B813.8000907@ahsoftware.de>
-In-Reply-To: <5187B813.8000907@ahsoftware.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130607220351.GE14781@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2013 07:02 AM, Alexander Holler wrote:
-> Hello,
->
-> I'm looking at how to adjust the (monotonic) system time from inside 
-> the kernel.
->
-> Use case is that I have a hw-clock which (not necessarily) regulary 
-> sends a timestamp with millisecond precision which I want to use to 
-> adjust the system time.
->
-> It seems the usual solution to do such, is to use NTP which uses it's 
-> own driver (which usually seems to be based on some serial connection):
->
-> hw-clock --serial--> kernel --serial-device--> ntpd -> kernel -> 
-> system-time
->
-> So one solution would be to emulate such a serial device:
->
-> hw-clock --> kernel --emulated-serial-device--> ntpd -> kernel -> 
-> system-time
->
-> Another solution would be to "invent" a ntp-device and write a driver 
-> for ntpd to use it:
->
-> hw-clock --> kernel --ntp-device--> ntpd -> kernel -> system-time
->
-> But I would prefer the following:
->
-> hw-clock --> kernel -> system-time
->
-> Problem is that the hw-clock in question doesn't offer something like 
-> a tick. It just might send a timestamp with millisecond precision 
-> whenever it wants.
->
-> Because I don't want to reinvent the wheel and because I think there 
-> are some people which already have spend some thoughts on similiar 
-> things, I'm asking here before I try to implement something which then 
-> never might find it's way into the mainline kernel.
->
-> Any hints, suggestions, whatever?
+On Fri, Jun 07, 2013 at 03:03:51PM -0700, Tejun Heo wrote:
+> On Fri, Jun 07, 2013 at 02:15:21PM -0700, Andrew Morton wrote:
+> > >   4434		/* copy worker description */
+> > > > 4435		probe_kernel_read(&desc_valid, &worker->desc_valid, sizeof(desc_valid));
+> > 
+> > I don't understand the rationale for the sparse test, really.  This
+> > code seems unproblematic.
+> 
+> Yeah, I've gotten that warning a couple times now and am just ignoring
+> it at this point.  Maybe the standard says bool isn't a proper
+> integeral type and its size isn't precisely defined or something?  I
+> don't know.
 
-Sorry on the delay to reply here, just noticed this in my spam folder 
-(hopefully I've trained it not to catch your mails now).
+Hmm, I'd better disable the warnings that are normally ignored anyway..
 
-You probably want to check out do_adjtimex() in the kernel. It has a 
-number of ways that allow for the clock to be slewed or jumped. 
-Otherwise you probably should look into the PPS subsystems to see if it 
-could be extended to support your needs.
-
-thanks
--john
-
-
+Thanks,
+Fengguang
