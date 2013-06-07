@@ -1,477 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab3FGBZR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 21:25:17 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:54659 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754926Ab3FGBZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 21:25:15 -0400
-Message-ID: <1370568312.2209.76.camel@joe-AO722>
-Subject: [PATCH] power: Add missing newlines, fix a couple of typos, add
- pr_fmt
-From: Joe Perches <joe@perches.com>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jens Axboe <axboe@kernel.dk>, "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Karsten Keil <isdn@linux-pingi.de>, stable@vger.kernel.org
-Date: Thu, 06 Jun 2013 18:25:12 -0700
-In-Reply-To: <20130607003914.GH7052@lizard.sbx05280.losalca.wayport.net>
-References: <1370551945-8444-1-git-send-email-keescook@chromium.org>
-	 <1370551945-8444-5-git-send-email-keescook@chromium.org>
-	 <20130607003914.GH7052@lizard.sbx05280.losalca.wayport.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755476Ab3FGB3f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 21:29:35 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:29780 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754574Ab3FGB3d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 21:29:33 -0400
+X-AuditID: cbfee68f-b7f436d000000f81-d3-51b1377cc576
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Shuah Khan'" <shuah.kh@samsung.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com, rpurdie@rpsys.net,
+        FlorianSchandinat@gmx.de, plagnioj@jcrosoft.com, tomi.valkeinen@ti.com,
+        rafael.j.wysocki@intel.com, Jingoo Han <jg1.han@samsung.com>
+References: <1370128047-2444-1-git-send-email-shuah.kh@samsung.com>
+ <001a01ce6010$3daaf3c0$b900db40$@samsung.com> <5441622.ypFXsKluBt@wuerfel>
+In-reply-to: <5441622.ypFXsKluBt@wuerfel>
+Subject: Re: [PATCH v3] backlight: Convert from Legacy pm ops to dev_pm_ops
+Date: Fri, 07 Jun 2013 10:29:31 +0900
+Message-id: <000101ce631e$75f5e120$61e1a360$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQK9QIxMUpghtMTMupkAiMbuzB1IwQIFRl3tAcjGv3aXLUlKwA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMKsWRmVeSWpSXmKPExsVy+t8zQ90a842BBqen8VjMWb+GzeLvpGPs
+	Fp0zrzFaXF54idXiRN8HVovLu+awWax7+ILJ4vGKt+wWu3c9ZbX48pnL4utPB4v182+xOfB4
+	/P41idFj56y77B4fPsZ5LN7zksnj1YU7LB4nZvxm8dgz/werR9+WVYwex29sZ/L4vEkugCuK
+	yyYlNSezLLVI3y6BK6PhsnbBPJ6KAy9PMTcw/uLsYuTkkBAwkdh8ZAIzhC0mceHeerYuRi4O
+	IYFljBJ3/i5ngSma07GSHSIxnVHiZN83ZgjnF6PErWsnwKrYBNQkvnw5zA5iiwgoSxx/eYcF
+	pIhZ4CiTxNUFZ6DaJzBKvFzykQmkilNAU+LI5+WMILawgLdEy95VbCA2i4CqxMvfm8Gm8gpY
+	SrR/2McOYQtK/Jh8DyzOLKAlsX7ncSYIW15i85q3UE8oSOw4+5oR4gonidblsxkhakQk9r14
+	xwhyhITAFg6J6U//M0MsE5D4NvkQ0FAOoISsxKYDUHMkJQ6uuMECdO4sJKtnIVk9C8nqWUhW
+	LGBkWcUomlqQXFCclF5krFecmFtcmpeul5yfu4kRkiD6dzDePWB9iDEZaP1EZinR5Hxggskr
+	iTc0NjOyMDUxNTYytzQjTVhJnFetxTpQSCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA2OMjd+k
+	1Uyd3qpMgleOVh5oT2/Zf13CSPaPVqO1iVRH6PGI1+qGC99pbRZKYe36wv/dc+stvVu54eJs
+	Ja9ntZW0t9b3Pz1x506qZMMRb5ULattmTzhUvJhnZecL3i/Ldh9/s9K81X/7zA8bX6xRe5EQ
+	sJetgP9D8I6KhQ951y3kFn6V6nF7Y6YSS3FGoqEWc1FxIgAOSzZnJgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAKsWRmVeSWpSXmKPExsVy+t9jQd0a842BBu1T2S3mrF/DZvF30jF2
+	i86Z1xgtLi+8xGpxou8Dq8XlXXPYLNY9fMFk8XjFW3aL3bueslp8+cxl8fWng8X6+bfYHHg8
+	fv+axOixc9Zddo8PH+M8Fu95yeTx6sIdFo8TM36zeOyZ/4PVo2/LKkaP4ze2M3l83iQXwBXV
+	wGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA3S2kkJZ
+	Yk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwjjGj4bJ2wTyeigMvTzE3MP7i7GLk
+	5JAQMJGY07GSHcIWk7hwbz1bFyMXh5DAdEaJk33fmCGcX4wSt66dYAGpYhNQk/jy5TBYh4iA
+	ssTxl3dYQIqYBY4ySVxdcIYdomMCo8TLJR+ZQKo4BTQljnxezghiCwt4S7TsXcUGYrMIqEq8
+	/L0ZbCqvgKVE+4d97BC2oMSPyffA4swCWhLrdx5ngrDlJTavecsMcauCxI6zrxkhrnCSaF0+
+	mxGiRkRi34t3jBMYhWYhGTULyahZSEbNQtKygJFlFaNoakFyQXFSeq6RXnFibnFpXrpecn7u
+	JkZw+nkmvYNxVYPFIUYBDkYlHt4fqzYECrEmlhVX5h5ilOBgVhLhPaWxMVCINyWxsiq1KD++
+	qDQntfgQYzLQpxOZpUST84GpMa8k3tDYxMzI0sjMwsjE3Jw0YSVx3oOt1oFCAumJJanZqakF
+	qUUwW5g4OKUaGAu4qpfPLzyw+qi4zfq8GQvfnbF3U21OncjFVfL+iZOGgrHjCimXHS/7551R
+	k1A5qZAyM0fY4HY9s5R9xeL8khnbF0okFBQVSGt1Rr8z0Nq9e/JC6+XXxYPulCed1TX/Ndcj
+	03jaLnuL/k7dom8vNTi9rPX/Hf/zas7UVyfLLwUejXLu87u6U4mlOCPRUIu5qDgRAM+pKS6D	AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sure that dev_<level> calls are newline terminated.
-Add #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt to prefix
-all pr_<level> calls with "charger-manager: "
+On Friday, June 07, 2013 6:28 AM, Arnd Bergmann wrote:
+> On Monday 03 June 2013 13:10:10 Jingoo Han wrote:
+> > On Sunday, June 02, 2013 8:07 AM, Shuah Khan wrote:
+> > >
+> > > Convert drivers/video/backlight/class to use dev_pm_ops for power
+> > > management and remove Legacy PM ops hooks. With this change, backlight
+> > > class registers suspend/resume callbacks via class->pm (dev_pm_ops)
+> > > instead of Legacy class->suspend/resume. When __device_suspend() runs
+> > > call-backs, it will find class->pm ops for the backlight class.
+> > >
+> > > Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+> > > Cc: Shuah Khan <shuahkhan@gmail.com>
+> >
+> > CC'ed Andrew Morton,
+> >
+> > It looks good.
+> >
+> > Acked-by: Jingoo Han <jg1.han@samsung.com>
+> >
+> 
+> I'm getting this build warning now:
+> 
+> arnd@wuerfel:/git/arm-soc$ cat build/omap1_defconfig/faillog
+> /git/arm-soc/drivers/video/backlight/backlight.c:212:12: warning: 'backlight_suspend' defined but not
+> used [-Wunused-function]
+>  static int backlight_suspend(struct device *dev)
+>             ^
+> /git/arm-soc/drivers/video/backlight/backlight.c:226:12: warning: 'backlight_resume' defined but not
+> used [-Wunused-function]
+>  static int backlight_resume(struct device *dev)
 
-Fix a couple of typos.
-Fix formats with terminating n that should be \n.
-Coalesce formats for easier grep.
-Align arguments to open parenthesis for these dev_<level> calls.
-Add missing spaces after coalescing multiple string segments.
+Hi Arnd Bergmann,
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
-diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-index 98de1dd..ba42029 100644
---- a/drivers/power/charger-manager.c
-+++ b/drivers/power/charger-manager.c
-@@ -12,6 +12,8 @@
-  * published by the Free Software Foundation.
- **/
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/io.h>
- #include <linux/module.h>
- #include <linux/irq.h>
-@@ -195,8 +197,8 @@ static bool is_charging(struct charger_manager *cm)
- 				cm->charger_stat[i],
- 				POWER_SUPPLY_PROP_ONLINE, &val);
- 		if (ret) {
--			dev_warn(cm->dev, "Cannot read ONLINE value from %s.\n",
--					cm->desc->psy_charger_stat[i]);
-+			dev_warn(cm->dev, "Cannot read ONLINE value from %s\n",
-+				 cm->desc->psy_charger_stat[i]);
- 			continue;
- 		}
- 		if (val.intval == 0)
-@@ -210,8 +212,8 @@ static bool is_charging(struct charger_manager *cm)
- 				cm->charger_stat[i],
- 				POWER_SUPPLY_PROP_STATUS, &val);
- 		if (ret) {
--			dev_warn(cm->dev, "Cannot read STATUS value from %s.\n",
--					cm->desc->psy_charger_stat[i]);
-+			dev_warn(cm->dev, "Cannot read STATUS value from %s\n",
-+				 cm->desc->psy_charger_stat[i]);
- 			continue;
- 		}
- 		if (val.intval == POWER_SUPPLY_STATUS_FULL ||
-@@ -289,7 +291,7 @@ static bool is_polling_required(struct charger_manager *cm)
- 		return is_charging(cm);
- 	default:
- 		dev_warn(cm->dev, "Incorrect polling_mode (%d)\n",
--			cm->desc->polling_mode);
-+			 cm->desc->polling_mode);
- 	}
- 
- 	return false;
-@@ -331,9 +333,8 @@ static int try_charger_enable(struct charger_manager *cm, bool enable)
- 
- 			err = regulator_enable(desc->charger_regulators[i].consumer);
- 			if (err < 0) {
--				dev_warn(cm->dev,
--					"Cannot enable %s regulator\n",
--					desc->charger_regulators[i].regulator_name);
-+				dev_warn(cm->dev, "Cannot enable %s regulator\n",
-+					 desc->charger_regulators[i].regulator_name);
- 			}
- 		}
- 	} else {
-@@ -350,9 +351,8 @@ static int try_charger_enable(struct charger_manager *cm, bool enable)
- 
- 			err = regulator_disable(desc->charger_regulators[i].consumer);
- 			if (err < 0) {
--				dev_warn(cm->dev,
--					"Cannot disable %s regulator\n",
--					desc->charger_regulators[i].regulator_name);
-+				dev_warn(cm->dev, "Cannot disable %s regulator\n",
-+					 desc->charger_regulators[i].regulator_name);
- 			}
- 		}
- 
-@@ -365,9 +365,8 @@ static int try_charger_enable(struct charger_manager *cm, bool enable)
- 				    desc->charger_regulators[i].consumer)) {
- 				regulator_force_disable(
- 					desc->charger_regulators[i].consumer);
--				dev_warn(cm->dev,
--					"Disable regulator(%s) forcibly.\n",
--					desc->charger_regulators[i].regulator_name);
-+				dev_warn(cm->dev, "Disable regulator(%s) forcibly\n",
-+					 desc->charger_regulators[i].regulator_name);
- 			}
- 		}
- 	}
-@@ -450,7 +449,7 @@ static void uevent_notify(struct charger_manager *cm, const char *event)
- 	strncpy(env_str, event, UEVENT_BUF_SIZE);
- 	kobject_uevent(&cm->dev->kobj, KOBJ_CHANGE);
- 
--	dev_info(cm->dev, "%s", event);
-+	dev_info(cm->dev, "%s\n", event);
- }
- 
- /**
-@@ -478,7 +477,7 @@ static void fullbatt_vchk(struct work_struct *work)
- 
- 	err = get_batt_uV(cm, &batt_uV);
- 	if (err) {
--		dev_err(cm->dev, "%s: get_batt_uV error(%d).\n", __func__, err);
-+		dev_err(cm->dev, "%s: get_batt_uV error(%d)\n", __func__, err);
- 		return;
- 	}
- 
-@@ -486,7 +485,7 @@ static void fullbatt_vchk(struct work_struct *work)
- 	if (diff < 0)
- 		return;
- 
--	dev_info(cm->dev, "VBATT dropped %duV after full-batt.\n", diff);
-+	dev_info(cm->dev, "VBATT dropped %duV after full-batt\n", diff);
- 
- 	if (diff > desc->fullbatt_vchkdrop_uV) {
- 		try_charger_restart(cm);
-@@ -519,7 +518,7 @@ static int check_charging_duration(struct charger_manager *cm)
- 		duration = curr - cm->charging_start_time;
- 
- 		if (duration > desc->charging_max_duration_ms) {
--			dev_info(cm->dev, "Charging duration exceed %lldms",
-+			dev_info(cm->dev, "Charging duration exceed %lldms\n",
- 				 desc->charging_max_duration_ms);
- 			uevent_notify(cm, "Discharging");
- 			try_charger_enable(cm, false);
-@@ -530,9 +529,9 @@ static int check_charging_duration(struct charger_manager *cm)
- 
- 		if (duration > desc->charging_max_duration_ms &&
- 				is_ext_pwr_online(cm)) {
--			dev_info(cm->dev, "DisCharging duration exceed %lldms",
-+			dev_info(cm->dev, "Discharging duration exceed %lldms\n",
- 				 desc->discharging_max_duration_ms);
--			uevent_notify(cm, "Recharing");
-+			uevent_notify(cm, "Recharging");
- 			try_charger_enable(cm, true);
- 			ret = true;
- 		}
-@@ -579,7 +578,7 @@ static bool _cm_monitor(struct charger_manager *cm)
- 	 */
- 	} else if (!cm->emergency_stop && check_charging_duration(cm)) {
- 		dev_dbg(cm->dev,
--			"Charging/Discharging duration is out of range");
-+			"Charging/Discharging duration is out of range\n");
- 	/*
- 	 * Check dropped voltage of battery. If battery voltage is more
- 	 * dropped than fullbatt_vchkdrop_uV after fully charged state,
-@@ -595,7 +594,7 @@ static bool _cm_monitor(struct charger_manager *cm)
- 	 */
- 	} else if (!cm->emergency_stop && is_full_charged(cm) &&
- 			cm->charger_enabled) {
--		dev_info(cm->dev, "EVENT_HANDLE: Battery Fully Charged.\n");
-+		dev_info(cm->dev, "EVENT_HANDLE: Battery Fully Charged\n");
- 		uevent_notify(cm, default_event_names[CM_EVENT_BATT_FULL]);
- 
- 		try_charger_enable(cm, false);
-@@ -725,7 +724,7 @@ static void fullbatt_handler(struct charger_manager *cm)
- 		cm->fullbatt_vchk_jiffies_at = 1;
- 
- out:
--	dev_info(cm->dev, "EVENT_HANDLE: Battery Fully Charged.\n");
-+	dev_info(cm->dev, "EVENT_HANDLE: Battery Fully Charged\n");
- 	uevent_notify(cm, default_event_names[CM_EVENT_BATT_FULL]);
- }
- 
-@@ -972,7 +971,7 @@ static bool cm_setup_timer(void)
- 	mutex_unlock(&cm_list_mtx);
- 
- 	if (wakeup_ms < UINT_MAX && wakeup_ms > 0) {
--		pr_info("Charger Manager wakeup timer: %u ms.\n", wakeup_ms);
-+		pr_info("Charger Manager wakeup timer: %u ms\n", wakeup_ms);
- 		if (rtc_dev) {
- 			struct rtc_wkalrm tmp;
- 			unsigned long time, now;
-@@ -1005,8 +1004,7 @@ static bool cm_setup_timer(void)
- 				ret = false;
- 			}
- 
--			pr_info("Waking up after %lu secs.\n",
--					time - now);
-+			pr_info("Waking up after %lu secs\n", time - now);
- 
- 			rtc_time_to_tm(time, &tmp.time);
- 			rtc_set_alarm(rtc_dev, &tmp);
-@@ -1101,7 +1099,7 @@ int setup_charger_manager(struct charger_global_desc *gd)
- 	g_desc = NULL;
- 
- 	if (!gd->rtc_only_wakeup) {
--		pr_err("The callback rtc_only_wakeup is not given.\n");
-+		pr_err("The callback rtc_only_wakeup is not given\n");
- 		return -EINVAL;
- 	}
- 
-@@ -1112,7 +1110,7 @@ int setup_charger_manager(struct charger_global_desc *gd)
- 			/* Retry at probe. RTC may be not registered yet */
- 		}
- 	} else {
--		pr_warn("No wakeup timer is given for charger manager."
-+		pr_warn("No wakeup timer is given for charger manager.  "
- 			"In-suspend monitoring won't work.\n");
- 	}
- 
-@@ -1138,13 +1136,13 @@ static void charger_extcon_work(struct work_struct *work)
- 					cable->min_uA, cable->max_uA);
- 		if (ret < 0) {
- 			pr_err("Cannot set current limit of %s (%s)\n",
--				cable->charger->regulator_name, cable->name);
-+			       cable->charger->regulator_name, cable->name);
- 			return;
- 		}
- 
- 		pr_info("Set current limit of %s : %duA ~ %duA\n",
--					cable->charger->regulator_name,
--					cable->min_uA, cable->max_uA);
-+			cable->charger->regulator_name,
-+			cable->min_uA, cable->max_uA);
- 	}
- 
- 	try_charger_enable(cable->cm, cable->attached);
-@@ -1210,9 +1208,8 @@ static int charger_extcon_init(struct charger_manager *cm,
- 	ret = extcon_register_interest(&cable->extcon_dev,
- 			cable->extcon_name, cable->name, &cable->nb);
- 	if (ret < 0) {
--		pr_info("Cannot register extcon_dev for %s(cable: %s).\n",
--				cable->extcon_name,
--				cable->name);
-+		pr_info("Cannot register extcon_dev for %s(cable: %s)\n",
-+			cable->extcon_name, cable->name);
- 		ret = -EINVAL;
- 	}
- 
-@@ -1243,8 +1240,8 @@ static int charger_manager_register_extcon(struct charger_manager *cm)
- 		charger->consumer = regulator_get(cm->dev,
- 					charger->regulator_name);
- 		if (charger->consumer == NULL) {
--			dev_err(cm->dev, "Cannot find charger(%s)n",
--					charger->regulator_name);
-+			dev_err(cm->dev, "Cannot find charger(%s)\n",
-+				charger->regulator_name);
- 			ret = -EINVAL;
- 			goto err;
- 		}
-@@ -1255,8 +1252,8 @@ static int charger_manager_register_extcon(struct charger_manager *cm)
- 
- 			ret = charger_extcon_init(cm, cable);
- 			if (ret < 0) {
--				dev_err(cm->dev, "Cannot initialize charger(%s)n",
--						charger->regulator_name);
-+				dev_err(cm->dev, "Cannot initialize charger(%s)\n",
-+					charger->regulator_name);
- 				goto err;
- 			}
- 			cable->charger = charger;
-@@ -1347,10 +1344,8 @@ static ssize_t charger_externally_control_store(struct device *dev,
- 		}
- 	} else {
- 		dev_warn(cm->dev,
--			"'%s' regulator should be controlled "
--			"in charger-manager because charger-manager "
--			"must need at least one charger for charging\n",
--			charger->regulator_name);
-+			 "'%s' regulator should be controlled in charger-manager because charger-manager must need at least one charger for charging\n",
-+			 charger->regulator_name);
- 	}
- 
- 	return count;
-@@ -1386,8 +1381,6 @@ static int charger_manager_register_sysfs(struct charger_manager *cm)
- 		snprintf(buf, 10, "charger.%d", i);
- 		str = kzalloc(sizeof(char) * (strlen(buf) + 1), GFP_KERNEL);
- 		if (!str) {
--			dev_err(cm->dev, "Cannot allocate memory: %s\n",
--					charger->regulator_name);
- 			ret = -ENOMEM;
- 			goto err;
- 		}
-@@ -1423,26 +1416,21 @@ static int charger_manager_register_sysfs(struct charger_manager *cm)
- 				!chargers_externally_control)
- 			chargers_externally_control = 0;
- 
--		dev_info(cm->dev, "'%s' regulator's externally_control"
--				"is %d\n", charger->regulator_name,
--				charger->externally_control);
-+		dev_info(cm->dev, "'%s' regulator's externally_control is %d\n",
-+			 charger->regulator_name, charger->externally_control);
- 
- 		ret = sysfs_create_group(&cm->charger_psy.dev->kobj,
- 					&charger->attr_g);
- 		if (ret < 0) {
--			dev_err(cm->dev, "Cannot create sysfs entry"
--					"of %s regulator\n",
--					charger->regulator_name);
-+			dev_err(cm->dev, "Cannot create sysfs entry of %s regulator\n",
-+				charger->regulator_name);
- 			ret = -EINVAL;
- 			goto err;
- 		}
- 	}
- 
- 	if (chargers_externally_control) {
--		dev_err(cm->dev, "Cannot register regulator because "
--				"charger-manager must need at least "
--				"one charger for charging battery\n");
--
-+		dev_err(cm->dev, "Cannot register regulator because charger-manager must need at least one charger for charging battery\n");
- 		ret = -EINVAL;
- 		goto err;
- 	}
-@@ -1463,7 +1451,7 @@ static int charger_manager_probe(struct platform_device *pdev)
- 		rtc_dev = rtc_class_open(g_desc->rtc_name);
- 		if (IS_ERR_OR_NULL(rtc_dev)) {
- 			rtc_dev = NULL;
--			dev_err(&pdev->dev, "Cannot get RTC %s.\n",
-+			dev_err(&pdev->dev, "Cannot get RTC %s\n",
- 				g_desc->rtc_name);
- 			ret = -ENODEV;
- 			goto err_alloc;
-@@ -1471,14 +1459,13 @@ static int charger_manager_probe(struct platform_device *pdev)
- 	}
- 
- 	if (!desc) {
--		dev_err(&pdev->dev, "No platform data (desc) found.\n");
-+		dev_err(&pdev->dev, "No platform data (desc) found\n");
- 		ret = -ENODEV;
- 		goto err_alloc;
- 	}
- 
- 	cm = kzalloc(sizeof(struct charger_manager), GFP_KERNEL);
- 	if (!cm) {
--		dev_err(&pdev->dev, "Cannot allocate memory.\n");
- 		ret = -ENOMEM;
- 		goto err_alloc;
- 	}
-@@ -1487,7 +1474,6 @@ static int charger_manager_probe(struct platform_device *pdev)
- 	cm->dev = &pdev->dev;
- 	cm->desc = kmemdup(desc, sizeof(struct charger_desc), GFP_KERNEL);
- 	if (!cm->desc) {
--		dev_err(&pdev->dev, "Cannot allocate memory.\n");
- 		ret = -ENOMEM;
- 		goto err_alloc_desc;
- 	}
-@@ -1498,33 +1484,28 @@ static int charger_manager_probe(struct platform_device *pdev)
- 	 * Users may intentionally ignore those two features.
- 	 */
- 	if (desc->fullbatt_uV == 0) {
--		dev_info(&pdev->dev, "Ignoring full-battery voltage threshold"
--					" as it is not supplied.");
-+		dev_info(&pdev->dev, "Ignoring full-battery voltage threshold as it is not supplied\n");
- 	}
- 	if (!desc->fullbatt_vchkdrop_ms || !desc->fullbatt_vchkdrop_uV) {
--		dev_info(&pdev->dev, "Disabling full-battery voltage drop "
--				"checking mechanism as it is not supplied.");
-+		dev_info(&pdev->dev, "Disabling full-battery voltage drop checking mechanism as it is not supplied\n");
- 		desc->fullbatt_vchkdrop_ms = 0;
- 		desc->fullbatt_vchkdrop_uV = 0;
- 	}
- 	if (desc->fullbatt_soc == 0) {
--		dev_info(&pdev->dev, "Ignoring full-battery soc(state of"
--					" charge) threshold as it is not"
--					" supplied.");
-+		dev_info(&pdev->dev, "Ignoring full-battery soc(state of charge) threshold as it is not supplied\n");
- 	}
- 	if (desc->fullbatt_full_capacity == 0) {
--		dev_info(&pdev->dev, "Ignoring full-battery full capacity"
--					" threshold as it is not supplied.");
-+		dev_info(&pdev->dev, "Ignoring full-battery full capacity threshold as it is not supplied\n");
- 	}
- 
- 	if (!desc->charger_regulators || desc->num_charger_regulators < 1) {
- 		ret = -EINVAL;
--		dev_err(&pdev->dev, "charger_regulators undefined.\n");
-+		dev_err(&pdev->dev, "charger_regulators undefined\n");
- 		goto err_no_charger;
- 	}
- 
- 	if (!desc->psy_charger_stat || !desc->psy_charger_stat[0]) {
--		dev_err(&pdev->dev, "No power supply defined.\n");
-+		dev_err(&pdev->dev, "No power supply defined\n");
- 		ret = -EINVAL;
- 		goto err_no_charger_stat;
- 	}
-@@ -1544,9 +1525,8 @@ static int charger_manager_probe(struct platform_device *pdev)
- 		cm->charger_stat[i] = power_supply_get_by_name(
- 					desc->psy_charger_stat[i]);
- 		if (!cm->charger_stat[i]) {
--			dev_err(&pdev->dev, "Cannot find power supply "
--					"\"%s\"\n",
--					desc->psy_charger_stat[i]);
-+			dev_err(&pdev->dev, "Cannot find power supply \"%s\"\n",
-+				desc->psy_charger_stat[i]);
- 			ret = -ENODEV;
- 			goto err_chg_stat;
- 		}
-@@ -1555,7 +1535,7 @@ static int charger_manager_probe(struct platform_device *pdev)
- 	cm->fuel_gauge = power_supply_get_by_name(desc->psy_fuel_gauge);
- 	if (!cm->fuel_gauge) {
- 		dev_err(&pdev->dev, "Cannot find power supply \"%s\"\n",
--				desc->psy_fuel_gauge);
-+			desc->psy_fuel_gauge);
- 		ret = -ENODEV;
- 		goto err_chg_stat;
- 	}
-@@ -1575,9 +1555,7 @@ static int charger_manager_probe(struct platform_device *pdev)
- 
- 	if (!desc->charging_max_duration_ms ||
- 			!desc->discharging_max_duration_ms) {
--		dev_info(&pdev->dev, "Cannot limit charging duration "
--			 "checking mechanism to prevent overcharge/overheat "
--			 "and control discharging duration");
-+		dev_info(&pdev->dev, "Cannot limit charging duration checking mechanism to prevent overcharge/overheat and control discharging duration\n");
- 		desc->charging_max_duration_ms = 0;
- 		desc->discharging_max_duration_ms = 0;
- 	}
-@@ -1598,7 +1576,6 @@ static int charger_manager_probe(struct platform_device *pdev)
- 				NUM_CHARGER_PSY_OPTIONAL),
- 				GFP_KERNEL);
- 	if (!cm->charger_psy.properties) {
--		dev_err(&pdev->dev, "Cannot allocate for psy properties.\n");
- 		ret = -ENOMEM;
- 		goto err_chg_stat;
- 	}
-@@ -1636,8 +1613,8 @@ static int charger_manager_probe(struct platform_device *pdev)
- 
- 	ret = power_supply_register(NULL, &cm->charger_psy);
- 	if (ret) {
--		dev_err(&pdev->dev, "Cannot register charger-manager with"
--				" name \"%s\".\n", cm->charger_psy.name);
-+		dev_err(&pdev->dev, "Cannot register charger-manager with name \"%s\"\n",
-+			cm->charger_psy.name);
- 		goto err_register;
- 	}
- 
-@@ -1948,7 +1925,7 @@ void cm_notify_event(struct power_supply *psy, enum cm_event_types type,
- 		uevent_notify(cm, msg ? msg : default_event_names[type]);
- 		break;
- 	default:
--		dev_err(cm->dev, "%s type not specified.\n", __func__);
-+		dev_err(cm->dev, "%s: type not specified\n", __func__);
- 		break;
- 	}
- }
+I see what happens.
+This build warning happens when CONFIG_PM is selected and
+CONFIG_PM_SLEEP is not selected.
 
+So, I will add '#ifdef CONFIG_PM_SLEEP' to './drivers/video/backlight/backlight.c'
+and send it soon.
+Thank you.
+
+Best regards,
+Jingoo Han
+
+> 
+> 	Arnd
 
