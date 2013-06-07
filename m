@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999Ab3FGH2g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 03:28:36 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3542 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838Ab3FGH2e (ORCPT
+	id S1752888Ab3FGH3U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 03:29:20 -0400
+Received: from mail1.bemta12.messagelabs.com ([216.82.251.14]:39190 "EHLO
+	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751023Ab3FGH3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 03:28:34 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 07 Jun 2013 00:27:46 -0700
-Message-ID: <51B18B9D.1030901@nvidia.com>
-Date: Fri, 7 Jun 2013 16:28:29 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Fri, 7 Jun 2013 03:29:19 -0400
+X-Env-Sender: Hector.Palacios@digi.com
+X-Msg-Ref: server-16.tower-28.messagelabs.com!1370590125!29310631!1
+X-Originating-IP: [66.77.174.14]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.6; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <51B18BA0.50506@digi.com>
+Date: Fri, 7 Jun 2013 09:28:32 +0200
+From: Hector Palacios <hector.palacios@digi.com>
+Organization: Digi International
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Alexander van Heukelum <heukelum@fastmail.fm>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Olof Johansson <olof@lixom.net>, "gnurou@gmail.com" <gnurou@gmail.com>,
+To: "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>
+CC: Juergen Beisert <jbe@pengutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
+        "brian@crystalfontz.com" <brian@crystalfontz.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH v2] simplefb: add support for a8b8g8r8 pixel format
-References: <1370584869-2904-1-git-send-email-acourbot@nvidia.com> <1370589753.21409.140661241005617.2A5614D3@webmail.messagingengine.com>
-In-Reply-To: <1370589753.21409.140661241005617.2A5614D3@webmail.messagingengine.com>
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: Re: mxsfb: DATA_FORMAT_24_BIT flag outputs invalid colours
+References: <519E03B0.1080006@digi.com> <519F4435.5010703@digi.com> <201305241300.25461.jbe@pengutronix.de> <201305241533.19941.jbe@pengutronix.de> <20130607072103.GF14209@lukather>
+In-Reply-To: <20130607072103.GF14209@lukather>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2013 04:22 PM, Alexander van Heukelum wrote:
->>   static struct simplefb_format simplefb_formats[] = {
->>   	{ "r5g6b5", 16, {11, 5}, {5, 6}, {0, 5}, {0, 0} },
->> +	{ "a8b8g8r8", 32, {0, 8}, {8, 8}, {16, 8}, {31, 8} },
+Hi Maxime,
+
+On 06/07/2013 09:21 AM, maxime.ripard@free-electrons.com wrote:
+> Hi Hector,
 >
-> Hi,
+> On Fri, May 24, 2013 at 03:33:19PM +0200, Juergen Beisert wrote:
+>> Someone told me, Qt5 cannot handle this special RGB666 mode (even not the
+>> def_rgb666_shift memory layout mentioned above). My test are based on Qt4.
+>> Qt5 needs a regular RGB888 mode, which should silently be converted
+>> internally to RGB666 in the hardware.
+>>
+>> So, your patch to always use the RGB888 memory layout seems to be the right
+>> way to go.
 >
-> 31? I assume in practice this doesn't influence anything, but I think it should have read 24.
+> Do you plan on submitting this patch? (Or did you already submit it and
+> I overlooked it?)
 
-Doh. Thanks for pointing it out.
+I wasn't sure that everybody involved agreed with the patch.
+@Juergen, would the patch break your platform?
+Additionally, the guys from Crystalfontz didn't comment on it, but their platform is 
+also using a 18bit data bus width and 32bpp.
 
-Alex.
+If no-one is against I'll be glad to submit it.
 
+Best regards,
+--
+Hector Palacios
