@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757335Ab3FGTGw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 15:06:52 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39309 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756012Ab3FGTGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757244Ab3FGTGu (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 7 Jun 2013 15:06:50 -0400
-Date: Fri, 7 Jun 2013 22:05:43 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-CC: Wolfram Sang <wsa@the-dreams.de>, Tony Lindgren <tony@atomide.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-i2c@vger.kernel.org>, Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH 3/5] i2c: omap: handle all irqs befor unblocking
- omap_i2c_xfer_msg()
-Message-ID: <20130607190543.GD15295@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1370630768-4077-1-git-send-email-grygorii.strashko@ti.com>
- <1370630768-4077-4-git-send-email-grygorii.strashko@ti.com>
+Received: from smtp2.Stanford.EDU ([171.67.219.82]:44936 "EHLO
+	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756012Ab3FGTGs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 15:06:48 -0400
+X-Greylist: delayed 472 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Jun 2013 15:06:48 EDT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SFyWQ0h3ruR435lw"
-Content-Disposition: inline
-In-Reply-To: <1370630768-4077-4-git-send-email-grygorii.strashko@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 7 Jun 2013 11:58:53 -0700
+Message-ID: <CA+nN=O9dnp-j48fb1MAKLh=gdtMqY8o0kkL5jM3eSFbp04whaA@mail.gmail.com>
+Subject: [PATCH] perf script: turn AUTOCOMMIT off for bulk SQL inserts in event_analyzing_sample.py
+From: Emmet Caulfield <emmet.caulfield@stanford.edu>
+To: linux-kernel@vger.kernel.org
+Cc: Feng Tang <feng.tang@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---SFyWQ0h3ruR435lw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The example script tools/perf/scripts/python/event_analyzing_sample.py
+contains a minor error. This script takes a perf.data file and
+populates a SQLite database with it.
 
-Hi,
+There's a long comment on lines 29-34 to the effect that it takes a
+long time to populate the database if the .db file is on disk, so it's
+done in the "ramdisk" (/dev/shm/perf.db), but the problem here is
+actually line 36:
 
-On Fri, Jun 07, 2013 at 09:46:06PM +0300, Grygorii Strashko wrote:
-> ARDY|NACK and ARDY|AL are set together in OMAP_I2C_STAT_REG, which will be
+    con.isolation_level=None
 
-Have you seen that happen ever ? AL is Arbitration Lost, we never put
-OMAP in a multi-master environment before.
+This line turns on AUTOCOMMIT, making every INSERT statement into its
+own transaction, and greatly slowing down a bulk insert (25 minutes
+vs. a few seconds to insert 15,000 records). This is best solved by
+merely omitting this line or changing it to:
 
-ARDY | NACK I also find it a bit hard for those two to happen together
-since ARDY will be set when you can change controller's register
-*again*, mening that a transfer has completed.
+    con.isolation_level='DEFERRED'
 
-Also, we need to follow what the programming model says. And, I don't
-have docs with me right now, but IIRC it tells us to bail out if any of
-the error conditions are met.
+After making this change, if the database is in memory, it takes
+roughly 0.5 seconds to insert 15,000 records and 0.8 seconds if the
+database file is on disk, effectively solving the problem.
 
---=20
-balbi
+Given that the whole purpose of having AUTOCOMMIT turned on is to
+ensure that individual insert/update/delete operations are committed
+to persistent storage, moving the .db file to a ramdisk defeats the
+purpose of turning this option on in the first place. Thus
+leaving/turning it *off* with the file on disk is no worse. It is
+pretty much standard practice to defer transactions and index updates
+for bulk inserts like this anyway.
 
---SFyWQ0h3ruR435lw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The following patch deletes the offending line and updates the
+associated comment.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Emmet.
 
-iQIcBAEBAgAGBQJRsi8HAAoJEIaOsuA1yqRELAgP/joYRVxoz4XuBODyelCVUVIG
-dw9OOtolUyaBhLUgDybfvvl9C1QDvb6bRB2m5sn1WpNBYUe7HTyc7rfr6X5ka7Wh
-xUSeUP3LMqV3gJKt7yhMPJXvj2TeLfKH+6HSSh3RFu0lvvimPZ+o7CTeMTEXJCYo
-XghUGa8mvoRPxqpOdazeWfvhbOXibzhYGIMZK9CxV1lEW/NKMp/QhuX+QSku4zZ2
-N0zTO0tcSbdleQYtNdkdiVxNuAbS7Oimlfj9cSUkY2V+Tknw6dRA085LtEKvBtv2
-BYxc0zOdTf4n+KTDgzEeWHWXo8GaiohwSe0SSptmXjLcaMlguX1blyXBTYgDnJg5
-cqlMBppMWZkLHZvXU8fYdn0SMXyftrzvadQ7GyjQoTTeFWSY3yKAjEGsbS0HG6l8
-ZVvLUhpkUtaLXns5DKbnd3LXEvpeADkzz2GKX1r3l+i7ZlQMO/woeEMtig5SLh/K
-+7tR717CoPz3Cr9QmAffK4JysFPPNLDjUcN1gy3oJrmd53rp77XCOA/AwgHvU7J9
-SXyxj6r8Tv4fU0Kz6HAqNiB5g/Y5xKZq7Rz99uHL5TkgRMvgcBNNzD/gDO7a5UYe
-ptQxaSbQMDYlSN7Q3IajYBcq14g1fdD6tyZ82hDn0Q6ZY1NNThigXGRZQobGHNJe
-Kd2PpvRVxGesarmCARDP
-=zHoN
------END PGP SIGNATURE-----
 
---SFyWQ0h3ruR435lw--
+--- tools/perf/scripts/python/event_analyzing_sample.py~
+2013-06-03 15:38:41.762331865 -0700
++++ tools/perf/scripts/python/event_analyzing_sample.py 2013-06-03
+15:43:48.978344602 -0700
+@@ -26,14 +26,9 @@
+ from perf_trace_context import *
+ from EventClass import *
+
+-#
+-# If the perf.data has a big number of samples, then the insert operation
+-# will be very time consuming (about 10+ minutes for 10000 samples) if the
+-# .db database is on disk. Move the .db file to RAM based FS to speedup
+-# the handling, which will cut the time down to several seconds.
+-#
++# Create/connect to a SQLite3 database:
+ con = sqlite3.connect("/dev/shm/perf.db")
+-con.isolation_level = None
++
+
+ def trace_begin():
+        print "In trace_begin:\n"
