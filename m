@@ -1,96 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab3FGKYi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 06:24:38 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:54235 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202Ab3FGKYg (ORCPT
+	id S1755325Ab3FGK0P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 06:26:15 -0400
+Received: from mail.windriver.com ([147.11.1.11]:63210 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671Ab3FGK0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 06:24:36 -0400
-Date: Fri, 7 Jun 2013 11:24:04 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Doug Anderson <dianders@chromium.org>, Chris Ball <cjb@laptop.org>,
-        Olof Johansson <olof@lixom.net>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Will Newton <will.newton@imgtec.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        lgirdwood@gmail.com
-Message-ID: <20130607102404.GO31367@sirena.org.uk>
-References: <1370580406-10254-1-git-send-email-dianders@chromium.org>
- <1664692.GUOAAQ3FLn@flatron>
+	Fri, 7 Jun 2013 06:26:13 -0400
+Message-ID: <51B1B866.6080103@windriver.com>
+Date: Fri, 7 Jun 2013 18:39:34 +0800
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5 ThunderBrowse/3.3.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DT/miTrKQuDYoJpq"
-Content-Disposition: inline
-In-Reply-To: <1664692.GUOAAQ3FLn@flatron>
-X-Cookie: Are you a turtle?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] mmc: dw_mmc: Handle late vmmc regulator with
- EPROBE_DEFER
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: <davem@davemloft.net>
+CC: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Subject: Re: [PATCH] sctp: set association state to established in dupcook_a
+ handler
+References: <1370245978-12884-1-git-send-email-xufeng.zhang@windriver.com> <51AEA8B6.9090609@windriver.com>
+In-Reply-To: <51AEA8B6.9090609@windriver.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi David,
 
---DT/miTrKQuDYoJpq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Is this fix fine to you for -stable?
 
-On Fri, Jun 07, 2013 at 12:19:58PM +0200, Tomasz Figa wrote:
-> On Thursday 06 of June 2013 21:46:45 Doug Anderson wrote:
 
-> > dw_mmc is probed.  This regulator is optional, though a warning will
-> > be printed if it's missing.  The fact that the regulator is optional
-> > means that (at the moment) it's not possible to use a regulator that
-> > probes _after_ dw_mmc.
+Thanks,
+Xufeng
 
-> > Fix this limitation by adding the ability to make vmmc required.  If a
-> > vmmc-supply is specified in the device tree we'll assume that vmmc is
-> > required.
+On 06/05/2013 10:55 AM, Xufeng Zhang wrote:
+> On 06/03/2013 03:52 PM, Xufeng Zhang wrote:
+>> 3.4-stable review patch.  If anyone has any objections, please let me 
+>> know.
+> Sorry Greg, David -- I did not fully understand all the details
+> of the stable kernel process earlier.
+>
+> I have since checked the networking stable queue here:
+>
+> http://patchwork.ozlabs.org/bundle/davem/stable/?state=*
+>
+> to confirm this upstream commit 9839ff0d has not yet been queued.
+>
+> It can be applied to kernel versions<3.0, 3.4>, and is
+> present in mainline for 3.8+ kernels.
+>
+> I think it makes sense to queue for stable because it
+> fixes the SCTP association can get stuck in SCTP_STATE_SHUTDOWN_PENDING
+> state forever in the below test case:
+> 1). Set SCTP parameters on A (slow detection of link failure):
+> net.sctp.association_max_retrans = 5
+> net.sctp.path_max_retrans = 5
+> net.sctp.hb_interval = 30000
+> 2). Set SCTP parameters on B (fast detection of link failure):
+> net.sctp.association_max_retrans = 2
+> net.sctp.path_max_retrans = 2
+> net.sctp.hb_interval = 1000
+> 3). Start sctp_darn on both sides:
+> A(interactive):
+> sctp_darn -H 192.168.100.10 -P 256 -h 192.168.100.100 -p 256 -I -s
+> B:
+> sctp_darn -H 192.168.100.100 -P 256 -h 192.168.100.10 -p 256 -l&
+> 4). Send data on A to establish the SCTP association:
+> snd=5
+> 5). Block SCTP traffic on B (simulates a network failure):
+> iptables -t filter -I INPUT 1 -p sctp --dport 256 -j DROP
+> iptables -t filter -I OUTPUT 1 -p sctp --dport 256 -j DROP
+> Then quickly send data on A and then shutdown (A goes into 
+> SHUTDOWN_PENDING state):
+> snd=5
+> snd=5
+> shutdown
+> 6). Wait for link to drop on B (Recieved SCTP_COMM_LOST), and quickly 
+> kill the listener,
+> open the firewall for SCTP, then start an SCTP sender:
+> kill $PID
+> iptables -t filter -D INPUT 1
+> iptables -t filter -D OUTPUT 1
+> sctp_darn -H 192.168.100.100 -P 256 -h 192.168.100.10 -p 256 -s
+> Press<Enter>  to send data to trigger sending INIT to A, the SHUTDOWN 
+> on A will failed and
+> the association on A remains in SHUTDOWN_PENDING (5) state indefinitely.
+>
+>
+> However if David doesn't think it is worth bothering with for
+> net stable, then that is of course fine too.
+>
+>
+> Thanks,
+> Xufeng
+>
+>
+>
+>> ------------------
+>>
+>>
+>> From: Xufeng Zhang<xufeng.zhang@windriver.com>
+>>
+>> [ Upstream commit 9839ff0dead906e85e4d17490aeff87a5859a157 ]
+>>
+>> While sctp handling a duplicate COOKIE-ECHO and the action is
+>> 'Association restart', sctp_sf_do_dupcook_a() will processing
+>> the unexpected COOKIE-ECHO for peer restart, but it does not set
+>> the association state to SCTP_STATE_ESTABLISHED, so the association
+>> could stuck in SCTP_STATE_SHUTDOWN_PENDING state forever.
+>> This violates the sctp specification:
+>>    RFC 4960 5.2.4. Handle a COOKIE ECHO when a TCB Exists
+>>    Action
+>>    A) In this case, the peer may have restarted. .....
+>>       After this, the endpoint shall enter the ESTABLISHED state.
+>>
+>> To resolve this problem, adding a SCTP_CMD_NEW_STATE cmd to the
+>> command list before SCTP_CMD_REPLY cmd, this will set the restart
+>> association to SCTP_STATE_ESTABLISHED state properly and also avoid
+>> I-bit being set in the DATA chunk header when COOKIE_ACK is bundled
+>> with DATA chunks.
+>>
+>> Signed-off-by: Xufeng Zhang<xufeng.zhang@windriver.com>
+>> Acked-by: Neil Horman<nhorman@tuxdriver.com>
+>> Acked-by: Vlad Yasevich<vyasevich@gmail.com>
+>> Signed-off-by: David S. Miller<davem@davemloft.net>
+>> ---
+>>   net/sctp/sm_statefuns.c |    4 +++-
+>>   1 files changed, 3 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
+>> index cb1c430..ab08f65 100644
+>> --- a/net/sctp/sm_statefuns.c
+>> +++ b/net/sctp/sm_statefuns.c
+>> @@ -1747,8 +1747,10 @@ static sctp_disposition_t 
+>> sctp_sf_do_dupcook_a(const struct sctp_endpoint *ep,
+>>
+>>       /* Update the content of current association. */
+>>       sctp_add_cmd_sf(commands, SCTP_CMD_UPDATE_ASSOC, 
+>> SCTP_ASOC(new_asoc));
+>> -    sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
+>>       sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP, SCTP_ULPEVENT(ev));
+>> +    sctp_add_cmd_sf(commands, SCTP_CMD_NEW_STATE,
+>> +            SCTP_STATE(SCTP_STATE_ESTABLISHED));
+>> +    sctp_add_cmd_sf(commands, SCTP_CMD_REPLY, SCTP_CHUNK(repl));
+>>       return SCTP_DISPOSITION_CONSUME;
+>>
+>>   nomem_ev:
+>
+>
 
-> This interesting case makes me think that regulator core should=20
-> differentiate between regulator lookup failure due to no lookup specified=
-=20
-> and due to the regulator specified in lookup being unavailable, returning=
-=20
-> appropriate (different) error codes.
-
-It does exactly that in so far as it can - you get -ENODEV if there's
-definitely no supply and -EPROBE_DEFER otherwise.
-
---DT/miTrKQuDYoJpq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRsbTAAAoJELSic+t+oim98CMQAI+zyImtt0r0OTvU74sprUb9
-FZzN60D2+GUgf8v72Nzz7YTiDbTDUsehEI/FapNdxNA8HHgF8aDq63uIHgdtyuSA
-ThmNYWRRh1oacjzOXDFpl8JfWKm0EwTuTScOV8trBBbbfgTUlcf4+AYwyTF79fV3
-u6l5ijYFQFdmATuOgPDKqSTMzX6eFVynf1kn2nviMn23ksbwFnGqyKXoloRfEW+n
-IRQLWasm0eH0dH5XiVeNpyQfHqnTxgybQVrEAD/kjKy8VE6L9vOgWYYE7Yljpa2d
-8vO2wnoabGDCUvPyxW866p29VkQ20/xVBpoSu61U6dwaSh81OiGp7rjfZorUcgxy
-puANtbD9AtOElrM/lv0kVinf5vsNhQaUI5ND0/57WHQDq/DbJ+ceoGimjE371K0x
-jhIVYd9rv7nALSdxI8sQeIpEgkOBeX83pKsJO+VPijOw9r56PgUeW03Dkz4WcpCh
-eO7tMUYgYAEF6hx/xGKSiUcD4EIiRoKMd5nn5yV5nmV2j4ja5kosSUHMiDBSwolS
-DTIj8bu0m4ztrr9R43TJuNbvXBPzptZP8qg3ZuwAwv/s9xEHCJaDEUJa+bFj4G55
-khTa9eOko95+PeaNi8dFYxn0Cr9aws62i2vg+tGypEtYgHb5rj0RwTSPEpXfuvQf
-GFsAuQ+/wyjgD9G6gcMN
-=36I0
------END PGP SIGNATURE-----
-
---DT/miTrKQuDYoJpq--
