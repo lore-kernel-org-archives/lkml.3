@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab3FGKW2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 06:22:28 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:51065 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887Ab3FGKW1 (ORCPT
+	id S1753780Ab3FGKXg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 06:23:36 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:33901 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752146Ab3FGKXe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 06:22:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Shuah Khan'" <shuah.kh@samsung.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com, rpurdie@rpsys.net,
-        FlorianSchandinat@gmx.de, plagnioj@jcrosoft.com, tomi.valkeinen@ti.com,
-        rafael.j.wysocki@intel.com
-Subject: Re: [PATCH] backlight: add CONFIG_PM_SLEEP to suspend/resume functions
-Date: Fri, 07 Jun 2013 12:22:19 +0200
-Message-ID: <2386569.59VQ9D5dv5@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <000201ce631f$d4ad0d50$7e0727f0$@samsung.com>
-References: <000201ce631f$d4ad0d50$7e0727f0$@samsung.com>
+	Fri, 7 Jun 2013 06:23:34 -0400
+Date: Fri, 7 Jun 2013 11:23:27 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: James King <james.king@linaro.org>
+Cc: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "namhyung@kernel.org" <namhyung@kernel.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH] arm/dt: Don't add disabled CPUs to system topology
+Message-ID: <20130607102326.GA3111@e102568-lin.cambridge.arm.com>
+References: <1370538685-22386-1-git-send-email-james.king@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:knWgGoCNOm4W/gF4Brg6g15xQeN9Od2SW7SwlN+SSJb
- xv7Ngzbk4RIANcnKwHfFkghyvts7q5oTKSlUZovkn8l8x+ePLr
- bDSYPs6zRy9+Cnga5xHTwFCrxZYzKCdsnvtaw/jbKCavzzHqO1
- 3fvlw9ytpI24XTPWjxCl+0CIndV1+78p5xNn4VpxKuCWA1OUUj
- 0afeA/Q9BdMJRDbsfd1tqrLTdBVQfBAjL4VCuEa82hDBHzK4Yu
- FkAn4534x8jlRLcRMTFI6yANTFLGpjMpFAxG+6DWlz+cXo1Hqz
- TMcVW9j3GcL5bUvNxhh/cU9Z+H8FGA3Y8slOnJbbDlJeWLrlpT
- bI1YZ/QwWIJQgBIctNDA=
+In-Reply-To: <1370538685-22386-1-git-send-email-james.king@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 07 Jun 2013 10:23:30.0730 (UTC) FILETIME=[0E8F20A0:01CE6369]
+X-MC-Unique: 113060711233201801
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 June 2013 10:39:20 Jingoo Han wrote:
-> Add CONFIG_PM_SLEEP to suspend/resume functions to fix the following
-> build warning when CONFIG_PM_SLEEP is not selected. This is because
-> sleep PM callbacks defined by SIMPLE_DEV_PM_OPS are only used when
-> the CONFIG_PM_SLEEP is enabled.
-> 
-> drivers/video/backlight/backlight.c:211:12: warning: 'backlight_suspend' defined but not used [-Wunused-function]
-> drivers/video/backlight/backlight.c:225:12: warning: 'backlight_resume' defined but not used [-Wunused-function]
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Hi James,
 
-I forgot:
+On Thu, Jun 06, 2013 at 06:11:25PM +0100, James King wrote:
+> If CPUs are marked as disabled in the devicetree, make sure they do
+> not exist in the system CPU information and CPU topology information.
+> In this case these CPUs will not be able to be added to the system later
+> using hot-plug. This allows a single chip with many CPUs to be easily
+> used in a variety of hardware devices where they may have different
+> actual processing requirements (eg for thermal/cost reasons).
+> 
+> - Change devicetree.c to ignore any cpu nodes marked as disabled,
+>   this effectively limits the number of active cpu cores so no need
+>   for the max_cpus=x in the chosen node.
+> - Change topology.c to ignore any cpu nodes marked as disabled, this
+>   is where the scheduler would learn about big/LITTLE cores so this
+>   effectively keeps the scheduler in sync.
+> 
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+I have two questions:
+
+1) Since with this approach the DT should change anyway if on different
+   hardware devices based on the same chip you want to allow booting a
+   different number of CPUs, why do not we remove the cpu nodes instead of
+   disabling them ? Put it another way: cpu nodes define a cpu as
+   possible (currently), we can simply remove the node if we do not want
+   that cpu to be seen by the kernel.
+2) If we go for the "status" property, why do not we use it to set present
+   mask ? That way the cpu is possible but not present, you cannot
+   hotplug it in. It is a bit of a stretch, granted, the cpu _is_ present,
+   we just want to disable it, do not know how this is handled in x86
+   and other archs though.
+
+I am just asking, since it is something I thought about while writing
+code that parses the DT cpu map, basically we do not have a way to
+"disable" a cpu in the DT and that's what you are doing, I just would like
+to understand the best way to put it into DT bindings.
+
+Thanks,
+Lorenzo
+
