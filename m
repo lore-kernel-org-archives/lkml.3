@@ -1,131 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943Ab3FGABA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 20:01:00 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:54365 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751693Ab3FGAA6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 20:00:58 -0400
+	id S1754118Ab3FGACn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 20:02:43 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:47002 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752940Ab3FGACj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 20:02:39 -0400
+Date: Thu, 6 Jun 2013 20:02:22 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] memcg: do not sleep on OOM waitqueue with full
+ charge context
+Message-ID: <20130607000222.GT15576@cmpxchg.org>
+References: <1370488193-4747-1-git-send-email-hannes@cmpxchg.org>
+ <1370488193-4747-2-git-send-email-hannes@cmpxchg.org>
+ <alpine.DEB.2.02.1306052058340.25115@chino.kir.corp.google.com>
+ <20130606053315.GB9406@cmpxchg.org>
+ <20130606173355.GB27226@cmpxchg.org>
+ <alpine.DEB.2.02.1306061308320.9493@chino.kir.corp.google.com>
+ <20130606215425.GM15721@cmpxchg.org>
+ <alpine.DEB.2.02.1306061507330.15503@chino.kir.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <20130606153030.GA19876@ab42.lan>
-References: <51942472.9010402@wwwdotorg.org>
-	<CACRpkdYtKr5w2=1sONG4Qn2TQue38nV7epWfzxNQz5rjSs0DZQ@mail.gmail.com>
-	<20130522142824.GC4789@ab42.lan>
-	<CAD6h2NT4FqmEsLvtTDwwDL2YVzXYNpw72hTOcSxSMvHLhWvFPQ@mail.gmail.com>
-	<20130524115053.GB5203@ab42.lan>
-	<CAD6h2NSh_4TNAGeFhg+va5QX2hGia+gkw-mPaeMezghsa=Zc6Q@mail.gmail.com>
-	<20130603123001.GD31808@ab42.lan>
-	<CAD6h2NQVKKvcoPdD4sm5rUM5G-FpF3abL=k+WfQsnKnm7qhREA@mail.gmail.com>
-	<20130606141115.GA10345@ab42.lan>
-	<CAD6h2NRNMQP-ZQ0Cc613tGThVEo7AzRExBmWsbtr1DXgiPwz7w@mail.gmail.com>
-	<20130606153030.GA19876@ab42.lan>
-Date: Fri, 7 Jun 2013 08:00:57 +0800
-Message-ID: <CAD6h2NQRdgeBkMJkJWeDt-304KY7e6+qyKVE-h9MY6bRnMAPLA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
-From: Haojian Zhuang <haojian.zhuang@linaro.org>
-To: Christian Ruppert <christian.ruppert@abilis.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1306061507330.15503@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 June 2013 23:30, Christian Ruppert <christian.ruppert@abilis.com> wrote:
-> On Thu, Jun 06, 2013 at 10:32:21PM +0800, Haojian Zhuang wrote:
->> On 6 June 2013 22:11, Christian Ruppert <christian.ruppert@abilis.com> wrote:
->> > On Wed, Jun 05, 2013 at 09:44:27AM +0800, Haojian Zhuang wrote:
->> >> On 3 June 2013 20:30, Christian Ruppert <christian.ruppert@abilis.com> wrote:
->> >> > OK, here's a simplified example of what we would like to do (this seems
->> >> > pretty common so I suppose there is a way I haven't understood). Our
->> >> > situation is slightly more complex but for the purpose of discussion
->> >> > let's assume a chip with 8 pins which can be configured for the
->> >> > following functions:
->> >> >
->> >> > Pin   GPIO-A    I2C    SPI0     SPI1
->> >> > ------------------------------------
->> >> >  1    GPIOA0    SDA             MISO1
->> >> >  2    GPIOA1    SCL             MOSI1
->> >> >  3    GPIOA2                    SS1_B
->> >> >  4    GPIOA3                    SCLK1
->> >> >  5    GPIOA4           MISO0
->> >> >  6    GPIOA5           MOSI0
->> >> >  7    GPIOA6           SS0_B
->> >> >  8    GPIOA7           SCLK0
->> >> >
->> >> > We can now define the following pinctrl-single:
->> >> >
->> >> > pinmux: pinmux@0xFFEE0000 {
->> >> >         compatible = "pinctrl-single";
->> >> >         reg = <0xFFEE0000 0x8>;
->> >> >         #address-cells = <1>;
->> >> >         #size-cells = <0>;
->> >> >         #gpio-range-cells = <3>;
->> >> >         pinctrl-single,register-width = <32>;
->> >> >         pinctrl-single,function-mask = <0xffffffff>;
->> >> >         pinctrl-single,gpio-range = <&range 1 8 0>;
->> >> >         gpioa_pins: pinmux_gpioa_pins {
->> >> >                 pinctrl-single,pins = <0x0 0 0x4 0>
->> >> >         };
->> >> >         i2c_pins: pinmux_i2c_pins {
->> >> >                 pinctrl-single,pins = <0x0 1>
->> >> >         };
->> >> >         spi0_pins: pinmux_spi0_pins {
->> >> >                 pinctrl-single,pins = <0x1 1>
->> >> <0x1 1>?
->> >>
->> >> If each pinmux register is only for one pin in your SoC.
->> >> I think that your definitions are wrong above. We use
->> >> register offset as the first argument, not pin number.
->> >> And the second argument should be pin function number.
->> >
->> > In our case each pinmux register (bit field) actually controls an entire
->> > group of pins.
->> >
->> >> If multiple pins are sharing one register with different bits,
->> >> you need to enable "pinctrl-single,bit-per-mux".
->> >
->> > Multiple pins are sharing the same bits in the same register. Do you
->> > think this prevents us from using pinctrl-single?
->> >
->> Could you give me your register definition? Then I can understand you
->> better.
->
-> In our example, the register map would look a bit like the following.
-> Note that every register configures four pins at a time.
->
-> Register 0x0:
->  Mode  GPIO-A    I2C    SPI1
->  Value 0x0       0x1    0x2
->  ---------------------------
->  Pin1  GPIOA0    SDA    MISO1
->  Pin2  GPIOA1    SCL    MOSI1
->  Pin3  GPIOA2           SS1_B
->  Pin4  GPIOA3           SCLK1
->
-> Register 0x4:
->  Mode  GPIO-A    SPI0
->  Value 0x0       0x1
->  ---------------------
->  Pin5  GPIOA4    MISO0
->  Pin6  GPIOA5    MOSI0
->  Pin7  GPIOA6    SS0_B
->  Pin8  GPIOA7    SCLK0
->
+On Thu, Jun 06, 2013 at 03:18:37PM -0700, David Rientjes wrote:
+> On Thu, 6 Jun 2013, Johannes Weiner wrote:
+> 
+> > > I don't understand why memcg is unique in this regard and it doesn't 
+> > > affect the page allocator as well on system oom conditions.  Ignoring 
+> > > memecg, all allocating processes will loop forever in the page allocator 
+> > > unless there are atypical gfp flags waiting for memory to be available, 
+> > > only one will call the oom killer at a time, a process is selected and 
+> > > killed, and the oom killer defers until that process exists because it 
+> > > finds TIF_MEMDIE.  Why is memcg charging any different?
+> > 
+> > The allocator wakes up kswapd, global OOMs are rarer, with physical
+> > memory the line to OOM is blurrier than with the memcg hard limit?
+> > 
+> > Anyway, I'm not aware of bug reports in the global case, but there are
+> > bug reports for the memcg case and we have a decent understanding of
+> > those deadlocks.  So can we stay focussed and fix this, please?
+> > 
+> 
+> Could you point me to those bug reports?  As far as I know, we have never 
+> encountered them so it would be surprising to me that we're running with a 
+> potential landmine and have seemingly never hit it.
 
-You said "Multiple pins are sharing the same bits in the same register.".
-I need to understand which bits you're talking about in your register.
+Sure thing: https://lkml.org/lkml/2012/11/21/497
 
-Regards
-Haojian
+During that thread Michal pinned down the problem to i_mutex being
+held by the OOM invoking task, which the selected victim is trying to
+acquire.
+
+> > > > Reported-by: Reported-by: azurIt <azurit@pobox.sk>
+> > > > Debugged-by: Michal Hocko <mhocko@suse.cz>
+> > > > Reported-by: David Rientjes <rientjes@google.com>
+> > > 
+> > > What exactly did I report?  This isn't at all what 
+> > > memory.oom_delay_millisecs is about, which is a failure of userspace to 
+> > > respond to the condition and react in time, not because it's stuck on any 
+> > > lock.  We still need that addition regardless of what you're doing here.
+> > 
+> > Oh, tell me how getting stuck indefinitely on a lock will not result
+> > in "a failure to react in time".  This is some seriously misguided
+> > pedantry.
+> > 
+> 
+> It certainly would, but it's not the point that memory.oom_delay_millisecs 
+> was intended to address.  memory.oom_delay_millisecs would simply delay 
+> calling mem_cgroup_out_of_memory() unless userspace can't free memory or 
+> increase the memory limit in time.  Obviously that delay isn't going to 
+> magically address any lock dependency issues.
+
+The delayed fallback would certainly resolve the issue of the
+userspace handler getting stuck, be it due to memory shortness or due
+to locks.
+
+However, it would not solve the part of the problem where the OOM
+killing kernel task is holding locks that the victim requires to exit.
+
+We are definitely looking at multiple related issues, that's why I'm
+trying to fix them step by step.
+
+> > And yes, you talked about deadlocking potential other than the handler
+> > itself OOMing, I quote from
+> > <alpine.DEB.2.02.1305301338430.20389@chino.kir.corp.google.com>:
+> > 
+> > "Unresponsiveness isn't necessarily only because of memory
+> >  constraints, you may have your oom notifier in a parent cgroup that
+> >  isn't oom.  If a process is stuck on mm->mmap_sem in the oom cgroup,
+> >  though, the oom notifier may not be able to scrape /proc/pid and
+> >  attain necessary information in making an oom kill decision."
+> > 
+> > These are your words, and my patch sets out to fix the described
+> > problem,
+> 
+> I can review this patch apart from memory.oom_delay_millisecs using the 
+> examples in your changelog, but this isn't the problem statement for my 
+> patch.  The paragraph above is describing one way that an oom handler may 
+> encounter issues, it's not the only way and it's not a way that we have 
+> ever faced on our production servers with memcg.  I just didn't think the 
+> above was me reporting a bug, perhaps you took it that way.
+
+Please do consider this fix individually.  It's good to know that you
+didn't run into this particular issue on your machines so far, but
+since you described the problem you must have arrived at the same
+conclusion by just reading the code, which was good enough for me.
+Again, I can just remove your Reported-by: if you don't think it's
+justified.
+
+> The point I'm trying to make is that your patch doesn't reduce our need 
+> for memory.oom_delay_millisecs as described in the thread for that patch.
+
+It does not.  But it does fix a problem that came up during the
+discussion and it does fix a problem that you may hit at a random
+point in time regardless of the memory.oom_delay_millisecs patch.
+
+I'm sorry for the confusion this created, but yes, it's a separate
+albeit related issue.
