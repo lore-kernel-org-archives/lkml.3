@@ -1,142 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757026Ab3FGSmK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 14:42:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35196 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755813Ab3FGSmJ (ORCPT
+	id S1757057Ab3FGSoX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 14:44:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5191 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755813Ab3FGSoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 14:42:09 -0400
-Date: Fri, 7 Jun 2013 11:42:08 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Oliver Neukum <oliver@neukum.org>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Stoffregen <paul@pjrc.com>
-Subject: [PATCH v2] USB: cdc-acm: remove unneeded spin_lock_irqsave/restore
- on write path
-Message-ID: <20130607184208.GB7139@kroah.com>
-References: <20130607183247.GA6850@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130607183247.GA6850@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 7 Jun 2013 14:44:22 -0400
+X-Authority-Analysis: v=2.0 cv=BcJaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=V63olZALi9sA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=iFRSGadmnM0A:10 a=WeUGJGDjuo7j8kHtijIA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1370630659.9844.89.camel@gandalf.local.home>
+Subject: Re: NULL pointer dereference when loading the gre module
+ (3.10.0-rc4)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Pravin B Shelar <pshelar@nicira.com>
+Date: Fri, 07 Jun 2013 14:44:19 -0400
+In-Reply-To: <20130607183438.GA23064@uio.no>
+References: <20130606221656.GA11475@uio.no>
+	 <20130607030648.GA28618@home.goodmis.org> <20130607085421.GF15083@uio.no>
+	 <1370612441.24311.411.camel@edumazet-glaptop>
+	 <1370618100.9844.73.camel@gandalf.local.home>
+	 <20130607154634.GA7529@uio.no>
+	 <1370621543.9844.78.camel@gandalf.local.home>
+	 <20130607175233.GA20230@uio.no>
+	 <1370629568.9844.87.camel@gandalf.local.home>
+	 <20130607183438.GA23064@uio.no>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Fri, 2013-06-07 at 20:34 +0200, Steinar H. Gunderson wrote:
+> On Fri, Jun 07, 2013 at 02:26:08PM -0400, Steven Rostedt wrote:
+> > On Fri, 2013-06-07 at 19:52 +0200, Steinar H. Gunderson wrote:
+> > Ah, that's because of this: module_init(ipgre_init);  Where it makes it
+> > into:
+> > 
+> > 00000000 <init_module>:
+> >    0:   55                      push   %ebp
+> >    1:   89 e5                   mov    %esp,%ebp
+> >    3:   53                      push   %ebx
+> >    4:   83 ec 08                sub    $0x8,%esp
+> >    7:   c7 04 24 00 00 00 00    movl   $0x0,(%esp)
+> >                         a: R_386_32     .rodata.str1.4
+> > 
+> > We can use ipgre_tap_init_net, and the offset of 0xb032 (45106) as that
+> > was 0xffffffffa0e5d034 - 0xffffffffa0e52002. Do you have CONFIG_NET_NS
+> > set?
+> 
+> ipgre_tap_init_net is 000000000000001a, but there's no way I can subtract
+> 0xb053 from that? Sorry, I'm confused. :-)
 
-When writing data we were:
-	lock
-	do some work
-	unlock
-	call function
-		lock
-		do some work
-		unlock
-		return
-	return
+OK, then its most likely in another module (likely the ip_tunnel.ko).
 
-It turns out, that "function" was only ever called in the one place, so
-instead of locking/unlocking for no good reason, just inline the
-function and only grab the lock once.
+Do know if you have CONFIG_NET_NS set in your .config?
 
-This has sped up the pathological case of sending 1 byte packets to a
-loop-back cdc-acm device from 49600 bytes per second to 50100 bytes a
-second on my workstation.  A tiny increase yes, but noticable, and now
-the spinlock isn't the hottest thing on the perf graph anymore.  Yes, we
-are still waiting for the hardware for the most part, but getting rid of
-a spinlock_irq_save() call for every packet is still a good thing.
+> 
+> > You can also cat /proc/modules. It gives you where the modules are
+> > located.
+> 
+> I've booted back to 3.9.x already; I couldn't live with a crashing kernel like
+> that. Unfortunately it's not that easy for me to reboot this machine all the
+> time either. :-/
 
-And we end up deleting lines of code, always a win overall.
+OK, if you get time, this may be a candidate to do a git bisect with.
 
-This was found by using a Teensy 3.0 device and the test program and
-firmware located at:
-	http://www.pjrc.com/teensy/benchmark_usb_serial_receive.html
+Thanks,
 
-Reported-by: Paul Stoffregen <paul@pjrc.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- Changes v1 - v2:
-   - move unlock farther down the call to where it needed to be.
+-- Steve
 
 
- drivers/usb/class/cdc-acm.c |   52 ++++++++++++++++----------------------------
- 1 file changed, 19 insertions(+), 33 deletions(-)
-
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -216,38 +216,6 @@ static int acm_start_wb(struct acm *acm,
- 	return rc;
- }
- 
--static int acm_write_start(struct acm *acm, int wbn)
--{
--	unsigned long flags;
--	struct acm_wb *wb = &acm->wb[wbn];
--	int rc;
--
--	spin_lock_irqsave(&acm->write_lock, flags);
--	if (!acm->dev) {
--		wb->use = 0;
--		spin_unlock_irqrestore(&acm->write_lock, flags);
--		return -ENODEV;
--	}
--
--	dev_vdbg(&acm->data->dev, "%s - susp_count %d\n", __func__,
--							acm->susp_count);
--	usb_autopm_get_interface_async(acm->control);
--	if (acm->susp_count) {
--		if (!acm->delayed_wb)
--			acm->delayed_wb = wb;
--		else
--			usb_autopm_put_interface_async(acm->control);
--		spin_unlock_irqrestore(&acm->write_lock, flags);
--		return 0;	/* A white lie */
--	}
--	usb_mark_last_busy(acm->dev);
--
--	rc = acm_start_wb(acm, wb);
--	spin_unlock_irqrestore(&acm->write_lock, flags);
--
--	return rc;
--
--}
- /*
-  * attributes exported through sysfs
-  */
-@@ -653,13 +621,31 @@ static int acm_tty_write(struct tty_stru
- 	}
- 	wb = &acm->wb[wbn];
- 
-+	if (!acm->dev) {
-+		wb->use = 0;
-+		spin_unlock_irqrestore(&acm->write_lock, flags);
-+		return -ENODEV;
-+	}
-+
- 	count = (count > acm->writesize) ? acm->writesize : count;
- 	dev_vdbg(&acm->data->dev, "%s - write %d\n", __func__, count);
- 	memcpy(wb->buf, buf, count);
- 	wb->len = count;
-+
-+	usb_autopm_get_interface_async(acm->control);
-+	if (acm->susp_count) {
-+		if (!acm->delayed_wb)
-+			acm->delayed_wb = wb;
-+		else
-+			usb_autopm_put_interface_async(acm->control);
-+		spin_unlock_irqrestore(&acm->write_lock, flags);
-+		return count;	/* A white lie */
-+	}
-+	usb_mark_last_busy(acm->dev);
-+
-+	stat = acm_start_wb(acm, wb);
- 	spin_unlock_irqrestore(&acm->write_lock, flags);
- 
--	stat = acm_write_start(acm, wbn);
- 	if (stat < 0)
- 		return stat;
- 	return count;
