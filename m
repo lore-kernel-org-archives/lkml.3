@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab3FGJIr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 05:08:47 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38308 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047Ab3FGJIm (ORCPT
+	id S1754088Ab3FGJJc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 05:09:32 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:48789 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753255Ab3FGJJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 05:08:42 -0400
-Date: Fri, 7 Jun 2013 10:08:22 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Vladimir Pantelic <vladoman@gmail.com>
-Cc: Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, debian-kernel@lists.debian.org
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
-	Uploading linux (3.9.4-1))
-Message-ID: <20130607090822.GS18614@n2100.arm.linux.org.uk>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com> <1851164.HnXhGSdttW@flatron> <CAPweEDxWW4LUeBaHLb+wHuAMq=63p88zsx4tumVb2PdP_+ohAw@mail.gmail.com> <1622862.fXQWv0YWGV@flatron> <CAPweEDx_1fvAv9sROtPreoyyj_yDAuYb040fM2zPc+tf22d=YA@mail.gmail.com> <51B19C85.9090407@gmail.com>
+	Fri, 7 Jun 2013 05:09:29 -0400
+Date: Fri, 7 Jun 2013 10:09:23 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Paul Walmsley <pwalmsley@nvidia.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, Andrew Chew <achew@nvidia.com>,
+        Matthew Longnecker <mlongnecker@nvidia.com>
+Message-ID: <20130607090923.GH31367@sirena.org.uk>
+References: <alpine.DEB.2.02.1306070753420.32163@utopia.booyaka.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+plSmdOTvOCX/8Oy"
 Content-Disposition: inline
-In-Reply-To: <51B19C85.9090407@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <alpine.DEB.2.02.1306070753420.32163@utopia.booyaka.com>
+X-Cookie: Are you a turtle?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: core: add regulator_get_linear_step()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 10:40:37AM +0200, Vladimir Pantelic wrote:
-> luke.leighton wrote:>   so.
-> >
-> >   coming back to what you said earlier: i'm formulating what to say to
-> > allwinner [and need to pre-send something by monday so that they can
-> > consider it before the meeting].  so far, it consists of:
-> >
-> > * device-tree is what the linux kernel community has come up with, it
-> > is equivalent to FEX.
-> >
-> > * the linux kernel community would like to apologise for not
-> > consulting with you (allwinner) on the decision to only accept device
-> > tree
->
-> apologize? WTF?
 
-(I don't seem to have the original mail).
+--+plSmdOTvOCX/8Oy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Definitely not.
+On Fri, Jun 07, 2013 at 08:06:56AM +0000, Paul Walmsley wrote:
 
-The way this generally works is that discussions happen in public on
-mailing lists, and people who have an interest get involved in the
-discussion.  If someone decides to avoid the mailing lists because they
-want to be secret about XYZ then they won't be part of the decision
-making process - but that's not _our_ problem.  That is _their_ problem.
+> Applies on v3.10-rc4.  Will be used by the upcoming Tegra DFLL clocksourc=
+e=20
+> driver, which will build its own table of voltage-to-VSEL values by=20
+> querying the regulator framework.
 
-In the case of DT, there was quite a lengthy discussion about it and
-its adoption.
+Can you show the code please?
 
-So, either the discussion took place _before_ there was any interest in
-the ARM kernel developments from Allwinner, or they themselves _chose_
-not to be represented in the discussion by not being on the mailing list
-or participating in the discussion.
+--+plSmdOTvOCX/8Oy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-There is nothing for us to apologise for here.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-(Occasionally, the kernel community *is* a dictatorship - for example,
-when Linus threatens to delete all the ARM defconfigs, or when Linus
-decides that we're running out of control when adding more than 10k
-lines of new code per kernel release, or - in the same way - when I see
-something I really don't like, but thankfully those are fairly rare.)
+iQIcBAEBAgAGBQJRsaM6AAoJELSic+t+oim9s+EQAIo1T9CipQV4RuC0ONe6h/yh
+erpT87tehwzWJLstitDRsh26EVt523IEv55yV/P8OE4Z2cG6lhzrNMTR+KfJQQtE
+ahU6DjoxtCFlclJJ+5jnFFRzAQnsZopeK3WgAh0FReYde18VUUg9PL1A8iRIOwH8
+nVoIkuSl6gH3IcFMZxwExSo2g/cZjcKBfP12RD4Ajko757suGmVWwJnlG3GXw7pr
+2auSB8EFqn2q6YzHaZ8wGwMnPYSb4CKGAQ3Yn5V0rA5MmmzKLRwWZ/7IyP+IxHKz
+urg0pCeXFHuN4qOiQrK2Ua8DPpAoEi2akgp/TN3sZOHX9cv4M1I0RBaLZldyYeZN
+LP3lW57xAVyBUEDKMr9V95VkE3OcmD7wB7pVma2IfbOIGWAJUMXLDbC2BzHAkRC/
+zhNRWkRguO6MTj/9lR2tnv+5rDBFYayFzXLZaMiusLR/xVO/2q9FBeUA1IBwqFry
+tRK09sBQqVP9J4WVUYQQx9Nu8ygke/BivJuhqNbf657zMSNCzjgwzg1rRXvYr1VR
+y1ujDUFEiq9KqzhhjyulVVE4OirWKT5MvNXKTS/nKeu5gvjBbg73CkVj5nQGLIgu
+nExxyQp8SALyTgNqgn/QC287CYXuFuW2QC557D3Of7d9oEU+Zv9GzLrh6Y5x+DPy
+NzAS6GSdnJlmqmdDGoP9
+=D1qQ
+-----END PGP SIGNATURE-----
+
+--+plSmdOTvOCX/8Oy--
