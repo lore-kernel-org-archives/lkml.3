@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185Ab3FGH4g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 03:56:36 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:26460 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750878Ab3FGH4e convert rfc822-to-8bit (ORCPT
+	id S1751958Ab3FGH7D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 03:59:03 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:44919 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878Ab3FGH7B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 03:56:34 -0400
-Date: Fri, 7 Jun 2013 09:55:29 +0200
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Jean Delvare <khali@linux-fr.org>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] i2c: designware: make i2c xfers non-interruptible
-Message-ID: <20130607075527.GB11875@ab42.lan>
-References: <1370526216-10060-1-git-send-email-christian.ruppert@abilis.com>
- <1370526216-10060-2-git-send-email-christian.ruppert@abilis.com>
- <20130607052555.GC11878@intel.com>
+	Fri, 7 Jun 2013 03:59:01 -0400
+X-AuditID: 9c93017d-b7c30ae0000063eb-e0-51b192c37638
+Date: Fri, 7 Jun 2013 16:58:58 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Jiang Liu <jiang.liu@huawei.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH v3 01/10] zram: avoid invalid memory access in zram_exit()
+Message-ID: <20130607075858.GA22516@blaptop>
+References: <1370534851-26056-1-git-send-email-jiang.liu@huawei.com>
+ <1370534851-26056-2-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20130607052555.GC11878@intel.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1370534851-26056-2-git-send-email-jiang.liu@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 08:25:55AM +0300, Mika Westerberg wrote:
-> On Thu, Jun 06, 2013 at 03:43:36PM +0200, Christian Ruppert wrote:
-> > When the process at the source of an i2c transfer is killed in the
-> > middle of the transfer, the transfer is interrupted. Interrupted
-> > transfers might cause buggy slaves on the bus (or higher level drivers)
-> > to go haywire.
-> > This patch forces ongoing i2c transfers to finish properly, even if the
-> > initiating process is killed.
-> 
-> I already sent a similar patch ;-)
-> 
-> https://patchwork.kernel.org/patch/2601241/
-> 
-> However, it is not yet picked by Wolfram.
+Hello Jiang,
 
-Oops, this looks like a human race condition :) I checked main line and
-Wolfram's git but didn't think of checking patchwork. I'll rebase the
-second patch on yours.
+On Fri, Jun 07, 2013 at 12:07:22AM +0800, Jiang Liu wrote:
+> Memory for zram->disk object may have already been freed after returning
+> from destroy_device(zram), then it's unsafe for zram_reset_device(zram)
+> to access zram->disk again.
+> 
+> We can't solve this bug by flipping the order of destroy_device(zram)
+> and zram_reset_device(zram), that will cause deadlock issues to the
+> zram sysfs handler.
+
+Sorry for bothering you with description nitpick.
+
+I agree your approach is so simple that I'd like to give Ack
+but your description is not clear.
+
+If you really want to say deadlock issue with flipping approach,
+please add enough explain how the deadlock happens.(But not sure
+it is worth that we should keep the problem of deadlock issue of
+flipping approach in changelog)
+
+Otherwise, it's enough with first paragraph because this bug is
+very simple and plain. I prefer latter because I want that 
+other developers don't waste their time to understand a deadlock issue
+of flipping approach)
+
+> 
+> So fix it by holding an extra reference to zram->disk before calling
+> destroy_device(zram).
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: stable@vger.kernel.org
+
+Acked-by: Minchan Kim <minchan@kernel.org>
+
+But please rewrite the description.
 
 -- 
-  Christian Ruppert              ,          <christian.ruppert@abilis.com>
-                                /|
-  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
-                             _// | bilis Systems   CH-1228 Plan-les-Ouates
+Kind regards,
+Minchan Kim
