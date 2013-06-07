@@ -1,66 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082Ab3FGJeX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 05:34:23 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:49775 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671Ab3FGJeW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 05:34:22 -0400
-From: Davis Abubakr-Sadik Nii Nai <dwa2pac@gmail.com>
-To: gregkh@linuxfoundation.org, devendra.aaru@gmail.com, plaes@plaes.org,
-        dwa2pac@gmail.com, yongjun_wei@trendmicro.com.cn
-Cc: devel@driverdev.osusl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: csr: fix indentation code style issue in csr_framework_ext.c
-Date: Fri,  7 Jun 2013 09:33:03 +0000
-Message-Id: <1370597583-8565-1-git-send-email-dwa2pac@gmail.com>
-X-Mailer: git-send-email 1.8.3
+	id S1753606Ab3FGJf3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 05:35:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50265 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753386Ab3FGJf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 05:35:28 -0400
+Message-ID: <51B1A94F.3060005@redhat.com>
+Date: Fri, 07 Jun 2013 11:35:11 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Jiang Liu <liuj97@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 05/10] zram: avoid double free in function zram_bvec_write()
+References: <1370361968-8764-1-git-send-email-jiang.liu@huawei.com> <1370361968-8764-5-git-send-email-jiang.liu@huawei.com>
+In-Reply-To: <1370361968-8764-5-git-send-email-jiang.liu@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to csr_framework.c that fixes indentation style issues
-found by the checkpatch.pl tool.
+On 06/04/2013 06:06 PM, Jiang Liu wrote:
+> When doing a patial write and the whole page is filled with zero,
+> zram_bvec_write() will free uncmem twice.
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: stable@vger.kernel.org
 
-Signed-off-by: Davis Abubakr-Sadik Nii Nai <dwa2pac@gmail.com>
----
- drivers/staging/csr/csr_framework_ext.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+I thought I acked this one already. I guess I didn't.
 
-diff --git a/drivers/staging/csr/csr_framework_ext.c b/drivers/staging/csr/csr_framework_ext.c
-index 2aabb6c..98122bc 100644
---- a/drivers/staging/csr/csr_framework_ext.c
-+++ b/drivers/staging/csr/csr_framework_ext.c
-@@ -1,10 +1,10 @@
- /*****************************************************************************
- 
--            (c) Cambridge Silicon Radio Limited 2010
--            All rights reserved and confidential information of CSR
-+		(c) Cambridge Silicon Radio Limited 2010
-+		All rights reserved and confidential information of CSR
- 
--            Refer to LICENSE.txt included with this source for details
--            on the license terms.
-+		Refer to LICENSE.txt included with this source for details
-+		on the license terms.
- 
- *****************************************************************************/
- 
-@@ -31,10 +31,10 @@
-  *----------------------------------------------------------------------------*/
- void CsrThreadSleep(u16 sleepTimeInMs)
- {
--    unsigned long t;
-+	unsigned long t;
- 
--    /* Convert t in ms to jiffies and round up */
--    t = ((sleepTimeInMs * HZ) + 999) / 1000;
--    schedule_timeout_uninterruptible(t);
-+	/* Convert t in ms to jiffies and round up */
-+	t = ((sleepTimeInMs * HZ) + 999) / 1000;
-+	schedule_timeout_uninterruptible(t);
- }
- EXPORT_SYMBOL_GPL(CsrThreadSleep);
--- 
-1.8.3
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
+
 
