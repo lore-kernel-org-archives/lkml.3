@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756436Ab3FGQVO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 12:21:14 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:38052 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753453Ab3FGQVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 12:21:12 -0400
-Date: Fri, 7 Jun 2013 10:20:50 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, Jingoo Han <jg1.han@samsung.com>,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        linux-samsung-soc@vger.kernel.org,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
-        linux-pci@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'Andrew Murray'" <andrew.murray@arm.com>
-Subject: Re: [PATCH 6/6] ARM: dts: Add pcie controller node for Samsung
- EXYNOS5440 SoC
-Message-ID: <20130607162050.GA31895@obsidianresearch.com>
-References: <00c001ce277b$92b26ab0$b8174010$%han@samsung.com>
- <20130408165626.GA30824@obsidianresearch.com>
- <000c01ce6360$237a7040$6a6f50c0$@samsung.com>
- <1880458.2ksb8qtzHh@wuerfel>
+	id S1756487Ab3FGQVw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 12:21:52 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45044 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754902Ab3FGQVv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 12:21:51 -0400
+Message-ID: <51B2089A.1070404@wwwdotorg.org>
+Date: Fri, 07 Jun 2013 10:21:46 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1880458.2ksb8qtzHh@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.195
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Alexandre Courbot <gnurou@gmail.com>,
+        Jani Nikula <ext-jani.1.nikula@nokia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Arnd Bergmann <arnd@arndb.de>, linux-gpio@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Active-low behavior in gpiolib
+References: <CAAVeFu+hQHScYYkvO1KOrUPLLaC0ju_O4SDZWyJE8KhLn_hibQ@mail.gmail.com> <CACRpkdYmOHX2bPMKHwY=V2L+4EN-+5KzD-YCJhQtfkFeKV5p8g@mail.gmail.com>
+In-Reply-To: <CACRpkdYmOHX2bPMKHwY=V2L+4EN-+5KzD-YCJhQtfkFeKV5p8g@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 01:59:43PM +0200, Arnd Bergmann wrote:
-> On Friday 07 June 2013 18:19:40 Jingoo Han wrote:
-> > Hi Jason Gunthorpe,
-> > 
-> > I implemented 'Single domain' with Exynos PCIe for last two months;
-> > however, it cannot work properly due to the hardware restriction.
-> > Each MEM region is hard-wired.
-> > 
-> > Thus, I will send Exynos PCIe V3 patch as 'Separate domains'.
+On 06/07/2013 01:10 AM, Linus Walleij wrote:
+> On Wed, Jun 5, 2013 at 7:22 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
 > 
-> Yes, I think that is best, if the hardware is clearly designed as
-> separate domains, this is what we should do by default in the
-> driver. For the Marvell case with its 10 separate ports, much
-> more address space would be wasted by having one domain per
-> port and that hardware let us work around it by remapping the
-> physical address space windows. For Exynos there is much less to
-> lose and I too cannot see how it would be done in the first
-> place.
+>> FLAG_ACTIVE_LOW, on the other hand, is *only* set and used through
+>> sysfs operations. Independently, the active low property can be
+>> specified in gpio phandles and retrieved by
+>> of_get_(named_)gpio_flags() - only it has to be kept in a separate
+>> variable which must then be checked everytime one wants to change the
+>> GPIO value to set the correct level.
+> 
+> Well it is designed as a sysfs-only thing according to the comment:
+> drivers/gpio/gpiolib.c:#define FLAG_ACTIVE_LOW  6       /* sysfs value
+> has active low */
+> 
+> So I think your actual question is whether it should also be
+> enabled for the kernel-internal interfaces.
+> 
+> Currently we have things like this:
+> 
+> /**
+>  * struct mmci_platform_data - platform configuration for the MMCI
+>  * (also known as PL180) block.
+> (...)
+>  * @gpio_cd: read this GPIO pin to detect card insertion
+>  * @cd_invert: true if the gpio_cd pin value is active low
+> (...)
+>         int     gpio_cd;
+>         bool    cd_invert;
+> 
+> So the knowledge of whether a certain GPIO is active high or low
+> is spread out through drivers, and the API only drives the line in a
+> very explicit way.
+...
+> So the only thing gained is that gpiolib gets some knowledge
+> of how the pin is used. But what is the gain of that?
 
-Sounds fair to me.
+Well, the big gain I see is that every driver needs to somehow find out
+whether the GPIO is active-low or not, and store a separate flag for it,
+and XOR all data with that flag. That's not a massive amount of code,
+but it's really rather annoying. Why can't we just tell gpiolib what the
+polarity is, and let it deal with it. In the DT case, this "tell gpiolib
+what the polarity is" would be 100% hidden inside the DT parsing/mapping
+(of_xlate) code. For non-DT, presumably this could be a flag that the
+board file or platform code programs into gpiolib early on.
 
-But when we talk about multiple domains we don't mean a disjoint range
-bus bus numbers, as your other email shows:
+If you're worried about this hiding too much information, and that some
+code might want to know what's really going on rather than the logical
+values, perhaps:
 
-00:00.0 PCI bridge: Samsung Electronics Co Ltd Device a549 (rev 01) (prog-if 00 [Normal decode])
-10:00.0 PCI bridge: Samsung Electronics Co Ltd Device a549 (rev 01) (prog-if 00 [Normal decode])
+gpiod_[gs]et() - return/accept logical values
+gpiod_[gs]et_raw() - return the actual electrical level
 
-We mean multiple domains, it should look like this:
-
-0000:00:00.0 PCI bridge: Samsung Electronics Co Ltd Device a549 (rev 01) (prog-if 00 [Normal decode])
-0001:00:00.0 PCI bridge: Samsung Electronics Co Ltd Device a549 (rev 01) (prog-if 00 [Normal decode])
-
-ie lspci -D.
-
-Each domain gets a unique bus number range, config space, io range,
-etc. This is much clearer to everyone than trying to pretend there is
-only one domain when the HW is actually multi-domain.
-
-Jason
+gpiod_[gs]et() might also hide details of
+open-drain/collector/source/... too, and do automatic tri-stating based
+on the level of output that was desired?
