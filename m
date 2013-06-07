@@ -1,147 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692Ab3FGTpR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 15:45:17 -0400
-Received: from 6.mo1.mail-out.ovh.net ([46.105.43.205]:39103 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754902Ab3FGTpP (ORCPT
+	id S1756865Ab3FGTpo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 15:45:44 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:38288 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755360Ab3FGTpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 15:45:15 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>,
-        Russell King <linux@arm.linux.org.uk>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [RFC PATCH 50/50] ARM: at91/dt: move sama5d3 boards to new at91 clk implem
-Date: Fri,  7 Jun 2013 21:45:09 +0200
-Message-Id: <1370634310-4185-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370615115-16979-1-git-send-email-b.brezillon@overkiz.com>
-References: <1370615115-16979-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 4097149762846423068
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 7 Jun 2013 15:45:43 -0400
+Date: Fri, 7 Jun 2013 15:45:34 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        bob.liu@oracle.com
+Cc: dan.magenheimer@oracle.com
+Subject: Re: [PATCH] xen/tmem: Don't over-write tmem_frontswap_poolid after
+ tmem_frontswap_init set it.
+Message-ID: <20130607194534.GB21543@phenom.dumpdata.com>
+References: <1370633355-21201-1-git-send-email-konrad.wilk@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370633355-21201-1-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define the main clock frequency in every sama5d3 boards.
-Remove the old main clock definition.
-Include the appropriate peripheral options according to peripherals
-availability.
+On Fri, Jun 07, 2013 at 12:29:15PM -0700, Konrad Rzeszutek Wilk wrote:
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- arch/arm/boot/dts/sama5d31ek.dts  |    4 ++++
- arch/arm/boot/dts/sama5d33ek.dts  |    2 ++
- arch/arm/boot/dts/sama5d34ek.dts  |    4 ++++
- arch/arm/boot/dts/sama5d35ek.dts  |    6 ++++++
- arch/arm/boot/dts/sama5d3xcm.dtsi |   17 ++++++-----------
- 5 files changed, 22 insertions(+), 11 deletions(-)
+CC-ing Bob.
 
-diff --git a/arch/arm/boot/dts/sama5d31ek.dts b/arch/arm/boot/dts/sama5d31ek.dts
-index 027bac7..3a6c391 100644
---- a/arch/arm/boot/dts/sama5d31ek.dts
-+++ b/arch/arm/boot/dts/sama5d31ek.dts
-@@ -7,6 +7,10 @@
-  * Licensed under GPLv2 or later.
-  */
- /dts-v1/;
-+#include "sama5d3_lcd.dtsi"
-+#include "sama5d3_emac.dtsi"
-+#include "sama5d3_mci2.dtsi"
-+#include "sama5d3_uart.dtsi"
- #include "sama5d3xmb.dtsi"
- #include "sama5d3xdm.dtsi"
- 
-diff --git a/arch/arm/boot/dts/sama5d33ek.dts b/arch/arm/boot/dts/sama5d33ek.dts
-index 99bd0c8..3e35854 100644
---- a/arch/arm/boot/dts/sama5d33ek.dts
-+++ b/arch/arm/boot/dts/sama5d33ek.dts
-@@ -7,6 +7,8 @@
-  * Licensed under GPLv2 or later.
-  */
- /dts-v1/;
-+#include "sama5d3_lcd.dtsi"
-+#include "sama5d3_gmac.dtsi"
- #include "sama5d3xmb.dtsi"
- #include "sama5d3xdm.dtsi"
- 
-diff --git a/arch/arm/boot/dts/sama5d34ek.dts b/arch/arm/boot/dts/sama5d34ek.dts
-index fb8ee11..d03db9f 100644
---- a/arch/arm/boot/dts/sama5d34ek.dts
-+++ b/arch/arm/boot/dts/sama5d34ek.dts
-@@ -7,6 +7,10 @@
-  * Licensed under GPLv2 or later.
-  */
- /dts-v1/;
-+#include "sama5d3_lcd.dtsi"
-+#include "sama5d3_gmac.dtsi"
-+#include "sama5d3_can.dtsi"
-+#include "sama5d3_mci2.dtsi"
- #include "sama5d3xmb.dtsi"
- #include "sama5d3xdm.dtsi"
- 
-diff --git a/arch/arm/boot/dts/sama5d35ek.dts b/arch/arm/boot/dts/sama5d35ek.dts
-index 509a53d..57e49b1 100644
---- a/arch/arm/boot/dts/sama5d35ek.dts
-+++ b/arch/arm/boot/dts/sama5d35ek.dts
-@@ -7,6 +7,12 @@
-  * Licensed under GPLv2 or later.
-  */
- /dts-v1/;
-+#include "sama5d3_gmac.dtsi"
-+#include "sama5d3_emac.dtsi"
-+#include "sama5d3_can.dtsi"
-+#include "sama5d3_mci2.dtsi"
-+#include "sama5d3_uart.dtsi"
-+#include "sama5d3_tcb1.dtsi"
- #include "sama5d3xmb.dtsi"
- 
- / {
-diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi b/arch/arm/boot/dts/sama5d3xcm.dtsi
-index 60637e4..a4ae732 100644
---- a/arch/arm/boot/dts/sama5d3xcm.dtsi
-+++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
-@@ -19,22 +19,17 @@
- 		reg = <0x20000000 0x20000000>;
- 	};
- 
--	clocks {
--		#address-cells = <1>;
--		#size-cells = <1>;
--		ranges;
--
--		main_clock: clock@0 {
--			compatible = "atmel,osc", "fixed-clock";
--			clock-frequency = <12000000>;
--		};
--	};
--
- 	ahb {
- 		apb {
- 			macb0: ethernet@f0028000 {
- 				phy-mode = "rgmii";
- 			};
-+
-+			pmc: pmc@fffffc00 {
-+				main: mainck {
-+					clock-frequency = <12000000>;
-+				};
-+			};
- 		};
- 
- 		nand0: nand@60000000 {
--- 
-1.7.9.5
-
+> Commit 10a7a0771399a57a297fca9615450dbb3f88081a ("xen: tmem: enable Xen
+> tmem shim to be built/loaded as a module") allows the tmem module
+> to be loaded any time. For this work the frontswap API had to
+> be able to asynchronously to call tmem_frontswap_init before
+> or after the swap image had been set. That was added in git
+> commit 905cd0e1bf9ffe82d6906a01fd974ea0f70be97a
+> ("mm: frontswap: lazy initialization to allow tmem backends to build/run as modules").
+> 
+> Which means we could do this (The common case):
+> 
+>  modprobe tmem		[so calls frontswap_register_ops, no ->init]
+> 			 modifies tmem_frontswap_poolid = -1
+>  swapon /dev/xvda1	[__frontswap_init, calls -> init, tmem_frontswap_poolid is
+> 			 < 0 so tmem hypercall done]
+> 
+> Or the failing one:
+> 
+>  swapon /dev/xvda1	[calls __frontswap_init, sets the need_init bitmap]
+>  modprobe tmem		[calls frontswap_register_ops, -->init calls, finds out
+> 			tmem_frontswap_poolid is 0, does not make a hypercall.
+> 			Later in the module_init, sets tmem_frontswap_poolid=-1]
+> 
+> Which meant that in the failing case we would not call the hypercall
+> to initialize the pool and never be able to make any frontswap
+> backend calls.
+> 
+> Moving the frontswap_register_ops after setting the tmem_frontswap_poolid
+> fixes it.
+> 
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  drivers/xen/tmem.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/xen/tmem.c b/drivers/xen/tmem.c
+> index cc072c6..0f0493c 100644
+> --- a/drivers/xen/tmem.c
+> +++ b/drivers/xen/tmem.c
+> @@ -379,10 +379,10 @@ static int xen_tmem_init(void)
+>  #ifdef CONFIG_FRONTSWAP
+>  	if (tmem_enabled && frontswap) {
+>  		char *s = "";
+> -		struct frontswap_ops *old_ops =
+> -			frontswap_register_ops(&tmem_frontswap_ops);
+> +		struct frontswap_ops *old_ops;
+>  
+>  		tmem_frontswap_poolid = -1;
+> +		old_ops = frontswap_register_ops(&tmem_frontswap_ops);
+>  		if (IS_ERR(old_ops) || old_ops) {
+>  			if (IS_ERR(old_ops))
+>  				return PTR_ERR(old_ops);
+> -- 
+> 1.8.1.4
+> 
