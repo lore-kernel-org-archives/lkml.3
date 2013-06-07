@@ -1,54 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754458Ab3FGJHs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 05:07:48 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:56965 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754241Ab3FGJHo (ORCPT
+	id S1753821Ab3FGJHe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 05:07:34 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:58741 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391Ab3FGJH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 05:07:44 -0400
-From: Adam Lee <adam.lee@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: platform-driver-x86@vger.kernel.org, ibm-acpi-devel@lists.sourceforge.net,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Alex Hung <alex.hung@canonical.com>, Bjorn Mork <bjorn@mork.no>
-Subject: [PATCH v2] thinkpad_acpi: return -NODEV while operating uninitialized LEDs
-Date: Fri,  7 Jun 2013 17:05:32 +0800
-Message-Id: <1370595932-29889-1-git-send-email-adam.lee@canonical.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1370593209-21358-1-git-send-email-adam.lee@canonical.com>
-References: <1370593209-21358-1-git-send-email-adam.lee@canonical.com>
+	Fri, 7 Jun 2013 05:07:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <1370590169-24804-2-git-send-email-alex.shi@intel.com>
+References: <1370590169-24804-1-git-send-email-alex.shi@intel.com>
+	<1370590169-24804-2-git-send-email-alex.shi@intel.com>
+Date: Fri, 7 Jun 2013 11:07:28 +0200
+Message-ID: <CAKfTPtA=pVQ69pfv97kgcdawgHbQbkbXW4sFGN6_bAzZcD9b9Q@mail.gmail.com>
+Subject: Re: [RFC patch 1/4] sched: change cfs_rq load avg to unsigned long
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Paul Turner <pjt@google.com>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>, riel@redhat.com,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not all 0-15 LEDs are available for all models, sometimes it's even not
-safe. This patch return -NODEV while operating uninitialized LEDs.
+On 7 June 2013 09:29, Alex Shi <alex.shi@intel.com> wrote:
+> Since the 'u64 runnable_load_avg, blocked_load_avg' in cfs_rq struct are
+> smaller than 'unsigned long' cfs_rq->load.weight. We don't need u64
+> vaiables to describe them. unsigned long is more efficient and convenience.
+>
 
-Signed-off-by: Adam Lee <adam.lee@canonical.com>
----
- drivers/platform/x86/thinkpad_acpi.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+Hi Alex,
 
-diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
-index 54d31c0..d2ac4e8 100644
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -5401,9 +5401,12 @@ static int led_write(char *buf)
- 		return -ENODEV;
- 
- 	while ((cmd = next_cmd(&buf))) {
--		if (sscanf(cmd, "%d", &led) != 1 || led < 0 || led > 15)
-+		if (sscanf(cmd, "%d", &led) != 1 || led < 0 || led > (TPACPI_LED_NUMLEDS -1))
- 			return -EINVAL;
- 
-+		if (!tpacpi_leds[led].led)
-+			return -ENODEV;
-+
- 		if (strstr(cmd, "off")) {
- 			s = TPACPI_LED_OFF;
- 		} else if (strstr(cmd, "on")) {
--- 
-1.7.10.4
+I just want to point out that we can't have more than 48388 tasks with
+highest priority on a runqueue with an unsigned long on a 32 bits
+system.  I don't know if we can reach such kind of limit on a 32bits
+machine ? For sure, not on an embedded system.
 
+Regards,
+Vincent
+
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  kernel/sched/debug.c | 4 ++--
+>  kernel/sched/sched.h | 2 +-
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+> index 75024a6..160afdc 100644
+> --- a/kernel/sched/debug.c
+> +++ b/kernel/sched/debug.c
+> @@ -211,9 +211,9 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+>         SEQ_printf(m, "  .%-30s: %ld\n", "load", cfs_rq->load.weight);
+>  #ifdef CONFIG_FAIR_GROUP_SCHED
+>  #ifdef CONFIG_SMP
+> -       SEQ_printf(m, "  .%-30s: %lld\n", "runnable_load_avg",
+> +       SEQ_printf(m, "  .%-30s: %ld\n", "runnable_load_avg",
+>                         cfs_rq->runnable_load_avg);
+> -       SEQ_printf(m, "  .%-30s: %lld\n", "blocked_load_avg",
+> +       SEQ_printf(m, "  .%-30s: %ld\n", "blocked_load_avg",
+>                         cfs_rq->blocked_load_avg);
+>         SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_avg",
+>                         (unsigned long long)atomic64_read(&cfs_rq->tg->load_avg));
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index 8bc66c6..5a80943 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -277,7 +277,7 @@ struct cfs_rq {
+>          * This allows for the description of both thread and group usage (in
+>          * the FAIR_GROUP_SCHED case).
+>          */
+> -       u64 runnable_load_avg, blocked_load_avg;
+> +       unsigned long runnable_load_avg, blocked_load_avg;
+>         atomic64_t decay_counter, removed_load;
+>         u64 last_decay;
+>
+> --
+> 1.7.12
+>
