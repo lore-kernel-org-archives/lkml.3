@@ -1,117 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043Ab3FGPOp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 11:14:45 -0400
-Received: from mga02.intel.com ([134.134.136.20]:53363 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754584Ab3FGPOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 11:14:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,822,1363158000"; 
-   d="scan'208";a="349861735"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <519BE6ED.8030202@sr71.net>
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1368321816-17719-21-git-send-email-kirill.shutemov@linux.intel.com>
- <519BE6ED.8030202@sr71.net>
-Subject: Re: [PATCHv4 20/39] thp, mm: naive support of thp in generic
- read/write routines
+	id S1756105Ab3FGPPF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 11:15:05 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8611 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754584Ab3FGPPD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 11:15:03 -0400
+X-Authority-Analysis: v=2.0 cv=fZsvOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=V63olZALi9sA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=iFRSGadmnM0A:10 a=pGAFGgNchqFLnj8YRjQA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=XwQ_8DN93FgMRfro:21 a=wtIMJEaojfGVE_dQ:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1370618100.9844.73.camel@gandalf.local.home>
+Subject: Re: NULL pointer dereference when loading the gre module
+ (3.10.0-rc4)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "Steinar H. Gunderson" <sgunderson@bigfoot.com>,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        netdev@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Pravin B Shelar <pshelar@nicira.com>
+Date: Fri, 07 Jun 2013 11:15:00 -0400
+In-Reply-To: <1370612441.24311.411.camel@edumazet-glaptop>
+References: <20130606221656.GA11475@uio.no>
+	 <20130607030648.GA28618@home.goodmis.org> <20130607085421.GF15083@uio.no>
+	 <1370612441.24311.411.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <20130607151718.E126AE0090@blue.fi.intel.com>
-Date: Fri,  7 Jun 2013 18:17:18 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Hansen wrote:
-> On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
-> > +		if (PageTransHuge(page))
-> > +			offset = pos & ~HPAGE_PMD_MASK;
-> > +
-> >  		pagefault_disable();
-> > -		copied = iov_iter_copy_from_user_atomic(page, i, offset, bytes);
-> > +		copied = iov_iter_copy_from_user_atomic(
-> > +				page + (offset >> PAGE_CACHE_SHIFT),
-> > +				i, offset & ~PAGE_CACHE_MASK, bytes);
-> >  		pagefault_enable();
-> >  		flush_dcache_page(page);
+On Fri, 2013-06-07 at 06:40 -0700, Eric Dumazet wrote:
+> On Fri, 2013-06-07 at 10:54 +0200, Steinar H. Gunderson wrote:
+> > On Thu, Jun 06, 2013 at 11:06:48PM -0400, Steven Rostedt wrote:
+> > > Note the faulting address is 0xffffffffa0e52001, which is around the
+> > > above address, be interesting to know what was at that location.
+> > 
+> > Doh, I looked at the wrong place in kallsyms:
+> > 
+> > ffffffffa0e52000 u ip_tunnel_init_net   [ip_gre]
+> > ffffffffa0e55000 t gre_err      [gre]
+> > ffffffffa0e5503d t gre_gso_send_check   [gre]
+> > ffffffffa0e55053 t gre_rcv      [gre]
+> > 
+> > So it's really ip_tunnel_init_net+1.
+> > 
+> > /* Steinar */
 > 
-> I think there's enough voodoo in there to warrant a comment or adding
-> some temporary variables.  There are three things going on that you wan
-> to convey:
+> " u " for ip_tunnel_init_net ?
 > 
-> 1. Offset is normally <PAGE_SIZE, but you make it <HPAGE_PMD_SIZE if
->    you are dealing with a huge page
-> 2. (offset >> PAGE_CACHE_SHIFT) is always 0 for small pages since
->     offset < PAGE_SIZE
-> 3. "offset & ~PAGE_CACHE_MASK" does nothing for small-page offsets, but
->    it turns a large-page offset back in to a small-page-offset.
+> Looks like someone forgot taking refcounts on a module ...
 > 
-> I think you can do it with something like this:
-> 
->  	int subpage_nr = 0;
-> 	off_t smallpage_offset = offset;
-> 	if (PageTransHuge(page)) {
-> 		// we transform 'offset' to be offset in to the huge
-> 		// page instead of inside the PAGE_SIZE page
-> 		offset = pos & ~HPAGE_PMD_MASK;
-> 		subpage_nr = (offset >> PAGE_CACHE_SHIFT);
-> 	}
-> 	
-> > +		copied = iov_iter_copy_from_user_atomic(
-> > +				page + subpage_nr,
-> > +				i, smallpage_offset, bytes);
-> 
-> 
-> > @@ -2437,6 +2453,7 @@ again:
-> >  			 * because not all segments in the iov can be copied at
-> >  			 * once without a pagefault.
-> >  			 */
-> > +			offset = pos & ~PAGE_CACHE_MASK;
-> 
-> Urg, and now it's *BACK* in to a small-page offset?
-> 
-> This means that 'offset' has two _different_ meanings and it morphs
-> between them during the function a couple of times.  That seems very
-> error-prone to me.
+> CC Pravin B Shelar, as this probably comes from commit
+> c54419321455631079c7d6e60bc732dd0c5914c5
+> ("GRE: Refactor GRE tunneling code.")
 
-I guess this way is better, right?
+int __net_init ip_tunnel_init_net(struct net *net, int ip_tnl_net_id,
+				  struct rtnl_link_ops *ops, char *devname)
+{
 
-@@ -2382,6 +2393,7 @@ static ssize_t generic_perform_write(struct file *file,
-                unsigned long bytes;    /* Bytes to write to page */
-                size_t copied;          /* Bytes copied from user */
-                void *fsdata;
-+               int subpage_nr = 0;
+[...]
+
+}
+EXPORT_SYMBOL_GPL(ip_tunnel_init_net);
+
+Really, you exported a symbol that can go away if CONFIG_NET_NS is not
+set?
+
+----
+net: Remove __net_init/exit from exported functions
+
+If CONFIG_NET_NS is not set then __net_init is the same as __init and
+__net_exit is the same as __exit. These functions will be removed from
+memory after the module loads or is removed. Functions that are exported
+for use by other functions should never be labeled for removal.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
+index e4147ec..850b5b5 100644
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -853,8 +853,8 @@ void ip_tunnel_dellink(struct net_device *dev, struct list_head *head)
+ }
+ EXPORT_SYMBOL_GPL(ip_tunnel_dellink);
  
-                offset = (pos & (PAGE_CACHE_SIZE - 1));
-                bytes = min_t(unsigned long, PAGE_CACHE_SIZE - offset,
-@@ -2411,8 +2423,14 @@ again:
-                if (mapping_writably_mapped(mapping))
-                        flush_dcache_page(page);
+-int __net_init ip_tunnel_init_net(struct net *net, int ip_tnl_net_id,
+-				  struct rtnl_link_ops *ops, char *devname)
++int ip_tunnel_init_net(struct net *net, int ip_tnl_net_id,
++		       struct rtnl_link_ops *ops, char *devname)
+ {
+ 	struct ip_tunnel_net *itn = net_generic(net, ip_tnl_net_id);
+ 	struct ip_tunnel_parm parms;
+@@ -899,7 +899,7 @@ static void ip_tunnel_destroy(struct ip_tunnel_net *itn, struct list_head *head)
+ 		unregister_netdevice_queue(itn->fb_tunnel_dev, head);
+ }
  
-+               if (PageTransHuge(page)) {
-+                       off_t huge_offset = pos & ~HPAGE_PMD_MASK;
-+                       subpage_nr = huge_offset >> PAGE_CACHE_SHIFT;
-+               }
-+
-                pagefault_disable();
--               copied = iov_iter_copy_from_user_atomic(page, i, offset, bytes);
-+               copied = iov_iter_copy_from_user_atomic(page + subpage_nr, i,
-+                               offset, bytes);
-                pagefault_enable();
-                flush_dcache_page(page);
+-void __net_exit ip_tunnel_delete_net(struct ip_tunnel_net *itn)
++void ip_tunnel_delete_net(struct ip_tunnel_net *itn)
+ {
+ 	LIST_HEAD(list);
  
--- 
- Kirill A. Shutemov
+
+
