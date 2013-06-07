@@ -1,192 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994Ab3FGCwi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 22:52:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55687 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751162Ab3FGCwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 22:52:37 -0400
-Message-ID: <51B14AD1.8000004@redhat.com>
-Date: Fri, 07 Jun 2013 10:52:01 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>,
-        "David S. Miller" <davem@davemloft.net>, Cong Wang <amwang@redhat.com>,
-        Amos Kong <akong@redhat.com>, Dave Jones <davej@redhat.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, qemu-devel@nongnu.org
-Subject: Re: [PATCH] virtio-net: put virtio net header inline with data
-References: <20130606095456.GA7865@redhat.com>
-In-Reply-To: <20130606095456.GA7865@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753280Ab3FGC4Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 22:56:24 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:43607 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857Ab3FGC4X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 22:56:23 -0400
+Date: Fri, 7 Jun 2013 12:56:12 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Subject: linux-next: manual merge of the wireless-next tree with the
+ wireless tree
+Message-Id: <20130607125612.4016cd4ee44614642dc5dd31@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__7_Jun_2013_12_56_12_+1000_x9z=mz4V7LFJETS="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2013 05:55 PM, Michael S. Tsirkin wrote:
-> For small packets we can simplify xmit processing by linearizing buffers
-> with the header: most packets seem to have enough head room we can use
-> for this purpose.
->
-> Since some older hypervisors (e.g. qemu before version 1.5)
-> required that header is the first s/g element,
-> we need a feature bit for this.
->
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
+--Signature=_Fri__7_Jun_2013_12_56_12_+1000_x9z=mz4V7LFJETS=
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi Michael:
+Hi John,
 
-The idea looks good, but there are some questions:
+Today's linux-next merge of the wireless-next tree got a conflict in
+drivers/net/wireless/ath/ath9k/Kconfig between commit 8bb7f167a12a
+("ath9k: Use minstrel rate control by default") from the wireless tree
+and commit cf657a2bc50d ("ath9k: Remove MAC_DEBUG") from the
+wireless-next tree.
 
-- What if we just use direct descriptors with sgs <=2 and double the
-ring size?
-- I believe we may add more things into vnet header in the future, so
-this trick may not work because of limited header room.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Thanks
-> This is a repost of my old patch, rebased to latest kernel.
->
-> Before:
-> Thu Jun  6 05:24:59 EDT 2013
-> TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to
-> 11.0.0.4 (11.0.0.4) port 0 AF_INET : demo
-> Local /Remote
-> Socket Size   Request  Resp.   Elapsed  Trans.
-> Send   Recv   Size     Size    Time     Rate         
-> bytes  Bytes  bytes    bytes   secs.    per sec   
->
-> 16384  87380  1        1       10.00    12931.13   
->
->
-> After:
-> TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to
-> 11.0.0.4 (11.0.0.4) port 0 AF_INET : demo
-> Local /Remote
-> Socket Size   Request  Resp.   Elapsed  Trans.
-> Send   Recv   Size     Size    Time     Rate         
-> bytes  Bytes  bytes    bytes   secs.    per sec   
->
-> 16384  87380  1        1       10.00    14151.12
->
->
->  drivers/net/virtio_net.c        | 42 +++++++++++++++++++++++++++++++++--------
->  include/uapi/linux/virtio_net.h |  6 +++++-
->  2 files changed, 39 insertions(+), 9 deletions(-)
->
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index c9e0038..d35a097 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -106,6 +106,9 @@ struct virtnet_info {
->  	/* Has control virtqueue */
->  	bool has_cvq;
->  
-> +	/* Host can handle any s/g split between our header and packet data */
-> +	bool any_header_sg;
-> +
->  	/* enable config space updates */
->  	bool config_enable;
->  
-> @@ -668,12 +671,28 @@ static void free_old_xmit_skbs(struct send_queue *sq)
->  
->  static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
->  {
-> -	struct skb_vnet_hdr *hdr = skb_vnet_hdr(skb);
-> +	struct skb_vnet_hdr *hdr;
->  	const unsigned char *dest = ((struct ethhdr *)skb->data)->h_dest;
->  	struct virtnet_info *vi = sq->vq->vdev->priv;
->  	unsigned num_sg;
-> +	unsigned hdr_len;
-> +	bool can_push;
->  
->  	pr_debug("%s: xmit %p %pM\n", vi->dev->name, skb, dest);
-> +	if (vi->mergeable_rx_bufs)
-> +		hdr_len = sizeof hdr->mhdr;
-> +	else
-> +		hdr_len = sizeof hdr->hdr;
-> +
-> +	can_push = vi->any_header_sg &&
-> +		!((unsigned long)skb->data & (__alignof__(*hdr) - 1)) &&
-> +		!skb_header_cloned(skb) && skb_headroom(skb) >= hdr_len;
-> +	/* Even if we can, don't push here yet as this would skew
-> +	 * csum_start offset below. */
-> +	if (can_push)
-> +		hdr = (struct skb_vnet_hdr *)(skb->data - hdr_len);
-> +	else
-> +		hdr = skb_vnet_hdr(skb);
->  
->  	if (skb->ip_summed == CHECKSUM_PARTIAL) {
->  		hdr->hdr.flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
-> @@ -702,15 +721,18 @@ static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
->  		hdr->hdr.gso_size = hdr->hdr.hdr_len = 0;
->  	}
->  
-> -	hdr->mhdr.num_buffers = 0;
-> -
-> -	/* Encode metadata header at front. */
->  	if (vi->mergeable_rx_bufs)
-> -		sg_set_buf(sq->sg, &hdr->mhdr, sizeof hdr->mhdr);
-> -	else
-> -		sg_set_buf(sq->sg, &hdr->hdr, sizeof hdr->hdr);
-> +		hdr->mhdr.num_buffers = 0;
->  
-> -	num_sg = skb_to_sgvec(skb, sq->sg + 1, 0, skb->len) + 1;
-> +	if (can_push) {
-> +		__skb_push(skb, hdr_len);
-> +		num_sg = skb_to_sgvec(skb, sq->sg, 0, skb->len);
-> +		/* Pull header back to avoid skew in tx bytes calculations. */
-> +		__skb_pull(skb, hdr_len);
-> +	} else {
-> +		sg_set_buf(sq->sg, hdr, hdr_len);
-> +		num_sg = skb_to_sgvec(skb, sq->sg + 1, 0, skb->len) + 1;
-> +	}
->  	return virtqueue_add_outbuf(sq->vq, sq->sg, num_sg, skb, GFP_ATOMIC);
->  }
->  
-> @@ -1554,6 +1576,9 @@ static int virtnet_probe(struct virtio_device *vdev)
->  	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
->  		vi->mergeable_rx_bufs = true;
->  
-> +	if (virtio_has_feature(vdev, VIRTIO_NET_F_ANY_HEADER_SG))
-> +		vi->any_header_sg = true;
-> +
->  	if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
->  		vi->has_cvq = true;
->  
-> @@ -1729,6 +1754,7 @@ static unsigned int features[] = {
->  	VIRTIO_NET_F_CTRL_RX, VIRTIO_NET_F_CTRL_VLAN,
->  	VIRTIO_NET_F_GUEST_ANNOUNCE, VIRTIO_NET_F_MQ,
->  	VIRTIO_NET_F_CTRL_MAC_ADDR,
-> +	VIRTIO_NET_F_ANY_HEADER_SG,
->  };
->  
->  static struct virtio_driver virtio_net_driver = {
-> diff --git a/include/uapi/linux/virtio_net.h b/include/uapi/linux/virtio_net.h
-> index c520203..9c98b7d 100644
-> --- a/include/uapi/linux/virtio_net.h
-> +++ b/include/uapi/linux/virtio_net.h
-> @@ -55,6 +55,8 @@
->  					 * Steering */
->  #define VIRTIO_NET_F_CTRL_MAC_ADDR 23	/* Set MAC address */
->  
-> +#define VIRTIO_NET_F_ANY_HEADER_SG 25	/* Host can handle any header s/g */
-> +
->  #define VIRTIO_NET_S_LINK_UP	1	/* Link is up */
->  #define VIRTIO_NET_S_ANNOUNCE	2	/* Announcement is needed */
->  
-> @@ -70,7 +72,9 @@ struct virtio_net_config {
->  	__u16 max_virtqueue_pairs;
->  } __attribute__((packed));
->  
-> -/* This is the first element of the scatter-gather list.  If you don't
-> +/* This header comes first in the scatter-gather list.
-> + * If VIRTIO_NET_F_ANY_HEADER_SG is not negotiated, it must
-> + * be the first element of the scatter-gather list.  If you don't
->   * specify GSO or CSUM features, you can simply ignore the header. */
->  struct virtio_net_hdr {
->  #define VIRTIO_NET_HDR_F_NEEDS_CSUM	1	// Use csum_start, csum_offset
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/net/wireless/ath/ath9k/Kconfig
+index 3c2cbc9,ec33c80..0000000
+--- a/drivers/net/wireless/ath/ath9k/Kconfig
++++ b/drivers/net/wireless/ath/ath9k/Kconfig
+@@@ -84,25 -84,13 +84,17 @@@ config ATH9K_DFS_CERTIFIE
+  	  developed. At this point enabling this option won't do anything
+  	  except increase code size.
+ =20
+- config ATH9K_MAC_DEBUG
+- 	bool "Atheros MAC statistics"
+- 	depends on ATH9K_DEBUGFS
+- 	default y
+- 	---help---
+- 	  This option enables collection of statistics for Rx/Tx status
+- 	  data and some other MAC related statistics
+-=20
+ -config ATH9K_RATE_CONTROL
+ +config ATH9K_LEGACY_RATE_CONTROL
+  	bool "Atheros ath9k rate control"
+  	depends on ATH9K
+ -	default y
+ +	default n
+  	---help---
+  	  Say Y, if you want to use the ath9k specific rate control
+ -	  module instead of minstrel_ht.
+ +	  module instead of minstrel_ht. Be warned that there are various
+ +	  issues with the ath9k RC and minstrel is a more robust algorithm.
+ +	  Note that even if this option is selected, "ath9k_rate_control"
+ +	  has to be passed to mac80211 using the module parameter,
+ +	  ieee80211_default_rc_algo.
+ =20
+  config ATH9K_HTC
+         tristate "Atheros HTC based wireless cards support"
+
+--Signature=_Fri__7_Jun_2013_12_56_12_+1000_x9z=mz4V7LFJETS=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRsUvRAAoJEECxmPOUX5FE478P/AtUSDmjASrTBX12lwWhVlWP
+YZiVjWbs/TqRMcMXUUV0KVm4NsMT13xSr7RUUhtQUkjRx1ajRBqHSH0DLnirWr1K
+B6D919fm2kC/OccJgQ4F/1aWfawT4scLDgGwL2fuTWWFjXc1GYNTcIImtQXynp1p
+/hjdXGbacrQYXkaOQAFO+tVQFzaqhzVSF/89Nj+7dgg+LIb+yusiGwUc77Uxpfhe
+Zuil143l2UmTrDPB28sCBCWjIRYeqSXcc8jVdHDnpmC3ngYxRZ6BwWPJ+c3B+Tve
+ZCOfuTeYPCCq0YSXCNSHFznG8NcVNDottk9Vm7uVWQla3eGifG6/jE2/ZxoPnp+q
++xCbkTDxs8Lm6YXgxeeF+Ddj4r+wActi2nps7y7T2Zye7+FwIJ1xvLMFh1D3Gmwp
+7moHvfhcrpHvcIg56nk+nw2xmFTO6d38FkCx0efv/f3EQ/iSnXPDEqe3x1BBMnat
+GZQSPXCFUYnix0askqF7QlTPjBowOJa+U8LLp3aY0ercRKBHpPsgrjhEBwpYjXyb
+6OOxmiodkGJOEfExX9bFoAmalcg2upGycntSYj7EpVAnegW8SXyOudobybx9S/uU
+2SuAji8XBPniuGyYzH+RPicWh++ge1cOTsQHvcmd689L0Ajd6nFWuEjqpKSPvTGY
+K0OeBf53XBj9W3u9hq8y
+=38Ec
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__7_Jun_2013_12_56_12_+1000_x9z=mz4V7LFJETS=--
