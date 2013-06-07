@@ -1,64 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129Ab3FGRaG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 13:30:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10020 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453Ab3FGRaD (ORCPT
+	id S1756377Ab3FGRaO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 13:30:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34834 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab3FGRaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 13:30:03 -0400
-X-Authority-Analysis: v=2.0 cv=BcJaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=fTapl0PP0WIQwNbzRJAA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1370626200.9844.79.camel@gandalf.local.home>
-Subject: [ANNOUNCE] 3.2.46-rt67
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Date: Fri, 07 Jun 2013 13:30:00 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Jun 2013 13:30:10 -0400
+Date: Fri, 7 Jun 2013 10:30:09 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Lotfi Manseur <lotfi.manseur@gmail.com>
+Cc: stable@vger.kernel.org, Wojciech M Zabolotny <W.Zabolotny@elka.pw.edu.pl>,
+        Nicolas Palix <nicolas.palix@imag.fr>,
+        Lotfi Manseur <lotfi.manseur@imag.fr>, Willy Tarreau <w@1wt.eu>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: serial/ftdi_sio.c Fix kernel oops
+Message-ID: <20130607173009.GC29371@kroah.com>
+References: <1370610872-1309-1-git-send-email-lotfi.manseur@imag.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370610872-1309-1-git-send-email-lotfi.manseur@imag.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 07, 2013 at 03:14:32PM +0200, Lotfi Manseur wrote:
+> Handle null termios in ftdi_set_termios(), introduced in
+> commit 552f6bf1bb0eda0011c0525dd587aa9e7ba5b846
+> This has been corrected in the mainline by
+> commits c515598e0f5769916c31c00392cc2bfe6af74e55 and
+> a816e3113b63753c330ca4751ea1d208e93e3015.
 
-Dear RT Folks,
+Then why shouldn't we just include those commit instead of your patch,
+which looks much different from these?
 
-I'm pleased to announce the 3.2.46-rt67 stable release.
+I'd much rather take the originals, not something else.
 
-
-This release is just an update to the new stable 3.2.46 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  branch: v3.2-rt
-  Head SHA1: cf4f969e9d468ae99a2897023ad1d343266b0362
-
-
-Or to build 3.2.46-rt67 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.46.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.46-rt67.patch.xz
-
-
-
-
-Enjoy,
-
--- Steve
-
-
-
+greg k-h
