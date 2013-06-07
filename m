@@ -1,53 +1,358 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756436Ab3FGPj5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 11:39:57 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:56247 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756247Ab3FGPjz (ORCPT
+	id S1756384Ab3FGPk3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 11:40:29 -0400
+Received: from 10.mo1.mail-out.ovh.net ([178.32.96.102]:48212 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756173Ab3FGPk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 11:39:55 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-Subject: Re: [PATCH v2] ethernet/arc/arc_emac - Add new driver
-Date: Fri, 7 Jun 2013 17:39:43 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: netdev@vger.kernel.org, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Mischa Jonker <Mischa.Jonker@synopsys.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-References: <1370617656-18349-1-git-send-email-abrodkin@synopsys.com>
-In-Reply-To: <1370617656-18349-1-git-send-email-abrodkin@synopsys.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306071739.44177.arnd@arndb.de>
-X-Provags-ID: V02:K0:9TZwI4e7UuKds/WQx6GVxEJDSM12+YJZCjQ2Z52gJgW
- BWU+pMi03zPXr2yEmi84Re/6GBscM9j4YQ6TtUscr6BqObjekE
- TOVXdwjoI3SkKGUFpS0gg38dRQbTmpNO2SG3ZJIx9XcxL5w4OQ
- YvYRPJwcD3CzIQ0vev7NC82DHjDd1RXZ7k5Jc3HaYBOWsC4yYr
- Sb0CynKMgXcO4SVrI+pFix5yoNxMJXWFXd103cDiuEsmujgWPX
- TzHO1/A5l2VhLqJ7tBfn3z7Wu6MuNZMmS5Xok1Ux9RZtVAwxpF
- B1/WBLekTbP7u0kaBNNCh+QNANcdyyrfCRGPLnRD4EZEHKv1vd
- dK8gd/c8NFIuuhLGsTk4=
+	Fri, 7 Jun 2013 11:40:28 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Mike Turquette <mturquette@linaro.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Andrew Victor <linux@maxim.org.za>
+Cc: Boris BREZILLON <b.brezillon@overkiz.com>,
+        Russell King <linux@arm.linux.org.uk>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: [RFC PATCH 20/50] ARM: at91: move at91sam9x5 SoCs to new at91 clk implem
+Date: Fri,  7 Jun 2013 17:30:18 +0200
+Message-Id: <1370619018-18756-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1370615115-16979-1-git-send-email-b.brezillon@overkiz.com>
+References: <1370615115-16979-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 18167239423760758812
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 June 2013, Alexey Brodkin wrote:
-> Driver for non-standard on-chip ethernet device ARC EMAC 10/100,
-> instantiated in some legacy ARC (Synopsys) FPGA Boards such as
-> ARCAngel4/ML50x.
-> 
-> This is based off of current Linus tree, build tested for x86.
-> 
-> Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
-> Reviewed-by: Vineet Gupta <vgupta@synopsys.com>
-> Reviewed-by: Mischa Jonker <mjonker@synopsys.com>
-> 
+This patch removes all references to the old at91 clks for at91sam9x5 SoCs.
+These SoCs only supports dt boards: we can remove register_clocks
+(all clocks are defined in dt).
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ arch/arm/mach-at91/at91sam9x5.c |  289 ---------------------------------------
+ 1 file changed, 289 deletions(-)
+
+diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
+index 83fc6b3..583a3d5 100644
+--- a/arch/arm/mach-at91/at91sam9x5.c
++++ b/arch/arm/mach-at91/at91sam9x5.c
+@@ -19,297 +19,9 @@
+ #include "board.h"
+ #include "soc.h"
+ #include "generic.h"
+-#include "clock.h"
+ #include "sam9_smc.h"
+ 
+ /* --------------------------------------------------------------------
+- *  Clocks
+- * -------------------------------------------------------------------- */
+-
+-/*
+- * The peripheral clocks.
+- */
+-static struct clk pioAB_clk = {
+-	.name		= "pioAB_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_PIOAB,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk pioCD_clk = {
+-	.name		= "pioCD_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_PIOCD,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk smd_clk = {
+-	.name		= "smd_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_SMD,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk usart0_clk = {
+-	.name		= "usart0_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_USART0,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk usart1_clk = {
+-	.name		= "usart1_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_USART1,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk usart2_clk = {
+-	.name		= "usart2_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_USART2,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-/* USART3 clock - Only for sam9g25/sam9x25 */
+-static struct clk usart3_clk = {
+-	.name		= "usart3_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_USART3,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk twi0_clk = {
+-	.name		= "twi0_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_TWI0,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk twi1_clk = {
+-	.name		= "twi1_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_TWI1,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk twi2_clk = {
+-	.name		= "twi2_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_TWI2,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk mmc0_clk = {
+-	.name		= "mci0_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_MCI0,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk spi0_clk = {
+-	.name		= "spi0_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_SPI0,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk spi1_clk = {
+-	.name		= "spi1_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_SPI1,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk uart0_clk = {
+-	.name		= "uart0_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_UART0,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk uart1_clk = {
+-	.name		= "uart1_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_UART1,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk tcb0_clk = {
+-	.name		= "tcb0_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_TCB,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk pwm_clk = {
+-	.name		= "pwm_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_PWM,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk adc_clk = {
+-	.name		= "adc_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_ADC,
+-	.type	= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk adc_op_clk = {
+-	.name		= "adc_op_clk",
+-	.type		= CLK_TYPE_PERIPHERAL,
+-	.rate_hz	= 5000000,
+-};
+-static struct clk dma0_clk = {
+-	.name		= "dma0_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_DMA0,
+-	.type	= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk dma1_clk = {
+-	.name		= "dma1_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_DMA1,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk uhphs_clk = {
+-	.name		= "uhphs",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_UHPHS,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk udphs_clk = {
+-	.name		= "udphs_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_UDPHS,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-/* emac0 clock - Only for sam9g25/sam9x25/sam9g35/sam9x35 */
+-static struct clk macb0_clk = {
+-	.name		= "pclk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_EMAC0,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-/* lcd clock - Only for sam9g15/sam9g35/sam9x35 */
+-static struct clk lcdc_clk = {
+-	.name		= "lcdc_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_LCDC,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-/* isi clock - Only for sam9g25 */
+-static struct clk isi_clk = {
+-	.name		= "isi_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_ISI,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk mmc1_clk = {
+-	.name		= "mci1_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_MCI1,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-/* emac1 clock - Only for sam9x25 */
+-static struct clk macb1_clk = {
+-	.name		= "pclk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_EMAC1,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-static struct clk ssc_clk = {
+-	.name		= "ssc_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_SSC,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-/* can0 clock - Only for sam9x35 */
+-static struct clk can0_clk = {
+-	.name		= "can0_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_CAN0,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-/* can1 clock - Only for sam9x35 */
+-static struct clk can1_clk = {
+-	.name		= "can1_clk",
+-	.pmc_mask	= 1 << AT91SAM9X5_ID_CAN1,
+-	.type		= CLK_TYPE_PERIPHERAL,
+-};
+-
+-static struct clk *periph_clocks[] __initdata = {
+-	&pioAB_clk,
+-	&pioCD_clk,
+-	&smd_clk,
+-	&usart0_clk,
+-	&usart1_clk,
+-	&usart2_clk,
+-	&twi0_clk,
+-	&twi1_clk,
+-	&twi2_clk,
+-	&mmc0_clk,
+-	&spi0_clk,
+-	&spi1_clk,
+-	&uart0_clk,
+-	&uart1_clk,
+-	&tcb0_clk,
+-	&pwm_clk,
+-	&adc_clk,
+-	&adc_op_clk,
+-	&dma0_clk,
+-	&dma1_clk,
+-	&uhphs_clk,
+-	&udphs_clk,
+-	&mmc1_clk,
+-	&ssc_clk,
+-	// irq0
+-};
+-
+-static struct clk_lookup periph_clocks_lookups[] = {
+-	/* lookup table for DT entries */
+-	CLKDEV_CON_DEV_ID("usart", "fffff200.serial", &mck),
+-	CLKDEV_CON_DEV_ID("usart", "f801c000.serial", &usart0_clk),
+-	CLKDEV_CON_DEV_ID("usart", "f8020000.serial", &usart1_clk),
+-	CLKDEV_CON_DEV_ID("usart", "f8024000.serial", &usart2_clk),
+-	CLKDEV_CON_DEV_ID("usart", "f8028000.serial", &usart3_clk),
+-	CLKDEV_CON_DEV_ID("t0_clk", "f8008000.timer", &tcb0_clk),
+-	CLKDEV_CON_DEV_ID("t0_clk", "f800c000.timer", &tcb0_clk),
+-	CLKDEV_CON_DEV_ID("mci_clk", "f0008000.mmc", &mmc0_clk),
+-	CLKDEV_CON_DEV_ID("mci_clk", "f000c000.mmc", &mmc1_clk),
+-	CLKDEV_CON_DEV_ID("dma_clk", "ffffec00.dma-controller", &dma0_clk),
+-	CLKDEV_CON_DEV_ID("dma_clk", "ffffee00.dma-controller", &dma1_clk),
+-	CLKDEV_CON_DEV_ID("pclk", "f0010000.ssc", &ssc_clk),
+-	CLKDEV_CON_DEV_ID(NULL, "f8010000.i2c", &twi0_clk),
+-	CLKDEV_CON_DEV_ID(NULL, "f8014000.i2c", &twi1_clk),
+-	CLKDEV_CON_DEV_ID(NULL, "f8018000.i2c", &twi2_clk),
+-	CLKDEV_CON_DEV_ID("spi_clk", "f0000000.spi", &spi0_clk),
+-	CLKDEV_CON_DEV_ID("spi_clk", "f0004000.spi", &spi1_clk),
+-	CLKDEV_CON_DEV_ID(NULL, "fffff400.gpio", &pioAB_clk),
+-	CLKDEV_CON_DEV_ID(NULL, "fffff600.gpio", &pioAB_clk),
+-	CLKDEV_CON_DEV_ID(NULL, "fffff800.gpio", &pioCD_clk),
+-	CLKDEV_CON_DEV_ID(NULL, "fffffa00.gpio", &pioCD_clk),
+-	/* additional fake clock for macb_hclk */
+-	CLKDEV_CON_DEV_ID("hclk", "f802c000.ethernet", &macb0_clk),
+-	CLKDEV_CON_DEV_ID("hclk", "f8030000.ethernet", &macb1_clk),
+-	CLKDEV_CON_DEV_ID("hclk", "600000.ohci", &uhphs_clk),
+-	CLKDEV_CON_DEV_ID("ohci_clk", "600000.ohci", &uhphs_clk),
+-	CLKDEV_CON_DEV_ID("ehci_clk", "700000.ehci", &uhphs_clk),
+-};
+-
+-/*
+- * The two programmable clocks.
+- * You must configure pin multiplexing to bring these signals out.
+- */
+-static struct clk pck0 = {
+-	.name		= "pck0",
+-	.pmc_mask	= AT91_PMC_PCK0,
+-	.type		= CLK_TYPE_PROGRAMMABLE,
+-	.id		= 0,
+-};
+-static struct clk pck1 = {
+-	.name		= "pck1",
+-	.pmc_mask	= AT91_PMC_PCK1,
+-	.type		= CLK_TYPE_PROGRAMMABLE,
+-	.id		= 1,
+-};
+-
+-static void __init at91sam9x5_register_clocks(void)
+-{
+-	int i;
+-
+-	for (i = 0; i < ARRAY_SIZE(periph_clocks); i++)
+-		clk_register(periph_clocks[i]);
+-
+-	clkdev_add_table(periph_clocks_lookups,
+-			 ARRAY_SIZE(periph_clocks_lookups));
+-
+-	if (cpu_is_at91sam9g25()
+-	|| cpu_is_at91sam9x25())
+-		clk_register(&usart3_clk);
+-
+-	if (cpu_is_at91sam9g25()
+-	|| cpu_is_at91sam9x25()
+-	|| cpu_is_at91sam9g35()
+-	|| cpu_is_at91sam9x35())
+-		clk_register(&macb0_clk);
+-
+-	if (cpu_is_at91sam9g15()
+-	|| cpu_is_at91sam9g35()
+-	|| cpu_is_at91sam9x35())
+-		clk_register(&lcdc_clk);
+-
+-	if (cpu_is_at91sam9g25())
+-		clk_register(&isi_clk);
+-
+-	if (cpu_is_at91sam9x25())
+-		clk_register(&macb1_clk);
+-
+-	if (cpu_is_at91sam9x25()
+-	|| cpu_is_at91sam9x35()) {
+-		clk_register(&can0_clk);
+-		clk_register(&can1_clk);
+-	}
+-
+-	clk_register(&pck0);
+-	clk_register(&pck1);
+-}
+-
+-/* --------------------------------------------------------------------
+  *  AT91SAM9x5 processor initialization
+  * -------------------------------------------------------------------- */
+ 
+@@ -324,5 +36,4 @@ static void __init at91sam9x5_map_io(void)
+ 
+ AT91_SOC_START(at91sam9x5)
+ 	.map_io = at91sam9x5_map_io,
+-	.register_clocks = at91sam9x5_register_clocks,
+ AT91_SOC_END
+-- 
+1.7.9.5
+
