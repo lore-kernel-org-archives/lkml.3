@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab3FGAoD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 20:44:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:32923 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752550Ab3FGAoA (ORCPT
+	id S1754530Ab3FGAsc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 20:48:32 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:48553 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab3FGAsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 20:44:00 -0400
-Date: Thu, 6 Jun 2013 17:39:14 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jens Axboe <axboe@kernel.dk>, "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Karsten Keil <isdn@linux-pingi.de>, stable@vger.kernel.org
-Subject: Re: [PATCH 4/8] power: ensure event is not used as format string
-Message-ID: <20130607003914.GH7052@lizard.sbx05280.losalca.wayport.net>
-References: <1370551945-8444-1-git-send-email-keescook@chromium.org>
- <1370551945-8444-5-git-send-email-keescook@chromium.org>
+	Thu, 6 Jun 2013 20:48:30 -0400
+Date: Thu, 6 Jun 2013 17:48:24 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Michel Lespinasse <walken@google.com>,
+        Greg Thelen <gthelen@google.com>, Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [patch -v4 4/8] memcg: enhance memcg iterator to support
+ predicates
+Message-ID: <20130607004824.GA16160@htj.dyndns.org>
+References: <20130604134523.GH31242@dhcp22.suse.cz>
+ <20130604193619.GA14916@htj.dyndns.org>
+ <20130604204807.GA13231@dhcp22.suse.cz>
+ <20130604205426.GI14916@htj.dyndns.org>
+ <20130605073728.GC15997@dhcp22.suse.cz>
+ <20130605080545.GF7303@mtj.dyndns.org>
+ <20130605085239.GF15997@dhcp22.suse.cz>
+ <20130605085849.GB7990@mtj.dyndns.org>
+ <20130605090739.GH15997@dhcp22.suse.cz>
+ <20130605090938.GA8266@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370551945-8444-5-git-send-email-keescook@chromium.org>
+In-Reply-To: <20130605090938.GA8266@mtj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 01:52:21PM -0700, Kees Cook wrote:
-> The exposed interface for cm_notify_event() could result in the event
-> msg string being parsed as a format string. Make sure it is only used
-> as a literal string.
+On Wed, Jun 05, 2013 at 02:09:38AM -0700, Tejun Heo wrote:
+> On Wed, Jun 05, 2013 at 11:07:39AM +0200, Michal Hocko wrote:
+> > On Wed 05-06-13 01:58:49, Tejun Heo wrote:
+> > [...]
+> > > Anyways, so you aren't gonna try the skipping thing?
+> > 
+> > As I said. I do not consider this a priority for the said reasons (i
+> > will not repeat them).
 > 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Cc: stable@vger.kernel.org
-> Cc: Anton Vorontsov <cbou@mail.ru>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> ---
+> That's a weird way to respond.  Alright, whatever, let me give it a
+> shot then.
 
-Thanks a lot, Kees! This is now applied.
+So, there were some private exchanges and here's my main issue with
+the addition of predicate callback to mem_cgroup_iter_cond().
 
->  drivers/power/charger-manager.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-> index fefc39f..98de1dd 100644
-> --- a/drivers/power/charger-manager.c
-> +++ b/drivers/power/charger-manager.c
-> @@ -450,7 +450,7 @@ static void uevent_notify(struct charger_manager *cm, const char *event)
->  	strncpy(env_str, event, UEVENT_BUF_SIZE);
->  	kobject_uevent(&cm->dev->kobj, KOBJ_CHANGE);
->  
-> -	dev_info(cm->dev, event);
-> +	dev_info(cm->dev, "%s", event);
->  }
->  
->  /**
-> -- 
-> 1.7.9.5
+There are two common patterns that are used to implement iteration.
+One is the good ol' callback based one - ie. call_fn_on_each(fn) type
+interface.  The other is something which can be used as part of flow
+control by the user - be it give_me_next_elem() or for_each() type
+loop macro.  In majority of cases, especially for anything generic,
+the latter is considered to be the better choice because, while a bit
+more challenging to implement usually, it's a lot less cumbersome for
+the users of the interface.
+
+mem_cgroup_iter_cond() seems icky to me because the predicate callback
+is essentially visit callback, so now we end up with
+give_me_next_elem() with visit callback, which is fundamentally
+superflous.  If it were properly call_fn_on_each(fn), the return
+values would be CONTINUE, SKIP_SUBTREE or ABORT, which makes more
+sense to me.  Sure, it can be said that the predicate callback is for
+a different purpose but it really doesn't change that the interface
+now is visiting the same node in two different places.  If it were
+something remotely widely used, it won't take much time developing
+braindamaged usages where part is being done inside the predicate
+callback and the rest is done outside without clear reason why just
+because of natural code growth.  I don't think this is the type of
+construct that we want in kernel in general.
+
+That said, it also is true that doing this is the shortest path to
+implementing subtree skip given how the iterator is put together
+currently and the series as a whole reduces significant amount of
+complexity, so it is an acceptable tradeoff to proceed with this
+implementation with later restructuring of the iterator.
+
+So, let's go ahead as proposed.  I'll try to rework the iterator on
+top of it, and my aplogies to Michal for being over-the-top.
+
+Thanks.
+
+-- 
+tejun
