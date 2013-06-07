@@ -1,155 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752576Ab3FGHwp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 03:52:45 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:49890 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab3FGHwo (ORCPT
+	id S1752755Ab3FGHw6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 03:52:58 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34869 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752631Ab3FGHw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 03:52:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <1622862.fXQWv0YWGV@flatron>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
-	<1851164.HnXhGSdttW@flatron>
-	<CAPweEDxWW4LUeBaHLb+wHuAMq=63p88zsx4tumVb2PdP_+ohAw@mail.gmail.com>
-	<1622862.fXQWv0YWGV@flatron>
-Date: Fri, 7 Jun 2013 08:52:43 +0100
-Message-ID: <CAPweEDx_1fvAv9sROtPreoyyj_yDAuYb040fM2zPc+tf22d=YA@mail.gmail.com>
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
- Uploading linux (3.9.4-1))
-From: "luke.leighton" <luke.leighton@gmail.com>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
+	Fri, 7 Jun 2013 03:52:56 -0400
+Date: Fri, 7 Jun 2013 17:52:44 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Peng Tao <bergwolf@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        debian-kernel@lists.debian.org
-Content-Type: text/plain; charset=UTF-8
+        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@openvz.org>,
+        Greg KH <greg@kroah.com>, "Dilger, Andreas" <andreas.dilger@intel.com>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+Message-Id: <20130607175244.95368825087acdfb25a2a8eb@canb.auug.org.au>
+In-Reply-To: <CA+a=Yy7BOcCXjZnbiZArWf=JCeSyp7k=J4DaBhQYQjy2ASgGkw@mail.gmail.com>
+References: <20130607162830.9d7ce277a9eda2b54fe73e92@canb.auug.org.au>
+	<CA+a=Yy7BOcCXjZnbiZArWf=JCeSyp7k=J4DaBhQYQjy2ASgGkw@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__7_Jun_2013_17_52_44_+1000_qz6_+kuZeigcY__."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 6, 2013 at 2:02 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> On Thursday 06 of June 2013 13:49:38 luke.leighton wrote:
->> On Thu, Jun 6, 2013 at 1:43 PM, Tomasz Figa <tomasz.figa@gmail.com>
-> wrote:
->> > Luke,
->> >
->> > On Thursday 06 of June 2013 13:24:57 luke.leighton wrote:
->> >> On Thu, Jun 6, 2013 at 1:01 AM, Tomasz Figa <tomasz.figa@gmail.com>
->> >
->> > wrote:
->> >> > I don't see any other solution here than moving all the Allwinner
->> >> > code
->> >> > to DT (as it has been suggested in this thread several times
->> >> > already), as this is the only hardware description method supported
->> >> > by ARM Linux.
->> >>
->> >>  i repeat again: please state, explicitly and unequivocably that you
->> >>  -
->> >>
->> >> linux kernel developers - are happy that the reach of linux and
->> >> gnu/linux OSes is dramatically reduced due to this intransigent
->> >> position.
->> >>
->> >>  or, tomasz, please state that you, tomasz, represent each and every
->> >>
->> >> one of the linux kernel developers so that i do not need to keep
->> >> asking.
->> >
->> > I do not represent all linux kernel developers by any means. I am just
->> > stating current policy of SoC/board support maintained by ARM Linux,
->> > which is common for all Linux kernel devlopers, or at least ARM Linux
->> > kernel developers.
->> >
->> > Personally I am happy with numerous companies backing this policy and
->> > not making problems like this with Allwinner and I am really
->> > surprised that you are supporting a troublesome company like this.
->>
->>  you've not read what i've written tomasz.
+--Signature=_Fri__7_Jun_2013_17_52_44_+1000_qz6_+kuZeigcY__.
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi,
+
+On Fri, 7 Jun 2013 15:26:56 +0800 Peng Tao <bergwolf@gmail.com> wrote:
 >
-> I have.
->
->> > There are many other SoC vendors making low cost SoCs, like Rockchip,
->> > Boxchip,
->>
->>  boxchip *is* allwinner.
->
-> Right, sorry. I am not really into this low cost hardware.
+> On Fri, Jun 7, 2013 at 2:28 PM, Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
+> >
+> > After merging the akpm tree, today's linux-next build (x86_64
+> > allmodconfig) failed like this:
+> >
+> > In file included from drivers/staging/lustre/include/linux/libcfs/linux=
+/libcfs.h:49:0,
+> >                  from drivers/staging/lustre/include/linux/libcfs/libcf=
+s.h:44,
+> >                  from drivers/staging/lustre/include/linux/lnet/linux/l=
+ib-lnet.h:45,
+> >                  from drivers/staging/lustre/include/linux/lnet/lib-lne=
+t.h:44,
+> >                  from drivers/staging/lustre/lnet/lnet/api-ni.c:38:
+> > drivers/staging/lustre/include/linux/libcfs/linux/linux-mem.h: In funct=
+ion 'set_shrinker':
+> > drivers/staging/lustre/include/linux/libcfs/linux/linux-mem.h:102:3: er=
+ror: 'struct shrinker' has no member named 'shrink'
+> >   s->shrink =3D func;
+> >    ^
+> >
+> > Caused by commit a37f14f05f2f ("shrinker: Kill old ->shrink API") from
+> > the akpm tree interacting with the new Lustre client code from the
+> > staging tree.
+> >
+> > I have just disabled the Lustre client code again (by reverting commit
+> > ee04fd11f11f ("Revert "Revert "staging/lustre: drop CONFIG_BROKEN
+> > dependency""")) and maybe someone can tell me what I need to do to fix
+> > this when I get back in a week.
+> I have a patchset to fix this but haven't yet sent out because it will
+> break build in Greg's staging tree. I can send it now but please tell
+> me to whom I should send the patches? Greg's tree doesn't contain
+> shrinker change, and mm- tree doesn't have Lustre code.
 
- i've been tracking it for several years.
+The mm- tree now has the lustre code since it it based on most of
+linux-next, so send them to Andrew.
 
-> There is also AMLogic, though.
+It will then be up to Andrew and Greg to make sure that the staging tree
+is merged into Linus' tree before Andrew's patch bomb.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
- they're *definitely* GPL-violators.
+--Signature=_Fri__7_Jun_2013_17_52_44_+1000_qz6_+kuZeigcY__.
+Content-Type: application/pgp-signature
 
->> > Telechips. Maybe they would be better candidates for being
->> > promoted as vendors of choice for hardware running free software?
->>
->>  no, because they're not selling at a low-enough price with
->> high-enough integration.  telechips and rockchip don't have the market
->> penetration.
->
-> I do not have access to any numbers, so I am left to believe in what you
-> say.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
- well... none of us do :)  that report (was it from IDC? it was in
-earlier messages) is a good analysis.
+iQIcBAEBCAAGBQJRsZFRAAoJEECxmPOUX5FER+8P/3EF8T8BEJbqAvRdPPWLNdum
+Szv4RsWXfX74nx4LI+TcFYgsFv2+YCzQ7qhypNlh3kGLx3kU9MIQybb2/1SC76bh
+ckchXtW4x3+GUtmNTE3ZUN7Wvi9DSLXnbEB/W0AfzYtX1uea5zAhnLXC47e12Cbb
+URje21Xt+HzgMtSzo8TJcNiYx/E8lWh/E/ws0ejrAGq426xz8pZZlH88QRUzlE5W
+OIh+AugivuCLnSYA7Rs2aSQBYFm9NSZWr0vvBjc1B7YabxUDKxA+v+SviTpvHiAl
+aoRqifKZ1iyOrnMS28l4zXwX4RL1sTIiYvq/YteYqnRxFynDNSLbAMGxfxxnwuvf
+2VT2Yzmw6XFGK+Z5DVAy/71fpJfu7ujgCpdddDD75dcuw4dUmrDMOxO/em5XbALV
+v0AuCsJE3yqwSc3A6HMLrg/00a5JyHCAM7Lw91BmB8dmNSwmdNgfEzU1SvKw8fOV
+KNMPXygQUWJRrEm3UAZIn13RYcbfo003FOkpA+wGH8RWAv6zzETKaJ4hQCmqSZ0t
+KwSI/HUQODzIi8LlsODVP3UjUvxJLIxZJeAHx5eZnuOR8ykOCB4zXMwAi8cDbD3V
+SCeNbESbKVd6fhITOYnQX7dWs3urkidcO/u3pNCp5FcNa1hG2zgTY/XmK/z75uWN
+JxIXtaCHzkovFi5HUXAd
+=Zs1/
+-----END PGP SIGNATURE-----
 
-> (Although here in Poland the cheap tablet market is almost evenly
-> divided between all those companies, you can find almost same amount of
-> tablets based on SoCs from each vendor.)
-
- most likely.
-
- allwinner is the one that's actually expressed an interest, at
-Director (Board) Level, of being GPL-compliant.  the software
-engineers understand that; their immediate Manager does not [and is
-causing considerable disruption].
-
- AMLogic stone-walled and cost us money and a large client due to
-their GPL violations. which they till have not resolved [in over 2
-years].  i will not work with them, ever again.
-
- Telechips are korean-based: they haven't responded to communications.
-
- Nufront got themselves in a muddle [late on silicon] so we ruled them
-out - we'll come back to them later.
-
- there's a number of others, but allwinner's the only one that is
-actively communicating.
-
- so.
-
- coming back to what you said earlier: i'm formulating what to say to
-allwinner [and need to pre-send something by monday so that they can
-consider it before the meeting].  so far, it consists of:
-
-* device-tree is what the linux kernel community has come up with, it
-is equivalent to FEX.
-
-* the linux kernel community would like to apologise for not
-consulting with you (allwinner) on the decision to only accept device
-tree
-
-[bear in mind that if this kind of thing isn't said, they risk just
-continuing to make the sunxi community's life absolute hell by
-continuing to work in isolation and continuing to duplicate drivers
-etc. etc. ]
-
-* work is being done by the free software community, they are
-beginning to integrate allwinner's work into the upstream kernel, and
-you (allwinner) will begin to see this when you get round to doing
-linux kernel 3.9
-
-* allwinner and the linux and sunxi community therefore need to work
-closer together, we propose:
-
-* {insert proposals here}
-
-3 days left on the clock.
-
-l.
+--Signature=_Fri__7_Jun_2013_17_52_44_+1000_qz6_+kuZeigcY__.--
