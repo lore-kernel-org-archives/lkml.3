@@ -1,75 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416Ab3FGORJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 10:17:09 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:57136 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753556Ab3FGORH (ORCPT
+	id S1755603Ab3FGORi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 10:17:38 -0400
+Received: from endeavour.telenet.dn.ua ([195.39.211.45]:35600 "EHLO
+	endeavour.telenet.dn.ua" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755441Ab3FGORg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 10:17:07 -0400
-Date: Fri, 7 Jun 2013 16:17:00 +0200
-From: Robert Richter <rric@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] perf tools: Add attr<num> syntax to event parser
-Message-ID: <20130607141700.GH3886@rric.localhost>
-References: <1369991785-10499-1-git-send-email-rric@kernel.org>
- <1369991785-10499-4-git-send-email-rric@kernel.org>
- <20130603135421.GB8758@krava.brq.redhat.com>
+	Fri, 7 Jun 2013 10:17:36 -0400
+Message-ID: <51B1EB7D.7060801@telenet.dn.ua>
+Date: Fri, 07 Jun 2013 17:17:33 +0300
+From: "Vitaly V. Bursov" <vitalyb@telenet.dn.ua>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130603135421.GB8758@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Daniel Borkmann <dborkman@redhat.com>
+CC: Mike Galbraith <bitbucket@online.de>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: Scaling problem with a lot of AF_PACKET sockets on different
+ interfaces
+References: <51B1CA50.30702@telenet.dn.ua> <1370608871.5854.64.camel@marge.simpson.net> <51B1DA96.1080303@redhat.com>
+In-Reply-To: <51B1DA96.1080303@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03.06.13 15:54:22, Jiri Olsa wrote:
-> On Fri, May 31, 2013 at 11:16:24AM +0200, Robert Richter wrote:
-> > From: Robert Richter <robert.richter@calxeda.com>
-> > 
-> > The event parser is limited to update only a subset of all fields in
-> > struct perf_event_attr (config*, period, branch_type). We are not able
-> > to set other attr fields, esp. flags.
-> > 
-> > Introducing a new syntax to set any field of the event attribute by
-> > using an index to the u64 value to be used within struct
-> > perf_event_attr. The new syntax attr<num> is similar to config<num>,
-> > but <num> specifies the index to be used. E.g. attr5:23 sets bit 23 of
-> > the flag field of attr.
-> > 
-> > The persistent event implementation is a use case of the above. In
-> > this case sysfs provides:
-> > 
-> >  /sys/bus/event_source/devices/persistent/events/mce_record:persistent,config=106
-> >  /sys/bus/event_source/devices/persistent/format/persistent:attr5:23
-> 
-> good idea, you probably need to update:
-> Documentation/ABI/testing/sysfs-bus-event_source-devices-format
+07.06.2013 16:05, Daniel Borkmann пишет:
+> On 06/07/2013 02:41 PM, Mike Galbraith wrote:
+>> (CC's net-fu dojo)
+>>
+>> On Fri, 2013-06-07 at 14:56 +0300, Vitaly V. Bursov wrote:
+>>> Hello,
+>>>
+>>> I have a Linux router with a lot of interfaces (hundreds or
+>>> thousands of VLANs) and an application that creates AF_PACKET
+>>> socket per interface and bind()s sockets to interfaces.
+>>>
+>>> Each socket has attached BPF filter too.
+>>>
+>>> The problem is observed on linux-3.8.13, but as far I can see
+>>> from the source the latest version has alike behavior.
+>>>
+>>> I noticed that box has strange performance problems with
+>>> most of the CPU time spent in __netif_receive_skb:
+>>>    86.15%  [k] __netif_receive_skb
+>>>     1.41%  [k] _raw_spin_lock
+>>>     1.09%  [k] fib_table_lookup
+>>>     0.99%  [k] local_bh_enable_ip
+>>>
+>>> and this the assembly with the "hot spot":
+>>>          │       shr    $0x8,%r15w
+>>>          │       and    $0xf,%r15d
+>>>     0.00 │       shl    $0x4,%r15
+>>>          │       add    $0xffffffff8165ec80,%r15
+>>>          │       mov    (%r15),%rax
+>>>     0.09 │       mov    %rax,0x28(%rsp)
+>>>          │       mov    0x28(%rsp),%rbp
+>>>     0.01 │       sub    $0x28,%rbp
+>>>          │       jmp    5c7
+>>>     1.72 │5b0:   mov    0x28(%rbp),%rax
+>>>     0.05 │       mov    0x18(%rsp),%rbx
+>>>     0.00 │       mov    %rax,0x28(%rsp)
+>>>     0.03 │       mov    0x28(%rsp),%rbp
+>>>     5.67 │       sub    $0x28,%rbp
+>>>     1.71 │5c7:   lea    0x28(%rbp),%rax
+>>>     1.73 │       cmp    %r15,%rax
+>>>          │       je     640
+>>>     1.74 │       cmp    %r14w,0x0(%rbp)
+>>>          │       jne    5b0
+>>>    81.36 │       mov    0x8(%rbp),%rax
+>>>     2.74 │       cmp    %rax,%r8
+>>>          │       je     5eb
+>>>     1.37 │       cmp    0x20(%rbx),%rax
+>>>          │       je     5eb
+>>>     1.39 │       cmp    %r13,%rax
+>>>          │       jne    5b0
+>>>     0.04 │5eb:   test   %r12,%r12
+>>>     0.04 │       je     6f4
+>>>          │       mov    0xc0(%rbx),%eax
+>>>          │       mov    0xc8(%rbx),%rdx
+>>>          │       testb  $0x8,0x1(%rdx,%rax,1)
+>>>          │       jne    6d5
+>>>
+>>> This corresponds to:
+>>>
+>>> net/core/dev.c:
+>>>           type = skb->protocol;
+>>>           list_for_each_entry_rcu(ptype,
+>>>                           &ptype_base[ntohs(type) & PTYPE_HASH_MASK], list) {
+>>>                   if (ptype->type == type &&
+>>>                       (ptype->dev == null_or_dev || ptype->dev == skb->dev ||
+>>>                        ptype->dev == orig_dev)) {
+>>>                           if (pt_prev)
+>>>                                   ret = deliver_skb(skb, pt_prev, orig_dev);
+>>>                           pt_prev = ptype;
+>>>                   }
+>>>           }
+>>>
+>>> Which works perfectly OK until there are a lot of AF_PACKET sockets, since
+>>> the socket adds a protocol to ptype list:
+>>>
+>>> # cat /proc/net/ptype
+>>> Type Device      Function
+>>> 0800 eth2.1989 packet_rcv+0x0/0x400
+>>> 0800 eth2.1987 packet_rcv+0x0/0x400
+>>> 0800 eth2.1986 packet_rcv+0x0/0x400
+>>> 0800 eth2.1990 packet_rcv+0x0/0x400
+>>> 0800 eth2.1995 packet_rcv+0x0/0x400
+>>> 0800 eth2.1997 packet_rcv+0x0/0x400
+>>> .......
+>>> 0800 eth2.1004 packet_rcv+0x0/0x400
+>>> 0800          ip_rcv+0x0/0x310
+>>> 0011          llc_rcv+0x0/0x3a0
+>>> 0004          llc_rcv+0x0/0x3a0
+>>> 0806          arp_rcv+0x0/0x150
+>>>
+>>> And this obviously results in a huge performance penalty.
+>>>
+>>> ptype_all, by the looks, should be the same.
+>>>
+>>> Probably one way to fix this it to perform interface name matching in
+>>> af_packet handler, but there could be other cases, other protocols.
+>>>
+>>> Ideas are welcome :)
+>
+> Probably, that depends on _your scenario_ and/or BPF filter, but would it be
+> an alternative if you have only a few packet sockets (maybe one pinned to each
+> cpu) and cluster/load-balance them together via packet fanout? (Where you
+> bind the socket to ifindex 0, so that you get traffic from all devs...) That
+> would at least avoid that "hot spot", and you could post-process the interface
+> via sockaddr_ll. But I'd agree that this will not solve the actual problem you've
+> observed. ;-)
 
-I will add something there.
+I was't aware of the ifindex 0 thing, it can help, thanks! Of course, if it'll
+work for me (applications is a custom DHCP server) it'll surely
+increase the overhead of BPF (I don't need to tap the traffic from all
+interfaces), there are vlans, bridges and bonds - likely the server will receive
+same packets multiple times and replies must be sent too...
+but it still should be faster.
 
-> also.. there's so far only mce_record event AFAICS, and this seems
-> to be initialized at the time when sysfs's not ready so I dont get
-> the sysfs entries for it.. and since there's no other event yet,
-> the sysfs is not updated/populated later.. I think ;)
+I just checked isc-dhcpd-V3.1.3 running on multiple interfaces
+(another system with 2.6.32):
+$ cat /proc/net/ptype
+Type Device      Function
+ALL  eth0     packet_rcv_spkt+0x0/0x190
+ALL  eth0.10  packet_rcv_spkt+0x0/0x190
+ALL  eth0.11  packet_rcv_spkt+0x0/0x190
+....
 
-The code adds entries dynamically. If something was added to the
-persistent events list, the sysfs entry is updated too. You should
-actually should see something in sysfs. Code that registers it is here
-for Intel or AMD:
+As I understand, it'll hit this code:
+         list_for_each_entry_rcu(ptype, &ptype_all, list) {
+                 if (!ptype->dev || ptype->dev == skb->dev) {
+                         if (pt_prev)
+                                 ret = deliver_skb(skb, pt_prev, orig_dev);
+                         pt_prev = ptype;
+                 }
+         }
+which scales the same.
 
- arch/x86/kernel/cpu/mcheck/mce.c:mcheck_init_tp()
+Thanks.
 
-> I'll probably tweak it somehow later, but if there was anything
-> simple I could do or I missed something please let me know, that
-> would speed up my testing
-
-CONFIG_FTRACE should be enabled (which enables tracepoints), but this
-is probably enabled per default. Otherwise the persistent pmu should
-be visible in sysfs. What does dmesg show on your system?
-
--Robert
