@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932296Ab3FGXLv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 19:11:51 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:43167 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932081Ab3FGXDt (ORCPT
+	id S932246Ab3FGXLu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 19:11:50 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:48669 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756156Ab3FGXDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Jun 2013 19:03:49 -0400
 From: David Daney <ddaney.cavm@gmail.com>
 To: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
         Sanjay Lal <sanjayl@kymasys.com>
 Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH 07/31] mips/kvm: Rename VCPU_registername to KVM_VCPU_ARCH_registername
-Date: Fri,  7 Jun 2013 16:03:11 -0700
-Message-Id: <1370646215-6543-8-git-send-email-ddaney.cavm@gmail.com>
+Subject: [PATCH 10/31] mips/kvm: Implement ioctls to get and set FPU registers.
+Date: Fri,  7 Jun 2013 16:03:14 -0700
+Message-Id: <1370646215-6543-11-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com>
 References: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com>
@@ -23,363 +23,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-This makes it follow the pattern where the structure name is the
-symbol name prefix.
+The current implementation does nothing with them, but future MIPSVZ
+work need them.  Also add the asm-offsets accessors for the fields.
 
 Signed-off-by: David Daney <david.daney@cavium.com>
 ---
- arch/mips/kernel/asm-offsets.c |  68 +++++++-------
- arch/mips/kvm/kvm_locore.S     | 206 ++++++++++++++++++++---------------------
- 2 files changed, 137 insertions(+), 137 deletions(-)
+ arch/mips/include/asm/kvm_host.h |  8 ++++++++
+ arch/mips/kernel/asm-offsets.c   |  8 ++++++++
+ arch/mips/kvm/kvm_mips.c         | 26 ++++++++++++++++++++++++--
+ 3 files changed, 40 insertions(+), 2 deletions(-)
 
+diff --git a/arch/mips/include/asm/kvm_host.h b/arch/mips/include/asm/kvm_host.h
+index 16013c7..505b804 100644
+--- a/arch/mips/include/asm/kvm_host.h
++++ b/arch/mips/include/asm/kvm_host.h
+@@ -102,6 +102,14 @@ struct kvm_vcpu_arch {
+ 	unsigned long lo;
+ 	unsigned long epc;
+ 
++	/* FPU state */
++	u64 fpr[32];
++	u32 fir;
++	u32 fccr;
++	u32 fexr;
++	u32 fenr;
++	u32 fcsr;
++
+ 	void *impl;
+ };
+ 
 diff --git a/arch/mips/kernel/asm-offsets.c b/arch/mips/kernel/asm-offsets.c
-index 22bf8f5..a0aa12c 100644
+index 5a9222e..03bf363 100644
 --- a/arch/mips/kernel/asm-offsets.c
 +++ b/arch/mips/kernel/asm-offsets.c
-@@ -351,40 +351,40 @@ void output_kvm_defines(void)
+@@ -377,6 +377,14 @@ void output_kvm_defines(void)
+ 	OFFSET(KVM_VCPU_ARCH_HI, kvm_vcpu, arch.hi);
+ 	OFFSET(KVM_VCPU_ARCH_EPC, kvm_vcpu, arch.epc);
+ 	OFFSET(KVM_VCPU_ARCH_IMPL, kvm_vcpu, arch.impl);
++	BLANK();
++	OFFSET(KVM_VCPU_ARCH_FPR,	kvm_vcpu, arch.fpr);
++	OFFSET(KVM_VCPU_ARCH_FIR,	kvm_vcpu, arch.fir);
++	OFFSET(KVM_VCPU_ARCH_FCCR,	kvm_vcpu, arch.fccr);
++	OFFSET(KVM_VCPU_ARCH_FEXR,	kvm_vcpu, arch.fexr);
++	OFFSET(KVM_VCPU_ARCH_FENR,	kvm_vcpu, arch.fenr);
++	OFFSET(KVM_VCPU_ARCH_FCSR,	kvm_vcpu, arch.fcsr);
++	BLANK();
  
- 	OFFSET(VCPU_GUEST_INST, kvm_vcpu_arch, guest_inst);
+ 	OFFSET(KVM_MIPS_VCPU_TE_HOST_EBASE, kvm_mips_vcpu_te, host_ebase);
+ 	OFFSET(KVM_MIPS_VCPU_TE_GUEST_EBASE, kvm_mips_vcpu_te, guest_ebase);
+diff --git a/arch/mips/kvm/kvm_mips.c b/arch/mips/kvm/kvm_mips.c
+index 041caad..18c8dc8 100644
+--- a/arch/mips/kvm/kvm_mips.c
++++ b/arch/mips/kvm/kvm_mips.c
+@@ -465,12 +465,34 @@ int kvm_arch_vcpu_postcreate(struct kvm_vcpu *vcpu)
  
--	OFFSET(VCPU_R0, kvm_vcpu_arch, gprs[0]);
--	OFFSET(VCPU_R1, kvm_vcpu_arch, gprs[1]);
--	OFFSET(VCPU_R2, kvm_vcpu_arch, gprs[2]);
--	OFFSET(VCPU_R3, kvm_vcpu_arch, gprs[3]);
--	OFFSET(VCPU_R4, kvm_vcpu_arch, gprs[4]);
--	OFFSET(VCPU_R5, kvm_vcpu_arch, gprs[5]);
--	OFFSET(VCPU_R6, kvm_vcpu_arch, gprs[6]);
--	OFFSET(VCPU_R7, kvm_vcpu_arch, gprs[7]);
--	OFFSET(VCPU_R8, kvm_vcpu_arch, gprs[8]);
--	OFFSET(VCPU_R9, kvm_vcpu_arch, gprs[9]);
--	OFFSET(VCPU_R10, kvm_vcpu_arch, gprs[10]);
--	OFFSET(VCPU_R11, kvm_vcpu_arch, gprs[11]);
--	OFFSET(VCPU_R12, kvm_vcpu_arch, gprs[12]);
--	OFFSET(VCPU_R13, kvm_vcpu_arch, gprs[13]);
--	OFFSET(VCPU_R14, kvm_vcpu_arch, gprs[14]);
--	OFFSET(VCPU_R15, kvm_vcpu_arch, gprs[15]);
--	OFFSET(VCPU_R16, kvm_vcpu_arch, gprs[16]);
--	OFFSET(VCPU_R17, kvm_vcpu_arch, gprs[17]);
--	OFFSET(VCPU_R18, kvm_vcpu_arch, gprs[18]);
--	OFFSET(VCPU_R19, kvm_vcpu_arch, gprs[19]);
--	OFFSET(VCPU_R20, kvm_vcpu_arch, gprs[20]);
--	OFFSET(VCPU_R21, kvm_vcpu_arch, gprs[21]);
--	OFFSET(VCPU_R22, kvm_vcpu_arch, gprs[22]);
--	OFFSET(VCPU_R23, kvm_vcpu_arch, gprs[23]);
--	OFFSET(VCPU_R24, kvm_vcpu_arch, gprs[24]);
--	OFFSET(VCPU_R25, kvm_vcpu_arch, gprs[25]);
--	OFFSET(VCPU_R26, kvm_vcpu_arch, gprs[26]);
--	OFFSET(VCPU_R27, kvm_vcpu_arch, gprs[27]);
--	OFFSET(VCPU_R28, kvm_vcpu_arch, gprs[28]);
--	OFFSET(VCPU_R29, kvm_vcpu_arch, gprs[29]);
--	OFFSET(VCPU_R30, kvm_vcpu_arch, gprs[30]);
--	OFFSET(VCPU_R31, kvm_vcpu_arch, gprs[31]);
--	OFFSET(VCPU_LO, kvm_vcpu_arch, lo);
--	OFFSET(VCPU_HI, kvm_vcpu_arch, hi);
-+	OFFSET(KVM_VCPU_ARCH_R0, kvm_vcpu_arch, gprs[0]);
-+	OFFSET(KVM_VCPU_ARCH_R1, kvm_vcpu_arch, gprs[1]);
-+	OFFSET(KVM_VCPU_ARCH_R2, kvm_vcpu_arch, gprs[2]);
-+	OFFSET(KVM_VCPU_ARCH_R3, kvm_vcpu_arch, gprs[3]);
-+	OFFSET(KVM_VCPU_ARCH_R4, kvm_vcpu_arch, gprs[4]);
-+	OFFSET(KVM_VCPU_ARCH_R5, kvm_vcpu_arch, gprs[5]);
-+	OFFSET(KVM_VCPU_ARCH_R6, kvm_vcpu_arch, gprs[6]);
-+	OFFSET(KVM_VCPU_ARCH_R7, kvm_vcpu_arch, gprs[7]);
-+	OFFSET(KVM_VCPU_ARCH_R8, kvm_vcpu_arch, gprs[8]);
-+	OFFSET(KVM_VCPU_ARCH_R9, kvm_vcpu_arch, gprs[9]);
-+	OFFSET(KVM_VCPU_ARCH_R10, kvm_vcpu_arch, gprs[10]);
-+	OFFSET(KVM_VCPU_ARCH_R11, kvm_vcpu_arch, gprs[11]);
-+	OFFSET(KVM_VCPU_ARCH_R12, kvm_vcpu_arch, gprs[12]);
-+	OFFSET(KVM_VCPU_ARCH_R13, kvm_vcpu_arch, gprs[13]);
-+	OFFSET(KVM_VCPU_ARCH_R14, kvm_vcpu_arch, gprs[14]);
-+	OFFSET(KVM_VCPU_ARCH_R15, kvm_vcpu_arch, gprs[15]);
-+	OFFSET(KVM_VCPU_ARCH_R16, kvm_vcpu_arch, gprs[16]);
-+	OFFSET(KVM_VCPU_ARCH_R17, kvm_vcpu_arch, gprs[17]);
-+	OFFSET(KVM_VCPU_ARCH_R18, kvm_vcpu_arch, gprs[18]);
-+	OFFSET(KVM_VCPU_ARCH_R19, kvm_vcpu_arch, gprs[19]);
-+	OFFSET(KVM_VCPU_ARCH_R20, kvm_vcpu_arch, gprs[20]);
-+	OFFSET(KVM_VCPU_ARCH_R21, kvm_vcpu_arch, gprs[21]);
-+	OFFSET(KVM_VCPU_ARCH_R22, kvm_vcpu_arch, gprs[22]);
-+	OFFSET(KVM_VCPU_ARCH_R23, kvm_vcpu_arch, gprs[23]);
-+	OFFSET(KVM_VCPU_ARCH_R24, kvm_vcpu_arch, gprs[24]);
-+	OFFSET(KVM_VCPU_ARCH_R25, kvm_vcpu_arch, gprs[25]);
-+	OFFSET(KVM_VCPU_ARCH_R26, kvm_vcpu_arch, gprs[26]);
-+	OFFSET(KVM_VCPU_ARCH_R27, kvm_vcpu_arch, gprs[27]);
-+	OFFSET(KVM_VCPU_ARCH_R28, kvm_vcpu_arch, gprs[28]);
-+	OFFSET(KVM_VCPU_ARCH_R29, kvm_vcpu_arch, gprs[29]);
-+	OFFSET(KVM_VCPU_ARCH_R30, kvm_vcpu_arch, gprs[30]);
-+	OFFSET(KVM_VCPU_ARCH_R31, kvm_vcpu_arch, gprs[31]);
-+	OFFSET(KVM_VCPU_ARCH_LO, kvm_vcpu_arch, lo);
-+	OFFSET(KVM_VCPU_ARCH_HI, kvm_vcpu_arch, hi);
- 	OFFSET(KVM_VCPU_ARCH_EPC, kvm_vcpu_arch, epc);
- 	OFFSET(VCPU_COP0, kvm_vcpu_arch, cop0);
- 	OFFSET(VCPU_GUEST_KERNEL_ASID, kvm_vcpu_arch, guest_kernel_asid);
-diff --git a/arch/mips/kvm/kvm_locore.S b/arch/mips/kvm/kvm_locore.S
-index a434bbe..7a33ee7 100644
---- a/arch/mips/kvm/kvm_locore.S
-+++ b/arch/mips/kvm/kvm_locore.S
-@@ -175,52 +175,52 @@ FEXPORT(__kvm_mips_load_asid)
-     mtc0    zero,  CP0_HWRENA
- 
-     /* Now load up the Guest Context from VCPU */
--    LONG_L     	$1, VCPU_R1(k1)
--    LONG_L     	$2, VCPU_R2(k1)
--    LONG_L     	$3, VCPU_R3(k1)
--
--    LONG_L     	$4, VCPU_R4(k1)
--    LONG_L     	$5, VCPU_R5(k1)
--    LONG_L     	$6, VCPU_R6(k1)
--    LONG_L     	$7, VCPU_R7(k1)
--
--    LONG_L     	$8,  VCPU_R8(k1)
--    LONG_L     	$9,  VCPU_R9(k1)
--    LONG_L     	$10, VCPU_R10(k1)
--    LONG_L     	$11, VCPU_R11(k1)
--    LONG_L     	$12, VCPU_R12(k1)
--    LONG_L     	$13, VCPU_R13(k1)
--    LONG_L     	$14, VCPU_R14(k1)
--    LONG_L     	$15, VCPU_R15(k1)
--    LONG_L     	$16, VCPU_R16(k1)
--    LONG_L     	$17, VCPU_R17(k1)
--    LONG_L     	$18, VCPU_R18(k1)
--    LONG_L     	$19, VCPU_R19(k1)
--    LONG_L     	$20, VCPU_R20(k1)
--    LONG_L     	$21, VCPU_R21(k1)
--    LONG_L     	$22, VCPU_R22(k1)
--    LONG_L     	$23, VCPU_R23(k1)
--    LONG_L     	$24, VCPU_R24(k1)
--    LONG_L     	$25, VCPU_R25(k1)
-+    LONG_L     	$1, KVM_VCPU_ARCH_R1(k1)
-+    LONG_L     	$2, KVM_VCPU_ARCH_R2(k1)
-+    LONG_L     	$3, KVM_VCPU_ARCH_R3(k1)
+ int kvm_arch_vcpu_ioctl_get_fpu(struct kvm_vcpu *vcpu, struct kvm_fpu *fpu)
+ {
+-	return -ENOIOCTLCMD;
++	int i;
 +
-+    LONG_L     	$4, KVM_VCPU_ARCH_R4(k1)
-+    LONG_L     	$5, KVM_VCPU_ARCH_R5(k1)
-+    LONG_L     	$6, KVM_VCPU_ARCH_R6(k1)
-+    LONG_L     	$7, KVM_VCPU_ARCH_R7(k1)
++	for (i = 0; i < ARRAY_SIZE(vcpu->arch.fpr); i++)
++		fpu->fpr[i] = vcpu->arch.fpr[i];
 +
-+    LONG_L     	$8,  KVM_VCPU_ARCH_R8(k1)
-+    LONG_L     	$9,  KVM_VCPU_ARCH_R9(k1)
-+    LONG_L     	$10, KVM_VCPU_ARCH_R10(k1)
-+    LONG_L     	$11, KVM_VCPU_ARCH_R11(k1)
-+    LONG_L     	$12, KVM_VCPU_ARCH_R12(k1)
-+    LONG_L     	$13, KVM_VCPU_ARCH_R13(k1)
-+    LONG_L     	$14, KVM_VCPU_ARCH_R14(k1)
-+    LONG_L     	$15, KVM_VCPU_ARCH_R15(k1)
-+    LONG_L     	$16, KVM_VCPU_ARCH_R16(k1)
-+    LONG_L     	$17, KVM_VCPU_ARCH_R17(k1)
-+    LONG_L     	$18, KVM_VCPU_ARCH_R18(k1)
-+    LONG_L     	$19, KVM_VCPU_ARCH_R19(k1)
-+    LONG_L     	$20, KVM_VCPU_ARCH_R20(k1)
-+    LONG_L     	$21, KVM_VCPU_ARCH_R21(k1)
-+    LONG_L     	$22, KVM_VCPU_ARCH_R22(k1)
-+    LONG_L     	$23, KVM_VCPU_ARCH_R23(k1)
-+    LONG_L     	$24, KVM_VCPU_ARCH_R24(k1)
-+    LONG_L     	$25, KVM_VCPU_ARCH_R25(k1)
++	fpu->fir = vcpu->arch.fir;
++	fpu->fccr = vcpu->arch.fccr;
++	fpu->fexr = vcpu->arch.fexr;
++	fpu->fenr = vcpu->arch.fenr;
++	fpu->fcsr = vcpu->arch.fcsr;
++
++	return 0;
+ }
  
-     /* k0/k1 loaded up later */
+ int kvm_arch_vcpu_ioctl_set_fpu(struct kvm_vcpu *vcpu, struct kvm_fpu *fpu)
+ {
+-	return -ENOIOCTLCMD;
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(vcpu->arch.fpr); i++)
++		vcpu->arch.fpr[i] = fpu->fpr[i];
++
++	vcpu->arch.fir = fpu->fir;
++	vcpu->arch.fccr = fpu->fccr;
++	vcpu->arch.fexr = fpu->fexr;
++	vcpu->arch.fenr = fpu->fenr;
++	vcpu->arch.fcsr = fpu->fcsr;
++
++	return 0;
+ }
  
--    LONG_L     	$28, VCPU_R28(k1)
--    LONG_L     	$29, VCPU_R29(k1)
--    LONG_L     	$30, VCPU_R30(k1)
--    LONG_L     	$31, VCPU_R31(k1)
-+    LONG_L     	$28, KVM_VCPU_ARCH_R28(k1)
-+    LONG_L     	$29, KVM_VCPU_ARCH_R29(k1)
-+    LONG_L     	$30, KVM_VCPU_ARCH_R30(k1)
-+    LONG_L     	$31, KVM_VCPU_ARCH_R31(k1)
- 
-     /* Restore hi/lo */
--	LONG_L		k0, VCPU_LO(k1)
-+	LONG_L		k0, KVM_VCPU_ARCH_LO(k1)
- 	mtlo		k0
- 
--	LONG_L		k0, VCPU_HI(k1)
-+	LONG_L		k0, KVM_VCPU_ARCH_HI(k1)
- 	mthi   		k0
- 
- FEXPORT(__kvm_mips_load_k0k1)
- 	/* Restore the guest's k0/k1 registers */
--    LONG_L     	k0, VCPU_R26(k1)
--    LONG_L     	k1, VCPU_R27(k1)
-+    LONG_L     	k0, KVM_VCPU_ARCH_R26(k1)
-+    LONG_L     	k1, KVM_VCPU_ARCH_R27(k1)
- 
-     /* Jump to guest */
- 	eret
-@@ -262,59 +262,59 @@ NESTED (MIPSX(GuestException), CALLFRAME_SIZ, ra)
- 	addiu		k1, k1, VCPU_HOST_ARCH
- 
-     /* Start saving Guest context to VCPU */
--    LONG_S  $0, VCPU_R0(k1)
--    LONG_S  $1, VCPU_R1(k1)
--    LONG_S  $2, VCPU_R2(k1)
--    LONG_S  $3, VCPU_R3(k1)
--    LONG_S  $4, VCPU_R4(k1)
--    LONG_S  $5, VCPU_R5(k1)
--    LONG_S  $6, VCPU_R6(k1)
--    LONG_S  $7, VCPU_R7(k1)
--    LONG_S  $8, VCPU_R8(k1)
--    LONG_S  $9, VCPU_R9(k1)
--    LONG_S  $10, VCPU_R10(k1)
--    LONG_S  $11, VCPU_R11(k1)
--    LONG_S  $12, VCPU_R12(k1)
--    LONG_S  $13, VCPU_R13(k1)
--    LONG_S  $14, VCPU_R14(k1)
--    LONG_S  $15, VCPU_R15(k1)
--    LONG_S  $16, VCPU_R16(k1)
--    LONG_S  $17,VCPU_R17(k1)
--    LONG_S  $18, VCPU_R18(k1)
--    LONG_S  $19, VCPU_R19(k1)
--    LONG_S  $20, VCPU_R20(k1)
--    LONG_S  $21, VCPU_R21(k1)
--    LONG_S  $22, VCPU_R22(k1)
--    LONG_S  $23, VCPU_R23(k1)
--    LONG_S  $24, VCPU_R24(k1)
--    LONG_S  $25, VCPU_R25(k1)
-+    LONG_S  $0, KVM_VCPU_ARCH_R0(k1)
-+    LONG_S  $1, KVM_VCPU_ARCH_R1(k1)
-+    LONG_S  $2, KVM_VCPU_ARCH_R2(k1)
-+    LONG_S  $3, KVM_VCPU_ARCH_R3(k1)
-+    LONG_S  $4, KVM_VCPU_ARCH_R4(k1)
-+    LONG_S  $5, KVM_VCPU_ARCH_R5(k1)
-+    LONG_S  $6, KVM_VCPU_ARCH_R6(k1)
-+    LONG_S  $7, KVM_VCPU_ARCH_R7(k1)
-+    LONG_S  $8, KVM_VCPU_ARCH_R8(k1)
-+    LONG_S  $9, KVM_VCPU_ARCH_R9(k1)
-+    LONG_S  $10, KVM_VCPU_ARCH_R10(k1)
-+    LONG_S  $11, KVM_VCPU_ARCH_R11(k1)
-+    LONG_S  $12, KVM_VCPU_ARCH_R12(k1)
-+    LONG_S  $13, KVM_VCPU_ARCH_R13(k1)
-+    LONG_S  $14, KVM_VCPU_ARCH_R14(k1)
-+    LONG_S  $15, KVM_VCPU_ARCH_R15(k1)
-+    LONG_S  $16, KVM_VCPU_ARCH_R16(k1)
-+    LONG_S  $17, KVM_VCPU_ARCH_R17(k1)
-+    LONG_S  $18, KVM_VCPU_ARCH_R18(k1)
-+    LONG_S  $19, KVM_VCPU_ARCH_R19(k1)
-+    LONG_S  $20, KVM_VCPU_ARCH_R20(k1)
-+    LONG_S  $21, KVM_VCPU_ARCH_R21(k1)
-+    LONG_S  $22, KVM_VCPU_ARCH_R22(k1)
-+    LONG_S  $23, KVM_VCPU_ARCH_R23(k1)
-+    LONG_S  $24, KVM_VCPU_ARCH_R24(k1)
-+    LONG_S  $25, KVM_VCPU_ARCH_R25(k1)
- 
-     /* Guest k0/k1 saved later */
- 
--    LONG_S  $28, VCPU_R28(k1)
--    LONG_S  $29, VCPU_R29(k1)
--    LONG_S  $30, VCPU_R30(k1)
--    LONG_S  $31, VCPU_R31(k1)
-+    LONG_S  $28, KVM_VCPU_ARCH_R28(k1)
-+    LONG_S  $29, KVM_VCPU_ARCH_R29(k1)
-+    LONG_S  $30, KVM_VCPU_ARCH_R30(k1)
-+    LONG_S  $31, KVM_VCPU_ARCH_R31(k1)
- 
-     /* We need to save hi/lo and restore them on
-      * the way out
-      */
-     mfhi    t0
--    LONG_S  t0, VCPU_HI(k1)
-+    LONG_S  t0, KVM_VCPU_ARCH_HI(k1)
- 
-     mflo    t0
--    LONG_S  t0, VCPU_LO(k1)
-+    LONG_S  t0, KVM_VCPU_ARCH_LO(k1)
- 
-     /* Finally save guest k0/k1 to VCPU */
-     mfc0    t0, CP0_ERROREPC
--    LONG_S  t0, VCPU_R26(k1)
-+    LONG_S  t0, KVM_VCPU_ARCH_R26(k1)
- 
-     /* Get GUEST k1 and save it in VCPU */
- 	PTR_LI	t1, ~0x2ff
-     mfc0    t0, CP0_EBASE
-     and     t0, t0, t1
-     LONG_L  t0, 0x3000(t0)
--    LONG_S  t0, VCPU_R27(k1)
-+    LONG_S  t0, KVM_VCPU_ARCH_R27(k1)
- 
-     /* Now that context has been saved, we can use other registers */
- 
-@@ -461,48 +461,48 @@ __kvm_mips_return_to_guest:
-     mtc0    zero,  CP0_HWRENA
- 
-     /* load the guest context from VCPU and return */
--    LONG_L  $0, VCPU_R0(k1)
--    LONG_L  $1, VCPU_R1(k1)
--    LONG_L  $2, VCPU_R2(k1)
--    LONG_L  $3, VCPU_R3(k1)
--    LONG_L  $4, VCPU_R4(k1)
--    LONG_L  $5, VCPU_R5(k1)
--    LONG_L  $6, VCPU_R6(k1)
--    LONG_L  $7, VCPU_R7(k1)
--    LONG_L  $8, VCPU_R8(k1)
--    LONG_L  $9, VCPU_R9(k1)
--    LONG_L  $10, VCPU_R10(k1)
--    LONG_L  $11, VCPU_R11(k1)
--    LONG_L  $12, VCPU_R12(k1)
--    LONG_L  $13, VCPU_R13(k1)
--    LONG_L  $14, VCPU_R14(k1)
--    LONG_L  $15, VCPU_R15(k1)
--    LONG_L  $16, VCPU_R16(k1)
--    LONG_L  $17, VCPU_R17(k1)
--    LONG_L  $18, VCPU_R18(k1)
--    LONG_L  $19, VCPU_R19(k1)
--    LONG_L  $20, VCPU_R20(k1)
--    LONG_L  $21, VCPU_R21(k1)
--    LONG_L  $22, VCPU_R22(k1)
--    LONG_L  $23, VCPU_R23(k1)
--    LONG_L  $24, VCPU_R24(k1)
--    LONG_L  $25, VCPU_R25(k1)
-+    LONG_L  $0, KVM_VCPU_ARCH_R0(k1)
-+    LONG_L  $1, KVM_VCPU_ARCH_R1(k1)
-+    LONG_L  $2, KVM_VCPU_ARCH_R2(k1)
-+    LONG_L  $3, KVM_VCPU_ARCH_R3(k1)
-+    LONG_L  $4, KVM_VCPU_ARCH_R4(k1)
-+    LONG_L  $5, KVM_VCPU_ARCH_R5(k1)
-+    LONG_L  $6, KVM_VCPU_ARCH_R6(k1)
-+    LONG_L  $7, KVM_VCPU_ARCH_R7(k1)
-+    LONG_L  $8, KVM_VCPU_ARCH_R8(k1)
-+    LONG_L  $9, KVM_VCPU_ARCH_R9(k1)
-+    LONG_L  $10, KVM_VCPU_ARCH_R10(k1)
-+    LONG_L  $11, KVM_VCPU_ARCH_R11(k1)
-+    LONG_L  $12, KVM_VCPU_ARCH_R12(k1)
-+    LONG_L  $13, KVM_VCPU_ARCH_R13(k1)
-+    LONG_L  $14, KVM_VCPU_ARCH_R14(k1)
-+    LONG_L  $15, KVM_VCPU_ARCH_R15(k1)
-+    LONG_L  $16, KVM_VCPU_ARCH_R16(k1)
-+    LONG_L  $17, KVM_VCPU_ARCH_R17(k1)
-+    LONG_L  $18, KVM_VCPU_ARCH_R18(k1)
-+    LONG_L  $19, KVM_VCPU_ARCH_R19(k1)
-+    LONG_L  $20, KVM_VCPU_ARCH_R20(k1)
-+    LONG_L  $21, KVM_VCPU_ARCH_R21(k1)
-+    LONG_L  $22, KVM_VCPU_ARCH_R22(k1)
-+    LONG_L  $23, KVM_VCPU_ARCH_R23(k1)
-+    LONG_L  $24, KVM_VCPU_ARCH_R24(k1)
-+    LONG_L  $25, KVM_VCPU_ARCH_R25(k1)
- 
-     /* $/k1 loaded later */
--    LONG_L  $28, VCPU_R28(k1)
--    LONG_L  $29, VCPU_R29(k1)
--    LONG_L  $30, VCPU_R30(k1)
--    LONG_L  $31, VCPU_R31(k1)
-+    LONG_L  $28, KVM_VCPU_ARCH_R28(k1)
-+    LONG_L  $29, KVM_VCPU_ARCH_R29(k1)
-+    LONG_L  $30, KVM_VCPU_ARCH_R30(k1)
-+    LONG_L  $31, KVM_VCPU_ARCH_R31(k1)
- 
- FEXPORT(__kvm_mips_skip_guest_restore)
--    LONG_L  k0, VCPU_HI(k1)
-+    LONG_L  k0, KVM_VCPU_ARCH_HI(k1)
-     mthi    k0
- 
--    LONG_L  k0, VCPU_LO(k1)
-+    LONG_L  k0, KVM_VCPU_ARCH_LO(k1)
-     mtlo    k0
- 
--    LONG_L  k0, VCPU_R26(k1)
--    LONG_L  k1, VCPU_R27(k1)
-+    LONG_L  k0, KVM_VCPU_ARCH_R26(k1)
-+    LONG_L  k1, KVM_VCPU_ARCH_R27(k1)
- 
-     eret
- 
+ int kvm_arch_vcpu_fault(struct kvm_vcpu *vcpu, struct vm_fault *vmf)
 -- 
 1.7.11.7
 
