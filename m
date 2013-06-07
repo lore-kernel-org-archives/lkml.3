@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab3FGIkn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 04:40:43 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:42019 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721Ab3FGIkk (ORCPT
+	id S1753417Ab3FGIlK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 04:41:10 -0400
+Received: from smtp-vbr19.xs4all.nl ([194.109.24.39]:2244 "EHLO
+	smtp-vbr19.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370Ab3FGIlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 04:40:40 -0400
-Message-ID: <51B19C85.9090407@gmail.com>
-Date: Fri, 07 Jun 2013 10:40:37 +0200
-From: Vladimir Pantelic <vladoman@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:20.0) Gecko/20100101 Firefox/20.0 SeaMonkey/2.17
+	Fri, 7 Jun 2013 04:41:08 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Subject: Re: [PATCH v2 0/4] media: i2c: ths7303 cleanup
+Date: Fri, 7 Jun 2013 10:40:35 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+References: <1369503576-22271-1-git-send-email-prabhakar.csengg@gmail.com> <2855590.yx9zfYZLis@avalon> <CA+V-a8vh-ttz1QQmV59fP5c3vK=1zC5QfmkHc9Du0ZAcY712Dg@mail.gmail.com>
+In-Reply-To: <CA+V-a8vh-ttz1QQmV59fP5c3vK=1zC5QfmkHc9Du0ZAcY712Dg@mail.gmail.com>
 MIME-Version: 1.0
-To: Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>
-CC: devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, debian-kernel@lists.debian.org
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
- Uploading linux (3.9.4-1))
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com> <1851164.HnXhGSdttW@flatron> <CAPweEDxWW4LUeBaHLb+wHuAMq=63p88zsx4tumVb2PdP_+ohAw@mail.gmail.com> <1622862.fXQWv0YWGV@flatron> <CAPweEDx_1fvAv9sROtPreoyyj_yDAuYb040fM2zPc+tf22d=YA@mail.gmail.com>
-In-Reply-To: <CAPweEDx_1fvAv9sROtPreoyyj_yDAuYb040fM2zPc+tf22d=YA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201306071040.35174.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-luke.leighton wrote:>   so.
- >
- >   coming back to what you said earlier: i'm formulating what to say to
- > allwinner [and need to pre-send something by monday so that they can
- > consider it before the meeting].  so far, it consists of:
- >
- > * device-tree is what the linux kernel community has come up with, it
- > is equivalent to FEX.
- >
- > * the linux kernel community would like to apologise for not
- > consulting with you (allwinner) on the decision to only accept device
- > tree
+On Thu June 6 2013 12:05:38 Prabhakar Lad wrote:
+> Hi Hans,
+> 
+> On Sun, May 26, 2013 at 6:50 AM, Laurent Pinchart
+> <laurent.pinchart@ideasonboard.com> wrote:
+> > On Saturday 25 May 2013 23:09:32 Prabhakar Lad wrote:
+> >> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> >>
+> >> Trivial cleanup of the driver.
+> >>
+> >> Changes for v2:
+> >> 1: Dropped the asynchronous probing and, OF
+> >>    support patches will be handling them independently because of
+> >> dependencies. 2: Arranged the patches logically so that git bisect
+> >>    succeeds.
+> >>
+> >> Lad, Prabhakar (4):
+> >>   ARM: davinci: dm365 evm: remove init_enable from ths7303 pdata
+> >>   media: i2c: ths7303: remove init_enable option from pdata
+> >>   media: i2c: ths7303: remove unnecessary function ths7303_setup()
+> >>   media: i2c: ths7303: make the pdata as a constant pointer
+> >>
+> Can you pick up this series or do you want me to issue a pull for it ?
 
-apologize? WTF?
+I've picked it up. I kept the dm365 patch separate, but I did improve the
+commit log a bit.
 
- > * allwinner and the linux and sunxi community therefore need to work
- > closer together, we propose:
- >
- > * {insert proposals here}
+Regards,
 
-1) switch to DT
-2) there is no 2)
-
- > 3 days left on the clock.
-
-tick tock
-
+	Hans
