@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab3FGWTj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 18:19:39 -0400
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:38377 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752999Ab3FGWTi (ORCPT
+	id S1756854Ab3FGWWZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 18:22:25 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:56451 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752999Ab3FGWWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 18:19:38 -0400
-Message-ID: <51B25C77.8080902@linaro.org>
-Date: Sat, 08 Jun 2013 00:19:35 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] add a WARN in setup_irq function for the IRQF_DISABLED
- flag
-References: <51B25BEC.5050003@linaro.org>
-In-Reply-To: <51B25BEC.5050003@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Fri, 7 Jun 2013 18:22:24 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        jolsa@redhat.com, namhyung@kernel.org, eranian@google.com,
+        David Ahern <dsahern@gmail.com>
+Subject: [RFC PATCH 0/4] perf: timehist command
+Date: Fri,  7 Jun 2013 16:22:10 -0600
+Message-Id: <1370643734-9579-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2013 12:17 AM, Daniel Lezcano wrote:
-> 
-> Hi,
-> 
-> we are still seeing drivers with the irq flag IRQF_DISABLED present and
-> *new* drivers submitted with this flag set.
-> 
-> I am wondering if we can add a WARN in the setup_irq function about this
-> flag. May be it is a bit rough but people will pay attention.
+I have commented a few times over the years about a perf-based command
+that does a time history analysis of task scheduling. Internal to the
+product I work on it has been extremely helpful debugging systems with
+heavy CPU contention - understanding which tasks are consuming cpu cycles
+over a given time window; when, why and how long a task was off the CPU
+and how much time did the task get when it was scheduled; inefficiencies
+from process bombs (shell scripts); and more.
 
-s/rough/brutal :)
+This is the first exported version of that command. It contains the
+basic features. It is also availabe at:
+    https://github.com/dsahern/linux/commits/timehist-basic-3.9
 
-> Thanks
-> 
->   -- Daniel
-> 
-> Index: clockevents/kernel/irq/manage.c
-> ===================================================================
-> --- clockevents.orig/kernel/irq/manage.c        2013-06-05
-> 23:57:22.723446115 +0200
-> +++ clockevents/kernel/irq/manage.c     2013-06-08 00:12:19.985035465 +0200
-> @@ -1212,6 +1212,9 @@ int setup_irq(unsigned int irq, struct i
-> 
->         if (WARN_ON(irq_settings_is_per_cpu_devid(desc)))
->                 return -EINVAL;
-> +
-> +       WARN(act->flags & IRQF_DISABLED, "IRQF_DISABLED flag is disabled");
-> +
->         chip_bus_lock(desc);
->         retval = __setup_irq(irq, desc, act);
->         chip_bus_sync_unlock(desc);
-> 
+We rely on the version that also provides time-of-day correlations.
+e.g., task X raised an alarm at time Y due to lack of access to a
+CPU. Take time Y from the log file and correlate with perf data to
+gain some insights into what was happening before, during and after
+the time of interest. The time-of-day version can be found here:
+    https://github.com/dsahern/linux/commits/timehist-timeofday-3.9
 
+The command currently uses the context-switch event -- for legacy reasons
+with the kernel version we use. The command needs to be updated to
+leverage the many scheduling tracepoints and with it updating the data
+that can be generated from the analysis. Until then throwing it out for
+comments and in case others find it useful.
+
+David Ahern (4):
+  perf: move setup_list from symbol.c to strlist.c
+  perf: add methods for setting/retrieving priv element of thread struct
+  perf: sample after exit loses thread correlation
+  perf: add timehist command
+
+ tools/perf/Makefile           |    2 ++
+ tools/perf/builtin-inject.c   |    2 +-
+ tools/perf/builtin-kmem.c     |    3 ++-
+ tools/perf/builtin-kvm.c      |    3 ++-
+ tools/perf/builtin-lock.c     |    3 ++-
+ tools/perf/builtin-sched.c    |   17 +++++++-------
+ tools/perf/builtin-script.c   |    3 ++-
+ tools/perf/builtin-trace.c    |    9 +++++---
+ tools/perf/builtin.h          |    1 +
+ tools/perf/perf.c             |    1 +
+ tools/perf/perf.h             |    6 +++++
+ tools/perf/tests/hists_link.c |    2 +-
+ tools/perf/util/build-id.c    |   11 ++++-----
+ tools/perf/util/event.c       |   11 +++++++--
+ tools/perf/util/machine.c     |   49 ++++++++++++++++++++++++++++++++---------
+ tools/perf/util/machine.h     |    6 +++--
+ tools/perf/util/session.c     |    2 +-
+ tools/perf/util/strlist.c     |   15 +++++++++++++
+ tools/perf/util/strlist.h     |    2 ++
+ tools/perf/util/symbol.c      |   14 ------------
+ tools/perf/util/thread.h      |   12 +++++++++-
+ 21 files changed, 121 insertions(+), 53 deletions(-)
 
 -- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+1.7.10.1
 
