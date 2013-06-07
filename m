@@ -1,87 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab3FGPMa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 11:12:30 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:35620 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756038Ab3FGPM1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 11:12:27 -0400
-Message-ID: <51B1F859.1010504@itdev.co.uk>
-Date: Fri, 07 Jun 2013 16:12:25 +0100
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
-Subject: Re: [PATCH 10/53] Input: atmel_mxt_ts - Add memory access interface
- via sysfs
-References: <1717403.GgHsbyUkDZ@dtor-d630.eng.vmware.com> <51AFA02B.3000604@itdev.co.uk> <20130605210715.GA16013@core.coreip.homeip.net> <51AFAF6D.7050204@itdev.co.uk> <20130606100346.GC1883@sirena.org.uk> <51B0651D.3090902@itdev.co.uk> <20130606105530.GT31367@sirena.org.uk> <51B06FE4.7040805@itdev.co.uk> <20130606131638.GX31367@sirena.org.uk> <51B0B52C.1090807@itdev.co.uk> <20130606164629.GG31367@sirena.org.uk>
-In-Reply-To: <20130606164629.GG31367@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756043Ab3FGPOp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 11:14:45 -0400
+Received: from mga02.intel.com ([134.134.136.20]:53363 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754584Ab3FGPOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 11:14:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,822,1363158000"; 
+   d="scan'208";a="349861735"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <519BE6ED.8030202@sr71.net>
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1368321816-17719-21-git-send-email-kirill.shutemov@linux.intel.com>
+ <519BE6ED.8030202@sr71.net>
+Subject: Re: [PATCHv4 20/39] thp, mm: naive support of thp in generic
+ read/write routines
 Content-Transfer-Encoding: 7bit
+Message-Id: <20130607151718.E126AE0090@blue.fi.intel.com>
+Date: Fri,  7 Jun 2013 18:17:18 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown wrote:
-> On Thu, Jun 06, 2013 at 05:13:32PM +0100, Nick Dyer wrote:
+Dave Hansen wrote:
+> On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
+> > +		if (PageTransHuge(page))
+> > +			offset = pos & ~HPAGE_PMD_MASK;
+> > +
+> >  		pagefault_disable();
+> > -		copied = iov_iter_copy_from_user_atomic(page, i, offset, bytes);
+> > +		copied = iov_iter_copy_from_user_atomic(
+> > +				page + (offset >> PAGE_CACHE_SHIFT),
+> > +				i, offset & ~PAGE_CACHE_MASK, bytes);
+> >  		pagefault_enable();
+> >  		flush_dcache_page(page);
 > 
->> I am not a legal expert, but I have described what you suggest to people
->> who are more expert in the NDA terms and they say I cannot implement a
->> solution which exposes the names of all the parameters. In any case,
+> I think there's enough voodoo in there to warrant a comment or adding
+> some temporary variables.  There are three things going on that you wan
+> to convey:
 > 
-> Who said anything about names?  I'd assume the userspace stuff is
-> eventually talking to the device based on numbers of some kind and I'd
-> expect that this would be what ends up in the API.
-
-OK. But if user-space is talking to the device based on register numbers, a
-binary attribute seems like the correct way to present that - isn't that
-what they're designed for?
-
->> And we wouldn't have won anything, because the user could still write to
->> the register that turns off reporting (for example) by mistake with both
->> methods.
+> 1. Offset is normally <PAGE_SIZE, but you make it <HPAGE_PMD_SIZE if
+>    you are dealing with a huge page
+> 2. (offset >> PAGE_CACHE_SHIFT) is always 0 for small pages since
+>     offset < PAGE_SIZE
+> 3. "offset & ~PAGE_CACHE_MASK" does nothing for small-page offsets, but
+>    it turns a large-page offset back in to a small-page-offset.
 > 
-> You'd not have access to the entire device register map which seems like
-> a win
-
-Not really.
-
-The chip itself will enforce which registers are read-only (by ignoring
-writes) or write-only (by returning zeros if read). Encoding all this
-information in the driver would just make it more brittle in the face of
-touch controller firmware updates.
-
-It would be possible for the driver to intermediate for some of the
-registers that it cares about. For example, if we change the screen width
-then the driver could reinitialise the input device. But I can't see that
-it makes sense if you are changing several settings in a row for the input
-device to be reinitialised several times. It is far less buggy to provide a
-single way of tearing down everything and reinitialising (which could be
-simply triggered from user space) than to encode all of the dependencies
-(which is bound to introduce bugs).
-
-It's not laziness, it's trying to push policy into user space.
-
->> Touch controllers are inherently complex system with a lot of configurable
->> parameters. The fact that it's complex and changes quickly doesn't make it
->> badly designed per se.
+> I think you can do it with something like this:
 > 
-> Having lots of configuration and having the parameters change regularly
-> doesn't immediately mean that it has to be complex - the requirement is
-> very common, touchscreens aren't too remarkable here.  The usual thing
-> is for the kernel to understand how to transfer data back and forth but
-> not the content of the data.
+>  	int subpage_nr = 0;
+> 	off_t smallpage_offset = offset;
+> 	if (PageTransHuge(page)) {
+> 		// we transform 'offset' to be offset in to the huge
+> 		// page instead of inside the PAGE_SIZE page
+> 		offset = pos & ~HPAGE_PMD_MASK;
+> 		subpage_nr = (offset >> PAGE_CACHE_SHIFT);
+> 	}
+> 	
+> > +		copied = iov_iter_copy_from_user_atomic(
+> > +				page + subpage_nr,
+> > +				i, smallpage_offset, bytes);
+> 
+> 
+> > @@ -2437,6 +2453,7 @@ again:
+> >  			 * because not all segments in the iov can be copied at
+> >  			 * once without a pagefault.
+> >  			 */
+> > +			offset = pos & ~PAGE_CACHE_MASK;
+> 
+> Urg, and now it's *BACK* in to a small-page offset?
+> 
+> This means that 'offset' has two _different_ meanings and it morphs
+> between them during the function a couple of times.  That seems very
+> error-prone to me.
 
-Sure, that's what I'm trying to accomplish. It's just that as far as I can
-see it makes more sense to use the established protocol that these chips
-have implemented rather than trying to bodge something else over the top or
-crowbar it into a different model that will cause abstraction problems. We
-have thought about this problem at great length, and discussed it on these
-lists, and with other kernel engineers at customers, etc.
+I guess this way is better, right?
+
+@@ -2382,6 +2393,7 @@ static ssize_t generic_perform_write(struct file *file,
+                unsigned long bytes;    /* Bytes to write to page */
+                size_t copied;          /* Bytes copied from user */
+                void *fsdata;
++               int subpage_nr = 0;
+ 
+                offset = (pos & (PAGE_CACHE_SIZE - 1));
+                bytes = min_t(unsigned long, PAGE_CACHE_SIZE - offset,
+@@ -2411,8 +2423,14 @@ again:
+                if (mapping_writably_mapped(mapping))
+                        flush_dcache_page(page);
+ 
++               if (PageTransHuge(page)) {
++                       off_t huge_offset = pos & ~HPAGE_PMD_MASK;
++                       subpage_nr = huge_offset >> PAGE_CACHE_SHIFT;
++               }
++
+                pagefault_disable();
+-               copied = iov_iter_copy_from_user_atomic(page, i, offset, bytes);
++               copied = iov_iter_copy_from_user_atomic(page + subpage_nr, i,
++                               offset, bytes);
+                pagefault_enable();
+                flush_dcache_page(page);
+ 
+-- 
+ Kirill A. Shutemov
