@@ -1,138 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755731Ab3FGO6J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 10:58:09 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:55203 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754902Ab3FGO6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 10:58:07 -0400
-Date: Fri, 7 Jun 2013 10:58:06 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org,
-        Timo =?iso-8859-1?Q?Ter=E4s?= <timo.teras@iki.fi>
-Subject: Re: [ 150/184] ipv4: check rt_genid in dst_check
-Message-ID: <20130607145806.GR15183@kvack.org>
-References: <20130604172136.519104713@1wt.eu> <1370585253.4021.93.camel@deadeye.wl.decadent.org.uk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370585253.4021.93.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Mutt/1.4.2.2i
+	id S1755934Ab3FGO6P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 10:58:15 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:24277 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753691Ab3FGO6M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 10:58:12 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+CC: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: [PATCH v2 2/2] at_hdmac: add FIFO configuration parameter to DMA DT binding
+Date: Fri, 7 Jun 2013 16:57:05 +0200
+Message-ID: <962983ea5510b1574466599fa1e8d857f33b1429.1370615665.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <cover.1370615665.git.nicolas.ferre@atmel.com>
+References: <cover.1370615665.git.nicolas.ferre@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 07:07:33AM +0100, Ben Hutchings wrote:
-> > This commit is based on the above, with the addition of verifying blackhole
-> > routes in the same manner.
-> 
-> That addition doesn't seem to correspond to anything in mainline.  Why
-> should 2.6.32 differ?
+From: Ludovic Desroches <ludovic.desroches@atmel.com>
 
-Fixing the issue with blackhole routes as it was accomplished in mainline 
-would require pulling in a lot more code, and people were not interested 
-in pulling in all of the dependencies given the much higher risk of trying 
-to select the right subset of changes to include.  The addition of the 
-single line of "dst->obsolete = -1;" in ipv4_dst_blackhole() was much 
-easier to verify, and is in the spirit of the patch in question.  This is 
-the minimal set of changes to fix the bug in question.
+For most devices the FIFO configuration is the same i.e. when half FIFO size is
+available/filled, a source/destination request is serviced. But USART devices
+have to do it when there is enough space/data available to perform a single
+AHB access so the ASAP configuration.
 
-		-ben
+Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+---
+ .../devicetree/bindings/dma/atmel-dma.txt          |  7 ++++--
+ drivers/dma/at_hdmac.c                             | 25 ++++++++++++++++++----
+ 2 files changed, 26 insertions(+), 6 deletions(-)
 
-> Ben.
-> 
-> > Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-> > Signed-off-by: Willy Tarreau <w@1wt.eu>
-> > ---
-> >  net/ipv4/route.c | 17 ++++++++++++-----
-> >  1 file changed, 12 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-> > index 58f141b..f16d19b 100644
-> > --- a/net/ipv4/route.c
-> > +++ b/net/ipv4/route.c
-> > @@ -1412,7 +1412,7 @@ void ip_rt_redirect(__be32 old_gw, __be32 daddr, __be32 new_gw,
-> >  					dev_hold(rt->u.dst.dev);
-> >  				if (rt->idev)
-> >  					in_dev_hold(rt->idev);
-> > -				rt->u.dst.obsolete	= 0;
-> > +				rt->u.dst.obsolete	= -1;
-> >  				rt->u.dst.lastuse	= jiffies;
-> >  				rt->u.dst.path		= &rt->u.dst;
-> >  				rt->u.dst.neighbour	= NULL;
-> > @@ -1477,7 +1477,7 @@ static struct dst_entry *ipv4_negative_advice(struct dst_entry *dst)
-> >  	struct dst_entry *ret = dst;
-> >  
-> >  	if (rt) {
-> > -		if (dst->obsolete) {
-> > +		if (dst->obsolete > 0) {
-> >  			ip_rt_put(rt);
-> >  			ret = NULL;
-> >  		} else if ((rt->rt_flags & RTCF_REDIRECTED) ||
-> > @@ -1700,7 +1700,9 @@ static void ip_rt_update_pmtu(struct dst_entry *dst, u32 mtu)
-> >  
-> >  static struct dst_entry *ipv4_dst_check(struct dst_entry *dst, u32 cookie)
-> >  {
-> > -	return NULL;
-> > +	if (rt_is_expired((struct rtable *)dst))
-> > +		return NULL;
-> > +	return dst;
-> >  }
-> >  
-> >  static void ipv4_dst_destroy(struct dst_entry *dst)
-> > @@ -1862,7 +1864,8 @@ static int ip_route_input_mc(struct sk_buff *skb, __be32 daddr, __be32 saddr,
-> >  	if (!rth)
-> >  		goto e_nobufs;
-> >  
-> > -	rth->u.dst.output= ip_rt_bug;
-> > +	rth->u.dst.output = ip_rt_bug;
-> > +	rth->u.dst.obsolete = -1;
-> >  
-> >  	atomic_set(&rth->u.dst.__refcnt, 1);
-> >  	rth->u.dst.flags= DST_HOST;
-> > @@ -2023,6 +2026,7 @@ static int __mkroute_input(struct sk_buff *skb,
-> >  	rth->fl.oif 	= 0;
-> >  	rth->rt_spec_dst= spec_dst;
-> >  
-> > +	rth->u.dst.obsolete = -1;
-> >  	rth->u.dst.input = ip_forward;
-> >  	rth->u.dst.output = ip_output;
-> >  	rth->rt_genid = rt_genid(dev_net(rth->u.dst.dev));
-> > @@ -2187,6 +2191,7 @@ local_input:
-> >  		goto e_nobufs;
-> >  
-> >  	rth->u.dst.output= ip_rt_bug;
-> > +	rth->u.dst.obsolete = -1;
-> >  	rth->rt_genid = rt_genid(net);
-> >  
-> >  	atomic_set(&rth->u.dst.__refcnt, 1);
-> > @@ -2411,7 +2416,8 @@ static int __mkroute_output(struct rtable **result,
-> >  	rth->rt_gateway = fl->fl4_dst;
-> >  	rth->rt_spec_dst= fl->fl4_src;
-> >  
-> > -	rth->u.dst.output=ip_output;
-> > +	rth->u.dst.output = ip_output;
-> > +	rth->u.dst.obsolete = -1;
-> >  	rth->rt_genid = rt_genid(dev_net(dev_out));
-> >  
-> >  	RT_CACHE_STAT_INC(out_slow_tot);
-> > @@ -2741,6 +2747,7 @@ static int ipv4_dst_blackhole(struct net *net, struct rtable **rp, struct flowi
-> >  	if (rt) {
-> >  		struct dst_entry *new = &rt->u.dst;
-> >  
-> > +		new->obsolete = -1;
-> >  		atomic_set(&new->__refcnt, 1);
-> >  		new->__use = 1;
-> >  		new->input = dst_discard;
-> 
-> -- 
-> Ben Hutchings
-> Theory and practice are closer in theory than in practice.
->                                 - John Levine, moderator of comp.compilers
-
-
-
+diff --git a/Documentation/devicetree/bindings/dma/atmel-dma.txt b/Documentation/devicetree/bindings/dma/atmel-dma.txt
+index c80e8a3..c280a0e 100644
+--- a/Documentation/devicetree/bindings/dma/atmel-dma.txt
++++ b/Documentation/devicetree/bindings/dma/atmel-dma.txt
+@@ -24,8 +24,11 @@ The three cells in order are:
+ 1. A phandle pointing to the DMA controller.
+ 2. The memory interface (16 most significant bits), the peripheral interface
+ (16 less significant bits).
+-3. The peripheral identifier for the hardware handshaking interface. The
+-identifier can be different for tx and rx.
++3. Parameters for the at91 DMA configuration register which are device
++dependant:
++  - bit 7-0: peripheral identifier for the hardware handshaking interface. The
++  identifier can be different for tx and rx.
++  - bit 11-8: FIFO configuration. 0 for half FIFO, 1 for ALAP, 1 for ASAP.
+ 
+ Example:
+ 
+diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+index 6db5228..4499dcf 100644
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -14,6 +14,7 @@
+  * found on AT91SAM9263.
+  */
+ 
++#include <dt-bindings/dma/at91.h>
+ #include <linux/clk.h>
+ #include <linux/dmaengine.h>
+ #include <linux/dma-mapping.h>
+@@ -1320,15 +1321,31 @@ static struct dma_chan *at_dma_xlate(struct of_phandle_args *dma_spec,
+ 	atslave = devm_kzalloc(&dmac_pdev->dev, sizeof(*atslave), GFP_KERNEL);
+ 	if (!atslave)
+ 		return NULL;
++
++	atslave->cfg = ATC_DST_H2SEL_HW | ATC_SRC_H2SEL_HW;
+ 	/*
+ 	 * We can fill both SRC_PER and DST_PER, one of these fields will be
+ 	 * ignored depending on DMA transfer direction.
+ 	 */
+-	per_id = dma_spec->args[1];
+-	atslave->cfg = ATC_FIFOCFG_HALFFIFO
+-		     | ATC_DST_H2SEL_HW | ATC_SRC_H2SEL_HW
+-		     | ATC_DST_PER_MSB(per_id) | ATC_DST_PER(per_id)
++	per_id = dma_spec->args[1] & AT91_DMA_CFG_PER_ID_MASK;
++	atslave->cfg |= ATC_DST_PER_MSB(per_id) | ATC_DST_PER(per_id)
+ 		     | ATC_SRC_PER_MSB(per_id) | ATC_SRC_PER(per_id);
++	/*
++	 * We have to translate the value we get from the device tree since
++	 * the half FIFO configuration value had to be 0 to keep backward
++	 * compatibility.
++	 */
++	switch(dma_spec->args[1] & AT91_DMA_CFG_FIFOCFG_MASK) {
++		case AT91_DMA_CFG_FIFOCFG_ALAP:
++			atslave->cfg |= ATC_FIFOCFG_LARGESTBURST;
++			break;
++		case AT91_DMA_CFG_FIFOCFG_ASAP:
++			atslave->cfg |= ATC_FIFOCFG_ENOUGHSPACE;
++			break;
++		case AT91_DMA_CFG_FIFOCFG_HALF:
++		default:
++			atslave->cfg |= ATC_FIFOCFG_HALFFIFO;
++	}
+ 	atslave->dma_dev = &dmac_pdev->dev;
+ 
+ 	chan = dma_request_channel(mask, at_dma_filter, atslave);
 -- 
-"Thought is the essence of where you are now."
+1.8.2.2
+
