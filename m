@@ -1,123 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab3FJPhr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 11:37:47 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:59430 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752486Ab3FJPhq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 11:37:46 -0400
-Date: Mon, 10 Jun 2013 17:37:39 +0200
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-To: HATAYAMA Daisuke <d.hatayama@gmail.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH v5 3/5] vmcore: Introduce remap_oldmem_pfn_range()
-Message-ID: <20130610173739.4d88d4ec@holzheu>
-In-Reply-To: <CABOkKT0yk6tytN=aTSdpECQWw_30m5qrZYH-W1msovkeiSeZCA@mail.gmail.com>
-References: <1370624161-2298-1-git-send-email-holzheu@linux.vnet.ibm.com>
-	<1370624161-2298-4-git-send-email-holzheu@linux.vnet.ibm.com>
-	<CABOkKT0yk6tytN=aTSdpECQWw_30m5qrZYH-W1msovkeiSeZCA@mail.gmail.com>
-Organization: IBM
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754010Ab3FJPiH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 11:38:07 -0400
+Received: from www.sr71.net ([198.145.64.142]:35184 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753918Ab3FJPiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 11:38:05 -0400
+Message-ID: <51B2029A.8050504@sr71.net>
+Date: Fri, 07 Jun 2013 08:56:10 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 14/39] thp, mm: rewrite delete_from_page_cache() to
+ support huge pages
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-15-git-send-email-kirill.shutemov@linux.intel.com> <519BD595.5040405@sr71.net> <20130528122812.0D624E0090@blue.fi.intel.com> <20130607151025.241EFE0090@blue.fi.intel.com>
+In-Reply-To: <20130607151025.241EFE0090@blue.fi.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061015-5024-0000-0000-0000064927AE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Jun 2013 22:40:24 +0900
-HATAYAMA Daisuke <d.hatayama@gmail.com> wrote:
+On 06/07/2013 08:10 AM, Kirill A. Shutemov wrote:
+> +	/*
+> +	 * When we add a huge page to page cache we take only reference to head
+> +	 * page, but on split we need to take addition reference to all tail
+> +	 * pages since they are still in page cache after splitting.
+> +	 */
+> +	init_tail_refcount = PageAnon(page) ? 0 : 1;
 
-> 2013/6/8 Michael Holzheu <holzheu@linux.vnet.ibm.com>:
-> <cut>
-> > @@ -225,6 +251,56 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
-> >         return acc;
-> >  }
-> >
-> > +static ssize_t read_vmcore(struct file *file, char __user *buffer,
-> > +                          size_t buflen, loff_t *fpos)
-> > +{
-> > +       return __read_vmcore(buffer, buflen, fpos, 1);
-> > +}
-> > +
-> > +/*
-> > + * The vmcore fault handler uses the page cache and fills data using the
-> > + * standard __vmcore_read() function.
-> > + */
-> > +static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-> > +{
-> > +       struct address_space *mapping = vma->vm_private_data;
-> > +       pgoff_t index = vmf->pgoff;
-> > +       struct page *page;
-> > +       loff_t src;
-> > +       char *buf;
-> > +       int rc;
-> > +
-> > +find_page:
-> > +       page = find_lock_page(mapping, index);
-> > +       if (page) {
-> > +               unlock_page(page);
-> > +               rc = VM_FAULT_MINOR;
-> > +       } else {
-> > +               page = page_cache_alloc_cold(mapping);
-> > +               if (!page)
-> > +                       return VM_FAULT_OOM;
-> > +               rc = add_to_page_cache_lru(page, mapping, index, GFP_KERNEL);
-> > +               if (rc) {
-> > +                       page_cache_release(page);
-> > +                       if (rc == -EEXIST)
-> > +                               goto find_page;
-> > +                       /* Probably ENOMEM for radix tree node */
-> > +                       return VM_FAULT_OOM;
-> > +               }
-> > +               buf = (void *) (page_to_pfn(page) << PAGE_SHIFT);
-> > +               src = index << PAGE_CACHE_SHIFT;
-> > +               __read_vmcore(buf, PAGE_SIZE, &src, 0);
-> > +               unlock_page(page);
-> > +               rc = VM_FAULT_MAJOR;
-> > +       }
-> > +       vmf->page = page;
-> > +       return rc;
-> > +}
-> 
-> How about reusing find_or_create_page()?
+What's the "init" for in the name?
 
-The function would then look like the following:
+In add_to_page_cache_locked() in patch 12/39, you do
+> +       spin_lock_irq(&mapping->tree_lock);
+> +       for (i = 0; i < nr; i++) {
+> +               page_cache_get(page + i);
 
-static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-{
-        struct address_space *mapping = vma->vm_private_data;
-        pgoff_t index = vmf->pgoff;
-        struct page *page;
-        loff_t src;
-        char *buf;
+That looks to me to be taking references to the tail pages.  What gives? :)
 
-        page = find_or_create_page(mapping, index, GFP_KERNEL);
-        if (!page)
-                return VM_FAULT_OOM;
-        src = index << PAGE_CACHE_SHIFT;
-        buf = (void *) (page_to_pfn(page) << PAGE_SHIFT);
-        __read_vmcore(buf, PAGE_SIZE, &src, 0);
-        unlock_page(page);
-        vmf->page = page;
-        return 0;
-}
+>  	for (i = HPAGE_PMD_NR - 1; i >= 1; i--) {
+>  		struct page *page_tail = page + i;
+>  
+> @@ -1587,8 +1595,9 @@ static void __split_huge_page_refcount(struct page *page,
+>  		 * atomic_set() here would be safe on all archs (and
+>  		 * not only on x86), it's safer to use atomic_add().
+>  		 */
+> -		atomic_add(page_mapcount(page) + page_mapcount(page_tail) + 1,
+> -			   &page_tail->_count);
+> +		atomic_add(init_tail_refcount + page_mapcount(page) +
+> +				page_mapcount(page_tail) + 1,
+> +				&page_tail->_count);
+>  
+>  		/* after clearing PageTail the gup refcount can be released */
+>  		smp_mb();
 
-I agree that this makes the function simpler but we have to copy
-the page also if it has already been filled, correct?
-
-But since normally only one process uses /proc/vmcore this might be
-acceptable.
-
-BTW: I also removed the VM_FAULT_MAJOR/MINOR because I think the fault
-handler should return 0 if a page has been found.
-
-Michael
+This does look much better in general, though.
 
