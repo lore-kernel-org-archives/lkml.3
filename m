@@ -1,93 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530Ab3FGAsc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 20:48:32 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:48553 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab3FGAsa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 20:48:30 -0400
-Date: Thu, 6 Jun 2013 17:48:24 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>, Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [patch -v4 4/8] memcg: enhance memcg iterator to support
- predicates
-Message-ID: <20130607004824.GA16160@htj.dyndns.org>
-References: <20130604134523.GH31242@dhcp22.suse.cz>
- <20130604193619.GA14916@htj.dyndns.org>
- <20130604204807.GA13231@dhcp22.suse.cz>
- <20130604205426.GI14916@htj.dyndns.org>
- <20130605073728.GC15997@dhcp22.suse.cz>
- <20130605080545.GF7303@mtj.dyndns.org>
- <20130605085239.GF15997@dhcp22.suse.cz>
- <20130605085849.GB7990@mtj.dyndns.org>
- <20130605090739.GH15997@dhcp22.suse.cz>
- <20130605090938.GA8266@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130605090938.GA8266@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754783Ab3FGAvY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 20:51:24 -0400
+Received: from mga02.intel.com ([134.134.136.20]:48743 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752944Ab3FGAvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 20:51:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,818,1363158000"; 
+   d="scan'208";a="325544618"
+Message-ID: <1370566409.4432.41.camel@ymzhang.sh.intel.com>
+Subject: Re: [PATCH] irq: add a new function irq_in_progress to check
+ pending IRQ handlers
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Reply-To: yanmin_zhang@linux.intel.com
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Liu ShuoX <shuox.liu@intel.com>, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, fweisbec@gmail.com, sedat.dilek@gmail.com,
+        srivatsa.bhat@linux.vnet.ibm.com,
+        Zhang Yanmin <yanmin.zhang@intel.com>
+Date: Fri, 07 Jun 2013 08:53:29 +0800
+In-Reply-To: <alpine.LFD.2.02.1306061505210.2905@ionos>
+References: <1370504296-24389-1-git-send-email-shuox.liu@intel.com>
+	 <alpine.LFD.2.02.1306061505210.2905@ionos>
+Organization: Intel.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 05, 2013 at 02:09:38AM -0700, Tejun Heo wrote:
-> On Wed, Jun 05, 2013 at 11:07:39AM +0200, Michal Hocko wrote:
-> > On Wed 05-06-13 01:58:49, Tejun Heo wrote:
-> > [...]
-> > > Anyways, so you aren't gonna try the skipping thing?
+On Thu, 2013-06-06 at 15:18 +0200, Thomas Gleixner wrote:
+> On Thu, 6 Jun 2013, shuox.liu@intel.com wrote:
+> > From: Zhang Yanmin <yanmin.zhang@intel.com>
 > > 
-> > As I said. I do not consider this a priority for the said reasons (i
-> > will not repeat them).
+> > synchronize_irq waits pending IRQ handlers to be finished. If using this
+> > function while holding a resource, the IRQ handler may cause deadlock.
+> > 
+> > Here we add a new function irq_in_progress which doesn't wait for the handlers
+> > to be finished.
+> > 
+> > A typical use case at suspend-to-ram:
+> > 
+> > device driver's irq handler is complicated and might hold a mutex at rare cases.
+> > Its suspend function is called and a suspended flag is set.
+> > In case its IRQ handler is running, suspend function calls irq_in_progress. if
+> > handler is running, abort suspend.
+> > The irq handler checks the suspended flag. If the device is suspended, irq handler
+> > either ignores the interrupt, or wakes up the whole system, and the driver's
+> > resume function could deal with the delayed interrupt handling.
 > 
-> That's a weird way to respond.  Alright, whatever, let me give it a
-> shot then.
+> This is as wrong as it can be. Fix the driver instead of hacking racy
+> functions into the core code.
+> 
+> So your problem looks like this:
+> 
+> CPU 0				CPU 1
+> irq_handler_thread()		suspend()
+>    .....			mutex_lock(&m);
+>    mutex_lock(&m);		synchronize_irq();
+> 
+> So why needs the mutex to be taken before synchronize_irq()? Why not
+> doing the obvious?
+> 
+> suspend()
+>   disable_irq(); (Implies synchronize_irq)
+>   mutex_lock(&m);
+>   ....
+>   mutex_unlock(&m);
+>   enable_irq();
+Thanks for the kind comment.
 
-So, there were some private exchanges and here's my main issue with
-the addition of predicate callback to mem_cgroup_iter_cond().
+We do consider your solution before and it works well indeed with some specific
+simple drivers. For example, some drives use GPIO pin as interrupt source.
 
-There are two common patterns that are used to implement iteration.
-One is the good ol' callback based one - ie. call_fn_on_each(fn) type
-interface.  The other is something which can be used as part of flow
-control by the user - be it give_me_next_elem() or for_each() type
-loop macro.  In majority of cases, especially for anything generic,
-the latter is considered to be the better choice because, while a bit
-more challenging to implement usually, it's a lot less cumbersome for
-the users of the interface.
+On one specific platform, disable_irq would really disable the irq at RTE entry,
+which means we lose the wakeup capability of this device.
+synchronize_irq can be another solution. But we did hit 'DPM device timeout' issue
+reported by dpm_wd_handler at suspend-to-ram.
 
-mem_cgroup_iter_cond() seems icky to me because the predicate callback
-is essentially visit callback, so now we end up with
-give_me_next_elem() with visit callback, which is fundamentally
-superflous.  If it were properly call_fn_on_each(fn), the return
-values would be CONTINUE, SKIP_SUBTREE or ABORT, which makes more
-sense to me.  Sure, it can be said that the predicate callback is for
-a different purpose but it really doesn't change that the interface
-now is visiting the same node in two different places.  If it were
-something remotely widely used, it won't take much time developing
-braindamaged usages where part is being done inside the predicate
-callback and the rest is done outside without clear reason why just
-because of natural code growth.  I don't think this is the type of
-construct that we want in kernel in general.
+The driver is complicated. We couldn't change too many functions to optimize it.
+In addition, we have to use the driver instead of throwing it away.
 
-That said, it also is true that doing this is the shortest path to
-implementing subtree skip given how the iterator is put together
-currently and the series as a whole reduces significant amount of
-complexity, so it is an acceptable tradeoff to proceed with this
-implementation with later restructuring of the iterator.
+With irq_in_progress, we can resolve this issue and it does work, although it
+looks like ugly.
 
-So, let's go ahead as proposed.  I'll try to rework the iterator on
-top of it, and my aplogies to Michal for being over-the-top.
+Yanmin
 
-Thanks.
 
--- 
-tejun
