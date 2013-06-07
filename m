@@ -1,109 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835Ab3FGDIW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 23:08:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55956 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752105Ab3FGDIV (ORCPT
+	id S1752721Ab3FGDKP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 23:10:15 -0400
+Received: from [205.204.113.249] ([205.204.113.249]:45009 "HELO
+	us-alimail-mta2.hst.scl.en.alidc.net." rhost-flags-FAIL-FAIL-FAIL-FAIL)
+	by vger.kernel.org with SMTP id S1751367Ab3FGDKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 23:08:21 -0400
-Date: Thu, 6 Jun 2013 20:08:53 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Liu ShuoX <shuox.liu@intel.com>,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        sedat.dilek@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
-        Zhang Yanmin <yanmin.zhang@intel.com>
-Subject: Re: [PATCH] irq: add a new function irq_in_progress to check pending
- IRQ handlers
-Message-ID: <20130607030853.GA2827@kroah.com>
-References: <1370504296-24389-1-git-send-email-shuox.liu@intel.com>
- <alpine.LFD.2.02.1306061505210.2905@ionos>
- <1370566409.4432.41.camel@ymzhang.sh.intel.com>
- <20130607010225.GA28256@kroah.com>
- <1370572672.4432.49.camel@ymzhang.sh.intel.com>
+	Thu, 6 Jun 2013 23:10:13 -0400
+Message-ID: <51B14F02.9090409@taobao.com>
+Date: Fri, 07 Jun 2013 11:09:54 +0800
+From: sanbai <sanbai@taobao.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370572672.4432.49.camel@ymzhang.sh.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: linux-kernel@vger.kernel.org, Zhu Yanhai <gaoyang.zyh@taobao.com>,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Tao Ma <taoma.tm@gmail.com>
+Subject: Re: [RFC v1] add new io-scheduler to use cgroup on high-speed device
+References: <1370398171-25173-1-git-send-email-sanbai@taobao.com> <20130605133059.GA16339@redhat.com>
+In-Reply-To: <20130605133059.GA16339@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 10:37:52AM +0800, Yanmin Zhang wrote:
-> On Thu, 2013-06-06 at 18:02 -0700, Greg KH wrote:
-> > On Fri, Jun 07, 2013 at 08:53:29AM +0800, Yanmin Zhang wrote:
-> > > On Thu, 2013-06-06 at 15:18 +0200, Thomas Gleixner wrote:
-> > > > On Thu, 6 Jun 2013, shuox.liu@intel.com wrote:
-> > > > > From: Zhang Yanmin <yanmin.zhang@intel.com>
-> > > > > 
-> > > > > synchronize_irq waits pending IRQ handlers to be finished. If using this
-> > > > > function while holding a resource, the IRQ handler may cause deadlock.
-> > > > > 
-> > > > > Here we add a new function irq_in_progress which doesn't wait for the handlers
-> > > > > to be finished.
-> > > > > 
-> > > > > A typical use case at suspend-to-ram:
-> > > > > 
-> > > > > device driver's irq handler is complicated and might hold a mutex at rare cases.
-> > > > > Its suspend function is called and a suspended flag is set.
-> > > > > In case its IRQ handler is running, suspend function calls irq_in_progress. if
-> > > > > handler is running, abort suspend.
-> > > > > The irq handler checks the suspended flag. If the device is suspended, irq handler
-> > > > > either ignores the interrupt, or wakes up the whole system, and the driver's
-> > > > > resume function could deal with the delayed interrupt handling.
-> > > > 
-> > > > This is as wrong as it can be. Fix the driver instead of hacking racy
-> > > > functions into the core code.
-> > > > 
-> > > > So your problem looks like this:
-> > > > 
-> > > > CPU 0				CPU 1
-> > > > irq_handler_thread()		suspend()
-> > > >    .....			mutex_lock(&m);
-> > > >    mutex_lock(&m);		synchronize_irq();
-> > > > 
-> > > > So why needs the mutex to be taken before synchronize_irq()? Why not
-> > > > doing the obvious?
-> > > > 
-> > > > suspend()
-> > > >   disable_irq(); (Implies synchronize_irq)
-> > > >   mutex_lock(&m);
-> > > >   ....
-> > > >   mutex_unlock(&m);
-> > > >   enable_irq();
-> > > Thanks for the kind comment.
-> > > 
-> > > We do consider your solution before and it works well indeed with some specific
-> > > simple drivers. For example, some drives use GPIO pin as interrupt source.
-> > > 
-> > > On one specific platform, disable_irq would really disable the irq at RTE entry,
-> > > which means we lose the wakeup capability of this device.
-> > > synchronize_irq can be another solution. But we did hit 'DPM device timeout' issue
-> > > reported by dpm_wd_handler at suspend-to-ram.
-> > > 
-> > > The driver is complicated. We couldn't change too many functions to optimize it.
-> > > In addition, we have to use the driver instead of throwing it away.
-> > 
-> > What is preventing you from rewriting it to work properly?
-> It's complicated.
+On 2013年06月05日 21:30, Vivek Goyal wrote:
+> On Wed, Jun 05, 2013 at 10:09:31AM +0800, Robin Dong wrote:
+>> We want to use blkio.cgroup on high-speed device (like fusionio) for our mysql clusters.
+>> After testing different io-scheduler, we found that  cfq is too slow and deadline can't run on cgroup.
+> So why not enhance deadline to be able to be used with cgroups instead of
+> coming up with a new scheduler?
+I think if we add cgroups support into deadline, it will not be suitable 
+to call "deadline" anymore...so a new ioscheduler and a new name may not 
+confuse users.
+>
+>> So we developed a new io-scheduler: tpps (Tiny Parallel Proportion Scheduler).It dispatch requests
+>> only by using their individual weight and total weight (proportion) therefore it's simply and efficient.
+> Can you give more details. Do you idle? Idling kills performance. If not,
+> then without idling how do you achieve performance differentiation.
+We don't idle, when comes to .elevator_dispatch_fn，we just compute 
+quota for every group:
 
-That sounds like your issue, not ours, so please don't push the problem
-onto someone else.  Take ownership of the driver, fix it up, and all
-will be good.
+quota = nr_requests - rq_in_driver;
+group_quota = quota * group_weight / total_weight;
+
+and dispatch 'group_quota' requests for the coordinate group. Therefore 
+high-weight group
+will dispatch more requests than low-weight group.
+>
+>> Test case: fusionio card, 4 cgroups, iodepth-512
+>>
+>> groupname  weight
+>> test1      1000
+>> test2      800
+>> test3      600
+>> test4      400
+>>
+> What's the workload used for this?
+>
+>> Use tpps, the result is:
+>>
+>> groupname  iops    avg-rt(ms)   max-rt(ms)
+>> test1      30220   16           54
+>> test2      28261   18           56
+>> test3      26333   19           69
+>> test4      20152   25           87
+>>
+>> Use cfq, the result is:
+>>
+>> groupname  iops    avg-rt(ms)   max-rt(ms)
+>> test1      16478   30           242
+>> test2      13015   39           347
+>> test3       9300   54           371
+>> test4       5806   87           393
+> How do results look like with cfq if this is run with slice_idle=0 and
+> quatum=128 or higher.
+>
+> cfqq idles on 3 things. queue (cfqq), service tree and cfq group.
+> slice_idle will disable idling on cfqq but not no service tree. If
+> we provide a knob for that, then idling on service tree can be disabled
+> too and then we will be left with group idling only and then it should
+> be much better.
+I do the test again for cfq (slice_idle=0, quatum=128) and tpps
+
+cfq (slice_idle=0, quatum=128)
+groupname iops avg-rt(ms) max-rt(ms)
+test1 16148 15 188
+test2 12756 20 117
+test3 9778 26 268
+test4 6198 41 209
+
+tpps
+groupname iops avg-rt(ms) max-rt(ms)
+test1 17292 14 65
+test2 15221 16 80
+test3 12080 21 66
+test4 7995 32 90
+
+Looks cfq with is much better than before.
+
+My fio script is :
+[global]
+direct=1
+ioengine=libaio
+#ioengine=psync
+runtime=30
+bs=4k
+rw=randread
+iodepth=256
+
+filename=/dev/fioa
+numjobs=2
+#group_reporting
+
+[read1]
+cgroup=test1
+cgroup_weight=1000
+
+[read2]
+cgroup=test2
+cgroup_weight=800
+
+[read3]
+cgroup=test3
+cgroup_weight=600
+
+[read4]
+cgroup=test4
+cgroup_weight=400
 
 
-> > > With irq_in_progress, we can resolve this issue and it does work, although it
-> > > looks like ugly.
-> > 
-> > Don't paper over driver bugs in the core kernel, fix the driver.
-> It's hard to say it's a driver bug. Could generic kernel provide some
-> flexibility for such complicated drivers?
+>
+> Thanks
+> Vivek
 
-Please post the code for the driver, and then we will be glad to
-continue the dicussion.
 
-As for "complicated", just make it "uncomplicated", it's just code :)
+-- 
 
-greg k-h
+Robin Dong
+董昊（花名：三百）
+阿里巴巴 集团 核心系统部 内核组
+分机：72370
+手机：13520865473
+email：sanbai@taobao.com
+
