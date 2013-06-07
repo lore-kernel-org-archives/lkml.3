@@ -1,37 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751235Ab3FGHjK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 03:39:10 -0400
-Received: from anakin.metrored.mx ([189.204.33.13]:59143 "EHLO
-	anakin.metrored.mx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838Ab3FGHjI convert rfc822-to-8bit (ORCPT
+	id S1751424Ab3FGHj7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 03:39:59 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:35372 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab3FGHj6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 03:39:08 -0400
-X-Greylist: delayed 50450 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Jun 2013 03:39:08 EDT
-From: "LIC. MARIO REA Y ASOCIADOS, S.C." <info@commercialloan.com>
-Reply-To: commercial.loan@songjiang.net
-Organization: COMMERCIAL FINANCE LOAN
-Subject: APPLY FOR EASY LOAN
-To: undisclosed-recipients:;
-Message-ID: <20130606141502.785e55b1@anakin.metrored.mx>
-Date: Thu, 06 Jun 2013 09:15:02 -0500
-X-Mailer: Kerio Connect 7.0.0 patch 1 WebMail
-X-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:21.0) Gecko/20100101 Firefox/21.0
+	Fri, 7 Jun 2013 03:39:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+In-Reply-To: <201306061644.26078.heiko@sntech.de>
+References: <201306061644.26078.heiko@sntech.de>
+Date: Fri, 7 Jun 2013 09:39:57 +0200
+Message-ID: <CACRpkdYXczRQKa_uAAZHdv7yDD+Od7RQb5NuZLV8=L0cDGJyUg@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: add pinconf-generic define for a pin-default pull
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apply now for your cheap loan at 2% percent interest rate. Provide the details below if interested:
+On Thu, Jun 6, 2013 at 4:44 PM, Heiko Stübner <heiko@sntech.de> wrote:
 
-Name:
-Loan Amount:
-Duration:
-Phone Number:
-Country:
+> There exist controllers that don't support to set the pull to up or down
+> separately but instead automatically set the pull direction based on
+> embedded knowledge inside the controller, for example depending on the
+> selected mux function of the pin.
+>
+> Therefore this patch adds another config option to use this default
+> pull-state for a pin where it is not possible to know or decide if the
+> pin will be pulled up or down.
+>
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 
-Best regards.
-COMMERCIAL FINANCE LOAN
+Excellent, patch applied with Stephen's ACK.
+
+Yours,
+Linus Walleij
