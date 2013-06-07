@@ -1,28 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824Ab3FGIpd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 04:45:33 -0400
-Received: from 15.mo1.mail-out.ovh.net ([188.165.38.232]:51484 "EHLO
+	id S1754101Ab3FGIqg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 04:46:36 -0400
+Received: from 4.mo1.mail-out.ovh.net ([46.105.76.26]:46909 "EHLO
 	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751887Ab3FGIp0 (ORCPT
+	with ESMTP id S1752239Ab3FGIpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 04:45:26 -0400
+	Fri, 7 Jun 2013 04:45:31 -0400
+X-Greylist: delayed 575 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Jun 2013 04:45:30 EDT
 From: Boris BREZILLON <b.brezillon@overkiz.com>
 To: Mike Turquette <mturquette@linaro.org>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Andrew Victor <linux@maxim.org.za>
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Boris BREZILLON <b.brezillon@overkiz.com>,
-        Russell King <linux@arm.linux.org.uk>
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
 X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [RFC 08/50] ARM: at91: add PMC utmi clock support using common clk framework.
-Date: Fri,  7 Jun 2013 10:34:19 +0200
-Message-Id: <1370594119-5342-9-git-send-email-b.brezillon@overkiz.com>
+Subject: [RFC 11/50] ARM: at91: add PMC clk device tree binding doc.
+Date: Fri,  7 Jun 2013 10:34:22 +0200
+Message-Id: <1370594119-5342-12-git-send-email-b.brezillon@overkiz.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1370594119-5342-1-git-send-email-b.brezillon@overkiz.com>
 References: <1370594119-5342-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 11166393801771365404
+X-Ovh-Tracer-Id: 11167238226716112044
 X-Ovh-Remote: 80.245.18.66 ()
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
@@ -37,205 +39,266 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This is the at91 utmi clock implementation using common clk framework.
-
-This clock is a pll with a fixed factor (x40).
-It is used as a source for usb clock.
+This is the documentation of the dt bindings used by at91 clks.
 
 Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 ---
- arch/arm/mach-at91/Kconfig  |    7 +++
- drivers/clk/at91/Makefile   |    1 +
- drivers/clk/at91/clk-utmi.c |  114 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/clk/at91.h    |    4 ++
- 4 files changed, 126 insertions(+)
+ .../devicetree/bindings/clock/at91-clock.txt       |  247 ++++++++++++++++++++
+ 1 file changed, 247 insertions(+)
 
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index 0280238..a4d442d 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -1,5 +1,8 @@
- if ARCH_AT91
- 
-+config HAVE_AT91_UTMI
-+	bool
-+
- config HAVE_AT91_DBGU0
- 	bool
- 
-@@ -65,6 +68,7 @@ config SOC_SAMA5D3
- 	select SOC_SAMA5
- 	select HAVE_FB_ATMEL
- 	select HAVE_AT91_DBGU1
-+	select HAVE_AT91_UTMI
- 	help
- 	  Select this if you are using one of Atmel's SAMA5D3 family SoC.
- 	  This support covers SAMA5D31, SAMA5D33, SAMA5D34, SAMA5D35.
-@@ -106,12 +110,14 @@ config SOC_AT91SAM9RL
- 	select HAVE_AT91_DBGU0
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
-+	select HAVE_AT91_UTMI
- 
- config SOC_AT91SAM9G45
- 	bool "AT91SAM9G45 or AT91SAM9M10 families"
- 	select HAVE_AT91_DBGU1
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
-+	select HAVE_AT91_UTMI
- 	help
- 	  Select this if you are using one of Atmel's AT91SAM9G45 family SoC.
- 	  This support covers AT91SAM9G45, AT91SAM9G46, AT91SAM9M10 and AT91SAM9M11.
-@@ -121,6 +127,7 @@ config SOC_AT91SAM9X5
- 	select HAVE_AT91_DBGU0
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
-+	select HAVE_AT91_UTMI
- 	help
- 	  Select this if you are using one of Atmel's AT91SAM9x5 family SoC.
- 	  This means that your SAM9 name finishes with a '5' (except if it is
-diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
-index 2d7c119..76d09f0 100644
---- a/drivers/clk/at91/Makefile
-+++ b/drivers/clk/at91/Makefile
-@@ -6,3 +6,4 @@ obj-y += clk-main.o clk-pll.o clk-plldiv.o clk-master.o
- obj-y += clk-system.o clk-peripheral.o
- 
- obj-$(CONFIG_AT91_PROGRAMMABLE_CLOCKS)	+= clk-programmable.o
-+obj-$(CONFIG_HAVE_AT91_UTMI)		+= clk-utmi.o
-diff --git a/drivers/clk/at91/clk-utmi.c b/drivers/clk/at91/clk-utmi.c
+diff --git a/Documentation/devicetree/bindings/clock/at91-clock.txt b/Documentation/devicetree/bindings/clock/at91-clock.txt
 new file mode 100644
-index 0000000..c0dd596
+index 0000000..63c5d16
 --- /dev/null
-+++ b/drivers/clk/at91/clk-utmi.c
-@@ -0,0 +1,114 @@
-+/*
-+ * drivers/clk/at91/clk-utmi.c
-+ *
-+ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
-+ *
-+ * This utmiram is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ */
++++ b/Documentation/devicetree/bindings/clock/at91-clock.txt
+@@ -0,0 +1,247 @@
++Device Tree Clock bindings for arch-at91
 +
-+#include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
-+#include <linux/clk/at91.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/io.h>
++This binding uses the common clock binding[1].
 +
-+#define to_clk_utmi(hw) container_of(hw, struct clk_utmi, hw)
++[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
 +
-+struct clk_utmi {
-+	struct clk_hw hw;
-+};
++Required properties:
++- compatible : shall be one of the following:
++	"atmel,at91rm9200-clk-main":
++		at91 main oscillator
 +
-+static int clk_utmi_prepare(struct clk_hw *hw)
-+{
-+	u32 tmp = at91_pmc_read(AT91_CKGR_UCKR) | AT91_PMC_UPLLEN |
-+		  AT91_PMC_UPLLCOUNT;
-+	at91_pmc_write(AT91_CKGR_UCKR, tmp);
-+	while (!(at91_pmc_read(AT91_PMC_SR) & AT91_PMC_LOCKU))
-+		;
-+	return 0;
-+}
++	"atmel,at91rm9200-clk-master" or
++	"atmel,at91sam9x5-clk-master":
++		at91 master clock
 +
-+static int clk_utmi_is_prepared(struct clk_hw *hw)
-+{
-+	return !!(at91_pmc_read(AT91_PMC_SR) & AT91_PMC_LOCKU);
-+}
++	"atmel,at91sam9x5-clk-peripheral" or
++	"atmel,at91rm9200-clk-peripheral":
++		at91 peripheral clocks
 +
-+static void clk_utmi_disable(struct clk_hw *hw)
-+{
-+	u32 tmp = at91_pmc_read(AT91_CKGR_UCKR) & ~AT91_PMC_UPLLEN;
-+	at91_pmc_write(AT91_CKGR_UCKR, tmp);
-+}
++	"atmel,at91rm9200-clk-pll" or
++	"atmel,at91sam9g45-clk-pll" or
++	"atmel,at91sam9g20-clk-pllb" or
++	"atmel,sama5d3-clk-pll":
++		at91 pll clocks
 +
-+static unsigned long clk_utmi_recalc_rate(struct clk_hw *hw,
-+					  unsigned long parent_rate)
-+{
-+	return parent_rate * 40;
-+}
++	"atmel,at91sam9x5-clk-plldiv":
++		at91 plla divisor
 +
-+static const struct clk_ops utmi_ops = {
-+	.prepare = clk_utmi_prepare,
-+	.is_prepared = clk_utmi_is_prepared,
-+	.disable = clk_utmi_disable,
-+	.recalc_rate = clk_utmi_recalc_rate,
-+};
++	"atmel,at91rm9200-clk-programmable" or
++	"atmel,at91sam9g45-clk-programmable" or
++	"atmel,at91sam9x5-clk-programmable":
++		at91 programmable clocks
 +
-+struct clk * __init
-+at91_clk_register_utmi(const char *name, const char *parent_name)
-+{
-+	struct clk_utmi *utmi;
-+	struct clk *clk = NULL;
-+	struct clk_init_data init;
++	"atmel,at91sam9x5-clk-smd":
++		at91 SMD (Soft Modem) clock
 +
-+	utmi = kzalloc(sizeof(*utmi), GFP_KERNEL);
-+	if (!utmi)
-+		return ERR_PTR(-ENOMEM);
++	"atmel,at91rm9200-clk-system":
++		at91 system clocks
 +
-+	init.name = name;
-+	init.ops = &utmi_ops;
-+	init.parent_names = parent_name ? &parent_name : NULL;
-+	init.num_parents = parent_name ? 1 : 0;
-+	init.flags = CLK_SET_RATE_GATE;
++	"atmel,at91rm9200-clk-usb" or
++	"atmel,at91sam9x5-clk-usb":
++		at91 usb clock
 +
-+	utmi->hw.init = &init;
++	"atmel,at91sam9x5-clk-utmi":
++		at91 utmi clock
 +
-+	clk = clk_register(NULL, &utmi->hw);
 +
-+	if (IS_ERR(clk))
-+		kfree(utmi);
++Required properties for main clock:
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks (optional if clock-frequency is provided) : shall be the slow clock
++	phandle. This clock is used to compute the main clock rate if
++	"clock-frequency" is not provided.
++- clock-frequency: the main oscillator frequency.Prefer the use of
++	"clock-frequency" over automatic clock rate computation.
 +
-+	return clk;
-+}
++For example:
++	main: mainck {
++		compatible = "atmel,at91rm9200-clk-main";
++		#clock-cells = <0>;
++		clocks = <&ck32k>;
++		clock-frequency = <18432000>;
++	};
 +
-+#if defined(CONFIG_OF)
-+static void __init
-+of_at91_clk_utmi_setup(struct device_node *np)
-+{
-+	struct clk *clk;
-+	const char *parent_name;
-+	const char *name = np->name;
++Required properties for master clock:
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall be the master clock sources (see atmel datasheet) phandles.
++	e.g. "<&ck32k>, <&main>, <&plla>, <&pllb>".
++- characteristics : device tree node describing master clock characteristics.
++	You can find these characteristics in atmel's SoC datasheets.
++	* output : minimum and maximum clock frequency (two u32 fields).
++		e.g. output = <0 133000000>; <=> 0 to 133MHz.
++	* divisors : master clock divisors table (four u32 fields).
++		0 <=> reserved value.
++		e.g. divisors = <1 2 4 6>;
++	* have-div3-pres : some SoC use the reserved value 7 in the PRES field
++		as CLOCK_DIV3 (e.g sam9x5).
 +
-+	parent_name = of_clk_get_parent_name(np, 0);
++For example:
++	mck: mck {
++		compatible = "atmel,at91rm9200-clk-master";
++		#clock-cells = <0>;
++		characteristics = {
++			output = <0 133000000>;
++			divisors = <1 2 4 0>;
++		};
++	};
 +
-+	of_property_read_string(np, "clock-output-names", &name);
++Required properties for peripheral clocks:
++- #clock-cells : from common clock binding; shall be set to 1. The second cell
++	is used to encode the peripheral id. Peripheral ids are defined in
++	atmel's SoC datasheets.
++- clocks : shall be the master clock phandle.
++	e.g. clocks = <&mck>;
++- ids : peripheral ids (u32 array).
++- clock-output-names : name of clocks. These are the name used during clock
++	registration.
++- "default-divisors" (optional, only available for
++	"atmel,at91sam9x5-clk-peripheral") : sam9x5 and sama5d3 SoC provides
++	configurable peripheral clock divisors. If you define this property
++	(u32 array), the default divisor will be applied when enabling
++	peripheral clock. If not provided the peripheral clock is not divided.
 +
-+	clk = at91_clk_register_utmi(name, parent_name);
++For example:
++	periph: periphck {
++		compatible = "atmel,at91sam9x5-clk-peripheral";
++		#clock-cells = <1>;
++		clocks = <&mck>;
++		ids = <2 6 7>;
++		clock-output-names = "pioA_clk", "pioB_clk", "pioB_clk";
++		default-divisors = <1 2 2>;
++	};
 +
-+	if (IS_ERR(clk))
-+		return;
 +
-+	of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+	return;
-+}
++Required properties for pll clocks:
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall be the main clock phandle.
++- id : pll id
++	* 0 <=> plla
++	* 1 <=> pllb
++- characteristics : device tree node describing pll clock characteristics.
++	You can find these characteristics in atmel's SoC datasheets.
++	* input : minimum and maximum source clock frequency (two u32 fields).
++		e.g. input = <1 32000000>; <=> 1 to 32MHz.
++	* output : output frequency ranges.
++	* out: out field value for output frequency ranges.
++	* icpll (not available on some SoC): icpll field value for output
++		frequency ranges.
 +
-+static void __init of_at91sam9x5_clk_utmi_setup(struct device_node *np)
-+{
-+	of_at91_clk_utmi_setup(np);
-+}
-+CLK_OF_DECLARE(at91sam9x5_clk_utmi, "atmel,at91sam9x5-clk-utmi",
-+	       of_at91sam9x5_clk_utmi_setup);
-+#endif
-diff --git a/include/linux/clk/at91.h b/include/linux/clk/at91.h
-index eccdf74..18c89c2 100644
---- a/include/linux/clk/at91.h
-+++ b/include/linux/clk/at91.h
-@@ -285,4 +285,8 @@ at91_clk_register_programmable(const char *name, const char **parent_names,
- 			       u8 num_parents, u8 id,
- 			       struct clk_programmable_layout *layout);
- 
++For example:
++	plla: pllack {
++		compatible = "atmel,at91sam9g45-clk-pll";
++		#clock-cells = <0>;
++		clocks = <&main>;
++		id = <0>;
++		input = <2000000 32000000>;
++		output = <74500000 800000000
++			  69500000 750000000
++			  64500000 700000000
++			  59500000 650000000
++			  54500000 600000000
++			  49500000 550000000
++			  44500000 500000000
++			  40000000 450000000>;
++		out = <0 1 2 3 0 1 2 3>;
++		icpll = <0 0 0 0 1 1 1 1>;
++	};
 +
-+struct clk * __init
-+at91_clk_register_utmi(const char *name, const char *parent_name);
++Required properties for plldiv clocks:
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall be the plla clock phandle.
 +
- #endif
++For example:
++	plladiv: plladivck {
++		compatible = "atmel,at91sam9x5-clk-plldiv";
++		#clock-cells = <0>;
++		clocks = <&plla>;
++	};
++
++Required properties for programmable clocks:
++- #clock-cells : from common clock binding; shall be set to 1. The second cell
++	is used to encode the programmable clock id.
++	Peripheral ids are in atmel's SoC
++	datasheets.
++- clocks : shall be the programmable clock source phandles.
++	e.g. clocks = <&clk32k>, <&main>, <&plla>, <&pllb>;
++- ids : programmable clock ids (u32 array).
++- clock-output-names : name of clocks. These names are used during clock
++	registration.
++
++For example:
++	prog: progck {
++		compatible = "atmel,at91sam9g45-clk-programmable";
++		#clock-cells = <1>;
++		ids = <0 1>;
++		clocks = <&clk32k>, <&main>, <&plladiv>, <&utmi>, <&mck>;
++		clock-output-names = "prog0", "prog1";
++	};
++
++
++Required properties for smd clock:
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall be the smd clock source phandles.
++	e.g. clocks = <&plladiv>, <&utmi>;
++
++For example:
++	smd: smdck {
++		compatible = "atmel,at91sam9x5-clk-smd";
++		#clock-cells = <0>;
++		clocks = <&plladiv>, <&utmi>;
++	};
++
++Required properties for system clocks:
++- #clock-cells : from common clock binding; shall be set to 1. The second cell
++	is used to encode the system clock id (bit used in SCER/SCDR register).
++- clocks : shall be the system clock source phandle.
++	e.g. clocks = <&usb>;
++- ids : peripheral ids (u32 array).
++- clock-output-names : name of clocks. These names are used during clock
++	registration.
++
++For example:
++	system: systemck {
++		compatible = "atmel,at91rm9200-clk-system";
++		#clock-cells = <1>;
++		ids = <2 4 6 7 8 9 10>;
++		clocks = <&mck>, <&smd>, <&usb>, <&usb>,
++			 <&prog 0>, <&prog 1>, <&prog 2>;
++		clock-output-names = "ddrck", "smdck", "uhpck", "udpck",
++				     "pck0", "pck1", "pck2";
++	};
++
++
++Required properties for usb clock:
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall be the smd clock source phandles.
++	e.g. clocks = <&pllb>;
++- divisors (only available for "atmel,at91rm9200-clk-usb"):
++	usb clock divisor table.
++	e.g. divisors = <1 2 4 0>;
++- usbs0-unused (only available for "atmel,at91sam9x5-clk-usb"):
++	Some SoC (sam9n12) use usb source 0 to disable the usb clock.
++
++For example:
++	usb: usbck {
++		compatible = "atmel,at91sam9x5-clk-usb";
++		#clock-cells = <0>;
++		clocks = <&plladiv>, <&utmi>;
++	};
++
++	usb: usbck {
++		compatible = "atmel,at91rm9200-clk-usb";
++		#clock-cells = <0>;
++		clocks = <&pllb>;
++		divisors = <1 2 4 0>;
++	};
++
++
++Required properties for utmi clock:
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall be the main clock source phandle.
++
++For example:
++	utmi: utmick {
++		compatible = "atmel,at91sam9x5-clk-utmi";
++		#clock-cells = <0>;
++		clocks = <&main>;
++	};
 -- 
 1.7.9.5
 
