@@ -1,486 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab3FGIzg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 04:55:36 -0400
-Received: from 19.mo1.mail-out.ovh.net ([178.32.97.206]:41588 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754711Ab3FGIz1 (ORCPT
+	id S1755261Ab3FGI4w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 04:56:52 -0400
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:57838 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754996Ab3FGI4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 04:55:27 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>,
-        devicetree-discuss@lists.ozlabs.org
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [RFC 06/50] ARM: at91: add PMC peripheral clocks support using common clk framework.
-Date: Fri,  7 Jun 2013 10:34:17 +0200
-Message-Id: <1370594119-5342-7-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370594119-5342-1-git-send-email-b.brezillon@overkiz.com>
-References: <1370594119-5342-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 11165830851805230252
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 7 Jun 2013 04:56:48 -0400
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Message-ID: <51B1A04B.7030003@yandex-team.ru>
+Date: Fri, 07 Jun 2013 12:56:43 +0400
+From: Roman Gushchin <klamm@yandex-team.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com,
+        yanmin.zhang@intel.com
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: slub: slab order on multi-processor machines
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
-This is the at91 peripheral clock implementation using common clk framework.
+While investigating some compaction-related problems, I noticed, that many (even most)
+kernel objects are allocated on slabs with order 2 or 3.
 
-Almost all peripherals provided by an at91 SoC need a clock to work properly.
-This clock is enabled/disabled using PCER/PCDR resgisters.
+This behavior was introduced by commit 9b2cd506e "slub: Calculate min_objects based on
+number of processors." by Christoph Lameter.
+As I understand, the idea was to make kernel allocations cheaper by reducing the total
+number of page allocations (allocating 1 page with order 3 is cheaper than allocating
+8 1-ordered pages).
 
-Each peripheral is given an id (see atmel's datasheets) which is used as bit
-position in SCER/SCDR registers.
+I'm sure, it's true for recently rebooted machine with a lot of free non-fragmented memory.
+But is it also true for heavy-loaded machine with fragmented memory?
+Are we sure, that it's cheaper to run compaction and allocate order 3 page than to use
+small 1-pages slabs?
+Do I miss something?
 
-Some new SoCs (at91sam9x5 and sama5d3) provide a new register (PCR) where you
-can configure the peripheral clock as a division of the master clock.
-This will help reducing the peripherals power comsumption.
+Disabling this behavior dramatically reduces the number of 2- and 3-ordered allocations.
+Compaction is performed significantly rarer. This is especially noticeable on machines
+with intensive disk i/o. I do not see any performance degradation. But I'm not sure,
+that I'm not missing something.
 
-This patch fixes erronous AT91_PMC_PCR_DIV values.
+Any comments and/or ideas are welcomed.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/clk/at91/Makefile         |    2 +-
- drivers/clk/at91/clk-peripheral.c |  376 +++++++++++++++++++++++++++++++++++++
- include/linux/clk/at91.h          |   14 +-
- 3 files changed, 388 insertions(+), 4 deletions(-)
+Thanks!
 
-diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
-index 13e5714..3e2a670 100644
---- a/drivers/clk/at91/Makefile
-+++ b/drivers/clk/at91/Makefile
-@@ -3,4 +3,4 @@
- #
- 
- obj-y += clk-main.o clk-pll.o clk-plldiv.o clk-master.o
--obj-y += clk-system.o
-+obj-y += clk-system.o clk-peripheral.o
-diff --git a/drivers/clk/at91/clk-peripheral.c b/drivers/clk/at91/clk-peripheral.c
-new file mode 100644
-index 0000000..2fc66b9
---- /dev/null
-+++ b/drivers/clk/at91/clk-peripheral.c
-@@ -0,0 +1,376 @@
-+/*
-+ * drivers/clk/at91/clk-peripheral.c
-+ *
-+ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
-+#include <linux/clk/at91.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/io.h>
-+
-+#define PERIPHERAL_MAX		64
-+
-+#define PERIPHERAL_AT91RM9200	0
-+#define PERIPHERAL_AT91SAM9X5	1
-+
-+#define to_clk_peripheral(hw) container_of(hw, struct clk_peripheral, hw)
-+struct clk_peripheral {
-+	struct clk_hw hw;
-+	u32 id;
-+};
-+
-+#define to_clk_sam9x5_peripheral(hw) \
-+	container_of(hw, struct clk_sam9x5_peripheral, hw)
-+struct clk_sam9x5_peripheral {
-+	struct clk_hw hw;
-+	u32 id;
-+	u8 div;
-+	u8 have_div_support;
-+};
-+
-+static int clk_peripheral_enable(struct clk_hw *hw)
-+{
-+	struct clk_peripheral *periph = to_clk_peripheral(hw);
-+	int offset = AT91_PMC_PCER;
-+	if (periph->id < 2)
-+		return 0;
-+	if (periph->id > 31)
-+		offset = AT91_PMC_PCER1;
-+	at91_pmc_write(offset, 1 << (periph->id & 31));
-+	return 0;
-+}
-+
-+static void clk_peripheral_disable(struct clk_hw *hw)
-+{
-+	struct clk_peripheral *periph = to_clk_peripheral(hw);
-+	int offset = AT91_PMC_PCDR;
-+	if (periph->id < 2)
-+		return;
-+	if (periph->id > 31)
-+		offset = AT91_PMC_PCDR1;
-+	at91_pmc_write(offset, 1 << (periph->id & 31));
-+}
-+
-+static int clk_peripheral_is_enabled(struct clk_hw *hw)
-+{
-+	struct clk_peripheral *periph = to_clk_peripheral(hw);
-+	int offset = AT91_PMC_PCSR;
-+	if (periph->id < 2)
-+		return 1;
-+	if (periph->id > 31)
-+		offset = AT91_PMC_PCSR1;
-+	return !!(at91_pmc_read(offset) & (1 << (periph->id & 31)));
-+}
-+
-+static const struct clk_ops peripheral_ops = {
-+	.enable = clk_peripheral_enable,
-+	.disable = clk_peripheral_disable,
-+	.is_enabled = clk_peripheral_is_enabled,
-+};
-+
-+struct clk * __init at91_clk_register_peripheral(const char *name,
-+						 const char *parent_name,
-+						 u32 id)
-+{
-+	struct clk_peripheral *periph;
-+	struct clk *clk = NULL;
-+	struct clk_init_data init;
-+
-+	id &= 31;
-+	periph = kzalloc(sizeof(*periph), GFP_KERNEL);
-+	if (!periph)
-+		return ERR_PTR(-ENOMEM);
-+
-+	init.name = name;
-+	init.ops = &peripheral_ops;
-+	init.parent_names = (parent_name ? &parent_name : NULL);
-+	init.num_parents = (parent_name ? 1 : 0);
-+	init.flags = 0;
-+
-+	periph->id = id;
-+	periph->hw.init = &init;
-+
-+	clk = clk_register(NULL, &periph->hw);
-+	if (IS_ERR(clk))
-+		kfree(periph);
-+
-+	return clk;
-+}
-+
-+static int clk_sam9x5_peripheral_enable(struct clk_hw *hw)
-+{
-+	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
-+	if (periph->id < 2)
-+		return 0;
-+	at91_pmc_write(AT91_PMC_PCR,
-+		       (periph->id & AT91_PMC_PCR_PID) |
-+		       AT91_PMC_PCR_CMD |
-+		       AT91_PMC_PCR_DIV(periph->div) |
-+		       AT91_PMC_PCR_EN);
-+	return 0;
-+}
-+
-+static void clk_sam9x5_peripheral_disable(struct clk_hw *hw)
-+{
-+	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
-+	if (periph->id < 2)
-+		return;
-+
-+	at91_pmc_write(AT91_PMC_PCR,
-+		       (periph->id & AT91_PMC_PCR_PID) |
-+		       AT91_PMC_PCR_CMD);
-+}
-+
-+static int clk_sam9x5_peripheral_is_enabled(struct clk_hw *hw)
-+{
-+	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
-+	if (periph->id < 2)
-+		return 1;
-+	at91_pmc_write(AT91_PMC_PCR,
-+		       (periph->id & AT91_PMC_PCR_PID));
-+	return !!(at91_pmc_read(AT91_PMC_PCR) & AT91_PMC_PCR_EN);
-+}
-+
-+static unsigned long
-+clk_sam9x5_peripheral_recalc_rate(struct clk_hw *hw,
-+				  unsigned long parent_rate)
-+{
-+	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
-+	u32 shift;
-+	if (periph->id < 2 || !periph->have_div_support)
-+		return parent_rate;
-+	at91_pmc_write(AT91_PMC_PCR,
-+		       (periph->id & AT91_PMC_PCR_PID));
-+	shift = (at91_pmc_read(AT91_PMC_PCR) >> 16) & 0x3;
-+	return parent_rate >> shift;
-+}
-+
-+static long clk_sam9x5_peripheral_round_rate(struct clk_hw *hw,
-+					     unsigned long rate,
-+					     unsigned long *parent_rate)
-+{
-+	int shift;
-+	unsigned long best_rate;
-+	unsigned long best_diff;
-+	unsigned long cur_rate;
-+	unsigned long cur_diff;
-+	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
-+	if (periph->id < 2 || !periph->have_div_support)
-+		return *parent_rate;
-+	if (rate >= *parent_rate)
-+		return rate;
-+	best_diff = *parent_rate - rate;
-+	best_rate = *parent_rate;
-+	for (shift = 1; shift < 4; shift++) {
-+		cur_rate = *parent_rate >> shift;
-+		if (cur_rate < rate)
-+			cur_diff = rate - cur_rate;
-+		else
-+			cur_diff = cur_rate - rate;
-+		if (cur_diff < best_diff) {
-+			best_diff = cur_diff;
-+			best_rate = cur_rate;
-+		}
-+		if (!best_diff || cur_rate < rate)
-+			break;
-+	}
-+	return best_rate;
-+}
-+
-+static int clk_sam9x5_peripheral_set_rate(struct clk_hw *hw,
-+					  unsigned long rate,
-+					  unsigned long parent_rate)
-+{
-+	int shift;
-+	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
-+	if (periph->id < 2 || !periph->have_div_support) {
-+		if (parent_rate == rate)
-+			return 0;
-+		else
-+			return -EINVAL;
-+	}
-+
-+	for (shift = 0; shift < 4; shift++) {
-+		if (parent_rate >> shift == rate) {
-+			periph->div = shift;
-+			return 0;
-+		}
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+static const struct clk_ops sam9x5_peripheral_ops = {
-+	.enable = clk_sam9x5_peripheral_enable,
-+	.disable = clk_sam9x5_peripheral_disable,
-+	.is_enabled = clk_sam9x5_peripheral_is_enabled,
-+	.recalc_rate = clk_sam9x5_peripheral_recalc_rate,
-+	.round_rate = clk_sam9x5_peripheral_round_rate,
-+	.set_rate = clk_sam9x5_peripheral_set_rate,
-+};
-+
-+struct clk * __init
-+at91_clk_register_sam9x5_peripheral(const char *name,
-+				    const char *parent_name,
-+				    u32 id, u32 default_div)
-+{
-+	struct clk_sam9x5_peripheral *periph;
-+	struct clk *clk = NULL;
-+	struct clk_init_data init;
-+
-+	periph = kzalloc(sizeof(*periph), GFP_KERNEL);
-+	if (!periph)
-+		return ERR_PTR(-ENOMEM);
-+
-+	init.name = name;
-+	init.ops = &sam9x5_peripheral_ops;
-+	init.parent_names = (parent_name ? &parent_name : NULL);
-+	init.num_parents = (parent_name ? 1 : 0);
-+	init.flags = CLK_SET_RATE_GATE;
-+
-+	periph->id = id;
-+	periph->hw.init = &init;
-+	periph->div = default_div;
-+
-+	clk = clk_register(NULL, &periph->hw);
-+
-+	if (IS_ERR(clk))
-+		kfree(periph);
-+
-+	return clk;
-+}
-+
-+#if defined(CONFIG_OF)
-+struct clk_periph_data {
-+	struct clk **clks;
-+	u8 *ids;
-+	unsigned int clk_num;
-+};
-+
-+static struct clk * __init
-+of_clk_src_periph_get(struct of_phandle_args *clkspec, void *data)
-+{
-+	struct clk_periph_data *clk_data = data;
-+	unsigned int id = clkspec->args[0];
-+	int i;
-+
-+	if (id >= PERIPHERAL_MAX)
-+		goto err;
-+
-+	for (i = 0; i < clk_data->clk_num; i++) {
-+		if (clk_data->ids[i] == id)
-+			return clk_data->clks[i];
-+	}
-+
-+err:
-+	pr_err("%s: invalid clock id %d\n", __func__, id);
-+	return ERR_PTR(-EINVAL);
-+}
-+
-+static void __init
-+of_at91_clk_periph_setup(struct device_node *np, u8 type)
-+{
-+	int num;
-+	int tmp;
-+	int i;
-+	u32 id;
-+	struct clk *clk;
-+	const char *parent_name;
-+	const char *name;
-+	u32 divisor;
-+	struct clk **clks;
-+	u8 *ids;
-+	struct clk_periph_data *clktab;
-+	parent_name = of_clk_get_parent_name(np, 0);
-+	if (!parent_name)
-+		return;
-+
-+	if (!of_get_property(np, "ids", &num))
-+		return;
-+
-+	num /= 4;
-+	if (num > PERIPHERAL_MAX)
-+		return;
-+
-+	if (of_property_count_strings(np, "clock-output-names") != num)
-+		return;
-+
-+	if (type == PERIPHERAL_AT91SAM9X5) {
-+		if (of_get_property(np, "default-divisors", &tmp) &&
-+		    (tmp / 4) != num)
-+			return;
-+	}
-+
-+	clktab = kzalloc(sizeof(*clktab), GFP_KERNEL);
-+	if (!clktab)
-+		return;
-+
-+	ids = kzalloc(num * sizeof(*ids), GFP_KERNEL);
-+	if (!ids)
-+		goto out_free_clktab;
-+
-+	clks = kzalloc(num * sizeof(*clks), GFP_KERNEL);
-+	if (!clks)
-+		goto out_free_ids;
-+
-+	for (i = 0; i < num; i++) {
-+		of_property_read_u32_index(np, "ids", i, &id);
-+		of_property_read_string_index(np, "clock-output-names",
-+					      i, &name);
-+		if (type == PERIPHERAL_AT91RM9200) {
-+			clk = at91_clk_register_peripheral(name,
-+							   parent_name, id);
-+		} else {
-+			if (of_property_read_u32_index(np, "default-divisors",
-+						       i,
-+						       &divisor))
-+				divisor = 0;
-+
-+			clk = at91_clk_register_sam9x5_peripheral(name,
-+								  parent_name,
-+								  id,
-+								  divisor);
-+		}
-+		if (IS_ERR(clk))
-+			goto out_free_clks;
-+		clks[i] = clk;
-+		ids[i] = id;
-+	}
-+
-+	clktab->clk_num = num;
-+	clktab->clks = clks;
-+	clktab->ids = ids;
-+	of_clk_add_provider(np, of_clk_src_periph_get, clktab);
-+	return;
-+
-+out_free_clks:
-+	kfree(clks);
-+out_free_ids:
-+	kfree(ids);
-+out_free_clktab:
-+	kfree(clktab);
-+}
-+
-+static void __init of_at91rm9200_clk_periph_setup(struct device_node *np)
-+{
-+	of_at91_clk_periph_setup(np, PERIPHERAL_AT91RM9200);
-+}
-+CLK_OF_DECLARE(at91rm9200_clk_periph, "atmel,at91rm9200-clk-peripheral",
-+	       of_at91rm9200_clk_periph_setup);
-+
-+static void __init of_at91sam9x5_clk_periph_setup(struct device_node *np)
-+{
-+	of_at91_clk_periph_setup(np, PERIPHERAL_AT91SAM9X5);
-+}
-+CLK_OF_DECLARE(at91sam9x5_clk_periph, "atmel,at91sam9x5-clk-peripheral",
-+	       of_at91sam9x5_clk_periph_setup);
-+#endif
-diff --git a/include/linux/clk/at91.h b/include/linux/clk/at91.h
-index c886226..4addfd6 100644
---- a/include/linux/clk/at91.h
-+++ b/include/linux/clk/at91.h
-@@ -183,9 +183,9 @@ extern void __iomem *at91_pmc_base;
- #define		AT91_PMC_PCR_CMD	(0x1  <<  12)		/* Command (read=0, write=1) */
- #define		AT91_PMC_PCR_DIV(n)	((n)  <<  16)		/* Divisor Value */
- #define			AT91_PMC_PCR_DIV0	0x0			/* Peripheral clock is MCK */
--#define			AT91_PMC_PCR_DIV2	0x2			/* Peripheral clock is MCK/2 */
--#define			AT91_PMC_PCR_DIV4	0x4			/* Peripheral clock is MCK/4 */
--#define			AT91_PMC_PCR_DIV8	0x8			/* Peripheral clock is MCK/8 */
-+#define			AT91_PMC_PCR_DIV2	0x1			/* Peripheral clock is MCK/2 */
-+#define			AT91_PMC_PCR_DIV4	0x2			/* Peripheral clock is MCK/4 */
-+#define			AT91_PMC_PCR_DIV8	0x3			/* Peripheral clock is MCK/8 */
- #define		AT91_PMC_PCR_EN		(0x1  <<  28)		/* Enable */
- 
- 
-@@ -259,4 +259,12 @@ at91_clk_register_master(const char *name, int num_parents,
- struct clk * __init
- at91_clk_register_system(const char *name, const char *parent_name, u8 id);
- 
-+struct clk * __init
-+at91_clk_register_peripheral(const char *name, const char *parent_name,
-+			     u32 id);
-+
-+struct clk * __init
-+at91_clk_register_sam9x5_peripheral(const char *name, const char *parent_name,
-+				    u32 id, u32 default_div);
-+
- #endif
--- 
-1.7.9.5
-
+Regards,
+Roman
