@@ -1,47 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab3FGBsr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 21:48:47 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:42961 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752202Ab3FGBsp (ORCPT
+	id S1755627Ab3FGCDN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 22:03:13 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:47875 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754357Ab3FGCDL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 21:48:45 -0400
-Message-ID: <51B13BF4.7090706@oracle.com>
-Date: Fri, 07 Jun 2013 09:48:36 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Thu, 6 Jun 2013 22:03:11 -0400
+From: "J, KEERTHY" <j-keerthy@ti.com>
+To: Lee Jones <lee.jones@linaro.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "wim@iguana.be" <wim@iguana.be>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "Kristo, Tero" <t-kristo@ti.com>
+Subject: RE: [PATCH v3] mfd: DT bindings for the palmas family MFD
+Thread-Topic: [PATCH v3] mfd: DT bindings for the palmas family MFD
+Thread-Index: AQHOYncuRwuUiYCq9keu21yMCEaQUZknvHwAgAABHgCAAcKsVA==
+Date: Fri, 7 Jun 2013 02:02:38 +0000
+Message-ID: <DC88CAD03C0052499C1907B327FC63229EA3F3@DBDE04.ent.ti.com>
+References: <1370496441-24620-1-git-send-email-j-keerthy@ti.com>
+ <20130606070210.GR3370@gmail.com>,<20130606070610.GS3370@gmail.com>
+In-Reply-To: <20130606070610.GS3370@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.49]
+Content-Type: text/plain; charset="koi8-r"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Viresh Kumar <viresh.kumar@linaro.org>, Neil Gu <qing.gu@oracle.com>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ACPI: update user_policy.max when _PPC updated
-References: <51AE8BE4.8050409@oracle.com> <42861210.QMFsUVH8RU@vostro.rjw.lan> <51B08EB7.8080702@oracle.com> <2674436.upogMLa2Oh@vostro.rjw.lan>
-In-Reply-To: <2674436.upogMLa2Oh@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/13 03:54, Rafael J. Wysocki wrote:
-> Do you mean you set a limit in the BIOS setup and the kernel changed that limit
-> on boot?
 
-Sorry for the confusing.
+________________________________________
+From: Lee Jones [lee.jones@linaro.org]
+Sent: Thursday, June 06, 2013 12:36 PM
+To: J, KEERTHY
+Cc: linux-kernel@vger.kernel.org; grant.likely@secretlab.ca; linux-doc@vger.kernel.org; devicetree-discuss@lists.ozlabs.org; swarren@wwwdotorg.org; swarren@nvidia.com; rob.herring@calxeda.com; rob@landley.net; sameo@linux.intel.com; wim@iguana.be; lgirdwood@gmail.com; gg@slimlogic.co.uk; Kristo, Tero; Ian Lartey
+Subject: Re: [PATCH v3] mfd: DT bindings for the palmas family MFD
 
-The issue is when we disable hardcap before kernel boot up, after kernel bring
-up, any changes of _PPC will update scaling_max_freq properly.
+On Thu, 06 Jun 2013, Lee Jones wrote:
 
-If we enable hardcap before kernel boot up, after kernel bring up, even we 
-disable it, scaling_max_freq does not be updated to max frequency, the max 
-frequency just up to the value when bring up.
+> On Thu, 06 Jun 2013, J Keerthy wrote:
+>
+> > Add the various binding files for the palmas family of chips. There is a
+> > top level MFD binding then a seperate binding for regulators IP blocks on chips.
+> >
+> > Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+> > Signed-off-by: J Keerthy <j-keerthy@ti.com>
+> > Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
+> > Reviewed-by: Stephen Warren <swarren@nvidia.com>
+> > ---
+> >  Documentation/devicetree/bindings/mfd/palmas.txt   |   49 +++++++++++++
+> >  .../devicetree/bindings/regulator/palmas-pmic.txt  |   72 ++++++++++++++++++++
+> >  2 files changed, 121 insertions(+), 0 deletions(-)
+> >  create mode 100644 Documentation/devicetree/bindings/mfd/palmas.txt
+> >  create mode 100644
+> > Documentation/devicetree/bindings/regulator/palmas-pmic.tx
+>
+> Applied, thanks.
 
-Review related codes I found the limit came from user_policy.max, means when
-we set user_policy.max to 1000MHZ when boot up, then any changes of _PPC could
-not enlarge the scaling_max_freq, I think this is not as expected? please advise.
+Grant,
 
-Thanks,
-Joe
+Could you pull this and drop the v2 of this patch please?
+
+Regards,
+Keerthy
+
+
+Ah wait. It appears Grant wants to take this.
+
+Unapplied, thanks. :)
+
+--
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org Å Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
