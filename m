@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175Ab3FGTCG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 15:02:06 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:49151 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756768Ab3FGTCE (ORCPT
+	id S1757300Ab3FGTCF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 15:02:05 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:33638 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757094Ab3FGTCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 15:02:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <4466665.6pIGCIdISn@flatron>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
-	<1622862.fXQWv0YWGV@flatron>
-	<CAPweEDx_1fvAv9sROtPreoyyj_yDAuYb040fM2zPc+tf22d=YA@mail.gmail.com>
-	<4466665.6pIGCIdISn@flatron>
-Date: Fri, 7 Jun 2013 20:02:03 +0100
-Message-ID: <CAPweEDwmgr2JbH+txDDjR_gDA2R2C1v=AuVCUVTs7RriMhZNiA@mail.gmail.com>
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
- Uploading linux (3.9.4-1))
-From: "luke.leighton" <luke.leighton@gmail.com>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        debian-kernel@lists.debian.org, Arnd Bergmann <arnd@arndb.de>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Olof Johansson <olof@lixom.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 7 Jun 2013 15:02:03 -0400
+From: Valentin Ilie <valentin.ilie@gmail.com>
+To: lauro.venancio@openbossa.org, aloisio.almeida@openbossa.org,
+        sameo@linux.intel.com
+Cc: linux-nfc@ml01.01.org, linux-kernel@vger.kernel.org,
+        Valentin Ilie <valentin.ilie@gmail.com>
+Subject: [PATCH] NFC: mei_phy: Clean up file
+Date: Fri,  7 Jun 2013 22:01:55 +0300
+Message-Id: <1370631715-23075-1-git-send-email-valentin.ilie@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 7, 2013 at 9:57 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+Fix checkpatch warnings.
+Replace __attribute__((__packed__)) with __packed.
+Replace spaces with tabs.
 
->Seeing from your posts you don't have any knowledge on how Linux kernel
-> development works
+Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
+---
+ drivers/nfc/mei_phy.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
- check back to 2004.
+diff --git a/drivers/nfc/mei_phy.c b/drivers/nfc/mei_phy.c
+index 1201bdb..606bf55 100644
+--- a/drivers/nfc/mei_phy.c
++++ b/drivers/nfc/mei_phy.c
+@@ -30,7 +30,7 @@ struct mei_nfc_hdr {
+ 	u16 req_id;
+ 	u32 reserved;
+ 	u16 data_size;
+-} __attribute__((packed));
++} __packed;
+ 
+ #define MEI_NFC_MAX_READ (MEI_NFC_HEADER_SIZE + MEI_NFC_MAX_HCI_PAYLOAD)
+ 
+@@ -60,8 +60,8 @@ int nfc_mei_phy_enable(void *phy_id)
+ 
+ 	r = mei_cl_enable_device(phy->device);
+ 	if (r < 0) {
+-                pr_err("MEI_PHY: Could not enable device\n");
+-                return r;
++		pr_err("MEI_PHY: Could not enable device\n");
++		return r;
+ 	}
+ 
+ 	r = mei_cl_register_event_cb(phy->device, nfc_mei_event_cb, phy);
+-- 
+1.7.9.5
 
-> and even on how Allwinner's cooperation with our
-> community looks (and seem to be completely closed to our effort of showing
-> you the reality),
-
- no - just f*****g busy, tomasz
-
-> so I'm not sure if you are the right person to take any
-> of those roles...
-
- well, tough.  get me up to speed, *fast*.  please stop wasting time
-like this: get me up to speed.  i may not be the best person but i am
-in the right place at the right time, and nobody else is going to be
-able to step into this role in time.
-
- so i may not be the best person that you *think* i am, but i'm the
-person you've got.  time's ticking.  can we get on please?
-
-> I'd suggest Maxime Ripard or someone else from Free Electrons to be
-> responsible for communication with Allwinner instead.
-
- you're welcome to suggest, however they do not have the contacts that
-i have (many of which are indirect anyway), and i am not going to
-introduce him to them either, in case they jeapordise the critical
-business relationships that took my associates 4 years to establish.
-
- l.
