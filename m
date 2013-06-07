@@ -1,74 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757432Ab3FGWbv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 18:31:51 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:51377 "EHLO
+	id S1161017Ab3FGWcr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 18:32:47 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:51600 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757347Ab3FGWbp (ORCPT
+	with ESMTP id S1753181Ab3FGWco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 18:31:45 -0400
+	Fri, 7 Jun 2013 18:32:44 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
         "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3 24/27] PCI, x86: Make ioapic hotplug support built-in
-Date: Fri,  7 Jun 2013 15:31:10 -0700
-Message-Id: <1370644273-10495-25-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joro@8bytes.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: [PATCH v3 12/27] x86, irq: Move down arch_early_irq_init()
+Date: Fri,  7 Jun 2013 15:30:58 -0700
+Message-Id: <1370644273-10495-13-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1370644273-10495-1-git-send-email-yinghai@kernel.org>
 References: <1370644273-10495-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ioapic hotplug should be built-in like pci root bus hotplug.
+Change position only.
 
-Also need to make it depends on X86_IO_APIC.
+Prepare to update arch_early_irq_init(), it needs to call some static
+functions.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 ---
- drivers/pci/Kconfig  | 3 ++-
- drivers/pci/ioapic.c | 7 -------
- 2 files changed, 2 insertions(+), 8 deletions(-)
+ arch/x86/kernel/apic/io_apic.c | 89 +++++++++++++++++++++---------------------
+ 1 file changed, 44 insertions(+), 45 deletions(-)
 
-diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
-index 6d51aa6..720989f 100644
---- a/drivers/pci/Kconfig
-+++ b/drivers/pci/Kconfig
-@@ -110,10 +110,11 @@ config PCI_PASID
- 	  If unsure, say N.
- 
- config PCI_IOAPIC
--	tristate "PCI IO-APIC hotplug support" if X86
-+	bool "PCI IO-APIC hotplug support" if X86
- 	depends on PCI
- 	depends on ACPI
- 	depends on HOTPLUG
-+	depends on X86_IO_APIC
- 	default !X86
- 
- config PCI_LABEL
-diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
-index 3c6bbdd..7d6b157 100644
---- a/drivers/pci/ioapic.c
-+++ b/drivers/pci/ioapic.c
-@@ -117,13 +117,6 @@ static int __init ioapic_init(void)
- {
- 	return pci_register_driver(&ioapic_driver);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index a157a56..2fcf813 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -185,51 +185,6 @@ static struct irq_pin_list *alloc_irq_pin_list(int node)
+ 	return kzalloc_node(sizeof(struct irq_pin_list), GFP_KERNEL, node);
  }
+ 
 -
--static void __exit ioapic_exit(void)
+-/* irq_cfg is indexed by the sum of all RTEs in all I/O APICs. */
+-static struct irq_cfg irq_cfgx[NR_IRQS_LEGACY];
+-
+-int __init arch_early_irq_init(void)
 -{
--	pci_unregister_driver(&ioapic_driver);
+-	struct irq_cfg *cfg;
+-	int count, node, i;
+-
+-	if (!legacy_pic->nr_legacy_irqs)
+-		io_apic_irqs = ~0UL;
+-
+-	for (i = 0; i < nr_ioapics; i++) {
+-		ioapics[i].saved_registers =
+-			kzalloc(sizeof(struct IO_APIC_route_entry) *
+-				ioapics[i].nr_registers, GFP_KERNEL);
+-		if (!ioapics[i].saved_registers)
+-			pr_err("IOAPIC %d: suspend/resume impossible!\n", i);
+-	}
+-
+-	cfg = irq_cfgx;
+-	count = ARRAY_SIZE(irq_cfgx);
+-	node = cpu_to_node(0);
+-
+-	/* Make sure the legacy interrupts are marked in the bitmap */
+-	irq_reserve_irqs(0, legacy_pic->nr_legacy_irqs);
+-
+-	for (i = 0; i < count; i++) {
+-		INIT_LIST_HEAD(&cfg[i].irq_2_pin);
+-		irq_set_chip_data(i, &cfg[i]);
+-		zalloc_cpumask_var_node(&cfg[i].domain, GFP_KERNEL, node);
+-		zalloc_cpumask_var_node(&cfg[i].old_domain, GFP_KERNEL, node);
+-		/*
+-		 * For legacy IRQ's, start with assigning irq0 to irq15 to
+-		 * IRQ0_VECTOR to IRQ15_VECTOR for all cpu's.
+-		 */
+-		if (i < legacy_pic->nr_legacy_irqs) {
+-			cfg[i].vector = IRQ0_VECTOR + i;
+-			cpumask_setall(cfg[i].domain);
+-		}
+-	}
+-
+-	return 0;
 -}
 -
- module_init(ioapic_init);
--module_exit(ioapic_exit);
+ static struct irq_cfg *irq_cfg(unsigned int irq)
+ {
+ 	return irq_get_chip_data(irq);
+@@ -332,6 +287,50 @@ static struct irq_cfg *realloc_irq_and_cfg_at(unsigned int at, int node)
+ 	return alloc_irq_and_cfg_at(at, node);
+ }
  
- MODULE_LICENSE("GPL");
++/* irq_cfg is indexed by the sum of all RTEs in all I/O APICs. */
++static struct irq_cfg irq_cfgx[NR_IRQS_LEGACY];
++
++int __init arch_early_irq_init(void)
++{
++	struct irq_cfg *cfg;
++	int count, node, i;
++
++	if (!legacy_pic->nr_legacy_irqs)
++		io_apic_irqs = ~0UL;
++
++	for (i = 0; i < nr_ioapics; i++) {
++		ioapics[i].saved_registers =
++			kzalloc(sizeof(struct IO_APIC_route_entry) *
++				ioapics[i].nr_registers, GFP_KERNEL);
++		if (!ioapics[i].saved_registers)
++			pr_err("IOAPIC %d: suspend/resume impossible!\n", i);
++	}
++
++	cfg = irq_cfgx;
++	count = ARRAY_SIZE(irq_cfgx);
++	node = cpu_to_node(0);
++
++	/* Make sure the legacy interrupts are marked in the bitmap */
++	irq_reserve_irqs(0, legacy_pic->nr_legacy_irqs);
++
++	for (i = 0; i < count; i++) {
++		INIT_LIST_HEAD(&cfg[i].irq_2_pin);
++		irq_set_chip_data(i, &cfg[i]);
++		zalloc_cpumask_var_node(&cfg[i].domain, GFP_KERNEL, node);
++		zalloc_cpumask_var_node(&cfg[i].old_domain, GFP_KERNEL, node);
++		/*
++		 * For legacy IRQ's, start with assigning irq0 to irq15 to
++		 * IRQ0_VECTOR to IRQ15_VECTOR for all cpu's.
++		 */
++		if (i < legacy_pic->nr_legacy_irqs) {
++			cfg[i].vector = IRQ0_VECTOR + i;
++			cpumask_setall(cfg[i].domain);
++		}
++	}
++
++	return 0;
++}
++
+ struct io_apic {
+ 	unsigned int index;
+ 	unsigned int unused[3];
 -- 
 1.8.1.4
 
