@@ -1,79 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab3FGSvq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 14:51:46 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:35102 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757171Ab3FGSuB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757231Ab3FGSuB (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 7 Jun 2013 14:50:01 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38349 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757171Ab3FGSt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 14:49:58 -0400
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+To: Wolfram Sang <wsa@the-dreams.de>, Tony Lindgren <tony@atomide.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-i2c@vger.kernel.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>, Nishanth Menon <nm@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: [PATCH 1/5] i2c: omap: fix spurious IRQs: disable/enable IRQ at INTC when idle
+Date: Fri, 7 Jun 2013 21:46:04 +0300
+Message-ID: <1370630768-4077-2-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1370630768-4077-1-git-send-email-grygorii.strashko@ti.com>
+References: <1370630768-4077-1-git-send-email-grygorii.strashko@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20130606172810.GE14209@lukather>
-References: <51AFA6DD.3000202@wwwdotorg.org>
-	<CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com>
-	<1370469574.18839.33.camel@localhost>
-	<CAPweEDxMpeJc-w=Yd7d2OT=UisRBp2rxf-MPMDUCOG3EyJz1GQ@mail.gmail.com>
-	<CAKON4OxwyV2f_iTEb5RnP_azc7EsSxPdku_TY5WLWxN7USiY1Q@mail.gmail.com>
-	<CAPweEDw1BabE0cmT5fxZ3Z9p9EH508M3Nzcqk2VcO0oz-qYsvg@mail.gmail.com>
-	<1370475609.20454.44.camel@localhost>
-	<CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
-	<CAKON4OxPDpN3BTc9GWP44exDSkAZGJ5OeCpUP37vRnnvxwUnmw@mail.gmail.com>
-	<CAOesGMgqxhG45NyCfpHc_0uHS+_Gn-hGZm-+CRvK2EEf1AGTow@mail.gmail.com>
-	<20130606172810.GE14209@lukather>
-Date: Fri, 7 Jun 2013 19:50:00 +0100
-Message-ID: <CAPweEDyg11k++gunqVQkbwi_-MvhexAX6Z_kjM=3rFBi7qNnzg@mail.gmail.com>
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
- Uploading linux (3.9.4-1))
-From: "luke.leighton" <luke.leighton@gmail.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Olof Johansson <olof@lixom.net>, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm <debian-arm@lists.debian.org>,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
-        debian-kernel <debian-kernel@lists.debian.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 6, 2013 at 6:28 PM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
+From: Kevin Hilman <khilman@deeprootsystems.com>
 
-> I should also add that Allwinner not only talked to us already,
+Currently, runtime PM is used to keep the device enabled only during
+active transfers and for a configurable runtime PM autosuspend timout
+after an xfer.
 
- oo!  great!  can you please [privately, not publicly] let me know who
-that is, so i can let the Directors know, so that they can follow up?
+In addition to idling the device, driver's ->runtime_suspend() method
+currently disables device interrupts when idle.  However, on some SoCs
+(notably OMAP4+), the I2C hardware may shared with other coprocessors.
+This means that the MPU will still recieve interrupts if a coprocessor
+is using the I2C device.  To avoid this, also disable interrupts at
+the MPU INTC when idling the device in ->runtime_suspend() (and
+re-enable them in ->runtime_resume().)  This part based on an original
+patch from Shubhrajyoti Datta.  NOTE: for proper sharing the I2C with
+a coprocessor, this driver still needs hwspinlock support added.
 
-> but also
-> expressed interest in doing actual modern kernel development (like using
-> "recently" introduced kernel frameworks, like the clk framework).
+More over, this patch fixes the kernel boot failure which happens when
+CONFIG_SENSORS_LM75=y:
 
- awesome.
+[    2.251220] WARNING: at drivers/bus/omap_l3_noc.c:113 l3_interrupt_handler+0x140/0x184()
+[    2.257781] L3 custom error: MASTER:MPU TARGET:L4 PER2
+[    2.264373] Modules linked in:
+[    2.268463] CPU: 0 PID: 2 Comm: kthreadd Not tainted 3.10.0-rc4-00034-g042dd60-dirty #64
+[    2.270385] [<c001a80c>] (unwind_backtrace+0x0/0xf0) from [<c0017238>] (show_stack+0x10/0x14)
+[    2.286102] [<c0017238>] (show_stack+0x10/0x14) from [<c0040fd0>] (warn_slowpath_common+0x4c/0x68)
+[    2.295593] [<c0040fd0>] (warn_slowpath_common+0x4c/0x68) from [<c0041080>] (warn_slowpath_fmt+0x30/0x40)
+[    2.299987] [<c0041080>] (warn_slowpath_fmt+0x30/0x40) from [<c02c5ed0>] (l3_interrupt_handler+0x140/0x184)
+[    2.315582] [<c02c5ed0>] (l3_interrupt_handler+0x140/0x184) from [<c009ffb8>] (handle_irq_event_percpu+0x58/0x258)
+[    2.323364] [<c009ffb8>] (handle_irq_event_percpu+0x58/0x258) from [<c00a01f4>] (handle_irq_event+0x3c/0x5c)
+[    2.327819] [<c00a01f4>] (handle_irq_event+0x3c/0x5c) from [<c00a2f7c>] (handle_fasteoi_irq+0xbc/0x164)
+[    2.337829] [<c00a2f7c>] (handle_fasteoi_irq+0xbc/0x164) from [<c009f978>] (generic_handle_irq+0x20/0x30)
+[    2.357513] [<c009f978>] (generic_handle_irq+0x20/0x30) from [<c0014168>] (handle_IRQ+0x4c/0xac)
+[    2.366821] [<c0014168>] (handle_IRQ+0x4c/0xac) from [<c00085b4>] (gic_handle_irq+0x28/0x5c)
+[    2.375762] [<c00085b4>] (gic_handle_irq+0x28/0x5c) from [<c04f08a4>] (__irq_svc+0x44/0x5c)
+[    2.379821] Exception stack(0xdb085ec0 to 0xdb085f08)
+[    2.389953] 5ec0: 00000001 00000001 00000000 db07ea00 40000113 db2317a8 db084000 000002f1
+[    2.389953] 5ee0: db07ea00 00000000 00000000 00000000 c04fd990 db085f08 c009170c c04f03e8
+[    2.405609] 5f00: 20000113 ffffffff
+[    2.408355] [<c04f08a4>] (__irq_svc+0x44/0x5c) from [<c04f03e8>] (_raw_spin_unlock_irqrestore+0x34/0x44)
+[    2.418304] [<c04f03e8>] (_raw_spin_unlock_irqrestore+0x34/0x44) from [<c00403c0>] (do_fork+0xa4/0x2d4)
+[    2.427795] [<c00403c0>] (do_fork+0xa4/0x2d4) from [<c0040620>] (kernel_thread+0x30/0x38)
+[    2.437805] [<c0040620>] (kernel_thread+0x30/0x38) from [<c0063888>] (kthreadd+0xd4/0x13c)
+[    2.448364] [<c0063888>] (kthreadd+0xd4/0x13c) from [<c0013308>] (ret_from_fork+0x14/0x2c)
+[    2.448364] ---[ end trace da8cf92c433d1616 ]---
 
-> I've received patches from them already for private reviews, they began
-> to show up on the kernel mailing lists, they asked to be CCed on the
-> patches I send upstream, they're even the one that reached out to me
-> when the early support for their chips was released. So, like Olof said,
-> they aren't in a vacuum, they are very aware of the mainline kernel and
-> speak a decent english.
+The root casue of crash is race between omap_i2c_runtime_suspend()
+ and omap_i2c_isr_thread()
 
- good!  next thing you know they'll be writing comments in english too [*1]
-
-> So yes, Allwinner has an evil vendor tree (c), with a solution similar yet
-> inferior (because not generic enough) to the device tree, but they show
-> interest on going down the mainline road.
-
- yes.  i'm coming at this from the other end, via the top management,
-so that this is properly coordinated.
-
- so.  reminder.  and question.  what needs to be done, and what are
-the benefits?
-
- l.
+CPU1:                                   CPU2:
+|-omap_i2c_xfer                         |
+  |- pm_runtime_put_autosuspend()       |
+     |-timeout                          |-omap_i2c_isr()
+                                          |-return IRQ_WAKE_THREAD;
+     |-omap_i2c_runtime_suspend()       |
+                                        |-omap_i2c_isr_thread()
+                                          |- oops is here - I2C module is in idle state
 
 
-[*1] http://git.rhombus-tech.net/?p=linux.git;a=blob;f=drivers/usb/sun7i_usb/manager/usb_manager.c;h=3775c83134efee9694789b68e85010ebc0d9938b;hb=refs/heads/lkcl-3.3-a20#l274
+Cc: Nishanth Menon <nm@ti.com>
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+---
+ drivers/i2c/busses/i2c-omap.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
+index 64c26f9..97844ff 100644
+--- a/drivers/i2c/busses/i2c-omap.c
++++ b/drivers/i2c/busses/i2c-omap.c
+@@ -1290,6 +1290,8 @@ static int omap_i2c_runtime_suspend(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct omap_i2c_dev *_dev = platform_get_drvdata(pdev);
+ 
++	disable_irq(_dev->irq);
++
+ 	_dev->iestate = omap_i2c_read_reg(_dev, OMAP_I2C_IE_REG);
+ 
+ 	if (_dev->scheme == OMAP_I2C_SCHEME_0)
+@@ -1320,6 +1322,8 @@ static int omap_i2c_runtime_resume(struct device *dev)
+ 
+ 	__omap_i2c_init(_dev);
+ 
++	enable_irq(_dev->irq);
++
+ 	return 0;
+ }
+ #endif /* CONFIG_PM_RUNTIME */
+-- 
+1.7.9.5
+
