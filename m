@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757854Ab3FGXEE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 19:04:04 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:61101 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757614Ab3FGXDu (ORCPT
+	id S1757822Ab3FGXEA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 19:04:00 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:45610 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757620Ab3FGXDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Jun 2013 19:03:50 -0400
 From: David Daney <ddaney.cavm@gmail.com>
 To: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
         Sanjay Lal <sanjayl@kymasys.com>
 Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH 11/31] MIPS: Rearrange branch.c so it can be used by kvm code.
-Date: Fri,  7 Jun 2013 16:03:15 -0700
-Message-Id: <1370646215-6543-12-git-send-email-ddaney.cavm@gmail.com>
+Subject: [PATCH 12/31] MIPS: Add instruction format information for WAIT, MTC0, MFC0, et al.
+Date: Fri,  7 Jun 2013 16:03:16 -0700
+Message-Id: <1370646215-6543-13-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com>
 References: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com>
@@ -23,135 +23,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-Introduce __compute_return_epc_for_insn0() entry point.
-
-Signed-off-by: David Daney <david.daney@cavium.com>
 ---
- arch/mips/include/asm/branch.h |  7 +++++
- arch/mips/kernel/branch.c      | 63 +++++++++++++++++++++++++++++++-----------
- 2 files changed, 54 insertions(+), 16 deletions(-)
+ arch/mips/include/uapi/asm/inst.h | 23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
 
-diff --git a/arch/mips/include/asm/branch.h b/arch/mips/include/asm/branch.h
-index e28a3e0..b3de685 100644
---- a/arch/mips/include/asm/branch.h
-+++ b/arch/mips/include/asm/branch.h
-@@ -37,6 +37,13 @@ static inline unsigned long exception_epc(struct pt_regs *regs)
+diff --git a/arch/mips/include/uapi/asm/inst.h b/arch/mips/include/uapi/asm/inst.h
+index 0f4aec2..133abc1 100644
+--- a/arch/mips/include/uapi/asm/inst.h
++++ b/arch/mips/include/uapi/asm/inst.h
+@@ -117,7 +117,8 @@ enum bcop_op {
+ enum cop0_coi_func {
+ 	tlbr_op	      = 0x01, tlbwi_op	    = 0x02,
+ 	tlbwr_op      = 0x06, tlbp_op	    = 0x08,
+-	rfe_op	      = 0x10, eret_op	    = 0x18
++	rfe_op	      = 0x10, eret_op	    = 0x18,
++	wait_op	      = 0x20
+ };
  
- #define BRANCH_LIKELY_TAKEN 0x0001
+ /*
+@@ -567,6 +568,24 @@ struct b_format {			/* BREAK and SYSCALL */
+ 	;)))
+ };
  
-+extern int __compute_return_epc(struct pt_regs *regs);
-+extern int __compute_return_epc_for_insn(struct pt_regs *regs,
-+					 union mips_instruction insn);
-+extern int __compute_return_epc_for_insn0(struct pt_regs *regs,
-+					  union mips_instruction insn,
-+					  unsigned int (*get_fcr31)(void));
++struct c0_format {			/* WAIT, TLB?? */
++	BITFIELD_FIELD(unsigned int opcode : 6,
++	BITFIELD_FIELD(unsigned int co : 1,
++	BITFIELD_FIELD(unsigned int code : 19,
++	BITFIELD_FIELD(unsigned int func : 6,
++	;))))
++};
 +
- static inline int compute_return_epc(struct pt_regs *regs)
- {
- 	if (get_isa16_mode(regs->cp0_epc)) {
-diff --git a/arch/mips/kernel/branch.c b/arch/mips/kernel/branch.c
-index 46c2ad0..e47145b 100644
---- a/arch/mips/kernel/branch.c
-+++ b/arch/mips/kernel/branch.c
-@@ -195,17 +195,18 @@ int __MIPS16e_compute_return_epc(struct pt_regs *regs)
- }
- 
- /**
-- * __compute_return_epc_for_insn - Computes the return address and do emulate
-+ * __compute_return_epc_for_insn0 - Computes the return address and do emulate
-  *				    branch simulation, if required.
-  *
-  * @regs:	Pointer to pt_regs
-  * @insn:	branch instruction to decode
-- * @returns:	-EFAULT on error and forces SIGBUS, and on success
-+ * @returns:	-EFAULT on error, and on success
-  *		returns 0 or BRANCH_LIKELY_TAKEN as appropriate after
-  *		evaluating the branch.
-  */
--int __compute_return_epc_for_insn(struct pt_regs *regs,
--				   union mips_instruction insn)
-+int __compute_return_epc_for_insn0(struct pt_regs *regs,
-+				   union mips_instruction insn,
-+				   unsigned int (*get_fcr31)(void))
- {
- 	unsigned int bit, fcr31, dspcontrol;
- 	long epc = regs->cp0_epc;
-@@ -281,7 +282,7 @@ int __compute_return_epc_for_insn(struct pt_regs *regs,
- 
- 		case bposge32_op:
- 			if (!cpu_has_dsp)
--				goto sigill;
-+				return -EFAULT;
- 
- 			dspcontrol = rddsp(0x01);
- 
-@@ -364,13 +365,7 @@ int __compute_return_epc_for_insn(struct pt_regs *regs,
- 	 * And now the FPA/cp1 branch instructions.
- 	 */
- 	case cop1_op:
--		preempt_disable();
--		if (is_fpu_owner())
--			asm volatile("cfc1\t%0,$31" : "=r" (fcr31));
--		else
--			fcr31 = current->thread.fpu.fcr31;
--		preempt_enable();
--
-+		fcr31 = get_fcr31();
- 		bit = (insn.i_format.rt >> 2);
- 		bit += (bit != 0);
- 		bit += 23;
-@@ -434,11 +429,47 @@ int __compute_return_epc_for_insn(struct pt_regs *regs,
- 	}
- 
- 	return ret;
-+}
-+EXPORT_SYMBOL_GPL(__compute_return_epc_for_insn0);
- 
--sigill:
--	printk("%s: DSP branch but not DSP ASE - sending SIGBUS.\n", current->comm);
--	force_sig(SIGBUS, current);
--	return -EFAULT;
-+static unsigned int __get_fcr31(void)
-+{
-+	unsigned int fcr31;
++struct c0m_format {			/* MTC0, MFC0, ... */
++	BITFIELD_FIELD(unsigned int opcode : 6,
++	BITFIELD_FIELD(unsigned int func : 5,
++	BITFIELD_FIELD(unsigned int rt : 5,
++	BITFIELD_FIELD(unsigned int rd : 5,
++	BITFIELD_FIELD(unsigned int code : 8,
++	BITFIELD_FIELD(unsigned int sel : 3,
++	;))))))
++};
 +
-+	preempt_disable();
-+	if (is_fpu_owner())
-+		asm volatile(
-+			".set push\n"
-+			"\t.set mips1\n"
-+			"\tcfc1\t%0,$31\n"
-+			"\t.set pop" : "=r" (fcr31));
-+	else
-+		fcr31 = current->thread.fpu.fcr31;
-+	preempt_enable();
-+	return fcr31;
-+}
-+
-+/**
-+ * __compute_return_epc_for_insn - Computes the return address and do emulate
-+ *				    branch simulation, if required.
-+ *
-+ * @regs:	Pointer to pt_regs
-+ * @insn:	branch instruction to decode
-+ * @returns:	-EFAULT on error and forces SIGBUS, and on success
-+ *		returns 0 or BRANCH_LIKELY_TAKEN as appropriate after
-+ *		evaluating the branch.
-+ */
-+int __compute_return_epc_for_insn(struct pt_regs *regs,
-+				   union mips_instruction insn)
-+{
-+	int r =  __compute_return_epc_for_insn0(regs, insn, __get_fcr31);
-+
-+	if (r < 0) {
-+		printk("%s: DSP branch but not DSP ASE - sending SIGBUS.\n", current->comm);
-+		force_sig(SIGBUS, current);
-+	}
-+
-+	return r;
- }
- EXPORT_SYMBOL_GPL(__compute_return_epc_for_insn);
- 
+ struct ps_format {			/* MIPS-3D / paired single format */
+ 	BITFIELD_FIELD(unsigned int opcode : 6,
+ 	BITFIELD_FIELD(unsigned int rs : 5,
+@@ -857,6 +876,8 @@ union mips_instruction {
+ 	struct f_format f_format;
+ 	struct ma_format ma_format;
+ 	struct b_format b_format;
++	struct c0_format c0_format;
++	struct c0m_format c0m_format;
+ 	struct ps_format ps_format;
+ 	struct v_format v_format;
+ 	struct fb_format fb_format;
 -- 
 1.7.11.7
 
