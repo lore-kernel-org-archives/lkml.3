@@ -1,166 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab3FGJqj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 05:46:39 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.137]:47020 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752796Ab3FGJqh (ORCPT
+	id S1754943Ab3FGJuf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 05:50:35 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38380 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487Ab3FGJue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 05:46:37 -0400
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-6.tower-179.messagelabs.com!1370598392!30148393!1
-X-Originating-IP: [83.171.138.125]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.6; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Fri, 07 Jun 2013 11:46:32 +0200
-Date: Fri, 7 Jun 2013 11:49:06 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Johannes Thumshirn <johannes.thumshirn@men.de>, <wim@iguana.be>,
-        <linux-watchdog@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: Some problems with sysfs patch (was Re: [PATCH v6] watchdog: New
- watchdog driver for MEN A21 watchdogs)
-Message-ID: <20130607094906.GA18730@jtlinux>
-References: <20130531114037.GA13533@roeck-us.net>
- <20130531125519.GB8983@jtlinux>
- <20130601041523.GB4081@roeck-us.net>
- <20130603095026.GA21720@jtlinux>
- <20130606105103.GA25245@jtlinux>
- <20130606113110.GA5834@roeck-us.net>
- <20130606130055.GA27244@jtlinux>
- <20130606170828.GA30898@roeck-us.net>
- <20130607074519.GA26046@jtlinux>
- <20130607091419.GA2180@roeck-us.net>
+	Fri, 7 Jun 2013 05:50:34 -0400
+Date: Fri, 7 Jun 2013 10:50:13 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Alessandro Rubini <rubini@gnudd.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, jslaby@suse.cz,
+        linux-serial@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, Chanho Min <chanho.min@lge.com>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+Subject: Re: amba pl011: where to submit a fix for x86 builds
+Message-ID: <20130607095013.GU18614@n2100.arm.linux.org.uk>
+References: <20130607093854.GA3429@mail.gnudd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130607091419.GA2180@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
-X-OriginalArrivalTime: 07 Jun 2013 09:46:31.0837 (UTC) FILETIME=[E3FEECD0:01CE6363]
+In-Reply-To: <20130607093854.GA3429@mail.gnudd.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 02:14:19AM -0700, Guenter Roeck wrote:
-> On Fri, Jun 07, 2013 at 09:45:19AM +0200, Johannes Thumshirn wrote:
-> > On Thu, Jun 06, 2013 at 10:08:28AM -0700, Guenter Roeck wrote:
-> > > On Thu, Jun 06, 2013 at 03:00:55PM +0200, Johannes Thumshirn wrote:
-> > > > On Thu, Jun 06, 2013 at 04:31:10AM -0700, Guenter Roeck wrote:
-> > > > > On Thu, Jun 06, 2013 at 12:51:03PM +0200, Johannes Thumshirn wrote:
-> > > > > > On Mon, Jun 03, 2013 at 11:50:26AM +0200, Johannes Thumshirn wrote:
-> > > > > > > On Fri, May 31, 2013 at 09:15:23PM -0700, Guenter Roeck wrote:
-> > > > > > > > On Fri, May 31, 2013 at 02:55:19PM +0200, Johannes Thumshirn wrote:
-> > > > > > > > > Hi Guenther,
-> > > > > > > > > On Fri, May 31, 2013 at 04:40:37AM -0700, Guenter Roeck wrote:
-> > > > > > > > > > > +#define GPIO_WD_ENAB	169
-> > > > > > > > > > > +#define GPIO_WD_FAST	170
-> > > > > > > > > > > +#define GPIO_WD_TRIG	171
-> > > > > > > > > > > +
-> > > > > > > > > > > +#define GPIO_RST_CAUSE_BASE 166
-> > > > > > > > > > > +
-> > > > > > > > > >
-> > > > > > > > > > I think I asked that before ... as you are supporting devicetree, gpio pins
-> > > > > > > > > > should really be provided through devicetree properties and not be hardcoded.
-> > > > > > > > > >
-> > > > > > > > > Yes you did and I didn't come up with a solution to this problem yet. I understand
-> > > > > > > > > and agree to your concerns but I'm lacking example code/documentation for it, maybe
-> > > > > > > > > you can point me to an example on that and then I'll update my code accordingly.
-> > > > > > > > >
-> > > > > > > >
-> > > > > > > > Have a look at Documentation/devicetree/bindings/gpio/gpio-fan.txt and
-> > > > > > > > drivers/hwmon/gpio-fan.c.
-> > > > > > >
-> > > > > > > Thanks a lot, this really helped me out. Updated patch is comming today
-> > > > > > > including the bindings document Arnd Bergmann requested. I only need to rebase
-> > > > > > > the sysfs patch on top of that changes.
-> > > > > > >
-> > > > > > > Regards,
-> > > > > > > Johannes
-> > > > > >
-> > > > > > Regarding the sysfs patch, I have a funny effect in my (rebased) sysfs code.
-> > > > > >
-> > > > > > Given the following code:
-> > > > > >
-> > > > > > +static ssize_t rebootcause_show(struct device *dev,
-> > > > > > +                               struct device_attribute *attr,
-> > > > > > +                               char *buf)
-> > > > > > +{
-> > > > > > +       struct a21_wdt_drv *drv = dev_get_drvdata(dev);
-> > > > > > +       unsigned int reset = 0;
-> > > > > > +
-> > > > > > +       if (!drv)
-> > > > > > +               return -EIO;
-> > > > > > +
-> > > > > > +       reset = a21_wdt_get_bootstatus(drv);
-> > > > > > +
-> > > > > > +       return sprintf(buf, "%s\n", reset_causes[reset]);
-> > > > > > +}
-> > > > > > +static DEVICE_ATTR(rebootcause, S_IRUGO, rebootcause_show, NULL);
-> > > > > >
-> > > > > > I actually need the check for if (!drv) to prevent an OOPS, as
-> > > > > > dev_get_drvdata(dev) returns NULL., though it is set at the end of my probe
-> > > > > > function via:
-> > > > > >
-> > > > > > [...]
-> > > > > > +       ret = watchdog_register_device(&a21_wdt);
-> > > > > > +       if (ret) {
-> > > > > > +               dev_err(&pdev->dev, "Cannot register watchdog device\n");
-> > > > > > +               goto err_register_wd;
-> > > > > > +       }
-> > > > > > +
-> > > > > > +       dev_set_drvdata(&pdev->dev, drv);
-> > > > > > +
-> > > > > > +       return 0;
-> > > > > > [...]
-> > > > > >
-> > > > > > The watchdog driver itself is working without any troubles.
-> > > > > >
-> > > > > > Some advice here would be worth its weight in gold.
-> > > > > >
-> > > > > It has to be set before the attribute is created. Are you doing that ? Also, is
-> > > > > 'dev' the same device pointer (ie is the 'dev' in your function the same as
-> > > > > &pdev->dev) ?
-> > > > >
-> > > > > Guenter
-> > > >
-> > > > Hi Guenter,
-> > > >
-> > > > Thanks for the quick reply. Indeed 'dev' in my function is a struct
-> > > > watchdog_device's dev (for device_create_file) and not &pdev->dev. Which in turn
-> > > > are not the same.
-> > > >
-> > > > A call to dev_set_drvdata(a21_wdt.dev, drv); solved the NULL pointer access. So
-> > > > last question, is it save to set the drvdata of a dev inside the struct
-> > > > watchdog_device or do I break something vital that way?
-> > > >
-> > > Good question. At issue is if your driver 'owns' struct watchdog_device,
-> > > or if the watchdog core owns it.
-> > >
-> > > However, since you know that a21_wdt.dev is the device, you can use
-> > > container_of() to get a reference to a21_wdt, and watchdog_get_drvdata
-> > > to get access to drv from a21_wdt. So you should not really need it.
-> > >
-> > > Thanks,
-> > > Guenter
-> >
-> > OK, but doesn't the container_of() macro only work if the parent struct embeds
-> > the child struct and not a pointer to it? But struct watchdog_device only has a
-> > pointer to a struct device (checked my 3.10-rc4 as well as watchdog-next/master,
-> > just in case I missed something).
-> >
-> Yes, you are right, sorry for the noise.
->
-> Guenter
+On Fri, Jun 07, 2013 at 11:38:54AM +0200, Alessandro Rubini wrote:
+> Hello.
+> This is cc'd to $(get_maintainer.pl -f drivers/tty/serial/amba-pl011.c)
+> and x86 maintainers too.
+> 
+> While working on the pci-to-amba bridge driver (to be resubmitted in
+> the next days) I have to deal with the problem of pl011 not building,
+> after phys_to_page was introduced, by Chanho Min (Cc: here) in commit
+> 
+>    cb06ff1 ARM: PL011: Add support for Rx DMA buffer polling.
+> 
+> because x86 has no phys_to_page.
+> 
+> The fix I use is trivially this:
+> 
+>   -       sg_set_page(&sg->sg, phys_to_page(dma_addr),
+>   +       sg_set_page(&sg->sg, virt_to_page(sg->buf),
+> 
+> (virt_to_page is slower, but other sg_get_page() users do the same
+> and other solutions are more convoluted).
 
-No problem. Actually I hoped you tell me I was wrong and point me to the right
-practice for this.
+... and thereby breaks ARM, because sg->buf is not part of the kernel
+direct mapped RAM region.
 
-Anyway I'll send the patch as it is and hope it's clean for inclusion.
-
-Thanks for your help.
-
-Johannes
-
+I don't think there's a portable way to do the above, because the DMA
+coherent API doesn't really support translating the allocated memory
+region to a struct page pointer.
