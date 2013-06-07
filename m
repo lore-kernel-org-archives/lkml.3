@@ -1,136 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695Ab3FGScu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 14:32:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35176 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755360Ab3FGSct (ORCPT
+	id S1756879Ab3FGSdw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 14:33:52 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:50101 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756184Ab3FGSdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 14:32:49 -0400
-Date: Fri, 7 Jun 2013 11:32:47 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Oliver Neukum <oliver@neukum.org>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Stoffregen <paul@pjrc.com>
-Subject: [PATCH] USB: cdc-acm: remove unneeded spin_lock_irqsave/restore on
- write path
-Message-ID: <20130607183247.GA6850@kroah.com>
+	Fri, 7 Jun 2013 14:33:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 7 Jun 2013 21:33:49 +0300
+Message-ID: <CA+ydwtpiZ7Z3bEWZxnM4BVxo_fvX5JXO=0zqqpobsCgm4jdwRQ@mail.gmail.com>
+Subject: ipv6 && kernel BUG at net/core/skbuff.c:126!
+From: Tommi Rantala <tt.rantala@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Cc: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Hit this while fuzzing v3.10-rc4-214-g1612e11 (plus a one-liner
+af_netlink patch from Patrick McHardy, that I hope is not related to
+this bug).
 
-When writing data we were:
-	lock
-	do some work
-	unlock
-	call function
-		lock
-		do some work
-		unlock
-		return
-	return
+Tommi
 
-It turns out, that "function" was only ever called in the one place, so
-instead of locking/unlocking for no good reason, just inline the
-function and only grab the lock once.
-
-This has sped up the pathological case of sending 1 byte packets to a
-loop-back cdc-acm device from 49600 bytes per second to 50100 bytes a
-second on my workstation.  A tiny increase yes, but noticable, and now
-the spinlock isn't the hottest thing on the perf graph anymore.  Yes, we
-are still waiting for the hardware for the most part, but getting rid of
-a spin_lock_irqsave() call for every packet is still a good thing.
-
-And we end up deleting lines of code, always a win overall.
-
-This was found by using a Teensy 3.0 device and the test program and
-firmware located at:
-	http://www.pjrc.com/teensy/benchmark_usb_serial_receive.html
-
-Reported-by: Paul Stoffregen <paul@pjrc.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/class/cdc-acm.c |   51 +++++++++++++++-----------------------------
- 1 file changed, 18 insertions(+), 33 deletions(-)
-
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -216,38 +216,6 @@ static int acm_start_wb(struct acm *acm,
- 	return rc;
- }
- 
--static int acm_write_start(struct acm *acm, int wbn)
--{
--	unsigned long flags;
--	struct acm_wb *wb = &acm->wb[wbn];
--	int rc;
--
--	spin_lock_irqsave(&acm->write_lock, flags);
--	if (!acm->dev) {
--		wb->use = 0;
--		spin_unlock_irqrestore(&acm->write_lock, flags);
--		return -ENODEV;
--	}
--
--	dev_vdbg(&acm->data->dev, "%s - susp_count %d\n", __func__,
--							acm->susp_count);
--	usb_autopm_get_interface_async(acm->control);
--	if (acm->susp_count) {
--		if (!acm->delayed_wb)
--			acm->delayed_wb = wb;
--		else
--			usb_autopm_put_interface_async(acm->control);
--		spin_unlock_irqrestore(&acm->write_lock, flags);
--		return 0;	/* A white lie */
--	}
--	usb_mark_last_busy(acm->dev);
--
--	rc = acm_start_wb(acm, wb);
--	spin_unlock_irqrestore(&acm->write_lock, flags);
--
--	return rc;
--
--}
- /*
-  * attributes exported through sysfs
-  */
-@@ -653,13 +621,30 @@ static int acm_tty_write(struct tty_stru
- 	}
- 	wb = &acm->wb[wbn];
- 
-+	if (!acm->dev) {
-+		wb->use = 0;
-+		spin_unlock_irqrestore(&acm->write_lock, flags);
-+		return -ENODEV;
-+	}
-+
- 	count = (count > acm->writesize) ? acm->writesize : count;
- 	dev_vdbg(&acm->data->dev, "%s - write %d\n", __func__, count);
- 	memcpy(wb->buf, buf, count);
- 	wb->len = count;
- 	spin_unlock_irqrestore(&acm->write_lock, flags);
- 
--	stat = acm_write_start(acm, wbn);
-+	usb_autopm_get_interface_async(acm->control);
-+	if (acm->susp_count) {
-+		if (!acm->delayed_wb)
-+			acm->delayed_wb = wb;
-+		else
-+			usb_autopm_put_interface_async(acm->control);
-+		spin_unlock_irqrestore(&acm->write_lock, flags);
-+		return count;	/* A white lie */
-+	}
-+	usb_mark_last_busy(acm->dev);
-+
-+	stat = acm_start_wb(acm, wb);
- 	if (stat < 0)
- 		return stat;
- 	return count;
+[19081.311430] vhci_hcd: changed 0
+[19085.248780] type=1401 audit(1370620096.643:275): SELinux:
+unrecognized netlink message type=26994 for sclass=34
+[19085.248780]
+[19212.879972] RDS: rds_bind() could not find a transport, load
+rds_tcp or rds_rdma?
+[19261.840596] type=1401 audit(1370620273.235:276): SELinux:
+unrecognized netlink message type=0 for sclass=34
+[19261.840596]
+[19275.403689] RDS: rds_bind() could not find a transport, load
+rds_tcp or rds_rdma?
+[19276.607552] trinity-watchdo[26887]: segfault at b4aae80 ip
+00000000004050df sp 00007fffbef9e348 error 4 in trinity[400000+22000]
+[19344.507844] RDS: rds_bind() could not find a transport, load
+rds_tcp or rds_rdma?
+[19491.565638] skbuff: skb_under_panic: text:ffffffff81fc402c len:48
+put:40 head:ffff88008c6a5a40 data:ffff88008c6a5a3c tail:0x2c end:0xc0
+dev:<NULL>
+[19491.570959] ------------[ cut here ]------------
+[19491.572556] kernel BUG at /build/linux-one/net/core/skbuff.c:126!
+[19491.574432] invalid opcode: 0000 [#1] SMP DEBUG_PAGEALLOC
+[19491.576143] CPU: 0 PID: 27749 Comm: trinity-child16 Not tainted
+3.10.0-rc4+ #1
+[19491.578330] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[19491.580017] task: ffff8800b51aa3e0 ti: ffff8800ad4b0000 task.ti:
+ffff8800ad4b0000
+[19491.582268] RIP: 0010:[<ffffffff8229b949>]  [<ffffffff8229b949>]
+skb_panic+0x5e/0x60
+[19491.584558] RSP: 0018:ffff8800ad4b1e00  EFLAGS: 00010282
+[19491.586165] RAX: 0000000000000086 RBX: ffff8800b7dd6900 RCX: 0000000000000006
+[19491.588290] RDX: 0000000000003420 RSI: ffff8800b51aaab8 RDI: 0000000000000246
+[19491.590426] RBP: ffff8800ad4b1e20 R08: 0000000000000002 R09: 0000000000000000
+[19491.592632] R10: 0000000000000001 R11: 0000000000000001 R12: ffffffff82dc29c0
+[19491.594897] R13: ffff8800b6a37000 R14: ffff8800b6a375f8 R15: ffff8800b5075680
+[19491.597103] FS:  00007feced22c700(0000) GS:ffff8800bf600000(0000)
+knlGS:0000000000000000
+[19491.599585] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[19491.601313] CR2: 00007f603b3cdb90 CR3: 00000000b03a2000 CR4: 00000000000006f0
+[19491.603450] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[19491.605580] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[19491.607710] Stack:
+[19491.608362]  ffff88008c6a5a3c 000000000000002c 00000000000000c0
+ffffffff82b59d69
+[19491.610681]  ffff8800ad4b1e30 ffffffff81eb6243 ffff8800ad4b1e90
+ffffffff81fc402c
+[19491.613074]  ffffffff81119c55 11ff8800b51aa3e0 ffff8800ad4b1e58
+0100007f0100007f
+[19491.615447] Call Trace:
+[19491.616273]  [<ffffffff81eb6243>] skb_push+0x33/0x40
+[19491.617840]  [<ffffffff81fc402c>] ip6_push_pending_frames+0x20c/0x4b0
+[19491.619768]  [<ffffffff81119c55>] ? local_bh_enable+0xc5/0xf0
+[19491.621476]  [<ffffffff81fdf650>] udp_v6_push_pending_frames+0x390/0x3a0
+[19491.623475]  [<ffffffff81119c55>] ? local_bh_enable+0xc5/0xf0
+[19491.625236]  [<ffffffff81fdf2c0>] ? compat_udpv6_setsockopt+0x30/0x30
+[19491.627153]  [<ffffffff81f60812>] udp_lib_setsockopt+0xc2/0x1d0
+[19491.628965]  [<ffffffff81fdf67d>] udpv6_setsockopt+0x1d/0x30
+[19491.630674]  [<ffffffff81eb33bf>] sock_common_setsockopt+0xf/0x20
+[19491.632577]  [<ffffffff81ead7e6>] SyS_setsockopt+0x96/0xe0
+[19491.634376]  [<ffffffff822a47a9>] system_call_fastpath+0x16/0x1b
+[19491.636189] Code: 00 00 48 89 44 24 10 8b 87 d0 00 00 00 48 89 44
+24 08 48 8b 87 e0 00 00 00 48 c7 c7 d0 82 b6 82 48 89 04 24 31 c0 e8
+b9 c3 fe ff <0f> 0b 55 48 89 e5 41 56 41 55 41 54 53 48 89 fb 48 83 ec
+28 4c
+[19491.643452] RIP  [<ffffffff8229b949>] skb_panic+0x5e/0x60
+[19491.645166]  RSP <ffff8800ad4b1e00>
+[19491.696563] ---[ end trace 65e4f208315d47ce ]---
+[19592.612621] irda_setsockopt: not allowed to set MAXSDUSIZE for this
+socket type!
