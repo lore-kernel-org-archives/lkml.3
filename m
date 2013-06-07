@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864Ab3FGQ4W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 12:56:22 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:59715 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756447Ab3FGQ4H (ORCPT
+	id S1756810Ab3FGQ4V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 12:56:21 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:58703 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756478Ab3FGQ4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Jun 2013 12:56:07 -0400
 From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
@@ -14,205 +14,215 @@ Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
         Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: [PATCH v5 1/5] vmcore: Introduce ELF header in new memory feature
-Date: Fri,  7 Jun 2013 18:55:57 +0200
-Message-Id: <1370624161-2298-2-git-send-email-holzheu@linux.vnet.ibm.com>
+Subject: [PATCH v5 3/5] vmcore: Introduce remap_oldmem_pfn_range()
+Date: Fri,  7 Jun 2013 18:55:59 +0200
+Message-Id: <1370624161-2298-4-git-send-email-holzheu@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.6
 In-Reply-To: <1370624161-2298-1-git-send-email-holzheu@linux.vnet.ibm.com>
 References: <1370624161-2298-1-git-send-email-holzheu@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13060716-5024-0000-0000-00000644D9E9
+x-cbid: 13060716-0542-0000-0000-0000057AC7EC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently for s390 we create the ELF core header in the 2nd kernel
-with a small trick. We relocate the addresses in the ELF header in
-a way that for the /proc/vmcore code it seems to be in the 1st kernel
-(old) memory and the read_from_oldmem() returns the correct data.
-This allows the /proc/vmcore code to use the ELF header in the
-2nd kernel.
+For zfcpdump we can't map the HSA storage because it is only available
+via a read interface. Therefore, for the new vmcore mmap feature we have
+introduce a new mechanism to create mappings on demand.
 
-This patch now exchanges the old mechanism with the new and much
-cleaner function call override feature that now offcially allows to
-create the ELF core header in the 2nd kernel.
+This patch introduces a new architecture function remap_oldmem_pfn_range()
+that should be used to create mappings with remap_pfn_range() for oldmem
+areas that can be directly mapped. For zfcpdump this is everything besides
+of the HSA memory. For the areas that are not mapped by remap_oldmem_pfn_range()
+a generic vmcore a new generic vmcore fault handler mmap_vmcore_fault()
+is called. This handler does the following:
 
-To use the new feature the following function have to be defined
-by the architecture backend code to read from new memory:
-
- * elfcorehdr_alloc: Return the address and size of the ELF header
- * elfcorehdr_free: Free the memory of the ELF header
- * elfcorehdr_read: Read from ELF header
- * elfcorehdr_read_notes: Read from ELF notes
+* Check if /proc/vmcore page cache page is already available
+* If yes:
+  - Return that page
+* If no:
+  - Allocate new page
+  - Fill page using __vmcore_read()
+  - Add new page to page cache
 
 Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 ---
- fs/proc/vmcore.c           | 63 +++++++++++++++++++++++++++++++++++++---------
- include/linux/crash_dump.h |  5 ++++
- 2 files changed, 56 insertions(+), 12 deletions(-)
+ fs/proc/vmcore.c           | 94 ++++++++++++++++++++++++++++++++++++++++++----
+ include/linux/crash_dump.h |  3 ++
+ 2 files changed, 89 insertions(+), 8 deletions(-)
 
 diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-index 0f6db52..221f84b 100644
+index 221f84b..259a639 100644
 --- a/fs/proc/vmcore.c
 +++ b/fs/proc/vmcore.c
-@@ -123,6 +123,36 @@ static ssize_t read_from_oldmem(char *buf, size_t count,
- 	return read;
+@@ -21,6 +21,7 @@
+ #include <linux/crash_dump.h>
+ #include <linux/list.h>
+ #include <linux/vmalloc.h>
++#include <linux/pagemap.h>
+ #include <asm/uaccess.h>
+ #include <asm/io.h>
+ #include "internal.h"
+@@ -153,11 +154,36 @@ ssize_t __weak elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos)
+ 	return read_from_oldmem(buf, count, ppos, 0);
  }
  
 +/*
-+ * Architectures may override this function to allocate ELF header in 2nd kernel
++ * Architectures may override this function to map oldmem
 + */
-+int __weak elfcorehdr_alloc(void)
++int __weak remap_oldmem_pfn_range(struct vm_area_struct *vma,
++				  unsigned long from, unsigned long pfn,
++				  unsigned long size, pgprot_t prot)
 +{
-+	return -ENODEV;
++	return remap_pfn_range(vma, from, pfn, size, prot);
 +}
 +
 +/*
-+ * Architectures may override this function to free header
++ * Copy to either kernel or user space
 + */
-+void __weak elfcorehdr_free(void)
-+{}
-+
-+/*
-+ * Architectures may override this function to read from ELF header
-+ */
-+ssize_t __weak elfcorehdr_read(char *buf, size_t count, u64 *ppos)
++static int copy_to(void *target, void *src, size_t size, int userbuf)
 +{
-+	return read_from_oldmem(buf, count, ppos, 0);
-+}
-+
-+/*
-+ * Architectures may override this function to read from notes sections
-+ */
-+ssize_t __weak elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos)
-+{
-+	return read_from_oldmem(buf, count, ppos, 0);
++	if (userbuf) {
++		if (copy_to_user(target, src, size))
++			return -EFAULT;
++		return 0;
++	} else {
++		memcpy(target, src, size);
++		return 0;
++	}
 +}
 +
  /* Read from the ELF header and then the crash dump. On error, negative value is
   * returned otherwise number of bytes read are returned.
   */
-@@ -322,7 +352,7 @@ static int __init update_note_header_size_elf64(const Elf64_Ehdr *ehdr_ptr)
- 		notes_section = kmalloc(max_sz, GFP_KERNEL);
- 		if (!notes_section)
- 			return -ENOMEM;
--		rc = read_from_oldmem(notes_section, max_sz, &offset, 0);
-+		rc = elfcorehdr_read_notes(notes_section, max_sz, &offset);
- 		if (rc < 0) {
- 			kfree(notes_section);
- 			return rc;
-@@ -409,7 +439,8 @@ static int __init copy_notes_elf64(const Elf64_Ehdr *ehdr_ptr, char *notes_buf)
- 		if (phdr_ptr->p_type != PT_NOTE)
- 			continue;
- 		offset = phdr_ptr->p_offset;
--		rc = read_from_oldmem(notes_buf, phdr_ptr->p_memsz, &offset, 0);
-+		rc = elfcorehdr_read_notes(notes_buf, phdr_ptr->p_memsz,
-+					   &offset);
- 		if (rc < 0)
- 			return rc;
- 		notes_buf += phdr_ptr->p_memsz;
-@@ -510,7 +541,7 @@ static int __init update_note_header_size_elf32(const Elf32_Ehdr *ehdr_ptr)
- 		notes_section = kmalloc(max_sz, GFP_KERNEL);
- 		if (!notes_section)
- 			return -ENOMEM;
--		rc = read_from_oldmem(notes_section, max_sz, &offset, 0);
-+		rc = elfcorehdr_read_notes(notes_section, max_sz, &offset);
- 		if (rc < 0) {
- 			kfree(notes_section);
- 			return rc;
-@@ -597,7 +628,8 @@ static int __init copy_notes_elf32(const Elf32_Ehdr *ehdr_ptr, char *notes_buf)
- 		if (phdr_ptr->p_type != PT_NOTE)
- 			continue;
- 		offset = phdr_ptr->p_offset;
--		rc = read_from_oldmem(notes_buf, phdr_ptr->p_memsz, &offset, 0);
-+		rc = elfcorehdr_read_notes(notes_buf, phdr_ptr->p_memsz,
-+					   &offset);
- 		if (rc < 0)
- 			return rc;
- 		notes_buf += phdr_ptr->p_memsz;
-@@ -793,7 +825,7 @@ static int __init parse_crash_elf64_headers(void)
- 	addr = elfcorehdr_addr;
- 
- 	/* Read Elf header */
--	rc = read_from_oldmem((char*)&ehdr, sizeof(Elf64_Ehdr), &addr, 0);
-+	rc = elfcorehdr_read((char *)&ehdr, sizeof(Elf64_Ehdr), &addr);
- 	if (rc < 0)
- 		return rc;
- 
-@@ -820,7 +852,7 @@ static int __init parse_crash_elf64_headers(void)
- 	if (!elfcorebuf)
- 		return -ENOMEM;
- 	addr = elfcorehdr_addr;
--	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz_orig, &addr, 0);
-+	rc = elfcorehdr_read(elfcorebuf, elfcorebuf_sz_orig, &addr);
- 	if (rc < 0)
- 		goto fail;
- 
-@@ -849,7 +881,7 @@ static int __init parse_crash_elf32_headers(void)
- 	addr = elfcorehdr_addr;
- 
- 	/* Read Elf header */
--	rc = read_from_oldmem((char*)&ehdr, sizeof(Elf32_Ehdr), &addr, 0);
-+	rc = elfcorehdr_read((char *)&ehdr, sizeof(Elf32_Ehdr), &addr);
- 	if (rc < 0)
- 		return rc;
- 
-@@ -875,7 +907,7 @@ static int __init parse_crash_elf32_headers(void)
- 	if (!elfcorebuf)
- 		return -ENOMEM;
- 	addr = elfcorehdr_addr;
--	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz_orig, &addr, 0);
-+	rc = elfcorehdr_read(elfcorebuf, elfcorebuf_sz_orig, &addr);
- 	if (rc < 0)
- 		goto fail;
- 
-@@ -902,7 +934,7 @@ static int __init parse_crash_elf_headers(void)
- 	int rc=0;
- 
- 	addr = elfcorehdr_addr;
--	rc = read_from_oldmem(e_ident, EI_NIDENT, &addr, 0);
-+	rc = elfcorehdr_read(e_ident, EI_NIDENT, &addr);
- 	if (rc < 0)
- 		return rc;
- 	if (memcmp(e_ident, ELFMAG, SELFMAG) != 0) {
-@@ -935,10 +967,17 @@ static int __init vmcore_init(void)
+-static ssize_t read_vmcore(struct file *file, char __user *buffer,
+-				size_t buflen, loff_t *fpos)
++static ssize_t __read_vmcore(char *buffer, size_t buflen, loff_t *fpos,
++			     int userbuf)
  {
- 	int rc = 0;
+ 	ssize_t acc = 0, tmp;
+ 	size_t tsz;
+@@ -174,7 +200,7 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+ 	/* Read ELF core header */
+ 	if (*fpos < elfcorebuf_sz) {
+ 		tsz = min(elfcorebuf_sz - (size_t)*fpos, buflen);
+-		if (copy_to_user(buffer, elfcorebuf + *fpos, tsz))
++		if (copy_to(buffer, elfcorebuf + *fpos, tsz, userbuf))
+ 			return -EFAULT;
+ 		buflen -= tsz;
+ 		*fpos += tsz;
+@@ -192,7 +218,7 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
  
--	/* If elfcorehdr= has been passed in cmdline, then capture the dump.*/
--	if (!(is_vmcore_usable()))
--		return rc;
-+	/*
-+	 * If elfcorehdr= has not been passed in cmdline, try to get the
-+	 * header from 2nd kernel, then capture the dump.
-+	 */
-+	if (!(is_vmcore_usable())) {
-+		rc = elfcorehdr_alloc();
-+		if (rc)
-+			return rc;
+ 		tsz = min(elfcorebuf_sz + elfnotes_sz - (size_t)*fpos, buflen);
+ 		kaddr = elfnotes_buf + *fpos - elfcorebuf_sz;
+-		if (copy_to_user(buffer, kaddr, tsz))
++		if (copy_to(buffer, kaddr, tsz, userbuf))
+ 			return -EFAULT;
+ 		buflen -= tsz;
+ 		*fpos += tsz;
+@@ -208,7 +234,7 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+ 		if (*fpos < m->offset + m->size) {
+ 			tsz = min_t(size_t, m->offset + m->size - *fpos, buflen);
+ 			start = m->paddr + *fpos - m->offset;
+-			tmp = read_from_oldmem(buffer, tsz, &start, 1);
++			tmp = read_from_oldmem(buffer, tsz, &start, userbuf);
+ 			if (tmp < 0)
+ 				return tmp;
+ 			buflen -= tsz;
+@@ -225,6 +251,56 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+ 	return acc;
+ }
+ 
++static ssize_t read_vmcore(struct file *file, char __user *buffer,
++			   size_t buflen, loff_t *fpos)
++{
++	return __read_vmcore(buffer, buflen, fpos, 1);
++}
++
++/*
++ * The vmcore fault handler uses the page cache and fills data using the
++ * standard __vmcore_read() function.
++ */
++static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
++{
++	struct address_space *mapping = vma->vm_private_data;
++	pgoff_t index = vmf->pgoff;
++	struct page *page;
++	loff_t src;
++	char *buf;
++	int rc;
++
++find_page:
++	page = find_lock_page(mapping, index);
++	if (page) {
++		unlock_page(page);
++		rc = VM_FAULT_MINOR;
++	} else {
++		page = page_cache_alloc_cold(mapping);
++		if (!page)
++			return VM_FAULT_OOM;
++		rc = add_to_page_cache_lru(page, mapping, index, GFP_KERNEL);
++		if (rc) {
++			page_cache_release(page);
++			if (rc == -EEXIST)
++				goto find_page;
++			/* Probably ENOMEM for radix tree node */
++			return VM_FAULT_OOM;
++		}
++		buf = (void *) (page_to_pfn(page) << PAGE_SHIFT);
++		src = index << PAGE_CACHE_SHIFT;
++		__read_vmcore(buf, PAGE_SIZE, &src, 0);
++		unlock_page(page);
++		rc = VM_FAULT_MAJOR;
 +	}
- 	rc = parse_crash_elf_headers();
-+	elfcorehdr_free();
- 	if (rc) {
- 		pr_warn("Kdump: vmcore not initialized\n");
- 		return rc;
++	vmf->page = page;
++	return rc;
++}
++
++static const struct vm_operations_struct vmcore_mmap_ops = {
++	.fault = mmap_vmcore_fault,
++};
++
+ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+ {
+ 	size_t size = vma->vm_end - vma->vm_start;
+@@ -242,6 +318,8 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+ 
+ 	vma->vm_flags &= ~(VM_MAYWRITE | VM_MAYEXEC);
+ 	vma->vm_flags |= VM_MIXEDMAP;
++	vma->vm_ops = &vmcore_mmap_ops;
++	vma->vm_private_data = file->f_mapping;
+ 
+ 	len = 0;
+ 
+@@ -283,9 +361,9 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+ 
+ 			tsz = min_t(size_t, m->offset + m->size - start, size);
+ 			paddr = m->paddr + start - m->offset;
+-			if (remap_pfn_range(vma, vma->vm_start + len,
+-					    paddr >> PAGE_SHIFT, tsz,
+-					    vma->vm_page_prot))
++			if (remap_oldmem_pfn_range(vma, vma->vm_start + len,
++						   paddr >> PAGE_SHIFT, tsz,
++						   vma->vm_page_prot))
+ 				goto fail;
+ 			size -= tsz;
+ 			start += tsz;
 diff --git a/include/linux/crash_dump.h b/include/linux/crash_dump.h
-index 37e4f8d..dd0f434 100644
+index dd0f434..c0818de 100644
 --- a/include/linux/crash_dump.h
 +++ b/include/linux/crash_dump.h
-@@ -12,6 +12,11 @@
- extern unsigned long long elfcorehdr_addr;
- extern unsigned long long elfcorehdr_size;
+@@ -16,6 +16,9 @@ extern int __weak elfcorehdr_alloc(void);
+ extern void __weak elfcorehdr_free(void);
+ extern ssize_t __weak elfcorehdr_read(char *buf, size_t count, u64 *ppos);
+ extern ssize_t __weak elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos);
++extern int __weak remap_oldmem_pfn_range(struct vm_area_struct *vma,
++					 unsigned long from, unsigned long pfn,
++					 unsigned long size, pgprot_t prot);
  
-+extern int __weak elfcorehdr_alloc(void);
-+extern void __weak elfcorehdr_free(void);
-+extern ssize_t __weak elfcorehdr_read(char *buf, size_t count, u64 *ppos);
-+extern ssize_t __weak elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos);
-+
  extern ssize_t copy_oldmem_page(unsigned long, char *, size_t,
  						unsigned long, int);
- 
 -- 
 1.8.1.6
 
