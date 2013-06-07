@@ -1,79 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab3FGWWZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 18:22:25 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:56451 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752999Ab3FGWWY (ORCPT
+	id S1757018Ab3FGWWa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 18:22:30 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:56583 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab3FGWW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 18:22:24 -0400
+	Fri, 7 Jun 2013 18:22:27 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, peterz@infradead.org, fweisbec@gmail.com,
         jolsa@redhat.com, namhyung@kernel.org, eranian@google.com,
         David Ahern <dsahern@gmail.com>
-Subject: [RFC PATCH 0/4] perf: timehist command
-Date: Fri,  7 Jun 2013 16:22:10 -0600
-Message-Id: <1370643734-9579-1-git-send-email-dsahern@gmail.com>
+Subject: [RFC PATCH 1/4] perf: move setup_list from symbol.c to strlist.c
+Date: Fri,  7 Jun 2013 16:22:11 -0600
+Message-Id: <1370643734-9579-2-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1370643734-9579-1-git-send-email-dsahern@gmail.com>
+References: <1370643734-9579-1-git-send-email-dsahern@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have commented a few times over the years about a perf-based command
-that does a time history analysis of task scheduling. Internal to the
-product I work on it has been extremely helpful debugging systems with
-heavy CPU contention - understanding which tasks are consuming cpu cycles
-over a given time window; when, why and how long a task was off the CPU
-and how much time did the task get when it was scheduled; inefficiencies
-from process bombs (shell scripts); and more.
+Code move only; no functional changes
 
-This is the first exported version of that command. It contains the
-basic features. It is also availabe at:
-    https://github.com/dsahern/linux/commits/timehist-basic-3.9
+Signed-off-by: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/util/strlist.c |   15 +++++++++++++++
+ tools/perf/util/strlist.h |    2 ++
+ tools/perf/util/symbol.c  |   14 --------------
+ 3 files changed, 17 insertions(+), 14 deletions(-)
 
-We rely on the version that also provides time-of-day correlations.
-e.g., task X raised an alarm at time Y due to lack of access to a
-CPU. Take time Y from the log file and correlate with perf data to
-gain some insights into what was happening before, during and after
-the time of interest. The time-of-day version can be found here:
-    https://github.com/dsahern/linux/commits/timehist-timeofday-3.9
-
-The command currently uses the context-switch event -- for legacy reasons
-with the kernel version we use. The command needs to be updated to
-leverage the many scheduling tracepoints and with it updating the data
-that can be generated from the analysis. Until then throwing it out for
-comments and in case others find it useful.
-
-David Ahern (4):
-  perf: move setup_list from symbol.c to strlist.c
-  perf: add methods for setting/retrieving priv element of thread struct
-  perf: sample after exit loses thread correlation
-  perf: add timehist command
-
- tools/perf/Makefile           |    2 ++
- tools/perf/builtin-inject.c   |    2 +-
- tools/perf/builtin-kmem.c     |    3 ++-
- tools/perf/builtin-kvm.c      |    3 ++-
- tools/perf/builtin-lock.c     |    3 ++-
- tools/perf/builtin-sched.c    |   17 +++++++-------
- tools/perf/builtin-script.c   |    3 ++-
- tools/perf/builtin-trace.c    |    9 +++++---
- tools/perf/builtin.h          |    1 +
- tools/perf/perf.c             |    1 +
- tools/perf/perf.h             |    6 +++++
- tools/perf/tests/hists_link.c |    2 +-
- tools/perf/util/build-id.c    |   11 ++++-----
- tools/perf/util/event.c       |   11 +++++++--
- tools/perf/util/machine.c     |   49 ++++++++++++++++++++++++++++++++---------
- tools/perf/util/machine.h     |    6 +++--
- tools/perf/util/session.c     |    2 +-
- tools/perf/util/strlist.c     |   15 +++++++++++++
- tools/perf/util/strlist.h     |    2 ++
- tools/perf/util/symbol.c      |   14 ------------
- tools/perf/util/thread.h      |   12 +++++++++-
- 21 files changed, 121 insertions(+), 53 deletions(-)
-
+diff --git a/tools/perf/util/strlist.c b/tools/perf/util/strlist.c
+index eabdce0..faa0e0f 100644
+--- a/tools/perf/util/strlist.c
++++ b/tools/perf/util/strlist.c
+@@ -170,3 +170,18 @@ struct str_node *strlist__entry(const struct strlist *slist, unsigned int idx)
+ 
+ 	return snode;
+ }
++
++int setup_list(struct strlist **list, const char *list_str,
++		              const char *list_name)
++{
++	if (list_str == NULL)
++		return 0;
++
++	*list = strlist__new(true, list_str);
++	if (!*list) {
++		pr_err("problems parsing %s list\n", list_name);
++		return -1;
++	}
++
++	return 0;
++}
+diff --git a/tools/perf/util/strlist.h b/tools/perf/util/strlist.h
+index 5c7f870..a5f433c 100644
+--- a/tools/perf/util/strlist.h
++++ b/tools/perf/util/strlist.h
+@@ -16,6 +16,8 @@ struct strlist {
+ 	bool	       dupstr;
+ };
+ 
++int setup_list(struct strlist **list, const char *list_str,
++	       const char *list_name);
+ struct strlist *strlist__new(bool dupstr, const char *slist);
+ void strlist__delete(struct strlist *slist);
+ 
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 8cf3b54..3ef8be8 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1164,20 +1164,6 @@ out_fail:
+ 	return -1;
+ }
+ 
+-static int setup_list(struct strlist **list, const char *list_str,
+-		      const char *list_name)
+-{
+-	if (list_str == NULL)
+-		return 0;
+-
+-	*list = strlist__new(true, list_str);
+-	if (!*list) {
+-		pr_err("problems parsing %s list\n", list_name);
+-		return -1;
+-	}
+-	return 0;
+-}
+-
+ static bool symbol__read_kptr_restrict(void)
+ {
+ 	bool value = false;
 -- 
 1.7.10.1
 
