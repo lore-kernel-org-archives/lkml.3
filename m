@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab3FGIzl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 04:55:41 -0400
-Received: from 12.mo1.mail-out.ovh.net ([87.98.162.229]:58764 "EHLO
+	id S1755102Ab3FGIzi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 04:55:38 -0400
+Received: from 12.mo1.mail-out.ovh.net ([87.98.162.229]:36905 "EHLO
 	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754769Ab3FGIz1 (ORCPT
+	with ESMTP id S1754660Ab3FGIz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Jun 2013 04:55:27 -0400
 From: Boris BREZILLON <b.brezillon@overkiz.com>
@@ -12,18 +12,16 @@ To: Mike Turquette <mturquette@linaro.org>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>,
-        devicetree-discuss@lists.ozlabs.org
+        linux-serial@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Cc: Boris BREZILLON <b.brezillon@overkiz.com>, linux-doc@vger.kernel.org,
+        linux-mmc@vger.kernel.org
 X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [RFC 07/50] ARM: at91: add PMC programmable clocks support using common clk framework.
-Date: Fri,  7 Jun 2013 10:34:18 +0200
-Message-Id: <1370594119-5342-8-git-send-email-b.brezillon@overkiz.com>
+Subject: [RFC 00/50] ARM: at91: move to common clk framework
+Date: Fri,  7 Jun 2013 10:34:11 +0200
+Message-Id: <1370594119-5342-1-git-send-email-b.brezillon@overkiz.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370594119-5342-1-git-send-email-b.brezillon@overkiz.com>
-References: <1370594119-5342-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 11166112326784365740
+X-Ovh-Tracer-Id: 11164142001928844316
 X-Ovh-Remote: 80.245.18.66 ()
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
@@ -37,446 +35,272 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-This is the at91 programmable clocks implementation using common clk
-framework.
-A programmable clock is a clock which can be exported on a given pin to clock
-external devices.
-Each programmable clock is given an id (from 0 to 8).
-The number of available programmable clocks depends on the SoC you're using.
-Programmable clock driver only implements the clock setting (clock rate and
-parent setting). It must be chained to a system clock in order to
-enable/disable the generated clock.
-The PCKX pins used to output the clock signals must be assigned to the
-appropriate peripheral (see atmel's datasheets).
+This patch series is a proposal to move at91 clock implementation
+to common clk framework.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/clk/at91/Makefile           |    2 +
- drivers/clk/at91/clk-programmable.c |  370 +++++++++++++++++++++++++++++++++++
- include/linux/clk/at91.h            |   18 ++
- 3 files changed, 390 insertions(+)
+Most of the clock provided by the PMC (Power Management Controller) are
+implemented :
+- main clock (main oscillator)
+- pll clocks
+- master clock
+- programmable clocks
+- utmi clock
+- peripheral clocks
+- system clocks
 
-diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
-index 3e2a670..2d7c119 100644
---- a/drivers/clk/at91/Makefile
-+++ b/drivers/clk/at91/Makefile
-@@ -4,3 +4,5 @@
- 
- obj-y += clk-main.o clk-pll.o clk-plldiv.o clk-master.o
- obj-y += clk-system.o clk-peripheral.o
-+
-+obj-$(CONFIG_AT91_PROGRAMMABLE_CLOCKS)	+= clk-programmable.o
-diff --git a/drivers/clk/at91/clk-programmable.c b/drivers/clk/at91/clk-programmable.c
-new file mode 100644
-index 0000000..e4b1fb0
---- /dev/null
-+++ b/drivers/clk/at91/clk-programmable.c
-@@ -0,0 +1,370 @@
-+/*
-+ * drivers/clk/at91/clk-programmable.c
-+ *
-+ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
-+#include <linux/clk/at91.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/io.h>
-+
-+#define PROG_SOURCE_MAX		5
-+#define PROG_MAX		8
-+
-+#define to_clk_programmable(hw) container_of(hw, struct clk_programmable, hw)
-+struct clk_programmable {
-+	struct clk_hw hw;
-+	u8 id;
-+	u8 css;
-+	u8 pres;
-+	u8 slckmck;
-+	struct clk_programmable_layout *layout;
-+};
-+
-+static int clk_programmable_prepare(struct clk_hw *hw)
-+{
-+	u32 tmp;
-+	struct clk_programmable *prog = to_clk_programmable(hw);
-+	struct clk_programmable_layout *layout = prog->layout;
-+	tmp = prog->css | (prog->pres << layout->pres_shift);
-+	if (layout->have_slck_mck && prog->slckmck)
-+		tmp |= 1 << 8;
-+	at91_pmc_write(AT91_PMC_PCKR(prog->id), tmp);
-+	while (!(at91_pmc_read(AT91_PMC_SR) & (AT91_PMC_PCK0RDY << prog->id)))
-+		;
-+	return 0;
-+}
-+
-+static int clk_programmable_is_prepared(struct clk_hw *hw)
-+{
-+	struct clk_programmable *prog = to_clk_programmable(hw);
-+	return !!(at91_pmc_read(AT91_PMC_SR) & (AT91_PMC_PCK0RDY << prog->id));
-+}
-+
-+static unsigned long clk_programmable_recalc_rate(struct clk_hw *hw,
-+						  unsigned long parent_rate)
-+{
-+	u32 tmp;
-+	struct clk_programmable *prog = to_clk_programmable(hw);
-+	struct clk_programmable_layout *layout = prog->layout;
-+	tmp = at91_pmc_read(AT91_PMC_PCKR(prog->id));
-+	prog->pres = (tmp >> layout->pres_shift) & 0x7;
-+	return parent_rate >> prog->pres;
-+}
-+
-+static long clk_programmable_round_rate(struct clk_hw *hw, unsigned long rate,
-+					unsigned long *parent_rate)
-+{
-+	unsigned long best_rate = *parent_rate;
-+	unsigned long best_diff;
-+	unsigned long new_diff;
-+	unsigned long cur_rate;
-+	int shift = shift;
-+
-+	if (rate > *parent_rate)
-+		return *parent_rate;
-+	else
-+		best_diff = *parent_rate - rate;
-+
-+	if (!best_diff)
-+		return best_rate;
-+
-+	for (shift = 1; shift < 7; shift++) {
-+		cur_rate = *parent_rate >> shift;
-+
-+		if (cur_rate > rate)
-+			new_diff = cur_rate - rate;
-+		else
-+			new_diff = rate - cur_rate;
-+
-+		if (!new_diff)
-+			return cur_rate;
-+
-+		if (new_diff < best_diff) {
-+			best_diff = new_diff;
-+			best_rate = cur_rate;
-+		}
-+
-+		if (rate > cur_rate)
-+			break;
-+
-+	}
-+
-+	return best_rate;
-+}
-+
-+static int clk_programmable_set_parent(struct clk_hw *hw, u8 index)
-+{
-+	struct clk_programmable *prog = to_clk_programmable(hw);
-+	struct clk_programmable_layout *layout = prog->layout;
-+	if (index > layout->css_mask) {
-+		if (index == 4 && layout->have_slck_mck) {
-+			prog->css = 0;
-+			prog->slckmck = 1;
-+			return 0;
-+		} else
-+			return -EINVAL;
-+	}
-+
-+	prog->css = index;
-+	return 0;
-+}
-+
-+static u8 clk_programmable_get_parent(struct clk_hw *hw)
-+{
-+	u32 tmp;
-+	u8 ret;
-+	struct clk_programmable *prog = to_clk_programmable(hw);
-+	struct clk_programmable_layout *layout = prog->layout;
-+	tmp = at91_pmc_read(AT91_PMC_PCKR(prog->id));
-+	prog->css = tmp & layout->css_mask;
-+	ret = prog->css;
-+	if (layout->have_slck_mck) {
-+		prog->slckmck = !!(tmp & (1 << 8));
-+		if (prog->slckmck && !ret)
-+			ret = 4;
-+	}
-+
-+	return ret;
-+}
-+
-+static int clk_programmable_set_rate(struct clk_hw *hw, unsigned long rate,
-+				     unsigned long parent_rate)
-+{
-+	struct clk_programmable *prog = to_clk_programmable(hw);
-+	unsigned long best_rate = parent_rate;
-+	unsigned long best_diff;
-+	unsigned long new_diff;
-+	unsigned long cur_rate;
-+	int shift = 0;
-+
-+	if (rate > parent_rate)
-+		return parent_rate;
-+	else
-+		best_diff = parent_rate - rate;
-+
-+	if (!best_diff) {
-+		prog->pres = shift;
-+		return 0;
-+	}
-+
-+	for (shift = 1; shift < 7; shift++) {
-+		cur_rate = parent_rate >> shift;
-+
-+		if (cur_rate > rate)
-+			new_diff = cur_rate - rate;
-+		else
-+			new_diff = rate - cur_rate;
-+
-+		if (!new_diff)
-+			break;
-+
-+		if (new_diff < best_diff) {
-+			best_diff = new_diff;
-+			best_rate = cur_rate;
-+		}
-+
-+		if (rate > cur_rate)
-+			break;
-+
-+	}
-+
-+	prog->pres = shift;
-+	return 0;
-+}
-+
-+static const struct clk_ops programmable_ops = {
-+	.prepare = clk_programmable_prepare,
-+	.is_prepared = clk_programmable_is_prepared,
-+	.recalc_rate = clk_programmable_recalc_rate,
-+	.round_rate = clk_programmable_round_rate,
-+	.get_parent = clk_programmable_get_parent,
-+	.set_parent = clk_programmable_set_parent,
-+	.set_rate = clk_programmable_set_rate,
-+};
-+
-+struct clk * __init
-+at91_clk_register_programmable(const char *name, const char **parent_names,
-+			       u8 num_parents, u8 id,
-+			       struct clk_programmable_layout *layout)
-+{
-+	struct clk_programmable *prog;
-+	struct clk *clk = NULL;
-+	struct clk_init_data init;
-+
-+	id &= 7;
-+
-+	prog = kzalloc(sizeof(*prog), GFP_KERNEL);
-+	if (!prog)
-+		return ERR_PTR(-ENOMEM);
-+
-+	init.name = name;
-+	init.ops = &programmable_ops;
-+	init.parent_names = parent_names;
-+	init.num_parents = num_parents;
-+	init.flags = CLK_SET_RATE_GATE | CLK_SET_PARENT_GATE;
-+
-+	prog->id = id;
-+	prog->layout = layout;
-+	prog->hw.init = &init;
-+
-+	clk = clk_register(NULL, &prog->hw);
-+
-+	if (IS_ERR(clk))
-+		kfree(prog);
-+
-+	return clk;
-+}
-+
-+struct clk_programmable_layout at91rm9200_programmable_layout = {
-+	.pres_shift = 2,
-+	.css_mask = 0x3,
-+	.have_slck_mck = 0,
-+};
-+
-+struct clk_programmable_layout at91sam9g45_programmable_layout = {
-+	.pres_shift = 2,
-+	.css_mask = 0x3,
-+	.have_slck_mck = 1,
-+};
-+
-+struct clk_programmable_layout at91sam9x5_programmable_layout = {
-+	.pres_shift = 4,
-+	.css_mask = 0x7,
-+	.have_slck_mck = 0,
-+};
-+
-+#if defined(CONFIG_OF)
-+struct clk_prog_data {
-+	struct clk **clks;
-+	u8 *ids;
-+	unsigned int clk_num;
-+};
-+
-+static struct clk * __init
-+of_clk_src_periph_get(struct of_phandle_args *clkspec, void *data)
-+{
-+	struct clk_prog_data *clk_data = data;
-+	unsigned int id = clkspec->args[0];
-+	int i;
-+
-+	if (id >= PROG_MAX)
-+		goto err;
-+
-+	for (i = 0; i < clk_data->clk_num; i++) {
-+		if (clk_data->ids[i] == id)
-+			return clk_data->clks[i];
-+	}
-+
-+err:
-+	pr_err("%s: invalid clock id %d\n", __func__, id);
-+	return ERR_PTR(-EINVAL);
-+}
-+
-+static void __init
-+of_at91_clk_prog_setup(struct device_node *np,
-+		       struct clk_programmable_layout *layout)
-+{
-+	int num;
-+	u32 id;
-+	int i;
-+	struct clk *clk;
-+	int num_parents;
-+	u8 *ids;
-+	struct clk **clks;
-+	struct clk_prog_data *clktab;
-+	const char *parent_names[PROG_SOURCE_MAX];
-+	const char *name = np->name;
-+
-+	num_parents = of_count_phandle_with_args(np, "clocks", "#clock-cells");
-+	if (num_parents <= 0 || num_parents > PROG_SOURCE_MAX)
-+		return;
-+
-+	for (i = 0; i < num_parents; ++i) {
-+		parent_names[i] = of_clk_get_parent_name(np, i);
-+		if (!parent_names[i])
-+			return;
-+	}
-+
-+	if (!of_get_property(np, "ids", &num))
-+		return;
-+
-+	num /= 4;
-+	if (num > PROG_MAX)
-+		return;
-+
-+	if (of_property_count_strings(np, "clock-output-names") != num)
-+		return;
-+
-+	clktab = kzalloc(sizeof(*clktab), GFP_KERNEL);
-+	if (!clktab)
-+		return;
-+
-+	ids = kzalloc(num * sizeof(*ids), GFP_KERNEL);
-+	if (!ids)
-+		goto out_free_clktab;
-+
-+	clks = kzalloc(num * sizeof(*clks), GFP_KERNEL);
-+	if (!clks)
-+		goto out_free_ids;
-+
-+	for (i = 0; i < num; i++) {
-+		of_property_read_u32_index(np, "ids", i, &id);
-+		if (id >= PROG_MAX)
-+			goto out_free_clks;
-+		of_property_read_string_index(np, "clock-output-names",
-+					      i, &name);
-+		clk = at91_clk_register_programmable(name, parent_names,
-+						     num_parents, id, layout);
-+
-+		if (IS_ERR(clk))
-+			goto out_free_clks;
-+		clks[i] = clk;
-+		ids[i] = id;
-+	}
-+
-+	clktab->clk_num = num;
-+	clktab->clks = clks;
-+	clktab->ids = ids;
-+	of_clk_add_provider(np, of_clk_src_periph_get, clktab);
-+	return;
-+
-+out_free_clks:
-+	kfree(clks);
-+out_free_ids:
-+	kfree(ids);
-+out_free_clktab:
-+	kfree(clktab);
-+}
-+
-+
-+static void __init of_at91rm9200_clk_prog_setup(struct device_node *np)
-+{
-+	of_at91_clk_prog_setup(np, &at91rm9200_programmable_layout);
-+}
-+CLK_OF_DECLARE(at91rm9200_clk_prog, "atmel,at91rm9200-clk-programmable",
-+	       of_at91rm9200_clk_prog_setup);
-+
-+static void __init of_at91sam9g45_clk_prog_setup(struct device_node *np)
-+{
-+	of_at91_clk_prog_setup(np, &at91sam9g45_programmable_layout);
-+}
-+CLK_OF_DECLARE(at91sam9g45_clk_prog, "atmel,at91sam9g45-clk-programmable",
-+	       of_at91sam9g45_clk_prog_setup);
-+
-+static void __init of_at91sam9x5_clk_prog_setup(struct device_node *np)
-+{
-+	of_at91_clk_prog_setup(np, &at91sam9x5_programmable_layout);
-+}
-+CLK_OF_DECLARE(at91sam9x5_clk_prog, "atmel,at91sam9x5-clk-programmable",
-+	       of_at91sam9x5_clk_prog_setup);
-+#endif
-diff --git a/include/linux/clk/at91.h b/include/linux/clk/at91.h
-index 4addfd6..eccdf74 100644
---- a/include/linux/clk/at91.h
-+++ b/include/linux/clk/at91.h
-@@ -221,6 +221,12 @@ struct clk_master_layout {
- 	u8 pres_shift;
- };
- 
-+struct clk_programmable_layout {
-+	u8 pres_shift;
-+	u8 css_mask;
-+	u8 have_slck_mck;
-+};
-+
- 
- struct clk * __init
- at91_clk_register_main(const char *name,
-@@ -267,4 +273,16 @@ struct clk * __init
- at91_clk_register_sam9x5_peripheral(const char *name, const char *parent_name,
- 				    u32 id, u32 default_div);
- 
-+
-+extern struct clk_programmable_layout at91rm9200_programmable_layout;
-+
-+extern struct clk_programmable_layout at91sam9g45_programmable_layout;
-+
-+extern struct clk_programmable_layout at91sam9x5_programmable_layout;
-+
-+struct clk * __init
-+at91_clk_register_programmable(const char *name, const char **parent_names,
-+			       u8 num_parents, u8 id,
-+			       struct clk_programmable_layout *layout);
-+
- #endif
+This implementation is compatible with device tree: the goal is
+to define the whole clock tree in the device tree (all currently
+available dt SoCs and boards are patched to support dt clocks).
+Please feel free to comment the dt bindinds (I'm not sure about the
+name I choose or the position of clock nodes: children of pmc node).
+
+I removed the register_clocks function in SoC supporting dt boards only:
+- at91sam9x5 SoCs
+- at91sam9n12 SoC
+- sama5d3 SoCs
+
+This patch series also update at91 drivers calling clk_enable/disable
+instead of the preferred clk_prepare_enable/disable_unprepare functions.
+
+
+I know there are a lot of cleanup in progress for at91 arch, so please tell
+me if you think this transition to common clk framework should wait.
+
+This patch series has been tested on Kizbox (sam9g20 SoC) board using device
+tree. It compiles for other SoCs and both with and without dt support, but it
+has not been tested.
+
+The clocks rate/parent change has not been tested.
+
+Best Regards,
+Boris
+
+Boris BREZILLON (50):
+  ARM: at91: move arch/arm/mach-at91/include/mach/at91_pmc.h to
+    include/linux/clk/at91.h
+  ARM: at91: add PMC main clock using common clk framework.
+  ARM: at91: add PMC pll clocks support using common clk framework.
+  ARM: at91: add PMC master clock support using common clk framework.
+  ARM: at91: add PMC system clocks support using common clk framework.
+  ARM: at91: add PMC peripheral clocks support using common clk
+    framework.
+  ARM: at91: add PMC programmable clocks support using common clk
+    framework.
+  ARM: at91: add PMC utmi clock support using common clk framework.
+  ARM: at91: add PMC usb clock support using common clk framework.
+  ARM: at91: add PMC smd clock support using common clk framework.
+  ARM: at91: add PMC clk device tree binding doc.
+  ARM: at91: move to common clk framework.
+  ARM: at91: move at91rm9200 SoC to common clk framework.
+  ARM: at91: move at91sam9260 SoC to common clk framework.
+  ARM: at91: move at91sam9263 SoC to common clk framework.
+  ARM: at91: move at91sam9263 SoC to common clk framework.
+  ARM: at91: move at91sam9g45 SoC to common clk framework.
+  ARM: at91: move at91sam9n12 SoC to common clk framework.
+  ARM: at91: move at91sam9rl SoC to common clk framework.
+  ARM: at91: move at91sam9x5 SoCs to common clk framework.
+  ARM: at91: move at91sam9 SoCs to common clk framework.
+  ARM: at91: move sama5d3 SoCs to common clk framework.
+  ARM: at91: move at91rm9200 non dt boards to common clk framework.
+  ARM: at91: move at91sam9 non dt boards to common clk framework.
+  ARM: at91: move pit timer to common clk framework.
+  ARM: at91/tc/clocksource: replace clk_enable/disable with
+    clk_prepare_enable/disable_unprepare.
+  at_hdmac: replace clk_enable/disable with
+    clk_prepare_enable/disable_unprepare.
+  ASoC: atmel-ssc: replace clk_enable/disable with
+    clk_prepare_enable/disable_unprepare.
+  mmc: atmel-mci: replace clk_enable/disable with
+    clk_prepare_enable/disable_unprepare.
+  pwm: atmel-tcb: replace clk_enable/disable with
+    clk_prepare_enable/disable_unprepare.
+  tty: atmel_serial: replace clk_enable/disable with
+    clk_prepare_enable/disable_unprepare.
+  usb: gadget: at91_udc: replace clk_enable/disable with
+    clk_prepare_enable/disable_unprepare.
+  drivers/usb/host/ehci-atmel.c: replace clk_enable/disable with
+    clk_prepare_enable/disable_unprepare.
+  USB: ohci-at91: replace clk_enable/disable with
+    clk_prepare_enable/disable_unprepare.
+  ARM: at91/avr32/atmel_lcdfb: replace clk_enable/disable with
+    clk_prepare_enable/disable_unprepare.
+  ARM: at91/dt: move at91rm9200 SoC to clk framework.
+  ARM: at91/dt: move at91sam9260 SoC to common clk framework.
+  ARM: at91/dt: move at91sam9263 SoC to common clk framework.
+  ARM: at91/dt: move at91sam9g45 SoC to common clk framework.
+  ARM: at91/dt: move at91sam9n12 SoC to common clk framework.
+  ARM: at91/dt: move at91sam9x5 SoCs to common clk framework.
+  ARM: at91/dt: move at91sam9g20 SoC to common clk framework.
+  ARM: at91/dt: move sama5d3 SoCs to common clk framework.
+  ARM: at91/dt: move at91sam9260/sam9g20 boards to common clk
+    framework.
+  ARM: at91/dt: move at91rm9200 boards to common clk framework.
+  ARM: at91/dt: move at91sam9263 boards to common clk framework.
+  ARM: at91/dt: move at91sam9g45 boards to common clk framework.
+  ARM: at91/dt: move at91sam9n12 boards to common clk framework.
+  ARM: at91/dt: move at91sam9x5 boards to common clk framework.
+  ARM: at91/dt: move sama5d3 boards to common clk framework.
+
+ .../devicetree/bindings/clock/at91-clock.txt       |  247 +++++
+ arch/arm/boot/dts/animeo_ip.dts                    |   17 +-
+ arch/arm/boot/dts/at91-ariag25.dts                 |   17 +-
+ arch/arm/boot/dts/at91rm9200.dtsi                  |  133 +++
+ arch/arm/boot/dts/at91rm9200ek.dts                 |   17 +-
+ arch/arm/boot/dts/at91sam9260.dtsi                 |  144 ++-
+ arch/arm/boot/dts/at91sam9263.dtsi                 |  135 +++
+ arch/arm/boot/dts/at91sam9263ek.dts                |   17 +-
+ arch/arm/boot/dts/at91sam9g15.dtsi                 |   11 +
+ arch/arm/boot/dts/at91sam9g20.dtsi                 |   37 +
+ arch/arm/boot/dts/at91sam9g20ek_common.dtsi        |   17 +-
+ arch/arm/boot/dts/at91sam9g25.dtsi                 |    3 +
+ arch/arm/boot/dts/at91sam9g35.dtsi                 |   23 +
+ arch/arm/boot/dts/at91sam9g45.dtsi                 |  157 ++++
+ arch/arm/boot/dts/at91sam9m10g45ek.dts             |   17 +-
+ arch/arm/boot/dts/at91sam9n12.dtsi                 |  153 ++++
+ arch/arm/boot/dts/at91sam9n12ek.dts                |   17 +-
+ arch/arm/boot/dts/at91sam9x25.dtsi                 |   25 +-
+ arch/arm/boot/dts/at91sam9x35.dtsi                 |    3 +
+ arch/arm/boot/dts/at91sam9x5.dtsi                  |  226 +++--
+ arch/arm/boot/dts/at91sam9x5_can.dtsi              |   24 +
+ arch/arm/boot/dts/at91sam9x5_isi.dtsi              |   24 +
+ arch/arm/boot/dts/at91sam9x5_lcdc.dtsi             |   32 +
+ arch/arm/boot/dts/at91sam9x5_macb0.dtsi            |   68 ++
+ arch/arm/boot/dts/at91sam9x5_macb1.dtsi            |   56 ++
+ arch/arm/boot/dts/at91sam9x5_usart3.dtsi           |   60 ++
+ arch/arm/boot/dts/ge863-pro3.dtsi                  |   16 +-
+ arch/arm/boot/dts/kizbox.dts                       |    5 +
+ arch/arm/boot/dts/mpa1600.dts                      |   16 +-
+ arch/arm/boot/dts/pm9g45.dts                       |   16 +-
+ arch/arm/boot/dts/sama5d3.dtsi                     |  358 ++++----
+ arch/arm/boot/dts/sama5d31ek.dts                   |    4 +
+ arch/arm/boot/dts/sama5d33ek.dts                   |    2 +
+ arch/arm/boot/dts/sama5d34ek.dts                   |    4 +
+ arch/arm/boot/dts/sama5d35ek.dts                   |    6 +
+ arch/arm/boot/dts/sama5d3_can.dtsi                 |   67 ++
+ arch/arm/boot/dts/sama5d3_emac.dtsi                |   56 ++
+ arch/arm/boot/dts/sama5d3_gmac.dtsi                |   89 ++
+ arch/arm/boot/dts/sama5d3_lcd.dtsi                 |   73 ++
+ arch/arm/boot/dts/sama5d3_mci2.dtsi                |   59 ++
+ arch/arm/boot/dts/sama5d3_tcb1.dtsi                |   39 +
+ arch/arm/boot/dts/sama5d3_uart.dtsi                |   42 +
+ arch/arm/boot/dts/sama5d3xcm.dtsi                  |   17 +-
+ arch/arm/boot/dts/tny_a9260_common.dtsi            |   17 +-
+ arch/arm/boot/dts/tny_a9263.dts                    |   17 +-
+ arch/arm/boot/dts/usb_a9260_common.dtsi            |   17 +-
+ arch/arm/boot/dts/usb_a9263.dts                    |   17 +-
+ arch/arm/mach-at91/Kconfig                         |   26 +
+ arch/arm/mach-at91/Makefile                        |    2 +-
+ arch/arm/mach-at91/at91rm9200.c                    |  578 +++++++-----
+ arch/arm/mach-at91/at91sam9260.c                   |  694 +++++++++-----
+ arch/arm/mach-at91/at91sam9261.c                   |  581 ++++++++----
+ arch/arm/mach-at91/at91sam9263.c                   |  599 +++++++-----
+ arch/arm/mach-at91/at91sam926x_time.c              |   21 +-
+ arch/arm/mach-at91/at91sam9g45.c                   |  705 ++++++++------
+ arch/arm/mach-at91/at91sam9g45_devices.c           |    1 -
+ arch/arm/mach-at91/at91sam9n12.c                   |  196 +---
+ arch/arm/mach-at91/at91sam9rl.c                    |  514 +++++++----
+ arch/arm/mach-at91/at91sam9x5.c                    |  291 +-----
+ arch/arm/mach-at91/board-1arm.c                    |   12 +-
+ arch/arm/mach-at91/board-afeb-9260v1.c             |   11 +-
+ arch/arm/mach-at91/board-cam60.c                   |   13 +-
+ arch/arm/mach-at91/board-carmeva.c                 |   13 +-
+ arch/arm/mach-at91/board-cpu9krea.c                |   12 +-
+ arch/arm/mach-at91/board-cpuat91.c                 |   12 +-
+ arch/arm/mach-at91/board-csb337.c                  |   11 +-
+ arch/arm/mach-at91/board-csb637.c                  |   11 +-
+ arch/arm/mach-at91/board-dt-rm9200.c               |    9 +-
+ arch/arm/mach-at91/board-dt-sam9.c                 |    9 +-
+ arch/arm/mach-at91/board-dt-sama5.c                |    9 +-
+ arch/arm/mach-at91/board-eb9200.c                  |   11 +-
+ arch/arm/mach-at91/board-ecbat91.c                 |   12 +-
+ arch/arm/mach-at91/board-eco920.c                  |   13 +-
+ arch/arm/mach-at91/board-flexibity.c               |   12 +-
+ arch/arm/mach-at91/board-foxg20.c                  |   12 +-
+ arch/arm/mach-at91/board-gsia18s.c                 |    8 +-
+ arch/arm/mach-at91/board-kafa.c                    |   12 +-
+ arch/arm/mach-at91/board-kb9202.c                  |   12 +-
+ arch/arm/mach-at91/board-pcontrol-g20.c            |    9 +-
+ arch/arm/mach-at91/board-picotux200.c              |   11 +-
+ arch/arm/mach-at91/board-qil-a9260.c               |   11 +-
+ arch/arm/mach-at91/board-rm9200dk.c                |   11 +-
+ arch/arm/mach-at91/board-rm9200ek.c                |   11 +-
+ arch/arm/mach-at91/board-rsi-ews.c                 |   12 +-
+ arch/arm/mach-at91/board-sam9-l9260.c              |   11 +-
+ arch/arm/mach-at91/board-sam9260ek.c               |   11 +-
+ arch/arm/mach-at91/board-sam9261ek.c               |   15 +-
+ arch/arm/mach-at91/board-sam9263ek.c               |   11 +-
+ arch/arm/mach-at91/board-sam9g20ek.c               |   15 +-
+ arch/arm/mach-at91/board-sam9m10g45ek.c            |   11 +-
+ arch/arm/mach-at91/board-sam9rlek.c                |   11 +-
+ arch/arm/mach-at91/board-snapper9260.c             |   12 +-
+ arch/arm/mach-at91/board-stamp9g20.c               |   15 +-
+ arch/arm/mach-at91/board-yl-9200.c                 |   12 +-
+ arch/arm/mach-at91/clock.c                         |  961 --------------------
+ arch/arm/mach-at91/clock.h                         |   49 -
+ arch/arm/mach-at91/generic.h                       |   10 +-
+ arch/arm/mach-at91/pm.c                            |    2 +-
+ arch/arm/mach-at91/pm_slowclock.S                  |    2 +-
+ arch/arm/mach-at91/pmc.c                           |   58 ++
+ arch/arm/mach-at91/sama5d3.c                       |  344 +------
+ arch/arm/mach-at91/setup.c                         |   38 +-
+ arch/arm/mach-at91/stamp9g20.h                     |    2 +-
+ drivers/clk/Makefile                               |    1 +
+ drivers/clk/at91/Makefile                          |   11 +
+ drivers/clk/at91/clk-main.c                        |  106 +++
+ drivers/clk/at91/clk-master.c                      |  317 +++++++
+ drivers/clk/at91/clk-peripheral.c                  |  376 ++++++++
+ drivers/clk/at91/clk-pll.c                         |  438 +++++++++
+ drivers/clk/at91/clk-plldiv.c                      |  125 +++
+ drivers/clk/at91/clk-programmable.c                |  370 ++++++++
+ drivers/clk/at91/clk-smd.c                         |  157 ++++
+ drivers/clk/at91/clk-system.c                      |  189 ++++
+ drivers/clk/at91/clk-usb.c                         |  303 ++++++
+ drivers/clk/at91/clk-utmi.c                        |  114 +++
+ drivers/clocksource/tcb_clksrc.c                   |   10 +-
+ drivers/dma/at_hdmac.c                             |   12 +-
+ drivers/misc/atmel-ssc.c                           |    8 +-
+ drivers/mmc/host/atmel-mci.c                       |   16 +-
+ drivers/pwm/pwm-atmel-tcb.c                        |    4 +-
+ drivers/tty/serial/atmel_serial.c                  |   35 +-
+ drivers/usb/gadget/at91_udc.c                      |   12 +-
+ drivers/usb/gadget/atmel_usba_udc.c                |    2 +-
+ drivers/usb/host/ehci-atmel.c                      |    8 +-
+ drivers/usb/host/ohci-at91.c                       |   12 +-
+ drivers/video/atmel_lcdfb.c                        |    8 +-
+ .../mach/at91_pmc.h => include/linux/clk/at91.h    |  122 ++-
+ 127 files changed, 7588 insertions(+), 3862 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/at91-clock.txt
+ create mode 100644 arch/arm/boot/dts/at91sam9x5_can.dtsi
+ create mode 100644 arch/arm/boot/dts/at91sam9x5_isi.dtsi
+ create mode 100644 arch/arm/boot/dts/at91sam9x5_lcdc.dtsi
+ create mode 100644 arch/arm/boot/dts/at91sam9x5_macb0.dtsi
+ create mode 100644 arch/arm/boot/dts/at91sam9x5_macb1.dtsi
+ create mode 100644 arch/arm/boot/dts/at91sam9x5_usart3.dtsi
+ create mode 100644 arch/arm/boot/dts/sama5d3_can.dtsi
+ create mode 100644 arch/arm/boot/dts/sama5d3_emac.dtsi
+ create mode 100644 arch/arm/boot/dts/sama5d3_gmac.dtsi
+ create mode 100644 arch/arm/boot/dts/sama5d3_lcd.dtsi
+ create mode 100644 arch/arm/boot/dts/sama5d3_mci2.dtsi
+ create mode 100644 arch/arm/boot/dts/sama5d3_tcb1.dtsi
+ create mode 100644 arch/arm/boot/dts/sama5d3_uart.dtsi
+ delete mode 100644 arch/arm/mach-at91/clock.c
+ delete mode 100644 arch/arm/mach-at91/clock.h
+ create mode 100644 arch/arm/mach-at91/pmc.c
+ create mode 100644 drivers/clk/at91/Makefile
+ create mode 100644 drivers/clk/at91/clk-main.c
+ create mode 100644 drivers/clk/at91/clk-master.c
+ create mode 100644 drivers/clk/at91/clk-peripheral.c
+ create mode 100644 drivers/clk/at91/clk-pll.c
+ create mode 100644 drivers/clk/at91/clk-plldiv.c
+ create mode 100644 drivers/clk/at91/clk-programmable.c
+ create mode 100644 drivers/clk/at91/clk-smd.c
+ create mode 100644 drivers/clk/at91/clk-system.c
+ create mode 100644 drivers/clk/at91/clk-usb.c
+ create mode 100644 drivers/clk/at91/clk-utmi.c
+ rename arch/arm/mach-at91/include/mach/at91_pmc.h => include/linux/clk/at91.h (76%)
+
 -- 
 1.7.9.5
 
