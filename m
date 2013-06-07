@@ -1,129 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab3FGACn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 20:02:43 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:47002 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752940Ab3FGACj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 20:02:39 -0400
-Date: Thu, 6 Jun 2013 20:02:22 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] memcg: do not sleep on OOM waitqueue with full
- charge context
-Message-ID: <20130607000222.GT15576@cmpxchg.org>
-References: <1370488193-4747-1-git-send-email-hannes@cmpxchg.org>
- <1370488193-4747-2-git-send-email-hannes@cmpxchg.org>
- <alpine.DEB.2.02.1306052058340.25115@chino.kir.corp.google.com>
- <20130606053315.GB9406@cmpxchg.org>
- <20130606173355.GB27226@cmpxchg.org>
- <alpine.DEB.2.02.1306061308320.9493@chino.kir.corp.google.com>
- <20130606215425.GM15721@cmpxchg.org>
- <alpine.DEB.2.02.1306061507330.15503@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1306061507330.15503@chino.kir.corp.google.com>
+	id S1754067Ab3FGADq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 20:03:46 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34992 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751908Ab3FGADp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 20:03:45 -0400
+Date: Fri, 7 Jun 2013 10:03:23 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Kim Phillips <kim.phillips@freescale.com>, Arnd Bergmann <arnd@arndb.de>,
+        "Woodhouse, David" <david.woodhouse@intel.com>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Daniel Santos <daniel.santos@pobox.com>,
+        Borislav Petkov <bp@alien8.de>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kyungsik Lee <kyungsik.lee@lge.com>
+Subject: Re: [PATCH v7] arm: use built-in byte swap function
+Message-Id: <20130607100323.be805fa79db5f446fcfa14c2@canb.auug.org.au>
+In-Reply-To: <20130606221234.GQ18614@n2100.arm.linux.org.uk>
+References: <20130220214943.9b28a5b208da9f081387c55e@freescale.com>
+	<alpine.LFD.2.03.1302202327370.6419@syhkavp.arg>
+	<20130221005221.15279b1372501af12c1e4f32@freescale.com>
+	<alpine.LFD.2.03.1302211134160.6419@syhkavp.arg>
+	<20130221203327.6558f89277468f7ffffa6506@freescale.com>
+	<alpine.LFD.2.03.1302212219100.6419@syhkavp.arg>
+	<20130222194032.f7b44aefa5e2723d16767a1b@freescale.com>
+	<1361661654.18110.102.camel@shinybook.infradead.org>
+	<20130523114654.1f273241725205c6703b2226@freescale.com>
+	<20130523231336.GS18614@n2100.arm.linux.org.uk>
+	<20130606221234.GQ18614@n2100.arm.linux.org.uk>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__7_Jun_2013_10_03_23_+1000_9HhIt2qX4P2wbQ=7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 03:18:37PM -0700, David Rientjes wrote:
-> On Thu, 6 Jun 2013, Johannes Weiner wrote:
-> 
-> > > I don't understand why memcg is unique in this regard and it doesn't 
-> > > affect the page allocator as well on system oom conditions.  Ignoring 
-> > > memecg, all allocating processes will loop forever in the page allocator 
-> > > unless there are atypical gfp flags waiting for memory to be available, 
-> > > only one will call the oom killer at a time, a process is selected and 
-> > > killed, and the oom killer defers until that process exists because it 
-> > > finds TIF_MEMDIE.  Why is memcg charging any different?
-> > 
-> > The allocator wakes up kswapd, global OOMs are rarer, with physical
-> > memory the line to OOM is blurrier than with the memcg hard limit?
-> > 
-> > Anyway, I'm not aware of bug reports in the global case, but there are
-> > bug reports for the memcg case and we have a decent understanding of
-> > those deadlocks.  So can we stay focussed and fix this, please?
-> > 
-> 
-> Could you point me to those bug reports?  As far as I know, we have never 
-> encountered them so it would be surprising to me that we're running with a 
-> potential landmine and have seemingly never hit it.
+--Signature=_Fri__7_Jun_2013_10_03_23_+1000_9HhIt2qX4P2wbQ=7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sure thing: https://lkml.org/lkml/2012/11/21/497
+Hi Russell,
 
-During that thread Michal pinned down the problem to i_mutex being
-held by the OOM invoking task, which the selected victim is trying to
-acquire.
+On Thu, 6 Jun 2013 23:12:34 +0100 Russell King - ARM Linux <linux@arm.linux=
+.org.uk> wrote:
+>
+> So, we have a problem here - the kind which appears when people stuff
+> things into the -next tree which aren't destined for the next merge
+> window.  This is the relevant context from your patch, which is
+> against linux-next:
+>=20
+> -                lib1funcs.o lib1funcs.S ashldi3.o ashldi3.S \
+> -                font.o font.c head.o misc.o $(OBJS)
+> +                lib1funcs.o lib1funcs.S ashldi3.o ashldi3.S bswapsdi2.o \
+> +                bswapsdi2.S font.o font.c head.o misc.o $(OBJS)
+>=20
+>  # Make sure files are removed during clean
+>  extra-y       +=3D piggy.gzip piggy.lzo piggy.lzma piggy.xzkern piggy.lz=
+4 \
+>                                                                ^^^^^^^^^
+> -                lib1funcs.S ashldi3.S $(libfdt) $(libfdt_hdrs)
+> +                lib1funcs.S ashldi3.S bswapsdi2.S $(libfdt) $(libfdt_hdr=
+s)
+>=20
+> the underlined bit - piggy.lz4 for those who read mail with proportional
+> fonts.
+>=20
+> That is not in any kernel I have, and if it _is_ something that is
+> destined for the next merge window, it should be in my tree as it's
+> a core ARM feature, not in some random other tree.
 
-> > > > Reported-by: Reported-by: azurIt <azurit@pobox.sk>
-> > > > Debugged-by: Michal Hocko <mhocko@suse.cz>
-> > > > Reported-by: David Rientjes <rientjes@google.com>
-> > > 
-> > > What exactly did I report?  This isn't at all what 
-> > > memory.oom_delay_millisecs is about, which is a failure of userspace to 
-> > > respond to the condition and react in time, not because it's stuck on any 
-> > > lock.  We still need that addition regardless of what you're doing here.
-> > 
-> > Oh, tell me how getting stuck indefinitely on a lock will not result
-> > in "a failure to react in time".  This is some seriously misguided
-> > pedantry.
-> > 
-> 
-> It certainly would, but it's not the point that memory.oom_delay_millisecs 
-> was intended to address.  memory.oom_delay_millisecs would simply delay 
-> calling mem_cgroup_out_of_memory() unless userspace can't free memory or 
-> increase the memory limit in time.  Obviously that delay isn't going to 
-> magically address any lock dependency issues.
+That is commit d8a6bf1b25bd ("arm: add support for LZ4-compressed
+kernel") from next-20130606 from the akpm tree.  (adding author cc)  That
+patch was cc'd to you, and is part of a series that adds LZ4 compression
+to the kernel, so would not work on its own.  The first patch in the
+series is "decompressor: add LZ4 decompressor module".
 
-The delayed fallback would certainly resolve the issue of the
-userspace handler getting stuck, be it due to memory shortness or due
-to locks.
 
-However, it would not solve the part of the problem where the OOM
-killing kernel task is holding locks that the victim requires to exit.
+> Short of hand-editing and manually applying the patch, a solution would
+> be to rebase it on a mainline kernel version, like -rc4, and resubmit
+> that version instead.  That will ultimately then give sfr a conflict
+> which should be trivial to resolve - and hopefully we'll find out who's
+> carrying the LZ4 patch and putting it into linux-next.
 
-We are definitely looking at multiple related issues, that's why I'm
-trying to fix them step by step.
+People should *never, ever* submit patches based on linux-next (unless,
+of course they are to me to help fix merge conflicts in linux-next, etc).
+Patches submitted to a particular maintainer should be based on (an
+ancestor of) that maintainer's current tree.
 
-> > And yes, you talked about deadlocking potential other than the handler
-> > itself OOMing, I quote from
-> > <alpine.DEB.2.02.1305301338430.20389@chino.kir.corp.google.com>:
-> > 
-> > "Unresponsiveness isn't necessarily only because of memory
-> >  constraints, you may have your oom notifier in a parent cgroup that
-> >  isn't oom.  If a process is stuck on mm->mmap_sem in the oom cgroup,
-> >  though, the oom notifier may not be able to scrape /proc/pid and
-> >  attain necessary information in making an oom kill decision."
-> > 
-> > These are your words, and my patch sets out to fix the described
-> > problem,
-> 
-> I can review this patch apart from memory.oom_delay_millisecs using the 
-> examples in your changelog, but this isn't the problem statement for my 
-> patch.  The paragraph above is describing one way that an oom handler may 
-> encounter issues, it's not the only way and it's not a way that we have 
-> ever faced on our production servers with memcg.  I just didn't think the 
-> above was me reporting a bug, perhaps you took it that way.
+Sure, test new code before and after merging linux-next, but don;t base
+new code on it.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Please do consider this fix individually.  It's good to know that you
-didn't run into this particular issue on your machines so far, but
-since you described the problem you must have arrived at the same
-conclusion by just reading the code, which was good enough for me.
-Again, I can just remove your Reported-by: if you don't think it's
-justified.
+--Signature=_Fri__7_Jun_2013_10_03_23_+1000_9HhIt2qX4P2wbQ=7
+Content-Type: application/pgp-signature
 
-> The point I'm trying to make is that your patch doesn't reduce our need 
-> for memory.oom_delay_millisecs as described in the thread for that patch.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-It does not.  But it does fix a problem that came up during the
-discussion and it does fix a problem that you may hit at a random
-point in time regardless of the memory.oom_delay_millisecs patch.
+iQIcBAEBCAAGBQJRsSNSAAoJEECxmPOUX5FEG5cQAKLhWnfzs/ehyVjQ+72vX+1N
+wKUWlwAcxyfoR5jq7bBtr3WvhDHMz2NBTT4gtojLybGBEQe1cqb84gIGnC526dVG
+FLcBiD+Ow5lGAJWLMUqqwk3282COLtuuNCThRt+ugsKnT6rRwt8KKVRGEFCJFEmZ
+vd/29eCUnm1QdfB+8VaZUgGuUwRhL52lEIM91+6GAIzCZTFjCY8MfefU4S4oaAh+
+dH+fN4Duw9dshtWrBGPlcmzYk36vbC4zrRaNe++7NSe5KCq/ThxVl3Xa3cizvQ7y
+JvcJmMeG2HowC7wwaTqfkrrCMa2ijCWDOPli+EsRftRKLXINJjU7i5AFl7j/lZ3A
+yMq98anl2jez7TZk5mcXr9h5lYcSOUUgOIVC0E/IPfa+efGUEMDKF0QGwvkPnUZZ
+Ehr5kkSShO0xRfy4mB2vmk8Xq8AR0ov+peh7LnUfGElyNw7lrQ5Ff1tMYuhVtIoq
+Jm5aj1BOdUUZNINy8XtKHSbTb51hOKuM4x0omYXNhyy/ezPO3wiac6meZkZ0ou1H
+wJKAws+6h/qwObCJmNS18UMWbsDqwMDhc6Cs2bZdWZSW8vj9HFDgJSQW5vTxiLqN
+D4giXLhuHmdC8AhC+qpROv1F1VtaX1noOY/JGMbwTep1WZIfwWvrFsya+MbEDKmp
+cER4PI1dFl2wIbLQM8IC
+=Jj85
+-----END PGP SIGNATURE-----
 
-I'm sorry for the confusion this created, but yes, it's a separate
-albeit related issue.
+--Signature=_Fri__7_Jun_2013_10_03_23_+1000_9HhIt2qX4P2wbQ=7--
