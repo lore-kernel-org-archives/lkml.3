@@ -1,256 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908Ab3FGOud (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 10:50:33 -0400
-Received: from 18.mo1.mail-out.ovh.net ([46.105.35.72]:36265 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755785Ab3FGOu2 (ORCPT
+	id S1755928Ab3FGOuz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 10:50:55 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:28867 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753911Ab3FGOux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 10:50:28 -0400
-X-Greylist: delayed 21302 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Jun 2013 10:50:27 EDT
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Andrew Victor <linux@maxim.org.za>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>,
-        Russell King <linux@arm.linux.org.uk>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [RFC PATCH 10/50] ARM: at91: add PMC smd clock
-Date: Fri,  7 Jun 2013 16:24:18 +0200
-Message-Id: <1370615115-16979-11-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370615115-16979-1-git-send-email-b.brezillon@overkiz.com>
-References: <1370615115-16979-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 17332666116264277020
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 7 Jun 2013 10:50:53 -0400
+Date: Fri, 7 Jun 2013 10:50:24 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [RFC PATCH v2, part3 07/11] PCI, xen-pcifront: use new PCI
+ interfaces to simplify implementation
+Message-ID: <20130607145024.GA16631@phenom.dumpdata.com>
+References: <1368719459-24800-1-git-send-email-jiang.liu@huawei.com>
+ <1368719459-24800-8-git-send-email-jiang.liu@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368719459-24800-8-git-send-email-jiang.liu@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the at91 smd (Soft Modem) clock implementation using common clk
-framework.
+On Thu, May 16, 2013 at 11:50:55PM +0800, Jiang Liu wrote:
+> Use new PCI interfaces to simplify xen-pcifront implementation:
+> 1) Use pci_create_root_bus() instead of pci_scan_bus_parented()
+>    because pci_scan_bus_parented() is marked as __deprecated.This
+>    also gets rid of a duplicated call of pci_bus_start_devices().
+> 2) Use pci_stop_root_bus() and pci_remove_root_bus() instead of
+>    open-coded private implementation.
+> 3) Use pci_set_host_bridge_release() to release data structures
+>    associated with PCI root buses.
+> 4) Use pci_bus_get()/pci_bus_put() to manage PCI root bus reference
+>    count.
+> 
+> This is also a preparation for coming PCI bus lock enhancement.
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+> Cc: xen-devel@lists.xensource.com
+> Cc: virtualization@lists.linux-foundation.org
+> Cc: linux-pci@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/pci/xen-pcifront.c | 81 ++++++++++++++++++++++------------------------
+>  1 file changed, 39 insertions(+), 42 deletions(-)
+> 
+> diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
+> index 816cf94..6aa2c0f 100644
+> --- a/drivers/pci/xen-pcifront.c
+> +++ b/drivers/pci/xen-pcifront.c
+> @@ -25,11 +25,6 @@
+>  #define INVALID_GRANT_REF (0)
+>  #define INVALID_EVTCHN    (-1)
+>  
+> -struct pci_bus_entry {
+> -	struct list_head list;
+> -	struct pci_bus *bus;
+> -};
+> -
+>  #define _PDEVB_op_active		(0)
+>  #define PDEVB_op_active			(1 << (_PDEVB_op_active))
+>  
+> @@ -47,12 +42,12 @@ struct pcifront_device {
+>  	struct xen_pci_sharedinfo *sh_info;
+>  	struct work_struct op_work;
+>  	unsigned long flags;
+> -
+>  };
+>  
+>  struct pcifront_sd {
+>  	int domain;
+>  	struct pcifront_device *pdev;
+> +	struct resource busn_res;
+>  };
+>  
+>  static inline struct pcifront_device *
+> @@ -67,6 +62,12 @@ static inline void pcifront_init_sd(struct pcifront_sd *sd,
+>  {
+>  	sd->domain = domain;
+>  	sd->pdev = pdev;
+> +
+> +	/* Xen pci-backend doesn't export P2P bridges */
+> +	sd->busn_res.start = bus;
+> +	sd->busn_res.end = bus;
+> +	sd->busn_res.flags = IORESOURCE_BUS;
+> +	sd->busn_res.name = "PCI busn";
+>  }
+>  
+>  static DEFINE_SPINLOCK(pcifront_dev_lock);
+> @@ -441,12 +442,19 @@ static int pcifront_scan_bus(struct pcifront_device *pdev,
+>  	return 0;
+>  }
+>  
+> +static void pcifront_release_sd(struct pci_host_bridge *bridge)
+> +{
+> +	struct pcifront_sd *sd = bridge->release_data;
+> +
+> +	kfree(sd);
+> +}
+> +
+>  static int pcifront_scan_root(struct pcifront_device *pdev,
+>  				 unsigned int domain, unsigned int bus)
+>  {
+>  	struct pci_bus *b;
+>  	struct pcifront_sd *sd = NULL;
+> -	struct pci_bus_entry *bus_entry = NULL;
+> +	LIST_HEAD(resources);
+>  	int err = 0;
+>  
+>  #ifndef CONFIG_PCI_DOMAINS
+> @@ -463,16 +471,18 @@ static int pcifront_scan_root(struct pcifront_device *pdev,
+>  	dev_info(&pdev->xdev->dev, "Creating PCI Frontend Bus %04x:%02x\n",
+>  		 domain, bus);
+>  
+> -	bus_entry = kmalloc(sizeof(*bus_entry), GFP_KERNEL);
+> -	sd = kmalloc(sizeof(*sd), GFP_KERNEL);
+> -	if (!bus_entry || !sd) {
+> +	sd = kzalloc(sizeof(*sd), GFP_KERNEL);
+> +	if (!sd) {
+>  		err = -ENOMEM;
+>  		goto err_out;
+>  	}
+>  	pcifront_init_sd(sd, domain, bus, pdev);
+>  
+> -	b = pci_scan_bus_parented(&pdev->xdev->dev, bus,
+> -				  &pcifront_bus_ops, sd);
+> +	pci_add_resource(&resources, &ioport_resource);
+> +	pci_add_resource(&resources, &iomem_resource);
+> +	pci_add_resource(&resources, &sd->busn_res);
+> +	b = pci_create_root_bus(&pdev->xdev->dev, bus, &pcifront_bus_ops,
+> +				sd, &resources);
+>  	if (!b) {
+>  		dev_err(&pdev->xdev->dev,
+>  			"Error creating PCI Frontend Bus!\n");
+> @@ -480,12 +490,14 @@ static int pcifront_scan_root(struct pcifront_device *pdev,
+>  		goto err_out;
+>  	}
+>  
+> -	bus_entry->bus = b;
+> +	pci_set_host_bridge_release(to_pci_host_bridge(b->bridge),
+> +				    pcifront_release_sd, sd);
+>  
+> -	list_add(&bus_entry->list, &pdev->root_buses);
+> -
+> -	/* pci_scan_bus_parented skips devices which do not have a have
+> -	* devfn==0. The pcifront_scan_bus enumerates all devfn. */
+> +	/*
+> +	 * Every PCI physical device should have function 0, but that's not
+> +	 * true for xen.
 
-Not used by any driver right now.
+That is incorrect. There are two types of backends - one of them will
+start at zero, but the other might not.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- arch/arm/mach-at91/Kconfig |    5 ++
- drivers/clk/at91/Makefile  |    1 +
- drivers/clk/at91/clk-smd.c |  157 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 163 insertions(+)
+> +	 * So use pcifront_scan_bus() instead of pci_scan_child_bus().
+> +	 */
+>  	err = pcifront_scan_bus(pdev, domain, bus, b);
+>  
+>  	/* Claim resources before going "live" with our devices */
+> @@ -497,7 +509,6 @@ static int pcifront_scan_root(struct pcifront_device *pdev,
+>  	return err;
+>  
+>  err_out:
+> -	kfree(bus_entry);
+>  	kfree(sd);
+>  
+>  	return err;
+> @@ -539,35 +550,19 @@ static int pcifront_rescan_root(struct pcifront_device *pdev,
+>  	return err;
+>  }
+>  
+> -static void free_root_bus_devs(struct pci_bus *bus)
+> -{
+> -	struct pci_dev *dev;
+> -
+> -	while (!list_empty(&bus->devices)) {
+> -		dev = container_of(bus->devices.next, struct pci_dev,
+> -				   bus_list);
+> -		dev_dbg(&dev->dev, "removing device\n");
+> -		pci_stop_and_remove_bus_device(dev);
+> -	}
+> -}
+> -
+>  static void pcifront_free_roots(struct pcifront_device *pdev)
+>  {
+> -	struct pci_bus_entry *bus_entry, *t;
+> +	struct pcifront_sd *sd;
+> +	struct pci_bus *bus;
+>  
+>  	dev_dbg(&pdev->xdev->dev, "cleaning up root buses\n");
+>  
+> -	list_for_each_entry_safe(bus_entry, t, &pdev->root_buses, list) {
+> -		list_del(&bus_entry->list);
+> -
+> -		free_root_bus_devs(bus_entry->bus);
+> -
+> -		kfree(bus_entry->bus->sysdata);
+> -
+> -		device_unregister(bus_entry->bus->bridge);
+> -		pci_remove_bus(bus_entry->bus);
+> -
+> -		kfree(bus_entry);
+> +	for_each_pci_root_bus(bus) {
+> +		sd = bus->sysdata;
+> +		if (sd->pdev == pdev) {
+> +			pci_stop_root_bus(bus);
+> +			pci_remove_root_bus(bus);
+> +		}
+>  	}
+>  }
+>  
+> @@ -670,6 +665,7 @@ static irqreturn_t pcifront_handler_aer(int irq, void *dev)
+>  	schedule_pcifront_aer_op(pdev);
+>  	return IRQ_HANDLED;
+>  }
+> +
 
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index ce4851d..8032871 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -27,6 +27,9 @@ config AT91_SAM9G45_RESET
- config AT91_SAM9_TIME
- 	bool
- 
-+config HAVE_AT91_SMD
-+	bool
-+
- config SOC_AT91SAM9
- 	bool
- 	select AT91_SAM9_TIME
-@@ -72,6 +75,7 @@ config SOC_SAMA5D3
- 	select HAVE_FB_ATMEL
- 	select HAVE_AT91_DBGU1
- 	select HAVE_AT91_UTMI
-+	select HAVE_AT91_SMD
- 	select HAVE_AT91_USB_CLK
- 	help
- 	  Select this if you are using one of Atmel's SAMA5D3 family SoC.
-@@ -137,6 +141,7 @@ config SOC_AT91SAM9X5
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
- 	select HAVE_AT91_UTMI
-+	select HAVE_AT91_SMD
- 	select HAVE_AT91_USB_CLK
- 	help
- 	  Select this if you are using one of Atmel's AT91SAM9x5 family SoC.
-diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
-index bbfd245..7206f4c 100644
---- a/drivers/clk/at91/Makefile
-+++ b/drivers/clk/at91/Makefile
-@@ -8,3 +8,4 @@ obj-y += clk-system.o clk-peripheral.o
- obj-$(CONFIG_AT91_PROGRAMMABLE_CLOCKS)	+= clk-programmable.o
- obj-$(CONFIG_HAVE_AT91_UTMI)		+= clk-utmi.o
- obj-$(CONFIG_HAVE_AT91_USB_CLK)		+= clk-usb.o
-+obj-$(CONFIG_HAVE_AT91_SMD)		+= clk-smd.o
-diff --git a/drivers/clk/at91/clk-smd.c b/drivers/clk/at91/clk-smd.c
-new file mode 100644
-index 0000000..61bd8a5
---- /dev/null
-+++ b/drivers/clk/at91/clk-smd.c
-@@ -0,0 +1,157 @@
-+/*
-+ * drivers/clk/at91/clk-smd.c
-+ *
-+ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
-+ *
-+ * This smdram is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
-+#include <linux/clk/at91.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/io.h>
-+
-+#define SMD_SOURCE_MAX		2
-+
-+#define to_at91sam9x5_clk_smd(hw) \
-+	container_of(hw, struct at91sam9x5_clk_smd, hw)
-+struct at91sam9x5_clk_smd {
-+	struct clk_hw hw;
-+};
-+
-+static unsigned long at91sam9x5_clk_smd_recalc_rate(struct clk_hw *hw,
-+						    unsigned long parent_rate)
-+{
-+	u32 tmp;
-+	u8 smddiv;
-+	tmp = at91_pmc_read(AT91_PMC_SMD);
-+	smddiv = (tmp & AT91_PMC_SMD_DIV) >> 8;
-+	return parent_rate / (smddiv + 1);
-+}
-+
-+static long at91sam9x5_clk_smd_round_rate(struct clk_hw *hw, unsigned long rate,
-+					  unsigned long *parent_rate)
-+{
-+	unsigned long div;
-+	unsigned long bestrate;
-+	unsigned long tmp;
-+
-+	if (rate >= *parent_rate)
-+		return *parent_rate;
-+
-+	div = *parent_rate / rate;
-+	if (div > 15)
-+		return *parent_rate / 16;
-+
-+	bestrate = *parent_rate / div;
-+	tmp = *parent_rate / (div + 1);
-+	if (bestrate - rate > rate - tmp)
-+		bestrate = tmp;
-+
-+	return bestrate;
-+}
-+
-+static int at91sam9x5_clk_smd_set_parent(struct clk_hw *hw, u8 index)
-+{
-+	u32 tmp;
-+	if (index > 1)
-+		return -EINVAL;
-+	tmp = at91_pmc_read(AT91_PMC_SMD) & ~AT91_PMC_SMDS;
-+	if (index)
-+		tmp |= AT91_PMC_SMDS;
-+	at91_pmc_write(AT91_PMC_SMD, tmp);
-+	return 0;
-+}
-+
-+static u8 at91sam9x5_clk_smd_get_parent(struct clk_hw *hw)
-+{
-+	return at91_pmc_read(AT91_PMC_SMD) & AT91_PMC_SMDS;
-+}
-+
-+static int at91sam9x5_clk_smd_set_rate(struct clk_hw *hw, unsigned long rate,
-+				       unsigned long parent_rate)
-+{
-+	u32 tmp;
-+	unsigned long div = parent_rate / rate;
-+	if (parent_rate % rate || div < 1 || div > 16)
-+		return -EINVAL;
-+	tmp = at91_pmc_read(AT91_PMC_SMD) & ~AT91_PMC_SMD_DIV;
-+	tmp |= (div - 1) << 8;
-+	at91_pmc_write(AT91_PMC_SMD, tmp);
-+
-+	return 0;
-+}
-+
-+static const struct clk_ops at91sam9x5_smd_ops = {
-+	.recalc_rate = at91sam9x5_clk_smd_recalc_rate,
-+	.round_rate = at91sam9x5_clk_smd_round_rate,
-+	.get_parent = at91sam9x5_clk_smd_get_parent,
-+	.set_parent = at91sam9x5_clk_smd_set_parent,
-+	.set_rate = at91sam9x5_clk_smd_set_rate,
-+};
-+
-+struct clk * __init
-+at91sam9x5_clk_register_smd(const char *name, const char **parent_names,
-+			    u8 num_parents)
-+{
-+	struct at91sam9x5_clk_smd *smd;
-+	struct clk *clk = NULL;
-+	struct clk_init_data init;
-+
-+	smd = kzalloc(sizeof(*smd), GFP_KERNEL);
-+	if (!smd)
-+		return ERR_PTR(-ENOMEM);
-+
-+	init.name = name;
-+	init.ops = &at91sam9x5_smd_ops;
-+	init.parent_names = parent_names;
-+	init.num_parents = num_parents;
-+	init.flags = CLK_SET_RATE_GATE | CLK_SET_PARENT_GATE;
-+
-+	smd->hw.init = &init;
-+
-+	clk = clk_register(NULL, &smd->hw);
-+
-+	if (IS_ERR(clk))
-+		kfree(smd);
-+
-+	return clk;
-+}
-+
-+#if defined(CONFIG_OF)
-+static void __init of_at91sam9x5_clk_smd_setup(struct device_node *np)
-+{
-+	struct clk *clk;
-+	int i;
-+	int num_parents;
-+	const char *parent_names[SMD_SOURCE_MAX];
-+	const char *name = np->name;
-+
-+	num_parents = of_count_phandle_with_args(np, "clocks", "#clock-cells");
-+	if (num_parents <= 0 || num_parents >= SMD_SOURCE_MAX)
-+		return;
-+
-+	for (i = 0; i < num_parents; i++) {
-+		parent_names[i] = of_clk_get_parent_name(np, i);
-+		if (!parent_names[i])
-+			return;
-+	}
-+
-+	of_property_read_string(np, "clock-output-names", &name);
-+
-+	clk = at91sam9x5_clk_register_smd(name, parent_names, num_parents);
-+
-+	if (IS_ERR(clk))
-+		return;
-+
-+	of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+}
-+CLK_OF_DECLARE(at91sam9x5_clk_smd, "atmel,at91sam9x5-clk-smd",
-+	       of_at91sam9x5_clk_smd_setup);
-+#endif
--- 
-1.7.9.5
+Stray
+>  static int pcifront_connect_and_init_dma(struct pcifront_device *pdev)
+>  {
+>  	int err = 0;
+> @@ -705,6 +701,7 @@ static void pcifront_disconnect(struct pcifront_device *pdev)
+>  
+>  	spin_unlock(&pcifront_dev_lock);
+>  }
+> +
 
+Stray
+>  static struct pcifront_device *alloc_pdev(struct xenbus_device *xdev)
+>  {
+>  	struct pcifront_device *pdev;
+> -- 
+> 1.8.1.2
+> 
