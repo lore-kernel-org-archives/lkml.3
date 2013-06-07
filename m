@@ -1,44 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501Ab3FGUX6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 16:23:58 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:51047 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752746Ab3FGUX4 (ORCPT
+	id S1756427Ab3FGU0K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 16:26:10 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:55713 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753181Ab3FGU0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 16:23:56 -0400
-X-Greylist: delayed 461 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Jun 2013 16:23:56 EDT
-Message-Id: <1370636175.13515.140661241274985.19126A97@webmail.messagingengine.com>
-X-Sasl-Enc: yW/r/P3n1e0X9NknTF7mbrPRWszG7ruOYt90Omcz6A3G 1370636175
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Adam Lee <adam.lee@canonical.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        ibm-acpi-devel@lists.sourceforge.net,
-        Alex Hung <alex.hung@canonical.com>, Bjorn Mork <bjorn@mork.no>
-MIME-Version: 1.0
+	Fri, 7 Jun 2013 16:26:07 -0400
+Message-ID: <1370636765.24311.440.camel@edumazet-glaptop>
+Subject: Re: NULL pointer dereference when loading the gre module
+ (3.10.0-rc4)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Pravin B Shelar <pshelar@nicira.com>
+Date: Fri, 07 Jun 2013 13:26:05 -0700
+In-Reply-To: <20130607184622.GA24906@uio.no>
+References: <20130607030648.GA28618@home.goodmis.org>
+	 <20130607085421.GF15083@uio.no>
+	 <1370612441.24311.411.camel@edumazet-glaptop>
+	 <1370618100.9844.73.camel@gandalf.local.home>
+	 <20130607154634.GA7529@uio.no>
+	 <1370621543.9844.78.camel@gandalf.local.home>
+	 <20130607175233.GA20230@uio.no>
+	 <1370629568.9844.87.camel@gandalf.local.home>
+	 <20130607183438.GA23064@uio.no>
+	 <1370630659.9844.89.camel@gandalf.local.home>
+	 <20130607184622.GA24906@uio.no>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
-X-Mailer: MessagingEngine.com Webmail Interface - ajax-25df3f14
-In-Reply-To: <20130607150651.GA2227@adam-laptop>
-References: <1370593209-21358-1-git-send-email-adam.lee@canonical.com>
- <1370593209-21358-4-git-send-email-adam.lee@canonical.com>
- <1370611358.6315.48.camel@x230.lan> <20130607150651.GA2227@adam-laptop>
-Subject: Re: [PATCH 3/3] thinkpad_acpi: add LED quirks of models which don't have
- EC controllable LEDs
-Date: Fri, 07 Jun 2013 17:16:15 -0300
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can you get me the ACPI interface documentation?  It should be simple to get it, but I haven't emailed the Lenovo BIOS engineers for some time.
+On Fri, 2013-06-07 at 20:46 +0200, Steinar H. Gunderson wrote:
+> On Fri, Jun 07, 2013 at 02:44:19PM -0400, Steven Rostedt wrote:
+> > Do know if you have CONFIG_NET_NS set in your .config?
+> 
+> Sorry, I forgot to answer this: No, it is not set.
 
-Basically, create a new LED method in thinkpad-acpi, lock it down to vendor lenovo, detect the new interfaces, and only check the two-argument LED one if the newer ones aren't found.
+OK please try the following patch, Steven forgot to update the include
+file as well.
 
-Not supporting the old /proc interface on new thinkpads is fine.
+I tried this patch and it solved the problem for me.
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Thanks
+
+
+[PATCH] ip_tunnel: remove __net_init/exit from exported functions
+
+If CONFIG_NET_NS is not set then __net_init is the same as __init and
+__net_exit is the same as __exit. These functions will be removed from
+memory after the module loads or is removed. Functions that are exported
+for use by other functions should never be labeled for removal.
+
+Bug introduced by commit c54419321455631079c
+("GRE: Refactor GRE tunneling code.")
+
+Reported-by: Steinar H. Gunderson <sgunderson@bigfoot.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+---
+ include/net/ip_tunnels.h |    6 +++---
+ net/ipv4/ip_tunnel.c     |    4 ++--
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/include/net/ip_tunnels.h b/include/net/ip_tunnels.h
+index 40b4dfc..1be442f 100644
+--- a/include/net/ip_tunnels.h
++++ b/include/net/ip_tunnels.h
+@@ -95,10 +95,10 @@ struct ip_tunnel_net {
+ int ip_tunnel_init(struct net_device *dev);
+ void ip_tunnel_uninit(struct net_device *dev);
+ void  ip_tunnel_dellink(struct net_device *dev, struct list_head *head);
+-int __net_init ip_tunnel_init_net(struct net *net, int ip_tnl_net_id,
+-				  struct rtnl_link_ops *ops, char *devname);
++int ip_tunnel_init_net(struct net *net, int ip_tnl_net_id,
++		       struct rtnl_link_ops *ops, char *devname);
+ 
+-void __net_exit ip_tunnel_delete_net(struct ip_tunnel_net *itn);
++void ip_tunnel_delete_net(struct ip_tunnel_net *itn);
+ 
+ void ip_tunnel_xmit(struct sk_buff *skb, struct net_device *dev,
+ 		    const struct iphdr *tnl_params, const u8 protocol);
+diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
+index 7c79cf8..e189db4 100644
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -853,7 +853,7 @@ void ip_tunnel_dellink(struct net_device *dev, struct list_head *head)
+ }
+ EXPORT_SYMBOL_GPL(ip_tunnel_dellink);
+ 
+-int __net_init ip_tunnel_init_net(struct net *net, int ip_tnl_net_id,
++int ip_tunnel_init_net(struct net *net, int ip_tnl_net_id,
+ 				  struct rtnl_link_ops *ops, char *devname)
+ {
+ 	struct ip_tunnel_net *itn = net_generic(net, ip_tnl_net_id);
+@@ -899,7 +899,7 @@ static void ip_tunnel_destroy(struct ip_tunnel_net *itn, struct list_head *head)
+ 		unregister_netdevice_queue(itn->fb_tunnel_dev, head);
+ }
+ 
+-void __net_exit ip_tunnel_delete_net(struct ip_tunnel_net *itn)
++void ip_tunnel_delete_net(struct ip_tunnel_net *itn)
+ {
+ 	LIST_HEAD(list);
+ 
+
+
