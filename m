@@ -1,68 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab3FGIWp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 04:22:45 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:40084 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753581Ab3FGIWm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 04:22:42 -0400
-From: Adam Lee <adam.lee@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: platform-driver-x86@vger.kernel.org, ibm-acpi-devel@lists.sourceforge.net,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Alex Hung <alex.hung@canonical.com>, Bjorn Mork <bjorn@mork.no>
-Subject: [PATCH 2/3] thinkpad_acpi: add the ability setting TPACPI_LED_NONE by quirk
-Date: Fri,  7 Jun 2013 16:20:08 +0800
-Message-Id: <1370593209-21358-3-git-send-email-adam.lee@canonical.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1370593209-21358-1-git-send-email-adam.lee@canonical.com>
-References: <1370593209-21358-1-git-send-email-adam.lee@canonical.com>
+	id S1753402Ab3FGIZL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 04:25:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43017 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751313Ab3FGIZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 04:25:06 -0400
+Date: Fri, 7 Jun 2013 10:25:02 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Michel Lespinasse <walken@google.com>,
+        Greg Thelen <gthelen@google.com>, Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [patch -v4 4/8] memcg: enhance memcg iterator to support
+ predicates
+Message-ID: <20130607082502.GC8117@dhcp22.suse.cz>
+References: <20130604193619.GA14916@htj.dyndns.org>
+ <20130604204807.GA13231@dhcp22.suse.cz>
+ <20130604205426.GI14916@htj.dyndns.org>
+ <20130605073728.GC15997@dhcp22.suse.cz>
+ <20130605080545.GF7303@mtj.dyndns.org>
+ <20130605085239.GF15997@dhcp22.suse.cz>
+ <20130605085849.GB7990@mtj.dyndns.org>
+ <20130605090739.GH15997@dhcp22.suse.cz>
+ <20130605090938.GA8266@mtj.dyndns.org>
+ <20130607004824.GA16160@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130607004824.GA16160@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some new Lenovo or ThinkPad laptops don't have EC controllable LEDs,
-their LED quirks are 0. This patch set led_supported=TPACPI_LED_NONE
-when quirk equals 0.
+On Thu 06-06-13 17:48:24, Tejun Heo wrote:
+> On Wed, Jun 05, 2013 at 02:09:38AM -0700, Tejun Heo wrote:
+> > On Wed, Jun 05, 2013 at 11:07:39AM +0200, Michal Hocko wrote:
+> > > On Wed 05-06-13 01:58:49, Tejun Heo wrote:
+> > > [...]
+> > > > Anyways, so you aren't gonna try the skipping thing?
+> > > 
+> > > As I said. I do not consider this a priority for the said reasons (i
+> > > will not repeat them).
+> > 
+> > That's a weird way to respond.  Alright, whatever, let me give it a
+> > shot then.
+> 
+> So, there were some private exchanges and here's my main issue with
+> the addition of predicate callback to mem_cgroup_iter_cond().
+> 
+> There are two common patterns that are used to implement iteration.
+> One is the good ol' callback based one - ie. call_fn_on_each(fn) type
+> interface.  The other is something which can be used as part of flow
+> control by the user - be it give_me_next_elem() or for_each() type
+> loop macro.  In majority of cases, especially for anything generic,
+> the latter is considered to be the better choice because, while a bit
+> more challenging to implement usually, it's a lot less cumbersome for
+> the users of the interface.
+> 
+> mem_cgroup_iter_cond() seems icky to me because the predicate callback
+> is essentially visit callback,
 
-Signed-off-by: Adam Lee <adam.lee@canonical.com>
----
- drivers/platform/x86/thinkpad_acpi.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+OK, I thought that the predicate signature made it clear that its
+purpose is to _check_ whether visiting makes sense rather than _visit_
+that node and work with the node. That is the reason why I didn't
+include state parameter which would be expected for the full visitor.
+Maybe using const would make it even more clear. I can update
+documentation for the predicate to make it more clear.
 
-diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
-index bea57ae..2fb1f1c 100644
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -5327,6 +5327,16 @@ static int __init led_init(struct ibm_init_struct *iibm)
- 
- 	led_supported = led_init_detect_mode();
- 
-+	if (led_supported != TPACPI_LED_NONE) {
-+		useful_leds = tpacpi_check_quirks(led_useful_qtable,
-+				ARRAY_SIZE(led_useful_qtable));
-+
-+		if (!useful_leds) {
-+			led_handle = NULL;
-+			led_supported = TPACPI_LED_NONE;
-+		}
-+	}
-+
- 	vdbg_printk(TPACPI_DBG_INIT, "LED commands are %s, mode %d\n",
- 		str_supported(led_supported), led_supported);
- 
-@@ -5340,9 +5350,6 @@ static int __init led_init(struct ibm_init_struct *iibm)
- 		return -ENOMEM;
- 	}
- 
--	useful_leds = tpacpi_check_quirks(led_useful_qtable,
--					  ARRAY_SIZE(led_useful_qtable));
--
- 	for (i = 0; i < TPACPI_LED_NUMLEDS; i++) {
- 		if (!tpacpi_is_led_restricted(i) &&
- 		    test_bit(i, &useful_leds)) {
+> so now we end up with give_me_next_elem() with visit callback, which
+> is fundamentally superflous.  If it were properly call_fn_on_each(fn),
+> the return values would be CONTINUE, SKIP_SUBTREE or ABORT, which
+> makes more sense to me.  Sure, it can be said that the predicate
+> callback is for a different purpose but it really doesn't change that
+> the interface now is visiting the same node in two different places.
+> If it were something remotely widely used, it won't take much time
+> developing braindamaged usages where part is being done inside the
+> predicate callback and the rest is done outside without clear reason
+> why just because of natural code growth.  I don't think this is the
+> type of construct that we want in kernel in general.
+> 
+> That said, it also is true that doing this is the shortest path to
+> implementing subtree skip given how the iterator is put together
+> currently and the series as a whole reduces significant amount of
+> complexity, so it is an acceptable tradeoff to proceed with this
+> implementation with later restructuring of the iterator.
+
+Good. As I said many times, memcg iterators could see some clean ups.
+
+> So, let's go ahead as proposed.  
+
+Thanks!
+
+> I'll try to rework the iterator on top of it, and my aplogies to
+> Michal for being over-the-top.
+
+Thanks!
+
 -- 
-1.7.10.4
-
+Michal Hocko
+SUSE Labs
