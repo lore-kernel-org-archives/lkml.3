@@ -1,46 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741Ab3FGIxF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 04:53:05 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38279 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741Ab3FGIwj (ORCPT
+	id S1754402Ab3FGIv6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 04:51:58 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:39905 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754255Ab3FGIvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 04:52:39 -0400
-Date: Fri, 7 Jun 2013 09:49:13 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "luke.leighton" <luke.leighton@gmail.com>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        linux-arm-kernel@lists.infradead.org, debian-kernel@lists.debian.org
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
-	Uploading linux (3.9.4-1))
-Message-ID: <20130607084913.GR18614@n2100.arm.linux.org.uk>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com> <1370475609.20454.44.camel@localhost> <CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com> <1733666.lHUBcfUXq9@flatron> <CAPweEDzYLDzh_-OWU61dtVhajZ40QpQgZKHFYDsh3FgF=r9_ag@mail.gmail.com> <20130606131042.GN18614@n2100.arm.linux.org.uk> <CAPweEDyYt+pN+UaFuqWL5RrHpyuq_4So-tArmx3dr=0wLS+hwQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPweEDyYt+pN+UaFuqWL5RrHpyuq_4So-tArmx3dr=0wLS+hwQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 7 Jun 2013 04:51:52 -0400
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+To: gleb@redhat.com
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH v3 5/6] KVM: MMU: add tracepoint for check_mmio_spte
+Date: Fri,  7 Jun 2013 16:51:27 +0800
+Message-Id: <1370595088-3315-6-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060708-9264-0000-0000-000003E49DE2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 09:02:43AM +0100, luke.leighton wrote:
->  ok.  so.  we come back to the question again: what shall i propose to
-> them that they consider doing, and what benefit would it be to them to
-> do so?
-> 
->  i cannot go to them and say "you have to do this [insert proposal
-> here]" - it has to be more subtle than that.
+It is useful for debug mmio spte invalidation
 
-It seems that you don't have to do anything at all.  From what Arnd and
-others have said, they are _already_ talking to, and working with people
-in the kernel community to move their code base forward, move to DT, and
-they are already starting to send their own patches for the mainline
-kernel themselves.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/mmu.c      |  9 +++++++--
+ arch/x86/kvm/mmutrace.h | 24 ++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index bdc95bc..1fd2c05 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -281,8 +281,13 @@ static bool set_mmio_spte(struct kvm *kvm, u64 *sptep, gfn_t gfn,
+ 
+ static bool check_mmio_spte(struct kvm *kvm, u64 spte)
+ {
+-	return likely(get_mmio_spte_generation(spte) ==
+-			kvm_current_mmio_generation(kvm));
++	unsigned int kvm_gen, spte_gen;
++
++	kvm_gen = kvm_current_mmio_generation(kvm);
++	spte_gen = get_mmio_spte_generation(spte);
++
++	trace_check_mmio_spte(spte, kvm_gen, spte_gen);
++	return likely(kvm_gen == spte_gen);
+ }
+ 
+ static inline u64 rsvd_bits(int s, int e)
+diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
+index ad24757..9d2e0ff 100644
+--- a/arch/x86/kvm/mmutrace.h
++++ b/arch/x86/kvm/mmutrace.h
+@@ -298,6 +298,30 @@ TRACE_EVENT(
+ 		  __entry->mmu_valid_gen, __entry->mmu_used_pages
+ 	)
+ );
++
++
++TRACE_EVENT(
++	check_mmio_spte,
++	TP_PROTO(u64 spte, unsigned int kvm_gen, unsigned int spte_gen),
++	TP_ARGS(spte, kvm_gen, spte_gen),
++
++	TP_STRUCT__entry(
++		__field(unsigned int, kvm_gen)
++		__field(unsigned int, spte_gen)
++		__field(u64, spte)
++	),
++
++	TP_fast_assign(
++		__entry->kvm_gen = kvm_gen;
++		__entry->spte_gen = spte_gen;
++		__entry->spte = spte;
++	),
++
++	TP_printk("spte %llx kvm_gen %x spte-gen %x valid %d", __entry->spte,
++		  __entry->kvm_gen, __entry->spte_gen,
++		  __entry->kvm_gen == __entry->spte_gen
++	)
++);
+ #endif /* _TRACE_KVMMMU_H */
+ 
+ #undef TRACE_INCLUDE_PATH
+-- 
+1.8.1.4
+
