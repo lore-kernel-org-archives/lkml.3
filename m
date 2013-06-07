@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab3FGIlK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 04:41:10 -0400
-Received: from smtp-vbr19.xs4all.nl ([194.109.24.39]:2244 "EHLO
-	smtp-vbr19.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab3FGIlI (ORCPT
+	id S1753581Ab3FGInO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 04:43:14 -0400
+Received: from cassarossa.samfundet.no ([193.35.52.29]:45676 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471Ab3FGInM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 04:41:08 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Subject: Re: [PATCH v2 0/4] media: i2c: ths7303 cleanup
-Date: Fri, 7 Jun 2013 10:40:35 +0200
-User-Agent: KMail/1.13.7 (Linux/3.10.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
-Cc: Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-References: <1369503576-22271-1-git-send-email-prabhakar.csengg@gmail.com> <2855590.yx9zfYZLis@avalon> <CA+V-a8vh-ttz1QQmV59fP5c3vK=1zC5QfmkHc9Du0ZAcY712Dg@mail.gmail.com>
-In-Reply-To: <CA+V-a8vh-ttz1QQmV59fP5c3vK=1zC5QfmkHc9Du0ZAcY712Dg@mail.gmail.com>
+	Fri, 7 Jun 2013 04:43:12 -0400
+Date: Fri, 7 Jun 2013 10:43:03 +0200
+From: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, davem@davemloft.net, netdev@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: NULL pointer dereference when loading the gre module (3.10.0-rc4)
+Message-ID: <20130607084303.GE15083@uio.no>
+References: <20130606221656.GA11475@uio.no>
+ <20130607030648.GA28618@home.goodmis.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306071040.35174.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130607030648.GA28618@home.goodmis.org>
+X-Operating-System: Linux 3.10.0-rc4 on a x86_64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu June 6 2013 12:05:38 Prabhakar Lad wrote:
-> Hi Hans,
-> 
-> On Sun, May 26, 2013 at 6:50 AM, Laurent Pinchart
-> <laurent.pinchart@ideasonboard.com> wrote:
-> > On Saturday 25 May 2013 23:09:32 Prabhakar Lad wrote:
-> >> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> >>
-> >> Trivial cleanup of the driver.
-> >>
-> >> Changes for v2:
-> >> 1: Dropped the asynchronous probing and, OF
-> >>    support patches will be handling them independently because of
-> >> dependencies. 2: Arranged the patches logically so that git bisect
-> >>    succeeds.
-> >>
-> >> Lad, Prabhakar (4):
-> >>   ARM: davinci: dm365 evm: remove init_enable from ths7303 pdata
-> >>   media: i2c: ths7303: remove init_enable option from pdata
-> >>   media: i2c: ths7303: remove unnecessary function ths7303_setup()
-> >>   media: i2c: ths7303: make the pdata as a constant pointer
-> >>
-> Can you pick up this series or do you want me to issue a pull for it ?
+On Thu, Jun 06, 2013 at 11:06:48PM -0400, Steven Rostedt wrote:
+> Note the faulting address is 0xffffffffa0e52001, which is around the
+> above address, be interesting to know what was at that location.
 
-I've picked it up. I kept the dm365 patch separate, but I did improve the
-commit log a bit.
+Aha, the plot thickens:
 
-Regards,
+root      6095  0.0  0.0   6632   596 ?        D    Jun06   0:00 /sbin/modprobe -q -- net-pf-17
 
-	Hans
+pannekake:/usr/src/linux-3.10-rc4> sudo cat /proc/6095/stack
+[<ffffffff812bb04f>] register_pernet_subsys+0x18/0x39
+[<ffffffffa0ffd089>] packet_init+0x32/0x44 [af_packet]
+[<ffffffff81000263>] do_one_initcall+0x7b/0x10c
+[<ffffffff8107e5db>] load_module+0x1b1f/0x1e19
+[<ffffffff8107e969>] SyS_init_module+0x94/0xa1
+[<ffffffff8138cf12>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+
+I have a tcpdump running almost all the time (from boot), for a variety of
+reasons. And I think I have the BPF JIT on; possibly related.
+
+/* Steinar */
+-- 
+Homepage: http://www.sesse.net/
