@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185Ab3FGGfP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 02:35:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50358 "EHLO
+	id S1751958Ab3FGGi2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 02:38:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50367 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750871Ab3FGGfN (ORCPT
+	by vger.kernel.org with ESMTP id S1750737Ab3FGGi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 02:35:13 -0400
-Message-ID: <1370586900.4149.0.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 102/184] Bluetooth: fix possible info leak in
+	Fri, 7 Jun 2013 02:38:26 -0400
+Message-ID: <1370587103.4149.1.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 185/184] [SCSI] mpt2sas: Send default descriptor for RAID
+ pass through in mpt2ctl
 From: Ben Hutchings <ben@decadent.org.uk>
 To: Willy Tarreau <w@1wt.eu>
 Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        Mathias Krause <minipli@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Fri, 07 Jun 2013 07:35:00 +0100
-In-Reply-To: <20130604172134.542955449@1wt.eu>
-References: <20130604172134.542955449@1wt.eu>
+        Kashyap Desai <kashyap.desai@lsi.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Moritz Muehlenhoff <jmm@inutil.org>
+Date: Fri, 07 Jun 2013 07:38:23 +0100
+In-Reply-To: <20130605094227.GA27324@1wt.eu>
+References: <58df134a4b98edf5b0073e2e1e988fe6@local>
+	 <20130604172137.930866926@1wt.eu> <20130605094227.GA27324@1wt.eu>
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-6fVLccOILRQSVZbWGyZ1"
+	protocol="application/pgp-signature"; boundary="=-bNtmsYiVoa/Ci+YYKocM"
 X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
 X-SA-Exim-Connect-IP: 192.168.4.101
@@ -32,88 +32,75 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-6fVLccOILRQSVZbWGyZ1
+--=-bNtmsYiVoa/Ci+YYKocM
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, 2013-06-04 at 19:23 +0200, Willy Tarreau wrote:
+On Wed, 2013-06-05 at 11:42 +0200, Willy Tarreau wrote:
 > 2.6.32-longterm review patch.  If anyone has any objections, please let m=
 e know.
+> Thanks to Moritz for spotting this missing patch from the series.
 >=20
 > ------------------
->  bt_sock_recvmsg()
 >=20
-> From: Mathias Krause <minipli@googlemail.com>
+> From: "Kashyap, Desai" <kashyap.desai@lsi.com>
 
-commit 4683f42fde3977bdb4e8a09622788cc8b5313778 upstream.
+commit ebda4d38df542e1ff4747c4daadfc7da250b4fa6 upstream.
 
-> In case the socket is already shutting down, bt_sock_recvmsg() returns
-> with 0 without updating msg_namelen leading to net/socket.c leaking the
-> local, uninitialized sockaddr_storage variable to userland -- 128 bytes
-> of kernel stack memory.
+> RAID_SCSI_IO_PASSTHROUGH: Driver needs to be sending the default
+> descriptor for RAID Passthru, currently its sending SCSI_IO descriptor.
 >=20
-> Fix this by moving the msg_namelen assignment in front of the shutdown
-> test.
->=20
-> Cc: Marcel Holtmann <marcel@holtmann.org>
-> Cc: Gustavo Padovan <gustavo@padovan.org>
-> Cc: Johan Hedberg <johan.hedberg@gmail.com>
-> Signed-off-by: Mathias Krause <minipli@googlemail.com>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> [dannf: adjusted to apply to Debian's 2.6.32]
-> Signed-off-by: Willy Tarreau <w@1wt.eu>
+> Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
+> Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 > ---
->  net/bluetooth/af_bluetooth.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>  drivers/scsi/mpt2sas/mpt2sas_ctl.c | 7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
 >=20
-> diff --git a/net/bluetooth/af_bluetooth.c b/net/bluetooth/af_bluetooth.c
-> index 8cfb5a8..d7239dd 100644
-> --- a/net/bluetooth/af_bluetooth.c
-> +++ b/net/bluetooth/af_bluetooth.c
-> @@ -240,14 +240,14 @@ int bt_sock_recvmsg(struct kiocb *iocb, struct sock=
-et *sock,
->  	if (flags & (MSG_OOB))
->  		return -EOPNOTSUPP;
-> =20
-> +	msg->msg_namelen =3D 0;
-> +
->  	if (!(skb =3D skb_recv_datagram(sk, flags, noblock, &err))) {
->  		if (sk->sk_shutdown & RCV_SHUTDOWN)
->  			return 0;
->  		return err;
+> diff --git a/drivers/scsi/mpt2sas/mpt2sas_ctl.c b/drivers/scsi/mpt2sas/mp=
+t2sas_ctl.c
+> index ddaa99c..d88e975 100644
+> --- a/drivers/scsi/mpt2sas/mpt2sas_ctl.c
+> +++ b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
+> @@ -744,8 +744,11 @@ _ctl_do_mpt_command(struct MPT2SAS_ADAPTER *ioc,
+>  		    mpt2sas_base_get_sense_buffer_dma(ioc, smid);
+>  		priv_sense =3D mpt2sas_base_get_sense_buffer(ioc, smid);
+>  		memset(priv_sense, 0, SCSI_SENSE_BUFFERSIZE);
+> -		mpt2sas_base_put_smid_scsi_io(ioc, smid,
+> -		    le16_to_cpu(mpi_request->FunctionDependent1));
+> +		if (mpi_request->Function =3D=3D MPI2_FUNCTION_SCSI_IO_REQUEST)
+> +			mpt2sas_base_put_smid_scsi_io(ioc, smid,
+> +			    le16_to_cpu(mpi_request->FunctionDependent1));
+> +		else
+> +			mpt2sas_base_put_smid_default(ioc, smid);
+>  		break;
 >  	}
-> =20
-> -	msg->msg_namelen =3D 0;
-> -
->  	copied =3D skb->len;
->  	if (len < copied) {
->  		msg->msg_flags |=3D MSG_TRUNC;
+>  	case MPI2_FUNCTION_SCSI_TASK_MGMT:
 
 --=20
 Ben Hutchings
 Theory and practice are closer in theory than in practice.
                                 - John Levine, moderator of comp.compilers
 
---=-6fVLccOILRQSVZbWGyZ1
+--=-bNtmsYiVoa/Ci+YYKocM
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUAUbF/FOe/yOyVhhEJAQqDJRAAy0bJ0jg8g8aJAPtGPgYELPLnYgoJgvO+
-0tX5qPAFC4eROOyelodanEqYe7hcfbG6LrU6bEeevGP/ZhwMgRvNFKxVxsax5+rh
-knBIzpB+EmZkxFinSBsB0olj75V1/2TYJ8auaYEkLlmJVvRJDb4VPBK9GY7Qb9GU
-ActMe+imdJfNOdt/HSt8j2fOIm25j/c1Ubcm7gV/6fXAOdpWNlf9BNx1qcDfwEB/
-Vm53xMX6x5RdMdkeqlUyb/2qKOh8IdGzsg/qiKrgJSTWaDzsYU9m+3h6NcaQxZVD
-GU+zyuslc3YvVuKiM2X7EoFzEmC1f5F5D4REmeZ/qdh6PORlgv9MbzU6Tip/l+ge
-pXcanzv4+KvREu+0+lqL8LnUVNfgB4KFWS7ZFJ86DLHqpgbtMA/vPacVOEOF1tEy
-a6uJbAcI5EZWOcWMZ1USBKVs5dzwJ7I24oVP3EZVZOXG+0c9GRZTFRq34ZKz8YNV
-t7158tnPjot2auEc7bMz5Xj6GdoNCYd4X1BpzPxuesrLg82GBtViu0f/p41QiO6X
-28DglqfYzpQbQSP/4N+sRM9433NiEpAo9fV6X9ZSGm3XXc1wU3/0RsEUVAQl62R9
-r/hSdVjO+hGG56CoHT9Y3+dgx+go9Ck0gU+quBlA1hbzMwrcqvIBvWVCxeH/eIcv
-xyj7HUtZi/M=
-=h+Nl
+iQIUAwUAUbF/3+e/yOyVhhEJAQpZ8w/3Riuon7V7TqhgOy1ZuwQQ1LpQOwU8dAQ7
+JMrQrsCRndp7jdlcEIqttXkb7DWgw65eRZq2AVXsGzdBeDzy5D7eatzWw3qiHzAv
+YlebfIMdKRxzBnuncuoLlqFSZ3/xUJ9FjsHN6Ng1KA8Gs4ibCjQZtr6GZ3pf9Ea2
+Za1sfjlgn51YlJTaaIM+IkgwLICWxe/BRRPVJBShbQ6aFNeAVOHxawBocpV7kTDY
+VoRg4A97P5YLSe+qN24vZAIjnjzoO1wd/KNbq8wCI1tsl3M/Y1508444c1BA5St5
+c+2LP6Ny+t57FR/qpAayMgqiOy/+hlYpLPGwlqKcytiKDxdBrvIOY+AmIR6Y7WEo
+qwMutybeWH8Kgiqzub+lPPGKMtBbgPOrKFvs8bw9nyWKMqzPMvm3eQ4gfjuJdwj2
+9cSQm9WXtVGGCzF0mWW+pwspyoIX1HS23diywKYYKDRuNkjtKtvTAiwGkrtauULo
+51y3zqCUPYamU0PzO4jA8+dBio6VoiRTUoPJJNHu3SnODEAFjAiVNSYTYmsStNBM
+pZ10s0v1umV/b+ouYbCWhXkJAU6hAYP3FFW0BsaZa55oq8t4im9SfYAP9KQd7m+h
+9z3FYTyRH+QJ0cj4sgxhhc1ax4NyiKywe743rgvxnr0N1kGRF8q33GUN86PiYvSM
+X7AqMVOPUg==
+=Aeb7
 -----END PGP SIGNATURE-----
 
---=-6fVLccOILRQSVZbWGyZ1--
+--=-bNtmsYiVoa/Ci+YYKocM--
