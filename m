@@ -1,189 +1,462 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783Ab3FGKxP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 06:53:15 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:51555 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671Ab3FGKxN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 06:53:13 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: devicetree-discuss@lists.ozlabs.org
-Cc: Jingoo Han <jg1.han@samsung.com>, "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
-        linux-samsung-soc@vger.kernel.org,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        linux-pci@vger.kernel.org,
-        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org,
-        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
-        "'Andrew Murray'" <andrew.murray@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V3 1/3] Add PCIe driver for Samsung Exynos
-Date: Fri, 07 Jun 2013 12:53:02 +0200
-Message-ID: <36071399.7aY6jgGn2d@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <000d01ce6360$9504e7e0$bf0eb7a0$@samsung.com>
-References: <000d01ce6360$9504e7e0$bf0eb7a0$@samsung.com>
+	id S1755064Ab3FGKyh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 06:54:37 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:54545 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752047Ab3FGKyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 06:54:35 -0400
+From: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+To: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
+CC: <sameo@linux.intel.com>, <lgirdwood@gmail.com>, <broonie@kernel.org>,
+        <balbi@ti.com>, <peter.ujfalusi@ti.com>, <t-kristo@ti.com>,
+        <tony@atomide.com>, Graeme Gregory <gg@slimlogic.co.uk>,
+        Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+Subject: [RFC v1] MFD: Change TWL6025 references to TWL6032
+Date: Fri, 7 Jun 2013 13:53:10 +0300
+Message-ID: <1370602390-12306-1-git-send-email-oleksandr.kozaruk@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:77hLjRePgCzGBD6srNn1qnNSn58Az6tPhebsOcQ04yl
- Xbp95k3plDD68ubSwuH+G3yioNjFH9/yTaQxKwoACFHKZcoWrO
- uEmzhENcTRlypmafF6J1nFS/fSa+OrBJtEkEJOLazNdQENrivb
- CM5TVYFb8HdDP+joreCdznJtsESz08uS8Wl6Kn0M3JoC+Fbzbp
- oBwe4wY/90ZtAJBzF2cUJootTmbrDd9RcON2D6c28mrDcBlm94
- aDMgprr4ytSuXaaEyvmMkmGqPXClnGJaSVXezMTllcLzW98ErB
- EDH/GOCg4vvCO/L7G6Rhk3/4j7qHvURRiXxfttZ+7S/4+e4otG
- PChgkWqu8/GR+ukgJR+w=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 June 2013 18:22:50 Jingoo Han wrote:
+From: Graeme Gregory <gg@slimlogic.co.uk>
 
-> diff --git a/Documentation/devicetree/bindings/pci/exynos-pcie.txt b/Documentation/devicetree/bindings/pci/exynos-pcie.txt
-> new file mode 100644
-> index 0000000..3eb4a2d
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/pci/exynos-pcie.txt
-> @@ -0,0 +1,56 @@
-> +* Samsung Exynos PCIe interface
-> +
-> +Required properties:
-> +-compatible: should be "samsung,exynos5440-pcie"
-> +-reg: base addresses and lengths of the pcie conteroller,
-> +	additional register for the pcie controller,
-> +	the phy controller,
-> +	additional register for the phy controller.
-> +- interrupts: interrupt values for level interrupt,
-> +	pulse interrupt, special interrupt.
-> +- device_type, set to "pci"
-> +- bus-range: PCI bus numbers covered
+The TWL6025 was never released beyond sample form and was replaced by
+the PhoenixLite range of chips - TWL6032. Change the references to
+reference the TWL6032 class and name the registers to twl6032 in line with
+an actual released chip name to avoid confusion.
 
-Why is it that only a subset of bus numbers are used? Can't you address
-the entire range?
+Currently there is no users of TWL6025 in the code. 
 
-> +- ranges: ranges for the PCI memory and I/O regions
-> +- reset-gpio: gpio pin number of power good signal
+Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+Signed-off-by: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+---
 
-The 'reset-gpio' property seems incorrect. I think this should either
-use the gpio binding or the reset-controller binding. Specifying 
-bare numbers to use as gpio pins does not work, since the number
-space for Linux internal gpio numbers is not necessarily the same
-as used by the hardware.
+There are non-mainline branches that use twl6032 by its name (for example
+git://git.omapzoom.org/kernel/omap.git). There is intention to add support
+of twl6032 device in mainline, but we'd like to know if we can use twl6032
+instead of twl6025 in our new patches, that we are going to provide.
 
-I think you also need an interrupt-map property as mandated by
-the PCI binding, in order to use legacy interrupts, as well as
-#address-cells and #size-cells.
+ drivers/mfd/twl-core.c            |   46 +++++++++++-----------
+ drivers/regulator/twl-regulator.c |   76 ++++++++++++++++++-------------------
+ drivers/usb/phy/phy-twl6030-usb.c |    2 +-
+ include/linux/i2c/twl.h           |   30 +++++++--------
+ 4 files changed, 77 insertions(+), 77 deletions(-)
 
-> +       pcie0@40000000 {
-> +               compatible = "samsung,exynos5440-pcie";
-> +               reg = <0x40000000 0x4000
-> +                       0x290000 0x1000
-> +                       0x270000 0x1000
-> +                       0x271000 0x40>;
-> +               interrupts = <0 20 0>, <0 21 0>, <0 22 0>;
-> +               device_type = "pci";
-> +               bus-range = <0x0 0xf>;
-> +               ranges = <0x00000800 0 0x40000000 0x40000000 0 0x00200000   /* configuration space */
-> +                         0x81000000 0 0          0x40200000 0 0x00004000   /* downstream I/O */
-> +                         0x82000000 0 0          0x40204000 0 0x10000000>; /* non-prefetchable memory */
-> +       };
-> +
-> +       pcie1@60000000 {
-> +               compatible = "samsung,exynos5440-pcie";
-> +               reg = <0x60000000 0x4000
-> +                       0x2a0000 0x1000
-> +                       0x272000 0x1000
-> +                       0x271040 0x40>;
-> +               interrupts = <0 23 0>, <0 24 0>, <0 25 0>;
-> +               device_type = "pci";
-> +               bus-range = <0x0 0xf>;
-> +               ranges = <0x00000800 0 0x60000000 0x60000000 0 0x00200000   /* configuration space */
-> +                         0x81000000 0 0          0x60200000 0 0x00004000   /* downstream I/O */
-> +                         0x82000000 0 0          0x60204000 0 0x10000000>; /* non-prefetchable memory */
-> +       };
+diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
+index 89ab4d9..f39bceb 100644
+--- a/drivers/mfd/twl-core.c
++++ b/drivers/mfd/twl-core.c
+@@ -118,7 +118,7 @@
+ #define TWL6030_BASEADD_GASGAUGE	0x00C0
+ #define TWL6030_BASEADD_PIH		0x00D0
+ #define TWL6030_BASEADD_CHARGER		0x00E0
+-#define TWL6025_BASEADD_CHARGER		0x00DA
++#define TWL6032_BASEADD_CHARGER		0x00DA
+ #define TWL6030_BASEADD_LED		0x00F4
+ 
+ /* subchip/slave 2 0x4A - DFT */
+@@ -718,9 +718,9 @@ add_children(struct twl4030_platform_data *pdata, unsigned irq_base,
+ 					| REGULATOR_CHANGE_STATUS,
+ 			};
+ 
+-			if (features & TWL6025_SUBCLASS) {
++			if (features & TWL6032_SUBCLASS) {
+ 				usb3v3.supply =	"ldousb";
+-				regulator = TWL6025_REG_LDOUSB;
++				regulator = TWL6032_REG_LDOUSB;
+ 			} else {
+ 				usb3v3.supply = "vusb";
+ 				regulator = TWL6030_REG_VUSB;
+@@ -747,8 +747,8 @@ add_children(struct twl4030_platform_data *pdata, unsigned irq_base,
+ 			usb3v3.dev_name = dev_name(child);
+ 	} else if (IS_ENABLED(CONFIG_REGULATOR_TWL4030) &&
+ 		   twl_class_is_6030()) {
+-		if (features & TWL6025_SUBCLASS)
+-			child = add_regulator(TWL6025_REG_LDOUSB,
++		if (features & TWL6032_SUBCLASS)
++			child = add_regulator(TWL6032_REG_LDOUSB,
+ 						pdata->ldousb, features);
+ 		else
+ 			child = add_regulator(TWL6030_REG_VUSB,
+@@ -872,7 +872,7 @@ add_children(struct twl4030_platform_data *pdata, unsigned irq_base,
+ 
+ 	/* twl6030 regulators */
+ 	if (IS_ENABLED(CONFIG_REGULATOR_TWL4030) && twl_class_is_6030() &&
+-			!(features & TWL6025_SUBCLASS)) {
++			!(features & TWL6032_SUBCLASS)) {
+ 		child = add_regulator(TWL6030_REG_VDD1, pdata->vdd1,
+ 					features);
+ 		if (IS_ERR(child))
+@@ -952,60 +952,60 @@ add_children(struct twl4030_platform_data *pdata, unsigned irq_base,
+ 			return PTR_ERR(child);
+ 	}
+ 
+-	/* twl6025 regulators */
++	/* twl6032 regulators */
+ 	if (IS_ENABLED(CONFIG_REGULATOR_TWL4030) && twl_class_is_6030() &&
+-			(features & TWL6025_SUBCLASS)) {
+-		child = add_regulator(TWL6025_REG_LDO5, pdata->ldo5,
++			(features & TWL6032_SUBCLASS)) {
++		child = add_regulator(TWL6032_REG_LDO5, pdata->ldo5,
+ 					features);
+ 		if (IS_ERR(child))
+ 			return PTR_ERR(child);
+ 
+-		child = add_regulator(TWL6025_REG_LDO1, pdata->ldo1,
++		child = add_regulator(TWL6032_REG_LDO1, pdata->ldo1,
+ 					features);
+ 		if (IS_ERR(child))
+ 			return PTR_ERR(child);
+ 
+-		child = add_regulator(TWL6025_REG_LDO7, pdata->ldo7,
++		child = add_regulator(TWL6032_REG_LDO7, pdata->ldo7,
+ 					features);
+ 		if (IS_ERR(child))
+ 			return PTR_ERR(child);
+ 
+-		child = add_regulator(TWL6025_REG_LDO6, pdata->ldo6,
++		child = add_regulator(TWL6032_REG_LDO6, pdata->ldo6,
+ 					features);
+ 		if (IS_ERR(child))
+ 			return PTR_ERR(child);
+ 
+-		child = add_regulator(TWL6025_REG_LDOLN, pdata->ldoln,
++		child = add_regulator(TWL6032_REG_LDOLN, pdata->ldoln,
+ 					features);
+ 		if (IS_ERR(child))
+ 			return PTR_ERR(child);
+ 
+-		child = add_regulator(TWL6025_REG_LDO2, pdata->ldo2,
++		child = add_regulator(TWL6032_REG_LDO2, pdata->ldo2,
+ 					features);
+ 		if (IS_ERR(child))
+ 			return PTR_ERR(child);
+ 
+-		child = add_regulator(TWL6025_REG_LDO4, pdata->ldo4,
++		child = add_regulator(TWL6032_REG_LDO4, pdata->ldo4,
+ 					features);
+ 		if (IS_ERR(child))
+ 			return PTR_ERR(child);
+ 
+-		child = add_regulator(TWL6025_REG_LDO3, pdata->ldo3,
++		child = add_regulator(TWL6032_REG_LDO3, pdata->ldo3,
+ 					features);
+ 		if (IS_ERR(child))
+ 			return PTR_ERR(child);
+ 
+-		child = add_regulator(TWL6025_REG_SMPS3, pdata->smps3,
++		child = add_regulator(TWL6032_REG_SMPS3, pdata->smps3,
+ 					features);
+ 		if (IS_ERR(child))
+ 			return PTR_ERR(child);
+ 
+-		child = add_regulator(TWL6025_REG_SMPS4, pdata->smps4,
++		child = add_regulator(TWL6032_REG_SMPS4, pdata->smps4,
+ 					features);
+ 		if (IS_ERR(child))
+ 			return PTR_ERR(child);
+ 
+-		child = add_regulator(TWL6025_REG_VIO, pdata->vio6025,
++		child = add_regulator(TWL6032_REG_VIO, pdata->vio6025,
+ 					features);
+ 		if (IS_ERR(child))
+ 			return PTR_ERR(child);
+@@ -1176,10 +1176,10 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 	if ((id->driver_data) & TWL6030_CLASS) {
+ 		twl_priv->twl_id = TWL6030_CLASS_ID;
+ 		twl_priv->twl_map = &twl6030_map[0];
+-		/* The charger base address is different in twl6025 */
+-		if ((id->driver_data) & TWL6025_SUBCLASS)
++		/* The charger base address is different in twl6032 */
++		if ((id->driver_data) & TWL6032_SUBCLASS)
+ 			twl_priv->twl_map[TWL_MODULE_MAIN_CHARGE].base =
+-							TWL6025_BASEADD_CHARGER;
++							TWL6032_BASEADD_CHARGER;
+ 		twl_regmap_config = twl6030_regmap_config;
+ 	} else {
+ 		twl_priv->twl_id = TWL4030_CLASS_ID;
+@@ -1292,7 +1292,7 @@ static const struct i2c_device_id twl_ids[] = {
+ 	{ "tps65921", TPS_SUBSET },	/* fewer LDOs; no codec, no LED
+ 					   and vibrator. Charger in USB module*/
+ 	{ "twl6030", TWL6030_CLASS },	/* "Phoenix power chip" */
+-	{ "twl6025", TWL6030_CLASS | TWL6025_SUBCLASS }, /* "Phoenix lite" */
++	{ "twl6032", TWL6030_CLASS | TWL6032_SUBCLASS }, /* "Phoenix lite" */
+ 	{ /* end of list */ },
+ };
+ MODULE_DEVICE_TABLE(i2c, twl_ids);
+diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
+index fb6e67d..93bc4f4 100644
+--- a/drivers/regulator/twl-regulator.c
++++ b/drivers/regulator/twl-regulator.c
+@@ -109,7 +109,7 @@ struct twlreg_info {
+ #define SMPS_OFFSET_EN		BIT(0)
+ #define SMPS_EXTENDED_EN	BIT(1)
+ 
+-/* twl6025 SMPS EPROM values */
++/* twl6032 SMPS EPROM values */
+ #define TWL6030_SMPS_OFFSET		0xB0
+ #define TWL6030_SMPS_MULT		0xB3
+ #define SMPS_MULTOFFSET_SMPS4	BIT(0)
+@@ -173,7 +173,7 @@ static int twl6030reg_is_enabled(struct regulator_dev *rdev)
+ 	struct twlreg_info	*info = rdev_get_drvdata(rdev);
+ 	int			grp = 0, val;
+ 
+-	if (!(twl_class_is_6030() && (info->features & TWL6025_SUBCLASS))) {
++	if (!(twl_class_is_6030() && (info->features & TWL6032_SUBCLASS))) {
+ 		grp = twlreg_grp(rdev);
+ 		if (grp < 0)
+ 			return grp;
+@@ -211,7 +211,7 @@ static int twl6030reg_enable(struct regulator_dev *rdev)
+ 	int			grp = 0;
+ 	int			ret;
+ 
+-	if (!(twl_class_is_6030() && (info->features & TWL6025_SUBCLASS)))
++	if (!(twl_class_is_6030() && (info->features & TWL6032_SUBCLASS)))
+ 		grp = twlreg_grp(rdev);
+ 	if (grp < 0)
+ 		return grp;
+@@ -245,7 +245,7 @@ static int twl6030reg_disable(struct regulator_dev *rdev)
+ 	int			grp = 0;
+ 	int			ret;
+ 
+-	if (!(twl_class_is_6030() && (info->features & TWL6025_SUBCLASS)))
++	if (!(twl_class_is_6030() && (info->features & TWL6032_SUBCLASS)))
+ 		grp = P1_GRP_6030 | P2_GRP_6030 | P3_GRP_6030;
+ 
+ 	/* For 6030, set the off state for all grps enabled */
+@@ -339,7 +339,7 @@ static int twl6030reg_set_mode(struct regulator_dev *rdev, unsigned mode)
+ 	int grp = 0;
+ 	int val;
+ 
+-	if (!(twl_class_is_6030() && (info->features & TWL6025_SUBCLASS)))
++	if (!(twl_class_is_6030() && (info->features & TWL6032_SUBCLASS)))
+ 		grp = twlreg_grp(rdev);
+ 
+ 	if (grp < 0)
+@@ -899,14 +899,14 @@ static const struct twlreg_info TWL6030_INFO_##label = { \
+ 		}, \
+ 	}
+ 
+-#define TWL6025_ADJUSTABLE_LDO(label, offset, min_mVolts, max_mVolts) \
+-static const struct twlreg_info TWL6025_INFO_##label = { \
++#define TWL6032_ADJUSTABLE_LDO(label, offset, min_mVolts, max_mVolts) \
++static const struct twlreg_info TWL6032_INFO_##label = { \
+ 	.base = offset, \
+ 	.min_mV = min_mVolts, \
+ 	.max_mV = max_mVolts, \
+ 	.desc = { \
+ 		.name = #label, \
+-		.id = TWL6025_REG_##label, \
++		.id = TWL6032_REG_##label, \
+ 		.n_voltages = 32, \
+ 		.ops = &twl6030ldo_ops, \
+ 		.type = REGULATOR_VOLTAGE, \
+@@ -933,14 +933,14 @@ static const struct twlreg_info TWLFIXED_INFO_##label = { \
+ 		}, \
+ 	}
+ 
+-#define TWL6025_ADJUSTABLE_SMPS(label, offset) \
++#define TWL6032_ADJUSTABLE_SMPS(label, offset) \
+ static const struct twlreg_info TWLSMPS_INFO_##label = { \
+ 	.base = offset, \
+ 	.min_mV = 600, \
+ 	.max_mV = 2100, \
+ 	.desc = { \
+ 		.name = #label, \
+-		.id = TWL6025_REG_##label, \
++		.id = TWL6032_REG_##label, \
+ 		.n_voltages = 63, \
+ 		.ops = &twlsmps_ops, \
+ 		.type = REGULATOR_VOLTAGE, \
+@@ -981,15 +981,15 @@ TWL6030_ADJUSTABLE_LDO(VMMC, 0x68, 1000, 3300);
+ TWL6030_ADJUSTABLE_LDO(VPP, 0x6c, 1000, 3300);
+ TWL6030_ADJUSTABLE_LDO(VUSIM, 0x74, 1000, 3300);
+ /* 6025 are renamed compared to 6030 versions */
+-TWL6025_ADJUSTABLE_LDO(LDO2, 0x54, 1000, 3300);
+-TWL6025_ADJUSTABLE_LDO(LDO4, 0x58, 1000, 3300);
+-TWL6025_ADJUSTABLE_LDO(LDO3, 0x5c, 1000, 3300);
+-TWL6025_ADJUSTABLE_LDO(LDO5, 0x68, 1000, 3300);
+-TWL6025_ADJUSTABLE_LDO(LDO1, 0x6c, 1000, 3300);
+-TWL6025_ADJUSTABLE_LDO(LDO7, 0x74, 1000, 3300);
+-TWL6025_ADJUSTABLE_LDO(LDO6, 0x60, 1000, 3300);
+-TWL6025_ADJUSTABLE_LDO(LDOLN, 0x64, 1000, 3300);
+-TWL6025_ADJUSTABLE_LDO(LDOUSB, 0x70, 1000, 3300);
++TWL6032_ADJUSTABLE_LDO(LDO2, 0x54, 1000, 3300);
++TWL6032_ADJUSTABLE_LDO(LDO4, 0x58, 1000, 3300);
++TWL6032_ADJUSTABLE_LDO(LDO3, 0x5c, 1000, 3300);
++TWL6032_ADJUSTABLE_LDO(LDO5, 0x68, 1000, 3300);
++TWL6032_ADJUSTABLE_LDO(LDO1, 0x6c, 1000, 3300);
++TWL6032_ADJUSTABLE_LDO(LDO7, 0x74, 1000, 3300);
++TWL6032_ADJUSTABLE_LDO(LDO6, 0x60, 1000, 3300);
++TWL6032_ADJUSTABLE_LDO(LDOLN, 0x64, 1000, 3300);
++TWL6032_ADJUSTABLE_LDO(LDOUSB, 0x70, 1000, 3300);
+ TWL4030_FIXED_LDO(VINTANA1, 0x3f, 1500, 11, 100, 0x08);
+ TWL4030_FIXED_LDO(VINTDIG, 0x47, 1500, 13, 100, 0x08);
+ TWL4030_FIXED_LDO(VUSB1V5, 0x71, 1500, 17, 100, 0x08);
+@@ -1001,9 +1001,9 @@ TWL6030_FIXED_LDO(VDAC, 0x64, 1800, 0);
+ TWL6030_FIXED_LDO(VUSB, 0x70, 3300, 0);
+ TWL6030_FIXED_LDO(V1V8, 0x16, 1800, 0);
+ TWL6030_FIXED_LDO(V2V1, 0x1c, 2100, 0);
+-TWL6025_ADJUSTABLE_SMPS(SMPS3, 0x34);
+-TWL6025_ADJUSTABLE_SMPS(SMPS4, 0x10);
+-TWL6025_ADJUSTABLE_SMPS(VIO, 0x16);
++TWL6032_ADJUSTABLE_SMPS(SMPS3, 0x34);
++TWL6032_ADJUSTABLE_SMPS(SMPS4, 0x10);
++TWL6032_ADJUSTABLE_SMPS(VIO, 0x16);
+ 
+ static u8 twl_get_smps_offset(void)
+ {
+@@ -1031,7 +1031,7 @@ static u8 twl_get_smps_mult(void)
+ 
+ #define TWL4030_OF_MATCH(comp, label) TWL_OF_MATCH(comp, TWL4030, label)
+ #define TWL6030_OF_MATCH(comp, label) TWL_OF_MATCH(comp, TWL6030, label)
+-#define TWL6025_OF_MATCH(comp, label) TWL_OF_MATCH(comp, TWL6025, label)
++#define TWL6032_OF_MATCH(comp, label) TWL_OF_MATCH(comp, TWL6032, label)
+ #define TWLFIXED_OF_MATCH(comp, label) TWL_OF_MATCH(comp, TWLFIXED, label)
+ #define TWLSMPS_OF_MATCH(comp, label) TWL_OF_MATCH(comp, TWLSMPS, label)
+ 
+@@ -1060,15 +1060,15 @@ static const struct of_device_id twl_of_match[] = {
+ 	TWL6030_OF_MATCH("ti,twl6030-vmmc", VMMC),
+ 	TWL6030_OF_MATCH("ti,twl6030-vpp", VPP),
+ 	TWL6030_OF_MATCH("ti,twl6030-vusim", VUSIM),
+-	TWL6025_OF_MATCH("ti,twl6025-ldo2", LDO2),
+-	TWL6025_OF_MATCH("ti,twl6025-ldo4", LDO4),
+-	TWL6025_OF_MATCH("ti,twl6025-ldo3", LDO3),
+-	TWL6025_OF_MATCH("ti,twl6025-ldo5", LDO5),
+-	TWL6025_OF_MATCH("ti,twl6025-ldo1", LDO1),
+-	TWL6025_OF_MATCH("ti,twl6025-ldo7", LDO7),
+-	TWL6025_OF_MATCH("ti,twl6025-ldo6", LDO6),
+-	TWL6025_OF_MATCH("ti,twl6025-ldoln", LDOLN),
+-	TWL6025_OF_MATCH("ti,twl6025-ldousb", LDOUSB),
++	TWL6032_OF_MATCH("ti,twl6032-ldo2", LDO2),
++	TWL6032_OF_MATCH("ti,twl6032-ldo4", LDO4),
++	TWL6032_OF_MATCH("ti,twl6032-ldo3", LDO3),
++	TWL6032_OF_MATCH("ti,twl6032-ldo5", LDO5),
++	TWL6032_OF_MATCH("ti,twl6032-ldo1", LDO1),
++	TWL6032_OF_MATCH("ti,twl6032-ldo7", LDO7),
++	TWL6032_OF_MATCH("ti,twl6032-ldo6", LDO6),
++	TWL6032_OF_MATCH("ti,twl6032-ldoln", LDOLN),
++	TWL6032_OF_MATCH("ti,twl6032-ldousb", LDOUSB),
+ 	TWLFIXED_OF_MATCH("ti,twl4030-vintana1", VINTANA1),
+ 	TWLFIXED_OF_MATCH("ti,twl4030-vintdig", VINTDIG),
+ 	TWLFIXED_OF_MATCH("ti,twl4030-vusb1v5", VUSB1V5),
+@@ -1080,9 +1080,9 @@ static const struct of_device_id twl_of_match[] = {
+ 	TWLFIXED_OF_MATCH("ti,twl6030-vusb", VUSB),
+ 	TWLFIXED_OF_MATCH("ti,twl6030-v1v8", V1V8),
+ 	TWLFIXED_OF_MATCH("ti,twl6030-v2v1", V2V1),
+-	TWLSMPS_OF_MATCH("ti,twl6025-smps3", SMPS3),
+-	TWLSMPS_OF_MATCH("ti,twl6025-smps4", SMPS4),
+-	TWLSMPS_OF_MATCH("ti,twl6025-vio", VIO),
++	TWLSMPS_OF_MATCH("ti,twl6032-smps3", SMPS3),
++	TWLSMPS_OF_MATCH("ti,twl6032-smps4", SMPS4),
++	TWLSMPS_OF_MATCH("ti,twl6032-vio", VIO),
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, twl_of_match);
+@@ -1163,19 +1163,19 @@ static int twlreg_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	switch (id) {
+-	case TWL6025_REG_SMPS3:
++	case TWL6032_REG_SMPS3:
+ 		if (twl_get_smps_mult() & SMPS_MULTOFFSET_SMPS3)
+ 			info->flags |= SMPS_EXTENDED_EN;
+ 		if (twl_get_smps_offset() & SMPS_MULTOFFSET_SMPS3)
+ 			info->flags |= SMPS_OFFSET_EN;
+ 		break;
+-	case TWL6025_REG_SMPS4:
++	case TWL6032_REG_SMPS4:
+ 		if (twl_get_smps_mult() & SMPS_MULTOFFSET_SMPS4)
+ 			info->flags |= SMPS_EXTENDED_EN;
+ 		if (twl_get_smps_offset() & SMPS_MULTOFFSET_SMPS4)
+ 			info->flags |= SMPS_OFFSET_EN;
+ 		break;
+-	case TWL6025_REG_VIO:
++	case TWL6032_REG_VIO:
+ 		if (twl_get_smps_mult() & SMPS_MULTOFFSET_VIO)
+ 			info->flags |= SMPS_EXTENDED_EN;
+ 		if (twl_get_smps_offset() & SMPS_MULTOFFSET_VIO)
+diff --git a/drivers/usb/phy/phy-twl6030-usb.c b/drivers/usb/phy/phy-twl6030-usb.c
+index 9de7ada..1753bd3 100644
+--- a/drivers/usb/phy/phy-twl6030-usb.c
++++ b/drivers/usb/phy/phy-twl6030-usb.c
+@@ -347,7 +347,7 @@ static int twl6030_usb_probe(struct platform_device *pdev)
+ 	if (np) {
+ 		twl->regulator = "usb";
+ 	} else if (pdata) {
+-		if (pdata->features & TWL6025_SUBCLASS)
++		if (pdata->features & TWL6032_SUBCLASS)
+ 			twl->regulator = "ldousb";
+ 		else
+ 			twl->regulator = "vusb";
+diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
+index 488debb..9087fec 100644
+--- a/include/linux/i2c/twl.h
++++ b/include/linux/i2c/twl.h
+@@ -726,7 +726,7 @@ struct twl4030_platform_data {
+ 	struct regulator_init_data		*clk32kg;
+ 	struct regulator_init_data              *v1v8;
+ 	struct regulator_init_data              *v2v1;
+-	/* TWL6025 LDO regulators */
++	/* TWL6032 LDO regulators */
+ 	struct regulator_init_data		*ldo1;
+ 	struct regulator_init_data		*ldo2;
+ 	struct regulator_init_data		*ldo3;
+@@ -736,7 +736,7 @@ struct twl4030_platform_data {
+ 	struct regulator_init_data		*ldo7;
+ 	struct regulator_init_data		*ldoln;
+ 	struct regulator_init_data		*ldousb;
+-	/* TWL6025 DCDC regulators */
++	/* TWL6032 DCDC regulators */
+ 	struct regulator_init_data		*smps3;
+ 	struct regulator_init_data		*smps4;
+ 	struct regulator_init_data		*vio6025;
+@@ -753,7 +753,7 @@ struct twl_regulator_driver_data {
+ #define TPS_SUBSET		BIT(1)	/* tps659[23]0 have fewer LDOs */
+ #define TWL5031			BIT(2)  /* twl5031 has different registers */
+ #define TWL6030_CLASS		BIT(3)	/* TWL6030 class */
+-#define TWL6025_SUBCLASS	BIT(4)  /* TWL6025 has changed registers */
++#define TWL6032_SUBCLASS	BIT(4)  /* TWL6032 has changed registers */
+ #define TWL4030_ALLOW_UNSUPPORTED BIT(5) /* Some voltages are possible
+ 					  * but not officially supported.
+ 					  * This flag is necessary to
+@@ -840,20 +840,20 @@ static inline int twl4030charger_usb_en(int enable) { return 0; }
+ #define TWL6030_REG_CLK32KG	48
+ 
+ /* LDOs on 6025 have different names */
+-#define TWL6025_REG_LDO2	49
+-#define TWL6025_REG_LDO4	50
+-#define TWL6025_REG_LDO3	51
+-#define TWL6025_REG_LDO5	52
+-#define TWL6025_REG_LDO1	53
+-#define TWL6025_REG_LDO7	54
+-#define TWL6025_REG_LDO6	55
+-#define TWL6025_REG_LDOLN	56
+-#define TWL6025_REG_LDOUSB	57
++#define TWL6032_REG_LDO2	49
++#define TWL6032_REG_LDO4	50
++#define TWL6032_REG_LDO3	51
++#define TWL6032_REG_LDO5	52
++#define TWL6032_REG_LDO1	53
++#define TWL6032_REG_LDO7	54
++#define TWL6032_REG_LDO6	55
++#define TWL6032_REG_LDOLN	56
++#define TWL6032_REG_LDOUSB	57
+ 
+ /* 6025 DCDC supplies */
+-#define TWL6025_REG_SMPS3	58
+-#define TWL6025_REG_SMPS4	59
+-#define TWL6025_REG_VIO		60
++#define TWL6032_REG_SMPS3	58
++#define TWL6032_REG_SMPS4	59
++#define TWL6032_REG_VIO		60
+ 
+ 
+ #endif /* End of __TWL4030_H */
+-- 
+1.7.9.5
 
-Is it intentional that in this example you set up both buses to
-have both memory and I/O space start at address 0 in bus space?
-
-I think it would be more logical to have non-overlapping addresses.
-You can also choose to have an identity mapping for memory
-space where a PCI bus address maps directly to the physical address
-used to access it, although that will prevent you from using legacy
-VGA cards that require the use of the low 16 MB.
-
-Using a 16kb I/O space rather than a 64KB I/O space per port will
-lead to pci_ioremap_io() map the start of your memory space into
-PCI_IO_VIRT_BASE, which you probably didn't intend.
-
-If your hardware cannot handle a full 64KB window, I would recommend
-to at least leave a hole before the start of the memory window.
-
-> +struct pcie_port {
-> +	struct device		*dev;
-> +	u8			controller;
-> +	u8			root_bus_nr;
-> +	void __iomem		*dbi_base;
-> +	void __iomem		*va_dbi_base;
-> +	void __iomem		*elbi_base;
-> +	void __iomem		*va_elbi_base;
-> +	void __iomem		*base;
-> +	void __iomem		*phy_base;
-> +	void __iomem		*va_phy_base;
-> +	void __iomem		*purple_base;
-> +	void __iomem		*va_purple_base;
-> +	void __iomem		*cfg0_base;
-> +	void __iomem		*va_cfg0_base;
-> +	void __iomem		*cfg1_base;
-> +	void __iomem		*va_cfg1_base;
-> +	void __iomem		*io_base;
-> +	void __iomem		*mem_base;
-> +	spinlock_t		conf_lock;
-> +	struct resource		io;
-> +	struct resource		mem;
-> +	struct resource		busn;
-
-A lot of the fields above appear to be duplicated. If you
-pass a physical address, that needs to be a phys_addr_t,
-not void __iomem*. I think most of the physical addresses
-can be removed there, and you just keep the virtual addresses
-but drop the va_ prefix.
-
-> +static int add_pcie_port(struct pcie_port *pp, struct platform_device *pdev)
-> +{
-> +	struct resource *dbi_base;
-> +	struct resource *elbi_base;
-> +	struct resource *phy_base;
-> +	struct resource *purple_base;
-> +	int ret;
-> +
-> +	dbi_base = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (!dbi_base) {
-> +		dev_err(&pdev->dev, "couldn't get dbi base resource\n");
-> +		return -EINVAL;
-> +	}
-> +	if (!devm_request_mem_region(&pdev->dev, dbi_base->start,
-> +				resource_size(dbi_base), pdev->name)) {
-> +		dev_err(&pdev->dev, "dbi base resource is busy\n");
-> +		return -EBUSY;
-> +	}
-> +	pp->dbi_base = (void __iomem *) (unsigned long)dbi_base->start;
-
-That will also let you get rid of the casts here.
-
-
-> +static int __exit exynos_pcie_remove(struct platform_device *pdev)
-> +{
-> +	return 0;
-> +}
-> +
-
-an empty 'remove' function seems incorrect. I don't know what a
-removable PCI should be doing here, but at least you need to undo
-everything you set up in the probe function.
-
-
-	Arnd
