@@ -1,84 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757632Ab3FGWdY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 18:33:24 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:22394 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757528Ab3FGWdU (ORCPT
+	id S1757711Ab3FGWdg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 18:33:36 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:51833 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757294Ab3FGWdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 18:33:20 -0400
+	Fri, 7 Jun 2013 18:33:33 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
         "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joro@8bytes.org>,
+        Yinghai Lu <yinghai@kernel.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Subject: [PATCH v3 13/27] x86, irq: Split out alloc_ioapic_save_registers()
-Date: Fri,  7 Jun 2013 15:30:59 -0700
-Message-Id: <1370644273-10495-14-git-send-email-yinghai@kernel.org>
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Joerg Roedel <joro@8bytes.org>
+Subject: [PATCH v3 09/27] x86, irq: Convert irq_2_pin list to generic list
+Date: Fri,  7 Jun 2013 15:30:55 -0700
+Message-Id: <1370644273-10495-10-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1370644273-10495-1-git-send-email-yinghai@kernel.org>
 References: <1370644273-10495-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split alloc_ioapic_save_registers() from early_irq_init(),
-so it will be per ioapic.
+Now irq_2_pin list is own grown list.
+We can use generic list to replace it so we could use generic helper
+functions to operate it.
 
-Will call that later for hot-added ioapic controller.
+Also make free_irq_cfg() free irq_2_pin list to support coming ioapic
+hotplug.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Joerg Roedel <joro@8bytes.org>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: Joerg Roedel <joro@8bytes.org>
 ---
- arch/x86/kernel/apic/io_apic.c | 22 +++++++++++++++-------
- 1 file changed, 15 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/hw_irq.h  |  2 +-
+ arch/x86/kernel/apic/io_apic.c | 22 ++++++++++++----------
+ 2 files changed, 13 insertions(+), 11 deletions(-)
 
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index 1da97ef..dc3942c 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -122,7 +122,7 @@ struct irq_2_irte {
+  * Most irqs are mapped 1:1 with pins.
+  */
+ struct irq_cfg {
+-	struct irq_pin_list	*irq_2_pin;
++	struct list_head	irq_2_pin;
+ 	cpumask_var_t		domain;
+ 	cpumask_var_t		old_domain;
+ 	u8			vector;
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 2fcf813..23b0be5 100644
+index 70b6617..670c538 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -290,6 +290,19 @@ static struct irq_cfg *realloc_irq_and_cfg_at(unsigned int at, int node)
- /* irq_cfg is indexed by the sum of all RTEs in all I/O APICs. */
- static struct irq_cfg irq_cfgx[NR_IRQS_LEGACY];
+@@ -66,7 +66,7 @@
+ #define __apicdebuginit(type) static type __init
  
-+static void alloc_ioapic_saved_registers(int idx)
-+{
-+	if (ioapics[idx].saved_registers)
-+		return;
-+
-+	ioapics[idx].saved_registers =
-+			kzalloc(sizeof(struct IO_APIC_route_entry) *
-+				ioapics[idx].nr_registers, GFP_KERNEL);
-+
-+	if (!ioapics[idx].saved_registers)
-+		pr_err("IOAPIC %d: suspend/resume impossible!\n", idx);
-+}
-+
- int __init arch_early_irq_init(void)
+ #define for_each_irq_pin(entry, head) \
+-	for (entry = head; entry; entry = entry->next)
++	list_for_each_entry(entry, &head, list)
+ 
+ /*
+  *      Is the SiS APIC rmw bug present ?
+@@ -176,8 +176,8 @@ void mp_save_irq(struct mpc_intsrc *m)
+ }
+ 
+ struct irq_pin_list {
++	struct list_head list;
+ 	int apic, pin;
+-	struct irq_pin_list *next;
+ };
+ 
+ static struct irq_pin_list *alloc_irq_pin_list(int node)
+@@ -213,6 +213,7 @@ int __init arch_early_irq_init(void)
+ 	irq_reserve_irqs(0, legacy_pic->nr_legacy_irqs);
+ 
+ 	for (i = 0; i < count; i++) {
++		INIT_LIST_HEAD(&cfg[i].irq_2_pin);
+ 		irq_set_chip_data(i, &cfg[i]);
+ 		zalloc_cpumask_var_node(&cfg[i].domain, GFP_KERNEL, node);
+ 		zalloc_cpumask_var_node(&cfg[i].old_domain, GFP_KERNEL, node);
+@@ -245,6 +246,7 @@ static struct irq_cfg *alloc_irq_cfg(unsigned int irq, int node)
+ 		goto out_cfg;
+ 	if (!zalloc_cpumask_var_node(&cfg->old_domain, GFP_KERNEL, node))
+ 		goto out_domain;
++	INIT_LIST_HEAD(&cfg->irq_2_pin);
+ 	return cfg;
+ out_domain:
+ 	free_cpumask_var(cfg->domain);
+@@ -255,11 +257,15 @@ out_cfg:
+ 
+ static void free_irq_cfg(unsigned int at, struct irq_cfg *cfg)
  {
- 	struct irq_cfg *cfg;
-@@ -298,13 +311,8 @@ int __init arch_early_irq_init(void)
- 	if (!legacy_pic->nr_legacy_irqs)
- 		io_apic_irqs = ~0UL;
++	struct irq_pin_list *entry, *tmp;
++
+ 	if (!cfg)
+ 		return;
+ 	irq_set_chip_data(at, NULL);
+ 	free_cpumask_var(cfg->domain);
+ 	free_cpumask_var(cfg->old_domain);
++	list_for_each_entry_safe(entry, tmp, &cfg->irq_2_pin, list)
++		kfree(entry);
+ 	kfree(cfg);
+ }
  
--	for (i = 0; i < nr_ioapics; i++) {
--		ioapics[i].saved_registers =
--			kzalloc(sizeof(struct IO_APIC_route_entry) *
--				ioapics[i].nr_registers, GFP_KERNEL);
--		if (!ioapics[i].saved_registers)
--			pr_err("IOAPIC %d: suspend/resume impossible!\n", i);
+@@ -420,15 +426,12 @@ static void ioapic_mask_entry(int apic, int pin)
+  */
+ static int __add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pin)
+ {
+-	struct irq_pin_list **last, *entry;
++	struct irq_pin_list *entry;
+ 
+ 	/* don't allow duplicates */
+-	last = &cfg->irq_2_pin;
+-	for_each_irq_pin(entry, cfg->irq_2_pin) {
++	for_each_irq_pin(entry, cfg->irq_2_pin)
+ 		if (entry->apic == apic && entry->pin == pin)
+ 			return 0;
+-		last = &entry->next;
 -	}
-+	for (i = 0; i < nr_ioapics; i++)
-+		alloc_ioapic_saved_registers(i);
  
- 	cfg = irq_cfgx;
- 	count = ARRAY_SIZE(irq_cfgx);
+ 	entry = alloc_irq_pin_list(node);
+ 	if (!entry) {
+@@ -439,7 +442,7 @@ static int __add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pi
+ 	entry->apic = apic;
+ 	entry->pin = pin;
+ 
+-	*last = entry;
++	list_add_tail(&entry->list, &cfg->irq_2_pin);
+ 	return 0;
+ }
+ 
+@@ -1622,8 +1625,7 @@ __apicdebuginit(void) print_IO_APICs(void)
+ 		cfg = irq_get_chip_data(irq);
+ 		if (!cfg)
+ 			continue;
+-		entry = cfg->irq_2_pin;
+-		if (!entry)
++		if (list_empty(&cfg->irq_2_pin))
+ 			continue;
+ 		printk(KERN_DEBUG "IRQ%d ", irq);
+ 		for_each_irq_pin(entry, cfg->irq_2_pin)
 -- 
 1.8.1.4
 
