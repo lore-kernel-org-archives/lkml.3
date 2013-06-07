@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab3FGRwm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 13:52:42 -0400
-Received: from cassarossa.samfundet.no ([193.35.52.29]:44796 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755868Ab3FGRwk (ORCPT
+	id S1756623Ab3FGRz4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 13:55:56 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:60450 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756171Ab3FGRzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 13:52:40 -0400
-Date: Fri, 7 Jun 2013 19:52:33 +0200
-From: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Pravin B Shelar <pshelar@nicira.com>
-Subject: Re: NULL pointer dereference when loading the gre module (3.10.0-rc4)
-Message-ID: <20130607175233.GA20230@uio.no>
-References: <20130606221656.GA11475@uio.no>
- <20130607030648.GA28618@home.goodmis.org>
- <20130607085421.GF15083@uio.no>
- <1370612441.24311.411.camel@edumazet-glaptop>
- <1370618100.9844.73.camel@gandalf.local.home>
- <20130607154634.GA7529@uio.no>
- <1370621543.9844.78.camel@gandalf.local.home>
+	Fri, 7 Jun 2013 13:55:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Daniel Tang <dt.tangr@gmail.com>
+Subject: Re: [PATCH] Add Initial TI-Nspire support
+Date: Fri, 7 Jun 2013 19:55:26 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org
+References: <E775DD08-5516-468E-9924-0D839218D7F9@gmail.com> <D6B73C11-1EB8-472B-BA1E-E48CF205B43F@gmail.com>
+In-Reply-To: <D6B73C11-1EB8-472B-BA1E-E48CF205B43F@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1370621543.9844.78.camel@gandalf.local.home>
-X-Operating-System: Linux 3.9.0+sesse01 on a x86_64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306071955.26375.arnd@arndb.de>
+X-Provags-ID: V02:K0:VhVuVppR/0GhPCZTx080/nU9pyNmrVW7VNxrHbyyWCw
+ ymE7/pBZYPWx51i3JAS26u/l8EWWsSZzOV6XLPgYB0hJl5jP0X
+ OCY1xsa6h5Qem9ZCoVu6R8nL+i/2wqyZJo3IT+4xAWxdD6OaiB
+ um0/ZsdD03gYKVqq49EmeeIR3CmxAE48r+fJrPAS+kgCn0RW+C
+ A+je8ahmR5MK7ewX7nYRxhVQiUuxM0laXHQFNp7Mp3QVYP/hjy
+ Yowp6bp+EHJ9tKNK1UntH+TVOyPhvziCJNlG0wctpMZzvegxE1
+ MtGOf8BVyDaXqv3MDSyXfFCBeVezRkDUFngfCkkZNtZ1ZWLDNE
+ 0I9q4gJV2+bmSfHawJfk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 12:12:23PM -0400, Steven Rostedt wrote:
->> Ffffffffa0e76000 u ip_tunnel_init_net   [ip_gre]
-> What do you get if you do an objdump -Dr ip_gre.ko
+On Friday 07 June 2013, Daniel Tang wrote:
+> Hi,
 > 
-> And then look for ipgre_init, and then subtract 0xb053 (45139) from its
-> address. As that is: ffffffffa0e81055 - ffffffffa0e76002, then see if
-> that object file has anything in that location.
+> I was wondering if this patch had gone through yet.
 
-pannekake:~> objdump -Dr /lib/modules/3.10.0-rc4/kernel/net/ipv4/ip_gre.ko | grep ipgre_init        
-0000000000000000 <ipgre_init_net>:                                                          
-   0:	8b 35 00 00 00 00    	mov    0x0(%rip),%esi        # 6 <ipgre_init_net+0x6>
-  13:	e8 00 00 00 00       	callq  18 <ipgre_init_net+0x18>
+Sorry, not yet. Olof and I are usually taking turns with merging things
+into the arm-soc tree, but in the past few weeks he has done all of it,
+and he was not on Cc the patch. Please make sure you always send submissions
+for inclusion (as opposed to submissions for review purposes) to
+arm@kernel.org so it reaches both of us.
 
-Ie., the symbol doesn't show up in the disassembly (for whatever reason).
+We are also sometimes missing requests for merging for patches (rather
+than git pull requests), so if you don't see your code show up in
+linux-next when it should, just send a friendly reminder like
+this one. I don't currently have a good overview of what pull
+requests are missing, so I think Olof should apply this one, or
+we can do a handover next week so I do the merging again for some
+time.
 
-/* Steinar */
--- 
-Homepage: http://www.sesse.net/
+	Arnd
