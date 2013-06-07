@@ -1,296 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161022Ab3FGXN7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 19:13:59 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:50967 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756177Ab3FGXDq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 19:03:46 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
-        Sanjay Lal <sanjayl@kymasys.com>
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH 02/31] MIPS: Save and restore K0/K1 when CONFIG_KVM_MIPSVZ
-Date: Fri,  7 Jun 2013 16:03:06 -0700
-Message-Id: <1370646215-6543-3-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com>
+	id S1161047Ab3FGXOK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 19:14:10 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:54613 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161025Ab3FGXOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 19:14:05 -0400
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v2 5/8] pinctrl: add pinctrl driver for Rockchip SoCs
+Date: Sat, 8 Jun 2013 01:13:48 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+References: <201306062107.58875.heiko@sntech.de> <201306062111.40983.heiko@sntech.de> <CACRpkdZ97poa5HOP4baDnsdq5OjwO5S2=+pPH9ey84r=ZW43nA@mail.gmail.com>
+In-Reply-To: <CACRpkdZ97poa5HOP4baDnsdq5OjwO5S2=+pPH9ey84r=ZW43nA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201306080113.49186.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+Am Freitag, 7. Juni 2013, 14:53:51 schrieb Linus Walleij:
+> On Thu, Jun 6, 2013 at 9:11 PM, Heiko Stübner <heiko@sntech.de> wrote:
+> > +       for (i = 0, j = 0; i < size; i += 4, j++) {
+> > +               unsigned long pinconf;
+> > +
+> > +               num = be32_to_cpu(*list++);
+> > +               bank = bank_num_to_bank(info, num);
+> > +               if (IS_ERR(bank))
+> > +                       return PTR_ERR(bank);
+> > +
+> > +               pin = be32_to_cpu(*list++);
+> > +               grp->pins[j] = bank->pin_base + pin;
+> > +               grp->func[j] = be32_to_cpu(*list++);
+> > +
+> > +               pinconf = be32_to_cpu(*list++);
+> > +               switch(pinconf) {
+> > +               case RK_PINCTRL_NONE:
+> > +                       bias = PIN_CONFIG_BIAS_DISABLE;
+> > +                       break;
+> > +               case RK_PINCTRL_PULL_PIN_DEFAULT:
+> > +                       bias = PIN_CONFIG_BIAS_PULL_PIN_DEFAULT;
+> > +                       break;
+> > +               case RK_PINCTRL_PULL_UP:
+> > +                       bias = PIN_CONFIG_BIAS_PULL_UP;
+> > +                       break;
+> > +               case RK_PINCTRL_PULL_DOWN:
+> > +                       bias = PIN_CONFIG_BIAS_PULL_DOWN;
+> > +                       break;
+> > +               }
+> > +
+> > +               grp->configs[j] = pinconf_to_config_packed(bias, 0);
+> > +       }
+> 
+> I would like this to be added to
+> drivers/pinctrl/pinconf-generic.c
+> as a utility function, with the header in
+> drivers/pinctrl/pinconf.h
+> 
+> Also in a separate patch.
+> 
+> > +++ b/include/dt-bindings/pinctrl/rockchip.h
+> 
+> (...)
+> 
+> > +#define RK_PINCTRL_NONE                        0
+> > +#define RK_PINCTRL_PULL_PIN_DEFAULT    (1 << 0)
+> > +#define RK_PINCTRL_PULL_UP             (1 << 1)
+> > +#define RK_PINCTRL_PULL_DOWN           (1 << 2)
+> 
+> So I'd like these moved to /include/dt-bindings/pinctrl/pinconfig.h
+> and used as a separete include. Drop the RK_* prefix as it
+> will be universal and use a PINCONFIG_* prefix instead
+> of PINCTRL_*.
+> 
+> I think that is the route we need to take.
+> 
+> Bonus if you implement more config options from
+> pinconf-generic.h but otherwise me and others will have
+> to do it.
 
-We cannot clobber any registers on exceptions as any guest will need
-them all.
+Gah, damn me for always wanting to get bonus points ;-),
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- arch/mips/include/asm/mipsregs.h   |  2 ++
- arch/mips/include/asm/stackframe.h | 15 +++++++++++++++
- arch/mips/kernel/cpu-probe.c       |  7 ++++++-
- arch/mips/kernel/genex.S           |  5 +++++
- arch/mips/kernel/scall64-64.S      | 12 ++++++++++++
- arch/mips/kernel/scall64-n32.S     | 12 ++++++++++++
- arch/mips/kernel/traps.c           |  5 +++++
- arch/mips/mm/tlbex.c               | 25 +++++++++++++++++++++++++
- 8 files changed, 82 insertions(+), 1 deletion(-)
+I did play around a bit with the idea you described above and came up
+with the stuff a bit below. This is in no way meant to be finished, I
+also only was able to compile test it yet, but it looks like it might
+work when I test it tomorrow.
 
-diff --git a/arch/mips/include/asm/mipsregs.h b/arch/mips/include/asm/mipsregs.h
-index 6e0da5aa..6f03c72 100644
---- a/arch/mips/include/asm/mipsregs.h
-+++ b/arch/mips/include/asm/mipsregs.h
-@@ -73,6 +73,8 @@
- #define CP0_TAGHI $29
- #define CP0_ERROREPC $30
- #define CP0_DESAVE $31
-+#define CP0_KSCRATCH1 $31, 2
-+#define CP0_KSCRATCH2 $31, 3
- 
- /*
-  * R4640/R4650 cp0 register names.  These registers are listed
-diff --git a/arch/mips/include/asm/stackframe.h b/arch/mips/include/asm/stackframe.h
-index a89d1b1..20627b2 100644
---- a/arch/mips/include/asm/stackframe.h
-+++ b/arch/mips/include/asm/stackframe.h
-@@ -181,6 +181,16 @@
- #endif
- 		LONG_S	k0, PT_R29(sp)
- 		LONG_S	$3, PT_R3(sp)
-+#ifdef CONFIG_KVM_MIPSVZ
-+		/*
-+		 * With KVM_MIPSVZ, we must not clobber k0/k1
-+		 * they were saved before they were used
-+		 */
-+		MFC0	k0, CP0_KSCRATCH1
-+		MFC0	$3, CP0_KSCRATCH2
-+		LONG_S	k0, PT_R26(sp)
-+		LONG_S	$3, PT_R27(sp)
-+#endif
- 		/*
- 		 * You might think that you don't need to save $0,
- 		 * but the FPU emulator and gdb remote debug stub
-@@ -447,6 +457,11 @@
- 		.endm
- 
- 		.macro	RESTORE_SP_AND_RET
-+
-+#ifdef CONFIG_KVM_MIPSVZ
-+		LONG_L	k0, PT_R26(sp)
-+		LONG_L	k1, PT_R27(sp)
-+#endif
- 		LONG_L	sp, PT_R29(sp)
- 		.set	mips3
- 		eret
-diff --git a/arch/mips/kernel/cpu-probe.c b/arch/mips/kernel/cpu-probe.c
-index ee1014e..7a07edb 100644
---- a/arch/mips/kernel/cpu-probe.c
-+++ b/arch/mips/kernel/cpu-probe.c
-@@ -1067,7 +1067,12 @@ __cpuinit void cpu_report(void)
- 
- static DEFINE_SPINLOCK(kscratch_used_lock);
- 
--static unsigned int kscratch_used_mask;
-+static unsigned int kscratch_used_mask
-+#ifdef CONFIG_KVM_MIPSVZ
-+/* KVM_MIPSVZ implemtation uses these two statically. */
-+= 0xc
-+#endif
-+;
- 
- int allocate_kscratch(void)
- {
-diff --git a/arch/mips/kernel/genex.S b/arch/mips/kernel/genex.S
-index 31fa856..163e299 100644
---- a/arch/mips/kernel/genex.S
-+++ b/arch/mips/kernel/genex.S
-@@ -46,6 +46,11 @@
- NESTED(except_vec3_generic, 0, sp)
- 	.set	push
- 	.set	noat
-+#ifdef CONFIG_KVM_MIPSVZ
-+		/* With KVM_MIPSVZ, we must not clobber k0/k1 */
-+	MTC0	k0, CP0_KSCRATCH1
-+	MTC0	k1, CP0_KSCRATCH2
-+#endif
- #if R5432_CP0_INTERRUPT_WAR
- 	mfc0	k0, CP0_INDEX
- #endif
-diff --git a/arch/mips/kernel/scall64-64.S b/arch/mips/kernel/scall64-64.S
-index 97a5909..5ff4882 100644
---- a/arch/mips/kernel/scall64-64.S
-+++ b/arch/mips/kernel/scall64-64.S
-@@ -62,6 +62,9 @@ NESTED(handle_sys64, PT_SIZE, sp)
- 	jalr	t2			# Do The Real Thing (TM)
- 
- 	li	t0, -EMAXERRNO - 1	# error?
-+#if defined(CONFIG_KVM_MIPSVZ) && defined(CONFIG_FAST_ACCESS_TO_THREAD_POINTER)
-+	ld	t2, TI_TP_VALUE($28)
-+#endif
- 	sltu	t0, t0, v0
- 	sd	t0, PT_R7(sp)		# set error flag
- 	beqz	t0, 1f
-@@ -70,6 +73,9 @@ NESTED(handle_sys64, PT_SIZE, sp)
- 	dnegu	v0			# error
- 	sd	t1, PT_R0(sp)		# save it for syscall restarting
- 1:	sd	v0, PT_R2(sp)		# result
-+#if defined(CONFIG_KVM_MIPSVZ) && defined(CONFIG_FAST_ACCESS_TO_THREAD_POINTER)
-+	sd	t2, PT_R26(sp)
-+#endif
- 
- n64_syscall_exit:
- 	j	syscall_exit_partial
-@@ -93,6 +99,9 @@ syscall_trace_entry:
- 	jalr	t0
- 
- 	li	t0, -EMAXERRNO - 1	# error?
-+#if defined(CONFIG_KVM_MIPSVZ) && defined(CONFIG_FAST_ACCESS_TO_THREAD_POINTER)
-+	ld	t2, TI_TP_VALUE($28)
-+#endif
- 	sltu	t0, t0, v0
- 	sd	t0, PT_R7(sp)		# set error flag
- 	beqz	t0, 1f
-@@ -101,6 +110,9 @@ syscall_trace_entry:
- 	dnegu	v0			# error
- 	sd	t1, PT_R0(sp)		# save it for syscall restarting
- 1:	sd	v0, PT_R2(sp)		# result
-+#if defined(CONFIG_KVM_MIPSVZ) && defined(CONFIG_FAST_ACCESS_TO_THREAD_POINTER)
-+	sd	t2, PT_R26(sp)
-+#endif
- 
- 	j	syscall_exit
- 
-diff --git a/arch/mips/kernel/scall64-n32.S b/arch/mips/kernel/scall64-n32.S
-index edcb659..cba35b4 100644
---- a/arch/mips/kernel/scall64-n32.S
-+++ b/arch/mips/kernel/scall64-n32.S
-@@ -55,6 +55,9 @@ NESTED(handle_sysn32, PT_SIZE, sp)
- 	jalr	t2			# Do The Real Thing (TM)
- 
- 	li	t0, -EMAXERRNO - 1	# error?
-+#if defined(CONFIG_KVM_MIPSVZ) && defined(CONFIG_FAST_ACCESS_TO_THREAD_POINTER)
-+	ld	t2, TI_TP_VALUE($28)
-+#endif
- 	sltu	t0, t0, v0
- 	sd	t0, PT_R7(sp)		# set error flag
- 	beqz	t0, 1f
-@@ -63,6 +66,9 @@ NESTED(handle_sysn32, PT_SIZE, sp)
- 	dnegu	v0			# error
- 	sd	t1, PT_R0(sp)		# save it for syscall restarting
- 1:	sd	v0, PT_R2(sp)		# result
-+#if defined(CONFIG_KVM_MIPSVZ) && defined(CONFIG_FAST_ACCESS_TO_THREAD_POINTER)
-+	sd	t2, PT_R26(sp)
-+#endif
- 
- 	j	syscall_exit_partial
- 
-@@ -85,6 +91,9 @@ n32_syscall_trace_entry:
- 	jalr	t0
- 
- 	li	t0, -EMAXERRNO - 1	# error?
-+#if defined(CONFIG_KVM_MIPSVZ) && defined(CONFIG_FAST_ACCESS_TO_THREAD_POINTER)
-+	ld	t2, TI_TP_VALUE($28)
-+#endif
- 	sltu	t0, t0, v0
- 	sd	t0, PT_R7(sp)		# set error flag
- 	beqz	t0, 1f
-@@ -93,6 +102,9 @@ n32_syscall_trace_entry:
- 	dnegu	v0			# error
- 	sd	t1, PT_R0(sp)		# save it for syscall restarting
- 1:	sd	v0, PT_R2(sp)		# result
-+#if defined(CONFIG_KVM_MIPSVZ) && defined(CONFIG_FAST_ACCESS_TO_THREAD_POINTER)
-+	sd	t2, PT_R26(sp)
-+#endif
- 
- 	j	syscall_exit
- 
-diff --git a/arch/mips/kernel/traps.c b/arch/mips/kernel/traps.c
-index e3be670..f008795 100644
---- a/arch/mips/kernel/traps.c
-+++ b/arch/mips/kernel/traps.c
-@@ -1483,6 +1483,11 @@ void __init *set_except_vector(int n, void *addr)
- #endif
- 		u32 *buf = (u32 *)(ebase + 0x200);
- 		unsigned int k0 = 26;
-+#ifdef CONFIG_KVM_MIPSVZ
-+		unsigned int k1 = 27;
-+		UASM_i_MTC0(&buf, k0, 31, 2);
-+		UASM_i_MTC0(&buf, k1, 31, 3);
-+#endif
- 		if ((handler & jump_mask) == ((ebase + 0x200) & jump_mask)) {
- 			uasm_i_j(&buf, handler & ~jump_mask);
- 			uasm_i_nop(&buf);
-diff --git a/arch/mips/mm/tlbex.c b/arch/mips/mm/tlbex.c
-index 001b87c..3ce7208 100644
---- a/arch/mips/mm/tlbex.c
-+++ b/arch/mips/mm/tlbex.c
-@@ -372,11 +372,19 @@ static void __cpuinit build_restore_work_registers(u32 **p)
- {
- 	if (scratch_reg > 0) {
- 		UASM_i_MFC0(p, 1, 31, scratch_reg);
-+#ifdef CONFIG_KVM_MIPSVZ
-+		UASM_i_MFC0(p, K0, 31, 2);
-+		UASM_i_MFC0(p, K1, 31, 3);
-+#endif
- 		return;
- 	}
- 	/* K0 already points to save area, restore $1 and $2  */
- 	UASM_i_LW(p, 1, offsetof(struct tlb_reg_save, a), K0);
- 	UASM_i_LW(p, 2, offsetof(struct tlb_reg_save, b), K0);
-+#ifdef CONFIG_KVM_MIPSVZ
-+	UASM_i_MFC0(p, K0, 31, 2);
-+	UASM_i_MFC0(p, K1, 31, 3);
-+#endif
+So if possible I would just like to get a "looks halfway sane, continue"
+or "completely wrong track" please :-) :
+
+
+constants in dt-bindings/pinctrl/pinconfig.h:
+-----------------------------
+#define PINCONFIG_NONE			0
+#define PINCONFIG_BIAS_DISABLE		(1 << 0)
+#define PINCONFIG_BIAS_HIGH_IMPEDANCE	(1 << 1)
+#define PINCONFIG_BIAS_BUS_HOLD		(1 << 2)
+#define PINCONFIG_BIAS_PULL_PIN_DEFAULT	(1 << 3)
+#define PINCONFIG_BIAS_PULL_UP		(1 << 4)
+#define PINCONFIG_BIAS_PULL_DOWN	(1 << 5)
+#define PINCONFIG_DRIVE_PUSH_PULL	(1 << 6)
+#define PINCONFIG_DRIVE_OPEN_DRAIN	(1 << 7)
+#define PINCONFIG_DRIVE_OPEN_SOURCE	(1 << 8)
+#define PINCONFIG_INPUT_SCHMITT_ENABLE	(1 << 9)
+#define PINCONFIG_INPUT_SCHMITT_DISABLE	(1 << 10)
+#define PINCONFIG_LOW_POWER_MODE	(1 << 11)
+#define PINCONFIG_OUTPUT_LOW		(1 << 12)
+#define PINCONFIG_OUTPUT_HIGH		(1 << 13)
+
+
+and code including how the rockchip driver could look like:
+---------
+diff --git a/drivers/pinctrl/pinconf-generic.c b/drivers/pinctrl/pinconf-generic.c
+index 9a6812b..35c40be 100644
+--- a/drivers/pinctrl/pinconf-generic.c
++++ b/drivers/pinctrl/pinconf-generic.c
+@@ -139,3 +139,61 @@ void pinconf_generic_dump_config(struct pinctrl_dev *pctldev,
  }
- 
- #ifndef CONFIG_MIPS_PGD_C0_CONTEXT
-@@ -1089,6 +1097,11 @@ build_fast_tlb_refill_handler (u32 **p, struct uasm_label **l,
- 	int vmalloc_branch_delay_filled = 0;
- 	const int scratch = 1; /* Our extra working register */
- 
-+#ifdef CONFIG_KVM_MIPSVZ
-+	UASM_i_MTC0(p, K0, 31, 2);
-+	UASM_i_MTC0(p, K1, 31, 3);
-+#endif
+ EXPORT_SYMBOL_GPL(pinconf_generic_dump_config);
+ #endif
 +
- 	rv.huge_pte = scratch;
- 	rv.restore_scratch = 0;
++/*
++ * Maps the devicetree config bits to actual pinconf values.
++ * The array indizes match the bits set in dt-bindings/pinctrl/pinconf.h
++ * and the array should contain an entry for each bit defined there
++ */
++static unsigned long conf_map[] = {
++	PIN_CONF_PACKED(PIN_CONFIG_BIAS_DISABLE, 0),
++	PIN_CONF_PACKED(PIN_CONFIG_BIAS_HIGH_IMPEDANCE, 0),
++	PIN_CONF_PACKED(PIN_CONFIG_BIAS_BUS_HOLD, 0),
++	PIN_CONF_PACKED(PIN_CONFIG_BIAS_PULL_PIN_DEFAULT, 0),
++	PIN_CONF_PACKED(PIN_CONFIG_BIAS_PULL_UP, 0),
++	PIN_CONF_PACKED(PIN_CONFIG_BIAS_PULL_DOWN, 0),
++	PIN_CONF_PACKED(PIN_CONFIG_DRIVE_PUSH_PULL, 0),
++	PIN_CONF_PACKED(PIN_CONFIG_DRIVE_OPEN_DRAIN, 0),
++	PIN_CONF_PACKED(PIN_CONFIG_DRIVE_OPEN_SOURCE, 0),
++	PIN_CONF_PACKED(PIN_CONFIG_INPUT_SCHMITT_ENABLE, 1),
++	PIN_CONF_PACKED(PIN_CONFIG_INPUT_SCHMITT_ENABLE, 0),
++	PIN_CONF_PACKED(PIN_CONFIG_LOW_POWER_MODE, 0),
++	PIN_CONF_PACKED(PIN_CONFIG_OUTPUT, 0),
++	PIN_CONF_PACKED(PIN_CONFIG_OUTPUT, 1),
++};
++
++/*
++ * Parse a pinconf bitmap from a devicetree entry into individual pin configs.
++ * @pinconf: the bitmap containing config bits
++ * @configs: after the function returns contains a pointer to an array of
++ *	     pin configs
++ * @nconfigs: number of entries of configs
++ */
++int pinconf_generic_parse_dt_bitmap(unsigned long pinconf, 
++				    unsigned long *configs,
++				    unsigned int *nconfigs)
++{
++	int bit;
++	int i;
++
++	*nconfigs = hweight_long(pinconf);
++	configs = kzalloc(*nconfigs * sizeof(unsigned long), GFP_KERNEL);
++
++	i = 0;
++	while (pinconf && i < *nconfigs) {
++		bit = __ffs(pinconf);
++		pinconf &= ~BIT(i);
++
++		if (bit > ARRAY_SIZE(conf_map)) {
++			pr_err("%s: unknown bit %d\n", __func__, bit);
++			kfree(configs);
++			return -EINVAL;
++		}
++
++		configs[i] = conf_map[bit];
++
++		i++;
++	}
++
++	return 0;
++}
+diff --git a/drivers/pinctrl/pinconf.h b/drivers/pinctrl/pinconf.h
+index 92c7267..0fab53a 100644
+--- a/drivers/pinctrl/pinconf.h
++++ b/drivers/pinctrl/pinconf.h
+@@ -123,3 +123,9 @@ static inline void pinconf_generic_dump_config(struct pinctrl_dev *pctldev,
+ 	return;
+ }
+ #endif
++
++#ifdef CONFIG_GENERIC_PINCONF
++int pinconf_generic_parse_dt_bitmap(unsigned long pinconf, 
++				    unsigned long *configs,
++				    unsigned int *nconfigs);
++#endif
+diff --git a/drivers/pinctrl/pinctrl-rockchip.c b/drivers/pinctrl/pinctrl-rockchip.c
+index b77e241..88398df 100644
+--- a/drivers/pinctrl/pinctrl-rockchip.c
++++ b/drivers/pinctrl/pinctrl-rockchip.c
+@@ -40,6 +40,7 @@
+ #include <dt-bindings/pinctrl/rockchip.h>
  
-@@ -1244,6 +1257,10 @@ build_fast_tlb_refill_handler (u32 **p, struct uasm_label **l,
- 		rv.restore_scratch = 1;
+ #include "core.h"
++#include "pinconf.h"
+ 
+ /* GPIO control registers */
+ #define GPIO_SWPORT_DR		0x00
+@@ -639,7 +640,8 @@ static int rockchip_pinctrl_parse_groups(struct device_node *np,
+ 	int num;
+ 	int i, j;
+ 	int pin;
+-	int bias;
++	int ret;
++	int nconfigs;
+ 
+ 	dev_dbg(info->dev, "group(%d): %s\n", index, np->name);
+ 
+@@ -683,22 +685,16 @@ static int rockchip_pinctrl_parse_groups(struct device_node *np,
+ 		grp->func[j] = be32_to_cpu(*list++);
+ 
+ 		pinconf = be32_to_cpu(*list++);
+-		switch(pinconf) {
+-		case RK_PINCTRL_NONE:
+-			bias = PIN_CONFIG_BIAS_DISABLE;
+-			break;
+-		case RK_PINCTRL_PULL_PIN_DEFAULT:
+-			bias = PIN_CONFIG_BIAS_PULL_PIN_DEFAULT;
+-			break;
+-		case RK_PINCTRL_PULL_UP:
+-			bias = PIN_CONFIG_BIAS_PULL_UP;
+-			break;
+-		case RK_PINCTRL_PULL_DOWN:
+-			bias = PIN_CONFIG_BIAS_PULL_DOWN;
+-			break;
+-		}
+ 
+-		grp->configs[j] = pinconf_to_config_packed(bias, 0);
++		ret = pinconf_generic_parse_dt_bitmap(pinconf, 
++				    &grp->configs[j], &nconfigs);
++		if (ret)
++			return ret;
++
++		if (nconfigs != 1) {
++			pr_err("unexpected number of config entries\n");
++			return -EINVAL;
++		}
  	}
  
-+#ifdef CONFIG_KVM_MIPSVZ
-+	UASM_i_MFC0(p, K0, 31, 2);
-+	UASM_i_MFC0(p, K1, 31, 3);
-+#endif
- 	uasm_i_eret(p); /* return from trap */
- 
- 	return rv;
-@@ -1277,6 +1294,10 @@ static void __cpuinit build_r4000_tlb_refill_handler(void)
- 							  scratch_reg);
- 		vmalloc_mode = refill_scratch;
- 	} else {
-+#ifdef CONFIG_KVM_MIPSVZ
-+		UASM_i_MTC0(&p, K0, 31, 2);
-+		UASM_i_MTC0(&p, K1, 31, 3);
-+#endif
- 		htlb_info.huge_pte = K0;
- 		htlb_info.restore_scratch = 0;
- 		vmalloc_mode = refill_noscratch;
-@@ -1311,6 +1332,10 @@ static void __cpuinit build_r4000_tlb_refill_handler(void)
- 		build_update_entries(&p, K0, K1);
- 		build_tlb_write_entry(&p, &l, &r, tlb_random);
- 		uasm_l_leave(&l, p);
-+#ifdef CONFIG_KVM_MIPSVZ
-+		UASM_i_MFC0(&p, K0, 31, 2);
-+		UASM_i_MFC0(&p, K1, 31, 3);
-+#endif
- 		uasm_i_eret(&p); /* return from trap */
- 	}
- #ifdef CONFIG_MIPS_HUGE_TLB_SUPPORT
--- 
-1.7.11.7
-
+ 	return 0;
