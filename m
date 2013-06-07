@@ -1,100 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab3FGM7W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 08:59:22 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:46048 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453Ab3FGM7U (ORCPT
+	id S1754574Ab3FGNAk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 09:00:40 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:62661 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753417Ab3FGNAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 08:59:20 -0400
-Date: Fri, 7 Jun 2013 16:59:09 +0400
-From: Artem Savkov <artem.savkov@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-mm@kvack.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [BUG] non-swapcache page in end_swap_bio_read()
-Message-ID: <20130607125908.GB9282@cpv436-motbuntu>
+	Fri, 7 Jun 2013 09:00:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1370606855-19403-1-git-send-email-patrice.chotard.st@gmail.com>
+References: <1370606855-19403-1-git-send-email-patrice.chotard.st@gmail.com>
+Date: Fri, 7 Jun 2013 15:00:38 +0200
+Message-ID: <CACRpkdbixv21db-_TcPApRj7=BHCQ52TDXnHqMpn+kaXcBBrhA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: pinctrl-abx500: Add device tree support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Patrice Chotard <patrice.chotard.st@gmail.com>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olivier Clergeaud <olivier.clergeaud@st.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Gabriel Fernandez <gabriel.fernandez@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+On Fri, Jun 7, 2013 at 2:07 PM,  <patrice.chotard.st@gmail.com> wrote:
 
-I'm hitting the following BUG_ON during boot when
-CONFIG_PM_STD_PARTITION or "resume" kernel boot option are set. Looks
-like this issue was introduced in (or brought up to light by)
-"mm: remove compressed copy from zram in-memory"
-(84e5bb4f06e6d6f0c4dfc033b4700702ed8aaccc in linux-next.git)
-What happens is that during swsusp_check() bio is created with
-bio_end_io set to end_swap_bio_read(), but the page is not in swap
-cache.
-Not sure how to handle this the right way, but proceeding with the
-optimization in end_swap_bio_read() only after checking PageSwapCache
-flag does help.
+> From: Patrice Chotard <patrice.chotard@st.com>
+>
+> We use the same way to define pin muxing and pin
+> configuration than for nomadik. So pickup code
+> from pinctrl_nomadik.c to be able to implement
+> pin multiplexing and pin configuration using
+> the device tree.
+>
+> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
+> Signed-off-by: Patrice Chotard <patrice.chotard@st.com>
 
-[    2.065206] kernel BUG at mm/swapfile.c:2361!
-[    2.065469] invalid opcode: 0000 [#1] SMP 
-[    2.065469] Modules linked in:
-[    2.065469] CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.10.0-rc4-next-20130607+ #61
-[    2.065469] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-[    2.065469] task: ffff88001e5ccfc0 ti: ffff88001e5ea000 task.ti: ffff88001e5ea000
-[    2.065469] RIP: 0010:[<ffffffff811462eb>]  [<ffffffff811462eb>] page_swap_info+0xab/0xb0
-[    2.065469] RSP: 0000:ffff88001ec03c78  EFLAGS: 00010246
-[    2.065469] RAX: 0100000000000009 RBX: ffffea0000794780 RCX: 0000000000000c0b
-[    2.065469] RDX: 0000000000000046 RSI: 0000000000000000 RDI: 0000000000000000
-[    2.065469] RBP: ffff88001ec03c88 R08: 0000000000000000 R09: 0000000000000000
-[    2.065469] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
-[    2.065469] R13: 0000000000000001 R14: ffff88001e7f6200 R15: 0000000000001000
-[    2.065469] FS:  0000000000000000(0000) GS:ffff88001ec00000(0000) knlGS:0000000000000000
-[    2.065469] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[    2.065469] CR2: 0000000000000000 CR3: 000000000240b000 CR4: 00000000000006e0
-[    2.065469] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[    2.065469] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[    2.065469] Stack:
-[    2.065469]  ffffea0000794780 ffff88001e7f6200 ffff88001ec03cb8 ffffffff81145486
-[    2.065469]  ffff88001e5cd5c0 ffff88001c02cd20 0000000000001000 0000000000000000
-[    2.065469]  ffff88001ec03cc8 ffffffff81199518 ffff88001ec03d28 ffffffff81518ec3
-[    2.065469] Call Trace:
-[    2.065469]  <IRQ> 
-[    2.065469]  [<ffffffff81145486>] end_swap_bio_read+0x96/0x130
-[    2.065469]  [<ffffffff81199518>] bio_endio+0x18/0x40
-[    2.065469]  [<ffffffff81518ec3>] blk_update_request+0x213/0x540
-[    2.065469]  [<ffffffff81518fa0>] ? blk_update_request+0x2f0/0x540
-[    2.065469]  [<ffffffff817986a6>] ? ata_hsm_qc_complete+0x46/0x130
-[    2.065469]  [<ffffffff81519212>] blk_update_bidi_request+0x22/0x90
-[    2.065469]  [<ffffffff8151b9ea>] blk_end_bidi_request+0x2a/0x80
-[    2.065469]  [<ffffffff8151ba8b>] blk_end_request+0xb/0x10
-[    2.065469]  [<ffffffff817693aa>] scsi_io_completion+0xaa/0x6b0
-[    2.065469]  [<ffffffff817608d8>] scsi_finish_command+0xc8/0x130
-[    2.065469]  [<ffffffff81769aff>] scsi_softirq_done+0x13f/0x160
-[    2.065469]  [<ffffffff81521ebc>] blk_done_softirq+0x7c/0x90
-[    2.065469]  [<ffffffff81049030>] __do_softirq+0x130/0x3f0
-[    2.065469]  [<ffffffff810d454e>] ? handle_irq_event+0x4e/0x70
-[    2.065469]  [<ffffffff81049405>] irq_exit+0xa5/0xb0
-[    2.065469]  [<ffffffff81003cb1>] do_IRQ+0x61/0xe0
-[    2.065469]  [<ffffffff81c2832f>] common_interrupt+0x6f/0x6f
-[    2.065469]  <EOI> 
-[    2.065469]  [<ffffffff8107ebff>] ? local_clock+0x4f/0x60
-[    2.065469]  [<ffffffff81c27f85>] ? _raw_spin_unlock_irq+0x35/0x50
-[    2.065469]  [<ffffffff81c27f7b>] ? _raw_spin_unlock_irq+0x2b/0x50
-[    2.065469]  [<ffffffff81078bd0>] finish_task_switch+0x80/0x110
-[    2.065469]  [<ffffffff81078b93>] ? finish_task_switch+0x43/0x110
-[    2.065469]  [<ffffffff81c2525c>] __schedule+0x32c/0x8c0
-[    2.065469]  [<ffffffff81c2c010>] ? notifier_call_chain+0x150/0x150
-[    2.065469]  [<ffffffff81c259d4>] schedule+0x24/0x70
-[    2.065469]  [<ffffffff81c25d42>] schedule_preempt_disabled+0x22/0x30
-[    2.065469]  [<ffffffff81093645>] cpu_startup_entry+0x335/0x380
-[    2.065469]  [<ffffffff81c1ed7e>] start_secondary+0x217/0x219
-[    2.065469] Code: 69 bc 16 82 48 c7 c7 77 bc 16 82 31 c0 49 c1 ec 39 49 c1 e9 10 41 83 e1 01 e8 6c d2 ad 00 5b 4a 8b 04 e5 e0 bf 14 83 41 5c c9 c3 <0f> 0b eb fe 90 48 8b 07 55 48 89 e5 a9 00 00 01 00 74 12 e8 3d 
-[    2.065469] RIP  [<ffffffff811462eb>] page_swap_info+0xab/0xb0
-[    2.065469]  RSP <ffff88001ec03c78>
+Overall this is looking fine.
 
--- 
-Regards,
-    Artem
+> +- ste,config: Handle of pin configuration node (e.g. ste,config = <&slpm_in_wkup_pdis>)
+> +
+> +- ste,input : <0/1/2>
+> +       0: input with no pull
+> +       1: input with pull up,
+> +       2: input with pull down,
+> +
+> +- ste,output: <0/1/2>
+> +       0: output low,
+> +       1: output high,
+> +       2: output (value is not specified).
+
+As I have just discussed with Heiko, we need generic pin config bindings for
+the drivers using generic pin config, such as the abx500. We have to start
+unifying unifiable stuff...
+
+i.e. this is not similar to the Nomadik pinctrl driver, because that one is not
+using generic pin config.
+
+So we're trying to agree on generic bindings with generic parsing code to
+avoid code duplication.
+
+Please check my review of Heiko's patch for my ideas and comment in
+that thread.
+
+Subject:
+"[PATCH v2 5/8] pinctrl: add pinctrl driver for Rockchip SoCs"
+
+Yours,
+Linus Walleij
