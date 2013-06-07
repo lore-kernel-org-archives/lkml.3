@@ -1,92 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464Ab3FGJB5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 05:01:57 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:26117 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753691Ab3FGJBx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 05:01:53 -0400
-Message-ID: <51B1A150.6030804@huawei.com>
-Date: Fri, 7 Jun 2013 17:01:04 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Namhyung Kim <namhyung@kernel.org>,
+	id S1755084Ab3FGJCL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 05:02:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9641 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753691Ab3FGJCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 05:02:03 -0400
+Date: Fri, 7 Jun 2013 11:01:38 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>
-Subject: [PATCH 3.0-stable 2/2] ftrace: Move ftrace_filter_lseek out of CONFIG_DYNAMIC_FTRACE
- section
-References: <51B1A131.9090206@huawei.com>
-In-Reply-To: <51B1A131.9090206@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 11/16] perf util: Parse header_page to get proper long
+ size
+Message-ID: <20130607090138.GA1071@krava.brq.redhat.com>
+References: <1370323231-14022-1-git-send-email-namhyung@kernel.org>
+ <1370323231-14022-12-git-send-email-namhyung@kernel.org>
+ <20130606153737.GA1011@krava.brq.redhat.com>
+ <87mwr22tav.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87mwr22tav.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 7f49ef69db6bbf756c0abca7e9b65b32e999eec8 upstream.
+On Fri, Jun 07, 2013 at 05:56:08PM +0900, Namhyung Kim wrote:
+> Hi Jiri,
+> 
+> On Thu, 6 Jun 2013 17:37:37 +0200, Jiri Olsa wrote:
+> > On Tue, Jun 04, 2013 at 02:20:26PM +0900, Namhyung Kim wrote:
+> >> From: Namhyung Kim <namhyung.kim@lge.com>
+> >> 
+> >> The header_page file describes the format of the ring buffer page
+> >> which is used by ftrace (not perf).  And size of "commit" field (I
+> >> guess it's older name was 'size') represents the real size of long
+> >> type used for kernel.  So update the pevent's long size.
+> >> 
+> > any reason why not merge this one with
+> >   83ae6eb perf util: Skip reading header_event file
+> 
+> Just try to keep it doing one thing in a patch.  But if you think it'd
+> better merging it, I'll do it. :)
 
-As ftrace_filter_lseek is now used with ftrace_pid_fops, it needs to
-be moved out of the #ifdef CONFIG_DYNAMIC_FTRACE section as the
-ftrace_pid_fops is defined when DYNAMIC_FTRACE is not.
+nope, just curious if I missed something ;-) it's ok
 
-Cc: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[ lizf: adjust context ]
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/trace/ftrace.c | 26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
-
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index b17a3f6..0d704b0 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -933,6 +933,19 @@ static __init void ftrace_profile_debugfs(struct dentry *d_tracer)
- 
- static struct pid * const ftrace_swapper_pid = &init_struct_pid;
- 
-+static loff_t
-+ftrace_filter_lseek(struct file *file, loff_t offset, int whence)
-+{
-+	loff_t ret;
-+
-+	if (file->f_mode & FMODE_READ)
-+		ret = seq_lseek(file, offset, whence);
-+	else
-+		file->f_pos = ret = 1;
-+
-+	return ret;
-+}
-+
- #ifdef CONFIG_DYNAMIC_FTRACE
- 
- #ifndef CONFIG_FTRACE_MCOUNT_RECORD
-@@ -2299,19 +2312,6 @@ ftrace_notrace_open(struct inode *inode, struct file *file)
- 				 inode, file);
- }
- 
--static loff_t
--ftrace_filter_lseek(struct file *file, loff_t offset, int origin)
--{
--	loff_t ret;
--
--	if (file->f_mode & FMODE_READ)
--		ret = seq_lseek(file, offset, origin);
--	else
--		file->f_pos = ret = 1;
--
--	return ret;
--}
--
- static int ftrace_match(char *str, char *regex, int len, int type)
- {
- 	int matched = 0;
--- 
-1.8.0.2
-
+jirka
