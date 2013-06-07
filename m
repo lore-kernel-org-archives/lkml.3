@@ -1,100 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876Ab3FGS0w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 14:26:52 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:42270 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756369Ab3FGS0u (ORCPT
+	id S932070Ab3FGSaS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 14:30:18 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:53066 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754298Ab3FGSaR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 14:26:50 -0400
+	Fri, 7 Jun 2013 14:30:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130606112723.71ddd70c@skate>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
-	<1370475609.20454.44.camel@localhost>
-	<CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
-	<1733666.lHUBcfUXq9@flatron>
-	<20130606112723.71ddd70c@skate>
-Date: Fri, 7 Jun 2013 19:26:49 +0100
-Message-ID: <CAPweEDzW60poOYahm31aW3_A=NvZmyBPPPgM9PzdvuPJnju69A@mail.gmail.com>
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
- Uploading linux (3.9.4-1))
-From: "luke.leighton" <luke.leighton@gmail.com>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        debian-kernel@lists.debian.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
+In-Reply-To: <20130607163658.GC25323@logfs.org>
+References: <1370280485-10047-1-git-send-email-joern@logfs.org>
+	<1370280485-10047-2-git-send-email-joern@logfs.org>
+	<CAHp75VczX+tjqJgNv4uv=BRekm2Gc2i8WHL91vJFWSXWS8-J_A@mail.gmail.com>
+	<20130606181248.GA17707@logfs.org>
+	<CAHp75VfFvirRvN8FwNey4=9GvMKmPvaM5PBThbEBwZYwL_pt-A@mail.gmail.com>
+	<20130607163658.GC25323@logfs.org>
+Date: Fri, 7 Jun 2013 21:30:16 +0300
+Message-ID: <CAHp75VdBb3Gt+sYwDbJo8BXRSsxwN0K6qw_UeJve6ycQwz2WBQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] list: add list_for_each_entry_del
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: =?UTF-8?Q?J=C3=B6rn_Engel?= <joern@logfs.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-thomas i _very_ briefly spotted this when i was extremely busy
-yesterday, and i'm grateful to the 2 or 3 people who've given me the
-keywords and/or links to catch up.
-
-On Thu, Jun 6, 2013 at 10:27 AM, Thomas Petazzoni
-<thomas.petazzoni@free-electrons.com> wrote:
-> Dear Tomasz Figa,
+On Fri, Jun 7, 2013 at 7:36 PM, Jörn Engel <joern@logfs.org> wrote:
+> On Thu, 6 June 2013 22:49:22 +0300, Andy Shevchenko wrote:
+>> On Thu, Jun 6, 2013 at 9:12 PM, Jörn Engel <joern@logfs.org> wrote:
+>> > On Thu, 6 June 2013 22:32:55 +0300, Andy Shevchenko wrote:
+>> >> What the problem to use list_for_each_safe()?
+>> >
+>> > The loop may terminate with elements left on the list.  There is more,
+>> > but I would consider this the main problem.
+>>
+>> I didn't quite get what you mean.
 >
-> On Thu, 06 Jun 2013 02:01:14 +0200, Tomasz Figa wrote:
+> Take two threads, one doing a list_for_each_entry_safe loop and
+> dropping the lock after list_del, the other doing list_add.  Result is
+> that you finish the list_for_each_entry_safe loop with something
+> remaining on the list.
 >
->> I don't see any other solution here than moving all the Allwinner
->> code to DT (as it has been suggested in this thread several times
->> already), as this is the only hardware description method supported
->> by ARM Linux.
->
-> Have you noticed that it is already the case in mainline?
+> spin_lock
+> list_for_each_entry_safe
+>         list_del
+>         spin_unlock
 
- i knew there was a little bit, but not the extent of the commits.
+Who is doing such thing?
 
-> My colleague Maxime Ripard (Cc'ed)
+Usually if you unlock, you exit from function, or you already done
+iteration through the list.
 
- maxime: we need to talk :)
+Like
+lock()
+list_for_each_safe() {
+  if (condition) {
+  list_del()
+  unlock()
+  return;
+ }
+}
+unlock()
+return;
 
- please tell me in 4 or 5 sentences what you've managed to do so far,
-expanding a little on what thomas says below, more specifically what
-it achieves and/or allows rather than technically what it does
-(suitable for managers and directors in other words), and what plans
-you'd like to see happen.
+In case you have to do unlock()/lock() routine inside iteration you always can
+do an additional check at the end
 
-> is the maintainer of the mainline Allwinner sunxi
-> effort. It already supports a number of boards, has a pinctrl driver, a
-> GPIO driver, serial port is working, network is working, I2C is
-> working.
->
-> All in mainline, completely Device Tree based.
+list_for_each_safe() {
+ unlock();
+ lock();
+}
+if (!list_empty()) {
+do_smth()
+}
+unlock();
 
- great.  which version did it first hit, i.e. what will the first
-signs of this be when allwinner begin doing "git pulls"?
+Thus, I don't see how list*del will help.
 
- and which boards.  bear in mind that one of those "boards" should
-really be "the total range of products available across hundreds of
-chinese tablet clone manufacturers".
+> If you search for this pattern in the kernel, you won't find too many
+> examples.  Quite likely that is because a) people realized this and
+> used a while (!list_empty()) loop to begin with or b) they started out
+> wrong and fixed the bug later.  Not sure how many examples of b) there
+> are.
 
- specific question: is one of the "boards" the one that tom cubie
-submitted, which covers virtually every android tablet product
-manufactured in the millions by chinese tablet clone manufacturers?
-
-
-> So isn't this entire discussion completely moot?
-
- no because it's totally in isolation from allwinner.  i need to give
-them a heads-up, and get them involved, giving them specific
-incentives [which nobody's yet given!!] for following a particular
-path [or paths] yet to be recommended.
-
-> The mainline support
-> for sunxi has already started since 6 months or so, and has been Device
-> Tree based from day one.
-
-to clarify: the *community-driven* mainline support for sunxi.  ok -
-which chips?  sun3i (ARM9), sun4i (Cortex A8), sun5i, sun6i and sun7i
-(Dual-Core Cortex A7)?  which ones are in?
-
-l.
+--
+With Best Regards,
+Andy Shevchenko
