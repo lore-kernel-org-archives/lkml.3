@@ -1,148 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab3FGQlb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 12:41:31 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:55326 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753691Ab3FGQla convert rfc822-to-8bit (ORCPT
+	id S1755731Ab3FGQrV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 12:47:21 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:54893 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab3FGQrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 12:41:30 -0400
-Date: Fri, 7 Jun 2013 17:41:23 +0100
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: James King <james.king@linaro.org>
-Cc: "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "namhyung@kernel.org" <namhyung@kernel.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH] arm/dt: Don't add disabled CPUs to system topology
-Message-ID: <20130607164123.GF3111@e102568-lin.cambridge.arm.com>
-References: <1370538685-22386-1-git-send-email-james.king@linaro.org>
- <20130607102326.GA3111@e102568-lin.cambridge.arm.com>
- <CAFtq+0FuzNcoQpK7=7d_KetYYHoPC7rdkFWMrApey5dxiWZ9mg@mail.gmail.com>
+	Fri, 7 Jun 2013 12:47:19 -0400
+Date: Fri, 7 Jun 2013 17:47:00 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Nick Dyer <nick.dyer@itdev.co.uk>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
+Message-ID: <20130607164700.GW31367@sirena.org.uk>
+References: <20130606100346.GC1883@sirena.org.uk>
+ <51B0651D.3090902@itdev.co.uk>
+ <20130606105530.GT31367@sirena.org.uk>
+ <51B06FE4.7040805@itdev.co.uk>
+ <20130606131638.GX31367@sirena.org.uk>
+ <51B0B52C.1090807@itdev.co.uk>
+ <20130606164629.GG31367@sirena.org.uk>
+ <51B1F859.1010504@itdev.co.uk>
+ <20130607154134.GU31367@sirena.org.uk>
+ <51B20630.7000304@itdev.co.uk>
 MIME-Version: 1.0
-In-Reply-To: <CAFtq+0FuzNcoQpK7=7d_KetYYHoPC7rdkFWMrApey5dxiWZ9mg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 07 Jun 2013 16:41:24.0774 (UTC) FILETIME=[D957AC60:01CE639D]
-X-MC-Unique: 113060717412702201
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bdvOYxGdT/r+cPTQ"
 Content-Disposition: inline
+In-Reply-To: <51B20630.7000304@itdev.co.uk>
+X-Cookie: Are you a turtle?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 10/53] Input: atmel_mxt_ts - Add memory access interface
+ via sysfs
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 12:48:58PM +0100, James King wrote:
-> Hi Lorenzo,
-> 
-> On 7 June 2013 11:23, Lorenzo Pieralisi <lorenzo.pieralisi@arm.com> wrote:
-> > Hi James,
-> >
-> > On Thu, Jun 06, 2013 at 06:11:25PM +0100, James King wrote:
-> >> If CPUs are marked as disabled in the devicetree, make sure they do
-> >> not exist in the system CPU information and CPU topology information.
-> >> In this case these CPUs will not be able to be added to the system later
-> >> using hot-plug. This allows a single chip with many CPUs to be easily
-> >> used in a variety of hardware devices where they may have different
-> >> actual processing requirements (eg for thermal/cost reasons).
-> >>
-> >> - Change devicetree.c to ignore any cpu nodes marked as disabled,
-> >>   this effectively limits the number of active cpu cores so no need
-> >>   for the max_cpus=x in the chosen node.
-> >> - Change topology.c to ignore any cpu nodes marked as disabled, this
-> >>   is where the scheduler would learn about big/LITTLE cores so this
-> >>   effectively keeps the scheduler in sync.
-> >>
-> >
-> > I have two questions:
-> >
-> > 1) Since with this approach the DT should change anyway if on different
-> >    hardware devices based on the same chip you want to allow booting a
-> >    different number of CPUs, why do not we remove the cpu nodes instead of
-> >    disabling them ? Put it another way: cpu nodes define a cpu as
-> >    possible (currently), we can simply remove the node if we do not want
-> >    that cpu to be seen by the kernel.
-> 
-> The reason we want disabled status rather than just remove the nodes
-> is to use a common soc.dtsi file which is included in many board.dts
-> files - eg:
-> 
-> file soc.dtsi contains:
-> 
->                 cpus {
->                                 cpu0: cpu@0 {
->                                                 device_type = "cpu";
->                                                 compatible = "arm,cortex-a7";
->                                                 reg = <0>;
->                                                 cluster = <&cluster0>;
->                                                 core = <&core0>;
 
-Minor nit, "cluster" and "core" phandles are not part of cpu the bindings
-that will be merged this cycle, I know it is just an example.
+--bdvOYxGdT/r+cPTQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->                                 };
-> 
->                                 cpu1: cpu@1 {
->                                                 device_type = "cpu";
->                                                 compatible = "arm,cortex-a7";
->                                                 reg = <1>;
->                                                 cluster = <&cluster0>;
->                                                 core = <&core1>;
->                                 };
-> 
->                                 cpu2: cpu@2 {
->                                                 device_type = "cpu";
->                                                 compatible = "arm,cortex-a15";
->                                                 reg = <2>;
->                                                 cluster = <&cluster0>;
->                                                 core = <&core2>;
->                                 };
->                 };
-> 
-> file board1.dts where we want the A15 disabled contains:
-> 
-> /include/ "soc.dtsi"
-> 
->                 cpus {
->                                 cpu2: cpu@2 {
->                                                 status = "disabled";
->                                 };
->                 };
+On Fri, Jun 07, 2013 at 05:11:28PM +0100, Nick Dyer wrote:
+> Mark Brown wrote:
 
-Understood, see the other reply as far as the status property is concerned.
+> > I thought there was this protocol you're concerned aboout, not raw
+> > registers?  Presenting the actual data in binary form seems sane, how
+> > one gets to the data is the issue.
 
-> > 2) If we go for the "status" property, why do not we use it to set present
-> >    mask ? That way the cpu is possible but not present, you cannot
-> >    hotplug it in. It is a bit of a stretch, granted, the cpu _is_ present,
-> >    we just want to disable it, do not know how this is handled in x86
-> >    and other archs though.
-> 
-> I have been struggling to find any equivalent example for another
-> arch, so just tried to solve our problem. I guess in the x86 world it
-> is less likely to want to disable processors in a SoC for heat/battery
-> issues so this has just never arisen. In this case the cpu is
-> physically present but not possible, but I am not sure it should be in
-> a present mask (giving the impression it can be used). Perhaps you
-> could elaborate with an example what you are thinking about here?
+> OK, so we seem to have gone round in a circle here. Initially I understood
+> you to say that providing a binary read/write attribute for access to the
+> configuration data was not acceptable.
 
-I was thinking about using status == "disabled" to mark a cpu as
-possible but not present; that is a bad idea for the reason you mentioned
-and also for the point Rob raised related to the ePAPR.
+What was being proposed was just mapping the register map straight into
+userspace and implementing the entire protocol in userspace.  Having the
+unparsed attributes visible themselves is relatively normal.
 
-I am not sure how we can solve this issue, as I mentioned the easiest
-solution consists in not defining cpu nodes in the DT or probably add
-an additional property != status with proper bindings attached to it.
+> >> The chip itself will enforce which registers are read-only (by ignoring
+> >> writes) or write-only (by returning zeros if read). Encoding all this
+> >> information in the driver would just make it more brittle in the face of
+> >> touch controller firmware updates.
 
-Lorenzo
+> > So not only do you interact with the firmware via this protocol but the
+> > actual hardware register map is unstable
 
+> The register map is fixed at firmware compile time. The driver contains
+> code which parses the object table and figures out the correct register
+> offsets which are used on the particular chip that it is talking to.
+
+> The user space tools that we have written contain an equivalent parser. Is
+> it the duplication of this code that is your concern?
+
+I don't think you're using the usual definition of "register map" here.
+You seem to be switching between talking about this object model the
+device has and device registers - perhaps the objects are also registers
+sometimes?
+
+> Are you saying that your concern is that user space shouldn't be able to
+> directly access these registers, for example to trigger a reset? In which
+> case, how should user space reset the chip if required?
+
+If the application layer can reset the device underneath the driver that
+doesn't seem awesome; similarly if the application layer is having to
+worry about the device getting powered off underneath it this doesn't
+seem great either.
+
+> >> It would be possible for the driver to intermediate for some of the
+> >> registers that it cares about. For example, if we change the screen width
+> >> then the driver could reinitialise the input device. But I can't see that
+> >> it makes sense if you are changing several settings in a row for the input
+> >> device to be reinitialised several times. It is far less buggy to provide a
+> >> single way of tearing down everything and reinitialising (which could be
+> >> simply triggered from user space) than to encode all of the dependencies
+> >> (which is bound to introduce bugs).
+
+> > I am having an extremely hard time connecting anything you're talking
+> > about here with the discussion at hand I'm afraid...
+
+> I'm trying to provide the background to this design as you've requested, I
+> apologise if you find it confusing.
+
+You appear to be assuming a great deal of familiarity with the specifics
+of this device here.  Where does all thi stuff about reinitialsing the
+device come from?  What are these dependencies and what does all this
+have to do with setting parameters?
+
+> > Nobody is talking about changing the protocol for interacting with the
+> > device.  The discussion here is about the ABI the driver offers to the
+> > application layer.
+
+> OK. I think that the ABI offered to the application layer should also be
+> object protocol, implemented over a binary attribute, which is what the
+> patch under discussion does. Is the problem that I need to provide better
+> documentation of object protocol?
+
+As Greg says you do need to document any new sysfs ABIs you're adding
+anyway.  However if this is some stateful protocol you're implementing
+then does it really map onto sysfs well, sysfs attributes are normally
+more just data values?
+
+Won't the driver end up getting into a fight with the magic userspace
+stuff if the driver has no idea what the magic userspace is doing?  How
+would suspend and resume work?
+
+--bdvOYxGdT/r+cPTQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRsg6BAAoJELSic+t+oim91d8P/AgjEuNYA0Htvw9y+f09wO2K
+XIX0eVoqJdV8D9b2m+LWI5GqeWLZejoJrTDFzquynkN1burF75mtBhr3nbHipXtC
+i58PMF+rBd16e6j5RszxKasaIYnqGqznXkokB3/dHXNm3ajPOv1BBFT0XM/S+SfU
+LNCHT+CXDhwAl4CHQgk1xAzFmkk7I9CPe8wDkZkFthH0apdBlkH/Kx7AnIdA2/Pz
+uyvt0t8o8+9Il/cID1HLMuzCe7yijGUNCov2USzZqCE+sbfVFgoxLXd5EhooHNjx
+HBr+aOdu8hbxlDuWvPpKRcnTZvFLnZXREq6fe5kSeGP7LzZ0gRhjetbUd5C9TrW6
+a9crwm0rd8+VlGeft5NRMfo3YR5k1tcq02pP6mF72EsFT5ZHXtjleuU85z2cZTik
+1kjuxPbaX8Cx7p9ipx5U/7B4o8D7R3FSd9c5cI2/hQJ6QADuHu73FM+lV45bqs6j
+L1z7U9i11lVwJ3w6gkKvF4T+llc50VrbEjjhW4Y18+VS645yurPJ2jFCkU0KycHw
+JIbQr6Gx7amBdcAtOO8FENRf8oGEtjyWQpAylOb2WRb0gmOTSE3BcEbiUrJdSW1V
+NhA44JqHSzfAFuKizCYtnRlbIQu04mOCcIupcpZjIXiIDMH8zYGIZQvzEyxDTeeh
+XaN4s895FkqBJAnKKxsW
+=HiCk
+-----END PGP SIGNATURE-----
+
+--bdvOYxGdT/r+cPTQ--
