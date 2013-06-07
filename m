@@ -1,90 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab3FGJHe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 05:07:34 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:58741 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391Ab3FGJH2 (ORCPT
+	id S1754380Ab3FGJIr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 05:08:47 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38308 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047Ab3FGJIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 05:07:28 -0400
+	Fri, 7 Jun 2013 05:08:42 -0400
+Date: Fri, 7 Jun 2013 10:08:22 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Vladimir Pantelic <vladoman@gmail.com>
+Cc: Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, debian-kernel@lists.debian.org
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
+	Uploading linux (3.9.4-1))
+Message-ID: <20130607090822.GS18614@n2100.arm.linux.org.uk>
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com> <1851164.HnXhGSdttW@flatron> <CAPweEDxWW4LUeBaHLb+wHuAMq=63p88zsx4tumVb2PdP_+ohAw@mail.gmail.com> <1622862.fXQWv0YWGV@flatron> <CAPweEDx_1fvAv9sROtPreoyyj_yDAuYb040fM2zPc+tf22d=YA@mail.gmail.com> <51B19C85.9090407@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1370590169-24804-2-git-send-email-alex.shi@intel.com>
-References: <1370590169-24804-1-git-send-email-alex.shi@intel.com>
-	<1370590169-24804-2-git-send-email-alex.shi@intel.com>
-Date: Fri, 7 Jun 2013 11:07:28 +0200
-Message-ID: <CAKfTPtA=pVQ69pfv97kgcdawgHbQbkbXW4sFGN6_bAzZcD9b9Q@mail.gmail.com>
-Subject: Re: [RFC patch 1/4] sched: change cfs_rq load avg to unsigned long
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: "mingo@redhat.com" <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Paul Turner <pjt@google.com>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, riel@redhat.com,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51B19C85.9090407@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 June 2013 09:29, Alex Shi <alex.shi@intel.com> wrote:
-> Since the 'u64 runnable_load_avg, blocked_load_avg' in cfs_rq struct are
-> smaller than 'unsigned long' cfs_rq->load.weight. We don't need u64
-> vaiables to describe them. unsigned long is more efficient and convenience.
+On Fri, Jun 07, 2013 at 10:40:37AM +0200, Vladimir Pantelic wrote:
+> luke.leighton wrote:>   so.
+> >
+> >   coming back to what you said earlier: i'm formulating what to say to
+> > allwinner [and need to pre-send something by monday so that they can
+> > consider it before the meeting].  so far, it consists of:
+> >
+> > * device-tree is what the linux kernel community has come up with, it
+> > is equivalent to FEX.
+> >
+> > * the linux kernel community would like to apologise for not
+> > consulting with you (allwinner) on the decision to only accept device
+> > tree
 >
+> apologize? WTF?
 
-Hi Alex,
+(I don't seem to have the original mail).
 
-I just want to point out that we can't have more than 48388 tasks with
-highest priority on a runqueue with an unsigned long on a 32 bits
-system.  I don't know if we can reach such kind of limit on a 32bits
-machine ? For sure, not on an embedded system.
+Definitely not.
 
-Regards,
-Vincent
+The way this generally works is that discussions happen in public on
+mailing lists, and people who have an interest get involved in the
+discussion.  If someone decides to avoid the mailing lists because they
+want to be secret about XYZ then they won't be part of the decision
+making process - but that's not _our_ problem.  That is _their_ problem.
 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  kernel/sched/debug.c | 4 ++--
->  kernel/sched/sched.h | 2 +-
->  2 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-> index 75024a6..160afdc 100644
-> --- a/kernel/sched/debug.c
-> +++ b/kernel/sched/debug.c
-> @@ -211,9 +211,9 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
->         SEQ_printf(m, "  .%-30s: %ld\n", "load", cfs_rq->load.weight);
->  #ifdef CONFIG_FAIR_GROUP_SCHED
->  #ifdef CONFIG_SMP
-> -       SEQ_printf(m, "  .%-30s: %lld\n", "runnable_load_avg",
-> +       SEQ_printf(m, "  .%-30s: %ld\n", "runnable_load_avg",
->                         cfs_rq->runnable_load_avg);
-> -       SEQ_printf(m, "  .%-30s: %lld\n", "blocked_load_avg",
-> +       SEQ_printf(m, "  .%-30s: %ld\n", "blocked_load_avg",
->                         cfs_rq->blocked_load_avg);
->         SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_avg",
->                         (unsigned long long)atomic64_read(&cfs_rq->tg->load_avg));
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index 8bc66c6..5a80943 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -277,7 +277,7 @@ struct cfs_rq {
->          * This allows for the description of both thread and group usage (in
->          * the FAIR_GROUP_SCHED case).
->          */
-> -       u64 runnable_load_avg, blocked_load_avg;
-> +       unsigned long runnable_load_avg, blocked_load_avg;
->         atomic64_t decay_counter, removed_load;
->         u64 last_decay;
->
-> --
-> 1.7.12
->
+In the case of DT, there was quite a lengthy discussion about it and
+its adoption.
+
+So, either the discussion took place _before_ there was any interest in
+the ARM kernel developments from Allwinner, or they themselves _chose_
+not to be represented in the discussion by not being on the mailing list
+or participating in the discussion.
+
+There is nothing for us to apologise for here.
+
+(Occasionally, the kernel community *is* a dictatorship - for example,
+when Linus threatens to delete all the ARM defconfigs, or when Linus
+decides that we're running out of control when adding more than 10k
+lines of new code per kernel release, or - in the same way - when I see
+something I really don't like, but thankfully those are fairly rare.)
