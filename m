@@ -1,137 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148Ab3FGTSl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 15:18:41 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56623 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755917Ab3FGTSj (ORCPT
+	id S1756768Ab3FGTU3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 15:20:29 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:41123 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755878Ab3FGTU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 15:18:39 -0400
-Message-ID: <51B2320B.6060101@wwwdotorg.org>
-Date: Fri, 07 Jun 2013 13:18:35 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 7 Jun 2013 15:20:27 -0400
 MIME-Version: 1.0
-To: Christian Ruppert <christian.ruppert@abilis.com>
-CC: Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
-References: <51942472.9010402@wwwdotorg.org> <CACRpkdYtKr5w2=1sONG4Qn2TQue38nV7epWfzxNQz5rjSs0DZQ@mail.gmail.com> <20130522142824.GC4789@ab42.lan> <CAD6h2NT4FqmEsLvtTDwwDL2YVzXYNpw72hTOcSxSMvHLhWvFPQ@mail.gmail.com> <20130524115053.GB5203@ab42.lan> <CAD6h2NSh_4TNAGeFhg+va5QX2hGia+gkw-mPaeMezghsa=Zc6Q@mail.gmail.com> <20130603123001.GD31808@ab42.lan> <CAD6h2NQVKKvcoPdD4sm5rUM5G-FpF3abL=k+WfQsnKnm7qhREA@mail.gmail.com> <20130606141115.GA10345@ab42.lan> <CAD6h2NRNMQP-ZQ0Cc613tGThVEo7AzRExBmWsbtr1DXgiPwz7w@mail.gmail.com> <20130606153030.GA19876@ab42.lan>
-In-Reply-To: <20130606153030.GA19876@ab42.lan>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <51B21A5F.5050201@gmx.de>
+References: <CA+ydwtqfJmD4aVcuDS6u96SiYT3Wg5Zj_5oXOkzHptG-TiG-_Q@mail.gmail.com>
+	<51B21A5F.5050201@gmx.de>
+Date: Fri, 7 Jun 2013 22:20:26 +0300
+Message-ID: <CA+ydwtoCbm3UkLaj9z7d3phDKNNhUpT+=jHxr4OApm1_KLSPdA@mail.gmail.com>
+Subject: Re: GPF at fsnotify_clear_marks_by_group_flags()
+From: Tommi Rantala <tt.rantala@gmail.com>
+To: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Cc: Eric Paris <eparis@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, trinity@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2013 09:30 AM, Christian Ruppert wrote:
-> On Thu, Jun 06, 2013 at 10:32:21PM +0800, Haojian Zhuang wrote:
->> On 6 June 2013 22:11, Christian Ruppert <christian.ruppert@abilis.com> wrote:
->>> On Wed, Jun 05, 2013 at 09:44:27AM +0800, Haojian Zhuang wrote:
->>>> On 3 June 2013 20:30, Christian Ruppert <christian.ruppert@abilis.com> wrote:
->>>>> OK, here's a simplified example of what we would like to do (this seems
->>>>> pretty common so I suppose there is a way I haven't understood). Our
->>>>> situation is slightly more complex but for the purpose of discussion
->>>>> let's assume a chip with 8 pins which can be configured for the
->>>>> following functions:
->>>>>
->>>>> Pin   GPIO-A    I2C    SPI0     SPI1
->>>>> ------------------------------------
->>>>>  1    GPIOA0    SDA             MISO1
->>>>>  2    GPIOA1    SCL             MOSI1
->>>>>  3    GPIOA2                    SS1_B
->>>>>  4    GPIOA3                    SCLK1
->>>>>  5    GPIOA4           MISO0
->>>>>  6    GPIOA5           MOSI0
->>>>>  7    GPIOA6           SS0_B
->>>>>  8    GPIOA7           SCLK0
->>>>>
->>>>> We can now define the following pinctrl-single:
->>>>>
->>>>> pinmux: pinmux@0xFFEE0000 {
->>>>>         compatible = "pinctrl-single";
->>>>>         reg = <0xFFEE0000 0x8>;
->>>>>         #address-cells = <1>;
->>>>>         #size-cells = <0>;
->>>>>         #gpio-range-cells = <3>;
->>>>>         pinctrl-single,register-width = <32>;
->>>>>         pinctrl-single,function-mask = <0xffffffff>;
->>>>>         pinctrl-single,gpio-range = <&range 1 8 0>;
->>>>>         gpioa_pins: pinmux_gpioa_pins {
->>>>>                 pinctrl-single,pins = <0x0 0 0x4 0>
->>>>>         };
->>>>>         i2c_pins: pinmux_i2c_pins {
->>>>>                 pinctrl-single,pins = <0x0 1>
->>>>>         };
->>>>>         spi0_pins: pinmux_spi0_pins {
->>>>>                 pinctrl-single,pins = <0x1 1>
->>>> <0x1 1>?
->>>>
->>>> If each pinmux register is only for one pin in your SoC.
->>>> I think that your definitions are wrong above. We use
->>>> register offset as the first argument, not pin number.
->>>> And the second argument should be pin function number.
->>>
->>> In our case each pinmux register (bit field) actually controls an entire
->>> group of pins.
->>>
->>>> If multiple pins are sharing one register with different bits,
->>>> you need to enable "pinctrl-single,bit-per-mux".
->>>
->>> Multiple pins are sharing the same bits in the same register. Do you
->>> think this prevents us from using pinctrl-single?
->>>
->> Could you give me your register definition? Then I can understand you
->> better.
-> 
-> In our example, the register map would look a bit like the following.
-> Note that every register configures four pins at a time.
-> 
-> Register 0x0:
->  Mode  GPIO-A    I2C    SPI1
->  Value 0x0       0x1    0x2
->  ---------------------------
->  Pin1  GPIOA0    SDA    MISO1
->  Pin2  GPIOA1    SCL    MOSI1
->  Pin3  GPIOA2           SS1_B
->  Pin4  GPIOA3           SCLK1
-> 
-> Register 0x4:
->  Mode  GPIO-A    SPI0
->  Value 0x0       0x1
->  ---------------------
->  Pin5  GPIOA4    MISO0
->  Pin6  GPIOA5    MOSI0
->  Pin7  GPIOA6    SS0_B
->  Pin8  GPIOA7    SCLK0
+2013/6/7 Lino Sanfilippo <LinoSanfilippo@gmx.de>:
+> On 03.06.2013 10:03, Tommi Rantala wrote:
+>>
+>> Hello,
+>>
+>> Hit this while fuzzing v3.10-rc4-0-gd683b96 with trinity.
+>>
+>> Looks similar to what I reported back in March:
+>> https://lkml.org/lkml/2013/3/13/222
+>>
+>
+> Hi Tommi,
+>
+> thank you for reporting. Do you know a way how to reproduce this?
 
-My suggestion here is that pinctrl-single isn't appropriate. The only
-way it could work is if you pretend that each group-of-pins is actually
-a single pin.
+OK, looks like I can reproducible this with a small hackish
+modification to trinity.
 
-However, then the correlation between these pretend pins (i.e. really
-the groups) and GPIOs won't work, because each "pin" is really 4 pins,
-and hence 4 GPIOs, and hence you won't be able to gpio_get() more than 1
-GPIO per pin group, I think.
+I just pushed a single commit to github in a "fanotify-fds" branch,
+try something like:
 
-It's not hard (although possibly data intensive depending on your SoC)
-to represent your HW just fine with a native pinctrl driver; pinctrl
-itself has the ability to separate the concepts of pins, groups-of-pins,
-and the mux-functions-that-are-assigned-to-groups. If any of your HW
-registers actually do control only a single pin, you can simply create
-both a pin and a group that contains only that one pin. This is all very
-similar to how Tegra works, although it sounds like your registers may
-be a bit more regular than Tegras - Tegra has a very variable number of
-pins in each grop, and even some overlap between groups (mux function
-groups and pin configuration groups aren't aligned).
+git clone -b fanotify-fds git://github.com/rantala/trinity.git
+cd trinity && ./configure.sh && make -j4
+
+Then, fuzz the fanotify_mark() syscall as the root user in some
+suitable environment:
+
+   # ./trinity -C20 -q -l off -c fanotify_mark --dangerous
+
+I just tried that three times in a virtual machine, and at every
+attempt I'm getting either the GPF or a "soft lockup" almost
+instantly:
+
+# ./trinity -q -l off -C20 -c fanotify_mark --dangerous
+Trinity v1.2pre  Dave Jones <davej@redhat.com>
+[3423] Marking syscall fanotify_mark (64bit:301 32bit:339) as to be enabled.
+Done parsing arguments.
+[3423] 32-bit syscalls: 1 enabled, 350 disabled.  64-bit syscalls: 1
+enabled, 313 disabled.
+DANGER: RUNNING AS ROOT.
+Unless you are running in a virtual machine, this could cause serious
+problems such as overwriting CMOS
+or similar which could potentially make this machine unbootable
+without a firmware reset.
+
+ctrl-c now unless you really know what you are doing.
+Using pid_max = 32768ds..
+[3424] Watchdog is alive
+[3423] Started watchdog process, PID is 3424
+[3425] Main thread is alive.
+Cachefile is stale. Need to regenerate.
+created 375 sockets
+Generating file descriptors
+Added 132 filenames from /dev
+Added 26622 filenames from /proc
+Added 18318 filenames from /sys
+[3425] Random reseed: 2990238257
+[  100.135012] BUG: soft lockup - CPU#0 stuck for 23s! [trinity-child11:3437]
+[  100.135012] irq event stamp: 186108
+[  100.135012] hardirqs last  enabled at (186107):
+[<ffffffff822a2c33>] restore_args+0x0/0x30
+[  100.135012] hardirqs last disabled at (186108):
+[<ffffffff822a41ed>] apic_timer_interrupt+0x6d/0x80
+[  100.135012] softirqs last  enabled at (186106):
+[<ffffffff8111a0c3>] __do_softirq+0x353/0x420
+[  100.135012] softirqs last disabled at (186101):
+[<ffffffff8111a2d9>] irq_exit+0x59/0xb0
+[  100.135012] CPU: 0 PID: 3437 Comm: trinity-child11 Not tainted 3.10.0-rc4+ #1
+[  100.135012] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[  100.135012] task: ffff8800ae418000 ti: ffff8800ae43a000 task.ti:
+ffff8800ae43a000
+[  100.135012] RIP: 0010:[<ffffffff81177b0e>]  [<ffffffff81177b0e>]
+lock_release+0x28e/0x340
+[  100.135012] RSP: 0000:ffff8800ae43be38  EFLAGS: 00000246
+[  100.135012] RAX: ffff8800ae418000 RBX: 00000000001d56c0 RCX: 00000000000061a0
+[  100.135012] RDX: ffff8800bf6392e0 RSI: ffffffff8115251a RDI: 0000000000000246
+[  100.135012] RBP: ffff8800ae43be60 R08: 0000000000000038 R09: 0000000000000000
+[  100.135012] R10: 0000000000000001 R11: 0000000000000001 R12: ffffffff8115219d
+[  100.135012] R13: ffff8800ae43bdc0 R14: ffffffff8106f4e9 R15: ffff8800ae43bd98
+[  100.135012] FS:  00007fb5c16b0700(0000) GS:ffff8800bf600000(0000)
+knlGS:0000000000000000
+[  100.135012] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  100.135012] CR2: 0000000000f16418 CR3: 00000000ae413000 CR4: 00000000000006f0
+[  100.135012] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  100.135012] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  100.135012] Stack:
+[  100.135012]  ffff8800aed90608 ffff8800b7d40fd8 ffff8800aed90608
+0000000000000001
+[  100.135012]  ffff8800b7d411b8 ffff8800ae43be78 ffffffff822a1e0a
+ffff8800aed905e8
+[  100.135012]  ffff8800ae43beb0 ffffffff81275671 ffff8800aed905e8
+ffff8800aed905e8
+[  100.135012] Call Trace:
+[  100.135012]  [<ffffffff822a1e0a>] _raw_spin_unlock+0x1a/0x40
+[  100.135012]  [<ffffffff81275671>] fsnotify_destroy_mark_locked+0x51/0x190
+[  100.135012]  [<ffffffff81275bab>]
+fsnotify_clear_marks_by_group_flags+0x8b/0xb0
+[  100.135012]  [<ffffffff8127503e>]
+fsnotify_clear_inode_marks_by_group+0xe/0x10
+[  100.135012]  [<ffffffff812793a5>] SyS_fanotify_mark+0x515/0x590
+[  100.135012]  [<ffffffff822a3569>] system_call_fastpath+0x16/0x1b
+[  100.135012] Code: 12 0f 1f 40 00 4c 89 ea 4c 89 e6 48 89 df e8 9a
+e6 ff ff 65 48 8b 04 25 40 c9 00 00 4c 89 f7 c7 80 d4 06 00 00 00 00
+00 00 57 9d <0f> 1f 44 00 00 e9 88 00 00 00 65 48 8b 04 25 30 c9 00 00
+83 80
+
+Tommi
