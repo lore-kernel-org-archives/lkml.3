@@ -1,115 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331Ab3FGQaa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 12:30:30 -0400
-Received: from 9.mo1.mail-out.ovh.net ([178.32.108.172]:56143 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754924Ab3FGQa2 (ORCPT
+	id S932089Ab3FGQdQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 12:33:16 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45658 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754584Ab3FGQdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 12:30:28 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Jun 2013 12:30:28 EDT
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Andrew Victor <linux@maxim.org.za>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>,
-        Russell King <linux@arm.linux.org.uk>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [RFC PATCH 25/50] ARM: at91: move pit timer to common clk framework
-Date: Fri,  7 Jun 2013 18:23:41 +0200
-Message-Id: <1370622222-19489-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370615115-16979-1-git-send-email-b.brezillon@overkiz.com>
-References: <1370615115-16979-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 621215275219580956
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 7 Jun 2013 12:33:14 -0400
+Message-ID: <51B20B46.4030501@wwwdotorg.org>
+Date: Fri, 07 Jun 2013 10:33:10 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Alexandre Courbot <gnurou@gmail.com>
+CC: Alexandre Courbot <acourbot@nvidia.com>, Joseph Lo <josephl@nvidia.com>,
+        Karan Jhavar <kjhavar@nvidia.com>, Varun Wadekar <vwadekar@nvidia.com>,
+        Chris Johnson <CJohnson@nvidia.com>,
+        Matthew Longnecker <MLongnecker@nvidia.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: tegra: add basic SecureOS support
+References: <1370503687-17767-1-git-send-email-acourbot@nvidia.com> <51B0BC80.9040007@wwwdotorg.org> <CAAVeFu+by44HnOzv_85kwgeCx5b9TxiMhr27x69QcUj9GRbk8A@mail.gmail.com>
+In-Reply-To: <CAAVeFu+by44HnOzv_85kwgeCx5b9TxiMhr27x69QcUj9GRbk8A@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use device tree to get the source clock of the PIT (Periodic Interval Timer).
-If the clock is not found in device tree (or dt is not enabled) we'll try to
-get it using clk_lookup definitions.
+On 06/07/2013 02:11 AM, Alexandre Courbot wrote:
+> On Fri, Jun 7, 2013 at 1:44 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 06/06/2013 01:28 AM, Alexandre Courbot wrote:
+>>> Boot loaders on some Tegra devices can be unlocked but do not let the
+>>> system operate without SecureOS. SecureOS prevents access to some
+>>> registers and requires the operating system to perform certain
+>>> operations through Secure Monitor Calls instead of directly accessing
+>>> the hardware.
+>>>
+>>> This patch introduces basic SecureOS support for Tegra. SecureOS support
+>>> can be enabled by adding a "nvidia,secure-os" property to the "chosen"
+>>> node of the device tree.
+>>
+>> I suspect "SecureOS" here is the name of a specific implementation of a
+>> secure monitor, right? It's certainly a very unfortunate name, since it
+>> sounds like a generic concept rather than a specific implementation:-(
+> 
+> Right. Using the actual name (Trusted Foundations) is probably better.
+> I don't think the SecureOS denomination is used by anyone else but
+> NVIDIA.
+> 
+>> There certainly could be (and I believe are in practice?) multiple
+>> implementation of a secure monitor for Tegra. Presumably, each of those
+>> implementations has (or could have) a different definition for what SVC
+>> calls it supports, their parameters, etc.
+>>
+>> I think we need to separate the concept of support for *a* secure
+>> monitor, from support for a *particular* secure monitor.
+> 
+> Agreed. In this case, can we assume that support for a specific secure
+> monitor is not arch-specific, and that this patch should be moved
+> outside of arch-tegra and down to arch/arm? In other words, the ABI of
+> a particular secure monitor should be the same no matter the chip,
+> shouldn't it?
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- arch/arm/mach-at91/at91sam926x_time.c |   21 +++++++++++++++++++--
- 1 file changed, 19 insertions(+), 2 deletions(-)
+I would like to believe that the Trusted Foundations monitor had the
+same ABI irrespective of which Soc it was running on. However, I have
+absolutely no idea at all if that's true. Even if there's some common
+subset of the ABI that is identical across all SoCs, I wouldn't be too
+surprised if there were custom extensions for each different SoC, or
+just perhaps even each product.
 
-diff --git a/arch/arm/mach-at91/at91sam926x_time.c b/arch/arm/mach-at91/at91sam926x_time.c
-index 3a4bc2e..fba7bd6 100644
---- a/arch/arm/mach-at91/at91sam926x_time.c
-+++ b/arch/arm/mach-at91/at91sam926x_time.c
-@@ -39,6 +39,7 @@
- static u32 pit_cycle;		/* write-once */
- static u32 pit_cnt;		/* access only w/system irq blocked */
- static void __iomem *pit_base_addr __read_mostly;
-+static struct clk *mck;
- 
- static inline unsigned int pit_read(unsigned int reg_offset)
- {
-@@ -186,6 +187,7 @@ static int __init of_at91sam926x_pit_init(void)
- {
- 	struct device_node	*np;
- 	int			ret;
-+	int			err = -EINVAL;
- 
- 	np = of_find_matching_node(NULL, pit_timer_ids);
- 	if (!np)
-@@ -195,10 +197,19 @@ static int __init of_at91sam926x_pit_init(void)
- 	if (!pit_base_addr)
- 		goto node_err;
- 
-+	mck = of_clk_get(np, 0);
-+	if (IS_ERR(mck)) {
-+		err = PTR_RET(mck);
-+		mck = NULL;
-+		pr_crit("AT91: PIT: Unable to get mck clk from DT\n");
-+		goto ioremap_err;
-+	}
-+
- 	/* Get the interrupts property */
- 	ret = irq_of_parse_and_map(np, 0);
- 	if (!ret) {
- 		pr_crit("AT91: PIT: Unable to get IRQ from DT\n");
-+		clk_put(mck);
- 		goto ioremap_err;
- 	}
- 	at91sam926x_pit_irq.irq = ret;
-@@ -212,7 +223,7 @@ ioremap_err:
- node_err:
- 	of_node_put(np);
- err:
--	return -EINVAL;
-+	return err;
- }
- #else
- static int __init of_at91sam926x_pit_init(void)
-@@ -237,7 +248,13 @@ void __init at91sam926x_pit_init(void)
- 	 * Use our actual MCK to figure out how many MCK/16 ticks per
- 	 * 1/HZ period (instead of a compile-time constant LATCH).
- 	 */
--	pit_rate = clk_get_rate(clk_get(NULL, "mck")) / 16;
-+	if (!mck)
-+		mck = clk_get(NULL, "mck");
-+
-+	if (IS_ERR(mck))
-+		panic("AT91: PIT: Unable to get mck clk\n");
-+	pit_rate = clk_get_rate(mck) / 16;
-+	pr_notice("AT91: PIT: mck rate = %lu\n", pit_rate);
- 	pit_cycle = (pit_rate + HZ/2) / HZ;
- 	WARN_ON(((pit_cycle - 1) & ~AT91_PIT_PIV) != 0);
- 
--- 
-1.7.9.5
+Can you research this and find out the answer?
 
+What we can always do is make a compatible property that lists
+everything[1], and have the driver match on the most specific value for
+now, but relax the driver's matching later if it turns out that the ABI
+is indeed common.
+
+[1] That'd need to be at least secure OS name, and secure OS version.
+Perhaps the SoC and board data can be deduced from the DT's top-level
+compatible properties; nvidia,tegra114-shield, nvidia,tegra114?
