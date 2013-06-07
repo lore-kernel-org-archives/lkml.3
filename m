@@ -1,150 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447Ab3FGWDU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 18:03:20 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:35386 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752900Ab3FGWDS (ORCPT
+	id S1756621Ab3FGWI7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 18:08:59 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:52779 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752999Ab3FGWI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 18:03:18 -0400
-Message-ID: <51B258A1.2060107@linaro.org>
-Date: Sat, 08 Jun 2013 00:03:13 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 7 Jun 2013 18:08:57 -0400
+Date: Sat, 8 Jun 2013 00:08:53 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: "luke.leighton" <luke.leighton@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>,
+        debian-kernel@lists.debian.org
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
+ Uploading linux (3.9.4-1))
+Message-ID: <20130607220853.GR14209@lukather>
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
+ <1370475609.20454.44.camel@localhost>
+ <CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
+ <1733666.lHUBcfUXq9@flatron>
+ <20130606112723.71ddd70c@skate>
+ <CAPweEDzW60poOYahm31aW3_A=NvZmyBPPPgM9PzdvuPJnju69A@mail.gmail.com>
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/6] clocksource: add Marvell Orion SoC timer
-References: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com> <1370536034-23956-3-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1370536034-23956-3-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPweEDzW60poOYahm31aW3_A=NvZmyBPPPgM9PzdvuPJnju69A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2013 06:27 PM, Sebastian Hesselbarth wrote:
-> This patch add a DT enabled driver for timers found on Marvell Orion SoCs
-> (Kirkwood, Dove, Orion5x, and Discovery Innovation). It installs a free-
-> running clocksource on timer0 and a clockevent source on timer1.
-> Corresponding device tree documentation is also added.
+On Fri, Jun 07, 2013 at 07:26:49PM +0100, luke.leighton wrote:
+>  maxime: we need to talk :)
 > 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Rob Landley <rob@landley.net>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Cc: Gregory Clement <gregory.clement@free-electrons.com>
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: linux-doc@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  .../bindings/timer/marvell,orion-timer.txt         |   17 +++
->  drivers/clocksource/Kconfig                        |    5 +
->  drivers/clocksource/Makefile                       |    1 +
->  drivers/clocksource/time-orion.c                   |  143 ++++++++++++++++++++
->  4 files changed, 166 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/timer/marvell,orion-timer.txt
->  create mode 100644 drivers/clocksource/time-orion.c
+>  please tell me in 4 or 5 sentences what you've managed to do so far,
+> expanding a little on what thomas says below, more specifically what
+> it achieves and/or allows rather than technically what it does
+> (suitable for managers and directors in other words), and what plans
+> you'd like to see happen.
+
+You mean something like http://linux-sunxi.org/Linux_mainlining_effort ?
+
+You should really do a bit of research before starting a thread like
+this one. This webpage has been around for like 9 monthes now on the wiki 
+of a community you pretend to represent (even though I fail to get how
+you can pretend such thing, but that's another topic).
+
+> > is the maintainer of the mainline Allwinner sunxi
+> > effort. It already supports a number of boards, has a pinctrl driver, a
+> > GPIO driver, serial port is working, network is working, I2C is
+> > working.
+> >
+> > All in mainline, completely Device Tree based.
 > 
-> diff --git a/Documentation/devicetree/bindings/timer/marvell,orion-timer.txt b/Documentation/devicetree/bindings/timer/marvell,orion-timer.txt
-> new file mode 100644
-> index 0000000..62bb826
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/timer/marvell,orion-timer.txt
-> @@ -0,0 +1,17 @@
-> +Marvell Orion SoC timer
-> +
-> +Required properties:
-> +- compatible: shall be "marvell,orion-timer"
-> +- reg: base address of the timer register starting with TIMERS CONTROL register
-> +- interrupt-parent: phandle of the bridge interrupt controller
-> +- interrupts: should contain the interrupts for Timer0 and Timer1
-> +- clocks: phandle of timer reference clock (tclk)
-> +
-> +Example:
-> +	timer: timer {
-> +		compatible = "marvell,orion-timer";
-> +		reg = <0x20300 0x20>;
-> +		interrupt-parent = <&bridge_intc>;
-> +		interrupts = <1>, <2>;
-> +		clocks = <&core_clk 0>;
-> +	};
-> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-> index f151c6c..2404869 100644
-> --- a/drivers/clocksource/Kconfig
-> +++ b/drivers/clocksource/Kconfig
-> @@ -25,6 +25,11 @@ config DW_APB_TIMER_OF
->  config ARMADA_370_XP_TIMER
->  	bool
->  
-> +config ORION_TIMER
-> +	select CLKSRC_OF
-> +	select CLKSRC_MMIO
-> +	bool
-> +
->  config SUN4I_TIMER
->  	bool
+>  great.  which version did it first hit, i.e. what will the first
+> signs of this be when allwinner begin doing "git pulls"?
 
-[ ... ]
+3.8, as shown in the wiki page
 
-> +
-> +static irqreturn_t orion_clkevt_irq_handler(int irq, void *dev_id)
-> +{
-> +	orion_clkevt.event_handler(&orion_clkevt);
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static struct irqaction orion_clkevt_irq = {
-> +	.name		= "orion_event",
-> +	.flags		= IRQF_DISABLED | IRQF_TIMER,
-
-IRQF_DISABLED is deprecated, it is a noop, you shall remove it.
-
-> +	.handler	= orion_clkevt_irq_handler,
-> +};
-> +
-> +static void __init orion_timer_init(struct device_node *np)
-> +{
-
-[ ... ]
-
-> +	/* setup timer1 as clockevent timer */
-> +	if (setup_irq(irq, &orion_clkevt_irq))
-> +		panic("%s: unable to setup irq\n", np->name);
-> +
-> +	ticks_per_jiffy = (clk_get_rate(clk) + HZ/2) / HZ;
-> +	orion_clkevt.cpumask = cpumask_of(0);
-
-        orion_clkevt.irq = irq;
-
-> +	clockevents_config_and_register(&orion_clkevt, clk_get_rate(clk),
-> +					ORION_ONESHOT_MIN, ORION_ONESHOT_MAX);
-> +}
-> +CLOCKSOURCE_OF_DECLARE(orion_timer, "marvell,orion-timer", orion_timer_init);
+>  and which boards.  bear in mind that one of those "boards" should
+> really be "the total range of products available across hundreds of
+> chinese tablet clone manufacturers".
 > 
+>  specific question: is one of the "boards" the one that tom cubie
+> submitted, which covers virtually every android tablet product
+> manufactured in the millions by chinese tablet clone manufacturers?
 
+Again, wiki.
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+> > So isn't this entire discussion completely moot?
+> 
+>  no because it's totally in isolation from allwinner.  i need to give
+> them a heads-up, and get them involved, giving them specific
+> incentives [which nobody's yet given!!] for following a particular
+> path [or paths] yet to be recommended.
+> 
+> > The mainline support
+> > for sunxi has already started since 6 months or so, and has been Device
+> > Tree based from day one.
+> 
+> to clarify: the *community-driven* mainline support for sunxi.  ok -
+> which chips?  sun3i (ARM9), sun4i (Cortex A8), sun5i, sun6i and sun7i
+> (Dual-Core Cortex A7)?  which ones are in?
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+A10, A13 for the moment. I just received hardware with A10s, A20 and A31
+that I need to work on, but support should come quite soon. I already
+have some patches pending to be tested on an A31 board, but didn't have
+as much time as I wanted lately to actually set a proper environment to
+test them.
 
+Maxime
