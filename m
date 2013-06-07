@@ -1,82 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab3FGJHk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 05:07:40 -0400
-Received: from sauhun.de ([89.238.76.85]:33242 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751391Ab3FGJHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 05:07:35 -0400
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>
-Subject: [RFC] i2c: add deprecation warning for class based instantiation
-Date: Fri,  7 Jun 2013 11:09:26 +0200
-Message-Id: <1370596166-12404-1-git-send-email-wsa@the-dreams.de>
+	id S1754458Ab3FGJHs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 05:07:48 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:56965 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754241Ab3FGJHo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 05:07:44 -0400
+From: Adam Lee <adam.lee@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: platform-driver-x86@vger.kernel.org, ibm-acpi-devel@lists.sourceforge.net,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Alex Hung <alex.hung@canonical.com>, Bjorn Mork <bjorn@mork.no>
+Subject: [PATCH v2] thinkpad_acpi: return -NODEV while operating uninitialized LEDs
+Date: Fri,  7 Jun 2013 17:05:32 +0800
+Message-Id: <1370595932-29889-1-git-send-email-adam.lee@canonical.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20130607090623.GC3428@katana>
-References: <20130607090623.GC3428@katana>
+In-Reply-To: <1370593209-21358-1-git-send-email-adam.lee@canonical.com>
+References: <1370593209-21358-1-git-send-email-adam.lee@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Class based instantiation can cause huge delays when booting. This
-mechanism was used when it was not possible to describe slaves on I2C
-busses. We now have other mechanisms, so most embedded I2C will not need
-classes and it was explicitly not recommended to use them. Add a
-deprecation warning for drivers who want to disable class based in the
-near future to gain boot-up time, so users relying on this technique can
-switch to something better. They really should.
+Not all 0-15 LEDs are available for all models, sometimes it's even not
+safe. This patch return -NODEV while operating uninitialized LEDs.
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Adam Lee <adam.lee@canonical.com>
 ---
- drivers/i2c/busses/i2c-omap.c |    2 +-
- drivers/i2c/i2c-core.c        |    6 ++++++
- include/linux/i2c.h           |    1 +
- 3 files changed, 8 insertions(+), 1 deletion(-)
+ drivers/platform/x86/thinkpad_acpi.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index e02f9e3..f06109f 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -1231,7 +1231,7 @@ omap_i2c_probe(struct platform_device *pdev)
- 	adap = &dev->adapter;
- 	i2c_set_adapdata(adap, dev);
- 	adap->owner = THIS_MODULE;
--	adap->class = I2C_CLASS_HWMON;
-+	adap->class = I2C_CLASS_HWMON | I2C_CLASS_DEPRECATED;
- 	strlcpy(adap->name, "OMAP I2C adapter", sizeof(adap->name));
- 	adap->algo = &omap_i2c_algo;
- 	adap->dev.parent = &pdev->dev;
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 48e31ed..47ea1f0 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -999,6 +999,12 @@ static int i2c_register_adapter(struct i2c_adapter *adap)
- 		return -EINVAL;
- 	}
+diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+index 54d31c0..d2ac4e8 100644
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -5401,9 +5401,12 @@ static int led_write(char *buf)
+ 		return -ENODEV;
  
-+	if (adap->class & I2C_CLASS_DEPRECATED)
-+		dev_warn(&adap->dev, "This adapter will soon drop class based "
-+			"instantiation of slaves\nPlease make sure all its I2C "
-+			"devices are instantiated by other means.\nCheck "
-+			"'Documentation/i2c/instantiating-devices' for details\n");
+ 	while ((cmd = next_cmd(&buf))) {
+-		if (sscanf(cmd, "%d", &led) != 1 || led < 0 || led > 15)
++		if (sscanf(cmd, "%d", &led) != 1 || led < 0 || led > (TPACPI_LED_NUMLEDS -1))
+ 			return -EINVAL;
+ 
++		if (!tpacpi_leds[led].led)
++			return -ENODEV;
 +
- 	rt_mutex_init(&adap->bus_lock);
- 	mutex_init(&adap->userspace_clients_lock);
- 	INIT_LIST_HEAD(&adap->userspace_clients);
-diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-index e988fa9..ffab838 100644
---- a/include/linux/i2c.h
-+++ b/include/linux/i2c.h
-@@ -473,6 +473,7 @@ void i2c_unlock_adapter(struct i2c_adapter *);
- #define I2C_CLASS_HWMON		(1<<0)	/* lm_sensors, ... */
- #define I2C_CLASS_DDC		(1<<3)	/* DDC bus on graphics adapters */
- #define I2C_CLASS_SPD		(1<<7)	/* Memory modules */
-+#define I2C_CLASS_DEPRECATED	(1<<8)	/* Warn users that adapter will stop using classes */
- 
- /* Internal numbers to terminate lists */
- #define I2C_CLIENT_END		0xfffeU
+ 		if (strstr(cmd, "off")) {
+ 			s = TPACPI_LED_OFF;
+ 		} else if (strstr(cmd, "on")) {
 -- 
 1.7.10.4
 
