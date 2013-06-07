@@ -1,140 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416Ab3FGPrO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 11:47:14 -0400
-Received: from mail.gemius.pl ([85.232.225.147]:23727 "EHLO mail.gemius.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753556Ab3FGPrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 11:47:12 -0400
-X-Greylist: delayed 1982 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Jun 2013 11:47:12 EDT
-Message-ID: <51B1F8B3.8030108@adocean-global.com>
-Date: Fri, 07 Jun 2013 17:13:55 +0200
-From: Piotr Nowojski <piotr.nowojski@adocean-global.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: OOM Killer and add_to_page_cache_locked
-References: <51B05616.9050501@adocean-global.com> <20130606155323.GD24115@dhcp22.suse.cz>
-In-Reply-To: <20130606155323.GD24115@dhcp22.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Spam-Score: -1.0 (-)
-X-Authorized: Piotr Nowojski
+	id S1755983Ab3FGPtT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 11:49:19 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:50201 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753958Ab3FGPtR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 11:49:17 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] i2c-mv64xxx: Various fixes
+Date: Fri,  7 Jun 2013 17:48:58 +0200
+Message-Id: <1370620140-17177-1-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 06.06.2013 17:57, Michal Hocko pisze:
->   
->> >In our system we have hit some very annoying situation (bug?) with
->> >cgroups. I'm writing to you, because I have found your posts on
->> >mailing lists with similar topic. Maybe you could help us or point
->> >some direction where to look for/ask.
->> >
->> >We have system with ~15GB RAM (+2GB SWAP), and we are running ~10
->> >heavy IO processes. Each process is using constantly 200-210MB RAM
->> >(RSS) and a lot of page cache. All processes are in cgroup with
->> >following limits:
->> >
->> >/sys/fs/cgroup/taskell2 $ cat memory.limit_in_bytes
->> >memory.memsw.limit_in_bytes
->> >14183038976
->> >15601344512
-> I assume that memory.use_hierarchy is 1, right?
-System has been rebooted since last test, so I can not guarantee that it 
-was set for 100%, but it should have been. Currently I'm rerunning this 
-scenario that lead to the described problem with:
+Hello,
 
-/sys/fs/cgroup/taskell2# cat memory.use_hierarchy ../memory.use_hierarchy
-1
-0
+This series contains a real fix for the I2C controller of the Armada
+XP SoC and a patch closer to a improvement than a fix.
 
-Where root cgroup, doesn't have any limits set.
+They are independent and are only in the same series because they are
+kind of fixes.
 
-/sys/fs/cgroup/taskell2# cat ../memory*limit*
-9223372036854775807
-9223372036854775807
-9223372036854775807
+They are based on 3.10-rc4, and they will be small conflicts if they
+are applied on top of i2c/for-next branch and on top of the series I
+have just sent to add I2C Transaction Generator support. You can have
+a look on the branch i2c-mv64xxx-fixes-bridge to get an idea on how to
+resolve it. This branch is located at
+https://github.com/MISL-EBU-System-SW/mainline-public.git
 
->> >Each process is being started in separate cgroup, with
->> >memory_soft_limit set to 1GB.
->> >
->> >/sys/fs/cgroup/taskell2 $ ls | grep subtask
->> >subtask5462692
->> >subtask5462697
->> >subtask5462698
->> >subtask5462699
->> >subtask5462700
->> >subtask5462701
->> >subtask5462702
->> >subtask5462703
->> >subtask5462704
->> >
->> >/sys/fs/cgroup/taskell2 $ cat subtask5462704/memory.limit_in_bytes
->> >subtask5462704/memory.memsw.limit_in_bytes
->> >subtask5462704/memory.soft_limit_in_bytes
->> >9223372036854775807
->> >9223372036854775807
->> >1073741824
->> >
->> >Memory usage is following:
->> >
->> >free -g
->> >              total       used       free     shared    buffers cached
->> >Mem:            14         14          0          0 0         12
->> >-/+ buffers/cache:          1         13
->> >Swap:            1          0          1
->> >
->> >/sys/fs/cgroup/taskell2 $ cat memory.stat
->> >cache 13208932352
->> >rss 0
->> >hierarchical_memory_limit 14183038976
->> >hierarchical_memsw_limit 15601344512
->> >total_cache 13775765504
->> >total_rss 264949760
->> >total_swap 135974912
->> >
->> >In other words, most memory is used by page cache and everything IMO
->> >should work just fine, but it isn't. Every couple of minutes, one of
->> >the processes is being killed by OOM Killer, triggered from IO read
->> >and "add_to_page_cache" (full stack attached below). For me this is
->> >ridiculous behavior. Process is trying to put something into page
->> >cache, but there is no free memory (because everything is eaten by
->> >page_cache) thus triggering OOM Killer. Why? Most of this page cache
->> >is not even used - at least not heavily used. Is this a bug? Stupid
->> >feature? Or am I missing something? Our configuration:
-> It sounds like a bug to me. If you had a small groups I would say that
-> the memory reclaim is not able to free any memory because almost all
-> the pages on the LRU are dirty and dirty pages throttling is not memcg
-> aware but your groups contain a lot of pages and all of they shouldn't
-> be dirty because the global dirty memory throttling should slow down
-> writers and writeback should have already started.
->
-> This has been fixed (or worked around to be more precise) by e62e384e
-> (memcg: prevent OOM with too many dirty pages) in 3.6.
->
-> Maybe you could try this patch and see if it helps. I would be sceptical
-> but it is worth trying.
->
-> The core thing to find out is why the hard limit reclaim is not able to
-> free anything. Unfortunatelly we do not have memcg reclaim statistics so
-> it would be a bit harder. I would start with the above patch first and
-> then I can prepare some debugging patches for you.
-I will try 3.6 (probably 3.7) kernel after weekend - unfortunately 
-repeating whole scenario is taking 10-30 hours because of very slowly 
-growing page cache.
->
-> Also does 3.4 vanila (or the stable kernel) behave the same way? Is the
-> current vanilla behaving the same way?
-I don't know, we are using standard kernel that comes from Ubuntu.
->
-> Finally, have you seen the issue for a longer time or it started showing
-> up only now?
->
-This system is very new. We have started testing scenario which 
-triggered OOM something like one week ago and we have immediately hit 
-this issue. Previously, with different scenarios and different memory 
-usage by processes we didn't have this issue.
+Thanks,
 
-Piotr Nowojski
+Zbigniew Bodek (2):
+  i2c-mv64xxx: Fix timing issue on Armada XP (errata FE-8471889)
+  i2c-mv64xxx: Abort the mv64xxx_of_config if clock-frequency is not
+    provided
+
+ drivers/i2c/busses/i2c-mv64xxx.c | 21 ++++++++++++++++++++-
+ 1 file changed, 20 insertions(+), 1 deletion(-)
+
+-- 
+1.8.1.2
+
