@@ -1,118 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932140Ab3FGTDP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 15:03:15 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:50690 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754298Ab3FGTDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 15:03:13 -0400
-Date: Fri, 7 Jun 2013 22:02:06 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-CC: Wolfram Sang <wsa@the-dreams.de>, Tony Lindgren <tony@atomide.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-i2c@vger.kernel.org>, Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH 2/5] i2c: omap: add runtime check in isr to be sure that
- i2c is enabled
-Message-ID: <20130607190206.GC15295@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1370630768-4077-1-git-send-email-grygorii.strashko@ti.com>
- <1370630768-4077-3-git-send-email-grygorii.strashko@ti.com>
+	id S1756971Ab3FGTE1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 15:04:27 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:39441 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754298Ab3FGTE0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 15:04:26 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TiqCXmo5T1hvSQQg"
-Content-Disposition: inline
-In-Reply-To: <1370630768-4077-3-git-send-email-grygorii.strashko@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOesGMg+Xk5yy2W3n__QYEkrXb5FP6eruOWvZPNHkOVHf2+pDA@mail.gmail.com>
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
+	<CAKON4OxDD5orX2w-_+d5kawTGXbE3KKj2QLERo9m7=NiUSXhgQ@mail.gmail.com>
+	<51AFA6DD.3000202@wwwdotorg.org>
+	<CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com>
+	<1370469574.18839.33.camel@localhost>
+	<CAPweEDxMpeJc-w=Yd7d2OT=UisRBp2rxf-MPMDUCOG3EyJz1GQ@mail.gmail.com>
+	<CAKON4OxwyV2f_iTEb5RnP_azc7EsSxPdku_TY5WLWxN7USiY1Q@mail.gmail.com>
+	<CAPweEDw1BabE0cmT5fxZ3Z9p9EH508M3Nzcqk2VcO0oz-qYsvg@mail.gmail.com>
+	<1370475609.20454.44.camel@localhost>
+	<CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
+	<CAKON4OxPDpN3BTc9GWP44exDSkAZGJ5OeCpUP37vRnnvxwUnmw@mail.gmail.com>
+	<CAOesGMgqxhG45NyCfpHc_0uHS+_Gn-hGZm-+CRvK2EEf1AGTow@mail.gmail.com>
+	<CAPweEDwU+RzTCGb20uh7jxAzjbrX_yHVa4sy_ATr7MWpBb4WcQ@mail.gmail.com>
+	<CAOesGMg+Xk5yy2W3n__QYEkrXb5FP6eruOWvZPNHkOVHf2+pDA@mail.gmail.com>
+Date: Fri, 7 Jun 2013 20:04:26 +0100
+Message-ID: <CAPweEDzeyJh+DKX=8tzrT9AnG9NqLp8nWkWFmB2Wy+JnBkqEdg@mail.gmail.com>
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
+ Uploading linux (3.9.4-1))
+From: "luke.leighton" <luke.leighton@gmail.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm <debian-arm@lists.debian.org>,
+        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
+        debian-kernel <debian-kernel@lists.debian.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---TiqCXmo5T1hvSQQg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jun 7, 2013 at 7:54 PM, Olof Johansson <olof@lixom.net> wrote:
+> Luke,
+>
+> I want only one thing from you at this time. See below.
+>
+>
+> On Fri, Jun 7, 2013 at 11:45 AM, luke.leighton <luke.leighton@gmail.com> wrote:
+>>  .... but the Directors of Allwinner aren't been kept in the loop,
+>> here: that's my job, to get them up-to-speed.
+>
+> The one job I would love for you to do instead of all this trolling
+> and time-wasting that's being done by _everybody_ involved, is to just
+> extract yourself from the situation and let us go on with our work.
+> You're causing nothing but confusion and extra work. Literally. You
+> represent nobody that matters in this discussion.
 
-Hi,
+ absolutely correct.  i am nobody, who is in the right place at the
+right time.  i'm just a messenger.  so - what message do you wish to
+take to the Directors of Allwinner (if any).
 
-On Fri, Jun 07, 2013 at 09:46:05PM +0300, Grygorii Strashko wrote:
-> Add runtime check at the beginning of omap_i2c_isr/omap_i2c_isr_thread
-> to be sure that i2c is enabled, before performing IRQ handling and access=
-ing
-> I2C IP registers:
-> 	if (pm_runtime_suspended(dev->dev)) {
-> 		WARN_ONCE(true, "We should never be here!\n");
-> 		return IRQ_NONE;
-> 	}
->=20
-> Produce warning in case if ISR called when i2c is disabled
->=20
-> CC: Kevin Hilman <khilman@linaro.org>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> ---
->  drivers/i2c/busses/i2c-omap.c |   10 ++++++++++
->  1 file changed, 10 insertions(+)
->=20
-> diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-> index 97844ff..2dac598 100644
-> --- a/drivers/i2c/busses/i2c-omap.c
-> +++ b/drivers/i2c/busses/i2c-omap.c
-> @@ -885,6 +885,11 @@ omap_i2c_isr(int irq, void *dev_id)
->  	u16 stat;
-> =20
->  	spin_lock(&dev->lock);
-> +	if (pm_runtime_suspended(dev->dev)) {
-> +		WARN_ONCE(true, "We should never be here!\n");
-> +		return IRQ_NONE;
-> +	}
+> By demanding
 
-returning IRQ_NONE is not what you want to do in this case. You want to
-setup a flag so that your runtime_resume() knows that there are pending
-events to be handled and you handle those in runtime_resume time.
+ a-a-ah, no demands made.
 
-But to be frank, I don't see how this can trigger since we're calling
-pm_runtime_get_sync() from omap_i2c_xfer() which means by the time
-pm_runtime_get_sync() returns, assuming no errors, i2c module should be
-fully resumed and ready to go. Perhaps you have found a bug somewhere
-else ?
+> us to spend time and effort bringing you personally up to
+> speed on a subject that both we (ARM kernel community) and them
+> (Allwinner) are already having discussions about, it's nothing but a
+> distraction and waste of energy.
+>
+> And yes, Allwinner knows about this public email thread
 
-Also, your 'We should never be here' message isn't helpfull at all.
-
-> @@ -905,6 +910,11 @@ omap_i2c_isr_thread(int this_irq, void *dev_id)
->  	u16 stat;
->  	int err =3D 0, count =3D 0;
-> =20
-> +	if (pm_runtime_suspended(dev->dev)) {
-> +		WARN_ONCE(true, "We should never be here!\n");
-> +		return IRQ_NONE;
-> +	}
-
-because of IRQF_ONESHOT I can't see how this would *ever* be a valid
-check.
-
---=20
-balbi
-
---TiqCXmo5T1hvSQQg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRsi4uAAoJEIaOsuA1yqREkG4P/1lsB5sJ3cYWwxz7Mt5gO5D1
-mCs4MjEdUAgO3WSVeRJlHPe0qFuJivy7CPAQ/F53HqwoCEt+E44IXFnRJtNQPoBt
-qsF0eVqRlhcLzlGbHTmv7TW+RbAC/aCNDmjyMj2HoZCrYAX7k7EZ/DKd4rlqLwAV
-Vp+rVjwdUNWlQYCQPYlCMDN7d6cU4ZhOtxcKrHrOGalBjkK049lZMahFcRS2yE4H
-FIcpdFZyNNZgZkAct2C8awdrXePm+l2Y1QnPI0DPuEGOiTZZmQgIQHV2Mq6fUudq
-igjP1Gile8K+H7fqUzVafuMRyE+RzRrTZsFzjHO4tsUBl8ZzUg4rgaynF221viVI
-kgA7k3yg7IDF//55ZCFn8W48bn6kY06YuTnIdDqDap4u4JoP8fgPAPTe8mXxTPO4
-nDicXXRE9jujFq088eoC/vZg8CMNICQ9ohcsLG1fyKcnXdgIKdxZbO7BjDQ8z9A9
-XMG8pqSyg5BbzpnUX9j5cW5n2L9hh0Qcyu3vK8juvRNbLnTGLMxlsV/HrN41N+Yd
-m6/Xd2pjDKMZ7zXXMDmeBEfoMxxYZca3weWIesU0kDie3v+UG3sYgiY6LO9DcX6F
-dlWNdaB3xWKdHejctGwZgKT6HW53ReZkNkpHfONaHwePHw/dKCSaTXZ8RdP11bUn
-i50n15ZMTr7L09I6R14r
-=lPoP
------END PGP SIGNATURE-----
-
---TiqCXmo5T1hvSQQg--
+ that's good!
