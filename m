@@ -1,242 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab3FGN1k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 09:27:40 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:37137 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752382Ab3FGN1i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 09:27:38 -0400
-X-AuditID: cbfee61b-b7f8e6d00000524c-41-51b1dfc81a4e
-Date: Fri, 07 Jun 2013 15:27:18 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH 2/5] cpufreq:boost: Add support for software based CPU
- frequency boost
-Message-id: <20130607152718.4b458087@amdc308.digital.local>
-In-reply-to: <CAKohpo=jCuLwhB+3pC0NLRBDmfPpGr=hRgxTT4rXzSwM4BndaQ@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1370502472-7249-3-git-send-email-l.majewski@samsung.com>
- <CAKohpok3KTfSWDU6PdDd4_VW4Pp+6J80yn5cLrYr5RuBNH-agA@mail.gmail.com>
- <20130606134903.5f69b8fb@amdc308.digital.local>
- <CAKohpo=jCuLwhB+3pC0NLRBDmfPpGr=hRgxTT4rXzSwM4BndaQ@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmkeLIzCtJLcpLzFFi42I5/e+xgO6J+xsDDZqXaln8ebuc1eJp0w92
-	i3mfZS06zz5htnjziNvi/aFnzBaXd81hs/jce4TR4nbjCjaL/oW9TBYdR74xW2z86uHA43Hn
-	2h42j9v/HjN7rJv2ltmjb8sqRo9Hi1sYPT5vkgtgi+KySUnNySxLLdK3S+DKuLCrruCwecXS
-	ey0sDYytWl2MnBwSAiYSH760MkHYYhIX7q1n62Lk4hASWMQocWbjWxYIp51JYtvXjywgVSwC
-	qhI72lvZQWw2AT2Jz3efAnVzcIgIaEm8vJkKUs8s8ItZouXVAmaQGmGBGKBBj8E28ApYS/zb
-	fAjM5hQIlrh+6hY7xIKDTBKXLixmBUnwC0hKtP/7wQxxkp3EuU8b2CGaBSV+TL4HdgQz0LLN
-	25pYIWx5ic1r3jJPYBSchaRsFpKyWUjKFjAyr2IUTS1ILihOSs810itOzC0uzUvXS87P3cQI
-	jppn0jsYVzVYHGIU4GBU4uH9sWpDoBBrYllxZe4hRgkOZiUR3sZNGwOFeFMSK6tSi/Lji0pz
-	UosPMUpzsCiJ8x5stQ4UEkhPLEnNTk0tSC2CyTJxcEo1ME7N53y4TqqB30vo0k1GJ1bmn/G7
-	X7x4NPvjCT7uq9fsGGqfsr+6let87cJy4+9lp8X2ludmPVous7jr8v+E8m8b+6pMufoM9A+G
-	8qz7cbZOPZXlyk+VYnfWnSIXPvK8zjH8dW0B3zyhggDuLy8FC5ReHzm5TTH9aLv75j2780Rz
-	7G0ZNdZ+YVRiKc5INNRiLipOBACdhMD/lgIAAA==
+	id S1754156Ab3FGN3b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 09:29:31 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:53162 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753190Ab3FGN33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 09:29:29 -0400
+Subject: Re: [PATCH RFC V9 0/19] Paravirtualized ticket spinlocks
+From: Andrew Theurer <habanero@linux.vnet.ibm.com>
+Reply-To: habanero@linux.vnet.ibm.com
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Jiannan Ouyang <ouyang@cs.pitt.edu>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        x86@kernel.org, konrad.wilk@oracle.com,
+        "H. Peter Anvin" <hpa@zytor.com>, pbonzini@redhat.com,
+        linux-doc@vger.kernel.org, xen-devel@lists.xensource.com,
+        Peter Zijlstra <peterz@infradead.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, gregkh@suse.de, agraf@suse.de,
+        chegu vinod <chegu_vinod@hp.com>, torvalds@linux-foundation.org,
+        Avi Kivity <avi.kivity@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, KVM <kvm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, stephan.diestelhorst@amd.com,
+        Rik van Riel <riel@redhat.com>, Andrew Jones <drjones@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+In-Reply-To: <51B17A6A.7060709@linux.vnet.ibm.com>
+References: <20130601192125.5966.35563.sendpatchset@codeblue>
+	 <20130602080739.GA24773@redhat.com>
+	 <CAJocwcf0oykyLv4B22pBf1A3H7+Cs6qu0vmTWp46Z=KwrTkXyQ@mail.gmail.com>
+	 <51ABF410.4090109@linux.vnet.ibm.com> <51AC35F0.4010400@linux.vnet.ibm.com>
+	 <51B17A6A.7060709@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 Jun 2013 08:29:13 -0500
+Message-ID: <1370611753.1425.50.camel@oc2024037011.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060713-7182-0000-0000-00000731DBA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
-
-> On 6 June 2013 17:19, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> >> On 6 June 2013 12:37, Lukasz Majewski <l.majewski@samsung.com>
-> >> wrote:
-> 
-> >> > cpufreq_driver->boost->attr))
+On Fri, 2013-06-07 at 11:45 +0530, Raghavendra K T wrote:
+> On 06/03/2013 11:51 AM, Raghavendra K T wrote:
+> > On 06/03/2013 07:10 AM, Raghavendra K T wrote:
+> >> On 06/02/2013 09:50 PM, Jiannan Ouyang wrote:
+> >>> On Sun, Jun 2, 2013 at 1:07 AM, Gleb Natapov <gleb@redhat.com> wrote:
+> >>>
+> >>>> High level question here. We have a big hope for "Preemptable Ticket
+> >>>> Spinlock" patch series by Jiannan Ouyang to solve most, if not all,
+> >>>> ticketing spinlocks in overcommit scenarios problem without need for
+> >>>> PV.
+> >>>> So how this patch series compares with his patches on PLE enabled
+> >>>> processors?
+> >>>>
+> >>>
+> >>> No experiment results yet.
+> >>>
+> >>> An error is reported on a 20 core VM. I'm during an internship
+> >>> relocation, and will start work on it next week.
 > >>
-> >> Why is this required? Why do we want platforms to add some files
-> >> in sysfs?
-> >
-> > There are two kinds of attributes, which are exported by boost:
-> >
-> > 1. global boost (/sys/devices/system/cpu/cpufreq/boost)
-> >
-> > 2. attributes describing cpufreq abilities when boost is available
-> > (/sys/devices/syste/cpu/cpu0/cpufreq/):
-> >         - scaling_boost_frequencies - which will show over clocked
-> >           frequencies
-> >         - the scaling_available_frequencies will also display
-> > boosted frequency (when boost enabled)
-> >
-> > Information from 2. is cpufreq_driver dependent. And that
-> > information shouldn't been displayed when boost is not available
-> 
-> This is not how I wanted this to be coded. Lets keep things simple:
-> - Implement it in the way cpufreq_freq_attr_scaling_available_freqs
->   is implemented. And then drivers which need to see boost freqs
->   can add it in their attr.
-> 
-> >> > +       policy->boost = cpufreq_boost = cpufreq_driver->boost;
+> >> Preemptable spinlocks' testing update:
+> >> I hit the same softlockup problem while testing on 32 core machine with
+> >> 32 guest vcpus that Andrew had reported.
 > >>
-> >> Why are we copying same pointer to policy->boost? Driver is
-> >> passing pointer to a single memory location, just save it globally.
-> >
-> > This needs some explanation.
-> >
-> > The sysfs entry presented at [1] doesn't bring any useful
-> > information to reuse (like *policy). For this reason the global
-> > cpufreq_boost pointer is needed.
-> >
-> > However to efficiently manage the boost, it is necessary to keep per
-> > policy pointer to the only struct cpufreq_boost instance (defined at
-> > cpufreq_driver code).
-> 
-> No we don't need to screw struct cpufreq_policy with it.
-> Just need two variables here:
-> - cpufreq_driver->boost: If driver supports boost or not.
-> - If above is true then a global bool variable that will say boost is
->   enabled from sysfs or not.
-> 
-> >> > +       /* disable boost for newly created policy - as we e.g.
-> >> > change
-> >> > +          governor */
-> >> > +       policy->boost->status = CPUFREQ_BOOST_DIS;
+> >> After that i started tuning TIMEOUT_UNIT, and when I went till (1<<8),
+> >> things seemed to be manageable for undercommit cases.
+> >> But I still see degradation for undercommit w.r.t baseline itself on 32
+> >> core machine (after tuning).
 > >>
-> >> Drivers supporting boost may want boost to be enabled by default,
-> >> maybe without any sysfs calls.
-> >
-> > This can be done by setting the struct cpufreq_boost status field to
-> > CPUFREQ_BOOST_EN at cpufreq driver code (when boost structure is
-> > defined)
-> 
-> This really isn't driver dependent.. But user dependent. Maybe lets
-> keep it disabled and people can enable it from sysfs.
-> 
-> >> Why do we need to maintain a list of boost here? notifiers?
-> >> complex :(
-> >
-> > Notifier is needed to disable boost when policy is changed (for
-> > example when we change from ondemand/lab to performance governor).
-> >
-> > I wanted to avoid the situation when boost stays enabled across
-> > different governors.
-> >
-> > The list of in system available policies is defined to allow boost
-> > enable/disable for all policies available (by changing for example
-> > policy->max field).
-> >
-> > If we decide, that we will support only one policy (as it is now at
-> > e.g. Exynos), the list is unnecessary here.
-> 
-> What we discussed last in your earlier patchset was:
-> - Keep boost feature separate from governors.
-> - If it is enabled, then any governor can use it (if they want).
-> - Lets not disable it if governor is changed. user must do it
-> explicitly.
-> 
-> >> > +static int cpufreq_frequency_table_skip_boost(struct
-> >> > cpufreq_policy *policy,
-> >> > +                                             unsigned int index)
-> >> > +{
-> >> > +       if (index == CPUFREQ_BOOST)
-> >> > +               if (!policy->boost ||
+> >> (37.5% degradation w.r.t base line).
+> >> I can give the full report after the all tests complete.
 > >>
-> >> This shouldn't be true. If index has got CPUFREQ_BOOST, then driver
-> >> has to support boost.
-> >
-> > Correct me if I'm wrong here, but in my understanding the boost
-> > shall be only supported when both CPUFREQ_BOOST index is defined in
-> > a freq_table and boost.state = CPUFREQ_BOOST_EN is set.
-> >
-> > Setting of CPUFREQ_BOOST shouldn't by default allow to use over
-> > clocking frequency.
-> 
-> For cpufreq core boost is enabled as soon as cpufreq_driver->boost is
-> true. We can have additional checks to see if there is atleast one
-> boost frequency but can skip this too.
-> 
-> >> why do we need this?
-> >
-> > To evaluate the maximal boost frequency from the frequency table.
-> > It is then used as a delimiter (when LAB cooperates with thermal
-> > framework).
-> 
-> Introduce this with LAB then.. Lets keep it as simple as possible for
-> now. One step at a time.
-> 
-> >> > +struct cpufreq_boost {
-> >> > +       unsigned int            max_boost_freq; /* maximum value
-> >> > of
-> >> > +                                                * boosted freq
-> >> > */
-> >> > +       unsigned int            max_normal_freq; /* non boost max
-> >> > freq */
-> >> > +       int                     status; /* status of boost */
-> >> > +
-> >> > +       /* boost sysfs attributies */
-> >> > +       struct freq_attr        **attr;
-> >> > +
-> >> > +       /* low-level trigger for boost */
-> >> > +       int (*low_level_boost) (struct cpufreq_policy *policy,
-> >> > int state); +
-> >> > +       struct list_head        policies;
-> >> > +};
+> >> For over-commit cases, I again started hitting softlockups (and
+> >> degradation is worse). But as I said in the preemptable thread, the
+> >> concept of preemptable locks looks promising (though I am still not a
+> >> fan of  embedded TIMEOUT mechanism)
 > >>
-> >> We don't need it. Just add two more fields to cpufreq_driver:
-> >> - have_boost_freqs and low_level_boost (maybe a better name.
-> >> What's its use?)
+> >> Here is my opinion of TODOs for preemptable locks to make it better ( I
+> >> think I need to paste in the preemptable thread also)
+> >>
+> >> 1. Current TIMEOUT UNIT seem to be on higher side and also it does not
+> >> scale well with large guests and also overcommit. we need to have a
+> >> sort of adaptive mechanism and better is sort of different TIMEOUT_UNITS
+> >> for different types of lock too. The hashing mechanism that was used in
+> >> Rik's spinlock backoff series fits better probably.
+> >>
+> >> 2. I do not think TIMEOUT_UNIT itself would work great when we have a
+> >> big queue (for large guests / overcommits) for lock.
+> >> one way is to add a PV hook that does yield hypercall immediately for
+> >> the waiters above some THRESHOLD so that they don't burn the CPU.
+> >> ( I can do POC to check if  that idea works in improving situation
+> >> at some later point of time)
+> >>
 > >
-> > The separate struct cpufreq_boost was created to explicitly separate
-> > boost fields from cpufreq_driver structure.
+> > Preemptable-lock results from my run with 2^8 TIMEOUT:
 > >
-> > If in your opinion this structure is redundant, I can remove it and
-> > extend cpufreq_driver structure.
+> > +-----------+-----------+-----------+------------+-----------+
+> >                   ebizzy (records/sec) higher is better
+> > +-----------+-----------+-----------+------------+-----------+
+> >      base        stdev        patched    stdev        %improvement
+> > +-----------+-----------+-----------+------------+-----------+
+> > 1x  5574.9000   237.4997    3484.2000   113.4449   -37.50202
+> > 2x  2741.5000   561.3090     351.5000   140.5420   -87.17855
+> > 3x  2146.2500   216.7718     194.8333    85.0303   -90.92215
+> > 4x  1663.0000   141.9235     101.0000    57.7853   -93.92664
+> > +-----------+-----------+-----------+------------+-----------+
+> > +-----------+-----------+-----------+------------+-----------+
+> >                 dbench  (Throughput) higher is better
+> > +-----------+-----------+-----------+------------+-----------+
+> >       base        stdev        patched    stdev        %improvement
+> > +-----------+-----------+-----------+------------+-----------+
+> > 1x  14111.5600   754.4525   3930.1602   2547.2369    -72.14936
+> > 2x  2481.6270    71.2665      181.1816    89.5368    -92.69908
+> > 3x  1510.2483    31.8634      104.7243    53.2470    -93.06576
+> > 4x  1029.4875    16.9166       72.3738    38.2432    -92.96992
+> > +-----------+-----------+-----------+------------+-----------+
+> >
+> > Note we can not trust on overcommit results because of softlock-ups
+> >
 > 
-> I am not against a structure (as putting related stuff in a struct is
-> always better), but against so many fields in it to make things
-> complicated.
+> Hi, I tried
+> (1) TIMEOUT=(2^7)
 > 
-> I will only keep have_boost_freqs and low_level_boost. Remove
-> everything else.
-
-I would prefer to have following fields in the cpufreq_boost structure:
-struct cpufreq_boost {
-	unsigned int	max_boost_freq; /*boost max freq*/
-	unsigned int 	max_normal_freq; /*max normal freq
-	int (*low_level_boost) (int state);
-	bool boost_en;  /* indicate if boost is enabled */
-}
-
-The max_{boost|normal}_freq fields will be filed at 
-ret = cpufreq_driver->init(policy);
-
-Thanks to them I will avoid calling many times routine, which extracts
-from freq_table maximal boost and normal frequencies.
-
-I could define those variables in the exynos-cpufreq.c driver, but I
-think, that they are more suitable to be embedded at cpufreq_boost
-structure.
-
-
+> (2) having yield hypercall that uses kvm_vcpu_on_spin() to do directed 
+> yield to other vCPUs.
 > 
-> > *boost pointer is necessary when one wants to enable/disable boost
-> > from e.g governor code (which operates mostly on struct
-> > cpufreq_policy *policy pointers).
+> Now I do not see any soft-lockup in overcommit cases and results are 
+> better now (except ebizzy 1x). and for dbench I see now it is closer to 
+> base and even improvement in 4x
 > 
-> We don't need to do this. boost can only be disabled from userspace by
-> user. No intervention from governor.
+> +-----------+-----------+-----------+------------+-----------+
+>                 ebizzy (records/sec) higher is better
+> +-----------+-----------+-----------+------------+-----------+
+>    base        stdev        patched    stdev        %improvement
+> +-----------+-----------+-----------+------------+-----------+
+>    5574.9000   237.4997     523.7000     1.4181   -90.60611
+>    2741.5000   561.3090     597.8000    34.9755   -78.19442
+>    2146.2500   216.7718     902.6667    82.4228   -57.94215
+>    1663.0000   141.9235    1245.0000    67.2989   -25.13530
+> +-----------+-----------+-----------+------------+-----------+
+> +-----------+-----------+-----------+------------+-----------+
+>                  dbench  (Throughput) higher is better
+> +-----------+-----------+-----------+------------+-----------+
+>     base        stdev        patched    stdev        %improvement
+> +-----------+-----------+-----------+------------+-----------+
+>   14111.5600   754.4525     884.9051    24.4723   -93.72922
+>    2481.6270    71.2665    2383.5700   333.2435    -3.95132
+>    1510.2483    31.8634    1477.7358    50.5126    -2.15279
+>    1029.4875    16.9166    1075.9225    13.9911     4.51050
+> +-----------+-----------+-----------+------------+-----------+
+> 
+> 
+> IMO hash based timeout is worth a try further.
+> I think little more tuning will get more better results.
 
+The problem I see (especially for dbench) is that we are still way off
+what I would consider the goal.  IMO, 2x over-commit result should be a
+bit lower than 50% (to account for switching overhead and less cache
+warmth).  We are at about 17.5% for 2x.  I am thinking we need a
+completely different approach to get there, but of course I do not know
+what that is yet :)  
 
+I am testing your patches now and hopefully with some analysis data we
+can better understand what's going on.
+> 
+> Jiannan, When you start working on this, I can also help
+> to get best of preemptable lock idea if you wish and share
+> the patches I tried.
 
--- 
-Best regards,
+-Andrew Theurer
 
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
