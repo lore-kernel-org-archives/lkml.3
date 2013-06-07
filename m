@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583Ab3FGPnU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 11:43:20 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:50091 "EHLO
+	id S1756432Ab3FGPpV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 11:45:21 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:50149 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756173Ab3FGPm3 (ORCPT
+	with ESMTP id S1753911Ab3FGPpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 11:42:29 -0400
+	Fri, 7 Jun 2013 11:45:19 -0400
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 To: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org
 Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
@@ -24,9 +24,9 @@ Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Dan Frazier <dann.frazier@canonical.com>,
         Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
         David Marlin <dmarlin@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/2] i2c-mv64xxx: Add I2C Transaction Generator support
-Date: Fri,  7 Jun 2013 17:42:21 +0200
-Message-Id: <1370619743-15245-1-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH 0/2] i2c-mv64xxx: Various fixes
+Date: Fri,  7 Jun 2013 17:44:58 +0200
+Message-Id: <1370619900-15963-1-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,40 +34,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hello,
 
-this patch set adds support for the I2C Transaction Generator which
-offloads CPU from managing I2C transfer step by step. This feature is
-currently only available on the I2C controller IP embedded in the
-Armada XP SoC. That's why usage of this mechanism is optional and
-activated through device tree.
+This series contains a real fix for the I2C controller of the Armada
+XP SoC and a patch closer to a improvement than a fix.
 
-The first patch modifies the driver itself and should go through i2c
-subsystem.
+They are independent and are only in the same series because they are
+kind of fixes.
 
-Due to the recent changes in i2c-mv64xxx.c file caused by Russell
-King's fixes, I based this patch on the for-next branch of the i2c git
-repository.
+They are based on 3.10-rc4, and they will be small conflicts if they
+are applied on top of i2c/for-next branch and on top of the series I
+have just sent to add I2C Transaction Generator support. You can have
+a look on the branch i2c-mv64xxx-fixes-bridge to get an idea on how to
+resolve it. This branch is located at
+https://github.com/MISL-EBU-System-SW/mainline-public.git
 
-The second patch updates the device tree to be able to use this new
-feature and should go through mvebu subsystem.
+Thanks,
 
-The 2 patches are independents for building or even at runtime, but of
-course we need both of them to be able to use the I2C Transaction
-Generator on the Armada XP SoC.
+Zbigniew Bodek (2):
+  i2c-mv64xxx: Fix timing issue on Armada XP (errata FE-8471889)
+  i2c-mv64xxx: Abort the mv64xxx_of_config if clock-frequency is not
+    provided
 
-Thanks
-
-Gregory CLEMENT (1):
-  ARM: dts: mvebu: Add the i2c-bridge capability to the mv64xxx-i2c
-
-Zbigniew Bodek (1):
-  i2c-mv64xxx: Add I2C Transaction Generator support
-
- .../devicetree/bindings/i2c/i2c-mv64xxx.txt        |   6 +
- arch/arm/boot/dts/armada-370-xp.dtsi               |   2 -
- arch/arm/boot/dts/armada-370.dtsi                  |   8 ++
- arch/arm/boot/dts/armada-xp.dtsi                   |  10 ++
- drivers/i2c/busses/i2c-mv64xxx.c                   | 143 ++++++++++++++++++++-
- 5 files changed, 163 insertions(+), 6 deletions(-)
+ drivers/i2c/busses/i2c-mv64xxx.c | 21 ++++++++++++++++++++-
+ 1 file changed, 20 insertions(+), 1 deletion(-)
 
 -- 
 1.8.1.2
