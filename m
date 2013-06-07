@@ -1,114 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab3FGLYk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 07:24:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:39699 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755226Ab3FGLYi (ORCPT
+	id S1753581Ab3FGLdq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 07:33:46 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:27183 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752670Ab3FGLdo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 07:24:38 -0400
-Message-ID: <51B1C2E8.2030709@canonical.com>
-Date: Fri, 07 Jun 2013 13:24:24 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 7 Jun 2013 07:33:44 -0400
+Date: Fri, 7 Jun 2013 13:32:09 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Haojian Zhuang <haojian.zhuang@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
+Message-ID: <20130607113207.GE11875@ab42.lan>
+References: <20130522142824.GC4789@ab42.lan>
+ <CAD6h2NT4FqmEsLvtTDwwDL2YVzXYNpw72hTOcSxSMvHLhWvFPQ@mail.gmail.com>
+ <20130524115053.GB5203@ab42.lan>
+ <CAD6h2NSh_4TNAGeFhg+va5QX2hGia+gkw-mPaeMezghsa=Zc6Q@mail.gmail.com>
+ <20130603123001.GD31808@ab42.lan>
+ <CAD6h2NQVKKvcoPdD4sm5rUM5G-FpF3abL=k+WfQsnKnm7qhREA@mail.gmail.com>
+ <20130606141115.GA10345@ab42.lan>
+ <CAD6h2NRNMQP-ZQ0Cc613tGThVEo7AzRExBmWsbtr1DXgiPwz7w@mail.gmail.com>
+ <20130606153030.GA19876@ab42.lan>
+ <CAD6h2NQRdgeBkMJkJWeDt-304KY7e6+qyKVE-h9MY6bRnMAPLA@mail.gmail.com>
 MIME-Version: 1.0
-To: sw0312.kim@samsung.com
-CC: dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
-        linaro-mm-sig@lists.linaro.org, sumit.semwal@linaro.org,
-        airlied@linux.ie, daniel.vetter@ffwll.ch, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 1/2] dma-buf: add importer private data to attachment
-References: <1369990487-23510-1-git-send-email-sw0312.kim@samsung.com> <1369990487-23510-2-git-send-email-sw0312.kim@samsung.com> <51AF3BD7.5070001@canonical.com> <51B14644.9070706@samsung.com>
-In-Reply-To: <51B14644.9070706@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAD6h2NQRdgeBkMJkJWeDt-304KY7e6+qyKVE-h9MY6bRnMAPLA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 07-06-13 04:32, 김승우 schreef:
-> Hello Maarten,
->
-> On 2013년 06월 05일 22:23, Maarten Lankhorst wrote:
->> Op 31-05-13 10:54, Seung-Woo Kim schreef:
->>> dma-buf attachment has only exporter private data, but importer private data
->>> can be useful for importer especially to re-import the same dma-buf.
->>> To use importer private data in attachment of the device, the function to
->>> search attachment in the attachment list of dma-buf is also added.
->>>
->>> Signed-off-by: Seung-Woo Kim <sw0312.kim@samsung.com>
->>> ---
->>>  drivers/base/dma-buf.c  |   31 +++++++++++++++++++++++++++++++
->>>  include/linux/dma-buf.h |    4 ++++
->>>  2 files changed, 35 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
->>> index 08fe897..a1eaaf2 100644
->>> --- a/drivers/base/dma-buf.c
->>> +++ b/drivers/base/dma-buf.c
->>> @@ -259,6 +259,37 @@ err_attach:
->>>  EXPORT_SYMBOL_GPL(dma_buf_attach);
->>>  
->>>  /**
->>> + * dma_buf_get_attachment - Get attachment with the device from dma_buf's
->>> + * attachments list
->>> + * @dmabuf:	[in]	buffer to find device from.
->>> + * @dev:	[in]	device to be found.
->>> + *
->>> + * Returns struct dma_buf_attachment * attaching the device; may return
->>> + * negative error codes.
->>> + *
->>> + */
->>> +struct dma_buf_attachment *dma_buf_get_attachment(struct dma_buf *dmabuf,
->>> +						  struct device *dev)
->>> +{
->>> +	struct dma_buf_attachment *attach;
->>> +
->>> +	if (WARN_ON(!dmabuf || !dev))
->>> +		return ERR_PTR(-EINVAL);
->>> +
->>> +	mutex_lock(&dmabuf->lock);
->>> +	list_for_each_entry(attach, &dmabuf->attachments, node) {
->>> +		if (attach->dev == dev) {
->>> +			mutex_unlock(&dmabuf->lock);
->>> +			return attach;
->>> +		}
->>> +	}
->>> +	mutex_unlock(&dmabuf->lock);
->>> +
->>> +	return ERR_PTR(-ENODEV);
->>> +}
->>> +EXPORT_SYMBOL_GPL(dma_buf_get_attachment);
->> NAK in any form..
->>
->> Spot the race condition between dma_buf_get_attachment and dma_buf_attach....
-> Both dma_buf_get_attachment and dma_buf_attach has mutet with
-> dmabuf->lock, and dma_buf_get_attachment is used for get attachment from
-> same device before calling dma_buf_attach.
+On Fri, Jun 07, 2013 at 08:00:57AM +0800, Haojian Zhuang wrote:
+> On 6 June 2013 23:30, Christian Ruppert <christian.ruppert@abilis.com> wrote:
+> > On Thu, Jun 06, 2013 at 10:32:21PM +0800, Haojian Zhuang wrote:
+> >> On 6 June 2013 22:11, Christian Ruppert <christian.ruppert@abilis.com> wrote:
+> >> > On Wed, Jun 05, 2013 at 09:44:27AM +0800, Haojian Zhuang wrote:
+> >> >> On 3 June 2013 20:30, Christian Ruppert <christian.ruppert@abilis.com> wrote:
+> >> >> > OK, here's a simplified example of what we would like to do (this seems
+> >> >> > pretty common so I suppose there is a way I haven't understood). Our
+> >> >> > situation is slightly more complex but for the purpose of discussion
+> >> >> > let's assume a chip with 8 pins which can be configured for the
+> >> >> > following functions:
+> >> >> >
+> >> >> > Pin   GPIO-A    I2C    SPI0     SPI1
+> >> >> > ------------------------------------
+> >> >> >  1    GPIOA0    SDA             MISO1
+> >> >> >  2    GPIOA1    SCL             MOSI1
+> >> >> >  3    GPIOA2                    SS1_B
+> >> >> >  4    GPIOA3                    SCLK1
+> >> >> >  5    GPIOA4           MISO0
+> >> >> >  6    GPIOA5           MOSI0
+> >> >> >  7    GPIOA6           SS0_B
+> >> >> >  8    GPIOA7           SCLK0
+> >> >> >
+> >> >> > We can now define the following pinctrl-single:
+> >> >> >
+> >> >> > pinmux: pinmux@0xFFEE0000 {
+> >> >> >         compatible = "pinctrl-single";
+> >> >> >         reg = <0xFFEE0000 0x8>;
+> >> >> >         #address-cells = <1>;
+> >> >> >         #size-cells = <0>;
+> >> >> >         #gpio-range-cells = <3>;
+> >> >> >         pinctrl-single,register-width = <32>;
+> >> >> >         pinctrl-single,function-mask = <0xffffffff>;
+> >> >> >         pinctrl-single,gpio-range = <&range 1 8 0>;
+> >> >> >         gpioa_pins: pinmux_gpioa_pins {
+> >> >> >                 pinctrl-single,pins = <0x0 0 0x4 0>
+> >> >> >         };
+> >> >> >         i2c_pins: pinmux_i2c_pins {
+> >> >> >                 pinctrl-single,pins = <0x0 1>
+> >> >> >         };
+> >> >> >         spi0_pins: pinmux_spi0_pins {
+> >> >> >                 pinctrl-single,pins = <0x1 1>
+> >> >> <0x1 1>?
+> >> >>
+> >> >> If each pinmux register is only for one pin in your SoC.
+> >> >> I think that your definitions are wrong above. We use
+> >> >> register offset as the first argument, not pin number.
+> >> >> And the second argument should be pin function number.
+> >> >
+> >> > In our case each pinmux register (bit field) actually controls an entire
+> >> > group of pins.
+> >> >
+> >> >> If multiple pins are sharing one register with different bits,
+> >> >> you need to enable "pinctrl-single,bit-per-mux".
+> >> >
+> >> > Multiple pins are sharing the same bits in the same register. Do you
+> >> > think this prevents us from using pinctrl-single?
+> >> >
+> >> Could you give me your register definition? Then I can understand you
+> >> better.
+> >
+> > In our example, the register map would look a bit like the following.
+> > Note that every register configures four pins at a time.
+> >
+> > Register 0x0:
+> >  Mode  GPIO-A    I2C    SPI1
+> >  Value 0x0       0x1    0x2
+> >  ---------------------------
+> >  Pin1  GPIOA0    SDA    MISO1
+> >  Pin2  GPIOA1    SCL    MOSI1
+> >  Pin3  GPIOA2           SS1_B
+> >  Pin4  GPIOA3           SCLK1
+> >
+> > Register 0x4:
+> >  Mode  GPIO-A    SPI0
+> >  Value 0x0       0x1
+> >  ---------------------
+> >  Pin5  GPIOA4    MISO0
+> >  Pin6  GPIOA5    MOSI0
+> >  Pin7  GPIOA6    SS0_B
+> >  Pin8  GPIOA7    SCLK0
+> >
+> 
+> You said "Multiple pins are sharing the same bits in the same register.".
+> I need to understand which bits you're talking about in your register.
 
-hint: what happens if 2 threads do this:
+In the above example, bits 0 and 1 of register 0x0 control pins 1
+through 4 and bit 0 of register 0x4 controls pins 5 through 8. The
+moment you write a new value in either of those registers, all four pins
+will change functionality simultaneously. There is no way to control the
+functionality of each pin individually.
 
-if (IS_ERR(attach = dma_buf_get_attachment(buf, dev)))
-attach = dma_buf_attach(buf, dev);
+Greetings,
+  Christian
 
-There really is no correct usecase for this kind of thing, so please don't do it.
-
-> While, dma_buf_detach can removes attachment because it does not have
-> ref count. So importer should check ref count in its importer private
-> data before calling dma_buf_detach if the importer want to use
-> dma_buf_get_attachment.
->
-> And dma_buf_get_attachment is for the importer, so exporter attach and
-> detach callback operation should not call it as like exporter detach
-> callback operation should not call dma_buf_attach if you mean this kind
-> of race.
->
-> If you have other considerations here, please describe more specifically.
->
-> Thanks and Best Regards,
-> - Seung-Woo Kim
->
->> ~Maarten
->>
->>
-
+-- 
+  Christian Ruppert              ,          <christian.ruppert@abilis.com>
+                                /|
+  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pr�-Fleuri
+                             _// | bilis Systems   CH-1228 Plan-les-Ouates
