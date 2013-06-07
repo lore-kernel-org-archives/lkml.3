@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752274Ab3FGF5X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 01:57:23 -0400
+	id S1752499Ab3FGF5j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 01:57:39 -0400
 Received: from mailout3.samsung.com ([203.254.224.33]:19696 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789Ab3FGF5V (ORCPT
+	with ESMTP id S1750908Ab3FGF5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 01:57:21 -0400
-X-AuditID: cbfee68d-b7f096d0000043fc-fa-51b1763f5e0c
+	Fri, 7 Jun 2013 01:57:22 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-00-51b1763fbdd5
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 1/2] f2fs: fix iget/iput of dir during recovery
-Date: Fri, 07 Jun 2013 14:55:56 +0900
-Message-id: <1370584557-20592-1-git-send-email-jaegeuk.kim@samsung.com>
+Subject: [PATCH 2/2] f2fs: support xattr security labels
+Date: Fri, 07 Jun 2013 14:55:57 +0900
+Message-id: <1370584557-20592-2-git-send-email-jaegeuk.kim@samsung.com>
 X-Mailer: git-send-email 1.8.1.3.566.gaa39828
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t8zfV37so2BBjs3aFlc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlfHr61bWglVyFTum
-	v2JvYFwi2cXIySEhYCKx9+MDVghbTOLCvfVsXYxcHEICyxgl7pzYwQ5TNP/jZmaIxHRGicb9
-	O8A6hATamCR2/6jsYuTgYBPQlti83wAkLCLALLFg6nlGkHpmgQmMEv8XvWcBSQgL2EucO/we
-	bCiLgKpE25weRhCbV8Bd4umV41DLdCVW/3/ODtIsIfCcTaJ1ynM2iAYBiW+TD7GALJMQkJXY
-	dIAZol5S4uCKGywTGAUXMDKsYhRNLUguKE5KLzLUK07MLS7NS9dLzs/dxAgJwd4djLcPWB9i
-	TAYaN5FZSjQ5HxjCeSXxhsZmRhamJqbGRuaWZqQJK4nzqrVYBwoJpCeWpGanphakFsUXleak
-	Fh9iZOLglGpgjJHkMFZ+pnny52cdnvemu3Ujr5onTxfIvKAb/GSxlR+fIv+C6J3BPFc/+l+c
-	/jks0fwWyxLBn4+Pe5hl3vVtaObiCXwy/8fWiwsCN823O19omt5n8rGI+cXm/zevedTc2ty9
-	apG5LPdt7oxKxfQIt5bq6H3tn12Xmkw/NskzYcsVy4YHvRLpSizFGYmGWsxFxYkA+wF6gFcC	AAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jQV37so2BBicfq1pc3/WXyeLSIneL
+In-reply-to: <1370584557-20592-1-git-send-email-jaegeuk.kim@samsung.com>
+References: <1370584557-20592-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t8zfV37so2BBq83W1tc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlTHnME/BfKOKYyfb
+	WRoYp2l2MXJySAiYSOw4tYMNwhaTuHBvPZDNxSEksIxRYu2a46wwRdvbOxghEtMZJf68XcsC
+	khASaGOS2P2jsouRg4NNQFti834DkLCIALPEgqnnweqZBSYwSvxf9B6sXljAQmLGzTuMIPUs
+	AqoS++/Eg4R5BdwlHn9czgixS1di9f/n7CA2p4CHxNcJr9kgVrlLHLjZxQIyU0LgO5vEnJYW
+	ZpAEi4CAxLfJh1hAZkoIyEpsOsAMMUdS4uCKGywTGIUXMDKsYhRNLUguKE5KLzLUK07MLS7N
+	S9dLzs/dxAgJ194djLcPWB9iTAYaN5FZSjQ5HxjueSXxhsZmRhamJqbGRuaWZqQJK4nzqrVY
+	BwoJpCeWpGanphakFsUXleakFh9iZOLglGpgjLiXt+/QxuAPTUbLDM++vWXItvDn5Pqr02qq
+	frvcjJ4Ut0roqZV5iewNjqypHf0Z8md23DvE7/pl474Jiic2JvwyfbN4otbxqC6rR+aHJ1Vf
+	5UpXMl0XW8b90e5v4qXpD/dwCtUEWxsfvy7r+qBotcjPSd4FC0wd9/mKMilsusfu8SzX/vLh
+	B0osxRmJhlrMRcWJAHOPJbhtAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsVy+t9jQV37so2BBo/fmVlc3/WXyeLSIneL
 	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
 	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
-	SBBcj5EBGkhYx5jx6+tW1oJVchU7pr9ib2BcItnFyMkhIWAiMf/jZmYIW0ziwr31bF2MXBxC
-	AtMZJRr372AFSQgJtDFJ7P5R2cXIwcEmoC2xeb8BSFhEgFliwdTzjCD1zAITGCX+L3rPApIQ
-	FrCXOHf4PTuIzSKgKtE2p4cRxOYVcJd4euU4O8QyXYnV/5+zT2DkXsDIsIpRNLUguaA4KT3X
-	UK84Mbe4NC9dLzk/dxMjOMCfSe1gXNlgcYhRgINRiYf356oNgUKsiWXFlbmHGCU4mJVEeNen
-	bQwU4k1JrKxKLcqPLyrNSS0+xJgMtH0is5Rocj4w+vJK4g2NTcyMLI3MLIxMzM1JE1YS5z3Q
-	ah0oJJCeWJKanZpakFoEs4WJg1OqgXFvR9f1LI9JaecZvLV2zpJbOHV9b73NS0epSR9v/RQs
-	riz5kK+Zd/d5YV3Uq8rHwWujjBufqzQwv7990GDJrynez6eLLDWpTda5ukem9cFKm68HV93h
-	mHvwJtdqhdwHN1a1+okmZPzdszBq55YJM1cb1L7SUOJLrBbXWrXhS6jM9c9KVlnvttQrsRRn
-	JBpqMRcVJwIActmIJ7QCAAA=
+	SBBcj5EBGkhYx5gx5zBPwXyjimMn21kaGKdpdjFyckgImEhsb+9ghLDFJC7cW8/WxcjFISQw
+	nVHiz9u1LCAJIYE2JondPyq7GDk42AS0JTbvNwAJiwgwSyyYep4RpJ5ZYAKjxP9F78HqhQUs
+	JGbcvMMIUs8ioCqx/048SJhXwF3i8cflULt0JVb/f84OYnMKeEh8nfCaDWKVu8SBm10sExh5
+	FzAyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQIjoZnUjsYVzZYHGIU4GBU4uH9uWpDoBBr
+	YllxZe4hRgkOZiUR3vVpGwOFeFMSK6tSi/Lji0pzUosPMSYDHTWRWUo0OR8YqXkl8YbGJmZG
+	lkZmFkYm5uakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C2cLEwSnVwGjPqlqzpGNVj1DRCja/yx3C
+	W8+rVAkVuFl1PYvxnci+OO3Tn8vhu9JvbfN6ZNf4/nvEtsXnZimxv2LqS5qlfGB2VvnkRVmb
+	GL9aBJ6xPLMssf2YlvTBkyJpfPMem7o/8w4/LG7+K1tzfY6alMu5jCPfjjlkPV7obO9x6bwa
+	owTzq/Ae1akztZVYijMSDbWYi4oTARN6Yg3KAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -45,134 +48,216 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is possible that iput is skipped after iget during the recovery.
-
-In recover_dentry(),
- dir = f2fs_iget();
- ...
- if (de && inode->i_ino == le32_to_cpu(de->ino))
-	goto out;
-
-In this case, this dir is not able to be added in dirty_dir_inode_list.
-The actual linking is done only when set_page_dirty() is called.
-
-So let's add this newly got inode into the list explicitly, and put it at the
-end of the recovery routine.
+This patch adds the support of security labels for f2fs, which will be used
+by SElinux.
 
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/checkpoint.c | 55 +++++++++++++++++++++++++++++++++++++---------------
- fs/f2fs/f2fs.h       |  1 +
- fs/f2fs/recovery.c   |  1 +
- 3 files changed, 41 insertions(+), 16 deletions(-)
+ fs/f2fs/Kconfig |  9 +++++++++
+ fs/f2fs/dir.c   |  5 +++++
+ fs/f2fs/xattr.c | 59 +++++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ fs/f2fs/xattr.h | 12 +++++++++++-
+ 4 files changed, 82 insertions(+), 3 deletions(-)
 
-diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index 6f56e57..9a77509 100644
---- a/fs/f2fs/checkpoint.c
-+++ b/fs/f2fs/checkpoint.c
-@@ -450,13 +450,30 @@ fail_no_cp:
- 	return -EINVAL;
+diff --git a/fs/f2fs/Kconfig b/fs/f2fs/Kconfig
+index fd27e7e..2214cc9 100644
+--- a/fs/f2fs/Kconfig
++++ b/fs/f2fs/Kconfig
+@@ -51,3 +51,12 @@ config F2FS_FS_POSIX_ACL
+ 	  Linux website <http://acl.bestbits.at/>.
+ 
+ 	  If you don't know what Access Control Lists are, say N
++
++config F2FS_FS_SECURITY
++	bool "F2FS Security Labels"
++	depends on F2FS_FS_XATTR
++	help
++	  Security labels provide acls used by the security modules
++	  like SELinux. This option should be used with the xattr mode.
++
++	  If you are not using a security module, say N.
+diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+index 67e2d13..81a1d6f 100644
+--- a/fs/f2fs/dir.c
++++ b/fs/f2fs/dir.c
+@@ -13,6 +13,7 @@
+ #include "f2fs.h"
+ #include "node.h"
+ #include "acl.h"
++#include "xattr.h"
+ 
+ static unsigned long dir_blocks(struct inode *inode)
+ {
+@@ -334,6 +335,10 @@ static struct page *init_inode_metadata(struct inode *inode,
+ 		if (err)
+ 			goto error;
+ 
++		err = f2fs_init_security(inode, dir, name);
++		if (err)
++			goto error;
++
+ 		wait_on_page_writeback(page);
+ 	} else {
+ 		page = get_node_page(F2FS_SB(dir->i_sb), inode->i_ino);
+diff --git a/fs/f2fs/xattr.c b/fs/f2fs/xattr.c
+index ae61f35..b5292fa 100644
+--- a/fs/f2fs/xattr.c
++++ b/fs/f2fs/xattr.c
+@@ -20,6 +20,7 @@
+  */
+ #include <linux/rwsem.h>
+ #include <linux/f2fs_fs.h>
++#include <linux/security.h>
+ #include "f2fs.h"
+ #include "xattr.h"
+ 
+@@ -43,6 +44,10 @@ static size_t f2fs_xattr_generic_list(struct dentry *dentry, char *list,
+ 		prefix = XATTR_TRUSTED_PREFIX;
+ 		prefix_len = XATTR_TRUSTED_PREFIX_LEN;
+ 		break;
++	case F2FS_XATTR_INDEX_SECURITY:
++		prefix = XATTR_SECURITY_PREFIX;
++		prefix_len = XATTR_SECURITY_PREFIX_LEN;
++		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -70,13 +75,14 @@ static int f2fs_xattr_generic_get(struct dentry *dentry, const char *name,
+ 		if (!capable(CAP_SYS_ADMIN))
+ 			return -EPERM;
+ 		break;
++	case F2FS_XATTR_INDEX_SECURITY:
++		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
+ 	if (strcmp(name, "") == 0)
+ 		return -EINVAL;
+-	return f2fs_getxattr(dentry->d_inode, type, name,
+-			buffer, size);
++	return f2fs_getxattr(dentry->d_inode, type, name, buffer, size);
  }
  
--void set_dirty_dir_page(struct inode *inode, struct page *page)
-+static int __add_dirty_inode(struct inode *inode, struct dir_inode_entry *new)
- {
- 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
- 	struct list_head *head = &sbi->dir_inode_list;
--	struct dir_inode_entry *new;
- 	struct list_head *this;
+ static int f2fs_xattr_generic_set(struct dentry *dentry, const char *name,
+@@ -93,6 +99,8 @@ static int f2fs_xattr_generic_set(struct dentry *dentry, const char *name,
+ 		if (!capable(CAP_SYS_ADMIN))
+ 			return -EPERM;
+ 		break;
++	case F2FS_XATTR_INDEX_SECURITY:
++		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -145,6 +153,40 @@ static int f2fs_xattr_advise_set(struct dentry *dentry, const char *name,
+ 	return 0;
+ }
  
-+	list_for_each(this, head) {
-+		struct dir_inode_entry *entry;
-+		entry = list_entry(this, struct dir_inode_entry, list);
-+		if (entry->inode == inode)
-+			return -EEXIST;
++#ifdef CONFIG_F2FS_FS_SECURITY
++static int f2fs_initxattrs(struct inode *inode, const struct xattr *xattr_array,
++		void *fs_info)
++{
++	const struct xattr *xattr;
++	char *name;
++	int err = 0;
++
++	for (xattr = xattr_array; xattr->name != NULL; xattr++) {
++		name = kmalloc(XATTR_SECURITY_PREFIX_LEN +
++			       strlen(xattr->name) + 1, GFP_NOFS);
++		if (!name) {
++			err = -ENOMEM;
++			break;
++		}
++		strcpy(name, XATTR_SECURITY_PREFIX);
++		strcpy(name + XATTR_SECURITY_PREFIX_LEN, xattr->name);
++		err = f2fs_setxattr(inode, F2FS_XATTR_INDEX_SECURITY, name,
++					xattr->value, xattr->value_len);
++		kfree(name);
++		if (err < 0)
++			break;
 +	}
-+	list_add_tail(&new->list, head);
-+#ifdef CONFIG_F2FS_STAT_FS
-+	sbi->n_dirty_dirs++;
++	return err;
++}
++
++int f2fs_init_security(struct inode *inode, struct inode *dir,
++				const struct qstr *qstr)
++{
++	return security_inode_init_security(inode, dir, qstr,
++				&f2fs_initxattrs, NULL);
++}
 +#endif
++
+ const struct xattr_handler f2fs_xattr_user_handler = {
+ 	.prefix	= XATTR_USER_PREFIX,
+ 	.flags	= F2FS_XATTR_INDEX_USER,
+@@ -169,6 +211,13 @@ const struct xattr_handler f2fs_xattr_advise_handler = {
+ 	.set    = f2fs_xattr_advise_set,
+ };
+ 
++const struct xattr_handler f2fs_xattr_security_handler = {
++	.prefix	= XATTR_SECURITY_PREFIX,
++	.list	= f2fs_xattr_generic_list,
++	.get	= f2fs_xattr_generic_get,
++	.set	= f2fs_xattr_generic_set,
++};
++
+ static const struct xattr_handler *f2fs_xattr_handler_map[] = {
+ 	[F2FS_XATTR_INDEX_USER] = &f2fs_xattr_user_handler,
+ #ifdef CONFIG_F2FS_FS_POSIX_ACL
+@@ -177,6 +226,9 @@ static const struct xattr_handler *f2fs_xattr_handler_map[] = {
+ #endif
+ 	[F2FS_XATTR_INDEX_TRUSTED] = &f2fs_xattr_trusted_handler,
+ 	[F2FS_XATTR_INDEX_ADVISE] = &f2fs_xattr_advise_handler,
++#ifdef CONFIG_F2FS_FS_SECURITY
++	[F2FS_XATTR_INDEX_SECURITY] = &f2fs_xattr_security_handler,
++#endif
+ };
+ 
+ const struct xattr_handler *f2fs_xattr_handlers[] = {
+@@ -187,6 +239,9 @@ const struct xattr_handler *f2fs_xattr_handlers[] = {
+ #endif
+ 	&f2fs_xattr_trusted_handler,
+ 	&f2fs_xattr_advise_handler,
++#ifdef CONFIG_F2FS_FS_SECURITY
++	&f2fs_xattr_security_handler,
++#endif
+ 	NULL,
+ };
+ 
+diff --git a/fs/f2fs/xattr.h b/fs/f2fs/xattr.h
+index 49c9558..14e1329 100644
+--- a/fs/f2fs/xattr.h
++++ b/fs/f2fs/xattr.h
+@@ -112,6 +112,7 @@ extern const struct xattr_handler f2fs_xattr_trusted_handler;
+ extern const struct xattr_handler f2fs_xattr_acl_access_handler;
+ extern const struct xattr_handler f2fs_xattr_acl_default_handler;
+ extern const struct xattr_handler f2fs_xattr_advise_handler;
++extern const struct xattr_handler f2fs_xattr_security_handler;
+ 
+ extern const struct xattr_handler *f2fs_xattr_handlers[];
+ 
+@@ -121,7 +122,6 @@ extern int f2fs_getxattr(struct inode *inode, int name_index, const char *name,
+ 		void *buffer, size_t buffer_size);
+ extern ssize_t f2fs_listxattr(struct dentry *dentry, char *buffer,
+ 		size_t buffer_size);
+-
+ #else
+ 
+ #define f2fs_xattr_handlers	NULL
+@@ -142,4 +142,14 @@ static inline ssize_t f2fs_listxattr(struct dentry *dentry, char *buffer,
+ }
+ #endif
+ 
++#ifdef CONFIG_F2FS_FS_SECURITY
++extern int f2fs_init_security(struct inode *inode, struct inode *dir,
++				const struct qstr *qstr);
++#else
++static inline int f2fs_init_security(struct inode *inode, struct inode *dir,
++				const struct qstr *qstr)
++{
 +	return 0;
 +}
-+
-+void set_dirty_dir_page(struct inode *inode, struct page *page)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	struct dir_inode_entry *new;
-+
- 	if (!S_ISDIR(inode->i_mode))
- 		return;
- retry:
-@@ -469,25 +486,31 @@ retry:
- 	INIT_LIST_HEAD(&new->list);
- 
- 	spin_lock(&sbi->dir_inode_lock);
--	list_for_each(this, head) {
--		struct dir_inode_entry *entry;
--		entry = list_entry(this, struct dir_inode_entry, list);
--		if (entry->inode == inode) {
--			kmem_cache_free(inode_entry_slab, new);
--			goto out;
--		}
--	}
--	list_add_tail(&new->list, head);
--#ifdef CONFIG_F2FS_STAT_FS
--	sbi->n_dirty_dirs++;
--#endif
-+	if (__add_dirty_inode(inode, new))
-+		kmem_cache_free(inode_entry_slab, new);
- 
--	BUG_ON(!S_ISDIR(inode->i_mode));
--out:
- 	inc_page_count(sbi, F2FS_DIRTY_DENTS);
- 	inode_inc_dirty_dents(inode);
- 	SetPagePrivate(page);
-+	spin_unlock(&sbi->dir_inode_lock);
-+}
-+
-+void add_dirty_dir_inode(struct inode *inode)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	struct dir_inode_entry *new;
-+retry:
-+	new = kmem_cache_alloc(inode_entry_slab, GFP_NOFS);
-+	if (!new) {
-+		cond_resched();
-+		goto retry;
-+	}
-+	new->inode = inode;
-+	INIT_LIST_HEAD(&new->list);
- 
-+	spin_lock(&sbi->dir_inode_lock);
-+	if (__add_dirty_inode(inode, new))
-+		kmem_cache_free(inode_entry_slab, new);
- 	spin_unlock(&sbi->dir_inode_lock);
- }
- 
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 40b137a..d6e63da 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -1030,6 +1030,7 @@ void remove_orphan_inode(struct f2fs_sb_info *, nid_t);
- int recover_orphan_inodes(struct f2fs_sb_info *);
- int get_valid_checkpoint(struct f2fs_sb_info *);
- void set_dirty_dir_page(struct inode *, struct page *);
-+void add_dirty_dir_inode(struct inode *);
- void remove_dirty_dir_inode(struct inode *);
- struct inode *check_dirty_dir_inode(struct f2fs_sb_info *, nid_t);
- void sync_dirty_dir_inodes(struct f2fs_sb_info *);
-diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-index 539ca32..ddde14f 100644
---- a/fs/f2fs/recovery.c
-+++ b/fs/f2fs/recovery.c
-@@ -58,6 +58,7 @@ static int recover_dentry(struct page *ipage, struct inode *inode)
- 			goto out;
- 		}
- 		set_inode_flag(F2FS_I(dir), FI_DELAY_IPUT);
-+		add_dirty_dir_inode(dir);
- 	}
- 
- 	name.len = le32_to_cpu(raw_inode->i_namelen);
++#endif
+ #endif /* __F2FS_XATTR_H__ */
 -- 
 1.8.1.3.566.gaa39828
 
