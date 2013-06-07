@@ -1,74 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513Ab3FGJ5z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 05:57:55 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:23526 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751694Ab3FGJ5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 05:57:54 -0400
-X-IronPort-AV: E=Sophos;i="4.87,821,1363104000"; 
-   d="scan'208";a="7491549"
-Message-ID: <51B1ADFE.2020201@cn.fujitsu.com>
-Date: Fri, 07 Jun 2013 17:55:10 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+	id S1753675Ab3FGKAE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 06:00:04 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49421 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694Ab3FGKAB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 06:00:01 -0400
+Date: Fri, 7 Jun 2013 10:59:36 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Paul Walmsley <pwalmsley@nvidia.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, Andrew Chew <achew@nvidia.com>,
+        Matthew Longnecker <mlongnecker@nvidia.com>
+Message-ID: <20130607095936.GK31367@sirena.org.uk>
+References: <alpine.DEB.2.02.1306070753420.32163@utopia.booyaka.com>
+ <20130607090923.GH31367@sirena.org.uk>
+ <alpine.DEB.2.02.1306070920010.32163@utopia.booyaka.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: chanho.min@lge.com, Johannes Weiner <hannes@cmpxchg.org>,
-        iamjoonsoo.kim@lge.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 3/3] mm, vmalloc: Remove alloc_map from vmap_block
-References: <51B1AD2F.4030702@cn.fujitsu.com>
-In-Reply-To: <51B1AD2F.4030702@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/07 17:56:06,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/07 17:56:08,
-	Serialize complete at 2013/06/07 17:56:08
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k6SrlR5F+BMzH45x"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1306070920010.32163@utopia.booyaka.com>
+X-Cookie: Are you a turtle?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: core: add regulator_get_linear_step()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As we have removed the dead code in the vb_alloc, it seems there is
-no place to use the alloc_map. So there is no reason to maintain
-the alloc_map in vmap_block.
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- mm/vmalloc.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+--k6SrlR5F+BMzH45x
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 5c037b9..ad11d4f 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -754,7 +754,6 @@ struct vmap_block {
- 	struct vmap_area *va;
- 	struct vmap_block_queue *vbq;
- 	unsigned long free, dirty;
--	DECLARE_BITMAP(alloc_map, VMAP_BBMAP_BITS);
- 	DECLARE_BITMAP(dirty_map, VMAP_BBMAP_BITS);
- 	struct list_head free_list;
- 	struct rcu_head rcu_head;
-@@ -820,7 +819,6 @@ static struct vmap_block *new_vmap_block(gfp_t gfp_mask)
- 	vb->va = va;
- 	vb->free = VMAP_BBMAP_BITS;
- 	vb->dirty = 0;
--	bitmap_zero(vb->alloc_map, VMAP_BBMAP_BITS);
- 	bitmap_zero(vb->dirty_map, VMAP_BBMAP_BITS);
- 	INIT_LIST_HEAD(&vb->free_list);
- 
-@@ -873,7 +871,6 @@ static void purge_fragmented_blocks(int cpu)
- 		if (vb->free + vb->dirty == VMAP_BBMAP_BITS && vb->dirty != VMAP_BBMAP_BITS) {
- 			vb->free = 0; /* prevent further allocs after releasing lock */
- 			vb->dirty = VMAP_BBMAP_BITS; /* prevent purging it again */
--			bitmap_fill(vb->alloc_map, VMAP_BBMAP_BITS);
- 			bitmap_fill(vb->dirty_map, VMAP_BBMAP_BITS);
- 			spin_lock(&vbq->lock);
- 			list_del_rcu(&vb->free_list);
--- 
-1.7.1
+On Fri, Jun 07, 2013 at 09:38:10AM +0000, Paul Walmsley wrote:
 
+> +static int get_cvb_voltage(struct platform_device *pdev, int c0, int c1,
+> +			   int c2)
+> +{
+> +	struct tegra_dfll *td = dev_get_drvdata(&pdev->dev);
+> +	/* apply only speedo scale: output mv = cvb_mv * v_scale */
+> +	int mv;
+> +
+> +	/* combined: apply voltage scale and round to cvb alignment step */
+> +	mv = DIV_ROUND_CLOSEST(c2 * td->speedo_value, td->cvb_speedo_scale);
+> +	mv = DIV_ROUND_CLOSEST((mv + c1) * td->speedo_value,
+> +			       td->cvb_speedo_scale) + c0;
+> +
+> +	/* XXX Bring back cvb_alignment_uv; put it in the board dfll DT */
+> +	return DIV_ROUND_UP(mv * 1000,
+> +			    td->cvb_voltage_scale * td->vdd_step) *
+> +		td->vdd_step / 1000;
+> +}
+
+Hrm, right.  So I guess for this the question is why you need the steps
+at all - can't the driver just ask for the voltage it wants with
+whatever tolerance is appropriate (or just specify the maximum tolerable
+voltage if that's better)?  I'm not sure what cvb_voltage_scale is.
+
+I guess the problem here is that you have to hit some fairly tight
+tolerances on the voltage?
+
+--k6SrlR5F+BMzH45x
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRsa8FAAoJELSic+t+oim9nxkP/iWcC1owc/5TFBkzaoPDtpfQ
+GXaZXiSG81A4xcFzB6grKuAKUK60jChYDg8//zAes9W2JqmadrWKkjNbFq547bvT
+0ymynTwBHIUjE/DPTyT0n74SUkQYolhcM3WhRJvFSetc1PPxW7X6QIzprBqATKgQ
+uBYyLPGs3AqmtDXSSJAHyZDCxhObTSyns1OrqYmVx/MxCTjrx9JwqTOMAlE4bufl
+J2vlUaGzTQ86dH2KFx0/G2UcIEgp3NzD0q6htfrfl1hW6CozEGCcJwJ3zr5mZGEU
+IjdpKoxYHnSKnv8pOLVVquQ19PUonYN861+VVMd+1QxNXvogK0xUtgrmxHS9t/Qr
+VD3vcioAwwoD8g/pJJQSuNjkEzMmqGoqI5QyPs6yM4CS7clnwUGZXQC4ZHpIs77M
+OlyrdFCIttu7t+8K/F+QsEvmIyBmIW22kjI56Mj/XNvMZKV2B+4ArhR9aB6sUzut
+2d33YfNsweLCB8SvMSu+3ocwbVq+KLu8GfCmUIqIYftQVbDYB+jbQpGTia8pmt75
+VIhfnLiBzdS9W9bMjzWeyqiQU+BgEROzOrc3Hk6AqxXktfDdWrVHhnptlvBzAsrx
+5hGKs4xO6NEE93EHRUQ5O10chfiHMoMa2PlMFs4qHz+z2Fsj3F1DjOE625VdQZaS
+neTYnE5ZapNJtWz2Mlbu
+=DyEh
+-----END PGP SIGNATURE-----
+
+--k6SrlR5F+BMzH45x--
