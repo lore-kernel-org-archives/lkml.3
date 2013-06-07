@@ -1,60 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756554Ab3FGScQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 14:32:16 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:62376 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755360Ab3FGScP (ORCPT
+	id S1756695Ab3FGScu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 14:32:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35176 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755360Ab3FGSct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 14:32:15 -0400
+	Fri, 7 Jun 2013 14:32:49 -0400
+Date: Fri, 7 Jun 2013 11:32:47 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Stoffregen <paul@pjrc.com>
+Subject: [PATCH] USB: cdc-acm: remove unneeded spin_lock_irqsave/restore on
+ write path
+Message-ID: <20130607183247.GA6850@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <1370551945-8444-9-git-send-email-keescook@chromium.org>
-References: <1370551945-8444-1-git-send-email-keescook@chromium.org>
-	<1370551945-8444-9-git-send-email-keescook@chromium.org>
-Date: Fri, 7 Jun 2013 11:32:14 -0700
-X-Google-Sender-Auth: XGMXdL4Zp5RrvcnjnDlZnFZMHzI
-Message-ID: <CAGXu5j+KfgZkhZNzxfCrY3sZS_oRTMwz1vKmd5QvP5rCw7EpfQ@mail.gmail.com>
-Subject: Re: [PATCH 8/8] isdn: clean up debug format string usage
-From: Kees Cook <keescook@chromium.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jens Axboe <axboe@kernel.dk>, "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        David Woodhouse <dwmw2@infradead.org>, Anton Vorontsov <cbou@mail.ru>,
-        Karsten Keil <isdn@linux-pingi.de>, Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 6, 2013 at 1:52 PM, Kees Cook <keescook@chromium.org> wrote:
-> Avoid unneeded local string buffers for constructing debug output. Also
-> cleans up debug calls that contain a single parameter so that they cannot
-> be accidentally parsed as format strings.
->
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Cc: Karsten Keil <isdn@linux-pingi.de>
-> [...]
-> diff --git a/drivers/isdn/mISDN/dsp_pipeline.c b/drivers/isdn/mISDN/dsp_pipeline.c
-> index 8b1a66c..88305c9 100644
-> --- a/drivers/isdn/mISDN/dsp_pipeline.c
-> +++ b/drivers/isdn/mISDN/dsp_pipeline.c
-> @@ -102,7 +102,7 @@ int mISDN_dsp_element_register(struct mISDN_dsp_element *elem)
->         entry->dev.class = elements_class;
->         entry->dev.release = mISDN_dsp_dev_release;
->         dev_set_drvdata(&entry->dev, elem);
-> -       dev_set_name(&entry->dev, "%s", elem->name);
-> +       dev_set_name(&entry->dev, elem->name);
->         ret = device_register(&entry->dev);
->         if (ret) {
->                 printk(KERN_ERR "%s: failed to register %s\n",
 
-This hunk should be dropped -- it got mixed up when splitting the
-dev_set_name() patch out.
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
--Kees
+When writing data we were:
+	lock
+	do some work
+	unlock
+	call function
+		lock
+		do some work
+		unlock
+		return
+	return
 
---
-Kees Cook
-Chrome OS Security
+It turns out, that "function" was only ever called in the one place, so
+instead of locking/unlocking for no good reason, just inline the
+function and only grab the lock once.
+
+This has sped up the pathological case of sending 1 byte packets to a
+loop-back cdc-acm device from 49600 bytes per second to 50100 bytes a
+second on my workstation.  A tiny increase yes, but noticable, and now
+the spinlock isn't the hottest thing on the perf graph anymore.  Yes, we
+are still waiting for the hardware for the most part, but getting rid of
+a spin_lock_irqsave() call for every packet is still a good thing.
+
+And we end up deleting lines of code, always a win overall.
+
+This was found by using a Teensy 3.0 device and the test program and
+firmware located at:
+	http://www.pjrc.com/teensy/benchmark_usb_serial_receive.html
+
+Reported-by: Paul Stoffregen <paul@pjrc.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/class/cdc-acm.c |   51 +++++++++++++++-----------------------------
+ 1 file changed, 18 insertions(+), 33 deletions(-)
+
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -216,38 +216,6 @@ static int acm_start_wb(struct acm *acm,
+ 	return rc;
+ }
+ 
+-static int acm_write_start(struct acm *acm, int wbn)
+-{
+-	unsigned long flags;
+-	struct acm_wb *wb = &acm->wb[wbn];
+-	int rc;
+-
+-	spin_lock_irqsave(&acm->write_lock, flags);
+-	if (!acm->dev) {
+-		wb->use = 0;
+-		spin_unlock_irqrestore(&acm->write_lock, flags);
+-		return -ENODEV;
+-	}
+-
+-	dev_vdbg(&acm->data->dev, "%s - susp_count %d\n", __func__,
+-							acm->susp_count);
+-	usb_autopm_get_interface_async(acm->control);
+-	if (acm->susp_count) {
+-		if (!acm->delayed_wb)
+-			acm->delayed_wb = wb;
+-		else
+-			usb_autopm_put_interface_async(acm->control);
+-		spin_unlock_irqrestore(&acm->write_lock, flags);
+-		return 0;	/* A white lie */
+-	}
+-	usb_mark_last_busy(acm->dev);
+-
+-	rc = acm_start_wb(acm, wb);
+-	spin_unlock_irqrestore(&acm->write_lock, flags);
+-
+-	return rc;
+-
+-}
+ /*
+  * attributes exported through sysfs
+  */
+@@ -653,13 +621,30 @@ static int acm_tty_write(struct tty_stru
+ 	}
+ 	wb = &acm->wb[wbn];
+ 
++	if (!acm->dev) {
++		wb->use = 0;
++		spin_unlock_irqrestore(&acm->write_lock, flags);
++		return -ENODEV;
++	}
++
+ 	count = (count > acm->writesize) ? acm->writesize : count;
+ 	dev_vdbg(&acm->data->dev, "%s - write %d\n", __func__, count);
+ 	memcpy(wb->buf, buf, count);
+ 	wb->len = count;
+ 	spin_unlock_irqrestore(&acm->write_lock, flags);
+ 
+-	stat = acm_write_start(acm, wbn);
++	usb_autopm_get_interface_async(acm->control);
++	if (acm->susp_count) {
++		if (!acm->delayed_wb)
++			acm->delayed_wb = wb;
++		else
++			usb_autopm_put_interface_async(acm->control);
++		spin_unlock_irqrestore(&acm->write_lock, flags);
++		return count;	/* A white lie */
++	}
++	usb_mark_last_busy(acm->dev);
++
++	stat = acm_start_wb(acm, wb);
+ 	if (stat < 0)
+ 		return stat;
+ 	return count;
