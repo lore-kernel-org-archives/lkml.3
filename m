@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab3FGNyx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 09:54:53 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:47769 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752382Ab3FGNyw (ORCPT
+	id S1754676Ab3FGN40 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 09:56:26 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:50721 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753082Ab3FGN4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 09:54:52 -0400
-Message-ID: <1370613289.24311.419.camel@edumazet-glaptop>
-Subject: RE: Scaling problem with a lot of AF_PACKET sockets on different
- interfaces
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: Mike Galbraith <bitbucket@online.de>,
-        "Vitaly V. Bursov" <vitalyb@telenet.dn.ua>,
-        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Date: Fri, 07 Jun 2013 06:54:49 -0700
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B727B@saturn3.aculab.com>
-References: <51B1CA50.30702@telenet.dn.ua>
-	 <1370608871.5854.64.camel@marge.simpson.net>
-	 <AE90C24D6B3A694183C094C60CF0A2F6026B727B@saturn3.aculab.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Fri, 7 Jun 2013 09:56:24 -0400
+Message-ID: <51B1E68C.1040504@cogentembedded.com>
+Date: Fri, 07 Jun 2013 17:56:28 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Lotfi Manseur <lotfi.manseur@gmail.com>
+CC: stable@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wojciech M Zabolotny <W.Zabolotny@elka.pw.edu.pl>,
+        Nicolas Palix <nicolas.palix@imag.fr>,
+        Lotfi Manseur <lotfi.manseur@imag.fr>, Willy Tarreau <w@1wt.eu>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: serial/ftdi_sio.c Fix kernel oops
+References: <1370610872-1309-1-git-send-email-lotfi.manseur@imag.fr>
+In-Reply-To: <1370610872-1309-1-git-send-email-lotfi.manseur@imag.fr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-07 at 14:30 +0100, David Laight wrote:
+Hello.
 
-> Looks like the ptype_base[] should be per 'dev'?
-> Or just put entries where ptype->dev != null_or_dev on a per-interface
-> list and do two searches?
+On 06/07/2013 05:14 PM, Lotfi Manseur wrote:
 
-Yes, but then we would have two searches instead of one in fast path.
+> Handle null termios in ftdi_set_termios(), introduced in
+> commit 552f6bf1bb0eda0011c0525dd587aa9e7ba5b846
+> This has been corrected in the mainline by
+> commits c515598e0f5769916c31c00392cc2bfe6af74e55 and
+> a816e3113b63753c330ca4751ea1d208e93e3015.
 
-ptype_base[] is currently 16 slots, 256 bytes on x86_64.
-Presumably the per device list could be a single list, instead of a hash
-table, but still...
+    You should also give the summary lines of all mentioned commits in 
+parens.
 
-If the application creating hundred or thousand of AF_PACKET sockets is
-a single process, I really question why using a single AF_PACKET was not
-chosen.
+> This is to be fixed in longterm 2.6.32.60 and 3.4.47.
+> This bug has been found with coccinelle.
+>
+> Signed-off-by: Lotfi Manseur <lotfi.manseur@imag.fr>
+> Signed-off-by: Nicolas Palix <nicolas.palix@imag.fr>
 
-We now have a FANOUT capability on AF_PACKET, so that its scalable to
-million of packets per second.
-
-I would rather try this way before adding yet another section in
-__netif_receive_skb()
-
-
+WBR, Sergei
 
