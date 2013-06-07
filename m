@@ -1,116 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751370Ab3FGEtw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 00:49:52 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:38482 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737Ab3FGEtv (ORCPT
+	id S1751575Ab3FGEuO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 00:50:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50089 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751023Ab3FGEuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 00:49:51 -0400
-Date: Fri, 7 Jun 2013 14:49:36 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: linux-next: manual merge of the driver-core tree with the pm tree
-Message-Id: <20130607144936.6ea0c2d9a7fcf321e59cc6d6@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+	Fri, 7 Jun 2013 00:50:12 -0400
+Message-ID: <1370580600.4021.72.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 010/184] usermodehelper: introduce umh_complete(sub_info)
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Willy Tarreau <w@1wt.eu>, dann frazier <dannf@debian.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 07 Jun 2013 05:50:00 +0100
+In-Reply-To: <20130604172130.718498876@1wt.eu>
+References: <20130604172130.718498876@1wt.eu>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-fscV4bUBeKn4rtX/cIqI"
+X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__7_Jun_2013_14_49_36_+1000_T=ArogYkIUPRU0bH"
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__7_Jun_2013_14_49_36_+1000_T=ArogYkIUPRU0bH
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+
+--=-fscV4bUBeKn4rtX/cIqI
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-Hi Greg,
+On Tue, 2013-06-04 at 19:21 +0200, Willy Tarreau wrote:
+> 2.6.32-longterm review patch.  If anyone has any objections, please let m=
+e know.
+>=20
+> ------------------
+>=20
+> From: Oleg Nesterov <oleg@redhat.com>
+>=20
+> commit b3449922502f5a161ee2b5022a33aec8472fbf18 upstream
+>=20
+> Preparation.  Add the new trivial helper, umh_complete().  Currently it
+> simply does complete(sub_info->complete).
+>=20
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: David Rientjes <rientjes@google.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> [dannf: Adjusted to apply to Debian's 2.6.32]
 
-Today's linux-next merge of the driver-core tree got a conflict in
-drivers/base/memory.c between commit 4960e05e2260 ("Driver core:
-Introduce offline/online callbacks for memory blocks") from the pm tree
-and commit 96b2c0fc8e74 ("drivers/base: Use attribute groups to create
-sysfs memory files") from the driver-core tree.
+Dann's backports are mostly missing his Signed-off-by.  (We don't
+usually bother with this in the Debian patch queue, but probably ought
+to do so when backporting.)
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Ben.
+
+> Signed-off-by: Willy Tarreau <w@1wt.eu>
+> ---
+>  kernel/kmod.c | 9 +++++++--
+>  1 file changed, 7 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/kernel/kmod.c b/kernel/kmod.c
+> index a061472..2a27d17 100644
+> --- a/kernel/kmod.c
+> +++ b/kernel/kmod.c
+> @@ -206,6 +206,11 @@ void call_usermodehelper_freeinfo(struct subprocess_=
+info *info)
+>  }
+>  EXPORT_SYMBOL(call_usermodehelper_freeinfo);
+> =20
+> +static void umh_complete(struct subprocess_info *sub_info)
+> +{
+> +	complete(sub_info->complete);
+> +}
+> +
+>  /* Keventd can't block, but this (a child) can. */
+>  static int wait_for_helper(void *data)
+>  {
+> @@ -245,7 +250,7 @@ static int wait_for_helper(void *data)
+>  	if (sub_info->wait =3D=3D UMH_NO_WAIT)
+>  		call_usermodehelper_freeinfo(sub_info);
+>  	else
+> -		complete(sub_info->complete);
+> +		umh_complete(sub_info);
+>  	return 0;
+>  }
+> =20
+> @@ -280,7 +285,7 @@ static void __call_usermodehelper(struct work_struct =
+*work)
+>  		/* FALLTHROUGH */
+> =20
+>  	case UMH_WAIT_EXEC:
+> -		complete(sub_info->complete);
+> +		umh_complete(sub_info);
+>  	}
+>  }
+> =20
 
 --=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Ben Hutchings
+Theory and practice are closer in theory than in practice.
+                                - John Levine, moderator of comp.compilers
 
-diff --cc drivers/base/memory.c
-index 4ebf97f,e315051..0000000
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@@ -595,6 -493,41 +541,42 @@@ struct memory_block *find_memory_block(
-  	return find_memory_block_hinted(section, NULL);
-  }
- =20
-+ static struct attribute *memory_memblk_attrs[] =3D {
-+ 	&dev_attr_phys_index.attr,
-+ 	&dev_attr_end_phys_index.attr,
-+ 	&dev_attr_state.attr,
-+ 	&dev_attr_phys_device.attr,
-+ 	&dev_attr_removable.attr,
-+ 	NULL
-+ };
-+=20
-+ static struct attribute_group memory_memblk_attr_group =3D {
-+ 	.attrs =3D memory_memblk_attrs,
-+ };
-+=20
-+ static const struct attribute_group *memory_memblk_attr_groups[] =3D {
-+ 	&memory_memblk_attr_group,
-+ 	NULL,
-+ };
-+=20
-+ /*
-+  * register_memory - Setup a sysfs device for a memory block
-+  */
-+ static
-+ int register_memory(struct memory_block *memory)
-+ {
-+ 	int error;
-+=20
-+ 	memory->dev.bus =3D &memory_subsys;
-+ 	memory->dev.id =3D memory->start_section_nr / sections_per_block;
-+ 	memory->dev.release =3D memory_block_release;
-+ 	memory->dev.groups =3D memory_memblk_attr_groups;
-++	memory->dev.offline =3D memory->state =3D=3D MEM_OFFLINE;
-+=20
-+ 	error =3D device_register(&memory->dev);
-+ 	return error;
-+ }
-+=20
-  static int init_memory_block(struct memory_block **memory,
-  			     struct mem_section *section, unsigned long state)
-  {
-
---Signature=_Fri__7_Jun_2013_14_49_36_+1000_T=ArogYkIUPRU0bH
-Content-Type: application/pgp-signature
+--=-fscV4bUBeKn4rtX/cIqI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJRsWZmAAoJEECxmPOUX5FE5IEP/iWJM4Tm7WZEtPEIrshGtuhk
-7sz8RFlVcJza6BXQcAuZBHoGrUEjBEW8AjAkupXK7GrrBB5qd2YMALMauV3VoDW6
-DpG4kKPCH/ejJHCKF5YHoCa++l79JKut6CNWYeEeH1FsH8p55qALglRUayB3MxTR
-sKurcSy8PZjxUFQXzuu8kST+N2f+igsRFT0uVT+DJD3ZL0pV4uSkjHWWh7yISezK
-j9lBSRSCckIwyvEtLwqIjq7CHCV9rjWtexnI6Ksva39ZYJdXqNCCcgH+cI8SbtP4
-OPc7iMy6IZLiMLAx4B+o/8oGaonQOjxdUb5jnwhu0Yepcoy1MHuYTt5Ix4TPzCZO
-S0nayln7TmxWsOh4/HTuSPsQGrnkB7jK7Aoo9KEYNlUxHfVh+1VKnWi/RUPcFrRJ
-q44WLempREvUCYD47SaUPOHDT2qFOgS3//rtQXW+doDd9E3nT+Oc4n+w/MWpO85y
-NXIDC1t+Ke7F2lLqk/fM0kThRrunQnMniaTnfu1BveUmCOr9pTDgvBfVumNjjNMs
-OKV5vGK/mk0sG/3D/BJD1sFa82xOCUBrpi+813ryrRsedtvdYalXD4/0cid5Xyqi
-RiBB2K4b2aN9Hf+C2fG0le8pDSUIZaHi6ZVo57sqHjC/mQ3D2JAUnT0a2b3wZtBm
-pH6NsP84rUOl9CUzWkKn
-=jrG9
+iQIVAwUAUbFmeOe/yOyVhhEJAQqK8A/+KrcqvmRLvgRXcrTa2FPwchyfNabCQ9Sp
+CsZZfny6FkgwqIvsho9twsHYhsEt7RuNLsJn4ioCAdpZOP97u8vuJX+QpD3o+8Hz
+tUHMQeX118r3B/jaWS03XMa/Db9qftXUvzHeJPq8ZnKvaFuSOY85sbMlpLr4tZRK
+GiNQ5aZMLzKJZEv5JbloVBl0ruI/2BHMfwXLeBgS9SzZfM5zABxYYkzkDdRllYJL
+QNiAbt1F05z+84qEQ6F/nwUTapKyvFX7bkPPCe0719+qIlEViIBFBejpveHmUvyR
+tAHzgLr6lOVZ3vSJvij46pr48uTWxYpU9VLAYu67G6XyxdZ/dCkYwXg0VZ3IixO6
+ox8zbMV9DRlZFdkAoZAnmIBvaOr9whVxQ+xoyHj072oogBbkk+70Qi4J1WWiDS1j
+l3+rtG3ZP8bEWtVpMKYxT5kN8L2K5zDrf7nsFs4EFWrT4Ij3E/n2J43yb7lQGXh5
+DEqLd0rnUAmL3yuBolZSMzLvMTj/pZUIpSTqYMmKr8dXpn1zrYvaxic1yw26vkRn
+ao0rD8r/aer9Ffm69oeHMOtxfcNOD3BHdO5+CUuT1ILDc/lrevD7kXnm0Rr7pEtP
+kMwDNJ+s0j/326uUqVsUEuVVFtzxJX+sxt1J3cp8tilDhb35b4NeVF2NMpkJSeM7
+JXk0536Yr5g=
+=7vJS
 -----END PGP SIGNATURE-----
 
---Signature=_Fri__7_Jun_2013_14_49_36_+1000_T=ArogYkIUPRU0bH--
+--=-fscV4bUBeKn4rtX/cIqI--
