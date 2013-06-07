@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab3FGOM7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 10:12:59 -0400
-Received: from a9-74.smtp-out.amazonses.com ([54.240.9.74]:34997 "EHLO
-	a9-74.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753556Ab3FGOM6 (ORCPT
+	id S1755464Ab3FGONL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 10:13:11 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:62828 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754280Ab3FGONI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 10:12:58 -0400
-Date: Fri, 7 Jun 2013 14:12:57 +0000
-From: Christoph Lameter <cl@gentwo.org>
-To: Roman Gushchin <klamm@yandex-team.ru>
-cc: penberg@kernel.org, mpm@selenic.com, yanmin.zhang@intel.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: slub: slab order on multi-processor machines
-In-Reply-To: <51B1A04B.7030003@yandex-team.ru>
-Message-ID: <0000013f1efbaa4f-6039ad3e-286e-4486-8b7e-7b0331edf990-000000@email.amazonses.com>
-References: <51B1A04B.7030003@yandex-team.ru>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 7 Jun 2013 10:13:08 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.06.07-54.240.9.74
+In-Reply-To: <20130607152718.4b458087@amdc308.digital.local>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+	<1370502472-7249-3-git-send-email-l.majewski@samsung.com>
+	<CAKohpok3KTfSWDU6PdDd4_VW4Pp+6J80yn5cLrYr5RuBNH-agA@mail.gmail.com>
+	<20130606134903.5f69b8fb@amdc308.digital.local>
+	<CAKohpo=jCuLwhB+3pC0NLRBDmfPpGr=hRgxTT4rXzSwM4BndaQ@mail.gmail.com>
+	<20130607152718.4b458087@amdc308.digital.local>
+Date: Fri, 7 Jun 2013 19:43:07 +0530
+Message-ID: <CAKohpok=+UiDQR+i3sJAKLc26f41=uexj1R7=OBUnjyvabAxhg@mail.gmail.com>
+Subject: Re: [PATCH 2/5] cpufreq:boost: Add support for software based CPU
+ frequency boost
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Jun 2013, Roman Gushchin wrote:
+Hi Lukasz,
 
-> As I understand, the idea was to make kernel allocations cheaper by reducing
-> the total
-> number of page allocations (allocating 1 page with order 3 is cheaper than
-> allocating
-> 8 1-ordered pages).
+On 7 June 2013 18:57, Lukasz Majewski <l.majewski@samsung.com> wrote:
 
-Its also affecting allocator speed. By having less page structures to
-manage the metadata effort is reduced. By having more objects in a page
-the fastpath of slub is more likely to be used (Visible in allocator
-benchmarks). Slub can fall back dynamically to order 0 pages if necessary.
-So it can take opportunistically take advantage of contiguous pages.
+I hope you agreed to all the other comments I gave as I don't see an
+explicit reply below each of these. I have seen people missing these
+in past, so what would be better to do is:
+- either reply below each one of them and say yes or no..
+- Or write once below many comments and say: All above comments
+are accepted.
 
-> I'm sure, it's true for recently rebooted machine with a lot of free
-> non-fragmented memory. But is it also true for heavy-loaded machine with
-> fragmented memory? Are we sure, that it's cheaper to run compaction and
-> allocate order 3 page than to use small 1-pages slabs? Do I miss
-> something?
+So, that Reviewer is assured that you haven't missed anything.
 
-We do have defragmentation logic and defragmentation passes to address
-that. In general the need for larger physical contiguous memory segments
-will increase as RAM gets larger and larger. Maybe 2M is the next step but
-we will always have to face fragmentation regardless of what the next size
-it.
+> I would prefer to have following fields in the cpufreq_boost structure:
+> struct cpufreq_boost {
+>         unsigned int    max_boost_freq; /*boost max freq*/
+>         unsigned int    max_normal_freq; /*max normal freq
+>         int (*low_level_boost) (int state);
+>         bool boost_en;  /* indicate if boost is enabled */
+> }
+>
+> The max_{boost|normal}_freq fields will be filed at
+> ret = cpufreq_driver->init(policy);
+>
+> Thanks to them I will avoid calling many times routine, which extracts
+> from freq_table maximal boost and normal frequencies.
+>
+> I could define those variables in the exynos-cpufreq.c driver, but I
+> think, that they are more suitable to be embedded at cpufreq_boost
+> structure.
+
+I understand that you need these variables (I will still look how you are
+using them in next version). But they are per policy and driver isn't
+responsible for maintaining them. If they are required then cpufreq
+core must find them out and keep in struct cpufreq_policy (as they
+are policy dependent)..
+
+So, remove this structure from cpufreq_driver and embed variables
+directly.
