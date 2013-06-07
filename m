@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab3FGLWR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 07:22:17 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:44350 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755878Ab3FGLVo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 07:21:44 -0400
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: kgene.kim@samsung.com, patches@linaro.org,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Subject: [PATCH 2/3] ARM: dts: Add FIMD node to Origen4210 board
-Date: Fri,  7 Jun 2013 16:37:14 +0530
-Message-Id: <1370603235-11193-3-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370603235-11193-1-git-send-email-tushar.behera@linaro.org>
-References: <1370603235-11193-1-git-send-email-tushar.behera@linaro.org>
+	id S1756021Ab3FGLWV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 07:22:21 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:59456 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755878Ab3FGLWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 07:22:19 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Lists linaro-dev <linaro-dev@lists.linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [GIT PULL RESENT] CPUFreq: ARM Updates for v3.11
+Date: Fri, 07 Jun 2013 13:31:24 +0200
+Message-ID: <195814068.OMscJ0xp3P@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAKohpokJt=8UpAKKEEFaojq-M_GPawrDRBdXL8erEDe2jh=Q4A@mail.gmail.com>
+References: <CAKohpokJt=8UpAKKEEFaojq-M_GPawrDRBdXL8erEDe2jh=Q4A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sachin Kamat <sachin.kamat@linaro.org>
+On Friday, June 07, 2013 04:39:49 PM Viresh Kumar wrote:
+> Hi Rafael,
+> 
+> The following changes since commit d683b96b072dc4680fc74964eca77e6a23d1fa6e:
+> 
+>   Linux 3.10-rc4 (2013-06-02 17:11:17 +0900)
+> 
+> are available in the git repository at:
+> 
+>   git://git.linaro.org/people/vireshk/linux.git cpufreq-next
+> 
+> for you to fetch changes up to ea61623fe9badd5a195b3a0878e6d89a2f97ac0e:
+> 
+>   cpufreq: kirkwood: Select CPU_FREQ_TABLE option (2013-06-07 16:33:36 +0530)
 
-Added FIMD and display timing node to Origen4210 board.
+Pulled, thanks Viresh!
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
----
- arch/arm/boot/dts/exynos4210-origen.dts |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+Rafael
 
-diff --git a/arch/arm/boot/dts/exynos4210-origen.dts b/arch/arm/boot/dts/exynos4210-origen.dts
-index bcf8079..4c6c3cd 100644
---- a/arch/arm/boot/dts/exynos4210-origen.dts
-+++ b/arch/arm/boot/dts/exynos4210-origen.dts
-@@ -290,4 +290,25 @@
- 			clock-frequency = <24000000>;
- 		};
- 	};
-+
-+	fimd@11c00000 {
-+		pinctrl-0 = <&lcd_en &lcd_clk &lcd_data24 &pwm0_out>;
-+		pinctrl-names = "default";
-+		status = "okay";
-+	};
-+
-+	display-timings {
-+		native-mode = <&timing0>;
-+		timing0: timing {
-+			clock-frequency = <50000>;
-+			hactive = <1024>;
-+			vactive = <600>;
-+			hfront-porch = <64>;
-+			hback-porch = <16>;
-+			hsync-len = <48>;
-+			vback-porch = <64>;
-+			vfront-porch = <16>;
-+			vsync-len = <3>;
-+		};
-+	};
- };
+
+> ----------------------------------------------------------------
+> Arnd Bergmann (2):
+>       cpufreq: SPEAr needs cpufreq table
+>       cpufreq: big.LITTLE needs cpufreq table
+> 
+> Ezequiel Garcia (1):
+>       cpufreq: kirkwood: Select CPU_FREQ_TABLE option
+> 
+>  drivers/cpufreq/Kconfig.arm | 3 +++
+>  1 file changed, 3 insertions(+)
 -- 
-1.7.9.5
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
