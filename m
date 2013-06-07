@@ -1,112 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab3FGCfv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 22:35:51 -0400
-Received: from mga03.intel.com ([143.182.124.21]:22005 "EHLO mga03.intel.com"
+	id S1752994Ab3FGCwi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 22:52:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55687 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751662Ab3FGCfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 22:35:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,818,1363158000"; 
-   d="scan'208";a="346154865"
-Message-ID: <1370572672.4432.49.camel@ymzhang.sh.intel.com>
-Subject: Re: [PATCH] irq: add a new function irq_in_progress to check
- pending IRQ handlers
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Reply-To: yanmin_zhang@linux.intel.com
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Liu ShuoX <shuox.liu@intel.com>,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        sedat.dilek@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
-        Zhang Yanmin <yanmin.zhang@intel.com>
-Date: Fri, 07 Jun 2013 10:37:52 +0800
-In-Reply-To: <20130607010225.GA28256@kroah.com>
-References: <1370504296-24389-1-git-send-email-shuox.liu@intel.com>
-	 <alpine.LFD.2.02.1306061505210.2905@ionos>
-	 <1370566409.4432.41.camel@ymzhang.sh.intel.com>
-	 <20130607010225.GA28256@kroah.com>
-Organization: Intel.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1751162Ab3FGCwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 22:52:37 -0400
+Message-ID: <51B14AD1.8000004@redhat.com>
+Date: Fri, 07 Jun 2013 10:52:01 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>,
+        "David S. Miller" <davem@davemloft.net>, Cong Wang <amwang@redhat.com>,
+        Amos Kong <akong@redhat.com>, Dave Jones <davej@redhat.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, qemu-devel@nongnu.org
+Subject: Re: [PATCH] virtio-net: put virtio net header inline with data
+References: <20130606095456.GA7865@redhat.com>
+In-Reply-To: <20130606095456.GA7865@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-06 at 18:02 -0700, Greg KH wrote:
-> On Fri, Jun 07, 2013 at 08:53:29AM +0800, Yanmin Zhang wrote:
-> > On Thu, 2013-06-06 at 15:18 +0200, Thomas Gleixner wrote:
-> > > On Thu, 6 Jun 2013, shuox.liu@intel.com wrote:
-> > > > From: Zhang Yanmin <yanmin.zhang@intel.com>
-> > > > 
-> > > > synchronize_irq waits pending IRQ handlers to be finished. If using this
-> > > > function while holding a resource, the IRQ handler may cause deadlock.
-> > > > 
-> > > > Here we add a new function irq_in_progress which doesn't wait for the handlers
-> > > > to be finished.
-> > > > 
-> > > > A typical use case at suspend-to-ram:
-> > > > 
-> > > > device driver's irq handler is complicated and might hold a mutex at rare cases.
-> > > > Its suspend function is called and a suspended flag is set.
-> > > > In case its IRQ handler is running, suspend function calls irq_in_progress. if
-> > > > handler is running, abort suspend.
-> > > > The irq handler checks the suspended flag. If the device is suspended, irq handler
-> > > > either ignores the interrupt, or wakes up the whole system, and the driver's
-> > > > resume function could deal with the delayed interrupt handling.
-> > > 
-> > > This is as wrong as it can be. Fix the driver instead of hacking racy
-> > > functions into the core code.
-> > > 
-> > > So your problem looks like this:
-> > > 
-> > > CPU 0				CPU 1
-> > > irq_handler_thread()		suspend()
-> > >    .....			mutex_lock(&m);
-> > >    mutex_lock(&m);		synchronize_irq();
-> > > 
-> > > So why needs the mutex to be taken before synchronize_irq()? Why not
-> > > doing the obvious?
-> > > 
-> > > suspend()
-> > >   disable_irq(); (Implies synchronize_irq)
-> > >   mutex_lock(&m);
-> > >   ....
-> > >   mutex_unlock(&m);
-> > >   enable_irq();
-> > Thanks for the kind comment.
-> > 
-> > We do consider your solution before and it works well indeed with some specific
-> > simple drivers. For example, some drives use GPIO pin as interrupt source.
-> > 
-> > On one specific platform, disable_irq would really disable the irq at RTE entry,
-> > which means we lose the wakeup capability of this device.
-> > synchronize_irq can be another solution. But we did hit 'DPM device timeout' issue
-> > reported by dpm_wd_handler at suspend-to-ram.
-> > 
-> > The driver is complicated. We couldn't change too many functions to optimize it.
-> > In addition, we have to use the driver instead of throwing it away.
-> 
-> What is preventing you from rewriting it to work properly?
-It's complicated.
+On 06/06/2013 05:55 PM, Michael S. Tsirkin wrote:
+> For small packets we can simplify xmit processing by linearizing buffers
+> with the header: most packets seem to have enough head room we can use
+> for this purpose.
+>
+> Since some older hypervisors (e.g. qemu before version 1.5)
+> required that header is the first s/g element,
+> we need a feature bit for this.
+>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
 
-> 
-> > With irq_in_progress, we can resolve this issue and it does work, although it
-> > looks like ugly.
-> 
-> Don't paper over driver bugs in the core kernel, fix the driver.
-It's hard to say it's a driver bug. Could generic kernel provide some flexibility
-for such complicated drivers?
+Hi Michael:
 
-For example, any driver's suspend can return error and the whole suspend-to-ram
-aborts. Can we say the driver has a bug? If so, why not to change all suspend/resume
-callbacks to return VOID?
-Current kernel already allows drivers to abort suspend-to-ram at some rare corner cases.
-Of course, if the abort happens frequently, it's a bug and we need fix it in driver.
-If it happens rarely, can we provide some flexibility for the driver?
+The idea looks good, but there are some questions:
 
-Thanks,
-Yanmin
+- What if we just use direct descriptors with sgs <=2 and double the
+ring size?
+- I believe we may add more things into vnet header in the future, so
+this trick may not work because of limited header room.
 
+Thanks
+> This is a repost of my old patch, rebased to latest kernel.
+>
+> Before:
+> Thu Jun  6 05:24:59 EDT 2013
+> TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to
+> 11.0.0.4 (11.0.0.4) port 0 AF_INET : demo
+> Local /Remote
+> Socket Size   Request  Resp.   Elapsed  Trans.
+> Send   Recv   Size     Size    Time     Rate         
+> bytes  Bytes  bytes    bytes   secs.    per sec   
+>
+> 16384  87380  1        1       10.00    12931.13   
+>
+>
+> After:
+> TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to
+> 11.0.0.4 (11.0.0.4) port 0 AF_INET : demo
+> Local /Remote
+> Socket Size   Request  Resp.   Elapsed  Trans.
+> Send   Recv   Size     Size    Time     Rate         
+> bytes  Bytes  bytes    bytes   secs.    per sec   
+>
+> 16384  87380  1        1       10.00    14151.12
+>
+>
+>  drivers/net/virtio_net.c        | 42 +++++++++++++++++++++++++++++++++--------
+>  include/uapi/linux/virtio_net.h |  6 +++++-
+>  2 files changed, 39 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index c9e0038..d35a097 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -106,6 +106,9 @@ struct virtnet_info {
+>  	/* Has control virtqueue */
+>  	bool has_cvq;
+>  
+> +	/* Host can handle any s/g split between our header and packet data */
+> +	bool any_header_sg;
+> +
+>  	/* enable config space updates */
+>  	bool config_enable;
+>  
+> @@ -668,12 +671,28 @@ static void free_old_xmit_skbs(struct send_queue *sq)
+>  
+>  static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
+>  {
+> -	struct skb_vnet_hdr *hdr = skb_vnet_hdr(skb);
+> +	struct skb_vnet_hdr *hdr;
+>  	const unsigned char *dest = ((struct ethhdr *)skb->data)->h_dest;
+>  	struct virtnet_info *vi = sq->vq->vdev->priv;
+>  	unsigned num_sg;
+> +	unsigned hdr_len;
+> +	bool can_push;
+>  
+>  	pr_debug("%s: xmit %p %pM\n", vi->dev->name, skb, dest);
+> +	if (vi->mergeable_rx_bufs)
+> +		hdr_len = sizeof hdr->mhdr;
+> +	else
+> +		hdr_len = sizeof hdr->hdr;
+> +
+> +	can_push = vi->any_header_sg &&
+> +		!((unsigned long)skb->data & (__alignof__(*hdr) - 1)) &&
+> +		!skb_header_cloned(skb) && skb_headroom(skb) >= hdr_len;
+> +	/* Even if we can, don't push here yet as this would skew
+> +	 * csum_start offset below. */
+> +	if (can_push)
+> +		hdr = (struct skb_vnet_hdr *)(skb->data - hdr_len);
+> +	else
+> +		hdr = skb_vnet_hdr(skb);
+>  
+>  	if (skb->ip_summed == CHECKSUM_PARTIAL) {
+>  		hdr->hdr.flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
+> @@ -702,15 +721,18 @@ static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
+>  		hdr->hdr.gso_size = hdr->hdr.hdr_len = 0;
+>  	}
+>  
+> -	hdr->mhdr.num_buffers = 0;
+> -
+> -	/* Encode metadata header at front. */
+>  	if (vi->mergeable_rx_bufs)
+> -		sg_set_buf(sq->sg, &hdr->mhdr, sizeof hdr->mhdr);
+> -	else
+> -		sg_set_buf(sq->sg, &hdr->hdr, sizeof hdr->hdr);
+> +		hdr->mhdr.num_buffers = 0;
+>  
+> -	num_sg = skb_to_sgvec(skb, sq->sg + 1, 0, skb->len) + 1;
+> +	if (can_push) {
+> +		__skb_push(skb, hdr_len);
+> +		num_sg = skb_to_sgvec(skb, sq->sg, 0, skb->len);
+> +		/* Pull header back to avoid skew in tx bytes calculations. */
+> +		__skb_pull(skb, hdr_len);
+> +	} else {
+> +		sg_set_buf(sq->sg, hdr, hdr_len);
+> +		num_sg = skb_to_sgvec(skb, sq->sg + 1, 0, skb->len) + 1;
+> +	}
+>  	return virtqueue_add_outbuf(sq->vq, sq->sg, num_sg, skb, GFP_ATOMIC);
+>  }
+>  
+> @@ -1554,6 +1576,9 @@ static int virtnet_probe(struct virtio_device *vdev)
+>  	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
+>  		vi->mergeable_rx_bufs = true;
+>  
+> +	if (virtio_has_feature(vdev, VIRTIO_NET_F_ANY_HEADER_SG))
+> +		vi->any_header_sg = true;
+> +
+>  	if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
+>  		vi->has_cvq = true;
+>  
+> @@ -1729,6 +1754,7 @@ static unsigned int features[] = {
+>  	VIRTIO_NET_F_CTRL_RX, VIRTIO_NET_F_CTRL_VLAN,
+>  	VIRTIO_NET_F_GUEST_ANNOUNCE, VIRTIO_NET_F_MQ,
+>  	VIRTIO_NET_F_CTRL_MAC_ADDR,
+> +	VIRTIO_NET_F_ANY_HEADER_SG,
+>  };
+>  
+>  static struct virtio_driver virtio_net_driver = {
+> diff --git a/include/uapi/linux/virtio_net.h b/include/uapi/linux/virtio_net.h
+> index c520203..9c98b7d 100644
+> --- a/include/uapi/linux/virtio_net.h
+> +++ b/include/uapi/linux/virtio_net.h
+> @@ -55,6 +55,8 @@
+>  					 * Steering */
+>  #define VIRTIO_NET_F_CTRL_MAC_ADDR 23	/* Set MAC address */
+>  
+> +#define VIRTIO_NET_F_ANY_HEADER_SG 25	/* Host can handle any header s/g */
+> +
+>  #define VIRTIO_NET_S_LINK_UP	1	/* Link is up */
+>  #define VIRTIO_NET_S_ANNOUNCE	2	/* Announcement is needed */
+>  
+> @@ -70,7 +72,9 @@ struct virtio_net_config {
+>  	__u16 max_virtqueue_pairs;
+>  } __attribute__((packed));
+>  
+> -/* This is the first element of the scatter-gather list.  If you don't
+> +/* This header comes first in the scatter-gather list.
+> + * If VIRTIO_NET_F_ANY_HEADER_SG is not negotiated, it must
+> + * be the first element of the scatter-gather list.  If you don't
+>   * specify GSO or CSUM features, you can simply ignore the header. */
+>  struct virtio_net_hdr {
+>  #define VIRTIO_NET_HDR_F_NEEDS_CSUM	1	// Use csum_start, csum_offset
 
