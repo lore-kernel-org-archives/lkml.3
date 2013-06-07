@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab3FGOpT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 10:45:19 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:24263 "EHLO
+	id S1755656Ab3FGOra (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 10:47:30 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:16678 "EHLO
 	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753212Ab3FGOpS (ORCPT
+	with ESMTP id S1754280Ab3FGOr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 10:45:18 -0400
+	Fri, 7 Jun 2013 10:47:28 -0400
+Message-ID: <51B1F27F.7080305@itdev.co.uk>
+Date: Fri, 07 Jun 2013 15:47:27 +0100
 From: Nick Dyer <nick.dyer@itdev.co.uk>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH V2] sysfs_notify is only possible on file attributes
-Date: Fri,  7 Jun 2013 15:45:13 +0100
-Message-Id: <1370616313-4015-1-git-send-email-nick.dyer@itdev.co.uk>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20130606193752.GA22115@kroah.com>
-References: <20130606193752.GA22115@kroah.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
+Subject: Re: [PATCH 10/53] Input: atmel_mxt_ts - Add memory access interface
+ via sysfs
+References: <1370453866-16534-1-git-send-email-nick.dyer@itdev.co.uk> <1370453866-16534-11-git-send-email-nick.dyer@itdev.co.uk> <20130606180125.GA26084@kroah.com>
+In-Reply-To: <20130606180125.GA26084@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If sysfs_notify is called on a binary attribute, bad things can
-happen, so prevent it.
+Greg KH wrote:
+> On Wed, Jun 05, 2013 at 06:37:03PM +0100, Nick Dyer wrote:
+>> Atmel maXTouch chips can be addressed via an "Object Based Protocol" which
+>> defines how i2c registers are mapped to different functions within the
+>> chips. This interface exposes the register map and allows user-space
+>> utilities to inspect and alter object configuration, and to view diagnostic
+>> data, while the device is running.
+>>
+>> Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
+>> Acked-by: Benson Leung <bleung@chromium.org>
+>> ---
+>>  drivers/input/touchscreen/atmel_mxt_ts.c |   82 ++++++++++++++++++++++++++++++
+>>  1 file changed, 82 insertions(+)
+> 
+> Whenever you add/remove/modify sysfs files, you also need a
+> Documentation/ABI/ update as well.  Please include that.
 
-Note, no in-kernel usage of this is currently present, but in the
-future, it's good to be safe.
-
-Changes in V2:
-- Also ignore sysfs_notify on dirs, links
-- Use WARN_ON rather than silently failing
-- Compiled and tested (huge apologies about first submission)
-
-Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
----
- fs/sysfs/file.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 602f56d..d2bb7ed 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -449,10 +449,12 @@ void sysfs_notify_dirent(struct sysfs_dirent *sd)
- 
- 	spin_lock_irqsave(&sysfs_open_dirent_lock, flags);
- 
--	od = sd->s_attr.open;
--	if (od) {
--		atomic_inc(&od->event);
--		wake_up_interruptible(&od->poll);
-+	if (!WARN_ON(sysfs_type(sd) != SYSFS_KOBJ_ATTR)) {
-+		od = sd->s_attr.open;
-+		if (od) {
-+			atomic_inc(&od->event);
-+			wake_up_interruptible(&od->poll);
-+		}
- 	}
- 
- 	spin_unlock_irqrestore(&sysfs_open_dirent_lock, flags);
--- 
-1.7.10.4
-
+Will do. I think I should also document the existing sysfs files which are
+missing docs.
