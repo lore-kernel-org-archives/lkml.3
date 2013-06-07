@@ -1,97 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab3FGPqs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 11:46:48 -0400
-Received: from cassarossa.samfundet.no ([193.35.52.29]:59530 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753982Ab3FGPqp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 11:46:45 -0400
-Date: Fri, 7 Jun 2013 17:46:35 +0200
-From: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Pravin B Shelar <pshelar@nicira.com>
-Subject: Re: NULL pointer dereference when loading the gre module (3.10.0-rc4)
-Message-ID: <20130607154634.GA7529@uio.no>
-References: <20130606221656.GA11475@uio.no>
- <20130607030648.GA28618@home.goodmis.org>
- <20130607085421.GF15083@uio.no>
- <1370612441.24311.411.camel@edumazet-glaptop>
- <1370618100.9844.73.camel@gandalf.local.home>
+	id S1755416Ab3FGPrO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 11:47:14 -0400
+Received: from mail.gemius.pl ([85.232.225.147]:23727 "EHLO mail.gemius.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753556Ab3FGPrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 11:47:12 -0400
+X-Greylist: delayed 1982 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Jun 2013 11:47:12 EDT
+Message-ID: <51B1F8B3.8030108@adocean-global.com>
+Date: Fri, 07 Jun 2013 17:13:55 +0200
+From: Piotr Nowojski <piotr.nowojski@adocean-global.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1370618100.9844.73.camel@gandalf.local.home>
-X-Operating-System: Linux 3.9.0+sesse01 on a x86_64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Hocko <mhocko@suse.cz>
+CC: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: OOM Killer and add_to_page_cache_locked
+References: <51B05616.9050501@adocean-global.com> <20130606155323.GD24115@dhcp22.suse.cz>
+In-Reply-To: <20130606155323.GD24115@dhcp22.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Spam-Score: -1.0 (-)
+X-Authorized: Piotr Nowojski
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 11:15:00AM -0400, Steven Rostedt wrote:
-> net: Remove __net_init/exit from exported functions
-> 
-> If CONFIG_NET_NS is not set then __net_init is the same as __init and
-> __net_exit is the same as __exit. These functions will be removed from
-> memory after the module loads or is removed. Functions that are exported
-> for use by other functions should never be labeled for removal.
+W dniu 06.06.2013 17:57, Michal Hocko pisze:
+>   
+>> >In our system we have hit some very annoying situation (bug?) with
+>> >cgroups. I'm writing to you, because I have found your posts on
+>> >mailing lists with similar topic. Maybe you could help us or point
+>> >some direction where to look for/ask.
+>> >
+>> >We have system with ~15GB RAM (+2GB SWAP), and we are running ~10
+>> >heavy IO processes. Each process is using constantly 200-210MB RAM
+>> >(RSS) and a lot of page cache. All processes are in cgroup with
+>> >following limits:
+>> >
+>> >/sys/fs/cgroup/taskell2 $ cat memory.limit_in_bytes
+>> >memory.memsw.limit_in_bytes
+>> >14183038976
+>> >15601344512
+> I assume that memory.use_hierarchy is 1, right?
+System has been rebooted since last test, so I can not guarantee that it 
+was set for 100%, but it should have been. Currently I'm rerunning this 
+scenario that lead to the described problem with:
 
-That didn't help much, I'm afraid:
+/sys/fs/cgroup/taskell2# cat memory.use_hierarchy ../memory.use_hierarchy
+1
+0
 
-[   18.005451] BUG: unable to handle kernel NULL pointer dereference at 0000000000000003
-[   18.013853] IP: [<ffffffffa0e76002>] 0xffffffffa0e76001
-[   18.019380] PGD 0 
-[   18.021695] Oops: 0000 [#1] SMP 
-[   18.025285] Modules linked in: ip_gre(+) gre ip_tunnel psmouse ide_generic ide_gd_mod ide_cd_mod cdrom acpi_cpufreq mperf coretemp kvm_intel kvm iTCO_wdt iTCO_vendor_support lpc_ich microcode mfd_core i2c_i801 pcspkr i2c_core ehci_pci evbug evdev ext4 crc16 jbd2 mbcache dm_mod raid456 async_raid6_recov async_memcpy async_pq async_xor async_tx xor raid6_pq raid1 md_mod sg sd_mod usbhid ide_pci_generic ide_core crc32c_intel e1000e ata_piix ptp pps_core uhci_hcd ehci_hcd mpt2sas raid_class unix
-[   18.073543] CPU: 0 PID: 3263 Comm: modprobe Not tainted 3.10.0-rc4 #2
-[   18.080237] Hardware name: Supermicro X8DTL/X8DTL, BIOS 2.1a       12/30/2011
-[   18.087634] task: ffff88061ecfad60 ti: ffff8806212f0000 task.ti: ffff8806212f0000
-[   18.095571] RIP: 0010:[<ffffffffa0e76002>]  [<ffffffffa0e76002>] 0xffffffffa0e76001
-[   18.103745] RSP: 0018:ffff8806212f1ca8  EFLAGS: 00010246
-[   18.109301] RAX: ffffffffa0e81000 RBX: ffff880623ebe280 RCX: 0000000000000000
-[   18.116682] RDX: ffffffffa0e7ea40 RSI: 0000000000000003 RDI: ffffffffa0e81018
-[   18.124063] RBP: ffff8806212f1ca8 R08: 0000000000000cf8 R09: ffffffff812bae96
-[   18.131441] R10: ffffea0018852c00 R11: 0000000000000000 R12: ffff880621678290
-[   18.138829] R13: ffffffffa0e7e9c0 R14: ffff8806212f1ef8 R15: 0000000000000002
-[   18.146210] FS:  00007f2e37fd1700(0000) GS:ffff880627200000(0000) knlGS:0000000000000000
-[   18.154747] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   18.160742] CR2: 0000000000000003 CR3: 0000000622a5e000 CR4: 00000000000007f0
-[   18.168131] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   18.175510] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   18.182890] Stack:
-[   18.185143]  ffff8806212f1cf8 ffffffff812baf26 2222222222222222 2222222222222222
-[   18.193235]  2222222222222222 ffffffffa0e7e9c0 0000000000000000 0000000000000000
-[   18.201313]  ffff8806212f1ef8 ffffffffa0e7eb60 ffff8806212f1d28 ffffffff812bafb6
-[   18.209389] Call Trace:
-[   18.212084]  [<ffffffff812baf26>] ops_init.constprop.7+0xc6/0xf5
-[   18.218339]  [<ffffffff812bafb6>] register_pernet_operations.isra.4+0x61/0x91
-[   18.225720]  [<ffffffff8138486f>] ? mutex_lock+0xf/0x20
-[   18.231189]  [<ffffffff812bb006>] register_pernet_device+0x20/0x51
-[   18.237621]  [<ffffffffa0e81034>] ? ipgre_tap_init_net+0x1a/0x1a [ip_gre]
-[   18.244661]  [<ffffffffa0e81055>] ipgre_init+0x21/0xc9 [ip_gre]
-[   18.250831]  [<ffffffffa0e81034>] ? ipgre_tap_init_net+0x1a/0x1a [ip_gre]
-[   18.257866]  [<ffffffff81000263>] do_one_initcall+0x7b/0x10c
-[   18.263780]  [<ffffffff8107e5db>] load_module+0x1b1f/0x1e19
-[   18.269594]  [<ffffffff8107a4f8>] ? sys_getegid16+0x44/0x44
-[   18.275416]  [<ffffffff81386cf2>] ? page_fault+0x22/0x30
-[   18.280972]  [<ffffffff8107e969>] SyS_init_module+0x94/0xa1
-[   18.286795]  [<ffffffff8138cf12>] system_call_fastpath+0x16/0x1b
-[   18.293051] Code: <6e> 65 77 6c 69 6e 6b 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
-[   18.302807] RIP  [<ffffffffa0e76002>] 0xffffffffa0e76001
-[   18.308429]  RSP <ffff8806212f1ca8>
-[   18.312163] CR2: 0000000000000003
-[   18.316021] ---[ end trace 839c6b43b00f02f5 ]---
+Where root cgroup, doesn't have any limits set.
 
-and still:
+/sys/fs/cgroup/taskell2# cat ../memory*limit*
+9223372036854775807
+9223372036854775807
+9223372036854775807
 
-Ffffffffa0e76000 u ip_tunnel_init_net   [ip_gre]
+>> >Each process is being started in separate cgroup, with
+>> >memory_soft_limit set to 1GB.
+>> >
+>> >/sys/fs/cgroup/taskell2 $ ls | grep subtask
+>> >subtask5462692
+>> >subtask5462697
+>> >subtask5462698
+>> >subtask5462699
+>> >subtask5462700
+>> >subtask5462701
+>> >subtask5462702
+>> >subtask5462703
+>> >subtask5462704
+>> >
+>> >/sys/fs/cgroup/taskell2 $ cat subtask5462704/memory.limit_in_bytes
+>> >subtask5462704/memory.memsw.limit_in_bytes
+>> >subtask5462704/memory.soft_limit_in_bytes
+>> >9223372036854775807
+>> >9223372036854775807
+>> >1073741824
+>> >
+>> >Memory usage is following:
+>> >
+>> >free -g
+>> >              total       used       free     shared    buffers cached
+>> >Mem:            14         14          0          0 0         12
+>> >-/+ buffers/cache:          1         13
+>> >Swap:            1          0          1
+>> >
+>> >/sys/fs/cgroup/taskell2 $ cat memory.stat
+>> >cache 13208932352
+>> >rss 0
+>> >hierarchical_memory_limit 14183038976
+>> >hierarchical_memsw_limit 15601344512
+>> >total_cache 13775765504
+>> >total_rss 264949760
+>> >total_swap 135974912
+>> >
+>> >In other words, most memory is used by page cache and everything IMO
+>> >should work just fine, but it isn't. Every couple of minutes, one of
+>> >the processes is being killed by OOM Killer, triggered from IO read
+>> >and "add_to_page_cache" (full stack attached below). For me this is
+>> >ridiculous behavior. Process is trying to put something into page
+>> >cache, but there is no free memory (because everything is eaten by
+>> >page_cache) thus triggering OOM Killer. Why? Most of this page cache
+>> >is not even used - at least not heavily used. Is this a bug? Stupid
+>> >feature? Or am I missing something? Our configuration:
+> It sounds like a bug to me. If you had a small groups I would say that
+> the memory reclaim is not able to free any memory because almost all
+> the pages on the LRU are dirty and dirty pages throttling is not memcg
+> aware but your groups contain a lot of pages and all of they shouldn't
+> be dirty because the global dirty memory throttling should slow down
+> writers and writeback should have already started.
+>
+> This has been fixed (or worked around to be more precise) by e62e384e
+> (memcg: prevent OOM with too many dirty pages) in 3.6.
+>
+> Maybe you could try this patch and see if it helps. I would be sceptical
+> but it is worth trying.
+>
+> The core thing to find out is why the hard limit reclaim is not able to
+> free anything. Unfortunatelly we do not have memcg reclaim statistics so
+> it would be a bit harder. I would start with the above patch first and
+> then I can prepare some debugging patches for you.
+I will try 3.6 (probably 3.7) kernel after weekend - unfortunately 
+repeating whole scenario is taking 10-30 hours because of very slowly 
+growing page cache.
+>
+> Also does 3.4 vanila (or the stable kernel) behave the same way? Is the
+> current vanilla behaving the same way?
+I don't know, we are using standard kernel that comes from Ubuntu.
+>
+> Finally, have you seen the issue for a longer time or it started showing
+> up only now?
+>
+This system is very new. We have started testing scenario which 
+triggered OOM something like one week ago and we have immediately hit 
+this issue. Previously, with different scenarios and different memory 
+usage by processes we didn't have this issue.
 
-I've checked that ip_tunnel.ko and ip_gre.ko was indeed rebuilt (new timestamps),
-and that my patching (I had to resolve manually due to fuzz) really removed __net_init.
-
-/* Steinar */
--- 
-Homepage: http://www.sesse.net/
+Piotr Nowojski
