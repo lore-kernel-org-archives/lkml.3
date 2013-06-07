@@ -1,72 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757422Ab3FGSuZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 14:50:25 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:51604 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757331Ab3FGSuU (ORCPT
+	id S1757357Ab3FGSuP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 14:50:15 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:50462 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757165Ab3FGSuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 14:50:20 -0400
-Date: Fri, 7 Jun 2013 20:50:15 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, Andrew Lunn <andrew@lunn.ch>,
-        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
-        David Marlin <dmarlin@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: dts: mvebu: Add the i2c-bridge capability to
- the mv64xxx-i2c
-Message-ID: <20130607205015.0a6d6bfd@skate>
-In-Reply-To: <20130607180941.GW23859@titan.lakedaemon.net>
-References: <1370619743-15245-1-git-send-email-gregory.clement@free-electrons.com>
-	<1370619743-15245-3-git-send-email-gregory.clement@free-electrons.com>
-	<20130607180941.GW23859@titan.lakedaemon.net>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Jun 2013 14:50:12 -0400
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+To: Wolfram Sang <wsa@the-dreams.de>, Tony Lindgren <tony@atomide.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-i2c@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: [PATCH 5/5] i2c: omap: remove omap_i2c_isr() hw irq handler
+Date: Fri, 7 Jun 2013 21:46:08 +0300
+Message-ID: <1370630768-4077-6-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1370630768-4077-1-git-send-email-grygorii.strashko@ti.com>
+References: <1370630768-4077-1-git-send-email-grygorii.strashko@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Jason Cooper,
+The omap_i2c_isr() does the irq check and schedules threaded handler if any of
+enabled IRQs is active, but currently the I2C IRQs are enabled just once,
+when I2C IP is enabling (transfer started) and they aren't changed after that.
+More over, now the I2C INTC IRQ is disabled when I2C IP is idled.
+Thus, I2C IRQs will start coming only when we want that, and there is
+no sense to have omap_i2c_isr() anymore:
+- omap_i2c_isr_thread() does all needed checks
+- synchronization is provided IRQ Core.
 
-On Fri, 7 Jun 2013 14:09:41 -0400, Jason Cooper wrote:
+So, get rid of omap_i2c_isr(), custom locking and
+struct omap_i2c_dev->lock variable.
 
-> > +- i2c,i2c-bridge : This flag indicate that the i2c controller have the
-> > +  Transaction Generator support and we want to use it. Not all the
-> > +  mv64xxx controller have this feature.
-> 
-> Do you have a list of which controllers definitely do, or definitely
-> don't?  That would be helpful for folks adding new boards.
+CC: Kevin Hilman <khilman@linaro.org>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+---
 
-As mentioned in the first commit log:
+This is clean-up patch.
 
-""
-This feature is currently only available on Armada XP, so usage of
-this mechanism is activated through device tree.
-""
+ drivers/i2c/busses/i2c-omap.c |   33 +--------------------------------
+ 1 file changed, 1 insertion(+), 32 deletions(-)
 
-So Armada XP is the only to have that, for now. We can probably assume
-future Marvell SoC may also have this feature, but we don't know for
-sure.
-
-Best regards,
-
-Thomas
+diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
+index b3daf3f..749f390 100644
+--- a/drivers/i2c/busses/i2c-omap.c
++++ b/drivers/i2c/busses/i2c-omap.c
+@@ -183,7 +183,6 @@ enum {
+ #define OMAP_I2C_IP_V2_INTERRUPTS_MASK	0x6FFF
+ 
+ struct omap_i2c_dev {
+-	spinlock_t		lock;		/* IRQ synchronization */
+ 	struct device		*dev;
+ 	void __iomem		*base;		/* virtual */
+ 	int			irq;
+@@ -876,35 +875,10 @@ static int omap_i2c_transmit_data(struct omap_i2c_dev *dev, u8 num_bytes,
+ }
+ 
+ static irqreturn_t
+-omap_i2c_isr(int irq, void *dev_id)
+-{
+-	struct omap_i2c_dev *dev = dev_id;
+-	irqreturn_t ret = IRQ_HANDLED;
+-	u16 mask;
+-	u16 stat;
+-
+-	spin_lock(&dev->lock);
+-	if (pm_runtime_suspended(dev->dev)) {
+-		WARN_ONCE(true, "We should never be here!\n");
+-		return IRQ_NONE;
+-	}
+ 
+-	mask = omap_i2c_read_reg(dev, OMAP_I2C_IE_REG);
+-	stat = omap_i2c_read_reg(dev, OMAP_I2C_STAT_REG);
+-
+-	if (stat & mask)
+-		ret = IRQ_WAKE_THREAD;
+-
+-	spin_unlock(&dev->lock);
+-
+-	return ret;
+-}
+-
+-static irqreturn_t
+ omap_i2c_isr_thread(int this_irq, void *dev_id)
+ {
+ 	struct omap_i2c_dev *dev = dev_id;
+-	unsigned long flags;
+ 	u16 bits;
+ 	u16 stat;
+ 	int err = 0, count = 0;
+@@ -914,7 +888,6 @@ omap_i2c_isr_thread(int this_irq, void *dev_id)
+ 		return IRQ_NONE;
+ 	}
+ 
+-	spin_lock_irqsave(&dev->lock, flags);
+ 	do {
+ 		bits = omap_i2c_read_reg(dev, OMAP_I2C_IE_REG);
+ 		stat = omap_i2c_read_reg(dev, OMAP_I2C_STAT_REG);
+@@ -1035,8 +1008,6 @@ omap_i2c_isr_thread(int this_irq, void *dev_id)
+ 	omap_i2c_complete_cmd(dev, err);
+ 
+ out:
+-	spin_unlock_irqrestore(&dev->lock, flags);
+-
+ 	return IRQ_HANDLED;
+ }
+ 
+@@ -1146,8 +1117,6 @@ omap_i2c_probe(struct platform_device *pdev)
+ 	dev->dev = &pdev->dev;
+ 	dev->irq = irq;
+ 
+-	spin_lock_init(&dev->lock);
+-
+ 	platform_set_drvdata(pdev, dev);
+ 	init_completion(&dev->cmd_complete);
+ 
+@@ -1229,7 +1198,7 @@ omap_i2c_probe(struct platform_device *pdev)
+ 				IRQF_NO_SUSPEND, pdev->name, dev);
+ 	else
+ 		r = devm_request_threaded_irq(&pdev->dev, dev->irq,
+-				omap_i2c_isr, omap_i2c_isr_thread,
++				NULL, omap_i2c_isr_thread,
+ 				IRQF_NO_SUSPEND | IRQF_ONESHOT,
+ 				pdev->name, dev);
+ 
 -- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+1.7.9.5
+
