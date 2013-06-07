@@ -1,174 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756162Ab3FGQJX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 12:09:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41269 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754981Ab3FGQJW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 12:09:22 -0400
-Message-ID: <51B205A1.4040405@canonical.com>
-Date: Fri, 07 Jun 2013 11:09:05 -0500
-From: Dave Chiluk <chiluk@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Petr Vandrovec <petr@vandrovec.name>
-CC: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] ncpfs: fix rmdir returns Device or resource busy
-References: <1369781410-24473-1-git-send-email-chiluk@canonical.com> <51A918B8.20303@canonical.com> <CA+i2_De5HHw2H9SvZ=W+QAOcy0M7jFac88OK6aeYdJVCGL6b+A@mail.gmail.com> <51AF9D77.2000901@canonical.com> <CA+i2_DfEhn_CPRBmyy4scG7UEL5bGsjodcq00Nyx4JZjnuSBGQ@mail.gmail.com>
-In-Reply-To: <CA+i2_DfEhn_CPRBmyy4scG7UEL5bGsjodcq00Nyx4JZjnuSBGQ@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/mixed;
- boundary="------------010509010307010801090006"
+	id S1756348Ab3FGQLA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 12:11:00 -0400
+Received: from mga01.intel.com ([192.55.52.88]:14344 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754981Ab3FGQK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 12:10:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,822,1363158000"; 
+   d="scan'208";a="346434952"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: [GIT PULL] Some error injection fixes to queue for 3.11
+Date: Fri, 07 Jun 2013 09:10:58 -0700
+Message-Id: <51b20612239358173f@agluck-desk.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010509010307010801090006
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+The following changes since commit d683b96b072dc4680fc74964eca77e6a23d1fa6e:
 
-Can't you just use the patch from my original e-mail?  Anyhow I attached
-it an already signed-off patch.
+  Linux 3.10-rc4 (2013-06-02 17:11:17 +0900)
 
-Al Viro Can you integrate it now?
+are available in the git repository at:
 
-Dave.
+  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-einj
 
-On 06/07/2013 01:43 AM, Petr Vandrovec wrote:
-> On Wed, Jun 5, 2013 at 1:20 PM, Dave Chiluk <chiluk@canonical.com> wrote:
->> Petr do you still have commit rights to ncpfs?  Can you please commit it
->> to upstream or do I have to get Al to do that?
-> 
-> Hi,
->   only thing I can do is to add
-> 
-> Signed-off-by: Petr Vandrovec <petr@vandrovec.name>
-> 
-> on your patch and forward it to Al.  Unfortunately patch below is
-> already whitespace-damaged :-(  So you can either send it to me, and
-> I'll resend it to Al, or you can do that directly...
-> 
-> Petr
-> 
->> Dave.
->>
->>
->> On 05/31/2013 05:22 PM, Petr Vandrovec wrote:
->>> Looks OK to me.
->>>
->>> As I said elsewhere, I do not use ncpfs for years so I cannot provide
->>> any sensible maintainership for it anymore :-(
->>>
->>> Petr
->>>
->>> On May 31, 2013 2:40 PM, "Dave Chiluk" <chiluk@canonical.com
->>> <mailto:chiluk@canonical.com>> wrote:
->>>
->>>     Any thoughts on this?  NCPFS seems to be the forgotten, left-behind,
->>>     red-headed stepchild of the fs community.
->>>
->>>     Dave.
->>>
->>>     On 05/28/2013 05:50 PM, Dave Chiluk wrote:
->>>     > 1d2ef5901483004d74947bbf78d5146c24038fe7 caused a regression in
->>>     ncpfs such that
->>>     > directories could no longer be removed.  This was because
->>>     ncp_rmdir checked
->>>     > to see if a dentry could be unhashed before allowing it to be
->>>     removed. Since
->>>     > 1d2ef5901483004d74947bbf78d5146c24038fe7 introduced a change that
->>>     incremented
->>>     > dentry->d_count causing it to always be greater than 1 unhash
->>>     would always
->>>     > fail.  Thus causing the error path in ncp_rmdir to always be
->>>     taken.  Removing
->>>     > this error path is safe as unhashing is still accomplished by
->>>     calls to dput
->>>     > from vfs_rmdir.
->>>     > ---
->>>     >  fs/ncpfs/dir.c |    9 ---------
->>>     >  1 file changed, 9 deletions(-)
->>>     >
->>>     > diff --git a/fs/ncpfs/dir.c b/fs/ncpfs/dir.c
->>>     > index 8163260..6792ce1 100644
->>>     > --- a/fs/ncpfs/dir.c
->>>     > +++ b/fs/ncpfs/dir.c
->>>     > @@ -1029,15 +1029,6 @@ static int ncp_rmdir(struct inode *dir,
->>>     struct dentry *dentry)
->>>     >       DPRINTK("ncp_rmdir: removing %s/%s\n",
->>>     >               dentry->d_parent->d_name.name <http://d_name.name>,
->>>     dentry->d_name.name <http://d_name.name>);
->>>     >
->>>     > -     /*
->>>     > -      * fail with EBUSY if there are still references to this
->>>     > -      * directory.
->>>     > -      */
->>>     > -     dentry_unhash(dentry);
->>>     > -     error = -EBUSY;
->>>     > -     if (!d_unhashed(dentry))
->>>     > -             goto out;
->>>     > -
->>>     >       len = sizeof(__name);
->>>     >       error = ncp_io2vol(server, __name, &len, dentry->d_name.name
->>>     <http://d_name.name>,
->>>     >                          dentry->d_name.len, !ncp_preserve_case(dir));
->>>     >
->>>
->>
-> 
+for you to fetch changes up to ace3647afb3eca214f6da5d653ad116ff77545b6:
 
+  ACPI/APEI: Update einj documentation for param1/param2 (2013-06-06 15:28:11 -0700)
 
---------------010509010307010801090006
-Content-Type: text/x-patch;
- name="0001-ncpfs-fix-rmdir-returns-Device-or-resource-busy.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-ncpfs-fix-rmdir-returns-Device-or-resource-busy.patch"
+----------------------------------------------------------------
+Miscellaneous fixes for ACPI EINJ (error injection) code.
 
->From 6af7fb5452c6e6edd10316338982ff85ada2cfcf Mon Sep 17 00:00:00 2001
-From: Dave Chiluk <chiluk@canonical.com>
-Date: Tue, 28 May 2013 16:06:08 -0500
-Subject: [PATCH] ncpfs: fix rmdir returns Device or resource busy
+----------------------------------------------------------------
+Chen Gong (2):
+      ACPI/APEI: Add parameter check before error injection
+      ACPI/APEI: Update einj documentation for param1/param2
 
-1d2ef5901483004d74947bbf78d5146c24038fe7 caused a regression in ncpfs such that
-directories could no longer be removed.  This was because ncp_rmdir checked
-to see if a dentry could be unhashed before allowing it to be removed. Since
-1d2ef5901483004d74947bbf78d5146c24038fe7 introduced a change that incremented
-dentry->d_count causing it to always be greater than 1 unhash would always
-fail.  Thus causing the error path in ncp_rmdir to always be taken.  Removing
-this error path is safe as unhashing is still accomplished by calls to dput
-from vfs_rmdir.
+Wei Yongjun (1):
+      ACPI, APEI, EINJ: Fix error return code in einj_init()
 
-Signed-off-by: Dave Chiluk <chiluk@canonical.com>
-Signed-off-by: Petr Vandrovec <petr@vandrovec.name>
----
- fs/ncpfs/dir.c |    9 ---------
- 1 file changed, 9 deletions(-)
-
-diff --git a/fs/ncpfs/dir.c b/fs/ncpfs/dir.c
-index 8163260..6792ce1 100644
---- a/fs/ncpfs/dir.c
-+++ b/fs/ncpfs/dir.c
-@@ -1029,15 +1029,6 @@ static int ncp_rmdir(struct inode *dir, struct dentry *dentry)
- 	DPRINTK("ncp_rmdir: removing %s/%s\n",
- 		dentry->d_parent->d_name.name, dentry->d_name.name);
- 
--	/*
--	 * fail with EBUSY if there are still references to this
--	 * directory.
--	 */
--	dentry_unhash(dentry);
--	error = -EBUSY;
--	if (!d_unhashed(dentry))
--		goto out;
--
- 	len = sizeof(__name);
- 	error = ncp_io2vol(server, __name, &len, dentry->d_name.name,
- 			   dentry->d_name.len, !ncp_preserve_case(dir));
--- 
-1.7.9.5
-
-
---------------010509010307010801090006--
+ Documentation/acpi/apei/einj.txt |  9 +++++++--
+ drivers/acpi/apei/einj.c         | 39 ++++++++++++++++++++++++++++++++++++---
+ kernel/resource.c                |  1 +
+ 3 files changed, 44 insertions(+), 5 deletions(-)
