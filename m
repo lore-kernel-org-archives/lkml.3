@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756899Ab3FGS0M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 14:26:12 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12872 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756570Ab3FGS0J (ORCPT
+	id S932081Ab3FGS0l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 14:26:41 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38876 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756210Ab3FGS0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 14:26:09 -0400
-X-Authority-Analysis: v=2.0 cv=BcJaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=V63olZALi9sA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=iFRSGadmnM0A:10 a=XZ4Dvq9fYrp_bfUSiIMA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1370629568.9844.87.camel@gandalf.local.home>
-Subject: Re: NULL pointer dereference when loading the gre module
- (3.10.0-rc4)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Pravin B Shelar <pshelar@nicira.com>
-Date: Fri, 07 Jun 2013 14:26:08 -0400
-In-Reply-To: <20130607175233.GA20230@uio.no>
-References: <20130606221656.GA11475@uio.no>
-	 <20130607030648.GA28618@home.goodmis.org> <20130607085421.GF15083@uio.no>
-	 <1370612441.24311.411.camel@edumazet-glaptop>
-	 <1370618100.9844.73.camel@gandalf.local.home>
-	 <20130607154634.GA7529@uio.no>
-	 <1370621543.9844.78.camel@gandalf.local.home>
-	 <20130607175233.GA20230@uio.no>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Jun 2013 14:26:39 -0400
+Date: Fri, 7 Jun 2013 19:26:08 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: joem <joem@martindale-electric.co.uk>
+Cc: Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>,
+        "debian-arm@lists.debian.org" <debian-arm@lists.debian.org>,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
+        "debian-kernel@lists.debian.org" <debian-kernel@lists.debian.org>
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
+	Uploading linux (3.9.4-1))
+Message-ID: <20130607182608.GV18614@n2100.arm.linux.org.uk>
+References: <CAPweEDw1BabE0cmT5fxZ3Z9p9EH508M3Nzcqk2VcO0oz-qYsvg@mail.gmail.com> <1370475609.20454.44.camel@localhost> <CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com> <1370477958.20454.68.camel@localhost> <CAPweEDyPffcN9cNJ10ZHt+AZJHTRdU0LMfCGM_756uAbf+NEBQ@mail.gmail.com> <51B085C6.3000605@gmail.com> <CAPweEDwR_NWUSi-j53m8MuoaV1RxM4wNNXtRioa2CjNdYqEtzQ@mail.gmail.com> <51B19046.5040401@gmail.com> <CAPweEDxfWcv7HSDuO6Uc751iiPg9ngDQc5UB7mbxwBespwF_7Q@mail.gmail.com> <1370616567.2433.20.camel@jm-desktop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370616567.2433.20.camel@jm-desktop>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-07 at 19:52 +0200, Steinar H. Gunderson wrote:
-> On Fri, Jun 07, 2013 at 12:12:23PM -0400, Steven Rostedt wrote:
-> >> Ffffffffa0e76000 u ip_tunnel_init_net   [ip_gre]
-> > What do you get if you do an objdump -Dr ip_gre.ko
+On Fri, Jun 07, 2013 at 02:49:28PM +0000, joem wrote:
+> > > SoC vendors are free to join the discussion, and many SoC vendors are part
+> > > of the kernel community, so calling this unilateral is plain wrong.
 > > 
-> > And then look for ipgre_init, and then subtract 0xb053 (45139) from its
-> > address. As that is: ffffffffa0e81055 - ffffffffa0e76002, then see if
-> > that object file has anything in that location.
+> >  you're free to believe that, vladimir.  i've explained why that
+> > hasn't happened, in prior messages.  can we move forward, please?
 > 
-> pannekake:~> objdump -Dr /lib/modules/3.10.0-rc4/kernel/net/ipv4/ip_gre.ko | grep ipgre_init        
-> 0000000000000000 <ipgre_init_net>:                                                          
->    0:	8b 35 00 00 00 00    	mov    0x0(%rip),%esi        # 6 <ipgre_init_net+0x6>
->   13:	e8 00 00 00 00       	callq  18 <ipgre_init_net+0x18>
+> I prefer it if the "vladimir" troll (and fellow trolls)
+> make requests for one of us to make or do something instead of
+> constantly whining and wasting time.
 > 
-> Ie., the symbol doesn't show up in the disassembly (for whatever reason).
+> After all we are attached to funds and resources ready to
+> deploy if something sounds a good idea and gets a vote.
+> 
+> To vladimir - please put your thoughts in a blog where it belongs.
+> If its important, I'm sure others would offer comment
+> and take you up on your thoughts.
 
-Ah, that's because of this: module_init(ipgre_init);  Where it makes it
-into:
+I think your position is confused.  Everything that Vladimir (in his
+three posts) in this thread so far have been correct.  Vladimir is not
+the one doing any trolling in this thread.
 
-00000000 <init_module>:
-   0:   55                      push   %ebp
-   1:   89 e5                   mov    %esp,%ebp
-   3:   53                      push   %ebx
-   4:   83 ec 08                sub    $0x8,%esp
-   7:   c7 04 24 00 00 00 00    movl   $0x0,(%esp)
-                        a: R_386_32     .rodata.str1.4
+Vladimir has not requested anything.  He hasn't whined.  He hasn't
+wasted time.  He has stated the following in _three_ short succinct
+emails:
+(a) no one gets to impose stipulate timescales unless they're willing
+to financially sponsor the work.
+(b) the adopted position of the Linux kernel developers.
 
-We can use ipgre_tap_init_net, and the offset of 0xb032 (45106) as that
-was 0xffffffffa0e5d034 - 0xffffffffa0e52002. Do you have CONFIG_NET_NS
-set?
+Luke Leighton on the other hand is demanding that we (Linux kernel
+developers) come up with proposals within three days so that Luke can
+act as a middle man between us and Allwinner, and is blaming the Linux
+kernel community for the situation with Allwinner.
 
-
-You can also cat /proc/modules. It gives you where the modules are
-located.
-
--- Steve
-
+As you seem to have your facts wrong, I can only conclude that you
+are also trolling... I hope I'm wrong about that and you've just made
+an innocent mistake.
