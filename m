@@ -1,205 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034Ab3FGTOl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 15:14:41 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:45311 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754902Ab3FGTOj (ORCPT
+	id S1756383Ab3FGTOu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 15:14:50 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:43120 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756072Ab3FGTOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 15:14:39 -0400
-Message-ID: <51B2311A.9040308@semaphore.gr>
-Date: Fri, 07 Jun 2013 22:14:34 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Fri, 7 Jun 2013 15:14:48 -0400
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Borislav Petkov <bp@suse.de>
-CC: Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of target
- frequency
-References: <51AF60D5.3080605@semaphore.gr> <20130605161703.GA29958@pd.tnic> <51AF71B6.6030408@semaphore.gr> <105446113.ZumbZWCbSi@vostro.rjw.lan>
-In-Reply-To: <105446113.ZumbZWCbSi@vostro.rjw.lan>
+In-Reply-To: <20130607205940.4816fed5@skate>
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
+	<1370475609.20454.44.camel@localhost>
+	<CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
+	<1733666.lHUBcfUXq9@flatron>
+	<20130606112723.71ddd70c@skate>
+	<CAPweEDzW60poOYahm31aW3_A=NvZmyBPPPgM9PzdvuPJnju69A@mail.gmail.com>
+	<20130607205940.4816fed5@skate>
+Date: Fri, 7 Jun 2013 20:14:47 +0100
+Message-ID: <CAPweEDzaWBYEOpDNCkxGyHzewTAVgD6v=Jjm-T46UW_jyPbKxg@mail.gmail.com>
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
+ Uploading linux (3.9.4-1))
+From: "luke.leighton" <luke.leighton@gmail.com>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>,
+        debian-kernel@lists.debian.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2013 11:35 PM, Rafael J. Wysocki wrote:
-> On Wednesday, June 05, 2013 08:13:26 PM Stratos Karafotis wrote:
->> Hi Borislav,
+On Fri, Jun 7, 2013 at 7:59 PM, Thomas Petazzoni
+<thomas.petazzoni@free-electrons.com> wrote:
+> Hello,
+>
+> On Fri, 7 Jun 2013 19:26:49 +0100, luke.leighton wrote:
+>
+>> > Have you noticed that it is already the case in mainline?
 >>
->> On 06/05/2013 07:17 PM, Borislav Petkov wrote:
->>> On Wed, Jun 05, 2013 at 07:01:25PM +0300, Stratos Karafotis wrote:
->>>> Ondemand calculates load in terms of frequency and increases it only
->>>> if the load_freq is greater than up_threshold multiplied by current
->>>> or average frequency. This seems to produce oscillations of frequency
->>>> between min and max because, for example, a relatively small load can
->>>> easily saturate minimum frequency and lead the CPU to max. Then, the
->>>> CPU will decrease back to min due to a small load_freq.
->>>
->>> Right, and I think this is how we want it, no?
->>>
->>> The thing is, the faster you finish your work, the faster you can become
->>> idle and save power.
+>>  i knew there was a little bit, but not the extent of the commits.
+>
+> Then you could probably use a bit of your time to read the kernel
+> commit logs rather than writing hundreds of e-mails, no?
+
+ not now, thomas.  i need summaries.  bear in mind i type faster than
+i can read/find.  very very grateful for your summaries, it's exactly
+what i need.
+
+>> > My colleague Maxime Ripard (Cc'ed)
 >>
->> This is exactly the goal of this patch. To use more efficiently middle
->> frequencies to finish faster the work.
+>>  maxime: we need to talk :)
 >>
->>> If you switch frequencies in a staircase-like manner, you're going to
->>> take longer to finish, in certain cases, and burn more power while doing
->>> so.
+>>  please tell me in 4 or 5 sentences what you've managed to do so far,
+>> expanding a little on what thomas says below, more specifically what
+>> it achieves and/or allows rather than technically what it does
+>> (suitable for managers and directors in other words), and what plans
+>> you'd like to see happen.
+>
+> Maxime will reply to this in more details, but I believe the status is:
+>
+>  * Interrupt controller is working.
+>  * Clock drivers are working.
+>  * Pinctrl is working.
+>  * GPIO is working.
+>  * Timer is working.
+>  * UART is working
+>  * Watchdog is on its way (patches posted)
+>  * Ethernet is on its way (patches posted)
+>  * I2C is on its way (patches posted)
+>
+> Cubieboard (A10), Hackberry (A10), Mini XPlus (A10) And OLinuxino (A13)
+> are supported.
+>
+> See arch/arm/boot/dts/sun{4,5}i* for a good overview.
+>
+>> > All in mainline, completely Device Tree based.
 >>
->> This is not true with this patch. It switches to middle frequencies
->> when the load < up_threshold.
->> Now, ondemand does not increase freq. CPU runs in lowest freq till the
->> load is greater than up_threshold.
+>>  great.  which version did it first hit, i.e. what will the first
+>> signs of this be when allwinner begin doing "git pulls"?
+>
+> The very first support landed in 3.8.
+>
+>> > So isn't this entire discussion completely moot?
 >>
->>> Btw, racing to idle is also a good example for why you want boosting:
->>> you want to go max out the core but stay within power limits so that you
->>> can finish sooner.
->>>
->>>> This patch changes the calculation method of load and target frequency
->>>> considering 2 points:
->>>> - Load computation should be independent from current or average
->>>> measured frequency. For example an absolute load 80% at 100MHz is not
->>>> necessarily equivalent to 8% at 1000MHz in the next sampling interval.
->>>> - Target frequency should be increased to any value of frequency table
->>>> proportional to absolute load, instead to only the max. Thus:
->>>>
->>>> Target frequency = C * load
->>>>
->>>> where C = policy->cpuinfo.max_freq / 100
->>>>
->>>> Tested on Intel i7-3770 CPU @ 3.40GHz and on Quad core 1500MHz Krait.
->>>> Phoronix benchmark of Linux Kernel Compilation 3.1 test shows an
->>>> increase ~1.5% in performance. cpufreq_stats (time_in_state) shows
->>>> that middle frequencies are used more, with this patch. Highest
->>>> and lowest frequencies were used less by ~9%
-> 
-> Can you also use powertop to measure the percentage of time spent in idle
-> states for the same workload with and without your patchset?  Also, it would
-> be good to measure the total energy consumption somehow ...
-> 
-> Thanks,
-> Rafael
+>>  no because it's totally in isolation from allwinner.  i need to give
+>> them a heads-up, and get them involved, giving them specific
+>> incentives [which nobody's yet given!!] for following a particular
+>> path [or paths] yet to be recommended.
+>
+> You really believe you're more important than you really are, I'd say.
 
-Hi Rafael,
+ no, i don't.  i'm just a messenger.  under-informed one, at the
+moment.  please bear that in mind rather than saying "you seem
+dreadfully underinformed" - i got caught off-guard by this opportunity
+and need to get up-to-speed rather fast.
 
-I repeated the tests extracting also powertop results.
-Measurement steps with and without this patch:
-1) Reboot system
-2) Running twice Phoronix benchmark of Linux Kernel Compilation 3.1 test
-   without taking measurement
-3) Wait few minutes
-4) Run Phoronix and powertop for 100secs and take measurement.
+> My colleague Maxime is in contact with Allwinner, he has regular
+> discussion with them, started reviewing some of the kernel code they're
+> writing, has received datasheets from them, and evaluation boards.
 
-I will try to repeat the test and take measurements with turbostat as
-Borislav suggested.
+ _great_.  that's brilliant to hear.
+
+> So this work is definitely not done in isolation from Allwinner, and
+> they have received much more than an heads-up from Maxime.
+>
+>> > The mainline support
+>> > for sunxi has already started since 6 months or so, and has been Device
+>> > Tree based from day one.
+>>
+>> to clarify: the *community-driven* mainline support for sunxi.  ok -
+>> which chips?  sun3i (ARM9), sun4i (Cortex A8), sun5i, sun6i and sun7i
+>> (Dual-Core Cortex A7)?  which ones are in?
+>
+> So far, A10 and A13. Maxime has received a A31 evaluation board from
+> Allwinner very recently, and also A10S and A20 boards. I suppose he
+> will be working on those fairly and posting the corresponding patches
+> fairly soon.
+
+ great.   you've got the A20 3.3 kernel source drop?
+ http://git.rhombus-tech.net/?p=linux.git;a=tree;h=refs/heads/lkcl-3.3-a20;hb=refs/heads/lkcl-3.3-a20
 
 
-Thanks,
-Stratos
+> In other words, it looks like you've started an entire discussion about
+> the mainline support for Allwinner SoCs without having a look at what
+> "git log" tells you...
 
-------------------------------------------------------------------
-Test WITHOUT this patch:
+ absolutely correct.  dived into this the moment i got word of a
+potential meeting on extremely short notice, having had zero time to
+review the logs prior even to then.
 
-Phoronix Test Suite v4.6.0
+> Which by itself is a very good indicator that
+> you're probably not the best interlocutor for Allwinner as far as
+> mainline development is concerned.
 
-    Installed: pts/build-linux-kernel-1.3.0
+ the meeting's going ahead, regardless of your concerns.  please help
+get me up to speed, for the benefit of the linux community.  take
+advantage of the opportunity, please: take it at face value without
+judgement.
 
-System Information
-
-Hardware:
-Processor: Intel Core i7-3770 @ 3.40GHz (8 Cores), Motherboard: ASUS CM6870, Chipset: Intel Xeon E3-1200 v2/3rd, Memory: 2 x 4096 MB DDR3-1600MHz HY64C1C1624ZY, Disk: 1000GB Seagate ST1000DM003-9YN1, Graphics: NVIDIA GeForce GT 640 3072MB, Audio: Realtek ALC892, Monitor: S23B350, Network: Realtek RTL8111/8168 + Ralink RT3090 Wireless 802.11n 1T/1R
-
-Software:
-OS: Fedora 18, Kernel: 3.10.0-rc3v+ (x86_64), Desktop: KDE 4.10.3, Display Server: X Server 1.13.3, Display Driver: nouveau 1.0.7, File-System: ext4, Screen Resolution: 1920x1080
-
-    Would you like to save these test results (Y/n): n
-
-
-Timed Linux Kernel Compilation 3.1:
-    pts/build-linux-kernel-1.3.0
-    Test 1 of 1
-    Estimated Trial Run Count:    3
-    Estimated Time To Completion: 2 Minutes
-        Running Pre-Test Script @ 21:41:19
-        Started Run 1 @ 21:41:30
-        Running Interim Test Script @ 21:41:44
-        Started Run 2 @ 21:41:47
-        Running Interim Test Script @ 21:42:02
-        Started Run 3 @ 21:42:05
-        Running Interim Test Script @ 21:42:15  [Std. Dev: 19.28%]
-        Started Run 4 @ 21:42:19
-        Running Interim Test Script @ 21:42:29  [Std. Dev: 18.72%]
-        Started Run 5 @ 21:42:32
-        Running Interim Test Script @ 21:42:42  [Std. Dev: 17.84%]
-        Started Run 6 @ 21:42:46  [Std. Dev: 16.91%]
-        Running Post-Test Script @ 21:42:55
-
-    Test Results:
-        11.073544979095
-        14.059958934784
-        9.6814110279083
-        9.6158590316772
-        9.5762379169464
-        9.5944919586182
-
-    Average: 10.60 Seconds
-
-Powertop results:
-http://www.semaphore.gr/results/powertop_without.html
-
-
----------------------------------------------------------------------
-Test WITH this patch:
-
-Phoronix Test Suite v4.6.0
-
-    Installed: pts/build-linux-kernel-1.3.0
-
-System Information
-
-Hardware:
-Processor: Intel Core i7-3770 @ 3.40GHz (8 Cores), Motherboard: ASUS CM6870, Chipset: Intel Xeon E3-1200 v2/3rd, Memory: 2 x 4096 MB DDR3-1600MHz HY64C1C1624ZY, Disk: 1000GB Seagate ST1000DM003-9YN1, Graphics: NVIDIA GeForce GT 640 3072MB, Audio: Realtek ALC892, Monitor: S23B350, Network: Realtek RTL8111/8168 + Ralink RT3090 Wireless 802.11n 1T/1R
-
-Software:
-OS: Fedora 18, Kernel: 3.10.0-rc3+ (x86_64), Desktop: KDE 4.10.3, Display Server: X Server 1.13.3, Display Driver: nouveau 1.0.7, File-System: ext4, Screen Resolution: 1920x1080
-
-    Would you like to save these test results (Y/n): n
-
-
-Timed Linux Kernel Compilation 3.1:
-    pts/build-linux-kernel-1.3.0
-    Test 1 of 1
-    Estimated Trial Run Count:    3
-    Estimated Time To Completion: 2 Minutes
-        Running Pre-Test Script @ 21:28:05
-        Started Run 1 @ 21:28:17
-        Running Interim Test Script @ 21:28:30
-        Started Run 2 @ 21:28:34
-        Running Interim Test Script @ 21:28:44
-        Started Run 3 @ 21:28:47
-        Running Interim Test Script @ 21:28:58  [Std. Dev: 4.81%]
-        Started Run 4 @ 21:29:02
-        Running Interim Test Script @ 21:29:12  [Std. Dev: 6.05%]
-        Started Run 5 @ 21:29:15
-        Running Interim Test Script @ 21:29:25  [Std. Dev: 6.13%]
-        Started Run 6 @ 21:29:28  [Std. Dev: 6.02%]
-        Running Post-Test Script @ 21:29:38
-
-    Test Results:
-        10.442322015762
-        10.038927078247
-        11.044027090073
-        9.5781810283661
-        9.5812470912933
-        9.5545389652252
-
-    Average: 10.04 Seconds
-
-Powertop results:
-http://www.semaphore.gr/results/powertop_with.html
+l.
