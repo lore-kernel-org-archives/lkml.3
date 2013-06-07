@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757521Ab3FGWcD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 18:32:03 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:51405 "EHLO
+	id S1161004Ab3FGWcX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 18:32:23 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:51404 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757461Ab3FGWbw (ORCPT
+	with ESMTP id S1757446Ab3FGWbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Jun 2013 18:31:52 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,9 +13,9 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3 26/27] PCI, x86, ACPI: Enable ioapic hotplug support with acpi host bridge.
-Date: Fri,  7 Jun 2013 15:31:12 -0700
-Message-Id: <1370644273-10495-27-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v3 27/27] PCI, x86, ACPI: get ioapic address from acpi device
+Date: Fri,  7 Jun 2013 15:31:13 -0700
+Message-Id: <1370644273-10495-28-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1370644273-10495-1-git-send-email-yinghai@kernel.org>
 References: <1370644273-10495-1-git-send-email-yinghai@kernel.org>
@@ -24,262 +24,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to have ioapic setup before normal pci drivers.
-otherwise other pci driver can not setup irq.
+Some ioapic controllers do not show up on pci config space,
+or pci device is there but no bar is used and is set by firmware in
+other non standard registers.
 
-So we should not treat them as normal pci devices.
-Also we will need to support ioapic hotplug without pci device around.
-
-We need to call ioapic add/remove during host-bridge add/remove.
+We can get ioapic address from ACPI0009's _CRS.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/acpi/pci_root.c  |   4 ++
- drivers/pci/ioapic.c     | 147 ++++++++++++++++++++++++++++++-----------------
- include/linux/pci-acpi.h |   8 +++
- 3 files changed, 106 insertions(+), 53 deletions(-)
+ drivers/pci/ioapic.c | 86 +++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 71 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-index e427dc5..dadcbe9 100644
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -542,6 +542,8 @@ static int acpi_pci_root_add(struct acpi_device *device,
- 	if (system_state != SYSTEM_BOOTING)
- 		pci_enable_bridges(root->bus);
- 
-+	acpi_pci_ioapic_add(root);
-+
- 	pci_bus_add_devices(root->bus);
- 	return 1;
- 
-@@ -561,6 +563,8 @@ static void acpi_pci_root_remove(struct acpi_device *device)
- 
- 	pci_stop_root_bus(root->bus);
- 
-+	acpi_pci_ioapic_remove(root);
-+
- 	device_set_run_wake(root->bus->bridge, false);
- 	pci_acpi_remove_bus_pm_notifier(device);
- 
 diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
-index 7d6b157..60351b2 100644
+index 60351b2..41f7c69 100644
 --- a/drivers/pci/ioapic.c
 +++ b/drivers/pci/ioapic.c
-@@ -22,101 +22,142 @@
- #include <linux/slab.h>
- #include <acpi/acpi_bus.h>
+@@ -32,6 +32,36 @@ struct acpi_pci_ioapic {
+ static LIST_HEAD(ioapic_list);
+ static DEFINE_MUTEX(ioapic_list_lock);
  
--struct ioapic {
--	acpi_handle	handle;
-+struct acpi_pci_ioapic {
-+	acpi_handle	root_handle;
- 	u32		gsi_base;
-+	struct pci_dev *pdev;
-+	struct list_head list;
- };
- 
--static int ioapic_probe(struct pci_dev *dev, const struct pci_device_id *ent)
-+static LIST_HEAD(ioapic_list);
-+static DEFINE_MUTEX(ioapic_list_lock);
-+
-+static void handle_ioapic_add(acpi_handle handle, struct pci_dev **pdev,
-+				 u32 *pgsi_base)
- {
--	acpi_handle handle;
- 	acpi_status status;
- 	unsigned long long gsb;
--	struct ioapic *ioapic;
-+	struct pci_dev *dev;
-+	u32 gsi_base;
- 	int ret;
- 	char *type;
--	struct resource *res;
-+	struct resource r;
-+	struct resource *res = &r;
-+	char objname[64];
-+	struct acpi_buffer buffer = {sizeof(objname), objname};
- 
--	handle = DEVICE_ACPI_HANDLE(&dev->dev);
--	if (!handle)
--		return -EINVAL;
-+	*pdev = NULL;
-+	*pgsi_base = 0;
- 
- 	status = acpi_evaluate_integer(handle, "_GSB", NULL, &gsb);
--	if (ACPI_FAILURE(status))
--		return -EINVAL;
--
--	/*
--	 * The previous code in acpiphp evaluated _MAT if _GSB failed, but
--	 * ACPI spec 4.0 sec 6.2.2 requires _GSB for hot-pluggable I/O APICs.
--	 */
-+	if (ACPI_FAILURE(status) || !gsb)
-+		return;
- 
--	ioapic = kzalloc(sizeof(*ioapic), GFP_KERNEL);
--	if (!ioapic)
--		return -ENOMEM;
-+	dev = acpi_get_pci_dev(handle);
-+	if (!dev)
-+		return;
- 
--	ioapic->handle = handle;
--	ioapic->gsi_base = (u32) gsb;
-+	acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
- 
--	if (dev->class == PCI_CLASS_SYSTEM_PIC_IOAPIC)
--		type = "IOAPIC";
--	else
--		type = "IOxAPIC";
-+	gsi_base = gsb;
-+	type = "IOxAPIC";
- 
- 	ret = pci_enable_device(dev);
- 	if (ret < 0)
--		goto exit_free;
-+		goto exit_put;
- 
- 	pci_set_master(dev);
- 
-+	if (dev->class == PCI_CLASS_SYSTEM_PIC_IOAPIC)
-+		type = "IOAPIC";
-+
- 	if (pci_request_region(dev, 0, type))
- 		goto exit_disable;
- 
- 	res = &dev->resource[0];
--	if (acpi_register_ioapic(ioapic->handle, res->start, ioapic->gsi_base))
-+
-+	if (acpi_register_ioapic(handle, res->start, gsi_base))
- 		goto exit_release;
- 
--	pci_set_drvdata(dev, ioapic);
--	dev_info(&dev->dev, "%s at %pR, GSI %u\n", type, res, ioapic->gsi_base);
--	return 0;
-+	pr_info("%s %s %s at %pR, GSI %u\n",
-+		dev_name(&dev->dev), objname, type,
-+		res, gsi_base);
-+
-+	*pdev = dev;
-+	*pgsi_base = gsi_base;
-+	return;
- 
- exit_release:
- 	pci_release_region(dev, 0);
- exit_disable:
- 	pci_disable_device(dev);
--exit_free:
--	kfree(ioapic);
--	return -ENODEV;
-+exit_put:
-+	pci_dev_put(dev);
- }
- 
--static void ioapic_remove(struct pci_dev *dev)
-+static void handle_ioapic_remove(acpi_handle handle, struct pci_dev *dev,
-+				  u32 gsi_base)
- {
--	struct ioapic *ioapic = pci_get_drvdata(dev);
-+	acpi_unregister_ioapic(handle, gsi_base);
- 
--	acpi_unregister_ioapic(ioapic->handle, ioapic->gsi_base);
- 	pci_release_region(dev, 0);
- 	pci_disable_device(dev);
--	kfree(ioapic);
-+	pci_dev_put(dev);
- }
- 
-+static acpi_status register_ioapic(acpi_handle handle, u32 lvl,
-+					void *context, void **rv)
++static acpi_status setup_res(struct acpi_resource *acpi_res, void *data)
 +{
-+	acpi_handle root_handle = context;
-+	struct pci_dev *pdev;
-+	u32 gsi_base;
-+	struct acpi_pci_ioapic *ioapic;
- 
--static DEFINE_PCI_DEVICE_TABLE(ioapic_devices) = {
--	{ PCI_DEVICE_CLASS(PCI_CLASS_SYSTEM_PIC_IOAPIC, ~0) },
--	{ PCI_DEVICE_CLASS(PCI_CLASS_SYSTEM_PIC_IOXAPIC, ~0) },
--	{ }
--};
--MODULE_DEVICE_TABLE(pci, ioapic_devices);
-+	handle_ioapic_add(handle, &pdev, &gsi_base);
-+	if (!gsi_base)
-+		return AE_OK;
- 
--static struct pci_driver ioapic_driver = {
--	.name		= "ioapic",
--	.id_table	= ioapic_devices,
--	.probe		= ioapic_probe,
--	.remove		= ioapic_remove,
--};
-+	ioapic = kzalloc(sizeof(*ioapic), GFP_KERNEL);
-+	if (!ioapic) {
-+		pr_err("%s: cannot allocate memory\n", __func__);
-+		handle_ioapic_remove(root_handle, pdev, gsi_base);
-+		return AE_OK;
-+	}
-+	ioapic->root_handle = root_handle;
-+	ioapic->pdev = pdev;
-+	ioapic->gsi_base = gsi_base;
++	struct resource *res;
++	struct acpi_resource_address64 addr;
++	acpi_status status;
++	unsigned long flags;
++	u64 start, end;
 +
-+	mutex_lock(&ioapic_list_lock);
-+	list_add(&ioapic->list, &ioapic_list);
-+	mutex_unlock(&ioapic_list_lock);
++	status = acpi_resource_to_address64(acpi_res, &addr);
++	if (!ACPI_SUCCESS(status))
++		return AE_OK;
++
++	if (addr.resource_type == ACPI_MEMORY_RANGE) {
++		if (addr.info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
++			return AE_OK;
++		flags = IORESOURCE_MEM;
++	} else
++		return AE_OK;
++
++	start = addr.minimum + addr.translation_offset;
++	end = addr.maximum + addr.translation_offset;
++
++	res = data;
++	res->flags = flags;
++	res->start = start;
++	res->end = end;
 +
 +	return AE_OK;
 +}
- 
--static int __init ioapic_init(void)
-+void acpi_pci_ioapic_add(struct acpi_pci_root *root)
++
+ static void handle_ioapic_add(acpi_handle handle, struct pci_dev **pdev,
+ 				 u32 *pgsi_base)
  {
--	return pci_register_driver(&ioapic_driver);
-+	acpi_status status;
-+
-+	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, root->device->handle,
-+				     (u32)1, register_ioapic, NULL,
-+				     root->device->handle,
-+				     NULL);
-+	if (ACPI_FAILURE(status))
-+		pr_err("%s: register_ioapic failure - %d", __func__, status);
- }
--module_init(ioapic_init);
+@@ -54,33 +84,56 @@ static void handle_ioapic_add(acpi_handle handle, struct pci_dev **pdev,
+ 		return;
  
--MODULE_LICENSE("GPL");
-+void acpi_pci_ioapic_remove(struct acpi_pci_root *root)
-+{
-+	struct acpi_pci_ioapic *ioapic, *tmp;
+ 	dev = acpi_get_pci_dev(handle);
+-	if (!dev)
+-		return;
++	if (!dev || !pci_resource_len(dev, 0)) {
++		struct acpi_device_info *info;
++		char *hid = NULL;
 +
-+	mutex_lock(&ioapic_list_lock);
-+	list_for_each_entry_safe(ioapic, tmp, &ioapic_list, list) {
-+		if (root->device->handle != ioapic->root_handle)
-+			continue;
-+		list_del(&ioapic->list);
-+		handle_ioapic_remove(ioapic->root_handle, ioapic->pdev,
-+					ioapic->gsi_base);
-+		kfree(ioapic);
++		status = acpi_get_object_info(handle, &info);
++		if (ACPI_FAILURE(status))
++			goto exit_put;
++		if (info->valid & ACPI_VALID_HID)
++			hid = info->hardware_id.string;
++		if (!hid || strcmp(hid, "ACPI0009")) {
++			kfree(info);
++			goto exit_put;
++		}
++		kfree(info);
++		memset(res, 0, sizeof(*res));
++		acpi_walk_resources(handle, METHOD_NAME__CRS, setup_res, res);
++		if (!res->flags)
++			goto exit_put;
 +	}
-+	mutex_unlock(&ioapic_list_lock);
-+}
-diff --git a/include/linux/pci-acpi.h b/include/linux/pci-acpi.h
-index 1704479..b2a2ced 100644
---- a/include/linux/pci-acpi.h
-+++ b/include/linux/pci-acpi.h
-@@ -69,6 +69,14 @@ static inline void acpiphp_remove_slots(struct pci_bus *bus) { }
- static inline void acpiphp_check_host_bridge(acpi_handle handle) { }
- #endif
  
-+#ifdef CONFIG_PCI_IOAPIC
-+void acpi_pci_ioapic_add(struct acpi_pci_root *root);
-+void acpi_pci_ioapic_remove(struct acpi_pci_root *root);
-+#else
-+static inline void acpi_pci_ioapic_add(struct acpi_pci_root *root) { }
-+static inline void acpi_pci_ioapic_remove(struct acpi_pci_root *root) { }
-+#endif
+ 	acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+ 
+ 	gsi_base = gsb;
+ 	type = "IOxAPIC";
++	if (dev) {
++		ret = pci_enable_device(dev);
++		if (ret < 0)
++			goto exit_put;
+ 
+-	ret = pci_enable_device(dev);
+-	if (ret < 0)
+-		goto exit_put;
+-
+-	pci_set_master(dev);
++		pci_set_master(dev);
+ 
+-	if (dev->class == PCI_CLASS_SYSTEM_PIC_IOAPIC)
+-		type = "IOAPIC";
++		if (dev->class == PCI_CLASS_SYSTEM_PIC_IOAPIC)
++			type = "IOAPIC";
+ 
+-	if (pci_request_region(dev, 0, type))
+-		goto exit_disable;
++		if (pci_resource_len(dev, 0)) {
++			if (pci_request_region(dev, 0, type))
++				goto exit_disable;
+ 
+-	res = &dev->resource[0];
++			res = &dev->resource[0];
++		}
++	}
+ 
+-	if (acpi_register_ioapic(handle, res->start, gsi_base))
+-		goto exit_release;
++	if (acpi_register_ioapic(handle, res->start, gsi_base)) {
++		if (dev)
++			goto exit_release;
++		return;
++	}
+ 
+ 	pr_info("%s %s %s at %pR, GSI %u\n",
+-		dev_name(&dev->dev), objname, type,
++		dev ? dev_name(&dev->dev) : "", objname, type,
+ 		res, gsi_base);
+ 
+ 	*pdev = dev;
+@@ -100,6 +153,9 @@ static void handle_ioapic_remove(acpi_handle handle, struct pci_dev *dev,
+ {
+ 	acpi_unregister_ioapic(handle, gsi_base);
+ 
++	if (!dev)
++		return;
 +
- #else	/* CONFIG_ACPI */
- static inline void acpi_pci_add_bus(struct pci_bus *bus) { }
- static inline void acpi_pci_remove_bus(struct pci_bus *bus) { }
+ 	pci_release_region(dev, 0);
+ 	pci_disable_device(dev);
+ 	pci_dev_put(dev);
 -- 
 1.8.1.4
 
