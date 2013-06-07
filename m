@@ -1,91 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987Ab3FGMPb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 08:15:31 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:54196 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671Ab3FGMPa convert rfc822-to-8bit (ORCPT
+	id S1754925Ab3FGMVx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 08:21:53 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:45032 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753556Ab3FGMVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 08:15:30 -0400
+	Fri, 7 Jun 2013 08:21:43 -0400
+MBOX-Line: From nobody Fri Jun  7 06:19:09 2013
+Subject: [PATCH 3/3] clk: tegra: T114: add DFLL DVCO reset control
+To: linux-tegra@vger.kernel.org, mturquette@linaro.org
+From: Paul Walmsley <pwalmsley@nvidia.com>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Aleksandr Frid <afrid@nvidia.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Fri, 07 Jun 2013 06:19:09 -0600
+Message-ID: <20130607121901.21868.65416.stgit@dusk.lan>
+In-Reply-To: <20130607121505.21868.72360.stgit@dusk.lan>
+References: <20130607121505.21868.72360.stgit@dusk.lan>
+User-Agent: StGit/0.16-37-g27ac3
 MIME-Version: 1.0
-In-Reply-To: <07905E0D268758488D76D7D747F21BB6043C4AD7@rdc8.rdc>
-References: <07905E0D268758488D76D7D747F21BB6043C4AD7@rdc8.rdc>
-From: Florian Fainelli <florian@openwrt.org>
-Date: Fri, 7 Jun 2013 13:14:49 +0100
-X-Google-Sender-Auth: 9HFmxxvtHUhg8Qbuzo18El73aSk
-Message-ID: <CAGVrzcZf8cT7r8+7OVEDSvMHB4rZbyMZM1kvstvdFHtX2QQzmA@mail.gmail.com>
-Subject: Re: r6040 mac driver issue and solution
-To: =?UTF-8?B?QnJ1Y2UgWWUgKOiRieS9s+asoyk=?= <Bruce.Ye@rdc.com.tw>
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?B?T3dlbiBQZW5nICjlva3ph5HpmoYp?= <Owen.Peng@rdc.com.tw>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Bruce,
+Add DFLL DVCO reset line control functions to the CAR IP block driver.
 
-2013/6/7 Bruce Ye (葉佳欣) <Bruce.Ye@rdc.com.tw>:
-> Dear Florian:
-> For RDC R6040 FAST ETHERNET DRIVER.
-> There's an issue in r6040 driver and for some RDC platform. It only occurs when there's more than one Ethernet port.
-> When initializing the MAC in boot up, r6040 driver set the same phy address to different ports.
-> It also display in boot log as below.
-> mii_bus:phy_addr=0:01
-> mii_bus:phy_addr=1:01
->
-> It will let the eth0 and eth1 work not in independent.
-> That is, if there is a connection on eth1 but not on eth0. The eth1 can not work only if link up the eth0.
-> To fix this problem is that giving the different phy address to different ports.
-> I already tested it on r6040.c version 0.27 and version 0.28 by the change and is worked.
+The DVCO present in the DFLL IP block has a separate reset line,
+exposed via the CAR IP block.  This reset line is asserted upon SoC
+reset.  Unless something (such as the DFLL driver) deasserts this
+line, the DVCO will not oscillate, although reads and writes to the
+DFLL IP block will complete.
 
-I see, thanks for the change. Have you verified that simply changing
-mii_bus->phy_mask is sufficient? This should prevent the second MII
-bus from probing the PHY at address 1. I will add this patch to my
-patchqueue for r6040, thank you!
+Thanks to Aleksandr Frid <afrid@nvidia.com> for identifying this and
+saving hours of debugging time.
 
->
-> Below is the change
->
-> --- linux-3.7.2/drivers/net/ethernet/rdc/r6040.c.orig   2013-06-07 03:00:05.670250988 -0700
-> +++ linux-3.7.2/drivers/net/ethernet/rdc/r6040.c        2013-06-07 03:05:01.666407765 -0700
-> @@ -1037,8 +1037,18 @@ static int r6040_mii_probe(struct net_de
->  {
->         struct r6040_private *lp = netdev_priv(dev);
->         struct phy_device *phydev = NULL;
-> +        static int first_find_addr = 0;
-> +        int addr;
-> +        for ( addr = first_find_addr; addr < PHY_MAX_ADDR; addr++ ) {
-> +
-> +        if ( lp->mii_bus->phy_map[addr] )
-> +                phydev = lp->mii_bus->phy_map[addr];
-> +
-> +        if(phydev)
-> +                break;
-> +        }
-> +        first_find_addr++ ;
->
-> -       phydev = phy_find_first(lp->mii_bus);
->         if (!phydev) {
->                 dev_err(&lp->pdev->dev, "no PHY found\n");
->                 return -ENODEV;
-> @@ -1194,6 +1204,10 @@ static int __devinit r6040_init_one(stru
->         lp->mii_bus->write = r6040_mdiobus_write;
->         lp->mii_bus->reset = r6040_mdiobus_reset;
->         lp->mii_bus->name = "r6040_eth_mii";
-> +        if ( card_idx == 0 )
-> +            lp->mii_bus->phy_mask = 0x1;
-> +        else
-> +            lp->mii_bus->phy_mask = 0x3;
->         snprintf(lp->mii_bus->id, MII_BUS_ID_SIZE, "%s-%x",
->                 dev_name(&pdev->dev), card_idx);
->         lp->mii_bus->irq = kmalloc(sizeof(int)*PHY_MAX_ADDR, GFP_KERNEL);
->
->
->
-> Signed-off-by: Bruce Ye Developer <Bruce.Ye@rdc.com.tw>
->
-> Best Regards
-> Bruce
-> RDC Semiconductor
+Signed-off-by: Paul Walmsley <pwalmsley@nvidia.com>
+Cc: Aleksandr Frid <afrid@nvidia.com>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ drivers/clk/tegra/clk-tegra114.c |   37 +++++++++++++++++++++++++++++++++++++
+ drivers/clk/tegra/clk.h          |    2 ++
+ 2 files changed, 39 insertions(+)
+
+diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
+index b35c78d..4ab15e3 100644
+--- a/drivers/clk/tegra/clk-tegra114.c
++++ b/drivers/clk/tegra/clk-tegra114.c
+@@ -29,6 +29,7 @@
+ #define RST_DEVICES_L			0x004
+ #define RST_DEVICES_H			0x008
+ #define RST_DEVICES_U			0x00C
++#define RST_DFLL_DVCO			0x2F4
+ #define RST_DEVICES_V			0x358
+ #define RST_DEVICES_W			0x35C
+ #define RST_DEVICES_X			0x28C
+@@ -47,6 +48,9 @@
+ #define CPU_FINETRIM_R			0x4e4	/* rise->rise prop dly inc A */
+ #define RST_DEVICES_NUM			5
+ 
++/* RST_DFLL_DVCO bitfields */
++#define DVFS_DFLL_RESET_SHIFT		0
++
+ /* CPU_FINETRIM_SELECT and CPU_FINETRIM_DR bitfields */
+ #define CPU_FINETRIM_1_FCPU_1		BIT(0)	/* fcpu0 */
+ #define CPU_FINETRIM_1_FCPU_2		BIT(1)	/* fcpu1 */
+@@ -2183,6 +2187,39 @@ void tegra114_clock_tune_cpu_trimmers_init(void)
+ }
+ EXPORT_SYMBOL(tegra114_clock_tune_cpu_trimmers_init);
+ 
++/**
++ * tegra114_clock_assert_dfll_dvco_reset - assert the DFLL's DVCO reset
++ *
++ * Assert the reset line of the DFLL's DVCO.  No return value.
++ */
++void tegra114_clock_assert_dfll_dvco_reset(void)
++{
++	u32 v;
++
++	v = readl_relaxed(clk_base + RST_DFLL_DVCO);
++	v |= (1 << DVFS_DFLL_RESET_SHIFT);
++	writel_relaxed(v, clk_base + RST_DFLL_DVCO);
++	tegra114_car_barrier();
++}
++EXPORT_SYMBOL(tegra114_clock_assert_dfll_dvco_reset);
++
++/**
++ * tegra114_clock_deassert_dfll_dvco_reset - deassert the DFLL's DVCO reset
++ *
++ * Deassert the reset line of the DFLL's DVCO, allowing the DVCO to
++ * operate.  No return value.
++ */
++void tegra114_clock_deassert_dfll_dvco_reset(void)
++{
++	u32 v;
++
++	v = readl_relaxed(clk_base + RST_DFLL_DVCO);
++	v &= ~(1 << DVFS_DFLL_RESET_SHIFT);
++	writel_relaxed(v, clk_base + RST_DFLL_DVCO);
++	tegra114_car_barrier();
++}
++EXPORT_SYMBOL(tegra114_clock_deassert_dfll_dvco_reset);
++
+ static void __init tegra114_clock_init(struct device_node *np)
+ {
+ 	struct device_node *node;
+diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
+index c0b72fc..c2d84a1 100644
+--- a/drivers/clk/tegra/clk.h
++++ b/drivers/clk/tegra/clk.h
+@@ -574,6 +574,8 @@ void tegra_init_dup_clks(struct tegra_clk_duplicate *dup_list,
+ void tegra114_clock_tune_cpu_trimmers_high(void);
+ void tegra114_clock_tune_cpu_trimmers_low(void);
+ void tegra114_clock_tune_cpu_trimmers_init(void);
++void tegra114_clock_assert_dfll_dvco_reset(void);
++void tegra114_clock_deassert_dfll_dvco_reset(void);
+ 
+ typedef void (*tegra_clk_apply_init_table_func)(void);
+ extern tegra_clk_apply_init_table_func tegra_clk_apply_init_table;
+
+
