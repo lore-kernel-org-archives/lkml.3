@@ -1,272 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925Ab3FGIze (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 04:55:34 -0400
-Received: from 14.mo1.mail-out.ovh.net ([178.32.97.215]:44011 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754557Ab3FGIz1 (ORCPT
+	id S1754962Ab3FGI5u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 04:57:50 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:42461 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753887Ab3FGIvu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 04:55:27 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>,
-        devicetree-discuss@lists.ozlabs.org
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [RFC 05/50] ARM: at91: add PMC system clocks support using common clk framework.
-Date: Fri,  7 Jun 2013 10:34:16 +0200
-Message-Id: <1370594119-5342-6-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370594119-5342-1-git-send-email-b.brezillon@overkiz.com>
-References: <1370594119-5342-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 11165830851799332012
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrfeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 7 Jun 2013 04:51:50 -0400
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+To: gleb@redhat.com
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH v3 4/6] KVM: MMU: fast invalidate all mmio sptes
+Date: Fri,  7 Jun 2013 16:51:26 +0800
+Message-Id: <1370595088-3315-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13060708-5140-0000-0000-00000354A0CD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch tries to introduce a very simple and scale way to invalidate
+all mmio sptes - it need not walk any shadow pages and hold mmu-lock
 
-This is the at91 system clock implementation using common clk framework.
+KVM maintains a global mmio valid generation-number which is stored in
+kvm->memslots.generation and every mmio spte stores the current global
+generation-number into his available bits when it is created
 
-Some peripheral needs to enable a "system" clock in order to work properly.
-Each system clock is given an id which is the bit offset used in SCER/SCDR
-registers.
+When KVM need zap all mmio sptes, it just simply increase the global
+generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
+then it walks the shadow page table and get the mmio spte. If the
+generation-number on the spte does not equal the global generation-number,
+it will go to the normal #PF handler to update the mmio spte
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Since 19 bits are used to store generation-number on mmio spte, we zap all
+mmio sptes when the number is round
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- drivers/clk/at91/Makefile     |    1 +
- drivers/clk/at91/clk-system.c |  189 +++++++++++++++++++++++++++++++++++++++++
- include/linux/clk/at91.h      |    3 +
- 3 files changed, 193 insertions(+)
+ arch/x86/include/asm/kvm_host.h |  2 +-
+ arch/x86/kvm/mmu.c              | 54 +++++++++++++++++++++++++++++++++++------
+ arch/x86/kvm/mmu.h              |  5 +++-
+ arch/x86/kvm/paging_tmpl.h      |  7 ++++--
+ arch/x86/kvm/vmx.c              |  4 +++
+ arch/x86/kvm/x86.c              |  3 +--
+ 6 files changed, 61 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
-index d41f616..13e5714 100644
---- a/drivers/clk/at91/Makefile
-+++ b/drivers/clk/at91/Makefile
-@@ -3,3 +3,4 @@
- #
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 1f98c1b..90d05ed 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -773,7 +773,7 @@ void kvm_mmu_write_protect_pt_masked(struct kvm *kvm,
+ 				     struct kvm_memory_slot *slot,
+ 				     gfn_t gfn_offset, unsigned long mask);
+ void kvm_mmu_zap_all(struct kvm *kvm);
+-void kvm_mmu_zap_mmio_sptes(struct kvm *kvm);
++void kvm_mmu_invalidate_mmio_sptes(struct kvm *kvm);
+ unsigned int kvm_mmu_calculate_mmu_pages(struct kvm *kvm);
+ void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int kvm_nr_mmu_pages);
  
- obj-y += clk-main.o clk-pll.o clk-plldiv.o clk-master.o
-+obj-y += clk-system.o
-diff --git a/drivers/clk/at91/clk-system.c b/drivers/clk/at91/clk-system.c
-new file mode 100644
-index 0000000..21af468
---- /dev/null
-+++ b/drivers/clk/at91/clk-system.c
-@@ -0,0 +1,189 @@
-+/*
-+ * drivers/clk/at91/clk-system.c
-+ *
-+ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
-+#include <linux/clk/at91.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/io.h>
-+
-+#define SYSTEM_MAX		32
-+
-+#define to_clk_system(hw) container_of(hw, struct clk_system, hw)
-+struct clk_system {
-+	struct clk_hw hw;
-+	u8 id;
-+};
-+
-+static int clk_system_enable(struct clk_hw *hw)
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 044d8c0..bdc95bc 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -205,9 +205,11 @@ EXPORT_SYMBOL_GPL(kvm_mmu_set_mmio_spte_mask);
+ #define MMIO_SPTE_GEN_LOW_SHIFT		3
+ #define MMIO_SPTE_GEN_HIGH_SHIFT	52
+ 
++#define MMIO_GEN_SHIFT			19
+ #define MMIO_GEN_LOW_SHIFT		9
+ #define MMIO_GEN_LOW_MASK		((1 << MMIO_GEN_LOW_SHIFT) - 1)
+-#define MMIO_MAX_GEN			((1 << 19) - 1)
++#define MMIO_GEN_MASK			((1 << MMIO_GEN_SHIFT) - 1)
++#define MMIO_MAX_GEN			((1 << MMIO_GEN_SHIFT) - 1)
+ 
+ static u64 generation_mmio_spte_mask(unsigned int gen)
+ {
+@@ -231,17 +233,23 @@ static unsigned int get_mmio_spte_generation(u64 spte)
+ 	return gen;
+ }
+ 
++static unsigned int kvm_current_mmio_generation(struct kvm *kvm)
 +{
-+	struct clk_system *sys = to_clk_system(hw);
-+	at91_pmc_write(AT91_PMC_SCER, sys->id);
-+	return 0;
++	return kvm_memslots(kvm)->generation & MMIO_GEN_MASK;
 +}
 +
-+static void clk_system_disable(struct clk_hw *hw)
+ static void mark_mmio_spte(struct kvm *kvm, u64 *sptep, u64 gfn,
+ 			   unsigned access)
+ {
+ 	struct kvm_mmu_page *sp =  page_header(__pa(sptep));
+-	u64 mask = generation_mmio_spte_mask(0);
++	unsigned int gen = kvm_current_mmio_generation(kvm);
++	u64 mask = generation_mmio_spte_mask(gen);
+ 
+ 	access &= ACC_WRITE_MASK | ACC_USER_MASK;
+ 	mask |= shadow_mmio_mask | access | gfn << PAGE_SHIFT;
+ 	sp->mmio_cached = true;
+ 
+-	trace_mark_mmio_spte(sptep, gfn, access, 0);
++	trace_mark_mmio_spte(sptep, gfn, access, gen);
+ 	mmu_spte_set(sptep, mask);
+ }
+ 
+@@ -271,6 +279,12 @@ static bool set_mmio_spte(struct kvm *kvm, u64 *sptep, gfn_t gfn,
+ 	return false;
+ }
+ 
++static bool check_mmio_spte(struct kvm *kvm, u64 spte)
 +{
-+	struct clk_system *sys = to_clk_system(hw);
-+	at91_pmc_write(AT91_PMC_SCDR, 1 << sys->id);
++	return likely(get_mmio_spte_generation(spte) ==
++			kvm_current_mmio_generation(kvm));
 +}
 +
-+static int clk_system_is_enabled(struct clk_hw *hw)
-+{
-+	struct clk_system *sys = to_clk_system(hw);
-+	return !!(at91_pmc_read(AT91_PMC_SCSR) & (sys->id));
-+}
+ static inline u64 rsvd_bits(int s, int e)
+ {
+ 	return ((1ULL << (e - s + 1)) - 1) << s;
+@@ -3235,6 +3249,9 @@ int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct)
+ 		gfn_t gfn = get_mmio_spte_gfn(spte);
+ 		unsigned access = get_mmio_spte_access(spte);
+ 
++		if (!check_mmio_spte(vcpu->kvm, spte))
++			return RET_MMIO_PF_INVALID;
 +
-+static const struct clk_ops system_ops = {
-+	.enable = clk_system_enable,
-+	.disable = clk_system_disable,
-+	.is_enabled = clk_system_is_enabled,
-+};
+ 		if (direct)
+ 			addr = 0;
+ 
+@@ -3276,8 +3293,12 @@ static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
+ 
+ 	pgprintk("%s: gva %lx error %x\n", __func__, gva, error_code);
+ 
+-	if (unlikely(error_code & PFERR_RSVD_MASK))
+-		return handle_mmio_page_fault(vcpu, gva, error_code, true);
++	if (unlikely(error_code & PFERR_RSVD_MASK)) {
++		r = handle_mmio_page_fault(vcpu, gva, error_code, true);
 +
-+struct clk * __init
-+at91_clk_register_system(const char *name, const char *parent_name, u8 id)
-+{
-+	struct clk_system *sys;
-+	struct clk *clk = NULL;
-+	struct clk_init_data init;
-+
-+	id &= 31;
-+
-+	sys = kzalloc(sizeof(*sys), GFP_KERNEL);
-+	if (!sys)
-+		return ERR_PTR(-ENOMEM);
-+
-+	init.name = name;
-+	init.ops = &system_ops;
-+	init.parent_names = (parent_name ? &parent_name : NULL);
-+	init.num_parents = (parent_name ? 1 : 0);
-+	init.flags = 0;
-+
-+	sys->id = id;
-+	sys->hw.init = &init;
-+
-+	clk = clk_register(NULL, &sys->hw);
-+
-+	if (IS_ERR(clk))
-+		kfree(sys);
-+
-+	return clk;
-+}
-+
-+#if defined(CONFIG_OF)
-+struct clk_system_data {
-+	struct clk **clks;
-+	u8 *ids;
-+	unsigned int clk_num;
-+};
-+
-+static struct clk * __init
-+of_clk_src_system_get(struct of_phandle_args *clkspec, void *data)
-+{
-+	struct clk_system_data *clk_data = data;
-+	unsigned int id = clkspec->args[0];
-+	int i;
-+
-+	if (id >= SYSTEM_MAX)
-+		goto err;
-+
-+	for (i = 0; i < clk_data->clk_num; i++) {
-+		if (clk_data->ids[i] == id)
-+			return clk_data->clks[i];
++		if (likely(r != RET_MMIO_PF_INVALID))
++			return r;
 +	}
+ 
+ 	r = mmu_topup_memory_caches(vcpu);
+ 	if (r)
+@@ -3353,8 +3374,12 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
+ 	ASSERT(vcpu);
+ 	ASSERT(VALID_PAGE(vcpu->arch.mmu.root_hpa));
+ 
+-	if (unlikely(error_code & PFERR_RSVD_MASK))
+-		return handle_mmio_page_fault(vcpu, gpa, error_code, true);
++	if (unlikely(error_code & PFERR_RSVD_MASK)) {
++		r = handle_mmio_page_fault(vcpu, gpa, error_code, true);
 +
-+err:
-+	pr_err("%s: invalid clock id %d\n", __func__, id);
-+	return ERR_PTR(-EINVAL);
-+}
-+
-+static void __init
-+of_at91_clk_sys_setup(struct device_node *np)
-+{
-+	int i;
-+	int num;
-+	u32 id;
-+	struct clk *clk;
-+	u8 *ids;
-+	struct clk **clks;
-+	struct clk_system_data *clktab;
-+	const char *parent_name;
-+	const char *name = np->name;
-+
-+	parent_name = of_clk_get_parent_name(np, 0);
-+	if (!parent_name)
-+		return;
-+
-+	if (!of_get_property(np, "ids", &num))
-+		return;
-+	num /= 4;
-+	if (num > SYSTEM_MAX)
-+		return;
-+
-+	if (of_count_phandle_with_args(np, "clocks", "#clock-cells") != num)
-+		return;
-+
-+	if (of_property_count_strings(np, "clock-output-names") != num)
-+		return;
-+
-+	clktab = kzalloc(sizeof(*clktab), GFP_KERNEL);
-+	if (!clktab)
-+		return;
-+
-+	ids = kzalloc(num * sizeof(*ids), GFP_KERNEL);
-+	if (!ids)
-+		goto out_free_clktab;
-+
-+	clks = kzalloc(num * sizeof(*clks), GFP_KERNEL);
-+	if (!clks)
-+		goto out_free_ids;
-+
-+	for (i = 0; i < num; i++) {
-+		of_property_read_u32_index(np, "ids", i, &id);
-+		if (id >= SYSTEM_MAX)
-+			goto out_free_clks;
-+		of_property_read_string_index(np, "clock-output-names",
-+					      i, &name);
-+		parent_name = of_clk_get_parent_name(np, i);
-+		if (!parent_name)
-+			goto out_free_clks;
-+
-+		clk = at91_clk_register_system(name, parent_name, id);
-+		if (IS_ERR(clk))
-+			goto out_free_clks;
-+
-+		clks[i] = clk;
-+		ids[i] = id;
++		if (likely(r != RET_MMIO_PF_INVALID))
++			return r;
 +	}
-+
-+	clktab->clk_num = num;
-+	clktab->clks = clks;
-+	clktab->ids = ids;
-+	of_clk_add_provider(np, of_clk_src_system_get, clktab);
-+	return;
-+
-+out_free_clks:
-+	kfree(clks);
-+out_free_ids:
-+	kfree(ids);
-+out_free_clktab:
-+	kfree(clktab);
-+}
-+
-+static void __init of_at91rm9200_clk_sys_setup(struct device_node *np)
+ 
+ 	r = mmu_topup_memory_caches(vcpu);
+ 	if (r)
+@@ -4327,7 +4352,7 @@ void kvm_mmu_invalidate_zap_all_pages(struct kvm *kvm)
+ 	spin_unlock(&kvm->mmu_lock);
+ }
+ 
+-void kvm_mmu_zap_mmio_sptes(struct kvm *kvm)
++static void kvm_mmu_zap_mmio_sptes(struct kvm *kvm)
+ {
+ 	struct kvm_mmu_page *sp, *node;
+ 	LIST_HEAD(invalid_list);
+@@ -4350,6 +4375,19 @@ static bool kvm_has_zapped_obsolete_pages(struct kvm *kvm)
+ 	return unlikely(!list_empty_careful(&kvm->arch.zapped_obsolete_pages));
+ }
+ 
++void kvm_mmu_invalidate_mmio_sptes(struct kvm *kvm)
 +{
-+	of_at91_clk_sys_setup(np);
++	/*
++	 * The very rare case: if the generation-number is round,
++	 * zap all shadow pages.
++	 *
++	 * The max value is MMIO_MAX_GEN - 1 since it is not called
++	 * when mark memslot invalid.
++	 */
++	if (unlikely(kvm_current_mmio_generation(kvm) >= (MMIO_MAX_GEN - 1)))
++		kvm_mmu_zap_mmio_sptes(kvm);
 +}
-+CLK_OF_DECLARE(at91rm9200_clk_sys, "atmel,at91rm9200-clk-system",
-+	       of_at91rm9200_clk_sys_setup);
-+#endif
-diff --git a/include/linux/clk/at91.h b/include/linux/clk/at91.h
-index a960e2f..c886226 100644
---- a/include/linux/clk/at91.h
-+++ b/include/linux/clk/at91.h
-@@ -256,4 +256,7 @@ at91_clk_register_master(const char *name, int num_parents,
- 			 struct clk_master_characteristics *characteristics);
- 
- 
-+struct clk * __init
-+at91_clk_register_system(const char *name, const char *parent_name, u8 id);
 +
- #endif
+ static int mmu_shrink(struct shrinker *shrink, struct shrink_control *sc)
+ {
+ 	struct kvm *kvm;
+diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
+index ba6a19c..5b59c57 100644
+--- a/arch/x86/kvm/mmu.h
++++ b/arch/x86/kvm/mmu.h
+@@ -56,12 +56,15 @@ void kvm_mmu_set_mmio_spte_mask(u64 mmio_mask);
+ /*
+  * Return values of handle_mmio_page_fault_common:
+  * RET_MMIO_PF_EMULATE: it is a real mmio page fault, emulate the instruction
+- *			 directly.
++ *			directly.
++ * RET_MMIO_PF_INVALID: invalid spte is detected then let the real page
++ *			fault path update the mmio spte.
+  * RET_MMIO_PF_RETRY: let CPU fault again on the address.
+  * RET_MMIO_PF_BUG: bug is detected.
+  */
+ enum {
+ 	RET_MMIO_PF_EMULATE = 1,
++	RET_MMIO_PF_INVALID = 2,
+ 	RET_MMIO_PF_RETRY = 0,
+ 	RET_MMIO_PF_BUG = -1
+ };
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index fb50fa6..7769699 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -552,9 +552,12 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+ 
+ 	pgprintk("%s: addr %lx err %x\n", __func__, addr, error_code);
+ 
+-	if (unlikely(error_code & PFERR_RSVD_MASK))
+-		return handle_mmio_page_fault(vcpu, addr, error_code,
++	if (unlikely(error_code & PFERR_RSVD_MASK)) {
++		r = handle_mmio_page_fault(vcpu, addr, error_code,
+ 					      mmu_is_nested(vcpu));
++		if (likely(r != RET_MMIO_PF_INVALID))
++			return r;
++	};
+ 
+ 	r = mmu_topup_memory_caches(vcpu);
+ 	if (r)
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 85c8d51..f4a5b3f 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -5369,6 +5369,10 @@ static int handle_ept_misconfig(struct kvm_vcpu *vcpu)
+ 	if (likely(ret == RET_MMIO_PF_EMULATE))
+ 		return x86_emulate_instruction(vcpu, gpa, 0, NULL, 0) ==
+ 					      EMULATE_DONE;
++
++	if (unlikely(ret == RET_MMIO_PF_INVALID))
++		return kvm_mmu_page_fault(vcpu, gpa, 0, NULL, 0);
++
+ 	if (unlikely(ret == RET_MMIO_PF_RETRY))
+ 		return 1;
+ 
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 54059ba..9e4afa7 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -7067,8 +7067,7 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
+ 	 * If memory slot is created, or moved, we need to clear all
+ 	 * mmio sptes.
+ 	 */
+-	if ((change == KVM_MR_CREATE) || (change == KVM_MR_MOVE))
+-		kvm_mmu_zap_mmio_sptes(kvm);
++	kvm_mmu_invalidate_mmio_sptes(kvm);
+ }
+ 
+ void kvm_arch_flush_shadow_all(struct kvm *kvm)
 -- 
-1.7.9.5
+1.8.1.4
 
