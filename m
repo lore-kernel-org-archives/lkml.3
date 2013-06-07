@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757424Ab3FGWc6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 18:32:58 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:22269 "EHLO
+	id S1757493Ab3FGWdH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 18:33:07 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:22295 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753181Ab3FGWc4 (ORCPT
+	with ESMTP id S1753181Ab3FGWdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 18:32:56 -0400
+	Fri, 7 Jun 2013 18:33:03 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
@@ -15,114 +15,154 @@ Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joro@8bytes.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Subject: [PATCH v3 20/27] x86, irq: Add mp_unregister_ioapic to handle hot-remove ioapic
-Date: Fri,  7 Jun 2013 15:31:06 -0700
-Message-Id: <1370644273-10495-21-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v3 11/27] x86, irq: Add realloc_irq_and_cfg_at()
+Date: Fri,  7 Jun 2013 15:30:57 -0700
+Message-Id: <1370644273-10495-12-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1370644273-10495-1-git-send-email-yinghai@kernel.org>
 References: <1370644273-10495-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It will free ioapic related irq_desc and also clear allocated_irqs bits.
+For ioapic hot-add support, it would be easy if we put all irqs
+for that ioapic controller together.
+
+We can reserve irq range at first, then reallocate those
+pre-reserved one when it is needed.
+
+Add realloc_irq_and_cfg_at() to really allocate irq_desc and cfg,
+because pre-reserved only mark bits in allocate_irqs bit maps.
+
+The reasons for not allocating them during reserving:
+1. only several pins in ioapic are used, allocate for all pins, will
+   waste memory for not used pins.
+2. relocate later could make sure irq_desc is allocated on local node ram.
+   as dev->node is set at that point.
+
+-v2: update changelog by adding reasons, requested by Konrad.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Cc: Joerg Roedel <joro@8bytes.org>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 ---
- arch/x86/include/asm/mpspec.h  |  1 +
- arch/x86/kernel/apic/io_apic.c | 42 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 43 insertions(+)
+ arch/x86/kernel/apic/io_apic.c | 32 +++++++++++++++++++++++++++++++-
+ include/linux/irq.h            |  5 +++++
+ kernel/irq/irqdesc.c           | 26 ++++++++++++++++++++++++++
+ 3 files changed, 62 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
-index 11bb6ea..e70b7e5 100644
---- a/arch/x86/include/asm/mpspec.h
-+++ b/arch/x86/include/asm/mpspec.h
-@@ -97,6 +97,7 @@ static inline void early_reserve_e820_mpc_new(void) { }
- void __cpuinit generic_processor_info(int apicid, int version);
- #ifdef CONFIG_ACPI
- int __mp_register_ioapic(int id, u32 address, u32 gsi_base, bool hot);
-+int mp_unregister_ioapic(u32 gsi_base);
- extern void mp_register_ioapic(int id, u32 address, u32 gsi_base);
- extern void mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger,
- 				   u32 gsi);
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index c581c4c..8a3fedf 100644
+index 670c538..a157a56 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -256,6 +256,14 @@ static void free_irq_at(unsigned int at, struct irq_cfg *cfg)
+@@ -301,6 +301,36 @@ static void free_irq_at(unsigned int at, struct irq_cfg *cfg)
  	irq_free_desc(at);
  }
  
-+static void free_irqs(unsigned int from, int cnt)
++static struct irq_cfg *realloc_irq_and_cfg_at(unsigned int at, int node)
 +{
-+	int i;
++	struct irq_desc *desc = irq_to_desc(at);
++	struct irq_cfg *cfg;
++	int res;
 +
-+	for (i = from; i < from + cnt; i++)
-+		free_irq_at(i, irq_get_chip_data(i));
++	if (desc) {
++		if (irq_desc_get_irq_data(desc)->node == node)
++			return alloc_irq_and_cfg_at(at, node);
++
++		cfg = irq_desc_get_chip_data(desc);
++		if (cfg) {
++			/* shared irq */
++			if (!list_empty(&cfg->irq_2_pin))
++				return cfg;
++			free_irq_cfg(at, cfg);
++		}
++	}
++
++	res = irq_realloc_desc_at(at, node);
++	if (res >= 0) {
++		cfg = alloc_irq_cfg(at, node);
++		if (cfg) {
++			irq_set_chip_data(at, cfg);
++			return cfg;
++		}
++	}
++
++	return alloc_irq_and_cfg_at(at, node);
++}
+ 
+ struct io_apic {
+ 	unsigned int index;
+@@ -3352,7 +3382,7 @@ int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev)
+ static int
+ io_apic_setup_irq_pin(unsigned int irq, int node, struct io_apic_irq_attr *attr)
+ {
+-	struct irq_cfg *cfg = alloc_irq_and_cfg_at(irq, node);
++	struct irq_cfg *cfg = realloc_irq_and_cfg_at(irq, node);
+ 	int ret;
+ 
+ 	if (!cfg)
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 4e0fcbb..9c6c047 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -602,6 +602,11 @@ void irq_free_descs(unsigned int irq, unsigned int cnt);
+ int irq_reserve_irqs(unsigned int from, unsigned int cnt);
+ int __irq_reserve_irqs(int irq, unsigned int from, unsigned int cnt);
+ 
++int __irq_realloc_desc(int at, int node, struct module *owner);
++/* use macros to avoid needing export.h for THIS_MODULE */
++#define irq_realloc_desc_at(at, node)	\
++	__irq_realloc_desc(at, node, THIS_MODULE)
++
+ static inline void irq_free_desc(unsigned int irq)
+ {
+ 	irq_free_descs(irq, 1);
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 3b9fb92..b48f65b 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -99,6 +99,11 @@ EXPORT_SYMBOL_GPL(nr_irqs);
+ static DEFINE_MUTEX(sparse_irq_lock);
+ static DECLARE_BITMAP(allocated_irqs, IRQ_BITMAP_BITS);
+ 
++static bool __irq_is_reserved(int irq)
++{
++	return !!test_bit(irq, allocated_irqs);
 +}
 +
- static struct irq_cfg *realloc_irq_and_cfg_at(unsigned int at, int node)
- {
- 	struct irq_desc *desc = irq_to_desc(at);
-@@ -329,6 +337,16 @@ static void __init reserve_ioapic_gsi_irq_extra(void)
- 	}
- }
+ #ifdef CONFIG_SPARSE_IRQ
  
-+static void free_ioapic_gsi_irq_base(int idx)
-+{
-+	struct mp_ioapic_gsi *gsi_cfg = mp_ioapic_gsi_routing(idx);
-+	int irq_base = gsi_cfg->irq_base;
-+	int irq_cnt = gsi_cfg->gsi_end - gsi_cfg->gsi_base + 1;
-+
-+	if (irq_base > 0)
-+		free_irqs(irq_base, irq_cnt);
-+}
-+
- static void alloc_ioapic_saved_registers(int idx)
- {
- 	if (ioapics[idx].saved_registers)
-@@ -342,6 +360,11 @@ static void alloc_ioapic_saved_registers(int idx)
- 		pr_err("IOAPIC %d: suspend/resume impossible!\n", idx);
- }
+ static RADIX_TREE(irq_desc_tree, GFP_KERNEL);
+@@ -410,6 +415,27 @@ __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
+ EXPORT_SYMBOL_GPL(__irq_alloc_descs);
  
-+static void free_ioapic_saved_registers(int idx)
+ /**
++ * irq_realloc_desc - allocate irq descriptor for irq that is already reserved
++ * @irq:	Allocate for specific irq number if irq >= 0
++ * @node:	Preferred node on which the irq descriptor should be allocated
++ * @owner:	Owning module (can be NULL)
++ *
++ * Returns the irq number or error code
++ */
++int __ref
++__irq_realloc_desc(int irq, int node, struct module *owner)
 +{
-+	kfree(ioapics[idx].saved_registers);
-+}
-+
- int __init arch_early_irq_init(void)
- {
- 	int node = cpu_to_node(0);
-@@ -3980,6 +4003,25 @@ void mp_register_ioapic(int id, u32 address, u32 gsi_base)
- 	__mp_register_ioapic(id, address, gsi_base, false);
- }
- 
-+int mp_unregister_ioapic(u32 gsi_base)
-+{
-+	int idx;
-+
-+	idx = mp_find_ioapic(gsi_base);
-+	if (idx < 0)
++	if (!__irq_is_reserved(irq))
 +		return -EINVAL;
 +
-+	free_ioapic_saved_registers(idx);
++	if (irq_to_desc(irq))
++		free_desc(irq);
 +
-+	free_ioapic_gsi_irq_base(idx);
-+
-+	clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
-+	memset(&ioapics[idx], 0, sizeof(struct ioapic));
-+	ioapics[idx].mp_config.apicid = 0xff;
-+
-+	return 0;
++	return alloc_descs(irq, 1, node, owner);
 +}
++EXPORT_SYMBOL_GPL(__irq_realloc_desc);
 +
- /* Enable IOAPIC early just for system timer */
- void __init pre_init_apic_IRQ0(void)
- {
++/**
+  * irq_reserve_irqs - mark irqs allocated
+  * @from:	mark from irq number
+  * @cnt:	number of irqs to mark
 -- 
 1.8.1.4
 
