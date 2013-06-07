@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932070Ab3FGSaS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 14:30:18 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:53066 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754298Ab3FGSaR convert rfc822-to-8bit (ORCPT
+	id S1756376Ab3FGSbK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 14:31:10 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:47268 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755135Ab3FGSbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 14:30:17 -0400
+	Fri, 7 Jun 2013 14:31:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130607163658.GC25323@logfs.org>
-References: <1370280485-10047-1-git-send-email-joern@logfs.org>
-	<1370280485-10047-2-git-send-email-joern@logfs.org>
-	<CAHp75VczX+tjqJgNv4uv=BRekm2Gc2i8WHL91vJFWSXWS8-J_A@mail.gmail.com>
-	<20130606181248.GA17707@logfs.org>
-	<CAHp75VfFvirRvN8FwNey4=9GvMKmPvaM5PBThbEBwZYwL_pt-A@mail.gmail.com>
-	<20130607163658.GC25323@logfs.org>
-Date: Fri, 7 Jun 2013 21:30:16 +0300
-Message-ID: <CAHp75VdBb3Gt+sYwDbJo8BXRSsxwN0K6qw_UeJve6ycQwz2WBQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] list: add list_for_each_entry_del
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: =?UTF-8?Q?J=C3=B6rn_Engel?= <joern@logfs.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1370568312.2209.76.camel@joe-AO722>
+References: <1370551945-8444-1-git-send-email-keescook@chromium.org>
+	<1370551945-8444-5-git-send-email-keescook@chromium.org>
+	<20130607003914.GH7052@lizard.sbx05280.losalca.wayport.net>
+	<1370568312.2209.76.camel@joe-AO722>
+Date: Fri, 7 Jun 2013 11:31:06 -0700
+X-Google-Sender-Auth: VjsOMEGJ1MorzkVQMsdWECm-NIE
+Message-ID: <CAGXu5j+YwLHzETz4kkSFU0bJRWgR44qtypc8vDGJX5tvhm1khw@mail.gmail.com>
+Subject: Re: [PATCH] power: Add missing newlines, fix a couple of typos, add pr_fmt
+From: Kees Cook <keescook@chromium.org>
+To: Joe Perches <joe@perches.com>
+Cc: Anton Vorontsov <anton@enomsg.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jens Axboe <axboe@kernel.dk>, "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Karsten Keil <isdn@linux-pingi.de>, "# 3.4.x" <stable@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 7, 2013 at 7:36 PM, Jörn Engel <joern@logfs.org> wrote:
-> On Thu, 6 June 2013 22:49:22 +0300, Andy Shevchenko wrote:
->> On Thu, Jun 6, 2013 at 9:12 PM, Jörn Engel <joern@logfs.org> wrote:
->> > On Thu, 6 June 2013 22:32:55 +0300, Andy Shevchenko wrote:
->> >> What the problem to use list_for_each_safe()?
->> >
->> > The loop may terminate with elements left on the list.  There is more,
->> > but I would consider this the main problem.
->>
->> I didn't quite get what you mean.
+On Thu, Jun 6, 2013 at 6:25 PM, Joe Perches <joe@perches.com> wrote:
+> Make sure that dev_<level> calls are newline terminated.
+> Add #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt to prefix
+> all pr_<level> calls with "charger-manager: "
 >
-> Take two threads, one doing a list_for_each_entry_safe loop and
-> dropping the lock after list_del, the other doing list_add.  Result is
-> that you finish the list_for_each_entry_safe loop with something
-> remaining on the list.
+> Fix a couple of typos.
+> Fix formats with terminating n that should be \n.
+> Coalesce formats for easier grep.
+> Align arguments to open parenthesis for these dev_<level> calls.
+> Add missing spaces after coalescing multiple string segments.
 >
-> spin_lock
-> list_for_each_entry_safe
->         list_del
->         spin_unlock
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-Who is doing such thing?
+Looks like good clean-ups.
 
-Usually if you unlock, you exit from function, or you already done
-iteration through the list.
+Acked-by: Kees Cook <keescook@chromium.org>
 
-Like
-lock()
-list_for_each_safe() {
-  if (condition) {
-  list_del()
-  unlock()
-  return;
- }
-}
-unlock()
-return;
-
-In case you have to do unlock()/lock() routine inside iteration you always can
-do an additional check at the end
-
-list_for_each_safe() {
- unlock();
- lock();
-}
-if (!list_empty()) {
-do_smth()
-}
-unlock();
-
-Thus, I don't see how list*del will help.
-
-> If you search for this pattern in the kernel, you won't find too many
-> examples.  Quite likely that is because a) people realized this and
-> used a while (!list_empty()) loop to begin with or b) they started out
-> wrong and fixed the bug later.  Not sure how many examples of b) there
-> are.
+-Kees
 
 --
-With Best Regards,
-Andy Shevchenko
+Kees Cook
+Chrome OS Security
