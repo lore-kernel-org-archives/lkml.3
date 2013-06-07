@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab3FGK2K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 06:28:10 -0400
-Received: from vps1.hno.se ([31.192.227.87]:39768 "EHLO vps1.hno.se"
+	id S1755842Ab3FGK2h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 06:28:37 -0400
+Received: from mx.rdc.com.tw ([122.201.198.125]:58850 "EHLO spam.rdc.com.tw"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753987Ab3FGK2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 06:28:07 -0400
-Message-ID: <1370600817.9983.7.camel@localhost>
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
- Uploading linux (3.9.4-1))
-From: Henrik =?ISO-8859-1?Q?Nordstr=F6m?= <henrik@henriknordstrom.net>
-To: "luke.leighton" <luke.leighton@gmail.com>
-Cc: Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>, debian-arm@lists.debian.org,
-        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, debian-kernel@lists.debian.org
-Date: Fri, 07 Jun 2013 12:26:57 +0200
-In-Reply-To: <CAPweEDyYt+pN+UaFuqWL5RrHpyuq_4So-tArmx3dr=0wLS+hwQ@mail.gmail.com>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
-	 <1370475609.20454.44.camel@localhost>
-	 <CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
-	 <1733666.lHUBcfUXq9@flatron>
-	 <CAPweEDzYLDzh_-OWU61dtVhajZ40QpQgZKHFYDsh3FgF=r9_ag@mail.gmail.com>
-	 <20130606131042.GN18614@n2100.arm.linux.org.uk>
-	 <CAPweEDyYt+pN+UaFuqWL5RrHpyuq_4So-tArmx3dr=0wLS+hwQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755760Ab3FGK2f convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 06:28:35 -0400
+X-Greylist: delayed 716 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Jun 2013 06:28:34 EDT
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="big5"
+Content-Transfer-Encoding: 8BIT
+Subject: r6040 mac driver issue and solution
+Date: Fri, 7 Jun 2013 18:16:18 +0800
+Message-ID: <07905E0D268758488D76D7D747F21BB6043C4AD7@rdc8.rdc>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: r6040 mac driver issue and solution
+Thread-Index: Ac5CeaKy3NRWoXvjQt2bHVjmDmdGJwg7dLkA
+From: =?big5?B?QnJ1Y2UgWWUgKLitqM6qWSk=?= <Bruce.Ye@rdc.com.tw>
+To: <florian@openwrt.org>
+Cc: <linux-kernel@vger.kernel.org>,
+        =?big5?B?T3dlbiBQZW5nICi0Xqr3tqkp?= <Owen.Peng@rdc.com.tw>,
+        =?big5?B?QnJ1Y2UgWWUgKLitqM6qWSk=?= <Bruce.Ye@rdc.com.tw>
+X-OriginalArrivalTime: 07 Jun 2013 10:16:21.0994 (UTC) FILETIME=[0F0334A0:01CE6368]
+X-DNSRBL: 
+X-MAIL: spam.rdc.com.tw r57AGKkW067973
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fre 2013-06-07 klockan 09:02 +0100 skrev luke.leighton:
+Dear Florian:
+For RDC R6040 FAST ETHERNET DRIVER.
+There's an issue in r6040 driver and for some RDC platform. It only occurs when there's more than one Ethernet port.
+When initializing the MAC in boot up, r6040 driver set the same phy address to different ports.
+It also display in boot log as below.
+mii_bus:phy_addr=0:01
+mii_bus:phy_addr=1:01
 
->  ok.  so.  we come back to the question again: what shall i propose to
-> them that they consider doing, and what benefit would it be to them to
-> do so?
+It will let the eth0 and eth1 work not in independent.
+That is, if there is a connection on eth1 but not on eth0. The eth1 can not work only if link up the eth0.
+To fix this problem is that giving the different phy address to different ports.
+I already tested it on r6040.c version 0.27 and version 0.28 by the change and is worked.
 
-Just tell them that the kernel is moving to a different configuration
-syntax called Device Tree, but apart from updating kernel drivers to the
-new way of configuring things it only have minor impact on their
-envionment. It is still possible to use the fex file for all board
-configuration details, only requires a small tool for translating fex to
-device tree.
+Below is the change 
 
-The change only impacts kernel, and a small change to their SDK build
-scripts to also build the device tree from the fex.
+--- linux-3.7.2/drivers/net/ethernet/rdc/r6040.c.orig   2013-06-07 03:00:05.670250988 -0700
++++ linux-3.7.2/drivers/net/ethernet/rdc/r6040.c        2013-06-07 03:05:01.666407765 -0700
+@@ -1037,8 +1037,18 @@ static int r6040_mii_probe(struct net_de
+ {
+        struct r6040_private *lp = netdev_priv(dev);
+        struct phy_device *phydev = NULL;
++        static int first_find_addr = 0;        
++        int addr;
++        for ( addr = first_find_addr; addr < PHY_MAX_ADDR; addr++ ) {
++               
++        if ( lp->mii_bus->phy_map[addr] ) 
++                phydev = lp->mii_bus->phy_map[addr];
++
++        if(phydev)
++                break;
++        }
++        first_find_addr++ ;
 
-It is no big deal really in structural terms. There is far bigger
-structural changes in the kernel which coincides with this and will
-require some developer time to adjust for. Had they upstreamed their
-changes earlier then...
+-       phydev = phy_find_first(lp->mii_bus);
+        if (!phydev) {
+                dev_err(&lp->pdev->dev, "no PHY found\n");
+                return -ENODEV;
+@@ -1194,6 +1204,10 @@ static int __devinit r6040_init_one(stru
+        lp->mii_bus->write = r6040_mdiobus_write;
+        lp->mii_bus->reset = r6040_mdiobus_reset;
+        lp->mii_bus->name = "r6040_eth_mii";
++        if ( card_idx == 0 )
++            lp->mii_bus->phy_mask = 0x1;
++        else
++            lp->mii_bus->phy_mask = 0x3;
+        snprintf(lp->mii_bus->id, MII_BUS_ID_SIZE, "%s-%x",
+                dev_name(&pdev->dev), card_idx);
+        lp->mii_bus->irq = kmalloc(sizeof(int)*PHY_MAX_ADDR, GFP_KERNEL);
 
-Regards
-Henrik
 
 
+Signed-off-by: Bruce Ye Developer <Bruce.Ye@rdc.com.tw>
 
+Best Regards
+Bruce
+RDC Semiconductor
