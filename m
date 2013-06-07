@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757289Ab3FGSuD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 14:50:03 -0400
-Received: from 1wt.eu ([62.212.114.60]:36206 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757165Ab3FGSt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 14:49:57 -0400
-Date: Fri, 7 Jun 2013 20:49:48 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Lotfi Manseur <lotfi.manseur@gmail.com>, stable@vger.kernel.org,
-        Wojciech M Zabolotny <W.Zabolotny@elka.pw.edu.pl>,
-        Nicolas Palix <nicolas.palix@imag.fr>,
-        Lotfi Manseur <lotfi.manseur@imag.fr>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: serial/ftdi_sio.c Fix kernel oops
-Message-ID: <20130607184948.GO19006@1wt.eu>
-References: <1370610872-1309-1-git-send-email-lotfi.manseur@imag.fr> <20130607173009.GC29371@kroah.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130607173009.GC29371@kroah.com>
-User-Agent: Mutt/1.4.2.3i
+	id S1757342Ab3FGSvq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 14:51:46 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:35102 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757171Ab3FGSuB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 14:50:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130606172810.GE14209@lukather>
+References: <51AFA6DD.3000202@wwwdotorg.org>
+	<CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com>
+	<1370469574.18839.33.camel@localhost>
+	<CAPweEDxMpeJc-w=Yd7d2OT=UisRBp2rxf-MPMDUCOG3EyJz1GQ@mail.gmail.com>
+	<CAKON4OxwyV2f_iTEb5RnP_azc7EsSxPdku_TY5WLWxN7USiY1Q@mail.gmail.com>
+	<CAPweEDw1BabE0cmT5fxZ3Z9p9EH508M3Nzcqk2VcO0oz-qYsvg@mail.gmail.com>
+	<1370475609.20454.44.camel@localhost>
+	<CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
+	<CAKON4OxPDpN3BTc9GWP44exDSkAZGJ5OeCpUP37vRnnvxwUnmw@mail.gmail.com>
+	<CAOesGMgqxhG45NyCfpHc_0uHS+_Gn-hGZm-+CRvK2EEf1AGTow@mail.gmail.com>
+	<20130606172810.GE14209@lukather>
+Date: Fri, 7 Jun 2013 19:50:00 +0100
+Message-ID: <CAPweEDyg11k++gunqVQkbwi_-MvhexAX6Z_kjM=3rFBi7qNnzg@mail.gmail.com>
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
+ Uploading linux (3.9.4-1))
+From: "luke.leighton" <luke.leighton@gmail.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Olof Johansson <olof@lixom.net>, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm <debian-arm@lists.debian.org>,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>,
+        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
+        debian-kernel <debian-kernel@lists.debian.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 10:30:09AM -0700, Greg Kroah-Hartman wrote:
-> On Fri, Jun 07, 2013 at 03:14:32PM +0200, Lotfi Manseur wrote:
-> > Handle null termios in ftdi_set_termios(), introduced in
-> > commit 552f6bf1bb0eda0011c0525dd587aa9e7ba5b846
-> > This has been corrected in the mainline by
-> > commits c515598e0f5769916c31c00392cc2bfe6af74e55 and
-> > a816e3113b63753c330ca4751ea1d208e93e3015.
-> 
-> Then why shouldn't we just include those commit instead of your patch,
-> which looks much different from these?
-> 
-> I'd much rather take the originals, not something else.
+On Thu, Jun 6, 2013 at 6:28 PM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
 
-Indeed. I've checked, and the second commit was just cosmetic (silence
-a warning reported by sparse for ptr == 0 introduced in the first one).
+> I should also add that Allwinner not only talked to us already,
 
-The context is minimally different (original commit introduces a jump
-to a label whose context has changed). I tend to think that the merged
-fix has less changes of being incorrectly applied, but given their
-triviality we could very well merge the original ones instead, and
-keep initial authorship BTW.
+ oo!  great!  can you please [privately, not publicly] let me know who
+that is, so i can let the Directors know, so that they can follow up?
 
-Willy
+> but also
+> expressed interest in doing actual modern kernel development (like using
+> "recently" introduced kernel frameworks, like the clk framework).
 
+ awesome.
+
+> I've received patches from them already for private reviews, they began
+> to show up on the kernel mailing lists, they asked to be CCed on the
+> patches I send upstream, they're even the one that reached out to me
+> when the early support for their chips was released. So, like Olof said,
+> they aren't in a vacuum, they are very aware of the mainline kernel and
+> speak a decent english.
+
+ good!  next thing you know they'll be writing comments in english too [*1]
+
+> So yes, Allwinner has an evil vendor tree (c), with a solution similar yet
+> inferior (because not generic enough) to the device tree, but they show
+> interest on going down the mainline road.
+
+ yes.  i'm coming at this from the other end, via the top management,
+so that this is properly coordinated.
+
+ so.  reminder.  and question.  what needs to be done, and what are
+the benefits?
+
+ l.
+
+
+[*1] http://git.rhombus-tech.net/?p=linux.git;a=blob;f=drivers/usb/sun7i_usb/manager/usb_manager.c;h=3775c83134efee9694789b68e85010ebc0d9938b;hb=refs/heads/lkcl-3.3-a20#l274
