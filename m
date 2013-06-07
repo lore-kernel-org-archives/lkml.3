@@ -1,120 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756768Ab3FGQM2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 12:12:28 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28451 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754769Ab3FGQMZ (ORCPT
+	id S1756229Ab3FGQMF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 12:12:05 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:37608 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756185Ab3FGQL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 12:12:25 -0400
-X-Authority-Analysis: v=2.0 cv=H8VZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=V63olZALi9sA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=iFRSGadmnM0A:10 a=xHJxkA4CriVIpFRvYYYA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1370621543.9844.78.camel@gandalf.local.home>
-Subject: Re: NULL pointer dereference when loading the gre module
- (3.10.0-rc4)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Pravin B Shelar <pshelar@nicira.com>
-Date: Fri, 07 Jun 2013 12:12:23 -0400
-In-Reply-To: <20130607154634.GA7529@uio.no>
-References: <20130606221656.GA11475@uio.no>
-	 <20130607030648.GA28618@home.goodmis.org> <20130607085421.GF15083@uio.no>
-	 <1370612441.24311.411.camel@edumazet-glaptop>
-	 <1370618100.9844.73.camel@gandalf.local.home>
-	 <20130607154634.GA7529@uio.no>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Jun 2013 12:11:59 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com, broonie@linaro.org,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 07/10] regulator: ab8500-ext: Provide a set_voltage call-back operation
+Date: Fri,  7 Jun 2013 17:11:25 +0100
+Message-Id: <1370621488-18130-8-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1370621488-18130-1-git-send-email-lee.jones@linaro.org>
+References: <1370621488-18130-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-06-07 at 17:46 +0200, Steinar H. Gunderson wrote:
-> On Fri, Jun 07, 2013 at 11:15:00AM -0400, Steven Rostedt wrote:
-> > net: Remove __net_init/exit from exported functions
-> > 
-> > If CONFIG_NET_NS is not set then __net_init is the same as __init and
-> > __net_exit is the same as __exit. These functions will be removed from
-> > memory after the module loads or is removed. Functions that are exported
-> > for use by other functions should never be labeled for removal.
-> 
-> That didn't help much, I'm afraid:
+When registering regulators which have a single voltage through Device
+Tree, the framework insists that the specified voltage is actually set.
+Well in order to do that we need to provide this call-back, where we
+check that the value is sane and return without error. Not that the
+selector isn't populated, but in our case list_voltage doesn't actually
+use it, so we're good.
 
-Ouch :-/
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/regulator/ab8500-ext.c |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
-> 
-> [   18.005451] BUG: unable to handle kernel NULL pointer dereference at 0000000000000003
-> [   18.013853] IP: [<ffffffffa0e76002>] 0xffffffffa0e76001
-> [   18.019380] PGD 0 
-> [   18.021695] Oops: 0000 [#1] SMP 
-> [   18.025285] Modules linked in: ip_gre(+) gre ip_tunnel psmouse ide_generic ide_gd_mod ide_cd_mod cdrom acpi_cpufreq mperf coretemp kvm_intel kvm iTCO_wdt iTCO_vendor_support lpc_ich microcode mfd_core i2c_i801 pcspkr i2c_core ehci_pci evbug evdev ext4 crc16 jbd2 mbcache dm_mod raid456 async_raid6_recov async_memcpy async_pq async_xor async_tx xor raid6_pq raid1 md_mod sg sd_mod usbhid ide_pci_generic ide_core crc32c_intel e1000e ata_piix ptp pps_core uhci_hcd ehci_hcd mpt2sas raid_class unix
-> [   18.073543] CPU: 0 PID: 3263 Comm: modprobe Not tainted 3.10.0-rc4 #2
-> [   18.080237] Hardware name: Supermicro X8DTL/X8DTL, BIOS 2.1a       12/30/2011
-> [   18.087634] task: ffff88061ecfad60 ti: ffff8806212f0000 task.ti: ffff8806212f0000
-> [   18.095571] RIP: 0010:[<ffffffffa0e76002>]  [<ffffffffa0e76002>] 0xffffffffa0e76001
-> [   18.103745] RSP: 0018:ffff8806212f1ca8  EFLAGS: 00010246
-> [   18.109301] RAX: ffffffffa0e81000 RBX: ffff880623ebe280 RCX: 0000000000000000
-> [   18.116682] RDX: ffffffffa0e7ea40 RSI: 0000000000000003 RDI: ffffffffa0e81018
-> [   18.124063] RBP: ffff8806212f1ca8 R08: 0000000000000cf8 R09: ffffffff812bae96
-> [   18.131441] R10: ffffea0018852c00 R11: 0000000000000000 R12: ffff880621678290
-> [   18.138829] R13: ffffffffa0e7e9c0 R14: ffff8806212f1ef8 R15: 0000000000000002
-> [   18.146210] FS:  00007f2e37fd1700(0000) GS:ffff880627200000(0000) knlGS:0000000000000000
-> [   18.154747] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [   18.160742] CR2: 0000000000000003 CR3: 0000000622a5e000 CR4: 00000000000007f0
-> [   18.168131] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [   18.175510] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [   18.182890] Stack:
-> [   18.185143]  ffff8806212f1cf8 ffffffff812baf26 2222222222222222 2222222222222222
-> [   18.193235]  2222222222222222 ffffffffa0e7e9c0 0000000000000000 0000000000000000
-> [   18.201313]  ffff8806212f1ef8 ffffffffa0e7eb60 ffff8806212f1d28 ffffffff812bafb6
-> [   18.209389] Call Trace:
-> [   18.212084]  [<ffffffff812baf26>] ops_init.constprop.7+0xc6/0xf5
-> [   18.218339]  [<ffffffff812bafb6>] register_pernet_operations.isra.4+0x61/0x91
-> [   18.225720]  [<ffffffff8138486f>] ? mutex_lock+0xf/0x20
-> [   18.231189]  [<ffffffff812bb006>] register_pernet_device+0x20/0x51
-> [   18.237621]  [<ffffffffa0e81034>] ? ipgre_tap_init_net+0x1a/0x1a [ip_gre]
-> [   18.244661]  [<ffffffffa0e81055>] ipgre_init+0x21/0xc9 [ip_gre]
-> [   18.250831]  [<ffffffffa0e81034>] ? ipgre_tap_init_net+0x1a/0x1a [ip_gre]
-> [   18.257866]  [<ffffffff81000263>] do_one_initcall+0x7b/0x10c
-> [   18.263780]  [<ffffffff8107e5db>] load_module+0x1b1f/0x1e19
-> [   18.269594]  [<ffffffff8107a4f8>] ? sys_getegid16+0x44/0x44
-> [   18.275416]  [<ffffffff81386cf2>] ? page_fault+0x22/0x30
-> [   18.280972]  [<ffffffff8107e969>] SyS_init_module+0x94/0xa1
-> [   18.286795]  [<ffffffff8138cf12>] system_call_fastpath+0x16/0x1b
-> [   18.293051] Code: <6e> 65 77 6c 69 6e 6b 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
-> [   18.302807] RIP  [<ffffffffa0e76002>] 0xffffffffa0e76001
-> [   18.308429]  RSP <ffff8806212f1ca8>
-> [   18.312163] CR2: 0000000000000003
-> [   18.316021] ---[ end trace 839c6b43b00f02f5 ]---
-> 
-> and still:
-> 
-> Ffffffffa0e76000 u ip_tunnel_init_net   [ip_gre]
-
-What do you get if you do an objdump -Dr ip_gre.ko
-
-And then look for ipgre_init, and then subtract 0xb053 (45139) from its
-address. As that is: ffffffffa0e81055 - ffffffffa0e76002, then see if
-that object file has anything in that location.
-
-
-> 
-> I've checked that ip_tunnel.ko and ip_gre.ko was indeed rebuilt (new timestamps),
-> and that my patching (I had to resolve manually due to fuzz) really removed __net_init.
-> 
-> /* Steinar */
-
-There's also reverting c54419321455631079c7d6e60bc732dd0c5914c5 and see
-if that fixes things. Just to confirm if that is the culprit.
-
-Thanks,
-
--- Steve
-
+diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
+index b4d4547..e4975bc 100644
+--- a/drivers/regulator/ab8500-ext.c
++++ b/drivers/regulator/ab8500-ext.c
+@@ -229,6 +229,28 @@ static unsigned int ab8500_ext_regulator_get_mode(struct regulator_dev *rdev)
+ 	return ret;
+ }
+ 
++static int ab8500_ext_set_voltage(struct regulator_dev *rdev, int min_uV,
++				  int max_uV, unsigned *selector)
++{
++	struct regulation_constraints *regu_constraints = rdev->constraints;
++
++	if (!regu_constraints) {
++		dev_err(rdev_get_dev(rdev), "No regulator constraints\n");
++		return -EINVAL;
++	}
++
++	if (regu_constraints->min_uV == min_uV &&
++	    regu_constraints->max_uV == max_uV)
++		return 0;
++
++	dev_err(rdev_get_dev(rdev),
++		"Requested min %duV max %duV != constrained min %duV max %duV\n",
++		min_uV, max_uV,
++		regu_constraints->min_uV, regu_constraints->max_uV);
++
++	return -EINVAL;
++}
++
+ static int ab8500_ext_list_voltage(struct regulator_dev *rdev,
+ 				   unsigned selector)
+ {
+@@ -252,6 +274,7 @@ static struct regulator_ops ab8500_ext_regulator_ops = {
+ 	.is_enabled		= ab8500_ext_regulator_is_enabled,
+ 	.set_mode		= ab8500_ext_regulator_set_mode,
+ 	.get_mode		= ab8500_ext_regulator_get_mode,
++	.set_voltage		= ab8500_ext_set_voltage,
+ 	.list_voltage		= ab8500_ext_list_voltage,
+ };
+ 
+-- 
+1.7.10.4
 
