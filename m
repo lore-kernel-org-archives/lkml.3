@@ -1,102 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab3FGLtH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 07:49:07 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:59471 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752047Ab3FGLtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 07:49:02 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Robin Randhawa <robin.randhawa@arm.com>, Steve.Bannister@arm.com,
-        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
-        arvind.chauhan@arm.com, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        Paul Mackerras <paulus@samba.org>, Olof Johansson <olof@lixom.net>,
-        linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        deepthi@linux.vnet.ibm.com, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 17/18] cpufreq: powerpc: move cpufreq driver to drivers/cpufreq
-Date: Fri, 07 Jun 2013 13:58:05 +0200
-Message-ID: <36081985.E8ct76IG4n@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohpom=HvLwn7q9gicJXmHExoaDKKHcgQgT=1F0SKu3N3bXSg@mail.gmail.com>
-References: <cover.1365079581.git.viresh.kumar@linaro.org> <CAKohpokgTmb6d79ipR9pV2iOfLSzngrPbMV3hFcuP64kbNYSQA@mail.gmail.com> <CAKohpom=HvLwn7q9gicJXmHExoaDKKHcgQgT=1F0SKu3N3bXSg@mail.gmail.com>
+	id S1753458Ab3FGLuy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 07:50:54 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:60172 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751424Ab3FGLux (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 07:50:53 -0400
+Date: Fri, 7 Jun 2013 12:50:46 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: [GIT PULL] EFI urgent fixes
+Message-ID: <20130607115046.GN30420@console-pimps.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 07, 2013 10:48:21 AM Viresh Kumar wrote:
-> On 31 May 2013 16:20, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> > On 20 May 2013 10:10, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> >> On 13 May 2013 11:34, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> >>> On 22 April 2013 12:19, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> >>>> On 9 April 2013 14:05, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> >>>>> On 5 April 2013 12:16, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> >>>>>> On 4 April 2013 18:24, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> >>>>>>> This patch moves cpufreq driver of powerpc platform to drivers/cpufreq.
-> >>>>>>>
-> >>>>>>> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> >>>>>>> Cc: Paul Mackerras <paulus@samba.org>
-> >>>>>>> Cc: Olof Johansson <olof@lixom.net>
-> >>>>>>> Cc: linuxppc-dev@lists.ozlabs.org
-> >>>>>>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> >>>>>>> ---
-> >>>>>>> Compile Tested only.
-> >>>>>>>
-> >>>>>>>  arch/powerpc/platforms/Kconfig                     | 31 ----------------------
-> >>>>>>>  arch/powerpc/platforms/pasemi/Makefile             |  1 -
-> >>>>>>>  arch/powerpc/platforms/powermac/Makefile           |  2 --
-> >>>>>>>  drivers/cpufreq/Kconfig.powerpc                    | 26 ++++++++++++++++++
-> >>>>>>>  drivers/cpufreq/Makefile                           |  3 +++
-> >>>>>>>  .../cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c  |  0
-> >>>>>>>  .../cpufreq/pmac32-cpufreq.c                       |  0
-> >>>>>>>  .../cpufreq/pmac64-cpufreq.c                       |  0
-> >>>>>>>  8 files changed, 29 insertions(+), 34 deletions(-)
-> >>>>>>>  rename arch/powerpc/platforms/pasemi/cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c (100%)
-> >>>>>>>  rename arch/powerpc/platforms/powermac/cpufreq_32.c => drivers/cpufreq/pmac32-cpufreq.c (100%)
-> >>>>>>>  rename arch/powerpc/platforms/powermac/cpufreq_64.c => drivers/cpufreq/pmac64-cpufreq.c (100%)
-> >>>>>>
-> >>>>>> Hi Deepthi,
-> >>>>>>
-> >>>>>> Can you help testing this please?
-> >>>>>
-> >>>>> Ping!!
-> >>>>
-> >>>> Ping!!
-> >>>
-> >>> Hi Benjamin,
-> >>>
-> >>> Hope you are back from your vacations. Can you give it a try now?
-> >>
-> >> Ping!!
-> >
-> > Ping!!
-> 
-> Hi Rafael,
-> 
-> Its been more than 2 months now that this patch was first posted.
-> And the response from Maintainers isn't so great, irrespective of
-> how many times I pinged them.
-> 
-> This is what I think:
-> - It looked functionally correct to Benjamin but he wanted somebody
-> to actually test it.
-> - Arnd gave his Ack (So it looked functionally correct to him too)
-> - We can probably push this into linux-next now and see if somebody
-> complains of any breakage it has done. If not we can get it pushed for
-> 3.11.
+Hi folks,
 
-I agree, applied to bleeding-edge.
+The following changes since commit eccaf52fee8305d5207ff110950a82c100e459bc:
 
-Thanks,
-Rafael
+  x86, efi: initial the local variable of DataSize to zero (2013-05-14 08:13:05 +0100)
 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
+
+for you to fetch changes up to d70005bfc5f47f74fb5cb77a84983ed26bf65557:
+
+  efi: Convert runtime services function ptrs (2013-06-06 11:07:07 +0100)
+
+----------------------------------------------------------------
+ * More tweaking to the EFI variable anti-bricking algorithm. Quite a
+   few users were reporting boot regressions in v3.9. This has now been
+   fixed with a more accurate "minimum storage requirement to avoid
+   bricking" value from Samsung (5K instead of 50%) and code to trigger
+   garbage collection when we near our limit - Matthew Garrett.
+
+ * A small cleanup to get rid of all the void * casting that is
+   prevalent in the EFI code - Borislav Petkov
+
+----------------------------------------------------------------
+Borislav Petkov (1):
+      efi: Convert runtime services function ptrs
+
+Matthew Garrett (1):
+      Modify UEFI anti-bricking code
+
+ arch/x86/boot/compressed/eboot.c      |  47 ---------
+ arch/x86/include/asm/efi.h            |  35 +++----
+ arch/x86/include/uapi/asm/bootparam.h |   1 -
+ arch/x86/platform/efi/efi.c           | 188 ++++++++++++----------------------
+ include/linux/efi.h                   |  28 ++---
+ 5 files changed, 93 insertions(+), 206 deletions(-)
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Matt Fleming, Intel Open Source Technology Center
