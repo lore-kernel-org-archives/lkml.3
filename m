@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756300Ab3FGRJk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 13:09:40 -0400
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:55421 "EHLO
-	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753453Ab3FGRJi (ORCPT
+	id S1756051Ab3FGRZB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 13:25:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34818 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754981Ab3FGRZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 13:09:38 -0400
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Message-ID: <51B213CB.8070102@yandex-team.ru>
-Date: Fri, 07 Jun 2013 21:09:31 +0400
-From: Roman Gushchin <klamm@yandex-team.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 7 Jun 2013 13:25:00 -0400
+Date: Fri, 7 Jun 2013 10:24:58 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Tobias Winter <tobias@linuxdingsda.de>,
+        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        Rob Landley <rob@landley.net>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] USB: serial: make minor allocation dynamic
+Message-ID: <20130607172458.GA29371@kroah.com>
+References: <20130606173103.GA1812@kroah.com>
+ <20130606173121.GA1866@kroah.com>
+ <20130607100047.GM2566@localhost>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@gentwo.org>
-CC: penberg@kernel.org, mpm@selenic.com, yanmin.zhang@intel.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: slub: slab order on multi-processor machines
-References: <51B1A04B.7030003@yandex-team.ru> <0000013f1efbaa4f-6039ad3e-286e-4486-8b7e-7b0331edf990-000000@email.amazonses.com>
-In-Reply-To: <0000013f1efbaa4f-6039ad3e-286e-4486-8b7e-7b0331edf990-000000@email.amazonses.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130607100047.GM2566@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.06.2013 18:12, Christoph Lameter wrote:
-> On Fri, 7 Jun 2013, Roman Gushchin wrote:
->
->> As I understand, the idea was to make kernel allocations cheaper by reducing
->> the total
->> number of page allocations (allocating 1 page with order 3 is cheaper than
->> allocating
->> 8 1-ordered pages).
->
-> Its also affecting allocator speed. By having less page structures to
-> manage the metadata effort is reduced. By having more objects in a page
-> the fastpath of slub is more likely to be used (Visible in allocator
-> benchmarks). Slub can fall back dynamically to order 0 pages if necessary.
-> So it can take opportunistically take advantage of contiguous pages.
+On Fri, Jun 07, 2013 at 12:00:47PM +0200, Johan Hovold wrote:
+> On Thu, Jun 06, 2013 at 10:31:21AM -0700, Greg KH wrote:
+> > From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> > @@ -1040,11 +1044,10 @@ static int usb_serial_probe(struct usb_i
+> >  	 */
+> >  	serial->disconnected = 1;
+> >  
+> > -	if (get_free_serial(serial, num_ports, &minor) == NULL) {
+> > +	if (get_free_serial(serial, num_ports)) {
+> >  		dev_err(ddev, "No more free serial devices\n");
+> >  		goto probe_error;
+> >  	}
+> > -	serial->minor = minor;
+> 
+> This gives a warning as minor is no longer initialised, but is still
+> used to initialise the console a bit further down.
+> 
+> 	usb_serial_console_init(minor);
+> 
+> Should probably just drop minor, and use serial->port[0]->minor instead.
 
-Thank you for clarification!
+Ah crap, I knew I was going to have to convert the console code, but I
+just forgot about it as I didn't have it selected so I didn't get any
+build errors...
 
-May be it's reasonable to fall back to order 0 pages if it's not possible
-to allocate new large page without direct compaction?
-I'll try to perform some tests here.
+I'll go fix that up and do a v3 of the patches...
 
-Regards,
-Roman
+greg k-h
