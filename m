@@ -1,199 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab3FGKAs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 06:00:48 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.168]:30491 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753221Ab3FGKAq (ORCPT
+	id S1754925Ab3FGKA7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 06:00:59 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:36651 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754677Ab3FGKA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 06:00:46 -0400
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-11.tower-38.messagelabs.com!1370598777!15207439!1
-X-Originating-IP: [83.171.138.125]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.6; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Fri, 07 Jun 2013 11:52:57 +0200
-Date: Fri, 7 Jun 2013 11:55:31 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: <wim@iguana.be>
-CC: <linux-kernel@vger.kernel.org>, <linux-watchdog@vger.kernel.org>,
-        <guenter@roeck-us.net>, <johannes.thumshirn@men.de>
-Subject: [PATCH v8 2/2] watchdog: Sysfs interface for MEN A21 watchdog
-Message-ID: <20130607095531.GA19431@jtlinux>
-References: <20130603143453.GA14251@jtlinux>
+	Fri, 7 Jun 2013 06:00:56 -0400
+Date: Fri, 7 Jun 2013 12:00:47 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Tobias Winter <tobias@linuxdingsda.de>,
+        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        Rob Landley <rob@landley.net>, Johan Hovold <jhovold@gmail.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] USB: serial: make minor allocation dynamic
+Message-ID: <20130607100047.GM2566@localhost>
+References: <20130606173103.GA1812@kroah.com>
+ <20130606173121.GA1866@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130603143453.GA14251@jtlinux>
+In-Reply-To: <20130606173121.GA1866@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
-X-OriginalArrivalTime: 07 Jun 2013 09:52:57.0157 (UTC) FILETIME=[C9AA1750:01CE6364]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a sysfs interface for the watchdog
-device found on MEN A21 Boards.
+On Thu, Jun 06, 2013 at 10:31:21AM -0700, Greg KH wrote:
+> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-The newly generated files are:
-* rebootcause:
-Can be one of:
-Power on Reset,
-CPU Reset Request,
-Push Button,
-FPGA Reset Request,
-Watchdog,
-Local Power Bad,
-Invalid or
-BDI
-and shows the reason of the boards last reboot.
+> @@ -1040,11 +1044,10 @@ static int usb_serial_probe(struct usb_i
+>  	 */
+>  	serial->disconnected = 1;
+>  
+> -	if (get_free_serial(serial, num_ports, &minor) == NULL) {
+> +	if (get_free_serial(serial, num_ports)) {
+>  		dev_err(ddev, "No more free serial devices\n");
+>  		goto probe_error;
+>  	}
+> -	serial->minor = minor;
 
-* active:
-Shows if the watchdog CPLD is actually running
+This gives a warning as minor is no longer initialised, but is still
+used to initialise the console a bit further down.
 
-* allow_disable:
-Shows if the watchdog is allowed to be disabled (NOWAYOUT disabled)
+	usb_serial_console_init(minor);
 
-* fastmode:
-Shows if the CPLD is running in fast mode (1s timeout), once it is in
-fastmode it can't be switched back to slow mode (30s timeout) until the
-next reboot.
+Should probably just drop minor, and use serial->port[0]->minor instead.
 
-Revision 2:
-* Re-worked sysfs patch to apply on re-worked base
-
-Revision 3:
-* Re-worked sysfs patch to apply on re-worked base
-Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
----
- drivers/watchdog/mena21_wdt.c |   88 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 88 insertions(+)
-
-diff --git a/drivers/watchdog/mena21_wdt.c b/drivers/watchdog/mena21_wdt.c
-index 29f9c0d..cae5462 100644
---- a/drivers/watchdog/mena21_wdt.c
-+++ b/drivers/watchdog/mena21_wdt.c
-@@ -20,6 +20,17 @@
- #include <linux/delay.h>
- #include <linux/bitops.h>
-
-+static char *reset_causes[] = {
-+	"Power On Reset",
-+	"CPU Reset Request",
-+	"Push Button",
-+	"FPGA Reset Request",
-+	"Watchdog",
-+	"Local Power Bad",
-+	"Invalid",
-+	"BDI",
-+};
-+
- enum a21_wdt_gpios {
- 	GPIO_WD_ENAB,
- 	GPIO_WD_FAST,
-@@ -52,6 +63,73 @@ static unsigned int a21_wdt_get_bootstatus(struct a21_wdt_drv *drv)
- 	return reset;
- }
-
-+static ssize_t rebootcause_show(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	struct a21_wdt_drv *drv = dev_get_drvdata(dev);
-+	unsigned int reset = 0;
-+
-+	reset = a21_wdt_get_bootstatus(drv);
-+
-+	return sprintf(buf, "%s\n", reset_causes[reset]);
-+}
-+static DEVICE_ATTR(rebootcause, S_IRUGO, rebootcause_show, NULL);
-+
-+static ssize_t active_show(struct device *dev, struct device_attribute *attr,
-+			   char *buf)
-+{
-+	struct a21_wdt_drv *drv = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%d\n", !!gpio_get_value(drv->gpios[GPIO_WD_ENAB]));
-+}
-+static DEVICE_ATTR(active, S_IRUGO, active_show, NULL);
-+
-+static ssize_t allow_disable_show(struct device *dev,
-+				  struct device_attribute *attr,
-+				  char *buf)
-+{
-+	return sprintf(buf, "%d\n", !nowayout);
-+}
-+static DEVICE_ATTR(allow_disable, S_IRUGO, allow_disable_show, NULL);
-+
-+static ssize_t fastmode_show(struct device *dev, struct device_attribute *attr,
-+			     char *buf)
-+{
-+	struct a21_wdt_drv *drv = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%d\n", !!gpio_get_value(drv->gpios[GPIO_WD_FAST]));
-+}
-+static DEVICE_ATTR(fastmode, S_IRUGO, fastmode_show, NULL);
-+
-+static int a21_wdt_create_files(struct watchdog_device *wdev)
-+{
-+	int ret;
-+
-+	ret = device_create_file(wdev->dev, &dev_attr_rebootcause);
-+	if (ret)
-+		return ret;
-+	ret = device_create_file(wdev->dev, &dev_attr_active);
-+	if (ret)
-+		return ret;
-+	ret = device_create_file(wdev->dev, &dev_attr_allow_disable);
-+	if (ret)
-+		return ret;
-+	ret = device_create_file(wdev->dev, &dev_attr_fastmode);
-+	if (ret)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+static void a21_wdt_remove_files(struct watchdog_device *wdev)
-+{
-+	device_remove_file(wdev->dev, &dev_attr_rebootcause);
-+	device_remove_file(wdev->dev, &dev_attr_active);
-+	device_remove_file(wdev->dev, &dev_attr_allow_disable);
-+	device_remove_file(wdev->dev, &dev_attr_fastmode);
-+}
-+
- static int a21_wdt_start(struct watchdog_device *wdt)
- {
- 	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-@@ -223,9 +301,18 @@ static int a21_wdt_probe(struct platform_device *pdev)
- 	}
-
- 	dev_set_drvdata(&pdev->dev, drv);
-+	dev_set_drvdata(a21_wdt.dev, drv);
-+
-+	ret = a21_wdt_create_files(&a21_wdt);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Cannot create sysfs entries\n");
-+		goto err_create_sysfs;
-+	}
-
- 	return 0;
-
-+err_create_sysfs:
-+	watchdog_unregister_device(&drv->wdt);
- err_register_wd:
- 	mutex_destroy(&drv->lock);
-
-@@ -239,6 +326,7 @@ static int a21_wdt_remove(struct platform_device *pdev)
- 	dev_warn(&pdev->dev,
- 		"Unregistering A21 watchdog driver, board may reboot\n");
-
-+	a21_wdt_remove_files(&drv->wdt);
-
- 	watchdog_unregister_device(&drv->wdt);
-
---
-1.7.9.5
-
+Thanks,
+Johan
