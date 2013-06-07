@@ -1,174 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab3FGPIG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 11:08:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33563 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453Ab3FGPIE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 11:08:04 -0400
-Date: Fri, 7 Jun 2013 08:08:35 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Liu ShuoX <shuox.liu@intel.com>,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        sedat.dilek@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
-        Zhang Yanmin <yanmin.zhang@intel.com>
-Subject: Re: [PATCH] irq: add a new function irq_in_progress to check pending
- IRQ handlers
-Message-ID: <20130607150835.GA5264@kroah.com>
-References: <1370504296-24389-1-git-send-email-shuox.liu@intel.com>
- <alpine.LFD.2.02.1306061505210.2905@ionos>
- <1370566409.4432.41.camel@ymzhang.sh.intel.com>
- <20130607010225.GA28256@kroah.com>
- <1370572672.4432.49.camel@ymzhang.sh.intel.com>
- <20130607030853.GA2827@kroah.com>
- <1370575086.4432.52.camel@ymzhang.sh.intel.com>
- <20130607041922.GA3603@kroah.com>
- <1370580895.4432.64.camel@ymzhang.sh.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370580895.4432.64.camel@ymzhang.sh.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755983Ab3FGPIT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 11:08:19 -0400
+Received: from mga03.intel.com ([143.182.124.21]:20087 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755889Ab3FGPIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 11:08:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,822,1363158000"; 
+   d="scan'208";a="313770366"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Dave Hansen <dave@sr71.net>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20130528122812.0D624E0090@blue.fi.intel.com>
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1368321816-17719-15-git-send-email-kirill.shutemov@linux.intel.com>
+ <519BD595.5040405@sr71.net>
+ <20130528122812.0D624E0090@blue.fi.intel.com>
+Subject: Re: [PATCHv4 14/39] thp, mm: rewrite delete_from_page_cache() to
+ support huge pages
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130607151025.241EFE0090@blue.fi.intel.com>
+Date: Fri,  7 Jun 2013 18:10:25 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 12:54:55PM +0800, Yanmin Zhang wrote:
-> On Thu, 2013-06-06 at 21:19 -0700, Greg KH wrote:
-> > On Fri, Jun 07, 2013 at 11:18:06AM +0800, Yanmin Zhang wrote:
-> > > On Thu, 2013-06-06 at 20:08 -0700, Greg KH wrote:
-> > > > On Fri, Jun 07, 2013 at 10:37:52AM +0800, Yanmin Zhang wrote:
-> > > > > On Thu, 2013-06-06 at 18:02 -0700, Greg KH wrote:
-> > > > > > On Fri, Jun 07, 2013 at 08:53:29AM +0800, Yanmin Zhang wrote:
-> > > > > > > On Thu, 2013-06-06 at 15:18 +0200, Thomas Gleixner wrote:
-> > > > > > > > On Thu, 6 Jun 2013, shuox.liu@intel.com wrote:
-> > > > > > > > > From: Zhang Yanmin <yanmin.zhang@intel.com>
-> > > > > > > > > 
-> > > > > > > > > synchronize_irq waits pending IRQ handlers to be finished. If using this
-> > > > > > > > > function while holding a resource, the IRQ handler may cause deadlock.
-> > > > > > > > > 
-> > > > > > > > > Here we add a new function irq_in_progress which doesn't wait for the handlers
-> > > > > > > > > to be finished.
-> > > > > > > > > 
-> > > > > > > > > A typical use case at suspend-to-ram:
-> > > > > > > > > 
-> > > > > > > > > device driver's irq handler is complicated and might hold a mutex at rare cases.
-> > > > > > > > > Its suspend function is called and a suspended flag is set.
-> > > > > > > > > In case its IRQ handler is running, suspend function calls irq_in_progress. if
-> > > > > > > > > handler is running, abort suspend.
-> > > > > > > > > The irq handler checks the suspended flag. If the device is suspended, irq handler
-> > > > > > > > > either ignores the interrupt, or wakes up the whole system, and the driver's
-> > > > > > > > > resume function could deal with the delayed interrupt handling.
-> > > > > > > > 
-> > > > > > > > This is as wrong as it can be. Fix the driver instead of hacking racy
-> > > > > > > > functions into the core code.
-> > > > > > > > 
-> > > > > > > > So your problem looks like this:
-> > > > > > > > 
-> > > > > > > > CPU 0				CPU 1
-> > > > > > > > irq_handler_thread()		suspend()
-> > > > > > > >    .....			mutex_lock(&m);
-> > > > > > > >    mutex_lock(&m);		synchronize_irq();
-> > > > > > > > 
-> > > > > > > > So why needs the mutex to be taken before synchronize_irq()? Why not
-> > > > > > > > doing the obvious?
-> > > > > > > > 
-> > > > > > > > suspend()
-> > > > > > > >   disable_irq(); (Implies synchronize_irq)
-> > > > > > > >   mutex_lock(&m);
-> > > > > > > >   ....
-> > > > > > > >   mutex_unlock(&m);
-> > > > > > > >   enable_irq();
-> > > > > > > Thanks for the kind comment.
-> > > > > > > 
-> > > > > > > We do consider your solution before and it works well indeed with some specific
-> > > > > > > simple drivers. For example, some drives use GPIO pin as interrupt source.
-> > > > > > > 
-> > > > > > > On one specific platform, disable_irq would really disable the irq at RTE entry,
-> > > > > > > which means we lose the wakeup capability of this device.
-> > > > > > > synchronize_irq can be another solution. But we did hit 'DPM device timeout' issue
-> > > > > > > reported by dpm_wd_handler at suspend-to-ram.
-> > > > > > > 
-> > > > > > > The driver is complicated. We couldn't change too many functions to optimize it.
-> > > > > > > In addition, we have to use the driver instead of throwing it away.
-> > > > > > 
-> > > > > > What is preventing you from rewriting it to work properly?
-> > > > > It's complicated.
-> > > > 
-> > > > That sounds like your issue, not ours, so please don't push the problem
-> > > > onto someone else.  Take ownership of the driver, fix it up, and all
-> > > > will be good.
-> > > > 
-> > > > 
-> > > > > > > With irq_in_progress, we can resolve this issue and it does work, although it
-> > > > > > > looks like ugly.
-> > > > > > 
-> > > > > > Don't paper over driver bugs in the core kernel, fix the driver.
-> > > > > It's hard to say it's a driver bug. Could generic kernel provide some
-> > > > > flexibility for such complicated drivers?
-> > > > 
-> > > > Please post the code for the driver, and then we will be glad to
-> > > > continue the dicussion.
-> > > Greg,
-> > > 
-> > > Thanks for your enthusiasm. It's a private driver for products.
+Kirill A. Shutemov wrote:
+> Dave Hansen wrote:
+> > Which reminds me...  Why do we handle their reference counts differently? :)
 > > 
-> > What do you mean "private driver"?  All drivers need to be merged into
-> > the mainline kernel, it saves you time and money, and we will fix your
-> > bugs for you.
-> > 
-> > You know that, your bosses know that, your management knows that, so why
-> > are you trying to hide things?
-> > 
-> > totally confused,
-> They are embedded device drivers, highly depending on specific devices which runs
-> its own firmware in devices. Here the kernel drivers run at AP side.
+> > It seems like we could easily put a for loop in delete_from_page_cache()
+> > that will release their reference counts along with the head page.
+> > Wouldn't that make the code less special-cased for tail pages?
+> 
+> delete_from_page_cache() is not the only user of
+> __delete_from_page_cache()...
+> 
+> It seems I did it wrong in add_to_page_cache_locked(). We shouldn't take
+> references on tail pages there, only one on head. On split it will be
+> distributed properly.
 
-That's no different from loads of drivers that we have in the kernel
-today, no need to keep them from being merged, please submit them.
+This way:
 
-> One example is Graphics driver, which is very big and coding is not friendly. Kernel
-> experts can raise tons of questions against the driver, but we have to make the driver
-> work well on real products.
-
-So you are saying that "kernel experts" don't ask questions that
-actually make drivers "work well on real products"?  If that's how you
-feel about the community, then why are you asking the community for help
-in the first place?
-
-And do you somehow think that we don't know how to review/write/fix
-graphics drivers?  Who do you think made Linux in the first place?
-
-> Another reason is drivers need workaround many hardware issues. That makes it
-> hard to implement kernel drivers in good shape sometimes.
-
-That's hogwash, we deal with that every single day, in almost every
-single driver we write.  That's why we have a kernel in the first place,
-to fix hardware problems and provide a unified interface to userspace so
-that it does NOT have to deal with hardware problems and differences.
-
-> We need support all cases.
-
-What "cases"?
-
-> We fixed lots of hard issues on embedded products and think if kernel could be more
-> flexible to support complicated cases.
-
-Do you think that Linux is not "flexible"?  It runs on more processors,
-and more system configurations than any other operating system ever has
-in the history of computing.  How is that not "complicated"?
-
-No one is forcing you to use Linux, so if you don't want to participate
-by providing your drivers and accepting feedback, don't expect us to
-change the core for drivers we have never seen and feel are broken.  It
-doesn't work that way.
-
-I think you need to spend some time with your company's Linux community
-development training programs, it's pretty obvious that you don't
-understand how the Linux kernel development process works at all.
-
-good luck,
-
-greg k-h
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index b267859..c2c0df2 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1556,6 +1556,7 @@ static void __split_huge_page_refcount(struct page *page,
+ 	struct zone *zone = page_zone(page);
+ 	struct lruvec *lruvec;
+ 	int tail_count = 0;
++	int init_tail_refcount;
+ 
+ 	/* prevent PageLRU to go away from under us, and freeze lru stats */
+ 	spin_lock_irq(&zone->lru_lock);
+@@ -1565,6 +1566,13 @@ static void __split_huge_page_refcount(struct page *page,
+ 	/* complete memcg works before add pages to LRU */
+ 	mem_cgroup_split_huge_fixup(page);
+ 
++	/*
++	 * When we add a huge page to page cache we take only reference to head
++	 * page, but on split we need to take addition reference to all tail
++	 * pages since they are still in page cache after splitting.
++	 */
++	init_tail_refcount = PageAnon(page) ? 0 : 1;
++
+ 	for (i = HPAGE_PMD_NR - 1; i >= 1; i--) {
+ 		struct page *page_tail = page + i;
+ 
+@@ -1587,8 +1595,9 @@ static void __split_huge_page_refcount(struct page *page,
+ 		 * atomic_set() here would be safe on all archs (and
+ 		 * not only on x86), it's safer to use atomic_add().
+ 		 */
+-		atomic_add(page_mapcount(page) + page_mapcount(page_tail) + 1,
+-			   &page_tail->_count);
++		atomic_add(init_tail_refcount + page_mapcount(page) +
++				page_mapcount(page_tail) + 1,
++				&page_tail->_count);
+ 
+ 		/* after clearing PageTail the gup refcount can be released */
+ 		smp_mb();
+-- 
+ Kirill A. Shutemov
