@@ -1,92 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755627Ab3FGCDN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 22:03:13 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:47875 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754357Ab3FGCDL convert rfc822-to-8bit (ORCPT
+	id S1755678Ab3FGCOb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 22:14:31 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:51751 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754357Ab3FGCO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 22:03:11 -0400
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: Lee Jones <lee.jones@linaro.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "wim@iguana.be" <wim@iguana.be>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "Kristo, Tero" <t-kristo@ti.com>
-Subject: RE: [PATCH v3] mfd: DT bindings for the palmas family MFD
-Thread-Topic: [PATCH v3] mfd: DT bindings for the palmas family MFD
-Thread-Index: AQHOYncuRwuUiYCq9keu21yMCEaQUZknvHwAgAABHgCAAcKsVA==
-Date: Fri, 7 Jun 2013 02:02:38 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229EA3F3@DBDE04.ent.ti.com>
-References: <1370496441-24620-1-git-send-email-j-keerthy@ti.com>
- <20130606070210.GR3370@gmail.com>,<20130606070610.GS3370@gmail.com>
-In-Reply-To: <20130606070610.GS3370@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.49]
-Content-Type: text/plain; charset="koi8-r"
-Content-Transfer-Encoding: 8BIT
+	Thu, 6 Jun 2013 22:14:29 -0400
 MIME-Version: 1.0
+Date: Fri, 7 Jun 2013 10:14:27 +0800
+Message-ID: <CAPgLHd9jbdU13hJo5c3kFM7vBCHzHHoahgFVos5kiO4ywe8QUQ@mail.gmail.com>
+Subject: [PATCH] staging: tidspbridge: fix error return code in omap34_xx_bridge_probe()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: omar.ramirez@copitl.com, gregkh@linuxfoundation.org, wfp5p@virginia.edu,
+        akpm@linux-foundation.org, tony@atomide.com
+Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-________________________________________
-From: Lee Jones [lee.jones@linaro.org]
-Sent: Thursday, June 06, 2013 12:36 PM
-To: J, KEERTHY
-Cc: linux-kernel@vger.kernel.org; grant.likely@secretlab.ca; linux-doc@vger.kernel.org; devicetree-discuss@lists.ozlabs.org; swarren@wwwdotorg.org; swarren@nvidia.com; rob.herring@calxeda.com; rob@landley.net; sameo@linux.intel.com; wim@iguana.be; lgirdwood@gmail.com; gg@slimlogic.co.uk; Kristo, Tero; Ian Lartey
-Subject: Re: [PATCH v3] mfd: DT bindings for the palmas family MFD
+Fix to return a negative error code in the class_create() error
+handling case instead of 0, as done elsewhere in this function.
 
-On Thu, 06 Jun 2013, Lee Jones wrote:
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/staging/tidspbridge/rmgr/drv_interface.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-> On Thu, 06 Jun 2013, J Keerthy wrote:
->
-> > Add the various binding files for the palmas family of chips. There is a
-> > top level MFD binding then a seperate binding for regulators IP blocks on chips.
-> >
-> > Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-> > Signed-off-by: J Keerthy <j-keerthy@ti.com>
-> > Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
-> > Reviewed-by: Stephen Warren <swarren@nvidia.com>
-> > ---
-> >  Documentation/devicetree/bindings/mfd/palmas.txt   |   49 +++++++++++++
-> >  .../devicetree/bindings/regulator/palmas-pmic.txt  |   72 ++++++++++++++++++++
-> >  2 files changed, 121 insertions(+), 0 deletions(-)
-> >  create mode 100644 Documentation/devicetree/bindings/mfd/palmas.txt
-> >  create mode 100644
-> > Documentation/devicetree/bindings/regulator/palmas-pmic.tx
->
-> Applied, thanks.
+diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+index c4d632c..6d04eb4 100644
+--- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
++++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+@@ -507,6 +507,7 @@ static int omap34_xx_bridge_probe(struct platform_device *pdev)
+ 	bridge_class = class_create(THIS_MODULE, "ti_bridge");
+ 	if (IS_ERR(bridge_class)) {
+ 		pr_err("%s: Error creating bridge class\n", __func__);
++		err = PTR_ERR(bridge_class);
+ 		goto err3;
+ 	}
+ 
 
-Grant,
-
-Could you pull this and drop the v2 of this patch please?
-
-Regards,
-Keerthy
-
-
-Ah wait. It appears Grant wants to take this.
-
-Unapplied, thanks. :)
-
---
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org Å Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
