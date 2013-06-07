@@ -1,165 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab3FGVYp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 17:24:45 -0400
-Received: from mga09.intel.com ([134.134.136.24]:16717 "EHLO mga09.intel.com"
+	id S1756300Ab3FGV0Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 17:26:25 -0400
+Received: from sauhun.de ([89.238.76.85]:52337 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753181Ab3FGVYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 17:24:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,824,1363158000"; 
-   d="scan'208";a="350037362"
-Date: Sat, 8 Jun 2013 02:15:11 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
-Cc: Will Deacon <will.deacon@arm.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, viresh.kumar@linaro.org, djbw@fb.com
-Subject: Re: [PATCH] dmatest: do not allow to interrupt ongoing tests
-Message-ID: <20130607204511.GM23045@intel.com>
-References: <1369308593-3723-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1753788Ab3FGV0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 17:26:23 -0400
+Date: Fri, 7 Jun 2013 23:28:17 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH] i2c: Let users disable "Probe an I2C bus for certain
+ devices"
+Message-ID: <20130607212817.GA3047@katana>
+References: <1370367222-19353-1-git-send-email-grygorii.strashko@ti.com>
+ <20130604174900.GA2992@katana>
+ <51AF63C7.9070007@ti.com>
+ <20130607090623.GC3428@katana>
+ <51B1B19E.1050200@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CE+1k2dSO48ffgeK"
 Content-Disposition: inline
-In-Reply-To: <1369308593-3723-1-git-send-email-andriy.shevchenko@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <51B1B19E.1050200@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 02:29:53PM +0300, Andy Shevchenko wrote:
-> When user interrupts ongoing transfers the dmatest may end up with console
-> lockup, oops, or data mismatch. This patch prevents user to abort any ongoing
-> test.
-> 
-> Documentation is updated accordingly.
-> 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Reported-by: Will Deacon <will.deacon@arm.com>
-> Tested-by: Will Deacon <will.deacon@arm.com>
-Applied, thanks. I will send this to linus shortly
 
---
-~Vinod
-> ---
->  Documentation/dmatest.txt |  6 +++---
->  drivers/dma/dmatest.c     | 45 +++++++++++++++++++++++----------------------
->  2 files changed, 26 insertions(+), 25 deletions(-)
-> 
-> diff --git a/Documentation/dmatest.txt b/Documentation/dmatest.txt
-> index 279ac0a..132a094 100644
-> --- a/Documentation/dmatest.txt
-> +++ b/Documentation/dmatest.txt
-> @@ -34,7 +34,7 @@ command:
->  After a while you will start to get messages about current status or error like
->  in the original code.
->  
-> -Note that running a new test will stop any in progress test.
-> +Note that running a new test will not stop any in progress test.
->  
->  The following command should return actual state of the test.
->  	% cat /sys/kernel/debug/dmatest/run
-> @@ -52,8 +52,8 @@ To wait for test done the user may perform a busy loop that checks the state.
->  
->  The module parameters that is supplied to the kernel command line will be used
->  for the first performed test. After user gets a control, the test could be
-> -interrupted or re-run with same or different parameters. For the details see
-> -the above section "Part 2 - When dmatest is built as a module..."
-> +re-run with the same or different parameters. For the details see the above
-> +section "Part 2 - When dmatest is built as a module..."
->  
->  In both cases the module parameters are used as initial values for the test case.
->  You always could check them at run-time by running
-> diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
-> index d8ce4ec..e88ded2 100644
-> --- a/drivers/dma/dmatest.c
-> +++ b/drivers/dma/dmatest.c
-> @@ -716,8 +716,7 @@ static int dmatest_func(void *data)
->  		}
->  		dma_async_issue_pending(chan);
->  
-> -		wait_event_freezable_timeout(done_wait,
-> -					     done.done || kthread_should_stop(),
-> +		wait_event_freezable_timeout(done_wait, done.done,
->  					     msecs_to_jiffies(params->timeout));
->  
->  		status = dma_async_is_tx_complete(chan, cookie, NULL, NULL);
-> @@ -997,7 +996,6 @@ static void stop_threaded_test(struct dmatest_info *info)
->  static int __restart_threaded_test(struct dmatest_info *info, bool run)
->  {
->  	struct dmatest_params *params = &info->params;
-> -	int ret;
->  
->  	/* Stop any running test first */
->  	__stop_threaded_test(info);
-> @@ -1012,13 +1010,23 @@ static int __restart_threaded_test(struct dmatest_info *info, bool run)
->  	memcpy(params, &info->dbgfs_params, sizeof(*params));
->  
->  	/* Run test with new parameters */
-> -	ret = __run_threaded_test(info);
-> -	if (ret) {
-> -		__stop_threaded_test(info);
-> -		pr_err("dmatest: Can't run test\n");
-> +	return __run_threaded_test(info);
-> +}
-> +
-> +static bool __is_threaded_test_run(struct dmatest_info *info)
-> +{
-> +	struct dmatest_chan *dtc;
-> +
-> +	list_for_each_entry(dtc, &info->channels, node) {
-> +		struct dmatest_thread *thread;
-> +
-> +		list_for_each_entry(thread, &dtc->threads, node) {
-> +			if (!thread->done)
-> +				return true;
-> +		}
->  	}
->  
-> -	return ret;
-> +	return false;
->  }
->  
->  static ssize_t dtf_write_string(void *to, size_t available, loff_t *ppos,
-> @@ -1091,22 +1099,10 @@ static ssize_t dtf_read_run(struct file *file, char __user *user_buf,
->  {
->  	struct dmatest_info *info = file->private_data;
->  	char buf[3];
-> -	struct dmatest_chan *dtc;
-> -	bool alive = false;
->  
->  	mutex_lock(&info->lock);
-> -	list_for_each_entry(dtc, &info->channels, node) {
-> -		struct dmatest_thread *thread;
-> -
-> -		list_for_each_entry(thread, &dtc->threads, node) {
-> -			if (!thread->done) {
-> -				alive = true;
-> -				break;
-> -			}
-> -		}
-> -	}
->  
-> -	if (alive) {
-> +	if (__is_threaded_test_run(info)) {
->  		buf[0] = 'Y';
->  	} else {
->  		__stop_threaded_test(info);
-> @@ -1132,7 +1128,12 @@ static ssize_t dtf_write_run(struct file *file, const char __user *user_buf,
->  
->  	if (strtobool(buf, &bv) == 0) {
->  		mutex_lock(&info->lock);
-> -		ret = __restart_threaded_test(info, bv);
-> +
-> +		if (__is_threaded_test_run(info))
-> +			ret = -EBUSY;
-> +		else
-> +			ret = __restart_threaded_test(info, bv);
-> +
->  		mutex_unlock(&info->lock);
->  	}
->  
-> -- 
-> 1.8.2.rc0.22.gb3600c3
-> 
+--CE+1k2dSO48ffgeK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
+
+> That sounds good to me - I can prepare patch for i2c-omap.c.
+> But, there is still an open question regarding *i2c-gpio.c* which,
+> actually, a source of biggest part of delay.
+
+Why should the DEPRECATED flag not work with i2c-gpio?
+
+
+--CE+1k2dSO48ffgeK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRslBwAAoJEBQN5MwUoCm2Jr8QAKphuWx9RwNuq8XpwRt7l2Am
+YjV6Ut6u2ktei5eH6W7lL9VQF3iqj7t2iPwHnxxUzwzfKXtha3jwlHaYBddwCSP4
+9gNnx+ROz34BkuagJRl+WYNHoAPh54Ie07FSUbcy+E5bLLk7ADDlUpOzkGj1HnrK
+YvbsWgsnuR9dwo0qx2PFi6bchsW7P7AOCiNZO/Fx0rGLjbIV3rAGxkuqAGfDCzh+
+SOuBtYT/vIFyC+IKa92P7USQwVD1leHWe5q5mqln+NTNHtSLhDmJWOoe7MiHBPOw
+Zd0h/csYJ3s0gd7F1y9qeZ5epujpfFvjuxA00rRB/us/I1SiRqOPM339o3c/T3Bm
+0ycgzqBqq1DBVOBGm6w6EwT7qPHF1eFMLiiaiKTAGM9eoAgkbyiPHrfRoo/2B0HI
+oqtEgsrHqZnb6Xf1syJQ3vmVXfzfoVq4prY991riK9zDYo41X3mppXr2mLTb8iRD
+CgH9Ln6SAjFOzULudCOedtovuvOCRsY77LWRtg12MFbthslcmjCryMBQ8M4sQ5oQ
+PXtVfAae2bZuuXgu+JlDiNRhoaNuhVOBEfcBdMBRMCWbz4UrX6tSmrhrDncRN+SZ
+55FIvafzKew2OqelbeA9kFvzf24roCQ9cYGp5LaifwPRr7QIdlKbj9XuyEirbZAz
+7uAhsgpz0BqIBifbI204
+=LTy1
+-----END PGP SIGNATURE-----
+
+--CE+1k2dSO48ffgeK--
