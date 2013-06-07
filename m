@@ -1,106 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757150Ab3FGTyB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 15:54:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27586 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756613Ab3FGTx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 15:53:59 -0400
-Date: Fri, 7 Jun 2013 15:53:51 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: sanbai <sanbai@taobao.com>
-Cc: linux-kernel@vger.kernel.org, Zhu Yanhai <gaoyang.zyh@taobao.com>,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Tao Ma <taoma.tm@gmail.com>
-Subject: Re: [RFC v1] add new io-scheduler to use cgroup on high-speed device
-Message-ID: <20130607195351.GD14015@redhat.com>
-References: <1370398171-25173-1-git-send-email-sanbai@taobao.com>
- <20130605133059.GA16339@redhat.com>
- <51B14F02.9090409@taobao.com>
+	id S1756487Ab3FGT4Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 15:56:16 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46460 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755373Ab3FGT4P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 15:56:15 -0400
+Message-ID: <51B23AD5.8060006@wwwdotorg.org>
+Date: Fri, 07 Jun 2013 13:56:05 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51B14F02.9090409@taobao.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: J Keerthy <j-keerthy@ti.com>
+CC: b-cousson@ti.com, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldewangan@nvidia.com, grant.likely@secretlab.ca, swarren@nvidia.com,
+        sameo@linux.intel.com, gg@slimlogic.co.uk, lee.jones@linaro.org
+Subject: Re: [PATCH] ARM: dts: add dtsi for palmas
+References: <1370604504-32310-1-git-send-email-j-keerthy@ti.com>
+In-Reply-To: <1370604504-32310-1-git-send-email-j-keerthy@ti.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 11:09:54AM +0800, sanbai wrote:
-> On 2013年06月05日 21:30, Vivek Goyal wrote:
-> >On Wed, Jun 05, 2013 at 10:09:31AM +0800, Robin Dong wrote:
-> >>We want to use blkio.cgroup on high-speed device (like fusionio) for our mysql clusters.
-> >>After testing different io-scheduler, we found that  cfq is too slow and deadline can't run on cgroup.
-> >So why not enhance deadline to be able to be used with cgroups instead of
-> >coming up with a new scheduler?
-> I think if we add cgroups support into deadline, it will not be
-> suitable to call "deadline" anymore...so a new ioscheduler and a new
-> name may not confuse users.
-
-Nobody got confused when we added cgroup support to CFQ. Not that
-I am saying go add support to deadline. I am just saying that need
-for cgroup support does not sound like it justfies need of a new
-IO scheduler.
-
-[..]
-> >Can you give more details. Do you idle? Idling kills performance. If not,
-> >then without idling how do you achieve performance differentiation.
-> We don't idle, when comes to .elevator_dispatch_fn，we just compute
-> quota for every group:
+On 06/07/2013 05:28 AM, J Keerthy wrote:
+> Adds palmas mfd and palmas regulator nodes. This is
+> based on the patch series:
 > 
-> quota = nr_requests - rq_in_driver;
-> group_quota = quota * group_weight / total_weight;
+> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg89957.html
 > 
-> and dispatch 'group_quota' requests for the coordinate group.
-> Therefore high-weight group
-> will dispatch more requests than low-weight group.
+> The device tree nodes are based on:
+> https://lkml.org/lkml/2013/6/6/25
 
-Ok, this works only if all the groups are full all the time otherwise
-groups will lose their fair share. This simplifies the things a lot.
-That is fairness is provided only if group is always backlogged. In
-practice, this happens only if a group is doing IO at very high rate
-(like your fio scripts). Have you tried running any real life workload
-in these cgroups (apache, databases etc) and see how good is service
-differentiation.
+> diff --git a/arch/arm/boot/dts/palmas.dtsi b/arch/arm/boot/dts/palmas.dtsi
 
-Anyway, sounds like this can be done at generic block layer like
-blk-throtl and it can sit on top so that it can work with all schedulers
-and can also work with bio based block drivers.  
+> +&palmas {
 
-[..]
-> I do the test again for cfq (slice_idle=0, quatum=128) and tpps
-> 
-> cfq (slice_idle=0, quatum=128)
-> groupname iops avg-rt(ms) max-rt(ms)
-> test1 16148 15 188
-> test2 12756 20 117
-> test3 9778 26 268
-> test4 6198 41 209
-> 
-> tpps
-> groupname iops avg-rt(ms) max-rt(ms)
-> test1 17292 14 65
-> test2 15221 16 80
-> test3 12080 21 66
-> test4 7995 32 90
-> 
-> Looks cfq with is much better than before.
+Hmmm. That (i.e. requiring the board file to declare the node, then
+setting up all the content by later including this file) is an
+interesting approach. I guess it's reasonable. The one issue is that it
+makes it a little harder for the board file to override any of the
+properties in this file., although it certainly is possible by including
+those overrides after the include.
 
-Yep, I am sure there are more simple opportunites for optimization
-where it can help. Can you try couple more things.
+Irrespective of that, some comments on this:
 
-- Drive even deeper queue depth. Set quantum=512.
+> +	palmas_pmic {
 
-- set group_idle=0.
+> +		ti,ldo6-vibrator;
 
-  Ideally this should effectively emulate what you are doing. That is try
-  to provide fairness without idling on group.
+For example, what if the board doesn't want to have the property set?
 
-  In practice I could not keep group queue full and before group exhausted
-  its slice, it got empty and got deleted from service tree and lost its
-  fair share. So if group_idle=0 leads to no service differentiation,
-  try slice_sync=10 and see what happens.
+> +
+> +		regulators {
+> +			smps123_reg: smps123 {
+> +				regulator-name = "smps123";
+> +				regulator-min-microvolt = < 600000>;
+> +				regulator-max-microvolt = <1500000>;
 
-Thanks
-Vivek
+Or what if the board wants to limit the voltage range of this regulator
+due to what it's used for on the board.
+
+> +				regulator-always-on;
+> +				regulator-boot-on;
+
+And those two properties are almost certainly board-specific policy.
+
