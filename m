@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab3FGOTo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 10:19:44 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:43830 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754290Ab3FGOTn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 10:19:43 -0400
-Date: Fri, 7 Jun 2013 10:19:42 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Greg KH <gregkh@linuxfoundation.org>
-cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>
-Subject: Re: usbutils 006 release
-In-Reply-To: <20130606232805.GA8875@kroah.com>
-Message-ID: <Pine.LNX.4.44L0.1306071018310.1366-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755682Ab3FGOTs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 10:19:48 -0400
+Received: from 1wt.eu ([62.212.114.60]:36152 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754290Ab3FGOTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 10:19:45 -0400
+Date: Fri, 7 Jun 2013 16:19:38 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: [ 027/184] ring-buffer: Fix race between integrity check and
+Message-ID: <20130607141938.GE19006@1wt.eu>
+References: <20130604172131.427118554@1wt.eu> <1370614020.9844.62.camel@gandalf.local.home>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370614020.9844.62.camel@gandalf.local.home>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Jun 2013, Greg KH wrote:
-
-> On Mon, Jul 09, 2012 at 11:22:22AM -0400, Alan Stern wrote:
-> > On Fri, 6 Jul 2012, Greg KH wrote:
+On Fri, Jun 07, 2013 at 10:07:00AM -0400, Steven Rostedt wrote:
+> On Tue, 2013-06-04 at 19:21 +0200, Willy Tarreau wrote:
+> > 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 > > 
-> > > Here's the 006 release of usbutils.
-> > > 
-> > > Some USB 3.0 updates, a new usb.ids file update, and a number of other
-> > > fixes and updates for annoying problems that people had reported.  Full
-> > > shortlog information is below if people are curious.
-> > > 
-> > > The package can be downladed from kernel.org:
-> > >         http://www.kernel.org/pub/linux/utils/usb/usbutils/
-> > > 
-> > > We've switched over to using git for development now, which makes things
-> > > much easier than the old cvs tree.  The tree can be found on both
-> > > kernel.org and github.com if you want to fork it and send us changes
-> > > easier:
-> > > 	http://git.kernel.org/?p=linux/kernel/git/gregkh/usbutils.git
+> > ------------------
+> >  readers
 > > 
-> > This link doesn't work for me.  Are you sure the repository is 
-> > installed at git.kernel.org?
+> > From: Steven Rostedt <srostedt@redhat.com>
+> > 
+> > commit 9366c1ba13fbc41bdb57702e75ca4382f209c82f upstream.
 > 
-> It wasn't, sorry, I've pushed it there now, and should show up in a few
-> hours.
+> This isn't the right commit (thanks to Ben for bringing this to my
+> attention).
+> 
+> That this commit SHA1 matches the change log but not the change.
+> According to git blame, the change below is from:
+> 
+> 54f7be5b831254199522523ccab4c3d954bbf576
+> ring-buffer: Fix NULL pointer if rb_set_head_page() fails
 
-A mere eleven months late...  :-)
+Ah yes indeed, thank you for bringing this up, Steve.
 
-Alan Stern
+Willy
 
