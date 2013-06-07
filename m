@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab3FGHa3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 03:30:29 -0400
+	id S1753372Ab3FGHbH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 03:31:07 -0400
 Received: from mga02.intel.com ([134.134.136.20]:11064 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753087Ab3FGHa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 03:30:26 -0400
+	id S1752553Ab3FGHaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 03:30:21 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,820,1363158000"; 
-   d="scan'208";a="325673080"
+   d="scan'208";a="325673040"
 From: Alex Shi <alex.shi@intel.com>
 To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
@@ -17,9 +17,9 @@ Cc: vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
         viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
         alex.shi@intel.com, mgorman@suse.de, riel@redhat.com,
         wangyun@linux.vnet.ibm.com, Jason Low <jason.low2@hp.com>
-Subject: [RFC patch 3/4] sched/cfs_rq: change atomic64_t removed_load to atomic_long_t
-Date: Fri,  7 Jun 2013 15:29:28 +0800
-Message-Id: <1370590169-24804-4-git-send-email-alex.shi@intel.com>
+Subject: [RFC patch 1/4] sched: change cfs_rq load avg to unsigned long
+Date: Fri,  7 Jun 2013 15:29:26 +0800
+Message-Id: <1370590169-24804-2-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1370590169-24804-1-git-send-email-alex.shi@intel.com>
 References: <1370590169-24804-1-git-send-email-alex.shi@intel.com>
@@ -27,67 +27,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Like as runnable_load_avg, blocked_load_avg variable, long type is
-enough for removed_load in 64 bit or 32 bit machine.
-
-Then we avoid the expensive atomic64 operations on 32 bit machine.
+Since the 'u64 runnable_load_avg, blocked_load_avg' in cfs_rq struct are
+smaller than 'unsigned long' cfs_rq->load.weight. We don't need u64
+vaiables to describe them. unsigned long is more efficient and convenience.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- kernel/sched/fair.c  | 10 ++++++----
- kernel/sched/sched.h |  3 ++-
- 2 files changed, 8 insertions(+), 5 deletions(-)
+ kernel/sched/debug.c | 4 ++--
+ kernel/sched/sched.h | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 30fb7dc..9cc4211 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1517,8 +1517,9 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
- 	if (!decays && !force_update)
- 		return;
- 
--	if (atomic64_read(&cfs_rq->removed_load)) {
--		u64 removed_load = atomic64_xchg(&cfs_rq->removed_load, 0);
-+	if (atomic_long_read(&cfs_rq->removed_load)) {
-+		unsigned long removed_load;
-+		removed_load = atomic_long_xchg(&cfs_rq->removed_load, 0);
- 		subtract_blocked_load_contrib(cfs_rq, removed_load);
- 	}
- 
-@@ -3479,7 +3480,8 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
- 	 */
- 	if (se->avg.decay_count) {
- 		se->avg.decay_count = -__synchronize_entity_decay(se);
--		atomic64_add(se->avg.load_avg_contrib, &cfs_rq->removed_load);
-+		atomic_long_add(se->avg.load_avg_contrib,
-+						&cfs_rq->removed_load);
- 	}
- }
- #endif /* CONFIG_SMP */
-@@ -5944,7 +5946,7 @@ void init_cfs_rq(struct cfs_rq *cfs_rq)
- #endif
- #if defined(CONFIG_FAIR_GROUP_SCHED) && defined(CONFIG_SMP)
- 	atomic64_set(&cfs_rq->decay_counter, 1);
--	atomic64_set(&cfs_rq->removed_load, 0);
-+	atomic_long_set(&cfs_rq->removed_load, 0);
- #endif
- }
- 
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 75024a6..160afdc 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -211,9 +211,9 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+ 	SEQ_printf(m, "  .%-30s: %ld\n", "load", cfs_rq->load.weight);
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ #ifdef CONFIG_SMP
+-	SEQ_printf(m, "  .%-30s: %lld\n", "runnable_load_avg",
++	SEQ_printf(m, "  .%-30s: %ld\n", "runnable_load_avg",
+ 			cfs_rq->runnable_load_avg);
+-	SEQ_printf(m, "  .%-30s: %lld\n", "blocked_load_avg",
++	SEQ_printf(m, "  .%-30s: %ld\n", "blocked_load_avg",
+ 			cfs_rq->blocked_load_avg);
+ 	SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_avg",
+ 			(unsigned long long)atomic64_read(&cfs_rq->tg->load_avg));
 diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 1bfa91a..874731f 100644
+index 8bc66c6..5a80943 100644
 --- a/kernel/sched/sched.h
 +++ b/kernel/sched/sched.h
-@@ -278,8 +278,9 @@ struct cfs_rq {
+@@ -277,7 +277,7 @@ struct cfs_rq {
+ 	 * This allows for the description of both thread and group usage (in
  	 * the FAIR_GROUP_SCHED case).
  	 */
- 	unsigned long runnable_load_avg, blocked_load_avg;
--	atomic64_t decay_counter, removed_load;
-+	atomic64_t decay_counter;
+-	u64 runnable_load_avg, blocked_load_avg;
++	unsigned long runnable_load_avg, blocked_load_avg;
+ 	atomic64_t decay_counter, removed_load;
  	u64 last_decay;
-+	atomic_long_t removed_load;
  
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	/* Required to track per-cpu representation of a task_group */
 -- 
 1.7.12
 
