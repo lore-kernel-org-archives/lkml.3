@@ -1,174 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756445Ab3FGRmK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 13:42:10 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:35314 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754981Ab3FGRmI (ORCPT
+	id S1756540Ab3FGRoA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 13:44:00 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:58146 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754981Ab3FGRn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 13:42:08 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Chris Ball <cjb@laptop.org>, Olof Johansson <olof@lixom.net>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Will Newton <will.newton@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] mmc: dw_mmc: Handle late vmmc regulators with EPROBE_DEFER
-Date: Fri, 07 Jun 2013 19:42:03 +0200
-Message-ID: <2536139.bTRcfOkXer@flatron>
-User-Agent: KMail/4.10.4 (Linux/3.9.4-gentoo; KDE/4.10.4; x86_64; ; )
-In-Reply-To: <1370626110-1731-1-git-send-email-dianders@chromium.org>
-References: <1370580406-10254-1-git-send-email-dianders@chromium.org> <1370626110-1731-1-git-send-email-dianders@chromium.org>
+	Fri, 7 Jun 2013 13:43:57 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Subject: Re: [PATCH 6/6] ARM: dts: Add pcie controller node for Samsung EXYNOS5440 SoC
+Date: Fri, 7 Jun 2013 19:43:18 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, Jingoo Han <jg1.han@samsung.com>,
+        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
+        linux-samsung-soc@vger.kernel.org,
+        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
+        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
+        linux-pci@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "'Andrew Murray'" <andrew.murray@arm.com>
+References: <00c001ce277b$92b26ab0$b8174010$%han@samsung.com> <1880458.2ksb8qtzHh@wuerfel> <20130607162050.GA31895@obsidianresearch.com>
+In-Reply-To: <20130607162050.GA31895@obsidianresearch.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306071943.18407.arnd@arndb.de>
+X-Provags-ID: V02:K0:Ei2+wSRW5eHYUC0wVV8tvW5Yo/xcztrKBWVR3Gu5NTs
+ t9vEJ2KDU/mntAMq6KUvH47h+7gOBFMtvf/umIkFuSTr3TeQKH
+ 4H4xVTyWv4Pn87KmjsE4FEynIpvfepXC1P8VAGSJBDGrqU8gPi
+ Iy0p5U2DELFfUVBlU4YIFn0/aWi/es0WfsTCja5Ygr+ttOjMuq
+ V2dV7yg/Ap5lHgjgrhzFgSHCfFpTcjf8yRqFpTf/MPXxYXK5U+
+ XTJdbY6UxvGhF+5o8QPk7pRTWTg94RBLitsroLdh878v2b9VEG
+ rBN1oezVtahcbxUk1UEgMmnZdIZi3jwGshXEmZNOJYWKxyvbh5
+ A86dO8UNYch7tAqyoh5E=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 of June 2013 10:28:29 Doug Anderson wrote:
-> It is possible to specify a regulator that should be turned on when
-> dw_mmc is probed.  At the moment dw_mmc will fail to use the regulator
-> properly if the regulator probes after dw_mmc.  Fix this problem by
-> honoring EPROBE_DEFER.
+On Friday 07 June 2013, Jason Gunthorpe wrote:
+> Sounds fair to me.
 > 
-> At the same time move the regulator code out of the slot init code.
-> We only specify one regulator for the whole device
+> But when we talk about multiple domains we don't mean a disjoint range
+> bus bus numbers, as your other email shows:
+> 
+> 00:00.0 PCI bridge: Samsung Electronics Co Ltd Device a549 (rev 01) (prog-if 00 [Normal decode])
+> 10:00.0 PCI bridge: Samsung Electronics Co Ltd Device a549 (rev 01) (prog-if 00 [Normal decode])
+> 
+> We mean multiple domains, it should look like this:
+> 
+> 0000:00:00.0 PCI bridge: Samsung Electronics Co Ltd Device a549 (rev 01) (prog-if 00 [Normal decode])
+> 0001:00:00.0 PCI bridge: Samsung Electronics Co Ltd Device a549 (rev 01) (prog-if 00 [Normal decode])
+> 
+> ie lspci -D.
+> 
+> Each domain gets a unique bus number range, config space, io range,
+> etc. This is much clearer to everyone than trying to pretend there is
+> only one domain when the HW is actually multi-domain.
 
-A question just out of curiousity: Is it really correct to have one vmmc 
-regulator for the whole device, instead of one regulator per slot?
+Yes, absolutely. This means we also don't need a bus-range property in DT, since each
+domain will allow all 255 buses.
 
-This might be something obvious, but I don't know any details about 
-dw_mmc, so sorry if it's the case.
-
-Best regards,
-Tomasz
-
-> and other parts of
-> the code (like suspend/resume) assume that the regulator has only been
-> enabled once.
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
-> Changes in v2:
-> - Avoid hackery to detect regulators that will never show up.
-> - Move regulator out of slot init--it doesn't belong there.
-> 
->  .../devicetree/bindings/mmc/synopsis-dw-mshc.txt   |  4 +++
->  drivers/mmc/host/dw_mmc.c                          | 40
-> ++++++++++++---------- 2 files changed, 25 insertions(+), 19
-> deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt
-> b/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt index
-> 726fd21..d5cc94e 100644
-> --- a/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt
-> +++ b/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt
-> @@ -55,6 +55,9 @@ Optional properties:
-> 
->  * broken-cd: as documented in mmc core bindings.
-> 
-> +* vmmc-supply: The phandle to the regulator to use for vmmc.  If this
-> is +  specified we'll defer probe until we can find this regulator. +
->  Aliases:
-> 
->  - All the MSHC controller nodes should be represented in the aliases
-> node using @@ -79,6 +82,7 @@ board specific portions as listed below.
->  		broken-cd;
->  		fifo-depth = <0x80>;
->  		card-detect-delay = <200>;
-> +		vmmc-supply = <&buck8>;
-> 
->  		slot@0 {
->  			reg = <0>;
-> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> index bc3a1bc..ab5642d 100644
-> --- a/drivers/mmc/host/dw_mmc.c
-> +++ b/drivers/mmc/host/dw_mmc.c
-> @@ -1895,7 +1895,7 @@ static int dw_mci_init_slot(struct dw_mci *host,
-> unsigned int id) struct mmc_host *mmc;
->  	struct dw_mci_slot *slot;
->  	const struct dw_mci_drv_data *drv_data = host->drv_data;
-> -	int ctrl_id, ret;
-> +	int ctrl_id;
->  	u8 bus_width;
-> 
->  	mmc = mmc_alloc_host(sizeof(struct dw_mci_slot), host->dev);
-> @@ -1985,19 +1985,6 @@ static int dw_mci_init_slot(struct dw_mci *host,
-> unsigned int id) #endif /* CONFIG_MMC_DW_IDMAC */
->  	}
-> 
-> -	host->vmmc = devm_regulator_get(mmc_dev(mmc), "vmmc");
-> -	if (IS_ERR(host->vmmc)) {
-> -		pr_info("%s: no vmmc regulator found\n", 
-mmc_hostname(mmc));
-> -		host->vmmc = NULL;
-> -	} else {
-> -		ret = regulator_enable(host->vmmc);
-> -		if (ret) {
-> -			dev_err(host->dev,
-> -				"failed to enable regulator: %d\n", ret);
-> -			goto err_setup_bus;
-> -		}
-> -	}
-> -
->  	if (dw_mci_get_cd(mmc))
->  		set_bit(DW_MMC_CARD_PRESENT, &slot->flags);
->  	else
-> @@ -2023,10 +2010,6 @@ static int dw_mci_init_slot(struct dw_mci *host,
-> unsigned int id) queue_work(host->card_workqueue, &host->card_work);
-> 
->  	return 0;
-> -
-> -err_setup_bus:
-> -	mmc_free_host(mmc);
-> -	return -EINVAL;
->  }
-> 
->  static void dw_mci_cleanup_slot(struct dw_mci_slot *slot, unsigned int
-> id) @@ -2229,11 +2212,29 @@ int dw_mci_probe(struct dw_mci *host)
->  		}
->  	}
-> 
-> +	host->vmmc = devm_regulator_get(host->dev, "vmmc");
-> +	if (IS_ERR(host->vmmc)) {
-> +		ret = PTR_ERR(host->vmmc);
-> +		if (ret == -EPROBE_DEFER)
-> +			goto err_clk_ciu;
-> +
-> +		dev_info(host->dev, "no vmmc regulator found: %d\n", ret);
-> +		host->vmmc = NULL;
-> +	} else {
-> +		ret = regulator_enable(host->vmmc);
-> +		if (ret) {
-> +			if (ret != -EPROBE_DEFER)
-> +				dev_err(host->dev,
-> +					"regulator_enable fail: %d\n", 
-ret);
-> +			goto err_clk_ciu;
-> +		}
-> +	}
-> +
->  	if (!host->bus_hz) {
->  		dev_err(host->dev,
->  			"Platform data must supply bus speed\n");
->  		ret = -ENODEV;
-> -		goto err_clk_ciu;
-> +		goto err_regulator;
->  	}
-> 
->  	host->quirks = host->pdata->quirks;
-> @@ -2378,6 +2379,7 @@ err_dmaunmap:
->  	if (host->use_dma && host->dma_ops->exit)
->  		host->dma_ops->exit(host);
-> 
-> +err_regulator:
->  	if (host->vmmc)
->  		regulator_disable(host->vmmc);
+	Arnd
