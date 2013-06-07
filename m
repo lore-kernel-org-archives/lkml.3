@@ -1,137 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751575Ab3FGEuO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 00:50:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50089 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751023Ab3FGEuM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 00:50:12 -0400
-Message-ID: <1370580600.4021.72.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 010/184] usermodehelper: introduce umh_complete(sub_info)
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Willy Tarreau <w@1wt.eu>, dann frazier <dannf@debian.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 07 Jun 2013 05:50:00 +0100
-In-Reply-To: <20130604172130.718498876@1wt.eu>
-References: <20130604172130.718498876@1wt.eu>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-fscV4bUBeKn4rtX/cIqI"
-X-Mailer: Evolution 3.4.4-3 
+	id S1751531Ab3FGEwu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 00:52:50 -0400
+Received: from mga14.intel.com ([143.182.124.37]:31189 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004Ab3FGEwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 00:52:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,819,1363158000"; 
+   d="scan'208";a="346196288"
+Message-ID: <1370580895.4432.64.camel@ymzhang.sh.intel.com>
+Subject: Re: [PATCH] irq: add a new function irq_in_progress to check
+ pending IRQ handlers
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Reply-To: yanmin_zhang@linux.intel.com
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Liu ShuoX <shuox.liu@intel.com>,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        sedat.dilek@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
+        Zhang Yanmin <yanmin.zhang@intel.com>
+Date: Fri, 07 Jun 2013 12:54:55 +0800
+In-Reply-To: <20130607041922.GA3603@kroah.com>
+References: <1370504296-24389-1-git-send-email-shuox.liu@intel.com>
+	 <alpine.LFD.2.02.1306061505210.2905@ionos>
+	 <1370566409.4432.41.camel@ymzhang.sh.intel.com>
+	 <20130607010225.GA28256@kroah.com>
+	 <1370572672.4432.49.camel@ymzhang.sh.intel.com>
+	 <20130607030853.GA2827@kroah.com>
+	 <1370575086.4432.52.camel@ymzhang.sh.intel.com>
+	 <20130607041922.GA3603@kroah.com>
+Organization: Intel.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2013-06-06 at 21:19 -0700, Greg KH wrote:
+> On Fri, Jun 07, 2013 at 11:18:06AM +0800, Yanmin Zhang wrote:
+> > On Thu, 2013-06-06 at 20:08 -0700, Greg KH wrote:
+> > > On Fri, Jun 07, 2013 at 10:37:52AM +0800, Yanmin Zhang wrote:
+> > > > On Thu, 2013-06-06 at 18:02 -0700, Greg KH wrote:
+> > > > > On Fri, Jun 07, 2013 at 08:53:29AM +0800, Yanmin Zhang wrote:
+> > > > > > On Thu, 2013-06-06 at 15:18 +0200, Thomas Gleixner wrote:
+> > > > > > > On Thu, 6 Jun 2013, shuox.liu@intel.com wrote:
+> > > > > > > > From: Zhang Yanmin <yanmin.zhang@intel.com>
+> > > > > > > > 
+> > > > > > > > synchronize_irq waits pending IRQ handlers to be finished. If using this
+> > > > > > > > function while holding a resource, the IRQ handler may cause deadlock.
+> > > > > > > > 
+> > > > > > > > Here we add a new function irq_in_progress which doesn't wait for the handlers
+> > > > > > > > to be finished.
+> > > > > > > > 
+> > > > > > > > A typical use case at suspend-to-ram:
+> > > > > > > > 
+> > > > > > > > device driver's irq handler is complicated and might hold a mutex at rare cases.
+> > > > > > > > Its suspend function is called and a suspended flag is set.
+> > > > > > > > In case its IRQ handler is running, suspend function calls irq_in_progress. if
+> > > > > > > > handler is running, abort suspend.
+> > > > > > > > The irq handler checks the suspended flag. If the device is suspended, irq handler
+> > > > > > > > either ignores the interrupt, or wakes up the whole system, and the driver's
+> > > > > > > > resume function could deal with the delayed interrupt handling.
+> > > > > > > 
+> > > > > > > This is as wrong as it can be. Fix the driver instead of hacking racy
+> > > > > > > functions into the core code.
+> > > > > > > 
+> > > > > > > So your problem looks like this:
+> > > > > > > 
+> > > > > > > CPU 0				CPU 1
+> > > > > > > irq_handler_thread()		suspend()
+> > > > > > >    .....			mutex_lock(&m);
+> > > > > > >    mutex_lock(&m);		synchronize_irq();
+> > > > > > > 
+> > > > > > > So why needs the mutex to be taken before synchronize_irq()? Why not
+> > > > > > > doing the obvious?
+> > > > > > > 
+> > > > > > > suspend()
+> > > > > > >   disable_irq(); (Implies synchronize_irq)
+> > > > > > >   mutex_lock(&m);
+> > > > > > >   ....
+> > > > > > >   mutex_unlock(&m);
+> > > > > > >   enable_irq();
+> > > > > > Thanks for the kind comment.
+> > > > > > 
+> > > > > > We do consider your solution before and it works well indeed with some specific
+> > > > > > simple drivers. For example, some drives use GPIO pin as interrupt source.
+> > > > > > 
+> > > > > > On one specific platform, disable_irq would really disable the irq at RTE entry,
+> > > > > > which means we lose the wakeup capability of this device.
+> > > > > > synchronize_irq can be another solution. But we did hit 'DPM device timeout' issue
+> > > > > > reported by dpm_wd_handler at suspend-to-ram.
+> > > > > > 
+> > > > > > The driver is complicated. We couldn't change too many functions to optimize it.
+> > > > > > In addition, we have to use the driver instead of throwing it away.
+> > > > > 
+> > > > > What is preventing you from rewriting it to work properly?
+> > > > It's complicated.
+> > > 
+> > > That sounds like your issue, not ours, so please don't push the problem
+> > > onto someone else.  Take ownership of the driver, fix it up, and all
+> > > will be good.
+> > > 
+> > > 
+> > > > > > With irq_in_progress, we can resolve this issue and it does work, although it
+> > > > > > looks like ugly.
+> > > > > 
+> > > > > Don't paper over driver bugs in the core kernel, fix the driver.
+> > > > It's hard to say it's a driver bug. Could generic kernel provide some
+> > > > flexibility for such complicated drivers?
+> > > 
+> > > Please post the code for the driver, and then we will be glad to
+> > > continue the dicussion.
+> > Greg,
+> > 
+> > Thanks for your enthusiasm. It's a private driver for products.
+> 
+> What do you mean "private driver"?  All drivers need to be merged into
+> the mainline kernel, it saves you time and money, and we will fix your
+> bugs for you.
+> 
+> You know that, your bosses know that, your management knows that, so why
+> are you trying to hide things?
+> 
+> totally confused,
+They are embedded device drivers, highly depending on specific devices which runs
+its own firmware in devices. Here the kernel drivers run at AP side.
 
---=-fscV4bUBeKn4rtX/cIqI
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+One example is Graphics driver, which is very big and coding is not friendly. Kernel
+experts can raise tons of questions against the driver, but we have to make the driver
+work well on real products.
 
-On Tue, 2013-06-04 at 19:21 +0200, Willy Tarreau wrote:
-> 2.6.32-longterm review patch.  If anyone has any objections, please let m=
-e know.
->=20
-> ------------------
->=20
-> From: Oleg Nesterov <oleg@redhat.com>
->=20
-> commit b3449922502f5a161ee2b5022a33aec8472fbf18 upstream
->=20
-> Preparation.  Add the new trivial helper, umh_complete().  Currently it
-> simply does complete(sub_info->complete).
->=20
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: David Rientjes <rientjes@google.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> [dannf: Adjusted to apply to Debian's 2.6.32]
+Another reason is drivers need workaround many hardware issues. That makes it
+hard to implement kernel drivers in good shape sometimes.
 
-Dann's backports are mostly missing his Signed-off-by.  (We don't
-usually bother with this in the Debian patch queue, but probably ought
-to do so when backporting.)
+We need support all cases.
 
-Ben.
+We fixed lots of hard issues on embedded products and think if kernel could be more
+flexible to support complicated cases.
 
-> Signed-off-by: Willy Tarreau <w@1wt.eu>
-> ---
->  kernel/kmod.c | 9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
->=20
-> diff --git a/kernel/kmod.c b/kernel/kmod.c
-> index a061472..2a27d17 100644
-> --- a/kernel/kmod.c
-> +++ b/kernel/kmod.c
-> @@ -206,6 +206,11 @@ void call_usermodehelper_freeinfo(struct subprocess_=
-info *info)
->  }
->  EXPORT_SYMBOL(call_usermodehelper_freeinfo);
-> =20
-> +static void umh_complete(struct subprocess_info *sub_info)
-> +{
-> +	complete(sub_info->complete);
-> +}
-> +
->  /* Keventd can't block, but this (a child) can. */
->  static int wait_for_helper(void *data)
->  {
-> @@ -245,7 +250,7 @@ static int wait_for_helper(void *data)
->  	if (sub_info->wait =3D=3D UMH_NO_WAIT)
->  		call_usermodehelper_freeinfo(sub_info);
->  	else
-> -		complete(sub_info->complete);
-> +		umh_complete(sub_info);
->  	return 0;
->  }
-> =20
-> @@ -280,7 +285,7 @@ static void __call_usermodehelper(struct work_struct =
-*work)
->  		/* FALLTHROUGH */
-> =20
->  	case UMH_WAIT_EXEC:
-> -		complete(sub_info->complete);
-> +		umh_complete(sub_info);
->  	}
->  }
-> =20
+Anyway, thanks.
 
---=20
-Ben Hutchings
-Theory and practice are closer in theory than in practice.
-                                - John Levine, moderator of comp.compilers
+Yanmin
 
---=-fscV4bUBeKn4rtX/cIqI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUbFmeOe/yOyVhhEJAQqK8A/+KrcqvmRLvgRXcrTa2FPwchyfNabCQ9Sp
-CsZZfny6FkgwqIvsho9twsHYhsEt7RuNLsJn4ioCAdpZOP97u8vuJX+QpD3o+8Hz
-tUHMQeX118r3B/jaWS03XMa/Db9qftXUvzHeJPq8ZnKvaFuSOY85sbMlpLr4tZRK
-GiNQ5aZMLzKJZEv5JbloVBl0ruI/2BHMfwXLeBgS9SzZfM5zABxYYkzkDdRllYJL
-QNiAbt1F05z+84qEQ6F/nwUTapKyvFX7bkPPCe0719+qIlEViIBFBejpveHmUvyR
-tAHzgLr6lOVZ3vSJvij46pr48uTWxYpU9VLAYu67G6XyxdZ/dCkYwXg0VZ3IixO6
-ox8zbMV9DRlZFdkAoZAnmIBvaOr9whVxQ+xoyHj072oogBbkk+70Qi4J1WWiDS1j
-l3+rtG3ZP8bEWtVpMKYxT5kN8L2K5zDrf7nsFs4EFWrT4Ij3E/n2J43yb7lQGXh5
-DEqLd0rnUAmL3yuBolZSMzLvMTj/pZUIpSTqYMmKr8dXpn1zrYvaxic1yw26vkRn
-ao0rD8r/aer9Ffm69oeHMOtxfcNOD3BHdO5+CUuT1ILDc/lrevD7kXnm0Rr7pEtP
-kMwDNJ+s0j/326uUqVsUEuVVFtzxJX+sxt1J3cp8tilDhb35b4NeVF2NMpkJSeM7
-JXk0536Yr5g=
-=7vJS
------END PGP SIGNATURE-----
-
---=-fscV4bUBeKn4rtX/cIqI--
