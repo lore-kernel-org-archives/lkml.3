@@ -1,107 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752067Ab3FGICr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 04:02:47 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:34617 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878Ab3FGICo (ORCPT
+	id S1751498Ab3FGIEe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 04:04:34 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:48641 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab3FGIE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 04:02:44 -0400
+	Fri, 7 Jun 2013 04:04:27 -0400
+Date: Fri, 7 Jun 2013 09:02:39 +0100
+From: Jamie Iles <jamie.iles@oracle.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Willy Tarreau <w@1wt.eu>, Jamie Iles <jamie.iles@oracle.com>,
+        Dmitry Monakhov <dmonakhov@openvz.org>,
+        Lukas Czerner <lczerner@redhat.com>, dann frazier <dannf@debian.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [ 130/184] CVE-2012-4508 kernel: ext4: AIO vs fallocate stale
+Message-ID: <20130607080239.GA10738@localhost>
+References: <20130604172135.695967415@1wt.eu>
+ <1370583725.4021.85.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20130606131042.GN18614@n2100.arm.linux.org.uk>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
-	<1370475609.20454.44.camel@localhost>
-	<CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
-	<1733666.lHUBcfUXq9@flatron>
-	<CAPweEDzYLDzh_-OWU61dtVhajZ40QpQgZKHFYDsh3FgF=r9_ag@mail.gmail.com>
-	<20130606131042.GN18614@n2100.arm.linux.org.uk>
-Date: Fri, 7 Jun 2013 09:02:43 +0100
-Message-ID: <CAPweEDyYt+pN+UaFuqWL5RrHpyuq_4So-tArmx3dr=0wLS+hwQ@mail.gmail.com>
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
- Uploading linux (3.9.4-1))
-From: "luke.leighton" <luke.leighton@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        linux-arm-kernel@lists.infradead.org, debian-kernel@lists.debian.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370583725.4021.85.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 6, 2013 at 2:10 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
+Hi Ben, Willy,
 
-> If companies are going to go off and invent the square wheel, and that
-> makes *them* suffer the loss of being able to merge back into the
-> mainline kernel, thereby making *their* job of moving forward with
-> their kernel versions much harder, then yes, we *are* happy.
+On Fri, Jun 07, 2013 at 06:42:05AM +0100, Ben Hutchings wrote:
+> On Tue, 2013-06-04 at 19:23 +0200, Willy Tarreau wrote:
+> > 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> >  data exposure
+> > 
+> > From: Jamie Iles <jamie.iles@oracle.com>
+> > 
+> > CVE-2012-4508 kernel: ext4: AIO vs fallocate stale data exposure
+> > [dannf: backported to Debian's 2.6.32]
+> 
+> Well, this has an interesting ancestry.  The original upstream commits
+> were c278531d39f3158bfee93dc67da0b77e09776de2,
+> 60d4616f3dc63371b3dc367e5e88fd4b4f037f65 and (most importantly)
+> dee1f973ca341c266229faa5a1a5bb268bed3531 by Dmitry Monakhov
+> <dmonakhov@openvz.org>.  They were backported into the RHEL 6 kernel by
+> Lukas Czerner, according to its changelog.  Dann got this version from
+> Oracle's redpatch repository, where, if I understand rightly, Jamie Iles
+> attempted to regenerate Lukas's patch(es).
 
- russell: they have more employees than sense :)  they also don't have
-any idea of what they *should* be doing, so this is an opportunity to
-educate them.
+That sounds correct to me - the patch is the result of splitting the 
+large ext4 patch that RHEL did from 6.3 -> 6.4.  The Virtuozzo/OpenVZ 
+folks came up with the same patch (independently I think) too.
 
- they're not feeling any pain: they just employ more chinese
-developers and substitute bodies for time and common-sense.
+> Would any of the above named be prepared to put their Signed-off-by to
+> this?
 
- also, in this particular case, thanks to their script.fex system when
-i said they only need to develop one kernel and one u-boot i really
-wasn't kidding around: they really have got to the point which
-everyone else dreams of with device-tree [admittedly by limiting the
-product range that their clients can play with, but that product range
-has huge returns, so they're still happy].
+Sure, I'd be happy to add my s-o-b.
 
-> Companies will always do idiotic things; it's *them* and their users
-> who have to live with the results of that bad decision making process.
+Signed-off-by: Jamie Iles <jamie@jamieiles.com>
 
- russell: the decision process they've made is actually an extremely
-effective one.
+Thanks,
 
-> Eventually, the pain of being outside the mainline kernel will become
-> too great, especially if their users demand things like kernel upgrades
-> from them.  Eventually, they will change.
->
-> And no, this isn't an intransigent position.  This is reality given
-> that ARM already has way too much code in the Linux kernel and we're
-> trying to reduce that through the use of technologies like DT.  The
-> last thing we need right now is for another "DT" like implementation
-> to come along which is only used on a minority of platforms - even if
-> the platform it is used on is successful.
->
-> The way this works is this:
-> - you either go with the policies which are set, or
-
- .... which they weren't consulted on, it has to be pointed out.
-
-> - you change the policy as a whole because you have a technically
->   superior solution
-
- i believe they have a technically more *successful* solution. whether
-it's more appropriate in a wider context is another matter.
-
- here we have a key to the crux of the problem: the linux kernel
-maintainers have to cater for _everyone_.  with no funding or
-incentive from the major contributors to work with them.  hmmm....
-
-> What that means in this case is either you adopt DT, or you convince
-> everyone that DT isn't the solution, but your solution is, and we adopt
-> your solution for *everything* instead.
->
-> If neither of those are possible, then that's really not our problem,
-> and it's not _us_ who are being "intransigent".
-
- indeed.
-
- ok.  so.  we come back to the question again: what shall i propose to
-them that they consider doing, and what benefit would it be to them to
-do so?
-
- i cannot go to them and say "you have to do this [insert proposal
-here]" - it has to be more subtle than that.
-
- l.
+Jamie
