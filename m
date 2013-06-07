@@ -1,127 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756810Ab3FGUmT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 16:42:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17017 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756030Ab3FGUmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 16:42:18 -0400
-Date: Thu, 6 Jun 2013 18:43:13 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        David Sharp <dhsharp@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH V2 1/1] kvm/vmx: Add a tracepoint write_tsc_offset
-Message-ID: <20130606214313.GA9144@amt.cnet>
-References: <20130604083616.22713.24922.stgit@yunodevel>
- <20130604083619.22713.25360.stgit@yunodevel>
- <20130606002322.GA24351@amt.cnet>
- <20130606113305.GB4725@redhat.com>
+	id S1756923Ab3FGUnD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 16:43:03 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48523 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756030Ab3FGUnB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 16:43:01 -0400
+Date: Fri, 7 Jun 2013 22:42:53 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Kefeng Wang <wangkefeng.wang@huawei.com>
+cc: Grant Likely <grant.likely@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, guohanjun@huawei.com
+Subject: Re: [PATCH 0/7] irq: fix checkpatch errors and warnings 
+In-Reply-To: <1370517631-8684-1-git-send-email-wangkefeng.wang@huawei.com>
+Message-ID: <alpine.LFD.2.02.1306072208420.24812@ionos>
+References: <1370517631-8684-1-git-send-email-wangkefeng.wang@huawei.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130606113305.GB4725@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 02:33:06PM +0300, Gleb Natapov wrote:
-> On Wed, Jun 05, 2013 at 09:23:22PM -0300, Marcelo Tosatti wrote:
-> > On Tue, Jun 04, 2013 at 05:36:19PM +0900, Yoshihiro YUNOMAE wrote:
-> > > Add a tracepoint write_tsc_offset for tracing TSC offset change.
-> > > We want to merge ftrace's trace data of guest OSs and the host OS using
-> > > TSC for timestamp in chronological order. We need "TSC offset" values for
-> > > each guest when merge those because the TSC value on a guest is always the
-> > > host TSC plus guest's TSC offset. If we get the TSC offset values, we can
-> > > calculate the host TSC value for each guest events from the TSC offset and
-> > > the event TSC value. The host TSC values of the guest events are used when we
-> > > want to merge trace data of guests and the host in chronological order.
-> > > (Note: the trace_clock of both the host and the guest must be set x86-tsc in
-> > > this case)
-> > > 
-> > > TSC offset is stored in the VMCS by vmx_write_tsc_offset() or
-> > > vmx_adjust_tsc_offset(). KVM executes the former function when a guest boots.
-> > > The latter function is executed when kvm clock is updated. Only host can read
-> > > TSC offset value from VMCS, so a host needs to output TSC offset value
-> > > when TSC offset is changed.
-> > > 
-> > > Since the TSC offset is not often changed, it could be overwritten by other
-> > > frequent events while tracing. To avoid that, I recommend to use a special
-> > > instance for getting this event:
-> > > 
-> > > 1. set a instance before booting a guest
-> > >  # cd /sys/kernel/debug/tracing/instances
-> > >  # mkdir tsc_offset
-> > >  # cd tsc_offset
-> > >  # echo x86-tsc > trace_clock
-> > >  # echo 1 > events/kvm/kvm_write_tsc_offset/enable
-> > > 
-> > > 2. boot a guest
-> > > 
-> > > Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-> > > Cc: Marcelo Tosatti <mtosatti@redhat.com>
-> > > Cc: Gleb Natapov <gleb@redhat.com>
-> > > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > > Cc: Ingo Molnar <mingo@redhat.com>
-> > > Cc: "H. Peter Anvin" <hpa@zytor.com>
-> > > ---
-> > >  arch/x86/kvm/trace.h |   18 ++++++++++++++++++
-> > >  arch/x86/kvm/vmx.c   |    3 +++
-> > >  arch/x86/kvm/x86.c   |    1 +
-> > >  3 files changed, 22 insertions(+)
-> > > 
-> > > diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
-> > > index fe5e00e..9c22e39 100644
-> > > --- a/arch/x86/kvm/trace.h
-> > > +++ b/arch/x86/kvm/trace.h
-> > > @@ -815,6 +815,24 @@ TRACE_EVENT(kvm_track_tsc,
-> > >  		  __print_symbolic(__entry->host_clock, host_clocks))
-> > >  );
-> > >  
-> > > +TRACE_EVENT(kvm_write_tsc_offset,
-> > > +	TP_PROTO(__u64 previous_tsc_offset, __u64 next_tsc_offset),
-> > > +	TP_ARGS(previous_tsc_offset, next_tsc_offset),
-> > > +
-> > > +	TP_STRUCT__entry(
-> > > +		__field(	__u64,	previous_tsc_offset		)
-> > > +		__field(	__u64,	next_tsc_offset			)
-> > > +	),
-> > > +
-> > > +	TP_fast_assign(
-> > > +		__entry->previous_tsc_offset	= previous_tsc_offset;
-> > > +		__entry->next_tsc_offset	= next_tsc_offset;
-> > > +	),
-> > > +
-> > > +	TP_printk("previous=%llu next=%llu",
-> > > +		  __entry->previous_tsc_offset, __entry->next_tsc_offset)
-> > > +);
-> > > +
-> > 
-> > Yoshihiro YUNOMAE,
-> > 
-> > 1) Why is previous_tsc_offset necessary?
-> > 
-> > 2) The TSC offset traces should include vcpu number, so that its
-> > possible to correlate traces of SMP guests (the tool should use
-> > the individual vcpu tsc offsets when converting guests trace).
-> > 
-> Why PID is not enough? No other trace, except kvm_entry, outputs vcpu id.
+On Thu, 6 Jun 2013, Kefeng Wang wrote:
 
-Guest trace contains CPU ID. 
+> Fix all the checkpath errors in kernel/irq dir, and some warnings
+> also fixed.
 
-If PID is exported it is necessary to perform an additional PID->VCPU
-translation, which might not be available by the time the trace is
-correlated by the tool (because guest is down).
+Sorry, I'm not really interested in this kind of patches. To be
+honest, it would be way more exciting if you had taught checkpatch to
+actually fix the missing space after the comma.
 
-So, PID is equivalent to VCPU as long as translation can be performed.
+Aside of that your mechanical fixups are mostly making the code worse
+to read. Just a few examples:
 
-What is the preference?
+--- linux-2.6.orig/kernel/irq/chip.c
++++ linux-2.6/kernel/irq/chip.c
+@@ -56,7 +56,8 @@ EXPORT_SYMBOL(irq_set_chip);
+ int irq_set_irq_type(unsigned int irq, unsigned int type)
+ {
+ 	unsigned long flags;
+-	struct irq_desc *desc = irq_get_desc_buslock(irq, &flags, IRQ_GET_DESC_CHECK_GLOBAL);
++	struct irq_desc *desc = irq_get_desc_buslock(irq, &flags,
++					IRQ_GET_DESC_CHECK_GLOBAL);
 
+This is horrible to parse. If we enforce the 80 character limit here
+at all, which I doubt it has a value for this particular case, then
+please adhere to the coding style used in this file and make it 
 
+	struct irq_desc *desc = irq_get_desc_buslock(irq, &flags,
+						     IRQ_GET_DESC_CHECK_GLOBAL);
 
+Aligning the first arguments of the first and the second line makes it
+way simpler to read.
+
+Aside of that, there is no real value to make changes like this:
+
+--- linux-2.6.orig/kernel/irq/irqdomain.c
++++ linux-2.6/kernel/irq/irqdomain.c
+@@ -419,7 +419,7 @@ static void irq_domain_disassociate_many
+ 		irq_data->hwirq = 0;
+ 
+ 		/* Clear reverse map */
+-		switch(domain->revmap_type) {
++		switch (domain->revmap_type) {
+
+And this:
+
+--- linux-2.6.orig/kernel/irq/proc.c
++++ linux-2.6/kernel/irq/proc.c
+@@ -276,7 +276,7 @@ static int name_unique(unsigned int irq,
+ 	int ret = 1;
+ 
+ 	raw_spin_lock_irqsave(&desc->lock, flags);
+-	for (action = desc->action ; action; action = action->next) {
++	for (action = desc->action; action; action = action->next) {
+
+Now there is another category:
+
+@@ -47,7 +47,7 @@ static void warn_no_thread(unsigned int 
+ 	if (test_and_set_bit(IRQTF_WARNED, &action->thread_flags))
+ 		return;
+ 
+-	printk(KERN_WARNING "IRQ %d device %s returned IRQ_WAKE_THREAD "
++	pr_warn("IRQ %d device %s returned IRQ_WAKE_THREAD "
+ 	       "but no thread function available.", irq, action->name);
+
+The checkpatch warning is to prevent new code to use the old style
+printk format, but it's not intended to force that on existing code.
+
+We can write a coccinelle script to fix such issues in one go all over
+the kernel source tree. Though I doubt that it has much value.
+
+It does not make the source better. It does not fix any bugs. It's
+just pointless entries in the changelogs
+
+Please sit down and read and understand the code and try to find real
+issues which cannot be detected and solved by scripts and
+tools. That's what's kernel hacking is about. You are not becoming a
+kernel developer by running tools and blindly fixing the complaints of
+the tools. You have to understand the code and you have to learn to
+judge the output of tools.
+
+Thanks,
+
+	tglx
