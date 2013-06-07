@@ -1,363 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756784Ab3FGSJd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 14:09:33 -0400
-Received: from 10.mo1.mail-out.ovh.net ([178.32.96.102]:60750 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755977Ab3FGSJ3 (ORCPT
+	id S1756665Ab3FGSKS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 14:10:18 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:25031 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756214Ab3FGSKQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 14:09:29 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [RFC PATCH 37/50] ARM: at91/dt: move at91sam9260 SoC to new at91 clk implem
-Date: Fri,  7 Jun 2013 20:09:25 +0200
-Message-Id: <1370628565-2797-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370615115-16979-1-git-send-email-b.brezillon@overkiz.com>
-References: <1370615115-16979-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 2479794546332301340
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 7 Jun 2013 14:10:16 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+uid34UTcu32BOEd4Qm3c0PQod3WCsxVY=
+Date: Fri, 7 Jun 2013 14:09:41 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, Andrew Lunn <andrew@lunn.ch>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: dts: mvebu: Add the i2c-bridge capability to
+ the mv64xxx-i2c
+Message-ID: <20130607180941.GW23859@titan.lakedaemon.net>
+References: <1370619743-15245-1-git-send-email-gregory.clement@free-electrons.com>
+ <1370619743-15245-3-git-send-email-gregory.clement@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370619743-15245-3-git-send-email-gregory.clement@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define at91sam9260 clocks in at91sam9260 device tree.
-Add references to the appropriate clocks in each peripheral.
+On Fri, Jun 07, 2013 at 05:42:23PM +0200, Gregory CLEMENT wrote:
+> The mv64xxx-i2c embedded in the Armada XP have a new feature called
+> i2c-bridge. This commit split the i2c information into armada-370.dtsi
+> and armada-xp.dtsi. Most of the data remains the same and stay in the
+> common file Armada-370-xp.dtsi. With this new feature the size of the
+> registers are bigger for Armada XP and for this SoCs we add a new flag
+> for the i2c-bridge capability.
+> 
+> The Device Tree binding documentation is updated accordingly.
+> 
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> ---
+>  Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt |  6 ++++++
+>  arch/arm/boot/dts/armada-370-xp.dtsi                  |  2 --
+>  arch/arm/boot/dts/armada-370.dtsi                     |  8 ++++++++
+>  arch/arm/boot/dts/armada-xp.dtsi                      | 10 ++++++++++
+>  4 files changed, 24 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt b/Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt
+> index f46d928..8ede3e7 100644
+> --- a/Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt
+> +++ b/Documentation/devicetree/bindings/i2c/i2c-mv64xxx.txt
+> @@ -8,6 +8,12 @@ Required properties :
+>   - interrupts      : The interrupt number
+>   - clock-frequency : Desired I2C bus clock frequency in Hz.
+>  
+> +Optional  properties :
+> +
+> +- i2c,i2c-bridge : This flag indicate that the i2c controller have the
+> +  Transaction Generator support and we want to use it. Not all the
+> +  mv64xxx controller have this feature.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- arch/arm/boot/dts/at91sam9260.dtsi |  144 +++++++++++++++++++++++++++++++++++-
- 1 file changed, 143 insertions(+), 1 deletion(-)
+Do you have a list of which controllers definitely do, or definitely
+don't?  That would be helpful for folks adding new boards.
 
-diff --git a/arch/arm/boot/dts/at91sam9260.dtsi b/arch/arm/boot/dts/at91sam9260.dtsi
-index 899a7cf..eac42f9 100644
---- a/arch/arm/boot/dts/at91sam9260.dtsi
-+++ b/arch/arm/boot/dts/at91sam9260.dtsi
-@@ -72,6 +72,109 @@
- 			pmc: pmc@fffffc00 {
- 				compatible = "atmel,at91rm9200-pmc";
- 				reg = <0xfffffc00 0x100>;
-+
-+				clk32k: slck {
-+					compatible = "fixed-clock";
-+					#clock-cells = <0>;
-+					clock-frequency = <32768>;
-+				};
-+
-+				main: mainck {
-+					compatible = "atmel,at91rm9200-clk-main", "fixed-clock";
-+					#clock-cells = <0>;
-+					clocks = <&clk32k>;
-+				};
-+
-+				plla: pllack {
-+					compatible = "atmel,at91rm9200-clk-pll";
-+					#clock-cells = <0>;
-+					clocks = <&main>;
-+					id = <0>;
-+					input = <1000000 32000000>;
-+					output = <80000000 160000000
-+						  150000000 240000000>;
-+					out = <0 2>;
-+				};
-+
-+				pllb: pllbck {
-+					compatible = "atmel,at91rm9200-clk-pll";
-+					#clock-cells = <0>;
-+					clocks = <&main>;
-+					id = <1>;
-+					input = <1000000 5000000>;
-+					output = <70000000 130000000>;
-+					out = <1>;
-+				};
-+
-+				mck: masterck {
-+					compatible = "atmel,at91rm9200-clk-master";
-+					#clock-cells = <0>;
-+					clocks = <&clk32k>, <&main>, <&plla>, <&pllb>;
-+					output = <0 105000000>;
-+					divisors = <1 2 4 0>;
-+				};
-+
-+				usb: usbck {
-+					compatible = "atmel,at91rm9200-clk-usb";
-+					#clock-cells = <0>;
-+					clocks = <&pllb>;
-+					divisors = <1 2 4 0>;
-+				};
-+
-+				prog: progck {
-+					compatible = "atmel,at91rm9200-clk-programmable";
-+					#clock-cells = <1>;
-+					ids = <0 1>;
-+					clocks = <&clk32k>, <&main>, <&plla>, <&pllb>;
-+					clock-output-names = "prog0", "prog1";
-+				};
-+
-+				system: systemck {
-+					compatible = "atmel,at91rm9200-clk-system";
-+					#clock-cells = <1>;
-+					ids = <6 7 8 9>;
-+					clocks = <&usb>, <&usb>, <&prog 0>, <&prog 1>;
-+					clock-output-names = "udpck", "uhpck", "pck0", "pck1";
-+				};
-+
-+				periph: periphck {
-+					compatible = "atmel,at91rm9200-clk-peripheral";
-+					#clock-cells = <1>;
-+					clocks = <&mck>;
-+					ids = <2 3 4 5 6 7 8 9 10 11 12 13 14 17
-+					       18 19 20 21 22 23 24 25 26 27 28>;
-+					clock-output-names = "pioA_clk",
-+							     "pioB_clk",
-+							     "pioC_clk",
-+							     "adc_clk",
-+							     "usart0_clk",
-+							     "usart1_clk",
-+							     "usart2_clk",
-+							     "mci_clk",
-+							     "udc_clk",
-+							     "twi_clk",
-+							     "spi0_clk",
-+							     "spi1_clk",
-+							     "ssc_clk",
-+							     "tc0_clk",
-+							     "tc1_clk",
-+							     "tc2_clk",
-+							     "ohci_clk",
-+							     "pclk",
-+							     "isi_clk",
-+							     "usart3_clk",
-+							     "usart4_clk",
-+							     "usart5_clk",
-+							     "tc3_clk",
-+							     "tc4_clk",
-+							     "tc5_clk";
-+
-+					adc_op_clk: adc_op_clk{
-+						compatible = "fixed-clock";
-+						#clock-cells = <0>;
-+						clock-frequency = <5000000>;
-+					};
-+				};
- 			};
- 
- 			rstc@fffffd00 {
-@@ -88,6 +191,7 @@
- 				compatible = "atmel,at91sam9260-pit";
- 				reg = <0xfffffd30 0xf>;
- 				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+				clocks = <&mck>;
- 			};
- 
- 			tcb0: timer@fffa0000 {
-@@ -96,6 +200,8 @@
- 				interrupts = <17 IRQ_TYPE_LEVEL_HIGH 0
- 					      18 IRQ_TYPE_LEVEL_HIGH 0
- 					      19 IRQ_TYPE_LEVEL_HIGH 0>;
-+				clocks = <&periph 17>, <&periph 18>, <&periph 19>;
-+				clock-names = "t0_clk", "t1_clk", "t2_clk";
- 			};
- 
- 			tcb1: timer@fffdc000 {
-@@ -104,6 +210,8 @@
- 				interrupts = <26 IRQ_TYPE_LEVEL_HIGH 0
- 					      27 IRQ_TYPE_LEVEL_HIGH 0
- 					      28 IRQ_TYPE_LEVEL_HIGH 0>;
-+				clocks = <&periph 26>, <&periph 27>, <&periph 28>;
-+				clock-names = "t0_clk", "t1_clk", "t2_clk";
- 			};
- 
- 			pinctrl@fffff400 {
-@@ -271,7 +379,7 @@
- 						atmel,pins =
- 							<AT91_PIOA 10 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PA10 periph B */
- 							 AT91_PIOA 11 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PA11 periph B */
--							 AT91_PIOA 24 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PA24 periph B */
-+							 AT91_PIOA 22 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PA22 periph B */
- 							 AT91_PIOA 25 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PA25 periph B */
- 							 AT91_PIOA 26 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PA26 periph B */
- 							 AT91_PIOA 27 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PA27 periph B */
-@@ -439,6 +547,7 @@
- 					gpio-controller;
- 					interrupt-controller;
- 					#interrupt-cells = <2>;
-+					clocks = <&periph 2>;
- 				};
- 
- 				pioB: gpio@fffff600 {
-@@ -449,6 +558,7 @@
- 					gpio-controller;
- 					interrupt-controller;
- 					#interrupt-cells = <2>;
-+					clocks = <&periph 3>;
- 				};
- 
- 				pioC: gpio@fffff800 {
-@@ -459,6 +569,7 @@
- 					gpio-controller;
- 					interrupt-controller;
- 					#interrupt-cells = <2>;
-+					clocks = <&periph 4>;
- 				};
- 			};
- 
-@@ -468,6 +579,8 @@
- 				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_dbgu>;
-+				clocks = <&mck>;
-+				clock-names = "usart";
- 				status = "disabled";
- 			};
- 
-@@ -479,6 +592,8 @@
- 				atmel,use-dma-tx;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_usart0>;
-+				clocks = <&periph 6>;
-+				clock-names = "usart";
- 				status = "disabled";
- 			};
- 
-@@ -490,6 +605,8 @@
- 				atmel,use-dma-tx;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_usart1>;
-+				clocks = <&periph 7>;
-+				clock-names = "usart";
- 				status = "disabled";
- 			};
- 
-@@ -501,6 +618,8 @@
- 				atmel,use-dma-tx;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_usart2>;
-+				clocks = <&periph 8>;
-+				clock-names = "usart";
- 				status = "disabled";
- 			};
- 
-@@ -512,6 +631,8 @@
- 				atmel,use-dma-tx;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_usart3>;
-+				clocks = <&periph 23>;
-+				clock-names = "usart";
- 				status = "disabled";
- 			};
- 
-@@ -523,6 +644,8 @@
- 				atmel,use-dma-tx;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_uart0>;
-+				clocks = <&periph 24>;
-+				clock-names = "usart";
- 				status = "disabled";
- 			};
- 
-@@ -534,6 +657,8 @@
- 				atmel,use-dma-tx;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_uart1>;
-+				clocks = <&periph 25>;
-+				clock-names = "usart";
- 				status = "disabled";
- 			};
- 
-@@ -543,6 +668,8 @@
- 				interrupts = <21 IRQ_TYPE_LEVEL_HIGH 3>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_macb_rmii>;
-+				clocks = <&periph 21>, <&periph 21>;
-+				clock-names = "hclk", "pclk";
- 				status = "disabled";
- 			};
- 
-@@ -550,6 +677,8 @@
- 				compatible = "atmel,at91rm9200-udc";
- 				reg = <0xfffa4000 0x4000>;
- 				interrupts = <10 IRQ_TYPE_LEVEL_HIGH 2>;
-+				clocks = <&periph 10>, <&system 6>;
-+				clock-names = "udc_clk", "udpck";
- 				status = "disabled";
- 			};
- 
-@@ -559,6 +688,7 @@
- 				interrupts = <11 IRQ_TYPE_LEVEL_HIGH 6>;
- 				#address-cells = <1>;
- 				#size-cells = <0>;
-+				clocks = <&periph 11>;
- 				status = "disabled";
- 			};
- 
-@@ -568,6 +698,8 @@
- 				interrupts = <9 IRQ_TYPE_LEVEL_HIGH 0>;
- 				#address-cells = <1>;
- 				#size-cells = <0>;
-+				clocks = <&periph 9>;
-+				clock-names = "mci_clk";
- 				status = "disabled";
- 			};
- 
-@@ -577,6 +709,8 @@
- 				interrupts = <14 IRQ_TYPE_LEVEL_HIGH 5>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_ssc0_tx &pinctrl_ssc0_rx>;
-+				clocks = <&periph 14>;
-+				clock-names = "pclk";
- 				status = "disabled";
- 			};
- 
-@@ -588,6 +722,8 @@
- 				interrupts = <12 IRQ_TYPE_LEVEL_HIGH 3>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_spi0>;
-+				clocks = <&periph 12>;
-+				clock-names = "spi_clk";
- 				status = "disabled";
- 			};
- 
-@@ -599,6 +735,8 @@
- 				interrupts = <13 IRQ_TYPE_LEVEL_HIGH 3>;
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&pinctrl_spi1>;
-+				clocks = <&periph 13>;
-+				clock-names = "spi_clk";
- 				status = "disabled";
- 			};
- 
-@@ -606,6 +744,8 @@
- 				compatible = "atmel,at91sam9260-adc";
- 				reg = <0xfffe0000 0x100>;
- 				interrupts = <5 IRQ_TYPE_LEVEL_HIGH 0>;
-+				clocks = <&periph 5>, <&adc_op_clk>;
-+				clock-names = "adc_clk", "adc_op_clk";
- 				atmel,adc-use-external-triggers;
- 				atmel,adc-channels-used = <0xf>;
- 				atmel,adc-vref = <3300>;
-@@ -669,6 +809,8 @@
- 			compatible = "atmel,at91rm9200-ohci", "usb-ohci";
- 			reg = <0x00500000 0x100000>;
- 			interrupts = <20 IRQ_TYPE_LEVEL_HIGH 2>;
-+			clocks = <&periph 20>, <&periph 20>, <&system 7>;
-+			clock-names = "ohci_clk", "hclk", "uhpck";
- 			status = "disabled";
- 		};
- 	};
--- 
-1.7.9.5
 
+> +
+>  Examples:
+
+nit. should the example be updated?
+
+thx,
+
+Jason.
