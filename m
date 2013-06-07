@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757113Ab3FGUqy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 16:46:54 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44017 "EHLO comal.ext.ti.com"
+	id S1757201Ab3FGUry (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 16:47:54 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44075 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755255Ab3FGUqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 16:46:53 -0400
+	id S1753181Ab3FGUrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 16:47:53 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <tony@atomide.com>, <grant.likely@linaro.org>
 CC: <linux-pm@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux@arm.linux.org.uk>, Eduardo Valentin <eduardo.valentin@ti.com>,
-        Zhang Rui <rui.zhang@intel.com>, Rob Herring <rob.herring@calxeda.com>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
-Subject: [PATCHv3 1/6] thermal: ti-soc-thermal: use standard GPIO DT bindings
-Date: Fri, 7 Jun 2013 16:46:03 -0400
-Message-ID: <1370637968-23299-2-git-send-email-eduardo.valentin@ti.com>
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Fabio Stevam <festevam@gmail.com>
+Subject: [PATCHv3 2/6] arm: introduce config HAS_BANDGAP
+Date: Fri, 7 Jun 2013 16:46:04 -0400
+Message-ID: <1370637968-23299-3-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1370637968-23299-1-git-send-email-eduardo.valentin@ti.com>
 References: <1370637968-23299-1-git-send-email-eduardo.valentin@ti.com>
@@ -24,93 +24,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change updates the ti-soc-thermal driver to use
-standard GPIO DT bindings to read the GPIO number associated
-to thermal shutdown IRQ, in case the device features it.
+Bandgap is a device used to measure temperature on
+electronic equipments. It is widely used in digital
+integrated circuits. It is based on the dependency
+between silicon voltage and temperature.
 
-Previously, the code was using a specific DT bindings.
-As now OMAP supports the standard way to model GPIOs,
-there is no point in having a ti specific binding.
+This patch introduce HAS_BANDGAP config entry.
+This config is a boolean value so that arch
+code can flag if they feature a bandgap device.
 
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: linux-pm@vger.kernel.org
+This config entry follows the same idea behind
+ARCH_HAS_CPUFREQ.
+
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-omap@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
+Cc: Fabio Stevam <festevam@gmail.com>
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- drivers/staging/ti-soc-thermal/ti-bandgap.c       | 8 ++------
- drivers/staging/ti-soc-thermal/ti_soc_thermal.txt | 9 +++++----
- 2 files changed, 7 insertions(+), 10 deletions(-)
+ arch/arm/Kconfig            | 3 +++
+ arch/arm/mach-omap2/Kconfig | 1 +
+ 2 files changed, 4 insertions(+)
 
-diff --git a/drivers/staging/ti-soc-thermal/ti-bandgap.c b/drivers/staging/ti-soc-thermal/ti-bandgap.c
-index f20c1cf..c7fc0d0 100644
---- a/drivers/staging/ti-soc-thermal/ti-bandgap.c
-+++ b/drivers/staging/ti-soc-thermal/ti-bandgap.c
-@@ -38,6 +38,7 @@
- #include <linux/of_device.h>
- #include <linux/of_platform.h>
- #include <linux/of_irq.h>
-+#include <linux/of_gpio.h>
- #include <linux/io.h>
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index d423d58..bcbdec9 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -174,6 +174,9 @@ config ARCH_HAS_CPUFREQ
+ 	  and that the relevant menu configurations are displayed for
+ 	  it.
  
- #include "ti-bandgap.h"
-@@ -1123,7 +1124,6 @@ static struct ti_bandgap *ti_bandgap_build(struct platform_device *pdev)
- 	const struct of_device_id *of_id;
- 	struct ti_bandgap *bgp;
- 	struct resource *res;
--	u32 prop;
- 	int i;
- 
- 	/* just for the sake */
-@@ -1167,11 +1167,7 @@ static struct ti_bandgap *ti_bandgap_build(struct platform_device *pdev)
- 	} while (res);
- 
- 	if (TI_BANDGAP_HAS(bgp, TSHUT)) {
--		if (of_property_read_u32(node, "ti,tshut-gpio", &prop) < 0) {
--			dev_err(&pdev->dev, "missing tshut gpio in device tree\n");
--			return ERR_PTR(-EINVAL);
--		}
--		bgp->tshut_gpio = prop;
-+		bgp->tshut_gpio = of_get_gpio(node, 0);
- 		if (!gpio_is_valid(bgp->tshut_gpio)) {
- 			dev_err(&pdev->dev, "invalid gpio for tshut (%d)\n",
- 				bgp->tshut_gpio);
-diff --git a/drivers/staging/ti-soc-thermal/ti_soc_thermal.txt b/drivers/staging/ti-soc-thermal/ti_soc_thermal.txt
-index a4a33d1..382bd98 100644
---- a/drivers/staging/ti-soc-thermal/ti_soc_thermal.txt
-+++ b/drivers/staging/ti-soc-thermal/ti_soc_thermal.txt
-@@ -17,8 +17,9 @@ Required properties:
- - interrupts : this entry should indicate which interrupt line
- the talert signal is routed to;
- Specific:
--- ti,tshut-gpio : this entry should be used to inform which GPIO
--line the tshut signal is routed to;
-+- gpios : this entry should be used to inform which GPIO
-+line the tshut signal is routed to. The informed GPIO will
-+be treated as an IRQ;
- - regs : this entry must also be specified and it is specific
- to each bandgap version, because the mapping may change from
- soc to soc, apart of depending on available features.
-@@ -37,7 +38,7 @@ bandgap {
- 		0x4a002378 0x18>;
- 	compatible = "ti,omap4460-bandgap";
- 	interrupts = <0 126 4>; /* talert */
--	ti,tshut-gpio = <86>;
-+	gpios = <&gpio3 22 0>; /* tshut */
- };
- 
- OMAP4470:
-@@ -47,7 +48,7 @@ bandgap {
- 		0x4a002378 0x18>;
- 	compatible = "ti,omap4470-bandgap";
- 	interrupts = <0 126 4>; /* talert */
--	ti,tshut-gpio = <86>;
-+	gpios = <&gpio3 22 0>; /* tshut */
- };
- 
- OMAP5430:
++config ARCH_HAS_BANDGAP
++	bool
++
+ config GENERIC_HWEIGHT
+ 	bool
+ 	default y
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index f49cd51..8620ab5 100644
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -4,6 +4,7 @@ config ARCH_OMAP
+ config ARCH_OMAP2PLUS
+ 	bool "TI OMAP2/3/4/5 SoCs with device tree support" if (ARCH_MULTI_V6 || ARCH_MULTI_V7)
+ 	select ARCH_HAS_CPUFREQ
++	select ARCH_HAS_BANDGAP
+ 	select ARCH_HAS_HOLES_MEMORYMODEL
+ 	select ARCH_OMAP
+ 	select ARCH_REQUIRE_GPIOLIB
 -- 
 1.8.2.1.342.gfa7285d
 
