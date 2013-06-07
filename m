@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261Ab3FGIOg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 04:14:36 -0400
-Received: from ns.km31432.keymachine.de ([87.118.86.135]:48603 "EHLO
-	mail.cybertec.at" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532Ab3FGIO1 (ORCPT
+	id S1753009Ab3FGIRL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 04:17:11 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:15402 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750878Ab3FGIRF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 04:14:27 -0400
-Message-ID: <51B1964B.3090007@pr.hu>
-Date: Fri, 07 Jun 2013 10:14:03 +0200
-From: Boszormenyi Zoltan <zboszor@pr.hu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Fri, 7 Jun 2013 04:17:05 -0400
+Date: Fri, 7 Jun 2013 10:16:37 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Jean Delvare <khali@linux-fr.org>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] i2c: designware: fix race between subsequent xfers
+Message-ID: <20130607081636.GC11875@ab42.lan>
+References: <1370526216-10060-1-git-send-email-christian.ruppert@abilis.com>
+ <20130607052353.GB11878@intel.com>
 MIME-Version: 1.0
-To: Aaron Lu <aaron.lwe@gmail.com>
-CC: dri-devel@lists.freedesktop.org, lkml <linux-kernel@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, Steve Tilden <stilden@sicom.com>
-Subject: Re: New prototype computer problem with S3 suspend
-References: <51B0D0DE.30902@pr.hu> <51B134A6.1020808@gmail.com>
-In-Reply-To: <51B134A6.1020808@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130607052353.GB11878@intel.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013-06-07 03:17 keltezéssel, Aaron Lu írta:
-> On 06/07/2013 02:11 AM, Boszormenyi Zoltan wrote:
->> Hi,
->>
->> we are working on an Intel Atom-based embedded PC and I have to
->> make suspend-to-RAM work but I can't seem to succeed.
->>
->> The symptom is that quite often, the machine resumes immediately
->> after pm-suspend. Sometimes more than 20 times out of 50 attempts.
-> Can you please file a bug about this?
-> https://bugzilla.kernel.org
->
->> I have tried 3.7.10, 3.9.4, 3.10-rc[234] and the linux-next branch from the
->> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git repository.
->> The attached dmesg is from today's linux-pm/linux-next plus the
->> latest drm-fixes patchset posted by Dave Airlie.
->>
->> I have tried disabling wakeup devices via /proc/acpi/wakeup and via sysfs files.
->> (/sys/devices/.../wakeup)
-> >From the dmesg, the following three devices are still armed with wakeup
-> capability and might be the cause:
->
-> i8042 kbd 00:03: System wakeup enabled by ACPI
-> PM: suspend of devices complete after 578.883 msecs
-> PM: late suspend of devices complete after 0.279 msecs
-> pcieport 0000:00:1c.1: System wakeup enabled by ACPI
-> ehci-pci 0000:00:1d.7: System wakeup enabled by ACPI
-> PM: noirq suspend of devices complete after 31.946 msecs
->
-> Anyway, please file a bug there, thanks.
+On Fri, Jun 07, 2013 at 08:23:53AM +0300, Mika Westerberg wrote:
+> Hi Christian,
+> 
+> On Thu, Jun 06, 2013 at 03:43:35PM +0200, Christian Ruppert wrote:
+> > The designware block is not always properly disabled in the case of
+> > transfer errors. Interrupts from aborted transfers might be handled
+> > after the data structures for the following transfer are initialised but
+> > before the hardware is set up. This might corrupt the data structures to
+> > the point that the system is stuck in an infinite interrupt loop (where
+> > FIFOs are never emptied).
+> > This patch cleanly disables the designware-i2c hardware at the end of
+> > every transfer, successful or not.
+> 
+> Have you tried with the latest mainline driver? There is a commit that
+> solves similar problem:
+> 
+> 2a2d95e9d6d29e7	i2c: designware: always clear interrupts before enabling them
+> 
+> Maybe it helps?
 
-For the suspend bug:
-https://bugzilla.kernel.org/show_bug.cgi?id=59401
+Hi Mika,
 
-For the warnings in i915:
-https://bugs.freedesktop.org/show_bug.cgi?id=65497
+Thanks for the hint but I have checked both main line and Wolfram's
+branch and I saw this patch. I actually hoped it would fix our problem
+but it didn't.
 
-Best regards,
-Zoltán Böszörményi
+Here some more details: We experienced system lockups (complete lock up,
+no reaction whatsoever) in long-term tests under heavy system load with
+lots of scheduling and forking/killing. These lockups could be traced to
+the I2C driver which after some time ended up in an incoherent state:
+i2c_dw_isr was being called with DW_IC_INTR_RX_FULL but
+dev->msg_read_idx == dev->msgs_num. This resulted in the FIFO never
+being emptied by i2c_dw_read. Since the DW_IC_INTR_RX_FULL interrupt is
+cleared by emptying the FIFO, this situation results in an IRQ loop
+locking up the system.
 
+We found that the situation systematically occurs just after the
+originating process is interrupted (premature return of
+wait_for_completion_interruptible_timeout) and further analysis showed
+the race condition: Interrupts from the previous transfer are sometimes
+triggered after the initialisation of dev in the beginning of
+i2c_dw_xfer, thus corrupting the state. If these interrupts occur before
+dev is initialised everything works fine.
+
+An alternative solution would probably be to make sure the hardware is
+disabled before initialising the dev structure in i2c_dw_xfer.
+
+Greetings,
+  Christian
+
+-- 
+  Christian Ruppert              ,          <christian.ruppert@abilis.com>
+                                /|
+  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
+                             _// | bilis Systems   CH-1228 Plan-les-Ouates
