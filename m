@@ -1,108 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab3FGMNR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 08:13:17 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:53814 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047Ab3FGMNP (ORCPT
+	id S1753987Ab3FGMPb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 08:15:31 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:54196 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752671Ab3FGMPa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 08:13:15 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Mischa Jonker <Mischa.Jonker@synopsys.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH] ethernet/arc/arc_emac - Add new driver
-Date: Fri, 07 Jun 2013 14:13:14 +0200
-Message-ID: <2468036.im0srnzmHT@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <4881796E12491D4BB15146FE0209CE643F5C77EC@DE02WEMBXB.internal.synopsys.com>
-References: <1370348510-23754-1-git-send-email-abrodkin@synopsys.com> <1505761.5DsauZd6eq@wuerfel> <4881796E12491D4BB15146FE0209CE643F5C77EC@DE02WEMBXB.internal.synopsys.com>
+	Fri, 7 Jun 2013 08:15:30 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:o227tIlNxyoW42z9R3TneRqISovTzQ31ZAwUxGx7HNO
- JnSr5snqllcq41d3BiEjvQD2D5PAOL+Bt1nR9AaWEyBxIfuN8Q
- 6+cx9AAu/TUp1Yp14IeQZFfb+C4GOJ1+BHef7UeY5VPiu33iP4
- e+YCuQNdQAL2VGWgFH5w1/s9Sdrtjce/jwngFet99nNKXXtFxp
- hU2RxYn9lDPtgWcziLrl2pyErjObSuidb//i3w3ZhQs5UqTFWg
- /4kN7Is/A6QWUufhaK2IyTq9TiTVMsZHQrBPK8bH38Uc4JeBU4
- IqlESNkFXMDQsc/2eQenuK0YY+edVSfki0ixNlCBqPOTRYvF+N
- ZRqpWLDHCrYUP7HiA5IE=
+In-Reply-To: <07905E0D268758488D76D7D747F21BB6043C4AD7@rdc8.rdc>
+References: <07905E0D268758488D76D7D747F21BB6043C4AD7@rdc8.rdc>
+From: Florian Fainelli <florian@openwrt.org>
+Date: Fri, 7 Jun 2013 13:14:49 +0100
+X-Google-Sender-Auth: 9HFmxxvtHUhg8Qbuzo18El73aSk
+Message-ID: <CAGVrzcZf8cT7r8+7OVEDSvMHB4rZbyMZM1kvstvdFHtX2QQzmA@mail.gmail.com>
+Subject: Re: r6040 mac driver issue and solution
+To: =?UTF-8?B?QnJ1Y2UgWWUgKOiRieS9s+asoyk=?= <Bruce.Ye@rdc.com.tw>
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?B?T3dlbiBQZW5nICjlva3ph5HpmoYp?= <Owen.Peng@rdc.com.tw>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 June 2013 10:42:28 Alexey Brodkin wrote:
-> On 06/07/2013 12:47 PM, Arnd Bergmann wrote:
+Dear Bruce,
 
-> > I wonder if it would be better to name the directory "synopsys" or
-> > "designware" rather than "arc" now. Is there a chance that the same
-> > controller is used on non-arc CPUs?
-> 
-> The thing is - "arc_emac" is a custom ARC's (that was implemented before 
-> acquisition of ARC by Synopsys) IP (it's not an IC - just a part of CPU) 
-> Ethernet controller that only exists in some legacy FPGA boards we 
-> (ex-ARC and our customers) still use a lot in development process.
-> 
-> Synopsys itself doesn't actively sell this device so there's no point in 
-> putting ARC EMAC into Synopsys folder.
-> 
-> And indeed we don't expect this device to be used with non-ARC CPU's.
-> 
-> I didn't add dependency on ARC in Kconfig just because I wanted to leave 
-> an ability to build this driver on x86 machine. I thought this is 
-> important requirement - allow anybody to at least build this driver to 
-> make sure it builds and doesn't cause tons of warnings to appear.
-> 
-> If it's totally fine to add dependency on ARC - then it would be even 
-> easier for me - refer to the next block of comments.
+2013/6/7 Bruce Ye (葉佳欣) <Bruce.Ye@rdc.com.tw>:
+> Dear Florian:
+> For RDC R6040 FAST ETHERNET DRIVER.
+> There's an issue in r6040 driver and for some RDC platform. It only occurs when there's more than one Ethernet port.
+> When initializing the MAC in boot up, r6040 driver set the same phy address to different ports.
+> It also display in boot log as below.
+> mii_bus:phy_addr=0:01
+> mii_bus:phy_addr=1:01
+>
+> It will let the eth0 and eth1 work not in independent.
+> That is, if there is a connection on eth1 but not on eth0. The eth1 can not work only if link up the eth0.
+> To fix this problem is that giving the different phy address to different ports.
+> I already tested it on r6040.c version 0.27 and version 0.28 by the change and is worked.
 
-No, I think making it generally available for all architectures is better.
+I see, thanks for the change. Have you verified that simply changing
+mii_bus->phy_mask is sufficient? This should prevent the second MII
+bus from probing the PHY at address 1. I will add this patch to my
+patchqueue for r6040, thank you!
 
-> >> +static int arc_emac_probe(struct platform_device *pdev)
-> >> +{
-> >> +	struct net_device *net_dev;
-> >> +	struct arc_emac_priv *priv;
-> >> +	int err;
-> >> +	unsigned int clock_frequency;
-> >> +	unsigned int id;
-> >> +	struct resource res_regs;
-> >> +#ifdef CONFIG_OF_IRQ
-> >> +	struct resource res_irq;
-> >> +#endif
-> >> +	const char *mac_addr = NULL;
-> >
-> > Please remove the #ifdef here. The driver does not work without this
-> > anyway, so better make it 'depend on OF_IRQ' in Kconfig.
-> 
-> As stated above I wanted to make it possible to compile on x86.
-> And for this I needed to:
-> 1. Add explicit mentions of "linux/platform_device.h" because with 
-> existence of OF "linux/of_platform.h" has "linux/platform_device.h" 
-> included internally.
-> 2. Enclose "of_irq_to_resource" and "of_get_mac_address" in ifdefs 
-> because neither of them has a stub for non-OF situation.
-
-But you can enable CONFIG_OF on x86. An allmodconfig build should
-still enable this driver. The #ifdefs are generally considered ugly,
-and there is no point adding them when the driver clearly wouldn't
-work on any architecture without them even if that hardware was
-available.
-
-> So if I may depend on ARC then I'm sure OF is selected and no need to worry.
-> Otherwise do I need to add stubs for "of_irq_to_resource" and 
-> "of_get_mac_address" somewhere in "of/of_xxx.h"?
-
-We are currently discussing those changes to the header files elsewhere.
-I think with a dependency on CONFIG_OF_IRQ and other symbols you need,
-you get the best compromise of the various requirements.
-
-	Arnd
+>
+> Below is the change
+>
+> --- linux-3.7.2/drivers/net/ethernet/rdc/r6040.c.orig   2013-06-07 03:00:05.670250988 -0700
+> +++ linux-3.7.2/drivers/net/ethernet/rdc/r6040.c        2013-06-07 03:05:01.666407765 -0700
+> @@ -1037,8 +1037,18 @@ static int r6040_mii_probe(struct net_de
+>  {
+>         struct r6040_private *lp = netdev_priv(dev);
+>         struct phy_device *phydev = NULL;
+> +        static int first_find_addr = 0;
+> +        int addr;
+> +        for ( addr = first_find_addr; addr < PHY_MAX_ADDR; addr++ ) {
+> +
+> +        if ( lp->mii_bus->phy_map[addr] )
+> +                phydev = lp->mii_bus->phy_map[addr];
+> +
+> +        if(phydev)
+> +                break;
+> +        }
+> +        first_find_addr++ ;
+>
+> -       phydev = phy_find_first(lp->mii_bus);
+>         if (!phydev) {
+>                 dev_err(&lp->pdev->dev, "no PHY found\n");
+>                 return -ENODEV;
+> @@ -1194,6 +1204,10 @@ static int __devinit r6040_init_one(stru
+>         lp->mii_bus->write = r6040_mdiobus_write;
+>         lp->mii_bus->reset = r6040_mdiobus_reset;
+>         lp->mii_bus->name = "r6040_eth_mii";
+> +        if ( card_idx == 0 )
+> +            lp->mii_bus->phy_mask = 0x1;
+> +        else
+> +            lp->mii_bus->phy_mask = 0x3;
+>         snprintf(lp->mii_bus->id, MII_BUS_ID_SIZE, "%s-%x",
+>                 dev_name(&pdev->dev), card_idx);
+>         lp->mii_bus->irq = kmalloc(sizeof(int)*PHY_MAX_ADDR, GFP_KERNEL);
+>
+>
+>
+> Signed-off-by: Bruce Ye Developer <Bruce.Ye@rdc.com.tw>
+>
+> Best Regards
+> Bruce
+> RDC Semiconductor
