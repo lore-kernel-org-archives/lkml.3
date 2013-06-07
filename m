@@ -1,51 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab3FGN40 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 09:56:26 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:50721 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753082Ab3FGN4Y (ORCPT
+	id S1755135Ab3FGOHF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 10:07:05 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6698 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752382Ab3FGOHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 09:56:24 -0400
-Message-ID: <51B1E68C.1040504@cogentembedded.com>
-Date: Fri, 07 Jun 2013 17:56:28 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Lotfi Manseur <lotfi.manseur@gmail.com>
-CC: stable@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wojciech M Zabolotny <W.Zabolotny@elka.pw.edu.pl>,
-        Nicolas Palix <nicolas.palix@imag.fr>,
-        Lotfi Manseur <lotfi.manseur@imag.fr>, Willy Tarreau <w@1wt.eu>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: serial/ftdi_sio.c Fix kernel oops
-References: <1370610872-1309-1-git-send-email-lotfi.manseur@imag.fr>
-In-Reply-To: <1370610872-1309-1-git-send-email-lotfi.manseur@imag.fr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 7 Jun 2013 10:07:03 -0400
+X-Authority-Analysis: v=2.0 cv=H8VZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=YMCyn-P7_OAA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=XZ-dteJvDOwA:10 a=20KFwNOVAAAA:8 a=ag1SF4gXAAAA:8 a=tN5xWe8_vvL4AfRlGK0A:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=1TSTQ8KKaH4A:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1370614020.9844.62.camel@gandalf.local.home>
+Subject: Re: [ 027/184] ring-buffer: Fix race between integrity check and
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Willy Tarreau <w@1wt.eu>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Date: Fri, 07 Jun 2013 10:07:00 -0400
+In-Reply-To: <20130604172131.427118554@1wt.eu>
+References: <20130604172131.427118554@1wt.eu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue, 2013-06-04 at 19:21 +0200, Willy Tarreau wrote:
+> 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+>  readers
+> 
+> From: Steven Rostedt <srostedt@redhat.com>
+> 
+> commit 9366c1ba13fbc41bdb57702e75ca4382f209c82f upstream.
 
-On 06/07/2013 05:14 PM, Lotfi Manseur wrote:
+This isn't the right commit (thanks to Ben for bringing this to my
+attention).
 
-> Handle null termios in ftdi_set_termios(), introduced in
-> commit 552f6bf1bb0eda0011c0525dd587aa9e7ba5b846
-> This has been corrected in the mainline by
-> commits c515598e0f5769916c31c00392cc2bfe6af74e55 and
-> a816e3113b63753c330ca4751ea1d208e93e3015.
+That this commit SHA1 matches the change log but not the change.
+According to git blame, the change below is from:
 
-    You should also give the summary lines of all mentioned commits in 
-parens.
+54f7be5b831254199522523ccab4c3d954bbf576
+ring-buffer: Fix NULL pointer if rb_set_head_page() fails
 
-> This is to be fixed in longterm 2.6.32.60 and 3.4.47.
-> This bug has been found with coccinelle.
->
-> Signed-off-by: Lotfi Manseur <lotfi.manseur@imag.fr>
-> Signed-off-by: Nicolas Palix <nicolas.palix@imag.fr>
+-- Steve
 
-WBR, Sergei
+> 
+> The function rb_check_pages() was added to make sure the ring buffer's
+> pages were sane. This check is done when the ring buffer size is modified
+> as well as when the iterator is released (closing the "trace" file),
+> as that was considered a non fast path and a good place to do a sanity
+> check.
+> 
+> The problem is that the check does not have any locks around it.
+> If one process were to read the trace file, and another were to read
+> the raw binary file, the check could happen while the reader is reading
+> the file.
+> 
+> The issues with this is that the check requires to clear the HEAD page
+> before doing the full check and it restores it afterward. But readers
+> require the HEAD page to exist before it can read the buffer, otherwise
+> it gives a nasty warning and disables the buffer.
+> 
+> By adding the reader lock around the check, this keeps the race from
+> happening.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Willy Tarreau <w@1wt.eu>
+> ---
+>  kernel/trace/ring_buffer.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+> index e749a05..6024960 100644
+> --- a/kernel/trace/ring_buffer.c
+> +++ b/kernel/trace/ring_buffer.c
+> @@ -2876,6 +2876,8 @@ rb_get_reader_page(struct ring_buffer_per_cpu *cpu_buffer)
+>  	 * Splice the empty reader page into the list around the head.
+>  	 */
+>  	reader = rb_set_head_page(cpu_buffer);
+> +	if (!reader)
+> +		goto out;
+>  	cpu_buffer->reader_page->list.next = reader->list.next;
+>  	cpu_buffer->reader_page->list.prev = reader->list.prev;
+>  
+
 
