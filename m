@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab3FGK1M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 06:27:12 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:59418 "EHLO hydra.sisk.pl"
+	id S1755674Ab3FGK2K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 06:28:10 -0400
+Received: from vps1.hno.se ([31.192.227.87]:39768 "EHLO vps1.hno.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752118Ab3FGK1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 06:27:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: shuox.liu@intel.com
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, pavel@ucw.cz,
-        len.brown@intel.com, gregkh@linuxfoundation.org,
-        yanmin_zhang@linux.intel.com
-Subject: Re: [PATCH 0/2] Run callback of device_prepare/complete consistently
-Date: Fri, 07 Jun 2013 12:36:12 +0200
-Message-ID: <2482951.doztFClhed@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1370593232-3602-1-git-send-email-shuox.liu@intel.com>
-References: <1370593232-3602-1-git-send-email-shuox.liu@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1753987Ab3FGK2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 06:28:07 -0400
+Message-ID: <1370600817.9983.7.camel@localhost>
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
+ Uploading linux (3.9.4-1))
+From: Henrik =?ISO-8859-1?Q?Nordstr=F6m?= <henrik@henriknordstrom.net>
+To: "luke.leighton" <luke.leighton@gmail.com>
+Cc: Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>, debian-arm@lists.debian.org,
+        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, debian-kernel@lists.debian.org
+Date: Fri, 07 Jun 2013 12:26:57 +0200
+In-Reply-To: <CAPweEDyYt+pN+UaFuqWL5RrHpyuq_4So-tArmx3dr=0wLS+hwQ@mail.gmail.com>
+References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
+	 <1370475609.20454.44.camel@localhost>
+	 <CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
+	 <1733666.lHUBcfUXq9@flatron>
+	 <CAPweEDzYLDzh_-OWU61dtVhajZ40QpQgZKHFYDsh3FgF=r9_ag@mail.gmail.com>
+	 <20130606131042.GN18614@n2100.arm.linux.org.uk>
+	 <CAPweEDyYt+pN+UaFuqWL5RrHpyuq_4So-tArmx3dr=0wLS+hwQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 07, 2013 04:20:30 PM shuox.liu@intel.com wrote:
-> dpm_run_callback is used in other stages of power states changing.
-> It provides debug info message and time measurement when call these
-> callback. We also want to benefit ->prepare and ->complete.
-> 
-> [PATCH 1/2] PM: use dpm_run_callback in device_prepare
-> [PATCH 2/2] PM: add dpm_run_callback_void and use it in device_complete
+fre 2013-06-07 klockan 09:02 +0100 skrev luke.leighton:
 
-Is this an "Oh, why don't we do that?" series, or is it useful for anything
-in practice?  I'm asking, because we haven't added that stuff to start with
-since we didn't see why it would be useful to anyone.
+>  ok.  so.  we come back to the question again: what shall i propose to
+> them that they consider doing, and what benefit would it be to them to
+> do so?
 
-And while patch [1/2] reduces the code size (by 1 line), so I can see some
-(tiny) benefit from applying it, patch [2/2] adds more code and is there any
-paractical reason?
+Just tell them that the kernel is moving to a different configuration
+syntax called Device Tree, but apart from updating kernel drivers to the
+new way of configuring things it only have minor impact on their
+envionment. It is still possible to use the fex file for all board
+configuration details, only requires a small tool for translating fex to
+device tree.
 
-Rafael
+The change only impacts kernel, and a small change to their SDK build
+scripts to also build the device tree from the fex.
+
+It is no big deal really in structural terms. There is far bigger
+structural changes in the kernel which coincides with this and will
+require some developer time to adjust for. Had they upstreamed their
+changes earlier then...
+
+Regards
+Henrik
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+
