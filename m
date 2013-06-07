@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757107Ab3FGSrm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 14:47:42 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:50317 "EHLO
+	id S1757130Ab3FGStv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 14:49:51 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:50421 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756173Ab3FGSrj (ORCPT
+	with ESMTP id S1756079Ab3FGStt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 14:47:39 -0400
+	Fri, 7 Jun 2013 14:49:49 -0400
 From: Grygorii Strashko <grygorii.strashko@ti.com>
 To: Wolfram Sang <wsa@the-dreams.de>, Tony Lindgren <tony@atomide.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
@@ -15,8 +15,8 @@ CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         Kevin Hilman <khilman@linaro.org>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>, Felipe Balbi <balbi@ti.com>
 Subject: [PATCH 0/5] v3.10-rc4: fix OMAP4 boot failure if CONFIG_SENSORS_LM75=y
-Date: Fri, 7 Jun 2013 21:43:27 +0300
-Message-ID: <1370630612-4014-1-git-send-email-grygorii.strashko@ti.com>
+Date: Fri, 7 Jun 2013 21:46:03 +0300
+Message-ID: <1370630768-4077-1-git-send-email-grygorii.strashko@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
 Content-Type: text/plain
