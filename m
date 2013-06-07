@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab3FGJlv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 05:41:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28981 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752796Ab3FGJlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 05:41:49 -0400
-Message-ID: <51B1AACD.7070403@redhat.com>
-Date: Fri, 07 Jun 2013 11:41:33 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1754667Ab3FGJn6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 05:43:58 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:60710 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810Ab3FGJn5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 05:43:57 -0400
+Message-ID: <51B1AB4F.1090206@gmail.com>
+Date: Fri, 07 Jun 2013 17:43:43 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Jiang Liu <liuj97@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH v3 06/10] zram: protect sysfs handler from invalid memory
- access
-References: <1370534851-26056-1-git-send-email-jiang.liu@huawei.com> <1370534851-26056-7-git-send-email-jiang.liu@huawei.com>
-In-Reply-To: <1370534851-26056-7-git-send-email-jiang.liu@huawei.com>
+To: Jerome Marchand <jmarchan@redhat.com>
+CC: Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Jiang Liu <jiang.liu@huawei.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH v3 05/10] zram: avoid access beyond the zram device
+References: <1370534851-26056-1-git-send-email-jiang.liu@huawei.com> <1370534851-26056-6-git-send-email-jiang.liu@huawei.com> <20130607080945.GD22516@blaptop> <51B1AA8A.4010005@redhat.com>
+In-Reply-To: <51B1AA8A.4010005@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2013 06:07 PM, Jiang Liu wrote:
-> Use zram->init_lock to protect access to zram->meta, otherwise it
-> may cause invalid memory access if zram->meta has been freed by
-> zram_reset_device().
+On 06/07/2013 05:40 PM, Jerome Marchand wrote:
+> On 06/07/2013 10:09 AM, Minchan Kim wrote:
+>> On Fri, Jun 07, 2013 at 12:07:26AM +0800, Jiang Liu wrote:
+>>> Function valid_io_request() should verify the entire request are within
+...
+>>>  
+>>> +	start = bio->bi_sector;
+>>> +	end = start + (bio->bi_size >> SECTOR_SHIFT);
+>>> +	bound = zram->disksize >> SECTOR_SHIFT;
+>>> +	/* out of range range */
+>>> +	if (unlikely(start >= bound || end >= bound || start > end))
+>>
+>>         if (end >= bound || start > end) isn't enough?
 > 
-> This issue may be triggered by:
-> Thread 1:
-> while true; do cat mem_used_total; done
-> Thread 2:
-> while true; do echo 8M > disksize; echo 1 > reset; done
+> I shall think so.
 > 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Acked-by: Minchan Kim <minchan@kernel.org>
-> Cc: stable@vger.kernel.org
+> Jerome
+Me too! But I realized this just after sending out the patchset
+last night.
 
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
+> 
+>>
+>>>  		return 0;
+>>> -	}
+>>>  
+>>>  	/* I/O request is valid */
+>>>  	return 1;
+>>> -- 
+>>> 1.8.1.2
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> 
 
