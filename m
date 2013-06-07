@@ -1,118 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317Ab3FGTIL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 15:08:11 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51309 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756566Ab3FGTIJ (ORCPT
+	id S1757388Ab3FGTI0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 15:08:26 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:50154 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756177Ab3FGTIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 15:08:09 -0400
-Date: Fri, 7 Jun 2013 22:07:02 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-CC: Wolfram Sang <wsa@the-dreams.de>, Tony Lindgren <tony@atomide.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-i2c@vger.kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH 4/5] i2c: omap: query STP always when NACK is received
-Message-ID: <20130607190701.GE15295@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1370630768-4077-1-git-send-email-grygorii.strashko@ti.com>
- <1370630768-4077-5-git-send-email-grygorii.strashko@ti.com>
+	Fri, 7 Jun 2013 15:08:24 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hwvH6HDNit2nSK4j"
-Content-Disposition: inline
-In-Reply-To: <1370630768-4077-5-git-send-email-grygorii.strashko@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130607185724.GZ14125@stoneboat.aleph1.co.uk>
+References: <CAPweEDz=hFxXW3XF9CSNZpEFSjayb5an1E8Xze1_uQcCZONVxg@mail.gmail.com>
+	<1370469574.18839.33.camel@localhost>
+	<CAPweEDxMpeJc-w=Yd7d2OT=UisRBp2rxf-MPMDUCOG3EyJz1GQ@mail.gmail.com>
+	<CAKON4OxwyV2f_iTEb5RnP_azc7EsSxPdku_TY5WLWxN7USiY1Q@mail.gmail.com>
+	<CAPweEDw1BabE0cmT5fxZ3Z9p9EH508M3Nzcqk2VcO0oz-qYsvg@mail.gmail.com>
+	<1370475609.20454.44.camel@localhost>
+	<CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
+	<CAKON4OxPDpN3BTc9GWP44exDSkAZGJ5OeCpUP37vRnnvxwUnmw@mail.gmail.com>
+	<CAOesGMgqxhG45NyCfpHc_0uHS+_Gn-hGZm-+CRvK2EEf1AGTow@mail.gmail.com>
+	<20130606172810.GE14209@lukather>
+	<20130607185724.GZ14125@stoneboat.aleph1.co.uk>
+Date: Fri, 7 Jun 2013 20:08:24 +0100
+Message-ID: <CAPweEDw3_M_5e_B2HueCNcfXjO9_4_oiCJuEfTERetyoOx=+vw@mail.gmail.com>
+Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
+ Uploading linux (3.9.4-1))
+From: "luke.leighton" <luke.leighton@gmail.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Olof Johansson <olof@lixom.net>,
+        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "luke.leighton" <luke.leighton@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        debian-arm <debian-arm@lists.debian.org>,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>,
+        ARM Linux Mailing List <linux-arm-kernel@lists.infradead.org>,
+        debian-kernel <debian-kernel@lists.debian.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---hwvH6HDNit2nSK4j
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jun 7, 2013 at 7:57 PM, Wookey <wookey@wookware.org> wrote:
+> OK, this sounds good. Could you say who the allwinner engineers are?
 
-Hi,
+ [cross-over: i asked him if he'd be happy to let me know privately,
+so i have at least some context when speaking to the Directors]
 
-On Fri, Jun 07, 2013 at 09:46:07PM +0300, Grygorii Strashko wrote:
-> According to I2C specification the NACK should be handled as folowing:
-> "When SDA remains HIGH during this ninth clock pulse, this is defined as =
-the Not
-> Acknowledge signal. The master can then gene rate either a STOP condition=
- to
-> abort the transfer, or a repeated START condition to start a new transfer=
-=2E"
+> I
+> guess it's quite a large organisation, so if Crazy Luke can say 'the
+> work of mainline integration using device-tree is already being done
+> by $these $people, please talk to them to help move it along', that
+> might help get everyone on the same page.
 
-right ...
+ .... *mull*, *mull*... yes exactly!
 
-> [http://www.nxp.com/documents/user_manual/UM10204.pdf]
->=20
-> The same is recomened by TI I2C wiki:
->  http://processors.wiki.ti.com/index.php/I2C_Tips
->=20
-> Currently, the OMAP I2C driver interrupts I2C trunsfer in case of NACK, b=
-ut
-> It queries Stop condition OMAP_I2C_CON_REG.STP=3D1 only if NACK has been =
-received
-> during the last message transmitting/recieving.
-> This may lead to stuck Bus in "Bus Busy" until I2C IP reset (idle/enable).
->=20
-> Hence, fix it by querying Stop condition (STP) always when NACK is receiv=
-ed.
->=20
-> CC: Kevin Hilman <khilman@linaro.org>
-> CC: Felipe Balbi <balbi@ti.com>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> ---
->  drivers/i2c/busses/i2c-omap.c |    9 ++++-----
->  1 file changed, 4 insertions(+), 5 deletions(-)
->=20
-> diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-> index 46fb8a5..b3daf3f 100644
-> --- a/drivers/i2c/busses/i2c-omap.c
-> +++ b/drivers/i2c/busses/i2c-omap.c
-> @@ -618,11 +618,10 @@ static int omap_i2c_xfer_msg(struct i2c_adapter *ad=
-ap,
->  	if (dev->cmd_err & OMAP_I2C_STAT_NACK) {
->  		if (msg->flags & I2C_M_IGNORE_NAK)
->  			return 0;
-> -		if (stop) {
-> -			w =3D omap_i2c_read_reg(dev, OMAP_I2C_CON_REG);
-> -			w |=3D OMAP_I2C_CON_STP;
-> -			omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, w);
-> -		}
-> +
-> +		w =3D omap_i2c_read_reg(dev, OMAP_I2C_CON_REG);
-> +		w |=3D OMAP_I2C_CON_STP;
-> +		omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, w);
+> If it's like many large organisations, some bits of it will 'get it'
+> and see why, in the long term, mainline integration is worthwhile, but
+> other bits will look at what they have now and their android focus,
+> and decide it's easier to keep doing what they are doing.
+>
+> There is a lot of hardware using these socs, and I'd love to be able
+> to use that with mainstream stuff, rather than random vendor piles,
+> and specific android kernels, so anything we can do to help make that
+> happen is good.
+>
+>> So yes, Allwinner has an evil vendor tree (c), with a solution similar yet
+>> inferior (because not generic enough) to the device tree, but they show
+>> interest on going down the mainline road.
+>
+> So, luke: mainline is not going to support fex directly, whatever you
+> or allwinner do. The advantages to allwinner of working with mainline
+> are:
+> 1) Ability to use whatever (kernel supported) hardware they like with
+> new designs, with no driver work
+> 2) Ability to use latest kernels and thus whatever shiny goodies those
+> include
+> 3) No need to do fex-ready drivers for new hardware
+> 4) No need to keep backporting new kernels to add fex integration
+> forevermore
 
-=2E.. and this is breaking repeated start.
+ hooraaaaay - thank you wookey, this is exactly what i need.
+cut/paste, straight into the report.
 
---=20
-balbi
+> If they want to keep existing tools and fex workflow then a fex<->DT
+> translation tool will be needed.
 
---hwvH6HDNit2nSK4j
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ in-kernel or external tool?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> (It's not clear to me to what degree
+> DT can simply be used instead directly)
 
-iQIcBAEBAgAGBQJRsi9VAAoJEIaOsuA1yqREl6cQAKqx4iTs7BFL8grVwwkjyDoW
-3Lnj50yS2kWetgywWi0OQ2EZpMJLrHBxUR4ho6soKRPYJmj85rAA4Wb86FLOEf7F
-LewUmWr42XPMZdwc2S1hNHXhZw5vsJMRIbxnLfKtylIoq8Da0wZgnBx8ykg2RKJH
-g5hG3JrYpHXAeiqIjmTFNJtTUUL/Vy4tqMpg0Kf+lWeUFNss06rYLnn6iD3XpYSg
-MU2/qjMBHlUkvMeDUrA3UN8dec/qftrazTpmOAxjeOoQeyS+IsnM6B8iGhu9/jvJ
-jKnJ5B760B6PgJ7mrBhKEyA6kzS2xn/6MntO4vC2INavZJXEV3zYJOdNo+1RI0cw
-sTMwXzryrXB6KPkU216qVlTSMizjVxZ9Ecs+blH85XyjrGdINpecew+wfShR8AoK
-f6hgLWkvo+YO91qAVS/LeDYt1R2FODlsIZflUgEDPbl3iL58lOseWUV8HaDdt7QI
-3XBOE9lm8k1pPQbilmce3vVRHVBa0bAy+Z3KGEgsE1NHFqIt33ZB7WtUBr2hZrFS
-gO3ZlVS/h4XbupxUpC0vBhQAJOo1zhSCVw4a4ULEmSxejBfSPSIiRRKgtmaq213N
-+tqmeK1EqoLFv6eqjqixnlwan6kVxbv/PAV2WQsQ6DS8/17j4cnotVL7wUmj15Gf
-I/iff4SQ1/EKUxJdxsMv
-=oEY1
------END PGP SIGNATURE-----
-
---hwvH6HDNit2nSK4j--
+ TBD.  input here, anyone?
