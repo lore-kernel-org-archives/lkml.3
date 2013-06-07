@@ -1,198 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757171Ab3FGUnH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 16:43:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36196 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756030Ab3FGUnE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 16:43:04 -0400
-Date: Fri, 7 Jun 2013 13:43:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Artem Savkov <artem.savkov@gmail.com>
-Cc: minchan.kernel.2@gmail.com, dan.magenheimer@oracle.com, rjw@sisk.pl,
-        linux-mm@kvack.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] non-swapcache pages in end_swap_bio_read()
-Message-Id: <20130607134303.a9bcff78691c38b03a8b3dde@linux-foundation.org>
-In-Reply-To: <1370636598-5405-1-git-send-email-artem.savkov@gmail.com>
-References: <20130607152653.GA3586@blaptop>
-	<1370636598-5405-1-git-send-email-artem.savkov@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757113Ab3FGUqy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 16:46:54 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44017 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755255Ab3FGUqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 16:46:53 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <tony@atomide.com>, <grant.likely@linaro.org>
+CC: <linux-pm@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux@arm.linux.org.uk>, Eduardo Valentin <eduardo.valentin@ti.com>,
+        Zhang Rui <rui.zhang@intel.com>, Rob Herring <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
+Subject: [PATCHv3 1/6] thermal: ti-soc-thermal: use standard GPIO DT bindings
+Date: Fri, 7 Jun 2013 16:46:03 -0400
+Message-ID: <1370637968-23299-2-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
+In-Reply-To: <1370637968-23299-1-git-send-email-eduardo.valentin@ti.com>
+References: <1370637968-23299-1-git-send-email-eduardo.valentin@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  8 Jun 2013 00:23:18 +0400 Artem Savkov <artem.savkov@gmail.com> wrote:
+This change updates the ti-soc-thermal driver to use
+standard GPIO DT bindings to read the GPIO number associated
+to thermal shutdown IRQ, in case the device features it.
 
-> There is no guarantee that page in end_swap_bio_read is in swapcache so we need
-> to check it before calling page_swap_info(). Otherwise kernel hits a bug on
-> like the one below.
-> Introduced in "mm: remove compressed copy from zram in-memory"
-> 
-> kernel BUG at mm/swapfile.c:2361!
+Previously, the code was using a specific DT bindings.
+As now OMAP supports the standard way to model GPIOs,
+there is no point in having a ti specific binding.
 
-Fair enough.
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org
+Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+---
+ drivers/staging/ti-soc-thermal/ti-bandgap.c       | 8 ++------
+ drivers/staging/ti-soc-thermal/ti_soc_thermal.txt | 9 +++++----
+ 2 files changed, 7 insertions(+), 10 deletions(-)
 
-> --- a/mm/page_io.c
-> +++ b/mm/page_io.c
->
-> ...
->
-> +		/*
-> +		 * There is no guarantee that the page is in swap cache, so
-> +		 * we need to check PG_swapcache before proceeding with this
-> +		 * optimization.
-> +		 */
-
-My initial thought was "how the heck can this not be a swapcache page".
-So let's add the important details to this comment.
-
-> +		if (unlikely(PageSwapCache(page))) {
-
-Surely this is "likely".
-
-> +			struct swap_info_struct *sis;
-> +
-> +			sis = page_swap_info(page);
-> +			if (sis->flags & SWP_BLKDEV) {
-> +				/*
-> +				 * The swap subsystem performs lazy swap slot freeing,
-> +				 * expecting that the page will be swapped out again.
-> +				 * So we can avoid an unnecessary write if the page
-> +				 * isn't redirtied.
-> +				 * This is good for real swap storage because we can
-> +				 * reduce unnecessary I/O and enhance wear-leveling
-> +				 * if an SSD is used as the as swap device.
-> +				 * But if in-memory swap device (eg zram) is used,
-> +				 * this causes a duplicated copy between uncompressed
-> +				 * data in VM-owned memory and compressed data in
-> +				 * zram-owned memory.  So let's free zram-owned memory
-> +				 * and make the VM-owned decompressed page *dirty*,
-> +				 * so the page should be swapped out somewhere again if
-> +				 * we again wish to reclaim it.
-> +				 */
-
-This comment now makes a horrid mess in an 80-col display.  I think we
-may as well remove a tabstop here.
-
-> +				struct gendisk *disk = sis->bdev->bd_disk;
-> +				if (disk->fops->swap_slot_free_notify) {
-> +					swp_entry_t entry;
-> +					unsigned long offset;
-> +
-> +					entry.val = page_private(page);
-> +					offset = swp_offset(entry);
-> +
-> +					SetPageDirty(page);
-> +					disk->fops->swap_slot_free_notify(sis->bdev,
-> +							offset);
-> +				}
->  			}
->  		}
->  	}
-
-Result:
-
---- a/mm/page_io.c~mm-remove-compressed-copy-from-zram-in-memory-fix-2-fix
-+++ a/mm/page_io.c
-@@ -81,51 +81,54 @@ void end_swap_bio_read(struct bio *bio,
- 				imajor(bio->bi_bdev->bd_inode),
- 				iminor(bio->bi_bdev->bd_inode),
- 				(unsigned long long)bio->bi_sector);
--	} else {
--		SetPageUptodate(page);
-+		goto out;
-+	}
-+
-+	SetPageUptodate(page);
-+
-+	/*
-+	 * There is no guarantee that the page is in swap cache - the software
-+	 * suspend code (at least) uses end_swap_bio_read() against a non-
-+	 * swapcache page.  So we must check PG_swapcache before proceeding with
-+	 * this optimization.
-+	 */
-+	if (likely(PageSwapCache(page))) {
-+		struct swap_info_struct *sis;
-+
-+		sis = page_swap_info(page);
-+		if (sis->flags & SWP_BLKDEV) {
-+			/*
-+			 * The swap subsystem performs lazy swap slot freeing,
-+			 * expecting that the page will be swapped out again.
-+			 * So we can avoid an unnecessary write if the page
-+			 * isn't redirtied.
-+			 * This is good for real swap storage because we can
-+			 * reduce unnecessary I/O and enhance wear-leveling
-+			 * if an SSD is used as the as swap device.
-+			 * But if in-memory swap device (eg zram) is used,
-+			 * this causes a duplicated copy between uncompressed
-+			 * data in VM-owned memory and compressed data in
-+			 * zram-owned memory.  So let's free zram-owned memory
-+			 * and make the VM-owned decompressed page *dirty*,
-+			 * so the page should be swapped out somewhere again if
-+			 * we again wish to reclaim it.
-+			 */
-+			struct gendisk *disk = sis->bdev->bd_disk;
-+			if (disk->fops->swap_slot_free_notify) {
-+				swp_entry_t entry;
-+				unsigned long offset;
-+
-+				entry.val = page_private(page);
-+				offset = swp_offset(entry);
+diff --git a/drivers/staging/ti-soc-thermal/ti-bandgap.c b/drivers/staging/ti-soc-thermal/ti-bandgap.c
+index f20c1cf..c7fc0d0 100644
+--- a/drivers/staging/ti-soc-thermal/ti-bandgap.c
++++ b/drivers/staging/ti-soc-thermal/ti-bandgap.c
+@@ -38,6 +38,7 @@
+ #include <linux/of_device.h>
+ #include <linux/of_platform.h>
+ #include <linux/of_irq.h>
++#include <linux/of_gpio.h>
+ #include <linux/io.h>
  
--		/*
--		 * There is no guarantee that the page is in swap cache, so
--		 * we need to check PG_swapcache before proceeding with this
--		 * optimization.
--		 */
--		if (unlikely(PageSwapCache(page))) {
--			struct swap_info_struct *sis;
--
--			sis = page_swap_info(page);
--			if (sis->flags & SWP_BLKDEV) {
--				/*
--				 * The swap subsystem performs lazy swap slot freeing,
--				 * expecting that the page will be swapped out again.
--				 * So we can avoid an unnecessary write if the page
--				 * isn't redirtied.
--				 * This is good for real swap storage because we can
--				 * reduce unnecessary I/O and enhance wear-leveling
--				 * if an SSD is used as the as swap device.
--				 * But if in-memory swap device (eg zram) is used,
--				 * this causes a duplicated copy between uncompressed
--				 * data in VM-owned memory and compressed data in
--				 * zram-owned memory.  So let's free zram-owned memory
--				 * and make the VM-owned decompressed page *dirty*,
--				 * so the page should be swapped out somewhere again if
--				 * we again wish to reclaim it.
--				 */
--				struct gendisk *disk = sis->bdev->bd_disk;
--				if (disk->fops->swap_slot_free_notify) {
--					swp_entry_t entry;
--					unsigned long offset;
--
--					entry.val = page_private(page);
--					offset = swp_offset(entry);
--
--					SetPageDirty(page);
--					disk->fops->swap_slot_free_notify(sis->bdev,
--							offset);
--				}
-+				SetPageDirty(page);
-+				disk->fops->swap_slot_free_notify(sis->bdev,
-+						offset);
- 			}
- 		}
- 	}
+ #include "ti-bandgap.h"
+@@ -1123,7 +1124,6 @@ static struct ti_bandgap *ti_bandgap_build(struct platform_device *pdev)
+ 	const struct of_device_id *of_id;
+ 	struct ti_bandgap *bgp;
+ 	struct resource *res;
+-	u32 prop;
+ 	int i;
  
-+out:
- 	unlock_page(page);
- 	bio_put(bio);
- }
-_
+ 	/* just for the sake */
+@@ -1167,11 +1167,7 @@ static struct ti_bandgap *ti_bandgap_build(struct platform_device *pdev)
+ 	} while (res);
+ 
+ 	if (TI_BANDGAP_HAS(bgp, TSHUT)) {
+-		if (of_property_read_u32(node, "ti,tshut-gpio", &prop) < 0) {
+-			dev_err(&pdev->dev, "missing tshut gpio in device tree\n");
+-			return ERR_PTR(-EINVAL);
+-		}
+-		bgp->tshut_gpio = prop;
++		bgp->tshut_gpio = of_get_gpio(node, 0);
+ 		if (!gpio_is_valid(bgp->tshut_gpio)) {
+ 			dev_err(&pdev->dev, "invalid gpio for tshut (%d)\n",
+ 				bgp->tshut_gpio);
+diff --git a/drivers/staging/ti-soc-thermal/ti_soc_thermal.txt b/drivers/staging/ti-soc-thermal/ti_soc_thermal.txt
+index a4a33d1..382bd98 100644
+--- a/drivers/staging/ti-soc-thermal/ti_soc_thermal.txt
++++ b/drivers/staging/ti-soc-thermal/ti_soc_thermal.txt
+@@ -17,8 +17,9 @@ Required properties:
+ - interrupts : this entry should indicate which interrupt line
+ the talert signal is routed to;
+ Specific:
+-- ti,tshut-gpio : this entry should be used to inform which GPIO
+-line the tshut signal is routed to;
++- gpios : this entry should be used to inform which GPIO
++line the tshut signal is routed to. The informed GPIO will
++be treated as an IRQ;
+ - regs : this entry must also be specified and it is specific
+ to each bandgap version, because the mapping may change from
+ soc to soc, apart of depending on available features.
+@@ -37,7 +38,7 @@ bandgap {
+ 		0x4a002378 0x18>;
+ 	compatible = "ti,omap4460-bandgap";
+ 	interrupts = <0 126 4>; /* talert */
+-	ti,tshut-gpio = <86>;
++	gpios = <&gpio3 22 0>; /* tshut */
+ };
+ 
+ OMAP4470:
+@@ -47,7 +48,7 @@ bandgap {
+ 		0x4a002378 0x18>;
+ 	compatible = "ti,omap4470-bandgap";
+ 	interrupts = <0 126 4>; /* talert */
+-	ti,tshut-gpio = <86>;
++	gpios = <&gpio3 22 0>; /* tshut */
+ };
+ 
+ OMAP5430:
+-- 
+1.8.2.1.342.gfa7285d
 
