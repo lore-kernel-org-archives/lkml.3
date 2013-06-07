@@ -1,93 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab3FGNfQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 09:35:16 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:19740 "EHLO mail.abilis.ch"
+	id S1754754Ab3FGNgn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 09:36:43 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50661 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752432Ab3FGNfO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 09:35:14 -0400
-Date: Fri, 7 Jun 2013 15:34:50 +0200
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
-Message-ID: <20130607133448.GJ11875@ab42.lan>
-References: <518AAF31.8080502@wwwdotorg.org>
- <20130510082521.GA2125@ab42.lan>
- <51942472.9010402@wwwdotorg.org>
- <CACRpkdYtKr5w2=1sONG4Qn2TQue38nV7epWfzxNQz5rjSs0DZQ@mail.gmail.com>
- <20130522142824.GC4789@ab42.lan>
- <CAD6h2NT4FqmEsLvtTDwwDL2YVzXYNpw72hTOcSxSMvHLhWvFPQ@mail.gmail.com>
- <20130524115053.GB5203@ab42.lan>
- <CACRpkdbqzSZefYB2jywkkKDE_Qse83+MDJ+D+UNYnQGFUzwQWQ@mail.gmail.com>
- <20130603094204.GC31808@ab42.lan>
- <CACRpkdbuDWBPUC8RKSfzwiMycyf1juC=ivxPi-tz-3-vcScnEg@mail.gmail.com>
+	id S1753082Ab3FGNgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 09:36:41 -0400
+Message-ID: <51B1E1C7.7050407@ti.com>
+Date: Fri, 7 Jun 2013 19:06:07 +0530
+From: Balaji T K <balajitk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <CACRpkdbuDWBPUC8RKSfzwiMycyf1juC=ivxPi-tz-3-vcScnEg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Tony Lindgren <tony@atomide.com>
+CC: Hebbar Gururaja <gururaja.hebbar@ti.com>, <khilman@linaro.org>,
+        <linus.walleij@linaro.org>, <sudhakar.raj@ti.com>,
+        <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <vaibhav.bedia@ti.com>, <linux-omap@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 09/11] mmc: omap_hsmmc: enhance pinctrl support
+References: <1369995191-20855-1-git-send-email-gururaja.hebbar@ti.com> <1369995191-20855-10-git-send-email-gururaja.hebbar@ti.com> <20130604144632.GI3331@atomide.com>
+In-Reply-To: <20130604144632.GI3331@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 01:36:16PM +0200, Linus Walleij wrote:
-> On Mon, Jun 3, 2013 at 11:42 AM, Christian Ruppert
-> <christian.ruppert@abilis.com> wrote:
-> 
-> > Ease of use is also the reason why I added the gpio-base property to the
-> > original driver: Finding out the global GPIO number to use in
-> > /sys/class/gpio for a given GPIO of a given bank seems to be a recurring
-> > headache for our customers and the definition of the bank's base number
-> > in the device tree is an attempt to improve this situation.
-> 
-> What you need to do in that case is to find a way to name the pins
-> in sysfs (creating symbolic links with the GPIO pin name) so they
-> can use these names in sysfs instead.
-> 
-> There is no ambition from my side to try to correlate the
-> GPIO sysfs interface and device trees. This is because the GPIO
-> sysfs is not universally liked. And when you say you want to make the
-> sysfs ABI easy to use that lights a big red light on my panel. I will
-> explain why.
-> 
-> What is very important is that your customers understand that
-> the GPIO sysfs shall not be used for things like:
-> 
-> - LEDs
-> - Switches
-> - Regulators
-> - Camera muxes
-> - etc
-> 
-> From the kernel community we have tried (or atleast I have tried)
-> that this kind of hardware shall be handled by the apropriate linux
-> subsystems, and not by obscure userspace code.
+On Tuesday 04 June 2013 08:16 PM, Tony Lindgren wrote:
+> * Hebbar Gururaja <gururaja.hebbar@ti.com> [130531 03:19]:
+>> Amend the hsmmc controller to optionally take a pin control handle and
+>> set the state of the pins to:
+>>
+>> - "default" on boot, resume and before performing a mmc transfer
+>> - "idle" after initial default, after resume default, and after each
+>> mmc/sd card access
+>> - "sleep" on suspend()
+>>
+>> By optionally putting the pins into sleep state in the suspend callback
+>> we can accomplish two things.
+>> - One is to minimize current leakage from pins and thus save power,
+>> - second, we can prevent the IP from driving pins output in an
+>> uncontrolled manner, which may happen if the power domain drops the
+>> domain regulator.
+>>
+>> If any of the above pin states are missing in dt, a warning message
+>> about the missing state is displayed.
+>> If certain pin-states are not available, to remove this warning message
+>> pass respective state name with null phandler.
+>
+> There's a similar patch in the "[RESEND PATCH v2 1/3] mmc: omap_hsmmc:
+> Enable SDIO IRQ using a GPIO in idle mode" thread. It also makes the
+> SDIO interrupts to work, so we need to consider that too.
+>
 
-I totally agree with that and we already declare the LEDs etc. on our
-PCBs in the device trees. However, we have at least one customer who has
-a user space driver for some peripheral on i2c which needs to be reset
-through GPIO. I'm not sure which framework to use for this sort of
-applications.
+Hi Tony,
 
-Greetings,
-  Christian
+I will try to combine both of these and make use of
+pinctrl_pm_select_[*]_state helper functions.
 
--- 
-  Christian Ruppert              ,          <christian.ruppert@abilis.com>
-                                /|
-  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
-                             _// | bilis Systems   CH-1228 Plan-les-Ouates
+
+> We can merge the dynamic pinmuxing parts separately, but they should
+> be in a separate function like I posted later on in the thread above.
+>
+> Regards,
+>
+> Tony
+>
