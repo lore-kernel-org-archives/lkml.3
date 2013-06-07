@@ -1,124 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296Ab3FGDQB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jun 2013 23:16:01 -0400
-Received: from mga09.intel.com ([134.134.136.24]:17050 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751686Ab3FGDQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jun 2013 23:16:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,819,1363158000"; 
-   d="scan'208";a="325595135"
-Message-ID: <1370575086.4432.52.camel@ymzhang.sh.intel.com>
-Subject: Re: [PATCH] irq: add a new function irq_in_progress to check
- pending IRQ handlers
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Reply-To: yanmin_zhang@linux.intel.com
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Liu ShuoX <shuox.liu@intel.com>,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        sedat.dilek@gmail.com, srivatsa.bhat@linux.vnet.ibm.com,
-        Zhang Yanmin <yanmin.zhang@intel.com>
-Date: Fri, 07 Jun 2013 11:18:06 +0800
-In-Reply-To: <20130607030853.GA2827@kroah.com>
-References: <1370504296-24389-1-git-send-email-shuox.liu@intel.com>
-	 <alpine.LFD.2.02.1306061505210.2905@ionos>
-	 <1370566409.4432.41.camel@ymzhang.sh.intel.com>
-	 <20130607010225.GA28256@kroah.com>
-	 <1370572672.4432.49.camel@ymzhang.sh.intel.com>
-	 <20130607030853.GA2827@kroah.com>
-Organization: Intel.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753041Ab3FGD2i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jun 2013 23:28:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37446 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751662Ab3FGD2h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jun 2013 23:28:37 -0400
+Date: Thu, 6 Jun 2013 20:28:31 -0700
+From: Tyler Hicks <tyhicks@canonical.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        ecryptfs@vger.kernel.org
+Subject: [GIT PULL] eCryptfs fixes for 3.10-rc5
+Message-ID: <20130607032818.GA18403@boyd>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="oyUTqETQ0mS9luUI"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-06 at 20:08 -0700, Greg KH wrote:
-> On Fri, Jun 07, 2013 at 10:37:52AM +0800, Yanmin Zhang wrote:
-> > On Thu, 2013-06-06 at 18:02 -0700, Greg KH wrote:
-> > > On Fri, Jun 07, 2013 at 08:53:29AM +0800, Yanmin Zhang wrote:
-> > > > On Thu, 2013-06-06 at 15:18 +0200, Thomas Gleixner wrote:
-> > > > > On Thu, 6 Jun 2013, shuox.liu@intel.com wrote:
-> > > > > > From: Zhang Yanmin <yanmin.zhang@intel.com>
-> > > > > > 
-> > > > > > synchronize_irq waits pending IRQ handlers to be finished. If using this
-> > > > > > function while holding a resource, the IRQ handler may cause deadlock.
-> > > > > > 
-> > > > > > Here we add a new function irq_in_progress which doesn't wait for the handlers
-> > > > > > to be finished.
-> > > > > > 
-> > > > > > A typical use case at suspend-to-ram:
-> > > > > > 
-> > > > > > device driver's irq handler is complicated and might hold a mutex at rare cases.
-> > > > > > Its suspend function is called and a suspended flag is set.
-> > > > > > In case its IRQ handler is running, suspend function calls irq_in_progress. if
-> > > > > > handler is running, abort suspend.
-> > > > > > The irq handler checks the suspended flag. If the device is suspended, irq handler
-> > > > > > either ignores the interrupt, or wakes up the whole system, and the driver's
-> > > > > > resume function could deal with the delayed interrupt handling.
-> > > > > 
-> > > > > This is as wrong as it can be. Fix the driver instead of hacking racy
-> > > > > functions into the core code.
-> > > > > 
-> > > > > So your problem looks like this:
-> > > > > 
-> > > > > CPU 0				CPU 1
-> > > > > irq_handler_thread()		suspend()
-> > > > >    .....			mutex_lock(&m);
-> > > > >    mutex_lock(&m);		synchronize_irq();
-> > > > > 
-> > > > > So why needs the mutex to be taken before synchronize_irq()? Why not
-> > > > > doing the obvious?
-> > > > > 
-> > > > > suspend()
-> > > > >   disable_irq(); (Implies synchronize_irq)
-> > > > >   mutex_lock(&m);
-> > > > >   ....
-> > > > >   mutex_unlock(&m);
-> > > > >   enable_irq();
-> > > > Thanks for the kind comment.
-> > > > 
-> > > > We do consider your solution before and it works well indeed with some specific
-> > > > simple drivers. For example, some drives use GPIO pin as interrupt source.
-> > > > 
-> > > > On one specific platform, disable_irq would really disable the irq at RTE entry,
-> > > > which means we lose the wakeup capability of this device.
-> > > > synchronize_irq can be another solution. But we did hit 'DPM device timeout' issue
-> > > > reported by dpm_wd_handler at suspend-to-ram.
-> > > > 
-> > > > The driver is complicated. We couldn't change too many functions to optimize it.
-> > > > In addition, we have to use the driver instead of throwing it away.
-> > > 
-> > > What is preventing you from rewriting it to work properly?
-> > It's complicated.
-> 
-> That sounds like your issue, not ours, so please don't push the problem
-> onto someone else.  Take ownership of the driver, fix it up, and all
-> will be good.
-> 
-> 
-> > > > With irq_in_progress, we can resolve this issue and it does work, although it
-> > > > looks like ugly.
-> > > 
-> > > Don't paper over driver bugs in the core kernel, fix the driver.
-> > It's hard to say it's a driver bug. Could generic kernel provide some
-> > flexibility for such complicated drivers?
-> 
-> Please post the code for the driver, and then we will be glad to
-> continue the dicussion.
-Greg,
 
-Thanks for your enthusiasm. It's a private driver for products.
+--oyUTqETQ0mS9luUI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Let's stop here and I wouldn't push the patch to upstream.
+Hi Linus,
 
-Thanks all.
-Yanmin
+The following changes since commit bb3ec6b08396bbd631b6441102dd1c3d89cbc576:
 
-> 
-> As for "complicated", just make it "uncomplicated", it's just code :)
+  mm: Fix virt_to_page() warning (2013-05-22 08:05:16 -0700)
 
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/tyhicks/ecryptfs.git tags/ecryptfs-3.10-rc5-msync
+
+for you to fetch changes up to bc5abcf7e411b889f73ea2a90439071a0f451011:
+
+  eCryptfs: Check return of filemap_write_and_wait during fsync (2013-06-04 23:53:31 -0700)
+
+----------------------------------------------------------------
+* Fixes how eCryptfs handles msync to sync both the upper and lower file
+* A couple of MAINTAINERS updates
+
+----------------------------------------------------------------
+Dustin Kirkland (1):
+      Update eCryptFS maintainers
+
+Paul Taysom (1):
+      ecryptfs: fixed msync to flush data
+
+Tyler Hicks (1):
+      eCryptfs: Check return of filemap_write_and_wait during fsync
+
+ MAINTAINERS        | 2 +-
+ fs/ecryptfs/file.c | 6 ++++++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+--oyUTqETQ0mS9luUI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCgAGBQJRsVNSAAoJENaSAD2qAscKFaIQAIYmS4one1LID1gUupPIvMs0
+tPfFiIST4s84U0GirM8uZvIi1hRjRrRQWf9+3v+o/87YhcTsPInXBviWs78P6/ZL
+eLUAkHiC4h3t7539ERFxwiOqs1cOeQEXQNMeq379cTAFomIZsh1991H9AySd8INM
+gIrqg5vsh5OBdQG59h4sewiplCSDgWNj9TQTLhbTMP4/Iqa0CdRqV+TwLNBy1fiP
+BM9/WfMD5H/Ez/7PNDKjVxPnROS7K6tQtb0Pv9wzhMiETu/Za4SckrZrs95SJv+A
+3RvMQ6W8M7yUGQZm0uUg5CsL3dvhOvzQ3Cv9/+yQCr+pWCIKwvKSQ1j0eUG/hF0L
+rhVGiVGwe1kNkhTdOTCYjeTMhK39ApJOi3CtWBT4YIbG/8sWl4J9leNl3ilxBKPF
+0N0ONzDgRNDhgvqQHHt2oaohg/x3DjedNn3MflWw66FVmggVQvCtNFK02wQkRIg0
+828gySs+QX8aODnRrZuECmgOVFkF+SlIZC9Vkn4XQ4+GMvaFiXK0j4rEeP+k9yR2
+tIveGDTxqckvHYGqeib7zyiLIDSDYTiUvxzyWOwkPzr6TOAoHCsiJx/9QKaTi7ip
+0D4bxv4wAzWzsmbuJu5F0/E2P3VH9COdGCk+xwGjYa6i19MIwAQL6BuKJddoSaaT
+oU39FKvP7+61JI2zIsM3
+=QHdb
+-----END PGP SIGNATURE-----
+
+--oyUTqETQ0mS9luUI--
