@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab3FGNr3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 09:47:29 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:37222 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752540Ab3FGNr2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 09:47:28 -0400
-Date: Fri, 7 Jun 2013 15:47:16 +0200
-From: Robert Richter <rric@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+	id S1755299Ab3FGNrm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 09:47:42 -0400
+Received: from 1wt.eu ([62.212.114.60]:36146 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754290Ab3FGNrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 09:47:40 -0400
+Date: Fri, 7 Jun 2013 15:47:29 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Lotfi Manseur <lotfi.manseur@gmail.com>
+Cc: stable@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wojciech M Zabolotny <W.Zabolotny@elka.pw.edu.pl>,
+        Nicolas Palix <nicolas.palix@imag.fr>,
+        Lotfi Manseur <lotfi.manseur@imag.fr>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 16/16] perf, persistent: Allow multiple users for an event
-Message-ID: <20130607134716.GG3886@rric.localhost>
-References: <1369990056-10310-1-git-send-email-rric@kernel.org>
- <1369990056-10310-17-git-send-email-rric@kernel.org>
- <20130603134925.GA13548@krava.brq.redhat.com>
- <20130604082042.GB23640@pd.tnic>
- <20130604091921.GC1103@krava.brq.redhat.com>
- <20130604093522.GD23640@pd.tnic>
-MIME-Version: 1.0
+Subject: Re: [PATCH] USB: serial/ftdi_sio.c Fix kernel oops
+Message-ID: <20130607134729.GC19006@1wt.eu>
+References: <1370610872-1309-1-git-send-email-lotfi.manseur@imag.fr>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130604093522.GD23640@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1370610872-1309-1-git-send-email-lotfi.manseur@imag.fr>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04.06.13 11:35:22, Borislav Petkov wrote:
-> On Tue, Jun 04, 2013 at 11:19:21AM +0200, Jiri Olsa wrote:
-> > 'cpu' did not pass ay check here..
+On Fri, Jun 07, 2013 at 03:14:32PM +0200, Lotfi Manseur wrote:
+> Handle null termios in ftdi_set_termios(), introduced in
+> commit 552f6bf1bb0eda0011c0525dd587aa9e7ba5b846
+> This has been corrected in the mainline by
+> commits c515598e0f5769916c31c00392cc2bfe6af74e55 and
+> a816e3113b63753c330ca4751ea1d208e93e3015.
 > 
-> Oh, I see.
-> 
-> You mean something like
-> 
-> 	if (cpu < NR_CPUS && cpu_online(cpu))
+> This is to be fixed in longterm 2.6.32.60 and 3.4.47.
+> This bug has been found with coccinelle.
 
-In perf_event_alloc() there is:
+Thank you Lofti, I have queued it now.
 
-        if ((unsigned)cpu >= nr_cpu_ids) {
-                if (!task || cpu != -1)
-                        return ERR_PTR(-EINVAL);
-        }
+Best regards,
+Willy
 
-So this should be sufficient:
-
-	if ((unsigned)cpu >= nr_cpu_ids)
-		...
-
--Robert
