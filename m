@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760Ab3FGV3g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 17:29:36 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:35653 "EHLO
+	id S1756018Ab3FGVe1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 17:34:27 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:40676 "EHLO
 	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608Ab3FGV3f (ORCPT
+	with ESMTP id S1752746Ab3FGVeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 17:29:35 -0400
+	Fri, 7 Jun 2013 17:34:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130607205940.4816fed5@skate>
+In-Reply-To: <20130607193014.GW18614@n2100.arm.linux.org.uk>
 References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
-	<1370475609.20454.44.camel@localhost>
-	<CAPweEDwS3tR=wh-bZJb3vqR8fVQra=3XxDitowGRdH9c7WRfmQ@mail.gmail.com>
-	<1733666.lHUBcfUXq9@flatron>
-	<20130606112723.71ddd70c@skate>
-	<CAPweEDzW60poOYahm31aW3_A=NvZmyBPPPgM9PzdvuPJnju69A@mail.gmail.com>
-	<20130607205940.4816fed5@skate>
-Date: Fri, 7 Jun 2013 22:29:34 +0100
-Message-ID: <CAPweEDxtC+OamcpVEQ3BULbN88hSJzKoi0fkNLBAdZD04LQCNQ@mail.gmail.com>
+	<1622862.fXQWv0YWGV@flatron>
+	<CAPweEDx_1fvAv9sROtPreoyyj_yDAuYb040fM2zPc+tf22d=YA@mail.gmail.com>
+	<4466665.6pIGCIdISn@flatron>
+	<CAPweEDwmgr2JbH+txDDjR_gDA2R2C1v=AuVCUVTs7RriMhZNiA@mail.gmail.com>
+	<20130607193014.GW18614@n2100.arm.linux.org.uk>
+Date: Fri, 7 Jun 2013 22:34:25 +0100
+Message-ID: <CAPweEDxMTnpFBaPiACpig0g3ZHVMwLJpOpdz6TbD-fN5hkDL7g@mail.gmail.com>
 Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
  Uploading linux (3.9.4-1))
 From: "luke.leighton" <luke.leighton@gmail.com>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
 Cc: Tomasz Figa <tomasz.figa@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>,
         devicetree-discuss <devicetree-discuss@ozlabs.org>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        debian-kernel@lists.debian.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
+        debian-kernel@lists.debian.org, Arnd Bergmann <arnd@arndb.de>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Olof Johansson <olof@lixom.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 7, 2013 at 7:59 PM, Thomas Petazzoni
-<thomas.petazzoni@free-electrons.com> wrote:
-
-> Maxime will reply to this in more details, but I believe the status is:
+On Fri, Jun 7, 2013 at 8:30 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Fri, Jun 07, 2013 at 08:02:03PM +0100, luke.leighton wrote:
+>>  well, tough.  get me up to speed, *fast*.
 >
->  * Interrupt controller is working.
->  * Clock drivers are working.
->  * Pinctrl is working.
->  * GPIO is working.
->  * Timer is working.
->  * UART is working
->  * Watchdog is on its way (patches posted)
->  * Ethernet is on its way (patches posted)
->  * I2C is on its way (patches posted)
+> No, not unless you're willing to *pay* someone to spend time teaching you,
 
- ok so i've got this now in
-http://hands.com/~lkcl/allwinner_linux_proposal.txt - that leaves...
-well there's quite a bit: usb, sd/mmc (both variants: they changed the
-data structures around sun5i), nand (probably both - the allwinner one
-and the mtd one being done, reminds me: we need full documentation on
-the NAND chip), scsi, g2d - cedarx and more.
+ there's not enough time.  2 days left.
 
- what else should be raised, and to what benefit?
+> because you are asking to be *taught* about the current situation, so
+> you're asking someone to do some _work_ _for_
+
+ ..... for the benefit of free software, russell.
+
+ for the benefit of free software.
+
+ for the BENEFIT of free software.
+
+ > _you_.
+
+ NO.
