@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab3FGIyZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 04:54:25 -0400
-Received: from canardo.mork.no ([148.122.252.1]:45072 "EHLO canardo.mork.no"
+	id S1754902Ab3FGIyb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 04:54:31 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:24407 "EHLO mail.abilis.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753958Ab3FGIyU convert rfc822-to-8bit (ORCPT
+	id S1753958Ab3FGIy1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 04:54:20 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Adam Lee <adam.lee@canonical.com>
-Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        ibm-acpi-devel@lists.sourceforge.net,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Alex Hung <alex.hung@canonical.com>
-Subject: Re: [PATCH 1/3] thinkpad_acpi: return -NODEV while operating uninitialized LEDs
-Organization: m
-References: <1370593209-21358-1-git-send-email-adam.lee@canonical.com>
-	<1370593209-21358-2-git-send-email-adam.lee@canonical.com>
-Date: Fri, 07 Jun 2013 10:53:50 +0200
-In-Reply-To: <1370593209-21358-2-git-send-email-adam.lee@canonical.com> (Adam
-	Lee's message of "Fri, 7 Jun 2013 16:20:07 +0800")
-Message-ID: <87vc5qxpwh.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	Fri, 7 Jun 2013 04:54:27 -0400
+Date: Fri, 7 Jun 2013 10:53:39 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org
+Subject: Re: i2c: designware: prevent signals from aborting I2C transfers
+Message-ID: <20130607085327.GA570@ab42.lan>
+References: <1369216991-13334-1-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1369216991-13334-1-git-send-email-mika.westerberg@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adam Lee <adam.lee@canonical.com> writes:
-
-> --- a/drivers/platform/x86/thinkpad_acpi.c
-> +++ b/drivers/platform/x86/thinkpad_acpi.c
-> @@ -5401,9 +5401,12 @@ static int led_write(char *buf)
->  		return -ENODEV;
+On Wed, May 22, 2013 at 10:03:11AM -0000, Mika Westerberg wrote:
+> If a process receives signal while it is waiting for I2C transfer to
+> complete, an error is returned to the caller and the transfer is aborted.
+> This can cause the driver to fail subsequent transfers. Also according to
+> commit d295a86eab2 (i2c: mv64xxx: work around signals causing I2C
+> transactions to be aborted) I2C drivers aren't supposed to abort
+> transactions on signals.
+> 
+> To prevent this switch to use wait_for_completion_timeout() instead of
+> wait_for_completion_interruptible_timeout() in the designware I2C driver.
+> 
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Reviewed-by: Christian Ruppert <christian.ruppert@abilis.com>
+> 
+> ---
+> drivers/i2c/busses/i2c-designware-core.c |    5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+> index c41ca63..db20a28 100644
+> --- a/drivers/i2c/busses/i2c-designware-core.c
+> +++ b/drivers/i2c/busses/i2c-designware-core.c
+> @@ -580,14 +580,13 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
+>  	i2c_dw_xfer_init(dev);
 >  
->  	while ((cmd = next_cmd(&buf))) {
-> -		if (sscanf(cmd, "%d", &led) != 1 || led < 0 || led > 15)
-> +		if (sscanf(cmd, "%d", &led) != 1)
->  			return -EINVAL;
+>  	/* wait for tx to complete */
+> -	ret = wait_for_completion_interruptible_timeout(&dev->cmd_complete, HZ);
+> +	ret = wait_for_completion_timeout(&dev->cmd_complete, HZ);
+>  	if (ret == 0) {
+>  		dev_err(dev->dev, "controller timed out\n");
+>  		i2c_dw_init(dev);
+>  		ret = -ETIMEDOUT;
+>  		goto done;
+> -	} else if (ret < 0)
+> -		goto done;
+> +	}
 >  
-> +		if (!tpacpi_leds[led].led)
-> +			return -ENODEV;
+>  	if (dev->msg_err) {
+>  		ret = dev->msg_err;
 
-This looks risky.  Why did you remove the index sanity check?  What will
-happen now if the input is e.g "-1" or "42"?
-
-BTW, the magic number 15 should probably be (TPACPI_LED_NUMLEDS - 1)
-instead.
-
-
-
-BjÃ¸rn
+-- 
+  Christian Ruppert              ,          <christian.ruppert@abilis.com>
+                                /|
+  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
+                             _// | bilis Systems   CH-1228 Plan-les-Ouates
