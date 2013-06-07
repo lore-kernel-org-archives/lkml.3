@@ -1,777 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065Ab3FGPMH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 11:12:07 -0400
-Received: from 20.mo1.mail-out.ovh.net ([188.165.45.168]:60923 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755416Ab3FGPMF (ORCPT
+	id S1756102Ab3FGPMa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 11:12:30 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:35620 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756038Ab3FGPM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 11:12:05 -0400
-X-Greylist: delayed 3093 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Jun 2013 11:12:05 EDT
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Andrew Victor <linux@maxim.org.za>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>,
-        Russell King <linux@arm.linux.org.uk>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [RFC PATCH 14/50] ARM: at91: move at91sam9260 SoC to new at91 clk implem
-Date: Fri,  7 Jun 2013 17:11:51 +0200
-Message-Id: <1370617912-18453-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370615115-16979-1-git-send-email-b.brezillon@overkiz.com>
-References: <1370615115-16979-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 17855928097762932764
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 7 Jun 2013 11:12:27 -0400
+Message-ID: <51B1F859.1010504@itdev.co.uk>
+Date: Fri, 07 Jun 2013 16:12:25 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
+Subject: Re: [PATCH 10/53] Input: atmel_mxt_ts - Add memory access interface
+ via sysfs
+References: <1717403.GgHsbyUkDZ@dtor-d630.eng.vmware.com> <51AFA02B.3000604@itdev.co.uk> <20130605210715.GA16013@core.coreip.homeip.net> <51AFAF6D.7050204@itdev.co.uk> <20130606100346.GC1883@sirena.org.uk> <51B0651D.3090902@itdev.co.uk> <20130606105530.GT31367@sirena.org.uk> <51B06FE4.7040805@itdev.co.uk> <20130606131638.GX31367@sirena.org.uk> <51B0B52C.1090807@itdev.co.uk> <20130606164629.GG31367@sirena.org.uk>
+In-Reply-To: <20130606164629.GG31367@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes all references to the old at91 clks implementation and
-make use of the new at91 clk implem for at91sam9260 SoC.
+Mark Brown wrote:
+> On Thu, Jun 06, 2013 at 05:13:32PM +0100, Nick Dyer wrote:
+> 
+>> I am not a legal expert, but I have described what you suggest to people
+>> who are more expert in the NDA terms and they say I cannot implement a
+>> solution which exposes the names of all the parameters. In any case,
+> 
+> Who said anything about names?  I'd assume the userspace stuff is
+> eventually talking to the device based on numbers of some kind and I'd
+> expect that this would be what ends up in the API.
 
-All dt specific lookups are removed (handled in clk device tree binding).  
+OK. But if user-space is talking to the device based on register numbers, a
+binary attribute seems like the correct way to present that - isn't that
+what they're designed for?
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- arch/arm/mach-at91/at91sam9260.c |  692 +++++++++++++++++++++++++-------------
- 1 file changed, 457 insertions(+), 235 deletions(-)
+>> And we wouldn't have won anything, because the user could still write to
+>> the register that turns off reporting (for example) by mistake with both
+>> methods.
+> 
+> You'd not have access to the entire device register map which seems like
+> a win
 
-diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
-index df32768..45a8169c 100644
---- a/arch/arm/mach-at91/at91sam9260.c
-+++ b/arch/arm/mach-at91/at91sam9260.c
-@@ -26,7 +26,6 @@
- #include "at91_rstc.h"
- #include "soc.h"
- #include "generic.h"
--#include "clock.h"
- #include "sam9_smc.h"
- 
- /* --------------------------------------------------------------------
-@@ -36,255 +35,478 @@
- /*
-  * The peripheral clocks.
-  */
--static struct clk pioA_clk = {
--	.name		= "pioA_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_PIOA,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk pioB_clk = {
--	.name		= "pioB_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_PIOB,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk pioC_clk = {
--	.name		= "pioC_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_PIOC,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk adc_clk = {
--	.name		= "adc_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_ADC,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--
--static struct clk adc_op_clk = {
--	.name		= "adc_op_clk",
--	.type		= CLK_TYPE_PERIPHERAL,
--	.rate_hz	= 5000000,
--};
--
--static struct clk usart0_clk = {
--	.name		= "usart0_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_US0,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk usart1_clk = {
--	.name		= "usart1_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_US1,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk usart2_clk = {
--	.name		= "usart2_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_US2,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk mmc_clk = {
--	.name		= "mci_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_MCI,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk udc_clk = {
--	.name		= "udc_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_UDP,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk twi_clk = {
--	.name		= "twi_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_TWI,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk spi0_clk = {
--	.name		= "spi0_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_SPI0,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk spi1_clk = {
--	.name		= "spi1_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_SPI1,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk ssc_clk = {
--	.name		= "ssc_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_SSC,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk tc0_clk = {
--	.name		= "tc0_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_TC0,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk tc1_clk = {
--	.name		= "tc1_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_TC1,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk tc2_clk = {
--	.name		= "tc2_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_TC2,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk ohci_clk = {
--	.name		= "ohci_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_UHP,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk macb_clk = {
--	.name		= "pclk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_EMAC,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk isi_clk = {
--	.name		= "isi_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_ISI,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk usart3_clk = {
--	.name		= "usart3_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_US3,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk usart4_clk = {
--	.name		= "usart4_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_US4,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk usart5_clk = {
--	.name		= "usart5_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_US5,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk tc3_clk = {
--	.name		= "tc3_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_TC3,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk tc4_clk = {
--	.name		= "tc4_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_TC4,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--static struct clk tc5_clk = {
--	.name		= "tc5_clk",
--	.pmc_mask	= 1 << AT91SAM9260_ID_TC5,
--	.type		= CLK_TYPE_PERIPHERAL,
--};
--
--static struct clk *periph_clocks[] __initdata = {
--	&pioA_clk,
--	&pioB_clk,
--	&pioC_clk,
--	&adc_clk,
--	&adc_op_clk,
--	&usart0_clk,
--	&usart1_clk,
--	&usart2_clk,
--	&mmc_clk,
--	&udc_clk,
--	&twi_clk,
--	&spi0_clk,
--	&spi1_clk,
--	&ssc_clk,
--	&tc0_clk,
--	&tc1_clk,
--	&tc2_clk,
--	&ohci_clk,
--	&macb_clk,
--	&isi_clk,
--	&usart3_clk,
--	&usart4_clk,
--	&usart5_clk,
--	&tc3_clk,
--	&tc4_clk,
--	&tc5_clk,
--	// irq0 .. irq2
--};
--
--static struct clk_lookup periph_clocks_lookups[] = {
--	/* One additional fake clock for macb_hclk */
--	CLKDEV_CON_ID("hclk", &macb_clk),
--	CLKDEV_CON_DEV_ID("spi_clk", "atmel_spi.0", &spi0_clk),
--	CLKDEV_CON_DEV_ID("spi_clk", "atmel_spi.1", &spi1_clk),
--	CLKDEV_CON_DEV_ID("t0_clk", "atmel_tcb.0", &tc0_clk),
--	CLKDEV_CON_DEV_ID("t1_clk", "atmel_tcb.0", &tc1_clk),
--	CLKDEV_CON_DEV_ID("t2_clk", "atmel_tcb.0", &tc2_clk),
--	CLKDEV_CON_DEV_ID("t0_clk", "atmel_tcb.1", &tc3_clk),
--	CLKDEV_CON_DEV_ID("t1_clk", "atmel_tcb.1", &tc4_clk),
--	CLKDEV_CON_DEV_ID("t2_clk", "atmel_tcb.1", &tc5_clk),
--	CLKDEV_CON_DEV_ID("pclk", "at91rm9200_ssc.0", &ssc_clk),
--	CLKDEV_CON_DEV_ID("pclk", "fffbc000.ssc", &ssc_clk),
--	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9260.0", &twi_clk),
--	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9g20.0", &twi_clk),
--	/* more usart lookup table for DT entries */
--	CLKDEV_CON_DEV_ID("usart", "fffff200.serial", &mck),
--	CLKDEV_CON_DEV_ID("usart", "fffb0000.serial", &usart0_clk),
--	CLKDEV_CON_DEV_ID("usart", "fffb4000.serial", &usart1_clk),
--	CLKDEV_CON_DEV_ID("usart", "fffb8000.serial", &usart2_clk),
--	CLKDEV_CON_DEV_ID("usart", "fffd0000.serial", &usart3_clk),
--	CLKDEV_CON_DEV_ID("usart", "fffd4000.serial", &usart4_clk),
--	CLKDEV_CON_DEV_ID("usart", "fffd8000.serial", &usart5_clk),
--	CLKDEV_CON_DEV_ID(NULL, "fffac000.i2c", &twi_clk),
--	/* more tc lookup table for DT entries */
--	CLKDEV_CON_DEV_ID("t0_clk", "fffa0000.timer", &tc0_clk),
--	CLKDEV_CON_DEV_ID("t1_clk", "fffa0000.timer", &tc1_clk),
--	CLKDEV_CON_DEV_ID("t2_clk", "fffa0000.timer", &tc2_clk),
--	CLKDEV_CON_DEV_ID("t0_clk", "fffdc000.timer", &tc3_clk),
--	CLKDEV_CON_DEV_ID("t1_clk", "fffdc000.timer", &tc4_clk),
--	CLKDEV_CON_DEV_ID("t2_clk", "fffdc000.timer", &tc5_clk),
--	CLKDEV_CON_DEV_ID("hclk", "500000.ohci", &ohci_clk),
--	CLKDEV_CON_DEV_ID("mci_clk", "fffa8000.mmc", &mmc_clk),
--	CLKDEV_CON_DEV_ID("spi_clk", "fffc8000.spi", &spi0_clk),
--	CLKDEV_CON_DEV_ID("spi_clk", "fffcc000.spi", &spi1_clk),
--	/* fake hclk clock */
--	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &ohci_clk),
--	CLKDEV_CON_ID("pioA", &pioA_clk),
--	CLKDEV_CON_ID("pioB", &pioB_clk),
--	CLKDEV_CON_ID("pioC", &pioC_clk),
--	CLKDEV_CON_DEV_ID(NULL, "fffff400.gpio", &pioA_clk),
--	CLKDEV_CON_DEV_ID(NULL, "fffff600.gpio", &pioB_clk),
--	CLKDEV_CON_DEV_ID(NULL, "fffff800.gpio", &pioC_clk),
--};
--
--static struct clk_lookup usart_clocks_lookups[] = {
--	CLKDEV_CON_DEV_ID("usart", "atmel_usart.0", &mck),
--	CLKDEV_CON_DEV_ID("usart", "atmel_usart.1", &usart0_clk),
--	CLKDEV_CON_DEV_ID("usart", "atmel_usart.2", &usart1_clk),
--	CLKDEV_CON_DEV_ID("usart", "atmel_usart.3", &usart2_clk),
--	CLKDEV_CON_DEV_ID("usart", "atmel_usart.4", &usart3_clk),
--	CLKDEV_CON_DEV_ID("usart", "atmel_usart.5", &usart4_clk),
--	CLKDEV_CON_DEV_ID("usart", "atmel_usart.6", &usart5_clk),
-+static struct clk_lookup pioA_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "pioA_clk", NULL),
-+	CLKDEV_INIT(NULL, "pioA", NULL),
-+};
-+
-+static struct clk_lookup pioB_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "pioB_clk", NULL),
-+	CLKDEV_INIT(NULL, "pioB", NULL),
-+};
-+
-+static struct clk_lookup pioC_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "pioC_clk", NULL),
-+	CLKDEV_INIT(NULL, "pioC", NULL),
-+};
-+
-+static struct clk_lookup adc_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "adc_clk", NULL),
-+};
-+
-+static struct clk_lookup usart0_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "usart0_clk", NULL),
-+	CLKDEV_INIT("atmel_usart.1", "usart", NULL),
-+};
-+
-+static struct clk_lookup usart1_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "usart1_clk", NULL),
-+	CLKDEV_INIT("atmel_usart.2", "usart", NULL),
-+};
-+
-+static struct clk_lookup usart2_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "usart2_clk", NULL),
-+	CLKDEV_INIT("atmel_usart.3", "usart", NULL),
-+};
-+
-+static struct clk_lookup mci_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "mci_clk", NULL),
-+};
-+
-+static struct clk_lookup udc_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "udc_clk", NULL),
-+};
-+
-+static struct clk_lookup twi_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "twi_clk", NULL),
-+	CLKDEV_INIT("i2c-at91sam9260.0", NULL, NULL),
-+	CLKDEV_INIT("i2c-at91sam9g20.0", NULL, NULL),
-+};
-+
-+static struct clk_lookup spi0_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "spi0_clk", NULL),
-+	CLKDEV_INIT("atmel_spi.0", "spi_clk", NULL),
-+};
-+
-+static struct clk_lookup spi1_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "spi1_clk", NULL),
-+	CLKDEV_INIT("atmel_spi.1", "spi_clk", NULL),
-+};
-+
-+static struct clk_lookup ssc_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "ssc_clk", NULL),
-+	CLKDEV_INIT("at91rm9200_ssc.0", "pclk", NULL),
-+};
-+
-+static struct clk_lookup tc0_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "tc0_clk", NULL),
-+	CLKDEV_INIT("atmel_tcb.0", "t0_clk", NULL),
-+};
-+
-+static struct clk_lookup tc1_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "tc1_clk", NULL),
-+	CLKDEV_INIT("atmel_tcb.0", "t1_clk", NULL),
-+};
-+
-+static struct clk_lookup tc2_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "tc2_clk", NULL),
-+	CLKDEV_INIT("atmel_tcb.0", "t2_clk", NULL),
-+};
-+
-+static struct clk_lookup ohci_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "ohci_clk", NULL),
-+	CLKDEV_INIT("at91_ohci", "hclk", NULL),
-+};
-+
-+static struct clk_lookup macb_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "pclk", NULL),
-+	CLKDEV_INIT(NULL, "hclk", NULL),
-+};
-+
-+static struct clk_lookup usart3_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "usart3_clk", NULL),
-+	CLKDEV_INIT("atmel_usart.4", "usart", NULL),
-+};
-+
-+static struct clk_lookup usart4_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "usart4_clk", NULL),
-+	CLKDEV_INIT("atmel_usart.5", "usart", NULL),
-+};
-+
-+static struct clk_lookup usart5_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "usart5_clk", NULL),
-+	CLKDEV_INIT("atmel_usart.6", "usart", NULL),
-+};
-+
-+static struct clk_lookup tc3_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "tc3_clk", NULL),
-+	CLKDEV_INIT("t0_clk", "atmel_tcb.1", NULL),
-+};
-+
-+static struct clk_lookup tc4_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "tc4_clk", NULL),
-+	CLKDEV_INIT("t1_clk", "atmel_tcb.1", NULL),
-+};
-+
-+static struct clk_lookup tc5_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "tc5_clk", NULL),
-+	CLKDEV_INIT("t2_clk", "atmel_tcb.1", NULL),
-+};
-+
-+static size_t periph_clock_lookup_sizes[] __initdata = {
-+	0,
-+	0,
-+	ARRAY_SIZE(pioA_clk_lookup),
-+	ARRAY_SIZE(pioB_clk_lookup),
-+	ARRAY_SIZE(pioC_clk_lookup),
-+	ARRAY_SIZE(adc_clk_lookup),
-+	ARRAY_SIZE(usart0_clk_lookup),
-+	ARRAY_SIZE(usart1_clk_lookup),
-+	ARRAY_SIZE(usart2_clk_lookup),
-+	ARRAY_SIZE(mci_clk_lookup),
-+	ARRAY_SIZE(udc_clk_lookup),
-+	ARRAY_SIZE(twi_clk_lookup),
-+	0,
-+	ARRAY_SIZE(spi0_clk_lookup),
-+	ARRAY_SIZE(spi1_clk_lookup),
-+	ARRAY_SIZE(ssc_clk_lookup),
-+	0,
-+	0,
-+	ARRAY_SIZE(tc0_clk_lookup),
-+	ARRAY_SIZE(tc1_clk_lookup),
-+	ARRAY_SIZE(tc2_clk_lookup),
-+	ARRAY_SIZE(ohci_clk_lookup),
-+	ARRAY_SIZE(macb_clk_lookup),
-+	0,
-+	ARRAY_SIZE(usart3_clk_lookup),
-+	ARRAY_SIZE(usart4_clk_lookup),
-+	ARRAY_SIZE(usart5_clk_lookup),
-+	ARRAY_SIZE(tc3_clk_lookup),
-+	ARRAY_SIZE(tc4_clk_lookup),
-+	ARRAY_SIZE(tc5_clk_lookup),
-+};
-+
-+static struct clk_lookup *periph_clock_lookups[] __initdata = {
-+	NULL,
-+	NULL,
-+	pioA_clk_lookup,
-+	pioB_clk_lookup,
-+	pioC_clk_lookup,
-+	adc_clk_lookup,
-+	usart0_clk_lookup,
-+	usart1_clk_lookup,
-+	usart2_clk_lookup,
-+	mci_clk_lookup,
-+	udc_clk_lookup,
-+	twi_clk_lookup,
-+	NULL,
-+	spi0_clk_lookup,
-+	spi1_clk_lookup,
-+	ssc_clk_lookup,
-+	NULL,
-+	NULL,
-+	tc0_clk_lookup,
-+	tc1_clk_lookup,
-+	tc2_clk_lookup,
-+	ohci_clk_lookup,
-+	macb_clk_lookup,
-+	NULL,
-+	usart3_clk_lookup,
-+	usart4_clk_lookup,
-+	usart5_clk_lookup,
-+	tc3_clk_lookup,
-+	tc4_clk_lookup,
-+	tc5_clk_lookup,
-+};
-+
-+
-+/*
-+ * The system clocks.
-+ */
-+static struct clk_lookup udp_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "udpck", NULL),
-+};
-+
-+static struct clk_lookup uhp_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "uhpck", NULL),
-+};
-+
-+static struct clk_lookup pck0_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "pck0", NULL),
-+};
-+
-+static struct clk_lookup pck1_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "pck1", NULL),
-+};
-+
-+static size_t system_clock_lookup_sizes[] __initdata = {
-+	0,
-+	0,
-+	0,
-+	0,
-+	0,
-+	0,
-+	ARRAY_SIZE(uhp_clk_lookup),
-+	ARRAY_SIZE(udp_clk_lookup),
-+	ARRAY_SIZE(pck0_clk_lookup),
-+	ARRAY_SIZE(pck1_clk_lookup),
-+};
-+
-+static struct clk_lookup *system_clock_lookups[] __initdata = {
-+	NULL,
-+	NULL,
-+	NULL,
-+	NULL,
-+	NULL,
-+	NULL,
-+	uhp_clk_lookup,
-+	udp_clk_lookup,
-+	pck0_clk_lookup,
-+	pck1_clk_lookup,
-+};
-+
-+static const char *system_clock_parent_names[] __initdata = {
-+	NULL,
-+	NULL,
-+	NULL,
-+	NULL,
-+	NULL,
-+	NULL,
-+	"usbck",
-+	"usbck",
-+	"prog0",
-+	"prog1",
-+	"prog2",
-+	"prog3",
- };
- 
- /*
-  * The two programmable clocks.
-  * You must configure pin multiplexing to bring these signals out.
-  */
--static struct clk pck0 = {
--	.name		= "pck0",
--	.pmc_mask	= AT91_PMC_PCK0,
--	.type		= CLK_TYPE_PROGRAMMABLE,
--	.id		= 0,
-+static const char *prog_clock_parent_names[] __initdata = {
-+	"clk32k",
-+	"main",
-+	"plla",
-+	"pllb",
- };
--static struct clk pck1 = {
--	.name		= "pck1",
--	.pmc_mask	= AT91_PMC_PCK1,
--	.type		= CLK_TYPE_PROGRAMMABLE,
--	.id		= 1,
-+
-+/*
-+ * The pll clocks.
-+ */
-+static struct clk_lookup pll_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "plla", NULL),
-+	CLKDEV_INIT(NULL, "pllb", NULL),
- };
- 
-+static struct clk_range at91sam9260_plla_output[] = {
-+	CLK_RANGE(80000000, 160000000),
-+	CLK_RANGE(150000000, 240000000),
-+};
-+static u8 at91sam9260_plla_out[] = {0, 2};
-+
-+static struct clk_range at91sam9260_pllb_output[] = {
-+	CLK_RANGE(70000000, 130000000),
-+};
-+static u8 at91sam9260_pllb_out[] = {1,};
-+
-+struct clk_pll_characteristics at91sam9260_pll_characteristics[] = {
-+	{
-+		.input = CLK_RANGE(1000000, 32000000),
-+		.num_output = ARRAY_SIZE(at91sam9260_plla_output),
-+		.output = at91sam9260_plla_output,
-+		.out = at91sam9260_plla_out,
-+	},
-+	{
-+		.input = CLK_RANGE(1000000, 5000000),
-+		.num_output = ARRAY_SIZE(at91sam9260_pllb_output),
-+		.output = at91sam9260_pllb_output,
-+		.out = at91sam9260_pllb_out,
-+	},
-+};
-+
-+static struct clk_range at91sam9xe_plla_output[] = {
-+	CLK_RANGE(80000000, 160000000),
-+	CLK_RANGE(150000000, 220000000),
-+};
-+
-+struct clk_pll_characteristics at91sam9xe_pll_characteristics[] = {
-+	{
-+		.input = CLK_RANGE(1000000, 32000000),
-+		.num_output = ARRAY_SIZE(at91sam9xe_plla_output),
-+		.output = at91sam9xe_plla_output,
-+		.out = at91sam9260_plla_out,
-+	},
-+	{
-+		.input = CLK_RANGE(1000000, 5000000),
-+		.num_output = ARRAY_SIZE(at91sam9260_pllb_output),
-+		.output = at91sam9260_pllb_output,
-+		.out = at91sam9260_pllb_out,
-+	},
-+};
-+
-+static struct clk_range at91sam9g20_plla_output[] = {
-+	CLK_RANGE(745000000, 800000000),
-+	CLK_RANGE(695000000, 750000000),
-+	CLK_RANGE(645000000, 700000000),
-+	CLK_RANGE(595000000, 650000000),
-+	CLK_RANGE(545000000, 600000000),
-+	CLK_RANGE(495000000, 550000000),
-+	CLK_RANGE(445000000, 500000000),
-+	CLK_RANGE(400000000, 450000000),
-+};
-+static u8 at91sam9g20_plla_out[] = {0, 1, 2, 3, 0, 1, 2, 3};
-+static u16 at91sam9g20_plla_icpll[] = {0, 0, 0, 0, 1, 1, 1, 1};
-+
-+static struct clk_range at91sam9g20_pllb_output[] = {
-+	CLK_RANGE(30000000, 100000000),
-+};
-+static u8 at91sam9g20_pllb_out[] = {0};
-+
-+struct clk_pll_characteristics at91sam9g20_pll_characteristics[] = {
-+	{
-+		.input = CLK_RANGE(2000000, 32000000),
-+		.num_output = ARRAY_SIZE(at91sam9g20_plla_output),
-+		.output = at91sam9g20_plla_output,
-+		.out = at91sam9g20_plla_out,
-+		.icpll = at91sam9g20_plla_icpll,
-+	},
-+	{
-+		.input = CLK_RANGE(2000000, 32000000),
-+		.num_output = ARRAY_SIZE(at91sam9g20_pllb_output),
-+		.output = at91sam9g20_pllb_output,
-+		.out = at91sam9g20_pllb_out,
-+	},
-+};
-+
-+
-+/*
-+ * The master clock.
-+ */
-+static struct clk_lookup mck_clk_lookup[] = {
-+	CLKDEV_INIT(NULL, "mck", NULL),
-+	CLKDEV_INIT("atmel_usart.0", "usart", NULL),
-+};
-+
-+struct clk_master_characteristics at91sam9260_master_characteristics = {
-+	.output = CLK_RANGE(0, 105000000),
-+	.have_div3_pres = 0,
-+	.divisors = {1, 2, 4, 0},
-+};
-+
-+struct clk_master_characteristics at91sam9xe_master_characteristics = {
-+	.output = CLK_RANGE(0, 90000000),
-+	.have_div3_pres = 0,
-+	.divisors = {1, 2, 4, 0},
-+};
-+
-+struct clk_master_characteristics at91sam9g20_master_characteristics = {
-+	.output = CLK_RANGE(0, 133000000),
-+	.have_div3_pres = 0,
-+	.divisors = {1, 2, 4, 6},
-+};
-+
-+static const char *master_clock_parent_names[] __initdata = {
-+	"clk32k",
-+	"main",
-+	"plla",
-+	"pllb",
-+};
-+
-+/*
-+ * The USB clock.
-+ */
-+static u32 usb_divisors[] = {1, 2, 4, 0};
-+
- static void __init at91sam9260_register_clocks(void)
- {
- 	int i;
-+	int k;
-+	size_t size;
-+	struct clk *clk;
-+	const char *name;
-+	struct clk_lookup *lookup;
-+	struct clk_pll_characteristics *pll_characteristics;
-+	struct clk_pll_layout *pll_layout;
-+	struct clk_master_characteristics *master_characteristics;
-+
-+	if (cpu_is_at91sam9xe()) {
-+		pll_characteristics = at91sam9xe_pll_characteristics;
-+		master_characteristics = &at91sam9xe_master_characteristics;
-+	} else if (cpu_is_at91sam9g20()) {
-+		pll_characteristics = at91sam9g20_pll_characteristics;
-+		master_characteristics = &at91sam9g20_master_characteristics;
-+	} else {
-+		pll_characteristics = at91sam9260_pll_characteristics;
-+		master_characteristics = &at91sam9260_master_characteristics;
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(pll_clk_lookup); i++) {
-+		name = pll_clk_lookup[i].con_id;
-+		pll_layout = &at91rm9200_pll_layout;
-+		if (cpu_is_at91sam9g20()) {
-+			if (!i)
-+				pll_layout = &at91sam9g45_pll_layout;
-+			else
-+				pll_layout = &at91sam9g20_pllb_layout;
-+		}
-+		clk = at91_clk_register_pll(name, "main", i, pll_layout,
-+					    &pll_characteristics[i]);
-+		pll_clk_lookup[i].clk = clk;
-+	}
-+	clkdev_add_table(pll_clk_lookup, ARRAY_SIZE(pll_clk_lookup));
-+
-+	clk = at91_clk_register_master("mck",
-+				       ARRAY_SIZE(master_clock_parent_names),
-+				       master_clock_parent_names,
-+				       &at91rm9200_master_layout,
-+				       master_characteristics);
-+	for (i = 0; i < ARRAY_SIZE(mck_clk_lookup); i++)
-+		mck_clk_lookup[i].clk = clk;
-+	clkdev_add_table(mck_clk_lookup, ARRAY_SIZE(mck_clk_lookup));
-+
-+	for (i = 0; i < ARRAY_SIZE(periph_clock_lookup_sizes); i++) {
-+		size = periph_clock_lookup_sizes[i];
-+		lookup = periph_clock_lookups[i];
-+		if (!size || !lookup)
-+			continue;
-+		name = periph_clock_lookups[i][0].con_id;
-+		if (!name)
-+			continue;
-+		clk = at91_clk_register_peripheral(name, "mck", i);
-+
-+		for (k = 0; k < size; k++)
-+			lookup[k].clk = clk;
-+		clkdev_add_table(lookup, size);
-+	}
-+
-+	for (i = 0; i < 2; i++) {
-+		name = system_clock_parent_names[8 + i];
-+		clk = at91_clk_register_programmable(name,
-+					prog_clock_parent_names,
-+					ARRAY_SIZE(prog_clock_parent_names),
-+					i, &at91rm9200_programmable_layout);
-+	}
- 
--	for (i = 0; i < ARRAY_SIZE(periph_clocks); i++)
--		clk_register(periph_clocks[i]);
-+	clk = at91rm9200_clk_register_usb("usbck", "pllb", usb_divisors);
- 
--	clkdev_add_table(periph_clocks_lookups,
--			 ARRAY_SIZE(periph_clocks_lookups));
--	clkdev_add_table(usart_clocks_lookups,
--			 ARRAY_SIZE(usart_clocks_lookups));
-+	for (i = 0; i < ARRAY_SIZE(system_clock_lookup_sizes); i++) {
-+		size = system_clock_lookup_sizes[i];
-+		lookup = system_clock_lookups[i];
-+		if (!size || !lookup)
-+			continue;
-+		name = system_clock_lookups[i][0].con_id;
-+		if (!name || !system_clock_parent_names[i])
-+			continue;
-+		clk = at91_clk_register_system(name,
-+					       system_clock_parent_names[i],
-+					       i);
-+		for (k = 0; k < size; k++)
-+			lookup[k].clk = clk;
-+		clkdev_add_table(lookup, size);
-+	}
- 
--	clk_register(&pck0);
--	clk_register(&pck1);
-+	clk_register_fixed_rate(NULL, "adc_op_clk", "mck", 0, 5000000);
- }
- 
- /* --------------------------------------------------------------------
--- 
-1.7.9.5
+Not really.
 
+The chip itself will enforce which registers are read-only (by ignoring
+writes) or write-only (by returning zeros if read). Encoding all this
+information in the driver would just make it more brittle in the face of
+touch controller firmware updates.
+
+It would be possible for the driver to intermediate for some of the
+registers that it cares about. For example, if we change the screen width
+then the driver could reinitialise the input device. But I can't see that
+it makes sense if you are changing several settings in a row for the input
+device to be reinitialised several times. It is far less buggy to provide a
+single way of tearing down everything and reinitialising (which could be
+simply triggered from user space) than to encode all of the dependencies
+(which is bound to introduce bugs).
+
+It's not laziness, it's trying to push policy into user space.
+
+>> Touch controllers are inherently complex system with a lot of configurable
+>> parameters. The fact that it's complex and changes quickly doesn't make it
+>> badly designed per se.
+> 
+> Having lots of configuration and having the parameters change regularly
+> doesn't immediately mean that it has to be complex - the requirement is
+> very common, touchscreens aren't too remarkable here.  The usual thing
+> is for the kernel to understand how to transfer data back and forth but
+> not the content of the data.
+
+Sure, that's what I'm trying to accomplish. It's just that as far as I can
+see it makes more sense to use the established protocol that these chips
+have implemented rather than trying to bodge something else over the top or
+crowbar it into a different model that will cause abstraction problems. We
+have thought about this problem at great length, and discussed it on these
+lists, and with other kernel engineers at customers, etc.
