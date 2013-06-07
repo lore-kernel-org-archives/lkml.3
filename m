@@ -1,120 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751314Ab3FGErH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 00:47:07 -0400
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:45301 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789Ab3FGErE (ORCPT
+	id S1751370Ab3FGEtw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 00:49:52 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:38482 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737Ab3FGEtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 00:47:04 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: Olof Johansson <olof@lixom.net>, Andrew Bresticker <abrestic@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Will Newton <will.newton@imgtec.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
-Subject: [PATCH 2/2] mmc: dw_mmc: Add the ability to set the ciu clock frequency
-Date: Thu,  6 Jun 2013 21:46:46 -0700
-Message-Id: <1370580406-10254-2-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.3
-In-Reply-To: <1370580406-10254-1-git-send-email-dianders@chromium.org>
-References: <1370580406-10254-1-git-send-email-dianders@chromium.org>
+	Fri, 7 Jun 2013 00:49:51 -0400
+Date: Fri, 7 Jun 2013 14:49:36 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: linux-next: manual merge of the driver-core tree with the pm tree
+Message-Id: <20130607144936.6ea0c2d9a7fcf321e59cc6d6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__7_Jun_2013_14_49_36_+1000_T=ArogYkIUPRU0bH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As of now we rely on code outside of the driver to set the ciu clock
-frequency.  There's no reason to do that.  Add support for setting up
-the clock in the driver during probe.
+--Signature=_Fri__7_Jun_2013_14_49_36_+1000_T=ArogYkIUPRU0bH
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- .../devicetree/bindings/mmc/synopsis-dw-mshc.txt        | 13 +++++++++++++
- drivers/mmc/host/dw_mmc.c                               | 17 +++++++++++++----
- 2 files changed, 26 insertions(+), 4 deletions(-)
+Hi Greg,
 
-diff --git a/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt
-index b09d2d0..edb7659 100644
---- a/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt
-+++ b/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt
-@@ -39,6 +39,19 @@ Required Properties:
- 
- Optional properties:
- 
-+* clocks: from common clock binding: handle to biu and ciu clocks for the
-+  bus interface unit clock and the card interface unit clock.
-+
-+* clock-names: from common clock binding: Shall be "biu" and "ciu".
-+  If the biu clock is missing we'll simply skip enabling it.  If the
-+  ciu clock is missing we'll just assume that the clock is running at
-+  clock-frequency.  It is an error to omit both the ciu clock and the
-+  clock-frequency.
-+
-+* clock-frequency: should be the frequency (in Hz) of the ciu clock.  If this
-+  is specified and the ciu clock is specified then we'll try to set the ciu
-+  clock to this at probe time.
-+
- * num-slots: specifies the number of slots supported by the controller.
-   The number of physical slots actually used could be equal or less than the
-   value specified by num-slots. If this property is not specified, the value
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index d3a0f8a..7ffb502 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -2133,6 +2133,7 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
- 	struct device_node *np = dev->of_node;
- 	const struct dw_mci_drv_data *drv_data = host->drv_data;
- 	int idx, ret;
-+	u32 clock_frequency;
- 
- 	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
- 	if (!pdata) {
-@@ -2159,6 +2160,9 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
- 
- 	of_property_read_u32(np, "card-detect-delay", &pdata->detect_delay_ms);
- 
-+	if (!of_property_read_u32(np, "clock-frequency", &clock_frequency))
-+		pdata->bus_hz = clock_frequency;
-+
- 	if (drv_data && drv_data->parse_dt) {
- 		ret = drv_data->parse_dt(host);
- 		if (ret)
-@@ -2223,18 +2227,23 @@ int dw_mci_probe(struct dw_mci *host)
- 	host->ciu_clk = devm_clk_get(host->dev, "ciu");
- 	if (IS_ERR(host->ciu_clk)) {
- 		dev_dbg(host->dev, "ciu clock not available\n");
-+		host->bus_hz = host->pdata->bus_hz;
- 	} else {
- 		ret = clk_prepare_enable(host->ciu_clk);
- 		if (ret) {
- 			dev_err(host->dev, "failed to enable ciu clock\n");
- 			goto err_clk_biu;
- 		}
--	}
- 
--	if (IS_ERR(host->ciu_clk))
--		host->bus_hz = host->pdata->bus_hz;
--	else
-+		if (host->pdata->bus_hz) {
-+			ret = clk_set_rate(host->ciu_clk, host->pdata->bus_hz);
-+			if (ret)
-+				dev_warn(host->dev,
-+					 "Unable to set bus rate to %ul\n",
-+					 host->pdata->bus_hz);
-+		}
- 		host->bus_hz = clk_get_rate(host->ciu_clk);
-+	}
- 
- 	if (drv_data && drv_data->setup_clock) {
- 		ret = drv_data->setup_clock(host);
--- 
-1.8.3
+Today's linux-next merge of the driver-core tree got a conflict in
+drivers/base/memory.c between commit 4960e05e2260 ("Driver core:
+Introduce offline/online callbacks for memory blocks") from the pm tree
+and commit 96b2c0fc8e74 ("drivers/base: Use attribute groups to create
+sysfs memory files") from the driver-core tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/base/memory.c
+index 4ebf97f,e315051..0000000
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@@ -595,6 -493,41 +541,42 @@@ struct memory_block *find_memory_block(
+  	return find_memory_block_hinted(section, NULL);
+  }
+ =20
++ static struct attribute *memory_memblk_attrs[] =3D {
++ 	&dev_attr_phys_index.attr,
++ 	&dev_attr_end_phys_index.attr,
++ 	&dev_attr_state.attr,
++ 	&dev_attr_phys_device.attr,
++ 	&dev_attr_removable.attr,
++ 	NULL
++ };
++=20
++ static struct attribute_group memory_memblk_attr_group =3D {
++ 	.attrs =3D memory_memblk_attrs,
++ };
++=20
++ static const struct attribute_group *memory_memblk_attr_groups[] =3D {
++ 	&memory_memblk_attr_group,
++ 	NULL,
++ };
++=20
++ /*
++  * register_memory - Setup a sysfs device for a memory block
++  */
++ static
++ int register_memory(struct memory_block *memory)
++ {
++ 	int error;
++=20
++ 	memory->dev.bus =3D &memory_subsys;
++ 	memory->dev.id =3D memory->start_section_nr / sections_per_block;
++ 	memory->dev.release =3D memory_block_release;
++ 	memory->dev.groups =3D memory_memblk_attr_groups;
+++	memory->dev.offline =3D memory->state =3D=3D MEM_OFFLINE;
++=20
++ 	error =3D device_register(&memory->dev);
++ 	return error;
++ }
++=20
+  static int init_memory_block(struct memory_block **memory,
+  			     struct mem_section *section, unsigned long state)
+  {
+
+--Signature=_Fri__7_Jun_2013_14_49_36_+1000_T=ArogYkIUPRU0bH
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRsWZmAAoJEECxmPOUX5FE5IEP/iWJM4Tm7WZEtPEIrshGtuhk
+7sz8RFlVcJza6BXQcAuZBHoGrUEjBEW8AjAkupXK7GrrBB5qd2YMALMauV3VoDW6
+DpG4kKPCH/ejJHCKF5YHoCa++l79JKut6CNWYeEeH1FsH8p55qALglRUayB3MxTR
+sKurcSy8PZjxUFQXzuu8kST+N2f+igsRFT0uVT+DJD3ZL0pV4uSkjHWWh7yISezK
+j9lBSRSCckIwyvEtLwqIjq7CHCV9rjWtexnI6Ksva39ZYJdXqNCCcgH+cI8SbtP4
+OPc7iMy6IZLiMLAx4B+o/8oGaonQOjxdUb5jnwhu0Yepcoy1MHuYTt5Ix4TPzCZO
+S0nayln7TmxWsOh4/HTuSPsQGrnkB7jK7Aoo9KEYNlUxHfVh+1VKnWi/RUPcFrRJ
+q44WLempREvUCYD47SaUPOHDT2qFOgS3//rtQXW+doDd9E3nT+Oc4n+w/MWpO85y
+NXIDC1t+Ke7F2lLqk/fM0kThRrunQnMniaTnfu1BveUmCOr9pTDgvBfVumNjjNMs
+OKV5vGK/mk0sG/3D/BJD1sFa82xOCUBrpi+813ryrRsedtvdYalXD4/0cid5Xyqi
+RiBB2K4b2aN9Hf+C2fG0le8pDSUIZaHi6ZVo57sqHjC/mQ3D2JAUnT0a2b3wZtBm
+pH6NsP84rUOl9CUzWkKn
+=jrG9
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__7_Jun_2013_14_49_36_+1000_T=ArogYkIUPRU0bH--
