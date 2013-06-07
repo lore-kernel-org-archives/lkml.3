@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab3FGK5E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 06:57:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42913 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752146Ab3FGK5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 06:57:02 -0400
-Subject: Re: GFS2: Add atomic_open support
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: cluster-devel@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jlayton@redhat.com,
-        "J. Bruce Fields" <bfields@fieldses.org>
-In-Reply-To: <20130606175312.GG13110@ZenIV.linux.org.uk>
-References: <1370530212.2744.34.camel@menhir>
-	 <20130606175312.GG13110@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Fri, 07 Jun 2013 11:54:29 +0100
-Message-ID: <1370602469.2768.25.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755603Ab3FGLA5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 07:00:57 -0400
+Received: from chaos.universe-factory.net ([5.9.180.86]:36819 "EHLO
+	chaos.universe-factory.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754580Ab3FGLAz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 07:00:55 -0400
+Message-ID: <51B1BD64.8090300@universe-factory.net>
+Date: Fri, 07 Jun 2013 13:00:52 +0200
+From: Matthias Schiffer <mschiffer@universe-factory.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: xiyou.wangcong@gmail.com, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net/3.9] ipv6: ndisc: fix ndisc_send_redirect writing
+ to the wrong skb
+References: <51A66CF3.7010202@universe-factory.net> <5578958b49fff222740711e091c2325100f5a440.1369963643.git.mschiffer@universe-factory.net> <CAM_iQpWNAnRTgzjPTPxLU-eqz1nWqD=zyjTgwZaaxbwcpf4KMw@mail.gmail.com> <20130531.014244.1871655049070137342.davem@davemloft.net>
+In-Reply-To: <20130531.014244.1871655049070137342.davem@davemloft.net>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2MFPEVCVABNCPCGVIDOJI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2MFPEVCVABNCPCGVIDOJI
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, 2013-06-06 at 18:53 +0100, Al Viro wrote:
-> On Thu, Jun 06, 2013 at 03:50:12PM +0100, Steven Whitehouse wrote:
-> > 
-> > The following patch implements atomic_open for GFS2. This is mostly
-> > straightforward, however there is one corner case which I've had to
-> > deal with, beyond what would normally be expected for a local
-> > filesystem.
-> 
-> Broken - what will happen if you hit a symlink, for starters?  On everything
-> handled locally you should just return finish_no_open(file, dentry) and
-> let the caller deal with that; the only cases that might make sense to
-> handle in ->atomic_open() are regular files and directories.  For gfs2 it
-> should be just regular files.  While we are at it, do you even need
-> ->private_data for gfs2 directories?
+On 05/31/2013 10:42 AM, David Miller wrote:
+> From: Cong Wang <xiyou.wangcong@gmail.com>
+> Date: Fri, 31 May 2013 11:23:11 +0800
+>=20
+>> On Fri, May 31, 2013 at 9:27 AM, Matthias Schiffer
+>> <mschiffer@universe-factory.net> wrote:
+>>> Since some refactoring in 5f5a011, ndisc_send_redirect called
+>>> ndisc_fill_redirect_hdr_option on the wrong skb, leading to data corr=
+uption or
+>>> in the worst case a panic when the skb_put failed.
+>>>
+>>> Signed-off-by: Matthias Schiffer <mschiffer@universe-factory.net>
+>>
+>>
+>> Good catch!
+>>
+>> Reviewed-by: Cong Wang <xiyou.wangcong@gmail.com>
+>=20
+> I've queued this up for -stable.
+>=20
 
-I'm brewing up another version of the patch at the moment, which I will
-post shortly. I don't understand why GFS2 specifically would not want to
-do this with both files and directories? Why would it be different to
-other filesystems in that respect?
-
-We do need private data for gfs2 directories because that is required
-for flock which should work equally well on directories as on regular
-files. Potentially we might allocate it later, on the first call to
-flock for example, but it has been done at open time so that we don't
-have to test for it on every flock call. Also I was hoping to put some
-info in there to assist with directory readahead at some stage too,
-
-Steve.
+I saw that this was marked as 'not applicable' in the patchwork - it
+should still be applied to the net tree though. I hope my patch tag
+'net/3.9' didn't cause any confusion, I meant net *and* 3.9.
 
 
+------enig2MFPEVCVABNCPCGVIDOJI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlGxvWQACgkQq3qIxbiQM9jQDQCeOhCY5fZEloQgamjoNpkEh2L5
+tdkAn1Wk+/FLQBrDZ4wrVzPnieLb/LZ8
+=Eii2
+-----END PGP SIGNATURE-----
+
+------enig2MFPEVCVABNCPCGVIDOJI--
