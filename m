@@ -1,141 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751062Ab3FGEIN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 00:08:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50020 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750737Ab3FGEIK (ORCPT
+	id S1751123Ab3FGEOy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 00:14:54 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:35084 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794Ab3FGEOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 00:08:10 -0400
-Message-ID: <1370578083.4021.67.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 058/184] KVM: x86: invalid opcode oops on SET_SREGS with
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Willy Tarreau <w@1wt.eu>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Petr Matousek <pmatouse@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Date: Fri, 07 Jun 2013 05:08:03 +0100
-In-Reply-To: <20130604172132.712738520@1wt.eu>
-References: <20130604172132.712738520@1wt.eu>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-jYMPYzeDK90VmRSAZ/ha"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Fri, 7 Jun 2013 00:14:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <1368509365-2260-1-git-send-email-indou.takao@jp.fujitsu.com>
+References: <1368509365-2260-1-git-send-email-indou.takao@jp.fujitsu.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 6 Jun 2013 22:14:31 -0600
+Message-ID: <CAErSpo4t_2Xw76p3Z9FVzyyK-MBovavDu9D=pYoPMjESSxgT=w@mail.gmail.com>
+Subject: Re: [PATCH v2] PCI: Reset PCIe devices to stop ongoing DMA
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        kexec@lists.infradead.org, ishii.hironobu@jp.fujitsu.com,
+        Don Dutile <ddutile@redhat.com>, bill.sumner@hp.com,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sorry it's taken me so long to look at this.  I've been putting this
+off because the patch doesn't seem "obviously correct," and I don't
+feel like I really understand the problem.  I'm naive about both
+IOMMUs and kexec/kdump, so please pardon (and help me with) any silly
+questions or assumptions below.
 
---=-jYMPYzeDK90VmRSAZ/ha
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Mon, May 13, 2013 at 11:29 PM, Takao Indoh
+<indou.takao@jp.fujitsu.com> wrote:
+> This patch resets PCIe devices on boot to stop ongoing DMA. When
+> "pci=pcie_reset_endpoint_devices" is specified, a hot reset is triggered
+> on each PCIe root port and downstream port to reset its downstream
+> endpoint.
+>
+> Problem:
+> This patch solves the problem that kdump can fail when intel_iommu=on is
+> specified. When intel_iommu=on is specified, many dma-remapping errors
+> occur in second kernel and it causes problems like driver error or PCI
+> SERR, at last kdump fails. This problem is caused as follows.
+> 1) Devices are working on first kernel.
+> 2) Switch to second kernel(kdump kernel). The devices are still working
+>    and its DMA continues during this switch.
+> 3) iommu is initialized during second kernel boot and ongoing DMA causes
+>    dma-remapping errors.
 
-On Tue, 2013-06-04 at 19:22 +0200, Willy Tarreau wrote:
-> 2.6.32-longterm review patch.  If anyone has any objections, please let m=
-e know.
->=20
-> ------------------
->  OSXSAVE bit set (CVE-2012-4461)
->=20
-> From: Petr Matousek <pmatouse@redhat.com>
->=20
-> commit 6d1068b3a98519247d8ba4ec85cd40ac136dbdf9 upstream.
->=20
-> On hosts without the XSAVE support unprivileged local user can trigger
-> oops similar to the one below by setting X86_CR4_OSXSAVE bit in guest
-> cr4 register using KVM_SET_SREGS ioctl and later issuing KVM_RUN
-> ioctl.
->=20
-> invalid opcode: 0000 [#2] SMP
-> Modules linked in: tun ip6table_filter ip6_tables ebtable_nat ebtables
-> ...
-> Pid: 24935, comm: zoog_kvm_monito Tainted: G      D      3.2.0-3-686-pae
-> EIP: 0060:[<f8b9550c>] EFLAGS: 00210246 CPU: 0
-> EIP is at kvm_arch_vcpu_ioctl_run+0x92a/0xd13 [kvm]
-> EAX: 00000001 EBX: 000f387e ECX: 00000000 EDX: 00000000
-> ESI: 00000000 EDI: 00000000 EBP: ef5a0060 ESP: d7c63e70
->  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-> Process zoog_kvm_monito (pid: 24935, ti=3Dd7c62000 task=3Ded84a0c0
-> task.ti=3Dd7c62000)
-> Stack:
->  00000001 f70a1200 f8b940a9 ef5a0060 00000000 00200202 f8769009 00000000
->  ef5a0060 000f387e eda5c020 8722f9c8 00015bae 00000000 ed84a0c0 ed84a0c0
->  c12bf02d 0000ae80 ef7f8740 fffffffb f359b740 ef5a0060 f8b85dc1 0000ae80
-> Call Trace:
->  [<f8b940a9>] ? kvm_arch_vcpu_ioctl_set_sregs+0x2fe/0x308 [kvm]
-> ...
->  [<c12bfb44>] ? syscall_call+0x7/0xb
-> Code: 89 e8 e8 14 ee ff ff ba 00 00 04 00 89 e8 e8 98 48 ff ff 85 c0 74
-> 1e 83 7d 48 00 75 18 8b 85 08 07 00 00 31 c9 8b 95 0c 07 00 00 <0f> 01
-> d1 c7 45 48 01 00 00 00 c7 45 1c 01 00 00 00 0f ae f0 89
-> EIP: [<f8b9550c>] kvm_arch_vcpu_ioctl_run+0x92a/0xd13 [kvm] SS:ESP
-> 0068:d7c63e70
->=20
-> QEMU first retrieves the supported features via KVM_GET_SUPPORTED_CPUID
-> and then sets them later. So guest's X86_FEATURE_XSAVE should be masked
-> out on hosts without X86_FEATURE_XSAVE, making kvm_set_cr4 with
-> X86_CR4_OSXSAVE fail. Userspaces that allow specifying guest cpuid with
-> X86_FEATURE_XSAVE even on hosts that do not support it, might be
-> susceptible to this attack from inside the guest as well.
->=20
-> Allow setting X86_CR4_OSXSAVE bit only if host has XSAVE support.
->=20
-> Signed-off-by: Petr Matousek <pmatouse@redhat.com>
-> Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-> [bwh: Backported to 2.6.32: XSAVE is not supported at all, so always
->  deny setting OSXSAVE]
+If I understand correctly, the problem only happens on systems with an
+IOMMU that's enabled in either the system or kdump kernel (or both).
+For systems without an IOMMU (or if it is disabled in both the system
+and kdump kernels),  any ongoing DMA should use addresses that target
+system-kernel memory and should not affect the kdump kernel.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+One thing I'm not sure about is that you are only resetting PCIe
+devices, but I don't think the problem is actually specific to PCIe,
+is it?  I think the same issue could occur on any system with an
+IOMMU.  In the x86 PC world, most IOMMUs are connected with PCIe, but
+there are systems with IOMMUs for plain old PCI devices, e.g.,
+PA-RISC.
 
-> Signed-off-by: Willy Tarreau <w@1wt.eu>
+I tried to make a list of the interesting scenarios and the events
+that are relevant to this problem:
+
+    Case 1: IOMMU off in system, off in kdump kernel
+      system kernel leaves IOMMU off
+        DMA targets system-kernel memory
+      kexec to kdump kernel (IOMMU off, devices untouched)
+        DMA targets system-kernel memory (harmless)
+      kdump kernel re-inits device
+        DMA targets kdump-kernel memory
+
+    Case 2: IOMMU off in system kernel, on in kdump kernel
+      system kernel leaves IOMMU off
+        DMA targets system-kernel memory
+      kexec to kdump kernel (IOMMU off, devices untouched)
+        DMA targets system-kernel memory (harmless)
+      kdump kernel enables IOMMU with no valid mappings
+        DMA causes IOMMU errors (annoying but harmless)
+      kdump kernel re-inits device
+        DMA targets IOMMU-mapped kdump-kernel memory
+
+    Case 3a: IOMMU on in system kernel, kdump kernel doesn't touch IOMMU
+      system kernel enables IOMMU
+        DMA targets IOMMU-mapped system-kernel memory
+      kexec to kdump kernel (IOMMU on, devices untouched)
+        DMA targets IOMMU-mapped system-kernel memory
+      kdump kernel doesn't know about IOMMU or doesn't touch it
+        DMA targets IOMMU-mapped system-kernel memory
+      kdump kernel re-inits device
+        kernel assumes no IOMMU, so all new DMA mappings are invalid
+because DMAs actually do go through the IOMMU
+        (** corruption or other non-recoverable error likely **)
+
+    Case 3b: IOMMU on in system kernel, kdump kernel disables IOMMU
+      system kernel enables IOMMU
+        DMA targets IOMMU-mapped system-kernel memory
+      kexec to kdump kernel (IOMMU on, devices untouched)
+        DMA targets IOMMU-mapped system-kernel memory
+      kdump kernel disables IOMMU
+        DMA targets IOMMU-mapped system-kernel memory, but IOMMU is disabled
+        (** corruption or other non-recoverable error likely **)
+      kdump kernel re-inits device
+        DMA targets kdump-kernel memory
+
+    Case 4: IOMMU on in system kernel, on in kdump kernel
+      system kernel enables IOMMU
+        DMA targets IOMMU-mapped system-kernel memory
+      kexec to kdump kernel (IOMMU on, devices untouched)
+        DMA targets IOMMU-mapped system-kernel memory
+      kdump kernel enables IOMMU with no valid mappings
+        DMA causes IOMMU errors (annoying but harmless)
+      kdump kernel re-inits device
+        DMA targets IOMMU-mapped kdump-kernel memory
+
+The problem cases I see are 3a and 3b, but that's not the problem
+you're describing.  Obviously I'm missing something.
+
+It sounds like you're seeing problems in case 2 or case 4, where the
+IOMMU is enabled in the kdump kernel.  Maybe my assumption about the
+IOMMU being enabled with no valid mappings is wrong?  Or maybe those
+IOMMU errors are not actually harmless?
+
+Resetting PCI/PCIe devices will help with cases 2, 4, and 3b, but not
+with case 3a.  Therefore, it seems like the kdump kernel *must*
+contain IOMMU support unless it knows for certain that the system
+kernel wasn't using the IOMMU.
+
+Do you have any bugzilla references or problem report URLs you could
+include here?
+
+Obviously I'm very confused here, so please help educate me :)
+
+Also, you mentioned PCI passthrough with a KVM guest as being a
+problem.  Can you explain more about what makes that a problem?  I
+don't know enough about passthrough to know why a device being used by
+a KVM guest would cause more problems than a device being used
+directly by the host.
+
+Bjorn
+
+> Solution:
+> All DMA transactions have to be stopped before iommu is initialized. By
+> this patch devices are reset and in-flight DMA is stopped before
+> pci_iommu_init.
+>
+> To invoke hot reset on an endpoint, its upstream link need to be reset.
+> reset_pcie_endpoints() is called from fs_initcall_sync, and it finds
+> root port/downstream port whose child is PCIe endpoint, and then reset
+> link between them. If the endpoint is VGA device, it is skipped because
+> the monitor blacks out if VGA controller is reset.
+>
+> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
 > ---
->  arch/x86/kvm/x86.c | 3 +++
->  1 file changed, 3 insertions(+)
->=20
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 79905f2..ec9728f 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -4719,6 +4719,9 @@ int kvm_arch_vcpu_ioctl_set_sregs(struct kvm_vcpu *=
-vcpu,
->  	int pending_vec, max_bits;
->  	struct descriptor_table dt;
-> =20
-> +	if (sregs->cr4 & X86_CR4_OSXSAVE)
-> +		return -EINVAL;
+>  Documentation/kernel-parameters.txt |    2 +
+>  drivers/pci/pci.c                   |  113 +++++++++++++++++++++++++++++++++++
+>  2 files changed, 115 insertions(+), 0 deletions(-)
+>
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index c3bfacb..8c9e8e4 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -2321,6 +2321,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>                                 any pair of devices, possibly at the cost of
+>                                 reduced performance.  This also guarantees
+>                                 that hot-added devices will work.
+> +               pcie_reset_endpoint_devices     Reset PCIe endpoint on boot by
+> +                               hot reset
+>                 cbiosize=nn[KMG]        The fixed amount of bus space which is
+>                                 reserved for the CardBus bridge's IO window.
+>                                 The default value is 256 bytes.
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index a899d8b..70c1205 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -3873,6 +3873,116 @@ void __weak pci_fixup_cardbus(struct pci_bus *bus)
+>  }
+>  EXPORT_SYMBOL(pci_fixup_cardbus);
+>
+> +/*
+> + * Return true if dev is PCIe root port or downstream port whose child is PCIe
+> + * endpoint except VGA device.
+> + */
+> +static int __init need_reset(struct pci_dev *dev)
+> +{
+> +       struct pci_bus *subordinate;
+> +       struct pci_dev *child;
 > +
->  	vcpu_load(vcpu);
-> =20
->  	dt.limit =3D sregs->idt.limit;
-
---=20
-Ben Hutchings
-Theory and practice are closer in theory than in practice.
-                                - John Levine, moderator of comp.compilers
-
---=-jYMPYzeDK90VmRSAZ/ha
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUbFco+e/yOyVhhEJAQq6ihAAv3p8xvKsLrbWGbHrkvBWayI4YNKY49wi
-XB4fYJ0ubMYdP1Pv8ASdrutef4phfkGVo5MbSnnnYGyq8bBKdj/ogYeJNX1n4Edl
-Y071xobIZY19pavTyXQlNZxvdsqBxvjNG+jO0nYTR2ozUZqtGdXc8uZ84n80TshX
-usKptJ+F4Z3MjqcJOt7e1gu3JnT+Xtpvh4hrNJ7Tv0KokLpsnAT2niXPaNYoSP1O
-wPJqNL9KvHn0TSefM5+k95qyJeGf8HB6z27j1oj/89r275H4mksStlVyutGtBawi
-Un5yNnZ0fAfTHcttnuYs/TJgLl+p91GpMUiBMJlWUahlzGLu+QOgXUC1mJJ6pGv1
-cVk+LmzsBL7ywqphO68SLe1KrhDscWiLijE6JqTUr7P4xKzNyjYav+2/MAOgtsEl
-5LpSnyhlmsjqvHPVo4bStr0+MhGIhHqf+Ic3N6n/MvvDhL0WJFNNQXFkuwvTULaR
-F8eo1k/cDqYu/KcCreN/Vev3+eH5hhKVtsjh/Z0P3yDyQZAAtLn/Twb4rwNIF3y+
-Vi1yy3H03zJP6t3EUPmv5lU2wYU9sBKYlODaJ5FtR9d+mfn+Fce8KU2W+Gf0tXkn
-wxCIcAEWJkD7WvvTerVqwvGVNU9TI7JYYlHetX1rDL29eTSDOtRbg3VAlRGvPDAB
-ca6IE1/aMtM=
-=7xwZ
------END PGP SIGNATURE-----
-
---=-jYMPYzeDK90VmRSAZ/ha--
+> +       if (!pci_is_pcie(dev) || !dev->subordinate ||
+> +           list_empty(&dev->subordinate->devices) ||
+> +           ((pci_pcie_type(dev) != PCI_EXP_TYPE_ROOT_PORT) &&
+> +            (pci_pcie_type(dev) != PCI_EXP_TYPE_DOWNSTREAM)))
+> +               return 0;
+> +
+> +       subordinate = dev->subordinate;
+> +       list_for_each_entry(child, &subordinate->devices, bus_list) {
+> +               if ((pci_pcie_type(child) == PCI_EXP_TYPE_UPSTREAM) ||
+> +                   (pci_pcie_type(child) == PCI_EXP_TYPE_PCI_BRIDGE) ||
+> +                   ((child->class >> 16) == PCI_BASE_CLASS_DISPLAY))
+> +                       /* Don't reset switch, bridge, VGA device */
+> +                       return 0;
+> +       }
+> +
+> +       return 1;
+> +}
+> +
+> +static void __init save_downstream_configs(struct pci_dev *dev)
+> +{
+> +       struct pci_bus *subordinate;
+> +       struct pci_dev *child;
+> +
+> +       subordinate = dev->subordinate;
+> +       list_for_each_entry(child, &subordinate->devices, bus_list) {
+> +               dev_info(&child->dev, "save state\n");
+> +               pci_save_state(child);
+> +       }
+> +}
+> +
+> +static void __init restore_downstream_configs(struct pci_dev *dev)
+> +{
+> +       struct pci_bus *subordinate;
+> +       struct pci_dev *child;
+> +
+> +       subordinate = dev->subordinate;
+> +       list_for_each_entry(child, &subordinate->devices, bus_list) {
+> +               dev_info(&child->dev, "restore state\n");
+> +               pci_restore_state(child);
+> +       }
+> +}
+> +
+> +static void __init do_downstream_device_reset(struct pci_dev *dev)
+> +{
+> +       u16 ctrl;
+> +
+> +       dev_info(&dev->dev, "Reset Secondary bus\n");
+> +
+> +       /* Assert Secondary Bus Reset */
+> +       pci_read_config_word(dev, PCI_BRIDGE_CONTROL, &ctrl);
+> +       ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
+> +       pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
+> +
+> +       /* Read config again to flush previous write */
+> +       pci_read_config_word(dev, PCI_BRIDGE_CONTROL, &ctrl);
+> +
+> +       msleep(2);
+> +
+> +       /* De-assert Secondary Bus Reset */
+> +       ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
+> +       pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
+> +}
+> +
+> +struct pci_dev_entry {
+> +       struct list_head list;
+> +       struct pci_dev *dev;
+> +};
+> +static int __initdata pcie_reset_endpoint_devices;
+> +static int __init reset_pcie_endpoints(void)
+> +{
+> +       struct pci_dev *dev = NULL;
+> +       struct pci_dev_entry *pdev_entry, *tmp;
+> +       LIST_HEAD(pdev_list);
+> +
+> +       if (!pcie_reset_endpoint_devices)
+> +               return 0;
+> +
+> +       for_each_pci_dev(dev)
+> +               if (need_reset(dev)) {
+> +                       pdev_entry = kmalloc(sizeof(*pdev_entry), GFP_KERNEL);
+> +                       pdev_entry->dev = dev;
+> +                       list_add(&pdev_entry->list, &pdev_list);
+> +               }
+> +
+> +       list_for_each_entry(pdev_entry, &pdev_list, list)
+> +               save_downstream_configs(pdev_entry->dev);
+> +
+> +       list_for_each_entry(pdev_entry, &pdev_list, list)
+> +               do_downstream_device_reset(pdev_entry->dev);
+> +
+> +       msleep(1000);
+> +
+> +       list_for_each_entry_safe(pdev_entry, tmp, &pdev_list, list) {
+> +               restore_downstream_configs(pdev_entry->dev);
+> +               kfree(pdev_entry);
+> +       }
+> +
+> +       return 0;
+> +}
+> +fs_initcall_sync(reset_pcie_endpoints);
+> +
+>  static int __init pci_setup(char *str)
+>  {
+>         while (str) {
+> @@ -3915,6 +4025,9 @@ static int __init pci_setup(char *str)
+>                                 pcie_bus_config = PCIE_BUS_PEER2PEER;
+>                         } else if (!strncmp(str, "pcie_scan_all", 13)) {
+>                                 pci_add_flags(PCI_SCAN_ALL_PCIE_DEVS);
+> +                       } else if (!strncmp(str, "pcie_reset_endpoint_devices",
+> +                                               27)) {
+> +                               pcie_reset_endpoint_devices = 1;
+>                         } else {
+>                                 printk(KERN_ERR "PCI: Unknown option `%s'\n",
+>                                                 str);
+> --
+> 1.7.1
+>
+>
