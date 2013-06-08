@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442Ab3FHBn3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 21:43:29 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:59794 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757300Ab3FHBnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 21:43:25 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: yanmin_zhang@linux.intel.com
-Cc: Greg KH <gregkh@linuxfoundation.org>, shuox.liu@intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, pavel@ucw.cz,
-        len.brown@intel.com
-Subject: Re: [PATCH 0/2] Run callback of device_prepare/complete consistently
-Date: Sat, 08 Jun 2013 03:52:30 +0200
-Message-ID: <2994160.MkjLhsn0bK@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1370655363.4432.87.camel@ymzhang.sh.intel.com>
-References: <1370593232-3602-1-git-send-email-shuox.liu@intel.com> <4500200.LnlZUcN9aW@vostro.rjw.lan> <1370655363.4432.87.camel@ymzhang.sh.intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1757256Ab3FHBpM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 21:45:12 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:56425 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754769Ab3FHBpK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 21:45:10 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+Subject: Re: [PATCH] Add TI-Nspire irqchip support
+From: Daniel Tang <dt.tangr@gmail.com>
+In-Reply-To: <20130531120647.149FF3E0901@localhost>
+Date: Sat, 8 Jun 2013 11:45:00 +1000
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C5349A0A-2BEA-4C8B-B7A0-E8F21A922674@gmail.com>
+References: <89D06030-E27E-445D-BBB8-45A47CA6C892@gmail.com> <alpine.LFD.2.02.1305301639560.2905@ionos> <20130531120647.149FF3E0901@localhost>
+To: Grant Likely <grant.likely@secretlab.ca>
+X-Mailer: Apple Mail (2.1503)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, June 08, 2013 09:36:03 AM Yanmin Zhang wrote:
-> On Sat, 2013-06-08 at 03:30 +0200, Rafael J. Wysocki wrote:
-> > On Friday, June 07, 2013 06:16:25 PM Greg KH wrote:
-> > > On Sat, Jun 08, 2013 at 08:42:12AM +0800, Yanmin Zhang wrote:
-> > > > On Fri, 2013-06-07 at 12:36 +0200, Rafael J. Wysocki wrote:
-> > > > > On Friday, June 07, 2013 04:20:30 PM shuox.liu@intel.com wrote:
-> > > > > > dpm_run_callback is used in other stages of power states changing.
-> > > > > > It provides debug info message and time measurement when call these
-> > > > > > callback. We also want to benefit ->prepare and ->complete.
-> > > > > > 
-> > > > > > [PATCH 1/2] PM: use dpm_run_callback in device_prepare
-> > > > > > [PATCH 2/2] PM: add dpm_run_callback_void and use it in device_complete
-> > > > > 
-> > > > > Is this an "Oh, why don't we do that?" series, or is it useful for anything
-> > > > > in practice?  I'm asking, because we haven't added that stuff to start with
-> > > > > since we didn't see why it would be useful to anyone.
-> > > > > 
-> > > > > And while patch [1/2] reduces the code size (by 1 line), so I can see some
-> > > > > (tiny) benefit from applying it, patch [2/2] adds more code and is there any
-> > > > > paractical reason?
-> > > > Sometimes, suspend-to-ram path spends too much time (either suspend slowly
-> > > > or wakeup slowly) and we need optimize it.
-> > > > With the 2 patches, we could collect initcall_debug printk info and manually
-> > > > check what prepare/complete callbacks consume too much time.
-> > > 
-> > > But initcall information is for initialization stuff, not suspend/resume
-> > > things, right?  Doesn't the existing tools for parsing this choke if it
-> > > sees the information at suspend/resume time?
-> > 
-> > We've been using that for suspend/resume for quite some time too, but not
-> > for the prepare/complete phases (because we still believe that's not really
-> > useful for them). 
-> > 
-> > Well, I'll be handling patches changing code under drivers/base/power,
-> > I promise. :-)
-> > 
-> > I've been doing that for quite a few years now ...
-> Yes, indeed. Power is one of the most important features on embedded devices.
-> Lots of smart phones don't really go through the full cycles of suspend-to-ram.
-> We are following the full steps of the suspend.
+Hi,
 
-But if you go through the code, you'll see that alomost no drivers actually
-implemet .prepare() and .complete().  Some subsystems do, but they really don't
-take too much time to execute.  Which means that your patches with
-initcall_debug will add quite a pile of useless garbage to the kernel log and
-I'm not sure how that helps?
+On 31/05/2013, at 10:06 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
 
-Rafael
+> 
+> Hi Daniel,
+> 
+> What is the SoC used in the Nspire? Is it something custom for the
+> calculator, or does it use an existing SoC?
 
+It seems to be a custom SoC from what I can see.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> I'm just surprised that this
+> device needs a new interrupt controller driver rather than one of the
+> drivers that is already in the tree.
+
+I had a brief look in the other driver code and there doesn't seem to be a existing driver for this interrupt controller.
+
+> 
+> If it is a new device, then that is fine, but you should follow the
+> discussion that Thomas pointed you at below.
+> 
+> g.
+> 
+
+Cheers,
+Daniel Tang
