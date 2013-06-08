@@ -1,114 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751248Ab3FHCig (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 22:38:36 -0400
-Received: from mga14.intel.com ([143.182.124.37]:24577 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750861Ab3FHCie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 22:38:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,826,1363158000"; 
-   d="scan'208";a="252223919"
-Message-ID: <51B298FE.5010808@intel.com>
-Date: Sat, 08 Jun 2013 10:37:50 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1751286Ab3FHDCm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 23:02:42 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:11298
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751059Ab3FHDCl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 23:02:41 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(z551biz98dI146fI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Sat, 8 Jun 2013 11:02:41 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Mike Turquette <mturquette@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH RFC 0/3] clk: dt: bindings for mux & divider clocks
+Message-ID: <20130608030240.GB22134@S2101-09.ap.freescale.net>
+References: <1370281990-15090-1-git-send-email-mturquette@linaro.org>
+ <20130607055128.GA20780@S2101-09.ap.freescale.net>
+ <20130607175254.10233.7661@quantum>
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
-        riel@redhat.com, wangyun@linux.vnet.ibm.com,
-        Jason Low <jason.low2@hp.com>,
-        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        fweisbec@gmail.com
-Subject: Re: [patch 0/9] sched: use runnable load avg in balance
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130607175254.10233.7661@quantum>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2013 03:20 PM, Alex Shi wrote:
-> Peter&Ingo:
-> 
-> v8: add a marco div64_ul and used it in task_h_load()
-> v7: rebasing on tip/sched/core tree.
+On Fri, Jun 07, 2013 at 10:52:54AM -0700, Mike Turquette wrote:
+> Yes, there was a time when I was firmly against doing such a thing.
+> However I'm not sure it is so bad now.  More and more SoCs are going to
+> keep getting merged into the kernel and that just means more and more
+> clock data.  Perhaps DT is best suited to handle this bloat.  I broke
+> the clock data out into a separate file so that it didn't overwhelm the
+> existing omap4.dtsi.
 
-Peter & Ingo:
+I'm actually more concerned by run-time impact.  Any of_find_node_*()
+call will possibly have to scan all those hundreds of nodes to find the
+desired one.  Anyway, it's an OMAP folks decision, and the impact might
+not be that much on those fast CPUs.
 
-IMHO, if the patch set missed in 3.11 kernel. We will lose the following
-widely benefit on many benchmarks, hackbench, pgbench, sysbench,
-anonymous java load ...
-
-What's your opinions? :)
+Shawn
 
 > 
-> I tested on Intel core2, NHM, SNB, IVB, 2 and 4 sockets machines with
-> benchmark kbuild, aim7, dbench, tbench, hackbench, oltp, and netperf
-> loopback etc. 
-> 
-> On SNB EP 4 sockets machine, the hackbench increased about 50%, and
-> result become stable. on other machines, hackbench increased about
-> 2~10%. oltp increased about 30% in NHM EX box. netperf loopback also
-> increased on SNB EP 4 sockets box. 
-> No clear changes on other benchmarks.
-> 
-> Michael Wang gotten better performance on pgbench on his box with this
-> patchset. https://lkml.org/lkml/2013/5/16/82
-> 
-> And Morten tested previous version with better power consumption.
-> http://comments.gmane.org/gmane.linux.kernel/1463371
-> 
-> Changlong found ltp cgroup stress testing get faster on SNB EP
-> machine with the last patch.  https://lkml.org/lkml/2013/5/23/65
-> ---
-> 3.10-rc1          patch1-7         patch1-8
-> duration=764   duration=754   duration=750
-> duration=764   duration=754   duration=751
-> duration=763   duration=755   duration=751
-> 
-> duration means the seconds of testing cost.
-> ---
-> 
-> Jason also found java server load benefited on his 8 sockets machine
-> with last patch. https://lkml.org/lkml/2013/5/29/673
-> ---
-> When using a 3.10-rc2 tip kernel with patches 1-8, there was about a 40%
-> improvement in performance of the workload compared to when using the
-> vanilla 3.10-rc2 tip kernel with no patches. When using a 3.10-rc2 tip
-> kernel with just patches 1-7, the performance improvement of the
-> workload over the vanilla 3.10-rc2 tip kernel was about 25%.
-> ---
-> 
-> We also tried to include blocked load avg in balance. but find many
-> benchmark performance drop a lot! Seems accumulating current
-> blocked_load_avg into cpu load isn't a good idea. Because:
-> 1, The blocked_load_avg is decayed same as runnable load, sometime is far
-> bigger than runnable load, that drive tasks to other idle or slight
-> load cpu, than cause both performance and power issue. But if the
-> blocked load is decayed too fast, it lose its effect. 
-> 2, Another issue of blocked load is that when waking up task, we can not 
-> know blocked load proportion of the task on rq. So, the blocked load is
-> meaningless in wake affine decision.  
-> 
-> According to above problem, we can not figure out a right way now to use 
-> blocked_load_avg in balance.
-> 
-> Since using runnable load avg in balance brings much benefit on
-> performance and power. and this patch was reviewed for long time.
-> So seems it's time to let it be clobbered in some sub tree, like 
-> tip or linux-next.  Any comments?
-> 
-> Regards
-> Alex
-> 
+> Either way I marked this series as RFC precisely due to your point.  I
+> want feedback on how the OMAP folks feel about this.  So far no has has
+> NACKed it ;-)
 
-
--- 
-Thanks
-    Alex
