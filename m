@@ -1,30 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757525Ab3FHBVB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 21:21:01 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:59788 "EHLO hydra.sisk.pl"
+	id S1757565Ab3FHB2U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 21:28:20 -0400
+Received: from mga01.intel.com ([192.55.52.88]:20352 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756633Ab3FHBVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 21:21:00 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	id S1757125Ab3FHB2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 21:28:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,825,1363158000"; 
+   d="scan'208";a="349971853"
+Message-ID: <1370655020.4432.83.camel@ymzhang.sh.intel.com>
+Subject: Re: [PATCH 0/2] Run callback of device_prepare/complete consistently
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Reply-To: yanmin_zhang@linux.intel.com
 To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Yanmin Zhang <yanmin_zhang@linux.intel.com>, shuox.liu@intel.com,
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, shuox.liu@intel.com,
         linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, pavel@ucw.cz,
         len.brown@intel.com
-Subject: Re: [PATCH 0/2] Run callback of device_prepare/complete consistently
-Date: Sat, 08 Jun 2013 03:30:07 +0200
-Message-ID: <4500200.LnlZUcN9aW@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
+Date: Sat, 08 Jun 2013 09:30:20 +0800
 In-Reply-To: <20130608011625.GB2819@kroah.com>
-References: <1370593232-3602-1-git-send-email-shuox.liu@intel.com> <1370652132.4432.68.camel@ymzhang.sh.intel.com> <20130608011625.GB2819@kroah.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+References: <1370593232-3602-1-git-send-email-shuox.liu@intel.com>
+	 <2482951.doztFClhed@vostro.rjw.lan>
+	 <1370652132.4432.68.camel@ymzhang.sh.intel.com>
+	 <20130608011625.GB2819@kroah.com>
+Organization: Intel.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 07, 2013 06:16:25 PM Greg KH wrote:
+On Fri, 2013-06-07 at 18:16 -0700, Greg KH wrote:
 > On Sat, Jun 08, 2013 at 08:42:12AM +0800, Yanmin Zhang wrote:
 > > On Fri, 2013-06-07 at 12:36 +0200, Rafael J. Wysocki wrote:
 > > > On Friday, June 07, 2013 04:20:30 PM shuox.liu@intel.com wrote:
@@ -48,22 +56,13 @@ On Friday, June 07, 2013 06:16:25 PM Greg KH wrote:
 > > check what prepare/complete callbacks consume too much time.
 > 
 > But initcall information is for initialization stuff, not suspend/resume
-> things, right?  Doesn't the existing tools for parsing this choke if it
+> things, right? 
+initcall_debug also controls shutdown callbacks, and suspend/resume callbacks.
+See __device_suspend=>dpm_run_callback. It's very useful when we want to optimize
+suspend-to-ram, or debug some hard issues which happen when async suspend is enabled.
+
+>  Doesn't the existing tools for parsing this choke if it
 > sees the information at suspend/resume time?
-
-We've been using that for suspend/resume for quite some time too, but not
-for the prepare/complete phases (because we still believe that's not really
-useful for them). 
-
-Well, I'll be handling patches changing code under drivers/base/power,
-I promise. :-)
-
-I've been doing that for quite a few years now ...
-
-Thanks,
-Rafael
+Current kernel doesn't print out info around prepare/complete.
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
