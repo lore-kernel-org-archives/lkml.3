@@ -1,163 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983Ab3FHNz5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 09:55:57 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:60083 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751734Ab3FHNzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 09:55:55 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: Borislav Petkov <bp@suse.de>, Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of target frequency
-Date: Sat, 08 Jun 2013 16:05 +0200
-Message-ID: <1731097.2elXaGsAyC@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <q46r5iepl3sunqe5eemv66hk.1370694869222@email.android.com>
-References: <q46r5iepl3sunqe5eemv66hk.1370694869222@email.android.com>
+	id S1752011Ab3FHOEV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 10:04:21 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:64068 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680Ab3FHOET (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jun 2013 10:04:19 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1370524350.23133.11.camel@intelbox>
+References: <1370523178-5437-1-git-send-email-akinobu.mita@gmail.com>
+	<1370523178-5437-2-git-send-email-akinobu.mita@gmail.com>
+	<1370524350.23133.11.camel@intelbox>
+Date: Sat, 8 Jun 2013 23:04:18 +0900
+Message-ID: <CAC5umyjsY3s_TtxMq6XmEA+qXiD8zm5LSrgDPd1JT=SrGkKsmQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] lib/scatterlist: introduce sg_pcopy_from_buffer() and sg_pcopy_to_buffer()
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: imre.deak@intel.com
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Douglas Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, June 08, 2013 03:34:29 PM Stratos Karafotis wrote:
-> I also did the test with the way you mentioned. But I thought to run turbostat for 100 sec as I did with powertop.
+2013/6/6 Imre Deak <imre.deak@intel.com>:
+> Looks ok to me, perhaps adding the seek functionality to the mapping
+> iterator would make things more generic and the mapping iterator more
+> resemble the page iterator. So we'd have a new sg_miter_start_offset and
+> call it here something like:
+>
+> sg_miter_start_offset(&miter, sgl, nents, sg_flags, skip);
 
-Ah, OK.
+I also thought something like this could be a new interface for sg_miter_* API,
+but I haven't found any places where it can be used yet.  That's why I made
+it a local function and didn't create new interface.
 
-> Actually benchmark lasts about 96 secs.
-> 
-> I think that we use almost the same energy for 100 sec to run the same load a little bit faster. I think this means also a reduce to power consumption.
-> 
-> I will also send the results running the test as you said.
-
-Cool, thanks!
-
-Rafael
-
-
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> 
-> >On Saturday, June 08, 2013 12:56:00 PM Stratos Karafotis wrote:
-> >> On 06/07/2013 11:57 PM, Rafael J. Wysocki wrote:
-> >> > On Friday, June 07, 2013 10:14:34 PM Stratos Karafotis wrote:
-> >> >> On 06/05/2013 11:35 PM, Rafael J. Wysocki wrote:
-> >> >>> On Wednesday, June 05, 2013 08:13:26 PM Stratos Karafotis wrote:
-> >> >>>> Hi Borislav,
-> >> >>>>
-> >> >>>> On 06/05/2013 07:17 PM, Borislav Petkov wrote:
-> >> >>>>> On Wed, Jun 05, 2013 at 07:01:25PM +0300, Stratos Karafotis wrote:
-> >> >>>>>> Ondemand calculates load in terms of frequency and increases it only
-> >> >>>>>> if the load_freq is greater than up_threshold multiplied by current
-> >> >>>>>> or average frequency. This seems to produce oscillations of frequency
-> >> >>>>>> between min and max because, for example, a relatively small load can
-> >> >>>>>> easily saturate minimum frequency and lead the CPU to max. Then, the
-> >> >>>>>> CPU will decrease back to min due to a small load_freq.
-> >> >>>>>
-> >> >>>>> Right, and I think this is how we want it, no?
-> >> >>>>>
-> >> >>>>> The thing is, the faster you finish your work, the faster you can become
-> >> >>>>> idle and save power.
-> >> >>>>
-> >> >>>> This is exactly the goal of this patch. To use more efficiently middle
-> >> >>>> frequencies to finish faster the work.
-> >> >>>>
-> >> >>>>> If you switch frequencies in a staircase-like manner, you're going to
-> >> >>>>> take longer to finish, in certain cases, and burn more power while doing
-> >> >>>>> so.
-> >> >>>>
-> >> >>>> This is not true with this patch. It switches to middle frequencies
-> >> >>>> when the load < up_threshold.
-> >> >>>> Now, ondemand does not increase freq. CPU runs in lowest freq till the
-> >> >>>> load is greater than up_threshold.
-> >> >>>>
-> >> >>>>> Btw, racing to idle is also a good example for why you want boosting:
-> >> >>>>> you want to go max out the core but stay within power limits so that you
-> >> >>>>> can finish sooner.
-> >> >>>>>
-> >> >>>>>> This patch changes the calculation method of load and target frequency
-> >> >>>>>> considering 2 points:
-> >> >>>>>> - Load computation should be independent from current or average
-> >> >>>>>> measured frequency. For example an absolute load 80% at 100MHz is not
-> >> >>>>>> necessarily equivalent to 8% at 1000MHz in the next sampling interval.
-> >> >>>>>> - Target frequency should be increased to any value of frequency table
-> >> >>>>>> proportional to absolute load, instead to only the max. Thus:
-> >> >>>>>>
-> >> >>>>>> Target frequency = C * load
-> >> >>>>>>
-> >> >>>>>> where C = policy->cpuinfo.max_freq / 100
-> >> >>>>>>
-> >> >>>>>> Tested on Intel i7-3770 CPU @ 3.40GHz and on Quad core 1500MHz Krait.
-> >> >>>>>> Phoronix benchmark of Linux Kernel Compilation 3.1 test shows an
-> >> >>>>>> increase ~1.5% in performance. cpufreq_stats (time_in_state) shows
-> >> >>>>>> that middle frequencies are used more, with this patch. Highest
-> >> >>>>>> and lowest frequencies were used less by ~9%
-> >> >>>
-> >> >>> Can you also use powertop to measure the percentage of time spent in idle
-> >> >>> states for the same workload with and without your patchset?  Also, it would
-> >> >>> be good to measure the total energy consumption somehow ...
-> >> >>>
-> >> >>> Thanks,
-> >> >>> Rafael
-> >> >>
-> >> >> Hi Rafael,
-> >> >>
-> >> >> I repeated the tests extracting also powertop results.
-> >> >> Measurement steps with and without this patch:
-> >> >> 1) Reboot system
-> >> >> 2) Running twice Phoronix benchmark of Linux Kernel Compilation 3.1 test
-> >> >>     without taking measurement
-> >> >> 3) Wait few minutes
-> >> >> 4) Run Phoronix and powertop for 100secs and take measurement.
-> >> > 
-> >> > Well, while this is not conclusive, it definitely looks very promising. :-)
-> >> > 
-> >> > We're seeing measurable performance improvement with the patchset applied *and*
-> >> > more time spent in idle states both at the same time.  I'd be very surprised if
-> >> > the energy consumption measuremets did not confirm that the patchset allowed
-> >> > us to reduce it.
-> >> > 
-> >> > If my computations are correct (somebody please check), the cores spent about
-> >> > 20% more time in idle on the average with the patchset applied and in addition
-> >> > to that the cc6 residency was greater by about 2% on the average with respect
-> >> > to the kernel without the patchset.
-> >> > 
-> >> > We need to verify if there are gains (or at least no regressions) with other
-> >> > workloads, but since this *also* reduces code complexity quite a bit, I'm
-> >> > seriously considering taking it.
-> >> > 
-> >> >> I will try to repeat the test and take measurements with turbostat as
-> >> >> Borislav suggested.
-> >> > 
-> >> > Please do!
-> >> > 
-> >> > Thanks,
-> >> > Rafael
-> >> > 
-> >> 
-> >> Hi,
-> >> 
-> >> I repeated the tests extracting results from turbostat.
-> >> Measurement steps with and without this patch:
-> >> 1) Reboot system
-> >> 2) Running twice Phoronix benchmark of Linux Kernel Compilation 3.1 test
-> >>    without taking measurement
-> >> 3) Wait few minutes
-> >> 4) Run Phoronix and turbostat (-i 100) and take measurement
-> >
-> >You need to do something like
-> >
-> ># ./turbostat <command invoking the phoronix suite>
-> >
-> >Did you do that?
-> >
-> >Rafael
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+But putting good function comment like other sg_miter_* API for new
+local function
+is harmless and it helps someone who wants interface like this in the future.
+So I'll do so in next version.
