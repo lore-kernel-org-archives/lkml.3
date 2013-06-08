@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751838Ab3FHI5W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 04:57:22 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:41160 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583Ab3FHI5U (ORCPT
+	id S1751813Ab3FHJEp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 05:04:45 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:47423 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507Ab3FHJEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 04:57:20 -0400
-Message-ID: <51B2F1ED.2090801@kernel.org>
-Date: Sat, 08 Jun 2013 09:57:17 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Sat, 8 Jun 2013 05:04:42 -0400
+Date: Sat, 8 Jun 2013 17:04:33 +0800
+From: Adam Lee <adam.lee@canonical.com>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org,
+        ibm-acpi-devel@lists.sourceforge.net,
+        Alex Hung <alex.hung@canonical.com>, Bjorn Mork <bjorn@mork.no>
+Subject: Re: [PATCH 3/3] thinkpad_acpi: add LED quirks of models which don't
+ have EC controllable LEDs
+Message-ID: <20130608090433.GB7334@adam-laptop>
+Mail-Followup-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+	Matthew Garrett <matthew.garrett@nebula.com>,
+	linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+	ibm-acpi-devel@lists.sourceforge.net,
+	Alex Hung <alex.hung@canonical.com>, Bjorn Mork <bjorn@mork.no>
+References: <1370593209-21358-1-git-send-email-adam.lee@canonical.com>
+ <1370593209-21358-4-git-send-email-adam.lee@canonical.com>
+ <1370611358.6315.48.camel@x230.lan>
+ <20130607150651.GA2227@adam-laptop>
+ <1370636175.13515.140661241274985.19126A97@webmail.messagingengine.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        "Hennerich, Michael" <Michael.Hennerich@analog.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: Arm sub architectures missing clk_round_rate()
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370636175.13515.140661241274985.19126A97@webmail.messagingengine.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At least one Arm subarch (pxa) does no provide an implementation of this
-function.  As far as I can see there is no way for a driver wishing to use
-it to detect it's absence.  This is marked in clk.h as being optional
-for 'Machine Class support'. Obvious solutions to this are:
+On Fri, Jun 07, 2013 at 05:16:15PM -0300, Henrique de Moraes Holschuh wrote:
+> Can you get me the ACPI interface documentation?  It should be simple
+> to get it, but I haven't emailed the Lenovo BIOS engineers for some
+> time.
+> 
+> Basically, create a new LED method in thinkpad-acpi, lock it down to
+> vendor lenovo, detect the new interfaces, and only check the
+> two-argument LED one if the newer ones aren't found.
+> 
+> Not supporting the old /proc interface on new thinkpads is fine.
 
-1) It is effectively only usable by platform specific drivers as no
-   more generic driver can know it is available.  Perhaps even a stub that
-   returns an appropriate error would be acceptable.
+Thanks, I will request the documentation from Lenovo again.
 
-2) It is not as optional as the header implies and should always be implemented
-   if the rest of the clk framework is.
+Please apply "[PATCH 1/3 v3] thinkpad_acpi: return -NODEV while operating uninitialized LEDs" and
+"[PATCH 2/3] thinkpad_acpi: add the ability setting TPACPI_LED_NONE by quirk", but
+hold "[PATCH 3/3] thinkpad_acpi: add LED quirks of models which don't have EC controllable LEDs",
+I will drop [PATCH 3/3] to discussion again when I got the documentation.
 
-3) There should be some means of detecting its absense so that drivers can
-   be dependant on its presene.
-
-Which is the correct one?
-
-This issue came up as a result of the thread
-http://marc.info/?l=linux-iio&m=137026653516438&w=2
-[PATCH RESEND V2 3/4] iio: frequency: adf4350: Add support for clock consumer framework
-on linux-iio@vger.kernel.org
-
-
-Thanks,
-
-Jonathan
+-- 
+Regards,
+Adam Lee
+Hardware Enablement
