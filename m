@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056Ab3FHO2I (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 10:28:08 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:41721 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab3FHO2E (ORCPT
+	id S1752241Ab3FHOaN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 10:30:13 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:63271 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680Ab3FHOaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 10:28:04 -0400
+	Sat, 8 Jun 2013 10:30:11 -0400
+X-Originating-IP: 108.223.40.66
+Date: Sat, 8 Jun 2013 07:30:55 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
+        Jiri Slaby <jslaby@suse.cz>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: Linux 3.9.5 [patch to fix powerpc build error attached]
+Message-ID: <20130608143055.GA21207@roeck-us.net>
+References: <20130607195816.GA28479@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20130606210041.GD5045@htj.dyndns.org>
-References: <1370523178-5437-1-git-send-email-akinobu.mita@gmail.com>
-	<1370523178-5437-2-git-send-email-akinobu.mita@gmail.com>
-	<20130606210041.GD5045@htj.dyndns.org>
-Date: Sat, 8 Jun 2013 23:28:04 +0900
-Message-ID: <CAC5umyi0By0hd5RSvhODjdx=1ExAdigDaiGDu-tYD7t4s2FYGw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] lib/scatterlist: introduce sg_pcopy_from_buffer() and sg_pcopy_to_buffer()
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Imre Deak <imre.deak@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Douglas Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130607195816.GA28479@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/6/7 Tejun Heo <tj@kernel.org>:
-> Hello,
->
-> On Thu, Jun 06, 2013 at 09:52:56PM +0900, Akinobu Mita wrote:
->> +static bool sg_miter_get_next_page(struct sg_mapping_iter *miter)
->> +{
->> +     if (!miter->__remaining) {
->> +             struct scatterlist *sg;
->> +             unsigned long pgoffset;
->> +
->> +             if (!__sg_page_iter_next(&miter->piter))
->> +                     return false;
->> +
->> +             sg = miter->piter.sg;
->> +             pgoffset = miter->piter.sg_pgoffset;
->> +
->> +             miter->__offset = pgoffset ? 0 : sg->offset;
->> +             miter->__remaining = sg->offset + sg->length -
->> +                             (pgoffset << PAGE_SHIFT) - miter->__offset;
->> +             miter->__remaining = min_t(unsigned long, miter->__remaining,
->> +                                        PAGE_SIZE - miter->__offset);
->> +     }
->> +
->> +     return true;
->> +}
->
-> It'd be better if separating out this function is a separate patch.
-> Mixing factoring out something and adding new stuff makes the patch a
-> bit harder to read.
+On Fri, Jun 07, 2013 at 12:58:16PM -0700, Greg KH wrote:
+> I'm announcing the release of the 3.9.5 kernel.
+> 
+> All users of the 3.9 kernel series must upgrade.
+> 
+> The updated 3.9.y git tree can be found at:
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.9.y
+> and can be browsed at the normal kernel.org git web browser:
+> 	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
+> 
+Powerpc build is fixed with the following patch.
 
-OK, sounds good. I'll do so in next version.
+>From 8ce3edac0a86f103bd1037110662d5d80a42dd5b Mon Sep 17 00:00:00 2001
+From: Guenter Roeck <linux@roeck-us.net>
+Date: Sat, 8 Jun 2013 07:23:47 -0700
+Subject: [PATCH] powerpc: Fix build error in stable/3.9
 
-But I feel sg_miter_get_next_page() is not very appropriate name, because
-it gets the next page only if necessary.  If I can find more appropriate name,
-I'll rename it.
+Commit e71c42189 (powerpc/tm: Abort on emulation and alignment faults)
+introduced a powerpc build error in 3.9.5.
 
->> +static bool sg_miter_seek(struct sg_mapping_iter *miter, off_t offset)
->> +{
->> +     WARN_ON(miter->addr);
->> +
->> +     while (offset) {
->> +             off_t consumed;
->> +
->> +             if (!sg_miter_get_next_page(miter))
->> +                     return false;
->> +
->> +             consumed = min_t(off_t, offset, miter->__remaining);
->> +             miter->__offset += consumed;
->> +             miter->__remaining -= consumed;
->> +             offset -= consumed;
->> +     }
->> +
->> +     return true;
->> +}
->
-> While I think the above should work at the beginning, what if @miter
-> is in the middle of iteration and __remaining isn't zero?
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+No upstream commit. Compile tested only.
 
-sg_miter_seek() should work as far as it is called just after sg_miter_start(),
-or just after sg_miter_stop() in the middle of iteration (Although I only
-tested the former case).  I omitted a function comment in excuse of the static
-function, but I should write something I said above.
+ arch/powerpc/kernel/traps.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
+index 1c22b2d..29857c6 100644
+--- a/arch/powerpc/kernel/traps.c
++++ b/arch/powerpc/kernel/traps.c
+@@ -1151,7 +1151,7 @@ void alignment_exception(struct pt_regs *regs)
+ 		local_irq_enable();
+ 
+ 	if (tm_abort_check(regs, TM_CAUSE_ALIGNMENT | TM_CAUSE_PERSISTENT))
+-		goto bail;
++		return;
+ 
+ 	/* we don't implement logging of alignment exceptions */
+ 	if (!(current->thread.align_ctl & PR_UNALIGN_SIGBUS))
+-- 
+1.7.9.7
+
