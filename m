@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180Ab3FKNN3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 09:13:29 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34207 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755093Ab3FKNN0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 09:13:26 -0400
-Date: Tue, 11 Jun 2013 15:13:16 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        John Stultz <john.stultz@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] Marvell Orion SoC irqchip and clocksource
-In-Reply-To: <51B71AF6.1090108@gmail.com>
-Message-ID: <alpine.LFD.2.02.1306111512480.22970@ionos>
-References: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130611123521.GA3996@localhost> <51B71AF6.1090108@gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1755219Ab3FKNNi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 09:13:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46978 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754778Ab3FKNNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 09:13:36 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: smtp.corp.redhat.com@redhat.com, davem@davemloft.net, mst@redhat.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: [net PATCH] tuntap: set SOCK_ZEROCOPY flag during open
+Date: Sat,  8 Jun 2013 14:17:41 +0800
+Message-Id: <1370672261-30076-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Jun 2013, Sebastian Hesselbarth wrote:
-> On 06/11/13 14:35, Ezequiel Garcia wrote:
-> With Thomas Gleixner's Review now only somebody has to take the irqchip
-> patch then all three drivers are queued for next release.
+Commit 54f968d6efdbf7dec36faa44fc11f01b0e4d1990
+(tuntap: move socket to tun_file) forgets to set SOCK_ZEROCOPY flag, which will
+prevent vhost_net from doing zercopy w/ tap. This patch fixes this by setting
+it during file open.
 
-I can take it through tip if nobody else wants it :)
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/tun.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index f042b03..d2ddd6d 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -2155,6 +2155,8 @@ static int tun_chr_open(struct inode *inode, struct file * file)
+ 	set_bit(SOCK_EXTERNALLY_ALLOCATED, &tfile->socket.flags);
+ 	INIT_LIST_HEAD(&tfile->next);
+ 
++	sock_set_flag(&tfile->sk, SOCK_ZEROCOPY);
++
+ 	return 0;
+ }
+ 
+-- 
+1.7.1
