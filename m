@@ -1,140 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab3FHVIE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 17:08:04 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:31832 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752779Ab3FHVIC (ORCPT
+	id S1752955Ab3FHVWM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 17:22:12 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:52749 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752780Ab3FHVWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 17:08:02 -0400
-X-IronPort-AV: E=Sophos;i="4.87,828,1363129200"; 
-   d="scan'208";a="20981670"
-Date: Sat, 8 Jun 2013 23:07:59 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-cc: Rusty Russell <rusty@rustcorp.com.au>, Thomas Meyer <thomas@m3y3r.de>,
-        mst@redhat.com, grant.likely@linaro.org, rob.herring@calxeda.com,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Julia Lawall <Julia.Lawall@lip6.fr>
-Subject: Re: [RFC] PTR_ERR: return 0 if ptr isn't an error value.
-In-Reply-To: <20130603071526.GA5483@pengutronix.de>
-Message-ID: <alpine.DEB.2.02.1306082305220.1968@localhost6.localdomain6>
-References: <1370080565.29224.29.camel@localhost.localdomain> <87mwr8sz9g.fsf@rustcorp.com.au> <20130603071526.GA5483@pengutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sat, 8 Jun 2013 17:22:11 -0400
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-686122369-1370725680=:1968"
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sat, 8 Jun 2013 22:21:50 +0100
+X-Google-Sender-Auth: 4qCAlpaCwKTiDWKAQYz73t5_xYw
+Message-ID: <CACxGe6vB-PAQXoPjmgReovCR+iHykA4ns-Fix0XziZ3L2y9yUA@mail.gmail.com>
+Subject: [GIT PULL] irqdomain bug fixes
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi Linus,
 
---8323328-686122369-1370725680=:1968
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Please pull the following branch with irqdomain bug fixes.
 
-On Mon, 3 Jun 2013, Uwe Kleine-König wrote:
+Thanks,
+g.
 
-> Hello Rusty,
-> 
-> [added akpm to Cc: who took the patch back then and Julia for the
-> coccinelle part below]
-> 
-> On Mon, Jun 03, 2013 at 11:59:15AM +0930, Rusty Russell wrote:
-> > 
-> > Back in 2011, Uwe Kleine-König added the nonsensically-named
-> > PTR_RET(), providing a means to avoid if() statements in code (commit 
-> > fa9ee9c4b9).
-> > 
-> > Instead, just make PTR_ERR() return 0 if the pointer isn't an error
-> > value.  This is harmless, since PTR_ERR() should have never been
-> > passed a non-error value.  And GCC is usually smart enough to remove
-> > the extra test if IS_ERR() has already been called.
-> I wonder in which situations gcc fails to be smart enough. Did you check
-> this?
-> 
-> > My vmlinux text increased by 300 bytes:
-> > 
-> > 	   text	   data	    bss	    dec	    hex	filename
-> > 	6029452	 491628	2576384	9097464	 8ad0f8	vmlinux
-> > 	6029721	 491628	2576384	9097733	 8ad205	vmlinux.PTR_ERR
-> > 
-> > Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > Cc: Thomas Meyer <thomas@m3y3r.de>
-> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> > 
-> > diff --git a/include/linux/err.h b/include/linux/err.h
-> > index f2edce2..621d859 100644
-> > --- a/include/linux/err.h
-> > +++ b/include/linux/err.h
-> > @@ -24,14 +24,16 @@ static inline void * __must_check ERR_PTR(long error)
-> >  	return (void *) error;
-> >  }
-> >  
-> > -static inline long __must_check PTR_ERR(const void *ptr)
-> > +static inline long __must_check IS_ERR(const void *ptr)
-> >  {
-> > -	return (long) ptr;
-> > +	return IS_ERR_VALUE((unsigned long)ptr);
-> >  }
-> >  
-> > -static inline long __must_check IS_ERR(const void *ptr)
-> > +static inline long __must_check PTR_ERR(const void *ptr)
-> >  {
-> > -	return IS_ERR_VALUE((unsigned long)ptr);
-> > +	if (IS_ERR(ptr))
-> > +		return (long) ptr;
-> > +	return 0;
-> >  }
-> >  
-> >  static inline long __must_check IS_ERR_OR_NULL(const void *ptr)
-> > @@ -52,14 +54,7 @@ static inline void * __must_check ERR_CAST(const void *ptr)
-> >  	return (void *) ptr;
-> >  }
-> >  
-> > -static inline int __must_check PTR_RET(const void *ptr)
-> > -{
-> > -	if (IS_ERR(ptr))
-> > -		return PTR_ERR(ptr);
-> > -	else
-> > -		return 0;
-> > -}
-> > -
-> > +#define PTR_RET	PTR_ERR
-> I'd add a comment here that PTR_RET shouldn't be used anymore.
-> 
-> >  #endif
-> >  
-> >  #endif /* _LINUX_ERR_H */
-> > 
-> 
-> Is it worth to apply the same change to tools/virtio/linux/err.h to
-> minimize the chance for later surprises?
-> Also scripts/coccinelle/api/ptr_ret.cocci starts giving false warnings.
-> 
-> Other than that I think the change is fine.
+The following changes since commit d683b96b072dc4680fc74964eca77e6a23d1fa6e:
 
-For a random example, here is a function that currently uses PTR_RET:
+  Linux 3.10-rc4 (2013-06-02 17:11:17 +0900)
 
-static int __net_init iptable_raw_net_init(struct net *net)
-{
-        struct ipt_replace *repl;
+are available in the git repository at:
 
-        repl = ipt_alloc_initial_table(&packet_raw);
-	if (repl == NULL)
-                return -ENOMEM;
-        net->ipv4.iptable_raw =
-                ipt_register_table(net, &packet_raw, repl);
-	kfree(repl);
-        return PTR_RET(net->ipv4.iptable_raw);
-}
+  git://git.secretlab.ca/git/linux tags/irqdomain-for-linus
 
-If it becomes return PTR_ERR(...); at the end, won't it look like the 
-function always fails?
+for you to fetch changes up to d94ea3f6d21e8b4398285516cc307c81d7374ec9:
 
-julia
---8323328-686122369-1370725680=:1968--
+  irqchip: Return -EPERM for reserved IRQs (2013-06-08 21:34:16 +0100)
+
+----------------------------------------------------------------
+irqdomain bug fixes for v3.10-rc4
+
+This branch contains a set of straight forward bug fixes to the
+irqdomain code and to a couple of drivers that make use of it.
+
+----------------------------------------------------------------
+Arnd Bergmann (1):
+      irqdomain: export irq_domain_add_simple
+
+Chen Gang (1):
+      kernel/irq/irqdomain.c: before use 'irq_data', need check it
+whether valid.
+
+Grant Likely (1):
+      irqchip: Return -EPERM for reserved IRQs
+
+Linus Walleij (1):
+      irqdomain: document the simple domain first_irq
+
+ drivers/irqchip/irq-versatile-fpga.c | 2 +-
+ drivers/irqchip/irq-vic.c            | 2 +-
+ kernel/irq/irqdomain.c               | 9 +++++++--
+ 3 files changed, 9 insertions(+), 4 deletions(-)
