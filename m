@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157Ab3FHXkg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 19:40:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34862 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753103Ab3FHXke (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 19:40:34 -0400
-Message-ID: <51B3C0EB.2070302@infradead.org>
-Date: Sat, 08 Jun 2013 16:40:27 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1753137Ab3FHX7L (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 19:59:11 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:37101 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752926Ab3FHX7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jun 2013 19:59:10 -0400
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 0/2] pinctrl: common handling of generic pinconfig props in dt
+Date: Sun, 9 Jun 2013 01:59:05 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Patrice Chotard <patrice.chotard.st@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-To: Markos Chandras <markos.chandras@imgtec.com>
-CC: linux-kernel@vger.kernel.org, Ohad Ben-Cohen <ohad@wizery.com>
-Subject: Re: [PATCH] drivers: Select dependencies for the VIRTUALIZATION symbol
-References: <1370604188-19806-1-git-send-email-markos.chandras@imgtec.com>
-In-Reply-To: <1370604188-19806-1-git-send-email-markos.chandras@imgtec.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201306090159.05383.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/13 04:23, Markos Chandras wrote:
-> The VIRTUALIZATION symbol depends on HAVE_KVM but CONFIG_REMOTEPROC
-> and CONFIG_RPMSG do not select HAVE_KVM leading to the following
-> warning and build problems later on:
-> 
-> warning: (REMOTEPROC && RPMSG) selects VIRTUALIZATION which has unmet
-> direct dependencies (HAVE_KVM)
-> warning: (REMOTEPROC && RPMSG) selects VIRTUALIZATION which has unmet
-> direct dependencies (HAVE_KVM)
-> 
-> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-> Cc: Ohad Ben-Cohen <ohad@wizery.com>
+Hi Linus,
 
-This seems odd.  Usually architectures declare that they HAVE_xyz
-and then drivers etc. can use that symbol to do (or not do) something.
+following your suggestions for a common handling of things like pulls in dt,
+I've come up with the following solution - hopefully I've gotten the correct
+meaning of your explanaitions.
 
-See Documentation/kbuild/kconfig-language.txt and search for /HAVE_/.
+It handles all the pinconfigs that either ignore the argument, or have very
+simple one, like PIN_CONFIG_OUTPUT does.
 
-> ---
->  drivers/remoteproc/Kconfig | 1 +
->  drivers/rpmsg/Kconfig      | 1 +
->  2 files changed, 2 insertions(+)
-> 
-> diff --git a/drivers/remoteproc/Kconfig b/drivers/remoteproc/Kconfig
-> index d4d377c..79648ca 100644
-> --- a/drivers/remoteproc/Kconfig
-> +++ b/drivers/remoteproc/Kconfig
-> @@ -6,6 +6,7 @@ config REMOTEPROC
->  	depends on HAS_DMA
->  	select CRC32
->  	select FW_LOADER
-> +	select HAVE_KVM
->  	select VIRTIO
->  	select VIRTUALIZATION
->  
-> diff --git a/drivers/rpmsg/Kconfig b/drivers/rpmsg/Kconfig
-> index 69a2193..3f0bd0f 100644
-> --- a/drivers/rpmsg/Kconfig
-> +++ b/drivers/rpmsg/Kconfig
-> @@ -3,6 +3,7 @@ menu "Rpmsg drivers"
->  # RPMSG always gets selected by whoever wants it
->  config RPMSG
->  	tristate
-> +	select HAVE_KVM
->  	select VIRTIO
->  	select VIRTUALIZATION
->  
-> 
+I've also attached my current rockchip pinctrl driver to show how it is using
+this currently.
 
+
+Heiko Stuebner (2):
+  pinctrl: add devicetree constants for simple generic pnconfig options
+  pinctrl: add function to separate combined pinconfig values
+
+ .../bindings/pinctrl/pinctrl-bindings.txt          |    9 +++
+ drivers/pinctrl/pinconf-generic.c                  |   61 ++++++++++++++++++++
+ drivers/pinctrl/pinconf.h                          |    6 ++
+ include/dt-bindings/pinctrl/pinconfig.h            |   37 ++++++++++++
+ 4 files changed, 113 insertions(+), 0 deletions(-)
+ create mode 100644 include/dt-bindings/pinctrl/pinconfig.h
 
 -- 
-~Randy
+1.7.2.3
+
