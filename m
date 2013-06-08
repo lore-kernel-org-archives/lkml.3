@@ -1,115 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469Ab3FHQsj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 12:48:39 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:48479 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752212Ab3FHQsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 12:48:38 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: X86 ML <x86@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: [PATCH] x86, intel_cacheinfo: Shut up last long-standing warning
-Date: Sat,  8 Jun 2013 18:48:15 +0200
-Message-Id: <1370710095-20547-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.3
+	id S1752546Ab3FHRKW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 13:10:22 -0400
+Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:34448 "EHLO
+	server.arpanet.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752286Ab3FHRKV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jun 2013 13:10:21 -0400
+Date: Sat, 8 Jun 2013 19:13:09 +0200
+From: Jon Arne =?utf-8?Q?J=C3=B8rgensen?= <jonarne@jonarne.no>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Jon Arne =?utf-8?Q?J=C3=B8rgensen?= <jonarne@jonarne.no>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mchehab@redhat.com, hans.verkuil@cisco.com, prabhakar.csengg@gmail.com,
+        g.liakhovetski@gmx.de, ezequiel.garcia@free-electrons.com,
+        timo.teras@iki.fi
+Subject: Re: [RFC v2 2/2] saa7115: Remove gm7113c video_std register change
+Message-ID: <20130608171309.GA10180@dell.arpanet.local>
+References: <1370000426-3324-1-git-send-email-jonarne@jonarne.no>
+ <1370000426-3324-3-git-send-email-jonarne@jonarne.no>
+ <201306071101.06774.hverkuil@xs4all.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <201306071101.06774.hverkuil@xs4all.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+On Fri, Jun 07, 2013 at 11:01:06AM +0200, Hans Verkuil wrote:
+> On Fri May 31 2013 13:40:26 Jon Arne Jørgensen wrote:
+> > On video std change, the driver would disable the automatic field
+> > detection on the gm7113c chip, and force either 50Hz or 60Hz.
+> > Don't do this any more.
+> 
+> Sorry, I'm not entirely sure what is happening here. Why would the gm7113c
+> behave different in this respect compared to the saa7113?
+> 
+> One thing to remember is that the chip should never get in a mode where
+> switching from e.g. NTSC to PAL on the input would change the output timings
+> to the bridge chip as well to PAL. Because that might cause DMA buffer
+> overruns. So if the user calls S_STD, then the bridge should always be
+> certain it gets whatever std was specified.
+> 
+> I'm not sure whether this patch puts the gm7113c in such a mode, but if it
+> does, then it should be redone.
+>
+> Regards,
+> 
+> 	Hans
+>
 
-arch/x86/kernel/cpu/intel_cacheinfo.c: In function ‘init_intel_cacheinfo’:
-arch/x86/kernel/cpu/intel_cacheinfo.c:642:28: warning: ‘this_leaf.size’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-arch/x86/kernel/cpu/intel_cacheinfo.c:643:29: warning: ‘this_leaf.eax.split.num_threads_sharing’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+Ah, you are of course right.
+The Somagic EasyCap which I use for testing is basicaly just forwarding the raw
+data from the gm7113c chip as isochronous usb transfers to the computer.
 
-This keeps on happening during randbuilds and the compiler is wrong
-here:
+Because of this I have to do lots of checks on the incomming data and
+local buffers in the smi2021 driver.
+I totaly forgot that the chip could be used in other configurations
+where you would use DMA transfers. Then the forcing of the video std suddenly
+makes sense. I guess I have to drop this part from the next version of
+the patch.
 
-In the case where cpuid4_cache_lookup_regs() returns 0, both
-this_leaf.size and this_leaf.eax get initialized. In the case where
-the CPUID leaf doesn't contain valid cache info, we error out which
-init_intel_cacheinfo() handles correctly without touching the
-abovementioned fields.
+Thank you for the review.
 
-So shut up the warning by clearing out the struct which we hand down.
+Best regards,
+Jon Arne Jørgensen
 
-While at it, reverse error handling and gain one indentation level.
-
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/kernel/cpu/intel_cacheinfo.c | 52 +++++++++++++++++------------------
- 1 file changed, 25 insertions(+), 27 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index 7c6f7d548c0f..8dc72dda66fe 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -618,36 +618,34 @@ unsigned int __cpuinit init_intel_cacheinfo(struct cpuinfo_x86 *c)
- 		 * parameters cpuid leaf to find the cache details
- 		 */
- 		for (i = 0; i < num_cache_leaves; i++) {
--			struct _cpuid4_info_regs this_leaf;
-+			struct _cpuid4_info_regs this_leaf = {};
- 			int retval;
- 
- 			retval = cpuid4_cache_lookup_regs(i, &this_leaf);
--			if (retval >= 0) {
--				switch (this_leaf.eax.split.level) {
--				case 1:
--					if (this_leaf.eax.split.type ==
--							CACHE_TYPE_DATA)
--						new_l1d = this_leaf.size/1024;
--					else if (this_leaf.eax.split.type ==
--							CACHE_TYPE_INST)
--						new_l1i = this_leaf.size/1024;
--					break;
--				case 2:
--					new_l2 = this_leaf.size/1024;
--					num_threads_sharing = 1 + this_leaf.eax.split.num_threads_sharing;
--					index_msb = get_count_order(num_threads_sharing);
--					l2_id = c->apicid & ~((1 << index_msb) - 1);
--					break;
--				case 3:
--					new_l3 = this_leaf.size/1024;
--					num_threads_sharing = 1 + this_leaf.eax.split.num_threads_sharing;
--					index_msb = get_count_order(
--							num_threads_sharing);
--					l3_id = c->apicid & ~((1 << index_msb) - 1);
--					break;
--				default:
--					break;
--				}
-+			if (retval < 0)
-+				continue;
-+
-+			switch (this_leaf.eax.split.level) {
-+			case 1:
-+				if (this_leaf.eax.split.type == CACHE_TYPE_DATA)
-+					new_l1d = this_leaf.size/1024;
-+				else if (this_leaf.eax.split.type == CACHE_TYPE_INST)
-+					new_l1i = this_leaf.size/1024;
-+				break;
-+			case 2:
-+				new_l2 = this_leaf.size/1024;
-+				num_threads_sharing = 1 + this_leaf.eax.split.num_threads_sharing;
-+				index_msb = get_count_order(num_threads_sharing);
-+				l2_id = c->apicid & ~((1 << index_msb) - 1);
-+				break;
-+			case 3:
-+				new_l3 = this_leaf.size/1024;
-+				num_threads_sharing = 1 + this_leaf.eax.split.num_threads_sharing;
-+				index_msb = get_count_order(num_threads_sharing);
-+				l3_id = c->apicid & ~((1 << index_msb) - 1);
-+				break;
-+			default:
-+				break;
- 			}
- 		}
- 	}
--- 
-1.8.3
-
+> > 
+> > Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
+> > ---
+> >  drivers/media/i2c/saa7115.c | 26 ++------------------------
+> >  1 file changed, 2 insertions(+), 24 deletions(-)
+> > 
+> > diff --git a/drivers/media/i2c/saa7115.c b/drivers/media/i2c/saa7115.c
+> > index 4a52b4d..ba18e57 100644
+> > --- a/drivers/media/i2c/saa7115.c
+> > +++ b/drivers/media/i2c/saa7115.c
+> > @@ -479,24 +479,6 @@ static const unsigned char saa7115_cfg_50hz_video[] = {
+> >  
+> >  /* ============== SAA7715 VIDEO templates (end) =======  */
+> >  
+> > -/* ============== GM7113C VIDEO templates =============  */
+> > -static const unsigned char gm7113c_cfg_60hz_video[] = {
+> > -	R_08_SYNC_CNTL, 0x68,			/* 0xBO: auto detection, 0x68 = NTSC */
+> > -	R_0E_CHROMA_CNTL_1, 0x07,		/* video autodetection is on */
+> > -
+> > -	0x00, 0x00
+> > -};
+> > -
+> > -static const unsigned char gm7113c_cfg_50hz_video[] = {
+> > -	R_08_SYNC_CNTL, 0x28,			/* 0x28 = PAL */
+> > -	R_0E_CHROMA_CNTL_1, 0x07,
+> > -
+> > -	0x00, 0x00
+> > -};
+> > -
+> > -/* ============== GM7113C VIDEO templates (end) =======  */
+> > -
+> > -
+> >  static const unsigned char saa7115_cfg_vbi_on[] = {
+> >  	R_80_GLOBAL_CNTL_1, 0x00,			/* reset tasks */
+> >  	R_88_POWER_SAVE_ADC_PORT_CNTL, 0xd0,		/* reset scaler */
+> > @@ -981,16 +963,12 @@ static void saa711x_set_v4lstd(struct v4l2_subdev *sd, v4l2_std_id std)
+> >  	// This works for NTSC-M, SECAM-L and the 50Hz PAL variants.
+> >  	if (std & V4L2_STD_525_60) {
+> >  		v4l2_dbg(1, debug, sd, "decoder set standard 60 Hz\n");
+> > -		if (state->ident == V4L2_IDENT_GM7113C)
+> > -			saa711x_writeregs(sd, gm7113c_cfg_60hz_video);
+> > -		else
+> > +		if (state->ident != V4L2_IDENT_GM7113C)
+> >  			saa711x_writeregs(sd, saa7115_cfg_60hz_video);
+> >  		saa711x_set_size(sd, 720, 480);
+> >  	} else {
+> >  		v4l2_dbg(1, debug, sd, "decoder set standard 50 Hz\n");
+> > -		if (state->ident == V4L2_IDENT_GM7113C)
+> > -			saa711x_writeregs(sd, gm7113c_cfg_50hz_video);
+> > -		else
+> > +		if (state->ident != V4L2_IDENT_GM7113C)
+> >  			saa711x_writeregs(sd, saa7115_cfg_50hz_video);
+> >  		saa711x_set_size(sd, 720, 576);
+> >  	}
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
