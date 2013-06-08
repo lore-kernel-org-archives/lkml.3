@@ -1,96 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875Ab3FHJNS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 05:13:18 -0400
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:49131 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab3FHJNP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 05:13:15 -0400
-Date: Sat, 8 Jun 2013 11:13:14 +0200
-From: Andreas Mohr <andi@lisas.de>
-To: Rob Landley <rob@landley.net>
-Cc: Andreas Mohr <andi@lisas.de>, Kris Rusocki <kszysiu@braxis.org>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Documentation: cover CONFIG_BINFMT_SCRIPT in init.txt
-Message-ID: <20130608091314.GA5027@rhlx01.hs-esslingen.de>
-References: <20130603202656.GA1102@rhlx01.hs-esslingen.de>
- <1370568800.2776.75@driftwood>
+	id S1751903Ab3FHJOw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 05:14:52 -0400
+Received: from linuxdingsda.de ([87.106.20.67]:42506 "EHLO serverteil.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751780Ab3FHJOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jun 2013 05:14:51 -0400
+Message-ID: <51B2F607.3020204@linuxdingsda.de>
+Date: Sat, 08 Jun 2013 11:14:47 +0200
+From: Tobias Winter <tobias@linuxdingsda.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370568800.2776.75@driftwood>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>,
+        Rob Landley <rob@landley.net>, Johan Hovold <jhovold@gmail.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/3] Increase the number of USB to serial devices we
+ can support at once
+References: <20130606173103.GA1812@kroah.com> <51B176FB.9070509@linuxdingsda.de> <51B1AE2F.3040405@linuxdingsda.de> <20130607172535.GB29371@kroah.com>
+In-Reply-To: <20130607172535.GB29371@kroah.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2XWDKSKEWLDXAAKWOBHFP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 08:33:20PM -0500, Rob Landley wrote:
-> No one person is an expert in every file in Documentation. My big
-> todo items are centered around librarian work: reorganizing the
-> layout of the directory so it's not a giant heap with everybody in
-> the world dumping stuff into the root directory, or weird little
-> crevices like pti/ and pps/ that have their own directory with one
-> file in it.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2XWDKSKEWLDXAAKWOBHFP
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Indeed, layout in kernel could be improved somewhat.
-Would be nice to find a layout that's suitably organized
-and more or less tries to *match* a good future
-(since it does not quite seem to exist yet) layout in Kconfig areas
-(where it's increasingly difficult to find things easily
-due to number of possibilities growing massively thanks to many
-new drivers and not enough obvious higher-level abstraction).
-Once you are asked to go beyond the third page in specific
-dialog-based menuconfig sections (e.g. drivers)
-you might just as well choose to enter minotaur labyrinth... :)
-Of course that's needed for manual changes only (make oldconfig does the rest),
-but it remains sufficiently painful.
+On 06/07/2013 07:25 PM, Greg KH wrote:
+> On Fri, Jun 07, 2013 at 11:55:59AM +0200, Tobias Winter wrote:
+>> On 06/07/2013 08:00 AM, Tobias Winter wrote:
+>>>   CC      drivers/usb/serial/console.o
+>>> drivers/usb/serial/console.c: In function =E2=80=98usb_console_setup=E2=
+=80=99:
+>>> drivers/usb/serial/console.c:111:2: error: implicit declaration of
+>>> function =E2=80=98usb_serial_get_by_index=E2=80=99 [-Werror=3Dimplici=
+t-function-declaration]
+>>> drivers/usb/serial/console.c:111:9: warning: assignment makes pointer=
 
-> Unfortunately, Documentation is the greatest source of bikeshedding
-> in the kernel. Even as the directory's nominal maintainer, I can't
-> say "translations don't belong in there, they belong on the web"
-> because Greg KH thinks they do so he'll check them in anyway. And
-> then nobody maintains them because anybody who can read the english
-> versions (and thus update the translations) doesn't need the
-> translations.
+>>> from integer without a cast [enabled by default]
+>>> drivers/usb/serial/console.c:122:40: error: =E2=80=98struct usb_seria=
+l=E2=80=99 has no
+>>> member named =E2=80=98minor=E2=80=99
+>>> cc1: some warnings being treated as errors
+>>> make[4]: *** [drivers/usb/serial/console.o] Error 1
+>>> make[3]: *** [drivers/usb/serial] Error 2
+>>> make[2]: *** [drivers/usb] Error 2
+>>> make[1]: *** [drivers] Error 2
+>>> make[1]: Leaving directory `/root/usb.git'
+>>> make: *** [debian/stamp/build/kernel] Error 2
+>>
+>> Despite that broken driver, I just gave it a try and the patchset work=
+s
+>> as expected.
+>=20
+> Thanks for testing, I forgot to update the console code, as no one sane=
 
-Rock <-> hard place. :)
+> every runs it :)
+>=20
+> I'll go fix that up now...
+I just retested it and it works as expected.
 
-The question here might simply be: what's Best Practice (tm) for
-dealing with translations? Unless that (I'm sure...) happens to not exist... ;)
+Thanks, Greg!
 
-> There's functional stuff in there like the devicetree bindings.
-> There's a Makefile that compiles stuff under Documentation, and not
-> just the htmldocs but actual code. I still don't really know why...
+Tobias
 
-Huh? Wow.
 
-But then a
-git log -p Documentation/Makefile
-easily answers it:
-it's exclusively for "documentation-side" sample source files,
-to ensure that they always remain correctly buildable/working samples
-of source code.
+------enig2XWDKSKEWLDXAAKWOBHFP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-> Unfortunately, I only really get time to deal with this sort of
-> thing in the downtime between contracts, and last time I had a gap
-> the massive barn-door-locking after the kernel.org breakin still had
-> my account disabled because I hadn't been to an in-person conference
-> to get a new pgp key signed in years. (And now that I've been to a
-> conference and gotten one signed, I need to sit down and write a new
-> rsync replacement on top of kup because non-security people wrote a
-> bespoke security wrapper for kernel.org to replace shell access,
-> which means my old rsync script that updated http://kernel.org/doc
-> needs to be replaced with a rube goldberg monstrosity to do the same
-> thing in a much more complicated and less efficient way.)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-Ouch.
+iEYEARECAAYFAlGy9gcACgkQ2CMMiSvcNgXr8gCfaaEcZ+JY1WqoXyzYqgbdwmLW
+9NoAoJeOgzkXQVslqOOafe0qUdW4B9VQ
+=9ncW
+-----END PGP SIGNATURE-----
 
-Count me in on the huge "people in need of sufficiently recognized pgp signing"
-list, though ;)
-
-Andreas Mohr
-
--- 
-GNU/Linux. It's not the software that's free, it's you.
+------enig2XWDKSKEWLDXAAKWOBHFP--
