@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751513Ab3FHIDY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 04:03:24 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:61366 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397Ab3FHIDW (ORCPT
+	id S1751546Ab3FHIEe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 04:04:34 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:42023 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447Ab3FHIEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 04:03:22 -0400
-X-Spam-Score: -100.8
-Message-ID: <51B2E4FD.4000708@asianux.com>
-Date: Sat, 08 Jun 2013 16:02:05 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Sat, 8 Jun 2013 04:04:31 -0400
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>, shli@fusionio.com,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] arch: x86: include: asm: need 'unsigned' type cast for
- atomic_clear_mask()
-References: <51B2CF75.1090207@asianux.com> <51B2DDC7.4070107@zytor.com>
-In-Reply-To: <51B2DDC7.4070107@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201306071040.35174.hverkuil@xs4all.nl>
+References: <1369503576-22271-1-git-send-email-prabhakar.csengg@gmail.com>
+ <2855590.yx9zfYZLis@avalon> <CA+V-a8vh-ttz1QQmV59fP5c3vK=1zC5QfmkHc9Du0ZAcY712Dg@mail.gmail.com>
+ <201306071040.35174.hverkuil@xs4all.nl>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Sat, 8 Jun 2013 13:34:10 +0530
+Message-ID: <CA+V-a8vhnri3Wusk7ZrDq6M9JAKHi+hs1qJ8ru8Mdgt7bTPD0w@mail.gmail.com>
+Subject: Re: [PATCH v2 0/4] media: i2c: ths7303 cleanup
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2013 03:31 PM, H. Peter Anvin wrote:
-> On 06/07/2013 11:30 PM, Chen Gang wrote:
->> > 
->> > atomic_set_mask() has already have 'unsigned' type case, and
->> > atomic_clear_mask() is the pair of atomic_set_mask().
->> > 
->> > So it also need 'unsigned' type case.
->> > 
-> Pray tell, in what situation does this matter?  The only reason I can
-> think of is if "mask" is actually a long...
+Hi Hans,
 
-Excuse me, in fact, I don't know whether it will cause issue. Since
-atomic_set_mask() has done, I think atomic_clear_mask() also need it.
+On Fri, Jun 7, 2013 at 2:10 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+> On Thu June 6 2013 12:05:38 Prabhakar Lad wrote:
+>> Hi Hans,
+>>
+>> On Sun, May 26, 2013 at 6:50 AM, Laurent Pinchart
+>> <laurent.pinchart@ideasonboard.com> wrote:
+>> > On Saturday 25 May 2013 23:09:32 Prabhakar Lad wrote:
+>> >> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>> >>
+>> >> Trivial cleanup of the driver.
+>> >>
+>> >> Changes for v2:
+>> >> 1: Dropped the asynchronous probing and, OF
+>> >>    support patches will be handling them independently because of
+>> >> dependencies. 2: Arranged the patches logically so that git bisect
+>> >>    succeeds.
+>> >>
+>> >> Lad, Prabhakar (4):
+>> >>   ARM: davinci: dm365 evm: remove init_enable from ths7303 pdata
+>> >>   media: i2c: ths7303: remove init_enable option from pdata
+>> >>   media: i2c: ths7303: remove unnecessary function ths7303_setup()
+>> >>   media: i2c: ths7303: make the pdata as a constant pointer
+>> >>
+>> Can you pick up this series or do you want me to issue a pull for it ?
+>
+> I've picked it up. I kept the dm365 patch separate, but I did improve the
+> commit log a bit.
+>
+Thanks for fixing it.
 
-If atomic_clear_mask() do need it, the atomic_set_mask() do not need it
-either, they are the pairs --> they will face the same situation.
-
-
-Thanks.
--- 
-Chen Gang
-
-Asianux Corporation
+Regards,
+--Prabhakar Lad
