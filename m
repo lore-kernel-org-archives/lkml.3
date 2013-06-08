@@ -1,65 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752328Ab3FHOZa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 10:25:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41041 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583Ab3FHOZ3 (ORCPT
+	id S1752056Ab3FHO2I (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 10:28:08 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:41721 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab3FHO2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 10:25:29 -0400
-Date: Sat, 8 Jun 2013 07:26:01 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tobias Winter <tobias@linuxdingsda.de>
-Cc: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        Rob Landley <rob@landley.net>, Johan Hovold <jhovold@gmail.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/3] Increase the number of USB to serial devices we
- can support at once
-Message-ID: <20130608142601.GA32217@kroah.com>
-References: <20130606173103.GA1812@kroah.com>
- <51B176FB.9070509@linuxdingsda.de>
- <51B1AE2F.3040405@linuxdingsda.de>
- <20130607172535.GB29371@kroah.com>
- <51B2F607.3020204@linuxdingsda.de>
+	Sat, 8 Jun 2013 10:28:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51B2F607.3020204@linuxdingsda.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130606210041.GD5045@htj.dyndns.org>
+References: <1370523178-5437-1-git-send-email-akinobu.mita@gmail.com>
+	<1370523178-5437-2-git-send-email-akinobu.mita@gmail.com>
+	<20130606210041.GD5045@htj.dyndns.org>
+Date: Sat, 8 Jun 2013 23:28:04 +0900
+Message-ID: <CAC5umyi0By0hd5RSvhODjdx=1ExAdigDaiGDu-tYD7t4s2FYGw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] lib/scatterlist: introduce sg_pcopy_from_buffer() and sg_pcopy_to_buffer()
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Imre Deak <imre.deak@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Douglas Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 08, 2013 at 11:14:47AM +0200, Tobias Winter wrote:
-> On 06/07/2013 07:25 PM, Greg KH wrote:
-> > On Fri, Jun 07, 2013 at 11:55:59AM +0200, Tobias Winter wrote:
-> >> On 06/07/2013 08:00 AM, Tobias Winter wrote:
-> >>>   CC      drivers/usb/serial/console.o
-> >>> drivers/usb/serial/console.c: In function ‘usb_console_setup’:
-> >>> drivers/usb/serial/console.c:111:2: error: implicit declaration of
-> >>> function ‘usb_serial_get_by_index’ [-Werror=implicit-function-declaration]
-> >>> drivers/usb/serial/console.c:111:9: warning: assignment makes pointer
-> >>> from integer without a cast [enabled by default]
-> >>> drivers/usb/serial/console.c:122:40: error: ‘struct usb_serial’ has no
-> >>> member named ‘minor’
-> >>> cc1: some warnings being treated as errors
-> >>> make[4]: *** [drivers/usb/serial/console.o] Error 1
-> >>> make[3]: *** [drivers/usb/serial] Error 2
-> >>> make[2]: *** [drivers/usb] Error 2
-> >>> make[1]: *** [drivers] Error 2
-> >>> make[1]: Leaving directory `/root/usb.git'
-> >>> make: *** [debian/stamp/build/kernel] Error 2
-> >>
-> >> Despite that broken driver, I just gave it a try and the patchset works
-> >> as expected.
-> > 
-> > Thanks for testing, I forgot to update the console code, as no one sane
-> > every runs it :)
-> > 
-> > I'll go fix that up now...
-> I just retested it and it works as expected.
+2013/6/7 Tejun Heo <tj@kernel.org>:
+> Hello,
+>
+> On Thu, Jun 06, 2013 at 09:52:56PM +0900, Akinobu Mita wrote:
+>> +static bool sg_miter_get_next_page(struct sg_mapping_iter *miter)
+>> +{
+>> +     if (!miter->__remaining) {
+>> +             struct scatterlist *sg;
+>> +             unsigned long pgoffset;
+>> +
+>> +             if (!__sg_page_iter_next(&miter->piter))
+>> +                     return false;
+>> +
+>> +             sg = miter->piter.sg;
+>> +             pgoffset = miter->piter.sg_pgoffset;
+>> +
+>> +             miter->__offset = pgoffset ? 0 : sg->offset;
+>> +             miter->__remaining = sg->offset + sg->length -
+>> +                             (pgoffset << PAGE_SHIFT) - miter->__offset;
+>> +             miter->__remaining = min_t(unsigned long, miter->__remaining,
+>> +                                        PAGE_SIZE - miter->__offset);
+>> +     }
+>> +
+>> +     return true;
+>> +}
+>
+> It'd be better if separating out this function is a separate patch.
+> Mixing factoring out something and adding new stuff makes the patch a
+> bit harder to read.
 
-Wonderful, thanks for testing.
+OK, sounds good. I'll do so in next version.
 
-greg k-h
+But I feel sg_miter_get_next_page() is not very appropriate name, because
+it gets the next page only if necessary.  If I can find more appropriate name,
+I'll rename it.
+
+>> +static bool sg_miter_seek(struct sg_mapping_iter *miter, off_t offset)
+>> +{
+>> +     WARN_ON(miter->addr);
+>> +
+>> +     while (offset) {
+>> +             off_t consumed;
+>> +
+>> +             if (!sg_miter_get_next_page(miter))
+>> +                     return false;
+>> +
+>> +             consumed = min_t(off_t, offset, miter->__remaining);
+>> +             miter->__offset += consumed;
+>> +             miter->__remaining -= consumed;
+>> +             offset -= consumed;
+>> +     }
+>> +
+>> +     return true;
+>> +}
+>
+> While I think the above should work at the beginning, what if @miter
+> is in the middle of iteration and __remaining isn't zero?
+
+sg_miter_seek() should work as far as it is called just after sg_miter_start(),
+or just after sg_miter_stop() in the middle of iteration (Although I only
+tested the former case).  I omitted a function comment in excuse of the static
+function, but I should write something I said above.
