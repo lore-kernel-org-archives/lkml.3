@@ -1,220 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111Ab3FHB7F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 21:59:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63031 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005Ab3FHB7D convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 21:59:03 -0400
-From: Daniel Tang <dt.tangr@gmail.com>
+	id S1751605Ab3FHCPO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 22:15:14 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3876 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751067Ab3FHCPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 22:15:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,825,1363158000"; 
+   d="scan'208";a="346651530"
+Date: Sat, 8 Jun 2013 10:15:09 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, kbuild-all@01.org,
+        Christopher Li <sparse@chrisli.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: kernel/workqueue.c:4435:61: sparse: expression using sizeof bool
+Message-ID: <20130608021509.GA13207@localhost>
+References: <51afd3ac.1kKgJcnM4PAV+Agb%fengguang.wu@intel.com>
+ <20130607141521.4000962d5ac0d7fcd54800cf@linux-foundation.org>
+ <20130607220351.GE14781@mtj.dyndns.org>
+ <20130607184614.45418364.akpm@linux-foundation.org>
+ <20130608020549.GN14781@mtj.dyndns.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: [PATCHv2] irqchip: Add support for TI-NSPIRE irqchip
-Date: Sat, 8 Jun 2013 11:58:55 +1000
-Message-Id: <AA3869CB-3720-4F1F-8D5C-DDEB3BF4BDC0@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
-X-Mailer: Apple Mail (2.1503)
+Content-Disposition: inline
+In-Reply-To: <20130608020549.GN14781@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the interrupt controllers found in some
-TI-Nspire models.
+// CC sparse people.
 
-FIQ support was taken out to simplify the driver
-code and may be added in later. Since Linux on this platform doesn't
-really use FIQs, this wasn't really that important in the first
-place.
-
-Changes from v1 to v2:
-* Converted to use generic IRQ chips.
-* Removed FIQ for now to simplify driver code.
-* Based against tip/irq/core and uses IRQ domain support for generic 
-  chips.
-
-
-Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
----
- .../interrupt-controller/lsi,zevio-intc.txt        |  18 +++
- drivers/irqchip/Makefile                           |   1 +
- drivers/irqchip/irq-zevio.c                        | 129 +++++++++++++++++++++
- 3 files changed, 148 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/interrupt-controller/lsi,zevio-intc.txt
- create mode 100644 drivers/irqchip/irq-zevio.c
-
-diff --git a/Documentation/devicetree/bindings/interrupt-controller/lsi,zevio-intc.txt b/Documentation/devicetree/bindings/interrupt-controller/lsi,zevio-intc.txt
-new file mode 100644
-index 0000000..aee38e7
---- /dev/null
-+++ b/Documentation/devicetree/bindings/interrupt-controller/lsi,zevio-intc.txt
-@@ -0,0 +1,18 @@
-+TI-NSPIRE interrupt controller
-+
-+Required properties:
-+- compatible: Compatible property value should be "lsi,zevio-intc".
-+
-+- reg: Physical base address of the controller and length of memory mapped
-+	region.
-+
-+- interrupt-controller : Identifies the node as an interrupt controller
-+
-+Example:
-+
-+interrupt-controller {
-+	compatible = "lsi,zevio-intc";
-+	interrupt-controller;
-+	reg = <0xDC000000 0x1000>;
-+	#interrupt-cells = <1>;
-+};
-diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-index cda4cb5..f313d14 100644
---- a/drivers/irqchip/Makefile
-+++ b/drivers/irqchip/Makefile
-@@ -15,4 +15,5 @@ obj-$(CONFIG_SIRF_IRQ)			+= irq-sirfsoc.o
- obj-$(CONFIG_RENESAS_INTC_IRQPIN)	+= irq-renesas-intc-irqpin.o
- obj-$(CONFIG_RENESAS_IRQC)		+= irq-renesas-irqc.o
- obj-$(CONFIG_VERSATILE_FPGA_IRQ)	+= irq-versatile-fpga.o
-+obj-$(CONFIG_ARCH_NSPIRE)		+= irq-zevio.o
- obj-$(CONFIG_ARCH_VT8500)		+= irq-vt8500.o
-diff --git a/drivers/irqchip/irq-zevio.c b/drivers/irqchip/irq-zevio.c
-new file mode 100644
-index 0000000..92e6c7b
---- /dev/null
-+++ b/drivers/irqchip/irq-zevio.c
-@@ -0,0 +1,129 @@
-+/*
-+ *  linux/drivers/irqchip/irq-zevio.c
-+ *
-+ *  Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+
-+#include <asm/mach/irq.h>
-+#include <asm/exception.h>
-+
-+#include "irqchip.h"
-+
-+#define IO_STATUS	0x000
-+#define IO_RAW_STATUS	0x004
-+#define IO_ENABLE	0x008
-+#define IO_DISABLE	0x00C
-+#define IO_CURRENT	0x020
-+#define IO_RESET	0x028
-+#define IO_MAX_PRIOTY	0x02C
-+
-+#define IO_IRQ_BASE	0x000
-+#define IO_FIQ_BASE	0x100
-+
-+#define IO_INVERT_SEL	0x200
-+#define IO_STICKY_SEL	0x204
-+#define IO_PRIORITY_SEL	0x300
-+
-+#define MAX_INTRS	32
-+#define FIQ_START	MAX_INTRS
-+
-+static struct irq_domain *zevio_irq_domain;
-+static void __iomem *zevio_irq_io;
-+
-+static void zevio_irq_ack(struct irq_data *irqd)
-+{
-+	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(irqd);
-+	struct irq_chip_regs *regs =
-+		&container_of(irqd->chip, struct irq_chip_type, chip)->regs;
-+
-+	irq_gc_lock(gc);
-+	readl(gc->reg_base + regs->ack);
-+	irq_gc_unlock(gc);
-+}
-+
-+static void init_base(void __iomem *base)
-+{
-+	/* Disable all interrupts */
-+	writel(~0, base + IO_DISABLE);
-+
-+	/* Accept interrupts of all priorities */
-+	writel(0xF, base + IO_MAX_PRIOTY);
-+
-+	/* Reset existing interrupts */
-+	readl(base + IO_RESET);
-+}
-+
-+asmlinkage void __exception_irq_entry zevio_handle_irq(struct pt_regs *regs)
-+{
-+	int irqnr;
-+
-+	while (readl(zevio_irq_io + IO_STATUS)) {
-+		irqnr = readl(zevio_irq_io + IO_CURRENT);
-+		irqnr = irq_find_mapping(zevio_irq_domain, irqnr);
-+		handle_IRQ(irqnr, regs);
-+	};
-+}
-+
-+static int __init zevio_of_init(struct device_node *node,
-+				struct device_node *parent)
-+{
-+	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
-+	struct irq_chip_generic *gc;
-+	int ret;
-+
-+	if (WARN_ON(zevio_irq_io || zevio_irq_domain))
-+		return -EBUSY;
-+
-+	zevio_irq_io = of_iomap(node, 0);
-+	BUG_ON(!zevio_irq_io);
-+
-+	/* Do not invert interrupt status bits */
-+	writel(~0, zevio_irq_io + IO_INVERT_SEL);
-+
-+	/* Disable sticky interrupts */
-+	writel(0, zevio_irq_io + IO_STICKY_SEL);
-+
-+	/* We don't use IRQ priorities. Set each IRQ to highest priority. */
-+	memset_io(zevio_irq_io + IO_PRIORITY_SEL, 0, MAX_INTRS * sizeof(u32));
-+
-+	/* Init IRQ and FIQ */
-+	init_base(zevio_irq_io + IO_IRQ_BASE);
-+	init_base(zevio_irq_io + IO_FIQ_BASE);
-+
-+	zevio_irq_domain = irq_domain_add_linear(node, MAX_INTRS,
-+						 &irq_generic_chip_ops, NULL);
-+	BUG_ON(!zevio_irq_domain);
-+
-+	ret = irq_alloc_domain_generic_chips(zevio_irq_domain, MAX_INTRS, 1,
-+					     "zevio_intc", handle_level_irq,
-+					     clr, 0, IRQ_GC_INIT_MASK_CACHE);
-+	BUG_ON(ret);
-+
-+	gc = irq_get_domain_generic_chip(zevio_irq_domain, 0);
-+	gc->reg_base				= zevio_irq_io;
-+	gc->chip_types[0].chip.irq_ack		= zevio_irq_ack;
-+	gc->chip_types[0].chip.irq_mask		= irq_gc_mask_disable_reg;
-+	gc->chip_types[0].chip.irq_unmask	= irq_gc_unmask_enable_reg;
-+	gc->chip_types[0].regs.mask		= IO_IRQ_BASE + IO_ENABLE;
-+	gc->chip_types[0].regs.enable		= IO_IRQ_BASE + IO_ENABLE;
-+	gc->chip_types[0].regs.disable		= IO_IRQ_BASE + IO_DISABLE;
-+	gc->chip_types[0].regs.ack		= IO_IRQ_BASE + IO_RESET;
-+
-+	set_handle_irq(zevio_handle_irq);
-+
-+	pr_info("TI-NSPIRE classic IRQ controller\n");
-+	return 0;
-+}
-+
-+IRQCHIP_DECLARE(zevio_irq, "lsi,zevio-intc", zevio_of_init);
--- 
-1.8.1.3
-
-
+On Fri, Jun 07, 2013 at 07:05:49PM -0700, Tejun Heo wrote:
+> Hello, Andrew.
+> 
+> On Fri, Jun 07, 2013 at 06:46:14PM -0700, Andrew Morton wrote:
+> > I believe sizeof(bool) can vary between compilers (on gcc it's 1) but
+> > that doesn't matter here.
+> 
+> Looking at the warning, I originally suspected that maybe the standard
+> was crazy enough to allow mixed usages of different sizes for bool as
+> the compiler sees fit.  Just scanned the spec, nothing that insane.
+> It's a proper integeral type, so I'm now more puzzled why sparse is
+> warning about sizeof(bool).
+> 
+> > sizeof(enum) can vary between compilers as well.  In fact I've seen a
+> > compiler which used 2 if the enumerated values were 0..65535, and 4
+> > otherwise.  So warning about sizeof(enum) would be a bit more useful
+> > than about sizeof(bool).
+> 
+> Oh yeah, gcc does that too.  If the enum definition contains a number
+> larger than 32bit, it'll grow it to 64bit.
+> 
+>  #include <stdio.h>
+> 
+>  enum { ENUM_A = 1LU };
+>  enum { ENUM_B = 1LU << 31 };
+>  enum { ENUM_C = 1LU << 32 };
+> 
+>  int main(void)
+>  {
+> 	 printf("%zu %zu %zu\n", sizeof(ENUM_A), sizeof(ENUM_B), sizeof(ENUM_C));
+> 	 return 0;
+>  }
+> 
+>  $ ./a.out
+>  4 4 8
+> 
+> Whether sparse should trigger a warning on it, I don't know.
+> 
+> Thanks.
+> 
+> -- 
+> tejun
