@@ -1,46 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011Ab3FHOEV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 10:04:21 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:64068 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680Ab3FHOET (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 10:04:19 -0400
+	id S1752071Ab3FHOFs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 10:05:48 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:60089 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751680Ab3FHOFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jun 2013 10:05:46 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lu@intel.com>
+Subject: [PATCH] ACPI / video: Do not bind to device objects with a driver or scan handler
+Date: Sat, 08 Jun 2013 16:14:53 +0200
+Message-ID: <8441239.yeE1QYIOsS@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <1370524350.23133.11.camel@intelbox>
-References: <1370523178-5437-1-git-send-email-akinobu.mita@gmail.com>
-	<1370523178-5437-2-git-send-email-akinobu.mita@gmail.com>
-	<1370524350.23133.11.camel@intelbox>
-Date: Sat, 8 Jun 2013 23:04:18 +0900
-Message-ID: <CAC5umyjsY3s_TtxMq6XmEA+qXiD8zm5LSrgDPd1JT=SrGkKsmQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] lib/scatterlist: introduce sg_pcopy_from_buffer() and sg_pcopy_to_buffer()
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: imre.deak@intel.com
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Douglas Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/6/6 Imre Deak <imre.deak@intel.com>:
-> Looks ok to me, perhaps adding the seek functionality to the mapping
-> iterator would make things more generic and the mapping iterator more
-> resemble the page iterator. So we'd have a new sg_miter_start_offset and
-> call it here something like:
->
-> sg_miter_start_offset(&miter, sgl, nents, sg_flags, skip);
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-I also thought something like this could be a new interface for sg_miter_* API,
-but I haven't found any places where it can be used yet.  That's why I made
-it a local function and didn't create new interface.
+With the introduction of ACPI scan handlers, ACPI device objects
+with an ACPI scan handler attached to them must not be bound to
+an ACPI driver any more.  Unfortunately, however, the ACPI video
+driver attempts to do just that if there is a _ROM ACPI control
+method defined under a device object with an ACPI scan handler.
 
-But putting good function comment like other sg_miter_* API for new
-local function
-is harmless and it helps someone who wants interface like this in the future.
-So I'll do so in next version.
+Prevent that from happening by making the video driver's "add"
+routine check if the device object already has a driver or
+ACPI scan handler attached to it and return an error code in
+that case.  That is not sufficient, though, because
+acpi_bus_driver_init() would then clear the device object's
+driver_data that may be set by the scan handler attached to it,
+so for the fix to work acpi_bus_driver_init() has to be modified
+to leave driver_data as is on errors.
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=58091
+Reported-and-bisected-by: Dmitry S. Demin <dmitryy.demin@gmail.com>
+Reported-and-tested-by: Jason Cassell <bluesloth600@gmail.com>
+Tracked-down-by: Aaron Lu <aaron.lu@intel.com>
+Cc: 3.9+ <stable@kernel.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/scan.c  |    5 +----
+ drivers/acpi/video.c |    3 +++
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+Index: linux-pm/drivers/acpi/video.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/video.c
++++ linux-pm/drivers/acpi/video.c
+@@ -1722,6 +1722,9 @@ static int acpi_video_bus_add(struct acp
+ 	int error;
+ 	acpi_status status;
+ 
++	if (device->handler || device->driver)
++		return -EINVAL;
++
+ 	status = acpi_walk_namespace(ACPI_TYPE_DEVICE,
+ 				device->parent->handle, 1,
+ 				acpi_video_bus_match, NULL,
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -1133,11 +1133,8 @@ acpi_bus_driver_init(struct acpi_device
+ 		return -ENOSYS;
+ 
+ 	result = driver->ops.add(device);
+-	if (result) {
+-		device->driver = NULL;
+-		device->driver_data = NULL;
++	if (result)
+ 		return result;
+-	}
+ 
+ 	device->driver = driver;
+ 
+
