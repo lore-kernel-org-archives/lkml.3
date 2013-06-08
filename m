@@ -1,200 +1,402 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983Ab3FHKD7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 06:03:59 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:36787 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751857Ab3FHKD5 (ORCPT
+	id S1752111Ab3FHKFy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 06:05:54 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:54256 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752030Ab3FHKFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 06:03:57 -0400
-Date: Sat, 8 Jun 2013 12:03:47 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Tobias Winter <tobias@linuxdingsda.de>,
-        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        Rob Landley <rob@landley.net>, Johan Hovold <jhovold@gmail.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/3] USB: serial: make minor allocation dynamic
-Message-ID: <20130608100347.GO2566@localhost>
-References: <20130606173103.GA1812@kroah.com>
- <20130606173121.GA1866@kroah.com>
- <20130607180428.GB4204@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130607180428.GB4204@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 8 Jun 2013 06:05:53 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Emilio Lopez <emilio@elopez.com.ar>, kevin@allwinnertech.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH 3/4] pinctrl: sunxi: Add external interrupt functions
+Date: Sat,  8 Jun 2013 12:05:45 +0200
+Message-Id: <1370685946-3718-4-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.3
+In-Reply-To: <1370685946-3718-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1370685946-3718-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 11:04:28AM -0700, Greg KH wrote:
-> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The A10 and A13 has a few pins that can be muxed into a particular
+function that can be used as an interrupt source. Add the available
+pins for such functions to the A10 and A13 description array.
 
-> Changes v2 - v3:
->   - fixed up comments about usb_serial_get_by_minor()
->   - fixed error case in usb_serial_get_by_minor()
->   - folded get_free_port() into get_free_serial()
->   - renamed get_free_serial() to allocate_minors()
->   - fixed console.c build breakage
->   - properly pass in minor port number to usb_serial_console_init()
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/pinctrl/pinctrl-sunxi.c | 99 ++++++++++++++++++++++++++++++-----------
+ 1 file changed, 73 insertions(+), 26 deletions(-)
 
-> --- a/drivers/usb/serial/usb-serial.c
-> +++ b/drivers/usb/serial/usb-serial.c
-> @@ -37,6 +37,7 @@
->  #include <linux/usb.h>
->  #include <linux/usb/serial.h>
->  #include <linux/kfifo.h>
-> +#include <linux/idr.h>
->  #include "pl2303.h"
->  
->  #define DRIVER_AUTHOR "Greg Kroah-Hartman <gregkh@linuxfoundation.org>"
-> @@ -49,72 +50,64 @@
->     drivers depend on it.
->  */
->  
-> -static struct usb_serial *serial_table[SERIAL_TTY_MINORS];
-> +static DEFINE_IDR(serial_minors);
->  static DEFINE_MUTEX(table_lock);
->  static LIST_HEAD(usb_serial_driver_list);
->  
->  /*
-> - * Look up the serial structure.  If it is found and it hasn't been
-> - * disconnected, return with its disc_mutex held and its refcount
-> - * incremented.  Otherwise return NULL.
-> + * Look up the serial port structure.  If it is found and it hasn't been
-> + * disconnected, return with the parent usb_serial structure's disc_mutex held
-> + * and its refcount incremented.  Otherwise return NULL.
->   */
-> -struct usb_serial *usb_serial_get_by_index(unsigned index)
-> +struct usb_serial_port *usb_serial_port_get_by_minor(unsigned minor)
->  {
-> -	struct usb_serial *serial;
-> +	struct usb_serial *serial = NULL;
+diff --git a/drivers/pinctrl/pinctrl-sunxi.c b/drivers/pinctrl/pinctrl-sunxi.c
+index 47c7f43..3bf941f 100644
+--- a/drivers/pinctrl/pinctrl-sunxi.c
++++ b/drivers/pinctrl/pinctrl-sunxi.c
+@@ -675,6 +675,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x2, "lcd1"),		/* D0 */
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAA0 */
+ 		SUNXI_FUNCTION(0x4, "uart3"),		/* TX */
++		SUNXI_FUNCTION_IRQ(0x6, 0),		/* EINT0 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D0 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH1,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -682,6 +683,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x2, "lcd1"),		/* D1 */
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAA1 */
+ 		SUNXI_FUNCTION(0x4, "uart3"),		/* RX */
++		SUNXI_FUNCTION_IRQ(0x6, 1),		/* EINT1 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D1 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH2,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -689,6 +691,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x2, "lcd1"),		/* D2 */
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAA2 */
+ 		SUNXI_FUNCTION(0x4, "uart3"),		/* RTS */
++		SUNXI_FUNCTION_IRQ(0x6, 2),		/* EINT2 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D2 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH3,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -696,6 +699,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x2, "lcd1"),		/* D3 */
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAIRQ */
+ 		SUNXI_FUNCTION(0x4, "uart3"),		/* CTS */
++		SUNXI_FUNCTION_IRQ(0x6, 3),		/* EINT3 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D3 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH4,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -703,6 +707,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x2, "lcd1"),		/* D4 */
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAD0 */
+ 		SUNXI_FUNCTION(0x4, "uart4"),		/* TX */
++		SUNXI_FUNCTION_IRQ(0x6, 4),		/* EINT4 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D4 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH5,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -710,6 +715,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x2, "lcd1"),		/* D5 */
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAD1 */
+ 		SUNXI_FUNCTION(0x4, "uart4"),		/* RX */
++		SUNXI_FUNCTION_IRQ(0x6, 5),		/* EINT5 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D5 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH6,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -718,6 +724,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAD2 */
+ 		SUNXI_FUNCTION(0x4, "uart5"),		/* TX */
+ 		SUNXI_FUNCTION(0x5, "ms"),		/* BS */
++		SUNXI_FUNCTION_IRQ(0x6, 6),		/* EINT6 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D6 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH7,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -726,6 +733,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAD3 */
+ 		SUNXI_FUNCTION(0x4, "uart5"),		/* RX */
+ 		SUNXI_FUNCTION(0x5, "ms"),		/* CLK */
++		SUNXI_FUNCTION_IRQ(0x6, 7),		/* EINT7 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D7 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH8,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -734,6 +742,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAD4 */
+ 		SUNXI_FUNCTION(0x4, "keypad"),		/* IN0 */
+ 		SUNXI_FUNCTION(0x5, "ms"),		/* D0 */
++		SUNXI_FUNCTION_IRQ(0x6, 8),		/* EINT8 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D8 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH9,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -742,6 +751,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAD5 */
+ 		SUNXI_FUNCTION(0x4, "keypad"),		/* IN1 */
+ 		SUNXI_FUNCTION(0x5, "ms"),		/* D1 */
++		SUNXI_FUNCTION_IRQ(0x6, 9),		/* EINT9 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D9 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH10,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -750,6 +760,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAD6 */
+ 		SUNXI_FUNCTION(0x4, "keypad"),		/* IN2 */
+ 		SUNXI_FUNCTION(0x5, "ms"),		/* D2 */
++		SUNXI_FUNCTION_IRQ(0x6, 10),		/* EINT10 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D10 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH11,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -758,6 +769,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAD7 */
+ 		SUNXI_FUNCTION(0x4, "keypad"),		/* IN3 */
+ 		SUNXI_FUNCTION(0x5, "ms"),		/* D3 */
++		SUNXI_FUNCTION_IRQ(0x6, 11),		/* EINT11 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D11 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH12,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -765,6 +777,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x2, "lcd1"),		/* D12 */
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAD8 */
+ 		SUNXI_FUNCTION(0x4, "ps2"),		/* SCK1 */
++		SUNXI_FUNCTION_IRQ(0x6, 12),		/* EINT12 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D12 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH13,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -773,6 +786,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAD9 */
+ 		SUNXI_FUNCTION(0x4, "ps2"),		/* SDA1 */
+ 		SUNXI_FUNCTION(0x5, "sim"),		/* RST */
++		SUNXI_FUNCTION_IRQ(0x6, 13),		/* EINT13 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D13 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH14,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -781,6 +795,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAD10 */
+ 		SUNXI_FUNCTION(0x4, "keypad"),		/* IN4 */
+ 		SUNXI_FUNCTION(0x5, "sim"),		/* VPPEN */
++		SUNXI_FUNCTION_IRQ(0x6, 14),		/* EINT14 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D14 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH15,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -789,6 +804,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAD11 */
+ 		SUNXI_FUNCTION(0x4, "keypad"),		/* IN5 */
+ 		SUNXI_FUNCTION(0x5, "sim"),		/* VPPPP */
++		SUNXI_FUNCTION_IRQ(0x6, 15),		/* EINT15 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D15 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH16,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -796,6 +812,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x2, "lcd1"),		/* D16 */
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAD12 */
+ 		SUNXI_FUNCTION(0x4, "keypad"),		/* IN6 */
++		SUNXI_FUNCTION_IRQ(0x6, 16),		/* EINT16 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D16 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH17,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -804,6 +821,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAD13 */
+ 		SUNXI_FUNCTION(0x4, "keypad"),		/* IN7 */
+ 		SUNXI_FUNCTION(0x5, "sim"),		/* VCCEN */
++		SUNXI_FUNCTION_IRQ(0x6, 17),		/* EINT17 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D17 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH18,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -812,6 +830,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAD14 */
+ 		SUNXI_FUNCTION(0x4, "keypad"),		/* OUT0 */
+ 		SUNXI_FUNCTION(0x5, "sim"),		/* SCK */
++		SUNXI_FUNCTION_IRQ(0x6, 18),		/* EINT18 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D18 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH19,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -820,6 +839,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAD15 */
+ 		SUNXI_FUNCTION(0x4, "keypad"),		/* OUT1 */
+ 		SUNXI_FUNCTION(0x5, "sim"),		/* SDA */
++		SUNXI_FUNCTION_IRQ(0x6, 19),		/* EINT19 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D19 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH20,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -827,6 +847,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x2, "lcd1"),		/* D20 */
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATAOE */
+ 		SUNXI_FUNCTION(0x4, "can"),		/* TX */
++		SUNXI_FUNCTION_IRQ(0x6, 20),		/* EINT20 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D20 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH21,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -834,6 +855,7 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x2, "lcd1"),		/* D21 */
+ 		SUNXI_FUNCTION(0x3, "pata"),		/* ATADREQ */
+ 		SUNXI_FUNCTION(0x4, "can"),		/* RX */
++		SUNXI_FUNCTION_IRQ(0x6, 21),		/* EINT21 */
+ 		SUNXI_FUNCTION(0x7, "csi1")),		/* D21 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PH22,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -925,54 +947,64 @@ static const struct sunxi_desc_pin sun4i_a10_pins[] = {
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+ 		SUNXI_FUNCTION(0x2, "spi0"),		/* CS0 */
+-		SUNXI_FUNCTION(0x3, "uart5")),		/* TX */
++		SUNXI_FUNCTION(0x3, "uart5"),		/* TX */
++		SUNXI_FUNCTION_IRQ(0x6, 22)),		/* EINT22 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PI11,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+ 		SUNXI_FUNCTION(0x2, "spi0"),		/* CLK */
+-		SUNXI_FUNCTION(0x3, "uart5")),		/* RX */
++		SUNXI_FUNCTION(0x3, "uart5"),		/* RX */
++		SUNXI_FUNCTION_IRQ(0x6, 23)),		/* EINT23 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PI12,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+ 		SUNXI_FUNCTION(0x2, "spi0"),		/* MOSI */
+-		SUNXI_FUNCTION(0x3, "uart6")),		/* TX */
++		SUNXI_FUNCTION(0x3, "uart6"),		/* TX */
++		SUNXI_FUNCTION_IRQ(0x6, 24)),		/* EINT24 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PI13,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+ 		SUNXI_FUNCTION(0x2, "spi0"),		/* MISO */
+-		SUNXI_FUNCTION(0x3, "uart6")),		/* RX */
++		SUNXI_FUNCTION(0x3, "uart6"),		/* RX */
++		SUNXI_FUNCTION_IRQ(0x6, 25)),		/* EINT25 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PI14,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+ 		SUNXI_FUNCTION(0x2, "spi0"),		/* CS1 */
+ 		SUNXI_FUNCTION(0x3, "ps2"),		/* SCK1 */
+-		SUNXI_FUNCTION(0x4, "timer4")),		/* TCLKIN0 */
++		SUNXI_FUNCTION(0x4, "timer4"),		/* TCLKIN0 */
++		SUNXI_FUNCTION_IRQ(0x6, 26)),		/* EINT26 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PI15,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+ 		SUNXI_FUNCTION(0x2, "spi1"),		/* CS1 */
+ 		SUNXI_FUNCTION(0x3, "ps2"),		/* SDA1 */
+-		SUNXI_FUNCTION(0x4, "timer5")),		/* TCLKIN1 */
++		SUNXI_FUNCTION(0x4, "timer5"),		/* TCLKIN1 */
++		SUNXI_FUNCTION_IRQ(0x6, 27)),		/* EINT27 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PI16,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+ 		SUNXI_FUNCTION(0x2, "spi1"),		/* CS0 */
+-		SUNXI_FUNCTION(0x3, "uart2")),		/* RTS */
++		SUNXI_FUNCTION(0x3, "uart2"),		/* RTS */
++		SUNXI_FUNCTION_IRQ(0x6, 28)),		/* EINT28 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PI17,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+ 		SUNXI_FUNCTION(0x2, "spi1"),		/* CLK */
+-		SUNXI_FUNCTION(0x3, "uart2")),		/* CTS */
++		SUNXI_FUNCTION(0x3, "uart2"),		/* CTS */
++		SUNXI_FUNCTION_IRQ(0x6, 29)),		/* EINT29 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PI18,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+ 		SUNXI_FUNCTION(0x2, "spi1"),		/* MOSI */
+-		SUNXI_FUNCTION(0x3, "uart2")),		/* TX */
++		SUNXI_FUNCTION(0x3, "uart2"),		/* TX */
++		SUNXI_FUNCTION_IRQ(0x6, 30)),		/* EINT30 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PI19,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+ 		SUNXI_FUNCTION(0x2, "spi1"),		/* MISO */
+-		SUNXI_FUNCTION(0x3, "uart2")),		/* RX */
++		SUNXI_FUNCTION(0x3, "uart2"),		/* RX */
++		SUNXI_FUNCTION_IRQ(0x6, 31)),		/* EINT31 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PI20,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+@@ -1000,20 +1032,24 @@ static const struct sunxi_desc_pin sun5i_a13_pins[] = {
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PB2,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+-		SUNXI_FUNCTION(0x2, "pwm")),
++		SUNXI_FUNCTION(0x2, "pwm"),
++		SUNXI_FUNCTION_IRQ(0x6, 16)),		/* EINT16 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PB3,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+-		SUNXI_FUNCTION(0x2, "ir0")),		/* TX */
++		SUNXI_FUNCTION(0x2, "ir0"),		/* TX */
++		SUNXI_FUNCTION_IRQ(0x6, 17)),		/* EINT17 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PB4,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+-		SUNXI_FUNCTION(0x2, "ir0")),		/* RX */
++		SUNXI_FUNCTION(0x2, "ir0"),		/* RX */
++		SUNXI_FUNCTION_IRQ(0x6, 18)),		/* EINT18 */
+ 	/* Hole */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PB10,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+-		SUNXI_FUNCTION(0x2, "spi2")),		/* CS1 */
++		SUNXI_FUNCTION(0x2, "spi2"),		/* CS1 */
++		SUNXI_FUNCTION_IRQ(0x6, 24)),		/* EINT24 */
+ 	/* Hole */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PB15,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -1211,11 +1247,13 @@ static const struct sunxi_desc_pin sun5i_a13_pins[] = {
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PE0,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x3, "csi0"),		/* PCLK */
+-		SUNXI_FUNCTION(0x4, "spi2")),		/* CS0 */
++		SUNXI_FUNCTION(0x4, "spi2"),		/* CS0 */
++		SUNXI_FUNCTION_IRQ(0x6, 14)),		/* EINT14 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PE1,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x3, "csi0"),		/* MCLK */
+-		SUNXI_FUNCTION(0x4, "spi2")),		/* CLK */
++		SUNXI_FUNCTION(0x4, "spi2"),		/* CLK */
++		SUNXI_FUNCTION_IRQ(0x6, 15)),		/* EINT15 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PE2,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x3, "csi0"),		/* HSYNC */
+@@ -1293,44 +1331,53 @@ static const struct sunxi_desc_pin sun5i_a13_pins[] = {
+ 	/* Hole */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PG0,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+-		SUNXI_FUNCTION(0x1, "gpio_out")),
++		SUNXI_FUNCTION(0x1, "gpio_out"),
++		SUNXI_FUNCTION_IRQ(0x6, 0)),		/* EINT0 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PG1,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+-		SUNXI_FUNCTION(0x1, "gpio_out")),
++		SUNXI_FUNCTION(0x1, "gpio_out"),
++		SUNXI_FUNCTION_IRQ(0x6, 1)),		/* EINT1 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PG2,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+-		SUNXI_FUNCTION(0x1, "gpio_out")),
++		SUNXI_FUNCTION(0x1, "gpio_out"),
++		SUNXI_FUNCTION_IRQ(0x6, 2)),		/* EINT2 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PG3,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+ 		SUNXI_FUNCTION(0x2, "mmc1"),		/* CMD */
+-		SUNXI_FUNCTION(0x4, "uart1")),		/* TX */
++		SUNXI_FUNCTION(0x4, "uart1"),		/* TX */
++		SUNXI_FUNCTION_IRQ(0x6, 3)),		/* EINT3 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PG4,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+ 		SUNXI_FUNCTION(0x2, "mmc1"),		/* CLK */
+-		SUNXI_FUNCTION(0x4, "uart1")),		/* RX */
+-/* Hole */
++		SUNXI_FUNCTION(0x4, "uart1"),		/* RX */
++		SUNXI_FUNCTION_IRQ(0x6, 4)),		/* EINT4 */
++	/* Hole */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PG9,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+ 		SUNXI_FUNCTION(0x2, "spi1"),		/* CS0 */
+-		SUNXI_FUNCTION(0x3, "uart3")),		/* TX */
++		SUNXI_FUNCTION(0x3, "uart3"),		/* TX */
++		SUNXI_FUNCTION_IRQ(0x6, 9)),		/* EINT9 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PG10,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+ 		SUNXI_FUNCTION(0x2, "spi1"),		/* CLK */
+-		SUNXI_FUNCTION(0x3, "uart3")),		/* RX */
++		SUNXI_FUNCTION(0x3, "uart3"),		/* RX */
++		SUNXI_FUNCTION_IRQ(0x6, 10)),		/* EINT10 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PG11,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+ 		SUNXI_FUNCTION(0x2, "spi1"),		/* MOSI */
+-		SUNXI_FUNCTION(0x3, "uart3")),		/* CTS */
++		SUNXI_FUNCTION(0x3, "uart3"),		/* CTS */
++		SUNXI_FUNCTION_IRQ(0x6, 11)),		/* EINT11 */
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PG12,
+ 		SUNXI_FUNCTION(0x0, "gpio_in"),
+ 		SUNXI_FUNCTION(0x1, "gpio_out"),
+ 		SUNXI_FUNCTION(0x2, "spi1"),		/* MISO */
+-		SUNXI_FUNCTION(0x3, "uart3")),		/* RTS */
++		SUNXI_FUNCTION(0x3, "uart3"),		/* RTS */
++		SUNXI_FUNCTION_IRQ(0x6, 12)),		/* EINT12 */
+ };
+ 
+ static const struct sunxi_pinctrl_desc sun4i_a10_pinctrl_data = {
+-- 
+1.8.3
 
-This isn't necessary anymore.
-
-> +	struct usb_serial_port *port;
->  
->  	mutex_lock(&table_lock);
-> -	serial = serial_table[index];
-> +	port = idr_find(&serial_minors, minor);
-> +	if (!port)
-> +		goto exit;
->  
-> -	if (serial) {
-> -		mutex_lock(&serial->disc_mutex);
-> -		if (serial->disconnected) {
-> -			mutex_unlock(&serial->disc_mutex);
-> -			serial = NULL;
-> -		} else {
-> -			kref_get(&serial->kref);
-> -		}
-> +	serial = port->serial;
-> +	mutex_lock(&serial->disc_mutex);
-> +	if (serial->disconnected) {
-> +		mutex_unlock(&serial->disc_mutex);
-> +		port = NULL;
-> +	} else {
-> +		kref_get(&serial->kref);
->  	}
-> +exit:
->  	mutex_unlock(&table_lock);
-> -	return serial;
-> +	return port;
->  }
->  
-> -static struct usb_serial *get_free_serial(struct usb_serial *serial,
-> -					int num_ports, unsigned int *minor)
-> +static int allocate_minors(struct usb_serial *serial, int num_ports)
->  {
-> +	struct usb_serial_port *port;
->  	unsigned int i, j;
-> -	int good_spot;
-> +	int minor;
->  
->  	dev_dbg(&serial->interface->dev, "%s %d\n", __func__, num_ports);
->  
-> -	*minor = 0;
->  	mutex_lock(&table_lock);
-> -	for (i = 0; i < SERIAL_TTY_MINORS; ++i) {
-> -		if (serial_table[i])
-> -			continue;
-> -
-> -		good_spot = 1;
-> -		for (j = 1; j <= num_ports-1; ++j)
-> -			if ((i+j >= SERIAL_TTY_MINORS) || (serial_table[i+j])) {
-> -				good_spot = 0;
-> -				i += j;
-> -				break;
-> -			}
-> -		if (good_spot == 0)
-> -			continue;
-> -
-> -		*minor = i;
-> -		j = 0;
-> -		dev_dbg(&serial->interface->dev, "%s - minor base = %d\n", __func__, *minor);
-> -		for (i = *minor; (i < (*minor + num_ports)) && (i < SERIAL_TTY_MINORS); ++i, ++j) {
-> -			serial_table[i] = serial;
-> -			serial->port[j]->minor = i;
-> -			serial->port[j]->port_number = i - *minor;
-> -		}
-> -		mutex_unlock(&table_lock);
-> -		return serial;
-> +	for (i = 0; i < num_ports; ++i) {
-> +		port = serial->port[i];
-> +		minor = idr_alloc(&serial_minors, port, 0, 0, GFP_KERNEL);
-> +		if (minor < 0)
-> +			goto error;
-> +		port->minor = minor;
-> +		port->port_number = i;
->  	}
-> +	serial->minors_reserved = 1;
->  	mutex_unlock(&table_lock);
-> -	return NULL;
-> +	return 0;
-> +error:
-> +	/* unwind the already allocated minors */
-> +	for (j = 0; j < i; ++j)
-> +		idr_remove(&serial_minors, serial->port[j]->minor);
-> +	mutex_unlock(&table_lock);
-> +	return minor;
->  }
->  
->  static void return_serial(struct usb_serial *serial)
-
-Perhaps rename this one release_minors to match allocate_minors (much
-better name btw)?
-
-> @@ -123,8 +116,9 @@ static void return_serial(struct usb_ser
->  
->  	mutex_lock(&table_lock);
->  	for (i = 0; i < serial->num_ports; ++i)
-> -		serial_table[serial->minor + i] = NULL;
-> +		idr_remove(&serial_minors, serial->port[i]->minor);
->  	mutex_unlock(&table_lock);
-> +	serial->minors_reserved = 0;
-
-This isn't strictly needed as the serial struct release_serial is only
-called once when the struct is about to be freed.
-
->  }
->  
->  static void destroy_serial(struct kref *kref)
-> @@ -136,7 +130,7 @@ static void destroy_serial(struct kref *
->  	serial = to_usb_serial(kref);
->  
->  	/* return the minor range that this device had */
-> -	if (serial->minor != SERIAL_TTY_NO_MINOR)
-> +	if (serial->minors_reserved)
->  		return_serial(serial);
->  
->  	if (serial->attached && serial->type->release)
-
-All three patches look good otherwise. The port-number disambiguation
-was indeed long overdue. Feel free to add
-
-Reviewed-by: Johan Hovold <jhovold@gmail.com>
-
-Thanks,
-Johan
