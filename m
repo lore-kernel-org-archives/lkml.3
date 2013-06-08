@@ -1,82 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab3FHAD0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 20:03:26 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:33612 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752746Ab3FHADZ convert rfc822-to-8bit (ORCPT
+	id S1757357Ab3FHAPp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 20:15:45 -0400
+Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:44064
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757096Ab3FHAPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 20:03:25 -0400
+	Fri, 7 Jun 2013 20:15:44 -0400
+X-Forefront-Antispam-Report: CIP:157.56.242.245;KIP:(null);UIP:(null);IPV:NLI;H:BL2PRD0712HT004.namprd07.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: PS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h19ceh1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1155h)
+Message-ID: <51B2779F.3030903@caviumnetworks.com>
+Date: Fri, 7 Jun 2013 17:15:27 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <20130607184844.GE25323@logfs.org>
-References: <1370280485-10047-1-git-send-email-joern@logfs.org>
-	<1370280485-10047-2-git-send-email-joern@logfs.org>
-	<CAHp75VczX+tjqJgNv4uv=BRekm2Gc2i8WHL91vJFWSXWS8-J_A@mail.gmail.com>
-	<20130606181248.GA17707@logfs.org>
-	<CAHp75VfFvirRvN8FwNey4=9GvMKmPvaM5PBThbEBwZYwL_pt-A@mail.gmail.com>
-	<20130607163658.GC25323@logfs.org>
-	<CAHp75VdBb3Gt+sYwDbJo8BXRSsxwN0K6qw_UeJve6ycQwz2WBQ@mail.gmail.com>
-	<20130607184844.GE25323@logfs.org>
-Date: Sat, 8 Jun 2013 03:03:24 +0300
-Message-ID: <CAHp75VfEUWYNXuo57x6JkOQfRM=03iGFaBKUeqz77SEeg_7=mA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] list: add list_for_each_entry_del
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: =?UTF-8?Q?J=C3=B6rn_Engel?= <joern@logfs.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: David Daney <ddaney.cavm@gmail.com>, <linux-mips@linux-mips.org>,
+        <ralf@linux-mips.org>, <kvm@vger.kernel.org>,
+        Sanjay Lal <sanjayl@kymasys.com>, <linux-kernel@vger.kernel.org>,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 20/31] mips/kvm: Hook into TLB fault handlers.
+References: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com> <1370646215-6543-21-git-send-email-ddaney.cavm@gmail.com> <51B26E02.8070802@cogentembedded.com>
+In-Reply-To: <51B26E02.8070802@cogentembedded.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.2.3.195]
+X-OriginatorOrg: caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 7, 2013 at 9:48 PM, Jörn Engel <joern@logfs.org> wrote:
-> On Fri, 7 June 2013 21:30:16 +0300, Andy Shevchenko wrote:
->> >
->> > spin_lock
->> > list_for_each_entry_safe
->> >         list_del
->> >         spin_unlock
->>
->> Who is doing such thing?
+On 06/07/2013 04:34 PM, Sergei Shtylyov wrote:
+> Hello.
 >
-> Replace list_for_each_entry_safe with 'while (!list_empty(...))' and
-> just grep.  My patch is about 'while (!list_empty(...))', not about
-> list_for_each_entry_safe.
+> On 06/08/2013 03:03 AM, David Daney wrote:
+>
+>> From: David Daney <david.daney@cavium.com>
+>>
+>> If the CPU is operating in guest mode when a TLB related excpetion
+>> occurs, give KVM a chance to do emulation.
+>>
+>> Signed-off-by: David Daney <david.daney@cavium.com>
+>> ---
+>>   arch/mips/mm/fault.c       | 8 ++++++++
+>>   arch/mips/mm/tlbex-fault.S | 6 ++++++
+>>   2 files changed, 14 insertions(+)
+>>
+>> diff --git a/arch/mips/mm/fault.c b/arch/mips/mm/fault.c
+>> index 0fead53..9391da49 100644
+>> --- a/arch/mips/mm/fault.c
+>> +++ b/arch/mips/mm/fault.c
+> [...]
+>> @@ -50,6 +51,13 @@ asmlinkage void __kprobes do_page_fault(struct
+>> pt_regs *regs, unsigned long writ
+>>              field, regs->cp0_epc);
+>>   #endif
+>> +#ifdef CONFIG_KVM_MIPSVZ
+>> +    if (test_tsk_thread_flag(current, TIF_GUESTMODE)) {
+>> +        if (mipsvz_page_fault(regs, write, address))
+>
+>     Any reason not to collapse these into single *if*?
+>
 
-I saw your patch against btrfs.
-I didn't see locking there.
+It makes the conditional call to mipsvz_page_fault() less obvious.
 
-Any excerpt like
+Certainly the same semantics can be achieved several different ways.
 
- while (!list_empty(&prefs)) {
- ref = list_first_entry(&prefs, struct __prelim_ref, list);
- list_del(&ref->list);
+David Daney
 
-could be transformed to
-struct __prelim_ref *_ref;
-list_for_each_entry_safe(ref, _ref, &prefs, list) {
- list_del(&ref->list);
- ...
-}
 
-but is it worth to do? (Same question to your approach)
+>> +            return;
+>> +    }
+>> +#endif
+>> +
+>>
+>
+>
 
-I see two potential issues with while_list_drain_entry() or whatever
-name you like:
- - you delete list as a first operation - you limit user to think in
-that way, if you choose deletion as last operation, who will go to
-free resources (call kfree() for example)?
-- you always use the same ordering (list_first_entry() call), someone
-may not be satisfied by that
 
-So, the approach with while (!list_empty()) { e = list_entry();
-list_del(&e->list); ... }
-actually not bad. If there any bugs in code, better to fix those bugs
-explicitly.
-
-What do I not understand?
-
---
-With Best Regards,
-Andy Shevchenko
