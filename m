@@ -1,101 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752478Ab3FHLam (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 07:30:42 -0400
-Received: from smtpbg64.qq.com ([103.7.28.238]:33862 "HELO smtpbg64.qq.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752353Ab3FHLal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 07:30:41 -0400
-X-QQ-mid: bizesmtp2t1370691038t240t200
-X-QQ-SSF: 01200000000000F0FLF2000A0000000
-Message-ID: <51B315CD.9010908@kylinos.com.cn>
-Date: Sat, 08 Jun 2013 19:30:21 +0800
-From: "weiqi@kylinos.com.cn" <weiqi@kylinos.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	id S1752515Ab3FHLu7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 07:50:59 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:35107 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752371Ab3FHLu5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jun 2013 07:50:57 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        mturquette@linaro.org, kgene.kim@samsung.com, patches@linaro.org,
+        swarren@wwwdotorg.org, grant.likely@linaro.org,
+        rob.herring@calxeda.com, devicetree-discuss@lists.ozlabs.org,
+        broonie@kernel.org, l.majewski@samsung.com, s.nawrocki@samsung.com
+Subject: Re: [PATCH 2/2] clk: exynos4: Add alias for cpufreq related clocks
+Date: Sat, 08 Jun 2013 13:50:52 +0200
+Message-ID: <2070978.AjQD2isvSl@flatron>
+User-Agent: KMail/4.10.4 (Linux/3.9.5-gentoo; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <1370517749-29892-3-git-send-email-tushar.behera@linaro.org>
+References: <1370517749-29892-1-git-send-email-tushar.behera@linaro.org> <1370517749-29892-3-git-send-email-tushar.behera@linaro.org>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "weiqi@kylinos.com.cn" <weiqi@kylinos.com.cn>,
-        torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: race condition in schedule_on_each_cpu()
-References: <tencent_0777D84B54B4163A3B85255A@qq.com> <20130606212303.GH5045@htj.dyndns.org> <51B138AA.4070707@kylinos.com.cn> <51B14472.60904@kylinos.com.cn> <20130607232219.GK14781@mtj.dyndns.org> <51B27744.6090507@kylinos.com.cn>
-In-Reply-To: <51B27744.6090507@kylinos.com.cn>
-Content-Type: multipart/mixed;
- boundary="------------030909090009080905060902"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030909090009080905060902
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Thursday 06 of June 2013 16:52:28 Tushar Behera wrote:
+> cpufreq driver for EXYNOS4 based SoCs are not platform drivers, hence
+> we cannot currently pass the clock names through a device tree node.
+> Instead, we need to make them available through a global alias.
+> 
+> 'armclk', 'moutcore', 'mout_mpll' and 'mout_apll' clock aliases are
+> defined.
+> 
+> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> ---
+>  drivers/clk/samsung/clk-exynos4.c |   10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/clk/samsung/clk-exynos4.c
+> b/drivers/clk/samsung/clk-exynos4.c index 3c1f888..1e4258a 100644
+> --- a/drivers/clk/samsung/clk-exynos4.c
+> +++ b/drivers/clk/samsung/clk-exynos4.c
+> @@ -356,8 +356,8 @@ struct samsung_fixed_rate_clock
+> exynos4210_fixed_rate_clks[] __initdata = {
+> 
+>  /* list of mux clocks supported in all exynos4 soc's */
+>  struct samsung_mux_clock exynos4_mux_clks[] __initdata = {
+> -	MUX_F(mout_apll, "mout_apll", mout_apll_p, SRC_CPU, 0, 1,
+> -			CLK_SET_RATE_PARENT, 0),
+> +	MUX_FA(mout_apll, "mout_apll", mout_apll_p, SRC_CPU, 0, 1,
+> +			CLK_SET_RATE_PARENT, 0, "mout_apll"),
+>  	MUX(none, "mout_hdmi", mout_hdmi_p, SRC_TV, 0, 1),
+>  	MUX(none, "mout_mfc1", sclk_evpll_p, SRC_MFC, 4, 1),
+>  	MUX(none, "mout_mfc", mout_mfc_p, SRC_MFC, 8, 1),
+> @@ -385,9 +385,9 @@ struct samsung_mux_clock exynos4210_mux_clks[]
+> __initdata = { MUX(none, "mout_g2d", mout_g2d_p, E4210_SRC_IMAGE, 8,
+> 1),
+>  	MUX(none, "mout_fimd1", group1_p4210, E4210_SRC_LCD1, 0, 4),
+>  	MUX(none, "mout_mipi1", group1_p4210, E4210_SRC_LCD1, 12, 4),
+> -	MUX_A(sclk_mpll, "sclk_mpll", mout_mpll_p, SRC_CPU, 8, 1, 
+"sclk_mpll"),
+> +	MUX_A(sclk_mpll, "sclk_mpll", mout_mpll_p, SRC_CPU, 8, 1, 
+"mout_mpll"),
 
-Hello Tejun Heo,
+This is not fully compliant with patch description. I'm not sure if there 
+weren't any users of the sclk_mpll alias.
 
-I've backported the  schedule_on_each_cpu()  "direct excution" patch on 
-3.0.30-rt50,
-and  It  fixed my problem.
+>  	MUX_A(mout_core, "mout_core", mout_core_p4210,
+> -			SRC_CPU, 16, 1, "mout_core"),
+> +			SRC_CPU, 16, 1, "moutcore"),
 
-attachment is the effective patch.
+IMHO those typo corrections are not part of this patch.
 
-However, I do not understand why  machine1 can expose problem,  but 
-machine2 not.
+>  	MUX_A(sclk_vpll, "sclk_vpll", sclk_vpll_p4210,
+>  			SRC_TOP0, 8, 1, "sclk_vpll"),
+>  	MUX(mout_fimc0, "mout_fimc0", group1_p4210, SRC_CAM, 0, 4),
+> @@ -534,7 +534,7 @@ struct samsung_div_clock exynos4_div_clks[]
+> __initdata = { DIV(none, "div_spi_pre2", "div_spi2", DIV_PERIL2, 8, 8),
+>  	DIV(none, "div_audio1", "mout_audio1", DIV_PERIL4, 0, 4),
+>  	DIV(none, "div_audio2", "mout_audio2", DIV_PERIL4, 16, 4),
+> -	DIV_A(arm_clk, "arm_clk", "div_core2", DIV_CPU0, 28, 3, 
+"arm_clk"),
+> +	DIV_A(arm_clk, "arm_clk", "div_core2", DIV_CPU0, 28, 3, "armclk"),
 
-I guess, because it's  rt-kernel's  preempt level related, so , is this 
-difference due to cpu performance?
+Same here.
 
-How do you think about this ?
+>  	DIV_A(sclk_apll, "sclk_apll", "mout_apll",
+>  			DIV_CPU0, 24, 3, "sclk_apll"),
+>  	DIV_F(none, "div_mipi_pre0", "div_mipi0", DIV_LCD0, 20, 4,
 
-Thank you~
+Basically I don't like the idea of those global aliases, which IMHO should 
+be completely dropped. Someone might not like it, but I'd go with the 
+conversion of our cpufreq drivers to platform drivers instead, which could 
+receive things like clocks and regulators using DT-based lookups.
 
---------------030909090009080905060902
-Content-Type: text/plain; charset=UTF-8;
- name="direct_execution.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="direct_execution.patch"
+This is especially important in case of regulators, which currently have 
+to be hacked by using vdd_arm as regulator name in device tree.
 
-diff -up linux-3.0.30-rt50/kernel/workqueue.c.bak linux-3.0.30-rt50/kernel/workqueue.c
---- linux-3.0.30-rt50/kernel/workqueue.c.bak	2013-06-08 19:09:06.801059232 +0800
-+++ linux-3.0.30-rt50/kernel/workqueue.c	2013-06-08 19:09:15.680069626 +0800
-@@ -1922,6 +1922,7 @@ static int worker_thread(void *__worker)
- 
- 	/* tell the scheduler that this is a workqueue worker */
- 	worker->task->flags |= PF_WQ_WORKER;
-+	smp_mb();
- woke_up:
- 	spin_lock_irq(&gcwq->lock);
- 
-@@ -2736,6 +2737,7 @@ EXPORT_SYMBOL(schedule_delayed_work_on);
- int schedule_on_each_cpu(work_func_t func)
- {
- 	int cpu;
-+	int orig = -1;
- 	struct work_struct __percpu *works;
- 
- 	works = alloc_percpu(struct work_struct);
-@@ -2744,13 +2746,20 @@ int schedule_on_each_cpu(work_func_t fun
- 
- 	get_online_cpus();
- 
-+	if(current->flags & PF_WQ_WORKER)
-+		orig = raw_smp_processor_id();
-+
- 	for_each_online_cpu(cpu) {
- 		struct work_struct *work = per_cpu_ptr(works, cpu);
- 
- 		INIT_WORK(work, func);
--		schedule_work_on(cpu, work);
-+		if(cpu != orig)
-+			schedule_work_on(cpu, work);
- 	}
- 
-+	if (orig >= 0)
-+		func(per_cpu_ptr(works,orig));
-+
- 	for_each_online_cpu(cpu)
- 		flush_work(per_cpu_ptr(works, cpu));
- 
+CCing people that might be interested in this topic.
 
---------------030909090009080905060902--
+Best regards,
+Tomasz
+
