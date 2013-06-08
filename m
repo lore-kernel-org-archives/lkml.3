@@ -1,103 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab3FHMZe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 08:25:34 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:50571 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752481Ab3FHMZX (ORCPT
+	id S1752348Ab3FHMeu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 08:34:50 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:48679 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751368Ab3FHMeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 08:25:23 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>
-Subject: [PATCH 2/4] f2fs: reorganise the function get_victim_by_default
-Date: Sat,  8 Jun 2013 21:25:16 +0900
-Message-Id: <1370694316-2772-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 8 Jun 2013 08:34:36 -0400
+Date: Sat, 08 Jun 2013 15:34:29 +0300
+Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of
+ target frequency
+Message-ID: <q46r5iepl3sunqe5eemv66hk.1370694869222@email.android.com>
+From: Stratos Karafotis <stratosk@semaphore.gr>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Borislav Petkov <bp@suse.de>, Viresh Kumar <viresh.kumar@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r58CZ3Gf027784
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+I also did the test with the way you mentioned. But I thought to run turbostat for 100 sec as I did with powertop.
+Actually benchmark lasts about 96 secs.
 
-Fix the function get_victim_by_default, where it checks
-for the condition  that p.min_segno != NULL_SEGNO as
-shown:
+I think that we use almost the same energy for 100 sec to run the same load a little bit faster. I think this means also a reduce to power consumption.
 
-if (p.min_segno != NULL_SEGNO)
-           goto got_it;
+I will also send the results running the test as you said.
 
-and if above condition is true then
+Thanks again,
+Stratos
 
-got_it:
-        if (p.min_segno != NULL_SEGNO) {
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-So this condition is being checked twice. Hence move the goto
-statement after the if condition so that duplication of condition
-check is avoided.
-
-Also this function makes a call to get_max_cost() to compute
-the max cost based on the f2fs_sbi_info and victim policy. Since
-get_max_cost depends on on three parameters of victim_sel_policy
-=> alloc_mode, gc_mode & ofs_unit, once this victim policy is
-initialised, these value will not change till the execution
-time of get_victim_by_default() & also f2fs_sbi_info structure
-parameters will not change.
-
-Hence making calls to get_max_cost() in while loop does not seems to
-be a good point. Instead we can call it once in begining and store
-the results in local variable, which later can serve our purpose
-for comparing the cost with max cost inside the while loop.
-
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
----
- fs/f2fs/gc.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index ddc2c67..3a9df36 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -241,14 +241,14 @@ static int get_victim_by_default(struct f2fs_sb_info *sbi,
- {
- 	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
- 	struct victim_sel_policy p;
--	unsigned int secno;
-+	unsigned int secno, max_cost;
- 	int nsearched = 0;
- 
- 	p.alloc_mode = alloc_mode;
- 	select_policy(sbi, gc_type, type, &p);
- 
- 	p.min_segno = NULL_SEGNO;
--	p.min_cost = get_max_cost(sbi, &p);
-+	p.min_cost = max_cost = get_max_cost(sbi, &p);
- 
- 	mutex_lock(&dirty_i->seglist_lock);
- 
-@@ -287,7 +287,7 @@ static int get_victim_by_default(struct f2fs_sb_info *sbi,
- 			p.min_cost = cost;
- 		}
- 
--		if (cost == get_max_cost(sbi, &p))
-+		if (cost == max_cost)
- 			continue;
- 
- 		if (nsearched++ >= MAX_VICTIM_SEARCH) {
-@@ -295,8 +295,8 @@ static int get_victim_by_default(struct f2fs_sb_info *sbi,
- 			break;
- 		}
- 	}
--got_it:
- 	if (p.min_segno != NULL_SEGNO) {
-+got_it:
- 		if (p.alloc_mode == LFS) {
- 			secno = GET_SECNO(sbi, p.min_segno);
- 			if (gc_type == FG_GC)
--- 
-1.7.9.5
-
+>On Saturday, June 08, 2013 12:56:00 PM Stratos Karafotis wrote:
+>> On 06/07/2013 11:57 PM, Rafael J. Wysocki wrote:
+>> > On Friday, June 07, 2013 10:14:34 PM Stratos Karafotis wrote:
+>> >> On 06/05/2013 11:35 PM, Rafael J. Wysocki wrote:
+>> >>> On Wednesday, June 05, 2013 08:13:26 PM Stratos Karafotis wrote:
+>> >>>> Hi Borislav,
+>> >>>>
+>> >>>> On 06/05/2013 07:17 PM, Borislav Petkov wrote:
+>> >>>>> On Wed, Jun 05, 2013 at 07:01:25PM +0300, Stratos Karafotis wrote:
+>> >>>>>> Ondemand calculates load in terms of frequency and increases it only
+>> >>>>>> if the load_freq is greater than up_threshold multiplied by current
+>> >>>>>> or average frequency. This seems to produce oscillations of frequency
+>> >>>>>> between min and max because, for example, a relatively small load can
+>> >>>>>> easily saturate minimum frequency and lead the CPU to max. Then, the
+>> >>>>>> CPU will decrease back to min due to a small load_freq.
+>> >>>>>
+>> >>>>> Right, and I think this is how we want it, no?
+>> >>>>>
+>> >>>>> The thing is, the faster you finish your work, the faster you can become
+>> >>>>> idle and save power.
+>> >>>>
+>> >>>> This is exactly the goal of this patch. To use more efficiently middle
+>> >>>> frequencies to finish faster the work.
+>> >>>>
+>> >>>>> If you switch frequencies in a staircase-like manner, you're going to
+>> >>>>> take longer to finish, in certain cases, and burn more power while doing
+>> >>>>> so.
+>> >>>>
+>> >>>> This is not true with this patch. It switches to middle frequencies
+>> >>>> when the load < up_threshold.
+>> >>>> Now, ondemand does not increase freq. CPU runs in lowest freq till the
+>> >>>> load is greater than up_threshold.
+>> >>>>
+>> >>>>> Btw, racing to idle is also a good example for why you want boosting:
+>> >>>>> you want to go max out the core but stay within power limits so that you
+>> >>>>> can finish sooner.
+>> >>>>>
+>> >>>>>> This patch changes the calculation method of load and target frequency
+>> >>>>>> considering 2 points:
+>> >>>>>> - Load computation should be independent from current or average
+>> >>>>>> measured frequency. For example an absolute load 80% at 100MHz is not
+>> >>>>>> necessarily equivalent to 8% at 1000MHz in the next sampling interval.
+>> >>>>>> - Target frequency should be increased to any value of frequency table
+>> >>>>>> proportional to absolute load, instead to only the max. Thus:
+>> >>>>>>
+>> >>>>>> Target frequency = C * load
+>> >>>>>>
+>> >>>>>> where C = policy->cpuinfo.max_freq / 100
+>> >>>>>>
+>> >>>>>> Tested on Intel i7-3770 CPU @ 3.40GHz and on Quad core 1500MHz Krait.
+>> >>>>>> Phoronix benchmark of Linux Kernel Compilation 3.1 test shows an
+>> >>>>>> increase ~1.5% in performance. cpufreq_stats (time_in_state) shows
+>> >>>>>> that middle frequencies are used more, with this patch. Highest
+>> >>>>>> and lowest frequencies were used less by ~9%
+>> >>>
+>> >>> Can you also use powertop to measure the percentage of time spent in idle
+>> >>> states for the same workload with and without your patchset?  Also, it would
+>> >>> be good to measure the total energy consumption somehow ...
+>> >>>
+>> >>> Thanks,
+>> >>> Rafael
+>> >>
+>> >> Hi Rafael,
+>> >>
+>> >> I repeated the tests extracting also powertop results.
+>> >> Measurement steps with and without this patch:
+>> >> 1) Reboot system
+>> >> 2) Running twice Phoronix benchmark of Linux Kernel Compilation 3.1 test
+>> >>     without taking measurement
+>> >> 3) Wait few minutes
+>> >> 4) Run Phoronix and powertop for 100secs and take measurement.
+>> > 
+>> > Well, while this is not conclusive, it definitely looks very promising. :-)
+>> > 
+>> > We're seeing measurable performance improvement with the patchset applied *and*
+>> > more time spent in idle states both at the same time.  I'd be very surprised if
+>> > the energy consumption measuremets did not confirm that the patchset allowed
+>> > us to reduce it.
+>> > 
+>> > If my computations are correct (somebody please check), the cores spent about
+>> > 20% more time in idle on the average with the patchset applied and in addition
+>> > to that the cc6 residency was greater by about 2% on the average with respect
+>> > to the kernel without the patchset.
+>> > 
+>> > We need to verify if there are gains (or at least no regressions) with other
+>> > workloads, but since this *also* reduces code complexity quite a bit, I'm
+>> > seriously considering taking it.
+>> > 
+>> >> I will try to repeat the test and take measurements with turbostat as
+>> >> Borislav suggested.
+>> > 
+>> > Please do!
+>> > 
+>> > Thanks,
+>> > Rafael
+>> > 
+>> 
+>> Hi,
+>> 
+>> I repeated the tests extracting results from turbostat.
+>> Measurement steps with and without this patch:
+>> 1) Reboot system
+>> 2) Running twice Phoronix benchmark of Linux Kernel Compilation 3.1 test
+>>    without taking measurement
+>> 3) Wait few minutes
+>> 4) Run Phoronix and turbostat (-i 100) and take measurement
+>
+>You need to do something like
+>
+># ./turbostat <command invoking the phoronix suite>
+>
+>Did you do that?
+>
+>Rafael
+>
+>
+>-- 
+>I speak only for myself.
+>Rafael J. Wysocki, Intel Open Source Technology Center.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
