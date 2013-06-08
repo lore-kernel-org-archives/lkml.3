@@ -1,87 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab3FHKpd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 06:45:33 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:60004 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751967Ab3FHKpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 06:45:31 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: yanmin_zhang@linux.intel.com
-Cc: Greg KH <gregkh@linuxfoundation.org>, shuox.liu@intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, pavel@ucw.cz,
-        len.brown@intel.com
-Subject: Re: [PATCH 0/2] Run callback of device_prepare/complete consistently
-Date: Sat, 08 Jun 2013 12:54:34 +0200
-Message-ID: <1848832.IkLoHNGzvs@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1370659038.4432.112.camel@ymzhang.sh.intel.com>
-References: <1370593232-3602-1-git-send-email-shuox.liu@intel.com> <2994160.MkjLhsn0bK@vostro.rjw.lan> <1370659038.4432.112.camel@ymzhang.sh.intel.com>
+	id S1752215Ab3FHKqK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 06:46:10 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:47382 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752022Ab3FHKqI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jun 2013 06:46:08 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        patches@linaro.org, Sachin Kamat <sachin.kamat@linaro.org>
+Subject: Re: [PATCH 1/3] ARM: dts: exynos4210: Add LCD related pinctrl entries
+Date: Sat, 08 Jun 2013 12:46:01 +0200
+Message-ID: <4895761.sVtM2qZnU3@flatron>
+User-Agent: KMail/4.10.4 (Linux/3.9.5-gentoo; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <1370603235-11193-2-git-send-email-tushar.behera@linaro.org>
+References: <1370603235-11193-1-git-send-email-tushar.behera@linaro.org> <1370603235-11193-2-git-send-email-tushar.behera@linaro.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, June 08, 2013 10:37:18 AM Yanmin Zhang wrote:
-> On Sat, 2013-06-08 at 03:52 +0200, Rafael J. Wysocki wrote:
-> > On Saturday, June 08, 2013 09:36:03 AM Yanmin Zhang wrote:
-> > > On Sat, 2013-06-08 at 03:30 +0200, Rafael J. Wysocki wrote:
-> > > > On Friday, June 07, 2013 06:16:25 PM Greg KH wrote:
-> > > > > On Sat, Jun 08, 2013 at 08:42:12AM +0800, Yanmin Zhang wrote:
-> > > > > > On Fri, 2013-06-07 at 12:36 +0200, Rafael J. Wysocki wrote:
-> > > > > > > On Friday, June 07, 2013 04:20:30 PM shuox.liu@intel.com wrote:
-> > > > > > > > dpm_run_callback is used in other stages of power states changing.
-> > > > > > > > It provides debug info message and time measurement when call these
-> > > > > > > > callback. We also want to benefit ->prepare and ->complete.
-> > > > > > > > 
-> > > > > > > > [PATCH 1/2] PM: use dpm_run_callback in device_prepare
-> > > > > > > > [PATCH 2/2] PM: add dpm_run_callback_void and use it in device_complete
-> > > > > > > 
-> > > > > > > Is this an "Oh, why don't we do that?" series, or is it useful for anything
-> > > > > > > in practice?  I'm asking, because we haven't added that stuff to start with
-> > > > > > > since we didn't see why it would be useful to anyone.
-> > > > > > > 
-> > > > > > > And while patch [1/2] reduces the code size (by 1 line), so I can see some
-> > > > > > > (tiny) benefit from applying it, patch [2/2] adds more code and is there any
-> > > > > > > paractical reason?
-> > > > > > Sometimes, suspend-to-ram path spends too much time (either suspend slowly
-> > > > > > or wakeup slowly) and we need optimize it.
-> > > > > > With the 2 patches, we could collect initcall_debug printk info and manually
-> > > > > > check what prepare/complete callbacks consume too much time.
-> > > > > 
-> > > > > But initcall information is for initialization stuff, not suspend/resume
-> > > > > things, right?  Doesn't the existing tools for parsing this choke if it
-> > > > > sees the information at suspend/resume time?
-> > > > 
-> > > > We've been using that for suspend/resume for quite some time too, but not
-> > > > for the prepare/complete phases (because we still believe that's not really
-> > > > useful for them). 
-> > > > 
-> > > > Well, I'll be handling patches changing code under drivers/base/power,
-> > > > I promise. :-)
-> > > > 
-> > > > I've been doing that for quite a few years now ...
-> > > Yes, indeed. Power is one of the most important features on embedded devices.
-> > > Lots of smart phones don't really go through the full cycles of suspend-to-ram.
-> > > We are following the full steps of the suspend.
-> > 
-> > But if you go through the code, you'll see that alomost no drivers actually
-> > implemet .prepare() and .complete().  Some subsystems do, but they really don't
-> > take too much time to execute.  Which means that your patches with
-> > initcall_debug will add quite a pile of useless garbage to the kernel log
-> Does that mean we need add more log levels around such info instead of just having or
-> not having?
+Hi Tushar, Sachin,
 
-Since we don't have any code in the tree that causes problems those patches are
-supposed to catch, I don't see why we need them in the tree.  Would it be
-viable to keep them out of the tree for the time being and re-submit once
-there is real need?
+On Friday 07 of June 2013 16:37:13 Tushar Behera wrote:
+> From: Sachin Kamat <sachin.kamat@linaro.org>
+> 
+> Adds pinctrl entries required by FIMD.
+> 
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> ---
+>  arch/arm/boot/dts/exynos4210-pinctrl.dtsi |   75
+> +++++++++++++++++++++++++++++ 1 file changed, 75 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/exynos4210-pinctrl.dtsi
+> b/arch/arm/boot/dts/exynos4210-pinctrl.dtsi index 55a2efb..d241726
+> 100644
+> --- a/arch/arm/boot/dts/exynos4210-pinctrl.dtsi
+> +++ b/arch/arm/boot/dts/exynos4210-pinctrl.dtsi
+> @@ -330,6 +330,81 @@
+>  			samsung,pin-pud = <3>;
+>  			samsung,pin-drv = <0>;
+>  		};
+> +
+> +		pwm0_out: pwm0-out {
+> +			samsung,pins = "gpd0-0";
+> +			samsung,pin-function = <2>;
+> +			samsung,pin-pud = <0>;
+> +			samsung,pin-drv = <0>;
+> +		};
+> +
+> +		pwm1_out: pwm1-out {
+> +			samsung,pins = "gpd0-1";
+> +			samsung,pin-function = <2>;
+> +			samsung,pin-pud = <0>;
+> +			samsung,pin-drv = <0>;
+> +		};
 
-Rafael
+Hmm, these two seem to be unrelated. Rebase error? :)
 
+> +		lcd_ctrl: lcd-ctrl {
+> +			samsung,pins = "gpd0-0", "gpd0-1";
+> +			samsung,pin-function = <3>;
+> +			samsung,pin-pud = <0>;
+> +			samsung,pin-drv = <0>;
+> +		};
+> +
+> +		lcd_sync: lcd-sync {
+> +			samsung,pins = "gpf0-0", "gpf0-1";
+> +			samsung,pin-function = <2>;
+> +			samsung,pin-pud = <0>;
+> +			samsung,pin-drv = <0>;
+> +		};
+> +
+> +		lcd_en: lcd-en {
+> +			samsung,pins = "gpe3-4";
+> +			samsung,pin-function = <2>;
+> +			samsung,pin-pud = <0>;
+> +			samsung,pin-drv = <0>;
+> +		};
+> +
+> +		lcd_clk: lcd-clk {
+> +			samsung,pins = "gpf0-0", "gpf0-1", "gpf0-2", 
+"gpf0-3";
+> +			samsung,pin-function = <2>;
+> +			samsung,pin-pud = <0>;
+> +			samsung,pin-drv = <0>;
+> +		};
+> +
+> +		lcd_data16: lcd-data-width16 {
+> +			samsung,pins = "gpf0-7", "gpf1-0", "gpf1-1", 
+"gpf1-2",
+> +					"gpf1-3", "gpf1-6", "gpf1-7", 
+"gpf2-0",
+> +					"gpf2-1", "gpf2-2", "gpf2-3", 
+"gpf2-7",
+> +					"gpf3-0", "gpf3-1", "gpf3-2", 
+"gpf3-3";
+> +			samsung,pin-function = <2>;
+> +			samsung,pin-pud = <0>;
+> +			samsung,pin-drv = <0>;
+> +		};
+> +
+> +		lcd_data18: lcd-data-width18 {
+> +			samsung,pins = "gpf0-6", "gpf0-7", "gpf1-0", 
+"gpf1-1",
+> +					"gpf1-2", "gpf1-3", "gpf1-6", 
+"gpf1-7",
+> +					"gpf2-0", "gpf2-1", "gpf2-2", 
+"gpf2-3",
+> +					"gpf2-6", "gpf2-7", "gpf3-0", 
+"gpf3-1",
+> +					"gpf3-2", "gpf3-3";
+> +			samsung,pin-function = <2>;
+> +			samsung,pin-pud = <0>;
+> +			samsung,pin-drv = <0>;
+> +		};
+> +
+> +		lcd_data24: lcd-data-width24 {
+> +			samsung,pins = "gpf0-4", "gpf0-5", "gpf0-6", 
+"gpf0-7",
+> +					"gpf1-0", "gpf1-1", "gpf1-2", 
+"gpf1-3",
+> +					"gpf1-4", "gpf1-5", "gpf1-6", 
+"gpf1-7",
+> +					"gpf2-0", "gpf2-1", "gpf2-2", 
+"gpf2-3",
+> +					"gpf2-4", "gpf2-5", "gpf2-6", 
+"gpf2-7",
+> +					"gpf3-0", "gpf3-1", "gpf3-2", 
+"gpf3-3";
+> +			samsung,pin-function = <2>;
+> +			samsung,pin-pud = <0>;
+> +			samsung,pin-drv = <0>;
+> +		};
+>  	};
+> 
+>  	pinctrl@11000000 {
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Otherwise looks good to me.
+
+Best regards,
+Tomasz
+
