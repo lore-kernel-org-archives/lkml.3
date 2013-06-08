@@ -1,46 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752575Ab3FHRq1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 13:46:27 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:56837 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752286Ab3FHRq0 (ORCPT
+	id S1752529Ab3FHRrW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 13:47:22 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:61568 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276Ab3FHRrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 13:46:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Daniel Tang <dt.tangr@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org
-Subject: Re: [PATCH] Add Initial TI-Nspire support
-Date: Sat, 08 Jun 2013 19:46:28 +0200
-Message-ID: <1464231.JBtC8Grrsg@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <9C5E608F-2DA8-469E-8C7C-B678B5EFC68B@gmail.com>
-References: <E775DD08-5516-468E-9924-0D839218D7F9@gmail.com> <201306071955.26375.arnd@arndb.de> <9C5E608F-2DA8-469E-8C7C-B678B5EFC68B@gmail.com>
+	Sat, 8 Jun 2013 13:47:20 -0400
+Date: Sat, 8 Jun 2013 10:47:23 -0700
+From: Olof Johansson <olof@lixom.net>
+To: torvalds@linux-foundation.org
+Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ARM: SoC fixes for 3.10-rc
+Message-ID: <20130608174723.GA12346@quad.lixom.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:qi34CPdwVaizt/WbueQO1qJKvSAYAJ8XSqZx6BM6OU4
- RaOTsWnFJwNjDRhcZTvOumlFxUJTimkARviSE7+PxmWJynVklU
- cd4wS5dTI5YGZJJ/vdaGsxksAioSv++T40G12dcmb1ShMtMfer
- TajjCNV6oJv/wDfr6LqqHK2/pw0V1kDOINkWv07gaKKUyigGy+
- j/GiQ8/Ditmzy4hdKyT4zqBCedDDKikGq1hqhinNiZRjd/5+uU
- eFL5bcGfARn8k4eEeWG8RY5/eG1d1zrpC4Wk19Yd7UBmwJqawC
- x8lPVu/lH0rMciZMfEXNs8XMazG5pULXfUT1ycnQ3HSP2Rd0iD
- jESqzHBoib6HH6rhqWRg=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 08 June 2013 11:42:54 Daniel Tang wrote:
-> 
-> On 08/06/2013, at 3:55 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->
-> If it hasn't been merged yet, would it be possible for me to
-> send version 2 of the patches? Or would you rather I wait
-> until it is merged and send in a separate patch to fix them?
+The following changes since commit d683b96b072dc4680fc74964eca77e6a23d1fa6e:
 
-Either way works fine, only after it has been merged into arm-soc
-you should send add-on patches rather than replacements.
+  Linux 3.10-rc4 (2013-06-02 17:11:17 +0900)
 
-	Arnd 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
+
+for you to fetch changes up to 090878aa951628143f40a1acc19ec074a5ae9200:
+
+  Merge tag 'mxs-fixes-3.10' of git://git.linaro.org/people/shawnguo/linux-2.6 into fixes (2013-06-07 18:19:40 -0700)
+
+----------------------------------------------------------------
+
+ARM: SoC fixes for 3.10-rc
+
+Another week, another batch of fixes for arm-soc platforms.
+
+Nothing controversial here, a handful of fixes for regressions and/or
+serious problems across several of the platforms. Things are slowing
+down nicely on fix rates for 3.10.
+
+----------------------------------------------------------------
+Andrew Lunn (1):
+      ARM: Kirkwood: TS219: Fix crash by double PCIe instantiation
+
+Anson Huang (1):
+      ARM: imx: clk-imx6q: AXI clock select index is incorrect
+
+Doug Anderson (1):
+      ARM: exynos: add debug_ll_io_init() call in exynos_init_io()
+
+Jiada Wang (1):
+      ARM i.MX6q: fix for ldb_di_sels
+
+Jonas Andersson (1):
+      ARM: dts: imx: fix clocks for cspi
+
+Jongsung Kim (1):
+      ARM: bcm2835: override the HW UART periphid
+
+Laurent Pinchart (1):
+      sh-pfc: r8a7779: Don't group USB OVC and PENC pins
+
+Lee Jones (2):
+      ARM: ux500: Only configure wake-up reasons on ux500 based platforms
+      ARM: ux500: Provide supplies for AUX1, AUX2 and AUX3
+
+Markus Pargmann (1):
+      ARM: mxs: icoll: Fix interrupts gpio bank 0
+
+Nadav Haklai (1):
+      ARM: mvebu: Fix bug in coherency fabric low level init function
+
+Olof Johansson (5):
+      Merge tag 'fixes-3.10-3' of git://git.infradead.org/users/jcooper/linux into fixes
+      Merge tag 'ux500-arm-soc-v3.10-fixes-2' of git://git.kernel.org/.../linusw/linux-stericsson into fixes
+      Merge tag 'renesas-fixes-for-v3.10' of git://git.kernel.org/.../horms/renesas into fixes
+      Merge tag 'imx-fixes-3.10-2' of git://git.linaro.org/people/shawnguo/linux-2.6 into fixes
+      Merge tag 'mxs-fixes-3.10' of git://git.linaro.org/people/shawnguo/linux-2.6 into fixes
+
+Simon Horman (1):
+      ARM: shmobile: sh73a0: Update CMT clockevent rating to 80
+
+Tushar Behera (1):
+      ARM: EXYNOS: uncompress - print debug messages if DEBUG_LL is defined
+
+ arch/arm/boot/dts/bcm2835.dtsi                  |  1 +
+ arch/arm/boot/dts/imx25.dtsi                    | 12 +++----
+ arch/arm/boot/dts/imx27.dtsi                    |  6 ++--
+ arch/arm/boot/dts/imx51.dtsi                    |  2 +-
+ arch/arm/boot/dts/imx53.dtsi                    |  2 +-
+ arch/arm/mach-exynos/common.c                   |  2 ++
+ arch/arm/mach-imx/clk-imx6q.c                   |  4 +--
+ arch/arm/mach-kirkwood/board-ts219.c            | 10 ------
+ arch/arm/mach-mvebu/coherency_ll.S              | 16 ++++++---
+ arch/arm/mach-shmobile/setup-sh73a0.c           |  2 +-
+ arch/arm/mach-ux500/board-mop500-regulators.c   |  3 ++
+ arch/arm/mach-ux500/cpuidle.c                   |  4 +++
+ arch/arm/plat-samsung/include/plat/uncompress.h | 10 +++++-
+ drivers/irqchip/irq-mxs.c                       | 14 +++-----
+ drivers/pinctrl/sh-pfc/pfc-r8a7779.c            | 45 ++++++++++++++++++++-----
+ 15 files changed, 84 insertions(+), 49 deletions(-)
