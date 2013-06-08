@@ -1,88 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751903Ab3FHJOw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 05:14:52 -0400
-Received: from linuxdingsda.de ([87.106.20.67]:42506 "EHLO serverteil.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751780Ab3FHJOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 05:14:51 -0400
-Message-ID: <51B2F607.3020204@linuxdingsda.de>
-Date: Sat, 08 Jun 2013 11:14:47 +0200
-From: Tobias Winter <tobias@linuxdingsda.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1751918Ab3FHJR4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 05:17:56 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:60991 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751571Ab3FHJRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jun 2013 05:17:53 -0400
+Message-ID: <51B2F694.7010008@gentoo.org>
+Date: Sat, 08 Jun 2013 05:17:08 -0400
+From: Richard Yao <ryao@gentoo.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130522 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>,
-        Rob Landley <rob@landley.net>, Johan Hovold <jhovold@gmail.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/3] Increase the number of USB to serial devices we
- can support at once
-References: <20130606173103.GA1812@kroah.com> <51B176FB.9070509@linuxdingsda.de> <51B1AE2F.3040405@linuxdingsda.de> <20130607172535.GB29371@kroah.com>
-In-Reply-To: <20130607172535.GB29371@kroah.com>
-X-Enigmail-Version: 1.5.1
+To: gentoo-dev@lists.gentoo.org
+CC: Sergei Trofimovich <slyfox@gentoo.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        kernel@gentoo.org, gentooligan@gmail.com
+Subject: Re: [gentoo-dev] dm-crypt reordering BIOs across barriers?
+References: <51B2A955.4010906@gentoo.org> <20130608091114.441c5f17@sf>
+In-Reply-To: <20130608091114.441c5f17@sf>
+X-Enigmail-Version: 1.6a1pre
 Content-Type: multipart/signed; micalg=pgp-sha1;
  protocol="application/pgp-signature";
- boundary="----enig2XWDKSKEWLDXAAKWOBHFP"
+ boundary="----enig2DXMRNMLHKVXDLBPEOFES"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2XWDKSKEWLDXAAKWOBHFP
-Content-Type: text/plain; charset=UTF-8
+------enig2DXMRNMLHKVXDLBPEOFES
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-On 06/07/2013 07:25 PM, Greg KH wrote:
-> On Fri, Jun 07, 2013 at 11:55:59AM +0200, Tobias Winter wrote:
->> On 06/07/2013 08:00 AM, Tobias Winter wrote:
->>>   CC      drivers/usb/serial/console.o
->>> drivers/usb/serial/console.c: In function =E2=80=98usb_console_setup=E2=
-=80=99:
->>> drivers/usb/serial/console.c:111:2: error: implicit declaration of
->>> function =E2=80=98usb_serial_get_by_index=E2=80=99 [-Werror=3Dimplici=
-t-function-declaration]
->>> drivers/usb/serial/console.c:111:9: warning: assignment makes pointer=
-
->>> from integer without a cast [enabled by default]
->>> drivers/usb/serial/console.c:122:40: error: =E2=80=98struct usb_seria=
-l=E2=80=99 has no
->>> member named =E2=80=98minor=E2=80=99
->>> cc1: some warnings being treated as errors
->>> make[4]: *** [drivers/usb/serial/console.o] Error 1
->>> make[3]: *** [drivers/usb/serial] Error 2
->>> make[2]: *** [drivers/usb] Error 2
->>> make[1]: *** [drivers] Error 2
->>> make[1]: Leaving directory `/root/usb.git'
->>> make: *** [debian/stamp/build/kernel] Error 2
+On 06/08/2013 02:11 AM, Sergei Trofimovich wrote:
+> On Fri, 07 Jun 2013 23:47:33 -0400
+> Richard Yao <ryao@gentoo.org> wrote:
+>=20
+>> When you use dm-crypt, block IO requests to a dm-* device will invoke
+>> dm_request_fn() -> map_request() -> crypt_map(). If a BIO is a write
+>> barrier, crypt_map() will return DM_MAPIO_REMAPPED to map_request(),
+>> which will immediately queue it to the device.
 >>
->> Despite that broken driver, I just gave it a try and the patchset work=
-s
->> as expected.
+>> If a few dozen IOs are queued in rapid succession with multiple write
+>> barriers, all write barriers will be executed before any actual write
+>> BIOs occur because the write IOs will be processed asynchronously in a=
+
+>> work queue. Since the barriers will be long gone by the time the write=
+
+>> IOs are queued, they can be queued in any order.
+>>
+>> Am I misunderstanding this or is dm-crypt ignoring proper write barrie=
+r
+>> semantics?
+>>
+> http://www.saout.de/pipermail/dm-crypt/2012-April/002441.html
+> http://lwn.net/Articles/400541/
 >=20
-> Thanks for testing, I forgot to update the console code, as no one sane=
 
-> every runs it :)
->=20
-> I'll go fix that up now...
-I just retested it and it works as expected.
-
-Thanks, Greg!
-
-Tobias
+It might be worth stating that I thought flush was a synonym for
+barrier. It still looks like there is an issue, despite my incorrect
+terminology.
 
 
-------enig2XWDKSKEWLDXAAKWOBHFP
+------enig2DXMRNMLHKVXDLBPEOFES
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: OpenPGP digital signature
 Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2.0.19 (GNU/Linux)
 Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iEYEARECAAYFAlGy9gcACgkQ2CMMiSvcNgXr8gCfaaEcZ+JY1WqoXyzYqgbdwmLW
-9NoAoJeOgzkXQVslqOOafe0qUdW4B9VQ
-=9ncW
+iQIcBAEBAgAGBQJRsvacAAoJECDuEZm+6Exk9q8P/1RtjD9/vqXi5+y+m08gt2Wu
+Kav5QBNpltNgo2trSLlr+HMyO0+Wv2Ibjnde1/AoNhJhIHcG2MHKObUfX3KykVwN
+lDn5YZynujLxJSMCqkYG16WTuvt+SkimbBNnZQyXWmtk3IxHqjFBSArxcuR5+YhH
+Ctl1wQHQXnLjtGmoXlGsD5Lz7GJsGNiMfoMqqYFeAsNL9nd/LjtvzxOeC81QYXBA
+HZbK/9UXxsBxrxdY8LtPHFn/eYA3DjmPXeGy9S4OLwsxnIHX7JbpOMzLsIWZUSbo
+4BJV1q+YrdI6y4YyZTv/kNrJ7p+60desmYy2oc+Fd1MbMqkIT3S20gjt5KdczsUx
+uxmpbyovVSqV3tesqTMTYSaGu/6wkKXsljNx4+9+3+/RMeJ4s5aIXw2u6DaftUhT
+RGXYcIdBgSGRCIMq4uzIq+GRtEF5q8Cy3kGPfNe2mj568Qs7Uzr156wzqGu6zG+K
+IKg+LhwRpYSPV2K9LIuzfiemzvimBRrgu8HnNdIaCaqDubdyiujtiRIwFT/QLH/c
+0Q/sT6qrDXqTDQAXkeMdI/Cwxc/2KfETUSv+P624eHRd7HCuu4CpISmMy8WG46e3
+bM3DMgQQeGW4D4Rk58iCNuPjqzOLpk8scjFmhUJtwyjclF+ebJhbNGVgd8ET8/ff
+ZYtnIgHusUQ/9XgzLkYA
+=4E3r
 -----END PGP SIGNATURE-----
 
-------enig2XWDKSKEWLDXAAKWOBHFP--
+------enig2DXMRNMLHKVXDLBPEOFES--
