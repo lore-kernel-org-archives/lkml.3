@@ -1,64 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751546Ab3FHIEe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 04:04:34 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:42023 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751447Ab3FHIEb (ORCPT
+	id S1751574Ab3FHIXc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 04:23:32 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:48747 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421Ab3FHIX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 04:04:31 -0400
+	Sat, 8 Jun 2013 04:23:28 -0400
+Message-ID: <51B2E9EC.1000205@ahsoftware.de>
+Date: Sat, 08 Jun 2013 10:23:08 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <201306071040.35174.hverkuil@xs4all.nl>
-References: <1369503576-22271-1-git-send-email-prabhakar.csengg@gmail.com>
- <2855590.yx9zfYZLis@avalon> <CA+V-a8vh-ttz1QQmV59fP5c3vK=1zC5QfmkHc9Du0ZAcY712Dg@mail.gmail.com>
- <201306071040.35174.hverkuil@xs4all.nl>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Sat, 8 Jun 2013 13:34:10 +0530
-Message-ID: <CA+V-a8vhnri3Wusk7ZrDq6M9JAKHi+hs1qJ8ru8Mdgt7bTPD0w@mail.gmail.com>
-Subject: Re: [PATCH v2 0/4] media: i2c: ths7303 cleanup
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: rtc-linux@googlegroups.com
+CC: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [rtc-linux] Re: adjusting the monotonic system time (from inside
+ the kernel)
+References: <5187B813.8000907@ahsoftware.de> <51B27182.8010506@linaro.org>
+In-Reply-To: <51B27182.8010506@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
-
-On Fri, Jun 7, 2013 at 2:10 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
-> On Thu June 6 2013 12:05:38 Prabhakar Lad wrote:
->> Hi Hans,
+Am 08.06.2013 01:49, schrieb John Stultz:
+> On 05/06/2013 07:02 AM, Alexander Holler wrote:
+>> Hello,
 >>
->> On Sun, May 26, 2013 at 6:50 AM, Laurent Pinchart
->> <laurent.pinchart@ideasonboard.com> wrote:
->> > On Saturday 25 May 2013 23:09:32 Prabhakar Lad wrote:
->> >> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->> >>
->> >> Trivial cleanup of the driver.
->> >>
->> >> Changes for v2:
->> >> 1: Dropped the asynchronous probing and, OF
->> >>    support patches will be handling them independently because of
->> >> dependencies. 2: Arranged the patches logically so that git bisect
->> >>    succeeds.
->> >>
->> >> Lad, Prabhakar (4):
->> >>   ARM: davinci: dm365 evm: remove init_enable from ths7303 pdata
->> >>   media: i2c: ths7303: remove init_enable option from pdata
->> >>   media: i2c: ths7303: remove unnecessary function ths7303_setup()
->> >>   media: i2c: ths7303: make the pdata as a constant pointer
->> >>
->> Can you pick up this series or do you want me to issue a pull for it ?
+>> I'm looking at how to adjust the (monotonic) system time from inside
+>> the kernel.
+>>
+>> Use case is that I have a hw-clock which (not necessarily) regulary
+>> sends a timestamp with millisecond precision which I want to use to
+>> adjust the system time.
+>>
+>> It seems the usual solution to do such, is to use NTP which uses it's
+>> own driver (which usually seems to be based on some serial connection):
+>>
+>> hw-clock --serial--> kernel --serial-device--> ntpd -> kernel ->
+>> system-time
+>>
+>> So one solution would be to emulate such a serial device:
+>>
+>> hw-clock --> kernel --emulated-serial-device--> ntpd -> kernel ->
+>> system-time
+>>
+>> Another solution would be to "invent" a ntp-device and write a driver
+>> for ntpd to use it:
+>>
+>> hw-clock --> kernel --ntp-device--> ntpd -> kernel -> system-time
+>>
+>> But I would prefer the following:
+>>
+>> hw-clock --> kernel -> system-time
+>>
+>> Problem is that the hw-clock in question doesn't offer something like
+>> a tick. It just might send a timestamp with millisecond precision
+>> whenever it wants.
+>>
+>> Because I don't want to reinvent the wheel and because I think there
+>> are some people which already have spend some thoughts on similiar
+>> things, I'm asking here before I try to implement something which then
+>> never might find it's way into the mainline kernel.
+>>
+>> Any hints, suggestions, whatever?
 >
-> I've picked it up. I kept the dm365 patch separate, but I did improve the
-> commit log a bit.
+> Sorry on the delay to reply here, just noticed this in my spam folder
+> (hopefully I've trained it not to catch your mails now).
 >
-Thanks for fixing it.
+> You probably want to check out do_adjtimex() in the kernel. It has a
+> number of ways that allow for the clock to be slewed or jumped.
+> Otherwise you probably should look into the PPS subsystems to see if it
+> could be extended to support your needs.
+
+Thanks, I've already digged around in the source for adjtimex to get a 
+clue about the ntp-api and how it works. At first view wasn't that 
+enlightened. ;)
+
+But that now has to wait. If the new hctosys mechanism ends up in the 
+kernel, the millisecond support for rtc-hid-sensor-time will disappear 
+because rtc-hid-sensor-time will not set the time itself afterwards.
+
+So I have to figure out and implement a new way to feed a timestamp with 
+milliseconds to hctosys.
+
+My first idea would be to add a read_timeval() or even read_timespec() 
+to rtc_class_ops which would be used by hctosys instead of read_time() 
+if it exists.
 
 Regards,
---Prabhakar Lad
+
+Alexander
