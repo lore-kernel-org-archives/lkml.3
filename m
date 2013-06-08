@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757129Ab3FHBeA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 21:34:00 -0400
-Received: from mga09.intel.com ([134.134.136.24]:22711 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754769Ab3FHBd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 21:33:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,825,1363158000"; 
-   d="scan'208";a="326066210"
-Message-ID: <1370655363.4432.87.camel@ymzhang.sh.intel.com>
-Subject: Re: [PATCH 0/2] Run callback of device_prepare/complete consistently
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Reply-To: yanmin_zhang@linux.intel.com
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg KH <gregkh@linuxfoundation.org>, shuox.liu@intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, pavel@ucw.cz,
-        len.brown@intel.com
-Date: Sat, 08 Jun 2013 09:36:03 +0800
-In-Reply-To: <4500200.LnlZUcN9aW@vostro.rjw.lan>
-References: <1370593232-3602-1-git-send-email-shuox.liu@intel.com>
-	 <1370652132.4432.68.camel@ymzhang.sh.intel.com>
-	 <20130608011625.GB2819@kroah.com> <4500200.LnlZUcN9aW@vostro.rjw.lan>
-Organization: Intel.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757209Ab3FHBnF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 21:43:05 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:33399 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755760Ab3FHBnD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 21:43:03 -0400
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+Subject: Re: [PATCH] Add Initial TI-Nspire support
+From: Daniel Tang <dt.tangr@gmail.com>
+In-Reply-To: <201306071955.26375.arnd@arndb.de>
+Date: Sat, 8 Jun 2013 11:42:54 +1000
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <9C5E608F-2DA8-469E-8C7C-B678B5EFC68B@gmail.com>
+References: <E775DD08-5516-468E-9924-0D839218D7F9@gmail.com> <D6B73C11-1EB8-472B-BA1E-E48CF205B43F@gmail.com> <201306071955.26375.arnd@arndb.de>
+To: Arnd Bergmann <arnd@arndb.de>
+X-Mailer: Apple Mail (2.1503)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-06-08 at 03:30 +0200, Rafael J. Wysocki wrote:
-> On Friday, June 07, 2013 06:16:25 PM Greg KH wrote:
-> > On Sat, Jun 08, 2013 at 08:42:12AM +0800, Yanmin Zhang wrote:
-> > > On Fri, 2013-06-07 at 12:36 +0200, Rafael J. Wysocki wrote:
-> > > > On Friday, June 07, 2013 04:20:30 PM shuox.liu@intel.com wrote:
-> > > > > dpm_run_callback is used in other stages of power states changing.
-> > > > > It provides debug info message and time measurement when call these
-> > > > > callback. We also want to benefit ->prepare and ->complete.
-> > > > > 
-> > > > > [PATCH 1/2] PM: use dpm_run_callback in device_prepare
-> > > > > [PATCH 2/2] PM: add dpm_run_callback_void and use it in device_complete
-> > > > 
-> > > > Is this an "Oh, why don't we do that?" series, or is it useful for anything
-> > > > in practice?  I'm asking, because we haven't added that stuff to start with
-> > > > since we didn't see why it would be useful to anyone.
-> > > > 
-> > > > And while patch [1/2] reduces the code size (by 1 line), so I can see some
-> > > > (tiny) benefit from applying it, patch [2/2] adds more code and is there any
-> > > > paractical reason?
-> > > Sometimes, suspend-to-ram path spends too much time (either suspend slowly
-> > > or wakeup slowly) and we need optimize it.
-> > > With the 2 patches, we could collect initcall_debug printk info and manually
-> > > check what prepare/complete callbacks consume too much time.
-> > 
-> > But initcall information is for initialization stuff, not suspend/resume
-> > things, right?  Doesn't the existing tools for parsing this choke if it
-> > sees the information at suspend/resume time?
-> 
-> We've been using that for suspend/resume for quite some time too, but not
-> for the prepare/complete phases (because we still believe that's not really
-> useful for them). 
-> 
-> Well, I'll be handling patches changing code under drivers/base/power,
-> I promise. :-)
-> 
-> I've been doing that for quite a few years now ...
-Yes, indeed. Power is one of the most important features on embedded devices.
-Lots of smart phones don't really go through the full cycles of suspend-to-ram.
-We are following the full steps of the suspend.
+Hi,
 
+On 08/06/2013, at 3:55 AM, Arnd Bergmann <arnd@arndb.de> wrote:
 
+> On Friday 07 June 2013, Daniel Tang wrote:
+>> Hi,
+>> 
+>> I was wondering if this patch had gone through yet.
+> 
+> Sorry, not yet.
+
+A few things have changed since I sent in this patch so I need to add some adjustments to the patch. There's a few Kconfig options that need adding and some device tree bindings that need to be changed.
+
+If it hasn't been merged yet, would it be possible for me to send version 2 of the patches? Or would you rather I wait until it is merged and send in a separate patch to fix them?
+
+> Olof and I are usually taking turns with merging things
+> into the arm-soc tree, but in the past few weeks he has done all of it,
+> and he was not on Cc the patch. Please make sure you always send submissions
+> for inclusion (as opposed to submissions for review purposes) to
+> arm@kernel.org so it reaches both of us.
+
+Ah my apologies. I will do that next time.
+
+> 
+> We are also sometimes missing requests for merging for patches (rather
+> than git pull requests), so if you don't see your code show up in
+> linux-next when it should, just send a friendly reminder like
+> this one. I don't currently have a good overview of what pull
+> requests are missing, so I think Olof should apply this one, or
+> we can do a handover next week so I do the merging again for some
+> time.
+> 
+> 	Arnd
+
+Cheers,
+Daniel Tang
