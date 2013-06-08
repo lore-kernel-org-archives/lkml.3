@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071Ab3FHOFs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 10:05:48 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:60089 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751680Ab3FHOFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 10:05:46 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lu@intel.com>
-Subject: [PATCH] ACPI / video: Do not bind to device objects with a driver or scan handler
-Date: Sat, 08 Jun 2013 16:14:53 +0200
-Message-ID: <8441239.yeE1QYIOsS@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
+	id S1752167Ab3FHOIR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 10:08:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40903 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522Ab3FHOIQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jun 2013 10:08:16 -0400
+Date: Sat, 8 Jun 2013 07:08:17 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Linux 3.9.5
+Message-ID: <20130608140817.GA7303@kroah.com>
+References: <20130607195816.GA28479@kroah.com>
+ <20130608035312.GA16419@roeck-us.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130608035312.GA16419@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Fri, Jun 07, 2013 at 08:53:12PM -0700, Guenter Roeck wrote:
+> On Fri, Jun 07, 2013 at 12:58:16PM -0700, Greg KH wrote:
+> > I'm announcing the release of the 3.9.5 kernel.
+> > 
+> > All users of the 3.9 kernel series must upgrade.
+> > 
+> > The updated 3.9.y git tree can be found at:
+> > 	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.9.y
+> > and can be browsed at the normal kernel.org git web browser:
+> > 	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
+> > 
+> > thanks,
+> > 
+> > greg k-h
+> > 
+> powerpc build fails:
+> 
+> arch/powerpc/kernel/traps.c: In function 'alignment_exception':
+> arch/powerpc/kernel/traps.c:1154:3: error: label 'bail' used but not defined
+> make[1]: *** [arch/powerpc/kernel/traps.o] Error 1
+> make[1]: *** Waiting for unfinished jobs....
+> 
+> Due to commit 6ce6c629 (powerpc/tm: Abort on emulation and alignment faults).
 
-With the introduction of ACPI scan handlers, ACPI device objects
-with an ACPI scan handler attached to them must not be bound to
-an ACPI driver any more.  Unfortunately, however, the ACPI video
-driver attempts to do just that if there is a _ROM ACPI control
-method defined under a device object with an ACPI scan handler.
+Is there a upstream patch that fixes this problem that I should apply?
 
-Prevent that from happening by making the video driver's "add"
-routine check if the device object already has a driver or
-ACPI scan handler attached to it and return an error code in
-that case.  That is not sufficient, though, because
-acpi_bus_driver_init() would then clear the device object's
-driver_data that may be set by the scan handler attached to it,
-so for the fix to work acpi_bus_driver_init() has to be modified
-to leave driver_data as is on errors.
+thanks,
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=58091
-Reported-and-bisected-by: Dmitry S. Demin <dmitryy.demin@gmail.com>
-Reported-and-tested-by: Jason Cassell <bluesloth600@gmail.com>
-Tracked-down-by: Aaron Lu <aaron.lu@intel.com>
-Cc: 3.9+ <stable@kernel.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/scan.c  |    5 +----
- drivers/acpi/video.c |    3 +++
- 2 files changed, 4 insertions(+), 4 deletions(-)
-
-Index: linux-pm/drivers/acpi/video.c
-===================================================================
---- linux-pm.orig/drivers/acpi/video.c
-+++ linux-pm/drivers/acpi/video.c
-@@ -1722,6 +1722,9 @@ static int acpi_video_bus_add(struct acp
- 	int error;
- 	acpi_status status;
- 
-+	if (device->handler || device->driver)
-+		return -EINVAL;
-+
- 	status = acpi_walk_namespace(ACPI_TYPE_DEVICE,
- 				device->parent->handle, 1,
- 				acpi_video_bus_match, NULL,
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -1133,11 +1133,8 @@ acpi_bus_driver_init(struct acpi_device
- 		return -ENOSYS;
- 
- 	result = driver->ops.add(device);
--	if (result) {
--		device->driver = NULL;
--		device->driver_data = NULL;
-+	if (result)
- 		return result;
--	}
- 
- 	device->driver = driver;
- 
-
+greg k-h
