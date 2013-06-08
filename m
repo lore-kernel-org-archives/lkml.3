@@ -1,39 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab3FHTjj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 15:39:39 -0400
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:56278 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752481Ab3FHTji (ORCPT
+	id S1752735Ab3FHUTV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 16:19:21 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:47728 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683Ab3FHUTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 15:39:38 -0400
+	Sat, 8 Jun 2013 16:19:20 -0400
 MIME-Version: 1.0
-X-Originating-IP: [84.115.78.137]
-Date: Sat, 8 Jun 2013 21:39:37 +0200
-Message-ID: <CALG0vJu9-640D=Q-2RoSOnWtR=sERwj0fSCibK+ijprcf-T6Ag@mail.gmail.com>
-Subject: Re: [BUG] PCI related panic on powerpc based board with 3.10-rcX
-From: Michael Guntsche <michael.guntsche@it-loops.com>
-To: linux-kernel@vger.kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org, Rojhalat Ibrahim <imr@rtschenk.de>
+In-Reply-To: <1370696686-1666-1-git-send-email-grant.likely@linaro.org>
+References: <1370696686-1666-1-git-send-email-grant.likely@linaro.org>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Sat, 8 Jun 2013 21:18:59 +0100
+X-Google-Sender-Auth: rE8z8CH67EgLs6q0sqNaHMiaEG8
+Message-ID: <CACxGe6v7H35eA1Ry0VqQaxezaeT=TMQnxe+f_WQmroroombeZQ@mail.gmail.com>
+Subject: Re: [PATCH] irqchip: Return -EPERM for reserved IRQs
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After bisecting I found the responsible commit.
+On Sat, Jun 8, 2013 at 2:04 PM, Grant Likely <grant.likely@linaro.org> wrote:
+> The irqdomain core will report a log message for any attempted map call
+> that fails unless the error code is -EPERM. This patch changes the
+> Versatile irq controller drivers to use -EPERM because it is normal for
+> a subset of the IRQ inputs to be marked as reserved on the various
+> Versatile platforms.
+>
+> Signed-off-by: Grant Likely <grant.likely@linaro.org>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
 
-50d8f87d2b3: powerpc/fsl-pci Make PCIe hotplug work with Freescale
-PCIe controllers
+I'm going to go ahead and take this one through the irqdomain tree
+since it is really an irqdomain bug fix. I'll be sending the pull
+request to Linus shortly.
 
-Reverting this commit allowed my board to boot again.
+g.
 
-@Rojhalat: Please have a look at
-http://marc.info/?l=linux-kernel&m=137071294204858&w=2
-for my initial bugreport.
-
-What I do not understand at all is why this is affecting my platform.
-AFAIK there is no PCIe hardware on it AND I completely disabled PCIe
-support in config.
-
-Kind regards,
-Mike
+> ---
+>  drivers/irqchip/irq-versatile-fpga.c | 2 +-
+>  drivers/irqchip/irq-vic.c            | 2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/irqchip/irq-versatile-fpga.c b/drivers/irqchip/irq-versatile-fpga.c
+> index 065b7a3..47a52ab 100644
+> --- a/drivers/irqchip/irq-versatile-fpga.c
+> +++ b/drivers/irqchip/irq-versatile-fpga.c
+> @@ -119,7 +119,7 @@ static int fpga_irqdomain_map(struct irq_domain *d, unsigned int irq,
+>
+>         /* Skip invalid IRQs, only register handlers for the real ones */
+>         if (!(f->valid & BIT(hwirq)))
+> -               return -ENOTSUPP;
+> +               return -EPERM;
+>         irq_set_chip_data(irq, f);
+>         irq_set_chip_and_handler(irq, &f->chip,
+>                                 handle_level_irq);
+> diff --git a/drivers/irqchip/irq-vic.c b/drivers/irqchip/irq-vic.c
+> index 884d11c..2bbb004 100644
+> --- a/drivers/irqchip/irq-vic.c
+> +++ b/drivers/irqchip/irq-vic.c
+> @@ -197,7 +197,7 @@ static int vic_irqdomain_map(struct irq_domain *d, unsigned int irq,
+>
+>         /* Skip invalid IRQs, only register handlers for the real ones */
+>         if (!(v->valid_sources & (1 << hwirq)))
+> -               return -ENOTSUPP;
+> +               return -EPERM;
+>         irq_set_chip_and_handler(irq, &vic_chip, handle_level_irq);
+>         irq_set_chip_data(irq, v->base);
+>         set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
+> --
+> 1.8.1.2
+>
