@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751218Ab3FHCfO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 22:35:14 -0400
-Received: from mga01.intel.com ([192.55.52.88]:31483 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750861Ab3FHCfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 22:35:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,826,1363158000"; 
-   d="scan'208";a="349985599"
-Message-ID: <1370659038.4432.112.camel@ymzhang.sh.intel.com>
-Subject: Re: [PATCH 0/2] Run callback of device_prepare/complete consistently
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Reply-To: yanmin_zhang@linux.intel.com
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg KH <gregkh@linuxfoundation.org>, shuox.liu@intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, pavel@ucw.cz,
-        len.brown@intel.com
-Date: Sat, 08 Jun 2013 10:37:18 +0800
-In-Reply-To: <2994160.MkjLhsn0bK@vostro.rjw.lan>
-References: <1370593232-3602-1-git-send-email-shuox.liu@intel.com>
-	 <4500200.LnlZUcN9aW@vostro.rjw.lan>
-	 <1370655363.4432.87.camel@ymzhang.sh.intel.com>
-	 <2994160.MkjLhsn0bK@vostro.rjw.lan>
-Organization: Intel.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751203Ab3FHChl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 22:37:41 -0400
+Received: from mail-db9lp0251.outbound.messaging.microsoft.com ([213.199.154.251]:51008
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750930Ab3FHChk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jun 2013 22:37:40 -0400
+X-Greylist: delayed 910 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Jun 2013 22:37:40 EDT
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275dhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1e23h1155h)
+X-WSS-ID: 0MO1YLA-01-6JZ-02
+X-M-MSG: 
+From: Jacob Shin <jacob.shin@amd.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Borislav Petkov <bp@alien8.de>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>, Jacob Shin <jacob.shin@amd.com>
+Subject: [PATCH V3 0/2] x86/microcode/amd: early loading fixes
+Date: Fri, 7 Jun 2013 21:22:18 -0500
+Message-ID: <1370658140-5299-1-git-send-email-jacob.shin@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-06-08 at 03:52 +0200, Rafael J. Wysocki wrote:
-> On Saturday, June 08, 2013 09:36:03 AM Yanmin Zhang wrote:
-> > On Sat, 2013-06-08 at 03:30 +0200, Rafael J. Wysocki wrote:
-> > > On Friday, June 07, 2013 06:16:25 PM Greg KH wrote:
-> > > > On Sat, Jun 08, 2013 at 08:42:12AM +0800, Yanmin Zhang wrote:
-> > > > > On Fri, 2013-06-07 at 12:36 +0200, Rafael J. Wysocki wrote:
-> > > > > > On Friday, June 07, 2013 04:20:30 PM shuox.liu@intel.com wrote:
-> > > > > > > dpm_run_callback is used in other stages of power states changing.
-> > > > > > > It provides debug info message and time measurement when call these
-> > > > > > > callback. We also want to benefit ->prepare and ->complete.
-> > > > > > > 
-> > > > > > > [PATCH 1/2] PM: use dpm_run_callback in device_prepare
-> > > > > > > [PATCH 2/2] PM: add dpm_run_callback_void and use it in device_complete
-> > > > > > 
-> > > > > > Is this an "Oh, why don't we do that?" series, or is it useful for anything
-> > > > > > in practice?  I'm asking, because we haven't added that stuff to start with
-> > > > > > since we didn't see why it would be useful to anyone.
-> > > > > > 
-> > > > > > And while patch [1/2] reduces the code size (by 1 line), so I can see some
-> > > > > > (tiny) benefit from applying it, patch [2/2] adds more code and is there any
-> > > > > > paractical reason?
-> > > > > Sometimes, suspend-to-ram path spends too much time (either suspend slowly
-> > > > > or wakeup slowly) and we need optimize it.
-> > > > > With the 2 patches, we could collect initcall_debug printk info and manually
-> > > > > check what prepare/complete callbacks consume too much time.
-> > > > 
-> > > > But initcall information is for initialization stuff, not suspend/resume
-> > > > things, right?  Doesn't the existing tools for parsing this choke if it
-> > > > sees the information at suspend/resume time?
-> > > 
-> > > We've been using that for suspend/resume for quite some time too, but not
-> > > for the prepare/complete phases (because we still believe that's not really
-> > > useful for them). 
-> > > 
-> > > Well, I'll be handling patches changing code under drivers/base/power,
-> > > I promise. :-)
-> > > 
-> > > I've been doing that for quite a few years now ...
-> > Yes, indeed. Power is one of the most important features on embedded devices.
-> > Lots of smart phones don't really go through the full cycles of suspend-to-ram.
-> > We are following the full steps of the suspend.
-> 
-> But if you go through the code, you'll see that alomost no drivers actually
-> implemet .prepare() and .complete().  Some subsystems do, but they really don't
-> take too much time to execute.  Which means that your patches with
-> initcall_debug will add quite a pile of useless garbage to the kernel log
-Does that mean we need add more log levels around such info instead of just having or
-not having?
+This patchset addreses two problems with early loading on AMD.
 
-Yanmin
+First, feedback from Yinghai that find_ucode_in_initrd() should be
+marked __init:
+  https://lkml.org/lkml/2013/6/4/695
+
+And second, feedback from Henrique that Intel early loading supports
+multiple microcode firmware concatenated together, whereas the current
+AMD implementation lacks this support:
+  https://lkml.org/lkml/2013/5/31/4
+
+V3:
+* style fix -- reduce multiple if statements into a single one
+
+V2:
+* test for !initrd_start before using it
+* use __pa() instead of __pa_nodebug() on AP load
+* fixed calculation of start offset and size of the microcode container file
+
+Jacob Shin (2):
+  x86/microcode/amd: make find_ucode_in_initrd() __init
+  x86/microcode/amd: allow multiple families' bin files appended
+    together
+
+ arch/x86/kernel/microcode_amd_early.c |  170 ++++++++++++++++++++++++---------
+ 1 file changed, 125 insertions(+), 45 deletions(-)
+
+-- 
+1.7.9.5
 
 
