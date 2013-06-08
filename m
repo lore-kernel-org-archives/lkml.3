@@ -1,53 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751286Ab3FHDCm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 23:02:42 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:11298
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751059Ab3FHDCl (ORCPT
+	id S1751324Ab3FHDPr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 23:15:47 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:53217 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab3FHDPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 23:02:41 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(z551biz98dI146fI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Sat, 8 Jun 2013 11:02:41 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Mike Turquette <mturquette@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH RFC 0/3] clk: dt: bindings for mux & divider clocks
-Message-ID: <20130608030240.GB22134@S2101-09.ap.freescale.net>
-References: <1370281990-15090-1-git-send-email-mturquette@linaro.org>
- <20130607055128.GA20780@S2101-09.ap.freescale.net>
- <20130607175254.10233.7661@quantum>
+	Fri, 7 Jun 2013 23:15:44 -0400
+Message-ID: <51B2A1D9.6060306@gmail.com>
+Date: Sat, 08 Jun 2013 11:15:37 +0800
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130607175254.10233.7661@quantum>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+To: Gleb Natapov <gleb@redhat.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH] KVM: x86: fix missed memory synchronization when patch hypercall
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 10:52:54AM -0700, Mike Turquette wrote:
-> Yes, there was a time when I was firmly against doing such a thing.
-> However I'm not sure it is so bad now.  More and more SoCs are going to
-> keep getting merged into the kernel and that just means more and more
-> clock data.  Perhaps DT is best suited to handle this bloat.  I broke
-> the clock data out into a separate file so that it didn't overwhelm the
-> existing omap4.dtsi.
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 
-I'm actually more concerned by run-time impact.  Any of_find_node_*()
-call will possibly have to scan all those hundreds of nodes to find the
-desired one.  Anyway, it's an OMAP folks decision, and the impact might
-not be that much on those fast CPUs.
+Currently, memory synchronization is missed in emulator_fix_hypercall,
+please see the commit 758ccc89b83
+(KVM: x86: drop calling kvm_mmu_zap_all in emulator_fix_hypercall)
 
-Shawn
+This patch fixes it by introducing kvm_vcpus_hang_on_page_start() and
+kvm_vcpus_hang_on_page_end which unmap the patched page from guest
+and use kvm_flush_remote_tlbs() as the serializing instruction to
+ensure the memory coherence
+[ The SDM said that INVEPT, INVVPID and MOV (to control register, with
+  the exception of MOV CR8) are the serializing instructions. ]
 
-> 
-> Either way I marked this series as RFC precisely due to your point.  I
-> want feedback on how the OMAP folks feel about this.  So far no has has
-> NACKed it ;-)
+The mmu-lock is held during host patches the page so that it stops vcpus
+to fix its further page fault
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/mmu.c | 25 +++++++++++++++++++++++++
+ arch/x86/kvm/mmu.h |  3 +++
+ arch/x86/kvm/x86.c |  7 +++++++
+ 3 files changed, 35 insertions(+)
+
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 7d50a2d..35cd0b6 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -4536,6 +4536,31 @@ int kvm_mmu_get_spte_hierarchy(struct kvm_vcpu *vcpu, u64 addr, u64 sptes[4])
+ }
+ EXPORT_SYMBOL_GPL(kvm_mmu_get_spte_hierarchy);
+
++/*
++ * Force vcpu to hang when it is trying to access the specified page.
++ *
++ * kvm_vcpus_hang_on_page_start and kvm_vcpus_hang_on_page_end should
++ * be used in pairs and they are currently used to sync memory access
++ * between vcpus when host cross-modifies the code segment of guest.
++ *
++ * We unmap the page from the guest and do memory synchronization by
++ * kvm_flush_remote_tlbs() under the protection of mmu-lock. If vcpu
++ * accesses the page, it will trigger #PF and be blocked on mmu-lock.
++ */
++void kvm_vcpus_hang_on_page_start(struct kvm *kvm, gfn_t gfn)
++{
++	spin_lock(&kvm->mmu_lock);
++
++	/* kvm_flush_remote_tlbs() can act as serializing instruction. */
++	if (kvm_unmap_hva(kvm, gfn_to_hva(kvm, gfn)))
++		kvm_flush_remote_tlbs(kvm);
++}
++
++void kvm_vcpus_hang_on_page_end(struct kvm *kvm)
++{
++	spin_unlock(&kvm->mmu_lock);
++}
++
+ void kvm_mmu_destroy(struct kvm_vcpu *vcpu)
+ {
+ 	ASSERT(vcpu);
+diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
+index 5b59c57..35910be 100644
+--- a/arch/x86/kvm/mmu.h
++++ b/arch/x86/kvm/mmu.h
+@@ -115,4 +115,7 @@ static inline bool permission_fault(struct kvm_mmu *mmu, unsigned pte_access,
+ }
+
+ void kvm_mmu_invalidate_zap_all_pages(struct kvm *kvm);
++
++void kvm_vcpus_hang_on_page_start(struct kvm *kvm, gfn_t gfn);
++void kvm_vcpus_hang_on_page_end(struct kvm *kvm);
+ #endif
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 9e4afa7..776bf1a 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5528,8 +5528,15 @@ static int emulator_fix_hypercall(struct x86_emulate_ctxt *ctxt)
+ 	struct kvm_vcpu *vcpu = emul_to_vcpu(ctxt);
+ 	char instruction[3];
+ 	unsigned long rip = kvm_rip_read(vcpu);
++	gpa_t gpa;
++
++	gpa = kvm_mmu_gva_to_gpa_fetch(vcpu, rip, NULL);
++	if (gpa == UNMAPPED_GVA)
++		return X86EMUL_PROPAGATE_FAULT;
+
++	kvm_vcpus_hang_on_page_start(vcpu->kvm, gpa_to_gfn(gpa));
+ 	kvm_x86_ops->patch_hypercall(vcpu, instruction);
++	kvm_vcpus_hang_on_page_end(vcpu->kvm);
+
+ 	return emulator_write_emulated(ctxt, rip, instruction, 3, NULL);
+ }
+-- 
+1.8.1.4
 
