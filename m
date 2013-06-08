@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995Ab3FHKFv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 06:05:51 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:54235 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751857Ab3FHKFu (ORCPT
+	id S1752033Ab3FHKJB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 06:09:01 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:61367 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935Ab3FHKI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 06:05:50 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Emilio Lopez <emilio@elopez.com.ar>, kevin@allwinnertech.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 0/4] Add external interrupt support for Allwinner SoCs
-Date: Sat,  8 Jun 2013 12:05:42 +0200
-Message-Id: <1370685946-3718-1-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.8.3
+	Sat, 8 Jun 2013 06:08:57 -0400
+X-Spam-Score: -100.8
+Message-ID: <51B30285.6020503@asianux.com>
+Date: Sat, 08 Jun 2013 18:08:05 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: rth@twiddle.net, ink@jurassic.park.msu.ru, mattst88@gmail.com,
+        "dhowells@redhat.com" <dhowells@redhat.com>, tony.luck@intel.com,
+        fenghua.yu@intel.com, yasutake.koichi@jp.panasonic.com
+CC: linux-alpha@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-ia64@vger.kernel.org, linux-am33-list@redhat.com,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: [Suggestion] arch/*/include/asm/bitops.h: about __set_bit() API.
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+Hello Maintainers:
 
-This patch adds the support for the external interrupt sources found in
-the PIO IP of the Allwinner SoCs.
 
-This IP handles up to 32 external interrupt source, that are exposed
-through a particular pin function on some pins handled by the PIO.
+Several architectures have different __set_bit() API to others, in
+standard API, 2nd param of __set_bit() is 'unsigned long *', but:
 
-We thus need to change the muxing to enable these interrupts, which
-leads to some additional logic.
+  in 'min10300', it is 'unsigned char *',
+  in 'ia64' and 'alpha', they are 'int' or 'unsigned int'.
 
-Thanks,
-Maxime
+If another sub-systems did not notice it, it may lead them to make
+mistakes.
 
-Maxime Ripard (4):
-  pinctrl: sunxi: Search the description array by pin id
-  pinctrl: sunxi: Add external interrupts support
-  pinctrl: sunxi: Add external interrupt functions
-  ARM: sunxi: dt: Register the pio node as interrupt controller
+It seems related maintainer intended to implement it like that.
 
- arch/arm/boot/dts/sun4i-a10.dtsi |   2 +
- arch/arm/boot/dts/sun5i-a13.dtsi |   2 +
- drivers/pinctrl/pinctrl-sunxi.c  | 307 +++++++++++++++++++++++++++++++++------
- drivers/pinctrl/pinctrl-sunxi.h  |  68 +++++++++
- 4 files changed, 331 insertions(+), 48 deletions(-)
+So could related maintainers provide the reason for it, so more guys
+(e.g. me) can learn about it (at least can avoid related mistakes).
 
+
+The related information in arch sub-system:
+
+using 'unsigned char *':
+  ./mn10300/include/asm/bitops.h:28:#define __set_bit(nr, addr)					\
+
+using 'unsigned int *', implicitly: 
+  ./ia64/include/asm/bitops.h:63:__set_bit (int nr, volatile void *addr)
+
+using 'int *', implicitly: (need use 'unsigned', at least)
+  ./alpha/include/asm/bitops.h:49:__set_bit(unsigned long nr, volatile void * addr)
+
+using 'unsigned long *' implicitly:
+  ./frv/include/asm/bitops.h:164:static inline void __set_bit(unsigned long nr, volatile void *addr)
+  
+standard API:  
+  ./h8300/include/asm/bitops.h:74:#define __set_bit(nr,addr)    set_bit((nr),(addr))
+  ./m68k/include/asm/bitops.h:67:#define __set_bit(nr, vaddr)	set_bit(nr, vaddr)
+  ./arc/include/asm/bitops.h:293:static inline void __set_bit(unsigned long nr, volatile unsigned long *m)
+  ./sh/include/asm/bitops-op32.h:20:static inline void __set_bit(int nr, volatile unsigned long *addr)
+  ./hexagon/include/asm/bitops.h:151:static inline void __set_bit(int nr, volatile unsigned long *addr)
+  ./s390/include/asm/bitops.h:212:static inline void __set_bit(unsigned long nr, volatile unsigned long *ptr)
+  ./x86/include/asm/bitops.h:84:static inline void __set_bit(int nr, volatile unsigned long *addr)
+  (others use 'generic')
+
+
+Thanks.
 -- 
-1.8.3
+Chen Gang
 
+Asianux Corporation
