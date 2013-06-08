@@ -1,67 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855Ab3FHJIx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 05:08:53 -0400
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:40494 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583Ab3FHJIv (ORCPT
+	id S1751875Ab3FHJNS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 05:13:18 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:49131 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751771Ab3FHJNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 05:08:51 -0400
+	Sat, 8 Jun 2013 05:13:15 -0400
+Date: Sat, 8 Jun 2013 11:13:14 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: Rob Landley <rob@landley.net>
+Cc: Andreas Mohr <andi@lisas.de>, Kris Rusocki <kszysiu@braxis.org>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: cover CONFIG_BINFMT_SCRIPT in init.txt
+Message-ID: <20130608091314.GA5027@rhlx01.hs-esslingen.de>
+References: <20130603202656.GA1102@rhlx01.hs-esslingen.de>
+ <1370568800.2776.75@driftwood>
 MIME-Version: 1.0
-In-Reply-To: <4247099.i8S79t0Pua@flatron>
-References: <CAPweEDx3mAy40BZrzrKPRbvg7vKMj7KevDQ3m_v4p6Yo50eSGg@mail.gmail.com>
-	<20130607205940.4816fed5@skate>
-	<CAPweEDxtC+OamcpVEQ3BULbN88hSJzKoi0fkNLBAdZD04LQCNQ@mail.gmail.com>
-	<4247099.i8S79t0Pua@flatron>
-Date: Sat, 8 Jun 2013 10:08:50 +0100
-Message-ID: <CAPweEDwON7x-FrqUrvKDNXu3nCYOgrEzY9V5q8zxvoe6kWKCtA@mail.gmail.com>
-Subject: Re: [Arm-netbook] getting allwinner SoC support upstream (was Re:
- Uploading linux (3.9.4-1))
-From: "luke.leighton" <luke.leighton@gmail.com>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        debian-arm@lists.debian.org, "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        debian-kernel@lists.debian.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370568800.2776.75@driftwood>
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 8, 2013 at 9:28 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+On Thu, Jun 06, 2013 at 08:33:20PM -0500, Rob Landley wrote:
+> No one person is an expert in every file in Documentation. My big
+> todo items are centered around librarian work: reorganizing the
+> layout of the directory so it's not a giant heap with everybody in
+> the world dumping stuff into the root directory, or weird little
+> crevices like pti/ and pps/ that have their own directory with one
+> file in it.
 
-> Now that the discussion went off from "you stupid kernel developers
+Indeed, layout in kernel could be improved somewhat.
+Would be nice to find a layout that's suitably organized
+and more or less tries to *match* a good future
+(since it does not quite seem to exist yet) layout in Kconfig areas
+(where it's increasingly difficult to find things easily
+due to number of possibilities growing massively thanks to many
+new drivers and not enough obvious higher-level abstraction).
+Once you are asked to go beyond the third page in specific
+dialog-based menuconfig sections (e.g. drivers)
+you might just as well choose to enter minotaur labyrinth... :)
+Of course that's needed for manual changes only (make oldconfig does the rest),
+but it remains sufficiently painful.
 
- *lol*.  i get that summary ["you said people were stupid!!!"] a lot.
-i don't quite understand where it comes from, otherwise i would stop
-doing it :)
+> Unfortunately, Documentation is the greatest source of bikeshedding
+> in the kernel. Even as the directory's nominal maintainer, I can't
+> say "translations don't belong in there, they belong on the web"
+> because Greg KH thinks they do so he'll check them in anyway. And
+> then nobody maintains them because anybody who can read the english
+> versions (and thus update the translations) doesn't need the
+> translations.
 
-> adopted DeviceTree without even asking a closed company about their
-> proprietary solution, which does the same" to something a bit more
-> constructive, let me point some of the benefits.
+Rock <-> hard place. :)
 
-> [snip...]
+The question here might simply be: what's Best Practice (tm) for
+dealing with translations? Unless that (I'm sure...) happens to not exist... ;)
 
- ahh, magic.  these have gone straight into that proposal.  i think
-the best ones - the gems - are the test-coverage and formally allowing
-public interaction.
+> There's functional stuff in there like the devicetree bindings.
+> There's a Makefile that compiles stuff under Documentation, and not
+> just the htmldocs but actual code. I still don't really know why...
 
- the test coverage because it will reduce the risk of errors in the
-silicon [you never know when developing both hardware and software
-where the bug might be] as well as reduce the development time and
-development costs.
+Huh? Wow.
 
- the public interaction (which i was going to ask thomas and maxime
-about, this morning) because it means a much faster feedback loop.
+But then a
+git log -p Documentation/Makefile
+easily answers it:
+it's exclusively for "documentation-side" sample source files,
+to ensure that they always remain correctly buildable/working samples
+of source code.
 
- i've been trying to think of ways to link "if you do X it will result
-in more sales and reduce risk" to the discussion, and i think you
-finally hit it tomasz, so thank you.
+> Unfortunately, I only really get time to deal with this sort of
+> thing in the downtime between contracts, and last time I had a gap
+> the massive barn-door-locking after the kernel.org breakin still had
+> my account disabled because I hadn't been to an in-person conference
+> to get a new pgp key signed in years. (And now that I've been to a
+> conference and gotten one signed, I need to sit down and write a new
+> rsync replacement on top of kup because non-security people wrote a
+> bespoke security wrapper for kernel.org to replace shell access,
+> which means my old rsync script that updated http://kernel.org/doc
+> needs to be replaced with a rube goldberg monstrosity to do the same
+> thing in a much more complicated and less efficient way.)
 
-l.
+Ouch.
+
+Count me in on the huge "people in need of sufficiently recognized pgp signing"
+list, though ;)
+
+Andreas Mohr
+
+-- 
+GNU/Linux. It's not the software that's free, it's you.
