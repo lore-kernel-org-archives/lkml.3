@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab3FHMZv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 08:25:51 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:55667 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752212Ab3FHMZs (ORCPT
+	id S1752564Ab3FHMZe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 08:25:34 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:50571 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752481Ab3FHMZX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 08:25:48 -0400
+	Sat, 8 Jun 2013 08:25:23 -0400
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: jaegeuk.kim@samsung.com
 Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
         Namjae Jeon <namjae.jeon@samsung.com>,
         Pankaj Kumar <pankaj.km@samsung.com>
-Subject: [PATCH 4/4] f2fs: optimise the truncate_data_blocks_range() range.
-Date: Sat,  8 Jun 2013 21:25:40 +0900
-Message-Id: <1370694340-2842-1-git-send-email-linkinjeon@gmail.com>
+Subject: [PATCH 2/4] f2fs: reorganise the function get_victim_by_default
+Date: Sat,  8 Jun 2013 21:25:16 +0900
+Message-Id: <1370694316-2772-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,45 +23,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namjae Jeon <namjae.jeon@samsung.com>
 
-The function truncate_data_blocks_range() decrements the valid
-block count of inode via dec_valid_block_count(). Since this
-function updates the i_blocks field of inode, we can update this
-field once we have calculated total the number of blocks
-to be freed.
+Fix the function get_victim_by_default, where it checks
+for the condition  that p.min_segno != NULL_SEGNO as
+shown:
 
-Therefore we can decrement valid blocks outside of the for loop.
+if (p.min_segno != NULL_SEGNO)
+           goto got_it;
 
-if (nr_free) {
-+dec_valid_block_count(sbi, dn->inode, nf_free)
-                set_page_dirty(dn->node_page);
-                sync_inode_page(dn);
-        }
-'nr_free' tells the total number of blocks freed.So, we can
-just directly pass this value to dec_valid_block_count() and update
-the i_blocks.
+and if above condition is true then
+
+got_it:
+        if (p.min_segno != NULL_SEGNO) {
+
+So this condition is being checked twice. Hence move the goto
+statement after the if condition so that duplication of condition
+check is avoided.
+
+Also this function makes a call to get_max_cost() to compute
+the max cost based on the f2fs_sbi_info and victim policy. Since
+get_max_cost depends on on three parameters of victim_sel_policy
+=> alloc_mode, gc_mode & ofs_unit, once this victim policy is
+initialised, these value will not change till the execution
+time of get_victim_by_default() & also f2fs_sbi_info structure
+parameters will not change.
+
+Hence making calls to get_max_cost() in while loop does not seems to
+be a good point. Instead we can call it once in begining and store
+the results in local variable, which later can serve our purpose
+for comparing the cost with max cost inside the while loop.
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
 ---
- fs/f2fs/file.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/f2fs/gc.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index 6071ff5..1c5362b 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -185,10 +185,10 @@ int truncate_data_blocks_range(struct dnode_of_data *dn, int count)
+diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
+index ddc2c67..3a9df36 100644
+--- a/fs/f2fs/gc.c
++++ b/fs/f2fs/gc.c
+@@ -241,14 +241,14 @@ static int get_victim_by_default(struct f2fs_sb_info *sbi,
+ {
+ 	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
+ 	struct victim_sel_policy p;
+-	unsigned int secno;
++	unsigned int secno, max_cost;
+ 	int nsearched = 0;
  
- 		update_extent_cache(NULL_ADDR, dn);
- 		invalidate_blocks(sbi, blkaddr);
--		dec_valid_block_count(sbi, dn->inode, 1);
- 		nr_free++;
+ 	p.alloc_mode = alloc_mode;
+ 	select_policy(sbi, gc_type, type, &p);
+ 
+ 	p.min_segno = NULL_SEGNO;
+-	p.min_cost = get_max_cost(sbi, &p);
++	p.min_cost = max_cost = get_max_cost(sbi, &p);
+ 
+ 	mutex_lock(&dirty_i->seglist_lock);
+ 
+@@ -287,7 +287,7 @@ static int get_victim_by_default(struct f2fs_sb_info *sbi,
+ 			p.min_cost = cost;
+ 		}
+ 
+-		if (cost == get_max_cost(sbi, &p))
++		if (cost == max_cost)
+ 			continue;
+ 
+ 		if (nsearched++ >= MAX_VICTIM_SEARCH) {
+@@ -295,8 +295,8 @@ static int get_victim_by_default(struct f2fs_sb_info *sbi,
+ 			break;
+ 		}
  	}
- 	if (nr_free) {
-+		dec_valid_block_count(sbi, dn->inode, nr_free);
- 		set_page_dirty(dn->node_page);
- 		sync_inode_page(dn);
- 	}
+-got_it:
+ 	if (p.min_segno != NULL_SEGNO) {
++got_it:
+ 		if (p.alloc_mode == LFS) {
+ 			secno = GET_SECNO(sbi, p.min_segno);
+ 			if (gc_type == FG_GC)
 -- 
 1.7.9.5
 
