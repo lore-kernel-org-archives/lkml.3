@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751489Ab3FHCSo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 22:18:44 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.246]:35606 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751052Ab3FHCSn (ORCPT
+	id S1751718Ab3FHCTV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 22:19:21 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:61040 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab3FHCTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 22:18:43 -0400
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <linux@arm.linux.org.uk>, <linux@maxim.org.za>, <nicolas.ferre@atmel.com>,
-        <plagnioj@jcrosoft.com>, <linux-kernel@vger.kernel.org>,
-        <wenyou.yang@atmel.com>
-Subject: [PATCH] Change the internal SRAM memory type MT_MEMORY_NONCACHED
-Date: Sat, 8 Jun 2013 10:17:43 +0800
-Message-ID: <1370657863-8725-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1369011911-21282-1-git-send-email-wenyou.yang@atmel.com>
-References: <1369011911-21282-1-git-send-email-wenyou.yang@atmel.com>
+	Fri, 7 Jun 2013 22:19:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1370595932-29889-1-git-send-email-adam.lee@canonical.com>
+References: <1370593209-21358-1-git-send-email-adam.lee@canonical.com>
+	<1370595932-29889-1-git-send-email-adam.lee@canonical.com>
+Date: Sat, 8 Jun 2013 10:19:18 +0800
+Message-ID: <CAFeW=pZp_j9GdFdxM1CxoOen314HA_wwdH+uXs0UJ6KD-3fCug@mail.gmail.com>
+Subject: Re: [PATCH v2] thinkpad_acpi: return -NODEV while operating
+ uninitialized LEDs
+From: Amos Kong <kongjianjun@gmail.com>
+To: Adam Lee <adam.lee@canonical.com>
+Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        ibm-acpi-devel@lists.sourceforge.net,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Alex Hung <alex.hung@canonical.com>, Bjorn Mork <bjorn@mork.no>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because MT_DEVICE is not executable in armv7, we change
-the internal SRAM memory type to MT_MEMORY_NONCACHED.
-As it seems that caching this internal SRAM memory is not necessary,
-we chose the this memory type.
+On Fri, Jun 7, 2013 at 5:05 PM, Adam Lee <adam.lee@canonical.com> wrote:
+>
+> Not all 0-15 LEDs are available for all models, sometimes it's even not
+> safe. This patch return -NODEV while operating uninitialized LEDs.
+>
+> Signed-off-by: Adam Lee <adam.lee@canonical.com>
+> ---
+>  drivers/platform/x86/thinkpad_acpi.c |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+> index 54d31c0..d2ac4e8 100644
+> --- a/drivers/platform/x86/thinkpad_acpi.c
+> +++ b/drivers/platform/x86/thinkpad_acpi.c
+> @@ -5401,9 +5401,12 @@ static int led_write(char *buf)
+>                 return -ENODEV;
+>
+>         while ((cmd = next_cmd(&buf))) {
+> -               if (sscanf(cmd, "%d", &led) != 1 || led < 0 || led > 15)
+> +               if (sscanf(cmd, "%d", &led) != 1 || led < 0 || led > (TPACPI_LED_NUMLEDS -1))
+>                         return -EINVAL;
+>
+> +               if (!tpacpi_leds[led].led)
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
----
- arch/arm/mach-at91/setup.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-index a33d4b5..98d55ef 100644
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@ -84,7 +84,7 @@ void __init at91_init_sram(int bank, unsigned long base, unsigned int length)
- 
- 	desc->pfn = __phys_to_pfn(base);
- 	desc->length = length;
--	desc->type = MT_DEVICE;
-+	desc->type = MT_MEMORY_NONCACHED;
- 
- 	pr_info("AT91: sram at 0x%lx of 0x%x mapped at 0x%lx\n",
- 		base, length, desc->virtual);
--- 
-1.7.9.5
+The .led filed might be set to '0' in led_init(), how about set the
+uninitiated .led to -1? and check by "if (tpacpi_leds[led].led < 0)"
 
+        for (i = 0; i < TPACPI_LED_NUMLEDS; i++) {
+                if (!tpacpi_is_led_restricted(i) &&
+                    test_bit(i, &useful_leds)) {
+                        rc = tpacpi_init_led(i);
+                        if (rc < 0) {
+                                led_exit();
+                                return rc;
+-                       }
++                       } else
++                               tpacpi_leds[led].led = -1;
+
+                } else tpacpi_leds[led].led = -1;
+        }
+
+
+> +                       return -ENODEV;
+> +
+>                 if (strstr(cmd, "off")) {
+>                         s = TPACPI_LED_OFF;
+>                 } else if (strstr(cmd, "on")) {
+> --
+> 1.7.10.4
