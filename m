@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab3FHBPX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jun 2013 21:15:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37621 "EHLO
+	id S1757446Ab3FHBQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jun 2013 21:16:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37628 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753726Ab3FHBPU (ORCPT
+	with ESMTP id S1752900Ab3FHBQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jun 2013 21:15:20 -0400
-Date: Fri, 7 Jun 2013 18:15:18 -0700
+	Fri, 7 Jun 2013 21:16:26 -0400
+Date: Fri, 7 Jun 2013 18:16:25 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Cc: shuox.liu@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, pavel@ucw.cz, rjw@sisk.pl,
-        len.brown@intel.com, Zhang Yanmin <yanmin.zhang@intel.com>
-Subject: Re: [PATCH 1/2] PM: use dpm_run_callback in device_prepare
-Message-ID: <20130608011518.GA2819@kroah.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, shuox.liu@intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, pavel@ucw.cz,
+        len.brown@intel.com
+Subject: Re: [PATCH 0/2] Run callback of device_prepare/complete consistently
+Message-ID: <20130608011625.GB2819@kroah.com>
 References: <1370593232-3602-1-git-send-email-shuox.liu@intel.com>
- <1370593232-3602-2-git-send-email-shuox.liu@intel.com>
- <20130607173706.GA29615@kroah.com>
- <1370652235.4432.70.camel@ymzhang.sh.intel.com>
+ <2482951.doztFClhed@vostro.rjw.lan>
+ <1370652132.4432.68.camel@ymzhang.sh.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370652235.4432.70.camel@ymzhang.sh.intel.com>
+In-Reply-To: <1370652132.4432.68.camel@ymzhang.sh.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 08, 2013 at 08:43:55AM +0800, Yanmin Zhang wrote:
-> On Fri, 2013-06-07 at 10:37 -0700, Greg KH wrote:
-> > On Fri, Jun 07, 2013 at 04:20:31PM +0800, shuox.liu@intel.com wrote:
-> > > From: ShuoX Liu <shuox.liu@intel.com>
+On Sat, Jun 08, 2013 at 08:42:12AM +0800, Yanmin Zhang wrote:
+> On Fri, 2013-06-07 at 12:36 +0200, Rafael J. Wysocki wrote:
+> > On Friday, June 07, 2013 04:20:30 PM shuox.liu@intel.com wrote:
+> > > dpm_run_callback is used in other stages of power states changing.
+> > > It provides debug info message and time measurement when call these
+> > > callback. We also want to benefit ->prepare and ->complete.
 > > > 
-> > > dpm_run_callback could show more debug info around prepare stage.
+> > > [PATCH 1/2] PM: use dpm_run_callback in device_prepare
+> > > [PATCH 2/2] PM: add dpm_run_callback_void and use it in device_complete
 > > 
-> > Why?  Who needs this?  What problem does it solve?
+> > Is this an "Oh, why don't we do that?" series, or is it useful for anything
+> > in practice?  I'm asking, because we haven't added that stuff to start with
+> > since we didn't see why it would be useful to anyone.
 > > 
-> > Without answers to this, why would you expect us to accept such a
-> > change?
-> It's to provide more debug info and developers can quickly find what
-> prepare/complete callback consumes too much time.
+> > And while patch [1/2] reduces the code size (by 1 line), so I can see some
+> > (tiny) benefit from applying it, patch [2/2] adds more code and is there any
+> > paractical reason?
+> Sometimes, suspend-to-ram path spends too much time (either suspend slowly
+> or wakeup slowly) and we need optimize it.
+> With the 2 patches, we could collect initcall_debug printk info and manually
+> check what prepare/complete callbacks consume too much time.
 
-What exact debug info is this providing, and why wouldn't you say all of
-this in the original changelog information?
+But initcall information is for initialization stuff, not suspend/resume
+things, right?  Doesn't the existing tools for parsing this choke if it
+sees the information at suspend/resume time?
 
-{hint}
-
+greg k-h
