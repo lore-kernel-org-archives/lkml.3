@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab3FIQ13 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 12:27:29 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:32986 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751811Ab3FIQ1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 12:27:24 -0400
-Message-ID: <51B4ACAB.20605@interlog.com>
-Date: Sun, 09 Jun 2013 12:26:19 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1754222Ab3FIQ2o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 12:28:44 -0400
+Received: from postout2.mail.lrz.de ([129.187.255.138]:38815 "EHLO
+	postout2.mail.lrz.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811Ab3FIQ2n convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jun 2013 12:28:43 -0400
+From: "Morales, Alejandra" <alejandra.morales@tum.de>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Questions about Runtime Power Management
+Thread-Topic: Questions about Runtime Power Management
+Thread-Index: Ac5lLkRrBYfFPnaQQhqUrRlWdi6dgQ==
+Date: Sun, 9 Jun 2013 16:28:21 +0000
+Message-ID: <9E3F9C2076C45D4783F09B90D5BE77CE16B4E6@BADWLRZ-SWMBX13.ads.mwn.de>
+Accept-Language: es-ES, en-US
+Content-Language: es-ES
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.155.5.51]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: SCSI development list <linux-scsi@vger.kernel.org>
-CC: Tomas Fasth <tomfa@debian.org>, Martin Pitt <mpitt@debian.org>,
-        kumba@gentoo.org, =?ISO-8859-1?Q?Dan_Hor=E1k?= <dhorak@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, delphij@delphij.net
-Subject: [ANNOUNCE] sdparm 1.08 available
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sdparm is a command line utility designed to get and set
-SCSI device parameters (cf hdparm for ATA disks). The
-parameters are held in mode pages. Apart from SCSI devices
-(e.g. disks, tapes and enclosures) sdparm can be used on
-any device that uses a SCSI command set. Almost all CD/DVD/BD
-drives use the SCSI MMC set irrespective of the transport.
-sdparm also can decode VPD pages including the device
-identification page. Commands to start and stop the media;
-load and unload removable media and some other housekeeping
-functions are supported. sdparm supports both the Linux
-kernel 2.4, 2.6 and 3 series with ports to FreeBSD, Solaris,
-Tru64 and Windows.
+Dear all,
 
-The version tracks changes in draft standards from
-www.t10.org since January 2012.
+I am currently involved in the implementation of my master thesis, for what I am trying to create a user space power management tool. As a part of this work I am developing a kernel module, and one of the first things I need to do is getting the current power state of some devices of my computer, essentially hard drives and network devices (ethernet and wireless cards).
 
-For more information and downloads see:
-     http://sg.danny.cz/sg/sdparm.html
+For the hard drives, I get the pointers to the struct device that represents each one iterating over scsi_bus_type and selecting those whose driver is named "sd". Then, I obtain the runtime power state:
 
-ChangeLog for sdparm-1.08 [20130606] [svn: r215]
-   - device id VPD: add protocol specific port identifier
-   - control extension mpage: add max sense data length
-   - power condition mpage: FIDCPC->CCF_IDLE,
-     FSBCPC->CCF_STAND, FSTCPC->CCF_STOPP (spc4r34+)
-   - caching mpage: add SYNC_PROG field (sbc3r33)
-   - block device characteristics VPD page additions sbc3r34
-   - extended inquiry vpd page: add max supported sense data
-     length
-   - protocol-specific port information VPD page for SAS SSP,
-     persistent connection (spl3r2), power disable (spl3r3)
-   - allow --readonly with --set= and --clear=
-   - add placeholder for third party copy VPD page
-   - supply more information if a UA occurs
-   - add Makefile so scripts/sas_disk_blink installed
-   - scripts/scsi_ch_swp: new, uses sdparm and blockdev
-   - ./configure options:
-     - change --enable-no-linux-bsg to --disable-linuxbsg
-     - add --disable-scsistrings to reduce utility size
-       with non-libsgutils build
-   - point svn:externals to rev 498 of sg3_utils
-     - report sdat_ovfl bit (if set) in sense data
-     - sg_pt_linux: expand DID_ (host_byte) codes
-       - cope with a transport error plus sense data
-       - prefer major() over MAJOR() macro
-     - win32: fixes for cygwin version 1.7.17 headers
+dev->power.runtime_status;
 
-ChangeLog for sdparm-1.07 [20120121] [svn: r188]
-...
+I did a test with an external USB hard drive, checking the runtime power state before and after issuing a sleep command with hdparm -Y. The drive effectively spinned down, but the runtime power state didn't change from active to suspended.
 
+In the case of net devices, I get the corresponding structures this way:
 
-Doug Gilbert
+struct net_device *netdev = first_net_device(&init_net);
+    
+while (netdev) {
+
+        struct device *dev = &netdev->dev;
+        
+        /* code... */
+
+        netdev = next_net_device(netdev);
+}
+
+For every net_device I get its embedded struct device and then I check the same field as before, but in this case runtime power management is disabled, so I always get the device is suspended, even though it is configured and working properly. In fact, the whole device struct seems to be empty.  
+
+Taking this into account, my questions are:
+
+- Is it possible that I am not getting the correct struct device for every hardware device?
+- Am I checking the correct field of the struct dev_pm_info?
+- Do scsi device drivers implement the runtime_status updates when drives effectively change their state?
+- Is runtime power management supported by net devices?
+
+Any answer would be really appreciated. Thanks in advance.
+
+Best regards,
+
+Alejandra Morales Ruiz
+Master Thesis Student
+Technische Universität München
+Fakultät für Informatik
