@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab3FIP5D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 11:57:03 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:56087 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751401Ab3FIP5B (ORCPT
+	id S1754109Ab3FIP7j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 11:59:39 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:37212 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751844Ab3FIP7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 11:57:01 -0400
-Message-ID: <51B4A693.4080503@metafoo.de>
-Date: Sun, 09 Jun 2013 18:00:19 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Sun, 9 Jun 2013 11:59:38 -0400
 MIME-Version: 1.0
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-CC: Mark Brown <broonie@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] regmap: Add regmap_field APIs
-References: <1369753080-1929-1-git-send-email-srinivas.kandagatla@st.com>
-In-Reply-To: <1369753080-1929-1-git-send-email-srinivas.kandagatla@st.com>
-X-Enigmail-Version: 1.4.1
+Date: Sun, 9 Jun 2013 23:59:36 +0800
+Message-ID: <CALZhoSSEfXyojD70cannzG9NxvqXTw6r_L5bxT9Ew+JbFhuxKg@mail.gmail.com>
+Subject: Question regarding put_prev_task in preempted condition
+From: Lei Wen <adrian.wenl@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
-> +int regmap_field_write(struct regmap_field *field, unsigned int val)
-> +{
-> +	int field_bits;
-> +	unsigned int reg_mask;
-> +	field_bits = field->msb - field->lsb + 1;
-> +	reg_mask = ((BIT(field_bits) - 1) << field->lsb);
-> +	return regmap_update_bits(field->regmap, field->reg,
-> +				reg_mask, val << field->lsb);
+Hi Peter,
 
-Considering that you'd do the same calculations over and over again it would
-probably make more sense store the mask rather than the msb in the struct
+While I am checking the preempt related code, I find a interesting part.
+That is when preempt_schedule is called, for its preempt_count be added
+PREEMPT_ACTIVE, so in __schedule() it could not be dequeued from rq
+by deactivate_task.
 
-> +}
-> +EXPORT_SYMBOL_GPL(regmap_field_write);
+Thus in put_prev_task, which is called a little later in __schedule(), it
+would call put_prev_task_fair, which finally calls put_prev_entity.
+For current task is not dequeued from rq, so in this function, it would
+enqueue it again to the rq by __enqueue_entity.
+
+Is there any reason to do like this, since entity already is over rq,
+why need to queue it again?
+
+And if current rq's vruntime distribution like below, and vruntime with 8
+is the task that would be get preempted. So in __enqueue_entity,
+its rb_left/rb_right would be set as NULL and reinserted into this RB tree.
+Then seems to me now, the entity with vruntime of 3 would be disappeared
+from the RB tree.
+            13
+           /  \
+         8    19
+        /  \
+      3    11
+
+I am not sure whether I understand the whole process correctly...
+Would the example as above happen in our real life?
+
+Thanks,
+Lei
