@@ -1,129 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab3FIIpm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 04:45:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10595 "EHLO mx1.redhat.com"
+	id S1752933Ab3FIIxu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 04:53:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55529 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753234Ab3FIIp3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 04:45:29 -0400
-Date: Sun, 9 Jun 2013 11:45:26 +0300
+	id S1750827Ab3FIIxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jun 2013 04:53:47 -0400
+Date: Sun, 9 Jun 2013 11:53:42 +0300
 From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH] KVM: x86: fix missed memory synchronization when patch
- hypercall
-Message-ID: <20130609084526.GH4725@redhat.com>
-References: <51B2A1D9.6060306@gmail.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v8 00/11] KVM: MMU: fast zap all shadow pages
+Message-ID: <20130609085342.GI4725@redhat.com>
+References: <1369960590-14138-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51B2A1D9.6060306@gmail.com>
+In-Reply-To: <1369960590-14138-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 08, 2013 at 11:15:37AM +0800, Xiao Guangrong wrote:
-> From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+On Fri, May 31, 2013 at 08:36:19AM +0800, Xiao Guangrong wrote:
+> Hi Gleb, Paolo, Marcelo,
 > 
-> Currently, memory synchronization is missed in emulator_fix_hypercall,
-> please see the commit 758ccc89b83
-> (KVM: x86: drop calling kvm_mmu_zap_all in emulator_fix_hypercall)
+> I have putted the potential controversial patches to the latter that are
+> patch 8 ~ 10, patch 11 depends on patch 9. Other patches are fully reviewed,
+> I think its are ready for being merged. If not luck enough, further discussion
+> is needed, could you please apply that patches first? :)
 > 
-> This patch fixes it by introducing kvm_vcpus_hang_on_page_start() and
-> kvm_vcpus_hang_on_page_end which unmap the patched page from guest
-> and use kvm_flush_remote_tlbs() as the serializing instruction to
-> ensure the memory coherence
-> [ The SDM said that INVEPT, INVVPID and MOV (to control register, with
->   the exception of MOV CR8) are the serializing instructions. ]
+> Thank you in advance!
 > 
-> The mmu-lock is held during host patches the page so that it stops vcpus
-> to fix its further page fault
+> Some points are raised during discussion but missed in this version:
+> 1) Gleb's idea that skip obsolete pages in the hast list walker
 > 
-I have a patch to implement is much simple and in generic way, not
-relying on MMU internals.
+>    Unfortunately, it is not safe. There has a window between updating
+>    valid-gen and reloading mmu, in that window, the obsolete page can
+>    be used by vcpu, but the guest page table fail to be write-protected
+>    (since the obsolete page is skipped in mmu_need_write_protect()).
+> 
+Can you elaborate on how this can happen. valid_gen is updated under
+mmu_lock and reloading of mmus happens under the same lock, so for all
+other vcpus this should look like atomic thing.
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 6402951..49774ab 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -5517,7 +5517,7 @@ out:
- }
- EXPORT_SYMBOL_GPL(kvm_emulate_hypercall);
- 
--static int emulator_fix_hypercall(struct x86_emulate_ctxt *ctxt)
-+static int emulator_fix_hypercall_cb(void *ctxt)
- {
- 	struct kvm_vcpu *vcpu = emul_to_vcpu(ctxt);
- 	char instruction[3];
-@@ -5528,6 +5528,14 @@ static int emulator_fix_hypercall(struct x86_emulate_ctxt *ctxt)
- 	return emulator_write_emulated(ctxt, rip, instruction, 3, NULL);
- }
- 
-+static int emulator_fix_hypercall(struct x86_emulate_ctxt *ctxt)
-+{
-+	struct kvm_vcpu *vcpu = emul_to_vcpu(ctxt);
-+	return kvm_exec_with_stopped_vcpu(vcpu->kvm,
-+			emulator_fix_hypercall_cb, ctxt);
-+}
-+
-+
- /*
-  * Check if userspace requested an interrupt window, and that the
-  * interrupt window is open.
-@@ -5761,6 +5769,10 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
- 			kvm_deliver_pmi(vcpu);
- 		if (kvm_check_request(KVM_REQ_SCAN_IOAPIC, vcpu))
- 			vcpu_scan_ioapic(vcpu);
-+		if (kvm_check_request(KVM_REQ_STOP_VCPU, vcpu)){
-+			mutex_lock(&vcpu->kvm->lock);
-+			mutex_unlock(&vcpu->kvm->lock);
-+		}
- 	}
- 
- 	if (kvm_check_request(KVM_REQ_EVENT, vcpu) || req_int_win) {
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index e3aae6d..6c9361a 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -125,6 +125,7 @@ static inline bool is_error_page(struct page *page)
- #define KVM_REQ_EPR_EXIT          20
- #define KVM_REQ_SCAN_IOAPIC       21
- #define KVM_REQ_GLOBAL_CLOCK_UPDATE 22
-+#define KVM_REQ_STOP_VCPU         23
- 
- #define KVM_USERSPACE_IRQ_SOURCE_ID		0
- #define KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID	1
-@@ -576,6 +577,7 @@ void kvm_flush_remote_tlbs(struct kvm *kvm);
- void kvm_reload_remote_mmus(struct kvm *kvm);
- void kvm_make_mclock_inprogress_request(struct kvm *kvm);
- void kvm_make_scan_ioapic_request(struct kvm *kvm);
-+int kvm_exec_with_stopped_vcpu(struct kvm *kvm, int (*cb)(void *), void *data);
- 
- long kvm_arch_dev_ioctl(struct file *filp,
- 			unsigned int ioctl, unsigned long arg);
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 1580dd4..531e765 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -222,6 +222,18 @@ void kvm_make_scan_ioapic_request(struct kvm *kvm)
- 	make_all_cpus_request(kvm, KVM_REQ_SCAN_IOAPIC);
- }
- 
-+int kvm_exec_with_stopped_vcpu(struct kvm *kvm, int (*cb)(void *), void *data)
-+{
-+	int r;
-+
-+	mutex_lock(&kvm->lock);
-+	make_all_cpus_request(kvm, KVM_REQ_STOP_VCPU);
-+	r = cb(data);
-+	mutex_unlock(&kvm->lock);
-+
-+	return r;
-+}
-+
- int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id)
- {
- 	struct page *page;
+>    Instead, we can only skip the zapped-obsolete page
+>    (is_obsolete_sp(sp) && sp->role.invalid)), the current code has already
+>    skip them but put the comment around the hash list walker to warn the
+>    further development.
+> 
+> 2) Marcelo's comment that obsolete pages can cause the number of shadow page
+>    greater than the n_max_mmu_pages
+> 
+>    I am not sure this is really a problem, it only exists in the really tiny
+>    window and the page-reclaim path are able to handle the obsolete pages.
+>    Furthermore, we can properly reduce n_max_mmu_pages to make that window
+>    more tiny.
+> 
+>    Anyway, like commit 5d21881432 shows that "the mmu counters are for
+>    beancounting purposes only", maybe that window is allowed.
+> 
+> Changlog:
+> V8:
+>   1): add some comments to explain FIFO around active_mmu_list address
+>       Marcelo's comments.
+> 
+>   2): the page-reclaim path may fail to free zapped-obsolete pages pointed
+>       out by Marcelo, the patchset fixes it by listing all zapped obsolete
+>       pages on a global list, always free page from that list first.
+> 
+>   3): address Marcelo's suggestion to move the "zap pages in batch" patch
+>       to the latter.
+> 
+>   4): drop the previous patch which introduced
+>       kvm_mmu_prepare_zap_obsolete_page(), instead, we put the comments
+>       around hash list walker to warn the user that the zapped-obsolete
+>       page still live on hash list.
+> 
+>   5): add the note into the changelog of "zap pages in batch" patch to explain
+>       the batch number is the speculative value based on Takuya's comments.
+> 
+> V7:
+>   1): separate some optimization into two patches which do not reuse
+>       the obsolete pages and collapse tlb flushes, suggested by Marcelo.
+> 
+>   2): make the patch based on Gleb's diff change which reduce
+>       KVM_REQ_MMU_RELOAD when root page is being zapped.
+> 
+>   3): remove calling kvm_mmu_zap_page when patching hypercall, investigated
+>       by Gleb.
+> 
+>   4): drop the patch which deleted page from hash list at the "prepare"
+>       time since it can break the walk based on hash list.
+> 
+>   5): rename kvm_mmu_invalidate_all_pages to kvm_mmu_invalidate_zap_all_pages.
+> 
+>   6): introduce kvm_mmu_prepare_zap_obsolete_page which is used to zap obsolete
+>       page to collapse tlb flushes.
+> 
+> V6:
+>   1): reversely walk active_list to skip the new created pages based
+>       on the comments from Gleb and Paolo.
+> 
+>   2): completely replace kvm_mmu_zap_all by kvm_mmu_invalidate_all_pages
+>       based on Gleb's comments.
+> 
+>   3): improve the parameters of kvm_mmu_invalidate_all_pages based on
+>       Gleb's comments.
+>  
+>   4): rename kvm_mmu_invalidate_memslot_pages to kvm_mmu_invalidate_all_pages
+>   5): rename zap_invalid_pages to kvm_zap_obsolete_pages
+> 
+> V5:
+>   1): rename is_valid_sp to is_obsolete_sp
+>   2): use lock-break technique to zap all old pages instead of only pages
+>       linked on invalid slot's rmap suggested by Marcelo.
+>   3): trace invalid pages and kvm_mmu_invalidate_memslot_pages()
+>   4): rename kvm_mmu_invalid_memslot_pages to kvm_mmu_invalidate_memslot_pages
+>       according to Takuya's comments.
+> 
+> V4:
+>   1): drop unmapping invalid rmap out of mmu-lock and use lock-break technique
+>       instead. Thanks to Gleb's comments.
+> 
+>   2): needn't handle invalid-gen pages specially due to page table always
+>       switched by KVM_REQ_MMU_RELOAD. Thanks to Marcelo's comments.
+> 
+> V3:
+>   completely redesign the algorithm, please see below.
+> 
+> V2:
+>   - do not reset n_requested_mmu_pages and n_max_mmu_pages
+>   - batch free root shadow pages to reduce vcpu notification and mmu-lock
+>     contention
+>   - remove the first patch that introduce kvm->arch.mmu_cache since we only
+>     'memset zero' on hashtable rather than all mmu cache members in this
+>     version
+>   - remove unnecessary kvm_reload_remote_mmus after kvm_mmu_zap_all
+> 
+> * Issue
+> The current kvm_mmu_zap_all is really slow - it is holding mmu-lock to
+> walk and zap all shadow pages one by one, also it need to zap all guest
+> page's rmap and all shadow page's parent spte list. Particularly, things
+> become worse if guest uses more memory or vcpus. It is not good for
+> scalability.
+> 
+> * Idea
+> KVM maintains a global mmu invalid generation-number which is stored in
+> kvm->arch.mmu_valid_gen and every shadow page stores the current global
+> generation-number into sp->mmu_valid_gen when it is created.
+> 
+> When KVM need zap all shadow pages sptes, it just simply increase the
+> global generation-number then reload root shadow pages on all vcpus.
+> Vcpu will create a new shadow page table according to current kvm's
+> generation-number. It ensures the old pages are not used any more.
+> 
+> Then the invalid-gen pages (sp->mmu_valid_gen != kvm->arch.mmu_valid_gen)
+> are zapped by using lock-break technique.
+> 
+> Gleb Natapov (1):
+>   KVM: MMU: reduce KVM_REQ_MMU_RELOAD when root page is zapped
+> 
+> Xiao Guangrong (10):
+>   KVM: x86: drop calling kvm_mmu_zap_all in emulator_fix_hypercall
+>   KVM: MMU: drop unnecessary kvm_reload_remote_mmus
+>   KVM: MMU: fast invalidate all pages
+>   KVM: x86: use the fast way to invalidate all pages
+>   KVM: MMU: show mmu_valid_gen in shadow page related tracepoints
+>   KVM: MMU: add tracepoint for kvm_mmu_invalidate_all_pages
+>   KVM: MMU: do not reuse the obsolete page
+>   KVM: MMU: zap pages in batch
+>   KVM: MMU: collapse TLB flushes when zap all pages
+>   KVM: MMU: reclaim the zapped-obsolete page first
+> 
+>  arch/x86/include/asm/kvm_host.h |    4 +
+>  arch/x86/kvm/mmu.c              |  128 ++++++++++++++++++++++++++++++++++++---
+>  arch/x86/kvm/mmu.h              |    1 +
+>  arch/x86/kvm/mmutrace.h         |   42 ++++++++++---
+>  arch/x86/kvm/x86.c              |   17 +----
+>  5 files changed, 161 insertions(+), 31 deletions(-)
+> 
+> -- 
+> 1.7.7.6
+
 --
 			Gleb.
