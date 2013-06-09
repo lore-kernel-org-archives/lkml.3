@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601Ab3FICYN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 22:24:13 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:45297 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752450Ab3FICTy (ORCPT
+	id S1753544Ab3FICYL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 22:24:11 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:64266 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751763Ab3FICT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 22:19:54 -0400
+	Sat, 8 Jun 2013 22:19:58 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: axboe@kernel.dk, tytso@mit.edu, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org
-Cc: Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH 11/26] block: Kill bio_iovec_idx(), __bio_iovec()
-Date: Sat,  8 Jun 2013 19:18:53 -0700
-Message-Id: <1370744348-15407-12-git-send-email-koverstreet@google.com>
+Cc: Kent Overstreet <koverstreet@google.com>, Neil Brown <neilb@suse.de>
+Subject: [PATCH 14/26] md, bcache: Remove bi_idx hacks
+Date: Sat,  8 Jun 2013 19:18:56 -0700
+Message-Id: <1370744348-15407-15-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.8.3.rc1
 In-Reply-To: <1370744348-15407-1-git-send-email-koverstreet@google.com>
 References: <1370744348-15407-1-git-send-email-koverstreet@google.com>
@@ -21,135 +21,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bio_iovec_idx() and __bio_iovec() don't have any valid uses anymore -
-previous users have been converted to bio_iovec_iter() or other methods.
+Now that drivers have been converted to the new bvec_iter primitives,
+there's no need to trim the bvec before we submit it; and we can't trim
+it once we start sharing bvecs.
 
-__BVEC_END() has to go too - the bvec array can't be used directly for
-the last biovec because we might only be using the first portion of it,
-we have to iterate over the bvec array with bio_for_each_segment() which
-checks against the current value of bi_iter.bi_size.
+It used to be that passing a partially completed bio (i.e. one with
+nonzero bi_idx) to generic_make_request() was a dangerous thing -
+various drivers would choke on such things. But with immutable biovecs
+and our new bio splitting that shares the biovecs, submitting partially
+completed bios has to work (and should work, now that all the drivers
+have been completed to the new primitives)
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Neil Brown <neilb@suse.de>
 ---
- block/blk-merge.c   | 13 +++++++++++--
- include/linux/bio.h | 26 ++++++++------------------
- 2 files changed, 19 insertions(+), 20 deletions(-)
+ drivers/md/bcache/io.c | 46 ++--------------------------------------------
+ drivers/md/md.c        | 22 ----------------------
+ 2 files changed, 2 insertions(+), 66 deletions(-)
 
-diff --git a/block/blk-merge.c b/block/blk-merge.c
-index 8940562..b53ddac 100644
---- a/block/blk-merge.c
-+++ b/block/blk-merge.c
-@@ -88,6 +88,9 @@ EXPORT_SYMBOL(blk_recount_segments);
- static int blk_phys_contig_segment(struct request_queue *q, struct bio *bio,
- 				   struct bio *nxt)
- {
-+	struct bio_vec end_bv, nxt_bv;
-+	struct bvec_iter iter;
-+
- 	if (!blk_queue_cluster(q))
- 		return 0;
+diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
+index da198da..294b4c1 100644
+--- a/drivers/md/bcache/io.c
++++ b/drivers/md/bcache/io.c
+@@ -9,48 +9,6 @@
+ #include "bset.h"
+ #include "debug.h"
  
-@@ -98,14 +101,20 @@ static int blk_phys_contig_segment(struct request_queue *q, struct bio *bio,
- 	if (!bio_has_data(bio))
- 		return 1;
+-static void bch_bi_idx_hack_endio(struct bio *bio, int error)
+-{
+-	struct bio *p = bio->bi_private;
+-
+-	bio_endio(p, error);
+-	bio_put(bio);
+-}
+-
+-static void bch_generic_make_request_hack(struct bio *bio)
+-{
+-	if (bio->bi_iter.bi_idx) {
+-		struct bio_vec bv;
+-		struct bvec_iter iter;
+-		struct bio *clone = bio_alloc(GFP_NOIO, bio_segments(bio));
+-
+-		bio_for_each_segment(bv, bio, iter)
+-			clone->bi_io_vec[clone->bi_vcnt++] = bv;
+-
+-		clone->bi_iter.bi_sector = bio->bi_iter.bi_sector;
+-		clone->bi_bdev		= bio->bi_bdev;
+-		clone->bi_rw		= bio->bi_rw;
+-		clone->bi_vcnt		= bio_segments(bio);
+-		clone->bi_iter.bi_size	= bio->bi_iter.bi_size;
+-
+-		clone->bi_private	= bio;
+-		clone->bi_end_io	= bch_bi_idx_hack_endio;
+-
+-		bio = clone;
+-	}
+-
+-	/*
+-	 * Hack, since drivers that clone bios clone up to bi_max_vecs, but our
+-	 * bios might have had more than that (before we split them per device
+-	 * limitations).
+-	 *
+-	 * To be taken out once immutable bvec stuff is in.
+-	 */
+-	bio->bi_max_vecs = bio->bi_vcnt;
+-
+-	generic_make_request(bio);
+-}
+-
+ /**
+  * bch_bio_split - split a bio
+  * @bio:	bio to split
+@@ -225,12 +183,12 @@ void bch_generic_make_request(struct bio *bio, struct bio_split_pool *p)
+ 		n->bi_private	= &s->cl;
  
--	if (!BIOVEC_PHYS_MERGEABLE(__BVEC_END(bio), __BVEC_START(nxt)))
-+	bio_for_each_segment(end_bv, bio, iter)
-+		if (end_bv.bv_len == iter.bi_size)
-+			break;
-+
-+	nxt_bv = bio_iovec(nxt);
-+
-+	if (!BIOVEC_PHYS_MERGEABLE(&end_bv, &nxt_bv))
- 		return 0;
+ 		closure_get(&s->cl);
+-		bch_generic_make_request_hack(n);
++		generic_make_request(n);
+ 	} while (n != bio);
  
- 	/*
- 	 * bio and nxt are contiguous in memory; check if the queue allows
- 	 * these two to be merged into one
+ 	continue_at(&s->cl, bch_bio_submit_split_done, NULL);
+ submit:
+-	bch_generic_make_request_hack(bio);
++	generic_make_request(bio);
+ }
+ 
+ /* Bios with headers */
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 1ed2426..20e0408 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -189,9 +189,6 @@ void md_trim_bio(struct bio *bio, int offset, int size)
+ 	 * the given offset and size.
+ 	 * This requires adjusting bi_sector, bi_size, and bi_io_vec
  	 */
--	if (BIO_SEG_BOUNDARY(q, bio, nxt))
-+	if (BIOVEC_SEG_BOUNDARY(q, &end_bv, &nxt_bv))
- 		return 1;
+-	struct bio_vec bvec;
+-	struct bvec_iter iter;
+-	int sofar = 0;
  
- 	return 0;
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 62c7293..1967b64 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -61,9 +61,6 @@
-  * various member access, note that bio_data should of course not be used
-  * on highmem page vectors
-  */
--#define bio_iovec_idx(bio, idx)	(&((bio)->bi_io_vec[(idx)]))
--#define __bio_iovec(bio)	bio_iovec_idx((bio), (bio)->bi_iter.bi_idx)
+ 	size <<= 9;
+ 	if (offset == 0 && size == bio->bi_iter.bi_size)
+@@ -202,25 +199,6 @@ void md_trim_bio(struct bio *bio, int offset, int size)
+ 	bio_advance(bio, offset << 9);
+ 
+ 	bio->bi_iter.bi_size = size;
 -
- #define __bvec_iter_bvec(bvec, iter)	(&(bvec)[(iter).bi_idx])
- 
- #define bvec_iter_page(bvec, iter)				\
-@@ -138,19 +135,16 @@ static inline void *bio_data(struct bio *bio)
-  * permanent PIO fall back, user is probably better off disabling highmem
-  * I/O completely on that queue (see ide-dma for example)
-  */
--#define __bio_kmap_atomic(bio, idx, kmtype)				\
--	(kmap_atomic(bio_iovec_idx((bio), (idx))->bv_page) +	\
--		bio_iovec_idx((bio), (idx))->bv_offset)
-+#define __bio_kmap_atomic(bio, iter)				\
-+	(kmap_atomic(bio_iovec_iter((bio), (iter)).bv_page) +	\
-+		bio_iovec_iter((bio), (iter)).bv_offset)
- 
--#define __bio_kunmap_atomic(addr, kmtype) kunmap_atomic(addr)
-+#define __bio_kunmap_atomic(addr)	kunmap_atomic(addr)
- 
- /*
-  * merge helpers etc
-  */
- 
--#define __BVEC_END(bio)		bio_iovec_idx((bio), (bio)->bi_vcnt - 1)
--#define __BVEC_START(bio)	bio_iovec_idx((bio), (bio)->bi_iter.bi_idx)
--
- /* Default implementation of BIOVEC_PHYS_MERGEABLE */
- #define __BIOVEC_PHYS_MERGEABLE(vec1, vec2)	\
- 	((bvec_to_phys((vec1)) + (vec1)->bv_len) == bvec_to_phys((vec2)))
-@@ -167,8 +161,6 @@ static inline void *bio_data(struct bio *bio)
- 	(((addr1) | (mask)) == (((addr2) - 1) | (mask)))
- #define BIOVEC_SEG_BOUNDARY(q, b1, b2) \
- 	__BIO_SEG_BOUNDARY(bvec_to_phys((b1)), bvec_to_phys((b2)) + (b2)->bv_len, queue_segment_boundary((q)))
--#define BIO_SEG_BOUNDARY(q, b1, b2) \
--	BIOVEC_SEG_BOUNDARY((q), __BVEC_END((b1)), __BVEC_START((b2)))
- 
- #define bio_io_error(bio) bio_endio((bio), -EIO)
- 
-@@ -177,9 +169,7 @@ static inline void *bio_data(struct bio *bio)
-  * before it got to the driver and the driver won't own all of it
-  */
- #define bio_for_each_segment_all(bvl, bio, i)				\
--	for (i = 0;							\
--	     bvl = bio_iovec_idx((bio), (i)), i < (bio)->bi_vcnt;	\
--	     i++)
-+	for (i = 0, bvl = (bio)->bi_io_vec; i < (bio)->bi_vcnt; i++, bvl++)
- 
- static inline void bvec_iter_advance(struct bio_vec *bv, struct bvec_iter *iter,
- 				     unsigned bytes)
-@@ -431,15 +421,15 @@ static inline void bvec_kunmap_irq(char *buffer, unsigned long *flags)
+-	/* avoid any complications with bi_idx being non-zero*/
+-	if (bio->bi_iter.bi_idx) {
+-		memmove(bio->bi_io_vec, bio->bi_io_vec+bio->bi_iter.bi_idx,
+-			(bio->bi_vcnt - bio->bi_iter.bi_idx) *
+-			sizeof(struct bio_vec));
+-		bio->bi_vcnt -= bio->bi_iter.bi_idx;
+-		bio->bi_iter.bi_idx = 0;
+-	}
+-	/* Make sure vcnt and last bv are not too big */
+-	bio_for_each_segment(bvec, bio, iter) {
+-		if (sofar + bvec.bv_len > size)
+-			bvec.bv_len = size - sofar;
+-		if (bvec.bv_len == 0) {
+-			bio->bi_vcnt = iter.bi_idx;
+-			break;
+-		}
+-		sofar += bvec.bv_len;
+-	}
  }
- #endif
+ EXPORT_SYMBOL_GPL(md_trim_bio);
  
--static inline char *__bio_kmap_irq(struct bio *bio, unsigned short idx,
-+static inline char *__bio_kmap_irq(struct bio *bio, struct bvec_iter iter,
- 				   unsigned long *flags)
- {
--	return bvec_kmap_irq(bio_iovec_idx(bio, idx), flags);
-+	return bvec_kmap_irq(&bio_iovec_iter(bio, iter), flags);
- }
- #define __bio_kunmap_irq(buf, flags)	bvec_kunmap_irq(buf, flags)
- 
- #define bio_kmap_irq(bio, flags) \
--	__bio_kmap_irq((bio), (bio)->bi_iter.bi_idx, (flags))
-+	__bio_kmap_irq((bio), (bio)->bi_iter, (flags))
- #define bio_kunmap_irq(buf,flags)	__bio_kunmap_irq(buf, flags)
- 
- static inline bool bio_is_rw(struct bio *bio)
 -- 
 1.8.3.rc1
 
