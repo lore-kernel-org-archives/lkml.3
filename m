@@ -1,117 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751945Ab3FICe3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 22:34:29 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:54702 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430Ab3FICe1 (ORCPT
+	id S1752348Ab3FICev (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 22:34:51 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:35608 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983Ab3FICem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 22:34:27 -0400
+	Sat, 8 Jun 2013 22:34:42 -0400
 From: Daniel Tang <dt.tangr@gmail.com>
 To: mmarek@suse.cz
 Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
         trivial@kernel.org, Daniel Tang <dt.tangr@gmail.com>
-Subject: [PATCH 1/2] Fix a build warning in scripts/sortextable.h
-Date: Sun,  9 Jun 2013 12:33:54 +1000
-Message-Id: <1370745235-12951-1-git-send-email-dt.tangr@gmail.com>
+Subject: [PATCH 2/2] Fix a build warning in scripts/mod/file2alias.c
+Date: Sun,  9 Jun 2013 12:33:55 +1000
+Message-Id: <1370745235-12951-2-git-send-email-dt.tangr@gmail.com>
 X-Mailer: git-send-email 1.8.1.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1370745235-12951-1-git-send-email-dt.tangr@gmail.com>
+References: <1370745235-12951-1-git-send-email-dt.tangr@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pointer passed to the _r() macro does not always match the type
-of the function that it is aliasing and raises several of the following
-warnings at compile time:
+On some systems, __used is already defined in sys/cdefs.h and causes
+a build warning:
 
-warning: passing argument 1 of ‘r8’ from incompatible pointer type
+scripts/mod/file2alias.c:85:1: warning: "__used" redefined
+In file included from /usr/include/stdio.h:64,
+                 from scripts/mod/modpost.h:1,
+		                  from scripts/mod/file2alias.c:13:
+				  /usr/include/sys/cdefs.h:146:1: warning: this is the location of the previous definition
 
-Fixed by casting the pointers to (void *) so they work with both the
-32bit and 64bit code.
+This adds an extra check before defining the __used macro to see if
+the macro was already defined elsewhere.
 
 Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
 ---
- scripts/sortextable.h | 29 +++++++++++++++--------------
- 1 file changed, 15 insertions(+), 14 deletions(-)
+ scripts/mod/file2alias.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/scripts/sortextable.h b/scripts/sortextable.h
-index f5eb43d..0a38fbd 100644
---- a/scripts/sortextable.h
-+++ b/scripts/sortextable.h
-@@ -110,9 +110,9 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
- 	int i;
- 	int idx;
+diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
+index 45f9a33..ab55456 100644
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@ -79,10 +79,12 @@ struct devtable **__start___devtable, **__stop___devtable;
+ extern struct devtable *__start___devtable[], *__stop___devtable[];
+ #endif /* __MACH__ */
  
--	shdr = (Elf_Shdr *)((char *)ehdr + _r(&ehdr->e_shoff));
-+	shdr = (Elf_Shdr *)((char *)ehdr + _r((void *)&ehdr->e_shoff));
- 	shstrtab_sec = shdr + r2(&ehdr->e_shstrndx);
--	secstrtab = (const char *)ehdr + _r(&shstrtab_sec->sh_offset);
-+	secstrtab = (const char *)ehdr + _r((void *)&shstrtab_sec->sh_offset);
- 	for (i = 0; i < r2(&ehdr->e_shnum); i++) {
- 		idx = r(&shdr[i].sh_name);
- 		if (strcmp(secstrtab + idx, "__ex_table") == 0) {
-@@ -122,8 +122,8 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
- 		if ((r(&shdr[i].sh_type) == SHT_REL ||
- 		     r(&shdr[i].sh_type) == SHT_RELA) &&
- 		    r(&shdr[i].sh_info) == extab_index) {
--			relocs = (void *)ehdr + _r(&shdr[i].sh_offset);
--			relocs_size = _r(&shdr[i].sh_size);
-+			relocs = (void *)ehdr + _r((void *)&shdr[i].sh_offset);
-+			relocs_size = _r((void *)&shdr[i].sh_size);
- 		}
- 		if (strcmp(secstrtab + idx, ".symtab") == 0)
- 			symtab_sec = shdr + i;
-@@ -142,14 +142,14 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
- 		fprintf(stderr,	"no __ex_table in  file: %s\n", fname);
- 		fail_file();
- 	}
--	strtab = (const char *)ehdr + _r(&strtab_sec->sh_offset);
-+	strtab = (const char *)ehdr + _r((void *)&strtab_sec->sh_offset);
+-#if __GNUC__ == 3 && __GNUC_MINOR__ < 3
+-# define __used			__attribute__((__unused__))
+-#else
+-# define __used			__attribute__((__used__))
++#if !defined(__used)
++# if __GNUC__ == 3 && __GNUC_MINOR__ < 3
++#  define __used			__attribute__((__unused__))
++# else
++#  define __used			__attribute__((__used__))
++# endif
+ #endif
  
--	extab_image = (void *)ehdr + _r(&extab_sec->sh_offset);
-+	extab_image = (void *)ehdr + _r((void *)&extab_sec->sh_offset);
- 
- 	if (custom_sort) {
--		custom_sort(extab_image, _r(&extab_sec->sh_size));
-+		custom_sort(extab_image, _r((void *)&extab_sec->sh_size));
- 	} else {
--		int num_entries = _r(&extab_sec->sh_size) / extable_ent_size;
-+		int num_entries = _r((void *)&extab_sec->sh_size) / extable_ent_size;
- 		qsort(extab_image, num_entries,
- 		      extable_ent_size, compare_extable);
- 	}
-@@ -159,12 +159,13 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
- 
- 	/* find main_extable_sort_needed */
- 	sort_needed_sym = NULL;
--	for (i = 0; i < _r(&symtab_sec->sh_size) / sizeof(Elf_Sym); i++) {
--		sym = (void *)ehdr + _r(&symtab_sec->sh_offset);
-+	for (i = 0; i < _r((void *)&symtab_sec->sh_size) / sizeof(Elf_Sym); i++)
-+	{
-+		sym = (void *)ehdr + _r((void *)&symtab_sec->sh_offset);
- 		sym += i;
- 		if (ELF_ST_TYPE(sym->st_info) != STT_OBJECT)
- 			continue;
--		idx = r(&sym->st_name);
-+		idx = r((void *)&sym->st_name);
- 		if (strcmp(strtab + idx, "main_extable_sort_needed") == 0) {
- 			sort_needed_sym = sym;
- 			break;
-@@ -178,9 +179,9 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
- 	}
- 	sort_needed_sec = &shdr[r2(&sort_needed_sym->st_shndx)];
- 	sort_done_location = (void *)ehdr +
--		_r(&sort_needed_sec->sh_offset) +
--		_r(&sort_needed_sym->st_value) -
--		_r(&sort_needed_sec->sh_addr);
-+		_r((void *)&sort_needed_sec->sh_offset) +
-+		_r((void *)&sort_needed_sym->st_value) -
-+		_r((void *)&sort_needed_sec->sh_addr);
- 
- #if 0
- 	printf("sort done marker at %lx\n",
+ /* Define a variable f that holds the value of field f of struct devid
 -- 
 1.8.1.3
 
