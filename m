@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752296Ab3FIHPc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 03:15:32 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:53200 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007Ab3FIHPb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 03:15:31 -0400
-Date: Sun, 9 Jun 2013 07:15:30 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Roger Quadros <rogerq@ti.com>
-cc: sameo@linux.intel.com, balbi@ti.com, tony@atomide.com, kishon@ti.com,
-        sshtylyov@mvista.com, bjorn@mork.no, linux@arm.linux.org.uk,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Rajendra Nayak <rnayak@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Mike Turquette <mturquette@linaro.com>
-Subject: Re: [PATCH v8 19/22] ARM: OMAP3: clock data: get rid of unused USB
- host clock aliases and dummies
-In-Reply-To: <5110EB87.1060704@ti.com>
-Message-ID: <alpine.DEB.2.02.1306090714470.20050@utopia.booyaka.com>
-References: <1358511445-26656-1-git-send-email-rogerq@ti.com> <1358511445-26656-20-git-send-email-rogerq@ti.com> <alpine.DEB.2.00.1301182027040.19470@utopia.booyaka.com> <50FD0BEF.9000007@ti.com> <alpine.DEB.2.00.1301211502190.8450@utopia.booyaka.com>
- <5110EB87.1060704@ti.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752525Ab3FIHR7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 03:17:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1877 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751913Ab3FIHR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jun 2013 03:17:58 -0400
+Date: Sun, 9 Jun 2013 10:18:32 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [net PATCH] tuntap: set SOCK_ZEROCOPY flag during open
+Message-ID: <20130609071817.GD13082@redhat.com>
+References: <1370672261-30076-1-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370672261-30076-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
-
-On Tue, 5 Feb 2013, Roger Quadros wrote:
-
-> On 01/21/2013 05:03 PM, Paul Walmsley wrote:
-> > Hi
-> > 
-> > On Mon, 21 Jan 2013, Roger Quadros wrote:
-> > 
-> >> On 01/18/2013 10:27 PM, Paul Walmsley wrote:
-> >>> On Fri, 18 Jan 2013, Roger Quadros wrote:
-> >>>
-> >>>> We don't need multiple aliases for the OMAP USB host clocks and neither
-> >>>> the dummy clocks so remove them.
-> >>>>
-> >>>> CC: Paul Walmsley <paul@pwsan.com>
-> >>>> CC: Rajendra Nayak <rnayak@ti.com>
-> >>>> CC: Benoit Cousson <b-cousson@ti.com>
-> >>>> CC: Mike Turquette <mturquette@linaro.com>
-> >>>>
-> >>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> >>>> Reviewed-by: Felipe Balbi <balbi@ti.com>
-> >>>> Acked-by: Paul Walmsley <paul@pwsan.com>
-> >>>
-> >>> Per Tony's earlier request, you can drop this patch and patch 20 from your 
-> >>> series now.  I've got them queued for 3.10 or late 3.9 merge window.
-> >>>
-> >>
-> >> Should have mentioned it earlier, but just this patch without the rest
-> >> of the cleanup patches will break USB Host on OMAP3, as the old driver
-> >> bails out if optional clock nodes are missing.
-> >>
-> >> Including patch 20 doesn't seem to cause a problem with OMAP4 though.
-> > 
-> > I've got these two patches queued for merging after your other patches go 
-> > upstream -- e.g., probably 3.10.  Do you foresee any problems with that?
-> > 
+On Sat, Jun 08, 2013 at 02:17:41PM +0800, Jason Wang wrote:
+> Commit 54f968d6efdbf7dec36faa44fc11f01b0e4d1990
+> (tuntap: move socket to tun_file) forgets to set SOCK_ZEROCOPY flag, which will
+> prevent vhost_net from doing zercopy w/ tap. This patch fixes this by setting
+> it during file open.
 > 
-> FYI, the usbhost patches are already in linux-next.
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-Queued this patch for v3.11; looks like I missed it for v3.10.
+I see, and this explains the perf regression we are seeing with 3.9.
 
-- Paul
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+
+and I think this should go into stable as well.
+
+> ---
+>  drivers/net/tun.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index f042b03..d2ddd6d 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -2155,6 +2155,8 @@ static int tun_chr_open(struct inode *inode, struct file * file)
+>  	set_bit(SOCK_EXTERNALLY_ALLOCATED, &tfile->socket.flags);
+>  	INIT_LIST_HEAD(&tfile->next);
+>  
+> +	sock_set_flag(&tfile->sk, SOCK_ZEROCOPY);
+> +
+>  	return 0;
+>  }
+>  
+> -- 
+> 1.7.1
