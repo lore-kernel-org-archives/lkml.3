@@ -1,217 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab3FIKiq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 06:38:46 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:53496 "EHLO
+	id S1753507Ab3FIKjL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 06:39:11 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:53510 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab3FIKio (ORCPT
+	with ESMTP id S1751797Ab3FIKjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 06:38:44 -0400
+	Sun, 9 Jun 2013 06:39:09 -0400
 From: Tanya Brokhman <tlinder@codeaurora.org>
 To: axboe@kernel.dk
 Cc: linux-arm-msm@vger.kernel.org, linux-mmc@vger.kernel.org,
         Tanya Brokhman <tlinder@codeaurora.org>,
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH/RESEND v8 1/4] block: Add support for reinsert a dispatched req
-Date: Sun,  9 Jun 2013 13:38:27 +0300
-Message-Id: <1370774315-27863-1-git-send-email-tlinder@codeaurora.org>
+Subject: [PATCH/RESEND v8 2/4] block: Extend cmd_flags in struct request
+Date: Sun,  9 Jun 2013 13:38:55 +0300
+Message-Id: <1370774339-27968-1-git-send-email-tlinder@codeaurora.org>
 X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for reinserting a dispatched request back to the
-scheduler's internal data structures.
-This capability is used by the device driver when it chooses to
-interrupt the current request transmission and execute another (more
-urgent) pending request. For example: interrupting long write in order
-to handle pending read. The device driver re-inserts the
-remaining write request back to the scheduler, to be rescheduled
-for transmission later on.
+At the moment no new request flags can be added to enum rq_flag_bits
+due to cmd_flags field size limitation. This commit adds a new filed to be used as
+an extensions to cmd_flags.
 
-Add API for verifying whether the current scheduler
-supports reinserting requests mechanism. If reinsert mechanism isn't
-supported by the scheduler, this code path will never be activated.
-
-Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
+Signed-off-by: Tanya Brokhman <tlinder@codeaurora.org>
 
 diff --git a/block/blk-core.c b/block/blk-core.c
-index 0852e5d..fe3683c 100644
+index fe3683c..3a14987 100644
 --- a/block/blk-core.c
 +++ b/block/blk-core.c
-@@ -1183,6 +1183,29 @@ struct request *blk_make_request(struct request_queue *q, struct bio *bio,
- }
- EXPORT_SYMBOL(blk_make_request);
- 
-+static void __blk_put_back_rq(struct request_queue *q, struct request *rq)
-+{
-+	blk_delete_timer(rq);
-+	blk_clear_rq_complete(rq);
-+
-+	if (blk_rq_tagged(rq))
-+		blk_queue_end_tag(q, rq);
-+
-+	BUG_ON(blk_queued_rq(rq));
-+
-+	if (rq->cmd_flags_ext & REQ_URGENT) {
-+		/*
-+		 * It's not compliant with the design to re-insert
-+		 * urgent requests. We want to be able to track this
-+		 * down.
-+		 */
-+		pr_debug("%s(): requeueing/reinserting an URGENT request",
-+			__func__);
-+		WARN_ON(!q->dispatched_urgent);
-+		q->dispatched_urgent = false;
-+	}
-+}
-+
- /**
-  * blk_requeue_request - put a request back on queue
-  * @q:		request queue where request should be inserted
-@@ -1195,19 +1218,45 @@ EXPORT_SYMBOL(blk_make_request);
-  */
- void blk_requeue_request(struct request_queue *q, struct request *rq)
+@@ -3226,6 +3226,8 @@ int __init blk_dev_init(void)
  {
--	blk_delete_timer(rq);
--	blk_clear_rq_complete(rq);
-+	__blk_put_back_rq(q, rq);
- 	trace_block_rq_requeue(q, rq);
--
--	if (blk_rq_tagged(rq))
--		blk_queue_end_tag(q, rq);
--
--	BUG_ON(blk_queued_rq(rq));
--
- 	elv_requeue_request(q, rq);
- }
- EXPORT_SYMBOL(blk_requeue_request);
+ 	BUILD_BUG_ON(__REQ_NR_BITS > 8 *
+ 			sizeof(((struct request *)0)->cmd_flags));
++	BUILD_BUG_ON(__REQ_EXT_NR_BITS > 8 *
++			sizeof(((struct request *)0)->cmd_flags_ext));
  
-+/**
-+ * blk_reinsert_request() - Insert a request back to the scheduler
-+ * @q:		request queue
-+ * @rq:		request to be inserted
-+ *
-+ * This function inserts the request back to the scheduler as if
-+ * it was never dispatched.
-+ *
-+ * Return: 0 on success, error code on fail
-+ */
-+int blk_reinsert_request(struct request_queue *q, struct request *rq)
-+{
-+	__blk_put_back_rq(q, rq);
-+	return elv_reinsert_request(q, rq);
-+}
-+EXPORT_SYMBOL(blk_reinsert_request);
-+
-+/**
-+ * blk_reinsert_req_sup() - check whether the scheduler supports
-+ *          reinsertion of requests
-+ * @q:		request queue
-+ *
-+ * Returns true if the current scheduler supports reinserting
-+ * request. False otherwise
-+ */
-+bool blk_reinsert_req_sup(struct request_queue *q)
-+{
-+	if (unlikely(!q))
-+		return false;
-+	return q->elevator->type->ops.elevator_reinsert_req_fn ? true : false;
-+}
-+EXPORT_SYMBOL(blk_reinsert_req_sup);
-+
- static void add_acct_request(struct request_queue *q, struct request *rq,
- 			     int where)
- {
-diff --git a/block/elevator.c b/block/elevator.c
-index eba5b04c..e28011b 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -577,6 +577,41 @@ void elv_requeue_request(struct request_queue *q, struct request *rq)
- 	__elv_add_request(q, rq, ELEVATOR_INSERT_REQUEUE);
- }
+ 	/* used for unplugging and affects IO latency/throughput - HIGHPRI */
+ 	kblockd_workqueue = alloc_workqueue("kblockd",
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index fa1abeb..40a921f 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -181,6 +181,11 @@ enum rq_flag_bits {
+ 	__REQ_NR_BITS,		/* stops here */
+ };
  
-+/**
-+ * elv_reinsert_request() - Insert a request back to the scheduler
-+ * @q:		request queue where request should be inserted
-+ * @rq:		request to be inserted
-+ *
-+ * This function returns the request back to the scheduler to be
-+ * inserted as if it was never dispatched
-+ *
-+ * Return: 0 on success, error code on failure
-+ */
-+int elv_reinsert_request(struct request_queue *q, struct request *rq)
-+{
-+	int res;
++/* Request flags. For use in the cmd_flags_ext field of struct request */
++enum ext_rq_flag_bits {
++	__REQ_EXT_NR_BITS,	/* stops here */
++};
 +
-+	if (!q->elevator->type->ops.elevator_reinsert_req_fn)
-+		return -EPERM;
-+
-+	res = q->elevator->type->ops.elevator_reinsert_req_fn(q, rq);
-+	if (!res) {
-+		/*
-+		 * it already went through dequeue, we need to decrement the
-+		 * in_flight count again
-+		 */
-+		if (blk_account_rq(rq)) {
-+			q->in_flight[rq_is_sync(rq)]--;
-+			if (rq->cmd_flags & REQ_SORTED)
-+				elv_deactivate_rq(q, rq);
-+		}
-+		rq->cmd_flags &= ~REQ_STARTED;
-+		q->nr_sorted++;
-+	}
-+
-+	return res;
-+}
-+
- void elv_drain_elevator(struct request_queue *q)
- {
- 	static int printed;
+ #define REQ_WRITE		(1 << __REQ_WRITE)
+ #define REQ_FAILFAST_DEV	(1 << __REQ_FAILFAST_DEV)
+ #define REQ_FAILFAST_TRANSPORT	(1 << __REQ_FAILFAST_TRANSPORT)
 diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 2fdb4a4..968720f 100644
+index 968720f..aa36278 100644
 --- a/include/linux/blkdev.h
 +++ b/include/linux/blkdev.h
-@@ -738,6 +738,8 @@ extern struct request *blk_get_request(struct request_queue *, int, gfp_t);
- extern struct request *blk_make_request(struct request_queue *, struct bio *,
- 					gfp_t);
- extern void blk_requeue_request(struct request_queue *, struct request *);
-+extern int blk_reinsert_request(struct request_queue *q, struct request *rq);
-+extern bool blk_reinsert_req_sup(struct request_queue *q);
- extern void blk_add_request_payload(struct request *rq, struct page *page,
- 		unsigned int len);
- extern int blk_rq_check_limits(struct request_queue *q, struct request *rq);
-diff --git a/include/linux/elevator.h b/include/linux/elevator.h
-index acd0312..d703f94 100644
---- a/include/linux/elevator.h
-+++ b/include/linux/elevator.h
-@@ -23,6 +23,8 @@ typedef void (elevator_bio_merged_fn) (struct request_queue *,
- typedef int (elevator_dispatch_fn) (struct request_queue *, int);
+@@ -100,6 +100,7 @@ struct request {
+ 	struct request_queue *q;
  
- typedef void (elevator_add_req_fn) (struct request_queue *, struct request *);
-+typedef int (elevator_reinsert_req_fn) (struct request_queue *,
-+					struct request *);
- typedef struct request *(elevator_request_list_fn) (struct request_queue *, struct request *);
- typedef void (elevator_completed_req_fn) (struct request_queue *, struct request *);
- typedef int (elevator_may_queue_fn) (struct request_queue *, int);
-@@ -48,6 +50,8 @@ struct elevator_ops
+ 	unsigned int cmd_flags;
++	unsigned int cmd_flags_ext;
+ 	enum rq_cmd_type_bits cmd_type;
+ 	unsigned long atomic_flags;
  
- 	elevator_dispatch_fn *elevator_dispatch_fn;
- 	elevator_add_req_fn *elevator_add_req_fn;
-+	elevator_reinsert_req_fn *elevator_reinsert_req_fn;
-+
- 	elevator_activate_req_fn *elevator_activate_req_fn;
- 	elevator_deactivate_req_fn *elevator_deactivate_req_fn;
- 
-@@ -126,6 +130,7 @@ extern void elv_merged_request(struct request_queue *, struct request *, int);
- extern void elv_bio_merged(struct request_queue *q, struct request *,
- 				struct bio *);
- extern void elv_requeue_request(struct request_queue *, struct request *);
-+extern int elv_reinsert_request(struct request_queue *, struct request *);
- extern struct request *elv_former_request(struct request_queue *, struct request *);
- extern struct request *elv_latter_request(struct request_queue *, struct request *);
- extern int elv_register_queue(struct request_queue *q);
 -- 
 1.7.6
 
