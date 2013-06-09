@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab3FICUF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 22:20:05 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:59045 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598Ab3FICT4 (ORCPT
+	id S1753473Ab3FICUS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 22:20:18 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:45925 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753366Ab3FICUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 22:19:56 -0400
+	Sat, 8 Jun 2013 22:20:11 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: axboe@kernel.dk, tytso@mit.edu, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org
-Cc: Kent Overstreet <koverstreet@google.com>,
-        Yehuda Sadeh <yehuda@inktank.com>, Alex Elder <elder@inktank.com>,
-        ceph-devel@vger.kernel.org
-Subject: [PATCH 12/26] rbd: Refactor bio cloning, don't clone biovecs
-Date: Sat,  8 Jun 2013 19:18:54 -0700
-Message-Id: <1370744348-15407-13-git-send-email-koverstreet@google.com>
+Cc: Kent Overstreet <koverstreet@google.com>
+Subject: [PATCH 25/26] block: Add bio_get_user_pages()
+Date: Sat,  8 Jun 2013 19:19:07 -0700
+Message-Id: <1370744348-15407-26-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.8.3.rc1
 In-Reply-To: <1370744348-15407-1-git-send-email-koverstreet@google.com>
 References: <1370744348-15407-1-git-send-email-koverstreet@google.com>
@@ -23,100 +21,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we've got drivers converted to the new immutable bvec
-primitives, bio splitting becomes much easier. In a few patches,
-bio_clone() will be changed to share the old bio's bvec instead of
-copying it, and bio_split() will do exactly what's being done here.
+This replaces some of the code that was in __bio_map_user_iov(), and
+soon we're going to use this helper in the dio code.
+
+Note that this relies on the recent change to make
+generic_make_request() take arbitrary sized bios - we're not using
+bio_add_page() here.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Yehuda Sadeh <yehuda@inktank.com>
-Cc: Alex Elder <elder@inktank.com>
-Cc: ceph-devel@vger.kernel.org
 ---
- drivers/block/rbd.c | 64 ++---------------------------------------------------
- 1 file changed, 2 insertions(+), 62 deletions(-)
+ fs/bio.c            | 123 +++++++++++++++++++++++++++-------------------------
+ include/linux/bio.h |   2 +
+ 2 files changed, 66 insertions(+), 59 deletions(-)
 
-diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-index 2a27dca..ed17d33 100644
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -1170,73 +1170,13 @@ static struct bio *bio_clone_range(struct bio *bio_src,
- 					unsigned int len,
- 					gfp_t gfpmask)
+diff --git a/fs/bio.c b/fs/bio.c
+index 10d71cf..fe88f6e 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -1212,17 +1212,69 @@ struct bio *bio_copy_user(struct request_queue *q, struct rq_map_data *map_data,
+ }
+ EXPORT_SYMBOL(bio_copy_user);
+ 
++/**
++ * bio_get_user_pages - pin user pages and add them to a biovec
++ * @bio: bio to add pages to
++ * @uaddr: start of user address
++ * @len: length in bytes
++ * @write_to_vm: bool indicating writing to pages or not
++ *
++ * Pins pages for up to @len bytes and appends them to @bio's bvec array. May
++ * pin only part of the requested pages - @bio need not have room for all the
++ * pages and can already have had pages added to it.
++ *
++ * Returns the number of bytes from @len added to @bio.
++ */
++ssize_t bio_get_user_pages(struct bio *bio, unsigned long uaddr,
++			   unsigned long len, int write_to_vm)
++{
++	int ret;
++	unsigned nr_pages, bytes;
++	unsigned offset = offset_in_page(uaddr);
++	struct bio_vec *bv;
++	struct page **pages;
++
++	nr_pages = min_t(size_t,
++			 DIV_ROUND_UP(len + offset, PAGE_SIZE),
++			 bio->bi_max_vecs - bio->bi_vcnt);
++
++	bv = &bio->bi_io_vec[bio->bi_vcnt];
++	pages = (void *) bv;
++
++	ret = get_user_pages_fast(uaddr, nr_pages, write_to_vm, pages);
++	if (ret < 0)
++		return ret;
++
++	bio->bi_vcnt += ret;
++	bytes = ret * PAGE_SIZE - offset;
++
++	while (ret--) {
++		bv[ret].bv_page = pages[ret];
++		bv[ret].bv_len = PAGE_SIZE;
++		bv[ret].bv_offset = 0;
++	}
++
++	bv[0].bv_offset += offset;
++	bv[0].bv_len -= offset;
++
++	if (bytes > len) {
++		bio->bi_io_vec[bio->bi_vcnt - 1].bv_len -= bytes - len;
++		bytes = len;
++	}
++
++	bio->bi_iter.bi_size += bytes;
++
++	return bytes;
++}
++
+ static struct bio *__bio_map_user_iov(struct request_queue *q,
+ 				      struct block_device *bdev,
+ 				      struct sg_iovec *iov, int iov_count,
+ 				      int write_to_vm, gfp_t gfp_mask)
  {
--	struct bio_vec bv;
--	struct bvec_iter iter;
--	struct bvec_iter end_iter;
--	unsigned int resid;
--	unsigned int voff;
--	unsigned short vcnt;
+-	int i, j;
+-	int nr_pages = 0;
+-	struct page **pages;
++	ssize_t ret;
++	int i, nr_pages = 0;
  	struct bio *bio;
+-	int cur_page = 0;
+-	int ret, offset;
  
--	/* Handle the easy case for the caller */
--
--	if (!offset && len == bio_src->bi_iter.bi_size)
--		return bio_clone(bio_src, gfpmask);
--
--	if (WARN_ON_ONCE(!len))
--		return NULL;
--	if (WARN_ON_ONCE(len > bio_src->bi_iter.bi_size))
--		return NULL;
--	if (WARN_ON_ONCE(offset > bio_src->bi_iter.bi_size - len))
--		return NULL;
--
--	/* Find first affected segment... */
--
--	resid = offset;
--	bio_for_each_segment(bv, bio_src, iter) {
--		if (resid < bv.bv_len)
--			break;
--		resid -= bv.bv_len;
--	}
--	voff = resid;
--
--	/* ...and the last affected segment */
--
--	resid += len;
--	__bio_for_each_segment(bv, bio_src, end_iter, iter) {
--		if (resid <= bv.bv_len)
--			break;
--		resid -= bv.bv_len;
--	}
--	vcnt = end_iter.bi_idx = iter.bi_idx + 1;
--
--	/* Build the clone */
--
--	bio = bio_alloc(gfpmask, (unsigned int) vcnt);
-+	bio = bio_clone(bio_src, gfpmask);
+ 	for (i = 0; i < iov_count; i++) {
+ 		unsigned long uaddr = (unsigned long)iov[i].iov_base;
+@@ -1251,57 +1303,17 @@ static struct bio *__bio_map_user_iov(struct request_queue *q,
  	if (!bio)
- 		return NULL;	/* ENOMEM */
+ 		return ERR_PTR(-ENOMEM);
  
--	bio->bi_bdev = bio_src->bi_bdev;
--	bio->bi_iter.bi_sector = bio_src->bi_iter.bi_sector +
--		(offset >> SECTOR_SHIFT);
--	bio->bi_rw = bio_src->bi_rw;
--	bio->bi_flags |= 1 << BIO_CLONED;
+-	ret = -ENOMEM;
+-	pages = kcalloc(nr_pages, sizeof(struct page *), gfp_mask);
+-	if (!pages)
+-		goto out;
 -
--	/*
--	 * Copy over our part of the bio_vec, then update the first
--	 * and last (or only) entries.
--	 */
--	memcpy(&bio->bi_io_vec[0], &bio_src->bi_io_vec[iter.bi_idx],
--			vcnt * sizeof (struct bio_vec));
--	bio->bi_io_vec[0].bv_offset += voff;
--	if (vcnt > 1) {
--		bio->bi_io_vec[0].bv_len -= voff;
--		bio->bi_io_vec[vcnt - 1].bv_len = resid;
--	} else {
--		bio->bi_io_vec[0].bv_len = len;
--	}
+ 	for (i = 0; i < iov_count; i++) {
+-		unsigned long uaddr = (unsigned long)iov[i].iov_base;
+-		unsigned long len = iov[i].iov_len;
+-		unsigned long end = (uaddr + len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+-		unsigned long start = uaddr >> PAGE_SHIFT;
+-		const int local_nr_pages = end - start;
+-		const int page_limit = cur_page + local_nr_pages;
 -
--	bio->bi_vcnt = vcnt;
-+	bio_advance(bio, offset);
- 	bio->bi_iter.bi_size = len;
+-		ret = get_user_pages_fast(uaddr, local_nr_pages,
+-				write_to_vm, &pages[cur_page]);
+-		if (ret < local_nr_pages) {
+-			ret = -EFAULT;
+-			goto out_unmap;
+-		}
+-
+-		offset = uaddr & ~PAGE_MASK;
+-		for (j = cur_page; j < page_limit; j++) {
+-			unsigned int bytes = PAGE_SIZE - offset;
++		ret = bio_get_user_pages(bio, (size_t) iov[i].iov_base,
++					 iov[i].iov_len,
++					 write_to_vm);
++		if (ret < 0)
++			goto out;
  
+-			if (len <= 0)
+-				break;
+-			
+-			if (bytes > len)
+-				bytes = len;
+-
+-			/*
+-			 * sorry...
+-			 */
+-			if (bio_add_pc_page(q, bio, pages[j], bytes, offset) <
+-					    bytes)
+-				break;
+-
+-			len -= bytes;
+-			offset = 0;
+-		}
+-
+-		cur_page = j;
+-		/*
+-		 * release the pages we didn't map into the bio, if any
+-		 */
+-		while (j < page_limit)
+-			page_cache_release(pages[j++]);
++		if (ret != iov[i].iov_len)
++			break;
+ 	}
+ 
+-	kfree(pages);
+-
+ 	/*
+ 	 * set data direction, and check if mapped pages need bouncing
+ 	 */
+@@ -1312,14 +1324,7 @@ static struct bio *__bio_map_user_iov(struct request_queue *q,
+ 	bio->bi_flags |= (1 << BIO_USER_MAPPED);
  	return bio;
+ 
+- out_unmap:
+-	for (i = 0; i < nr_pages; i++) {
+-		if(!pages[i])
+-			break;
+-		page_cache_release(pages[i]);
+-	}
+  out:
+-	kfree(pages);
+ 	bio_put(bio);
+ 	return ERR_PTR(ret);
+ }
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 444cc91..340d859 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -333,6 +333,8 @@ extern int bio_add_page(struct bio *, struct page *, unsigned int,unsigned int);
+ extern int bio_add_pc_page(struct request_queue *, struct bio *, struct page *,
+ 			   unsigned int, unsigned int);
+ extern int bio_get_nr_vecs(struct block_device *);
++extern ssize_t bio_get_user_pages(struct bio *, unsigned long,
++				  unsigned long, int);
+ extern struct bio *bio_map_user(struct request_queue *, struct block_device *,
+ 				unsigned long, unsigned int, int, gfp_t);
+ struct sg_iovec;
 -- 
 1.8.3.rc1
 
