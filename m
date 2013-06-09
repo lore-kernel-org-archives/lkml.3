@@ -1,160 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983Ab3FICrk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 22:47:40 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49621 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349Ab3FICrj (ORCPT
+	id S1751936Ab3FIDhv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 23:37:51 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:31036 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751496Ab3FIDht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 22:47:39 -0400
-Message-ID: <51B3ECC9.9000906@wwwdotorg.org>
-Date: Sat, 08 Jun 2013 20:47:37 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Sat, 8 Jun 2013 23:37:49 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhgNAIb3s1F5LHX5/2dsb2JhbABWA4MJgwS3AYFJg2YEAXcXdIIjAQEEATocIwULCAMOBgQJJQ8FJQMhE4gHBbsqFo1VMIENEAcRgm5hA5c/kUODISo
+Date: Sun, 9 Jun 2013 13:37:44 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Shawn Bohrer <sbohrer@rgmadvisors.com>
+Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
+Subject: Re: 3.10-rc4 stalls during mmap writes
+Message-ID: <20130609033744.GA29376@dastard>
+References: <20130607193712.GD2995@sbohrermbp13-local.rgmadvisors.com>
 MIME-Version: 1.0
-To: Haojian Zhuang <haojian.zhuang@linaro.org>
-CC: Christian Ruppert <christian.ruppert@abilis.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
-References: <51942472.9010402@wwwdotorg.org> <CACRpkdYtKr5w2=1sONG4Qn2TQue38nV7epWfzxNQz5rjSs0DZQ@mail.gmail.com> <20130522142824.GC4789@ab42.lan> <CAD6h2NT4FqmEsLvtTDwwDL2YVzXYNpw72hTOcSxSMvHLhWvFPQ@mail.gmail.com> <20130524115053.GB5203@ab42.lan> <CAD6h2NSh_4TNAGeFhg+va5QX2hGia+gkw-mPaeMezghsa=Zc6Q@mail.gmail.com> <20130603123001.GD31808@ab42.lan> <CAD6h2NQVKKvcoPdD4sm5rUM5G-FpF3abL=k+WfQsnKnm7qhREA@mail.gmail.com> <20130606141115.GA10345@ab42.lan> <CAD6h2NRNMQP-ZQ0Cc613tGThVEo7AzRExBmWsbtr1DXgiPwz7w@mail.gmail.com> <20130606153030.GA19876@ab42.lan> <51B2320B.6060101@wwwdotorg.org> <CAD6h2NR=3uhc0dnkoa_8rXz1QerSXaS0bY0ny0a8Lk0TaSPhUg@mail.gmail.com>
-In-Reply-To: <CAD6h2NR=3uhc0dnkoa_8rXz1QerSXaS0bY0ny0a8Lk0TaSPhUg@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130607193712.GD2995@sbohrermbp13-local.rgmadvisors.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2013 02:31 AM, Haojian Zhuang wrote:
-> On 8 June 2013 03:18, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 06/06/2013 09:30 AM, Christian Ruppert wrote:
->>> On Thu, Jun 06, 2013 at 10:32:21PM +0800, Haojian Zhuang wrote:
->>>> On 6 June 2013 22:11, Christian Ruppert <christian.ruppert@abilis.com> wrote:
->>>>> On Wed, Jun 05, 2013 at 09:44:27AM +0800, Haojian Zhuang wrote:
->>>>>> On 3 June 2013 20:30, Christian Ruppert <christian.ruppert@abilis.com> wrote:
->>>>>>> OK, here's a simplified example of what we would like to do (this seems
->>>>>>> pretty common so I suppose there is a way I haven't understood). Our
->>>>>>> situation is slightly more complex but for the purpose of discussion
->>>>>>> let's assume a chip with 8 pins which can be configured for the
->>>>>>> following functions:
->>>>>>>
->>>>>>> Pin   GPIO-A    I2C    SPI0     SPI1
->>>>>>> ------------------------------------
->>>>>>>  1    GPIOA0    SDA             MISO1
->>>>>>>  2    GPIOA1    SCL             MOSI1
->>>>>>>  3    GPIOA2                    SS1_B
->>>>>>>  4    GPIOA3                    SCLK1
->>>>>>>  5    GPIOA4           MISO0
->>>>>>>  6    GPIOA5           MOSI0
->>>>>>>  7    GPIOA6           SS0_B
->>>>>>>  8    GPIOA7           SCLK0
->>>>>>>
->>>>>>> We can now define the following pinctrl-single:
->>>>>>>
->>>>>>> pinmux: pinmux@0xFFEE0000 {
->>>>>>>         compatible = "pinctrl-single";
->>>>>>>         reg = <0xFFEE0000 0x8>;
->>>>>>>         #address-cells = <1>;
->>>>>>>         #size-cells = <0>;
->>>>>>>         #gpio-range-cells = <3>;
->>>>>>>         pinctrl-single,register-width = <32>;
->>>>>>>         pinctrl-single,function-mask = <0xffffffff>;
->>>>>>>         pinctrl-single,gpio-range = <&range 1 8 0>;
->>>>>>>         gpioa_pins: pinmux_gpioa_pins {
->>>>>>>                 pinctrl-single,pins = <0x0 0 0x4 0>
->>>>>>>         };
->>>>>>>         i2c_pins: pinmux_i2c_pins {
->>>>>>>                 pinctrl-single,pins = <0x0 1>
->>>>>>>         };
->>>>>>>         spi0_pins: pinmux_spi0_pins {
->>>>>>>                 pinctrl-single,pins = <0x1 1>
->>>>>> <0x1 1>?
->>>>>>
->>>>>> If each pinmux register is only for one pin in your SoC.
->>>>>> I think that your definitions are wrong above. We use
->>>>>> register offset as the first argument, not pin number.
->>>>>> And the second argument should be pin function number.
->>>>>
->>>>> In our case each pinmux register (bit field) actually controls an entire
->>>>> group of pins.
->>>>>
->>>>>> If multiple pins are sharing one register with different bits,
->>>>>> you need to enable "pinctrl-single,bit-per-mux".
->>>>>
->>>>> Multiple pins are sharing the same bits in the same register. Do you
->>>>> think this prevents us from using pinctrl-single?
->>>>>
->>>> Could you give me your register definition? Then I can understand you
->>>> better.
->>>
->>> In our example, the register map would look a bit like the following.
->>> Note that every register configures four pins at a time.
->>>
->>> Register 0x0:
->>>  Mode  GPIO-A    I2C    SPI1
->>>  Value 0x0       0x1    0x2
->>>  ---------------------------
->>>  Pin1  GPIOA0    SDA    MISO1
->>>  Pin2  GPIOA1    SCL    MOSI1
->>>  Pin3  GPIOA2           SS1_B
->>>  Pin4  GPIOA3           SCLK1
->>>
->>> Register 0x4:
->>>  Mode  GPIO-A    SPI0
->>>  Value 0x0       0x1
->>>  ---------------------
->>>  Pin5  GPIOA4    MISO0
->>>  Pin6  GPIOA5    MOSI0
->>>  Pin7  GPIOA6    SS0_B
->>>  Pin8  GPIOA7    SCLK0
->>
->> My suggestion here is that pinctrl-single isn't appropriate. The only
->> way it could work is if you pretend that each group-of-pins is actually
->> a single pin.
->>
->> However, then the correlation between these pretend pins (i.e. really
->> the groups) and GPIOs won't work, because each "pin" is really 4 pins,
->> and hence 4 GPIOs, and hence you won't be able to gpio_get() more than 1
->> GPIO per pin group, I think.
+On Fri, Jun 07, 2013 at 02:37:12PM -0500, Shawn Bohrer wrote:
+> I've started testing the 3.10 kernel, previously I was on 3.4, and I'm
+> encounting some fairly large stalls in my memory mapped writes in the
+> range of .01 to 1s.  I've managed to capture two of these stalls so
+> far and both looked like the following:
 > 
-> Actually we can get each GPIO in the SoC. But we need to do some workaround.
+> 1) Writing process writes to a new page and blocks on xfs_ilock:
 > 
-> 1. As we discussed, we need to pretend a pin group as a single pin.
-> 
-> 2. In DTS, we need to define "gpio-ranges" in gpio node and
-> "pinctrl-single,gpio-range"
-> in pinmux node as below.
-> 
->     gpio {
->              /* gpio offset, pin offset, nr pins */
->              /* skip GPIOA1 & GPIOA3, PIN0 means pin1/pin2, PIN1 means
-> pin3/pin4 */
->             gpio-ranges = <&pmx 0 0 1 &pmx 2 1 1>;
->     };
-> 
->     pmx {
->               /* pin offset, nr pins, gpio function */
->              pinctrl-single,gpio-range = <&range 0 1 0 &range 1 1 0>
->     };
->     range {
->              #pinctrl-single,gpio-range-cells = <3>;
->     };
-> 
-> Because we pretend pin1/pin2 as one single pin (PIN1), we skip to define it
-> in gpio-ranges. This range is only help you to find right pinmux controller.
-> 
-> Yes, I agree that pinctrl-single driver isn't 100% appropriate. But it
-> could work.
-> I verified it.
+>     <...>-21567 [009]  9435.453069: sched_switch:     prev_comm=tick_receiver_m prev_pid=21567 prev_prio=79 prev_state=D ==> next_comm=swapper/9 next_pid=0 next_prio=120
+>     <...>-21567 [009]  9435.453072: kernel_stack:     <stack trace>
+> => schedule (ffffffff814ca379)
+> => rwsem_down_write_failed (ffffffff814cb095)
+> => call_rwsem_down_write_failed (ffffffff81275053)
+> => xfs_ilock (ffffffff8120b25c)
+> => xfs_vn_update_time (ffffffff811cf3d3)
+> => update_time (ffffffff81158dd3)
+> => file_update_time (ffffffff81158f0c)
+> => block_page_mkwrite (ffffffff81171d23)
+> => xfs_vm_page_mkwrite (ffffffff811c5375)
+> => do_wp_page (ffffffff8110c27f)
+> => handle_pte_fault (ffffffff8110dd24)
+> => handle_mm_fault (ffffffff8110f430)
+> => __do_page_fault (ffffffff814cef72)
+> => do_page_fault (ffffffff814cf2e7)
+> => page_fault (ffffffff814cbab2)
 
-Yeah, that sounds pretty horrible, sorry.
+Changing C/MTIME on the inode. Needs a lock, the update is
+transactional.
+
+> 
+> 2) kworker calls xfs_iunlock and wakes up my process:
+> 
+>    kworker/u50:1-403   [013]  9436.027354: sched_wakeup:     comm=tick_receiver_m pid=21567 prio=79 success=1 target_cpu=009
+>    kworker/u50:1-403   [013]  9436.027359: kernel_stack:     <stack trace>
+> => ttwu_do_activate.constprop.34 (ffffffff8106c556)
+> => try_to_wake_up (ffffffff8106e996)
+> => wake_up_process (ffffffff8106ea87)
+> => __rwsem_do_wake (ffffffff8126e531)
+> => rwsem_wake (ffffffff8126e62a)
+> => call_rwsem_wake (ffffffff81275077)
+> => xfs_iunlock (ffffffff8120b55c)
+> => xfs_iomap_write_allocate (ffffffff811ce4e7)
+> => xfs_map_blocks (ffffffff811bf145)
+> => xfs_vm_writepage (ffffffff811bfbc2)
+
+And allocation during writeback is holding the lock on that inode
+as it's already in a transaction.
+
+> So I guess my question is does anyone know why I'm now seeing these
+> stalls with 3.10?
+
+Because we made all metadata updates in XFS fully transactional in
+3.4:
+
+commit 8a9c9980f24f6d86e0ec0150ed35fba45d0c9f88
+Author: Christoph Hellwig <hch@infradead.org>
+Date:   Wed Feb 29 09:53:52 2012 +0000
+
+    xfs: log timestamp updates
+    
+    Timestamps on regular files are the last metadata that XFS does not update
+    transactionally.  Now that we use the delaylog mode exclusively and made
+    the log scode scale extremly well there is no need to bypass that code for
+    timestamp updates.  Logging all updates allows to drop a lot of code, and
+    will allow for further performance improvements later on.
+    
+    Note that this patch drops optimized handling of fdatasync - it will be
+    added back in a separate commit.
+    
+    Reviewed-by: Dave Chinner <dchinner@redhat.com>
+    Signed-off-by: Christoph Hellwig <hch@lst.de>
+    Reviewed-by: Mark Tinguely <tinguely@sgi.com>
+    Signed-off-by: Ben Myers <bpm@sgi.com>
+$ git describe --contains 8a9c998
+v3.4-rc1~55^2~23
+
+IOWs, you're just lucky you haven't noticed it on 3.4....
+
+> Are there any suggestions for how to eliminate them?
+
+Nope. You're stuck with it - there's far more places in the page
+fault path where you can get stuck on the same lock for the same
+reason - e.g. during block mapping for the newly added pagecache
+page...
+
+Hint: mmap() does not provide -deterministic- low latency access to
+mapped pages - it is only "mostly low latency". mmap() has exactly
+the same worst case page fault latencies as the equivalent write()
+syscall. e.g., dirty too many pages and mmap() write page faults
+can be throttled, just like a write() syscall....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
