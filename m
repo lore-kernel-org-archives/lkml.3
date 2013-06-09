@@ -1,87 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667Ab3FIVeP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 17:34:15 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:34907 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381Ab3FIVeO (ORCPT
+	id S1751635Ab3FIVgS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 17:36:18 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:63563 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab3FIVgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 17:34:14 -0400
+	Sun, 9 Jun 2013 17:36:17 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>, linux-kernel@vger.kernel.org,
+        linux-sunxi@googlegroups.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, kevin@allwinnertech.com
+Subject: Re: [PATCH 4/6] ARM: sunxi: dt: Add Allwinner A10s DTSI
+Date: Sun, 09 Jun 2013 23:36:24 +0200
+Message-ID: <3346364.JR9UrJYqP8@wuerfel>
+User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
+In-Reply-To: <1370795767-9769-5-git-send-email-maxime.ripard@free-electrons.com>
+References: <1370795767-9769-1-git-send-email-maxime.ripard@free-electrons.com> <1370795767-9769-5-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <51B44DF9.5040705@gmail.com>
-References: <51B44DF9.5040705@gmail.com>
-Date: Sun, 9 Jun 2013 14:34:13 -0700
-X-Google-Sender-Auth: nPVGVUDK4jSgJnIozVPAJWKJfFQ
-Message-ID: <CAE9FiQWtJhubmrgwGjLjOHDJF+Vkt-Y4y2uHuXc6pZg1XUDRxg@mail.gmail.com>
-Subject: Re: [PATCH buf-fix] kernel, range: fix broken mtrr_cleanup
-From: Yinghai Lu <yinghai@kernel.org>
-To: Shan Wei <shanwei88@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Samuel Liao <samuelliao@tencent.com>,
-        Lin Feng <linfeng@cn.fujitsu.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>,
-        davidshan <davidshan@tencent.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Y+BK20HDAgupBoYy2Ii/iNm8L5HDWjzaatQy6oTu5WS
+ IDwgyyuj76NnlVsQzKK5etamGF8/FzOGOaxWTwIeNHc0gxLaaQ
+ P48ITAxHWt9a62C5VaEejr3y2m2b9Qfw4UbbihVTqzmtomOwEB
+ IrKWh4RU6UKOnrydcXrqd+MIi0VC3Q3CTb4LMRTkQ+QAAIobxo
+ C8gprft6QURoq6JLTHqGwFQMX/hRadfJNrxanZkMRjlTeo8h6W
+ FbARxM1AK0g+FzTOdpwBn/wm2FsoFvnf0UwEQaweU5MXLr/9G+
+ Jd5NRAdStEGZV+xpmydLO7Puh0uxsJNfGQJm9ea5zJvyce3X+s
+ OlNIY1oIG7pJ3W578ql8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 9, 2013 at 2:42 AM, Shan Wei <shanwei88@gmail.com> wrote:
-> From: Samuel Liao <samuelliao@tencent.com>
->
->
-> commit fbe06b7bae7c9cf6ab05168fce5ee93b2f4bae7c broken the mtrr_cleanup
-> due to return incorrect merged range. this patch remove the empty range
-> by swapping with the last.
->
-> Error messages:
-> Jun  9 14:06:18 kernel: [    0.000000] *BAD*gran_size: 64K   chunk_size: 64K         num_reg: 4      lose cover RAM: -0G
-> Jun  9 14:06:18 kernel: [    0.000000] *BAD*gran_size: 64K   chunk_size: 128K        num_reg: 4      lose cover RAM: -0G
-> Jun  9 14:06:18 kernel: [    0.000000] *BAD*gran_size: 64K   chunk_size: 256K        num_reg: 4      lose cover RAM: -0G
-> Jun  9 14:06:18 kernel: [    0.000000] *BAD*gran_size: 64K   chunk_size: 512K        num_reg: 4      lose cover RAM: -0G
->
->
-> Signed-off-by: Samuel Liao <samuelliao@tencent.com>
+On Sunday 09 June 2013 18:36:05 Maxime Ripard wrote:
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 > ---
->  kernel/range.c | 15 ++++++++++----
->  1 file changed, 11 insertions(+), 4 deletions(-)
->
-> diff --git a/kernel/range.c b/kernel/range.c
-> index eb911db..b723697 100644
-> --- a/kernel/range.c
-> +++ b/kernel/range.c
-> @@ -48,11 +48,18 @@ int add_range_with_merge(struct range *range, int az, int nr_range,
->                 final_start = min(range[i].start, start);
->                 final_end = max(range[i].end, end);
->
-> +               if (final_start == range[i].start && final_end == range[i].end)
-> +                       return nr_range;
-> +
->                 /* clear it and add it back for further merge */
-> -               range[i].start = 0;
-> -               range[i].end =  0;
-> -               return add_range_with_merge(range, az, nr_range,
-> -                       final_start, final_end);
-> +               nr_range -= 1;
-> +               if (i != nr_range) {
-> +                       range[i].start = range[nr_range].start;
-> +                       range[i].end = range[nr_range].end;
-> +               }
-> +               range[nr_range].start = 0;
-> +               range[nr_range].end =  0;
-> +               i = -1;
->         }
->
->         /* Need to add it: */
+>  arch/arm/boot/dts/sun5i-a10s.dtsi | 286 ++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 286 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/sun5i-a10s.dtsi
 
-this patch is totally wrong.
+Would it make sense to split out the parts that are common with A13 into
+a separate sun5i.dtsi file?
 
-if the ranges already have [0,1g), [2g, 3g). and want to add [1g, 2g) to it.
-
-what is the result after this patch?
-only [1g, 2g)
-
-Thanks
-
-Yinghai
+	Arnd
