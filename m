@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751231Ab3FIUAr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 16:00:47 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:37669 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750695Ab3FIUAo (ORCPT
+	id S1751040Ab3FIUAq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 16:00:46 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:34622 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822Ab3FIUAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 9 Jun 2013 16:00:44 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -14,89 +14,68 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Joshua Covington <joshuacov@googlemail.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
         <stable@vger.kernel.org>
-Subject: [PATCH 2/2] x86, range: make add_range use blank slot
-Date: Sun,  9 Jun 2013 13:00:05 -0700
-Message-Id: <1370808005-23565-2-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 1/2] x86,mtrr: Fix original mtrr range get for mtrr_cleanup
+Date: Sun,  9 Jun 2013 13:00:04 -0700
+Message-Id: <1370808005-23565-1-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1370808005-23565-1-git-send-email-yinghai@kernel.org>
-References: <1370808005-23565-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now add_range_with_merge will generate blank slot as subtract_range.
-we could reach the array limit because of blank slots.
+Joshua reported: Commit cd7b304dfaf1 (x86, range: fix missing merge
+during add range) broke mtrr cleanup on his setup in 3.9.5.
+corresponding commit in upstream is fbe06b7bae7c.
 
-We can let add_range to have second try to use blank slot.
+  *BAD*gran_size: 64K chunk_size: 16M num_reg: 6 lose cover RAM: -0G
 
-Also use WARN_ONCE to print trace.
+https://bugzilla.kernel.org/show_bug.cgi?id=59491
+
+So it rejects new var mtrr layout.
+
+It turns out we have some problem with initial mtrr range retrievel.
+current sequence is:
+	x86_get_mtrr_mem_range
+		==> bunchs of add_range_with_merge
+		==> bunchs of subract_range
+		==> clean_sort_range
+	add_range_with_merge for [0,1M)
+	sort_range()
+
+add_range_with_merge could have blank slots, so we can not just
+sort only, that will have final result have extra blank slot in head.
+
+So move that calling add_range_with_merge for [0,1M), with that we
+could avoid extra clean_sort_range calling.
 
 Reported-by: Joshua Covington <joshuacov@googlemail.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Cc: <stable@vger.kernel.org> v3.9
----
- kernel/range.c |   34 ++++++++++++++++++++++------------
- 1 file changed, 22 insertions(+), 12 deletions(-)
 
-Index: linux-2.6/kernel/range.c
+---
+ arch/x86/kernel/cpu/mtrr/cleanup.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+Index: linux-2.6/arch/x86/kernel/cpu/mtrr/cleanup.c
 ===================================================================
---- linux-2.6.orig/kernel/range.c
-+++ linux-2.6/kernel/range.c
-@@ -3,23 +3,34 @@
-  */
- #include <linux/kernel.h>
- #include <linux/init.h>
-+#include <linux/bug.h>
- #include <linux/sort.h>
--
- #include <linux/range.h>
+--- linux-2.6.orig/arch/x86/kernel/cpu/mtrr/cleanup.c
++++ linux-2.6/arch/x86/kernel/cpu/mtrr/cleanup.c
+@@ -714,15 +714,15 @@ int __init mtrr_cleanup(unsigned address
+ 	if (mtrr_tom2)
+ 		x_remove_size = (mtrr_tom2 >> PAGE_SHIFT) - x_remove_base;
  
- int add_range(struct range *range, int az, int nr_range, u64 start, u64 end)
- {
--	if (start >= end)
--		return nr_range;
-+	int i;
+-	nr_range = x86_get_mtrr_mem_range(range, 0, x_remove_base, x_remove_size);
+ 	/*
+ 	 * [0, 1M) should always be covered by var mtrr with WB
+ 	 * and fixed mtrrs should take effect before var mtrr for it:
+ 	 */
+ 	nr_range = add_range_with_merge(range, RANGE_NUM, nr_range, 0,
+ 					1ULL<<(20 - PAGE_SHIFT));
+-	/* Sort the ranges: */
+-	sort_range(range, nr_range);
++	/* add from var mtrr at last */
++	nr_range = x86_get_mtrr_mem_range(range, nr_range,
++					  x_remove_base, x_remove_size);
  
--	/* Out of slots: */
--	if (nr_range >= az)
-+	if (start >= end)
- 		return nr_range;
- 
--	range[nr_range].start = start;
--	range[nr_range].end = end;
-+	/* Out of slots ? */
-+	if (nr_range < az) {
-+		i = nr_range;
-+		nr_range++;
-+	} else {
-+		/* find blank slot */
-+		for (i = 0; i < az; i++)
-+			if (!range[i].end)
-+				break;
-+		if (i == az) {
-+			WARN_ONCE(1, "run out of slot in ranges\n");
-+			return az;
-+		}
-+	}
- 
--	nr_range++;
-+	range[i].start = start;
-+	range[i].end = end;
- 
- 	return nr_range;
- }
-@@ -98,10 +109,9 @@ void subtract_range(struct range *range,
- 			if (i < az) {
- 				range[i].end = range[j].end;
- 				range[i].start = end;
--			} else {
--				pr_err("%s: run out of slot in ranges\n",
--					__func__);
--			}
-+			} else
-+				WARN_ONCE(1, "run out of slot in ranges\n");
-+
- 			range[j].end = start;
- 			continue;
- 		}
+ 	range_sums = sum_ranges(range, nr_range);
+ 	printk(KERN_INFO "total RAM covered: %ldM\n",
