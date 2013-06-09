@@ -1,384 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084Ab3FISQh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 14:16:37 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:52118 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732Ab3FISQg (ORCPT
+	id S1752063Ab3FISeR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 14:34:17 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:56394 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751706Ab3FISeQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 14:16:36 -0400
+	Sun, 9 Jun 2013 14:34:16 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>, linux-pm@vger.kernel.org,
+        Len Brown <len.brown@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Michael Karcher <Michael.Karcher@fu-berlin.de>
+Subject: Re: [REGRESSION] fan always on with 3.10-rc2
+Date: Sun, 09 Jun 2013 20:34:10 +0200
+Message-ID: <1461538.eEAU3Zp7hk@merkaba>
+User-Agent: KMail/4.10.2 (Linux/3.10.0-rc5-tp520; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <1825381.bJOGDrYABG@merkaba>
+References: <15568618.SsOOjPSAq8@merkaba> <1825381.bJOGDrYABG@merkaba>
 MIME-Version: 1.0
-In-Reply-To: <1370617656-18349-1-git-send-email-abrodkin@synopsys.com>
-References: <1370617656-18349-1-git-send-email-abrodkin@synopsys.com>
-Date: Sun, 9 Jun 2013 21:16:35 +0300
-Message-ID: <CAHp75VemPmx=1TjcAgLcat5rQO45VkBnppbeOkA_3o24c8HN-g@mail.gmail.com>
-Subject: Re: [PATCH v2] ethernet/arc/arc_emac - Add new driver
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-Cc: netdev <netdev@vger.kernel.org>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Mischa Jonker <Mischa.Jonker@synopsys.com>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 7, 2013 at 6:07 PM, Alexey Brodkin
-<Alexey.Brodkin@synopsys.com> wrote:
-> Driver for non-standard on-chip ethernet device ARC EMAC 10/100,
-> instantiated in some legacy ARC (Synopsys) FPGA Boards such as
-> ARCAngel4/ML50x.
->
-> This is based off of current Linus tree, build tested for x86.
-
-> +++ b/drivers/net/ethernet/arc/arc_emac_main.c
-> @@ -0,0 +1,956 @@
-> +/*
-> + * Copyright (C) 2004, 2007-2010, 2011-2013 Synopsys, Inc. (www.synopsys.com)
-
-2004, 2007-2013 ?
-
-> + * Driver for the ARC EMAC 10100 (Rev 5)
-
-If you are going to upstream this, why do you need revision?
-
-> + * Alexey Brodkin: June 2013
-> + *  -Upsteaming
-
-It will be obvious from existence of your commit in the git tree.
-
-> + *  -Refactoring
-> + *      = Use device-tree/OF for configuration
-> + *      = Use libphy for phy management
-> + *      = Remove non-NAPI code sections
-> + *      = Remove ARC-specific BD management implementations
-> + *      = Add ethtool functionality
-> + *
-> + * Vineet Gupta: June 2011
-> + *  -Issues when working with 64b cache line size
-> + *      = BD rings point to aligned location in an internal buffer
-> + *      = added support for cache coherent BD Ring memory
-> + *
-> + * Vineet Gupta: May 2010
-> + *  -Reduced foot-print of the main ISR (handling for error cases moved out
-> + *      into a separate non-inline function).
-> + *  -Driver Tx path optimized for small packets (which fit into 1 BD = 2K).
-> + *      Any specifics for chaining are in a separate block of code.
-> + *
-> + * Vineet Gupta: Nov 2009
-> + *  -Unified NAPI and Non-NAPI Code.
-> + *  -API changes since 2.6.26 for making NAPI independent of netdevice
-> + *  -Cutting a few checks in main Rx poll routine
-> + *  -Tweaked NAPI implementation:
-> + *      In poll mode, Original driver would always start sweeping BD chain
-> + *      from BD-0 upto poll budget (40). And if it got over-budget it would
-> + *      drop reminder of packets.
-> + *      Instead now we remember last BD polled and in next
-> + *      cycle, we resume from next BD onwards. That way in case of over-budget
-> + *      no packet needs to be dropped.
-> + *
-> + * Vineet Gupta: Nov 2009
-> + *  -Rewrote the driver register access macros so that multiple accesses
-> + *   in same function use "anchor" reg to save the base addr causing
-> + *   shorter instructions
-> + *
-> + * Amit Bhor, Sameer Dhavale: 2004
-
-I don't know if it's a good idea to keep changelog inside source file,
-we have git commit messages for that. You may move this to the first
-commit message if you want to keep history, and in future git will do
-the job for you.
-
-> + */
-> +
-> +#include <linux/etherdevice.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/io.h>
-> +#include <linux/module.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/of_mdio.h>
-> +#include <linux/of_net.h>
-> +#include <linux/of_platform.h>
-> +
-> +#include "arc_emac_regs.h"
-> +#include "arc_emac_mdio.h"
-
-Since you are creating driver under its own folder why to keep the
-prefixes in the filenames? I think regs.h and mdio.h would be enough.
-
-> +/* Transmission timeout */
-> +#define TX_TIMEOUT (400*HZ/1000)
-
-(400 * HZ / 1000)
-
-> +struct arc_emac_priv {
-
-> +       /* Pointers to BD rings - Device side */
-
-What about documenting structure fields in the kerneldoc format on the
-top of struct definition?
-
-> +       dma_addr_t rxbd_dma_hdl;
-> +       dma_addr_t txbd_dma_hdl;
-
-Perhaps you may consider to reduce field names somethow. I don't know
-why rxbd_dma and txbd_dma is not enough.
-
-> +       struct sk_buff *rx_skbuff[RX_BD_NUM];
-> +       struct sk_buff *tx_skbuff[TX_BD_NUM];
-
-Ditto.
-
-> +       void __iomem *reg_base_addr;
-
-Ditto.
-For example, base or regs.
-
-> +/**
-> + * arc_emac_adjust_link - Adjust the PHY link speed/duplex.
-> + * @net_dev:   Pointer to the net_device structure.
-> + *
-> + * This function is called to change the speed and duplex setting after
-> + * auto negotiation is done by the PHY.
-> + */
-> +static void arc_emac_adjust_link(struct net_device *net_dev)
-> +{
-> +       struct arc_emac_priv *priv = netdev_priv(net_dev);
-> +       struct phy_device *phydev = priv->phy_dev;
-> +       unsigned int reg, status_change = 0;
-> +
-> +       BUG_ON(!priv->phy_dev);
-> +
-> +       if (phydev->link && (priv->old_speed != phydev->speed)) {
-> +               /* speed changed */
-> +               switch (phydev->speed) {
-> +               case SPEED_10:
-> +               case SPEED_100:
-> +                       break;
-> +               default:
-> +                       netdev_warn(net_dev, "Speed (%d) is not 10/100?\n",
-> +                                   phydev->speed);
-> +                       break;
-> +               }
-> +               priv->old_speed = phydev->speed;
-> +               status_change = 1;
-> +       }
-> +
-> +       if (phydev->link && (priv->old_duplex != phydev->duplex)) {
-> +               /* duplex mode changed */
-> +               reg = EMAC_REG_GET(priv->reg_base_addr, R_CTRL);
-> +
-> +               if (DUPLEX_FULL == phydev->duplex)
-> +                       reg |= ENFL_MASK;
-> +               else
-> +                       reg &= ~ENFL_MASK;
-> +
-> +               EMAC_REG_SET(priv->reg_base_addr, R_CTRL, reg);
-> +               priv->old_duplex = phydev->duplex;
-> +               status_change = 1;
-> +       }
-> +
-> +       if (phydev->link != priv->old_link) {
-> +               /* link state changed */
-> +               if (!phydev->link) {
-> +                       /* link went down */
-> +                       priv->old_speed = 0;
-> +                       priv->old_duplex = -1;
-
-If you move this part to the top of function you may simplify conditions
-
-if (priv->old_link && !phydev->link) {
-                       /* link went down */
-                       priv->old_speed = 0;
-                       priv->old_duplex = -1;
-  priv->old_link = NULL;
-  phy_print_status(phydev);
-  return;
-}
-
-if (priv->old_speed != phydev->speed) {
-...
-
-> +               }
-> +               priv->old_link = phydev->link;
-> +               status_change = 1;
-> +       }
-> +
-> +       if (status_change)
-> +               phy_print_status(phydev);
-> +}
-
-> +static int arc_emac_poll(struct napi_struct *napi, int budget)
-> +{
-
-> +       for (loop = 0; loop < RX_BD_NUM; loop++) {
-> +               i = (i + 1) & (RX_BD_NUM - 1);
-
-i = (i + 1) % RX_BD_NUM;
-
-> +static irqreturn_t arc_emac_intr(int irq, void *dev_instance)
-> +{
-
-> +       if (likely(status & (RXINT_MASK | TXINT_MASK))) {
-
-It dublicates following checks.
-Instead of using else, you may check for opposite condition.
-
-> +               if (status & RXINT_MASK) {
-
-> +               }
-> +               if (status & TXINT_MASK) {
-
-> +               }
-> +       } else {
-
-> +               if (status & ERR_MASK) {
-> +                       /* MSER/RXCR/RXFR/RXFL interrupt fires on corresponding
-> +                        * 8-bit error counter overrun.
-> +                        * Because of this fact we add 256 items each time
-> +                        * overrun interrupt happens.
-> +                        */
-> +
-> +                       if (status & TXCH_MASK) {
-> +                               priv->stats.tx_errors++;
-> +                               priv->stats.tx_aborted_errors++;
-> +                               netdev_err(priv->net_dev,
-> +                                          "Tx chaining err! txbd_dirty = %u\n",
-> +                                          priv->txbd_dirty);
-> +                       } else if (status & MSER_MASK) {
-> +                               priv->stats.rx_missed_errors += 255;
-> +                               priv->stats.rx_errors += 255;
-> +                       } else if (status & RXCR_MASK) {
-> +                               priv->stats.rx_crc_errors += 255;
-> +                               priv->stats.rx_errors += 255;
-> +                       } else if (status & RXFR_MASK) {
-> +                               priv->stats.rx_frame_errors += 255;
-> +                               priv->stats.rx_errors += 255;
-
-Why 255 ?
-
-> +                       } else if (status & RXFL_MASK) {
-> +                               priv->stats.rx_over_errors += 255;
-> +                               priv->stats.rx_errors += 255;
-
-> +struct net_device_stats *arc_emac_stats(struct net_device *net_dev)
-> +{
-> +       unsigned long miss, rxerr, rxfram, rxcrc, rxoflow;
-> +       struct arc_emac_priv *priv = netdev_priv(net_dev);
-> +
-> +       rxerr = EMAC_REG_GET(priv->reg_base_addr, R_RXERR);
-> +       miss = EMAC_REG_GET(priv->reg_base_addr, R_MISS);
-> +
-> +       rxcrc = (rxerr & 0xff);
-> +       rxfram = (rxerr >> 8 & 0xff);
-> +       rxoflow = (rxerr >> 16 & 0xff);
-
-For what purpose you embraced those?
-
-> +int arc_emac_tx(struct sk_buff *skb, struct net_device *net_dev)
-> +{
-> +       int len, bitmask;
-> +       unsigned int info;
-> +       char *pkt;
-> +       struct arc_emac_priv *priv = netdev_priv(net_dev);
-> +
-> +       len = skb->len < ETH_ZLEN ? ETH_ZLEN : skb->len;
-
-len = max_t(..., ETH_ZLEN, skb->len);
-
-> +tx_next_chunk:
-> +
-> +       info = priv->txbd[priv->txbd_curr].info;
-> +       if (likely((info & OWN_MASK) == FOR_CPU)) {
-
-> +       } else {
-> +               return NETDEV_TX_BUSY;
-
-What about to do this check first and return, and do the body unconditionally?
-
-> +       }
-> +}
-> +
-
-> +static int arc_emac_probe(struct platform_device *pdev)
-> +{
-> +       struct net_device *net_dev;
-> +       struct arc_emac_priv *priv;
-> +       int err;
-> +       unsigned int id, clock_frequency;
-> +       struct resource res_regs, res_irq;
-> +       const char *mac_addr = NULL;
-
-It seems useless assignment.
-
-> +       priv->reg_base_addr = devm_ioremap_resource(&pdev->dev, &res_regs);
-> +       if (IS_ERR(priv->reg_base_addr)) {
-> +               dev_err(&pdev->dev, "failed to ioremap MAC registers\n");
-
-No need to print this here.
-
-
-> +++ b/drivers/net/ethernet/arc/arc_emac_mdio.c
-> @@ -0,0 +1,170 @@
-> +/*
-> + * Copyright (C) 2004, 2007-2010, 2011-2013 Synopsys, Inc. (www.synopsys.com)
-
-2007-2013?
-
-> +static int arc_mdio_complete_wait(struct arc_mdio_priv *priv)
-> +{
-> +       unsigned int status;
-> +       unsigned int count = (ARC_MDIO_COMPLETE_POLL_COUNT * 40);
-
-> +               /* Make sure we never get into infinite loop */
-> +               if (count-- == 0) {
-> +                       WARN_ON(1);
-
-Is it really requires WARN_ON?
-
-> +                       return -ETIMEDOUT;
-> +               }
-> +               msleep(25);
-
-Overall delay is up to 1000 ms, correct?
-
-> +static int arc_mdio_write(struct mii_bus *bus, int phy_addr,
-> +                         int reg_num, u16 value)
-> +{
-
-> +       EMAC_REG_SET(priv->reg_base_addr, R_MDIO,
-> +                    0x50020000 | (phy_addr << 23) | (reg_num << 18) |
-> +                    (value & 0xffff));
-
-Useless 0xffff for u16 value.
-
-> +++ b/drivers/net/ethernet/arc/arc_emac_mdio.h
-> @@ -0,0 +1,22 @@
-> +/*
-> + * Copyright (C) 2004, 2007-2010, 2011-2013 Synopsys, Inc. (www.synopsys.com)
-
-2007-2013
-
-> +struct arc_mdio_priv {
-> +       struct mii_bus *bus;
-> +       struct device *dev;
-> +       void __iomem *reg_base_addr; /* MAC registers base address */
-
-kerneldoc format?
-
-> +++ b/drivers/net/ethernet/arc/arc_emac_regs.h
-> @@ -0,0 +1,72 @@
-> +/*
-> + * Copyright (C) 2004, 2007-2010, 2011-2013 Synopsys, Inc. (www.synopsys.com)
-
-2007-2013 ?
-
---
-With Best Regards,
-Andy Shevchenko
+Am Samstag, 8. Juni 2013, 22:34:44 schrieb Martin Steigerwald:
+> Am Freitag, 24. Mai 2013, 13:03:18 schrieb Martin Steigerwald:
+> > Hi!
+> > 
+> > With 3.10-rc2 I see fan always or almost always on, even during extended
+> > periods of basically idling around. I did not notice this with 3.9. This is
+> > on an ThinkPad T520 with Intel Sandybridge i5-2520M dual core with
+> > hyperthreading at regularily 2,5 GhZ and Intel graphics (no nvidia).
+> > 
+> > I am using full hz:
+> > 
+> > martin@merkaba:~/Linux/Kernel/Mainline/Bugs/fan always on with 3.10.2-rc2> xzgrep NO_HZ config-3.10.0-rc2-tp520.xz
+> > CONFIG_NO_HZ_COMMON=y
+> > # CONFIG_NO_HZ_IDLE is not set
+> > CONFIG_NO_HZ_FULL=y
+> > CONFIG_NO_HZ_FULL_ALL=y
+> > CONFIG_NO_HZ=y
+> > CONFIG_RCU_FAST_NO_HZ=y
+> > 
+> > And P-State driver (which I used in 3.9 already as well).
+> > 
+> > Kernel config attached as xz. Use xzless or xzcat to display.
+> > 
+> > 
+> > What puzzles is output of powertop, especially:
+> 
+> Still present in 3.10-rc4.
+> 
+> I disabled P-State driver but then rpm seems to be even worse.
+> 
+> Around 2800 rpm all the time, was about 2650 with Intel P State driver.
+> 
+> Next I will try without CONFIG_NO_HZ_FULL and CONFIG_NO_HZ_FULL_ALL.
+
+Okay, without these both the behavior is better. Fan still does not seem
+to get into non running state, which it was able to with earlier kernels
+(or userspaces?), but its down to a quiet 1950 rpm with Intel P-State driver
+enabled again. CC큕 to people from thread "power management regression
+in linux 3.10? (related to CONFIG_NO_HZ_FULL)" which I think is related.
+
+Powertop values make a lot more sense as well:
+
+PowerTOP v2.0     Overview   Idle stats   Frequency stats   Device stats   Tunables                                     
+
+
+          Package   |             Core    |            CPU 0       CPU 1
+                    |                     | C0 active   1,4%        0,9%
+                    |                     | POLL        0,0%    0,0 ms  0,0%    0,0 ms
+                    |                     | C1E-SNB     7,7%    3,0 ms  2,9%    5,3 ms
+C2 (pc2)    1,1%    |                     |
+C3 (pc3)    7,2%    | C3 (cc3)    8,4%    | C3-SNB      8,2%    3,1 ms  3,0%   15,2 ms
+C6 (pc6)    4,9%    | C6 (cc6)    9,3%    | C6-SNB      7,0%    3,5 ms  6,2%   13,0 ms
+C7 (pc7)    9,9%    | C7 (cc7)   64,3%    | C7-SNB     73,4%    6,8 ms 84,0%   21,6 ms
+
+                    |             Core    |            CPU 2       CPU 3
+                    |                     | C0 active   1,1%        0,9%
+                    |                     | POLL        0,0%    0,0 ms  0,0%    0,0 ms
+                    |                     | C1E-SNB    11,0%    6,9 ms  1,4%    4,8 ms
+                    |                     |
+                    | C3 (cc3)    9,3%    | C3-SNB      7,7%    5,8 ms  1,9%    6,0 ms
+                    | C6 (cc6)   10,0%    | C6-SNB      8,5%    7,4 ms  4,1%    4,9 ms
+                    | C7 (cc7)   64,9%    | C7-SNB     71,4%    8,2 ms 91,1%    7,1 ms
+
+
+
+PowerTOP v2.0     Overview   Idle stats   Frequency stats   Device stats   Tunables                                     
+
+
+            Package |             Core    |            CPU 0       CPU 1
+                    |                     | Actual    2,0 GHz     2,4 GHz
+Idle        54,4%   | Idle        97,4%   | Idle        98,9%       98,2%
+2,90 GHz     0,6%   | 2,90 GHz     0,1%   | 2,90 GHz     0,1%        0,1%
+2,81 GHz     2,6%   | 3,10 GHz     0,2%   | 3,10 GHz     0,1%        0,1%
+3,10 GHz     1,2%   | 2,10 GHz     0,1%   | 2,10 GHz     0,0%        0,0%
+3,21 GHz     7,3%   | 3,21 GHz     0,9%   | 3,21 GHz     0,1%        0,9%
+2,10 GHz     2,3%   | 2,81 GHz     0,2%   | 2,81 GHz     0,1%        0,1%
+3,00 GHz     3,5%   | 3,00 GHz     0,0%   | 3,00 GHz     0,0%        0,0%
+2,40 GHz     3,5%   | 2,40 GHz     0,1%   | 2,40 GHz     0,1%        0,1%
+1,91 GHz     1,0%   | 1,91 GHz     0,1%   | 1,91 GHz     0,0%        0,0%
+2,21 GHz     0,6%   | 2,21 GHz     0,1%   | 2,21 GHz     0,1%        0,1%
+
+                    |             Core    |            CPU 2       CPU 3
+                    |                     | Actual    2,4 GHz     2,5 GHz
+                    | Idle        56,3%   | Idle        98,4%       57,7%
+                    | 2,90 GHz     0,5%   | 2,90 GHz     0,1%        0,9%
+                    | 2,81 GHz     2,5%   | 2,81 GHz     0,1%        6,4%
+                    | 3,10 GHz     1,1%   | 3,10 GHz     0,2%        2,2%
+                    | 3,21 GHz     6,7%   | 3,00 GHz     0,0%        2,4%
+                    | 3,00 GHz     3,5%   | 3,21 GHz     0,5%        3,4%
+                    | 2,71 GHz     2,4%   | 2,50 GHz     0,1%        3,3%
+                    | 2,50 GHz     1,1%   | 2,31 GHz     0,1%        0,4%
+                    | 2,31 GHz     0,2%   | 2,71 GHz     0,1%        1,0%
+                    | 2,60 GHz     1,0%   | 2,60 GHz     0,1%        2,7%
+
+
+If I haven큧 stated it. This is on a ThinkPad T520 with dual core
+Sandybridge i5-2620M at 2.5 GHz (overclockable to 3.2 GhZ), now with
+Kernel 3.10-rc5. I didn큧 test this one with the full hz stuff enabled, only
+rc2 and rc4.
+
+> According to powertop CPU 0 is never idle
+> 
+> PowerTOP v2.0     Overview   Idle stats   Frequency stats   Device stats   Tunables                                     
+> 
+> 
+>             Package |             Core    |            CPU 0       CPU 1
+>                     |                     | Actual       843 MHz    1148 MHz
+> Turbo Mode   2,2%   | Turbo Mode   2,1%   | Turbo Mode   2,1%        0,8%
+> 2,50 GHz     0,9%   | 2,50 GHz     0,9%   | 2,50 GHz     0,9%        0,0%
+> 2,00 GHz     0,0%   | 2,00 GHz     0,0%   | 2,00 GHz     0,0%        0,0%
+> 1,80 GHz     0,1%   | 1,80 GHz     0,1%   | 1,80 GHz     0,1%        0,0%
+> 1,60 GHz     0,0%   | 1,60 GHz     0,0%   | 1,60 GHz     0,0%        0,0%
+> 1400 MHz     0,0%   | 1400 MHz     0,0%   | 1400 MHz     0,0%        0,0%
+> 1200 MHz     0,0%   | 1200 MHz     0,0%   | 1200 MHz     0,0%        0,0%
+> 1000 MHz     0,0%   | 1000 MHz     0,0%   | 1000 MHz     0,0%        0,0%
+>  800 MHz    87,9%   |  800 MHz    87,3%   |  800 MHz    87,1%        3,5%
+> Idle         9,0%   | Idle         9,6%   | Idle         9,9%       95,7%
+> 
+>                     |             Core    |            CPU 2       CPU 3
+>                     |                     | Actual       953 MHz     905 MHz
+>                     | Turbo Mode   0,8%   | Turbo Mode   0,7%        0,1%
+>                     | 2,50 GHz     0,7%   | 2,50 GHz     0,7%        0,0%
+>                     | 2,00 GHz     0,0%   | 2,00 GHz     0,0%        0,0%
+>                     | 1,80 GHz     0,1%   | 1,80 GHz     0,1%        0,0%
+>                     | 1,60 GHz     0,0%   | 1,60 GHz     0,0%        0,0%
+>                     | 1400 MHz     0,0%   | 1400 MHz     0,0%        0,0%
+>                     | 1200 MHz     0,0%   | 1200 MHz     0,0%        0,0%
+>                     | 1000 MHz     0,0%   | 1000 MHz     0,0%        0,0%
+>                     |  800 MHz    10,3%   |  800 MHz     7,4%        3,7%
+>                     | Idle        88,1%   | Idle        91,0%       96,2%
+> 
+> 
+> 
+> 
+> PowerTOP v2.0     Overview   Idle stats   Frequency stats   Device stats   Tunables                                     
+> 
+> 
+>           Package   |             Core    |            CPU 0       CPU 1
+>                     |                     | C0 active  32,5%        0,3%
+>                     |                     | POLL       96,4%    0,9 ms  0,0%    0,0 ms
+>                     |                     | C1E-SNB     0,0%    0,0 ms  0,0%    0,2 ms
+> C2 (pc2)    0,0%    |                     |
+> C3 (pc3)    0,0%    | C3 (cc3)    0,0%    | C3-SNB      0,0%    0,0 ms  0,0%    0,1 ms
+> C6 (pc6)    0,0%    | C6 (cc6)    0,0%    | C6-SNB      0,0%    0,0 ms  0,0%    0,0 ms
+> C7 (pc7)    0,0%    | C7 (cc7)    0,0%    | C7-SNB      0,0%    0,0 ms 99,2%   10,9 ms
+> 
+>                     |             Core    |            CPU 2       CPU 3
+>                     |                     | C0 active   1,2%        0,7%
+>                     |                     | POLL        0,0%    0,0 ms  0,0%    0,0 ms
+>                     |                     | C1E-SNB     0,0%    0,1 ms  0,1%    0,2 ms
+>                     |                     |
+>                     | C3 (cc3)    0,1%    | C3-SNB      0,0%    0,8 ms  0,0%    0,2 ms
+>                     | C6 (cc6)    0,0%    | C6-SNB      0,0%    0,0 ms  0,0%    0,0 ms
+>                     | C7 (cc7)   95,0%    | C7-SNB     97,7%   14,5 ms 97,7%   12,2 ms
+> 
+> 
+> Old outputs with rc2 and P-State driver for comparison:
+> 
+> > 
+> > PowerTOP v2.0     Overview   Idle stats   Frequency stats   Device stats   Tunables                                     
+> > 
+> > 
+> >           Package   |             Core    |            CPU 0       CPU 1
+> >                     |                     | C0 active 127,4%        2,3%
+> >                                                       ^^^^^^
+> >                     |                     | POLL       98,1%    0,9 ms  0,0%    0,0 ms
+> >                                                        ^^^^^
+> >                     |                     | C1E-SNB     0,0%    0,0 ms  0,4%    0,9 ms
+> > C2 (pc2)    0,0%    |                     |
+> > C3 (pc3)    0,0%    | C3 (cc3)    0,0%    | C3-SNB      0,0%    0,0 ms  0,1%    0,8 ms
+> > C6 (pc6)    0,0%    | C6 (cc6)    0,0%    | C6-SNB      0,0%    0,0 ms  0,0%    0,8 ms
+> > C7 (pc7)    0,0%    | C7 (cc7)    0,0%    | C7-SNB      0,0%    0,0 ms 97,5%    7,4 ms
+> > 
+> >                     |             Core    |            CPU 2       CPU 3
+> >                     |                     | C0 active   1,9%        0,8%
+> >                     |                     | POLL        0,0%    0,0 ms  0,0%    0,0 ms
+> >                     |                     | C1E-SNB     1,1%    1,3 ms  0,0%    0,1 ms
+> >                     |                     |
+> >                     | C3 (cc3)    0,3%    | C3-SNB      0,3%    1,0 ms  0,0%    0,2 ms
+> >                     | C6 (cc6)    0,1%    | C6-SNB      0,1%    2,5 ms  0,0%    0,3 ms
+> >                     | C7 (cc7)   96,2%    | C7-SNB     97,0%    7,2 ms 99,3%   17,2 ms
+> > 
+> > 
+> > PowerTOP v2.0     Overview   Idle stats   Frequency stats   Device stats   Tunables                                     
+> > 
+> > 
+> >             Package |             Core    |            CPU 0       CPU 1
+> >                     |                     | Actual    3,2 GHz     3,1 GHz
+> > Idle       100,0%   | Idle       100,0%   | Idle       100,0%      100,0%
+> > 
+> >                     |             Core    |            CPU 2       CPU 3
+> >                     |                     | Actual    3,0 GHz     3,0 GHz
+> >                     | Idle       100,0%   | Idle       100,0%      100,0%
+> > 
+> > 
+> > It seems the kernel is overbusying one core completely, if the output of
+> > powertop is correct. And why is Actual frequencing of CPUs that high?
+> > I saw that kernel tends to overtact quickly. I thought this was due to
+> > getting work done quickly and then let it idle. But the idle stats
+> > seem bogus to, maybe powertop is not up to date with current kernels?
+> > 
+> > I see no reason for busying one core. This happens when CPU usage is
+> > below 20%. The fan is consistently around 2640 rpm:
+> > 
+> > 
+> > PowerTOP v2.0     Overview   Idle stats   Frequency stats   Device stats   Tunables                                     
+> > 
+> > Summary: 399,8 wakeups/second,  0,0 GPU ops/second, 0,0 VFS ops/sec and 3,0% CPU use
+> > 
+> >                 Usage       Events/s    Category       Description
+> >              2644 rpm                   Device         Laptop fan
+> >             100,0%                      Device         Audio codec hwC0D1: Conexant
+> >             100,0%                      Device         Audio codec hwC0D3: Intel
+> >             100,0%                      Device         Audio codec hwC0D0: Conexant
+> >              30,7 탎/s     112,3        Process        [ksoftirqd/0]
+> >               4,2 ms/s      83,5        Process        kwin -session 10cec7d36b000136265311700000023930000_1369322581_349094
+> >               0,8 ms/s      67,3        Process        [irq/42-i915@pci]
+> >               5,5 ms/s      53,6        Process        /usr/bin/X :0 vt7 -br -nolisten tcp -auth /var/run/xauth/A:0-eXsirc
+> >             698,3 탎/s      13,3        Process        [irq/16-mmc0]
+> >              85,8 탎/s       9,1        Process        [rcu_preempt]
+> >             297,1 탎/s       8,7        Process        /usr/sbin/mysqld --defaults-file=/home/martin/.local/share/akonadi/mysql.conf --datadir
+> >              78,6 탎/s       8,1        Process        [ksoftirqd/2]
+> >               6,7 ms/s       3,7        Process        /usr/bin/plasma-desktop
+> >             218,9 탎/s       5,0        Interrupt      [1] timer(softirq)
+> >               2,8 ms/s       2,9        Process        /usr/bin/konsole -session 10cec7d36b000135326160200000249810027_1369322580_899575
+> >              65,9 탎/s       3,6        Process        [ksoftirqd/1]
+> >              69,8 탎/s       3,5        Process        [ksoftirqd/3]
+> >              38,1 탎/s       3,4        Process        [rcuop/3]
+> >              35,3 탎/s       2,4        Process        [rcuop/2]
+> >               6,0 ms/s      0,00        Process        atop
+> >              21,3 탎/s       1,8        Process        [irq/43-ahci]
+> >              33,3 탎/s       1,7        Process        [rcuop/0]
+> >             122,3 탎/s       1,7        Process        [btrfs-transacti]
+> >              66,4 탎/s       1,5        Process        /usr/bin/dirmngr --daemon --sh
+> >              61,2 탎/s       1,0        Process        [rcuop/1]
+> >              29,2 탎/s       1,0        Process        /usr/lib/gvfs/gvfs-afc-volume-monitor
+> >              40,8 탎/s       0,9        Timer          process_timeout
+> >              25,5 탎/s       0,9        Process        /usr/bin/python /usr/bin/hp-systray -x
+> >              32,2 탎/s       0,7        Process        /usr/bin/dbus-daemon --fork --print-pid 5 --print-address 7 --session
+> >               5,1 탎/s       0,7        Process        [irq/44-eth0]
+> >             612,1 탎/s       0,4        Process        ksysguardd
+> >             137,6 탎/s       0,5        Interrupt      [7] sched(softirq)
+> >               5,6 탎/s       0,5        Timer          clocksource_watchdog
+> >              71,2 탎/s       0,4        kWork          disk_events_workfn
+> >              57,5 탎/s       0,4        Process        kdeinit4: kded4 [kdeinit]
+> >              68,3 탎/s       0,3        Process        akonadiserver
+> >              34,6 탎/s       0,3        Process        /usr/bin/virtuoso-t +foreground +configfile /tmp/virtuoso_fB2599.ini +wait
+> >              14,9 탎/s       0,3        Process        /usr/bin/gpg-agent --daemon --sh --write-env-file=/home/martin/.gnupg/gpg-agent-info-me
+> >              39,4 탎/s      0,30        Process        /usr/bin/nepomukservicestub nepomukfileindexer
+> > 
+> > 
+> > PowerTOP v2.0     Overview   Idle stats   Frequency stats   Device stats   Tunables                                     
+> > 
+> > 
+> >               Usage     Device name
+> >              2644 rpm     Laptop fan
+> >               4,3%        CPU use
+> >             100,0%        Audio codec hwC0D3: Intel
+> >             100,0%        Audio codec hwC0D0: Conexant
+> >             100,0%        Audio codec hwC0D1: Conexant
+> >              20,9 pkts/s  Network interface: eth0 (e1000e)
+> >             100,0%        USB device: usb-device-8087-0024
+> >             100,0%        USB device: usb-device-8087-0024
+> >             100,0%        Display backlight
+> >             100,0%        Display backlight
+> >             100,0%        USB device: EHCI Host Controller
+> >             100,0%        USB device: Biometric Coprocessor (UPEK)
+> >             100,0%        USB device: Integrated Smart Card Reader (Lenovo)
+> >             100,0%        USB device: EHCI Host Controller
+> >               0,0 ops/s   GPU
+> >             100,0%        USB device: usb-device-17ef-100a
+> >             100,0%        PCI Device: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 5
+> >             100,0%        PCI Device: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 4
+> >             100,0%        PCI Device: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 2
+> >             100,0%        PCI Device: Intel Corporation 6 Series/C200 Series Chipset Family High Definition Audio Controller
+> >             100,0%        PCI Device: Intel Corporation 6 Series/C200 Series Chipset Family MEI Controller #1
+> >             100,0%        USB device: PS/2+USB Mouse
+> >             100,0%        PCI Device: Intel Corporation QM67 Express Chipset Family LPC Controller
+> >             100,0%        PCI Device: Intel Corporation 6 Series/C200 Series Chipset Family 6 port SATA AHCI Controller
+> >             100,0%        PCI Device: Ricoh Co Ltd MMC/SD Host Controller
+> >             100,0%        PCI Device: Silicon Image, Inc. SiI 3531 [SATALink/SATARaid] Serial ATA Controller
+> >             100,0%        PCI Device: Ricoh Co Ltd R5C832 PCIe IEEE 1394 Controller
+> >             100,0%        PCI Device: Intel Corporation 6 Series/C200 Series Chipset Family USB Enhanced Host Controller #2
+> >             100,0%        PCI Device: Intel Corporation 82579LM Gigabit Network Connection
+> >             100,0%        PCI Device: Intel Corporation 6 Series/C200 Series Chipset Family SMBus Controller
+> >             100,0%        PCI Device: Intel Corporation 6 Series/C200 Series Chipset Family PCI Express Root Port 1
+> >             100,0%        PCI Device: Intel Corporation 6 Series/C200 Series Chipset Family USB Enhanced Host Controller #1
+> >             100,0%        PCI Device: Intel Corporation 2nd Generation Core Processor Family Integrated Graphics Controller
+> >             100,0%        PCI Device: Intel Corporation 2nd Generation Core Processor Family DRAM Controller
+> >             100,0%        PCI Device: Intel Corporation Centrino Advanced-N 6205 [Taylor Peak]
+> >               0,0 pkts/s  Network interface: wlan0 (iwlwifi)
+> >               0,0%        Thinkpad light
+> >               0,0%        Radio device: thinkpad_acpi
+> >               0,0%        Radio device: iwlwifi
+> > 
+> > 
+> > I saw nothing outstanding in dmesg or kern.log, just
+> > 
+> > merkaba:~#2> grep "Intel pstate controlling: cpu" /var/log/kern.log
+> > May 20 10:03:31 merkaba kernel: [264852.930994] Intel pstate controlling: cpu 1
+> > May 20 10:03:31 merkaba kernel: [264852.944479] Intel pstate controlling: cpu 2
+> > May 20 10:03:31 merkaba kernel: [264852.957879] Intel pstate controlling: cpu 3
+> > May 21 09:14:03 merkaba kernel: [315800.710623] Intel pstate controlling: cpu 1
+> > May 21 09:14:03 merkaba kernel: [315800.724087] Intel pstate controlling: cpu 2
+> > May 21 09:14:03 merkaba kernel: [315800.737493] Intel pstate controlling: cpu 3
+> > May 21 20:01:20 merkaba kernel: [344305.122543] Intel pstate controlling: cpu 1
+> > May 21 20:01:20 merkaba kernel: [344305.135953] Intel pstate controlling: cpu 2
+> > May 21 20:01:20 merkaba kernel: [344305.149398] Intel pstate controlling: cpu 3
+> > May 21 21:52:18 merkaba kernel: [    1.441043] Intel pstate controlling: cpu 0
+> > May 21 21:52:18 merkaba kernel: [    1.441084] Intel pstate controlling: cpu 1
+> > May 21 21:52:18 merkaba kernel: [    1.441123] Intel pstate controlling: cpu 2
+> > May 21 21:52:18 merkaba kernel: [    1.441162] Intel pstate controlling: cpu 3
+> > May 23 17:22:29 merkaba kernel: [    1.860224] Intel pstate controlling: cpu 0
+> > May 23 17:22:29 merkaba kernel: [    1.860267] Intel pstate controlling: cpu 1
+> > May 23 17:22:29 merkaba kernel: [    1.860306] Intel pstate controlling: cpu 2
+> > May 23 17:22:29 merkaba kernel: [    1.860345] Intel pstate controlling: cpu 3
+> > 
+> > But these seem to be regular and I had them before as well.
+> > 
+> > Thanks,
+> > 
+> 
+-- 
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
