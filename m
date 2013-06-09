@@ -1,91 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449Ab3FIJSY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 05:18:24 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:15757 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799Ab3FIJSX (ORCPT
+	id S1753289Ab3FIJYr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 05:24:47 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:51887 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827Ab3FIJYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 05:18:23 -0400
-Message-ID: <51B4480F.2050400@huawei.com>
-Date: Sun, 9 Jun 2013 17:17:03 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Sun, 9 Jun 2013 05:24:45 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: N900 device tree conversion: how to do first step
+Date: Sun, 9 Jun 2013 11:24:40 +0200
+User-Agent: KMail/1.13.7 (Linux/3.9.0-rc4+uvd+synaptics-generic; KDE/4.10.4; x86_64; ; )
+Cc: kernel list <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        aaro.koskinen@iki.fi, linux-omap@vger.kernel.org,
+        lauri.leukkunen@nokia.com
+References: <20130609015944.GA23559@amd.pavel.ucw.cz>
+In-Reply-To: <20130609015944.GA23559@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Cgroups <cgroups@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: [PATCH v3 7/7] cpuset: fix to migrate mm correctly in a corner case
-References: <51B4475A.8030509@huawei.com>
-In-Reply-To: <51B4475A.8030509@huawei.com>
-Content-Type: text/plain; charset="GB2312"
+Content-Type: multipart/signed;
+  boundary="nextPart5024910.E8RVTgHMGR";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Message-Id: <201306091124.41251@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before moving tasks out of empty cpusets, update_tasks_nodemask()
-is called, which calls do_migrate_pages(xx, from, to). Then those
-tasks are moved to an ancestor, and do_migrate_pages() is called
-again.
+--nextPart5024910.E8RVTgHMGR
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-The first time: from = node_to_be_offlined, to = empty.
-The second time: from = empty, to = ancestor's nodemask.
+On Sunday 09 June 2013 03:59:44 Pavel Machek wrote:
+> Hi!
+>=20
+> I'd like to convert Nokia N900 to device tree.
+>=20
+> Unfortunately, serial port is not easily available (very
+> special cable would be needed, does someone know where to get
+> one?) and I don't have BDI (and very special cable would be
+> needed, too).
+>=20
 
-so looks like no pages will be migrated.
+Hello,
 
-Fix this by:
+I used serial port only in qemu for debugging. Maybe you can try
+to play with qemu first. Qemu has good n900 HW support.
 
-- Don't call update_tasks_nodemask() on empty cpusets.
-- Pass cs->old_mems_allowed to do_migrate_pages().
+But problematic is to create n900 mtd nand image bootable in
+qemu, because it needs closed source nokia bootloader and this
+needs to have CAL partition with some unknown data with is
+proprietary format.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/cpuset.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+Nevertheless, there is prebuilded qemu image with maemo5 and with
+special version of nokia patches qemu, which was (and still is)
+very good for testing anything for n900. Special version of qemu
+plus qemu image is part of MADDE development tool, look here:
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index d1d6782..3cd68b8 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1563,9 +1563,16 @@ static void cpuset_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
- 		struct cpuset *mems_oldcs = effective_nodemask_cpuset(oldcs);
- 
- 		mpol_rebind_mm(mm, &cpuset_attach_nodemask_to);
--		if (is_memory_migrate(cs))
--			cpuset_migrate_mm(mm, &mems_oldcs->mems_allowed,
-+		if (is_memory_migrate(cs)) {
-+			/*
-+			 * old_mems_allowed is the same with mems_allowed here,
-+			 * except if this task is being moved automatically due
-+			 * to hotplug, and in this case mems_allowed is empty
-+			 * and old_mems_allowed is the offlined node.
-+			 */
-+			cpuset_migrate_mm(mm, &mems_oldcs->old_mems_allowed,
- 					  &cpuset_attach_nodemask_to);
-+		}
- 		mmput(mm);
- 	}
- 
-@@ -2155,7 +2162,7 @@ retry:
- 	 * for empty cpuset to take on ancestor's cpumask.
- 	 */
- 	if ((sane && cpumask_empty(cs->cpus_allowed)) ||
--	    !cpumask_empty(&off_cpus))
-+	    (!cpumask_empty(&off_cpus) && !cpumask_empty(cs->cpus_allowed)))
- 		update_tasks_cpumask(cs, NULL);
- 
- 	mutex_lock(&callback_mutex);
-@@ -2167,7 +2174,7 @@ retry:
- 	 * for empty cpuset to take on ancestor's nodemask.
- 	 */
- 	if ((sane && nodes_empty(cs->mems_allowed)) ||
--	    !nodes_empty(off_mems))
-+	    (!nodes_empty(off_mems) && !nodes_empty(cs->mems_allowed)))
- 		update_tasks_nodemask(cs, NULL);
- 
- 	is_empty = cpumask_empty(cs->cpus_allowed) ||
--- 
-1.8.0.2
+Info: http://wiki.maemo.org/MADDE
+Download link: http://tablets-dev.nokia.com/MADDE.php
+
+Except skinning support and Opengl ES all other nokia patches were
+included into Linaro version of qemu, so you can use it without
+problems. But you still need proprietary bootloader and correct
+CAL partition.
+
+But, nokia released closed redistributable version of bootloader
+for qemu and (proprietary) tool which generating mtd nand
+partition. You can pass kernel, initfs, rootfs images and it
+create correct mtd layout and automatically creating CAL.
+
+Proprietary n900 bootloader (two parts!) for qemu is here:
+http://download.meego.com/live/Trunk:/non-oss:/Testing/Trunk_Testing/i586/n=
+olo-qemu-0.20100910-1.2.i586.rpm
+
+Proprietary tool for creating mtd nand file is here:
+http://download.meego.com/live/Trunk:/non-oss:/Testing/Trunk_Testing/i586/q=
+flasher-21-1.2.i586.rpm
+
+PS: Sorry for too many closed SW, but there is no FOSS equivalent
+and this is the only one option how to use qemu n900 hw support.
+U-Boot is ported to n900, but depends on Nokia bootloader...
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart5024910.E8RVTgHMGR
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlG0SdkACgkQi/DJPQPkQ1JTmgCgtTUjEUwivW/hkR7tPIdRzZoA
+P9YAoISSHtgZpFOKtYqkfUctbG3YDs8y
+=Chox
+-----END PGP SIGNATURE-----
+
+--nextPart5024910.E8RVTgHMGR--
