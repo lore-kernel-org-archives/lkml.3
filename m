@@ -1,65 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932Ab3FIMbO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 08:31:14 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:6803 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495Ab3FIMbN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 08:31:13 -0400
-X-Spam-Score: -100.8
-Message-ID: <51B4755B.4020205@asianux.com>
-Date: Sun, 09 Jun 2013 20:30:19 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kernel/softirq.c: delete 'while' looping to improve a little
- performance and beautify code
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753897Ab3FIMlF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 08:41:05 -0400
+Received: from mout.gmx.net ([212.227.17.20]:57178 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752296Ab3FIMlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jun 2013 08:41:02 -0400
+X-Authenticated: #4630777
+X-Provags-ID: V01U2FsdGVkX1+MWqsEIDOM+gaXlVtgiltFD00rT/JxytNumf8j6y
+	8kxirhLuK0KbBr
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+To: eparis@redhat.com
+Cc: linux-kernel@vger.kernel.org
+Subject: filesystem notification fixes/cleanup
+Date: Sun,  9 Jun 2013 14:40:41 +0200
+Message-Id: <1370781646-10496-1-git-send-email-LinoSanfilippo@gmx.de>
+X-Mailer: git-send-email 1.7.9.5
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-After finish the internal 'while', need not test TASKLET_STATE_SCHED
-again, so looping back to outside 'while' is only for set_bit().
+this patch series fixes a couple of races (fanotify/inotify) or simplifies code
+(dnotify) by means of the fsnotify groups mark mutex. The last patch updates the
+comments in fs/notify/mark.c concerning the changed fsnotify locking implementation.
 
-When use 'if' and set_bit() instead of 'while', it will save at least
-one running conditional instruction, and also will be clearer for readers
-(although the binary size will be a little bigger).
+Regards,
+Lino
 
-The related patch is "1da177e Linux-2.6.12-rc2"
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- kernel/softirq.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index a5f8836..52da25f 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -540,10 +540,11 @@ void tasklet_kill(struct tasklet_struct *t)
- 	if (in_interrupt())
- 		printk("Attempt to kill tasklet from interrupt\n");
- 
--	while (test_and_set_bit(TASKLET_STATE_SCHED, &t->state)) {
-+	if (test_and_set_bit(TASKLET_STATE_SCHED, &t->state)) {
- 		do {
- 			yield();
- 		} while (test_bit(TASKLET_STATE_SCHED, &t->state));
-+		set_bit(TASKLET_STATE_SCHED, &t->state);
- 	}
- 	tasklet_unlock_wait(t);
- 	clear_bit(TASKLET_STATE_SCHED, &t->state);
--- 
-1.7.7.6
+[PATCH 1/5] fanotify: Fix races when adding/removing marks
+[PATCH 2/5] fanotify: Put duplicate code for adding vfsmount/inode
+[PATCH 3/5] dnotify: replace dnotify_mark_mutex with mark mutex of
+[PATCH 4/5] inotify: fix race when adding a new watch
+[PATCH 5/5] fsnotify: update comments concerning locking scheme
