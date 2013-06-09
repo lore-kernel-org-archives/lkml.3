@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753231Ab3FIJ3p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 05:29:45 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:62105 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931Ab3FIJ3n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 05:29:43 -0400
-Message-ID: <51B44B01.7050304@gmail.com>
-Date: Sun, 09 Jun 2013 17:29:37 +0800
-From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH] KVM: x86: fix missed memory synchronization when patch
- hypercall
-References: <51B2A1D9.6060306@gmail.com> <20130609084526.GH4725@redhat.com>
-In-Reply-To: <20130609084526.GH4725@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753258Ab3FIJaz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 05:30:55 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:25466 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750827Ab3FIJay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jun 2013 05:30:54 -0400
+X-Greylist: delayed 2501 seconds by postgrey-1.27 at vger.kernel.org; Sun, 09 Jun 2013 05:30:53 EDT
+Date: Sun, 9 Jun 2013 10:10:03 +0200
+Message-Id: <201306090810.r598A3D1013107@localhost.localdomain>
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] Fix regression on spi-fsl-spi.c following modification on spi.c
+X-Antivirus: avast! (VPS 130608-1, 08/06/2013), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2013 04:45 PM, Gleb Natapov wrote:
+spi-fsl-spi.c made the assumption that t->bits_per_word and t->speed_hz were
+set only when wanting to change the setting.
+Since commit e6811d1d7a6a38ee637fe219c3b67dbfe17e8b3f, t->bits_per_word has
+been set in all transfers, therefore the assumption made by the driver leads to
+failure. This patch fixes the issue by comparing the t->new bits_per_word and
+t->speed_hz with the previous one in order to determine if one of them changed.
 
-> +static int emulator_fix_hypercall(struct x86_emulate_ctxt *ctxt)
-> +{
-> +	struct kvm_vcpu *vcpu = emul_to_vcpu(ctxt);
-> +	return kvm_exec_with_stopped_vcpu(vcpu->kvm,
-> +			emulator_fix_hypercall_cb, ctxt);
-> +}
-> +
-> +
->  /*
->   * Check if userspace requested an interrupt window, and that the
->   * interrupt window is open.
-> @@ -5761,6 +5769,10 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
->  			kvm_deliver_pmi(vcpu);
->  		if (kvm_check_request(KVM_REQ_SCAN_IOAPIC, vcpu))
->  			vcpu_scan_ioapic(vcpu);
-> +		if (kvm_check_request(KVM_REQ_STOP_VCPU, vcpu)){
-> +			mutex_lock(&vcpu->kvm->lock);
-> +			mutex_unlock(&vcpu->kvm->lock);
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-We should execute a serializing instruction here?
-
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -222,6 +222,18 @@ void kvm_make_scan_ioapic_request(struct kvm *kvm)
->  	make_all_cpus_request(kvm, KVM_REQ_SCAN_IOAPIC);
->  }
-> 
-> +int kvm_exec_with_stopped_vcpu(struct kvm *kvm, int (*cb)(void *), void *data)
-> +{
-> +	int r;
-> +
-> +	mutex_lock(&kvm->lock);
-> +	make_all_cpus_request(kvm, KVM_REQ_STOP_VCPU);
-> +	r = cb(data);
-
-And here?
-
+--- linux-3.8.13/drivers/spi/spi-fsl-spi.c	2013-05-11 22:57:46.000000000 +0200
++++ linux/drivers/spi/spi-fsl-spi.c	2013-06-09 00:13:30.000000000 +0200
+@@ -476,11 +476,14 @@
+ 	unsigned int cs_change;
+ 	const int nsecs = 50;
+ 	int status;
++	u32 prev_speed_hz = 0;
++	u8 prev_bits_per_word = 0;
+ 
+ 	cs_change = 1;
+ 	status = 0;
+ 	list_for_each_entry(t, &m->transfers, transfer_list) {
+-		if (t->bits_per_word || t->speed_hz) {
++		if (prev_bits_per_word != t->bits_per_word
++				|| prev_speed_hz != t->speed_hz) {
+ 			/* Don't allow changes if CS is active */
+ 			status = -EINVAL;
+ 
+@@ -488,6 +491,8 @@
+ 				status = fsl_spi_setup_transfer(spi, t);
+ 			if (status < 0)
+ 				break;
++			prev_bits_per_word = t->bits_per_word;
++			prev_speed_hz = t->speed_hz;
+ 		}
+ 
+ 		if (cs_change) {
