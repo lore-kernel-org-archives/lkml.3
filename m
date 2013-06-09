@@ -1,48 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635Ab3FIVgS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 17:36:18 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:63563 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab3FIVgR (ORCPT
+	id S1751723Ab3FIVhW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 17:37:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51567 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751449Ab3FIVhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 17:36:17 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>, linux-kernel@vger.kernel.org,
-        linux-sunxi@googlegroups.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, kevin@allwinnertech.com
-Subject: Re: [PATCH 4/6] ARM: sunxi: dt: Add Allwinner A10s DTSI
-Date: Sun, 09 Jun 2013 23:36:24 +0200
-Message-ID: <3346364.JR9UrJYqP8@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <1370795767-9769-5-git-send-email-maxime.ripard@free-electrons.com>
-References: <1370795767-9769-1-git-send-email-maxime.ripard@free-electrons.com> <1370795767-9769-5-git-send-email-maxime.ripard@free-electrons.com>
+	Sun, 9 Jun 2013 17:37:21 -0400
+Date: Sun, 9 Jun 2013 14:37:18 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Wang YanQing <udknight@gmail.com>, akpm@linux-foundation.org,
+        yinghai@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        liwanp@linux.vnet.ibm.com, tangchen@cn.fujitsu.com
+Subject: Re: [PATCH]memblock: do double array and add merge directly path in
+ memblock_insert_region
+Message-ID: <20130609213718.GA8045@mtj.dyndns.org>
+References: <20130609173430.GA2592@udknight>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Y+BK20HDAgupBoYy2Ii/iNm8L5HDWjzaatQy6oTu5WS
- IDwgyyuj76NnlVsQzKK5etamGF8/FzOGOaxWTwIeNHc0gxLaaQ
- P48ITAxHWt9a62C5VaEejr3y2m2b9Qfw4UbbihVTqzmtomOwEB
- IrKWh4RU6UKOnrydcXrqd+MIi0VC3Q3CTb4LMRTkQ+QAAIobxo
- C8gprft6QURoq6JLTHqGwFQMX/hRadfJNrxanZkMRjlTeo8h6W
- FbARxM1AK0g+FzTOdpwBn/wm2FsoFvnf0UwEQaweU5MXLr/9G+
- Jd5NRAdStEGZV+xpmydLO7Puh0uxsJNfGQJm9ea5zJvyce3X+s
- OlNIY1oIG7pJ3W578ql8=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130609173430.GA2592@udknight>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 09 June 2013 18:36:05 Maxime Ripard wrote:
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  arch/arm/boot/dts/sun5i-a10s.dtsi | 286 ++++++++++++++++++++++++++++++++++++++
->  1 file changed, 286 insertions(+)
->  create mode 100644 arch/arm/boot/dts/sun5i-a10s.dtsi
+Hello,
 
-Would it make sense to split out the parts that are common with A13 into
-a separate sun5i.dtsi file?
+On Mon, Jun 10, 2013 at 01:34:30AM +0800, Wang YanQing wrote:
+> If we allow do merge directly when insertion, we can get better performance,
+> this patch add support to do merge directly in memblock_insert_region.
 
-	Arnd
+Do you have actual case where performance in this patch is
+problematic?
+
+> -static void __init_memblock memblock_insert_region(struct memblock_type *type,
+> +static int __init_memblock memblock_insert_region(struct memblock_type *type,
+>  						   int idx, phys_addr_t base,
+> -						   phys_addr_t size, int nid)
+> +						   phys_addr_t size, int nid, int merge)
+
+bool merge and you need to update comment accordingly.
+
+>  {
+>  	struct memblock_region *rgn = &type->regions[idx];
+>  
+> -	BUG_ON(type->cnt >= type->max);
+> +	if (merge && (base + size) == rgn->base &&
+> +	        nid == memblock_get_region_node(rgn)) {
+> +		rgn->base = base;
+> +		rgn->size += size;
+> +		type->total_size += size;
+> +		return 0;
+> +	}
+
+What if merge is from upside down or this connects two disjoint
+regions?
+
+>  static int __init_memblock memblock_add_region(struct memblock_type *type,
+>  				phys_addr_t base, phys_addr_t size, int nid)
+...
+>  		if (rbase > base) {
+> -			nr_new++;
+> -			if (insert)
+> -				memblock_insert_region(type, i++, base,
+> -						       rbase - base, nid);
+> +			ret = memblock_insert_region(type, i++, base,
+> +					rbase - base, nid, 1);
+> +			if (ret) {
+> +				return ret;
+> +			}
+
+Superflous { } and you need roll back what you've done upto this point
+before returning.  That's the reason why the function is structured
+the way it is.  If insertion fails due to array expansion failure, the
+previous code doesn't change the memblock tables at all.  Your new
+code leaves it half-updated.
+
+> @@ -498,8 +488,11 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
+>  			rgn->base = base;
+>  			rgn->size -= base - rbase;
+>  			type->total_size -= base - rbase;
+> -			memblock_insert_region(type, i, rbase, base - rbase,
+> -					       memblock_get_region_node(rgn));
+> +			ret = memblock_insert_region(type, i, rbase, base - rbase,
+> +					memblock_get_region_node(rgn), 0);
+> +			if (ret) {
+> +				return ret;
+> +			}
+
+Ditto, you need to roll back on failure.
+
+> @@ -533,6 +529,7 @@ static int __init_memblock __memblock_remove(struct memblock_type *type,
+>  
+>  	for (i = end_rgn - 1; i >= start_rgn; i--)
+>  		memblock_remove_region(type, i);
+> +	memblock_merge_regions(type);
+
+Why is this added?
+
+Thanks.
+
+-- 
+tejun
