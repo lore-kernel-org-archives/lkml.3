@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab3FIQgR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 12:36:17 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:56928 "EHLO
+	id S1754451Ab3FIQgb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 12:36:31 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:56960 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751844Ab3FIQgP (ORCPT
+	with ESMTP id S1754400Ab3FIQg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 12:36:15 -0400
+	Sun, 9 Jun 2013 12:36:29 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Linus Walleij <linus.walleij@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 1/6] ARM: sunxi: Add Allwinner A10s machine compatible
-Date: Sun,  9 Jun 2013 18:36:02 +0200
-Message-Id: <1370795767-9769-2-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 5/6] ARM: sunxi: Add Olimex A10s-Olinuxino-micro device tree
+Date: Sun,  9 Jun 2013 18:36:06 +0200
+Message-Id: <1370795767-9769-6-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3
 In-Reply-To: <1370795767-9769-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1370795767-9769-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,42 +24,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The A10s is a SoC member of the Allwinner sun5i family. It is basically
-an A13 with an EMAC and an HDMI controller.
-
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- Documentation/arm/sunxi/README | 4 ++++
- arch/arm/mach-sunxi/sunxi.c    | 1 +
- 2 files changed, 5 insertions(+)
+ arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts | 75 ++++++++++++++++++++++++
+ 1 file changed, 75 insertions(+)
+ create mode 100644 arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts
 
-diff --git a/Documentation/arm/sunxi/README b/Documentation/arm/sunxi/README
-index d9a372d..e3f93fb 100644
---- a/Documentation/arm/sunxi/README
-+++ b/Documentation/arm/sunxi/README
-@@ -17,6 +17,10 @@ SunXi family
- 	+ User Manual
- 	  http://dl.linux-sunxi.org/A10/A10%20User%20Manual%20-%20v1.20%20%282012-04-09%2c%20DECRYPTED%29.pdf
- 
-+      - Allwinner A10s (sun5i)
-+        + Datasheet
-+          http://dl.linux-sunxi.org/A10s/A10s%20Datasheet%20-%20v1.20%20%282012-03-27%29.pdf
+diff --git a/arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts b/arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts
+new file mode 100644
+index 0000000..73ad65e
+--- /dev/null
++++ b/arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts
+@@ -0,0 +1,75 @@
++/*
++ * Copyright 2013 Maxime Ripard
++ *
++ * Maxime Ripard <maxime.ripard@free-electrons.com>
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
 +
-       - Allwinner A13 (sun5i)
-         + Datasheet
- 	  http://dl.linux-sunxi.org/A13/A13%20Datasheet%20-%20v1.12%20%282012-03-29%29.pdf
-diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
-index 08937a3..a42d874 100644
---- a/arch/arm/mach-sunxi/sunxi.c
-+++ b/arch/arm/mach-sunxi/sunxi.c
-@@ -109,6 +109,7 @@ static void __init sunxi_dt_init(void)
- 
- static const char * const sunxi_board_dt_compat[] = {
- 	"allwinner,sun4i-a10",
-+	"allwinner,sun5i-a10s",
- 	"allwinner,sun5i-a13",
- 	NULL,
- };
++/dts-v1/;
++/include/ "sun5i-a10s.dtsi"
++
++/ {
++	model = "Olimex A10s-Olinuxino Micro";
++	compatible = "olimex,a10s-olinuxino-micro", "allwinner,sun5i-a10s";
++
++	soc@01c20000 {
++		emac: ethernet@01c0b000 {
++			pinctrl-names = "default";
++			pinctrl-0 = <&emac_pins_a>;
++			phy = <&phy1>;
++			status = "okay";
++		};
++
++		mdio@01c0b080 {
++			status = "okay";
++
++			phy1: ethernet-phy@1 {
++				reg = <1>;
++			};
++		};
++
++		pinctrl@01c20800 {
++			led_pins_olinuxino: led_pins@0 {
++				allwinner,pins = "PE3";
++				allwinner,function = "gpio_out";
++				allwinner,drive = <1>;
++				allwinner,pull = <0>;
++			};
++		};
++
++		uart0: serial@01c28000 {
++			pinctrl-names = "default";
++			pinctrl-0 = <&uart0_pins_a>;
++			status = "okay";
++		};
++
++		uart2: serial@01c28800 {
++			pinctrl-names = "default";
++			pinctrl-0 = <&uart2_pins_a>;
++			status = "okay";
++		};
++
++		uart3: serial@01c28c00 {
++			pinctrl-names = "default";
++			pinctrl-0 = <&uart3_pins_a>;
++			status = "okay";
++		};
++	};
++
++	leds {
++		compatible = "gpio-leds";
++		pinctrl-names = "default";
++		pinctrl-0 = <&led_pins_olinuxino>;
++
++		power {
++			gpios = <&pio 4 3 0>;
++			default-state = "on";
++		};
++	};
++};
 -- 
 1.8.3
 
