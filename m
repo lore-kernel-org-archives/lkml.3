@@ -1,81 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751040Ab3FIUAq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 16:00:46 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:34622 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822Ab3FIUAo (ORCPT
+	id S1751324Ab3FIULb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 16:11:31 -0400
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:42506 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868Ab3FIUL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 16:00:44 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Joshua Covington <joshuacov@googlemail.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        <stable@vger.kernel.org>
-Subject: [PATCH 1/2] x86,mtrr: Fix original mtrr range get for mtrr_cleanup
-Date: Sun,  9 Jun 2013 13:00:04 -0700
-Message-Id: <1370808005-23565-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Sun, 9 Jun 2013 16:11:29 -0400
+Date: Sun, 9 Jun 2013 23:11:19 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: pali.rohar@gmail.com, kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org
+Subject: Re: N900 device tree conversion: how to do first step
+Message-ID: <20130609201119.GA3190@blackmetal.musicnaut.iki.fi>
+References: <20130609015944.GA23559@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130609015944.GA23559@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joshua reported: Commit cd7b304dfaf1 (x86, range: fix missing merge
-during add range) broke mtrr cleanup on his setup in 3.9.5.
-corresponding commit in upstream is fbe06b7bae7c.
+Hi,
 
-  *BAD*gran_size: 64K chunk_size: 16M num_reg: 6 lose cover RAM: -0G
+On Sun, Jun 09, 2013 at 03:59:44AM +0200, Pavel Machek wrote:
+> I'd like to convert Nokia N900 to device tree.
+> 
+> Unfortunately, serial port is not easily available (very special cable
+> would be needed, does someone know where to get one?) and I don't have
+> BDI (and very special cable would be needed, too).
+> 
+> So I tried doing very small first step, hoping that I get booting
+> system... obviously I did not.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=59491
+The following works for me, it's enough to boot and get the USB networking
+working. After that I can connect to the device with ssh. I don't use
+serial either, I just have initramfs with busybox+dropbear with hardcoded
+interface setup.
 
-So it rejects new var mtrr layout.
+---8<---
 
-It turns out we have some problem with initial mtrr range retrievel.
-current sequence is:
-	x86_get_mtrr_mem_range
-		==> bunchs of add_range_with_merge
-		==> bunchs of subract_range
-		==> clean_sort_range
-	add_range_with_merge for [0,1M)
-	sort_range()
+/dts-v1/;
 
-add_range_with_merge could have blank slots, so we can not just
-sort only, that will have final result have extra blank slot in head.
+/include/ "omap34xx.dtsi"
 
-So move that calling add_range_with_merge for [0,1M), with that we
-could avoid extra clean_sort_range calling.
+/ {
+	model = "Nokia N900";
+	compatible = "nokia,omap3-n900", "ti,omap3";
 
-Reported-by: Joshua Covington <joshuacov@googlemail.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: <stable@vger.kernel.org> v3.9
+	cpus {
+		cpu@0 {
+			cpu0-supply = <&vcc>;
+		};
+	};
 
----
- arch/x86/kernel/cpu/mtrr/cleanup.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+	memory {
+		device_type = "memory";
+		reg = <0x80000000 0x10000000>; /* 256 MB */
+	};
 
-Index: linux-2.6/arch/x86/kernel/cpu/mtrr/cleanup.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/mtrr/cleanup.c
-+++ linux-2.6/arch/x86/kernel/cpu/mtrr/cleanup.c
-@@ -714,15 +714,15 @@ int __init mtrr_cleanup(unsigned address
- 	if (mtrr_tom2)
- 		x_remove_size = (mtrr_tom2 >> PAGE_SHIFT) - x_remove_base;
- 
--	nr_range = x86_get_mtrr_mem_range(range, 0, x_remove_base, x_remove_size);
- 	/*
- 	 * [0, 1M) should always be covered by var mtrr with WB
- 	 * and fixed mtrrs should take effect before var mtrr for it:
- 	 */
- 	nr_range = add_range_with_merge(range, RANGE_NUM, nr_range, 0,
- 					1ULL<<(20 - PAGE_SHIFT));
--	/* Sort the ranges: */
--	sort_range(range, nr_range);
-+	/* add from var mtrr at last */
-+	nr_range = x86_get_mtrr_mem_range(range, nr_range,
-+					  x_remove_base, x_remove_size);
- 
- 	range_sums = sum_ranges(range, nr_range);
- 	printk(KERN_INFO "total RAM covered: %ldM\n",
+};
+
+&i2c1 {
+	clock-frequency = <2200000>;
+
+	twl: twl@48 {
+		reg = <0x48>;
+		interrupts = <7>; /* SYS_NIRQ cascaded to intc */
+		interrupt-parent = <&intc>;
+	};
+};
+
+/include/ "twl4030.dtsi"
+
+&twl_gpio {
+	ti,pullups	= <0x0>;
+	ti,pulldowns	= <0x03ff3f>; /* BIT(0..5) | BIT(8..17) */
+};
+
+&i2c2 {
+	clock-frequency = <400000>;
+};
+
+&i2c3 {
+	clock-frequency = <100000>;
+};
+
+&mmc1 {
+	status = "disabled";
+};
+
+&mmc2 {
+	status = "disabled";
+};
+
+&mmc3 {
+	status = "disabled";
+};
+
+&usb_otg_hs {
+	interface-type = <0>;
+	usb-phy = <&usb2_phy>;
+	mode = <2>;
+	power = <50>;
+};
