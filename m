@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab3FIQ2o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 12:28:44 -0400
-Received: from postout2.mail.lrz.de ([129.187.255.138]:38815 "EHLO
-	postout2.mail.lrz.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811Ab3FIQ2n convert rfc822-to-8bit (ORCPT
+	id S1754245Ab3FIQgP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 12:36:15 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:56922 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751844Ab3FIQgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 12:28:43 -0400
-From: "Morales, Alejandra" <alejandra.morales@tum.de>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Questions about Runtime Power Management
-Thread-Topic: Questions about Runtime Power Management
-Thread-Index: Ac5lLkRrBYfFPnaQQhqUrRlWdi6dgQ==
-Date: Sun, 9 Jun 2013 16:28:21 +0000
-Message-ID: <9E3F9C2076C45D4783F09B90D5BE77CE16B4E6@BADWLRZ-SWMBX13.ads.mwn.de>
-Accept-Language: es-ES, en-US
-Content-Language: es-ES
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.155.5.51]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Sun, 9 Jun 2013 12:36:14 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Emilio Lopez <emilio@elopez.com.ar>, kevin@allwinnertech.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH 0/6] Add support for Allwinner A10s SoCs
+Date: Sun,  9 Jun 2013 18:36:01 +0200
+Message-Id: <1370795767-9769-1-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear all,
+Hi everyone,
 
-I am currently involved in the implementation of my master thesis, for what I am trying to create a user space power management tool. As a part of this work I am developing a kernel module, and one of the first things I need to do is getting the current power state of some devices of my computer, essentially hard drives and network devices (ethernet and wireless cards).
+This patch serie reworks a bit the pinctrl driver and adds the necessary
+bits needed to support the Allwinner A10s SoC.
 
-For the hard drives, I get the pointers to the struct device that represents each one iterating over scsi_bus_type and selecting those whose driver is named "sd". Then, I obtain the runtime power state:
+This SoC is a bit in between the A10 and A13. Notable differences with
+the A13 is the addition of an HDMI controller and of the EMAC.
 
-dev->power.runtime_status;
+For the time being (ie until we find a proper datasheet for this SoCs),
+the clock definition is taken from the A10 one.
 
-I did a test with an external USB hard drive, checking the runtime power state before and after issuing a sleep command with hdparm -Y. The drive effectively spinned down, but the runtime power state didn't change from active to suspended.
+This patches depends on the "Add external interrupt support for Allwinner SoCs"
+patch serie.
 
-In the case of net devices, I get the corresponding structures this way:
+Thanks,
+Maxime
 
-struct net_device *netdev = first_net_device(&init_net);
-    
-while (netdev) {
+Maxime Ripard (6):
+  ARM: sunxi: Add Allwinner A10s machine compatible
+  pinctrl: sunxi: Move the pins definitions to a separate header
+  pinctrl: sunxi: Add Allwinner A10s pins
+  ARM: sunxi: dt: Add Allwinner A10s DTSI
+  ARM: sunxi: Add Olimex A10s-Olinuxino-micro device tree
+  ARM: multi_v7: Enable Allwinner EMAC in multi_v7_defconfig
 
-        struct device *dev = &netdev->dev;
-        
-        /* code... */
+ Documentation/arm/sunxi/README                   |    4 +
+ arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts |   75 +
+ arch/arm/boot/dts/sun5i-a10s.dtsi                |  286 +++
+ arch/arm/configs/multi_v7_defconfig              |    2 +
+ arch/arm/mach-sunxi/sunxi.c                      |    1 +
+ drivers/pinctrl/pinctrl-sunxi-pins.h             | 2023 ++++++++++++++++++++++
+ drivers/pinctrl/pinctrl-sunxi.c                  | 1362 +--------------
+ 7 files changed, 2393 insertions(+), 1360 deletions(-)
+ create mode 100644 arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts
+ create mode 100644 arch/arm/boot/dts/sun5i-a10s.dtsi
+ create mode 100644 drivers/pinctrl/pinctrl-sunxi-pins.h
 
-        netdev = next_net_device(netdev);
-}
+-- 
+1.8.3
 
-For every net_device I get its embedded struct device and then I check the same field as before, but in this case runtime power management is disabled, so I always get the device is suspended, even though it is configured and working properly. In fact, the whole device struct seems to be empty.  
-
-Taking this into account, my questions are:
-
-- Is it possible that I am not getting the correct struct device for every hardware device?
-- Am I checking the correct field of the struct dev_pm_info?
-- Do scsi device drivers implement the runtime_status updates when drives effectively change their state?
-- Is runtime power management supported by net devices?
-
-Any answer would be really appreciated. Thanks in advance.
-
-Best regards,
-
-Alejandra Morales Ruiz
-Master Thesis Student
-Technische Universität München
-Fakultät für Informatik
