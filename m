@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab3FICXr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 22:23:47 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:32848 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab3FICT7 (ORCPT
+	id S1753601Ab3FICYN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 22:24:13 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:45297 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752450Ab3FICTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 22:19:59 -0400
+	Sat, 8 Jun 2013 22:19:54 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: axboe@kernel.dk, tytso@mit.edu, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org
 Cc: Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH 15/26] block: Generic bio chaining
-Date: Sat,  8 Jun 2013 19:18:57 -0700
-Message-Id: <1370744348-15407-16-git-send-email-koverstreet@google.com>
+Subject: [PATCH 11/26] block: Kill bio_iovec_idx(), __bio_iovec()
+Date: Sat,  8 Jun 2013 19:18:53 -0700
+Message-Id: <1370744348-15407-12-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.8.3.rc1
 In-Reply-To: <1370744348-15407-1-git-send-email-koverstreet@google.com>
 References: <1370744348-15407-1-git-send-email-koverstreet@google.com>
@@ -21,158 +21,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a generic mechanism for chaining bio completions. This is
-going to be used for a bio_split() replacement, and some other things in
-the future.
+bio_iovec_idx() and __bio_iovec() don't have any valid uses anymore -
+previous users have been converted to bio_iovec_iter() or other methods.
 
-This is implemented with a new bio flag that bio_endio() checks; it
-would definitely be cleaner to implement chaining with a bi_end_io
-function, but since there's no limits on the depth of a bio chain (and
-with arbitrary bio splitting coming this is going to be a real issue)
-using an endio function would lead to unbounded stack usage.
-
-Tail call optimization could solve that, but CONFIG_FRAME_POINTER
-disables gcc's tail call optimization (-fno-optimize-sibling-calls) - so
-we do it the hacky but safe way.
+__BVEC_END() has to go too - the bvec array can't be used directly for
+the last biovec because we might only be using the first portion of it,
+we have to iterate over the bvec array with bio_for_each_segment() which
+checks against the current value of bi_iter.bi_size.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 Cc: Jens Axboe <axboe@kernel.dk>
 ---
- drivers/md/bcache/io.c    |  2 +-
- fs/bio.c                  | 45 +++++++++++++++++++++++++++++++++++++++------
- include/linux/bio.h       |  1 +
- include/linux/blk_types.h |  7 +++++--
- 4 files changed, 46 insertions(+), 9 deletions(-)
+ block/blk-merge.c   | 13 +++++++++++--
+ include/linux/bio.h | 26 ++++++++------------------
+ 2 files changed, 19 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
-index 294b4c1..246b420 100644
---- a/drivers/md/bcache/io.c
-+++ b/drivers/md/bcache/io.c
-@@ -137,7 +137,7 @@ static void bch_bio_submit_split_done(struct closure *cl)
- 
- 	s->bio->bi_end_io = s->bi_end_io;
- 	s->bio->bi_private = s->bi_private;
--	bio_endio(s->bio, 0);
-+	s->bio->bi_end_io(s->bio, 0);
- 
- 	closure_debug_destroy(&s->cl);
- 	mempool_free(s, s->p->bio_split_hook);
-diff --git a/fs/bio.c b/fs/bio.c
-index 24271ce..bd25401 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -273,6 +273,7 @@ void bio_init(struct bio *bio)
+diff --git a/block/blk-merge.c b/block/blk-merge.c
+index 8940562..b53ddac 100644
+--- a/block/blk-merge.c
++++ b/block/blk-merge.c
+@@ -88,6 +88,9 @@ EXPORT_SYMBOL(blk_recount_segments);
+ static int blk_phys_contig_segment(struct request_queue *q, struct bio *bio,
+ 				   struct bio *nxt)
  {
- 	memset(bio, 0, sizeof(*bio));
- 	bio->bi_flags = 1 << BIO_UPTODATE;
-+	atomic_set(&bio->bi_remaining, 1);
- 	atomic_set(&bio->bi_cnt, 1);
- }
- EXPORT_SYMBOL(bio_init);
-@@ -295,9 +296,29 @@ void bio_reset(struct bio *bio)
- 
- 	memset(bio, 0, BIO_RESET_BYTES);
- 	bio->bi_flags = flags|(1 << BIO_UPTODATE);
-+	atomic_set(&bio->bi_remaining, 1);
- }
- EXPORT_SYMBOL(bio_reset);
- 
-+/**
-+ * bio_chain - chain bio completions
-+ *
-+ * The caller won't have a bi_end_io called when @bio completes - instead,
-+ * @parent's bi_end_io won't be called until both @parent and @bio have
-+ * completed.
-+ *
-+ * The caller must not set bi_private or bi_end_io in @bio.
-+ */
-+void bio_chain(struct bio *bio, struct bio *parent)
-+{
-+	BUG_ON(bio->bi_private || bio->bi_end_io);
++	struct bio_vec end_bv, nxt_bv;
++	struct bvec_iter iter;
 +
-+	bio->bi_flags |= 1 << BIO_CHAINED;
-+	bio->bi_private = parent;
-+	atomic_inc(&parent->bi_remaining);
-+}
-+EXPORT_SYMBOL(bio_chain);
-+
- static void bio_alloc_rescue(struct work_struct *work)
- {
- 	struct bio_set *bs = container_of(work, struct bio_set, rescue_work);
-@@ -1669,13 +1690,25 @@ EXPORT_SYMBOL(bio_flush_dcache_pages);
-  **/
- void bio_endio(struct bio *bio, int error)
- {
--	if (error)
--		clear_bit(BIO_UPTODATE, &bio->bi_flags);
--	else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
--		error = -EIO;
-+	while (bio) {
-+		BUG_ON(atomic_read(&bio->bi_remaining) <= 0);
-+
-+		if (error)
-+			clear_bit(BIO_UPTODATE, &bio->bi_flags);
-+		else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
-+			error = -EIO;
-+
-+		if (!atomic_dec_and_test(&bio->bi_remaining))
-+			return;
+ 	if (!blk_queue_cluster(q))
+ 		return 0;
  
--	if (bio->bi_end_io)
--		bio->bi_end_io(bio, error);
-+		if (bio_flagged(bio, BIO_CHAINED)) {
-+			bio = bio->bi_private;
-+		} else {
-+			if (bio->bi_end_io)
-+				bio->bi_end_io(bio, error);
-+			bio = NULL;
-+		}
-+	}
- }
- EXPORT_SYMBOL(bio_endio);
+@@ -98,14 +101,20 @@ static int blk_phys_contig_segment(struct request_queue *q, struct bio *bio,
+ 	if (!bio_has_data(bio))
+ 		return 1;
  
+-	if (!BIOVEC_PHYS_MERGEABLE(__BVEC_END(bio), __BVEC_START(nxt)))
++	bio_for_each_segment(end_bv, bio, iter)
++		if (end_bv.bv_len == iter.bi_size)
++			break;
++
++	nxt_bv = bio_iovec(nxt);
++
++	if (!BIOVEC_PHYS_MERGEABLE(&end_bv, &nxt_bv))
+ 		return 0;
+ 
+ 	/*
+ 	 * bio and nxt are contiguous in memory; check if the queue allows
+ 	 * these two to be merged into one
+ 	 */
+-	if (BIO_SEG_BOUNDARY(q, bio, nxt))
++	if (BIOVEC_SEG_BOUNDARY(q, &end_bv, &nxt_bv))
+ 		return 1;
+ 
+ 	return 0;
 diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 80ffe15..55d2ce8 100644
+index 62c7293..1967b64 100644
 --- a/include/linux/bio.h
 +++ b/include/linux/bio.h
-@@ -326,6 +326,7 @@ extern void bio_advance(struct bio *, unsigned);
+@@ -61,9 +61,6 @@
+  * various member access, note that bio_data should of course not be used
+  * on highmem page vectors
+  */
+-#define bio_iovec_idx(bio, idx)	(&((bio)->bi_io_vec[(idx)]))
+-#define __bio_iovec(bio)	bio_iovec_idx((bio), (bio)->bi_iter.bi_idx)
+-
+ #define __bvec_iter_bvec(bvec, iter)	(&(bvec)[(iter).bi_idx])
  
- extern void bio_init(struct bio *);
- extern void bio_reset(struct bio *);
-+void bio_chain(struct bio *, struct bio *);
+ #define bvec_iter_page(bvec, iter)				\
+@@ -138,19 +135,16 @@ static inline void *bio_data(struct bio *bio)
+  * permanent PIO fall back, user is probably better off disabling highmem
+  * I/O completely on that queue (see ide-dma for example)
+  */
+-#define __bio_kmap_atomic(bio, idx, kmtype)				\
+-	(kmap_atomic(bio_iovec_idx((bio), (idx))->bv_page) +	\
+-		bio_iovec_idx((bio), (idx))->bv_offset)
++#define __bio_kmap_atomic(bio, iter)				\
++	(kmap_atomic(bio_iovec_iter((bio), (iter)).bv_page) +	\
++		bio_iovec_iter((bio), (iter)).bv_offset)
  
- extern int bio_add_page(struct bio *, struct page *, unsigned int,unsigned int);
- extern int bio_add_pc_page(struct request_queue *, struct bio *, struct page *,
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 72f1274..69f5c0d 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -64,6 +64,8 @@ struct bio {
- 	unsigned int		bi_seg_front_size;
- 	unsigned int		bi_seg_back_size;
- 
-+	atomic_t		bi_remaining;
-+
- 	bio_end_io_t		*bi_end_io;
- 
- 	void			*bi_private;
-@@ -119,13 +121,14 @@ struct bio {
- #define BIO_QUIET	10	/* Make BIO Quiet */
- #define BIO_MAPPED_INTEGRITY 11/* integrity metadata has been remapped */
- #define BIO_SNAP_STABLE	12	/* bio data must be snapshotted during write */
-+#define BIO_CHAINED	13	/* bi_private points to a parent bio */
+-#define __bio_kunmap_atomic(addr, kmtype) kunmap_atomic(addr)
++#define __bio_kunmap_atomic(addr)	kunmap_atomic(addr)
  
  /*
-  * Flags starting here get preserved by bio_reset() - this includes
-  * BIO_POOL_IDX()
+  * merge helpers etc
   */
--#define BIO_RESET_BITS	13
--#define BIO_OWNS_VEC	13	/* bio_free() should free bvec */
-+#define BIO_RESET_BITS	14
-+#define BIO_OWNS_VEC	14	/* bio_free() should free bvec */
  
- #define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
+-#define __BVEC_END(bio)		bio_iovec_idx((bio), (bio)->bi_vcnt - 1)
+-#define __BVEC_START(bio)	bio_iovec_idx((bio), (bio)->bi_iter.bi_idx)
+-
+ /* Default implementation of BIOVEC_PHYS_MERGEABLE */
+ #define __BIOVEC_PHYS_MERGEABLE(vec1, vec2)	\
+ 	((bvec_to_phys((vec1)) + (vec1)->bv_len) == bvec_to_phys((vec2)))
+@@ -167,8 +161,6 @@ static inline void *bio_data(struct bio *bio)
+ 	(((addr1) | (mask)) == (((addr2) - 1) | (mask)))
+ #define BIOVEC_SEG_BOUNDARY(q, b1, b2) \
+ 	__BIO_SEG_BOUNDARY(bvec_to_phys((b1)), bvec_to_phys((b2)) + (b2)->bv_len, queue_segment_boundary((q)))
+-#define BIO_SEG_BOUNDARY(q, b1, b2) \
+-	BIOVEC_SEG_BOUNDARY((q), __BVEC_END((b1)), __BVEC_START((b2)))
  
+ #define bio_io_error(bio) bio_endio((bio), -EIO)
+ 
+@@ -177,9 +169,7 @@ static inline void *bio_data(struct bio *bio)
+  * before it got to the driver and the driver won't own all of it
+  */
+ #define bio_for_each_segment_all(bvl, bio, i)				\
+-	for (i = 0;							\
+-	     bvl = bio_iovec_idx((bio), (i)), i < (bio)->bi_vcnt;	\
+-	     i++)
++	for (i = 0, bvl = (bio)->bi_io_vec; i < (bio)->bi_vcnt; i++, bvl++)
+ 
+ static inline void bvec_iter_advance(struct bio_vec *bv, struct bvec_iter *iter,
+ 				     unsigned bytes)
+@@ -431,15 +421,15 @@ static inline void bvec_kunmap_irq(char *buffer, unsigned long *flags)
+ }
+ #endif
+ 
+-static inline char *__bio_kmap_irq(struct bio *bio, unsigned short idx,
++static inline char *__bio_kmap_irq(struct bio *bio, struct bvec_iter iter,
+ 				   unsigned long *flags)
+ {
+-	return bvec_kmap_irq(bio_iovec_idx(bio, idx), flags);
++	return bvec_kmap_irq(&bio_iovec_iter(bio, iter), flags);
+ }
+ #define __bio_kunmap_irq(buf, flags)	bvec_kunmap_irq(buf, flags)
+ 
+ #define bio_kmap_irq(bio, flags) \
+-	__bio_kmap_irq((bio), (bio)->bi_iter.bi_idx, (flags))
++	__bio_kmap_irq((bio), (bio)->bi_iter, (flags))
+ #define bio_kunmap_irq(buf,flags)	__bio_kunmap_irq(buf, flags)
+ 
+ static inline bool bio_is_rw(struct bio *bio)
 -- 
 1.8.3.rc1
 
