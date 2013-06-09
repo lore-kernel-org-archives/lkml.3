@@ -1,65 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab3FIC2e (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 22:28:34 -0400
-Received: from lycasmtp.lycamobile.co.uk ([217.118.119.180]:48528 "EHLO
-	lycasmtp.lycamobile.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab3FIC2d convert rfc822-to-8bit (ORCPT
+	id S1751945Ab3FICe3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 22:34:29 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:54702 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430Ab3FICe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 22:28:33 -0400
-Message-Id: <201306090204.r58J91Nn011415@lycasmtp.lycamobile.co.uk>
-Content-Type: text/plain; charset="iso-8859-1"
+	Sat, 8 Jun 2013 22:34:27 -0400
+From: Daniel Tang <dt.tangr@gmail.com>
+To: mmarek@suse.cz
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        trivial@kernel.org, Daniel Tang <dt.tangr@gmail.com>
+Subject: [PATCH 1/2] Fix a build warning in scripts/sortextable.h
+Date: Sun,  9 Jun 2013 12:33:54 +1000
+Message-Id: <1370745235-12951-1-git-send-email-dt.tangr@gmail.com>
+X-Mailer: git-send-email 1.8.1.3
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Confirmed Reciept.....
-To: Recipients <info@uk.net>
-From: info@uk.net
-Date: Sun, 09 Jun 2013 07:43:21 +0530
-Reply-To: claim.jonesgreene@hotmail.co.uk
-X-plintron-MailScanner-Information: Please contact the ISP for more information
-X-plintron-MailScanner-ID: r58J91Nn011415
-X-plintron-MailScanner: Found to be clean
-X-plintron-MailScanner-SpamScore: ssss
-X-plintron-MailScanner-From: info@uk.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Uk National Lottery
-Ref: L/200-26937
-Batch: 2007MJL-01
+The pointer passed to the _r() macro does not always match the type
+of the function that it is aliasing and raises several of the following
+warnings at compile time:
 
+warning: passing argument 1 of ‘r8’ from incompatible pointer type
 
-                     FINAL NOTIFICATION
-We are pleased to inform you today 6th  June, 2013 of the result 
-of the winners of the  UK NATIONAL LOTTERY ONLINE PROMO PROGRAMME, held 
-on the 30th of May, 2013.
+Fixed by casting the pointers to (void *) so they work with both the
+32bit and 64bit code.
 
-You have therefore been approved for a lump sum pay out of �1,000 000 
-(One Million Pounds Sterling) in cash credited to file XYL/26510460037/06.To file for your claim, 
-please contact our claims agent;
+Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
+---
+ scripts/sortextable.h | 29 +++++++++++++++--------------
+ 1 file changed, 15 insertions(+), 14 deletions(-)
 
-Agents Name: Dr.Jones Greene
-Emai: claim.jonesgreene@hotmail.co.uk
-
-
-Provide him with the information below:
-
-1.Full Name:
-2.Full Address:
-3.Marital Status:
-4.Occupation:
-5.Age:
-6.Sex:
-7.Nationality:
-8.Country Of Residence:
-9.Telephone Number:
-
-Congratulations once more from all members and staff of this program.
-
-Sincerely, 
-Dr.Jones Greene
-UK NATIONAL LOTTERY
-
+diff --git a/scripts/sortextable.h b/scripts/sortextable.h
+index f5eb43d..0a38fbd 100644
+--- a/scripts/sortextable.h
++++ b/scripts/sortextable.h
+@@ -110,9 +110,9 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+ 	int i;
+ 	int idx;
+ 
+-	shdr = (Elf_Shdr *)((char *)ehdr + _r(&ehdr->e_shoff));
++	shdr = (Elf_Shdr *)((char *)ehdr + _r((void *)&ehdr->e_shoff));
+ 	shstrtab_sec = shdr + r2(&ehdr->e_shstrndx);
+-	secstrtab = (const char *)ehdr + _r(&shstrtab_sec->sh_offset);
++	secstrtab = (const char *)ehdr + _r((void *)&shstrtab_sec->sh_offset);
+ 	for (i = 0; i < r2(&ehdr->e_shnum); i++) {
+ 		idx = r(&shdr[i].sh_name);
+ 		if (strcmp(secstrtab + idx, "__ex_table") == 0) {
+@@ -122,8 +122,8 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+ 		if ((r(&shdr[i].sh_type) == SHT_REL ||
+ 		     r(&shdr[i].sh_type) == SHT_RELA) &&
+ 		    r(&shdr[i].sh_info) == extab_index) {
+-			relocs = (void *)ehdr + _r(&shdr[i].sh_offset);
+-			relocs_size = _r(&shdr[i].sh_size);
++			relocs = (void *)ehdr + _r((void *)&shdr[i].sh_offset);
++			relocs_size = _r((void *)&shdr[i].sh_size);
+ 		}
+ 		if (strcmp(secstrtab + idx, ".symtab") == 0)
+ 			symtab_sec = shdr + i;
+@@ -142,14 +142,14 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+ 		fprintf(stderr,	"no __ex_table in  file: %s\n", fname);
+ 		fail_file();
+ 	}
+-	strtab = (const char *)ehdr + _r(&strtab_sec->sh_offset);
++	strtab = (const char *)ehdr + _r((void *)&strtab_sec->sh_offset);
+ 
+-	extab_image = (void *)ehdr + _r(&extab_sec->sh_offset);
++	extab_image = (void *)ehdr + _r((void *)&extab_sec->sh_offset);
+ 
+ 	if (custom_sort) {
+-		custom_sort(extab_image, _r(&extab_sec->sh_size));
++		custom_sort(extab_image, _r((void *)&extab_sec->sh_size));
+ 	} else {
+-		int num_entries = _r(&extab_sec->sh_size) / extable_ent_size;
++		int num_entries = _r((void *)&extab_sec->sh_size) / extable_ent_size;
+ 		qsort(extab_image, num_entries,
+ 		      extable_ent_size, compare_extable);
+ 	}
+@@ -159,12 +159,13 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+ 
+ 	/* find main_extable_sort_needed */
+ 	sort_needed_sym = NULL;
+-	for (i = 0; i < _r(&symtab_sec->sh_size) / sizeof(Elf_Sym); i++) {
+-		sym = (void *)ehdr + _r(&symtab_sec->sh_offset);
++	for (i = 0; i < _r((void *)&symtab_sec->sh_size) / sizeof(Elf_Sym); i++)
++	{
++		sym = (void *)ehdr + _r((void *)&symtab_sec->sh_offset);
+ 		sym += i;
+ 		if (ELF_ST_TYPE(sym->st_info) != STT_OBJECT)
+ 			continue;
+-		idx = r(&sym->st_name);
++		idx = r((void *)&sym->st_name);
+ 		if (strcmp(strtab + idx, "main_extable_sort_needed") == 0) {
+ 			sort_needed_sym = sym;
+ 			break;
+@@ -178,9 +179,9 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+ 	}
+ 	sort_needed_sec = &shdr[r2(&sort_needed_sym->st_shndx)];
+ 	sort_done_location = (void *)ehdr +
+-		_r(&sort_needed_sec->sh_offset) +
+-		_r(&sort_needed_sym->st_value) -
+-		_r(&sort_needed_sec->sh_addr);
++		_r((void *)&sort_needed_sec->sh_offset) +
++		_r((void *)&sort_needed_sym->st_value) -
++		_r((void *)&sort_needed_sec->sh_addr);
+ 
+ #if 0
+ 	printf("sort done marker at %lx\n",
+-- 
+1.8.1.3
 
