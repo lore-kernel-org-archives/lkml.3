@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751381Ab3FIVAr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 17:00:47 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:44355 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab3FIVAp convert rfc822-to-8bit (ORCPT
+	id S1751580Ab3FIVLq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 17:11:46 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:46319 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750987Ab3FIVLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 17:00:45 -0400
-Date: Sun, 9 Jun 2013 23:00:39 +0200
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>
-Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Peter Korsgaard <jacmet@uclibc.org>,
-        Cody Schafer <cody@linux.vnet.ibm.com>,
-        Benjamin Poirier <bpoirier@suse.de>, Alan Cox <alan@linux.intel.com>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [RFC][PATCH] kconfig: Fix defconfig when one choice menu selects
- options that another choice menu depends on
-Message-ID: <20130609210039.GA3292@free.fr>
-References: <1370576226-7597-1-git-send-email-arve@android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1370576226-7597-1-git-send-email-arve@android.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Sun, 9 Jun 2013 17:11:44 -0400
+From: Johannes Schilling <of82ecuq@cip.cs.fau.de>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, Kurt Kanzenbach <shifty91@gmail.com>,
+        linux-kernel@i4.cs.fau.de, Johannes Schilling <of82ecuq@cip.cs.fau.de>,
+        linux-kernel@vger.kernel.org, Al Cho <acho@novell.com>,
+        Amarjargal Gundjalam <amarjargal16@gmail.com>,
+        Laura Lawniczak <laura.lawniczak@googlemail.com>
+Subject: [PATCH] keucr: removed unnecessary variables and comments
+Date: Sun,  9 Jun 2013 23:11:30 +0200
+Message-Id: <1370812290-7562-1-git-send-email-of82ecuq@cip.cs.fau.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20130609052844.GA31124@kroah.com>
+References: <20130609052844.GA31124@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arve, All,
+From: Laura Lawniczak <laura.lawniczak@googlemail.com>
 
-On 2013-06-06 20:37 -0700, Arve Hjønnevåg spake thusly:
-> The defconfig and Kconfig combination below, which is based on 3.10-rc4
-> Kconfigs, resulted in several options getting set to "m" instead of "y".
+blen and bn were only used in commented code fragments.
+since comments should be informative and not for storing old
+code, both, commented code and variables, were removed.
 
-OK, I was able to reproduce your test-case, and the fix seems
-reasonable.
+Signed-off-by: Laura Lawniczak <laura.lawniczak@googlemail.com>
+Signed-off-by: Johannes Schilling <of82ecuq@cip.cs.fau.de>
+---
 
-I'm just back from a week-end no-internet-access break, so I'll look at
-it more thoroughly tomorrow.
+  this one is against latest gregkh/staging-next, and at least for me applies
+  cleanly.
 
-Thank you!
 
-Regards,
-Yann E. MORIN.
+ drivers/staging/keucr/transport.c |   14 --------------
+ 1 file changed, 14 deletions(-)
 
+diff --git a/drivers/staging/keucr/transport.c b/drivers/staging/keucr/transport.c
+index 1f9ea58..aeb2186 100644
+--- a/drivers/staging/keucr/transport.c
++++ b/drivers/staging/keucr/transport.c
+@@ -85,16 +85,9 @@ static void usb_stor_print_cmd(struct us_data *us, struct scsi_cmnd *srb)
+ {
+ 	PBYTE   Cdb = srb->cmnd;
+ 	DWORD   cmd = Cdb[0];
+-	DWORD   bn  =   ((Cdb[2] << 24) & 0xff000000) |
+-			((Cdb[3] << 16) & 0x00ff0000) |
+-			((Cdb[4] << 8) & 0x0000ff00) |
+-			((Cdb[5] << 0) & 0x000000ff);
+-	WORD    blen = ((Cdb[7] << 8) & 0xff00) | ((Cdb[8] << 0) & 0x00ff);
+ 
+ 	switch (cmd) {
+ 	case TEST_UNIT_READY:
+-		/* dev_dbg(&us->pusb_dev->dev,
+-			"scsi cmd %X --- SCSIOP_TEST_UNIT_READY\n", cmd); */
+ 		break;
+ 	case INQUIRY:
+ 		dev_dbg(&us->pusb_dev->dev,
+@@ -113,14 +106,8 @@ static void usb_stor_print_cmd(struct us_data *us, struct scsi_cmnd *srb)
+ 				"scsi cmd %X --- SCSIOP_READ_CAPACITY\n", cmd);
+ 		break;
+ 	case READ_10:
+-		/*  dev_dbg(&us->pusb_dev->dev,
+-			"scsi cmd %X --- SCSIOP_READ,bn = %X, blen = %X\n"
+-			cmd, bn, blen); */
+ 		break;
+ 	case WRITE_10:
+-		/* dev_dbg(&us->pusb_dev->dev,
+-			"scsi cmd %X --- SCSIOP_WRITE, bn = %X, blen = %X\n",
+-			cmd, bn, blen); */
+ 		break;
+ 	case ALLOW_MEDIUM_REMOVAL:
+ 		dev_dbg(&us->pusb_dev->dev,
+@@ -130,7 +117,6 @@ static void usb_stor_print_cmd(struct us_data *us, struct scsi_cmnd *srb)
+ 		dev_dbg(&us->pusb_dev->dev, "scsi cmd %X --- Other cmd\n", cmd);
+ 		break;
+ 	}
+-	bn = 0;
+ }
+ 
+ /*
 -- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+1.7.10.4
+
