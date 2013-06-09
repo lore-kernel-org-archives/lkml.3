@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751644Ab3FIVOz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 17:14:55 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:44033 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751120Ab3FIVOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 17:14:53 -0400
-Date: Sun, 9 Jun 2013 23:14:49 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Stratos Karafotis <stratosk@semaphore.gr>, Borislav Petkov <bp@suse.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of
- target frequency
-Message-ID: <20130609211449.GA5517@pd.tnic>
-References: <q46r5iepl3sunqe5eemv66hk.1370694869222@email.android.com>
- <20130609162653.GA5004@pd.tnic>
- <51B4C497.2030308@semaphore.gr>
- <7661669.NhG4BEI8zO@vostro.rjw.lan>
+	id S1751703Ab3FIVP0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 17:15:26 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:42217 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751273Ab3FIVPY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jun 2013 17:15:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <7661669.NhG4BEI8zO@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130609205747.GX23987@mwanda>
+References: <1370768902-20239-1-git-send-email-emilgoode@gmail.com>
+	<CAHp75VftwuS4ZTFP5D90PhyzrAMoHVxDiSCg0jrMGp+r0eRfzA@mail.gmail.com>
+	<20130609191732.GK28112@mwanda>
+	<CAHp75VcOMUVtfgXOQ+cyVpJN-XS7=yO1H8+8Nnw+LCgYWp7RPw@mail.gmail.com>
+	<20130609205747.GX23987@mwanda>
+Date: Mon, 10 Jun 2013 00:15:22 +0300
+Message-ID: <CAHp75VeDtfq3APDQsy2SP=wLrRPUJdVaBbfu4NcrWrC70wCebg@mail.gmail.com>
+Subject: Re: [PATCH] mtd: orion_nand: Improve error handling in orion_nand_probe
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Emil Goode <emilgoode@gmail.com>, David Woodhouse <dwmw2@infradead.org>,
+        artem.bityutskiy@linux.intel.com, andrew@lunn.ch,
+        Bill Pemberton <wfp5p@virginia.edu>, Jingoo Han <jg1.han@samsung.com>,
+        linux-mtd@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 09, 2013 at 10:58:51PM +0200, Rafael J. Wysocki wrote:
-> Can you possibly prepare a graph showing both the execution time
-> and energy consumption for several different loop durations in your
-> program (let's keep the 5000 us sleep for now), including multiples of
-> sampling_rate as well as some other durations?
+On Sun, Jun 9, 2013 at 11:57 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> On Sun, Jun 09, 2013 at 10:27:03PM +0300, Andy Shevchenko wrote:
+>> On Sun, Jun 9, 2013 at 10:17 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+>> > On Sun, Jun 09, 2013 at 08:15:20PM +0300, Andy Shevchenko wrote:
 
-Judgind by the times in C0 one of the cores spent, this small program
-is single-threaded and is a microbenchmark. And you know how optimizing
-against a microbenchmark doesn't really make a lot of sense.
+>> >> What about another patch (that I guess should go first)  that converts
+>> >> printk to dev_* or pr_*?
+>>
+>> > Huh, what?  Those are two totally unrelated things.  Emil's patch is
+>> > a bug fix.
+>>
+>> To be precise his patch is bugfix and cleanup at once.
+>> My proposal is to add a clean up patch.
+>
+> The printk idea isn't a bad one, it's just totally unrelated to what
+> the patch is doing.
 
-I wonder if lmbench or aim9 or whatever would make more sense to try
-here...
+I don't agree with word 'totally'. It touches probe function and
+shuffles code there.
 
-Thanks.
+>  You can't just randomly tell people to do a
+> bunch of work for no reason.  "Good bugfix, but before we apply it
+> you have to mow my lawn."
 
--- 
-Regards/Gruss,
-    Boris.
+In this particular case I didn't think it's a big deal to fix 3 printfs.
+Anyway, see patch in the next message.
 
-Sent from a fat crate under my desk. Formatting is fine.
+
 --
+With Best Regards,
+Andy Shevchenko
