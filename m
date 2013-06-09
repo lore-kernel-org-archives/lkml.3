@@ -1,229 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab3FIWxA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 18:53:00 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33445 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751997Ab3FIWw6 (ORCPT
+	id S1752471Ab3FIW5P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 18:57:15 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:34679 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311Ab3FIW5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 18:52:58 -0400
-Date: Sun, 9 Jun 2013 23:53:06 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Ingo Molnar <mingo@kernel.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "alex.shi@intel.com" <alex.shi@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Mike Galbraith <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: power-efficient scheduling design
-Message-ID: <20130609225306.GA8695@MacBook-Pro.local>
-References: <20130530134718.GB32728@e103034-lin>
- <51B221AF.9070906@linux.vnet.ibm.com>
- <20130608112801.GA8120@MacBook-Pro.local>
- <1834293.MlyIaiESPL@vostro.rjw.lan>
- <51B3F99A.4000101@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51B3F99A.4000101@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 9 Jun 2013 18:57:13 -0400
+X-AuditID: cbfee68e-b7f276d000002279-8a-51b508474e1c
+Message-id: <1370818554.3600.73.camel@kjgkr>
+Subject: Re: [RFC 0/5] Enable f2fs support inline data
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Huajun Li <huajun.li.lee@gmail.com>
+Cc: Haicheng Li <haicheng.li@linux.intel.com>,
+        Namjae Jeon <linkinjeon@gmail.com>, Huajun Li <huajun.li@intel.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, namjae.jeon@samsung.com,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-f2fs-devel <linux-f2fs-devel@lists.sourceforge.net>
+Date: Mon, 10 Jun 2013 07:55:54 +0900
+In-reply-to: <CA+v9cxZVvW+puuSWOYPJ-QnMPq-=vSi3xbb79s1u8i43XN2Wxw@mail.gmail.com>
+References: <1370253854-15084-1-git-send-email-huajun.li@intel.com>
+ <1370312366.3600.3.camel@kjgkr>
+ <CAKYAXd-87rGatnEC8wbocR_wt6Qdpec3HzZaH9ukpzmst6DK=A@mail.gmail.com>
+ <20130604060119.GA3265@hli22-desktop> <1370416414.3600.36.camel@kjgkr>
+ <CA+v9cxZVvW+puuSWOYPJ-QnMPq-=vSi3xbb79s1u8i43XN2Wxw@mail.gmail.com>
+Organization: samsung
+Content-type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature"; boundary="=-bpg0MrU5CDt2VgwooYZF"
+X-Mailer: Evolution 3.2.3-0ubuntu6
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOKsWRmVeSWpSXmKPExsVy+t8zfV13jq2BBntv61mcedbBaLFlS4zF
+	1/47bBbX795itri0yN1iz96TLBaXd81hs/gxvd6Bw2PnrLvsHov3vGTymHcy0GP3gs9MHn1b
+	VjF6fN4kF8AWxWWTkpqTWZZapG+XwJVxa98f9oI+r4oJ83pYGxhvGXYxcnJICJhINK/rZoGw
+	xSQu3FvP1sXIxSEksIxRorn3JwtM0aMVTcwQiemMEqt2LWKBcF4zSjw7dhwow8HBK6AjcfhY
+	CYgpLGAm0dKfBWKyCWhLbN5vADJGSEBR4u3+u6wgtoiAusTrF3NZQaYwC6xiktj5pZsZJMEi
+	oCqxYfcNMJtTIFjiyJaXTBCr9jBJ/Hn/jQkkwS8gKnGy9RMjiM0sUCXR3nCFEeJQJYnd7Z3s
+	IDavgKDEj8n3wO6UENjCIXHjxEuoDQIS3yYfYgG5TkJAVmLTAWaIXkmJgytusExgFJ+FZOws
+	JKMg4poSrdt/s0PY2hLLFr5mhrBtJdatew9VYyOx6eoCRghbXmL72znMCxjZVzGKphYkFxQn
+	pRcZ6RUn5haX5qXrJefnbmKExH7fDsabB6wPMVYBnTiRWUo0OR+YOvJK4g2NzYwsTE1MjY3M
+	Lc2oIqwkzqvWYh0oJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgbHgal7VNq4gEWepGQ8frJ3N
+	ve4pR6xPyvTNRz92MZVf4djRFHqvU1/wyKS1DaKaFUmKul1HFl47eeo4s6vZ5jNrrs+ROvfk
+	8LbAU6yXff9N9KqezNF70FgmYktC7TLx0x2v7acKVm3bcv6x9PzpPTHXe3rZDOMc62/w/Pjb
+	dbM++msfw/XDlUFKLMUZiYZazEXFiQBAi7ilKgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBJsWRmVeSWpSXmKPExsVy+t9jQV13jq2BBo171C3OPOtgtNiyJcbi
+	a/8dNovrd28xW1xa5G6xZ+9JFovLu+awWfyYXu/A4bFz1l12j8V7XjJ5zDsZ6LF7wWcmj74t
+	qxg9Pm+SC2CLamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
+	0HXLzAG6RkmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYcWvfH/aCPq+K
+	CfN6WBsYbxl2MXJySAiYSDxa0cQMYYtJXLi3nq2LkYtDSGA6o8SqXYtYIJzXjBLPjh0HquLg
+	4BXQkTh8rATEFBYwk2jpzwIx2QS0JTbvNwAZIySgKPF2/11WEFtEQF3i9Yu5rCBTmAVWMUns
+	/NINtotFQFViw+4bYDanQLDEkS0vmSBW7WGS+PP+GxNIgl9AVOJk6ydGEJtZoEqiveEKI8Sh
+	ShK72zvZQWxeAUGJH5PvsUxgFJyFpGwWkhREXFOidftvdghbW2LZwtfMELatxLp176FqbCQ2
+	XV3ACGHLS2x/O4d5ASP7KkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgxPJMegfjqgaLQ4wC
+	HIxKPLwPfm0JFGJNLCuuzD3EqAI059GG1RcYpVjy8vNSlUR4C5qA0rwpiZVVqUX58UWlOanF
+	hxgnMgLDYyKzlGhyPjAd5pXEGxqbmBlZGplZGJmYm9NSWEmc92CrdaCQQHpiSWp2ampBahHM
+	UUwcnFINjGVlhtf3tdakvufKeVFw6NZe7p2Htu0MZa+JPPeF91Pvb31HbtN1NxUWLLt+6uxx
+	tyk3Hx+dWrRqyywbh6w94k5s/R/qH2lGbGiTCl9QIXdG+Y6rB2dv8bM7yx/GXovPOyatOeGj
+	EfuJGjnHDNvSLf8ydI5r3o63aloVmbxiB8f0B3uv86j8u6PEUpyRaKjFXFScCAC1YBd7qwMA	AA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Preeti,
 
-(trimming lots of text, hopefully to make it easier to follow)
+--=-bpg0MrU5CDt2VgwooYZF
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Sun, Jun 09, 2013 at 04:42:18AM +0100, Preeti U Murthy wrote:
-> On 06/08/2013 07:32 PM, Rafael J. Wysocki wrote:
-> > On Saturday, June 08, 2013 12:28:04 PM Catalin Marinas wrote:
-> >> On Fri, Jun 07, 2013 at 07:08:47PM +0100, Preeti U Murthy wrote:
-> >>> Meanwhile the scheduler should ensure that the tasks are retained on
-> >>> that CPU,whose frequency is boosted and should not load balance it, so
-> >>> that they can get over quickly. This I think is what is missing. Again
-> >>> this comes down to the scheduler taking feedback from the CPU frequency
-> >>> governors which is not currently happening.
-> >>
-> >> Same loop again. The cpu load goes high because (a) there is more work,
-> >> possibly triggered by external events, and (b) the scheduler decided to
-> >> balance the CPUs in a certain way. As for cpuidle above, the scheduler
-> >> has direct influence on the cpufreq decisions. How would the scheduler
-> >> know which CPU not to balance against? Are CPUs in a cluster
-> >> synchronous? Is it better do let other CPU idle or more efficient to run
-> >> this cluster at half-speed?
-> >>
-> >> Let's say there is an increase in the load, does the scheduler wait
-> >> until cpufreq figures this out or tries to take the other CPUs out of
-> >> idle? Who's making this decision? That's currently a potentially
-> >> unstable loop.
-> >
-> > Yes, it is and I don't think we currently have good answers here.
-> 
-> My answer to the above question is scheduler does not wait until cpufreq
-> figures it out. All that the scheduler cares about today is load
-> balancing. Spread the load and hope it finishes soon. There is a
-> possibility today that even before cpu frequency governor can boost the
-> frequency of cpu, the scheduler can spread the load.
-> 
-> As for the second question it will wakeup idle cpus if it must to load
-> balance.
+Hi,
 
-That's exactly my point. Such behaviour can become unstable (it probably
-won't oscillate but it affects the power or performance).
+2013-06-08 (=ED=86=A0), 15:25 +0800, Huajun Li:
+>=20
+> Hi Jaegeuk,=20
+> Thanks for your suggestion.
+> On Wed, Jun 5, 2013 at 3:13 PM, Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> wrote:
+>         Hi Haicheng,
+>         2013-06-04 (=ED=99=94), 14:01 +0800, Haicheng Li:
+>         > Hi Jaegeuk & Namjae,
+>         >
+>         > Sure, we'll address your comments. And this version is RFC,
+>         just wanna to
+>         > make sure this feature is meaningful for f2fs project, and
+>         there is no obvious
+>         > mistake, e.g. missing some critical path.
+>         IMO, it is worth to design and implement the inline feature
+>         though, I'd
+>         like to review the total design before looking at trivial
+>         mistakes.
+>         Since if the initial design is changed frequently, we need to
+>         review
+>         again and again.
+>        =20
+> Agree. So let's understand/clarify your following proposal firstly.
 
-> It is a good question asked: "does the scheduler wait until cpufreq
-> figures it out." Currently the answer is no, it does not communicate
-> with cpu frequency at all (except through cpu power, but that is the
-> good part of the story, so I will not get there now). But maybe we
-> should change this. I think we can do so the following way.
-> 
-> When can a scheduler talk to cpu frequency? It can do so under the below
-> circumstances:
-> 
-> 1. Load is too high across the systems, all cpus are loaded, no chance
-> of load balancing. Therefore ask cpu frequency governor to step up
-> frequency to get improve performance.
+>         So, we need to decide the overall inline design.
+>         Currently we have to consider three data structures at a same
+>         time for
+>         the on-disk *inline* inode block structure, which are data,
+>         dentry, and
+>         xattr as well.
+>        =20
+>         IMO, we can give three inode flags: F2FS_INLINE_DATA,
+>         F2FS_INLINE_DENT,
+>         and F2FS_INLINE_XATTR.
+>        =20
+> Small data and dentries can be inline.  And xattr (such as XATTR_USER,
+> XATTR_TRUSTED, eg. ) can be inline too, right ?
 
-Too high or too low loads across the whole system are relatively simple
-scenarios: for the former boost the frequency (cpufreq can do this on
-its own, the scheduler has nowhere to balance anyway), for the latter
-pack small tasks (or other heuristics).
+Right.
 
-But the bigger issue is where some CPUs are idle while others are
-running at a smaller frequency. With the current implementation it is
-even hard to get into this asymmetric state (some cluster loaded while
-the other in deep sleep) unless the load is low and you apply some small
-task packing patch.
+> Or inline xattr is just working for inline data/dentries?
+> =20
+>         < on-disk inode block >
+>          - metadata
+>          - if F2FS_INLINE_XATTR is set,
+>           : use fixed 2*255 bytes to *cache* two xattrs for simplicity
+>=20
+> These 2 xattrs are working for the ones storing in xattr_nid block
+> before, or just providing info for inline data/dent ?=20
 
-> 2. The scheduler finds out that if it has to load balance, it has to do
-> so on cpus which are in deep idle state( Currently this logic is not
-> present, but worth getting it in). It then decides to increase the
-> frequency of the already loaded cpus to improve performance. It calls
-> cpu freq governor.
+I meant that we can store a fixed number of xattrs in the inode block
+like *inline* data. The number, 2, is just for example.
+If users give only one or two xattrs, we can store them in the inode
+block instead of using extra node blocks.
 
-So you say that the scheduler decides to increase the frequency of the
-already loaded cpus to improve performance. Doesn't this mean that the
-scheduler takes on some of the responsibilities of cpufreq? You now add
-logic about boosting CPU frequency to the scheduler.
+If a system enables SELinux, it is able to set security labels to all
+the files according to the policy, so that we need to consider inline
+xattr seriously.
+>=20
+>=20
+>          `- if F2FS_INLINE_DATA is set,
+>            : use the remained space varied by F2FS_INLINE_XATTR.
+>          `- if F2FS_INLINE_DENT is set,
+>            : use variable number of dentries determined by
+>         F2FS_INLINE_XATTR.
+> Do you mean inline dent depends on inline xattr, that is, we need a
+> dedicated xattr entry providing info for inline denteries, right?
 
-What's even more problematic is that cpufreq has policies decided by the
-user (or pre-configured OS policies) but the scheduler is not aware of
-them. Let's say the user wants a more conservative cpufreq policy, how
-long should the scheduler wait for cpufreq to boost the frequency before
-waking idle CPUs?
+What I meant was the size of inline dentry space. We need to calculate
+the size for inline dentries on-the-fly as the F2FS_INLINE_XATTR is set
+or not.
 
-There are many questions like above. I'm not looking for specific
-answers but rather trying get a higher level clear view of the
-responsibilities of the three main factors contributing to
-power/performance: load balancing (scheduler), cpufreq and cpuidle.
+> =20
+>=20
+>          `- Otherwise, use as pointers
+>        =20
+>         And then, we need to define how to deal with their
+>         combinations.
+>        =20
+>         Operational conditions
+>         ----------------------
+>          - use inline xattr or not, by checking other inline flags and
+>         inline
+>         data size.
+>          - calculate inline data size and its offset according to the
+>         use of
+>         inline xattrs.
+>          - the places of inline operaions wrt the lock consistency and
+>         coverage
+>          - Power-off-recovery routine should care about the on-disk
+>         inode
+>         structure.
+>          - unset F2FS_INLINE_DATA if i_size =3D 0
+>          - unset F2FS_INLINE_XATTR if xattr entries =3D 0
+>          - unset F2FS_INLINE_DENT if dentries =3D 0
+>        =20
+>          - what else?
+> - clear these flags after the inline data/dent is moved to normal data
+> block
+> - maybe we need store xattr_header while making xattr inline.=20
 
-> 3. The scheduler finds out that if it has to load balance, it has to do
-> so on a different power domain which is idle currently(shallow/deep). It
-> thinks the better of it and calls cpu frequency governor to boost the
-> frequency of the cpus in the current domain.
+It seems that there is nothing to store any header information.
 
-As for 2, the scheduler would make power decisions. Then why don't make
-a unified implementation? Or remove such decisions from the scheduler.
+Thanks,
 
-> > The results of many measurements seem to indicate that it generally is better
-> > to do the work as quickly as possible and then go idle again, but there are
-> > costs associated with going back and forth from idle to non-idle etc.
-> 
-> I think we can even out the cost benefit of race to idle, by choosing to
-> do it wisely. Like for example if points 2 and 3 above are true (idle
-> cpus are in deep sleep states or need to ld balance on a different power
-> domain), then step up the frequency of the current working cpus and reap
-> its benefit.
+>        =20
+>         Once we design the whole thing, we can make general functions
+>         to deal
+>         with them gracefully.
+>        =20
+>         > And if you team has some special opensource test suites used
+>         in your daily
+>         > f2fs test cycle, pls. kindly share the info with us, then we
+>         can make sure our
+>         > patchset can pass these cases before we send out next
+>         version.
+>        =20
+>        =20
+>         1. xfstests for functionality
+>         2. fsstress for deadlock/consistency check
+>         3. power-off with fsstress
+>        =20
+>         Thanks,
+>        =20
+>         > BTW, test the kernel source tree or kernel build is a good
+>         suggestion. thanks.
+>         >
+>         > On Tue, Jun 04, 2013 at 01:23:57PM +0900, Namjae Jeon wrote:
+>         > > Hi. Huajun.
+>         > >
+>         > > I agree jaegeuk's opinion.
+>         > > Additionally, It is better that you describe the effect in
+>         change-log
+>         > > when this feature is added to f2fs.
+>         > > e.g.
+>         > >     1. how much space is saved when storing
+>         kernel-tree(small files) ?
+>         > >     2. small files creation performance test.
+>         > >     3. file look-up performance test.
+>         > >     4. other performance tools 's result.
+>         > >
+>         > > Thanks.
+>         > >
+>         > > 2013/6/4 Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+>         > > > Hi,
+>         > > >
+>         > > > This feature is one of my todo items. ;)
+>         > > > Thank you for the contribution.
+>         > > >
+>         > > > Before reviewing the below code intensively, we need to
+>         check the
+>         > > > following issues.
+>         > > >
+>         > > > - deadlock conditions
+>         > > > - FS consistency
+>         > > > - recovery routine
+>         > > >
+>         > > > Could you check one more time?
+>         > > > Thanks again,
+>         > > >
+>         > > > 2013-06-03 (=EC=9B=94), 18:04 +0800, Huajun Li:
+>         > > >> f2fs inode is so large, small files can be stored
+>         directly in the inode,
+>         > > >> rather than just storing a single block address and
+>         storing the data elsewhere.
+>         > > >>
+>         > > >> This RFC patch set is just to enable f2fs support
+>         inline data: files less than
+>         > > >> about 3.6K can be stored directly in inode block.
+>         > > >>
+>         > > >> TODO: make small dirs inline too.
+>         > > >>
+>         > > >>
+>         > > >> Haicheng Li (3):
+>         > > >>   f2fs: Add helper functions and flag to support inline
+>         data
+>         > > >>   f2fs: Add interface for inline data support
+>         > > >>   f2fs: add tracepoints to debug inline data operations
+>         > > >>
+>         > > >> Huajun Li (2):
+>         > > >>   f2fs: Handle inline data read and write
+>         > > >>   f2fs: Key functions to handle inline data
+>         > > >>
+>         > > >>  fs/f2fs/Kconfig             |   10 +++
+>         > > >>  fs/f2fs/Makefile            |    1 +
+>         > > >>  fs/f2fs/data.c              |   78
+>         +++++++++++++++++++++-
+>         > > >>  fs/f2fs/f2fs.h              |   70 +++++++++++++++++++
+>         > > >>  fs/f2fs/file.c              |    9 ++-
+>         > > >>  fs/f2fs/inline.c            |  156
+>         +++++++++++++++++++++++++++++++++++++++++++
+>         > > >>  fs/f2fs/inode.c             |    8 +++
+>         > > >>  include/linux/f2fs_fs.h     |    5 ++
+>         > > >>  include/trace/events/f2fs.h |   69 +++++++++++++++++++
+>         > > >>  9 files changed, 402 insertions(+), 4 deletions(-)
+>         > > >>  create mode 100644 fs/f2fs/inline.c
+>         > > >>
+>         > > >
+>         > > > --
+>         > > > Jaegeuk Kim
+>         > > > Samsung
+>         > > --
+>         > > To unsubscribe from this list: send the line "unsubscribe
+>         linux-fsdevel" in
+>         > > the body of a message to majordomo@vger.kernel.org
+>         > > More majordomo info at
+>          http://vger.kernel.org/majordomo-info.html
+>        =20
+>        =20
+>         --
+>         Jaegeuk Kim
+>         Samsung
+>=20
+>=20
 
-And such decision would be made by ...? I guess the scheduler again.
+--=20
+Jaegeuk Kim
+Samsung
 
-> > And what about performance scaling?  Quite frankly, in my opinion that
-> > requires some more investigation, because there still are some open questions
-> > in that area.  To start with we can just continue using the current heuristics,
-> > but perhaps with the scheduler calling the scaling "governor" when it sees fit
-> > instead of that "governor" running kind of in parallel with it.
-> 
-> Exactly. How this can be done is elaborated above. This is one of the
-> key things we need today,IMHO.
+--=-bpg0MrU5CDt2VgwooYZF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-The scheduler asking the cpufreq governor of what it needs is a too
-simplistic view IMHO. What if the governor is conservative? How much
-does the scheduler wait until the feedback loop reacts (CPU frequency
-raised increasing the idle time so that the scheduler eventually
-measures a smaller load)?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-The scheduler could get more direct feedback from cpufreq like "I'll get
-to this frequency in x ms" or not at all but then the scheduler needs to
-make another power-related decision on whether to wait (be conservative)
-or wake up an idle CPU. Do you want to add various power policies at the
-scheduler level just to match the cpufreq ones?
+iQIcBAABAgAGBQJRtQf6AAoJEEAUqH6CSFDSu7EP/jBIPHME4manwiGt6PDABdQN
+MuK6XM+9QirDvYbJiZ/h1nqHRBi/dOpxIo9WVHty258b1FxNEdtj87eCcMTxL6Mb
+rqnv/gRpmM1Icyw+Aada1yC1FpRAzxEAg0nw+iOjB0sonjv992mD+PAb7AP8vCP5
+JkU6qFSuLl3x9ZViC9CbWpEDQrlsNOsg6Zkfz/UG4pLUUitycwuXAM2ugpuOBPeR
+Erh5pbND6qNgPulcCWYeEMNZKv6D9OfrIR6liLE2ozm4l3ZvFwHoQi1c22sbzSgK
+AW8mKEioSGU0wgRSr7JZzAiUteAoDvFJtjCbhc+5c2eXBHqmtAERmp1wVyyaUS/Q
+gU0q/JLaGdOAzym/2204hRcbtDTk43xcd9PHwlqh8HjhX9UT5zFBhrdxF3IFhuQS
+SEGISwACmzirDubu3npP6Y0y1G0lADrWEmxgp1wkuTrKkPjI3TtSU1uDNEFCkfSW
+nA8OawwHPAkwe6d8ENp/s973cv1gWsAI+NTpfvVGbh7OEIUfM2C4zaTv35+MB3WX
+0Ol9AKFL82l23Kqh4u/VjsuimNHzyyVyn+4BJpIQmrfcmoPElCKhM2dqlGdxDfAt
+JW/c+a35OTSeHR1GoIfPxhw4+zWtSj1o8obdmCaFpZ9XxjfdtZufOJ9B1RYMzTKd
+5klQagUgqUCJAvQaIcxr
+=tMS9
+-----END PGP SIGNATURE-----
 
-> >> That's why I suggested maybe starting to take the load balancing out of
-> >> fair.c and make it easily extensible (my opinion, the scheduler guys may
-> >> disagree). Then make it more aware of topology, power configuration so
-> >> that it makes the right task placement decision. You then get it to
-> >> tell cpufreq about the expected performance requirements (frequency
-> >> decided by cpufreq) and cpuidle about how long it could be idle for (you
-> >> detect a periodic task every 1ms, or you don't have any at all because
-> >> they were migrated, the right C state being decided by the governor).
-> >
-> > There is another angle to look at that as I said somewhere above.
-> >
-> > What if we could integrate cpuidle with cpufreq so that there is one code
-> > layer representing what the hardware can do to the scheduler?  What benefits
-> > can we get from that, if any?
-> 
-> We could debate on this point. I am a bit confused about this. As I see
-> it, there is no problem with keeping them separately. One, because of
-> code readability; it is easy to understand what are the different
-> parameters that the performance of CPU depends on, without needing to
-> dig through the code. Two, because cpu frequency kicks in during runtime
-> primarily and cpuidle during idle time of the cpu.
-> 
-> But this would also mean creating well defined interfaces between them.
-> Integrating cpufreq and cpuidle seems like a better argument to make due
-> to their common functionality at a higher level of talking to hardware
-> and tuning the performance parameters of cpu. But I disagree that
-> scheduler should be put into this common framework as well as it has
-> functionalities which are totally disjoint from what subsystems such as
-> cpuidle and cpufreq are intended to do.
+--=-bpg0MrU5CDt2VgwooYZF--
 
-It's not about the whole scheduler but rather the load balancing, task
-placement. You can try to create well defined interfaces between them
-but first of all let's define clearly what responsibilities each of the
-three frameworks have.
-
-As I said in my first email on this subject, we could:
-
-a) let the scheduler focus on performance only but control (restrict)
-   the load balancing from cpufreq. For example via cpu_power, a value
-   of 0 meaning don't balance against it. Cpufreq changes the frequency
-   based on the load and may allow the scheduler to use idle CPUs. Such
-   approach requires closer collaboration between cpufreq and cpuidle
-   (possibly even merging them) and cpufreq needs to become even more
-   aware of CPU topology.
-
-or:
-
-b) Merge the load balancer and cpufreq together (could leave cpuidle
-   out initially) with a new design.
-
-Any other proposals are welcome. So far they were either tweaks in
-various places (small task packing) or are relatively vague (like we
-need two-way communication between cpuidle and scheduler).
-
-Best regards.
-
--- 
-Catalin
