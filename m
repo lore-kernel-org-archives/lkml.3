@@ -1,167 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572Ab3FIHbe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 03:31:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5825 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751543Ab3FIHbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 03:31:32 -0400
-Date: Sun, 9 Jun 2013 10:31:15 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: David Daney <ddaney.cavm@gmail.com>, kvm@vger.kernel.org,
-        linux-mips@linux-mips.org, ralf@linux-mips.org,
-        Sanjay Lal <sanjayl@kymasys.com>, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH 00/31] KVM/MIPS: Implement hardware virtualization via
- the MIPS-VZ extensions.
-Message-ID: <20130609073115.GE4725@redhat.com>
-References: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com>
- <51B26974.5000306@caviumnetworks.com>
+	id S1752519Ab3FIHxO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 03:53:14 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:48246 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751199Ab3FIHxM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jun 2013 03:53:12 -0400
+From: Xiaoguang Chen <chenxg@marvell.com>
+To: <viresh.kumar@linaro.org>, <rjw@sisk.pl>
+CC: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <njiang1@marvell.com>,
+        <zjwu@marvell.com>, <ylmao@marvell.com>, <chenxg.marvell@gmail.com>,
+        Xiaoguang Chen <chenxg@marvell.com>
+Subject: [PATCH v2] cpufreq: fix governor start/stop race condition
+Date: Sun, 9 Jun 2013 15:50:05 +0800
+Message-ID: <1370764205-3933-1-git-send-email-chenxg@marvell.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51B26974.5000306@caviumnetworks.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 04:15:00PM -0700, David Daney wrote:
-> I should also add that I will shortly send patches for the kvm tool
-> required to drive this VM as well as a small set of patches that
-> create a para-virtualized MIPS/Linux guest kernel.
-> 
-> The idea is that because there is no standard SMP linux system, we
-> create a standard para-virtualized system that uses a handful of
-> hypercalls, but mostly just uses virtio devices.  It has no emulated
-> real hardware (no 8250 UART, no emulated legacy anything...)
-> 
-Virtualization is useful for running legacy code. Why dismiss support
-for non pv guests so easily? How different MIPS SMP systems are? What
-about running non pv UP systems?
+cpufreq governor stop and start should be kept in sequence.
+If not, there will be unexpected behavior, for example:
 
-> David Daney
-> 
-> 
-> On 06/07/2013 04:03 PM, David Daney wrote:
-> >From: David Daney <david.daney@cavium.com>
-> >
-> >These patches take a somewhat different approach to MIPS
-> >virtualization via the MIPS-VZ extensions than the patches previously
-> >sent by Sanjay Lal.
-> >
-> >Several facts about the code:
-> >
-> >o Existing exception handlers are modified to hook in to KVM instead
-> >   of intercepting all exceptions via the EBase register, and then
-> >   chaining to real exception handlers.
-> >
-> >o Able to boot 64-bit SMP guests that use the FPU (I have booted 4-way
-> >   SMP 64-bit MIPS/Linux).
-> >
-> >o Additional overhead on every exception even when *no* vCPU is running.
-> >
-> >o Lower interrupt overhead, than the EBase interception method, when
-> >   vCPU *is* running.
-> >
-> >o This code is somewhat smaller than the existing trap/emulate
-> >   implementation (about 2100 lines vs. about 5300 lines)
-> >
-> >o Currently probably only usable on the OCTEON III CPU model, as some
-> >   MIPS-VZ implementation-defined behaviors were assumed to have the
-> >   OCTEON III behavior.
-> >
-> >Note: I think Ralf already has the 17/31 (MIPS: Quit exposing Kconfig
-> >symbols in uapi headers.) queued, but I also include it here.
-> >
-> >David Daney (31):
-> >   MIPS: Move allocate_kscratch to cpu-probe.c and make it public.
-> >   MIPS: Save and restore K0/K1 when CONFIG_KVM_MIPSVZ
-> >   mips/kvm: Fix 32-bitisms in kvm_locore.S
-> >   mips/kvm: Add casts to avoid pointer width mismatch build failures.
-> >   mips/kvm: Use generic cache flushing functions.
-> >   mips/kvm: Rename kvm_vcpu_arch.pc to  kvm_vcpu_arch.epc
-> >   mips/kvm: Rename VCPU_registername to KVM_VCPU_ARCH_registername
-> >   mips/kvm: Fix code formatting in arch/mips/kvm/kvm_locore.S
-> >   mips/kvm: Factor trap-and-emulate support into a pluggable
-> >     implementation.
-> >   mips/kvm: Implement ioctls to get and set FPU registers.
-> >   MIPS: Rearrange branch.c so it can be used by kvm code.
-> >   MIPS: Add instruction format information for WAIT, MTC0, MFC0, et al.
-> >   mips/kvm: Add accessors for MIPS VZ registers.
-> >   mips/kvm: Add thread_info flag to indicate operation in MIPS VZ Guest
-> >     Mode.
-> >   mips/kvm: Exception handling to leave and reenter guest mode.
-> >   mips/kvm: Add exception handler for MIPSVZ Guest exceptions.
-> >   MIPS: Quit exposing Kconfig symbols in uapi headers.
-> >   mips/kvm: Add pt_regs slots for BadInstr and BadInstrP
-> >   mips/kvm: Add host definitions for MIPS VZ based host.
-> >   mips/kvm: Hook into TLB fault handlers.
-> >   mips/kvm: Allow set_except_vector() to be used from MIPSVZ code.
-> >   mips/kvm: Split get_new_mmu_context into two parts.
-> >   mips/kvm: Hook into CP unusable exception handler.
-> >   mips/kvm: Add thread_struct fields used by MIPSVZ hosts.
-> >   mips/kvm: Add some asm-offsets constants used by MIPSVZ.
-> >   mips/kvm: Split up Kconfig and Makefile definitions in preperation
-> >     for MIPSVZ.
-> >   mips/kvm: Gate the use of kvm_local_flush_tlb_all() by KVM_MIPSTE
-> >   mips/kvm: Only use KVM_COALESCED_MMIO_PAGE_OFFSET with KVM_MIPSTE
-> >   mips/kvm: Add MIPSVZ support.
-> >   mips/kvm: Enable MIPSVZ in Kconfig/Makefile
-> >   mips/kvm: Allow for upto 8 KVM vcpus per vm.
-> >
-> >  arch/mips/Kconfig                   |    1 +
-> >  arch/mips/include/asm/branch.h      |    7 +
-> >  arch/mips/include/asm/kvm_host.h    |  622 +-----------
-> >  arch/mips/include/asm/kvm_mips_te.h |  589 +++++++++++
-> >  arch/mips/include/asm/kvm_mips_vz.h |   29 +
-> >  arch/mips/include/asm/mipsregs.h    |  264 +++++
-> >  arch/mips/include/asm/mmu_context.h |   12 +-
-> >  arch/mips/include/asm/processor.h   |    6 +
-> >  arch/mips/include/asm/ptrace.h      |   36 +
-> >  arch/mips/include/asm/stackframe.h  |  150 ++-
-> >  arch/mips/include/asm/thread_info.h |    2 +
-> >  arch/mips/include/asm/uasm.h        |    2 +-
-> >  arch/mips/include/uapi/asm/inst.h   |   23 +-
-> >  arch/mips/include/uapi/asm/ptrace.h |   17 +-
-> >  arch/mips/kernel/asm-offsets.c      |  124 ++-
-> >  arch/mips/kernel/branch.c           |   63 +-
-> >  arch/mips/kernel/cpu-probe.c        |   34 +
-> >  arch/mips/kernel/genex.S            |    8 +
-> >  arch/mips/kernel/scall64-64.S       |   12 +
-> >  arch/mips/kernel/scall64-n32.S      |   12 +
-> >  arch/mips/kernel/traps.c            |   15 +-
-> >  arch/mips/kvm/Kconfig               |   23 +-
-> >  arch/mips/kvm/Makefile              |   15 +-
-> >  arch/mips/kvm/kvm_locore.S          |  980 +++++++++---------
-> >  arch/mips/kvm/kvm_mips.c            |  768 ++------------
-> >  arch/mips/kvm/kvm_mips_comm.h       |    1 +
-> >  arch/mips/kvm/kvm_mips_commpage.c   |    9 +-
-> >  arch/mips/kvm/kvm_mips_dyntrans.c   |    4 +-
-> >  arch/mips/kvm/kvm_mips_emul.c       |  312 +++---
-> >  arch/mips/kvm/kvm_mips_int.c        |   53 +-
-> >  arch/mips/kvm/kvm_mips_int.h        |    2 -
-> >  arch/mips/kvm/kvm_mips_stats.c      |    6 +-
-> >  arch/mips/kvm/kvm_mipsvz.c          | 1894 +++++++++++++++++++++++++++++++++++
-> >  arch/mips/kvm/kvm_mipsvz_guest.S    |  234 +++++
-> >  arch/mips/kvm/kvm_tlb.c             |  140 +--
-> >  arch/mips/kvm/kvm_trap_emul.c       |  932 +++++++++++++++--
-> >  arch/mips/mm/fault.c                |    8 +
-> >  arch/mips/mm/tlbex-fault.S          |    6 +
-> >  arch/mips/mm/tlbex.c                |   45 +-
-> >  39 files changed, 5299 insertions(+), 2161 deletions(-)
-> >  create mode 100644 arch/mips/include/asm/kvm_mips_te.h
-> >  create mode 100644 arch/mips/include/asm/kvm_mips_vz.h
-> >  create mode 100644 arch/mips/kvm/kvm_mipsvz.c
-> >  create mode 100644 arch/mips/kvm/kvm_mipsvz_guest.S
-> >
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+we have 4 cpus and policy->cpu=cpu0, cpu1/2/3 are linked to cpu0.
+the normal sequence is as below:
 
---
-			Gleb.
+1) Current governor is userspace, one application tries to set
+governor to ondemand. it will call __cpufreq_set_policy in which it
+will stop userspace governor and then start ondemand governor.
+
+2) Current governor is userspace, now cpu0 hotplugs in cpu3, it will
+call cpufreq_add_policy_cpu. on which it first stops userspace
+governor, and then starts userspace governor.
+
+Now if the sequence of above two cases interleaves, it becames
+below sequence:
+
+1) application stops userspace governor
+2)                                      hotplug stops userspace governor
+3) application starts ondemand governor
+4)                                      hotplug starts a governor
+
+in step 4, hotplug is supposed to start userspace governor, but now
+the governor has been changed by application to ondemand, so hotplug
+starts ondemand governor again !!!!
+
+The solution is: do not allow stop governor multi-times
+Governor stop should only do once, after it is stopped,
+no other governor stop should be executed.
+
+Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
+---
+ drivers/cpufreq/cpufreq.c | 10 +++++++++-
+ include/linux/cpufreq.h   |  1 +
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 2d53f47..c8d7cb2 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1562,6 +1562,11 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+ 
+ 	pr_debug("__cpufreq_governor for CPU %u, event %u\n",
+ 						policy->cpu, event);
++
++	if ((!policy->governor->enabled && (event == CPUFREQ_GOV_STOP)) ||
++	    (policy->governor->enabled && (event == CPUFREQ_GOV_START)))
++		return 0;
++
+ 	ret = policy->governor->governor(policy, event);
+ 
+ 	if (!ret) {
+@@ -1569,6 +1574,10 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+ 			policy->governor->initialized++;
+ 		else if (event == CPUFREQ_GOV_POLICY_EXIT)
+ 			policy->governor->initialized--;
++		else if (event == CPUFREQ_GOV_STOP)
++			policy->governor->enabled = 0;
++		else if (event == CPUFREQ_GOV_START)
++			policy->governor->enabled = 1;
+ 	}
+ 
+ 	/* we keep one module reference alive for
+@@ -1581,7 +1590,6 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+ 	return ret;
+ }
+ 
+-
+ int cpufreq_register_governor(struct cpufreq_governor *governor)
+ {
+ 	int err;
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 037d36a..16c5b70 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -199,6 +199,7 @@ struct cpufreq_governor {
+ 			will fallback to performance governor */
+ 	struct list_head	governor_list;
+ 	struct module		*owner;
++	int enabled;
+ };
+ 
+ /*
+-- 
+1.8.0
+
