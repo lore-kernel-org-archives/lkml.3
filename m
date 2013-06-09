@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428Ab3FICX1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 22:23:27 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:37486 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752900Ab3FICUB (ORCPT
+	id S1753518Ab3FICXr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 22:23:47 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:32848 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645Ab3FICT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 22:20:01 -0400
+	Sat, 8 Jun 2013 22:19:59 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: axboe@kernel.dk, tytso@mit.edu, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org
-Cc: Kent Overstreet <koverstreet@google.com>, NeilBrown <neilb@suse.de>,
-        Alasdair Kergon <agk@redhat.com>,
-        Lars Ellenberg <lars.ellenberg@linbit.com>,
-        Peter Osterlund <petero2@telia.com>, Sage Weil <sage@inktank.com>
-Subject: [PATCH 16/26] block: Rename bio_split() -> bio_pair_split()
-Date: Sat,  8 Jun 2013 19:18:58 -0700
-Message-Id: <1370744348-15407-17-git-send-email-koverstreet@google.com>
+Cc: Kent Overstreet <koverstreet@google.com>
+Subject: [PATCH 15/26] block: Generic bio chaining
+Date: Sat,  8 Jun 2013 19:18:57 -0700
+Message-Id: <1370744348-15407-16-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.8.3.rc1
 In-Reply-To: <1370744348-15407-1-git-send-email-koverstreet@google.com>
 References: <1370744348-15407-1-git-send-email-koverstreet@google.com>
@@ -24,117 +21,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is prep work for introducing a more general bio_split().
+This adds a generic mechanism for chaining bio completions. This is
+going to be used for a bio_split() replacement, and some other things in
+the future.
+
+This is implemented with a new bio flag that bio_endio() checks; it
+would definitely be cleaner to implement chaining with a bi_end_io
+function, but since there's no limits on the depth of a bio chain (and
+with arbitrary bio splitting coming this is going to be a real issue)
+using an endio function would lead to unbounded stack usage.
+
+Tail call optimization could solve that, but CONFIG_FRAME_POINTER
+disables gcc's tail call optimization (-fno-optimize-sibling-calls) - so
+we do it the hacky but safe way.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 Cc: Jens Axboe <axboe@kernel.dk>
-Cc: NeilBrown <neilb@suse.de>
-Cc: Alasdair Kergon <agk@redhat.com>
-Cc: Lars Ellenberg <lars.ellenberg@linbit.com>
-Cc: Peter Osterlund <petero2@telia.com>
-Cc: Sage Weil <sage@inktank.com>
 ---
- drivers/block/pktcdvd.c | 2 +-
- drivers/md/linear.c     | 2 +-
- drivers/md/raid0.c      | 6 +++---
- drivers/md/raid10.c     | 2 +-
- fs/bio.c                | 4 ++--
- include/linux/bio.h     | 2 +-
- 6 files changed, 9 insertions(+), 9 deletions(-)
+ drivers/md/bcache/io.c    |  2 +-
+ fs/bio.c                  | 45 +++++++++++++++++++++++++++++++++++++++------
+ include/linux/bio.h       |  1 +
+ include/linux/blk_types.h |  7 +++++--
+ 4 files changed, 46 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-index 68a6d2a..6c1029c 100644
---- a/drivers/block/pktcdvd.c
-+++ b/drivers/block/pktcdvd.c
-@@ -2412,7 +2412,7 @@ static void pkt_make_request(struct request_queue *q, struct bio *bio)
- 		if (last_zone != zone) {
- 			BUG_ON(last_zone != zone + pd->settings.size);
- 			first_sectors = last_zone - bio->bi_iter.bi_sector;
--			bp = bio_split(bio, first_sectors);
-+			bp = bio_pair_split(bio, first_sectors);
- 			BUG_ON(!bp);
- 			pkt_make_request(q, &bp->bio1);
- 			pkt_make_request(q, &bp->bio2);
-diff --git a/drivers/md/linear.c b/drivers/md/linear.c
-index fb3b0d0..e9b53e9 100644
---- a/drivers/md/linear.c
-+++ b/drivers/md/linear.c
-@@ -326,7 +326,7 @@ static void linear_make_request(struct mddev *mddev, struct bio *bio)
+diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
+index 294b4c1..246b420 100644
+--- a/drivers/md/bcache/io.c
++++ b/drivers/md/bcache/io.c
+@@ -137,7 +137,7 @@ static void bch_bio_submit_split_done(struct closure *cl)
  
- 		rcu_read_unlock();
+ 	s->bio->bi_end_io = s->bi_end_io;
+ 	s->bio->bi_private = s->bi_private;
+-	bio_endio(s->bio, 0);
++	s->bio->bi_end_io(s->bio, 0);
  
--		bp = bio_split(bio, end_sector - bio->bi_iter.bi_sector);
-+		bp = bio_pair_split(bio, end_sector - bio->bi_iter.bi_sector);
- 
- 		linear_make_request(mddev, &bp->bio1);
- 		linear_make_request(mddev, &bp->bio2);
-diff --git a/drivers/md/raid0.c b/drivers/md/raid0.c
-index d8c2ec0..5edc3f7 100644
---- a/drivers/md/raid0.c
-+++ b/drivers/md/raid0.c
-@@ -534,11 +534,11 @@ static void raid0_make_request(struct mddev *mddev, struct bio *bio)
- 		 * refuse to split for us, so we need to split it.
- 		 */
- 		if (likely(is_power_of_2(chunk_sects)))
--			bp = bio_split(bio, chunk_sects - (sector &
-+			bp = bio_pair_split(bio, chunk_sects - (sector &
- 							   (chunk_sects-1)));
- 		else
--			bp = bio_split(bio, chunk_sects -
--				       sector_div(sector, chunk_sects));
-+			bp = bio_pair_split(bio, chunk_sects -
-+					    sector_div(sector, chunk_sects));
- 		raid0_make_request(mddev, &bp->bio1);
- 		raid0_make_request(mddev, &bp->bio2);
- 		bio_pair_release(bp);
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index 5899d87..7b68d82 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1185,7 +1185,7 @@ static void make_request(struct mddev *mddev, struct bio * bio)
- 		/* This is a one page bio that upper layers
- 		 * refuse to split for us, so we need to split it.
- 		 */
--		bp = bio_split(bio, chunk_sects -
-+		bp = bio_pair_split(bio, chunk_sects -
- 			       (bio->bi_iter.bi_sector & (chunk_sects - 1)));
- 
- 		/* Each of these 'make_request' calls will call 'wait_barrier'.
+ 	closure_debug_destroy(&s->cl);
+ 	mempool_free(s, s->p->bio_split_hook);
 diff --git a/fs/bio.c b/fs/bio.c
-index bd25401..3968b8f 100644
+index 24271ce..bd25401 100644
 --- a/fs/bio.c
 +++ b/fs/bio.c
-@@ -1746,7 +1746,7 @@ static void bio_pair_end_2(struct bio *bi, int err)
- /*
-  * split a bio - only worry about a bio with a single page in its iovec
-  */
--struct bio_pair *bio_split(struct bio *bi, int first_sectors)
-+struct bio_pair *bio_pair_split(struct bio *bi, int first_sectors)
+@@ -273,6 +273,7 @@ void bio_init(struct bio *bio)
  {
- 	struct bio_pair *bp = mempool_alloc(bio_split_pool, GFP_NOIO);
- 
-@@ -1793,7 +1793,7 @@ struct bio_pair *bio_split(struct bio *bi, int first_sectors)
- 
- 	return bp;
+ 	memset(bio, 0, sizeof(*bio));
+ 	bio->bi_flags = 1 << BIO_UPTODATE;
++	atomic_set(&bio->bi_remaining, 1);
+ 	atomic_set(&bio->bi_cnt, 1);
  }
--EXPORT_SYMBOL(bio_split);
-+EXPORT_SYMBOL(bio_pair_split);
+ EXPORT_SYMBOL(bio_init);
+@@ -295,9 +296,29 @@ void bio_reset(struct bio *bio)
  
- /*
-  * create memory pools for biovec's in a bio_set.
+ 	memset(bio, 0, BIO_RESET_BYTES);
+ 	bio->bi_flags = flags|(1 << BIO_UPTODATE);
++	atomic_set(&bio->bi_remaining, 1);
+ }
+ EXPORT_SYMBOL(bio_reset);
+ 
++/**
++ * bio_chain - chain bio completions
++ *
++ * The caller won't have a bi_end_io called when @bio completes - instead,
++ * @parent's bi_end_io won't be called until both @parent and @bio have
++ * completed.
++ *
++ * The caller must not set bi_private or bi_end_io in @bio.
++ */
++void bio_chain(struct bio *bio, struct bio *parent)
++{
++	BUG_ON(bio->bi_private || bio->bi_end_io);
++
++	bio->bi_flags |= 1 << BIO_CHAINED;
++	bio->bi_private = parent;
++	atomic_inc(&parent->bi_remaining);
++}
++EXPORT_SYMBOL(bio_chain);
++
+ static void bio_alloc_rescue(struct work_struct *work)
+ {
+ 	struct bio_set *bs = container_of(work, struct bio_set, rescue_work);
+@@ -1669,13 +1690,25 @@ EXPORT_SYMBOL(bio_flush_dcache_pages);
+  **/
+ void bio_endio(struct bio *bio, int error)
+ {
+-	if (error)
+-		clear_bit(BIO_UPTODATE, &bio->bi_flags);
+-	else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
+-		error = -EIO;
++	while (bio) {
++		BUG_ON(atomic_read(&bio->bi_remaining) <= 0);
++
++		if (error)
++			clear_bit(BIO_UPTODATE, &bio->bi_flags);
++		else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
++			error = -EIO;
++
++		if (!atomic_dec_and_test(&bio->bi_remaining))
++			return;
+ 
+-	if (bio->bi_end_io)
+-		bio->bi_end_io(bio, error);
++		if (bio_flagged(bio, BIO_CHAINED)) {
++			bio = bio->bi_private;
++		} else {
++			if (bio->bi_end_io)
++				bio->bi_end_io(bio, error);
++			bio = NULL;
++		}
++	}
+ }
+ EXPORT_SYMBOL(bio_endio);
+ 
 diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 55d2ce8..dd70f7e 100644
+index 80ffe15..55d2ce8 100644
 --- a/include/linux/bio.h
 +++ b/include/linux/bio.h
-@@ -281,7 +281,7 @@ struct bio_pair {
- 	atomic_t			cnt;
- 	int				error;
- };
--extern struct bio_pair *bio_split(struct bio *bi, int first_sectors);
-+extern struct bio_pair *bio_pair_split(struct bio *bi, int first_sectors);
- extern void bio_pair_release(struct bio_pair *dbio);
+@@ -326,6 +326,7 @@ extern void bio_advance(struct bio *, unsigned);
  
- extern struct bio_set *bioset_create(unsigned int, unsigned int);
+ extern void bio_init(struct bio *);
+ extern void bio_reset(struct bio *);
++void bio_chain(struct bio *, struct bio *);
+ 
+ extern int bio_add_page(struct bio *, struct page *, unsigned int,unsigned int);
+ extern int bio_add_pc_page(struct request_queue *, struct bio *, struct page *,
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index 72f1274..69f5c0d 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -64,6 +64,8 @@ struct bio {
+ 	unsigned int		bi_seg_front_size;
+ 	unsigned int		bi_seg_back_size;
+ 
++	atomic_t		bi_remaining;
++
+ 	bio_end_io_t		*bi_end_io;
+ 
+ 	void			*bi_private;
+@@ -119,13 +121,14 @@ struct bio {
+ #define BIO_QUIET	10	/* Make BIO Quiet */
+ #define BIO_MAPPED_INTEGRITY 11/* integrity metadata has been remapped */
+ #define BIO_SNAP_STABLE	12	/* bio data must be snapshotted during write */
++#define BIO_CHAINED	13	/* bi_private points to a parent bio */
+ 
+ /*
+  * Flags starting here get preserved by bio_reset() - this includes
+  * BIO_POOL_IDX()
+  */
+-#define BIO_RESET_BITS	13
+-#define BIO_OWNS_VEC	13	/* bio_free() should free bvec */
++#define BIO_RESET_BITS	14
++#define BIO_OWNS_VEC	14	/* bio_free() should free bvec */
+ 
+ #define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
+ 
 -- 
 1.8.3.rc1
 
