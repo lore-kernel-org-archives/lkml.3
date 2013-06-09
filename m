@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415Ab3FIW6D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 18:58:03 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:55078 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311Ab3FIW6B (ORCPT
+	id S1752497Ab3FIXCC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 19:02:02 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:45794 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371Ab3FIXB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 18:58:01 -0400
-Message-ID: <51B50873.8010104@gmail.com>
-Date: Sun, 09 Jun 2013 15:57:55 -0700
-From: David Daney <david.s.daney@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: David Daney <ddaney.cavm@gmail.com>, linux-mips@linux-mips.org,
-        ralf@linux-mips.org, kvm@vger.kernel.org,
-        Sanjay Lal <sanjayl@kymasys.com>, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH v5 5/6] mips/kvm: Fix ABI by moving manipulation of CP0
- registers to KVM_{G,S}ET_ONE_REG
-References: <1369248236-27237-1-git-send-email-ddaney.cavm@gmail.com> <1369248236-27237-6-git-send-email-ddaney.cavm@gmail.com> <20130608110503.GF15299@redhat.com>
-In-Reply-To: <20130608110503.GF15299@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 9 Jun 2013 19:01:59 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: linux-acpi@vger.kernel.org
+Cc: seth.forshee@canonical.com, joeyli.kernel@gmail.com,
+        daniel.vetter@ffwll.ch, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, rjw@sisk.pl
+Subject: [PATCH 0/3] Fix backlight issues on some Windows 8 systems 
+Date: Sun,  9 Jun 2013 19:01:36 -0400
+Message-Id: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
+X-Mailer: git-send-email 1.8.2.1
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 2001:470:1f07:1371:6267:20ff:fec3:2318
+X-SA-Exim-Mail-From: matthew.garrett@nebula.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2013 04:05 AM, Gleb Natapov wrote:
-> On Wed, May 22, 2013 at 11:43:55AM -0700, David Daney wrote:
->> From: David Daney <david.daney@cavium.com>
->>
->> Because not all 256 CP0 registers are ever implemented, we need a
->> different method of manipulating them.  Use the
->> KVM_SET_ONE_REG/KVM_GET_ONE_REG mechanism.
->>
->> Now unused code and definitions are removed.
->>
-> Just noticed that KVM_REG_MIPS_ definitions are wrong. You need to
-> define KVM_REG_MIPS in include/uapi/linux/kvm.h (please use
-> 0x7000000000000000ULL as 0x6000000000000000ULL is reserved for ARM64)
-> and define all KVM_REG_MIPS_ values as "KVM_REG_MIPS | value". Can you
-> send a patch to do that ASAP?
+Windows 8 introduced new policy for backlight control by pushing it out to
+graphics drivers. This appears to have coincided with a range of vendors
+adding Windows 8 checks to their backlight control code which trigger either
+awkward behaviour (Lenovo) or complete brokenness (some Dells). The simplest
+thing to do would be to just disable ACPI backlight control entirely if the
+firmware indicates Windows 8 support, but it's entirely possible that
+individual graphics drivers might still make use of the ACPI functionality in
+preference to native control.
 
-It will have to be tomorrow, I cannot test anything today.
+The first two patches in this series are picked from other patchesets aimed at
+solving similar problems. The last simply unregisters ACPI backlight control
+on Windows 8 systems when using an Intel GPU. Similar code could be added to
+other drivers, but I'm reluctant to do so without further investigation as
+to the behaviour of the vendor drivers under Windows.
 
-Thanks,
-David Daney
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
 
