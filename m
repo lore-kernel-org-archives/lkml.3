@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753688Ab3FIKBx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 06:01:53 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:46745 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab3FIKBv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 06:01:51 -0400
-Message-ID: <51B45289.6080704@gmail.com>
-Date: Sun, 09 Jun 2013 18:01:45 +0800
-From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH] KVM: x86: fix missed memory synchronization when patch
- hypercall
-References: <51B2A1D9.6060306@gmail.com> <20130609084526.GH4725@redhat.com> <51B44B01.7050304@gmail.com> <20130609093910.GL4725@redhat.com>
-In-Reply-To: <20130609093910.GL4725@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753836Ab3FIKHj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 06:07:39 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:47449 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750853Ab3FIKHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jun 2013 06:07:37 -0400
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH 0/5] Add a safe static_cpu_has variant
+Date: Sun,  9 Jun 2013 12:07:29 +0200
+Message-Id: <1370772454-6106-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2013 05:39 PM, Gleb Natapov wrote:
-> On Sun, Jun 09, 2013 at 05:29:37PM +0800, Xiao Guangrong wrote:
->> On 06/09/2013 04:45 PM, Gleb Natapov wrote:
->>
->>> +static int emulator_fix_hypercall(struct x86_emulate_ctxt *ctxt)
->>> +{
->>> +	struct kvm_vcpu *vcpu = emul_to_vcpu(ctxt);
->>> +	return kvm_exec_with_stopped_vcpu(vcpu->kvm,
->>> +			emulator_fix_hypercall_cb, ctxt);
->>> +}
->>> +
->>> +
->>>  /*
->>>   * Check if userspace requested an interrupt window, and that the
->>>   * interrupt window is open.
->>> @@ -5761,6 +5769,10 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
->>>  			kvm_deliver_pmi(vcpu);
->>>  		if (kvm_check_request(KVM_REQ_SCAN_IOAPIC, vcpu))
->>>  			vcpu_scan_ioapic(vcpu);
->>> +		if (kvm_check_request(KVM_REQ_STOP_VCPU, vcpu)){
->>> +			mutex_lock(&vcpu->kvm->lock);
->>> +			mutex_unlock(&vcpu->kvm->lock);
->>
->> We should execute a serializing instruction here?
->>
->>> --- a/virt/kvm/kvm_main.c
->>> +++ b/virt/kvm/kvm_main.c
->>> @@ -222,6 +222,18 @@ void kvm_make_scan_ioapic_request(struct kvm *kvm)
->>>  	make_all_cpus_request(kvm, KVM_REQ_SCAN_IOAPIC);
->>>  }
->>>
->>> +int kvm_exec_with_stopped_vcpu(struct kvm *kvm, int (*cb)(void *), void *data)
->>> +{
->>> +	int r;
->>> +
->>> +	mutex_lock(&kvm->lock);
->>> +	make_all_cpus_request(kvm, KVM_REQ_STOP_VCPU);
->>> +	r = cb(data);
->>
->> And here?
-> Since the serialisation instruction the SDM suggest to use is CPUID I
-> think the point here is to flush CPU pipeline. Since all vcpus are out
-> of a guest mode I think out of order execution of modified instruction
-> is no an issue here.
+From: Borislav Petkov <bp@suse.de>
 
-I checked the SDM that it did not said VMLAUNCH/VMRESUME are the
-serializing instructions both in VM-Entry description and Instruction
-reference, instead it said the VMX related serializing instructions are:
-INVEPT, INVVPID.
+As recently experienced, using static_cpu_has too early (before
+alternatives have run) causes some obscure bugs and decyphering those
+doesn't simply point to such premature usage.
 
-So, i guess the explicit serializing instruction is needed here.
+Therefore, let's add a static_cpu_has_safe variant which always works
+and can be used in early code.
 
+Also, 2/5 adds a debugging option, the idea behind it being to enable
+all sensible debugging code which we want to enable on x86 in order to
+catch build and runtime issues. The idea is to save a bunch of time of
+wading through "Kernel hacking" and staring at options. We'll see how
+that actually pans out though.
+
+Borislav Petkov (5):
+  x86, cpu: Add a synthetic cpu feature
+  x86, debug: Add a collect-all misc debug checks option
+  x86: Sanity-check static_cpu_has usage
+  x86: Add a static_cpu_has_safe variant
+  x86, FPU: Use static_cpu_has_safe before alternatives
+
+ arch/x86/Kconfig.debug              |  12 ++++
+ arch/x86/include/asm/cpufeature.h   | 118 ++++++++++++++++++++++++++++++++++--
+ arch/x86/include/asm/fpu-internal.h |   2 +-
+ arch/x86/kernel/cpu/common.c        |  16 +++++
+ 4 files changed, 143 insertions(+), 5 deletions(-)
+
+-- 
+1.8.3
 
