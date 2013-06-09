@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127Ab3FITV3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 15:21:29 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:46465 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562Ab3FITV2 (ORCPT
+	id S1752219Ab3FIT1L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 15:27:11 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:40434 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab3FIT1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 15:21:28 -0400
+	Sun, 9 Jun 2013 15:27:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <84A937D219C2B44EB8EA44831ACA1E491725F227@PRN-MBX01-3.TheFacebook.com>
-References: <CAHp75VdgKDx8vhTcUD5sBLd7aB=39SFxi-ayioZqE6o_AtZkxA@mail.gmail.com>
-	<84A937D219C2B44EB8EA44831ACA1E491725F227@PRN-MBX01-3.TheFacebook.com>
-Date: Sun, 9 Jun 2013 22:21:27 +0300
-Message-ID: <CAHp75Vf4YyudTHZYDACqNA+95JVREw9yZXkY0=3ovHf6G-Bm5A@mail.gmail.com>
-Subject: Re: [PATCH] dmatest: add ability to disable pq and xor
+In-Reply-To: <20130609191732.GK28112@mwanda>
+References: <1370768902-20239-1-git-send-email-emilgoode@gmail.com>
+	<CAHp75VftwuS4ZTFP5D90PhyzrAMoHVxDiSCg0jrMGp+r0eRfzA@mail.gmail.com>
+	<20130609191732.GK28112@mwanda>
+Date: Sun, 9 Jun 2013 22:27:03 +0300
+Message-ID: <CAHp75VcOMUVtfgXOQ+cyVpJN-XS7=yO1H8+8Nnw+LCgYWp7RPw@mail.gmail.com>
+Subject: Re: [PATCH] mtd: orion_nand: Improve error handling in orion_nand_probe
 From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Dan Williams <djbw@fb.com>
-Cc: Jon Mason <jon.mason@intel.com>,
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Emil Goode <emilgoode@gmail.com>, David Woodhouse <dwmw2@infradead.org>,
+        artem.bityutskiy@linux.intel.com, andrew@lunn.ch,
+        Bill Pemberton <wfp5p@virginia.edu>, Jingoo Han <jg1.han@samsung.com>,
+        linux-mtd@lists.infradead.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jiang <dave.jiang@intel.com>, Vinod Koul <vinod.koul@intel.com>
+        kernel-janitors@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 4, 2013 at 8:11 PM, Dan Williams <djbw@fb.com> wrote:
-> On 6/4/13 12:25 AM, "Andy Shevchenko" <andy.shevchenko@gmail.com> wrote:
->>On Tue, Jun 4, 2013 at 2:29 AM, Jon Mason <jon.mason@intel.com> wrote:
->>> On Fri, May 31, 2013 at 11:22:10AM +0300, Andy Shevchenko wrote:
+On Sun, Jun 9, 2013 at 10:17 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> On Sun, Jun 09, 2013 at 08:15:20PM +0300, Andy Shevchenko wrote:
 
 []
 
->>>  Since the testing is started immediately upon module
->>> insertion,
->>It used to be so, but nowadays it's true only when dmatest is compiled in.
->>If someone wants to compile in that module they probably want to run
->>stress tests, where XOR and PQ might be useful.
->
-> ...and they would want the test selection to be specified on the kernel
-> command line.  At least that's how I used compiled in dmatest in the past.
+>> What about another patch (that I guess should go first)  that converts
+>> printk to dev_* or pr_*?
 
-Actually you're right. Better to have it in that case too.
+> Huh, what?  Those are two totally unrelated things.  Emil's patch is
+> a bug fix.
 
->>My opinion I already shared, new node under debugfs. There is might be
->>a good reason to add a new module parameter as well.
->
-> I'm not seeing why debugfs is helpful here.  Just make it a module
-> parameter that calls a routine to setup the bit mask.
-
-I'm not objecting against module parameter, though I would like to see
-debugfs node for that as well.
+To be precise his patch is bugfix and cleanup at once.
+My proposal is to add a clean up patch.
 
 --
 With Best Regards,
