@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666Ab3FIQiJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 12:38:09 -0400
-Received: from mx.karvy.com ([202.78.251.12]:56387 "EHLO mx.karvy.com"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753071Ab3FIQiH convert rfc822-to-8bit (ORCPT
+	id S1752474Ab3FIQrw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 12:47:52 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34450 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822Ab3FIQrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 12:38:07 -0400
-X-Greylist: delayed 917 seconds by postgrey-1.27 at vger.kernel.org; Sun, 09 Jun 2013 12:38:06 EDT
-X-AuditID: c0a810d1-b7fee6d00000098a-bc-51b4abc347fe
-From: <tingangavati@karvy.com>
-Date: Sun, 9 Jun 2013 21:52:26 +0530
-Subject: Email: kent.reeveess@citynew.com 
-Thread-Topic: Email: kent.reeveess@citynew.com 
-Thread-Index: AQHOZS2HSrmgP+riJkmQIZTgqRqRtw==
-Message-ID: <19B28EE80A8B0043917709225DC33E6D03EEA0068A@SRV-MAIL-MB8.karvy.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Sun, 9 Jun 2013 12:47:51 -0400
+Date: Sun, 9 Jun 2013 18:47:45 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        aaro.koskinen@iki.fi, linux-omap@vger.kernel.org,
+        lauri.leukkunen@nokia.com
+Subject: Re: N900 device tree conversion: how to do first step
+Message-ID: <20130609164745.GB16066@amd.pavel.ucw.cz>
+References: <20130609015944.GA23559@amd.pavel.ucw.cz>
+ <201306091124.41251@pali>
 MIME-Version: 1.0
-To: Undisclosed recipients:;
-X-Brightmail-Tracker: H4sIAAAAAAAAA02TX0xTZxjG950/36n13wFlflPHBc4Lu1gm0eQ1cWa72tE5N43GZJls3TyK
-	A9EUZHNbsipQSkOchTqg4Y8CFVglHYKhCq2I0IJCa5UuIEwYtJmFsDTgENGqrccL7n7vk+d7
-	nve9+GR0rAOvlh1NzxTV6aq0BCxn2uv4wxtvWZr3fNBeuAFOGzUcuG/6OAiV/83B1KVRDN3G
-	GxxU1FsxeKaKEdTeCbGQW9/HQcCbj+CxvR9DrW8rzIzvhZI5PQfVfj0FOY8aEVjaJmhwunsx
-	1DjGEBgHu2n4/WolBc09GgaeDJxB0OLtp+BF6SgNE1NZ0NX5E2jbrQy0ayJBWmt3pC4wTEGh
-	zsOApTcZ8ie1FITLpiNS0zgLPZYmBtp0rSzUzrpYcN78GLK1j1mY7PByEAxQ8LxilIXugusc
-	zN93Re6pbkBwNttEwX8BNwveKh8FN641UTDUVYPgtK6KgS7DBAfGAT8Nc/+vhNx/K2lo1hgo
-	MPurEUzU/cNBjb2TAqdtjILB6VkW7l8vwx+5kDBe0IuFM2Y7Ema892jhqqEYC/aQnxHqgrc4
-	QfdAwwrOuw5WKMvN5QTDX7WcYG6IPJv9c5gWplvyWKHfoqWEuZcNWJi5Ev/FO1/Ktx0S045m
-	ierE7d/IU55enkMnOugfc4rMnAYFKT1aJCP8ZtJaUYckfpvcfWjFeiSXxfLlFCkdukdLQyMi
-	54M5dNQVyxsig+9glDEfTzS+ElaPZDKGf4+EnyZG5RW8gjjmzWyUV/KJxGN3vmElKXR6Xhcv
-	5T8nfS4HjjKKFD+5ffm1TvOryAN/5ZvleFLT5qEljiPB8Res5I8jw3lWJPmVZOC8EUv8Prl0
-	cZKW8mNIT6mfkXrXkpJzlVhafx0Z6CvC51CcaUGdaUGUaUGUaUHUBcT8gWK+Pbbx+MnMJGWq
-	Sp11Svnd8WNXkPQHvDbk8Cs70BoZk7BqaVJGw55Y/ogqU0wVxROi+mv1yTQxowNRskWrNWjZ
-	pk/5Z/vD8qrWLWNijDt75sCWH+7Yx1Kx4lft2vW/fWVz+E+5u56nluMlxcnNKY0v30p+tn90
-	8aHlhvDe0IeqfaEjxs3L1vcvPjiS91l40rW7fKva1qtIn9/97u1dvwwWrGkZ+QSJinq2cXv+
-	w0D8z7oNZ21QtHPXjqTO74eqRq5dTGAyUlSbFLQ6Q/UKOFUXFNEDAAA=
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201306091124.41251@pali>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun 2013-06-09 11:24:40, Pali Rohár wrote:
+> On Sunday 09 June 2013 03:59:44 Pavel Machek wrote:
+> > Hi!
+> > 
+> > I'd like to convert Nokia N900 to device tree.
+> > 
+> > Unfortunately, serial port is not easily available (very
+> > special cable would be needed, does someone know where to get
+> > one?) and I don't have BDI (and very special cable would be
+> > needed, too).
+> > 
+> 
+> Hello,
+> 
+> I used serial port only in qemu for debugging. Maybe you can try
+> to play with qemu first. Qemu has good n900 HW support.
+
+Yes, qemu is helpful.
+
+For the record: this is how you use it.
+
+KERNEL=/data/l/linux-n900/zImage_dtb
+./qflasher -m rx51 -x ./xloader-qemu.bin -s ./secondary-qemu.bin -k $KERNEL -o n900.img -p k=6072
+
+> sd-empty
+./qemu-system-arm -s -M n900 -mtdblock n900.img -sd sd-empty -serial
+stdio -clock unix -redir tcp:5555:10.0.2.15:22
+
+...and this patch is needed to make it past rx51_init.
+
+Author: Pavel <pavel@ucw.cz>
+Date:   Sun Jun 9 18:45:39 2013 +0200
+
+    Comment out errata workaround that breaks qemu.
+
+diff --git a/arch/arm/mach-omap2/board-rx51.c b/arch/arm/mach-omap2/board-rx51.c
+index 938e46f..0ffd7d3 100644
+--- a/arch/arm/mach-omap2/board-rx51.c
++++ b/arch/arm/mach-omap2/board-rx51.c
+@@ -108,11 +108,13 @@ static void __init rx51_init(void)
+ 	rx51_peripherals_init();
+ 	rx51_camera_init();
+ 
++#if 0
+ #ifdef CONFIG_ARM_ERRATA_430973
+ 	printk(KERN_INFO "RX-51: Enabling ARM errata 430973 workaround.\n");
+ 	/* set IBE to 1 */
+ 	rx51_secure_update_aux_cr(1 << 6, 0);
+ #endif
++#endif
+ 
+ 	/* Ensure SDRC pins are mux'd for self-refresh */
+ 	omap_mux_init_signal("sdrc_cke0", OMAP_PIN_OUTPUT);
 
 
-This email is to inform you that you have been selected as one of the recipients of a cash grant for the growth of your economy and personal development. You are to receive the sum of 500,000.00 Pounds Sterling as developmental aid paid by the United Nations Foundation to individuals in selective countries. To receive your grant contact the UNDP agent allocated to you below:
-
-
-
-Mr Kent Reeves
-Email: kent.reeveess@citynew.com
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
