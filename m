@@ -1,90 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580Ab3FIVLq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 17:11:46 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:46319 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750987Ab3FIVLo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 17:11:44 -0400
-From: Johannes Schilling <of82ecuq@cip.cs.fau.de>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, Kurt Kanzenbach <shifty91@gmail.com>,
-        linux-kernel@i4.cs.fau.de, Johannes Schilling <of82ecuq@cip.cs.fau.de>,
-        linux-kernel@vger.kernel.org, Al Cho <acho@novell.com>,
-        Amarjargal Gundjalam <amarjargal16@gmail.com>,
-        Laura Lawniczak <laura.lawniczak@googlemail.com>
-Subject: [PATCH] keucr: removed unnecessary variables and comments
-Date: Sun,  9 Jun 2013 23:11:30 +0200
-Message-Id: <1370812290-7562-1-git-send-email-of82ecuq@cip.cs.fau.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20130609052844.GA31124@kroah.com>
-References: <20130609052844.GA31124@kroah.com>
+	id S1751644Ab3FIVOz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 17:14:55 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:44033 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751120Ab3FIVOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jun 2013 17:14:53 -0400
+Date: Sun, 9 Jun 2013 23:14:49 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Stratos Karafotis <stratosk@semaphore.gr>, Borislav Petkov <bp@suse.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of
+ target frequency
+Message-ID: <20130609211449.GA5517@pd.tnic>
+References: <q46r5iepl3sunqe5eemv66hk.1370694869222@email.android.com>
+ <20130609162653.GA5004@pd.tnic>
+ <51B4C497.2030308@semaphore.gr>
+ <7661669.NhG4BEI8zO@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <7661669.NhG4BEI8zO@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Laura Lawniczak <laura.lawniczak@googlemail.com>
+On Sun, Jun 09, 2013 at 10:58:51PM +0200, Rafael J. Wysocki wrote:
+> Can you possibly prepare a graph showing both the execution time
+> and energy consumption for several different loop durations in your
+> program (let's keep the 5000 us sleep for now), including multiples of
+> sampling_rate as well as some other durations?
 
-blen and bn were only used in commented code fragments.
-since comments should be informative and not for storing old
-code, both, commented code and variables, were removed.
+Judgind by the times in C0 one of the cores spent, this small program
+is single-threaded and is a microbenchmark. And you know how optimizing
+against a microbenchmark doesn't really make a lot of sense.
 
-Signed-off-by: Laura Lawniczak <laura.lawniczak@googlemail.com>
-Signed-off-by: Johannes Schilling <of82ecuq@cip.cs.fau.de>
----
+I wonder if lmbench or aim9 or whatever would make more sense to try
+here...
 
-  this one is against latest gregkh/staging-next, and at least for me applies
-  cleanly.
+Thanks.
 
-
- drivers/staging/keucr/transport.c |   14 --------------
- 1 file changed, 14 deletions(-)
-
-diff --git a/drivers/staging/keucr/transport.c b/drivers/staging/keucr/transport.c
-index 1f9ea58..aeb2186 100644
---- a/drivers/staging/keucr/transport.c
-+++ b/drivers/staging/keucr/transport.c
-@@ -85,16 +85,9 @@ static void usb_stor_print_cmd(struct us_data *us, struct scsi_cmnd *srb)
- {
- 	PBYTE   Cdb = srb->cmnd;
- 	DWORD   cmd = Cdb[0];
--	DWORD   bn  =   ((Cdb[2] << 24) & 0xff000000) |
--			((Cdb[3] << 16) & 0x00ff0000) |
--			((Cdb[4] << 8) & 0x0000ff00) |
--			((Cdb[5] << 0) & 0x000000ff);
--	WORD    blen = ((Cdb[7] << 8) & 0xff00) | ((Cdb[8] << 0) & 0x00ff);
- 
- 	switch (cmd) {
- 	case TEST_UNIT_READY:
--		/* dev_dbg(&us->pusb_dev->dev,
--			"scsi cmd %X --- SCSIOP_TEST_UNIT_READY\n", cmd); */
- 		break;
- 	case INQUIRY:
- 		dev_dbg(&us->pusb_dev->dev,
-@@ -113,14 +106,8 @@ static void usb_stor_print_cmd(struct us_data *us, struct scsi_cmnd *srb)
- 				"scsi cmd %X --- SCSIOP_READ_CAPACITY\n", cmd);
- 		break;
- 	case READ_10:
--		/*  dev_dbg(&us->pusb_dev->dev,
--			"scsi cmd %X --- SCSIOP_READ,bn = %X, blen = %X\n"
--			cmd, bn, blen); */
- 		break;
- 	case WRITE_10:
--		/* dev_dbg(&us->pusb_dev->dev,
--			"scsi cmd %X --- SCSIOP_WRITE, bn = %X, blen = %X\n",
--			cmd, bn, blen); */
- 		break;
- 	case ALLOW_MEDIUM_REMOVAL:
- 		dev_dbg(&us->pusb_dev->dev,
-@@ -130,7 +117,6 @@ static void usb_stor_print_cmd(struct us_data *us, struct scsi_cmnd *srb)
- 		dev_dbg(&us->pusb_dev->dev, "scsi cmd %X --- Other cmd\n", cmd);
- 		break;
- 	}
--	bn = 0;
- }
- 
- /*
 -- 
-1.7.10.4
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
