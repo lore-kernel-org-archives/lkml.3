@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222Ab3FIHNX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 03:13:23 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:53170 "EHLO
+	id S1752296Ab3FIHPc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 03:15:32 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:53200 "EHLO
 	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab3FIHNW (ORCPT
+	with ESMTP id S1751007Ab3FIHPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 03:13:22 -0400
-Date: Sun, 9 Jun 2013 07:13:21 +0000 (UTC)
+	Sun, 9 Jun 2013 03:15:31 -0400
+Date: Sun, 9 Jun 2013 07:15:30 +0000 (UTC)
 From: Paul Walmsley <paul@pwsan.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-cc: Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Philip Avinash <avinashphilip@ti.com>
-Subject: Re: [PATCH 1/4] ARM: AM33XX: clk: Add clock node for EHRPWM TBCLK
-In-Reply-To: <1370526759-31163-2-git-send-email-bigeasy@linutronix.de>
-Message-ID: <alpine.DEB.2.02.1306090713090.20050@utopia.booyaka.com>
-References: <1370526759-31163-1-git-send-email-bigeasy@linutronix.de> <1370526759-31163-2-git-send-email-bigeasy@linutronix.de>
+To: Roger Quadros <rogerq@ti.com>
+cc: sameo@linux.intel.com, balbi@ti.com, tony@atomide.com, kishon@ti.com,
+        sshtylyov@mvista.com, bjorn@mork.no, linux@arm.linux.org.uk,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Rajendra Nayak <rnayak@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Mike Turquette <mturquette@linaro.com>
+Subject: Re: [PATCH v8 19/22] ARM: OMAP3: clock data: get rid of unused USB
+ host clock aliases and dummies
+In-Reply-To: <5110EB87.1060704@ti.com>
+Message-ID: <alpine.DEB.2.02.1306090714470.20050@utopia.booyaka.com>
+References: <1358511445-26656-1-git-send-email-rogerq@ti.com> <1358511445-26656-20-git-send-email-rogerq@ti.com> <alpine.DEB.2.00.1301182027040.19470@utopia.booyaka.com> <50FD0BEF.9000007@ti.com> <alpine.DEB.2.00.1301211502190.8450@utopia.booyaka.com>
+ <5110EB87.1060704@ti.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -24,17 +29,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Jun 2013, Sebastian Andrzej Siewior wrote:
+Hi Roger,
 
-> From: Philip Avinash <avinashphilip@ti.com>
-> 
-> EHRPWM module requires explicit clock gating of TBCLK from control
-> module. Hence add TBCLK clock node in clock tree for EHRPWM modules.
-> 
-> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
-> [bigeasy: remove CK_AM33XX]
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+On Tue, 5 Feb 2013, Roger Quadros wrote:
 
-Thanks, queued.
+> On 01/21/2013 05:03 PM, Paul Walmsley wrote:
+> > Hi
+> > 
+> > On Mon, 21 Jan 2013, Roger Quadros wrote:
+> > 
+> >> On 01/18/2013 10:27 PM, Paul Walmsley wrote:
+> >>> On Fri, 18 Jan 2013, Roger Quadros wrote:
+> >>>
+> >>>> We don't need multiple aliases for the OMAP USB host clocks and neither
+> >>>> the dummy clocks so remove them.
+> >>>>
+> >>>> CC: Paul Walmsley <paul@pwsan.com>
+> >>>> CC: Rajendra Nayak <rnayak@ti.com>
+> >>>> CC: Benoit Cousson <b-cousson@ti.com>
+> >>>> CC: Mike Turquette <mturquette@linaro.com>
+> >>>>
+> >>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> >>>> Reviewed-by: Felipe Balbi <balbi@ti.com>
+> >>>> Acked-by: Paul Walmsley <paul@pwsan.com>
+> >>>
+> >>> Per Tony's earlier request, you can drop this patch and patch 20 from your 
+> >>> series now.  I've got them queued for 3.10 or late 3.9 merge window.
+> >>>
+> >>
+> >> Should have mentioned it earlier, but just this patch without the rest
+> >> of the cleanup patches will break USB Host on OMAP3, as the old driver
+> >> bails out if optional clock nodes are missing.
+> >>
+> >> Including patch 20 doesn't seem to cause a problem with OMAP4 though.
+> > 
+> > I've got these two patches queued for merging after your other patches go 
+> > upstream -- e.g., probably 3.10.  Do you foresee any problems with that?
+> > 
+> 
+> FYI, the usbhost patches are already in linux-next.
+
+Queued this patch for v3.11; looks like I missed it for v3.10.
 
 - Paul
