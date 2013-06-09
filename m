@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469Ab3FICWD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 22:22:03 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:64694 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208Ab3FICUI (ORCPT
+	id S1753387Ab3FICWa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 22:22:30 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:55585 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751383Ab3FICUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 22:20:08 -0400
+	Sat, 8 Jun 2013 22:20:04 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: axboe@kernel.dk, tytso@mit.edu, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org
-Cc: Kent Overstreet <koverstreet@google.com>, Neil Brown <neilb@suse.de>,
-        Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com
-Subject: [PATCH 22/26] block: Make generic_make_request handle arbitrary sized bios
-Date: Sat,  8 Jun 2013 19:19:04 -0700
-Message-Id: <1370744348-15407-23-git-send-email-koverstreet@google.com>
+Cc: Kent Overstreet <koverstreet@google.com>,
+        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: [PATCH 19/26] block: Kill bio_segments()
+Date: Sat,  8 Jun 2013 19:19:01 -0700
+Message-Id: <1370744348-15407-20-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.8.3.rc1
 In-Reply-To: <1370744348-15407-1-git-send-email-koverstreet@google.com>
 References: <1370744348-15407-1-git-send-email-koverstreet@google.com>
@@ -22,269 +24,255 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The way the block layer is currently written, it goes to great lengths
-to avoid having to split bios; upper layer code (such as bio_add_page())
-checks what the underlying device can handle and tries to always create
-bios that don't need to be split.
+When we start sharing biovecs, keeping bi_vcnt accurate for splits is
+going to be error prone - and unnecessary, if we refactor some code.
 
-But this approach becomes unwieldy and eventually breaks down with
-stacked devices and devices with dynamic limits, and it adds a lot of
-complexity. If the block layer could split bios as needed, we could
-eliminate a lot of complexity elsewhere - particularly in stacked
-drivers. Code that creates bios can then create whatever size bios are
-convenient, and more importantly stacked drivers don't have to deal with
-both their own bio size limitations and the limitations of the
-(potentially multiple) devices underneath them.
+So bio_segments() has to go - but most of the existing users just needed
+to know if the bio had multiple segments, which is easier - add a
+bio_multiple_segments() for them.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Neil Brown <neilb@suse.de>
-Cc: Alasdair Kergon <agk@redhat.com>
-Cc: dm-devel@redhat.com
+Cc: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>
+Cc: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
 ---
- block/blk-core.c       |  24 ++++++----
- block/blk-merge.c      | 120 +++++++++++++++++++++++++++++++++++++++++++++++++
- block/blk.h            |   3 ++
- include/linux/blkdev.h |   4 ++
- 4 files changed, 142 insertions(+), 9 deletions(-)
+ drivers/block/ps3disk.c                  |  7 ++---
+ drivers/md/bcache/io.c                   | 54 ++++++++++++++------------------
+ drivers/message/fusion/mptsas.c          |  8 ++---
+ drivers/scsi/libsas/sas_expander.c       |  8 ++---
+ drivers/scsi/mpt2sas/mpt2sas_transport.c | 10 +++---
+ drivers/scsi/mpt3sas/mpt3sas_transport.c |  8 ++---
+ include/linux/bio.h                      |  3 +-
+ 7 files changed, 45 insertions(+), 53 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 4d6eb60..f43bf1a 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -599,6 +599,10 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
- 	if (q->id < 0)
- 		goto fail_q;
+diff --git a/drivers/block/ps3disk.c b/drivers/block/ps3disk.c
+index 464be78..8d1a19c 100644
+--- a/drivers/block/ps3disk.c
++++ b/drivers/block/ps3disk.c
+@@ -101,10 +101,9 @@ static void ps3disk_scatter_gather(struct ps3_storage_device *dev,
  
-+	q->bio_split = bioset_create(4, 0);
-+	if (!q->bio_split)
-+		goto fail_split;
-+
- 	q->backing_dev_info.ra_pages =
- 			(VM_MAX_READAHEAD * 1024) / PAGE_CACHE_SIZE;
- 	q->backing_dev_info.state = 0;
-@@ -651,6 +655,8 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
+ 	rq_for_each_segment(bvec, req, iter) {
+ 		unsigned long flags;
+-		dev_dbg(&dev->sbd.core,
+-			"%s:%u: bio %u: %u segs %u sectors from %lu\n",
+-			__func__, __LINE__, i, bio_segments(iter.bio),
+-			bio_sectors(iter.bio), iter.bio->bi_iter.bi_sector);
++		dev_dbg(&dev->sbd.core, "%s:%u: bio %u: %u sectors from %lu\n",
++			__func__, __LINE__, i, bio_sectors(iter.bio),
++			iter.bio->bi_iter.bi_sector);
  
- fail_id:
- 	ida_simple_remove(&blk_queue_ida, q->id);
-+fail_split:
-+	bioset_free(q->bio_split);
- fail_q:
- 	kmem_cache_free(blk_requestq_cachep, q);
- 	return NULL;
-@@ -1687,15 +1693,6 @@ generic_make_request_checks(struct bio *bio)
- 		goto end_io;
- 	}
+ 		size = bvec->bv_len;
+ 		buf = bvec_kmap_irq(bvec, &flags);
+diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
+index 4224cfd..e3c582d 100644
+--- a/drivers/md/bcache/io.c
++++ b/drivers/md/bcache/io.c
+@@ -11,40 +11,32 @@
  
--	if (likely(bio_is_rw(bio) &&
--		   nr_sectors > queue_max_hw_sectors(q))) {
--		printk(KERN_ERR "bio too big device %s (%u > %u)\n",
--		       bdevname(bio->bi_bdev, b),
--		       bio_sectors(bio),
--		       queue_max_hw_sectors(q));
--		goto end_io;
--	}
--
- 	part = bio->bi_bdev->bd_part;
- 	if (should_fail_request(part, bio->bi_iter.bi_size) ||
- 	    should_fail_request(&part_to_disk(part)->part0,
-@@ -1820,6 +1817,7 @@ void generic_make_request(struct bio *bio)
- 	current->bio_list = &bio_list_on_stack;
- 	do {
- 		struct request_queue *q = bdev_get_queue(bio->bi_bdev);
-+		struct bio *split = NULL;
- 
- 		/*
- 		 * low level driver can indicate that it wants pages above a
-@@ -1828,6 +1826,14 @@ void generic_make_request(struct bio *bio)
- 		 */
- 		blk_queue_bounce(q, &bio);
- 
-+		if (!blk_queue_largebios(q))
-+			split = blk_bio_segment_split(q, bio, q->bio_split);
-+		if (split) {
-+			bio_chain(split, bio);
-+			bio_list_add(current->bio_list, bio);
-+			bio = split;
-+		}
-+
- 		q->make_request_fn(q, bio);
- 
- 		bio = bio_list_pop(current->bio_list);
-diff --git a/block/blk-merge.c b/block/blk-merge.c
-index ba48830..fbbcfc5 100644
---- a/block/blk-merge.c
-+++ b/block/blk-merge.c
-@@ -9,6 +9,126 @@
- 
- #include "blk.h"
- 
-+static struct bio *blk_bio_discard_split(struct request_queue *q,
-+					 struct bio *bio,
-+					 struct bio_set *bs)
-+{
-+	sector_t max_discard_sectors, granularity, alignment, tmp;
-+	unsigned split_sectors;
-+
-+	/* Zero-sector (unknown) and one-sector granularities are the same.  */
-+	granularity = max(q->limits.discard_granularity >> 9, 1U);
-+
-+	max_discard_sectors = min(q->limits.max_discard_sectors, UINT_MAX >> 9);
-+	sector_div(max_discard_sectors, granularity);
-+	max_discard_sectors *= granularity;
-+
-+	if (unlikely(!max_discard_sectors)) {
-+		/* XXX: warn */
-+		return NULL;
-+	}
-+
-+	if (bio_sectors(bio) <= max_discard_sectors)
-+		return NULL;
-+
-+	split_sectors = max_discard_sectors;
-+
-+	/*
-+	 * If splitting a request, and the next starting sector would be
-+	 * misaligned, stop the discard at the previous aligned sector.
-+	 */
-+	alignment = q->limits.discard_alignment >> 9;
-+	alignment = sector_div(alignment, granularity);
-+
-+	tmp = bio->bi_iter.bi_sector + split_sectors - alignment;
-+	tmp = sector_div(tmp, granularity);
-+
-+	if (split_sectors > tmp)
-+		split_sectors -= tmp;
-+
-+	return bio_split(bio, split_sectors, GFP_NOIO, bs);
-+}
-+
-+static struct bio *blk_bio_write_same_split(struct request_queue *q,
-+					    struct bio *bio,
-+					    struct bio_set *bs)
-+{
-+	if (!q->limits.max_write_same_sectors)
-+		return NULL;
-+
-+	if (bio_sectors(bio) <= q->limits.max_write_same_sectors)
-+		return NULL;
-+
-+	return bio_split(bio, q->limits.max_write_same_sectors, GFP_NOIO, bs);
-+}
-+
-+struct bio *blk_bio_segment_split(struct request_queue *q, struct bio *bio,
-+				  struct bio_set *bs)
-+{
-+	struct bio *split;
-+	struct bio_vec bv, bvprv;
+ static unsigned bch_bio_max_sectors(struct bio *bio)
+ {
+-	unsigned ret = bio_sectors(bio);
+ 	struct request_queue *q = bdev_get_queue(bio->bi_bdev);
+-	unsigned max_segments = min_t(unsigned, BIO_MAX_PAGES,
+-				      queue_max_segments(q));
++	struct bio_vec bv;
 +	struct bvec_iter iter;
-+	unsigned seg_size = 0, nsegs = 0;
-+	int prev = 0;
-+
-+	struct bvec_merge_data bvm = {
-+		.bi_bdev	= bio->bi_bdev,
-+		.bi_sector	= bio->bi_iter.bi_sector,
-+		.bi_size	= 0,
-+		.bi_rw		= bio->bi_rw,
-+	};
-+
-+	if (bio->bi_rw & REQ_DISCARD)
-+		return blk_bio_discard_split(q, bio, bs);
-+
-+	if (bio->bi_rw & REQ_WRITE_SAME)
-+		return blk_bio_write_same_split(q, bio, bs);
++	unsigned ret = 0, seg = 0;
+ 
+ 	if (bio->bi_rw & REQ_DISCARD)
+-		return min(ret, q->limits.max_discard_sectors);
+-
+-	if (bio_segments(bio) > max_segments ||
+-	    q->merge_bvec_fn) {
+-		struct bio_vec bv;
+-		struct bvec_iter iter;
+-		unsigned seg = 0;
+-
+-		ret = 0;
+-
+-		bio_for_each_segment(bv, bio, iter) {
+-			struct bvec_merge_data bvm = {
+-				.bi_bdev	= bio->bi_bdev,
+-				.bi_sector	= bio->bi_iter.bi_sector,
+-				.bi_size	= ret << 9,
+-				.bi_rw		= bio->bi_rw,
+-			};
+-
+-			if (seg == max_segments)
+-				break;
+-
+-			if (q->merge_bvec_fn &&
+-			    q->merge_bvec_fn(q, &bvm, &bv) < (int) bv.bv_len)
+-				break;
+-
+-			seg++;
+-			ret += bv.bv_len >> 9;
+-		}
++		return min(bio_sectors(bio), q->limits.max_discard_sectors);
 +
 +	bio_for_each_segment(bv, bio, iter) {
++		struct bvec_merge_data bvm = {
++			.bi_bdev	= bio->bi_bdev,
++			.bi_sector	= bio->bi_iter.bi_sector,
++			.bi_size	= ret << 9,
++			.bi_rw		= bio->bi_rw,
++		};
++
++		if (seg == min_t(unsigned, BIO_MAX_PAGES,
++				 queue_max_segments(q)))
++			break;
++
 +		if (q->merge_bvec_fn &&
 +		    q->merge_bvec_fn(q, &bvm, &bv) < (int) bv.bv_len)
-+			goto split;
++			break;
 +
-+		bvm.bi_size += bv.bv_len;
-+
-+		if (prev && blk_queue_cluster(q)) {
-+			if (seg_size + bv.bv_len > queue_max_segment_size(q))
-+				goto new_segment;
-+			if (!BIOVEC_PHYS_MERGEABLE(&bvprv, &bv))
-+				goto new_segment;
-+			if (!BIOVEC_SEG_BOUNDARY(q, &bvprv, &bv))
-+				goto new_segment;
-+
-+			seg_size += bv.bv_len;
-+			bvprv = bv;
-+			prev = 1;
-+			continue;
-+		}
-+new_segment:
-+		if (nsegs == queue_max_segments(q))
-+			goto split;
-+
-+		nsegs++;
-+		bvprv = bv;
-+		prev = 1;
-+		seg_size = bv.bv_len;
-+	}
-+
-+	return NULL;
-+split:
-+	split = bio_clone_bioset(bio, GFP_NOIO, bs);
-+
-+	split->bi_iter.bi_size -= iter.bi_size;
-+	bio->bi_iter = iter;
-+
-+	if (bio_integrity(bio)) {
-+		bio_integrity_advance(bio, split->bi_iter.bi_size);
-+		bio_integrity_trim(split, 0, bio_sectors(split));
-+	}
-+
-+	return split;
-+}
-+
- static unsigned int __blk_recalc_rq_segments(struct request_queue *q,
- 					     struct bio *bio)
- {
-diff --git a/block/blk.h b/block/blk.h
-index e837b8f..387afbd 100644
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -130,6 +130,9 @@ static inline int blk_should_fake_timeout(struct request_queue *q)
- }
- #endif
++		seg++;
++		ret += bv.bv_len >> 9;
+ 	}
  
-+struct bio *blk_bio_segment_split(struct request_queue *q, struct bio *bio,
-+				  struct bio_set *bs);
-+
- int ll_back_merge_fn(struct request_queue *q, struct request *req,
- 		     struct bio *bio);
- int ll_front_merge_fn(struct request_queue *q, struct request *req, 
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 2a16de2..9a32ed8 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -445,6 +445,7 @@ struct request_queue {
- 	struct throtl_data *td;
- #endif
- 	struct rcu_head		rcu_head;
-+	struct bio_set		*bio_split;
- };
+ 	ret = min(ret, queue_max_sectors(q));
+diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
+index dd239bd..00d339c 100644
+--- a/drivers/message/fusion/mptsas.c
++++ b/drivers/message/fusion/mptsas.c
+@@ -2235,10 +2235,10 @@ static int mptsas_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
+ 	}
  
- #define QUEUE_FLAG_QUEUED	1	/* uses generic tag queueing */
-@@ -467,6 +468,7 @@ struct request_queue {
- #define QUEUE_FLAG_SECDISCARD  17	/* supports SECDISCARD */
- #define QUEUE_FLAG_SAME_FORCE  18	/* force complete on same CPU */
- #define QUEUE_FLAG_DEAD        19	/* queue tear-down finished */
-+#define QUEUE_FLAG_LARGEBIOS   19	/* no limits on bio size */
+ 	/* do we need to support multiple segments? */
+-	if (bio_segments(req->bio) > 1 || bio_segments(rsp->bio) > 1) {
+-		printk(MYIOC_s_ERR_FMT "%s: multiple segments req %u %u, rsp %u %u\n",
+-		    ioc->name, __func__, bio_segments(req->bio), blk_rq_bytes(req),
+-		    bio_segments(rsp->bio), blk_rq_bytes(rsp));
++	if (bio_multiple_segments(req->bio) ||
++	    bio_multiple_segments(rsp->bio)) {
++		printk(MYIOC_s_ERR_FMT "%s: multiple segments req %u, rsp %u\n",
++		    ioc->name, __func__, blk_rq_bytes(req), blk_rq_bytes(rsp));
+ 		return -EINVAL;
+ 	}
  
- #define QUEUE_FLAG_DEFAULT	((1 << QUEUE_FLAG_IO_STAT) |		\
- 				 (1 << QUEUE_FLAG_STACKABLE)	|	\
-@@ -550,6 +552,8 @@ static inline void queue_flag_clear(unsigned int flag, struct request_queue *q)
- #define blk_queue_discard(q)	test_bit(QUEUE_FLAG_DISCARD, &(q)->queue_flags)
- #define blk_queue_secdiscard(q)	(blk_queue_discard(q) && \
- 	test_bit(QUEUE_FLAG_SECDISCARD, &(q)->queue_flags))
-+#define blk_queue_largebios(q)				\
-+	test_bit(QUEUE_FLAG_LARGEBIOS, &(q)->queue_flags)
+diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
+index 446b851..0cac7d8 100644
+--- a/drivers/scsi/libsas/sas_expander.c
++++ b/drivers/scsi/libsas/sas_expander.c
+@@ -2163,10 +2163,10 @@ int sas_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
+ 	}
  
- #define blk_noretry_request(rq) \
- 	((rq)->cmd_flags & (REQ_FAILFAST_DEV|REQ_FAILFAST_TRANSPORT| \
+ 	/* do we need to support multiple segments? */
+-	if (bio_segments(req->bio) > 1 || bio_segments(rsp->bio) > 1) {
+-		printk("%s: multiple segments req %u %u, rsp %u %u\n",
+-		       __func__, bio_segments(req->bio), blk_rq_bytes(req),
+-		       bio_segments(rsp->bio), blk_rq_bytes(rsp));
++	if (bio_multiple_segments(req->bio) ||
++	    bio_multiple_segments(rsp->bio)) {
++		printk("%s: multiple segments req %u, rsp %u\n",
++		       __func__, blk_rq_bytes(req), blk_rq_bytes(rsp));
+ 		return -EINVAL;
+ 	}
+ 
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_transport.c b/drivers/scsi/mpt2sas/mpt2sas_transport.c
+index 2c2e01e..d2224b5 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_transport.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_transport.c
+@@ -1940,7 +1940,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
+ 	ioc->transport_cmds.status = MPT2_CMD_PENDING;
+ 
+ 	/* Check if the request is split across multiple segments */
+-	if (bio_segments(req->bio) > 1) {
++	if (bio_multiple_segments(req->bio)) {
+ 		u32 offset = 0;
+ 
+ 		/* Allocate memory and copy the request */
+@@ -1972,7 +1972,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
+ 
+ 	/* Check if the response needs to be populated across
+ 	 * multiple segments */
+-	if (bio_segments(rsp->bio) > 1) {
++	if (bio_multiple_segments(rsp->bio)) {
+ 		pci_addr_in = pci_alloc_consistent(ioc->pdev, blk_rq_bytes(rsp),
+ 		    &pci_dma_in);
+ 		if (!pci_addr_in) {
+@@ -2039,7 +2039,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
+ 	sgl_flags = (MPI2_SGE_FLAGS_SIMPLE_ELEMENT |
+ 	    MPI2_SGE_FLAGS_END_OF_BUFFER | MPI2_SGE_FLAGS_HOST_TO_IOC);
+ 	sgl_flags = sgl_flags << MPI2_SGE_FLAGS_SHIFT;
+-	if (bio_segments(req->bio) > 1) {
++	if (bio_multiple_segments(req->bio)) {
+ 		ioc->base_add_sg_single(psge, sgl_flags |
+ 		    (blk_rq_bytes(req) - 4), pci_dma_out);
+ 	} else {
+@@ -2055,7 +2055,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
+ 	    MPI2_SGE_FLAGS_LAST_ELEMENT | MPI2_SGE_FLAGS_END_OF_BUFFER |
+ 	    MPI2_SGE_FLAGS_END_OF_LIST);
+ 	sgl_flags = sgl_flags << MPI2_SGE_FLAGS_SHIFT;
+-	if (bio_segments(rsp->bio) > 1) {
++	if (bio_multiple_segments(rsp->bio)) {
+ 		ioc->base_add_sg_single(psge, sgl_flags |
+ 		    (blk_rq_bytes(rsp) + 4), pci_dma_in);
+ 	} else {
+@@ -2100,7 +2100,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
+ 		    le16_to_cpu(mpi_reply->ResponseDataLength);
+ 		/* check if the resp needs to be copied from the allocated
+ 		 * pci mem */
+-		if (bio_segments(rsp->bio) > 1) {
++		if (bio_multiple_segments(rsp->bio)) {
+ 			u32 offset = 0;
+ 			u32 bytes_to_copy =
+ 			    le16_to_cpu(mpi_reply->ResponseDataLength);
+diff --git a/drivers/scsi/mpt3sas/mpt3sas_transport.c b/drivers/scsi/mpt3sas/mpt3sas_transport.c
+index dd15b2d..3898f51 100644
+--- a/drivers/scsi/mpt3sas/mpt3sas_transport.c
++++ b/drivers/scsi/mpt3sas/mpt3sas_transport.c
+@@ -1923,7 +1923,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
+ 	ioc->transport_cmds.status = MPT3_CMD_PENDING;
+ 
+ 	/* Check if the request is split across multiple segments */
+-	if (req->bio->bi_vcnt > 1) {
++	if (bio_multiple_segments(req->bio)) {
+ 		u32 offset = 0;
+ 
+ 		/* Allocate memory and copy the request */
+@@ -1955,7 +1955,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
+ 
+ 	/* Check if the response needs to be populated across
+ 	 * multiple segments */
+-	if (rsp->bio->bi_vcnt > 1) {
++	if (bio_multiple_segments(rsp->bio)) {
+ 		pci_addr_in = pci_alloc_consistent(ioc->pdev, blk_rq_bytes(rsp),
+ 		    &pci_dma_in);
+ 		if (!pci_addr_in) {
+@@ -2016,7 +2016,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
+ 	mpi_request->RequestDataLength = cpu_to_le16(blk_rq_bytes(req) - 4);
+ 	psge = &mpi_request->SGL;
+ 
+-	if (req->bio->bi_vcnt > 1)
++	if (bio_multiple_segments(req->bio))
+ 		ioc->build_sg(ioc, psge, pci_dma_out, (blk_rq_bytes(req) - 4),
+ 		    pci_dma_in, (blk_rq_bytes(rsp) + 4));
+ 	else
+@@ -2061,7 +2061,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
+ 
+ 		/* check if the resp needs to be copied from the allocated
+ 		 * pci mem */
+-		if (rsp->bio->bi_vcnt > 1) {
++		if (bio_multiple_segments(rsp->bio)) {
+ 			u32 offset = 0;
+ 			u32 bytes_to_copy =
+ 			    le16_to_cpu(mpi_reply->ResponseDataLength);
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 6767622..aa015ee 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -90,7 +90,8 @@
+ #define bio_offset(bio)		bio_offset_iter((bio), (bio)->bi_iter)
+ #define bio_iovec(bio)		bio_iovec_iter((bio), (bio)->bi_iter)
+ 
+-#define bio_segments(bio)	((bio)->bi_vcnt - (bio)->bi_iter.bi_idx)
++#define bio_multiple_segments(bio)				\
++	((bio)->bi_iter.bi_size != bio_iovec(bio).bv_len)
+ #define bio_sectors(bio)	((bio)->bi_iter.bi_size >> 9)
+ #define bio_end_sector(bio)	((bio)->bi_iter.bi_sector + bio_sectors((bio)))
+ 
 -- 
 1.8.3.rc1
 
