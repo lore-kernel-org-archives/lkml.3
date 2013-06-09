@@ -1,124 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145Ab3FIQ1E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 12:27:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40430 "EHLO mx2.suse.de"
+	id S1754237Ab3FIQ13 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 12:27:29 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:32986 "EHLO smtp.infotech.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751811Ab3FIQ1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 12:27:01 -0400
-Date: Sun, 9 Jun 2013 18:26:53 +0200
-From: Borislav Petkov <bp@suse.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Stratos Karafotis <stratosk@semaphore.gr>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of
- target frequency
-Message-ID: <20130609162653.GA5004@pd.tnic>
-References: <q46r5iepl3sunqe5eemv66hk.1370694869222@email.android.com>
- <1731097.2elXaGsAyC@vostro.rjw.lan>
- <51B394A9.3020005@semaphore.gr>
- <2892497.M93vsSKx5I@vostro.rjw.lan>
+	id S1751811Ab3FIQ1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jun 2013 12:27:24 -0400
+Message-ID: <51B4ACAB.20605@interlog.com>
+Date: Sun, 09 Jun 2013 12:26:19 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <2892497.M93vsSKx5I@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: SCSI development list <linux-scsi@vger.kernel.org>
+CC: Tomas Fasth <tomfa@debian.org>, Martin Pitt <mpitt@debian.org>,
+        kumba@gentoo.org, =?ISO-8859-1?Q?Dan_Hor=E1k?= <dhorak@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, delphij@delphij.net
+Subject: [ANNOUNCE] sdparm 1.08 available
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 09, 2013 at 12:18:09AM +0200, Rafael J. Wysocki wrote:
-> The average power drawn by the package is slightly higher with the
-> patchset applied (27.66 W vs 27.25 W), but since the time needed to
-> complete the workload with the patchset applied was shorter by about
-> 2.3 sec, the total energy used was less in the latter case (by about
-> 25.7 J if I'm not mistaken, or 1% relative). This means that in the
-> absence of a power limit between 27.25 W and 27.66 W it's better to
-> use the kernel with the patchset applied for that particular workload
-> from the performance and energy usage perspective.
->
-> Good, hopefully that's going to be confirmed on other systems and/or
-> with other workloads. :-)
+sdparm is a command line utility designed to get and set
+SCSI device parameters (cf hdparm for ATA disks). The
+parameters are held in mode pages. Apart from SCSI devices
+(e.g. disks, tapes and enclosures) sdparm can be used on
+any device that uses a SCSI command set. Almost all CD/DVD/BD
+drives use the SCSI MMC set irrespective of the transport.
+sdparm also can decode VPD pages including the device
+identification page. Commands to start and stop the media;
+load and unload removable media and some other housekeeping
+functions are supported. sdparm supports both the Linux
+kernel 2.4, 2.6 and 3 series with ports to FreeBSD, Solaris,
+Tru64 and Windows.
 
-Yep, I see similar results on my AMD F15h.
+The version tracks changes in draft standards from
+www.t10.org since January 2012.
 
-So there's a register which tells you what the current energy
-consumption in Watts is and support for it is integrated in lm_sensors.
-I did one read per second, for the duration of the kernel build (10-r5 +
-tip), with and without the patch, and averaged out the results:
+For more information and downloads see:
+     http://sg.danny.cz/sg/sdparm.html
 
-without
-=======
+ChangeLog for sdparm-1.08 [20130606] [svn: r215]
+   - device id VPD: add protocol specific port identifier
+   - control extension mpage: add max sense data length
+   - power condition mpage: FIDCPC->CCF_IDLE,
+     FSBCPC->CCF_STAND, FSTCPC->CCF_STOPP (spc4r34+)
+   - caching mpage: add SYNC_PROG field (sbc3r33)
+   - block device characteristics VPD page additions sbc3r34
+   - extended inquiry vpd page: add max supported sense data
+     length
+   - protocol-specific port information VPD page for SAS SSP,
+     persistent connection (spl3r2), power disable (spl3r3)
+   - allow --readonly with --set= and --clear=
+   - add placeholder for third party copy VPD page
+   - supply more information if a UA occurs
+   - add Makefile so scripts/sas_disk_blink installed
+   - scripts/scsi_ch_swp: new, uses sdparm and blockdev
+   - ./configure options:
+     - change --enable-no-linux-bsg to --disable-linuxbsg
+     - add --disable-scsistrings to reduce utility size
+       with non-libsgutils build
+   - point svn:externals to rev 498 of sg3_utils
+     - report sdat_ovfl bit (if set) in sense data
+     - sg_pt_linux: expand DID_ (host_byte) codes
+       - cope with a transport error plus sense data
+       - prefer major() over MAJOR() macro
+     - win32: fixes for cygwin version 1.7.17 headers
 
-1. 158 samples, avg Watts: 116.915
-2. 158 samples, avg Watts: 116.855
-3. 158 samples, avg Watts: 116.737
-4. 158 samples, avg Watts: 116.792
-
-=> 116.82475 avg Watts.
-
-with
-====
-
-1. 157 samples, avg Watts: 116.496
-2. 156 samples, avg Watts: 117.535
-3. 156 samples, avg Watts: 118.174
-4. 157 samples, avg Watts: 117.95
-
-=> 117.53875 avg Watts.
-
-So there's a slight raise in the average power consumption but the
-samples count drops by 1 or 2, which is consistent with the observed
-kernel build speedup of 1 or 2 seconds.
-
-perf doesn't show any significant difference with and without the patch
-but those are single runs only.
-
-without
-=======
-
- Performance counter stats for 'make -j9':
-
-    1167856.647713 task-clock                #    7.272 CPUs utilized
-         1,071,177 context-switches          #    0.917 K/sec
-            52,844 cpu-migrations            #    0.045 K/sec
-        43,600,721 page-faults               #    0.037 M/sec
- 4,712,068,048,465 cycles                    #    4.035 GHz
- 1,181,730,064,794 stalled-cycles-frontend   #   25.08% frontend cycles idle
-   243,576,229,438 stalled-cycles-backend    #    5.17% backend  cycles idle
- 2,966,369,010,209 instructions              #    0.63  insns per cycle
-                                             #    0.40  stalled cycles per insn
-   651,136,706,156 branches                  #  557.548 M/sec
-    34,582,447,788 branch-misses             #    5.31% of all branches
-
-     160.599796045 seconds time elapsed
-
-with
-====
-
- Performance counter stats for 'make -j9':
-
-    1169278.095561 task-clock                #    7.271 CPUs utilized
-         1,076,528 context-switches          #    0.921 K/sec
-            53,284 cpu-migrations            #    0.046 K/sec
-        43,598,610 page-faults               #    0.037 M/sec
- 4,721,747,687,668 cycles                    #    4.038 GHz
- 1,182,301,583,422 stalled-cycles-frontend   #   25.04% frontend cycles idle
-   248,675,448,161 stalled-cycles-backend    #    5.27% backend  cycles idle
- 2,967,419,684,598 instructions              #    0.63  insns per cycle
-                                             #    0.40  stalled cycles per insn
-   651,527,448,140 branches                  #  557.205 M/sec
-    34,560,656,638 branch-misses             #    5.30% of all branches
-
-     160.811815170 seconds time elapsed
+ChangeLog for sdparm-1.07 [20120121] [svn: r188]
+...
 
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Doug Gilbert
