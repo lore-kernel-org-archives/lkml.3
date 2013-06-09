@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525Ab3FIHR7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 03:17:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1877 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751913Ab3FIHR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 03:17:58 -0400
-Date: Sun, 9 Jun 2013 10:18:32 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [net PATCH] tuntap: set SOCK_ZEROCOPY flag during open
-Message-ID: <20130609071817.GD13082@redhat.com>
-References: <1370672261-30076-1-git-send-email-jasowang@redhat.com>
+	id S1752329Ab3FIHac (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 03:30:32 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:53241 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543Ab3FIHaa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jun 2013 03:30:30 -0400
+Date: Sun, 9 Jun 2013 07:30:29 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, Rajendra Nayak <rnayak@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH 08/14] MAINTAINERS: fix mach-omap2
+ clockdomain/powerdomain
+In-Reply-To: <1362275632-20242-9-git-send-email-cesarb@cesarb.net>
+Message-ID: <alpine.DEB.2.02.1306090729220.20050@utopia.booyaka.com>
+References: <1362275632-20242-1-git-send-email-cesarb@cesarb.net> <1362275632-20242-9-git-send-email-cesarb@cesarb.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370672261-30076-1-git-send-email-jasowang@redhat.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 08, 2013 at 02:17:41PM +0800, Jason Wang wrote:
-> Commit 54f968d6efdbf7dec36faa44fc11f01b0e4d1990
-> (tuntap: move socket to tun_file) forgets to set SOCK_ZEROCOPY flag, which will
-> prevent vhost_net from doing zercopy w/ tap. This patch fixes this by setting
-> it during file open.
+Hi,
+
+On Sat, 2 Mar 2013, Cesar Eduardo Barros wrote:
+
+> The code in these files was moved to cm*.[ch] and prm*.[ch] in the same
+> directory by commits 4981539 (ARM: OMAP2+: powerdomain/PRM: move the
+> low-level powerdomain functions into PRM) and 4bd5259 (ARM: OMAP2/3:
+> clockdomain/PRM/CM: move the low-level clockdomain functions into
+> PRM/CM).
 > 
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> I am not sure if this fix is correct, since there are other things in
+> these files. Please NAK this patch (and propose a better one) if it is
+> wrong.
+> 
+> Cc: Paul Walmsley <paul@pwsan.com>
+> Cc: Rajendra Nayak <rnayak@ti.com>
+> Cc: Russ Dill <Russ.Dill@ti.com>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: linux-omap@vger.kernel.org
+> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
 
-I see, and this explains the perf regression we are seeing with 3.9.
+Looks like this one got lost in my inbox.  
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Paul Walmsley <paul@pwsan.com>
 
-and I think this should go into stable as well.
+(but you'll probably need to update it against a recent kernel and resend)
+
+
+- Paul
+
 
 > ---
->  drivers/net/tun.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+>  MAINTAINERS | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
 > 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index f042b03..d2ddd6d 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -2155,6 +2155,8 @@ static int tun_chr_open(struct inode *inode, struct file * file)
->  	set_bit(SOCK_EXTERNALLY_ALLOCATED, &tfile->socket.flags);
->  	INIT_LIST_HEAD(&tfile->next);
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 92718d8..46c1288 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -5651,10 +5651,8 @@ M:	Rajendra Nayak <rnayak@ti.com>
+>  M:	Paul Walmsley <paul@pwsan.com>
+>  L:	linux-omap@vger.kernel.org
+>  S:	Maintained
+> -F:	arch/arm/mach-omap2/powerdomain2xxx_3xxx.c
+> -F:	arch/arm/mach-omap2/powerdomain44xx.c
+> -F:	arch/arm/mach-omap2/clockdomain2xxx_3xxx.c
+> -F:	arch/arm/mach-omap2/clockdomain44xx.c
+> +F:	arch/arm/mach-omap2/cm*.[ch]
+> +F:	arch/arm/mach-omap2/prm*.[ch]
 >  
-> +	sock_set_flag(&tfile->sk, SOCK_ZEROCOPY);
-> +
->  	return 0;
->  }
->  
+>  OMAP AUDIO SUPPORT
+>  M:	Peter Ujfalusi <peter.ujfalusi@ti.com>
 > -- 
-> 1.7.1
+> 1.7.11.7
+> 
+
