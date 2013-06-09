@@ -1,184 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751797Ab3FIGcl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 02:32:41 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:63803 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931Ab3FIGcj (ORCPT
+	id S1752107Ab3FIGgN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 02:36:13 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:59304 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931Ab3FIGgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 02:32:39 -0400
-X-Spam-Score: -100.8
-Message-ID: <51B4214E.6090007@asianux.com>
-Date: Sun, 09 Jun 2013 14:31:42 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Sun, 9 Jun 2013 02:36:11 -0400
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Mike Frysinger <vapier@gentoo.org>, takata@linux-m32r.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Arnd Bergmann <arnd@arndb.de>, realmz paranoid <realmz6@gmail.com>,
-        linux390@de.ibm.com,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
-        linux-s390@vger.kernel.org, Linux-Arch <linux-arch@vger.kernel.org>,
-        Marc Gauthier <Marc.Gauthier@tensilica.com>
-Subject: [PATCH v2] arch: asm-generic: for atomic_set_mask() 1st param, use
- 'unsigned int' instead of 'unsigned long'
-References: <51B2E262.3030603@asianux.com> <CAErSpo5pg0EvJOR9nn3B0d+q0o6zsdwzM41AQx=AHfynRqX3hQ@mail.gmail.com>
-In-Reply-To: <CAErSpo5pg0EvJOR9nn3B0d+q0o6zsdwzM41AQx=AHfynRqX3hQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51B25559.20404@hp.com>
+References: <CA+ydwtpiZ7Z3bEWZxnM4BVxo_fvX5JXO=0zqqpobsCgm4jdwRQ@mail.gmail.com>
+	<51B25559.20404@hp.com>
+Date: Sun, 9 Jun 2013 09:36:10 +0300
+Message-ID: <CA+ydwtp2w3OS+NotDaTfFSvJ+39_2pii0V3BqWwTeZT4tKdJjg@mail.gmail.com>
+Subject: Re: ipv6 && kernel BUG at net/core/skbuff.c:126!
+From: Tommi Rantala <tt.rantala@gmail.com>
+To: Brian Haley <brian.haley@hp.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2013/6/8 Brian Haley <brian.haley@hp.com>:
+> On 06/07/2013 02:33 PM, Tommi Rantala wrote:
+>> Hello,
+>>
+>> Hit this while fuzzing v3.10-rc4-214-g1612e11 (plus a one-liner
+>> af_netlink patch from Patrick McHardy, that I hope is not related to
+>> this bug).
+>>
+>> Tommi
+>
+>> [19491.615447] Call Trace:
+>> [19491.616273]  [<ffffffff81eb6243>] skb_push+0x33/0x40
+>> [19491.617840]  [<ffffffff81fc402c>] ip6_push_pending_frames+0x20c/0x4b0
+>> [19491.619768]  [<ffffffff81119c55>] ? local_bh_enable+0xc5/0xf0
+>> [19491.621476]  [<ffffffff81fdf650>] udp_v6_push_pending_frames+0x390/0x3a0
+>> [19491.623475]  [<ffffffff81119c55>] ? local_bh_enable+0xc5/0xf0
+>> [19491.625236]  [<ffffffff81fdf2c0>] ? compat_udpv6_setsockopt+0x30/0x30
+>> [19491.627153]  [<ffffffff81f60812>] udp_lib_setsockopt+0xc2/0x1d0
+>> [19491.628965]  [<ffffffff81fdf67d>] udpv6_setsockopt+0x1d/0x30
+>> [19491.630674]  [<ffffffff81eb33bf>] sock_common_setsockopt+0xf/0x20
+>> [19491.632577]  [<ffffffff81ead7e6>] SyS_setsockopt+0x96/0xe0
+>> [19491.634376]  [<ffffffff822a47a9>] system_call_fastpath+0x16/0x1b
+>
+> Does something as simple below crash?  It at least tickles the code path from
+> what I can tell.
 
-atomic_set_mask() and atomic_clear_mask() are the pairs, so the related
-parameters' type need match with each other.
+Nope, no visible effect.
 
-The type of 'addr->counter' is 'int', so use 'unsigned int' instead
-of 'unsigned long', and let atomic_set_mask() match atomic_clear_mask().
-
-
-For arch sub-system, currently, have 3 types of definition for them:
-1st for 'int', 2nd for 'long', 3rd is conflict to use 'int' and 'long'.
-
-At least, better to fix 3rd (conflict using 'int' and 'long').
-
-
-using 'long':
-  ./h8300/include/asm/atomic.h:129:static __inline__ void atomic_set_mask(unsigned long mask, unsigned long *v)
-  ./h8300/include/asm/atomic.h:118:static __inline__ void atomic_clear_mask(unsigned long mask, unsigned long *v)
-  ./mn10300/include/asm/atomic.h:211:static inline void atomic_set_mask(unsigned long mask, unsigned long *addr)
-  ./mn10300/include/asm/atomic.h:177:static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
-  ./m68k/include/asm/atomic.h:192:static inline void atomic_set_mask(unsigned long mask, unsigned long *v)
-  ./m68k/include/asm/atomic.h:187:static inline void atomic_clear_mask(unsigned long mask, unsigned long *v)
-  ./frv/include/asm/bitops.h:113:#define atomic_set_mask(mask, v) atomic_test_and_OR_mask((mask), (v))
-  ./frv/include/asm/bitops.h:112:#define atomic_clear_mask(mask, v)       atomic_test_and_ANDNOT_mask((mask), (v))
-  ./x86/include/asm/atomic.h:260:#define atomic_set_mask(mask, addr)                              \
-  ./x86/include/asm/atomic.h:256:#define atomic_clear_mask(mask, addr)                            \
-
-also using 'long': (but only atomic_clear_mask, no atomic_set_mask)
-  ./arm64/include/asm/atomic.h:129:static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
-  ./arc/include/asm/atomic.h:89:static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
-  ./arc/include/asm/atomic.h:182:static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
-  ./arm/include/asm/atomic.h:137:static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
-  ./arm/include/asm/atomic.h:200:static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
-
-using 'int':
-  ./metag/include/asm/atomic_lock1.h:100:static inline void atomic_set_mask(unsigned int mask, atomic_t *v)
-  ./metag/include/asm/atomic_lnkget.h:127:static inline void atomic_set_mask(unsigned int mask, atomic_t *v)
-  ./metag/include/asm/atomic_lock1.h:90:static inline void atomic_clear_mask(unsigned int mask, atomic_t *v)
-  ./metag/include/asm/atomic_lnkget.h:110:static inline void atomic_clear_mask(unsigned int mask, atomic_t *v)
-  ./sh/include/asm/atomic-grb.h:104:static inline void atomic_set_mask(unsigned int mask, atomic_t *v)
-  ./sh/include/asm/atomic-irq.h:64:static inline void atomic_set_mask(unsigned int mask, atomic_t *v)
-  ./sh/include/asm/atomic-llsc.h:93:static inline void atomic_set_mask(unsigned int mask, atomic_t *v)
-  ./sh/include/asm/atomic-grb.h:84:static inline void atomic_clear_mask(unsigned int mask, atomic_t *v)
-  ./sh/include/asm/atomic-irq.h:55:static inline void atomic_clear_mask(unsigned int mask, atomic_t *v)
-  ./sh/include/asm/atomic-llsc.h:79:static inline void atomic_clear_mask(unsigned int mask, atomic_t *v)
-  ./xtensa/include/asm/atomic.h:357:static inline void atomic_set_mask(unsigned int mask, atomic_t *v)
-  ./xtensa/include/asm/atomic.h:322:static inline void atomic_clear_mask(unsigned int mask, atomic_t *v)
-
-also using 'int', (better to notice 'signed' and 'unsigned'):
-  ./blackfin/include/asm/atomic.h:31:#define atomic_set_mask(m, v)   __raw_atomic_set_asm(&(v)->counter, m)
-  ./blackfin/include/asm/atomic.h:30:#define atomic_clear_mask(m, v) __raw_atomic_clear_asm(&(v)->counter, m)
-
-conflict to use 'int' and 'long':
-  ./m32r/include/asm/atomic.h:289:static __inline__ void atomic_set_mask(unsigned long  mask, atomic_t *addr)
-  ./m32r/include/asm/atomic.h:267:static __inline__ void atomic_clear_mask(unsigned long  mask, atomic_t *addr)
-  ./s390/include/asm/atomic.h:79:static inline void atomic_set_mask(unsigned long mask, atomic_t *v)
-  ./s390/include/asm/atomic.h:74:static inline void atomic_clear_mask(unsigned long mask, atomic_t *v)
-  (in fact, 'generic' is also conflict to use 'int' and 'long')
+# strace ./i
+execve("./i", ["./i"], [/* 14 vars */]) = 0
+[...]
+socket(PF_INET6, SOCK_DGRAM, IPPROTO_IP) = 3
+setsockopt(3, SOL_UDP, 1, [1], 4)       = 0
+sendto(3, "1234546789", 10, 0, {sa_family=AF_INET6,
+sin6_port=htons(1234), inet_pton(AF_INET6, "::", &sin6_addr),
+sin6_flowinfo=0, sin6_scope_id=0}, 28) = 10
+setsockopt(3, SOL_UDP, 1, [0], 4)       = 0
+close(3)                                = 0
+exit_group(0)                           = ?
++++ exited with 0 +++
 
 
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/blackfin/include/asm/atomic.h |    4 ++--
- arch/m32r/include/asm/atomic.h     |    8 ++++----
- arch/s390/include/asm/atomic.h     |    4 ++--
- include/asm-generic/atomic.h       |    2 +-
- 4 files changed, 9 insertions(+), 9 deletions(-)
-
-diff --git a/arch/blackfin/include/asm/atomic.h b/arch/blackfin/include/asm/atomic.h
-index a107a98..feefef8 100644
---- a/arch/blackfin/include/asm/atomic.h
-+++ b/arch/blackfin/include/asm/atomic.h
-@@ -27,8 +27,8 @@ asmlinkage int __raw_atomic_test_asm(const volatile int *ptr, int value);
- #define atomic_add_return(i, v) __raw_atomic_update_asm(&(v)->counter, i)
- #define atomic_sub_return(i, v) __raw_atomic_update_asm(&(v)->counter, -(i))
- 
--#define atomic_clear_mask(m, v) __raw_atomic_clear_asm(&(v)->counter, m)
--#define atomic_set_mask(m, v)   __raw_atomic_set_asm(&(v)->counter, m)
-+#define atomic_clear_mask(m, v) __raw_atomic_clear_asm(&(v)->counter, (int)(m))
-+#define atomic_set_mask(m, v)   __raw_atomic_set_asm(&(v)->counter, (int)(m))
- 
- #endif
- 
-diff --git a/arch/m32r/include/asm/atomic.h b/arch/m32r/include/asm/atomic.h
-index 0d81697..71237e0 100644
---- a/arch/m32r/include/asm/atomic.h
-+++ b/arch/m32r/include/asm/atomic.h
-@@ -264,10 +264,10 @@ static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
- }
- 
- 
--static __inline__ void atomic_clear_mask(unsigned long  mask, atomic_t *addr)
-+static __inline__ void atomic_clear_mask(unsigned int mask, atomic_t *addr)
- {
- 	unsigned long flags;
--	unsigned long tmp;
-+	unsigned int tmp;
- 
- 	local_irq_save(flags);
- 	__asm__ __volatile__ (
-@@ -286,10 +286,10 @@ static __inline__ void atomic_clear_mask(unsigned long  mask, atomic_t *addr)
- 	local_irq_restore(flags);
- }
- 
--static __inline__ void atomic_set_mask(unsigned long  mask, atomic_t *addr)
-+static __inline__ void atomic_set_mask(unsigned int mask, atomic_t *addr)
- {
- 	unsigned long flags;
--	unsigned long tmp;
-+	unsigned int tmp;
- 
- 	local_irq_save(flags);
- 	__asm__ __volatile__ (
-diff --git a/arch/s390/include/asm/atomic.h b/arch/s390/include/asm/atomic.h
-index c797832..82cd683 100644
---- a/arch/s390/include/asm/atomic.h
-+++ b/arch/s390/include/asm/atomic.h
-@@ -71,12 +71,12 @@ static inline int atomic_sub_return(int i, atomic_t *v)
- #define atomic_dec_return(_v)		atomic_sub_return(1, _v)
- #define atomic_dec_and_test(_v)		(atomic_sub_return(1, _v) == 0)
- 
--static inline void atomic_clear_mask(unsigned long mask, atomic_t *v)
-+static inline void atomic_clear_mask(unsigned int mask, atomic_t *v)
- {
- 	__CS_LOOP(v, ~mask, "nr");
- }
- 
--static inline void atomic_set_mask(unsigned long mask, atomic_t *v)
-+static inline void atomic_set_mask(unsigned int mask, atomic_t *v)
- {
- 	__CS_LOOP(v, mask, "or");
- }
-diff --git a/include/asm-generic/atomic.h b/include/asm-generic/atomic.h
-index 33bd2de..f31bff97 100644
---- a/include/asm-generic/atomic.h
-+++ b/include/asm-generic/atomic.h
-@@ -153,7 +153,7 @@ static inline int __atomic_add_unless(atomic_t *v, int a, int u)
-  * Atomically clears the bits set in @mask from @v
-  */
- #ifndef atomic_clear_mask
--static inline void atomic_clear_mask(unsigned long mask, atomic_t *v)
-+static inline void atomic_clear_mask(unsigned int mask, atomic_t *v)
- {
- 	unsigned long flags;
- 
--- 
-1.7.7.6
+> -Brian
+>
+>
+> #include <stdio.h>
+> #include <stdlib.h>
+> #include <string.h>
+> #include <errno.h>
+> #include <sys/socket.h>
+> #include <netinet/in.h>
+> #include <netinet/udp.h>
+>
+> main()
+> {
+>         int s, cork, err, flags = 0;
+>         struct sockaddr_in6 sin6 = {0};
+>         char *buf = "1234546789";
+>
+>         s = socket(AF_INET6, SOCK_DGRAM, 0);
+>         if (s < 0) {
+>                 perror("socket");
+>                 exit(1);
+>         }
+>
+>         cork = 1;
+>         err = setsockopt(s, SOL_UDP, UDP_CORK, &cork, sizeof(cork));
+>         if (err < 0) {
+>                 perror("setsockopt");
+>                 goto out;
+>         }
+>
+>         sin6.sin6_family = AF_INET6;
+>         sin6.sin6_port = htons(1234);
+>         err = sendto(s, buf, strlen(buf), flags,
+>                         (const struct sockaddr *)&sin6,
+>                         sizeof(sin6));
+>         if (err < 0) {
+>                 perror("sendto");
+>                 goto out;
+>         }
+>
+>         cork = 0;
+>         err = setsockopt(s, SOL_UDP, UDP_CORK, &cork, sizeof(cork));
+>         if (err < 0)
+>                 perror("setsockopt");
+>
+> out:
+>         close(s);
+>         exit(0);
+> }
