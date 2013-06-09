@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751497Ab3FIU7D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 16:59:03 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:43483 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab3FIU7B (ORCPT
+	id S1751381Ab3FIVAr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 17:00:47 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:44355 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116Ab3FIVAp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 16:59:01 -0400
-Date: Sun, 9 Jun 2013 23:57:47 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Emil Goode <emilgoode@gmail.com>, David Woodhouse <dwmw2@infradead.org>,
-        artem.bityutskiy@linux.intel.com, andrew@lunn.ch,
-        Bill Pemberton <wfp5p@virginia.edu>, Jingoo Han <jg1.han@samsung.com>,
-        linux-mtd@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] mtd: orion_nand: Improve error handling in
- orion_nand_probe
-Message-ID: <20130609205747.GX23987@mwanda>
-References: <1370768902-20239-1-git-send-email-emilgoode@gmail.com>
- <CAHp75VftwuS4ZTFP5D90PhyzrAMoHVxDiSCg0jrMGp+r0eRfzA@mail.gmail.com>
- <20130609191732.GK28112@mwanda>
- <CAHp75VcOMUVtfgXOQ+cyVpJN-XS7=yO1H8+8Nnw+LCgYWp7RPw@mail.gmail.com>
+	Sun, 9 Jun 2013 17:00:45 -0400
+Date: Sun, 9 Jun 2013 23:00:39 +0200
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>
+Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Peter Korsgaard <jacmet@uclibc.org>,
+        Cody Schafer <cody@linux.vnet.ibm.com>,
+        Benjamin Poirier <bpoirier@suse.de>, Alan Cox <alan@linux.intel.com>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [RFC][PATCH] kconfig: Fix defconfig when one choice menu selects
+ options that another choice menu depends on
+Message-ID: <20130609210039.GA3292@free.fr>
+References: <1370576226-7597-1-git-send-email-arve@android.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAHp75VcOMUVtfgXOQ+cyVpJN-XS7=yO1H8+8Nnw+LCgYWp7RPw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1370576226-7597-1-git-send-email-arve@android.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 09, 2013 at 10:27:03PM +0300, Andy Shevchenko wrote:
-> On Sun, Jun 9, 2013 at 10:17 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> > On Sun, Jun 09, 2013 at 08:15:20PM +0300, Andy Shevchenko wrote:
-> 
-> []
-> 
-> >> What about another patch (that I guess should go first)  that converts
-> >> printk to dev_* or pr_*?
-> 
-> > Huh, what?  Those are two totally unrelated things.  Emil's patch is
-> > a bug fix.
-> 
-> To be precise his patch is bugfix and cleanup at once.
-> My proposal is to add a clean up patch.
+Arve, All,
 
-The printk idea isn't a bad one, it's just totally unrelated to what
-the patch is doing.  You can't just randomly tell people to do a
-bunch of work for no reason.  "Good bugfix, but before we apply it
-you have to mow my lawn."
+On 2013-06-06 20:37 -0700, Arve Hjønnevåg spake thusly:
+> The defconfig and Kconfig combination below, which is based on 3.10-rc4
+> Kconfigs, resulted in several options getting set to "m" instead of "y".
 
-regards,
-dan carpenter
+OK, I was able to reproduce your test-case, and the fix seems
+reasonable.
+
+I'm just back from a week-end no-internet-access break, so I'll look at
+it more thoroughly tomorrow.
+
+Thank you!
+
+Regards,
+Yann E. MORIN.
+
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
