@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752353Ab3FICTx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jun 2013 22:19:53 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:58605 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751730Ab3FICTo (ORCPT
+	id S1752509Ab3FICZR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jun 2013 22:25:17 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:61884 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264Ab3FICTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jun 2013 22:19:44 -0400
+	Sat, 8 Jun 2013 22:19:52 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: axboe@kernel.dk, tytso@mit.edu, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org
 Cc: Kent Overstreet <koverstreet@google.com>,
-        "Ed L. Cashin" <ecashin@coraid.com>, Alasdair Kergon <agk@redhat.com>,
-        dm-devel@redhat.com, "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: [PATCH 05/26] block: Convert bio_iovec() to bvec_iter
-Date: Sat,  8 Jun 2013 19:18:47 -0700
-Message-Id: <1370744348-15407-6-git-send-email-koverstreet@google.com>
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: [PATCH 09/26] bio-integrity: Convert to bvec_iter
+Date: Sat,  8 Jun 2013 19:18:51 -0700
+Message-Id: <1370744348-15407-10-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.8.3.rc1
 In-Reply-To: <1370744348-15407-1-git-send-email-koverstreet@google.com>
 References: <1370744348-15407-1-git-send-email-koverstreet@google.com>
@@ -23,207 +23,435 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For immutable biovecs, we'll be introducing a new bio_iovec() that uses
-our new bvec iterator to construct a biovec, taking into account
-bvec_iter->bi_bvec_done - this patch updates existing users for the new
-usage.
-
-Some of the existing users really do need a pointer into the bvec array
-- those uses are all going to be removed, but we'll need the
-functionality from immutable to remove them - so for now rename the
-existing bio_iovec() -> __bio_iovec(), and it'll be removed in a couple
-patches.
-
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 Cc: Jens Axboe <axboe@kernel.dk>
-Cc: "Ed L. Cashin" <ecashin@coraid.com>
-Cc: Alasdair Kergon <agk@redhat.com>
-Cc: dm-devel@redhat.com
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>
 Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
 ---
- drivers/block/aoe/aoecmd.c |  2 +-
- drivers/md/bcache/io.c     | 13 +++++++------
- drivers/md/dm-verity.c     |  2 +-
- drivers/scsi/sd.c          |  2 +-
- fs/bio.c                   | 20 ++++++++++----------
- include/linux/bio.h        | 10 ++++++----
- 6 files changed, 26 insertions(+), 23 deletions(-)
+ block/blk-integrity.c |  40 ++++++++++---------
+ drivers/scsi/sd_dif.c |  30 +++++++-------
+ fs/bio-integrity.c    | 108 ++++++++++++--------------------------------------
+ include/linux/bio.h   |  19 ++++-----
+ 4 files changed, 71 insertions(+), 126 deletions(-)
 
-diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
-index 8716181..1fb2d6d 100644
---- a/drivers/block/aoe/aoecmd.c
-+++ b/drivers/block/aoe/aoecmd.c
-@@ -926,7 +926,7 @@ bufinit(struct buf *buf, struct request *rq, struct bio *bio)
- 	buf->resid = bio->bi_iter.bi_size;
- 	buf->sector = bio->bi_iter.bi_sector;
- 	bio_pageinc(bio);
--	buf->bv = bio_iovec(bio);
-+	buf->bv = __bio_iovec(bio);
- 	buf->bv_resid = buf->bv->bv_len;
- 	WARN_ON(buf->bv_resid == 0);
- }
-diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
-index 28f06ca..13580e5 100644
---- a/drivers/md/bcache/io.c
-+++ b/drivers/md/bcache/io.c
-@@ -20,11 +20,12 @@ static void bch_bi_idx_hack_endio(struct bio *bio, int error)
- static void bch_generic_make_request_hack(struct bio *bio)
+diff --git a/block/blk-integrity.c b/block/blk-integrity.c
+index 03cf717..861fcae 100644
+--- a/block/blk-integrity.c
++++ b/block/blk-integrity.c
+@@ -43,30 +43,32 @@ static const char *bi_unsupported_name = "unsupported";
+  */
+ int blk_rq_count_integrity_sg(struct request_queue *q, struct bio *bio)
  {
- 	if (bio->bi_iter.bi_idx) {
-+		int i;
-+		struct bio_vec *bv;
- 		struct bio *clone = bio_alloc(GFP_NOIO, bio_segments(bio));
+-	struct bio_vec *iv, *ivprv = NULL;
++	struct bio_vec iv, ivprv;
+ 	unsigned int segments = 0;
+ 	unsigned int seg_size = 0;
+-	unsigned int i = 0;
++	struct bvec_iter iter;
++	int prev = 0;
  
--		memcpy(clone->bi_io_vec,
--		       bio_iovec(bio),
--		       bio_segments(bio) * sizeof(struct bio_vec));
-+		bio_for_each_segment(bv, bio, i)
-+			clone->bi_io_vec[clone->bi_vcnt++] = *bv;
+-	bio_for_each_integrity_vec(iv, bio, i) {
++	bio_for_each_integrity_vec(iv, bio, iter) {
  
- 		clone->bi_iter.bi_sector = bio->bi_iter.bi_sector;
- 		clone->bi_bdev		= bio->bi_bdev;
-@@ -93,7 +94,7 @@ struct bio *bch_bio_split(struct bio *bio, int sectors,
- 			if (!ret)
- 				return NULL;
+-		if (ivprv) {
+-			if (!BIOVEC_PHYS_MERGEABLE(ivprv, iv))
++		if (prev) {
++			if (!BIOVEC_PHYS_MERGEABLE(&ivprv, &iv))
+ 				goto new_segment;
  
--			memcpy(ret->bi_io_vec, bio_iovec(bio),
-+			memcpy(ret->bi_io_vec, __bio_iovec(bio),
- 			       sizeof(struct bio_vec) * vcnt);
+-			if (!BIOVEC_SEG_BOUNDARY(q, ivprv, iv))
++			if (!BIOVEC_SEG_BOUNDARY(q, &ivprv, &iv))
+ 				goto new_segment;
  
- 			break;
-@@ -102,7 +103,7 @@ struct bio *bch_bio_split(struct bio *bio, int sectors,
- 			if (!ret)
- 				return NULL;
+-			if (seg_size + iv->bv_len > queue_max_segment_size(q))
++			if (seg_size + iv.bv_len > queue_max_segment_size(q))
+ 				goto new_segment;
  
--			memcpy(ret->bi_io_vec, bio_iovec(bio),
-+			memcpy(ret->bi_io_vec, __bio_iovec(bio),
- 			       sizeof(struct bio_vec) * vcnt);
- 
- 			ret->bi_io_vec[vcnt - 1].bv_len = nbytes;
-@@ -178,7 +179,7 @@ static unsigned bch_bio_max_sectors(struct bio *bio)
- 	ret = min(ret, queue_max_sectors(q));
- 
- 	WARN_ON(!ret);
--	ret = max_t(int, ret, bio_iovec(bio)->bv_len >> 9);
-+	ret = max_t(int, ret, bio_iovec(bio).bv_len >> 9);
- 
- 	return ret;
- }
-diff --git a/drivers/md/dm-verity.c b/drivers/md/dm-verity.c
-index 90ce9e0..f3a4dcb 100644
---- a/drivers/md/dm-verity.c
-+++ b/drivers/md/dm-verity.c
-@@ -525,7 +525,7 @@ static int verity_map(struct dm_target *ti, struct bio *bio)
- 		io->io_vec = io->io_vec_inline;
- 	else
- 		io->io_vec = mempool_alloc(v->vec_mempool, GFP_NOIO);
--	memcpy(io->io_vec, bio_iovec(bio),
-+	memcpy(io->io_vec, __bio_iovec(bio),
- 	       io->io_vec_size * sizeof(struct bio_vec));
- 
- 	verity_submit_prefetch(v, io);
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index c1c5552..73aec6a 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -786,7 +786,7 @@ static int sd_setup_write_same_cmnd(struct scsi_device *sdp, struct request *rq)
- 	if (sdkp->device->no_write_same)
- 		return BLKPREP_KILL;
- 
--	BUG_ON(bio_offset(bio) || bio_iovec(bio)->bv_len != sdp->sector_size);
-+	BUG_ON(bio_offset(bio) || bio_iovec(bio).bv_len != sdp->sector_size);
- 
- 	sector >>= ilog2(sdp->sector_size) - 9;
- 	nr_sectors >>= ilog2(sdp->sector_size) - 9;
-diff --git a/fs/bio.c b/fs/bio.c
-index b7c02b0..f1e7c68 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -821,12 +821,12 @@ void bio_advance(struct bio *bio, unsigned bytes)
- 			break;
- 		}
- 
--		if (bytes >= bio_iovec(bio)->bv_len) {
--			bytes -= bio_iovec(bio)->bv_len;
-+		if (bytes >= bio_iovec(bio).bv_len) {
-+			bytes -= bio_iovec(bio).bv_len;
- 			bio->bi_iter.bi_idx++;
+-			seg_size += iv->bv_len;
++			seg_size += iv.bv_len;
  		} else {
--			bio_iovec(bio)->bv_len -= bytes;
--			bio_iovec(bio)->bv_offset += bytes;
-+			bio_iovec(bio).bv_len -= bytes;
-+			bio_iovec(bio).bv_offset += bytes;
- 			bytes = 0;
+ new_segment:
+ 			segments++;
+-			seg_size = iv->bv_len;
++			seg_size = iv.bv_len;
  		}
+ 
++		prev = 1;
+ 		ivprv = iv;
  	}
-@@ -879,8 +879,8 @@ void bio_copy_data(struct bio *dst, struct bio *src)
- 	unsigned src_offset, dst_offset, bytes;
- 	void *src_p, *dst_p;
  
--	src_bv = bio_iovec(src);
--	dst_bv = bio_iovec(dst);
-+	src_bv = __bio_iovec(src);
-+	dst_bv = __bio_iovec(dst);
+@@ -87,24 +89,25 @@ EXPORT_SYMBOL(blk_rq_count_integrity_sg);
+ int blk_rq_map_integrity_sg(struct request_queue *q, struct bio *bio,
+ 			    struct scatterlist *sglist)
+ {
+-	struct bio_vec *iv, *ivprv = NULL;
++	struct bio_vec iv, ivprv;
+ 	struct scatterlist *sg = NULL;
+ 	unsigned int segments = 0;
+-	unsigned int i = 0;
++	struct bvec_iter iter;
++	int prev = 0;
  
- 	src_offset = src_bv->bv_offset;
- 	dst_offset = dst_bv->bv_offset;
-@@ -893,7 +893,7 @@ void bio_copy_data(struct bio *dst, struct bio *src)
- 				if (!src)
- 					break;
+-	bio_for_each_integrity_vec(iv, bio, i) {
++	bio_for_each_integrity_vec(iv, bio, iter) {
  
--				src_bv = bio_iovec(src);
-+				src_bv = __bio_iovec(src);
+-		if (ivprv) {
+-			if (!BIOVEC_PHYS_MERGEABLE(ivprv, iv))
++		if (prev) {
++			if (!BIOVEC_PHYS_MERGEABLE(&ivprv, &iv))
+ 				goto new_segment;
+ 
+-			if (!BIOVEC_SEG_BOUNDARY(q, ivprv, iv))
++			if (!BIOVEC_SEG_BOUNDARY(q, &ivprv, &iv))
+ 				goto new_segment;
+ 
+-			if (sg->length + iv->bv_len > queue_max_segment_size(q))
++			if (sg->length + iv.bv_len > queue_max_segment_size(q))
+ 				goto new_segment;
+ 
+-			sg->length += iv->bv_len;
++			sg->length += iv.bv_len;
+ 		} else {
+ new_segment:
+ 			if (!sg)
+@@ -114,10 +117,11 @@ new_segment:
+ 				sg = sg_next(sg);
  			}
  
- 			src_offset = src_bv->bv_offset;
-@@ -906,7 +906,7 @@ void bio_copy_data(struct bio *dst, struct bio *src)
- 				if (!dst)
- 					break;
+-			sg_set_page(sg, iv->bv_page, iv->bv_len, iv->bv_offset);
++			sg_set_page(sg, iv.bv_page, iv.bv_len, iv.bv_offset);
+ 			segments++;
+ 		}
  
--				dst_bv = bio_iovec(dst);
-+				dst_bv = __bio_iovec(dst);
- 			}
++		prev = 1;
+ 		ivprv = iv;
+ 	}
  
- 			dst_offset = dst_bv->bv_offset;
-@@ -1766,8 +1766,8 @@ struct bio_pair *bio_split(struct bio *bi, int first_sectors)
- 	bp->bio1.bi_iter.bi_size = first_sectors << 9;
+diff --git a/drivers/scsi/sd_dif.c b/drivers/scsi/sd_dif.c
+index 6174ca4..a7a691d 100644
+--- a/drivers/scsi/sd_dif.c
++++ b/drivers/scsi/sd_dif.c
+@@ -365,7 +365,6 @@ void sd_dif_prepare(struct request *rq, sector_t hw_sector,
+ 	struct bio *bio;
+ 	struct scsi_disk *sdkp;
+ 	struct sd_dif_tuple *sdt;
+-	unsigned int i, j;
+ 	u32 phys, virt;
  
- 	if (bi->bi_vcnt != 0) {
--		bp->bv1 = *bio_iovec(bi);
--		bp->bv2 = *bio_iovec(bi);
-+		bp->bv1 = bio_iovec(bi);
-+		bp->bv2 = bio_iovec(bi);
+ 	sdkp = rq->bio->bi_bdev->bd_disk->private_data;
+@@ -376,19 +375,21 @@ void sd_dif_prepare(struct request *rq, sector_t hw_sector,
+ 	phys = hw_sector & 0xffffffff;
  
- 		if (bio_is_rw(bi)) {
- 			bp->bv2.bv_offset += first_sectors << 9;
+ 	__rq_for_each_bio(bio, rq) {
+-		struct bio_vec *iv;
++		struct bio_vec iv;
++		struct bvec_iter iter;
++		unsigned int j;
+ 
+ 		/* Already remapped? */
+ 		if (bio_flagged(bio, BIO_MAPPED_INTEGRITY))
+ 			break;
+ 
+-		virt = bio->bi_integrity->bip_sector & 0xffffffff;
++		virt = bio->bi_integrity->bip_iter.bi_sector & 0xffffffff;
+ 
+-		bip_for_each_vec(iv, bio->bi_integrity, i) {
+-			sdt = kmap_atomic(iv->bv_page)
+-				+ iv->bv_offset;
++		bip_for_each_vec(iv, bio->bi_integrity, iter) {
++			sdt = kmap_atomic(iv.bv_page)
++				+ iv.bv_offset;
+ 
+-			for (j = 0 ; j < iv->bv_len ; j += tuple_sz, sdt++) {
++			for (j = 0; j < iv.bv_len; j += tuple_sz, sdt++) {
+ 
+ 				if (be32_to_cpu(sdt->ref_tag) == virt)
+ 					sdt->ref_tag = cpu_to_be32(phys);
+@@ -414,7 +415,7 @@ void sd_dif_complete(struct scsi_cmnd *scmd, unsigned int good_bytes)
+ 	struct scsi_disk *sdkp;
+ 	struct bio *bio;
+ 	struct sd_dif_tuple *sdt;
+-	unsigned int i, j, sectors, sector_sz;
++	unsigned int j, sectors, sector_sz;
+ 	u32 phys, virt;
+ 
+ 	sdkp = scsi_disk(scmd->request->rq_disk);
+@@ -430,15 +431,16 @@ void sd_dif_complete(struct scsi_cmnd *scmd, unsigned int good_bytes)
+ 		phys >>= 3;
+ 
+ 	__rq_for_each_bio(bio, scmd->request) {
+-		struct bio_vec *iv;
++		struct bio_vec iv;
++		struct bvec_iter iter;
+ 
+-		virt = bio->bi_integrity->bip_sector & 0xffffffff;
++		virt = bio->bi_integrity->bip_iter.bi_sector & 0xffffffff;
+ 
+-		bip_for_each_vec(iv, bio->bi_integrity, i) {
+-			sdt = kmap_atomic(iv->bv_page)
+-				+ iv->bv_offset;
++		bip_for_each_vec(iv, bio->bi_integrity, iter) {
++			sdt = kmap_atomic(iv.bv_page)
++				+ iv.bv_offset;
+ 
+-			for (j = 0 ; j < iv->bv_len ; j += tuple_sz, sdt++) {
++			for (j = 0; j < iv.bv_len; j += tuple_sz, sdt++) {
+ 
+ 				if (sectors == 0) {
+ 					kunmap_atomic(sdt);
+diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
+index 4220b96..61f41ff 100644
+--- a/fs/bio-integrity.c
++++ b/fs/bio-integrity.c
+@@ -134,8 +134,7 @@ int bio_integrity_add_page(struct bio *bio, struct page *page,
+ 		return 0;
+ 	}
+ 
+-	iv = bip_vec_idx(bip, bip->bip_vcnt);
+-	BUG_ON(iv == NULL);
++	iv = bip->bip_vec + bip->bip_vcnt;
+ 
+ 	iv->bv_page = page;
+ 	iv->bv_len = len;
+@@ -203,6 +202,12 @@ static inline unsigned int bio_integrity_hw_sectors(struct blk_integrity *bi,
+ 	return sectors;
+ }
+ 
++static inline unsigned int bio_integrity_bytes(struct blk_integrity *bi,
++					       unsigned int sectors)
++{
++	return bio_integrity_hw_sectors(bi, sectors) * bi->tuple_size;
++}
++
+ /**
+  * bio_integrity_tag_size - Retrieve integrity tag space
+  * @bio:	bio to inspect
+@@ -235,9 +240,9 @@ int bio_integrity_tag(struct bio *bio, void *tag_buf, unsigned int len, int set)
+ 	nr_sectors = bio_integrity_hw_sectors(bi,
+ 					DIV_ROUND_UP(len, bi->tag_size));
+ 
+-	if (nr_sectors * bi->tuple_size > bip->bip_size) {
+-		printk(KERN_ERR "%s: tag too big for bio: %u > %u\n",
+-		       __func__, nr_sectors * bi->tuple_size, bip->bip_size);
++	if (nr_sectors * bi->tuple_size > bip->bip_iter.bi_size) {
++		printk(KERN_ERR "%s: tag too big for bio: %u > %u\n", __func__,
++		       nr_sectors * bi->tuple_size, bip->bip_iter.bi_size);
+ 		return -1;
+ 	}
+ 
+@@ -322,7 +327,7 @@ static void bio_integrity_generate(struct bio *bio)
+ 		sector += sectors;
+ 		prot_buf += sectors * bi->tuple_size;
+ 		total += sectors * bi->tuple_size;
+-		BUG_ON(total > bio->bi_integrity->bip_size);
++		BUG_ON(total > bio->bi_integrity->bip_iter.bi_size);
+ 
+ 		kunmap_atomic(kaddr);
+ 	}
+@@ -387,8 +392,8 @@ int bio_integrity_prep(struct bio *bio)
+ 
+ 	bip->bip_owns_buf = 1;
+ 	bip->bip_buf = buf;
+-	bip->bip_size = len;
+-	bip->bip_sector = bio->bi_iter.bi_sector;
++	bip->bip_iter.bi_size = len;
++	bip->bip_iter.bi_sector = bio->bi_iter.bi_sector;
+ 
+ 	/* Map it */
+ 	offset = offset_in_page(buf);
+@@ -444,7 +449,7 @@ static int bio_integrity_verify(struct bio *bio)
+ 	struct blk_integrity_exchg bix;
+ 	struct bio_vec bv;
+ 	struct bvec_iter iter;
+-	sector_t sector = bio->bi_integrity->bip_sector;
++	sector_t sector = bio->bi_integrity->bip_iter.bi_sector;
+ 	unsigned int sectors, total, ret;
+ 	void *prot_buf = bio->bi_integrity->bip_buf;
+ 
+@@ -470,7 +475,7 @@ static int bio_integrity_verify(struct bio *bio)
+ 		sector += sectors;
+ 		prot_buf += sectors * bi->tuple_size;
+ 		total += sectors * bi->tuple_size;
+-		BUG_ON(total > bio->bi_integrity->bip_size);
++		BUG_ON(total > bio->bi_integrity->bip_iter.bi_size);
+ 
+ 		kunmap_atomic(kaddr);
+ 	}
+@@ -535,56 +540,6 @@ void bio_integrity_endio(struct bio *bio, int error)
+ EXPORT_SYMBOL(bio_integrity_endio);
+ 
+ /**
+- * bio_integrity_mark_head - Advance bip_vec skip bytes
+- * @bip:	Integrity vector to advance
+- * @skip:	Number of bytes to advance it
+- */
+-void bio_integrity_mark_head(struct bio_integrity_payload *bip,
+-			     unsigned int skip)
+-{
+-	struct bio_vec *iv;
+-	unsigned int i;
+-
+-	bip_for_each_vec(iv, bip, i) {
+-		if (skip == 0) {
+-			bip->bip_idx = i;
+-			return;
+-		} else if (skip >= iv->bv_len) {
+-			skip -= iv->bv_len;
+-		} else { /* skip < iv->bv_len) */
+-			iv->bv_offset += skip;
+-			iv->bv_len -= skip;
+-			bip->bip_idx = i;
+-			return;
+-		}
+-	}
+-}
+-
+-/**
+- * bio_integrity_mark_tail - Truncate bip_vec to be len bytes long
+- * @bip:	Integrity vector to truncate
+- * @len:	New length of integrity vector
+- */
+-void bio_integrity_mark_tail(struct bio_integrity_payload *bip,
+-			     unsigned int len)
+-{
+-	struct bio_vec *iv;
+-	unsigned int i;
+-
+-	bip_for_each_vec(iv, bip, i) {
+-		if (len == 0) {
+-			bip->bip_vcnt = i;
+-			return;
+-		} else if (len >= iv->bv_len) {
+-			len -= iv->bv_len;
+-		} else { /* len < iv->bv_len) */
+-			iv->bv_len = len;
+-			len = 0;
+-		}
+-	}
+-}
+-
+-/**
+  * bio_integrity_advance - Advance integrity vector
+  * @bio:	bio whose integrity vector to update
+  * @bytes_done:	number of data bytes that have been completed
+@@ -597,13 +552,9 @@ void bio_integrity_advance(struct bio *bio, unsigned int bytes_done)
+ {
+ 	struct bio_integrity_payload *bip = bio->bi_integrity;
+ 	struct blk_integrity *bi = bdev_get_integrity(bio->bi_bdev);
+-	unsigned int nr_sectors;
++	unsigned bytes = bio_integrity_bytes(bi, bytes_done >> 9);
+ 
+-	BUG_ON(bip == NULL);
+-	BUG_ON(bi == NULL);
+-
+-	nr_sectors = bio_integrity_hw_sectors(bi, bytes_done >> 9);
+-	bio_integrity_mark_head(bip, nr_sectors * bi->tuple_size);
++	bvec_iter_advance(bip->bip_vec, &bip->bip_iter, bytes);
+ }
+ EXPORT_SYMBOL(bio_integrity_advance);
+ 
+@@ -623,16 +574,9 @@ void bio_integrity_trim(struct bio *bio, unsigned int offset,
+ {
+ 	struct bio_integrity_payload *bip = bio->bi_integrity;
+ 	struct blk_integrity *bi = bdev_get_integrity(bio->bi_bdev);
+-	unsigned int nr_sectors;
+ 
+-	BUG_ON(bip == NULL);
+-	BUG_ON(bi == NULL);
+-	BUG_ON(!bio_flagged(bio, BIO_CLONED));
+-
+-	nr_sectors = bio_integrity_hw_sectors(bi, sectors);
+-	bip->bip_sector = bip->bip_sector + offset;
+-	bio_integrity_mark_head(bip, offset * bi->tuple_size);
+-	bio_integrity_mark_tail(bip, sectors * bi->tuple_size);
++	bio_integrity_advance(bio, offset << 9);
++	bip->bip_iter.bi_size = bio_integrity_bytes(bi, sectors);
+ }
+ EXPORT_SYMBOL(bio_integrity_trim);
+ 
+@@ -662,8 +606,8 @@ void bio_integrity_split(struct bio *bio, struct bio_pair *bp, int sectors)
+ 	bp->bio1.bi_integrity = &bp->bip1;
+ 	bp->bio2.bi_integrity = &bp->bip2;
+ 
+-	bp->iv1 = bip->bip_vec[bip->bip_idx];
+-	bp->iv2 = bip->bip_vec[bip->bip_idx];
++	bp->iv1 = bip->bip_vec[bip->bip_iter.bi_idx];
++	bp->iv2 = bip->bip_vec[bip->bip_iter.bi_idx];
+ 
+ 	bp->bip1.bip_vec = &bp->iv1;
+ 	bp->bip2.bip_vec = &bp->iv2;
+@@ -672,11 +616,12 @@ void bio_integrity_split(struct bio *bio, struct bio_pair *bp, int sectors)
+ 	bp->iv2.bv_offset += sectors * bi->tuple_size;
+ 	bp->iv2.bv_len -= sectors * bi->tuple_size;
+ 
+-	bp->bip1.bip_sector = bio->bi_integrity->bip_sector;
+-	bp->bip2.bip_sector = bio->bi_integrity->bip_sector + nr_sectors;
++	bp->bip1.bip_iter.bi_sector = bio->bi_integrity->bip_iter.bi_sector;
++	bp->bip2.bip_iter.bi_sector =
++		bio->bi_integrity->bip_iter.bi_sector + nr_sectors;
+ 
+ 	bp->bip1.bip_vcnt = bp->bip2.bip_vcnt = 1;
+-	bp->bip1.bip_idx = bp->bip2.bip_idx = 0;
++	bp->bip1.bip_iter.bi_idx = bp->bip2.bip_iter.bi_idx = 0;
+ }
+ EXPORT_SYMBOL(bio_integrity_split);
+ 
+@@ -704,9 +649,8 @@ int bio_integrity_clone(struct bio *bio, struct bio *bio_src,
+ 	memcpy(bip->bip_vec, bip_src->bip_vec,
+ 	       bip_src->bip_vcnt * sizeof(struct bio_vec));
+ 
+-	bip->bip_sector = bip_src->bip_sector;
+ 	bip->bip_vcnt = bip_src->bip_vcnt;
+-	bip->bip_idx = bip_src->bip_idx;
++	bip->bip_iter = bip_src->bip_iter;
+ 
+ 	return 0;
+ }
 diff --git a/include/linux/bio.h b/include/linux/bio.h
-index d321e63..580c9ae 100644
+index 3c194bc..62c7293 100644
 --- a/include/linux/bio.h
 +++ b/include/linux/bio.h
-@@ -62,9 +62,11 @@
-  * on highmem page vectors
-  */
- #define bio_iovec_idx(bio, idx)	(&((bio)->bi_io_vec[(idx)]))
--#define bio_iovec(bio)		bio_iovec_idx((bio), (bio)->bi_iter.bi_idx)
--#define bio_page(bio)		bio_iovec((bio))->bv_page
--#define bio_offset(bio)		bio_iovec((bio))->bv_offset
-+#define __bio_iovec(bio)	bio_iovec_idx((bio), (bio)->bi_iter.bi_idx)
-+#define bio_iovec(bio)		(*__bio_iovec(bio))
+@@ -253,16 +253,15 @@ static inline void bio_advance_iter(struct bio *bio, struct bvec_iter *iter,
+ struct bio_integrity_payload {
+ 	struct bio		*bip_bio;	/* parent bio */
+ 
+-	sector_t		bip_sector;	/* virtual start sector */
++	struct bvec_iter	bip_iter;
+ 
++	/* kill - should just use bip_vec */
+ 	void			*bip_buf;	/* generated integrity data */
+-	bio_end_io_t		*bip_end_io;	/* saved I/O completion fn */
+ 
+-	unsigned int		bip_size;
++	bio_end_io_t		*bip_end_io;	/* saved I/O completion fn */
+ 
+ 	unsigned short		bip_slab;	/* slab the bip came from */
+ 	unsigned short		bip_vcnt;	/* # of integrity bio_vecs */
+-	unsigned short		bip_idx;	/* current bip_vec index */
+ 	unsigned		bip_owns_buf:1;	/* should free bip_buf */
+ 
+ 	struct work_struct	bip_work;	/* I/O completion */
+@@ -621,16 +620,12 @@ struct biovec_slab {
+ 
+ #if defined(CONFIG_BLK_DEV_INTEGRITY)
+ 
+-#define bip_vec_idx(bip, idx)	(&(bip->bip_vec[(idx)]))
+-#define bip_vec(bip)		bip_vec_idx(bip, 0)
+ 
+-#define __bip_for_each_vec(bvl, bip, i, start_idx)			\
+-	for (bvl = bip_vec_idx((bip), (start_idx)), i = (start_idx);	\
+-	     i < (bip)->bip_vcnt;					\
+-	     bvl++, i++)
+ 
+-#define bip_for_each_vec(bvl, bip, i)					\
+-	__bip_for_each_vec(bvl, bip, i, (bip)->bip_idx)
++#define bip_vec_idx(bip, idx)	(&(bip->bip_vec[(idx)]))
 +
-+#define bio_page(bio)		(bio_iovec((bio)).bv_page)
-+#define bio_offset(bio)		(bio_iovec((bio)).bv_offset)
- #define bio_segments(bio)	((bio)->bi_vcnt - (bio)->bi_iter.bi_idx)
- #define bio_sectors(bio)	((bio)->bi_iter.bi_size >> 9)
- #define bio_end_sector(bio)	((bio)->bi_iter.bi_sector + bio_sectors((bio)))
-@@ -72,7 +74,7 @@
- static inline unsigned int bio_cur_bytes(struct bio *bio)
- {
- 	if (bio->bi_vcnt)
--		return bio_iovec(bio)->bv_len;
-+		return bio_iovec(bio).bv_len;
- 	else /* dataless requests such as discard */
- 		return bio->bi_iter.bi_size;
- }
++#define bip_for_each_vec(bvl, bip, iter)				\
++	for_each_bvec(bvl, (bip)->bip_vec, iter, (bip)->bip_iter)
+ 
+ #define bio_for_each_integrity_vec(_bvl, _bio, _iter)			\
+ 	for_each_bio(_bio)						\
 -- 
 1.8.3.rc1
 
