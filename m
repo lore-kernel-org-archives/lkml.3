@@ -1,178 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347Ab3FJLt5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 07:49:57 -0400
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:45728 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752778Ab3FJLtz (ORCPT
+	id S1753068Ab3FJLtv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 07:49:51 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:54633 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752301Ab3FJLts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 07:49:55 -0400
-Message-ID: <51B5BCB3.3060405@st.com>
-Date: Mon, 10 Jun 2013 12:46:59 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Michal Simek <monstr@monstr.eu>
-Cc: linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+	Mon, 10 Jun 2013 07:49:48 -0400
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: thierry.reding@gmail.com, patches@linaro.org, alsa-devel@alsa-project.org,
+        devel@driverdev.osuosl.org, linux-can@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-gpio@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+        sparclinux@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Chris Ball <cjb@laptop.org>, Dan Williams <djbw@fb.com>,
+        "David S. Miller" <davem@davemloft.net>, Felipe Balbi <balbi@ti.com>,
         Grant Likely <grant.likely@linaro.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
         Linus Walleij <linus.walleij@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-doc@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
         Mark Brown <broonie@kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <rob.herring@calxeda.com>,
-        Rob Landley <rob@landley.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: Re: [PATCH v2 06/11] ARM:stixxxx: Add STiH415 SOC support
-References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com> <1370856381-6644-1-git-send-email-srinivas.kandagatla@st.com> <CAHTX3d+dk3W_9b7SVUokWq4KYXnj=Z1=WPj5zJ-gUvJqqwE=+Q@mail.gmail.com>
-In-Reply-To: <CAHTX3d+dk3W_9b7SVUokWq4KYXnj=Z1=WPj5zJ-gUvJqqwE=+Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Michal Simek <michal.simek@xilinx.com>, Rob Landley <rob@landley.net>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Wolfgang Grandegger <wg@grandegger.com>
+Subject: [PATCH 00/15] Convert to use devm_ioremap_resource
+Date: Mon, 10 Jun 2013 17:04:58 +0530
+Message-Id: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/13 12:15, Michal Simek wrote:
+These are the remaining instances of devm_request_and_ioremap. Convert
+them to use devm_ioremap_resource as introduced by commit
+75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()).
+Patches 1 to 13 remove occurrences of devm_request_and_ioremap.
+Patch 14 modifies one comment that speaks about devm_request_and_ioremap.
+Patch 15 removes the definition of devm_request_and_ioremap which
+should only be applied if all other pathces are merged.
 
-Thankyou for your comments,
-> Hi,
-> 
-> hmm - that's a nice bug that thunderbird is not able to send this email. :-(
-> Let's comment it again via gmail.
->     diff --git a/arch/arm/boot/dts/stih415.dtsi
->     b/arch/arm/boot/dts/stih415.dtsi
->     new file mode 100644
->     index 0000000..6dcf5b4
->     --- /dev/null
->     +++ b/arch/arm/boot/dts/stih415.dtsi
-...
->     +
->     +       soc {
->     +               #address-cells = <1>;
->     +               #size-cells = <1>;
->     +               interrupt-parent = <&intc>;
->     +               ranges;
->     +               compatible      = "simple-bus";
-> 
-> 
-> 
-> Rob and Grant: what's the purpose of SoC node.
-> It seems to me odd that SoC is compatible with simple-bus.
+Tushar Behera (15):
+  sparc,leon: Convert to use devm_ioremap_resource
+  sudmac: Convert to use devm_ioremap_resource
+  mmc: mvsdio: Convert to use devm_ioremap_resource
+  gpio_msm: Convert to use devm_ioremap_resource
+  gpio-sta2x11: Convert to use devm_ioremap_resource
+  net: bcm63xx_enet: Convert to use devm_ioremap_resource
+  net: fec: Convert to use devm_ioremap_resource
+  net: emaclite: Convert to use devm_ioremap_resource
+  net: can: Convert to use devm_ioremap_resource
+  Staging: netlogic: Convert to use devm_ioremap_resource
+  regulator: ti-abb: Convert to use devm_ioremap_resource
+  ASoC: spear: Convert to use devm_ioremap_resource
+  pci: mvebu: Convert to use devm_ioremap_resource
+  usb: phy: rcar-usb: Fix comment w.r.t. devm_ioremap_resource
+  lib: devres: Remove deprecated devm_request_and_ioremap
 
-All the drivers on this SOC are based on platform bus, so we use
-simple-bus, here.
+ Documentation/driver-model/devres.txt         |    1 -
+ arch/sparc/kernel/leon_pci_grpci1.c           |    6 +++---
+ drivers/dma/sh/sudmac.c                       |    6 +++---
+ drivers/gpio/gpio-msm-v1.c                    |   12 +++++------
+ drivers/gpio/gpio-sta2x11.c                   |    4 +++-
+ drivers/mmc/host/mvsdio.c                     |    6 +++---
+ drivers/net/can/c_can/c_can_platform.c        |    4 ++--
+ drivers/net/ethernet/broadcom/bcm63xx_enet.c  |   12 +++++------
+ drivers/net/ethernet/freescale/fec_main.c     |   12 +++++------
+ drivers/net/ethernet/xilinx/xilinx_emaclite.c |    6 ++++--
+ drivers/pci/host/pci-mvebu.c                  |    5 +++--
+ drivers/regulator/ti-abb-regulator.c          |   12 +++++------
+ drivers/staging/netlogic/xlr_net.c            |    8 +++----
+ drivers/usb/phy/phy-rcar-usb.c                |    2 +-
+ include/linux/device.h                        |    2 --
+ lib/devres.c                                  |   28 -------------------------
+ sound/soc/spear/spdif_out.c                   |   20 +++++-------------
+ 17 files changed, 55 insertions(+), 91 deletions(-)
 
->     diff --git a/arch/arm/boot/dts/stih41x.dtsi
->     b/arch/arm/boot/dts/stih41x.dtsi
->     new file mode 100644
->     index 0000000..7321403
->     --- /dev/null
->     +++ b/arch/arm/boot/dts/stih41x.dtsi
->     @@ -0,0 +1,38 @@
->     +/ {
->     +       #address-cells = <1>;
->     +       #size-cells = <1>;
->     +
->     +       cpus {
->     +               #address-cells = <1>;
->     +               #size-cells = <0>;
->     +               cpu@0 {
->     +                       compatible = "arm,cortex-a9";
->     +                       reg = <0>;
->     +               };
->     +               cpu@1 {
->     +                       compatible = "arm,cortex-a9";
->     +                       reg = <1>;
->     +               };
->     +       };
->     +
-> 
-> 
-> I believe your SoC also has a bus here.
-
-It does but there is no active driver to manage it.
-
->     --- /dev/null
->     +++ b/arch/arm/mach-stixxxx/board-dt.c
->     @@ -0,0 +1,47 @@
-
->     +
->     +void __init stih41x_l2x0_init(void)
->     +{
->     +       u32 way_size = 0x4;
->     +       u32 aux_ctrl;
->     +
->     +       aux_ctrl = (0x1 << L2X0_AUX_CTRL_SHARE_OVERRIDE_SHIFT) |
->     +               (0x1 << L2X0_AUX_CTRL_DATA_PREFETCH_SHIFT) |
->     +               (0x1 << L2X0_AUX_CTRL_INSTR_PREFETCH_SHIFT) |
->     +               (way_size << L2X0_AUX_CTRL_WAY_SIZE_SHIFT);
-> 
-> 
-> 
-> #include <linux/bitops.h>
-> Linus Walleij would write use  BIT() here
-
-I will use BIT() macro.
-
->     diff --git a/arch/arm/mach-stixxxx/headsmp.S
->     b/arch/arm/mach-stixxxx/headsmp.S
->     new file mode 100644
->     index 0000000..3dd5c04
->     --- /dev/null
->     +++ b/arch/arm/mach-stixxxx/headsmp.S
->     @@ -0,0 +1,44 @@
->     +/*
->     + *  arch/arm/plat-stixxxx/headsmp.S
-> 
-
->     +       .long   pen_release
-> 
-> 
-> check that your SoC has no option to start/reset cpus separately.
-> If yes, then you shouldn't use pen_release.
-> We discussed this with Russel some days ago.
-No, stih41x series can't reset the cores separately.
->  
-> 
->     diff --git a/arch/arm/mach-stixxxx/platsmp.c
->     b/arch/arm/mach-stixxxx/platsmp.c
->     new file mode 100644
->     index 0000000..ffc40c0
->     --- /dev/null
->     +++ b/arch/arm/mach-stixxxx/platsmp.c
->     @@ -0,0 +1,117 @@
->     +/*
->     + *  arch/arm/plat-stixxxx/platsmp.c
-> 
-> 
-> wrong.
-
-Left over, will clean it up in next version.
-
->     + *  arch/arm/plat-stixxxx/platsmp.c
-> 
-> 
-> incorrect.
-Left over, will clean it up in next version.
->  
->     +extern struct smp_operations   stixxxx_smp_ops;
->     +extern void __iomem *stixxxx_scu_base_addr;
-> 
-> 
-> Unused variable in this patch.
-yes, I will remove stixxxx_scu_base_addr.
-
-thanks,
-srini
-
+CC: alsa-devel@alsa-project.org
+CC: devel@driverdev.osuosl.org
+CC: linux-can@vger.kernel.org
+CC: linux-doc@vger.kernel.org
+CC: linux-gpio@vger.kernel.org
+CC: linux-mmc@vger.kernel.org
+CC: linux-pci@vger.kernel.org
+CC: linux-usb@vger.kernel.org
+CC: netdev@vger.kernel.org
+CC: sparclinux@vger.kernel.org
+CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: Chris Ball <cjb@laptop.org>
+CC: Dan Williams <djbw@fb.com>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Felipe Balbi <balbi@ti.com>
+CC: Grant Likely <grant.likely@linaro.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Liam Girdwood <lgirdwood@gmail.com>
+CC: Linus Walleij <linus.walleij@linaro.org>
+CC: Marc Kleine-Budde <mkl@pengutronix.de>
+CC: Mark Brown <broonie@kernel.org>
+CC: Michal Simek <michal.simek@xilinx.com>
+CC: Rob Landley <rob@landley.net>
+CC: Vinod Koul <vinod.koul@intel.com>
+CC: Wolfgang Grandegger <wg@grandegger.com>
+-- 
+1.7.9.5
 
