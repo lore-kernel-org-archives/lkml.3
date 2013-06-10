@@ -1,75 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391Ab3FJILj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 04:11:39 -0400
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:44107 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab3FJILh (ORCPT
+	id S1752416Ab3FJIMS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 04:12:18 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:52842 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752090Ab3FJIMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 04:11:37 -0400
+	Mon, 10 Jun 2013 04:12:15 -0400
+Date: Mon, 10 Jun 2013 09:12:08 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: J Keerthy <j-keerthy@ti.com>
+Cc: b-cousson@ti.com, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldewangan@nvidia.com, grant.likely@secretlab.ca, swarren@wwwdotorg.org,
+        swarren@nvidia.com, sameo@linux.intel.com, gg@slimlogic.co.uk
+Subject: Re: [PATCH 2/2] ARM: dts: OMAP5: add palmas node and omap specific
+ palmas regulator properties
+Message-ID: <20130610081208.GD24958@gmail.com>
+References: <1370845335-14926-1-git-send-email-j-keerthy@ti.com>
+ <1370845335-14926-3-git-send-email-j-keerthy@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <51B20B46.4030501@wwwdotorg.org>
-References: <1370503687-17767-1-git-send-email-acourbot@nvidia.com>
- <51B0BC80.9040007@wwwdotorg.org> <CAAVeFu+by44HnOzv_85kwgeCx5b9TxiMhr27x69QcUj9GRbk8A@mail.gmail.com>
- <51B20B46.4030501@wwwdotorg.org>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Mon, 10 Jun 2013 17:11:15 +0900
-Message-ID: <CAAVeFu+UMZikdWO20c9chvBcieOAUgOhz-nTEUpevFWnPNC_ZA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: tegra: add basic SecureOS support
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Alexandre Courbot <acourbot@nvidia.com>, Joseph Lo <josephl@nvidia.com>,
-        Karan Jhavar <kjhavar@nvidia.com>, Varun Wadekar <vwadekar@nvidia.com>,
-        Chris Johnson <CJohnson@nvidia.com>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1370845335-14926-3-git-send-email-j-keerthy@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 8, 2013 at 1:33 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>> I think we need to separate the concept of support for *a* secure
->>> monitor, from support for a *particular* secure monitor.
->>
->> Agreed. In this case, can we assume that support for a specific secure
->> monitor is not arch-specific, and that this patch should be moved
->> outside of arch-tegra and down to arch/arm? In other words, the ABI of
->> a particular secure monitor should be the same no matter the chip,
->> shouldn't it?
->
-> I would like to believe that the Trusted Foundations monitor had the
-> same ABI irrespective of which Soc it was running on. However, I have
-> absolutely no idea at all if that's true. Even if there's some common
-> subset of the ABI that is identical across all SoCs, I wouldn't be too
-> surprised if there were custom extensions for each different SoC, or
-> just perhaps even each product.
->
-> Can you research this and find out the answer?
+> Add palmas node and omap specific palmas regulator properties.
+> 
+> This patch is based on:
+> 
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
+> 	for_3.11/dts
 
-Will do. Information about TF is scarce unfortunately.
+There's no need for this to be in the commit message.
 
-> What we can always do is make a compatible property that lists
-> everything[1], and have the driver match on the most specific value for
-> now, but relax the driver's matching later if it turns out that the ABI
-> is indeed common.
->
-> [1] That'd need to be at least secure OS name, and secure OS version.
-> Perhaps the SoC and board data can be deduced from the DT's top-level
-> compatible properties; nvidia,tegra114-shield, nvidia,tegra114?
+> Boot tested on omap5-uevm board.
+> 
+> Signed-off-by: J Keerthy <j-keerthy@ti.com>
+> ---
+>  arch/arm/boot/dts/omap5-uevm.dts |  145 ++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 145 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/omap5-uevm.dts b/arch/arm/boot/dts/omap5-uevm.dts
+> index 927db1e..88172db 100644
+> --- a/arch/arm/boot/dts/omap5-uevm.dts
+> +++ b/arch/arm/boot/dts/omap5-uevm.dts
+> @@ -254,6 +254,151 @@
+>  	pinctrl-0 = <&i2c1_pins>;
+>  
+>  	clock-frequency = <400000>;
+> +
+> +	palmas: palmas@48 {
+> +		reg = <0x48>;
+> +		/* SPI = 0, IRQ# = 7, 4 = active high level-sensitive */
 
-They can probably, but in theory nothing prevents a board from coming
-with different secure monitors (or none at all). In this case, just
-having the board name might not be enough.
+The interrupt property is fairly ubiqutous. There's not really any
+need to document it in this manor.
 
-Having a proper node for the firmware like David and Tomasz suggested
-seems to be the best way to make sure we cover all cases - I think I
-will try to do it this way for the next version, and hopefully come
-with a binding that is useful for everyone.
+> +		interrupts = <0 7 4>; /* IRQ_SYS_1N cascaded to gic */
 
-Thanks,
-Alex.
+Use the IRQ includes in dt-bindings.
+
+> +		interrupt-parent = <&gic>;
+> +	};
+> +
+> +};
+> +
+> +#include "palmas.dtsi"
+
+I'm a bit confused by this. Is it now common practice to break out
+nodes in this way? I assume to counter mass indentation, but it's a
+bit alien to me.
+
+> +&palmas {
+> +	palmas_pmic {
+> +		ti,ldo6-vibrator;
+> +
+> +		regulators {
+> +			smps123_reg: smps123 {
+> +				regulator-min-microvolt = < 600000>;
+> +				regulator-max-microvolt = <1500000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +			};
+
+Are these all board specific, or are they shared with any other
+platform?
+
+> +			smps45_reg: smps45 {
+> +				regulator-min-microvolt = < 600000>;
+> +				regulator-max-microvolt = <1310000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +			};
+> +
+> +			smps6_reg: smps6 {
+> +				regulator-min-microvolt = <1200000>;
+> +				regulator-max-microvolt = <1200000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +			};
+> +
+> +			smps7_reg: smps7 {
+> +				regulator-min-microvolt = <1800000>;
+> +				regulator-max-microvolt = <1800000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +			};
+> +
+> +			smps8_reg: smps8 {
+> +				regulator-min-microvolt = < 600000>;
+> +				regulator-max-microvolt = <1310000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +			};
+> +
+> +			smps9_reg: smps9 {
+> +				regulator-min-microvolt = <2100000>;
+> +				regulator-max-microvolt = <2100000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +				ti,smps-range = <0x80>;
+> +			};
+> +
+> +			smps10_reg: smps10 {
+> +				regulator-min-microvolt = <5000000>;
+> +				regulator-max-microvolt = <5000000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +			};
+> +
+> +			ldo1_reg: ldo1 {
+> +				regulator-min-microvolt = <2800000>;
+> +				regulator-max-microvolt = <2800000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +			};
+> +
+> +			ldo2_reg: ldo2 {
+> +				regulator-min-microvolt = <2900000>;
+> +				regulator-max-microvolt = <2900000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +			};
+> +
+> +			ldo3_reg: ldo3 {
+> +				regulator-min-microvolt = <3000000>;
+> +				regulator-max-microvolt = <3000000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +			};
+> +
+> +			ldo4_reg: ldo4 {
+> +				regulator-min-microvolt = <2200000>;
+> +				regulator-max-microvolt = <2200000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +			};
+> +
+> +			ldo5_reg: ldo5 {
+> +				regulator-min-microvolt = <1800000>;
+> +				regulator-max-microvolt = <1800000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +			};
+> +
+> +			ldo6_reg: ldo6 {
+> +				regulator-min-microvolt = <1500000>;
+> +				regulator-max-microvolt = <1500000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +			};
+> +
+> +			ldo7_reg: ldo7 {
+> +				regulator-min-microvolt = <1500000>;
+> +				regulator-max-microvolt = <1500000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +			};
+> +
+> +			ldo8_reg: ldo8 {
+> +				regulator-min-microvolt = <1500000>;
+> +				regulator-max-microvolt = <1500000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +			};
+> +
+> +			ldo9_reg: ldo9 {
+> +				regulator-min-microvolt = <1800000>;
+> +				regulator-max-microvolt = <3300000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +			};
+> +
+> +			ldoln_reg: ldoln {
+> +				regulator-min-microvolt = <1800000>;
+> +				regulator-max-microvolt = <1800000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +			};
+> +
+> +			ldousb_reg: ldousb {
+> +				regulator-min-microvolt = <3250000>;
+> +				regulator-max-microvolt = <3250000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +			};
+> +		};
+> +	};
+>  };
+>  
+>  &i2c5 {
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
