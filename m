@@ -1,101 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752970Ab3FJL7w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 07:59:52 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:34910 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552Ab3FJL7u (ORCPT
+	id S1753311Ab3FJMBv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 08:01:51 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:32798 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab3FJMBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 07:59:50 -0400
-Date: Mon, 10 Jun 2013 14:59:38 +0300
-From: Johan Hedberg <johan.hedberg@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        kernel list <linux-kernel@vger.kernel.org>, marcel@holtmann.org,
-        gustavo@padovan.org, linux-bluetooth@vger.kernel.org
-Subject: Re: 3.10-rc: bluetooth disappeared on thinkpad x60 (regression)
-Message-ID: <20130610115938.GA12892@x220.ger.corp.intel.com>
-Mail-Followup-To: Pavel Machek <pavel@ucw.cz>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	kernel list <linux-kernel@vger.kernel.org>, marcel@holtmann.org,
-	gustavo@padovan.org, linux-bluetooth@vger.kernel.org
-References: <20130610092907.GA5487@amd.pavel.ucw.cz>
- <20130610100519.GA9816@x220.ger.corp.intel.com>
- <20130610110423.GA8834@amd.pavel.ucw.cz>
+	Mon, 10 Jun 2013 08:01:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130610110423.GA8834@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1370864113-17895-12-git-send-email-tushar.behera@linaro.org>
+References: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
+	<1370864113-17895-12-git-send-email-tushar.behera@linaro.org>
+Date: Mon, 10 Jun 2013 17:31:47 +0530
+Message-ID: <CAK9yfHySr3J8roLmntGvUi3-DkBCW397TjO65Qr0Zej8C7ROdg@mail.gmail.com>
+Subject: Re: [PATCH 11/15] regulator: ti-abb: Convert to use devm_ioremap_resource
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, thierry.reding@gmail.com, patches@linaro.org,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
+On 10 June 2013 17:05, Tushar Behera <tushar.behera@linaro.org> wrote:
+> Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
+> introduced devm_ioremap_resource() and deprecated the use of
+> devm_request_and_ioremap().
+>
+> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> CC: Mark Brown <broonie@kernel.org>
+> CC: Liam Girdwood <lgirdwood@gmail.com>
+> ---
+>  drivers/regulator/ti-abb-regulator.c |   12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/regulator/ti-abb-regulator.c b/drivers/regulator/ti-abb-regulator.c
+> index 870d209..f494a11 100644
+> --- a/drivers/regulator/ti-abb-regulator.c
+> +++ b/drivers/regulator/ti-abb-regulator.c
+> @@ -722,10 +722,10 @@ static int ti_abb_probe(struct platform_device *pdev)
+>                 ret = -ENODEV;
+>                 goto err;
+>         }
+> -       abb->base = devm_request_and_ioremap(dev, res);
+> -       if (!abb->base) {
+> +       abb->base = devm_ioremap_resource(dev, res);
+> +       if (IS_ERR(abb->base)) {
+>                 dev_err(dev, "Unable to map '%s'\n", pname);
 
-On Mon, Jun 10, 2013, Pavel Machek wrote:
-> > > root@amd:~# hciconfig hci0 up
-> > > Can't init device hci0: Operation not supported (95)
-> > > root@amd:~# hcitool inq
-> > > Inquiring ...
-> > > Inquiry failed.: No such device
-> > > root@amd:~# 
-> > 
-> > Could you take logs of the HCI traffic that happens when you try this.
-> > You can use the btmon tool from BlueZ for it. Based on a quick look at
-> > the code it seems like this particular error could only come if one of
-> > the HCI commands used for device initialization fails.
-> 
-> Where can I get btmon? I tried 
-> 
-> root@amd:~# apt-get install bluez-utils
-> 
-> but it is not there.
+You may remove the above error message as devm_ioremap_resource prints
+its own error messages.
 
-I can only speak from an upstream perspective (since I'm not familiar
-with distro-specific packaging conventions), but btmon is what you'll
-find in the monitor subdirectory of the bluez source tree.
+> -               ret = -ENOMEM;
+> +               ret = PTR_ERR(abb->base);
+>                 goto err;
+>         }
+>
+> @@ -776,10 +776,10 @@ static int ti_abb_probe(struct platform_device *pdev)
+>                 ret = -ENODEV;
+>                 goto skip_opt;
+>         }
+> -       abb->ldo_base = devm_request_and_ioremap(dev, res);
+> -       if (!abb->ldo_base) {
+> +       abb->ldo_base = devm_ioremap_resource(dev, res);
+> +       if (IS_ERR(abb->ldo_base)) {
+>                 dev_err(dev, "Unable to map '%s'\n", pname);
 
-> (Can I just add printk somewhere?)
+ditto
 
-If you want, the Bluetooth subsystem does support the dynamic debug
-feature, so you could enable logs for hci_core.c and hci_event.c.
-However, this will likely still not be enough and the HCI logs would
-anyway be needed. One thing to note is that btmon is a quite new tool
-which may not yet be packaged by your distro (it appeared in BlueZ 5,
-released 6 months ago). An alternative which should work too is hcidump,
-probably packed in a bluez-hcidump package on your distro.
+> -               ret = -ENOMEM;
+> +               ret = PTR_ERR(abb->ldo_base);
+>                 goto err;
+>         }
+>
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-> 
-> > The Bluetooth HCI init sequence is constructed using only commands that
-> > should be expected to work assuming the hardware follows the
-> > specification, but occasionally we do encounter Bluetooth hardware that
-> > is broken in one way or another and needs a work around to the sequence.
-> > E.g. recently we added a couple of extra commands to read some new
-> > parameters from the hardware, commands that are mandatory for hardware
-> > beyond a specific version (something we check for), but could be that
-> > the chip on the X60 doesn't support these.
-> 
-> I don't expect strace is enough?
-> 
-> set_thread_area({entry_number:-1 -> 6, base_addr:0xb7624b20,
-> limit:1048575, seg_32bit:1, contents:0, read_exec_only:0,
-> limit_in_pages:1, seg_not_present:0, useable:1}) = 0
-> mprotect(0xb7766000, 8192, PROT_READ)   = 0
-> mprotect(0xb77b2000, 4096, PROT_READ)   = 0
-> munmap(0xb7782000, 76642)               = 0
-> socket(PF_BLUETOOTH, SOCK_RAW, 1)       = 3
-> ioctl(3, 0x800448d3, 0xb77cc420)        = 0
-> ioctl(3, 0x400448c9, 0)                 = -1 EOPNOTSUPP (Operation not
-> supported)
-> write(2, "Can't init device hci0: Operatio"..., 53Can't init device
-> hci0: Operation not supported (95)
-> ) = 53
-> exit_group(1)                           = ?
 
-Nope, that still doesn't show anything new compared to what we already
-know. The interesting part is what messages the kernel is exchanging
-with the Bluetooth hardware and the only way the get a full
-understanding of that is with btmon or hcidump.
 
-Johan
+-- 
+With warm regards,
+Sachin
