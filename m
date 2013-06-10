@@ -1,136 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab3FJLeH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 07:34:07 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:33127 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752347Ab3FJLeF convert rfc822-to-8bit (ORCPT
+	id S1753428Ab3FJLhN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 07:37:13 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:56083 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213Ab3FJLhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 07:34:05 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: li guang <lig.fnst@cn.fujitsu.com>
-Cc: Len Brown <lenb@kernel.org>, Matthew Garrett <matthew.garrett@nebula.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org,
-        Andreas =?ISO-8859-1?Q?F=E4rber?= <afaerber@suse.de>,
-        Igor Mammedov <imammedo@redhat.com>
-Subject: Re: [PATCH RFC v2 2/3] ec: add ec space notifier
-Date: Mon, 10 Jun 2013 13:43:09 +0200
-Message-ID: <21097972.gssLReeoxv@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1370825214.21655.20.camel@liguang.fnst.cn.fujitsu.com>
-References: <1370482835-764-1-git-send-email-lig.fnst@cn.fujitsu.com> <10739719.ouMOhAfYPv@vostro.rjw.lan> <1370825214.21655.20.camel@liguang.fnst.cn.fujitsu.com>
+	Mon, 10 Jun 2013 07:37:11 -0400
+X-AuditID: 85900ec0-d2ec7b900000151e-7f-51b5ba646f73
+Message-ID: <51B5BA60.30508@hitachi.com>
+Date: Mon, 10 Jun 2013 20:37:04 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, David Sharp <dhsharp@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Re: Re: Re: [PATCH V2 1/1] kvm/vmx: Add a tracepoint write_tsc_offset
+References: <20130604083616.22713.24922.stgit@yunodevel> <20130604083619.22713.25360.stgit@yunodevel> <20130606002322.GA24351@amt.cnet> <20130606113305.GB4725@redhat.com> <51B16E0E.5020208@hitachi.com> <20130609111442.GP4725@redhat.com> <51B59CC2.3060707@hitachi.com> <20130610100505.GB4725@redhat.com>
+In-Reply-To: <20130610100505.GB4725@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 10, 2013 08:46:54 AM li guang wrote:
-> 在 2013-06-06四的 12:59 +0200，Rafael J. Wysocki写道：
-> > On Thursday, June 06, 2013 09:40:34 AM liguang wrote:
-> > > add a notifier for anyone who are instresting in
-> > > ec space changing.
-> > > 
-> > > Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
-> > 
-> > I'm not going to apply this anyway, but can you please explain what's the
-> > problem you're trying to solve here?
-> 
-> OK, currently it is for QEMU to do cpu online automatically after
-> hot-plug a cpu,
-> and maybe potentially for real platform's cpu
-> plug/unplug implementation.
-> with this notifier, we don't need any GPIOes,IO ports, and other
-> hardware cost if we do have an EC chip in board to trigger kernel's 
-> cpu process for this.
+Hi Gleb,
 
-You need to make ACPI eject/bus/device notifications go to the processor
-objects rather than to listen to the EC events.
+(2013/06/10 19:05), Gleb Natapov wrote:
+> On Mon, Jun 10, 2013 at 06:30:42PM +0900, Yoshihiro YUNOMAE wrote:
+>> Hi Gleb,
+>>
+>> (2013/06/09 20:14), Gleb Natapov wrote:
+>>> On Fri, Jun 07, 2013 at 02:22:22PM +0900, Yoshihiro YUNOMAE wrote:
+>>>> (2013/06/06 20:33), Gleb Natapov wrote:
+>>>>> On Wed, Jun 05, 2013 at 09:23:22PM -0300, Marcelo Tosatti wrote:
+>>>>>> On Tue, Jun 04, 2013 at 05:36:19PM +0900, Yoshihiro YUNOMAE wrote:
+>>>>>>> Add a tracepoint write_tsc_offset for tracing TSC offset change.
+>>>>>>> We want to merge ftrace's trace data of guest OSs and the host OS using
+>>>>>>> TSC for timestamp in chronological order. We need "TSC offset" values for
+>>>>>>> each guest when merge those because the TSC value on a guest is always the
+>>>>>>> host TSC plus guest's TSC offset. If we get the TSC offset values, we can
+>>>>>>> calculate the host TSC value for each guest events from the TSC offset and
+>>>>>>> the event TSC value. The host TSC values of the guest events are used when we
+>>>>>>> want to merge trace data of guests and the host in chronological order.
+>>>>>>> (Note: the trace_clock of both the host and the guest must be set x86-tsc in
+>>>>>>> this case)
+>>>>>>>
+>>>>>>> TSC offset is stored in the VMCS by vmx_write_tsc_offset() or
+>>>>>>> vmx_adjust_tsc_offset(). KVM executes the former function when a guest boots.
+>>>>>>> The latter function is executed when kvm clock is updated. Only host can read
+>>>>>>> TSC offset value from VMCS, so a host needs to output TSC offset value
+>>>>>>> when TSC offset is changed.
+>>>>>>>
+>>>>>>> Since the TSC offset is not often changed, it could be overwritten by other
+>>>>>>> frequent events while tracing. To avoid that, I recommend to use a special
+>>>>>>> instance for getting this event:
+>>>>>>>
+>>>>>>> 1. set a instance before booting a guest
+>>>>>>>   # cd /sys/kernel/debug/tracing/instances
+>>>>>>>   # mkdir tsc_offset
+>>>>>>>   # cd tsc_offset
+>>>>>>>   # echo x86-tsc > trace_clock
+>>>>>>>   # echo 1 > events/kvm/kvm_write_tsc_offset/enable
+>>>>>>>
+>>>>>>> 2. boot a guest
+>>>>>>>
+>>>>>>> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+>>>>>>> Cc: Marcelo Tosatti <mtosatti@redhat.com>
+>>>>>>> Cc: Gleb Natapov <gleb@redhat.com>
+>>>>>>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>>>>>>> Cc: Ingo Molnar <mingo@redhat.com>
+>>>>>>> Cc: "H. Peter Anvin" <hpa@zytor.com>
+>>>>>>> ---
+>>>>>>>   arch/x86/kvm/trace.h |   18 ++++++++++++++++++
+>>>>>>>   arch/x86/kvm/vmx.c   |    3 +++
+>>>>>>>   arch/x86/kvm/x86.c   |    1 +
+>>>>>>>   3 files changed, 22 insertions(+)
+>>>>>>>
+>>>>>>> diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
+>>>>>>> index fe5e00e..9c22e39 100644
+>>>>>>> --- a/arch/x86/kvm/trace.h
+>>>>>>> +++ b/arch/x86/kvm/trace.h
+>>>>>>> @@ -815,6 +815,24 @@ TRACE_EVENT(kvm_track_tsc,
+>>>>>>>   		  __print_symbolic(__entry->host_clock, host_clocks))
+>>>>>>>   );
+>>>>>>>
+>>>>>>> +TRACE_EVENT(kvm_write_tsc_offset,
+>>>>>>> +	TP_PROTO(__u64 previous_tsc_offset, __u64 next_tsc_offset),
+>>>>>>> +	TP_ARGS(previous_tsc_offset, next_tsc_offset),
+>>>>>>> +
+>>>>>>> +	TP_STRUCT__entry(
+>>>>>>> +		__field(	__u64,	previous_tsc_offset		)
+>>>>>>> +		__field(	__u64,	next_tsc_offset			)
+>>>>>>> +	),
+>>>>>>> +
+>>>>>>> +	TP_fast_assign(
+>>>>>>> +		__entry->previous_tsc_offset	= previous_tsc_offset;
+>>>>>>> +		__entry->next_tsc_offset	= next_tsc_offset;
+>>>>>>> +	),
+>>>>>>> +
+>>>>>>> +	TP_printk("previous=%llu next=%llu",
+>>>>>>> +		  __entry->previous_tsc_offset, __entry->next_tsc_offset)
+>>>>>>> +);
+>>>>>>> +
+>>>>>>
+>>>>>> Yoshihiro YUNOMAE,
+>>>>>>
+>>>>>> 1) Why is previous_tsc_offset necessary?
+>>>>
+>>>> I was considering the situations where we did not enable
+>>>> kvm_write_tsc_offset event before booting a guest or where we did not
+>>>> use multiple buffers. Here, we will need another new I/F to get current
+>>>> TSC offset of a given VCPU. For example, if kvm_write_tsc_offset is not
+>>>> included in the host's trace data, we get the current TSC offset from
+>>>> the new I/F and apply it to all guest events. On the other hand, if
+>>>> kvm_write_tsc_offset event appears more than once, we apply the
+>>>> previous offset to guest events before the first TSC offset change.
+>>>>
+>>>> Since we support only for using multiple buffers now, we don't need to
+>>>> record previous TSC offset at this time. But I'm conscious that we have
+>>>> to change the format of kvm_write_tsc_offset event when we support
+>>>> those situations.
+>>>>
+>>>>>> 2) The TSC offset traces should include vcpu number, so that its
+>>>>>> possible to correlate traces of SMP guests (the tool should use
+>>>>>> the individual vcpu tsc offsets when converting guests trace).
+>>>>>>
+>>>>> Why PID is not enough? No other trace, except kvm_entry, outputs vcpu id.
+>>>>
+>>>> As Gleb mentioned, a tool can understand TSC offset for each vcpu from
+>>>> PID and vcpu number of kvm_entry. IMO, that is indirect way, so I would
+>>>> be better off including vcpu number.
+>>>>
+>>> But doesn't the tool operates on vcpu's PID for all other events. I mean to
+>>> figure out what vcpu an event belongs too during merge. Why tsc offset
+>>> event is different?
+>>
+>> In vcpu_load()@virt/kvm/kvm_main.c, it seems that PID of the vcpu thread
+>> can be changed. Are you familiar with this situation?
+> Recommended way of using KVM API is to have dedicated thread per vcpu
+> and this is how all known userspace implementations use it, but having
+> one thread drive several vcpus (not simultaneously obviously) also
+> works, but not recommended.
 
-> Yep, you said you'll reject this anyway,
-> but I have to ask do this notifier offend
-> any rules of your development?
+I understood. Thanks.
 
-Well, yes, it does.  CPU offline/online is not only for hotplugging and people
-do not expect CPUs to actually physically go away after using offline.
+>> If the situation can be occurred, outputting vcpu number is better, I
+>> think. If not occurred, as you say, we will be able to merge those data
+>> without vcpu number in write_tsc_offset event.
+> The thing is that all other traces that you want to merge do not contain
+> vcpu number, only pid, so if the situation occurs how do you merge the
+> data?
+
+As you say, all kvm events cannot contain vcpu number.
+However, all trace data of guests include VCPU number, so we can
+understand how guests and the host operate by using both those values
+and kvm_entry events.
+
+>>                                                  However, when we
+>> focus on output data of the write_tsc_offset event, it is difficult to
+>> directly understand contents of the data if vcpu number information is
+>> not included. So, including the information is useful, I think.
+>>
+> How your tool does it now?
+
+My sample tool supports only for one vcpu, and the tool does not
+automatically get TSC offset values yet. If the event includes
+vcpu number, it is easy to manage TSC offset for each vcpu.
+For example, if the data are "kvm_write_tsc_offset: vcpu=0 prev=100
+next=12345", a tool will use next value for all vcpu0 data of the guest.
 
 Thanks,
-Rafael
 
-
-> > > ---
-> > >  drivers/acpi/ec.c    |   32 ++++++++++++++++++++++++++++++++
-> > >  include/linux/acpi.h |    2 ++
-> > >  2 files changed, 34 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-> > > index edc0081..dee3417 100644
-> > > --- a/drivers/acpi/ec.c
-> > > +++ b/drivers/acpi/ec.c
-> > > @@ -124,6 +124,35 @@ static int EC_FLAGS_MSI; /* Out-of-spec MSI controller */
-> > >  static int EC_FLAGS_VALIDATE_ECDT; /* ASUStec ECDTs need to be validated */
-> > >  static int EC_FLAGS_SKIP_DSDT_SCAN; /* Not all BIOS survive early DSDT scan */
-> > >  
-> > > +/* notifier chain for who are intresting in ec space changing */
-> > > +static RAW_NOTIFIER_HEAD(ec_space_chain);
-> > > +
-> > > +int __ref register_ec_space_notifier(struct notifier_block *nb)
-> > > +{
-> > > +        int ret;
-> > > +
-> > > +        ret = raw_notifier_chain_register(&ec_space_chain, nb);
-> > > +
-> > > +        return ret;
-> > > +}
-> > > +EXPORT_SYMBOL(register_ec_space_notifier);
-> > > +
-> > > +void __ref unregister_ec_space_notifier(struct notifier_block *nb)
-> > > +{
-> > > +
-> > > +        raw_notifier_chain_unregister(&ec_space_chain, nb);
-> > > +}
-> > > +EXPORT_SYMBOL(unregister_ec_space_notifier);
-> > > +
-> > > +static int ec_space_notify(void *data)
-> > > +{
-> > > +    int ret;
-> > > +
-> > > +    ret = __raw_notifier_call_chain(&ec_space_chain, 0, data, -1, NULL);
-> > > +
-> > > +     return notifier_to_errno(ret);
-> > > +}
-> > > +
-> > >  /* --------------------------------------------------------------------------
-> > >                               Transaction Management
-> > >     -------------------------------------------------------------------------- */
-> > > @@ -638,6 +667,9 @@ static u32 acpi_ec_gpe_handler(acpi_handle gpe_device,
-> > >  		wake_up(&ec->wait);
-> > >  		ec_check_sci(ec, acpi_ec_read_status(ec));
-> > >  	}
-> > > +
-> > > +	ec_space_notify(data);
-> > > +
-> > >  	return ACPI_INTERRUPT_HANDLED | ACPI_REENABLE_GPE;
-> > >  }
-> > >  
-> > > diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-> > > index 17b5b59..4fe2247 100644
-> > > --- a/include/linux/acpi.h
-> > > +++ b/include/linux/acpi.h
-> > > @@ -158,6 +158,8 @@ extern int ec_transaction(u8 command,
-> > >                            const u8 *wdata, unsigned wdata_len,
-> > >                            u8 *rdata, unsigned rdata_len);
-> > >  extern acpi_handle ec_get_handle(void);
-> > > +extern int register_ec_space_notifier(struct notifier_block *nb);
-> > > +extern void unregister_ec_space_notifier(struct notifier_block *nb);
-> > >  
-> > >  #if defined(CONFIG_ACPI_WMI) || defined(CONFIG_ACPI_WMI_MODULE)
-> > >  
-> > > 
-> 
-> 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
+
+
