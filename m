@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698Ab3FJAte (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 20:49:34 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:64925 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751504Ab3FJAtb (ORCPT
+	id S1752748Ab3FJAti (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 20:49:38 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:62126 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707Ab3FJAtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 20:49:31 -0400
+	Sun, 9 Jun 2013 20:49:36 -0400
 From: Grant Likely <grant.likely@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [RFC 01/10] irqdomain: Relax failure path on setting up mappings
-Date: Mon, 10 Jun 2013 01:49:13 +0100
-Message-Id: <1370825362-11145-2-git-send-email-grant.likely@linaro.org>
+        Grant Likely <grant.likely@linaro.org>
+Subject: [RFC 03/10] irqdomain: Add a name field
+Date: Mon, 10 Jun 2013 01:49:15 +0100
+Message-Id: <1370825362-11145-4-git-send-email-grant.likely@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1370825362-11145-1-git-send-email-grant.likely@linaro.org>
 References: <1370825362-11145-1-git-send-email-grant.likely@linaro.org>
@@ -24,61 +23,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 98aa468e, "irqdomain: Support for static IRQ mapping and
-association" introduced an API for directly associating blocks of hwirqs
-to linux irqs. However, if any irq in that block failed to map (say if
-the mapping functions returns an error because the irq is already
-mapped) then the whole thing will fail and roll back. This is probably
-too aggressive since there are valid reasons why a mapping may fail.
-ie. Firmware may have a particular IRQ marked as unusable.
-
-This patch drops the error path out of irq_domain_associate(). If a
-mapping fails, then it is simply skipped. There is no reason to fail the
-entire allocation.
-
-v2: Still output an information message on failed mappings and make sure
-    attempted mapping gets cleared out of the irq_data structure.
+This patch adds a name field to the irq_domain structure to help mere
+mortals understand the mappings between irq domains and virqs. It also
+converts a number of places that have open-coded some kind of fudging
+an irqdomain name to use the new field. This means a more consistent
+display of names in irq domain log messages and debugfs output.
 
 Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/irq/irqdomain.c | 16 ++++------------
- 1 file changed, 4 insertions(+), 12 deletions(-)
+ include/linux/irqdomain.h |  1 +
+ kernel/irq/generic-chip.c |  1 +
+ kernel/irq/irqdomain.c    | 19 ++++++-------------
+ 3 files changed, 8 insertions(+), 13 deletions(-)
 
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index 6f06241..e5e513c 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -89,6 +89,7 @@ struct irq_domain_chip_generic;
+  */
+ struct irq_domain {
+ 	struct list_head link;
++	const char *name;
+ 
+ 	/* type of reverse mapping_technique */
+ 	unsigned int revmap_type;
+diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
+index 95575d8..ca98cc5 100644
+--- a/kernel/irq/generic-chip.c
++++ b/kernel/irq/generic-chip.c
+@@ -305,6 +305,7 @@ int irq_alloc_domain_generic_chips(struct irq_domain *d, int irqs_per_chip,
+ 		/* Calc pointer to the next generic chip */
+ 		tmp += sizeof(*gc) + num_ct * sizeof(struct irq_chip_type);
+ 	}
++	d->name = name;
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(irq_alloc_domain_generic_chips);
 diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 20b677d..61d6d3c 100644
+index 1ac8cf4..b1b5e67 100644
 --- a/kernel/irq/irqdomain.c
 +++ b/kernel/irq/irqdomain.c
-@@ -464,23 +464,15 @@ int irq_domain_associate_many(struct irq_domain *domain, unsigned int irq_base,
- 				/*
- 				 * If map() returns -EPERM, this interrupt is protected
- 				 * by the firmware or some other service and shall not
--				 * be mapped.
--				 *
--				 * Since on some platforms we blindly try to map everything
--				 * we end up with a log full of backtraces.
--				 *
--				 * So instead, we silently fail on -EPERM, it is the
--				 * responsibility of the PIC driver to display a relevant
--				 * message if needed.
-+				 * be mapped. Don't bother telling the user about it.
+@@ -410,12 +410,15 @@ int irq_domain_associate_many(struct irq_domain *domain, unsigned int irq_base,
  				 */
  				if (ret != -EPERM) {
--					pr_err("irq-%i==>hwirq-0x%lx mapping failed: %d\n",
--					       virq, hwirq, ret);
--					WARN_ON(1);
-+					pr_info("%s didn't like hwirq-0x%lx to VIRQ%i mapping (rc=%d)\n",
-+					       of_node_full_name(domain->of_node), hwirq, virq, ret);
+ 					pr_info("%s didn't like hwirq-0x%lx to VIRQ%i mapping (rc=%d)\n",
+-					       of_node_full_name(domain->of_node), hwirq, virq, ret);
++					       domain->name, hwirq, virq, ret);
  				}
  				irq_data->domain = NULL;
  				irq_data->hwirq = 0;
--				goto err_unmap;
-+				continue;
+ 				continue;
  			}
++			/* If not already assigned, give the domain the chip's name */
++			if (!domain->name && irq_data->chip)
++				domain->name = irq_data->chip->name;
  		}
  
+ 		switch (domain->revmap_type) {
+@@ -708,8 +711,6 @@ static int virq_debug_show(struct seq_file *m, void *private)
+ {
+ 	unsigned long flags;
+ 	struct irq_desc *desc;
+-	const char *p;
+-	static const char none[] = "none";
+ 	void *data;
+ 	int i;
+ 
+@@ -731,20 +732,12 @@ static int virq_debug_show(struct seq_file *m, void *private)
+ 			seq_printf(m, "0x%05lx  ", desc->irq_data.hwirq);
+ 
+ 			chip = irq_desc_get_chip(desc);
+-			if (chip && chip->name)
+-				p = chip->name;
+-			else
+-				p = none;
+-			seq_printf(m, "%-15s  ", p);
++			seq_printf(m, "%-15s  ", (chip && chip->name) ? chip->name : "none");
+ 
+ 			data = irq_desc_get_chip_data(desc);
+ 			seq_printf(m, data ? "0x%p  " : "  %p  ", data);
+ 
+-			if (desc->irq_data.domain)
+-				p = of_node_full_name(desc->irq_data.domain->of_node);
+-			else
+-				p = none;
+-			seq_printf(m, "%s\n", p);
++			seq_printf(m, "%s\n", desc->irq_data.domain->name);
+ 		}
+ 
+ 		raw_spin_unlock_irqrestore(&desc->lock, flags);
 -- 
 1.8.1.2
 
