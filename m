@@ -1,188 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428Ab3FJLhN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 07:37:13 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:56083 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752213Ab3FJLhL (ORCPT
+	id S1753466Ab3FJLiM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 07:38:12 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:33139 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753305Ab3FJLiJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 07:37:11 -0400
-X-AuditID: 85900ec0-d2ec7b900000151e-7f-51b5ba646f73
-Message-ID: <51B5BA60.30508@hitachi.com>
-Date: Mon, 10 Jun 2013 20:37:04 +0900
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
+	Mon, 10 Jun 2013 07:38:09 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: li guang <lig.fnst@cn.fujitsu.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Len Brown <lenb@kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org,
+        Andreas =?ISO-8859-1?Q?F=E4rber?= <afaerber@suse.de>,
+        Igor Mammedov <imammedo@redhat.com>
+Subject: Re: [PATCH RFC v2 0/3] add cpu physically hotplug driver
+Date: Mon, 10 Jun 2013 13:47:17 +0200
+Message-ID: <1875411.erfv3Z7LVk@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1370837061.21655.54.camel@liguang.fnst.cn.fujitsu.com>
+References: <1370482835-764-1-git-send-email-lig.fnst@cn.fujitsu.com> <51B54D51.2070505@jp.fujitsu.com> <1370837061.21655.54.camel@liguang.fnst.cn.fujitsu.com>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, David Sharp <dhsharp@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Re: Re: Re: [PATCH V2 1/1] kvm/vmx: Add a tracepoint write_tsc_offset
-References: <20130604083616.22713.24922.stgit@yunodevel> <20130604083619.22713.25360.stgit@yunodevel> <20130606002322.GA24351@amt.cnet> <20130606113305.GB4725@redhat.com> <51B16E0E.5020208@hitachi.com> <20130609111442.GP4725@redhat.com> <51B59CC2.3060707@hitachi.com> <20130610100505.GB4725@redhat.com>
-In-Reply-To: <20130610100505.GB4725@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gleb,
+On Monday, June 10, 2013 12:04:21 PM li guang wrote:
+> 在 2013-06-10一的 12:51 +0900，Yasuaki Ishimatsu写道：
+> > 2013/06/10 9:36, li guang wrote:
+> > > Hi, Rafael
+> > >
+> > > 在 2013-06-06四的 13:00 +0200，Rafael J. Wysocki写道：
+> > >> On Thursday, June 06, 2013 09:40:32 AM liguang wrote:
+> > >>> This patch-set try to support physically hot-plug/unplug
+> > >>> a cpu automatically, that is:
+> > >>> if you offline a cpu, it will automatically actually remove
+> > >>> a cpu, and if you hot-plug a cpu, then it will online this
+> > >>> cpu automatically.
+> > >>
+> > >> No and no.
+> > >
+> > > Hmm... are you saying cpu online/offline designed to distinguish
+> > > with real cpu plug/unplug?
+> > > but, what the actual usage of online/offline?
+> > > forgive my foolish.
+> > >
+> > >>
+> > >> Why do you need this?
+> > >>
+> > >
+> > > e.g. for QEMU case, if hot-plug a cpu,
+> > 
+> > > we have to online a cpu manually if there's
+> > > no user space support like udev to do it automatically.
+> > 
+> > I could not understand why you do not use udev.
+> > Please explain in detail.
+> 
+> I did not say I can't use udev now,
+> just for in case someone can't.
+> 
+> > 
+> > > and also, I think maybe online/offline should be naturally
+> > > integrated with real plug/unplug process of CPU.
+> > 
+> > I could not understand this explanation too.
+> > Why do we need it?
+> > 
+> 
+> actually, I am asking if CPU online/offline have real purpose,
+> you offline a CPU, then threads can't run on it,
+> you online a CPU, then threads can run on it,
+> so, the purpose here is just bouncing threads?
+> obviously not, any profound historical reasons?
 
-(2013/06/10 19:05), Gleb Natapov wrote:
-> On Mon, Jun 10, 2013 at 06:30:42PM +0900, Yoshihiro YUNOMAE wrote:
->> Hi Gleb,
->>
->> (2013/06/09 20:14), Gleb Natapov wrote:
->>> On Fri, Jun 07, 2013 at 02:22:22PM +0900, Yoshihiro YUNOMAE wrote:
->>>> (2013/06/06 20:33), Gleb Natapov wrote:
->>>>> On Wed, Jun 05, 2013 at 09:23:22PM -0300, Marcelo Tosatti wrote:
->>>>>> On Tue, Jun 04, 2013 at 05:36:19PM +0900, Yoshihiro YUNOMAE wrote:
->>>>>>> Add a tracepoint write_tsc_offset for tracing TSC offset change.
->>>>>>> We want to merge ftrace's trace data of guest OSs and the host OS using
->>>>>>> TSC for timestamp in chronological order. We need "TSC offset" values for
->>>>>>> each guest when merge those because the TSC value on a guest is always the
->>>>>>> host TSC plus guest's TSC offset. If we get the TSC offset values, we can
->>>>>>> calculate the host TSC value for each guest events from the TSC offset and
->>>>>>> the event TSC value. The host TSC values of the guest events are used when we
->>>>>>> want to merge trace data of guests and the host in chronological order.
->>>>>>> (Note: the trace_clock of both the host and the guest must be set x86-tsc in
->>>>>>> this case)
->>>>>>>
->>>>>>> TSC offset is stored in the VMCS by vmx_write_tsc_offset() or
->>>>>>> vmx_adjust_tsc_offset(). KVM executes the former function when a guest boots.
->>>>>>> The latter function is executed when kvm clock is updated. Only host can read
->>>>>>> TSC offset value from VMCS, so a host needs to output TSC offset value
->>>>>>> when TSC offset is changed.
->>>>>>>
->>>>>>> Since the TSC offset is not often changed, it could be overwritten by other
->>>>>>> frequent events while tracing. To avoid that, I recommend to use a special
->>>>>>> instance for getting this event:
->>>>>>>
->>>>>>> 1. set a instance before booting a guest
->>>>>>>   # cd /sys/kernel/debug/tracing/instances
->>>>>>>   # mkdir tsc_offset
->>>>>>>   # cd tsc_offset
->>>>>>>   # echo x86-tsc > trace_clock
->>>>>>>   # echo 1 > events/kvm/kvm_write_tsc_offset/enable
->>>>>>>
->>>>>>> 2. boot a guest
->>>>>>>
->>>>>>> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
->>>>>>> Cc: Marcelo Tosatti <mtosatti@redhat.com>
->>>>>>> Cc: Gleb Natapov <gleb@redhat.com>
->>>>>>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>>>>>> Cc: Ingo Molnar <mingo@redhat.com>
->>>>>>> Cc: "H. Peter Anvin" <hpa@zytor.com>
->>>>>>> ---
->>>>>>>   arch/x86/kvm/trace.h |   18 ++++++++++++++++++
->>>>>>>   arch/x86/kvm/vmx.c   |    3 +++
->>>>>>>   arch/x86/kvm/x86.c   |    1 +
->>>>>>>   3 files changed, 22 insertions(+)
->>>>>>>
->>>>>>> diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
->>>>>>> index fe5e00e..9c22e39 100644
->>>>>>> --- a/arch/x86/kvm/trace.h
->>>>>>> +++ b/arch/x86/kvm/trace.h
->>>>>>> @@ -815,6 +815,24 @@ TRACE_EVENT(kvm_track_tsc,
->>>>>>>   		  __print_symbolic(__entry->host_clock, host_clocks))
->>>>>>>   );
->>>>>>>
->>>>>>> +TRACE_EVENT(kvm_write_tsc_offset,
->>>>>>> +	TP_PROTO(__u64 previous_tsc_offset, __u64 next_tsc_offset),
->>>>>>> +	TP_ARGS(previous_tsc_offset, next_tsc_offset),
->>>>>>> +
->>>>>>> +	TP_STRUCT__entry(
->>>>>>> +		__field(	__u64,	previous_tsc_offset		)
->>>>>>> +		__field(	__u64,	next_tsc_offset			)
->>>>>>> +	),
->>>>>>> +
->>>>>>> +	TP_fast_assign(
->>>>>>> +		__entry->previous_tsc_offset	= previous_tsc_offset;
->>>>>>> +		__entry->next_tsc_offset	= next_tsc_offset;
->>>>>>> +	),
->>>>>>> +
->>>>>>> +	TP_printk("previous=%llu next=%llu",
->>>>>>> +		  __entry->previous_tsc_offset, __entry->next_tsc_offset)
->>>>>>> +);
->>>>>>> +
->>>>>>
->>>>>> Yoshihiro YUNOMAE,
->>>>>>
->>>>>> 1) Why is previous_tsc_offset necessary?
->>>>
->>>> I was considering the situations where we did not enable
->>>> kvm_write_tsc_offset event before booting a guest or where we did not
->>>> use multiple buffers. Here, we will need another new I/F to get current
->>>> TSC offset of a given VCPU. For example, if kvm_write_tsc_offset is not
->>>> included in the host's trace data, we get the current TSC offset from
->>>> the new I/F and apply it to all guest events. On the other hand, if
->>>> kvm_write_tsc_offset event appears more than once, we apply the
->>>> previous offset to guest events before the first TSC offset change.
->>>>
->>>> Since we support only for using multiple buffers now, we don't need to
->>>> record previous TSC offset at this time. But I'm conscious that we have
->>>> to change the format of kvm_write_tsc_offset event when we support
->>>> those situations.
->>>>
->>>>>> 2) The TSC offset traces should include vcpu number, so that its
->>>>>> possible to correlate traces of SMP guests (the tool should use
->>>>>> the individual vcpu tsc offsets when converting guests trace).
->>>>>>
->>>>> Why PID is not enough? No other trace, except kvm_entry, outputs vcpu id.
->>>>
->>>> As Gleb mentioned, a tool can understand TSC offset for each vcpu from
->>>> PID and vcpu number of kvm_entry. IMO, that is indirect way, so I would
->>>> be better off including vcpu number.
->>>>
->>> But doesn't the tool operates on vcpu's PID for all other events. I mean to
->>> figure out what vcpu an event belongs too during merge. Why tsc offset
->>> event is different?
->>
->> In vcpu_load()@virt/kvm/kvm_main.c, it seems that PID of the vcpu thread
->> can be changed. Are you familiar with this situation?
-> Recommended way of using KVM API is to have dedicated thread per vcpu
-> and this is how all known userspace implementations use it, but having
-> one thread drive several vcpus (not simultaneously obviously) also
-> works, but not recommended.
+The purpose is to ensure that the CPU won't be used after the offline
+and the online is simply complementary.
 
-I understood. Thanks.
+> I boldly think maybe online/offline should be integrated into
+> real plug/unplug process of CPU.
 
->> If the situation can be occurred, outputting vcpu number is better, I
->> think. If not occurred, as you say, we will be able to merge those data
->> without vcpu number in write_tsc_offset event.
-> The thing is that all other traces that you want to merge do not contain
-> vcpu number, only pid, so if the situation occurs how do you merge the
-> data?
-
-As you say, all kvm events cannot contain vcpu number.
-However, all trace data of guests include VCPU number, so we can
-understand how guests and the host operate by using both those values
-and kvm_entry events.
-
->>                                                  However, when we
->> focus on output data of the write_tsc_offset event, it is difficult to
->> directly understand contents of the data if vcpu number information is
->> not included. So, including the information is useful, I think.
->>
-> How your tool does it now?
-
-My sample tool supports only for one vcpu, and the tool does not
-automatically get TSC offset values yet. If the event includes
-vcpu number, it is easy to manage TSC offset for each vcpu.
-For example, if the data are "kvm_write_tsc_offset: vcpu=0 prev=100
-next=12345", a tool will use next value for all vcpu0 data of the guest.
+Well, please look into the acpi-hotplug branch of the linux-pm.git tree for
+patches that do just that.
 
 Thanks,
+Rafael
 
+
+> 
+> Thanks!
+> 
+> > >
+> > >>
+> > >>
+> > >>> so, offline is just like eject, but eject attribute seems not
+> > >>> available since recent kernel(can't figure out when), with
+> > >>> this driver, if allowed, it will trigger a eject cpu process.
+> > >>> and for automatically online, it was said there are objections,
+> > >>> don't know the reason, so, send this patch-set boldly.
+> > >>>
+> > >>> of course, this approach is for QEMU 's hotplug cpu emulation
+> > >>> only, but not limited, if someone like to explore ec space to
+> > >>> implment cpu hot-plug/unplug for real platform please
+> > >>> feel free to continue.
+> > >>>
+> > >>> Li Guang (3)
+> > >>> 	 drivers/platform/x86: add cpu physically hotplug driver
+> > >>> 	 ec: add ec space notifier
+> > >>> 	 cpu_physic_hotplug: register handler for ec space notifier
+> > >>>
+> > >>> drivers/acpi/ec.c                         | 32 ++++++++++++++++++++++++++++++++
+> > >>> drivers/platform/x86/Kconfig              |  8 ++++
+> > >>> drivers/platform/x86/Makefile             |  1 +
+> > >>> drivers/platform/x86/cpu_physic_hotplug.c | 90 +++++++++++++++++++++++++++++
+> > >>> include/linux/acpi.h                      |  2 ++
+> > >>> 5 files changed, 130 insertions(+), 3 deletions(-)
+> > >>>   create mode 100644 drivers/platform/x86/cpu_physic_hotplug.c
+> > >
+> > >
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > Please read the FAQ at  http://www.tux.org/lkml/
+> > >
+> > 
+> > 
+> 
+> 
 -- 
-Yoshihiro YUNOMAE
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: yoshihiro.yunomae.ez@hitachi.com
-
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
