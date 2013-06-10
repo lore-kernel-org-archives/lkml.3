@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864Ab3FJLwb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 07:52:31 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:42652 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653Ab3FJLuY (ORCPT
+	id S1752485Ab3FJLuS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 07:50:18 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43077 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752301Ab3FJLuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 07:50:24 -0400
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: thierry.reding@gmail.com, patches@linaro.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: [PATCH 08/15] net: emaclite: Convert to use devm_ioremap_resource
-Date: Mon, 10 Jun 2013 17:05:06 +0530
-Message-Id: <1370864113-17895-9-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
-References: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
+	Mon, 10 Jun 2013 07:50:10 -0400
+Date: Mon, 10 Jun 2013 13:50:08 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: shuox.liu@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, len.brown@intel.com,
+        gregkh@linuxfoundation.org, yanmin_zhang@linux.intel.com
+Subject: Re: [PATCH 0/2] Run callback of device_prepare/complete
+ consistently
+Message-ID: <20130610115008.GA28366@amd.pavel.ucw.cz>
+References: <1370593232-3602-1-git-send-email-shuox.liu@intel.com>
+ <2482951.doztFClhed@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2482951.doztFClhed@vostro.rjw.lan>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
-introduced devm_ioremap_resource() and deprecated the use of
-devm_request_and_ioremap().
+On Fri 2013-06-07 12:36:12, Rafael J. Wysocki wrote:
+> On Friday, June 07, 2013 04:20:30 PM shuox.liu@intel.com wrote:
+> > dpm_run_callback is used in other stages of power states changing.
+> > It provides debug info message and time measurement when call these
+> > callback. We also want to benefit ->prepare and ->complete.
+> > 
+> > [PATCH 1/2] PM: use dpm_run_callback in device_prepare
+> > [PATCH 2/2] PM: add dpm_run_callback_void and use it in device_complete
+> 
+> Is this an "Oh, why don't we do that?" series, or is it useful for anything
+> in practice?  I'm asking, because we haven't added that stuff to start with
+> since we didn't see why it would be useful to anyone.
+> 
+> And while patch [1/2] reduces the code size (by 1 line), so I can see some
+> (tiny) benefit from applying it, patch [2/2] adds more code and is there any
+> paractical reason?
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-CC: netdev@vger.kernel.org
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Michal Simek <michal.simek@xilinx.com>
----
- drivers/net/ethernet/xilinx/xilinx_emaclite.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+Well, we have android people periodically trying to push suspend
+instrumentation; usually the patches are much uglier than this. (Like,
+essentially reinventing printk).
 
-diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-index 1cd131b..fd4dbda 100644
---- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-+++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-@@ -1159,9 +1159,11 @@ static int xemaclite_of_probe(struct platform_device *ofdev)
- 	ndev->irq = res->start;
- 
- 	res = platform_get_resource(ofdev, IORESOURCE_MEM, 0);
--	lp->base_addr = devm_request_and_ioremap(&ofdev->dev, res);
--	if (!lp->base_addr)
-+	lp->base_addr = devm_ioremap_resource(&ofdev->dev, res);
-+	if (IS_ERR(lp->base_addr)) {
-+		rc = PTR_ERR(lp->base_addr);
- 		goto error;
-+	}
- 
- 	ndev->mem_start = res->start;
- 	ndev->mem_end = res->end;
+So... there is some demand for this.
+									Pavel
 -- 
-1.7.9.5
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
