@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751985Ab3FJDgT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 23:36:19 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:60767 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459Ab3FJDgS (ORCPT
+	id S1752179Ab3FJDku (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 23:40:50 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:50820 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630Ab3FJDkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 23:36:18 -0400
+	Sun, 9 Jun 2013 23:40:47 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxJxY3J2X7DsEY4nz050PmNFgsZRewQEPoVWc1gzdiLGw@mail.gmail.com>
-References: <1370764616.14883.28.camel@pasglop>
-	<CA+55aFz_E+x=Mr9Z6_09wzh1mXFr3a2VigPX77LzrsyLUFeb+Q@mail.gmail.com>
-	<CA+55aFxAC4EksZcz7SaZNjF9mfKkwLjWp2rEKxMZT8m-7uBeNQ@mail.gmail.com>
-	<51B53DAB.10501@ozlabs.org>
-	<CA+55aFzHT3NWrF6gq+BaLcZmEtrFwkiXv0_qZ0jGjxTO6-8iPQ@mail.gmail.com>
-	<CA+55aFxJxY3J2X7DsEY4nz050PmNFgsZRewQEPoVWc1gzdiLGw@mail.gmail.com>
-Date: Sun, 9 Jun 2013 20:36:17 -0700
-X-Google-Sender-Auth: 6zmGGI_HsFrgnXzTYbU41pnsgxs
-Message-ID: <CA+55aFx684C7k8=2Fk53AOvfSkfUb_6DncCnOM8zU=jdhOQMuA@mail.gmail.com>
-Subject: Re: [git pull] Please pull powerpc.git merge branch
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jeremy Kerr <jk@ozlabs.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Patchwork ML <patchwork@lists.ozlabs.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1366104482-14240-1-git-send-email-ks.giri@samsung.com>
+References: <1366104482-14240-1-git-send-email-ks.giri@samsung.com>
+Date: Mon, 10 Jun 2013 09:10:45 +0530
+Message-ID: <CAKrE-Kc5aSdQcphVrq74xgHOxnEs3frZqjHzf_7bvvgwQWHY0g@mail.gmail.com>
+Subject: Re: [PATCH V2] ahci: sata: add support for exynos5440 sata
+From: Girish KS <girishks2000@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 9, 2013 at 8:20 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+HI,
+can this patch be pulled in for 3.11
+
+On Tue, Apr 16, 2013 at 2:58 PM, Girish K S <girishks2000@gmail.com> wrote:
+> This patch adds the compatible string of the exynos5440 sata controller
+> compliant with the ahci 1.3 and sata 3.0 specification.
 >
-> .. the rationale for this is that the work pattern of people is
-> actually interesting information. You can do things like this:
+> Signed-off-by: Girish K S <ks.giri@samsung.com>
 >
->     git log --pretty=%aD --author=Torvalds
-
-Final side note: for me, and other git users that apply other peoples
-patches, it's probably better to use
-
-   git log --pretty=%cD --committer=Torvalds
-
-instead.
-
-Interestingly, that shows a different pattern than my "authorship"
-statistics, which are mainly pull requests. It turns out I commit
-patches much more in the afternoon. The reason is probably simple: in
-the mornings, I have pull requests waiting from overnight, so a fair
-number of pull requests where I am author at 9-11. But my biggest
-source of patches tends to be Andrew Morton, who sends the patches in
-the afternoon, so suddenly the commit counts skew towards being
-between 3pm-8pm when you take all my commits into accoint.
-
-Doing
-
-    git log --since=6.months --pretty=%aD --grep=Signed.*Andrew.Morton
-
-backs that up: most of the commits that have sign-offs by Andrew are
-sent in the afternoon.
-
-I just find details like that really interesting, where you can
-actually mine for the workpatterns of people.
-
-                   Linus
+> changes in v2:
+>                 changed the compatible string by adding the actual IP
+> owners name instead of the SoC vendor name.
+>
+> ---
+>  drivers/ata/ahci_platform.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+> index 7a8a284..c06f021 100644
+> --- a/drivers/ata/ahci_platform.c
+> +++ b/drivers/ata/ahci_platform.c
+> @@ -327,6 +327,7 @@ static SIMPLE_DEV_PM_OPS(ahci_pm_ops, ahci_suspend, ahci_resume);
+>
+>  static const struct of_device_id ahci_of_match[] = {
+>         { .compatible = "snps,spear-ahci", },
+> +       { .compatible = "snps,exynos5440-ahci", },
+>         {},
+>  };
+>  MODULE_DEVICE_TABLE(of, ahci_of_match);
+> --
+> 1.7.5.4
+>
