@@ -1,83 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab3FJNrK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 09:47:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56366 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab3FJNrI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 09:47:08 -0400
-Date: Mon, 10 Jun 2013 06:47:42 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Josh Boyer <jwboyer@gmail.com>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>, lwn@lwn.net,
-        Jiri Slaby <jslaby@suse.cz>, Michael Neuling <mikey@neuling.org>
-Subject: Re: Linux 3.9.5
-Message-ID: <20130610134742.GA1249@kroah.com>
-References: <20130607195816.GA28479@kroah.com>
- <20130608035312.GA16419@roeck-us.net>
- <20130608140817.GA7303@kroah.com>
- <20130608144237.GA21423@roeck-us.net>
- <CA+5PVA5qoTspk6idt4-9U9e2X=Nt_mOi6LPEiRb3hEUFLSWmjg@mail.gmail.com>
- <20130610133702.GA29579@roeck-us.net>
+	id S1753267Ab3FJNsK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 09:48:10 -0400
+Received: from mail-bn1lp0156.outbound.protection.outlook.com ([207.46.163.156]:35509
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752616Ab3FJNsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 09:48:08 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "seth.forshee@canonical.com" <seth.forshee@canonical.com>,
+        "joeyli.kernel@gmail.com" <joeyli.kernel@gmail.com>,
+        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lenb@kernel.org" <lenb@kernel.org>
+Subject: Re: [PATCH 0/3] Fix backlight issues on some Windows 8 systems
+Thread-Topic: [PATCH 0/3] Fix backlight issues on some Windows 8 systems
+Thread-Index: AQHOZdCy0C608TgzZU6JwZlMJ4ewq5ku9p+A
+Date: Mon, 10 Jun 2013 13:48:04 +0000
+Message-ID: <1370872083.9178.2.camel@x230.lan>
+References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
+	 <1714928.Kf7sBtKE1o@vostro.rjw.lan>
+In-Reply-To: <1714928.Kf7sBtKE1o@vostro.rjw.lan>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+x-forefront-antispam-report: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:BY2PR05MB222;H:BY2PR05MB222.namprd05.prod.outlook.com;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <E5D0396D51E1A14194A5994F95A8B5B9@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130610133702.GA29579@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5ADmGYZ004751
 
-On Mon, Jun 10, 2013 at 06:37:02AM -0700, Guenter Roeck wrote:
-> On Mon, Jun 10, 2013 at 08:10:11AM -0400, Josh Boyer wrote:
-> > On Sat, Jun 8, 2013 at 10:42 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> > > On Sat, Jun 08, 2013 at 07:08:17AM -0700, Greg KH wrote:
-> > >> On Fri, Jun 07, 2013 at 08:53:12PM -0700, Guenter Roeck wrote:
-> > >> > On Fri, Jun 07, 2013 at 12:58:16PM -0700, Greg KH wrote:
-> > >> > > I'm announcing the release of the 3.9.5 kernel.
-> > >> > >
-> > >> > > All users of the 3.9 kernel series must upgrade.
-> > >> > >
-> > >> > > The updated 3.9.y git tree can be found at:
-> > >> > >   git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.9.y
-> > >> > > and can be browsed at the normal kernel.org git web browser:
-> > >> > >   http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
-> > >> > >
-> > >> > > thanks,
-> > >> > >
-> > >> > > greg k-h
-> > >> > >
-> > >> > powerpc build fails:
-> > >> >
-> > >> > arch/powerpc/kernel/traps.c: In function 'alignment_exception':
-> > >> > arch/powerpc/kernel/traps.c:1154:3: error: label 'bail' used but not defined
-> > >> > make[1]: *** [arch/powerpc/kernel/traps.o] Error 1
-> > >> > make[1]: *** Waiting for unfinished jobs....
-> > >> >
-> > >> > Due to commit 6ce6c629 (powerpc/tm: Abort on emulation and alignment faults).
-> > >>
-> > >> Is there a upstream patch that fixes this problem that I should apply?
-> > >>
-> > > No, this is not a problem upstream. The missing label was introduced by patch
-> > > ba12eedee (powerpc: Exception hooks for context tracking subsystem) which, if I
-> > > understand correctly, was necessary due to 6ba3c97a388 (x86: Exception hooks
-> > > for userspace RCU extended QS) and a couple of other patches. All that doesn't
-> > > look like stable material to me.
-> > 
-> > This can probably be fixed just by replacing 'goto bail' with 'return'
-> > on that line.
-> > Mikey, does that sound right?
-> > 
-> I submitted a patch doing just that.
+On Mon, 2013-06-10 at 13:59 +0200, Rafael J. Wysocki wrote:
 
-I'll queue that up today and do a new review round with the other stable
-patches we have.
+> I happen to know that alternative solution to this problem is being worked on,
+> so I'm going to wait until it is submitted and then we'll decide what to merge.
 
-thanks,
+Sure.
 
-greg k-h
+> I'm slightly concerned about unregistering ACPI backlight control for all
+> systems declaring win8 support, even though it may actually work for them.
+
+Right, that's why I think it's correct to leave it up to the graphics
+drivers. It seems like they're the ones that make the policy
+determination under Windows now. The policy as implemented here may not
+be correct, but doing better would probably involve Intel letting us
+know how their Windows driver behaves.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
