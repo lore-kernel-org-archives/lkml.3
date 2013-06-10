@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab3FJOhG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 10:37:06 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:34999 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945Ab3FJOhB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 10:37:01 -0400
+	id S1753611Ab3FJOkQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 10:40:16 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:30811 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750930Ab3FJOkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 10:40:15 -0400
+Subject: [PATCH 0/3] SUNRPC: PipeFS races fixes
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, devel@openvz.org, linux-kernel@vger.kernel.org,
+        jlayton@redhat.com
+Date: Mon, 10 Jun 2013 18:39:53 +0400
+Message-ID: <20130610143725.7498.72391.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1306100924570.22024@ayla.of.borg>
-References: <alpine.DEB.2.00.1306100922530.21948@ayla.of.borg>
-	<alpine.DEB.2.00.1306100924570.22024@ayla.of.borg>
-Date: Mon, 10 Jun 2013 17:37:00 +0300
-Message-ID: <CAJL_dMtUXSCe3Bm=D4aYaX9NwhnaPjVsY4O+f8U9h5-NV9i0=A@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.10-rc5
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        "Linux/PPC Development" <linuxppc-dev@lists.ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The relevant maintainers do not get a copy of this.
+This series fixed races between PipeFS mount/umount notification calls and
+SUNRPC clients creation and destruction.
+
+https://bugzilla.redhat.com/show_bug.cgi?id=924649
+
+The following series implements...
+
+---
+
+Stanislav Kinsbursky (3):
+      SUNRPC: fix races on PipeFS UMOUNT notifications
+      SUNRPC: fix races on PipeFS UMOUNT notifications
+      SUNRPC: PipeFS MOUNT notification optimization for dying clients
 
 
-On Mon, Jun 10, 2013 at 10:25 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> On Mon, 10 Jun 2013, Geert Uytterhoeven wrote:
->> JFYI, when comparing v3.10-rc5 to v3.10-rc4[3], the summaries are:
->>   - build errors: +19/-10
->> [1] http://kisskb.ellerman.id.au/kisskb/head/6308/ (all 120 configs)
->
->  + arch/powerpc/kernel/cacheinfo.c: error: 'associativity' may be used uninitialized in this function [-Werror=uninitialized]:  => 571:16
->   + arch/powerpc/kernel/cacheinfo.c: error: 'size_kb' may be used uninitialized in this function [-Werror=uninitialized]:  => 522:16
->   + arch/powerpc/kernel/pci_dn.c: error: 'ret' may be used uninitialized in this function [-Werror=uninitialized]:  => 97:8
->   + arch/powerpc/kvm/book3s_32_mmu.c: error: 'sr' may be used uninitialized in this function [-Werror=uninitialized]:  => 63:2
->   + arch/powerpc/kvm/book3s_64_mmu.c: error: 'slb' may be used uninitialized in this function [-Werror=uninitialized]:  => 485:3
->   + arch/powerpc/mm/hash_native_64.c: error: 'a_size' may be used uninitialized in this function [-Werror=uninitialized]:  => 67:31
->   + arch/powerpc/platforms/cell/spufs/inode.c: error: incompatible types when assigning to type 'kgid_t' from type 'int':  => 628:16
->   + arch/powerpc/platforms/cell/spufs/inode.c: error: incompatible types when assigning to type 'kuid_t' from type 'int':  => 623:16
->   + arch/powerpc/platforms/pseries/msi.c: error: 'total' may be used uninitialized in this function [-Werror=uninitialized]:  => 320:24
->   + arch/powerpc/platforms/pseries/pci.c: error: 'pcie_link_speed_stats' may be used uninitialized in this function [-Werror=uninitialized]:  => 150:31
->
-> powerpc-randconfig
->
->> [3] http://kisskb.ellerman.id.au/kisskb/head/6290/ (all 120 configs)
->
-> Gr{oetje,eeting}s,
->
->                                                 Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                                             -- Linus Torvalds
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ net/sunrpc/clnt.c     |   14 +++++++++-----
+ net/sunrpc/rpc_pipe.c |    5 ++++-
+ 2 files changed, 13 insertions(+), 6 deletions(-)
+
