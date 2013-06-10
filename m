@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903Ab3FJJFw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 05:05:52 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:41828 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751910Ab3FJJFu (ORCPT
+	id S1752989Ab3FJJGS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 05:06:18 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:49171 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884Ab3FJJGQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 05:05:50 -0400
-Date: Mon, 10 Jun 2013 17:05:44 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: Crypto Fixes for 3.10
-Message-ID: <20130610090544.GA13465@gondor.apana.org.au>
-References: <20100903110722.GA31826@gondor.apana.org.au>
- <20101215115035.GA25248@gondor.apana.org.au>
- <20110216053911.GA10999@gondor.apana.org.au>
- <20110328071322.GA6569@gondor.apana.org.au>
- <20110629235153.GA16559@gondor.apana.org.au>
- <20120126024342.GA12492@gondor.apana.org.au>
- <20120823083242.GA23102@gondor.apana.org.au>
- <20121109093005.GA25632@gondor.apana.org.au>
- <20130328082841.GA7425@gondor.apana.org.au>
- <20130528055229.GA23937@gondor.apana.org.au>
+	Mon, 10 Jun 2013 05:06:16 -0400
+From: J Keerthy <j-keerthy@ti.com>
+To: <b-cousson@ti.com>, <devicetree-discuss@lists.ozlabs.org>
+CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <ldewangan@nvidia.com>, <grant.likely@secretlab.ca>,
+        <swarren@wwwdotorg.org>, <swarren@nvidia.com>, <sameo@linux.intel.com>,
+        <gg@slimlogic.co.uk>, <lee.jones@linaro.org>,
+        J Keerthy <j-keerthy@ti.com>
+Subject: [PATCH v2 0/2]  ARM: dts: Add palmas dtsi 
+Date: Mon, 10 Jun 2013 14:34:17 +0530
+Message-ID: <1370855059-5342-1-git-send-email-j-keerthy@ti.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130528055229.GA23937@gondor.apana.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+This patch series adds palmas.dtsi and adds the omap5 specific palmas
+entries in the omap5-uevm board file.
 
-This push fixes a build problem in sahara and temporarily disables
-two new optimisations because of performance regressions until a
-permanent fix is ready.
+This patch series is based on:
 
-Please pull from
+git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
+for_3.11/dts
 
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+Boot tested on omap5-uevm board.
 
-or
+J Keerthy (2):
+  ARM: dts: add dtsi for palmas
+  ARM: dts: OMAP5: add palmas node and omap specific palmas regulator
+    properties
 
-master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+ arch/arm/boot/dts/omap5-uevm.dts |  147 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/palmas.dtsi    |   98 +++++++++++++++++++++++++
+ 2 files changed, 245 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/boot/dts/palmas.dtsi
 
-
-Arnd Bergmann (1):
-      crypto: sahara - fix building as module
-
-Jussi Kivilinna (2):
-      crypto: twofish - disable AVX2 implementation
-      crypto: blowfish - disable AVX2 implementation
-
- crypto/Kconfig          |    2 ++
- drivers/crypto/sahara.c |    2 +-
- 2 files changed, 3 insertions(+), 1 deletions(-)
-
-Thanks,
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.7.5.4
+
