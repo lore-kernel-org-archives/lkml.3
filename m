@@ -1,140 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196Ab3FJLVZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 07:21:25 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54125 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751843Ab3FJLVX (ORCPT
+	id S1753035Ab3FJL0k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 07:26:40 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41521 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751843Ab3FJL0i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 07:21:23 -0400
-Date: Mon, 10 Jun 2013 12:20:50 +0100
-From: Dave Martin <Dave.Martin@arm.com>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Chris Johnson <CJohnson@nvidia.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Karan Jhavar <kjhavar@nvidia.com>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Joseph Lo <josephl@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+	Mon, 10 Jun 2013 07:26:38 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: Kevin Hilman <khilman@linaro.org>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "zonque@gmail.com" <zonque@gmail.com>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: tegra: add basic SecureOS support
-Message-ID: <20130610112050.GB3674@localhost.localdomain>
-References: <1370503687-17767-1-git-send-email-acourbot@nvidia.com>
- <51B0BC80.9040007@wwwdotorg.org>
- <20130606180824.GC3320@localhost.localdomain>
- <CAAVeFuJkV3VVfeinLrjCCef9ZqJNvKurQwVWnJsW-bZqniTQ1w@mail.gmail.com>
- <20130607181318.GC29344@localhost.localdomain>
- <CAAVeFuKsa=GsxexQOSOYPYvkAXaEZXfW1+zRmv25CtFEY=T_GQ@mail.gmail.com>
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "Bedia, Vaibhav" <vaibhav.bedia@ti.com>,
+        "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>
+Subject: RE: [PATCH 2/2] rtc: omap: add rtc wakeup support to alarm events
+Thread-Topic: [PATCH 2/2] rtc: omap: add rtc wakeup support to alarm events
+Thread-Index: AQHOXiYQaPj+OUHVHUilAFHAKAjcJ5ku1Q+A
+Date: Mon, 10 Jun 2013 11:25:17 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EC2E907@DBDE04.ent.ti.com>
+References: <1369982005-8572-1-git-send-email-gururaja.hebbar@ti.com>
+	<1369982005-8572-3-git-send-email-gururaja.hebbar@ti.com>
+ <87a9nb2gjh.fsf@linaro.org>
+In-Reply-To: <87a9nb2gjh.fsf@linaro.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAVeFuKsa=GsxexQOSOYPYvkAXaEZXfW1+zRmv25CtFEY=T_GQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 05:05:04PM +0900, Alexandre Courbot wrote:
-> On Sat, Jun 8, 2013 at 3:13 AM, Dave Martin <Dave.Martin@arm.com> wrote:
-> > One way to make the backend generic would be to have something like
-> > one of the following (some syntax omitted due to laziness):
-> >
-> >         u32 __naked __call_smc(u32 r0, ...)
-> >         {
-> >                 asm volatile (
-> >                         stmfd   sp!, {r4-r11,lr}
-> >                         smc     #0
-> >                         ldmfd   sp!, {r4-r11,pc}
-> >                         ::: "memory"
-> >                 );
-> >         }
-> >
-> >         /* The above works for up to 4 u32 arguments */
-> >
-> >         u32 __naked __call_smc(u32 r0, ...)
-> >         {
-> >                 asm volatile (
-> >                         mov     ip, sp
-> >                         stmfd   sp!, {r4-r11,lr}
-> >                         ldmia   ip, {r4-r11}
-> >                         smc     #0
-> >                         ldmfd   sp!, {r4-r11,pc}
-> >                         ::: "memory"
-> >                 );
-> >         }
-> >
-> >         /*
-> >          * Works for up to 13 u32 arguments, provided the stack is deep
-> >          * enough to provide suitable garbage data to fill the registers
-> >          * if the caller supplied fewer arguments (a bit of a hack)
-> >          */
-> >
-> >         u32 __naked __call_smc(struct pt_regs *regs) {
-> >
-> >                 asm(
-> >                         stmfd   sp!, {r4-r11,lr}
-> >                         /* load regs from <regs> */
-> >                         smc #0
-> >                         /* save regs back to <regs> */
-> >                         ldmfd   sp!, {r4-r11,pc}
-> >                 );
-> >         }
-> >
-> >         /*
-> >          * Most generic,  least-efficient version.
-> >          * Can return up to 13 u32 results instead of just one.
-> >          * For convenience, the r0 value returned by the SMC could be
-> >          * left in r0 so that it also determines the return value of the
-> >          * function.
-> >          *
-> >          * Most of the time, SMC shouldn't be called on any hot path,
-> >          * otherwise the performance battle is already lost -- so it may
-> >          * not be crucial to reach the maximum possible efficiency for
-> >          * these calls.
-> >          */
-> >
-> >
-> > A particular firmware's Linux glue code might have to put extra stuff
-> > around calls to generic_smc, but at least generic_smc itself wouldn't
-> > need to be reinvented, and the firmware-specific glue code could usually
-> > avoid asm.
-> >
-> >> Another example is the function that Tomasz shown
-> >> (https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/arch/arm/mach-exynos/exynos-smc.S?id=refs/tags/next-20130606
-> >> ), which preserves r4-r11 but also assumes r3 is an argument - that's
-> >> again another slightly different convention.
-> >
-> > ... for which the above implementations of __call_smc() should work too.
-> >
-> >> All in all the needs of the various firmwares might end up being just
-> >> different enough that we need to have a different backend for each of
-> >> them. The firmware_ops defined in arch/arm/include/asm/firmware.h
-> >> perform the abstraction at a higher level, which seems more fit here
-> >> IMHO.
-> >>
-> >> Alex.
-> >
-> > Indeed.  If you think you could work with one of the above generics, we
-> > could try it and see what it looks like though.
-> >
-> > If it's an awkward fit, I might be being too optimistic.
+On Fri, May 31, 2013 at 23:11:22, Kevin Hilman wrote:
+> Hebbar Gururaja <gururaja.hebbar@ti.com> writes:
 > 
-> I agree that your versions would most likely work in our (and probably
-> many others) case. But I wonder if individual platforms will not
-> prefer to sacrifice the ease of use of a generic version for the
-> ability to write faster code that will just preserve what is needed
-> (whether that performance gain is justified or not is of course
-> subject to debate). I don't have enough hindsight to decide which
-> approach is the best, but until we have more examples of firmwares
-> that would justify such a factorization, I think I'd like to go with
-> our own version first - for there is already more than enough to fix
-> in this patch. :)
+> > On some platforms (like AM33xx), a special register (RTC_IRQWAKEEN)
+> > is available to enable Wakeup feature for Alarm Events.
+> >
+> > Since new platforms/Boards are now added through DT only, this feature
+> > is supported via DT property only.
+> 
+> > Platforms using such IP should add the property "ti,has_irq_wake_enb"
+> > in rtc DT node.
+> 
+> This is a property of the IP, not the board.  Can't you detect this
+> based on the revision of the IP?
 
-Sure, I'll have another think based on your repost.
+Here is what I found out till now.
 
-Cheers
----Dave
+1. rtc-omap driver is used by Davinci, OMAP-1/2 & AM33xx SoC.
+
+2. Only AM33xx soc rtc ip has revision register (& populated). Older OMAP
+   Or davinci doesn't have this register.
+
+3. AFAIK, this was the reason why Afzal used platform_device_id & 
+   of_device_id->data method to detect new versions (commit
+   9e0344dcc225fe1a0e8b8af9ff7df44ec4613580)
+
+
+So now either 
+a. I can follow the same method and add new member to omap_rtc_devtype & add a new compatible in 
+ omap_rtc_of_match in rtc-omap.c
+
+or
+
+b. use dt property to indicate existence of above property.
+
+
+Kindly let me know your opinion about the same.
+
+> 
+> Kevin
+> 
+
+
+Regards, 
+Gururaja
