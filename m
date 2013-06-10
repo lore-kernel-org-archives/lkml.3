@@ -1,233 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038Ab3FJKf7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 06:35:59 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:33227 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752776Ab3FJKf4 (ORCPT
+	id S1753122Ab3FJKkg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 06:40:36 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44298 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751843Ab3FJKke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 06:35:56 -0400
-Date: Mon, 10 Jun 2013 12:35:37 +0200
-From: Emil Goode <emilgoode@gmail.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Andrew Lunn <andrew@lunn.ch>, Bill Pemberton <wfp5p@virginia.edu>,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org,
-        "'Dan Carpenter'" <dan.carpenter@oracle.com>,
-        "'Andy Shevchenko'" <andy.shevchenko@gmail.com>
-Subject: Re: [PATCH v2] mtd: orion_nand: Improve error handling in
- orion_nand_probe
-Message-ID: <20130610103537.GA20987@debian>
-References: <1370822442-25217-1-git-send-email-emilgoode@gmail.com>
- <001e01ce659c$3e582270$bb086750$@samsung.com>
+	Mon, 10 Jun 2013 06:40:34 -0400
+Date: Mon, 10 Jun 2013 11:40:32 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Stuart Menefy <stuart.menefy@st.com>, Mark Brown <broonie@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH v2 09/11] ARM:stixxxx: Add stixxxx options to
+ multi_v7_defconfig
+Message-ID: <20130610104032.GA2513@e106331-lin.cambridge.arm.com>
+References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com>
+ <1370856477-7237-1-git-send-email-srinivas.kandagatla@st.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <001e01ce659c$3e582270$bb086750$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1370856477-7237-1-git-send-email-srinivas.kandagatla@st.com>
+Thread-Topic: [PATCH v2 09/11] ARM:stixxxx: Add stixxxx options to
+ multi_v7_defconfig
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+acceptlanguage: en-GB, en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jingoo,
+On Mon, Jun 10, 2013 at 10:27:57AM +0100, Srinivas KANDAGATLA wrote:
+> This patch adds stih415 and stih416 support to multi_v7_defconfig.
 
-Thank you for the review. There was another discussion and the following
-patch was sent that converts printk to dev_err.
+This seems to drop a few options also:
 
-http://lists.infradead.org/pipermail/linux-mtd/2013-June/047198.html
+CONFIG_ARM_ARCH_TIMER
+CONFIG_ARM_ERRATA_754322
+CONFIG_EXPERIMENTAL
+CONFIG_GPIO_PL061
+CONFIG_MMC_WMT
 
-My conclusion of the discussion was that error messages for kzalloc
-calls are probably made out of habit and that it's better to rely on
-the internal error messages of kzalloc.
+I just applied this to v3.10-rc5, and ran `make ARCH=arm multi_v7_defconfig`.
+It seems MMC_WMT and GPIO_PL061 get selected elsewhere, but ARM_ARCH_TIMER and
+ARM_ERRATA_754322 are left unselected.
 
-http://lists.infradead.org/pipermail/linux-mtd/2013-June/047203.html
+Thanks,
+Mark.
 
-So instead of sending a second version that applies on top of the
-"convert printk to dev_*" patch, I decided to remove the error
-messages for the kzalloc calls.
-
-About the introduced call to devm_request_mem_region that is made
-inside of devm_ioremap_resource. My understanding is that
-request_mem_region should be used for all memory mappen I/O to
-inform the kernel of the I/O adress range that will be used by
-the driver.
-
-There are other examples in drivers/mtd/nand of devm_ioremap_resource
-beeing used in probe functions.
-
-Here are some of them:
-drivers/mtd/nand/lpc32xx_slc.c
-drivers/mtd/nand/fsmc_nand.c
-drivers/mtd/nand/davinci_nand.c
-
-Best regards,
-
-Emil
-
-On Mon, Jun 10, 2013 at 02:34:57PM +0900, Jingoo Han wrote:
-> Monday, June 10, 2013 9:01 AM, Emil Goode wrote:
-> > 
-> > This patch fixes some issues in the error handling and simplifies
-> > the code by converting to devm* functions.
-> > 
-> > If the kzalloc call fails it is unnecessary to use the label no_res
-> > and pass a NULL pointer to kfree. If the devm_kzalloc call fails on
-> > line 110 we forget to call iounmap for the previous ioremap call.
-> > 
-> > The following changes are introduced:
-> > - Convert to devm_kzalloc and remove calls to kfree.
-> > - Convert to devm_ioremap_resource that adds a missing call to
-> >   *request_mem_region and remove calls to iounmap.
-> > - The devm_ioremap_resource function checks the passed resource so
-> >   we can remove the NULL check after the platform_get_resource call.
-> > 
-> > Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> > ---
-> > This patch is only build tested
-> > v2: Fix change log typo and remove error messages for kzalloc calls
-> > 
-> >  drivers/mtd/nand/orion_nand.c |   49 +++++++++++++----------------------------
-> >  1 file changed, 15 insertions(+), 34 deletions(-)
-> > 
-> > diff --git a/drivers/mtd/nand/orion_nand.c b/drivers/mtd/nand/orion_nand.c
-> > index 8fbd002..76b9fba 100644
-> > --- a/drivers/mtd/nand/orion_nand.c
-> > +++ b/drivers/mtd/nand/orion_nand.c
-> > @@ -85,35 +85,24 @@ static int __init orion_nand_probe(struct platform_device *pdev)
-> >  	int ret = 0;
-> >  	u32 val = 0;
-> > 
-> > -	nc = kzalloc(sizeof(struct nand_chip) + sizeof(struct mtd_info), GFP_KERNEL);
-> > -	if (!nc) {
-> > -		printk(KERN_ERR "orion_nand: failed to allocate device structure.\n");
 > 
-> CC'ed Dan Carpenter, Andy Shevchenko
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> CC: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  arch/arm/configs/multi_v7_defconfig |   32 +++++++++++++++-----------------
+>  1 files changed, 15 insertions(+), 17 deletions(-)
 > 
-> You don't need to remove this error message.
-> You would replace 'printk(KERN_ERR "orion_nand:...)' with
-> 'dev_err(&pdev->dev,)'.
+> diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+> index 2e67a27..8a5cd5c 100644
+> --- a/arch/arm/configs/multi_v7_defconfig
+> +++ b/arch/arm/configs/multi_v7_defconfig
+> @@ -1,23 +1,20 @@
+> -CONFIG_EXPERIMENTAL=y
+>  CONFIG_NO_HZ=y
+>  CONFIG_HIGH_RES_TIMERS=y
+>  CONFIG_ARCH_MVEBU=y
+>  CONFIG_MACH_ARMADA_370=y
+> -CONFIG_ARCH_SIRF=y
+>  CONFIG_MACH_ARMADA_XP=y
+>  CONFIG_ARCH_HIGHBANK=y
+>  CONFIG_ARCH_SOCFPGA=y
+> -CONFIG_ARCH_SUNXI=y
+> -CONFIG_ARCH_WM8850=y
+> -# CONFIG_ARCH_VEXPRESS_CORTEX_A5_A9_ERRATA is not set
+> -CONFIG_ARCH_ZYNQ=y
+> -CONFIG_ARM_ERRATA_754322=y
+>  CONFIG_PLAT_SPEAR=y
+>  CONFIG_ARCH_SPEAR13XX=y
+>  CONFIG_MACH_SPEAR1310=y
+>  CONFIG_MACH_SPEAR1340=y
+> +CONFIG_ARCH_STIXXXX=y
+> +CONFIG_ARCH_SUNXI=y
+> +CONFIG_ARCH_SIRF=y
+> +CONFIG_ARCH_WM8850=y
+> +CONFIG_ARCH_ZYNQ=y
+>  CONFIG_SMP=y
+> -CONFIG_ARM_ARCH_TIMER=y
+>  CONFIG_AEABI=y
+>  CONFIG_HIGHMEM=y
+>  CONFIG_HIGHPTE=y
+> @@ -25,27 +22,30 @@ CONFIG_ARM_APPENDED_DTB=y
+>  CONFIG_VFP=y
+>  CONFIG_NEON=y
+>  CONFIG_NET=y
+> +CONFIG_DEVTMPFS=y
+>  CONFIG_BLK_DEV_SD=y
+>  CONFIG_ATA=y
+> +CONFIG_SATA_AHCI_PLATFORM=y
+>  CONFIG_SATA_HIGHBANK=y
+>  CONFIG_SATA_MV=y
+> -CONFIG_SATA_AHCI_PLATFORM=y
+>  CONFIG_NETDEVICES=y
+>  CONFIG_NET_CALXEDA_XGMAC=y
+>  CONFIG_SMSC911X=y
+>  CONFIG_STMMAC_ETH=y
+> +CONFIG_KEYBOARD_SPEAR=y
+>  CONFIG_SERIO_AMBAKMI=y
+>  CONFIG_SERIAL_8250=y
+>  CONFIG_SERIAL_8250_CONSOLE=y
+>  CONFIG_SERIAL_8250_DW=y
+> -CONFIG_KEYBOARD_SPEAR=y
+>  CONFIG_SERIAL_AMBA_PL011=y
+>  CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
+> -CONFIG_SERIAL_OF_PLATFORM=y
+>  CONFIG_SERIAL_SIRFSOC=y
+>  CONFIG_SERIAL_SIRFSOC_CONSOLE=y
+>  CONFIG_SERIAL_VT8500=y
+>  CONFIG_SERIAL_VT8500_CONSOLE=y
+> +CONFIG_SERIAL_OF_PLATFORM=y
+> +CONFIG_SERIAL_ST_ASC=y
+> +CONFIG_SERIAL_ST_ASC_CONSOLE=y
+>  CONFIG_IPMI_HANDLER=y
+>  CONFIG_IPMI_SI=y
+>  CONFIG_I2C=y
+> @@ -54,7 +54,6 @@ CONFIG_I2C_SIRF=y
+>  CONFIG_SPI=y
+>  CONFIG_SPI_PL022=y
+>  CONFIG_SPI_SIRF=y
+> -CONFIG_GPIO_PL061=y
+>  CONFIG_FB=y
+>  CONFIG_FB_ARMCLCD=y
+>  CONFIG_FB_WM8505=y
+> @@ -67,7 +66,6 @@ CONFIG_MMC_ARMMMCI=y
+>  CONFIG_MMC_SDHCI=y
+>  CONFIG_MMC_SDHCI_PLTFM=y
+>  CONFIG_MMC_SDHCI_SPEAR=y
+> -CONFIG_MMC_WMT=y
+>  CONFIG_EDAC=y
+>  CONFIG_EDAC_MM_EDAC=y
+>  CONFIG_EDAC_HIGHBANK_MC=y
+> @@ -75,9 +73,9 @@ CONFIG_EDAC_HIGHBANK_L2=y
+>  CONFIG_RTC_CLASS=y
+>  CONFIG_RTC_DRV_PL031=y
+>  CONFIG_RTC_DRV_VT8500=y
+> -CONFIG_PWM=y
+> -CONFIG_PWM_VT8500=y
+>  CONFIG_DMADEVICES=y
+> -CONFIG_PL330_DMA=y
+> -CONFIG_SIRF_DMA=y
+>  CONFIG_DW_DMAC=y
+> +CONFIG_SIRF_DMA=y
+> +CONFIG_PL330_DMA=y
+> +CONFIG_PWM=y
+> +CONFIG_PWM_VT8500=y
+> -- 
+> 1.7.6.5
 > 
-> 	dev_err("failed to allocate device structure.\n");
-> 
-> 
-> > -		ret = -ENOMEM;
-> > -		goto no_res;
-> > -	}
-> > +	nc = devm_kzalloc(&pdev->dev, sizeof(struct nand_chip) +
-> > +			  sizeof(struct mtd_info), GFP_KERNEL);
-> > +	if (!nc)
-> > +		return -ENOMEM;
-> > +
-> >  	mtd = (struct mtd_info *)(nc + 1);
-> > 
-> >  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > -	if (!res) {
-> > -		ret = -ENODEV;
-> > -		goto no_res;
-> > -	}
-> > -
-> > -	io_base = ioremap(res->start, resource_size(res));
-> > -	if (!io_base) {
-> > -		printk(KERN_ERR "orion_nand: ioremap failed\n");
-> 
-> Yes, this error message is not necessary.
-> devm_ioremap_resource() provides its own error messages; so all
-> explicit error messages can be removed from the failure code paths.
-> 
-> 
-> > -		ret = -EIO;
-> > -		goto no_res;
-> > -	}
-> > +	io_base = devm_ioremap_resource(&pdev->dev, res);
-> 
-> How about using devm_ioremap() instead of devm_ioremap_resource()?
-> 
-> Only ioremap() was used previously; however, devm_ioremap_resource()
-> internally calls both devm_request_mem_region() and devm_ioremap().
-> 
-> If it is wrong, please let me know kindly. :)
-> 
-> 
-> > +	if (IS_ERR(io_base))
-> > +		return PTR_ERR(io_base);
-> > 
-> >  	if (pdev->dev.of_node) {
-> >  		board = devm_kzalloc(&pdev->dev, sizeof(struct orion_nand_data),
-> > -					GFP_KERNEL);
-> > -		if (!board) {
-> > -			printk(KERN_ERR "orion_nand: failed to allocate board structure.\n");
-> 
-> As above mentioned, you don't need to remove this error message.
-> You would replace 'printk(KERN_ERR "orion_nand:...)' with
-> 'dev_err(&pdev->dev,)'.
-> 
-> 	dev_err("failed to allocate board structure.\n");
-> 
-> 
-> Best regards,
-> Jingoo Han
-> 
-> 
-> > -			ret = -ENOMEM;
-> > -			goto no_res;
-> > -		}
-> > +				     GFP_KERNEL);
-> > +		if (!board)
-> > +			return -ENOMEM;
-> > +
-> >  		if (!of_property_read_u32(pdev->dev.of_node, "cle", &val))
-> >  			board->cle = (u8)val;
-> >  		else
-> > @@ -167,7 +156,7 @@ static int __init orion_nand_probe(struct platform_device *pdev)
-> > 
-> >  	if (nand_scan(mtd, 1)) {
-> >  		ret = -ENXIO;
-> > -		goto no_dev;
-> > +		goto disable_clk;
-> >  	}
-> > 
-> >  	mtd->name = "orion_nand";
-> > @@ -176,20 +165,17 @@ static int __init orion_nand_probe(struct platform_device *pdev)
-> >  			board->parts, board->nr_parts);
-> >  	if (ret) {
-> >  		nand_release(mtd);
-> > -		goto no_dev;
-> > +		goto disable_clk;
-> >  	}
-> > 
-> >  	return 0;
-> > 
-> > -no_dev:
-> > +disable_clk:
-> >  	if (!IS_ERR(clk)) {
-> >  		clk_disable_unprepare(clk);
-> >  		clk_put(clk);
-> >  	}
-> >  	platform_set_drvdata(pdev, NULL);
-> > -	iounmap(io_base);
-> > -no_res:
-> > -	kfree(nc);
-> > 
-> >  	return ret;
-> >  }
-> > @@ -197,15 +183,10 @@ no_res:
-> >  static int orion_nand_remove(struct platform_device *pdev)
-> >  {
-> >  	struct mtd_info *mtd = platform_get_drvdata(pdev);
-> > -	struct nand_chip *nc = mtd->priv;
-> >  	struct clk *clk;
-> > 
-> >  	nand_release(mtd);
-> > 
-> > -	iounmap(nc->IO_ADDR_W);
-> > -
-> > -	kfree(nc);
-> > -
-> >  	clk = clk_get(&pdev->dev, NULL);
-> >  	if (!IS_ERR(clk)) {
-> >  		clk_disable_unprepare(clk);
-> > --
-> > 1.7.10.4
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
 > 
