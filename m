@@ -1,122 +1,460 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab3FJSyT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 14:54:19 -0400
-Received: from nm22-vm1.bullet.mail.bf1.yahoo.com ([98.139.212.127]:44159 "EHLO
-	nm22-vm1.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752316Ab3FJSyR convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 14:54:17 -0400
-X-Greylist: delayed 316 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Jun 2013 14:54:17 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 559964.34716.bm@omp1004.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=Qqjs8Uw7jtEMaGizRajvvVsjtVc0dNh5pKrZyaLTBoOpou8DTGrXd8x+GljW2IZNzj0MbKhUB5LgecMVPkK8eEWxRhXw81VmC+SkG44QWMOCbP9izCQ3b7LjUp3h0SCwBqfMyXPZ+jPOINMWj8RGacTKy5ZKd+Du4jfL6faFOVY=;
-X-YMail-OSG: noFg58MVM1ms5t3iciGv4M4DMM18r9LUsfDcJgoOmkMg7Zs
- uZToSU6RZ0GI8ClcuXfM8WULdRjjBrxzrtCAIYNVZqXDu11tP5ZxBuE8Sb4a
- U_AvwseAfo12orRb_rrzr7Eyqj7NiUZDRpeU6O8mdV_pjGh2qF5q4bgRRCin
- P64mDDlh8XNBsAHW2iHhkSlCChcbyDjrw38.PFQy9Hk4R6PeU6F.3vQBCk.x
- 63BYMkuRXHY9FmlS5EMPzRZEMccWXim5AE1HnGYcufu87uA24.6ASLkoIV4k
- SgVDtGTt_kP0XEe6yHU59.5RMDFjTqfE8YBZ0z7ZTTyGv5Ys5GaIxjXxt0BK
- u3I_Tt_gr8.RbITW3A3pq.DcloRJ_TDBbkZEr0uQ.ekK1wy3DdP5uIdq5B_E
- 7waXb48c1MdtXwNrDXoATI5FaJvUEqMsPnoHuoP6S8K1g1R0OdEGzjO9eCsS
- wV_nAngfDgcwkw.XBvPakbFBroipPAKDhMwV9eiKVS5IDn33wkLNN.6T5Vk_
- 5DLMU_LYl0229ViwTjBYXY4FwmUEs4q8pbGAiPMiEJtFQY8ga.3gFSOkxk5l
- HDkdKsh03vPoJyu0cZNpxrittcfKXy_q8QWCXdXkg6h8Ax6GUZBA2jSFgqZm
- U0oXUmzGkq32sOAAqYSaL9UHTZNTJFYcIPspWps98ckfr8TYYfBT1zAyRaOe
- TaBr92TcwWqDTv0Kvyp6hBBuu74TLgcWu1V6JtA.KUfChG66qvszrQhN0It9
- v.LPCrhLqHdgQ
-X-Rocket-MIMEInfo: 002.001,Pl9fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fCj4gRnJvbTogYW5pc2ggc2luZ2ggPGFuaXNoMTk4NTE5ODUxOTg1QGdtYWlsLmNvbT4KPlRvOiBQSU5UVSBLVU1BUiA8cGludHVfYWdhcndhbEB5YWhvby5jb20.IAo.Q2M6ICJsaW51eC1rZXJuZWxAdmdlci5rZXJuZWwub3JnIiA8bGludXgta2VybmVsQHZnZXIua2VybmVsLm9yZz47ICJsaW51eC1tbUBrdmFjay5vcmciIDxsaW51eC1tbUBrdmFjay5vcmc.IAo.U2VudDogU3VuZGF5LCA5IEp1bmUgMjAxMyAxMDo1OCBQTQo.U3ViamVjdDogUmU6IFsBMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.146.552
-References: <1370843475.58124.YahooMailNeo@web160106.mail.bf1.yahoo.com> <CAK7N6vrQFK=9OQi7dDUgGWWNQk71x3BeqPA9x3Pq66baA61PrQ@mail.gmail.com>
-Message-ID: <1370890140.99216.YahooMailNeo@web160102.mail.bf1.yahoo.com>
-Date: Mon, 10 Jun 2013 11:49:00 -0700 (PDT)
-From: PINTU KUMAR <pintu_agarwal@yahoo.com>
-Reply-To: PINTU KUMAR <pintu_agarwal@yahoo.com>
-Subject: Re: [checkpatch] - Confusion
-To: anish singh <anish198519851985@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-In-Reply-To: <CAK7N6vrQFK=9OQi7dDUgGWWNQk71x3BeqPA9x3Pq66baA61PrQ@mail.gmail.com>
+	id S1754403Ab3FJSym (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 14:54:42 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:33368 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754174Ab3FJSyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 14:54:40 -0400
+Date: Mon, 10 Jun 2013 13:54:36 -0500
+From: Russ Anderson <rja@sgi.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: joeyli <jlee@suse.com>, Matthew Garrett <matthew.garrett@nebula.com>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "bp@alien8.de" <bp@alien8.de>, "jkosina@suse.cz" <jkosina@suse.cz>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "oneukum@suse.de" <oneukum@suse.de>
+Subject: Re: [PATCH] Modify UEFI anti-bricking code
+Message-ID: <20130610185435.GB14124@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <1370276021.30695.4.camel@linux-s257.site> <1370277079.6315.14.camel@x230.lan> <1370316933.30695.7.camel@linux-s257.site> <CAL01qptzxe5L6Vq+nBZLq+bQNxbe_i_2OdKMNJGZQDfMihaHOw@mail.gmail.com> <1370444007.6315.32.camel@x230.lan> <20130605155904.GC30420@console-pimps.org> <1370495110.6523.35.camel@linux-s257.site> <1370497321.6315.44.camel@x230.lan> <1370504426.6523.49.camel@linux-s257.site> <20130606092542.GE30420@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130606092542.GE30420@console-pimps.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->________________________________
-> From: anish singh <anish198519851985@gmail.com>
->To: PINTU KUMAR <pintu_agarwal@yahoo.com> 
->Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>; "linux-mm@kvack.org" <linux-mm@kvack.org> 
->Sent: Sunday, 9 June 2013 10:58 PM
->Subject: Re: [checkpatch] - Confusion
+On Thu, Jun 06, 2013 at 10:25:42AM +0100, Matt Fleming wrote:
+> On Thu, 06 Jun, at 03:40:26PM, joeyli wrote:
+> > OK, I moved volatile checking to the top of the function.
+> > New version, version 3 diff result like the following.
 > 
->
->On Mon, Jun 10, 2013 at 11:21 AM, PINTU KUMAR <pintu_agarwal@yahoo.com> wrote:
->> Hi,
->>
->> I wanted to submit my first patch.
->> But I have some confusion about the /scripts/checkpatch.pl errors.
->>
->> After correcting some checkpatch errors, when I run checkpatch.pl, it showed me 0 errors.
->> But when I create patches are git format-patch, it is showing me 1 error.
->did  you run the checkpatch.pl on the file which gets created
->after git format-patch?
->If yes, then I think it is not necessary.You can use git-am to apply
->your own patch on a undisturbed file and if it applies properly then
->you are good to go i.e. you can send your patch.
+> Thanks. This is what I've now got queued up.
 
-Yes, first I ran checkpatch directly on the file(mm/page_alloc.c) and fixed all the errors.
-It showed me (0) errors.
-Then I created a patch using _git format-patch_ and ran checkpatch again on the created patch.
-But now it is showing me 1 error.
-According to me this error is false positive (irrelevant), because I did not change anything related to the error and also the similar change already exists somewhere else too.
-Do you mean, shall I go ahead and submit the patch with this 1 error??
-ERROR: need consistent spacing around '*' (ctx:WxV)
-
-#153: FILE: mm/page_alloc.c:5476:
-+int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
+Is this (or similar) going to make it into 3.10?
 
 
+> 
+> ---
+> 
+> >From 118428bf3b207d9b390a27f32dfef6dc2979078d Mon Sep 17 00:00:00 2001
+> From: Matthew Garrett <matthew.garrett@nebula.com>
+> Date: Sat, 1 Jun 2013 16:06:20 -0400
+> Subject: [PATCH] Modify UEFI anti-bricking code
+> 
+> This patch reworks the UEFI anti-bricking code, including an effective
+> reversion of cc5a080c and 31ff2f20. It turns out that calling
+> QueryVariableInfo() from boot services results in some firmware
+> implementations jumping to physical addresses even after entering virtual
+> mode, so until we have 1:1 mappings for UEFI runtime space this isn't
+> going to work so well.
+> 
+> Reverting these gets us back to the situation where we'd refuse to create
+> variables on some systems because they classify deleted variables as "used"
+> until the firmware triggers a garbage collection run, which they won't do
+> until they reach a lower threshold. This results in it being impossible to
+> install a bootloader, which is unhelpful.
+> 
+> Feedback from Samsung indicates that the firmware doesn't need more than
+> 5KB of storage space for its own purposes, so that seems like a reasonable
+> threshold. However, there's still no guarantee that a platform will attempt
+> garbage collection merely because it drops below this threshold. It seems
+> that this is often only triggered if an attempt to write generates a
+> genuine EFI_OUT_OF_RESOURCES error. We can force that by attempting to
+> create a variable larger than the remaining space. This should fail, but if
+> it somehow succeeds we can then immediately delete it.
+> 
+> I've tested this on the UEFI machines I have available, but I don't have
+> a Samsung and so can't verify that it avoids the bricking problem.
+> 
+> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+> Signed-off-by: Lee, Chun-Y <jlee@suse.com> [ dummy variable cleanup ]
+> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+> ---
+>  arch/x86/boot/compressed/eboot.c      |  47 ---------
+>  arch/x86/include/asm/efi.h            |   7 --
+>  arch/x86/include/uapi/asm/bootparam.h |   1 -
+>  arch/x86/platform/efi/efi.c           | 188 ++++++++++++----------------------
+>  4 files changed, 65 insertions(+), 178 deletions(-)
+> 
+> diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+> index 35ee62f..c205035 100644
+> --- a/arch/x86/boot/compressed/eboot.c
+> +++ b/arch/x86/boot/compressed/eboot.c
+> @@ -251,51 +251,6 @@ static void find_bits(unsigned long mask, u8 *pos, u8 *size)
+>  	*size = len;
+>  }
+>  
+> -static efi_status_t setup_efi_vars(struct boot_params *params)
+> -{
+> -	struct setup_data *data;
+> -	struct efi_var_bootdata *efidata;
+> -	u64 store_size, remaining_size, var_size;
+> -	efi_status_t status;
+> -
+> -	if (sys_table->runtime->hdr.revision < EFI_2_00_SYSTEM_TABLE_REVISION)
+> -		return EFI_UNSUPPORTED;
+> -
+> -	data = (struct setup_data *)(unsigned long)params->hdr.setup_data;
+> -
+> -	while (data && data->next)
+> -		data = (struct setup_data *)(unsigned long)data->next;
+> -
+> -	status = efi_call_phys4((void *)sys_table->runtime->query_variable_info,
+> -				EFI_VARIABLE_NON_VOLATILE |
+> -				EFI_VARIABLE_BOOTSERVICE_ACCESS |
+> -				EFI_VARIABLE_RUNTIME_ACCESS, &store_size,
+> -				&remaining_size, &var_size);
+> -
+> -	if (status != EFI_SUCCESS)
+> -		return status;
+> -
+> -	status = efi_call_phys3(sys_table->boottime->allocate_pool,
+> -				EFI_LOADER_DATA, sizeof(*efidata), &efidata);
+> -
+> -	if (status != EFI_SUCCESS)
+> -		return status;
+> -
+> -	efidata->data.type = SETUP_EFI_VARS;
+> -	efidata->data.len = sizeof(struct efi_var_bootdata) -
+> -		sizeof(struct setup_data);
+> -	efidata->data.next = 0;
+> -	efidata->store_size = store_size;
+> -	efidata->remaining_size = remaining_size;
+> -	efidata->max_var_size = var_size;
+> -
+> -	if (data)
+> -		data->next = (unsigned long)efidata;
+> -	else
+> -		params->hdr.setup_data = (unsigned long)efidata;
+> -
+> -}
+> -
+>  static efi_status_t setup_efi_pci(struct boot_params *params)
+>  {
+>  	efi_pci_io_protocol *pci;
+> @@ -1202,8 +1157,6 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
+>  
+>  	setup_graphics(boot_params);
+>  
+> -	setup_efi_vars(boot_params);
+> -
+>  	setup_efi_pci(boot_params);
+>  
+>  	status = efi_call_phys3(sys_table->boottime->allocate_pool,
+> diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
+> index 2fb5d58..60c89f3 100644
+> --- a/arch/x86/include/asm/efi.h
+> +++ b/arch/x86/include/asm/efi.h
+> @@ -102,13 +102,6 @@ extern void efi_call_phys_epilog(void);
+>  extern void efi_unmap_memmap(void);
+>  extern void efi_memory_uc(u64 addr, unsigned long size);
+>  
+> -struct efi_var_bootdata {
+> -	struct setup_data data;
+> -	u64 store_size;
+> -	u64 remaining_size;
+> -	u64 max_var_size;
+> -};
+> -
+>  #ifdef CONFIG_EFI
+>  
+>  static inline bool efi_is_native(void)
+> diff --git a/arch/x86/include/uapi/asm/bootparam.h b/arch/x86/include/uapi/asm/bootparam.h
+> index 0874424..c15ddaf 100644
+> --- a/arch/x86/include/uapi/asm/bootparam.h
+> +++ b/arch/x86/include/uapi/asm/bootparam.h
+> @@ -6,7 +6,6 @@
+>  #define SETUP_E820_EXT			1
+>  #define SETUP_DTB			2
+>  #define SETUP_PCI			3
+> -#define SETUP_EFI_VARS			4
+>  
+>  /* ram_size flags */
+>  #define RAMDISK_IMAGE_START_MASK	0x07FF
+> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+> index 82089d8..5ae2eb0 100644
+> --- a/arch/x86/platform/efi/efi.c
+> +++ b/arch/x86/platform/efi/efi.c
+> @@ -42,7 +42,6 @@
+>  #include <linux/io.h>
+>  #include <linux/reboot.h>
+>  #include <linux/bcd.h>
+> -#include <linux/ucs2_string.h>
+>  
+>  #include <asm/setup.h>
+>  #include <asm/efi.h>
+> @@ -54,12 +53,12 @@
+>  
+>  #define EFI_DEBUG	1
+>  
+> -/*
+> - * There's some additional metadata associated with each
+> - * variable. Intel's reference implementation is 60 bytes - bump that
+> - * to account for potential alignment constraints
+> - */
+> -#define VAR_METADATA_SIZE 64
+> +#define EFI_MIN_RESERVE 5120
+> +
+> +#define EFI_DUMMY_GUID \
+> +	EFI_GUID(0x4424ac57, 0xbe4b, 0x47dd, 0x9e, 0x97, 0xed, 0x50, 0xf0, 0x9f, 0x92, 0xa9)
+> +
+> +static efi_char16_t efi_dummy_name[6] = { 'D', 'U', 'M', 'M', 'Y', 0 };
+>  
+>  struct efi __read_mostly efi = {
+>  	.mps        = EFI_INVALID_TABLE_ADDR,
+> @@ -79,13 +78,6 @@ struct efi_memory_map memmap;
+>  static struct efi efi_phys __initdata;
+>  static efi_system_table_t efi_systab __initdata;
+>  
+> -static u64 efi_var_store_size;
+> -static u64 efi_var_remaining_size;
+> -static u64 efi_var_max_var_size;
+> -static u64 boot_used_size;
+> -static u64 boot_var_size;
+> -static u64 active_size;
+> -
+>  unsigned long x86_efi_facility;
+>  
+>  /*
+> @@ -188,53 +180,8 @@ static efi_status_t virt_efi_get_next_variable(unsigned long *name_size,
+>  					       efi_char16_t *name,
+>  					       efi_guid_t *vendor)
+>  {
+> -	efi_status_t status;
+> -	static bool finished = false;
+> -	static u64 var_size;
+> -
+> -	status = efi_call_virt3(get_next_variable,
+> -				name_size, name, vendor);
+> -
+> -	if (status == EFI_NOT_FOUND) {
+> -		finished = true;
+> -		if (var_size < boot_used_size) {
+> -			boot_var_size = boot_used_size - var_size;
+> -			active_size += boot_var_size;
+> -		} else {
+> -			printk(KERN_WARNING FW_BUG  "efi: Inconsistent initial sizes\n");
+> -		}
+> -	}
+> -
+> -	if (boot_used_size && !finished) {
+> -		unsigned long size = 0;
+> -		u32 attr;
+> -		efi_status_t s;
+> -		void *tmp;
+> -
+> -		s = virt_efi_get_variable(name, vendor, &attr, &size, NULL);
+> -
+> -		if (s != EFI_BUFFER_TOO_SMALL || !size)
+> -			return status;
+> -
+> -		tmp = kmalloc(size, GFP_ATOMIC);
+> -
+> -		if (!tmp)
+> -			return status;
+> -
+> -		s = virt_efi_get_variable(name, vendor, &attr, &size, tmp);
+> -
+> -		if (s == EFI_SUCCESS && (attr & EFI_VARIABLE_NON_VOLATILE)) {
+> -			var_size += size;
+> -			var_size += ucs2_strsize(name, 1024);
+> -			active_size += size;
+> -			active_size += VAR_METADATA_SIZE;
+> -			active_size += ucs2_strsize(name, 1024);
+> -		}
+> -
+> -		kfree(tmp);
+> -	}
+> -
+> -	return status;
+> +	return efi_call_virt3(get_next_variable,
+> +			      name_size, name, vendor);
+>  }
+>  
+>  static efi_status_t virt_efi_set_variable(efi_char16_t *name,
+> @@ -243,34 +190,9 @@ static efi_status_t virt_efi_set_variable(efi_char16_t *name,
+>  					  unsigned long data_size,
+>  					  void *data)
+>  {
+> -	efi_status_t status;
+> -	u32 orig_attr = 0;
+> -	unsigned long orig_size = 0;
+> -
+> -	status = virt_efi_get_variable(name, vendor, &orig_attr, &orig_size,
+> -				       NULL);
+> -
+> -	if (status != EFI_BUFFER_TOO_SMALL)
+> -		orig_size = 0;
+> -
+> -	status = efi_call_virt5(set_variable,
+> -				name, vendor, attr,
+> -				data_size, data);
+> -
+> -	if (status == EFI_SUCCESS) {
+> -		if (orig_size) {
+> -			active_size -= orig_size;
+> -			active_size -= ucs2_strsize(name, 1024);
+> -			active_size -= VAR_METADATA_SIZE;
+> -		}
+> -		if (data_size) {
+> -			active_size += data_size;
+> -			active_size += ucs2_strsize(name, 1024);
+> -			active_size += VAR_METADATA_SIZE;
+> -		}
+> -	}
+> -
+> -	return status;
+> +	return efi_call_virt5(set_variable,
+> +			      name, vendor, attr,
+> +			      data_size, data);
+>  }
+>  
+>  static efi_status_t virt_efi_query_variable_info(u32 attr,
+> @@ -786,9 +708,6 @@ void __init efi_init(void)
+>  	char vendor[100] = "unknown";
+>  	int i = 0;
+>  	void *tmp;
+> -	struct setup_data *data;
+> -	struct efi_var_bootdata *efi_var_data;
+> -	u64 pa_data;
+>  
+>  #ifdef CONFIG_X86_32
+>  	if (boot_params.efi_info.efi_systab_hi ||
+> @@ -806,22 +725,6 @@ void __init efi_init(void)
+>  	if (efi_systab_init(efi_phys.systab))
+>  		return;
+>  
+> -	pa_data = boot_params.hdr.setup_data;
+> -	while (pa_data) {
+> -		data = early_ioremap(pa_data, sizeof(*efi_var_data));
+> -		if (data->type == SETUP_EFI_VARS) {
+> -			efi_var_data = (struct efi_var_bootdata *)data;
+> -
+> -			efi_var_store_size = efi_var_data->store_size;
+> -			efi_var_remaining_size = efi_var_data->remaining_size;
+> -			efi_var_max_var_size = efi_var_data->max_var_size;
+> -		}
+> -		pa_data = data->next;
+> -		early_iounmap(data, sizeof(*efi_var_data));
+> -	}
+> -
+> -	boot_used_size = efi_var_store_size - efi_var_remaining_size;
+> -
+>  	set_bit(EFI_SYSTEM_TABLES, &x86_efi_facility);
+>  
+>  	/*
+> @@ -1085,6 +988,13 @@ void __init efi_enter_virtual_mode(void)
+>  		runtime_code_page_mkexec();
+>  
+>  	kfree(new_memmap);
+> +
+> +	/* clean DUMMY object */
+> +	efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
+> +			 EFI_VARIABLE_NON_VOLATILE |
+> +			 EFI_VARIABLE_BOOTSERVICE_ACCESS |
+> +			 EFI_VARIABLE_RUNTIME_ACCESS,
+> +			 0, NULL);
+>  }
+>  
+>  /*
+> @@ -1136,33 +1046,65 @@ efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
+>  	efi_status_t status;
+>  	u64 storage_size, remaining_size, max_size;
+>  
+> +	if (!(attributes & EFI_VARIABLE_NON_VOLATILE))
+> +		return 0;
+> +
+>  	status = efi.query_variable_info(attributes, &storage_size,
+>  					 &remaining_size, &max_size);
+>  	if (status != EFI_SUCCESS)
+>  		return status;
+>  
+> -	if (!max_size && remaining_size > size)
+> -		printk_once(KERN_ERR FW_BUG "Broken EFI implementation"
+> -			    " is returning MaxVariableSize=0\n");
+>  	/*
+>  	 * Some firmware implementations refuse to boot if there's insufficient
+>  	 * space in the variable store. We account for that by refusing the
+>  	 * write if permitting it would reduce the available space to under
+> -	 * 50%. However, some firmware won't reclaim variable space until
+> -	 * after the used (not merely the actively used) space drops below
+> -	 * a threshold. We can approximate that case with the value calculated
+> -	 * above. If both the firmware and our calculations indicate that the
+> -	 * available space would drop below 50%, refuse the write.
+> +	 * 5KB. This figure was provided by Samsung, so should be safe.
+>  	 */
+> +	if ((remaining_size - size < EFI_MIN_RESERVE) &&
+> +		!efi_no_storage_paranoia) {
+> +
+> +		/*
+> +		 * Triggering garbage collection may require that the firmware
+> +		 * generate a real EFI_OUT_OF_RESOURCES error. We can force
+> +		 * that by attempting to use more space than is available.
+> +		 */
+> +		unsigned long dummy_size = remaining_size + 1024;
+> +		void *dummy = kmalloc(dummy_size, GFP_ATOMIC);
+> +
+> +		status = efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
+> +					  EFI_VARIABLE_NON_VOLATILE |
+> +					  EFI_VARIABLE_BOOTSERVICE_ACCESS |
+> +					  EFI_VARIABLE_RUNTIME_ACCESS,
+> +					  dummy_size, dummy);
+> +
+> +		if (status == EFI_SUCCESS) {
+> +			/*
+> +			 * This should have failed, so if it didn't make sure
+> +			 * that we delete it...
+> +			 */
+> +			efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
+> +					 EFI_VARIABLE_NON_VOLATILE |
+> +					 EFI_VARIABLE_BOOTSERVICE_ACCESS |
+> +					 EFI_VARIABLE_RUNTIME_ACCESS,
+> +					 0, dummy);
+> +		}
+>  
+> -	if (!storage_size || size > remaining_size ||
+> -	    (max_size && size > max_size))
+> -		return EFI_OUT_OF_RESOURCES;
+> +		/*
+> +		 * The runtime code may now have triggered a garbage collection
+> +		 * run, so check the variable info again
+> +		 */
+> +		status = efi.query_variable_info(attributes, &storage_size,
+> +						 &remaining_size, &max_size);
+>  
+> -	if (!efi_no_storage_paranoia &&
+> -	    ((active_size + size + VAR_METADATA_SIZE > storage_size / 2) &&
+> -	     (remaining_size - size < storage_size / 2)))
+> -		return EFI_OUT_OF_RESOURCES;
+> +		if (status != EFI_SUCCESS)
+> +			return status;
+> +
+> +		/*
+> +		 * There still isn't enough room, so return an error
+> +		 */
+> +		if (remaining_size - size < EFI_MIN_RESERVE)
+> +			return EFI_OUT_OF_RESOURCES;
+> +	}
+>  
+>  	return EFI_SUCCESS;
+>  }
+> -- 
+> 1.8.1.4
+> 
+> -- 
+> Matt Fleming, Intel Open Source Technology Center
 
->>
->> If I fix error in patch, it showed me back again in files.
->>
->> Now, I am confused which error to fix while submitting patches, the file or the patch errors.
->>
->> Please provide your opinion.
->>
->> File: mm/page_alloc.c
->> Previous file errors:
->> total: 16 errors, 110 warnings, 6255 lines checked
->>
->> After fixing errors:
->> total: 0 errors, 105 warnings, 6255 lines checked
->>
->>
->> And, after running on patch:
->> ERROR: need consistent spacing around '*' (ctx:WxV)
->> #153: FILE: mm/page_alloc.c:5476:
->> +int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
->>
->>
->>
->>
->> - Pintu
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
->--
->To unsubscribe, send a message with 'unsubscribe linux-mm' in
->the body to majordomo@kvack.org.  For more info on Linux MM,
->see: http://www.linux-mm.org/ .
->Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
->
->
+-- 
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
