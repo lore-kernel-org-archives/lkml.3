@@ -1,101 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab3FJBB4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 21:01:56 -0400
-Received: from trent.utfs.org ([94.185.90.103]:59845 "EHLO trent.utfs.org"
+	id S1751806Ab3FJBgF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 21:36:05 -0400
+Received: from mga03.intel.com ([143.182.124.21]:19023 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751561Ab3FJBBz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 21:01:55 -0400
-X-Greylist: delayed 662 seconds by postgrey-1.27 at vger.kernel.org; Sun, 09 Jun 2013 21:01:55 EDT
-Date: Sun, 9 Jun 2013 17:50:49 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: nico-linuxsetlocalversion@schottelius.org
-Subject: [RFC] scripts/setlocalversion on write-protected source tree
-Message-ID: <alpine.DEB.2.10.1306091640270.13746@trent.utfs.org>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1751284Ab3FJBgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jun 2013 21:36:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,833,1363158000"; 
+   d="scan'208";a="252742293"
+Message-ID: <51B52D7C.6090009@intel.com>
+Date: Mon, 10 Jun 2013 09:35:56 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1184995494-2012676215-1370825449=:13746"
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+To: mingo@redhat.com, peterz@infradead.org
+CC: Alex Shi <alex.shi@intel.com>, tglx@linutronix.de,
+        akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
+        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
+        riel@redhat.com, wangyun@linux.vnet.ibm.com,
+        Jason Low <jason.low2@hp.com>,
+        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
+        fweisbec@gmail.com
+Subject: Re: [patch 0/9] sched: use runnable load avg in balance
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Ingo & Peter:
 
----1184995494-2012676215-1370825449=:13746
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+How are you?
+I know you are very very busy since services for wide key kernel parts.
+So hope this email don't disturb you. :)
 
-Hi,
+PJT's runnable load was introduced into kernel from 3.8 kernel. But
+besides increase longer code path, it does nothing help now.
 
-I just stumbled across another[0] issue when scripts/setlocalversion 
-operates on a write-protected source tree. Back then[0] the source tree 
-was on an read-only NFS share, so "test -w" was introduced before "git 
-update-index" was run.
+This patch try to enable the runnable load into scheduler balance. Most
+of this patchset are bug fixing related except 6~8th which are direct
+service for introducing runnable load into balance.
+The patchset was talked in LKML from last Nov, adopted many suggestions
+from PTJ, MikeG, Morten, PeterZ etc. Also tested on x86 and arm
+platforms, both got positive feedback.
 
-This time, the source tree is on read/write NFS share, but the permissions 
-are world-readable and only a specific user (or root) can write. 
-Thus, "test -w ." returns "0" and then runs "git update-index", 
-producing the following message (on a dirty tree):
+With this patchset, CFS scheduler will has better and stabler
+performance on hackbench, sysbench, pgbench. etc benchmarks. You will
+like the performance number which mentioned in last emails.
 
-  fatal: Unable to create '/usr/local/src/linux-git/.git/index.lock': Permission denied
+I appreciated for any further review and comments!
 
-While it says "fatal", compilation continues just fine.
+Wish you all best!
+Alex
 
-The patch below adds yet another (clumsy) check before "git 
-update-index", but I'm not sure if this is the right way to go.
 
-On a side note, I don't think a kernel compilation should alter the source 
-tree (or the .git directory) in any way and I don't see how removing 
-"git update-index" could do any harm. The Mercurial and SVN routines in 
-scripts/setlocalversion don't have any tree-modifying commands, AFAICS. 
-So, maybe the attached patch would be acceptable.
-
-Thoughts?
-Christian.
-
-[0] https://patchwork.kernel.org/patch/29718/
-
-diff --git a/scripts/setlocalversion b/scripts/setlocalversion
-old mode 100755
-new mode 100644
-index 84b88f1..2560718
---- a/scripts/setlocalversion
-+++ b/scripts/setlocalversion
-@@ -72,7 +72,8 @@ scm_version()
- 		fi
- 
- 		# Update index only on r/w media
--		[ -w . ] && git update-index --refresh --unmerged > /dev/null
-+		[ -w . ] && touch .git/index.lock 2>/dev/null && rm -f .git/index.lock && \
-+			git update-index --refresh --unmerged > /dev/null
- 
- 		# Check for uncommitted changes
- 		if git diff-index --name-only HEAD | grep -qv "^scripts/package"; then
+On 06/07/2013 03:20 PM, Alex Shi wrote:
+> Peter&Ingo:
+> 
+> v8: add a marco div64_ul and used it in task_h_load()
+> v7: rebasing on tip/sched/core tree.
+> 
+> I tested on Intel core2, NHM, SNB, IVB, 2 and 4 sockets machines with
+> benchmark kbuild, aim7, dbench, tbench, hackbench, oltp, and netperf
+> loopback etc. 
+> 
+> On SNB EP 4 sockets machine, the hackbench increased about 50%, and
+> result become stable. on other machines, hackbench increased about
+> 2~10%. oltp increased about 30% in NHM EX box. netperf loopback also
+> increased on SNB EP 4 sockets box. 
+> No clear changes on other benchmarks.
+> 
+> Michael Wang gotten better performance on pgbench on his box with this
+> patchset. https://lkml.org/lkml/2013/5/16/82
+> 
+> And Morten tested previous version with better power consumption.
+> http://comments.gmane.org/gmane.linux.kernel/1463371
+> 
+> Changlong found ltp cgroup stress testing get faster on SNB EP
+> machine with the last patch.  https://lkml.org/lkml/2013/5/23/65
+> ---
+> 3.10-rc1          patch1-7         patch1-8
+> duration=764   duration=754   duration=750
+> duration=764   duration=754   duration=751
+> duration=763   duration=755   duration=751
+> 
+> duration means the seconds of testing cost.
+> ---
+> 
+> Jason also found java server load benefited on his 8 sockets machine
+> with last patch. https://lkml.org/lkml/2013/5/29/673
+> ---
+> When using a 3.10-rc2 tip kernel with patches 1-8, there was about a 40%
+> improvement in performance of the workload compared to when using the
+> vanilla 3.10-rc2 tip kernel with no patches. When using a 3.10-rc2 tip
+> kernel with just patches 1-7, the performance improvement of the
+> workload over the vanilla 3.10-rc2 tip kernel was about 25%.
+> ---
+> 
+> We also tried to include blocked load avg in balance. but find many
+> benchmark performance drop a lot! Seems accumulating current
+> blocked_load_avg into cpu load isn't a good idea. Because:
+> 1, The blocked_load_avg is decayed same as runnable load, sometime is far
+> bigger than runnable load, that drive tasks to other idle or slight
+> load cpu, than cause both performance and power issue. But if the
+> blocked load is decayed too fast, it lose its effect. 
+> 2, Another issue of blocked load is that when waking up task, we can not 
+> know blocked load proportion of the task on rq. So, the blocked load is
+> meaningless in wake affine decision.  
+> 
+> According to above problem, we can not figure out a right way now to use 
+> blocked_load_avg in balance.
+> 
+> Since using runnable load avg in balance brings much benefit on
+> performance and power. and this patch was reviewed for long time.
+> So seems it's time to let it be clobbered in some sub tree, like 
+> tip or linux-next.  Any comments?
+> 
+> Regards
+> Alex
+> 
 
 
 -- 
-BOFH excuse #359:
-
-YOU HAVE AN I/O ERROR -> Incompetent Operator error
----1184995494-2012676215-1370825449=:13746
-Content-Type: TEXT/x-diff; name=setlocalversion_no-update-index.diff
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.DEB.2.10.1306091750490.13746@trent.utfs.org>
-Content-Description: 
-Content-Disposition: attachment; filename=setlocalversion_no-update-index.diff
-
-ZGlmZiAtLWdpdCBhL3NjcmlwdHMvc2V0bG9jYWx2ZXJzaW9uIGIvc2NyaXB0
-cy9zZXRsb2NhbHZlcnNpb24NCmluZGV4IDg0Yjg4ZjEuLmQxMDVhNDQgMTAw
-NzU1DQotLS0gYS9zY3JpcHRzL3NldGxvY2FsdmVyc2lvbg0KKysrIGIvc2Ny
-aXB0cy9zZXRsb2NhbHZlcnNpb24NCkBAIC03MSw5ICs3MSw2IEBAIHNjbV92
-ZXJzaW9uKCkNCiAJCQlwcmludGYgLS0gJy1zdm4lcycgImBnaXQgc3ZuIGZp
-bmQtcmV2ICRoZWFkYCINCiAJCWZpDQogDQotCQkjIFVwZGF0ZSBpbmRleCBv
-bmx5IG9uIHIvdyBtZWRpYQ0KLQkJWyAtdyAuIF0gJiYgZ2l0IHVwZGF0ZS1p
-bmRleCAtLXJlZnJlc2ggLS11bm1lcmdlZCA+IC9kZXYvbnVsbA0KLQ0KIAkJ
-IyBDaGVjayBmb3IgdW5jb21taXR0ZWQgY2hhbmdlcw0KIAkJaWYgZ2l0IGRp
-ZmYtaW5kZXggLS1uYW1lLW9ubHkgSEVBRCB8IGdyZXAgLXF2ICJec2NyaXB0
-cy9wYWNrYWdlIjsgdGhlbg0KIAkJCXByaW50ZiAnJXMnIC1kaXJ0eQ0K
-
----1184995494-2012676215-1370825449=:13746--
+Thanks
+    Alex
