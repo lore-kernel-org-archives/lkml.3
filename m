@@ -1,110 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806Ab3FJFYU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 01:24:20 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:62864 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997Ab3FJFYQ (ORCPT
+	id S1751834Ab3FJFfB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 01:35:01 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:30169 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751215Ab3FJFe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 01:24:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <1369950320-22784-1-git-send-email-stepanm@codeaurora.org>
-References: <1369950320-22784-1-git-send-email-stepanm@codeaurora.org>
-Date: Mon, 10 Jun 2013 14:24:14 +0900
-Message-ID: <CANqRtoQERw46u7qyUPavd7XCj5P8TMVFFNy-xjEBMDEoR7U1Qw@mail.gmail.com>
-Subject: Re: [PATCH] arm: Prevent memory aliasing on non-LPAE kernels
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Stepan Moskovchenko <stepanm@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 10 Jun 2013 01:34:59 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-fb-51b56581c643
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Emil Goode'" <emilgoode@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Andrew Lunn <andrew@lunn.ch>, Bill Pemberton <wfp5p@virginia.edu>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
+        "'Dan Carpenter'" <dan.carpenter@oracle.com>,
+        "'Andy Shevchenko'" <andy.shevchenko@gmail.com>
+References: <1370822442-25217-1-git-send-email-emilgoode@gmail.com>
+In-reply-to: <1370822442-25217-1-git-send-email-emilgoode@gmail.com>
+Subject: Re: [PATCH v2] mtd: orion_nand: Improve error handling in
+ orion_nand_probe
+Date: Mon, 10 Jun 2013 14:34:57 +0900
+Message-id: <001e01ce659c$3e582270$bb086750$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQMbR6Kq/ihb14HhXWZ1cYv/fVMtwJaUoosQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgleLIzCtJLcpLzFFi42I5/e+ZkW5j6tZAg9Z1Vhbn7x5itng54TCj
+	xZvHz5gtXv+bzmIxceVkZouWJ4vYLS4vvMRqsfWWtMXlXXPYLHY3LWO3WPX/LIsDt8fOWXfZ
+	PTav0PKYdzLQY/OSeo+dOz4zeXx8eovFo2/LKkaPz5vkPF4cf8kUwBnFZZOSmpNZllqkb5fA
+	lbF57y+2gocqFS1Pr7E1MH6V6WLk5JAQMJG4tvUSO4QtJnHh3nq2LkYuDiGBZYwSP+7NYIcp
+	+tdzjQUiMZ1RYt/MY1DOL0aJrp87WEGq2ATUJL58OQzWIQJkP3n3GGwUs0AHs8SZlg42kISQ
+	gLPEqQ1zmUFsTgEXiT1trYwgtrBAqMSklbuZQGwWAVWJ//M3soDYvAKWEpc7Ie7jFRCU+DH5
+	HlicWUBLYv3O40wQtrzE5jVvmSFOVZDYcfY1I8QRRhIXznxhg6gRkdj34h0jyEESAgs5JGZt
+	O8AKsUxA4tvkQ0BDOYASshKbDkDNkZQ4uOIGywRGiVlIVs9CsnoWktWzkKxYwMiyilE0tSC5
+	oDgpvchUrzgxt7g0L10vOT93EyMkFUzcwXj/gPUhxmSg9ROZpUST84GpJK8k3tDYzMjC1MTU
+	2Mjc0ow0YSVxXvUW60AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjIvqEjy3ePPZb9hwuGFq
+	0i+fq+LXz71e8MX+hrlN3brDd/clT+R7MXObynPdbaadwmpfeljvS/yx/vPe4HbRBY1DO2Ze
+	sbx3YorILrP/FxmCdyxW2Zn4Y/+6W1s9LhddX+Y9qdwoobZh7fOKxT1n79cuu/6pSqSno3JO
+	WtC777ELtz15LRrm9m+DEktxRqKhFnNRcSIAchjaMxsDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKKsWRmVeSWpSXmKPExsVy+t9jQd3G1K2BBt1vTCzO3z3EbPFywmFG
+	izePnzFbvP43ncVi4srJzBYtTxaxW1xeeInVYustaYvLu+awWexuWsZuser/WRYHbo+ds+6y
+	e2xeoeUx72Sgx+Yl9R47d3xm8vj49BaLR9+WVYwenzfJebw4/pIpgDOqgdEmIzUxJbVIITUv
+	OT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB+hWJYWyxJxSoFBAYnGxkr4d
+	pgmhIW66FjCNEbq+IUFwPUYGaCBhHWPG5r2/2AoeqlS0PL3G1sD4VaaLkZNDQsBE4l/PNRYI
+	W0ziwr31bF2MXBxCAtMZJfbNPMYC4fxilOj6uYMVpIpNQE3iy5fD7CC2CJD95N1jsA5mgQ5m
+	iTMtHWwgCSEBZ4lTG+Yyg9icAi4Se9paGUFsYYFQiUkrdzOB2CwCqhL/528EW80rYClxufMS
+	O4QtKPFj8j2wOLOAlsT6nceZIGx5ic1r3jJDnKogsePsa0aII4wkLpz5wgZRIyKx78U7xgmM
+	QrOQjJqFZNQsJKNmIWlZwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM40TyT2sG4ssHi
+	EKMAB6MSD++DX1sChVgTy4orcw8xSnAwK4nw/rTcGijEm5JYWZValB9fVJqTWnyIMRno04nM
+	UqLJ+cAkmFcSb2hsYmZkaWRmYWRibk6asJI474FW60AhgfTEktTs1NSC1CKYLUwcnFINjGfi
+	YztOPRG/skH0Tuj9lZHLipT2HN3lVvCF4VJxoUfJheQNjsKVnhtX3i8RkHeQ5pksKL3WZv2i
+	/Sl1CqefRkyQEvjWOU89ea7J9PXngycyPLs7KyC75OocF8GeAP4uzluG2iezu7VWnD25uPTh
+	vV3CjInvxfq2fpOd/zVa/jyrpe8yO52zV5RYijMSDbWYi4oTAT6ez7F4AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Stepan,
-
-On Fri, May 31, 2013 at 6:45 AM, Stepan Moskovchenko
-<stepanm@codeaurora.org> wrote:
-> Some LPAE-capable systems may use a Device Tree containing
-> memory nodes that describe memory extending beyond the 4GB
-> physical address boundary. Ignore or truncate these memory
-> nodes on kernels that have not been built with LPAE
-> support, to prevent the extended physical addresses from
-> being truncated and aliasing with physical addresses below
-> the 4GB boundary.
->
-> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+Monday, June 10, 2013 9:01 AM, Emil Goode wrote:
+> 
+> This patch fixes some issues in the error handling and simplifies
+> the code by converting to devm* functions.
+> 
+> If the kzalloc call fails it is unnecessary to use the label no_res
+> and pass a NULL pointer to kfree. If the devm_kzalloc call fails on
+> line 110 we forget to call iounmap for the previous ioremap call.
+> 
+> The following changes are introduced:
+> - Convert to devm_kzalloc and remove calls to kfree.
+> - Convert to devm_ioremap_resource that adds a missing call to
+>   *request_mem_region and remove calls to iounmap.
+> - The devm_ioremap_resource function checks the passed resource so
+>   we can remove the NULL check after the platform_get_resource call.
+> 
+> Signed-off-by: Emil Goode <emilgoode@gmail.com>
 > ---
->  arch/arm/kernel/devtree.c |   12 ++++++++++++
->  1 files changed, 12 insertions(+), 0 deletions(-)
+> This patch is only build tested
+> v2: Fix change log typo and remove error messages for kzalloc calls
+> 
+>  drivers/mtd/nand/orion_nand.c |   49 +++++++++++++----------------------------
+>  1 file changed, 15 insertions(+), 34 deletions(-)
+> 
+> diff --git a/drivers/mtd/nand/orion_nand.c b/drivers/mtd/nand/orion_nand.c
+> index 8fbd002..76b9fba 100644
+> --- a/drivers/mtd/nand/orion_nand.c
+> +++ b/drivers/mtd/nand/orion_nand.c
+> @@ -85,35 +85,24 @@ static int __init orion_nand_probe(struct platform_device *pdev)
+>  	int ret = 0;
+>  	u32 val = 0;
+> 
+> -	nc = kzalloc(sizeof(struct nand_chip) + sizeof(struct mtd_info), GFP_KERNEL);
+> -	if (!nc) {
+> -		printk(KERN_ERR "orion_nand: failed to allocate device structure.\n");
 
-Thanks for your efforts on fixing this issue. Before I was aware of
-this patch I wrote a different implementation to solve most likely the
-same issue, please see the following patches for more information.
-Thanks to Arnd for pointing me in the right direction.
+CC'ed Dan Carpenter, Andy Shevchenko
 
-[PATCH 00/03] ARM: 64-bit memory fixes, APE6EVM second memory bank
-[PATCH 01/03] ARM: Let arm_add_memory() always use 64-bit arguments
-[PATCH 02/03] ARM: Handle 64-bit memory in case of 32-bit phys_addr_t
-[PATCH 03/03] ARM: shmobile: Add second memory bank to DTS for APE6EVM
+You don't need to remove this error message.
+You would replace 'printk(KERN_ERR "orion_nand:...)' with
+'dev_err(&pdev->dev,)'.
 
-Regarding this patch, I have now tested it on my APE6EVM board
-together with this patch:
-
-[PATCH 03/03] ARM: shmobile: Add second memory bank to DTS for APE6EVM
-
-Without your patch the situation is as follows:
-
-HIGHMEM=n, LPAE=n - OK (busted, second bank ignored with message [1])
-HIGHMEM=y, LPAE=n - NG (busted, board hangs on boot)
-HIGHMEM=n, LPAE=y - OK
-HIGHMEM=y, LPAE=y - OK
-
-[1] Ignoring RAM at 00000000-3fffffff (vmalloc region overlap).
-
-With your patch applied I get the following:
-
-HIGHMEM=n, LPAE=n - OK (with message [2])
-HIGHMEM=y, LPAE=n - OK (with message [2])
-HIGHMEM=n, LPAE=y - OK
-HIGHMEM=y, LPAE=y - OK
-
-[2] Ignoring memory at 0x200000000 due to lack of LPAE support
+	dev_err("failed to allocate device structure.\n");
 
 
-So your patch unbreaks the second memory on my board perfectly well, thank you!
+> -		ret = -ENOMEM;
+> -		goto no_res;
+> -	}
+> +	nc = devm_kzalloc(&pdev->dev, sizeof(struct nand_chip) +
+> +			  sizeof(struct mtd_info), GFP_KERNEL);
+> +	if (!nc)
+> +		return -ENOMEM;
+> +
+>  	mtd = (struct mtd_info *)(nc + 1);
+> 
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	if (!res) {
+> -		ret = -ENODEV;
+> -		goto no_res;
+> -	}
+> -
+> -	io_base = ioremap(res->start, resource_size(res));
+> -	if (!io_base) {
+> -		printk(KERN_ERR "orion_nand: ioremap failed\n");
 
-Regarding implementation details, I wonder if we only need to cover
-the DT memory banks by performing the check inside
-early_init_dt_add_memory_arch()?
+Yes, this error message is not necessary.
+devm_ioremap_resource() provides its own error messages; so all
+explicit error messages can be removed from the failure code paths.
 
-To me the root cause of this issue seems to be how phys_addr_t is
-configured when LPAE=n. It is understandable that the kernel cannot
-handle 64-bit addresses when phys_addr_t is 32-bit, but I believe we
-need some sane way to omit those memory banks. Your patch handles the
-non-LPAE case before phys_addr_t is involved which seems to work well.
-Your approach is much better compared to as-is today with potentially
-wrapping phys_addr_t parameters to arm_add_memory().
 
-The only question in my mind is about the location for this kind of
-test, shall it be done in early_init_dt_add_memory_arch() or
-arm_add_memory()?
+> -		ret = -EIO;
+> -		goto no_res;
+> -	}
+> +	io_base = devm_ioremap_resource(&pdev->dev, res);
 
-If we care about adding some bounds checking for the kernel command
-line mem=xxx option then arm_add_memory() seems to be the best
-location from my point of view.
+How about using devm_ioremap() instead of devm_ioremap_resource()?
 
-Any ideas?
+Only ioremap() was used previously; however, devm_ioremap_resource()
+internally calls both devm_request_mem_region() and devm_ioremap().
 
-Please add me to CC if you respin your patch. I will give it a go on my board.
+If it is wrong, please let me know kindly. :)
 
-Thanks,
 
-/ magnus
+> +	if (IS_ERR(io_base))
+> +		return PTR_ERR(io_base);
+> 
+>  	if (pdev->dev.of_node) {
+>  		board = devm_kzalloc(&pdev->dev, sizeof(struct orion_nand_data),
+> -					GFP_KERNEL);
+> -		if (!board) {
+> -			printk(KERN_ERR "orion_nand: failed to allocate board structure.\n");
+
+As above mentioned, you don't need to remove this error message.
+You would replace 'printk(KERN_ERR "orion_nand:...)' with
+'dev_err(&pdev->dev,)'.
+
+	dev_err("failed to allocate board structure.\n");
+
+
+Best regards,
+Jingoo Han
+
+
+> -			ret = -ENOMEM;
+> -			goto no_res;
+> -		}
+> +				     GFP_KERNEL);
+> +		if (!board)
+> +			return -ENOMEM;
+> +
+>  		if (!of_property_read_u32(pdev->dev.of_node, "cle", &val))
+>  			board->cle = (u8)val;
+>  		else
+> @@ -167,7 +156,7 @@ static int __init orion_nand_probe(struct platform_device *pdev)
+> 
+>  	if (nand_scan(mtd, 1)) {
+>  		ret = -ENXIO;
+> -		goto no_dev;
+> +		goto disable_clk;
+>  	}
+> 
+>  	mtd->name = "orion_nand";
+> @@ -176,20 +165,17 @@ static int __init orion_nand_probe(struct platform_device *pdev)
+>  			board->parts, board->nr_parts);
+>  	if (ret) {
+>  		nand_release(mtd);
+> -		goto no_dev;
+> +		goto disable_clk;
+>  	}
+> 
+>  	return 0;
+> 
+> -no_dev:
+> +disable_clk:
+>  	if (!IS_ERR(clk)) {
+>  		clk_disable_unprepare(clk);
+>  		clk_put(clk);
+>  	}
+>  	platform_set_drvdata(pdev, NULL);
+> -	iounmap(io_base);
+> -no_res:
+> -	kfree(nc);
+> 
+>  	return ret;
+>  }
+> @@ -197,15 +183,10 @@ no_res:
+>  static int orion_nand_remove(struct platform_device *pdev)
+>  {
+>  	struct mtd_info *mtd = platform_get_drvdata(pdev);
+> -	struct nand_chip *nc = mtd->priv;
+>  	struct clk *clk;
+> 
+>  	nand_release(mtd);
+> 
+> -	iounmap(nc->IO_ADDR_W);
+> -
+> -	kfree(nc);
+> -
+>  	clk = clk_get(&pdev->dev, NULL);
+>  	if (!IS_ERR(clk)) {
+>  		clk_disable_unprepare(clk);
+> --
+> 1.7.10.4
+
