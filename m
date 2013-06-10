@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137Ab3FJNk0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 09:40:26 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:47684 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752392Ab3FJNkZ (ORCPT
+	id S1753238Ab3FJNku (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 09:40:50 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:44653 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752740Ab3FJNkt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 09:40:25 -0400
+	Mon, 10 Jun 2013 09:40:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <1370624161-2298-4-git-send-email-holzheu@linux.vnet.ibm.com>
-References: <1370624161-2298-1-git-send-email-holzheu@linux.vnet.ibm.com>
-	<1370624161-2298-4-git-send-email-holzheu@linux.vnet.ibm.com>
-Date: Mon, 10 Jun 2013 22:40:24 +0900
-Message-ID: <CABOkKT0yk6tytN=aTSdpECQWw_30m5qrZYH-W1msovkeiSeZCA@mail.gmail.com>
-Subject: Re: [PATCH v5 3/5] vmcore: Introduce remap_oldmem_pfn_range()
-From: HATAYAMA Daisuke <d.hatayama@gmail.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+In-Reply-To: <201306101510.51961.heiko@sntech.de>
+References: <201306090159.05383.heiko@sntech.de>
+	<201306090201.17739.heiko@sntech.de>
+	<CACRpkdaEcZZ3NZzwKOhUPjvFg+bSZ=UbpyPT2EBcAfVv1-EsKA@mail.gmail.com>
+	<201306101510.51961.heiko@sntech.de>
+Date: Mon, 10 Jun 2013 15:40:48 +0200
+Message-ID: <CACRpkdY9xVWxvhQLM3AUq6XEOABNnHHPquJwtrcXRgLMVhoawA@mail.gmail.com>
+Subject: Re: [EXAMPLE PATCH] pinctrl: add pinctrl driver for Rockchip SoCs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Patrice Chotard <patrice.chotard.st@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/6/8 Michael Holzheu <holzheu@linux.vnet.ibm.com>:
-<cut>
-> @@ -225,6 +251,56 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
->         return acc;
->  }
+On Mon, Jun 10, 2013 at 3:10 PM, Heiko Stübner <heiko@sntech.de> wrote:
+> Am Montag, 10. Juni 2013, 15:00:41 schrieb Linus Walleij:
+>> On Sun, Jun 9, 2013 at 2:01 AM, Heiko Stübner <heiko@sntech.de> wrote:
+>>
+>> (...)
+>>
+>> > +#include <linux/irqchip/chained_irq.h>
+>> > +#include <linux/clk-provider.h>
+>> > +#include <dt-bindings/pinctrl/rockchip.h>
+>>
+>> Hm I don't know if we're supposed to do things like this actually.
+>>
+>> It depends on whether the <dt-bindings/*> hierarchy is supposed
+>> to stay in the kernel after the device trees are moved out to a
+>> separate repo.
+>>
+>> Grant/Rob, shall we do this in drivers?
 >
-> +static ssize_t read_vmcore(struct file *file, char __user *buffer,
-> +                          size_t buflen, loff_t *fpos)
-> +{
-> +       return __read_vmcore(buffer, buflen, fpos, 1);
-> +}
-> +
-> +/*
-> + * The vmcore fault handler uses the page cache and fills data using the
-> + * standard __vmcore_read() function.
-> + */
-> +static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-> +{
-> +       struct address_space *mapping = vma->vm_private_data;
-> +       pgoff_t index = vmf->pgoff;
-> +       struct page *page;
-> +       loff_t src;
-> +       char *buf;
-> +       int rc;
-> +
-> +find_page:
-> +       page = find_lock_page(mapping, index);
-> +       if (page) {
-> +               unlock_page(page);
-> +               rc = VM_FAULT_MINOR;
-> +       } else {
-> +               page = page_cache_alloc_cold(mapping);
-> +               if (!page)
-> +                       return VM_FAULT_OOM;
-> +               rc = add_to_page_cache_lru(page, mapping, index, GFP_KERNEL);
-> +               if (rc) {
-> +                       page_cache_release(page);
-> +                       if (rc == -EEXIST)
-> +                               goto find_page;
-> +                       /* Probably ENOMEM for radix tree node */
-> +                       return VM_FAULT_OOM;
-> +               }
-> +               buf = (void *) (page_to_pfn(page) << PAGE_SHIFT);
-> +               src = index << PAGE_CACHE_SHIFT;
-> +               __read_vmcore(buf, PAGE_SIZE, &src, 0);
-> +               unlock_page(page);
-> +               rc = VM_FAULT_MAJOR;
-> +       }
-> +       vmf->page = page;
-> +       return rc;
-> +}
+> we can get rid of it, if it's controversial.
 
-How about reusing find_or_create_page()?
+We'll wait and see what the others say.
 
-Thanks.
-HATAYAMA, Daisuke
+There is no point in duplicating this info if it will
+actually stay in the kernel.
+
+Yours,
+Linus Walleij
