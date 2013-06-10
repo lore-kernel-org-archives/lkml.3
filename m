@@ -1,92 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751985Ab3FJHNY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 03:13:24 -0400
-Received: from mga09.intel.com ([134.134.136.24]:22993 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751562Ab3FJHNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 03:13:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,835,1363158000"; 
-   d="scan'208";a="326909829"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [RESEND] [char-misc 3.10] mei: nfc: fix nfc device freeing
-Date: Mon, 10 Jun 2013 10:10:26 +0300
-Message-Id: <1370848226-5910-2-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1370848226-5910-1-git-send-email-tomas.winkler@intel.com>
-References: <1370848226-5910-1-git-send-email-tomas.winkler@intel.com>
+	id S1751751Ab3FJHQE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 03:16:04 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48740 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108Ab3FJHQC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 03:16:02 -0400
+Date: Mon, 10 Jun 2013 09:15:57 +0200
+From: Jens Axboe <axboe@kernel.dk>
+To: Joel A Fernandes <agnel.joel@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        "Fernandes, Joel A" <joelagnel@ti.com>
+Subject: Re: Block layer / MMC: Order of segments in SG-list
+Message-ID: <20130610071557.GJ26541@kernel.dk>
+References: <CAD=GYpbFF_F+5xdf3PirbNkfjym+iZtHBVPuney=7fvi_yYDSA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAD=GYpbFF_F+5xdf3PirbNkfjym+iZtHBVPuney=7fvi_yYDSA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The nfc_dev is a static variable and is not cleaned properly upon reset
-mainly ndev->cl and ndev->cl_info are not set to NULL after freeing which
+On Sun, Jun 09 2013, Joel A Fernandes wrote:
+> Hi,
+> So I tried dumping addresses of an SG list in omap_hsmmc driver before
+> it is passed to DMA.
+> 
+> I found some interesting traces occasionally such as the below SG list
+> of length 4.
+> 
+> [    6.758716] (0) length=4096, sg virt addr=c1318000, sg phy addr=81318000
+> [    6.765863] (1) length=4096, sg virt addr=c1317000, sg phy addr=81317000
+> [    6.773011] (2) length=4096, sg virt addr=c1316000, sg phy addr=81316000
+> [    6.780087] (3) length=4096, sg virt addr=c1315000, sg phy addr=81315000
+> 
+> What is interesting is these chunks are really physically contiguous
+> but in reverse order in the list. I think a smarter ordering can
+> actually improve through put considerably and save precious DMA
+> resources by not having to allocate slots for parts of contiguous
+> chunk of physical memory.
+> 
+> Is there any particular reason why this might be the case? I traced to
+> find that the SG list is actually prepared by mmc_queue_map_sg ->
+> blk_rq_map_sg
 
-mei_stop:198: mei_me 0000:00:16.0: stopping the device.
-[  404.253427] general protection fault: 0000 [#2] SMP
-[  404.253437] Modules linked in: mei_me(-) binfmt_misc snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device edd af_packet cpufreq_conservative cpufreq_userspace cpufreq_powersave fuse loop dm_mod hid_generic usbhid hid coretemp acpi_cpufreq mperf kvm_intel kvm crc32c_intel ghash_clmulni_intel aesni_intel ablk_helper cryptd lrw gf128mul snd_hda_codec_hdmi glue_helper aes_x86_64 e1000e snd_hda_intel snd_hda_codec ehci_pci iTCO_wdt iTCO_vendor_support ehci_hcd snd_hwdep xhci_hcd snd_pcm usbcore ptp mei sg microcode snd_timer pps_core i2c_i801 snd pcspkr battery rtc_cmos lpc_ich mfd_core soundcore usb_common snd_page_alloc ac ext3 jbd mbcache drm_kms_helper drm intel_agp i2c_algo_bit intel_gtt i2c_core sd_mod crc_t10dif thermal fan video button processor thermal_sys hwmon ahci libahci libata scsi_mod [last unloaded: mei_me]
-[  404.253591] CPU: 0 PID: 5551 Comm: modprobe Tainted: G      D W    3.10.0-rc3 #1
-[  404.253611] task: ffff880143cd8300 ti: ffff880144a2a000 task.ti: ffff880144a2a000
-[  404.253619] RIP: 0010:[<ffffffff81334e5d>]  [<ffffffff81334e5d>] device_del+0x1d/0x1d0
-[  404.253638] RSP: 0018:ffff880144a2bcf8  EFLAGS: 00010206
-[  404.253645] RAX: 2020302e30202030 RBX: ffff880144fdb000 RCX: 0000000000000086
-[  404.253652] RDX: 0000000000000001 RSI: 0000000000000086 RDI: ffff880144fdb000
-[  404.253659] RBP: ffff880144a2bd18 R08: 0000000000000651 R09: 0000000000000006
-[  404.253666] R10: 0000000000000651 R11: 0000000000000006 R12: ffff880144fdb000
-[  404.253673] R13: ffff880149371098 R14: ffff880144482c00 R15: ffffffffa04710e0
-[  404.253681] FS:  00007f251c59a700(0000) GS:ffff88014e200000(0000) knlGS:0000000000000000
-[  404.253689] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  404.253696] CR2: ffffffffff600400 CR3: 0000000145319000 CR4: 00000000001407f0
-[  404.253703] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  404.253710] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
-[  404.253716] Stack:
-[  404.253720]  ffff880144fdb000 ffff880143ffe000 ffff880149371098 ffffffffa0471000
-[  404.253732]  ffff880144a2bd38 ffffffff8133502d ffff88014e20cf48 ffff880143ffe1d8
-[  404.253744]  ffff880144a2bd48 ffffffffa02a4749 ffff880144a2bd58 ffffffffa02a4ba1
-[  404.253755] Call Trace:
-[  404.253766]  [<ffffffff8133502d>] device_unregister+0x1d/0x60
-[  404.253787]  [<ffffffffa02a4749>] mei_cl_remove_device+0x9/0x10 [mei]
-[  404.253804]  [<ffffffffa02a4ba1>] mei_nfc_host_exit+0x21/0x30 [mei]
-[  404.253819]  [<ffffffffa029c2dd>] mei_stop+0x3d/0x90 [mei]
-[  404.253830]  [<ffffffffa046e220>] mei_me_remove+0x60/0xe0 [mei_me]
-[  404.253843]  [<ffffffff81278f37>] pci_device_remove+0x37/0xb0
-[  404.253855]  [<ffffffff81337c68>] __device_release_driver+0x98/0x100
-[  404.253865]  [<ffffffff81337d80>] driver_detach+0xb0/0xc0
-[  404.253876]  [<ffffffff81336b4f>] bus_remove_driver+0x8f/0x120
-[  404.253891]  [<ffffffff81075990>] ? try_to_wake_up+0x2b0/0x2b0
-[  404.253903]  [<ffffffff81338a48>] driver_unregister+0x58/0x90
-[  404.253913]  [<ffffffff8127906b>] pci_unregister_driver+0x2b/0xb0
-[  404.253924]  [<ffffffffa046f244>] mei_me_driver_exit+0x10/0xdcc [mei_me]
-[  404.253936]  [<ffffffff810a50d8>] SyS_delete_module+0x198/0x2b0
-[  404.253949]  [<ffffffff814850d9>] ? do_page_fault+0x9/0x10
-[  404.253961]  [<ffffffff81489692>] system_call_fastpath+0x16/0x1b
-[  404.253967] Code: 41 5c 41 5d 41 5e 41 5f c9 c3 0f 1f 40 00 55 48 89 e5 41 56 41 55 41 54 49 89 fc 53 48 8b 87 88 00 00 00 4c 8b 37 48 85 c0 74 18 <48> 8b 78 78 4c 89 e2 be 02 00 00 00 48 81 c7 f8 00 00 00 e8 3b
-[  404.254048] RIP  [<ffffffff81334e5d>] device_del+0x1d/0x1d0
+mmc or the block layer can't do much about the memory it is handed. The
+sg mappings just reflect the fact that they happened to be in reverse,
+so to speak. You are right in that having those pages in the right order
+and being able to merge the segments is a win. Unless you are heavily SG
+entry starved or your DMA controller has a high per-sg-entry overhead,
+it's usually not a big deal.
 
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/nfc.c | 2 ++
- 1 file changed, 2 insertions(+)
+That said, you should investigate WHY they are in that order :-)
 
-diff --git a/drivers/misc/mei/nfc.c b/drivers/misc/mei/nfc.c
-index 3adf8a7..d0c6907 100644
---- a/drivers/misc/mei/nfc.c
-+++ b/drivers/misc/mei/nfc.c
-@@ -142,6 +142,8 @@ static void mei_nfc_free(struct mei_nfc_dev *ndev)
- 		mei_cl_unlink(ndev->cl_info);
- 		kfree(ndev->cl_info);
- 	}
-+
-+	memset(ndev, 0, sizeof(struct mei_nfc_dev));
- }
- 
- static int mei_nfc_build_bus_name(struct mei_nfc_dev *ndev)
 -- 
-1.8.1.2
+Jens Axboe
 
