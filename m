@@ -1,39 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab3FJVQv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 17:16:51 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7474 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752530Ab3FJVQu (ORCPT
+	id S1753319Ab3FJVSf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 17:18:35 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:33351 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752095Ab3FJVSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 17:16:50 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=eB9Tj_0eLcoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=XIlBwW5Cg4gA:10 a=VwQbUJbxAAAA:8 a=usBZwVLwd1w-VwlX9swA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1370899008.9844.126.camel@gandalf.local.home>
+	Mon, 10 Jun 2013 17:18:33 -0400
+Date: Mon, 10 Jun 2013 14:18:03 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        fweisbec@gmail.com, rostedt@goodmis.org
 Subject: Re: Another RCU trace. (3.10-rc5)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, fweisbec@gmail.com,
-        Peter Zijlstra <peterz@infradead.org>
-Date: Mon, 10 Jun 2013 17:16:48 -0400
-In-Reply-To: <20130610210123.GA27154@redhat.com>
+Message-ID: <20130610211803.GR5146@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 References: <20130610195145.GA26068@redhat.com>
-	 <20130610203355.GO5146@linux.vnet.ibm.com>
-	 <20130610210123.GA27154@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+ <20130610203355.GO5146@linux.vnet.ibm.com>
+ <20130610210123.GA27154@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130610210123.GA27154@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061021-7606-0000-0000-00000C5930BB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-06-10 at 17:01 -0400, Dave Jones wrote:
+On Mon, Jun 10, 2013 at 05:01:23PM -0400, Dave Jones wrote:
 > On Mon, Jun 10, 2013 at 01:33:55PM -0700, Paul E. McKenney wrote:
->  
+> 
 >  > > I saw some of Steven's patches get merged on Friday, is there anything else
 >  > > outstanding that didn't make it in yet that I could test ?
 >  > > Or is this another new bug ?
@@ -44,9 +42,15 @@ On Mon, 2013-06-10 at 17:01 -0400, Dave Jones wrote:
 >  > 
 >  > Kind of hard to tell whether they are relevant given the interleaved
 >  > stack traces, but can't hurt to try them out.
->  
-> Here's another. Looks different.
 > 
+> Here's another. Looks different.
+
+I bet that commit d6284099 (trace: Allow idle-safe tracepoints to be
+called from irq) from the above git archive fixes this one.  Just don't
+ask how much I am willing to bet.  ;-)
+
+								Thanx, Paul
+
 > [ 2739.921649] ===============================
 > [ 2739.923894] [ INFO: suspicious RCU usage. ]
 > [ 2739.926144] 3.10.0-rc5+ #6 Not tainted
@@ -78,14 +82,6 @@ On Mon, 2013-06-10 at 17:01 -0400, Dave Jones wrote:
 > [ 2739.997036]  [<ffffffff816ea1e6>] __schedule+0x166/0x9c0
 > [ 2739.998192]  [<ffffffff816eaf60>] ? __cond_resched_softirq+0x60/0x60
 > [ 2739.999344]  [<ffffffff816eae94>] preempt_schedule+0x44/0x60
-
-Yeah, this one is fixed by a patch I sent out earlier, and I believe
-Peter Zijlstra is going to push it. It wasn't part of my queue.
-
-Peter, Are you going to take the preempt_schedule_context() patch?
-
--- Steve
-
 > [ 2740.000479]  [<ffffffff816eaf60>] ? __cond_resched_softirq+0x60/0x60
 > [ 2740.001622]  [<ffffffff816ecf64>] ? retint_careful+0x12/0x2e
 > [ 2740.002760]  [<ffffffff8110d73f>] ftrace_ops_control_func+0x10f/0x140
@@ -131,5 +127,5 @@ Peter, Are you going to take the preempt_schedule_context() patch?
 > [ 2757.623846]  [<ffffffff8106a3b0>] ? __call_usermodehelper+0x90/0x90
 > [ 2757.625829] ---[ end trace 312da8c9d32e2f2c ]---
 > 
-
+> 
 
