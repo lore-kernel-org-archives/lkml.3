@@ -1,121 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab3FJIqA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 04:46:00 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:54324 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752600Ab3FJIp7 (ORCPT
+	id S1752814Ab3FJIxH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 04:53:07 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57320 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752580Ab3FJIxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 04:45:59 -0400
-Message-ID: <51B5923F.9050801@gmail.com>
-Date: Mon, 10 Jun 2013 16:45:51 +0800
-From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 10 Jun 2013 04:53:05 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <51B593C3.7030609@jp.fujitsu.com>
+Date: Mon, 10 Jun 2013 17:52:19 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, avi.kivity@gmail.com,
-        mtosatti@redhat.com, pbonzini@redhat.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH v3 3/6] KVM: MMU: make return value of mmio page fault
- handler more readable
-References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1370595088-3315-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130610075750.GZ4725@redhat.com>
-In-Reply-To: <20130610075750.GZ4725@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>
+CC: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] vmcore: disable mmap_vmcore() if CONFIG_MMU is not defined
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2013 03:57 PM, Gleb Natapov wrote:
-> On Fri, Jun 07, 2013 at 04:51:25PM +0800, Xiao Guangrong wrote:
->> Define some meaningful names instead of raw code
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  arch/x86/kvm/mmu.c | 15 +++++----------
->>  arch/x86/kvm/mmu.h | 14 ++++++++++++++
->>  arch/x86/kvm/vmx.c |  4 ++--
->>  3 files changed, 21 insertions(+), 12 deletions(-)
->>
->> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->> index eca91bd..044d8c0 100644
->> --- a/arch/x86/kvm/mmu.c
->> +++ b/arch/x86/kvm/mmu.c
->> @@ -3222,17 +3222,12 @@ static u64 walk_shadow_page_get_mmio_spte(struct kvm_vcpu *vcpu, u64 addr)
->>  	return spte;
->>  }
->>  
->> -/*
->> - * If it is a real mmio page fault, return 1 and emulat the instruction
->> - * directly, return 0 to let CPU fault again on the address, -1 is
->> - * returned if bug is detected.
->> - */
->>  int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct)
->>  {
->>  	u64 spte;
->>  
->>  	if (quickly_check_mmio_pf(vcpu, addr, direct))
->> -		return 1;
->> +		return RET_MMIO_PF_EMULATE;
->>  
->>  	spte = walk_shadow_page_get_mmio_spte(vcpu, addr);
->>  
->> @@ -3245,7 +3240,7 @@ int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct)
->>  
->>  		trace_handle_mmio_page_fault(addr, gfn, access);
->>  		vcpu_cache_mmio_info(vcpu, addr, gfn, access);
->> -		return 1;
->> +		return RET_MMIO_PF_EMULATE;
->>  	}
->>  
->>  	/*
->> @@ -3253,13 +3248,13 @@ int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct)
->>  	 * it's a BUG if the gfn is not a mmio page.
->>  	 */
->>  	if (direct && !check_direct_spte_mmio_pf(spte))
->> -		return -1;
->> +		return RET_MMIO_PF_BUG;
->>  
->>  	/*
->>  	 * If the page table is zapped by other cpus, let CPU fault again on
->>  	 * the address.
->>  	 */
->> -	return 0;
->> +	return RET_MMIO_PF_RETRY;
->>  }
->>  EXPORT_SYMBOL_GPL(handle_mmio_page_fault_common);
->>  
->> @@ -3269,7 +3264,7 @@ static int handle_mmio_page_fault(struct kvm_vcpu *vcpu, u64 addr,
->>  	int ret;
->>  
->>  	ret = handle_mmio_page_fault_common(vcpu, addr, direct);
->> -	WARN_ON(ret < 0);
->> +	WARN_ON(ret == RET_MMIO_PF_BUG);
->>  	return ret;
->>  }
->>  
->> diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
->> index 922bfae..ba6a19c 100644
->> --- a/arch/x86/kvm/mmu.h
->> +++ b/arch/x86/kvm/mmu.h
->> @@ -52,6 +52,20 @@
->>  
->>  int kvm_mmu_get_spte_hierarchy(struct kvm_vcpu *vcpu, u64 addr, u64 sptes[4]);
->>  void kvm_mmu_set_mmio_spte_mask(u64 mmio_mask);
->> +
->> +/*
->> + * Return values of handle_mmio_page_fault_common:
->> + * RET_MMIO_PF_EMULATE: it is a real mmio page fault, emulate the instruction
->> + *			 directly.
->> + * RET_MMIO_PF_RETRY: let CPU fault again on the address.
->> + * RET_MMIO_PF_BUG: bug is detected.
->> + */
->> +enum {
->> +	RET_MMIO_PF_EMULATE = 1,
->> +	RET_MMIO_PF_RETRY = 0,
->> +	RET_MMIO_PF_BUG = -1
->> +};
-> I would order them from -1 to 1 and rename RET_MMIO_PF_BUG to
-> RET_MMIO_PF_ERROR, but no need to resend just for that.
+Hello,
 
-Fine to me. Will make a separate patch to update it later. Thanks for your review!
+This patch fixes the issue reported by Amd on an overlook of no-MMU configuration.
+
+This patch is made on top of v3.10-rc4-mmotm-2013-06-06-16-19.
+
+I tested this on x86_64 and x86 with 1GB and 5GB memory.
+
+I build this on arm without CONFIG_MMU configuration.
+
+Thanks.
+HATAYAMA, Daisuke
+
+>From e2f067a497872a9c60002c56ea550e4600072166 Mon Sep 17 00:00:00 2001
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Date: Sat, 8 Jun 2013 20:46:57 +0900
+Subject: [PATCH] vmcore: disable mmap_vmcore() if CONFIG_MMU is not defined
+
+>From Amd's report of a link-time build error in vmcore.c, it turned
+out that mmap_vmcore() work overlooked no-MMU configuraiton.
+
+In the current design, it's impossible to implement mmap_vmcore() for
+no-MMU configuration since MMU is essential in order to map physically
+non-contiguous objects (ELF header, ELF note segment and memory
+regions in the 1st kernel pointed to by PT_LOAD entries) into
+virtually contiguous user-space in ELF layout.
+
+Hence, this patch disables mmap_vmcore() if CONFIG_MMU is not defined,
+returning -ENOSYS.
+
+Another change is to fix the build error by using vmalloc_user()
+instead of calling vzalloc() and find_vm_area() in order, by which we
+no longer need to call find_vm_area() in vmcore.c that has no
+counterpart on non-MMU configuration.
+
+Also, on no-MMU configuration, because we don't export buffer for ELF
+note segment to user-space, we use vzalloc() to allocate the buffer.
+Therefore, we use differnet functions to allocate the buffer for ELF
+note segment. To avoid code duplication, introduce a helper
+alloc_elfnotes_buf().
+
+Reported-by: Amd Bergmann <arnd@arndb.de>
+Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+---
+ fs/proc/vmcore.c |   57 +++++++++++++++++++++++++++++++++++------------------
+ 1 files changed, 37 insertions(+), 20 deletions(-)
+
+diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+index 0f6db52..2850317 100644
+--- a/fs/proc/vmcore.c
++++ b/fs/proc/vmcore.c
+@@ -195,6 +195,35 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+ 	return acc;
+ }
+ 
++/**
++ * alloc_elfnotes_buf - allocate buffer for ELF note segment in
++ *                      vmalloc memory
++ *
++ * @notes_sz: size of buffer
++ *
++ * If CONFIG_MMU is defined, use vmalloc_user() to allow users to mmap
++ * the buffer to user-space by means of remap_vmalloc_range().
++ *
++ * If CONFIG_MMU is not defined, use vzalloc() since mmap_vmcore() is
++ * disabled and there's no need to allow users to mmap the buffer.
++ */
++static inline char *alloc_elfnotes_buf(size_t notes_sz)
++{
++#ifdef CONFIG_MMU
++	return vmalloc_user(notes_sz);
++#else
++	return vzalloc(notes_sz);
++#endif
++}
++
++/*
++ * Disable mmap_vmcore() if CONFIG_MMU is not defined. MMU is
++ * essential for mmap_vmcore() in order to map physically
++ * non-contiguous objects (ELF header, ELF note segment and memory
++ * regions in the 1st kernel pointed to by PT_LOAD entries) into
++ * virtually contiguous user-space in ELF layout.
++ */
++#ifdef CONFIG_MMU
+ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+ {
+ 	size_t size = vma->vm_end - vma->vm_start;
+@@ -271,6 +300,12 @@ fail:
+ 	do_munmap(vma->vm_mm, vma->vm_start, len);
+ 	return -EAGAIN;
+ }
++#else
++static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
++{
++	return -ENOSYS;
++}
++#endif
+ 
+ static const struct file_operations proc_vmcore_operations = {
+ 	.read		= read_vmcore,
+@@ -427,7 +462,6 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+ 	Elf64_Ehdr *ehdr_ptr;
+ 	Elf64_Phdr phdr;
+ 	u64 phdr_sz = 0, note_off;
+-	struct vm_struct *vm;
+ 
+ 	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+ 
+@@ -440,18 +474,10 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+ 		return rc;
+ 
+ 	*notes_sz = roundup(phdr_sz, PAGE_SIZE);
+-	*notes_buf = vzalloc(*notes_sz);
++	*notes_buf = alloc_elfnotes_buf(*notes_sz);
+ 	if (!*notes_buf)
+ 		return -ENOMEM;
+ 
+-	/*
+-	 * Allow users to remap ELF note segment buffer on vmalloc memory using
+-	 * remap_vmalloc_range.()
+-	 */
+-	vm = find_vm_area(*notes_buf);
+-	BUG_ON(!vm);
+-	vm->flags |= VM_USERMAP;
+-
+ 	rc = copy_notes_elf64(ehdr_ptr, *notes_buf);
+ 	if (rc < 0)
+ 		return rc;
+@@ -615,7 +641,6 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
+ 	Elf32_Ehdr *ehdr_ptr;
+ 	Elf32_Phdr phdr;
+ 	u64 phdr_sz = 0, note_off;
+-	struct vm_struct *vm;
+ 
+ 	ehdr_ptr = (Elf32_Ehdr *)elfptr;
+ 
+@@ -628,18 +653,10 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
+ 		return rc;
+ 
+ 	*notes_sz = roundup(phdr_sz, PAGE_SIZE);
+-	*notes_buf = vzalloc(*notes_sz);
++	*notes_buf = alloc_elfnotes_buf(*notes_sz);
+ 	if (!*notes_buf)
+ 		return -ENOMEM;
+ 
+-	/*
+-	 * Allow users to remap ELF note segment buffer on vmalloc memory using
+-	 * remap_vmalloc_range()
+-	 */
+-	vm = find_vm_area(*notes_buf);
+-	BUG_ON(!vm);
+-	vm->flags |= VM_USERMAP;
+-
+ 	rc = copy_notes_elf32(ehdr_ptr, *notes_buf);
+ 	if (rc < 0)
+ 		return rc;
+-- 
+1.7.7.6
+
