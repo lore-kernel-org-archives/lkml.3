@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab3FJVcp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 17:32:45 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:42569 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753558Ab3FJVcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 17:32:43 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Hans Verkuil <hverkuil@xs4all.nl>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH] [media] usbvision-video: fix memory leak of alt_max_pkt_size
-Date: Tue, 11 Jun 2013 01:32:29 +0400
-Message-Id: <1370899949-16987-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.1.2
+	id S1753855Ab3FJVdQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 17:33:16 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60069 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752879Ab3FJVdP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 17:33:15 -0400
+Date: Mon, 10 Jun 2013 14:33:14 -0700 (PDT)
+Message-Id: <20130610.143314.1237579707705274760.davem@davemloft.net>
+To: mst@redhat.com
+Cc: jasowang@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tuntap: fix a possible race between queue selection
+ and changing queues
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130605103332.GD31830@redhat.com>
+References: <1370421897-30933-1-git-send-email-jasowang@redhat.com>
+	<20130605103332.GD31830@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. usbvision->alt_max_pkt_size is not deallocated anywhere.
-2. if allocation of usbvision->alt_max_pkt_size fails,
-there is no proper deallocation of already acquired resources.
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Wed, 5 Jun 2013 13:33:32 +0300
 
-The patch adds kfree(usbvision->alt_max_pkt_size) to
-usbvision_release() as soon as other deallocations happen there.
-It calls usbvision_release() if allocation of
-usbvision->alt_max_pkt_size fails as soon as usbvision_release()
-is safe to work with incompletely initialized usbvision structure.
+> On Wed, Jun 05, 2013 at 04:44:57PM +0800, Jason Wang wrote:
+>> Complier may generate codes that re-read the tun->numqueues during
+>> tun_select_queue(). This may be a race if vlan->numqueues were changed in the
+>> same time and can lead unexpected result (e.g. very huge value).
+>> 
+>> We need prevent the compiler from generating such codes by adding an
+>> ACCESS_ONCE() to make sure tun->numqueues were only read once.
+>> 
+>> Bug were introduced by commit c8d68e6be1c3b242f1c598595830890b65cea64a
+>> (tuntap: multiqueue support).
+>> 
+>> Reported-by: Michael S. Tsirkin <mst@redhat.com>
+>> Cc: Michael S. Tsirkin <mst@redhat.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> 
+> Acked-by: Michael S. Tsirkin <mst@redhat.com>
+> 
+> This is a theoretical problem, right?
+> So no need for stable.
 
-Found by Linux Driver Verification project (linuxtesting.org).
-
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/media/usb/usbvision/usbvision-video.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/media/usb/usbvision/usbvision-video.c b/drivers/media/usb/usbvision/usbvision-video.c
-index d34c2af..443e783 100644
---- a/drivers/media/usb/usbvision/usbvision-video.c
-+++ b/drivers/media/usb/usbvision/usbvision-video.c
-@@ -1459,6 +1459,7 @@ static void usbvision_release(struct usb_usbvision *usbvision)
- 
- 	usbvision_remove_sysfs(usbvision->vdev);
- 	usbvision_unregister_video(usbvision);
-+	kfree(usbvision->alt_max_pkt_size);
- 
- 	usb_free_urb(usbvision->ctrl_urb);
- 
-@@ -1574,6 +1575,7 @@ static int usbvision_probe(struct usb_interface *intf,
- 	usbvision->alt_max_pkt_size = kmalloc(32 * usbvision->num_alt, GFP_KERNEL);
- 	if (usbvision->alt_max_pkt_size == NULL) {
- 		dev_err(&intf->dev, "usbvision: out of memory!\n");
-+		usbvision_release(usbvision);
- 		return -ENOMEM;
- 	}
- 
--- 
-1.8.1.2
-
+Applied, thanks.
