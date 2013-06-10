@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab3FJSnU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 14:43:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16777 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752316Ab3FJSnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 14:43:19 -0400
-Date: Mon, 10 Jun 2013 20:33:17 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Tomas Janousek <tjanouse@redhat.com>,
-        Tomas Smetana <tsmetana@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] de_thread: mt-exec should update ->real_start_time
-Message-ID: <20130610183317.GA14398@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130610183300.GA14379@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754271Ab3FJSwH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 14:52:07 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:49550 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484Ab3FJSwF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 14:52:05 -0400
+Message-ID: <1370890317.3252.10.camel@edumazet-glaptop>
+Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
+ macro
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: zhmurov@yandex-team.ru
+Cc: David Miller <davem@davemloft.net>, paulmck@linux.vnet.ibm.com,
+        klamm@yandex-team.ru, brouer@redhat.com, dipankar@in.ibm.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, David.Laight@ACULAB.COM, stable@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Date: Mon, 10 Jun 2013 11:51:57 -0700
+In-Reply-To: <51B61B22.2010604@yandex-team.ru>
+References: <1370229169.24311.119.camel@edumazet-glaptop>
+	 <20130602.202703.1059637861388689182.davem@davemloft.net>
+	 <20130603034254.GC29614@linux.vnet.ibm.com>
+	 <20130602.204915.334823676645400072.davem@davemloft.net>
+	 <51B61B22.2010604@yandex-team.ru>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-924b42d5 "Use boot based time for process start time and boot
-time in /proc" updated copy_process/do_task_stat but forgot
-about de_thread(). This breaks "ps axOT" if a sub-thread execs.
+On Mon, 2013-06-10 at 22:29 +0400, Boris B. Zhmurov wrote:
 
-Note: I think that task->start_time should die.
+> Hello David,
+> 
+> Do you think, this patch is "stable material" and should be included in
+> 3.0-stable and 3.4-stable trees? Thanks.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- fs/exec.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Yes, its in the stable queue :
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 00eaba7..aeace12 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -930,6 +930,7 @@ static int de_thread(struct task_struct *tsk)
- 		 * also take its birthdate (always earlier than our own).
- 		 */
- 		tsk->start_time = leader->start_time;
-+		tsk->real_start_time = leader->real_start_time;
- 
- 		BUG_ON(!same_thread_group(leader, tsk));
- 		BUG_ON(has_group_leader_pid(tsk));
--- 
-1.5.5.1
+http://patchwork.ozlabs.org/bundle/davem/stable/?state=*
+
+
 
