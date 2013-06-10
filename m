@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214Ab3FJRRa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 13:17:30 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:38865 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753934Ab3FJRRW (ORCPT
+	id S1753471Ab3FJRR2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 13:17:28 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:46166 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753802Ab3FJRRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 13:17:22 -0400
+	Mon, 10 Jun 2013 13:17:21 -0400
 From: Manfred Spraul <manfred@colorfullife.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
@@ -14,131 +14,210 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mike Galbraith <efault@gmx.de>,
         Manfred Spraul <manfred@colorfullife.com>
-Subject: [PATCH 5/6] ipc/sem.c: Replace shared sem_otime with per-semaphore value
-Date: Mon, 10 Jun 2013 19:16:50 +0200
-Message-Id: <1370884611-3861-6-git-send-email-manfred@colorfullife.com>
+Subject: [PATCH 4/6] ipc/sem.c: Always use only one queue for alter operations.
+Date: Mon, 10 Jun 2013 19:16:49 +0200
+Message-Id: <1370884611-3861-5-git-send-email-manfred@colorfullife.com>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1370884611-3861-5-git-send-email-manfred@colorfullife.com>
+In-Reply-To: <1370884611-3861-4-git-send-email-manfred@colorfullife.com>
 References: <1370884611-3861-1-git-send-email-manfred@colorfullife.com>
  <1370884611-3861-2-git-send-email-manfred@colorfullife.com>
  <1370884611-3861-3-git-send-email-manfred@colorfullife.com>
  <1370884611-3861-4-git-send-email-manfred@colorfullife.com>
- <1370884611-3861-5-git-send-email-manfred@colorfullife.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sem_otime contains the time of the last semaphore operation
-that completed successfully. Every operation updates this
-value, thus access from multiple cpus can cause trashing.
+There are two places that can contain alter operations:
+- the global queue: sma->pending_alter
+- the per-semaphore queues: sma->sem_base[].pending_alter.
 
-Therefore the patch replaces the variable with a per-semaphore
-variable. The per-array sem_otime is only calculated when required.
+Since one of the queues must be processed first, this causes an odd
+priorization of the wakeups:
+Right now, complex operations have priority over simple ops.
 
-No performance improvement on a single-socket i3 - only important
-for larger systems.
+The patch restores the behavior of linux <=3.0.9: The longest
+waiting operation has the highest priority.
+
+This is done by using only one queue:
+- if there are complex ops, then sma->pending_alter is used.
+- otherwise, the per-semaphore queues are used.
+
+As a side effect, do_smart_update_queue() becomes much simpler:
+No more goto logic.
 
 Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
 ---
- include/linux/sem.h |  1 -
- ipc/sem.c           | 37 +++++++++++++++++++++++++++++++------
- 2 files changed, 31 insertions(+), 7 deletions(-)
+ ipc/sem.c | 128 ++++++++++++++++++++++++++++++++++++++++++--------------------
+ 1 file changed, 88 insertions(+), 40 deletions(-)
 
-diff --git a/include/linux/sem.h b/include/linux/sem.h
-index 55e17f6..976ce3a 100644
---- a/include/linux/sem.h
-+++ b/include/linux/sem.h
-@@ -12,7 +12,6 @@ struct task_struct;
- struct sem_array {
- 	struct kern_ipc_perm	____cacheline_aligned_in_smp
- 				sem_perm;	/* permissions .. see ipc.h */
--	time_t			sem_otime;	/* last semop time */
- 	time_t			sem_ctime;	/* last change time */
- 	struct sem		*sem_base;	/* ptr to first semaphore in array */
- 	struct list_head	pending_alter;	/* pending operations */
 diff --git a/ipc/sem.c b/ipc/sem.c
-index dcf99ef..e6d21f6 100644
+index e7f3d64..dcf99ef 100644
 --- a/ipc/sem.c
 +++ b/ipc/sem.c
-@@ -99,6 +99,7 @@ struct sem {
- 					/* that alter the semaphore */
- 	struct list_head pending_const; /* pending single-sop operations */
- 					/* that do not alter the semaphore*/
-+	time_t	sem_otime;	/* candidate for sem_otime */
- } ____cacheline_aligned_in_smp;
- 
- /* One queue for each sleeping process in the system. */
-@@ -909,8 +910,14 @@ static void do_smart_update(struct sem_array *sma, struct sembuf *sops, int nsop
- 			}
- 		}
- 	}
--	if (otime)
--		sma->sem_otime = get_seconds();
-+	if (otime) {
-+		if (sops == NULL) {
-+			sma->sem_base[0].sem_otime = get_seconds();
-+		} else {
-+			sma->sem_base[sops[0].sem_num].sem_otime =
-+								get_seconds();
-+		}
-+	}
+@@ -192,6 +192,53 @@ void __init sem_init (void)
+ 				IPC_SEM_IDS, sysvipc_sem_proc_show);
  }
  
- 
-@@ -1056,6 +1063,21 @@ static unsigned long copy_semid_to_user(void __user *buf, struct semid64_ds *in,
- 	}
- }
- 
-+static time_t get_semotime(struct sem_array *sma)
++/**
++ * unmerge_queues - unmerge queues, if possible.
++ * @sma: semaphore array
++ *
++ * The function unmerges the wait queues if complex_count is 0.
++ * It must be called prior to dropping the global semaphore array lock.
++ */
++static void unmerge_queues(struct sem_array *sma)
 +{
-+	int i;
-+	time_t res;
++	struct sem_queue *q, *tq;
 +
-+	res = sma->sem_base[0].sem_otime;
-+	for (i = 1; i < sma->sem_nsems; i++) {
-+		time_t to = sma->sem_base[i].sem_otime;
++	/* complex operations still around? */
++	if (sma->complex_count)
++		return;
++	/*
++	 * We will switch back to simple mode.
++	 * Move all pending operation back into the per-semaphore
++	 * queues.
++	 */
++	list_for_each_entry_safe(q, tq, &sma->pending_alter, list) {
++		struct sem *curr;
++		curr = &sma->sem_base[q->sops[0].sem_num];
 +
-+		if (to > res)
-+			res = to;
++		list_add_tail(&q->list, &curr->pending_alter);
 +	}
-+	return res;
++	INIT_LIST_HEAD(&sma->pending_alter);
 +}
 +
- static int semctl_nolock(struct ipc_namespace *ns, int semid,
- 			 int cmd, int version, void __user *p)
- {
-@@ -1129,9 +1151,9 @@ static int semctl_nolock(struct ipc_namespace *ns, int semid,
- 			goto out_unlock;
- 
- 		kernel_to_ipc64_perm(&sma->sem_perm, &tbuf.sem_perm);
--		tbuf.sem_otime  = sma->sem_otime;
--		tbuf.sem_ctime  = sma->sem_ctime;
--		tbuf.sem_nsems  = sma->sem_nsems;
-+		tbuf.sem_otime = get_semotime(sma);
-+		tbuf.sem_ctime = sma->sem_ctime;
-+		tbuf.sem_nsems = sma->sem_nsems;
- 		rcu_read_unlock();
- 		if (copy_semid_to_user(p, &tbuf, version))
- 			return -EFAULT;
-@@ -2019,6 +2041,9 @@ static int sysvipc_sem_proc_show(struct seq_file *s, void *it)
- {
- 	struct user_namespace *user_ns = seq_user_ns(s);
- 	struct sem_array *sma = it;
-+	time_t sem_otime;
++/**
++ * merge_queues - Merge single semop queues into global queue
++ * @sma: semaphore array
++ *
++ * This function merges all per-semaphore queues into the global queue.
++ * It is necessary to achieve FIFO ordering for the pending single-sop
++ * operations when a multi-semop operation must sleep.
++ * Only the alter operations must be moved, the const operations can stay.
++ */
++static void merge_queues(struct sem_array *sma)
++{
++	int i;
++	for (i = 0; i < sma->sem_nsems; i++) {
++		struct sem *sem = sma->sem_base + i;
 +
-+	sem_otime = get_semotime(sma);
++		list_splice_init(&sem->pending_alter, &sma->pending_alter);
++	}
++}
++
+ /*
+  * If the request contains only one semaphore operation, and there are
+  * no complex transactions pending, lock only the semaphore involved.
+@@ -262,6 +309,7 @@ static inline int sem_lock(struct sem_array *sma, struct sembuf *sops,
+ static inline void sem_unlock(struct sem_array *sma, int locknum)
+ {
+ 	if (locknum == -1) {
++		unmerge_queues(sma);
+ 		spin_unlock(&sma->sem_perm.lock);
+ 	} else {
+ 		struct sem *sem = sma->sem_base + locknum;
+@@ -829,49 +877,38 @@ static void do_smart_update(struct sem_array *sma, struct sembuf *sops, int nsop
+ 			int otime, struct list_head *pt)
+ {
+ 	int i;
+-	int progress;
  
- 	return seq_printf(s,
- 			  "%10d %10d  %4o %10u %5u %5u %5u %5u %10lu %10lu\n",
-@@ -2030,7 +2055,7 @@ static int sysvipc_sem_proc_show(struct seq_file *s, void *it)
- 			  from_kgid_munged(user_ns, sma->sem_perm.gid),
- 			  from_kuid_munged(user_ns, sma->sem_perm.cuid),
- 			  from_kgid_munged(user_ns, sma->sem_perm.cgid),
--			  sma->sem_otime,
-+			  sem_otime,
- 			  sma->sem_ctime);
+ 	otime |= do_smart_wakeup_zero(sma, sops, nsops, pt);
+ 
+-	progress = 1;
+-retry_global:
+-	if (sma->complex_count) {
+-		if (update_queue(sma, -1, pt)) {
+-			progress = 1;
+-			otime = 1;
+-			sops = NULL;
+-		}
+-	}
+-	if (!progress)
+-		goto done;
+-
+-	if (!sops) {
+-		/* No semops; something special is going on. */
+-		for (i = 0; i < sma->sem_nsems; i++) {
+-			if (update_queue(sma, i, pt)) {
+-				otime = 1;
+-				progress = 1;
++	if (!list_empty(&sma->pending_alter)) {
++		/* semaphore array uses the global queue - just process it. */
++		otime |= update_queue(sma, -1, pt);
++	} else {
++		if (!sops) {
++			/*
++			 * No sops, thus the modified semaphores are not
++			 * known. Check all.
++			 */
++			for (i = 0; i < sma->sem_nsems; i++)
++				otime |= update_queue(sma, i, pt);
++		} else {
++			/*
++			 * Check the semaphores that were increased:
++			 * - No complex ops, thus all sleeping ops are
++			 *   decrease.
++			 * - if we decreased the value, then any sleeping
++			 *   semaphore ops wont be able to run: If the
++			 *   previous value was too small, then the new
++			 *   value will be too small, too.
++			 */
++			for (i = 0; i < nsops; i++) {
++				if (sops[i].sem_op > 0) {
++					otime |= update_queue(sma,
++							sops[i].sem_num, pt);
++				}
+ 			}
+ 		}
+-		goto done_checkretry;
+-	}
+-
+-	/* Check the semaphores that were modified. */
+-	for (i = 0; i < nsops; i++) {
+-		if (sops[i].sem_op > 0 ||
+-			(sops[i].sem_op < 0 &&
+-				sma->sem_base[sops[i].sem_num].semval == 0))
+-			if (update_queue(sma, sops[i].sem_num, pt)) {
+-				otime = 1;
+-				progress = 1;
+-			}
+-	}
+-done_checkretry:
+-	if (progress) {
+-		progress = 0;
+-		goto retry_global;
+ 	}
+-done:
+ 	if (otime)
+ 		sma->sem_otime = get_seconds();
  }
- #endif
+@@ -1741,11 +1778,22 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
+ 		struct sem *curr;
+ 		curr = &sma->sem_base[sops->sem_num];
+ 
+-		if (alter)
+-			list_add_tail(&queue.list, &curr->pending_alter);
+-		else
++		if (alter) {
++			if (sma->complex_count) {
++				list_add_tail(&queue.list,
++						&sma->pending_alter);
++			} else {
++
++				list_add_tail(&queue.list,
++						&curr->pending_alter);
++			}
++		} else {
+ 			list_add_tail(&queue.list, &curr->pending_const);
++		}
+ 	} else {
++		if (!sma->complex_count)
++			merge_queues(sma);
++
+ 		if (alter)
+ 			list_add_tail(&queue.list, &sma->pending_alter);
+ 		else
 -- 
 1.8.1.4
 
