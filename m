@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751708Ab3FJHKP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 03:10:15 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:44199 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab3FJHKO (ORCPT
+	id S1751830Ab3FJHLc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 03:11:32 -0400
+Received: from eu1sys200aog122.obsmtp.com ([207.126.144.153]:38725 "EHLO
+	eu1sys200aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751511Ab3FJHLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 03:10:14 -0400
+	Mon, 10 Jun 2013 03:11:31 -0400
+Message-ID: <51B57BA0.3060702@st.com>
+Date: Mon, 10 Jun 2013 08:09:20 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-From: =?UTF-8?B?5Yav5Yqb?= <lifeng1519@gmail.com>
-Date: Mon, 10 Jun 2013 15:09:43 +0800
-Message-ID: <CAEK8JBBKfNaUVkk7nvHki4TDiLFExkoGR5QTxDujxgtk4QyvkQ@mail.gmail.com>
-Subject: [PATCH] fs/cepth compile error
-To: linux-kernel <linux-kernel@vger.kernel.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Mark Brown <broonie@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] regmap: Add regmap_field APIs
+References: <1369753080-1929-1-git-send-email-srinivas.kandagatla@st.com> <51B4A693.4080503@metafoo.de>
+In-Reply-To: <51B4A693.4080503@metafoo.de>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I try to compile kernel v3.9.2 v3.9.5, It outputs couldn't find fs/cepth/ioctl.o
-Go to the dir and couldn't find the ioctl.c,only a ioctl.h file.But
-the ioctl.h isn't included by other file.
-So simply remove ioctl.o from the Makefile to fix.
+On 09/06/13 17:00, Lars-Peter Clausen wrote:
+> [...]
+>> +int regmap_field_write(struct regmap_field *field, unsigned int val)
+>> +{
+>> +	int field_bits;
+>> +	unsigned int reg_mask;
+>> +	field_bits = field->msb - field->lsb + 1;
+>> +	reg_mask = ((BIT(field_bits) - 1) << field->lsb);
+>> +	return regmap_update_bits(field->regmap, field->reg,
+>> +				reg_mask, val << field->lsb);
+> 
+> Considering that you'd do the same calculations over and over again it would
+> probably make more sense store the mask rather than the msb in the struct
+It makes sense, I will do that change.
 
-Thanks
+Thanks,
+srini
+> 
+>> +}
+>> +EXPORT_SYMBOL_GPL(regmap_field_write);
 
-commit d8e29a9f5a2474ac0dcb26baa3cf29075f3ce980
-Author: vonnyfly <lifeng1519@gmail.com>
-Date:   Mon Jun 10 14:53:38 2013 +0800
-
-    fix ioctl.o not find error
----
- fs/ceph/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/ceph/Makefile b/fs/ceph/Makefile
-index bd35212..e0d2294 100644
---- a/fs/ceph/Makefile
-+++ b/fs/ceph/Makefile
-@@ -4,7 +4,7 @@
-
- obj-$(CONFIG_CEPH_FS) += ceph.o
-
--ceph-y := super.o inode.o dir.o file.o locks.o addr.o ioctl.o \
-+ceph-y := super.o inode.o dir.o file.o locks.o addr.o \
-        export.o caps.o snap.o xattr.o \
-        mds_client.o mdsmap.o strings.o ceph_frag.o \
-        debugfs.o
-
---
-Thanks and Best Regards,
-vonnyfly
-
-Cell:13401157876
-Email :lifeng1519@gmail.com
-Addr: Rm. 911,DaYunCun,Zhichun Road,Haidian Districts Beijing,100191
