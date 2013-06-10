@@ -1,273 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910Ab3FJGEs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 02:04:48 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:34123 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997Ab3FJGEp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 02:04:45 -0400
-Date: Sun, 9 Jun 2013 23:04:42 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-input@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net
-Subject: Re: [PATCH V3 1/2] tps6507x-ts: Add DT support
-Message-ID: <20130610060442.GA30158@core.coreip.homeip.net>
-References: <1369126458-24872-1-git-send-email-manishv.b@ti.com>
- <1369126458-24872-2-git-send-email-manishv.b@ti.com>
+	id S1751301Ab3FJGTJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 02:19:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4054 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751088Ab3FJGTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 02:19:08 -0400
+Date: Mon, 10 Jun 2013 09:18:49 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: David Daney <david.s.daney@gmail.com>
+Cc: David Daney <ddaney@caviumnetworks.com>,
+        David Daney <ddaney.cavm@gmail.com>, kvm@vger.kernel.org,
+        linux-mips@linux-mips.org, ralf@linux-mips.org,
+        Sanjay Lal <sanjayl@kymasys.com>, linux-kernel@vger.kernel.org,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 00/31] KVM/MIPS: Implement hardware virtualization via
+ the MIPS-VZ extensions.
+Message-ID: <20130610061849.GX4725@redhat.com>
+References: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com>
+ <51B26974.5000306@caviumnetworks.com>
+ <20130609073115.GE4725@redhat.com>
+ <51B50E87.2060501@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1369126458-24872-2-git-send-email-manishv.b@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51B50E87.2060501@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Manish,
-
-On Tue, May 21, 2013 at 02:24:17PM +0530, Vishwanathrao Badarkhe, Manish wrote:
-> Add device tree based support for TI's tps6507x touchscreen.
+On Sun, Jun 09, 2013 at 04:23:51PM -0700, David Daney wrote:
+> On 06/09/2013 12:31 AM, Gleb Natapov wrote:
+> >On Fri, Jun 07, 2013 at 04:15:00PM -0700, David Daney wrote:
+> >>I should also add that I will shortly send patches for the kvm tool
+> >>required to drive this VM as well as a small set of patches that
+> >>create a para-virtualized MIPS/Linux guest kernel.
+> >>
+> >>The idea is that because there is no standard SMP linux system, we
+> >>create a standard para-virtualized system that uses a handful of
+> >>hypercalls, but mostly just uses virtio devices.  It has no emulated
+> >>real hardware (no 8250 UART, no emulated legacy anything...)
+> >>
+> >Virtualization is useful for running legacy code. Why dismiss support
+> >for non pv guests so easily?
 > 
-> Tested on da850-evm.
+> Just because we create standard PV system devices, doesn't preclude
+> emulating real hardware.  In fact Sanjay Lal's work includes QEMU
+> support for doing just this for a MIPS malta board.  I just wanted a
+> very simple system I could implement with the kvm tool in a couple
+> of days, so that is what I initially did.
 > 
-> Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
-> ---
-> Changes since V2:
->  - Removed unnecessary code.
->  - Updated Documentation to provide proper names of
->    devicetree properties.
-> 
-> Changes since V1:
->  - Updated documentation to specify tps6507x as multifunctional
->    device.
->  - return proper error value in absence of platform and DT
->    data for touchscreen.
->  - Updated commit message.
-> 
-> :100755 100755 8fffa3c... 65ee2cd... M	Documentation/devicetree/bindings/mfd/tps6507x.txt
-> :100644 100644 65e0f9a... 89232ee... M	drivers/input/touchscreen/tps6507x-ts.c
->  Documentation/devicetree/bindings/mfd/tps6507x.txt |   28 ++++++-
->  drivers/input/touchscreen/tps6507x-ts.c            |   98 ++++++++++++++------
->  2 files changed, 95 insertions(+), 31 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/mfd/tps6507x.txt b/Documentation/devicetree/bindings/mfd/tps6507x.txt
-> index 8fffa3c..65ee2cd 100755
-> --- a/Documentation/devicetree/bindings/mfd/tps6507x.txt
-> +++ b/Documentation/devicetree/bindings/mfd/tps6507x.txt
-> @@ -1,4 +1,8 @@
-> -TPS6507x Power Management Integrated Circuit
-> +TPS6507x Multifunctional Device.
-> +
-> +Features provided by TPS6507x:
-> +        1.Power Management Integrated Circuit.
-> +        2.Touch-Screen.
->  
->  Required properties:
->  - compatible: "ti,tps6507x"
-> @@ -23,6 +27,12 @@ Required properties:
->         vindcdc1_2-supply: VDCDC1 and VDCDC2 input.
->         vindcdc3-supply  : VDCDC3 input.
->         vldo1_2-supply   : VLDO1 and VLDO2 input.
-> +- tsc: This node specifies touch screen data.
-> +	ti,poll-period : Time at which touch input is getting sampled in ms.
-> +	ti,min-pressure: Minimum pressure value to trigger touch.
-> +	ti,vref	       : voltage reference for ADC.
-> +		      0: Reference voltage for ADC is disabled.
-> +		      1: Reference voltage for ADC is enabled.
->  
->  Regulator Optional properties:
->  - defdcdc_default: It's property of DCDC2 and DCDC3 regulators.
-> @@ -30,6 +40,14 @@ Regulator Optional properties:
->  			1: If defdcdc pin of DCDC2/DCDC3 is driven HIGH.
->    If this property is not defined, it defaults to 0 (not enabled).
->  
-> +Touchscreen Optional properties:
-> +- ti,vendor : Touchscreen vendor id to populate
-> +	      in sysclass interface.
-> +- ti,product: Touchscreen product id to populate
-> +	      in sysclass interface.
-> +- ti,version: Touchscreen version id to populate
-> +	      in sysclass interface.
-> +
->  Example:
->  
->  	pmu: tps6507x@48 {
-> @@ -88,4 +106,12 @@ Example:
->  			};
->  		};
->  
-> +		tsc {
-> +			ti,poll-period = <30>;
-> +			ti,min-pressure = <0x30>;
-> +			ti,vref = <0>;
-> +			ti,vendor = <0>;
-> +			ti,product = <65070>;
-> +			ti,version = <0x100>;
-> +		};
->  	};
-> diff --git a/drivers/input/touchscreen/tps6507x-ts.c b/drivers/input/touchscreen/tps6507x-ts.c
-> index 65e0f9a..89232ee 100644
-> --- a/drivers/input/touchscreen/tps6507x-ts.c
-> +++ b/drivers/input/touchscreen/tps6507x-ts.c
-> @@ -21,6 +21,8 @@
->  #include <linux/mfd/tps6507x.h>
->  #include <linux/input/tps6507x-ts.h>
->  #include <linux/delay.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
->  
->  #define TSC_DEFAULT_POLL_PERIOD 30 /* ms */
->  #define TPS_DEFAULT_MIN_PRESSURE 0x30
-> @@ -231,36 +233,76 @@ done:
->  	ret = tps6507x_adc_standby(tsc);
->  }
->  
-> +static int tsc_init_data(struct tps6507x_dev *tps6507x_dev,
-> +		struct input_dev *input_dev)
-> +{
-> +	struct device_node *node = tps6507x_dev->dev->of_node;
-> +	struct tps6507x_board *tps_board =
-> +		(struct tps6507x_board *)tps6507x_dev->dev->platform_data;
+That makes sense. From your wording I misunderstood that there is something
+in proposed patches that requires PV to run a guest.
 
-
-Please make tps_board const pointer and use dev_get_platdata() to fetch
-it.
-
-> +	struct touchscreen_init_data *init_data = NULL;
-> +	int err;
-> +
-> +	if (node)
-> +		node = of_find_node_by_name(node, "tsc");
-
-Why do you have to locate OF node manually instead of already having it
-attached to the device stucture?
-
-> +	if (tps_board)
-> +		init_data = tps_board->tps6507x_ts_init_data;
-> +
-> +	if (node == NULL || init_data == NULL) {
-> +		err = -EINVAL;
-> +		goto error_ret;
-> +	} else if (init_data) {
-> +		tps6507x_dev->ts->poll_period = init_data->poll_period;
-> +		tps6507x_dev->ts->min_pressure = init_data->min_pressure;
-> +		tps6507x_dev->ts->vref = init_data->vref;
-> +		input_dev->id.vendor = init_data->vendor;
-> +		input_dev->id.product = init_data->product;
-> +		input_dev->id.version = init_data->version;
-> +	} else if (node) {
-> +		err = of_property_read_u32(node, "ti,poll-period",
-> +					(u32 *)&tps6507x_dev->ts->poll_period);
-> +		if (err < 0)
-> +			goto error_ret;
-> +
-> +		err = of_property_read_u16(node, "ti,min-pressure",
-> +					&tps6507x_dev->ts->min_pressure);
-> +		if (err < 0)
-> +			goto error_ret;
-> +
-> +		err = of_property_read_u32(node, "ti,vref",
-> +					&tps6507x_dev->ts->vref);
-
-I do not think it is used anywhere, see a patch I just sent out.
-
-> +		if (err < 0)
-> +			goto error_ret;
-> +
-> +		err = of_property_read_u16(node, "ti,vendor",
-> +					&input_dev->id.vendor);
-> +		if (err < 0)
-> +			goto error_ret;
-> +
-> +		err = of_property_read_u16(node, "ti,product",
-> +					&input_dev->id.product);
-> +		if (err < 0)
-> +			goto error_ret;
-> +
-> +		err = of_property_read_u16(node, "ti,version",
-> +					&input_dev->id.version);
-
-You say these 3 properties are optional, so why do you err out if you
-fail to read them?
-
-> +		if (err < 0)
-> +			goto error_ret;
-> +	}
-> +
-> +	return 0;
-> +
-> +error_ret:
-> +	return err;
-> +}
-> +
->  static int tps6507x_ts_probe(struct platform_device *pdev)
->  {
->  	int error;
->  	struct tps6507x_ts *tsc;
->  	struct tps6507x_dev *tps6507x_dev = dev_get_drvdata(pdev->dev.parent);
-> -	struct touchscreen_init_data *init_data;
->  	struct input_dev *input_dev;
-> -	struct tps6507x_board *tps_board;
->  	int schd;
->  
-> -	/**
-> -	 * tps_board points to pmic related constants
-> -	 * coming from the board-evm file.
-> -	 */
-> -
-> -	tps_board = (struct tps6507x_board *)tps6507x_dev->dev->platform_data;
-> -
-> -	if (!tps_board) {
-> -		dev_err(tps6507x_dev->dev,
-> -			"Could not find tps6507x platform data\n");
-> -		return -EIO;
-> -	}
-> -
-> -	/**
-> -	 * init_data points to array of regulator_init structures
-> -	 * coming from the board-evm file.
-> -	 */
-> -
-> -	init_data = tps_board->tps6507x_ts_init_data;
-> -
->  	tsc = devm_kzalloc(&pdev->dev, sizeof(struct tps6507x_ts), GFP_KERNEL);
->  	if (!tsc) {
->  		dev_err(tps6507x_dev->dev, "failed to allocate driver data\n");
-> @@ -301,14 +343,10 @@ static int tps6507x_ts_probe(struct platform_device *pdev)
->  
->  	INIT_DELAYED_WORK(&tsc->work, tps6507x_ts_handler);
->  
-> -	if (init_data) {
-> -		tsc->poll_period = init_data->poll_period;
-> -		tsc->vref = init_data->vref;
-> -		tsc->min_pressure = init_data->min_pressure;
-> -		input_dev->id.vendor = init_data->vendor;
-> -		input_dev->id.product = init_data->product;
-> -		input_dev->id.version = init_data->version;
-> -	} else {
-> +	error = tsc_init_data(tps6507x_dev, input_dev);
-> +
-> +	if (error) {
-> +		dev_warn(&pdev->dev, "Use default platform data\n");
-
-Why do we have to warn here?
-
-Also, this is not reqlly equivalent transformation of the old code,
-which allowed to partially specify init data and would substitute some
-of it with defaults.
-
->  		tsc->poll_period = TSC_DEFAULT_POLL_PERIOD;
->  		tsc->min_pressure = TPS_DEFAULT_MIN_PRESSURE;
->  	}
-> -- 
-> 1.7.4.1
-> 
-
-Thanks.
-
--- 
-Dmitry
+--
+			Gleb.
