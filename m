@@ -1,131 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751386Ab3FJEMu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 00:12:50 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:16556 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750707Ab3FJEMs convert rfc822-to-8bit (ORCPT
+	id S1751372Ab3FJEOV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 00:14:21 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:42015 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997Ab3FJEOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 00:12:48 -0400
-X-IronPort-AV: E=Sophos;i="4.87,834,1363104000"; 
-   d="scan'208";a="7511766"
-Subject: Re: [PATCH RFC v2 0/3] add cpu physically hotplug driver
-From: li guang <lig.fnst@cn.fujitsu.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org,
-        Andreas =?ISO-8859-1?Q?F=E4rber?= <afaerber@suse.de>,
-        Igor Mammedov <imammedo@redhat.com>
-In-Reply-To: <51B54D51.2070505@jp.fujitsu.com>
-References: <1370482835-764-1-git-send-email-lig.fnst@cn.fujitsu.com>
-	 <5449620.11SBDUltzF@vostro.rjw.lan>
-	 <1370824567.21655.10.camel@liguang.fnst.cn.fujitsu.com>
-	 <51B54D51.2070505@jp.fujitsu.com>
-Date: Mon, 10 Jun 2013 12:04:21 +0800
-Message-ID: <1370837061.21655.54.camel@liguang.fnst.cn.fujitsu.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/10 12:04:05,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/10 12:04:09,
-	Serialize complete at 2013/06/10 12:04:09
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 10 Jun 2013 00:14:19 -0400
+Message-ID: <51B55296.5030006@linaro.org>
+Date: Mon, 10 Jun 2013 09:44:14 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Tomasz Figa <tomasz.figa@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        patches@linaro.org, Sachin Kamat <sachin.kamat@linaro.org>
+Subject: Re: [PATCH 2/3] ARM: dts: Add FIMD node to Origen4210 board
+References: <1370603235-11193-1-git-send-email-tushar.behera@linaro.org> <1370603235-11193-3-git-send-email-tushar.behera@linaro.org> <5527415.fcM1OgADxD@flatron>
+In-Reply-To: <5527415.fcM1OgADxD@flatron>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-在 2013-06-10一的 12:51 +0900，Yasuaki Ishimatsu写道：
-> 2013/06/10 9:36, li guang wrote:
-> > Hi, Rafael
-> >
-> > 在 2013-06-06四的 13:00 +0200，Rafael J. Wysocki写道：
-> >> On Thursday, June 06, 2013 09:40:32 AM liguang wrote:
-> >>> This patch-set try to support physically hot-plug/unplug
-> >>> a cpu automatically, that is:
-> >>> if you offline a cpu, it will automatically actually remove
-> >>> a cpu, and if you hot-plug a cpu, then it will online this
-> >>> cpu automatically.
-> >>
-> >> No and no.
-> >
-> > Hmm... are you saying cpu online/offline designed to distinguish
-> > with real cpu plug/unplug?
-> > but, what the actual usage of online/offline?
-> > forgive my foolish.
-> >
-> >>
-> >> Why do you need this?
-> >>
-> >
-> > e.g. for QEMU case, if hot-plug a cpu,
+On 06/08/2013 04:19 PM, Tomasz Figa wrote:
+> On Friday 07 of June 2013 16:37:14 Tushar Behera wrote:
+>> From: Sachin Kamat <sachin.kamat@linaro.org>
+>>
+>> Added FIMD and display timing node to Origen4210 board.
+>>
+>> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+>> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+>> ---
+>>  arch/arm/boot/dts/exynos4210-origen.dts |   21 +++++++++++++++++++++
+>>  1 file changed, 21 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/exynos4210-origen.dts
+>> b/arch/arm/boot/dts/exynos4210-origen.dts index bcf8079..4c6c3cd 100644
+>> --- a/arch/arm/boot/dts/exynos4210-origen.dts
+>> +++ b/arch/arm/boot/dts/exynos4210-origen.dts
+>> @@ -290,4 +290,25 @@
+>>  			clock-frequency = <24000000>;
+>>  		};
+>>  	};
+>> +
+>> +	fimd@11c00000 {
+>> +		pinctrl-0 = <&lcd_en &lcd_clk &lcd_data24 &pwm0_out>;
 > 
-> > we have to online a cpu manually if there's
-> > no user space support like udev to do it automatically.
+> Ahh, this would explain the two pwm pin groups from previous patch.
 > 
-> I could not understand why you do not use udev.
-> Please explain in detail.
-
-I did not say I can't use udev now,
-just for in case someone can't.
-
-> 
-> > and also, I think maybe online/offline should be naturally
-> > integrated with real plug/unplug process of CPU.
-> 
-> I could not understand this explanation too.
-> Why do we need it?
+> This seems somehow incorrect, though. AFAIK PWM outputs are not managed by 
+> FIMD in any way.
 > 
 
-actually, I am asking if CPU online/offline have real purpose,
-you offline a CPU, then threads can't run on it,
-you online a CPU, then threads can run on it,
-so, the purpose here is just bouncing threads?
-obviously not, any profound historical reasons?
+I couldn't find any better place to put the pwm0_out pin configurations.
+Without configuring pwm0_out pins, display doesn't come up on the LCD.
+Any suggestions?
 
-I boldly think maybe online/offline should be integrated into
-real plug/unplug process of CPU.
-
-Thanks!
-
-> >
-> >>
-> >>
-> >>> so, offline is just like eject, but eject attribute seems not
-> >>> available since recent kernel(can't figure out when), with
-> >>> this driver, if allowed, it will trigger a eject cpu process.
-> >>> and for automatically online, it was said there are objections,
-> >>> don't know the reason, so, send this patch-set boldly.
-> >>>
-> >>> of course, this approach is for QEMU 's hotplug cpu emulation
-> >>> only, but not limited, if someone like to explore ec space to
-> >>> implment cpu hot-plug/unplug for real platform please
-> >>> feel free to continue.
-> >>>
-> >>> Li Guang (3)
-> >>> 	 drivers/platform/x86: add cpu physically hotplug driver
-> >>> 	 ec: add ec space notifier
-> >>> 	 cpu_physic_hotplug: register handler for ec space notifier
-> >>>
-> >>> drivers/acpi/ec.c                         | 32 ++++++++++++++++++++++++++++++++
-> >>> drivers/platform/x86/Kconfig              |  8 ++++
-> >>> drivers/platform/x86/Makefile             |  1 +
-> >>> drivers/platform/x86/cpu_physic_hotplug.c | 90 +++++++++++++++++++++++++++++
-> >>> include/linux/acpi.h                      |  2 ++
-> >>> 5 files changed, 130 insertions(+), 3 deletions(-)
-> >>>   create mode 100644 drivers/platform/x86/cpu_physic_hotplug.c
-> >
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> >
+>> +		pinctrl-names = "default";
+>> +		status = "okay";
+>> +	};
+>> +
+>> +	display-timings {
+>> +		native-mode = <&timing0>;
+>> +		timing0: timing {
+>> +			clock-frequency = <50000>;
 > 
+> Hmm, 50 KHz for pixel clock? Isn't it a bit too low? Or am I missing 
+> something?
 > 
 
+Actually clock-frequency value is not used by DRM-FIMD, but instead
+required by the framework.
 
+Still it would be better to provide the actual pixel clock value here.
+So I would update this with 40MHz which is actual pixel clock used on my
+board.
+
+> Best regards,
+> Tomasz
+> 
+>> +			hactive = <1024>;
+>> +			vactive = <600>;
+>> +			hfront-porch = <64>;
+>> +			hback-porch = <16>;
+>> +			hsync-len = <48>;
+>> +			vback-porch = <64>;
+>> +			vfront-porch = <16>;
+>> +			vsync-len = <3>;
+>> +		};
+>> +	};
+>>  };
+
+Thanks for your review.
+
+-- 
+Tushar Behera
