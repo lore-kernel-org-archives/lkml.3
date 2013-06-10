@@ -1,38 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113Ab3FJWKg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 18:10:36 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:39795 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790Ab3FJWKf (ORCPT
+	id S1752387Ab3FJWK7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 18:10:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4500 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752096Ab3FJWK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 18:10:35 -0400
-Date: Mon, 10 Jun 2013 15:10:31 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, fweisbec@gmail.com
+	Mon, 10 Jun 2013 18:10:58 -0400
+X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=eB9Tj_0eLcoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=XIlBwW5Cg4gA:10 a=VwQbUJbxAAAA:8 a=D19gQVrFAAAA:8 a=IjJRYWstNwOpoeDe-NIA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1370902256.9844.131.camel@gandalf.local.home>
 Subject: Re: Another RCU trace. (3.10-rc5)
-Message-ID: <20130610221031.GV5146@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130610195145.GA26068@redhat.com>
- <20130610203355.GO5146@linux.vnet.ibm.com>
- <20130610210123.GA27154@redhat.com>
- <20130610211803.GR5146@linux.vnet.ibm.com>
- <1370900256.9844.128.camel@gandalf.local.home>
- <20130610215421.GA31251@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: paulmck@linux.vnet.ibm.com, Linux Kernel <linux-kernel@vger.kernel.org>,
+        fweisbec@gmail.com, Peter Zijlstra <peterz@infradead.org>
+Date: Mon, 10 Jun 2013 18:10:56 -0400
 In-Reply-To: <20130610215421.GA31251@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061022-7606-0000-0000-00000C598402
+References: <20130610195145.GA26068@redhat.com>
+	 <20130610203355.GO5146@linux.vnet.ibm.com>
+	 <20130610210123.GA27154@redhat.com>
+	 <20130610211803.GR5146@linux.vnet.ibm.com>
+	 <1370900256.9844.128.camel@gandalf.local.home>
+	 <20130610215421.GA31251@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 05:54:21PM -0400, Dave Jones wrote:
+On Mon, 2013-06-10 at 17:54 -0400, Dave Jones wrote:
 > On Mon, Jun 10, 2013 at 05:37:36PM -0400, Steven Rostedt wrote:
 >  > On Mon, 2013-06-10 at 14:18 -0700, Paul E. McKenney wrote:
 >  > > On Mon, Jun 10, 2013 at 05:01:23PM -0400, Dave Jones wrote:
@@ -69,45 +70,15 @@ On Mon, Jun 10, 2013 at 05:54:21PM -0400, Dave Jones wrote:
 > 
 > So maybe that patch was a winner after all and got dropped ?
 
-Please see below for the patch that I was thinking of.
+I don't think it got dropped, it just seemed that it would go through
+Peter:
 
-It has not been dropped, I was on travel and a bit slow about pushing
-things.
+https://lkml.org/lkml/2013/6/6/456
 
-							Thanx, Paul
+-- Steve
 
-------------------------------------------------------------------------
+> 
+> 	Dave
+>  
 
-trace: Allow idle-safe tracepoints to be called from irq
-
-__DECLARE_TRACE_RCU() currently creates an _rcuidle() tracepoint which
-may safely be invoked from what RCU considers to be an idle CPU.
-However, these _rcuidle() tracepoints may -not- be invoked from the
-handler of an irq taken from idle, because rcu_idle_enter() zeroes
-RCU's nesting-level counter, so that the rcu_irq_exit() returning to
-idle will trigger a WARN_ON_ONCE().
-
-This commit therefore substitutes rcu_irq_enter() for rcu_idle_exit()
-and rcu_irq_exit() for rcu_idle_enter() in order to make the _rcuidle()
-tracepoints usable from irq handlers as well as from process context.
-
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index 2f322c3..f8e084d 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -145,8 +145,8 @@ static inline void tracepoint_synchronize_unregister(void)
- 				TP_PROTO(data_proto),			\
- 				TP_ARGS(data_args),			\
- 				TP_CONDITION(cond),			\
--				rcu_idle_exit(),			\
--				rcu_idle_enter());			\
-+				rcu_irq_enter(),			\
-+				rcu_irq_exit());			\
- 	}
- #else
- #define __DECLARE_TRACE_RCU(name, proto, args, cond, data_proto, data_args)
 
