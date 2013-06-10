@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129Ab3FJQKx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 12:10:53 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:41338 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab3FJQKu (ORCPT
+	id S1752639Ab3FJQOv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 12:14:51 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:29301 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030Ab3FJQOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 12:10:50 -0400
-X-AuditID: cbfec7f4-b7fd76d0000035e1-bc-51b5fa876f80
-Message-id: <51B5FA86.5090705@samsung.com>
-Date: Mon, 10 Jun 2013 18:10:46 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-version: 1.0
-To: broonie@opensource.wolfsonmicro.com
-Cc: grant.likely@linaro.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH] spi: s3c64xx: Fix pm_runtime_get_sync() return value check
-References: <1369666560-12436-1-git-send-email-s.nawrocki@samsung.com>
-In-reply-to: <1369666560-12436-1-git-send-email-s.nawrocki@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t/xa7rtv7YGGkzrMbP4N/sUm8WBPzsY
-	Lc42vWG3uLxrDpvFjPP7mBxYPe5c28Pm8XLibzaPvi2rGD0+b5ILYInisklJzcksSy3St0vg
-	ypj86BRjwTKuitvdW5gbGOdwdDFyckgImEgceDiNCcIWk7hwbz1bFyMXh5DAUkaJ7T1X2CGc
-	T4wSZ3tmsIBU8QpoSfz8fp4ZxGYRUJXYc+cFmM0mYCjRe7SPEcQWFQiQWLzkHDtEvaDEj8n3
-	gHo5OEQE1CW2HtcBmcks0Mkosf7nerB6YQF/iVedU8DmCwm4Sfy+ewtsJqeAu0Tj3HY2EJtZ
-	QEdif+s0KFteYvOat8wTGAVmIVkxC0nZLCRlCxiZVzGKppYmFxQnpeca6hUn5haX5qXrJefn
-	bmKEBPKXHYyLj1kdYhTgYFTi4X3wa0ugEGtiWXFl7iFGCQ5mJRHe5DdbA4V4UxIrq1KL8uOL
-	SnNSiw8xMnFwSjUwNq3iX9FszzY/ZV9Q16Pd8QfPsi26Kad3/OuXlzPsemRN12QvmVyqcazP
-	Y3OpzGaRVyxNjMwzd2h803xZ+tLF+t/H9DkfjWaklr7foZYrVqUknWHjZzOlp/Ttu2M6nd3H
-	HHOPtN83yDv+MvLhai0OVT6j/tsKpUpNf6+s1/jnHhfftlvvpus5JZbijERDLeai4kQAU4re
-	kEICAAA=
+	Mon, 10 Jun 2013 12:14:50 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+To: akpm@linux-foundation.org
+Cc: davidlohr.bueso@hp.com, riel@redhat.com, walken@google.com,
+        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] ipc: don't allocate with GFP_KERNEL inside rcu read lock
+Date: Mon, 10 Jun 2013 12:14:30 -0400
+Message-Id: <1370880870-23833-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2013 04:56 PM, Sylwester Nawrocki wrote:
-> If the device is already in a runtime PM enabled state
-> pm_runtime_get_sync() will return 1, so a test for negative
-> value should be used to check for errors.
-> 
-> Without this patch there are seen errors like:
-> 
-> [    8.540000] s3c64xx-spi 13930000.spi: Failed to enable device: 1
-> [    8.545000] spi_master spi1: failed to prepare transfer hardware
-> 
-> Likely because the driver uses synchronous API to runtime enable
-> the device and asychronous one to disable it.
+ipc_addid() is protected by a rcu read lock, which means we can't allocate
+using GFP_KERNEL inside it.
 
-Is there anything wrong with this patch ? I still can't see it in
-Linus' tree.
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
 
-> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/spi/spi-s3c64xx.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
-> index 5000586..71cc3e6 100644
-> --- a/drivers/spi/spi-s3c64xx.c
-> +++ b/drivers/spi/spi-s3c64xx.c
-> @@ -444,7 +444,7 @@ static int s3c64xx_spi_prepare_transfer(struct spi_master *spi)
->  	}
->  
->  	ret = pm_runtime_get_sync(&sdd->pdev->dev);
-> -	if (ret != 0) {
-> +	if (ret < 0) {
->  		dev_err(dev, "Failed to enable device: %d\n", ret);
->  		goto out_tx;
->  	}
-> 
+Another option would be to call idr_preload from outside the read lock,
+but that complicates the code much more than this fix. If that's the
+preferred method to fix it I can resend that solution instead.
 
-Thanks,
-Sylwester
+ ipc/util.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ipc/util.c b/ipc/util.c
+index a746abb..00aca85 100644
+--- a/ipc/util.c
++++ b/ipc/util.c
+@@ -261,7 +261,7 @@ int ipc_addid(struct ipc_ids* ids, struct kern_ipc_perm* new, int size)
+ 	if (ids->in_use >= size)
+ 		return -ENOSPC;
+ 
+-	idr_preload(GFP_KERNEL);
++	idr_preload(GFP_ATOMIC);
+ 
+ 	spin_lock_init(&new->lock);
+ 	new->deleted = 0;
+-- 
+1.8.1.2
+
