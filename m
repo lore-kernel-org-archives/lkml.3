@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235Ab3FJRRb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 13:17:31 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:48352 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753948Ab3FJRRY (ORCPT
+	id S1754214Ab3FJRRa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 13:17:30 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:38865 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753934Ab3FJRRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 13:17:24 -0400
+	Mon, 10 Jun 2013 13:17:22 -0400
 From: Manfred Spraul <manfred@colorfullife.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
@@ -14,120 +14,131 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mike Galbraith <efault@gmx.de>,
         Manfred Spraul <manfred@colorfullife.com>
-Subject: [PATCH 6/6] ipc/sem.c: Rename try_atomic_semop() to perform_atomic_semop(), docu update
-Date: Mon, 10 Jun 2013 19:16:51 +0200
-Message-Id: <1370884611-3861-7-git-send-email-manfred@colorfullife.com>
+Subject: [PATCH 5/6] ipc/sem.c: Replace shared sem_otime with per-semaphore value
+Date: Mon, 10 Jun 2013 19:16:50 +0200
+Message-Id: <1370884611-3861-6-git-send-email-manfred@colorfullife.com>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1370884611-3861-6-git-send-email-manfred@colorfullife.com>
+In-Reply-To: <1370884611-3861-5-git-send-email-manfred@colorfullife.com>
 References: <1370884611-3861-1-git-send-email-manfred@colorfullife.com>
  <1370884611-3861-2-git-send-email-manfred@colorfullife.com>
  <1370884611-3861-3-git-send-email-manfred@colorfullife.com>
  <1370884611-3861-4-git-send-email-manfred@colorfullife.com>
  <1370884611-3861-5-git-send-email-manfred@colorfullife.com>
- <1370884611-3861-6-git-send-email-manfred@colorfullife.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup: Some minor points that I noticed while writing the
-previous patches
+sem_otime contains the time of the last semaphore operation
+that completed successfully. Every operation updates this
+value, thus access from multiple cpus can cause trashing.
 
-1) The name try_atomic_semop() is misleading: The function performs the
-   operation (if it is possible).
+Therefore the patch replaces the variable with a per-semaphore
+variable. The per-array sem_otime is only calculated when required.
 
-2) Some documentation updates.
-
-No real code change, a rename and documentation changes.
+No performance improvement on a single-socket i3 - only important
+for larger systems.
 
 Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
 ---
- ipc/sem.c | 32 +++++++++++++++++++++-----------
- 1 file changed, 21 insertions(+), 11 deletions(-)
+ include/linux/sem.h |  1 -
+ ipc/sem.c           | 37 +++++++++++++++++++++++++++++++------
+ 2 files changed, 31 insertions(+), 7 deletions(-)
 
+diff --git a/include/linux/sem.h b/include/linux/sem.h
+index 55e17f6..976ce3a 100644
+--- a/include/linux/sem.h
++++ b/include/linux/sem.h
+@@ -12,7 +12,6 @@ struct task_struct;
+ struct sem_array {
+ 	struct kern_ipc_perm	____cacheline_aligned_in_smp
+ 				sem_perm;	/* permissions .. see ipc.h */
+-	time_t			sem_otime;	/* last semop time */
+ 	time_t			sem_ctime;	/* last change time */
+ 	struct sem		*sem_base;	/* ptr to first semaphore in array */
+ 	struct list_head	pending_alter;	/* pending operations */
 diff --git a/ipc/sem.c b/ipc/sem.c
-index e6d21f6..f9d1c06 100644
+index dcf99ef..e6d21f6 100644
 --- a/ipc/sem.c
 +++ b/ipc/sem.c
-@@ -154,12 +154,15 @@ static int sysvipc_sem_proc_show(struct seq_file *s, void *it);
- #define SEMOPM_FAST	64  /* ~ 372 bytes on stack */
+@@ -99,6 +99,7 @@ struct sem {
+ 					/* that alter the semaphore */
+ 	struct list_head pending_const; /* pending single-sop operations */
+ 					/* that do not alter the semaphore*/
++	time_t	sem_otime;	/* candidate for sem_otime */
+ } ____cacheline_aligned_in_smp;
  
- /*
-- * linked list protection:
-+ * Locking:
-  *	sem_undo.id_next,
-+ *	sem_array.complex_count,
-  *	sem_array.pending{_alter,_cont},
-- *	sem_array.sem_undo: sem_lock() for read/write
-+ *	sem_array.sem_undo: global sem_lock() for read/write
-  *	sem_undo.proc_next: only "current" is allowed to read/write that field.
-  *	
-+ *	sem_array.sem_base[i].pending_{const,alter}:
-+ *		global or semaphore sem_lock() for read/write
-  */
- 
- #define sc_semmsl	sem_ctls[0]
-@@ -536,12 +539,19 @@ SYSCALL_DEFINE3(semget, key_t, key, int, nsems, int, semflg)
- 	return ipcget(ns, &sem_ids(ns), &sem_ops, &sem_params);
+ /* One queue for each sleeping process in the system. */
+@@ -909,8 +910,14 @@ static void do_smart_update(struct sem_array *sma, struct sembuf *sops, int nsop
+ 			}
+ 		}
+ 	}
+-	if (otime)
+-		sma->sem_otime = get_seconds();
++	if (otime) {
++		if (sops == NULL) {
++			sma->sem_base[0].sem_otime = get_seconds();
++		} else {
++			sma->sem_base[sops[0].sem_num].sem_otime =
++								get_seconds();
++		}
++	}
  }
  
--/*
-- * Determine whether a sequence of semaphore operations would succeed
-- * all at once. Return 0 if yes, 1 if need to sleep, else return error code.
-+/** perform_atomic_semop - Perform (if possible) a semaphore operation
-+ * @sma: semaphore array
-+ * @sops: array with operations that should be checked
-+ * @nsems: number of sops
-+ * @un: undo array
-+ * @pid: pid that did the change
-+ *
-+ * Returns 0 if the operation was possible.
-+ * Returns 1 if the operation is impossible, the caller must sleep.
-+ * Negative values are error codes.
-  */
  
--static int try_atomic_semop (struct sem_array * sma, struct sembuf * sops,
-+static int perform_atomic_semop(struct sem_array *sma, struct sembuf *sops,
- 			     int nsops, struct sem_undo *un, int pid)
- {
- 	int result, sem_op;
-@@ -724,8 +734,8 @@ static int wake_const_ops(struct sem_array *sma, int semnum,
- 		q = container_of(walk, struct sem_queue, list);
- 		walk = walk->next;
- 
--		error = try_atomic_semop(sma, q->sops, q->nsops,
--						q->undo, q->pid);
-+		error = perform_atomic_semop(sma, q->sops, q->nsops,
-+						 q->undo, q->pid);
- 
- 		if (error <= 0) {
- 			/* operation completed, remove from queue & wakeup */
-@@ -836,7 +846,7 @@ again:
- 		if (semnum != -1 && sma->sem_base[semnum].semval == 0)
- 			break;
- 
--		error = try_atomic_semop(sma, q->sops, q->nsops,
-+		error = perform_atomic_semop(sma, q->sops, q->nsops,
- 					 q->undo, q->pid);
- 
- 		/* Does q->sleeper still need to sleep? */
-@@ -1680,7 +1690,6 @@ static int get_queue_result(struct sem_queue *q)
- 	return error;
+@@ -1056,6 +1063,21 @@ static unsigned long copy_semid_to_user(void __user *buf, struct semid64_ds *in,
+ 	}
  }
  
--
- SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
- 		unsigned, nsops, const struct timespec __user *, timeout)
++static time_t get_semotime(struct sem_array *sma)
++{
++	int i;
++	time_t res;
++
++	res = sma->sem_base[0].sem_otime;
++	for (i = 1; i < sma->sem_nsems; i++) {
++		time_t to = sma->sem_base[i].sem_otime;
++
++		if (to > res)
++			res = to;
++	}
++	return res;
++}
++
+ static int semctl_nolock(struct ipc_namespace *ns, int semid,
+ 			 int cmd, int version, void __user *p)
  {
-@@ -1778,7 +1787,8 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
- 	if (un && un->semid == -1)
- 		goto out_unlock_free;
+@@ -1129,9 +1151,9 @@ static int semctl_nolock(struct ipc_namespace *ns, int semid,
+ 			goto out_unlock;
  
--	error = try_atomic_semop (sma, sops, nsops, un, task_tgid_vnr(current));
-+	error = perform_atomic_semop(sma, sops, nsops, un,
-+					task_tgid_vnr(current));
- 	if (error <= 0) {
- 		if (alter && error == 0)
- 			do_smart_update(sma, sops, nsops, 1, &tasks);
+ 		kernel_to_ipc64_perm(&sma->sem_perm, &tbuf.sem_perm);
+-		tbuf.sem_otime  = sma->sem_otime;
+-		tbuf.sem_ctime  = sma->sem_ctime;
+-		tbuf.sem_nsems  = sma->sem_nsems;
++		tbuf.sem_otime = get_semotime(sma);
++		tbuf.sem_ctime = sma->sem_ctime;
++		tbuf.sem_nsems = sma->sem_nsems;
+ 		rcu_read_unlock();
+ 		if (copy_semid_to_user(p, &tbuf, version))
+ 			return -EFAULT;
+@@ -2019,6 +2041,9 @@ static int sysvipc_sem_proc_show(struct seq_file *s, void *it)
+ {
+ 	struct user_namespace *user_ns = seq_user_ns(s);
+ 	struct sem_array *sma = it;
++	time_t sem_otime;
++
++	sem_otime = get_semotime(sma);
+ 
+ 	return seq_printf(s,
+ 			  "%10d %10d  %4o %10u %5u %5u %5u %5u %10lu %10lu\n",
+@@ -2030,7 +2055,7 @@ static int sysvipc_sem_proc_show(struct seq_file *s, void *it)
+ 			  from_kgid_munged(user_ns, sma->sem_perm.gid),
+ 			  from_kuid_munged(user_ns, sma->sem_perm.cuid),
+ 			  from_kgid_munged(user_ns, sma->sem_perm.cgid),
+-			  sma->sem_otime,
++			  sem_otime,
+ 			  sma->sem_ctime);
+ }
+ #endif
 -- 
 1.8.1.4
 
