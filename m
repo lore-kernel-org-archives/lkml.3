@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971Ab3FJHs6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 03:48:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34106 "EHLO mx2.suse.de"
+	id S1751996Ab3FJH5C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 03:57:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56728 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751411Ab3FJHs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 03:48:57 -0400
-Date: Mon, 10 Jun 2013 09:48:54 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [patch -v4 4/8] memcg: enhance memcg iterator to support
- predicates
-Message-ID: <20130610074854.GA5138@dhcp22.suse.cz>
-References: <1370254735-13012-1-git-send-email-mhocko@suse.cz>
- <1370254735-13012-5-git-send-email-mhocko@suse.cz>
+	id S1751117Ab3FJH5A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 03:57:00 -0400
+Date: Mon, 10 Jun 2013 10:56:56 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v3 0/6] KVM: MMU: fast invalidate all mmio sptes
+Message-ID: <20130610075656.GY4725@redhat.com>
+References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370254735-13012-5-git-send-email-mhocko@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just for the record. I squash the following doc update to the patch in
-the next version.
----
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 811967a..9ca85ff 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -42,11 +42,19 @@ struct mem_cgroup_reclaim_cookie {
- };
- 
- enum mem_cgroup_filter_t {
--	VISIT,
--	SKIP,
--	SKIP_TREE,
-+	VISIT,		/* visit current node */
-+	SKIP,		/* skip the current node and continue traversal */
-+	SKIP_TREE,	/* skip the whole subtree and continue traversal */
- };
- 
-+/*
-+ * mem_cgroup_filter_t predicate might instruct mem_cgroup_iter_cond how to
-+ * iterate through the hierarchy tree. Each tree element is checked by the
-+ * predicate before it is returned by the iterator. If a filter returns
-+ * SKIP or SKIP_TREE then the iterator code continues traversal (with the
-+ * next node down the hierarchy or the next node that doesn't belong under the
-+ * memcg's subtree).
-+ */
- typedef enum mem_cgroup_filter_t
- (*mem_cgroup_iter_filter)(struct mem_cgroup *memcg, struct mem_cgroup *root);
- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 91740f7..43e955a 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1073,6 +1073,14 @@ skip_node:
- 			prev_cgroup = next_cgroup;
- 			goto skip_node;
- 		case SKIP_TREE:
-+			/*
-+			 * cgroup_rightmost_descendant is not an optimal way to
-+			 * skip through a subtree (especially for imbalanced
-+			 * trees leaning to right) but that's what we have right
-+			 * now. More effective solution would be traversing
-+			 * right-up for first non-NULL without calling
-+			 * cgroup_next_descendant_pre afterwards.
-+			 */
- 			prev_cgroup = cgroup_rightmost_descendant(next_cgroup);
- 			goto skip_node;
- 		case VISIT:
--- 
-Michal Hocko
-SUSE Labs
+On Fri, Jun 07, 2013 at 04:51:22PM +0800, Xiao Guangrong wrote:
+> Changelog:
+> V3:
+>   All of these changes are from Gleb's review:
+>   1) rename RET_MMIO_PF_EMU to RET_MMIO_PF_EMULATE.
+>   2) smartly adjust kvm generation number in kvm_current_mmio_generatio()
+>      to avoid kvm_memslots->generation overflow.
+> 
+> V2:
+>   - rename kvm_mmu_invalid_mmio_spte to kvm_mmu_invalid_mmio_sptes
+>   - use kvm->memslots->generation as kvm global generation-number
+>   - fix comment and codestyle
+>   - init kvm generation close to mmio wrap-around value
+>   - keep kvm_mmu_zap_mmio_sptes
+> 
+> The current way is holding hot mmu-lock and walking all shadow pages, this
+> is not scale. This patchset tries to introduce a very simple and scale way
+> to fast invalidate all mmio sptes - it need not walk any shadow pages and hold
+> any locks.
+> 
+> The idea is simple:
+> KVM maintains a global mmio valid generation-number which is stored in
+> kvm->memslots.generation and every mmio spte stores the current global
+> generation-number into his available bits when it is created
+> 
+> When KVM need zap all mmio sptes, it just simply increase the global
+> generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
+> then it walks the shadow page table and get the mmio spte. If the
+> generation-number on the spte does not equal the global generation-number,
+> it will go to the normal #PF handler to update the mmio spte
+> 
+> Since 19 bits are used to store generation-number on mmio spte, we zap all
+> mmio sptes when the number is round
+> 
+Looks good to me, but doesn't tis obsolete kvm_mmu_zap_mmio_sptes() and
+sp->mmio_cached, so they should be removed as part of the patch series?
+
+> Xiao Guangrong (6):
+>   KVM: MMU: retain more available bits on mmio spte
+>   KVM: MMU: store generation-number into mmio spte
+>   KVM: MMU: make return value of mmio page fault handler more readable
+>   KVM: MMU: fast invalidate all mmio sptes
+>   KVM: MMU: add tracepoint for check_mmio_spte
+>   KVM: MMU: init kvm generation close to mmio wrap-around value
+> 
+>  arch/x86/include/asm/kvm_host.h |   2 +-
+>  arch/x86/kvm/mmu.c              | 131 ++++++++++++++++++++++++++++++++--------
+>  arch/x86/kvm/mmu.h              |  17 ++++++
+>  arch/x86/kvm/mmutrace.h         |  34 +++++++++--
+>  arch/x86/kvm/paging_tmpl.h      |  10 ++-
+>  arch/x86/kvm/vmx.c              |  12 ++--
+>  arch/x86/kvm/x86.c              |  11 +++-
+>  7 files changed, 177 insertions(+), 40 deletions(-)
+> 
+> -- 
+> 1.8.1.4
+
+--
+			Gleb.
