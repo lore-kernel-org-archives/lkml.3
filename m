@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753057Ab3FJROc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 13:14:32 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:57508 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484Ab3FJROa (ORCPT
+	id S1753271Ab3FJRP7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 13:15:59 -0400
+Received: from mail.advaoptical.com ([91.217.199.15]:53991 "EHLO
+	mail.advaoptical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318Ab3FJRP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 13:14:30 -0400
-Message-ID: <51B60973.1080506@gmail.com>
-Date: Mon, 10 Jun 2013 10:14:27 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Mon, 10 Jun 2013 13:15:57 -0400
+From: Oded Gabbay <ogabbay@advaoptical.com>
+To: <gregkh@linuxfoundation.org>, <cjb@laptop.org>, <dirk.behme@de.bosch.com>
+CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <ogabbay@advaoptical.com>
+Subject: [PATCH] MMC: FSL SDHC: Add support for non-removable card. Kernel version 3.4.48
+Date: Mon, 10 Jun 2013 20:15:40 +0300
+Message-ID: <1370884540-25238-1-git-send-email-ogabbay@advaoptical.com>
+X-Mailer: git-send-email 1.8.3
 MIME-Version: 1.0
-To: Sanjay Lal <sanjayl@kymasys.com>
-CC: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH 00/31] KVM/MIPS: Implement hardware virtualization via
- the MIPS-VZ extensions.
-References: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com> <8D7771A4-B51E-4FA8-9342-621FE41792DE@kymasys.com>
-In-Reply-To: <8D7771A4-B51E-4FA8-9342-621FE41792DE@kymasys.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [192.168.179.55]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8626,1.0.431,0.0.0000
+ definitions=2013-06-10_04:2013-06-10,2013-06-10,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2013 09:43 AM, Sanjay Lal wrote:
->
-> On Jun 7, 2013, at 4:03 PM, David Daney wrote:
->
->> From: David Daney <david.daney@cavium.com>
->>
->> These patches take a somewhat different approach to MIPS
->> virtualization via the MIPS-VZ extensions than the patches previously
->> sent by Sanjay Lal.
->>
->> Several facts about the code:
->>
->>
->> o Currently probably only usable on the OCTEON III CPU model, as some
->>   MIPS-VZ implementation-defined behaviors were assumed to have the
->>   OCTEON III behavior.
->>
->
->
-> I've only briefly gone over the patches, but I was wondering if the Cavium implementation has support for GuestIDs, which are optional in the VZ-ASE?
->
+This patch adds support of recognizing non-removable cards
+to Freescale's SDHC host driver. This is done by detecting the
+attribute "non-removable" in the probe function
 
-No, OCTEON III does not support this optional behavior.  For the most 
-part this only impacts TLB management.  I think in the context of KVM, 
-you cannot leave foreign Guest's TLB entries present in the Guest TLB 
-anyhow, so the feature is of little use.
+This patch depends on patch[2/3] from 6-jun-2013:
+https://patchwork.kernel.org/patch/2649381/
 
-Since MIPS TLBs are managed by software, it is valid for a guest to 
-populate the TLB in any way it desires.  To have the hypervisor (KVM) 
-come and randomly invalidate the TLB, via the GuestID mechanism, would 
-both be detectable by the guest, and potentially make the guest operate 
-incorrectly.
+This patch is instead of patch[3/3] from 6-jun-2013:
+https://patchwork.kernel.org/patch/2649231/
 
-David Daney
+Signed-off-by: Oded Gabbay <ogabbay@advaoptical.com>
+---
+ drivers/mmc/host/sdhci-of-esdhc.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-> Regards
-> Sanjay
->
->
->
->
+diff --git a/drivers/mmc/host/sdhci-of-esdhc.c b/drivers/mmc/host/sdhci-of-esdhc.c
+index e70f22f..a6e068c 100644
+--- a/drivers/mmc/host/sdhci-of-esdhc.c
++++ b/drivers/mmc/host/sdhci-of-esdhc.c
+@@ -222,6 +222,10 @@ static int __devinit sdhci_esdhc_probe(struct platform_device *pdev)
+ 		host->quirks2 |= SDHCI_QUIRK2_BROKEN_HOST_CONTROL;
+ 	}
+ 
++	/* Check if card is non-removable */
++	if (of_find_property(np, "non-removable", NULL))
++		host->caps |= MMC_CAP_NONREMOVABLE;
++
+ 	ret = sdhci_add_host(host);
+ 	if (ret)
+ 		sdhci_pltfm_free(pdev);
+-- 
+1.8.3
 
