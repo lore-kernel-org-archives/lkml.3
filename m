@@ -1,70 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab3FJVyc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 17:54:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46111 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753734Ab3FJVya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 17:54:30 -0400
-Date: Mon, 10 Jun 2013 17:54:21 -0400
-From: Dave Jones <davej@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: paulmck@linux.vnet.ibm.com, Linux Kernel <linux-kernel@vger.kernel.org>,
-        fweisbec@gmail.com
-Subject: Re: Another RCU trace. (3.10-rc5)
-Message-ID: <20130610215421.GA31251@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Steven Rostedt <rostedt@goodmis.org>, paulmck@linux.vnet.ibm.com,
-	Linux Kernel <linux-kernel@vger.kernel.org>, fweisbec@gmail.com
-References: <20130610195145.GA26068@redhat.com>
- <20130610203355.GO5146@linux.vnet.ibm.com>
- <20130610210123.GA27154@redhat.com>
- <20130610211803.GR5146@linux.vnet.ibm.com>
- <1370900256.9844.128.camel@gandalf.local.home>
+	id S1754045Ab3FJVyk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 17:54:40 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:45649 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753824Ab3FJVyi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 17:54:38 -0400
+Date: Mon, 10 Jun 2013 14:54:31 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
+Message-ID: <20130610215431.GT5146@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130609193657.GA13392@linux.vnet.ibm.com>
+ <1370900106.3252.11.camel@edumazet-glaptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370900256.9844.128.camel@gandalf.local.home>
+In-Reply-To: <1370900106.3252.11.camel@edumazet-glaptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061021-5518-0000-0000-00000F844BDE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 05:37:36PM -0400, Steven Rostedt wrote:
- > On Mon, 2013-06-10 at 14:18 -0700, Paul E. McKenney wrote:
- > > On Mon, Jun 10, 2013 at 05:01:23PM -0400, Dave Jones wrote:
- > > > On Mon, Jun 10, 2013 at 01:33:55PM -0700, Paul E. McKenney wrote:
- > > > 
- > > >  > > I saw some of Steven's patches get merged on Friday, is there anything else
- > > >  > > outstanding that didn't make it in yet that I could test ?
- > > >  > > Or is this another new bug ?
- > > >  > 
- > > >  > I have three fixes queued up at:
- > > >  > 
- > > >  > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/urgent
- > > >  > 
- > > >  > Kind of hard to tell whether they are relevant given the interleaved
- > > >  > stack traces, but can't hurt to try them out.
- > > > 
- > > > Here's another. Looks different.
- > > 
- > > I bet that commit d6284099 (trace: Allow idle-safe tracepoints to be
- > > called from irq) from the above git archive fixes this one.  Just don't
- > > ask how much I am willing to bet.  ;-)
- > 
- > Don't bet much ;-)  This has nothing to do with tracepoints. It's due to
- > the function tracer. 
+On Mon, Jun 10, 2013 at 02:35:06PM -0700, Eric Dumazet wrote:
+> On Sun, 2013-06-09 at 12:36 -0700, Paul E. McKenney wrote:
+> > Breaking up locks is better than implementing high-contention locks, but
+> > if we must have high-contention locks, why not make them automatically
+> > switch between light-weight ticket locks at low contention and queued
+> > locks at high contention?
+> > 
+> > This commit therefore allows ticket locks to automatically switch between
+> > pure ticketlock and queued-lock operation as needed.  If too many CPUs
+> > are spinning on a given ticket lock, a queue structure will be allocated
+> > and the lock will switch to queued-lock operation.  When the lock becomes
+> > free, it will switch back into ticketlock operation.  The low-order bit
+> > of the head counter is used to indicate that the lock is in queued mode,
+> > which forces an unconditional mismatch between the head and tail counters.
+> > This approach means that the common-case code path under conditions of
+> > low contention is very nearly that of a plain ticket lock.
+> > 
+> > A fixed number of queueing structures is statically allocated in an
+> > array.  The ticket-lock address is used to hash into an initial element,
+> > but if that element is already in use, it moves to the next element.  If
+> > the entire array is already in use, continue to spin in ticket mode.
+> > 
+> > This has been only lightly tested in the kernel, though a userspace
+> > implementation has survived substantial testing.
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> This looks a great idea ;)
 
-dammit, 20 minutes after I finally cloned the repo.
-Can we go back to posting diffs instead of hashes please ?
+Glad you like it!  Hopefully workloads like it as well.  ;-)
 
-So while updating my list of bugs I've found this cycle, I noticed
-I'd already posted this one a month ago on -rc2.
-https://lkml.org/lkml/2013/5/21/327
-which led us to this patch https://lkml.org/lkml/2013/5/24/379
-After which I hit a bunch of what seem to be other RCU related bugs.
+> > +
+> > +static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+> > +{
+> > +	__ticket_t head = 2;
+> > +
+> > +	head = xadd(&lock->tickets.head, 2);
+> 
+> 	head = xadd(&lock->tickets.head, head);
 
-So maybe that patch was a winner after all and got dropped ?
+Yikes!  Good catch, fixed.
 
-	Dave
- 
+> > +	if (head & 0x1)
+> > +		tkt_q_do_wake(lock);
+> > +}
+> > +#endif /* #else #ifndef CONFIG_TICKET_LOCK_QUEUED */
+> 
+> > + */
+> > +void tkt_q_do_wake(arch_spinlock_t *asp)
+> > +{
+> > +	struct tkt_q_head *tqhp;
+> > +	struct tkt_q *tqp;
+> > +
+> > +	/* If the queue is still being set up, wait for it. */
+> > +	while ((tqhp = tkt_q_find_head(asp)) == NULL)
+> > +		cpu_relax();
+> > +
+> > +	for (;;) {
+> > +
+> > +		/* Find the first queue element. */
+> > +		tqp = ACCESS_ONCE(tqhp->spin);
+> > +		if (tqp != NULL)
+> > +			break;  /* Element exists, hand off lock. */
+> > +		if (tkt_q_try_unqueue(asp, tqhp))
+> > +			return; /* No element, successfully removed queue. */
+> > +		cpu_relax();
+> > +	}
+> > +	if (ACCESS_ONCE(tqhp->head_tkt) != -1)
+> > +		ACCESS_ONCE(tqhp->head_tkt) = -1;
+> > +	smp_mb(); /* Order pointer fetch and assignment against handoff. */
+> > +	ACCESS_ONCE(tqp->cpu) = -1;
+> > +}
+> 
+> EXPORT_SYMBOL(tkt_q_do_wake) ?
+
+Good point, just in case we want to use spinlocks in modules.  ;-)
+Same for tkt_spin_pass(), I guess.
+
+> Hmm, unfortunately I lack time this week to fully read the patch !
+
+I suspect that there is very little danger of this patch going in this
+week, so you should have some additional time.  ;-)
+
+							Thanx, Paul
+
