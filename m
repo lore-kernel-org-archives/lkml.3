@@ -1,108 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab3FJLtv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 07:49:51 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:54633 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752301Ab3FJLts (ORCPT
+	id S1753049Ab3FJL4f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 07:56:35 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:46858 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751552Ab3FJL4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 07:49:48 -0400
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: thierry.reding@gmail.com, patches@linaro.org, alsa-devel@alsa-project.org,
-        devel@driverdev.osuosl.org, linux-can@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        sparclinux@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Chris Ball <cjb@laptop.org>, Dan Williams <djbw@fb.com>,
-        "David S. Miller" <davem@davemloft.net>, Felipe Balbi <balbi@ti.com>,
+	Mon, 10 Jun 2013 07:56:33 -0400
+Message-ID: <51B5BE53.2000105@st.com>
+Date: Mon, 10 Jun 2013 12:53:55 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>,
+        devicetree-discuss@lists.ozlabs.org,
         Grant Likely <grant.likely@linaro.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
         Mark Brown <broonie@kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>, Rob Landley <rob@landley.net>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Wolfgang Grandegger <wg@grandegger.com>
-Subject: [PATCH 00/15] Convert to use devm_ioremap_resource
-Date: Mon, 10 Jun 2013 17:04:58 +0530
-Message-Id: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Olof Johansson <olof@lixom.net>, Rob Herring <rob.herring@calxeda.com>,
+        Rob Landley <rob@landley.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: Re: [PATCH v2 01/11] serial:st-asc: Add ST ASC driver.
+References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com> <1370856060-6403-1-git-send-email-srinivas.kandagatla@st.com> <20130610093511.GT18614@n2100.arm.linux.org.uk>
+In-Reply-To: <20130610093511.GT18614@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are the remaining instances of devm_request_and_ioremap. Convert
-them to use devm_ioremap_resource as introduced by commit
-75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()).
-Patches 1 to 13 remove occurrences of devm_request_and_ioremap.
-Patch 14 modifies one comment that speaks about devm_request_and_ioremap.
-Patch 15 removes the definition of devm_request_and_ioremap which
-should only be applied if all other pathces are merged.
+Thankyou for your comment and suggestion,
+I will fix the POSIX compliant issue.
 
-Tushar Behera (15):
-  sparc,leon: Convert to use devm_ioremap_resource
-  sudmac: Convert to use devm_ioremap_resource
-  mmc: mvsdio: Convert to use devm_ioremap_resource
-  gpio_msm: Convert to use devm_ioremap_resource
-  gpio-sta2x11: Convert to use devm_ioremap_resource
-  net: bcm63xx_enet: Convert to use devm_ioremap_resource
-  net: fec: Convert to use devm_ioremap_resource
-  net: emaclite: Convert to use devm_ioremap_resource
-  net: can: Convert to use devm_ioremap_resource
-  Staging: netlogic: Convert to use devm_ioremap_resource
-  regulator: ti-abb: Convert to use devm_ioremap_resource
-  ASoC: spear: Convert to use devm_ioremap_resource
-  pci: mvebu: Convert to use devm_ioremap_resource
-  usb: phy: rcar-usb: Fix comment w.r.t. devm_ioremap_resource
-  lib: devres: Remove deprecated devm_request_and_ioremap
-
- Documentation/driver-model/devres.txt         |    1 -
- arch/sparc/kernel/leon_pci_grpci1.c           |    6 +++---
- drivers/dma/sh/sudmac.c                       |    6 +++---
- drivers/gpio/gpio-msm-v1.c                    |   12 +++++------
- drivers/gpio/gpio-sta2x11.c                   |    4 +++-
- drivers/mmc/host/mvsdio.c                     |    6 +++---
- drivers/net/can/c_can/c_can_platform.c        |    4 ++--
- drivers/net/ethernet/broadcom/bcm63xx_enet.c  |   12 +++++------
- drivers/net/ethernet/freescale/fec_main.c     |   12 +++++------
- drivers/net/ethernet/xilinx/xilinx_emaclite.c |    6 ++++--
- drivers/pci/host/pci-mvebu.c                  |    5 +++--
- drivers/regulator/ti-abb-regulator.c          |   12 +++++------
- drivers/staging/netlogic/xlr_net.c            |    8 +++----
- drivers/usb/phy/phy-rcar-usb.c                |    2 +-
- include/linux/device.h                        |    2 --
- lib/devres.c                                  |   28 -------------------------
- sound/soc/spear/spdif_out.c                   |   20 +++++-------------
- 17 files changed, 55 insertions(+), 91 deletions(-)
-
-CC: alsa-devel@alsa-project.org
-CC: devel@driverdev.osuosl.org
-CC: linux-can@vger.kernel.org
-CC: linux-doc@vger.kernel.org
-CC: linux-gpio@vger.kernel.org
-CC: linux-mmc@vger.kernel.org
-CC: linux-pci@vger.kernel.org
-CC: linux-usb@vger.kernel.org
-CC: netdev@vger.kernel.org
-CC: sparclinux@vger.kernel.org
-CC: Bjorn Helgaas <bhelgaas@google.com>
-CC: Chris Ball <cjb@laptop.org>
-CC: Dan Williams <djbw@fb.com>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Felipe Balbi <balbi@ti.com>
-CC: Grant Likely <grant.likely@linaro.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Liam Girdwood <lgirdwood@gmail.com>
-CC: Linus Walleij <linus.walleij@linaro.org>
-CC: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: Mark Brown <broonie@kernel.org>
-CC: Michal Simek <michal.simek@xilinx.com>
-CC: Rob Landley <rob@landley.net>
-CC: Vinod Koul <vinod.koul@intel.com>
-CC: Wolfgang Grandegger <wg@grandegger.com>
--- 
-1.7.9.5
+On 10/06/13 10:35, Russell King - ARM Linux wrote:
+> On Mon, Jun 10, 2013 at 10:21:00AM +0100, Srinivas KANDAGATLA wrote:
+>> This patch adds support to ASC (asynchronous serial controller)
+>> driver, which is basically a standard serial driver. This IP is common
+>> across all the ST parts for settop box platforms.
+>>
+>> ASC is embedded in ST COMMS IP block. It supports Rx & Tx functionality.
+>> It support all industry standard baud rates.
+> 
+> Your driver is not POSIX compliant.
+> 
+>> +		for (; count != 0; count--) {
+>> +			c = asc_in(port, ASC_RXBUF);
+>> +			flag = TTY_NORMAL;
+>> +			port->icount.rx++;
+>> +
+>> +			if (unlikely(c & ASC_RXBUF_FE)) {
+>> +				if (c == ASC_RXBUF_FE) {
+>> +					port->icount.brk++;
+>> +					if (uart_handle_break(port))
+>> +						continue;
+>> +					flag = TTY_BREAK;
+>> +				} else {
+>> +					port->icount.frame++;
+>> +					flag = TTY_FRAME;
+>> +				}
+>> +			} else if (ascport->check_parity &&
+>> +				   unlikely(c & ASC_RXBUF_PE)) {
+>> +				port->icount.parity++;
+>> +				flag = TTY_PARITY;
+>> +			}
+>> +
+>> +			if (uart_handle_sysrq_char(port, c))
+>> +				continue;
+>> +			tty_insert_flip_char(tport, c & 0xff, flag);
+>> +		}
+>> +		if (overrun) {
+>> +			port->icount.overrun++;
+>> +			tty_insert_flip_char(tport, 0, TTY_OVERRUN);
+>> +		}
+> 
+> No support for ignoring error conditions.  No support for ignoring all
+> input... and:
+> 
+>> +static void asc_set_termios(struct uart_port *port, struct ktermios *termios,
+>> +			    struct ktermios *old)
+>> +{
+>> +	struct asc_port *ascport = to_asc_port(port);
+>> +	unsigned int baud;
+>> +	u32 ctrl_val;
+>> +	tcflag_t cflag;
+>> +	unsigned long flags;
+>> +
+>> +	port->uartclk = clk_get_rate(ascport->clk);
+>> +
+>> +	baud = uart_get_baud_rate(port, termios, old, 0, port->uartclk/16);
+>> +	cflag = termios->c_cflag;
+>> +
+>> +	spin_lock_irqsave(&port->lock, flags);
+>> +
+>> +	/* read control register */
+>> +	ctrl_val = asc_in(port, ASC_CTL);
+>> +
+>> +	/* stop serial port and reset value */
+>> +	asc_out(port, ASC_CTL, (ctrl_val & ~ASC_CTL_RUN));
+>> +	ctrl_val = ASC_CTL_RXENABLE | ASC_CTL_FIFOENABLE;
+>> +
+>> +	/* reset fifo rx & tx */
+>> +	asc_out(port, ASC_TXRESET, 1);
+>> +	asc_out(port, ASC_RXRESET, 1);
+>> +
+>> +	/* set character length */
+>> +	if ((cflag & CSIZE) == CS7) {
+>> +		ctrl_val |= ASC_CTL_MODE_7BIT_PAR;
+>> +	} else {
+>> +		ctrl_val |= (cflag & PARENB) ?  ASC_CTL_MODE_8BIT_PAR :
+>> +						ASC_CTL_MODE_8BIT;
+>> +	}
+>> +
+>> +	ascport->check_parity = (cflag & PARENB) ? 1 : 0;
+>> +
+>> +	/* set stop bit */
+>> +	ctrl_val |= (cflag & CSTOPB) ? ASC_CTL_STOP_2BIT : ASC_CTL_STOP_1BIT;
+>> +
+>> +	/* odd parity */
+>> +	if (cflag & PARODD)
+>> +		ctrl_val |= ASC_CTL_PARITYODD;
+>> +
+>> +	/* hardware flow control */
+>> +	if ((cflag & CRTSCTS) && ascport->hw_flow_control)
+>> +		ctrl_val |= ASC_CTL_CTSENABLE;
+> 
+> This doesn't reflect those facts back into the termios structure to
+> indicate that they aren't supported.
+> 
+> Consider using uart_port's ignore and read status masks to implement
+> the break, framing, parity and overrun checking in your interrupt
+> handler using the same methodology as drivers like 8250, amba-pl011
+> etc.  That will help you get these code sequences correct.
+> 
+> 
 
