@@ -1,97 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486Ab3FJPyX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 11:54:23 -0400
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:49824 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750887Ab3FJPyU (ORCPT
+	id S1753052Ab3FJQBZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 12:01:25 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:40732 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751751Ab3FJQBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 11:54:20 -0400
-Message-ID: <51B5F60D.6050205@st.com>
-Date: Mon, 10 Jun 2013 16:51:41 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Mon, 10 Jun 2013 12:01:23 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stuart Menefy <stuart.menefy@st.com>, Mark Brown <broonie@kernel.org>,
+In-Reply-To: <20130610153850.GU18614@n2100.arm.linux.org.uk>
+References: <1370155183-31421-1-git-send-email-sboyd@codeaurora.org>
+	<1370155183-31421-5-git-send-email-sboyd@codeaurora.org>
+	<20130603093938.GG18614@n2100.arm.linux.org.uk>
+	<51AD069F.1060308@codeaurora.org>
+	<20130603221210.GO18614@n2100.arm.linux.org.uk>
+	<CAK7N6vrVvYPP8_y9F3uC=vZpdkb7_9gdzG96xSiyr0ASe6iMCQ@mail.gmail.com>
+	<20130610153850.GU18614@n2100.arm.linux.org.uk>
+Date: Mon, 10 Jun 2013 21:31:21 +0530
+Message-ID: <CAK7N6vqao-O4hTLCNatu3LVC38OFR+L8MxZCc-gi1fikBSdYYA@mail.gmail.com>
+Subject: Re: [PATCHv2 4/6] sched_clock: Add support for >32 bit sched_clock
+From: anish singh <anish198519851985@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>,
+        linux-kernel-mail <linux-kernel@vger.kernel.org>, arm@kernel.org,
         John Stultz <john.stultz@linaro.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: [PATCH v2 04/11] mfd:stixxxx-syscfg: Add ST System Configuration
- support.
-References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com> <CACRpkdaW2ALTWCB7Rd8m=aAGQwh3T_dJVncxJn_eXer4X3J6_g@mail.gmail.com> <51B5DA26.6070707@st.com> <2757224.FBxg98dX57@wuerfel>
-In-Reply-To: <2757224.FBxg98dX57@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the comments.
-On 10/06/13 15:02, Arnd Bergmann wrote:
-> On Monday 10 June 2013 14:52:38 Srinivas KANDAGATLA wrote:
->> On 10/06/13 14:16, Linus Walleij wrote:
->>> On Mon, Jun 10, 2013 at 11:22 AM, Srinivas KANDAGATLA
->>> <srinivas.kandagatla@st.com> wrote:
->>>
->>>> This mfd driver provides higher level inialization routines for various
->>>> IPs like Ethernet, USB, PCIE, SATA and so on. Also it provides way to
->>>> get to syscfg registers via standard regmap api which is usefull for
->>>> drivers like pinctrl.
->>>>
->>>> This patch adds support to ST System Configuration registers, which can
->>>> be configured by the drivers.
->>>>
->>>> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->>>> CC: Stuart Menefy <stuart.menefy@st.com>
->>>> CC: Stephen Gallimore <stephen.gallimore@st.com>
->>>> CC: Linus Walleij <linus.walleij@linaro.org>
->>>> CC: Mark Brown <broonie@kernel.org>
->>>
->>> What is this driver doing that drivers/mfd/syscon.c is not already
->>> doing?
->>
->> As of now, the driver is very much similar to syscon + some additional
->> functionality, but we are planning to use this file to add higher level
->> functions to configure different IPs like ethernet, usb, power, reset
->> and so on which are very much specific to ST System Configuration Registers.
-> 
-> I was expecting that you'd actually interface with the syscon code and
-> build on top, rather than copy it.
-> 
-I did not like the copying either, on the other hand I don't want to
-pollute the syscon code.
+On Mon, Jun 10, 2013 at 9:08 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
 
-As you said, I will make use of existing syscon and build "System
-configuration interface" on top of it and see how it look like. It will
-definitely get rid of lot of code duplication.
+Least I can do is to say "Thanks".
+> On Mon, Jun 10, 2013 at 08:46:36PM +0530, anish singh wrote:
+>> Probably a trivial question.I was wondering why this particular requirement
+>> exists in the first place.I looked into this commit 112f38a4a3 but couldn't
+>> gather the reason.
+>
+> You're looking at a commit introducing an implementation.  The requirement
+> isn't driven by the implementation.  It's driven by the code and the maths
+> in the core scheduler, and its been a requirement for years.
+>
+> sched_clock() needs to be monotonic, and needs to wrap at 64-bit, because
+> calculations are done by comparing the difference of two 64-bit values
+> returned from this function.
 
-Thanks,
-srini
+Yes, and this is the question.If it is 32 bit then also it can overflow but
+it will happen relatively fast.So I guess that is the reason why we use 64 bit
+and this will avoid recalculations for recalibration.
+>
+> Let's take a trivial example - if you have a 16 bit counter, and you have
+> a value of 0xc000 ns, and next time you read it, it has value 0x0001 ns,
+> then what value do you end up with when you calculate the time passed
+> using 64-bit maths.
+>
+> That's 0x0000000000000001 - 0x000000000000c000.  The answer is a very big
+> number which is not the correct 16385.  This means that things like process
+> timeslice counting and scheduler fairness is compromised - I'd expect even
 
-> There are multiple ways of doing that, e.g. you could export a function
-> from syscon.c that you call to register the device node and then import
-> the regmap from syscon into your high-level driver again.
-
-> 
-> 	Arnd
-> 
-> 
-
+So you mean when counter overflows the scheduler doesn't handle it?
+> more so if you're running RT and this is being used to provide guarantees.
