@@ -1,115 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754Ab3FJI70 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 04:59:26 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:48396 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752284Ab3FJI7Y (ORCPT
+	id S1752553Ab3FJI6i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 04:58:38 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42008 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752038Ab3FJI6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 04:59:24 -0400
-Message-ID: <51B5955A.8090708@monstr.eu>
-Date: Mon, 10 Jun 2013 10:59:06 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Mon, 10 Jun 2013 04:58:36 -0400
+Date: Mon, 10 Jun 2013 09:57:16 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Marc Zyngier <Marc.Zyngier@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH v2] arm64: kernel: compiling issue, need delete
+ read_current_timer().
+Message-ID: <20130610085715.GA6580@mudshark.cambridge.arm.com>
+References: <5199C725.8050102@asianux.com>
+ <168084c28e8ba5124c05553e97463172@localhost>
+ <20130520095606.GH31359@mudshark.cambridge.arm.com>
+ <519AF2DC.2040200@asianux.com>
+ <20130521085325.GB10453@mudshark.cambridge.arm.com>
+ <519B425D.4030806@asianux.com>
+ <51A32F40.1050309@asianux.com>
+ <51B2B50A.1050305@asianux.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        Graeme Smecher <gsmecher@threespeedlogic.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 1/2] xilinx systemace: Fix device name assignment for
- SystemACE (from "xs`" to "xsa").
-References: <4b5d6615a1338145a461a6d4e1c7d3e42d4f4522.1369312303.git.michal.simek@xilinx.com> <51AC9068.7050203@monstr.eu> <20130603142242.GB7024@kroah.com> <51ACA928.4090601@monstr.eu> <20130603143722.GA7651@kroah.com>
-In-Reply-To: <20130603143722.GA7651@kroah.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2GGPETVBVDQNEHCHRLSOG"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51B2B50A.1050305@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2GGPETVBVDQNEHCHRLSOG
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Sat, Jun 08, 2013 at 05:37:30AM +0100, Chen Gang wrote:
+> Hello Maintainers:
+> 
+> Please help check it, when you have time.
 
-On 06/03/2013 04:37 PM, Greg Kroah-Hartman wrote:
-> On Mon, Jun 03, 2013 at 04:33:12PM +0200, Michal Simek wrote:
->> On 06/03/2013 04:22 PM, Greg Kroah-Hartman wrote:
->>> On Mon, Jun 03, 2013 at 02:47:36PM +0200, Michal Simek wrote:
->>>> Hi Greg,
->>>>
->>>> do you want to take these two patches through your tree?
->>>
->>> Why would I be sending in drivers/block/* patches?  I don't have a tr=
-ee
->>> for that, do I?
->>
->> Ah ok. I took you because you are 3rd based on get_maintainer patch (5=
-0% commit signer)
->>
->>
->>>> Or should I take them through my microblaze tree?
->>>
->>> Please do, or send them to the block maintainer.
->>
->> Who is drivers/block maintainer? I can't see anyone in MAINTAINERS fil=
-e.
->=20
-> Jens is the block/ maintainer, so I imagine he's also the drivers/block=
-/
-> maintainer as well.  If not, he would know who.
->=20
+[...]
 
-We have nice follow up on this. It was applied as different patch to Linu=
-s tree.
+> >> Under arm64, we will calibrate the delay loop statically using a known
+> >> timer frequency, so delete read_current_timer(), or it will cause
+> >> compiling issue with allmodconfig.
+> >>
+> >> The related error:
+> >>   ERROR: "read_current_timer" [lib/rbtree_test.ko] undefined!
+> >>   ERROR: "read_current_timer" [lib/interval_tree_test.ko] undefined!
+> >>   ERROR: "read_current_timer" [fs/ext4/ext4.ko] undefined!
+> >>   ERROR: "read_current_timer" [crypto/tcrypt.ko] undefined!
+> >>
+> >>
+> >> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> >> ---
+> >>  arch/arm64/include/asm/timex.h |    6 +++---
+> >>  arch/arm64/kernel/time.c       |    6 ------
+> >>  2 files changed, 3 insertions(+), 9 deletions(-)
 
-commit 585dc0c2f68981c02a0bb6fc8fe191a3f513959c
-Author: Gernot Vormayr <gvormayr@gmail.com>
-Date:   Fri May 24 15:55:03 2013 -0700
+Looks ok to me. We'll take it for a spin and apply it if it doesn't catch
+fire.
 
-    drivers/block/xsysace.c: fix id with missing port-number
-
-    If the port number is missing from the device-tree the device gets na=
-med
-    xs` instead of xsa.  This fixes the check for missing ids.
-
-    Tested on ml507 board.
-
-    Signed-off-by: Gernot Vormayr <gvormayr@gmail.com>
-    Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Cc: Jens Axboe <axboe@kernel.dk>
-    Cc: Grant Likely <grant.likely@linaro.org>
-    Cc: Rob Herring <rob.herring@calxeda.com>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-M
-
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
-------enig2GGPETVBVDQNEHCHRLSOG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlG1lV8ACgkQykllyylKDCF8tgCgi7fvIv92J7w6sLnlQ2MT37gb
-FHQAoIREVLzLh7OBqjwS1rsGwkF4cVvC
-=f7SQ
------END PGP SIGNATURE-----
-
-------enig2GGPETVBVDQNEHCHRLSOG--
+Will
