@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256Ab3FJR0R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 13:26:17 -0400
-Received: from londo.lunn.ch ([80.238.139.98]:38830 "EHLO londo.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752182Ab3FJR0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 13:26:16 -0400
-Date: Mon, 10 Jun 2013 19:25:41 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 2/6] clocksource: add Marvell Orion SoC timer
-Message-ID: <20130610172541.GA21290@lunn.ch>
-References: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1370856955-10514-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1754083Ab3FJR3n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 13:29:43 -0400
+Received: from smtp-out-079.synserver.de ([212.40.185.79]:1070 "EHLO
+	smtp-out-079.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999Ab3FJR3m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 13:29:42 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 22742
+Message-ID: <51B60D0A.7040307@metafoo.de>
+Date: Mon, 10 Jun 2013 19:29:46 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370856955-10514-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Ralf Baechle <ralf@linux-mips.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        Maarten ter Huurne <maarten@treewalker.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH v2 3/6] dma: Add a jz4740 dmaengine driver
+References: <1369931105-28065-1-git-send-email-lars@metafoo.de> <1369931105-28065-4-git-send-email-lars@metafoo.de> <20130530171225.GA3767@intel.com> <51A79E8F.4070209@metafoo.de>
+In-Reply-To: <51A79E8F.4070209@metafoo.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 11:35:55AM +0200, Sebastian Hesselbarth wrote:
-> This patch add a DT enabled driver for timers found on Marvell Orion SoCs
-> (Kirkwood, Dove, Orion5x, and Discovery Innovation). It installs a free-
-> running clocksource on timer0 and a clockevent source on timer1.
-> Corresponding device tree documentation is also added.
+On 05/30/2013 08:46 PM, Lars-Peter Clausen wrote:
+>>> +static int jz4740_dma_alloc_chan_resources(struct dma_chan *c)
+>>> +{
+>>> +	struct jz4740_dmaengine_chan *chan = to_jz4740_dma_chan(c);
+>>> +
+>>> +	chan->jz_chan = jz4740_dma_request(chan, NULL);
+>>> +	if (!chan->jz_chan)
+>>> +		return -EBUSY;
+>>> +
+>>> +	jz4740_dma_set_complete_cb(chan->jz_chan, jz4740_dma_complete_cb);
+>>> +
+>>> +	return 0;
+>> Sorry, I didnt reply on this one. The API expects you to allocate a pool of
+>> descriptors. These descriptors are to be used in .device_prep_xxx calls later.
 > 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Changelog:
-> v3->v4:
-> - export thread-safe access to TIMER_CTRL register to use with watchdog
-> - remove IRQF_DISABLED and add .irq to clock event (Suggested by Daniel Lezcano)
-> 
-> Notes:
-> - This is only an update to clocksource driver, the remaining patches are
->   not resent as they have not been changed.
-> - I will not rework orion watchdog driver for this patch set. It is written
->   Kirkwood/Orion5x specific although it will also work on Dove and it is messing
->   with shared registers. It has done it before, so I consider it broken anyway.
->   I (or somebody else) will take care of proper watchdog later.
-> - An updated branch can be found on
->   git://github.com/shesselba/linux-dove.git orion-irqchip-for-v3.11_v4
+> The size of the descriptor is not fixed, so they can not be pre-allocated. And
+> this is nothing new either, most of the more recently added dmaengine drivers
+> allocate their descriptors on demand.
 
-Hi Sebastian
+Vinod, are you ok with this explanation?
 
-You can add a
-
-Tested-by: Andrew Lunn <andrew@lunn.ch>
-
-I tested on my kirkwood QNAP.
-
-           CPU0
-  2:       6062  bridge-interrupt-ctrl  orion_event
-  9:          0  f1010140.gpio  Reset
- 15:          0  f1010140.gpio  USB Copy
- 24:        106  main-interrupt-ctrl  ehci_hcd:usb1
- 25:       2463  main-interrupt-ctrl  sata_mv
- 26:          0  main-interrupt-ctrl  f1030000.crypto
- 27:          2  main-interrupt-ctrl  f1060800.xor
- 28:          2  main-interrupt-ctrl  f1060800.xor
- 29:         71  main-interrupt-ctrl  mv64xxx_i2c
- 30:          2  main-interrupt-ctrl  f1060900.xor
- 31:          2  main-interrupt-ctrl  f1060900.xor
- 32:         41  main-interrupt-ctrl  eth0
- 33:       1317  main-interrupt-ctrl  serial
- 75:        745  main-interrupt-ctrl  f1072004.mdio-bus
-Err:          0                                              
-
-      Andrew
+- Lars
