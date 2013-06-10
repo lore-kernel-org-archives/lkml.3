@@ -1,67 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316Ab3FJUJE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 16:09:04 -0400
-Received: from mout.gmx.net ([212.227.17.21]:53353 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751690Ab3FJUJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 16:09:02 -0400
-X-Authenticated: #9962044
-X-Provags-ID: V01U2FsdGVkX1915GgLPuV1RJD0syB4Q/w+KXhZ7m1JW3rpLvRiwe
-	sik07Blfwj3Dwo
-From: Marc Dietrich <marvin24@gmx.de>
-To: linux-kernel@vger.kernel.org
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org
-Subject: [PATCH] mfd: tps6586x: correct device name of the regulator cell
-Date: Mon, 10 Jun 2013 22:06:01 +0200
-Message-Id: <89e4451e14f324d8bd480f843fa5960b481e3188.1370894247.git.marvin24@gmx.de>
-X-Mailer: git-send-email 1.7.9.5
-X-Y-GMX-Trusted: 0
+	id S1752704Ab3FJUJP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 16:09:15 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:49684 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390Ab3FJUJL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 16:09:11 -0400
+Date: Mon, 10 Jun 2013 22:09:07 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Jay Agarwal <jagarwal@nvidia.com>, linux@arm.linux.org.uk,
+        bhelgaas@google.com, ldewangan@nvidia.com, olof@lixom.net,
+        hdoyu@nvidia.com, pgaikwad@nvidia.com, mturquette@linaro.org,
+        pdeschrijver@nvidia.com, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, jtukkinen@nvidia.com, kthota@nvidia.com
+Subject: Re: [PATCH V4 2/4] ARM: tegra: pcie: Add tegra3 support
+Message-ID: <20130610200906.GD25859@mithrandir>
+References: <1370445221-17696-1-git-send-email-jagarwal@nvidia.com>
+ <51AF68F1.8080307@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fXStkuK2IQBfcDe+"
+Content-Disposition: inline
+In-Reply-To: <51AF68F1.8080307@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the device name of the regulator function to the one chosed for
-MODULE_ALIAS. This fixes kernel module loading for the regulator function.
-Also change the name of the platform driver to make everything consistent.
 
-Signed-off-by: Marc Dietrich <marvin24@gmx.de>
----
-I don't think this "fix" can still go into 3.10, but I would love to see
-it there because otherwise many distro kernels supporting tegra2 would have
-to force load the driver.
+--fXStkuK2IQBfcDe+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- drivers/mfd/tps6586x.c                 |    2 +-
- drivers/regulator/tps6586x-regulator.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+On Wed, Jun 05, 2013 at 10:36:01AM -0600, Stephen Warren wrote:
+> On 06/05/2013 09:13 AM, Jay Agarwal wrote:
+> > - Make private data structure for each SoC
+> > - Add required Tegra30 clocks and regulators
+> > - Add Tegra30 specific code in enable controller
+> > - Added Tegra30 specific properties in pci binding document
+>=20
+> It's a bit odd to send an updated version of just some of the patches;
+> reposting a whole series is much easier for the person applying the
+> patches. However, hopefully Thierry can handle it in this case.
 
-diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-index 721b918..4b93ed4 100644
---- a/drivers/mfd/tps6586x.c
-+++ b/drivers/mfd/tps6586x.c
-@@ -107,7 +107,7 @@ static struct mfd_cell tps6586x_cell[] = {
- 		.name = "tps6586x-gpio",
- 	},
- 	{
--		.name = "tps6586x-pmic",
-+		.name = "tps6586x-regulator",
- 	},
- 	{
- 		.name = "tps6586x-rtc",
-diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
-index d8fa37d..2c9155b 100644
---- a/drivers/regulator/tps6586x-regulator.c
-+++ b/drivers/regulator/tps6586x-regulator.c
-@@ -439,7 +439,7 @@ static int tps6586x_regulator_remove(struct platform_device *pdev)
- 
- static struct platform_driver tps6586x_regulator_driver = {
- 	.driver	= {
--		.name	= "tps6586x-pmic",
-+		.name	= "tps6586x-regulator",
- 		.owner	= THIS_MODULE,
- 	},
- 	.probe		= tps6586x_regulator_probe,
--- 
-1.7.9.5
+Yes, I think I can handle it. It might be good to have Jay look at the
+final patches when I'm done, though, to make sure I haven't forgotten
+anything.
+
+> > diff --git a/Documentation/devicetree/bindings/pci/nvidia,tegra20-pcie.=
+txt b/Documentation/devicetree/bindings/pci/nvidia,tegra20-pcie.txt
+>=20
+> >  Required properties:
+> > -- compatible: "nvidia,tegra20-pcie"
+> > +- compatible: "nvidia,tegra20-pcie" "nvidia,tegra30-pcie"
+>=20
+> perhaps add "or" between those two entries?
+>=20
+> > +- avdd-supply: Power supply for controller (1.05V) (not required for t=
+egra20)
+> ...
+> > +  "cml": The Tegra clock of that name (not required for tegra20)
+>=20
+> Tegra20 should be capitalized in both those two lines.
+>=20
+> I assume that Thierry can fix up these nits when he applies the patches,
+> so you don't need to repost. Thierry can correct me if I'm wrong.
+
+I've found a few other nits that I can take care of myself when
+applying.
+
+Thierry
+
+--fXStkuK2IQBfcDe+
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRtjJiAAoJEN0jrNd/PrOh3mcP/0f89iNTjFV7Hcu/CqXv9cm0
+cEIdW9/98jwXHQxvkhsKLjkH58khuvi9tTqlzkaNJ1tesUZMNGNsFXz/VyLioKlF
++rR7XQD0bDhmDJmbrIzT6A2cXz0LttHSSzrisxG3gblyKop4jPW0nLsgOElC+Bfy
+Ih/dadL3mHjoatabXiBM8CgtEuAnbnH+NQndMaIY2pavBvT1JRQiiMR+LP1LnrsG
+5PORPybgvj9SkXNS8RdyDVGJw/CQQ0cGStKxzkRhp2Dp4PmoXKj3gO6XMWGx4Vzs
+ZMUemze+//25Pw3i+a34+P1kwmRxnoNjCDwn/H757KijgtGV17GtpNwPZgg4YfiE
+o1+dM/G4bob1xRGLsMkNw+QXzbH82RREYO+LycwP16pzBiIxbxTK8mMZQjmSK2KF
+pga2VIhfPxJoF9afVjiuqdm0W0LquUGknCNpBcdQ7CNjR4gGQPcrZQpmYqmagwY7
+Nn3DjViptoOybrKSpX9up0OwFV8QIZIX9TONXCJotdrXZV5avxX9nXWpNKejeoV2
+crYYftUufzvZFAO/4OufBNuQZlYN3G58giwcrNQ/gYyKgqxRPCd4aHfVaxCAXFt/
+xzBkMZ40Mo8U9ElRDFhfqdRXhUmah1jLcZkgLLConuDzUhhCWlU3GOPm/TFUobcd
+Yxi30/eOa66xNh3IVPW5
+=sA4U
+-----END PGP SIGNATURE-----
+
+--fXStkuK2IQBfcDe+--
