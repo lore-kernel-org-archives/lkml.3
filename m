@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740Ab3FJOg5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 10:36:57 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:41803 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945Ab3FJOgz (ORCPT
+	id S1753275Ab3FJOhG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 10:37:06 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:34999 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751945Ab3FJOhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 10:36:55 -0400
-Message-ID: <51B5E480.6060303@gmail.com>
-Date: Mon, 10 Jun 2013 22:36:48 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Mon, 10 Jun 2013 10:37:01 -0400
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm: Fix the comment for GFP_ZONE_TABLE
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.00.1306100924570.22024@ayla.of.borg>
+References: <alpine.DEB.2.00.1306100922530.21948@ayla.of.borg>
+	<alpine.DEB.2.00.1306100924570.22024@ayla.of.borg>
+Date: Mon, 10 Jun 2013 17:37:00 +0300
+Message-ID: <CAJL_dMtUXSCe3Bm=D4aYaX9NwhnaPjVsY4O+f8U9h5-NV9i0=A@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.10-rc5
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        "Linux/PPC Development" <linuxppc-dev@lists.ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+The relevant maintainers do not get a copy of this.
 
-0xc just means MOVABLE + DMA32, which results in zone DMA32.
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- include/linux/gfp.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 0f615eb..9b4dd49 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -209,7 +209,7 @@ static inline int allocflags_to_migratetype(gfp_t gfp_flags)
-  *       0x9    => DMA or NORMAL (MOVABLE+DMA)
-  *       0xa    => MOVABLE (Movable is valid only if HIGHMEM is set too)
-  *       0xb    => BAD (MOVABLE+HIGHMEM+DMA)
-- *       0xc    => DMA32 (MOVABLE+HIGHMEM+DMA32)
-+ *       0xc    => DMA32 (MOVABLE+DMA32)
-  *       0xd    => BAD (MOVABLE+DMA32+DMA)
-  *       0xe    => BAD (MOVABLE+DMA32+HIGHMEM)
-  *       0xf    => BAD (MOVABLE+DMA32+HIGHMEM+DMA)
--- 
-1.7.1
+On Mon, Jun 10, 2013 at 10:25 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Mon, 10 Jun 2013, Geert Uytterhoeven wrote:
+>> JFYI, when comparing v3.10-rc5 to v3.10-rc4[3], the summaries are:
+>>   - build errors: +19/-10
+>> [1] http://kisskb.ellerman.id.au/kisskb/head/6308/ (all 120 configs)
+>
+>  + arch/powerpc/kernel/cacheinfo.c: error: 'associativity' may be used uninitialized in this function [-Werror=uninitialized]:  => 571:16
+>   + arch/powerpc/kernel/cacheinfo.c: error: 'size_kb' may be used uninitialized in this function [-Werror=uninitialized]:  => 522:16
+>   + arch/powerpc/kernel/pci_dn.c: error: 'ret' may be used uninitialized in this function [-Werror=uninitialized]:  => 97:8
+>   + arch/powerpc/kvm/book3s_32_mmu.c: error: 'sr' may be used uninitialized in this function [-Werror=uninitialized]:  => 63:2
+>   + arch/powerpc/kvm/book3s_64_mmu.c: error: 'slb' may be used uninitialized in this function [-Werror=uninitialized]:  => 485:3
+>   + arch/powerpc/mm/hash_native_64.c: error: 'a_size' may be used uninitialized in this function [-Werror=uninitialized]:  => 67:31
+>   + arch/powerpc/platforms/cell/spufs/inode.c: error: incompatible types when assigning to type 'kgid_t' from type 'int':  => 628:16
+>   + arch/powerpc/platforms/cell/spufs/inode.c: error: incompatible types when assigning to type 'kuid_t' from type 'int':  => 623:16
+>   + arch/powerpc/platforms/pseries/msi.c: error: 'total' may be used uninitialized in this function [-Werror=uninitialized]:  => 320:24
+>   + arch/powerpc/platforms/pseries/pci.c: error: 'pcie_link_speed_stats' may be used uninitialized in this function [-Werror=uninitialized]:  => 150:31
+>
+> powerpc-randconfig
+>
+>> [3] http://kisskb.ellerman.id.au/kisskb/head/6290/ (all 120 configs)
+>
+> Gr{oetje,eeting}s,
+>
+>                                                 Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                                             -- Linus Torvalds
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
