@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab3FJVDy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 17:03:54 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:36148 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753185Ab3FJVDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 17:03:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type; q=dns; s=
-	sasl; b=p5aOioz+r/Lbkqg6bLrTsdVOw4dvhsZUT4QUcvCF+r02QZT2028pvEHk
-	p00ak8CaWGE1TvJdMyot3Dch3rh8rQPpmwfdlytZfOJW8XNxtrsIZLHuzbIvQj6G
-	G++u6BxjLMaMgUzAmwUiWm+nIWnlM3HcmaOsSNC0vhBwhcsm524=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v1.8.3.1
-Date: Mon, 10 Jun 2013 14:03:49 -0700
-Message-ID: <7vy5ahekzu.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1753496Ab3FJVFK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 17:05:10 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:52785 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753298Ab3FJVFJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 17:05:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 408D77CA-D211-11E2-9334-E56BAAC0D69C-77302942!b-pb-sasl-quonix.pobox.com
+In-Reply-To: <1370266965-7901-1-git-send-email-lee.jones@linaro.org>
+References: <1370266965-7901-1-git-send-email-lee.jones@linaro.org>
+Date: Mon, 10 Jun 2013 23:05:08 +0200
+Message-ID: <CAPDyKFrJumd79hHWJkGWvRKzhoaprPHu=U6HOHXzVL8WyNS6jw@mail.gmail.com>
+Subject: Re: [PATCH 00/21] ARM: ux500: Enable Clock look-up from Device Tree
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git v1.8.3.1 is now available at the
-usual places.
+On 3 June 2013 15:42, Lee Jones <lee.jones@linaro.org> wrote:
+> Nice and simple implementation using standard Clk APIs.
+Hi Lee,
 
-This is primarily to push out fixes to two regressions that seem to
-affect many people, namely, the ".gitignore !directory" bug and the
-"daemon cannot read from $HOME owned by root" bug.
+I may be a bit tired, but I am having a bit hard to follow the steps
+taken in this patch set. :-)
 
-The release tarballs are found at:
+I should of course tell you why:
+1. You start out by adding DT definitions in the DT files, should that
+not be done as the final step, after the DT support has been added in
+ux500 clk driver?
+2. Moreover, I think it would be enough to group the definitions
+patches into one patch or at least significant fewer. Same feeling
+about the patches were you remove the AUXDATA, this would simplify the
+review for me.
+3. The rest will be commented per patch.
 
-    http://code.google.com/p/git-core/downloads/list
+Kind regards
+Ulf Hansson
 
-and their SHA-1 checksums are:
-
-32562a231fe4422bc033bf872fffa61f41ee2669  git-1.8.3.1.tar.gz
-94d48f6f8684aec851124e7d0b835b338a9187ad  git-htmldocs-1.8.3.1.tar.gz
-0cd759579d4bd75f1cf1ba073b1ab96c49390426  git-manpages-1.8.3.1.tar.gz
-
-The following public repositories all have a copy of the v1.8.3.1
-tag and the maint branch that the tag points at:
-
-  url = https://kernel.googlesource.com/pub/scm/git/git
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
-
-Also, http://www.kernel.org/pub/software/scm/git/ has copies of the
-release tarballs.
-
-Git v1.8.3.1 Release Notes
-========================
-
-Fixes since v1.8.3
-------------------
-
- * When $HOME is misconfigured to point at an unreadable directory, we
-   used to complain and die. The check has been loosened.
-
- * Handling of negative exclude pattern for directories "!dir" was
-   broken in the update to v1.8.3.
-
-Also contains a handful of trivial code clean-ups, documentation
-updates, updates to the test suite, etc.
+>
+>  arch/arm/boot/dts/dbx5x0.dtsi    |   94 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+>  arch/arm/boot/dts/snowball.dts   |    3 ++-
+>  arch/arm/mach-ux500/cpu-db8500.c |   36 +--------------------------
+>  drivers/clk/ux500/u8500_clk.c    |  154 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+>  4 files changed, 249 insertions(+), 38 deletions(-)
+>
+>
