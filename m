@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab3FJLt7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 07:49:59 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:62318 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab3FJLtz (ORCPT
+	id S1753651Ab3FJLx7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 07:53:59 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:52035 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753416Ab3FJLt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 07:49:55 -0400
+	Mon, 10 Jun 2013 07:49:58 -0400
 From: Tushar Behera <tushar.behera@linaro.org>
 To: linux-kernel@vger.kernel.org
-Cc: thierry.reding@gmail.com, patches@linaro.org,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>
-Subject: [PATCH 02/15] sudmac: Convert to use devm_ioremap_resource
-Date: Mon, 10 Jun 2013 17:05:00 +0530
-Message-Id: <1370864113-17895-3-git-send-email-tushar.behera@linaro.org>
+Cc: thierry.reding@gmail.com, patches@linaro.org, linux-mmc@vger.kernel.org,
+        Chris Ball <cjb@laptop.org>
+Subject: [PATCH 03/15] mmc: mvsdio: Convert to use devm_ioremap_resource
+Date: Mon, 10 Jun 2013 17:05:01 +0530
+Message-Id: <1370864113-17895-4-git-send-email-tushar.behera@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
 References: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
@@ -26,28 +26,28 @@ introduced devm_ioremap_resource() and deprecated the use of
 devm_request_and_ioremap().
 
 Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-CC: Vinod Koul <vinod.koul@intel.com>
-CC: Dan Williams <djbw@fb.com>
+CC: linux-mmc@vger.kernel.org
+CC: Chris Ball <cjb@laptop.org>
 ---
- drivers/dma/sh/sudmac.c |    6 +++---
+ drivers/mmc/host/mvsdio.c |    6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/dma/sh/sudmac.c b/drivers/dma/sh/sudmac.c
-index e7c94bb..0a81e30 100644
---- a/drivers/dma/sh/sudmac.c
-+++ b/drivers/dma/sh/sudmac.c
-@@ -360,9 +360,9 @@ static int sudmac_probe(struct platform_device *pdev)
+diff --git a/drivers/mmc/host/mvsdio.c b/drivers/mmc/host/mvsdio.c
+index d08fe6a..656f1f5 100644
+--- a/drivers/mmc/host/mvsdio.c
++++ b/drivers/mmc/host/mvsdio.c
+@@ -758,9 +758,9 @@ static int __init mvsd_probe(struct platform_device *pdev)
  
- 	dma_dev = &su_dev->shdma_dev.dma_dev;
+ 	spin_lock_init(&host->lock);
  
--	su_dev->chan_reg = devm_request_and_ioremap(&pdev->dev, chan);
--	if (!su_dev->chan_reg)
--		return err;
-+	su_dev->chan_reg = devm_ioremap_resource(&pdev->dev, chan);
-+	if (IS_ERR(su_dev->chan_reg))
-+		return PTR_ERR(su_dev->chan_reg);
- 
- 	dma_cap_set(DMA_SLAVE, dma_dev->cap_mask);
+-	host->base = devm_request_and_ioremap(&pdev->dev, r);
+-	if (!host->base) {
+-		ret = -ENOMEM;
++	host->base = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(host->base)) {
++		ret = PTR_ERR(host->base);
+ 		goto out;
+ 	}
  
 -- 
 1.7.9.5
