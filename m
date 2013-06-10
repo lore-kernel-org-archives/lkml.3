@@ -1,93 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab3FJRWB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 13:22:01 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:34508 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753351Ab3FJRV7 (ORCPT
+	id S1753988Ab3FJRXw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 13:23:52 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:2880 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab3FJRXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 13:21:59 -0400
-Message-ID: <51B60B35.8030201@linaro.org>
-Date: Mon, 10 Jun 2013 19:21:57 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 2/6] clocksource: add Marvell Orion SoC timer
-References: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com> <1370856955-10514-1-git-send-email-sebastian.hesselbarth@gmail.com> <51B5F8FE.5090508@linaro.org> <51B5FF51.6090708@gmail.com> <51B60267.9000600@linaro.org> <51B6031B.4030204@gmail.com> <51B6079E.5090602@linaro.org> <20130610170921.GM23859@titan.lakedaemon.net>
-In-Reply-To: <20130610170921.GM23859@titan.lakedaemon.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 10 Jun 2013 13:23:51 -0400
+Message-ID: <1370885029.1795.7.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] ipc: don't allocate with GFP_KERNEL inside rcu read lock
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: akpm@linux-foundation.org, riel@redhat.com, walken@google.com,
+        linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>
+Date: Mon, 10 Jun 2013 10:23:49 -0700
+In-Reply-To: <1370880870-23833-1-git-send-email-sasha.levin@oracle.com>
+References: <1370880870-23833-1-git-send-email-sasha.levin@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2013 07:09 PM, Jason Cooper wrote:
-> On Mon, Jun 10, 2013 at 07:06:38PM +0200, Daniel Lezcano wrote:
->> On 06/10/2013 06:47 PM, Sebastian Hesselbarth wrote:
->>> On 06/10/13 18:44, Daniel Lezcano wrote:
->>>> On 06/10/2013 06:31 PM, Sebastian Hesselbarth wrote:
->>>>> On 06/10/13 18:04, Daniel Lezcano wrote:
->>>>>> On 06/10/2013 11:35 AM, Sebastian Hesselbarth wrote:
->>>>>>> This patch add a DT enabled driver for timers found on Marvell Orion
->>>>>>> SoCs
->>>>>>> (Kirkwood, Dove, Orion5x, and Discovery Innovation). It installs a
->>>>>>> free-
->>>>>>> running clocksource on timer0 and a clockevent source on timer1.
->>>>>>> Corresponding device tree documentation is also added.
->>>>>>>
->>>>>>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->>>>>>
->>>>>> It looks good for me.
->>>>>>
->>>>>> Sebastian,
->>>>>>
->>>>>> shall I take it through my tree (it will go to Thomas's tree) ?
->>>>>
->>>>> Daniel,
->>>>>
->>>>> I checked MAINTAINERS and thought clocksource, i.e. patch 2/6, would go
->>>>> through Thomas' or John's tree? If you want to take it, I am fine with
->>>>> it but guess I am not the one to choose here ;)
->>>>
->>>> Actually, I am giving a hand to John and Thomas. I take the patches for
->>>> clockevents (and also for clocksource if both are mixed and John did not
->>>> pick it yet) and Thomas pulls from my tree [1].
->>>>
->>>> If there is no dependency with any other patches of your patchset, which
->>>> seems to be the case, I will queue it for 3.11.
->>>
->>> Ok, thanks!
->>
->> I have a lot of ^M in the patch ... dos2unix removed them but I am
->> wondering how they get there ?
+On Mon, 2013-06-10 at 12:14 -0400, Sasha Levin wrote:
+> ipc_addid() is protected by a rcu read lock, which means we can't allocate
+> using GFP_KERNEL inside it.
 > 
-> He sent it with git-send-mail, how are you extracting it from
-> Thunderbird?
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> ---
+> 
+> Another option would be to call idr_preload from outside the read lock,
+> but that complicates the code much more than this fix. If that's the
+> preferred method to fix it I can resend that solution instead.
+> 
 
-I use a script to extract the patch from my mailbox. I am using it for
-years now I did not face these spurious characters before.
+This issue was reported last week by Fengguang
+(http://www.spinics.net/lists/kernel/msg1545633.html#.UbYI9qqdmV8)
 
-Anyway, it seems not related to the patch itself, I will handle that.
+Your fix looks the simplest approach, but I'm not sure if doing the
+atomic allocation would trigger some other problem, as a side effect.
+Andrew?
 
-Thanks
-  -- Daniel
+A third option would be to simply revert the offending commit, leaving
+the rcu locking as it originally was.
 
-
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Thanks,
+Davidlohr
 
