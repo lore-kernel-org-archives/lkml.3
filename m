@@ -1,68 +1,512 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab3FJJXw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 05:23:52 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:46284 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752620Ab3FJJXt (ORCPT
+	id S1753249Ab3FJJY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 05:24:28 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:40548 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752715Ab3FJJYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 05:23:49 -0400
-Subject: Re: [PATCH 3/3] i915: Don't provide ACPI backlight interface if
- firmware expects Windows 8
-From: joeyli <jlee@suse.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: linux-acpi@vger.kernel.org, seth.forshee@canonical.com,
-        daniel.vetter@ffwll.ch, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        lenb@kernel.org, rjw@sisk.pl
-In-Reply-To: <1370818899-8595-4-git-send-email-matthew.garrett@nebula.com>
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
-	 <1370818899-8595-4-git-send-email-matthew.garrett@nebula.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Jun 2013 17:22:23 +0800
-Message-ID: <1370856143.6523.114.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Mon, 10 Jun 2013 05:24:20 -0400
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Arnd Bergmann <arnd@arndb.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, linux@arm.linux.org.uk,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Olof Johansson <olof@lixom.net>, Rob Herring <rob.herring@calxeda.com>,
+        Rob Landley <rob@landley.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tony Prisk <linux@prisktech.co.nz>,
+        Rob Herring <robherring2@gmail.com>, Will Deacon <will.deacon@arm.com>
+Subject: [PATCH v2 02/11] clocksource:global_timer: Add ARM global timer support.
+Date: Mon, 10 Jun 2013 10:21:27 +0100
+Message-Id: <1370856087-6452-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com>
+References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 日，2013-06-09 於 19:01 -0400，Matthew Garrett 提到：
-> Windows 8 leaves backlight control up to individual graphics drivers rather
-> than making ACPI calls itself. There's plenty of evidence to suggest that
-> the Intel driver for Windows doesn't use the ACPI interface, including the
-> fact that it's broken on a bunch of machines when the OS claims to support
-> Windows 8. The simplest thing to do appears to be to disable the ACPI
-> backlight interface on these systems.
-> 
-> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-> ---
->  drivers/gpu/drm/i915/i915_dma.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-> index 3b315ba..23b6292 100644
-> --- a/drivers/gpu/drm/i915/i915_dma.c
-> +++ b/drivers/gpu/drm/i915/i915_dma.c
-> @@ -1661,6 +1661,9 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
->  		/* Must be done after probing outputs */
->  		intel_opregion_init(dev);
->  		acpi_video_register();
-> +		/* Don't use ACPI backlight functions on Windows 8 platforms */
-> +		if (acpi_osi_version() >= ACPI_OSI_WIN_8)
-> +			acpi_video_backlight_unregister();
->  	}
->  
->  	if (IS_GEN5(dev))
+From: Stuart Menefy <stuart.menefy@st.com>
 
-This patch set works to me on Acer Aspire V3 notebook for unregister the
-backlight interface of acpi video driver when i915 loaded. Acer Aspire
-V3 has the Windows8 support in DSDT.
+This is a simple driver for the global timer module found in the Cortex
+A9-MP cores from revision r1p0 onwards. This should be able to perform
+the functions of the system timer and the local timer in an SMP system.
 
-Tested-by: Lee, Chun-Yi <jlee@suse.com>
+The global timer has the following features:
+    The global timer is a 64-bit incrementing counter with an
+auto-incrementing feature. It continues incrementing after sending
+interrupts. The global timer is memory mapped in the private memory
+region.
+    The global timer is accessible to all Cortex-A9 processors in the
+cluster. Each Cortex-A9 processor has a private 64-bit comparator that
+is used to assert a private interrupt when the global timer has reached
+the comparator value. All the Cortex-A9 processors in a design use the
+banked ID, ID27, for this interrupt. ID27 is sent to the Interrupt
+Controller as a Private Peripheral Interrupt. The global timer is
+clocked by PERIPHCLK.
 
+Signed-off-by: Stuart Menefy <stuart.menefy@st.com>
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+CC: Arnd Bergmann <arnd@arndb.de>
+CC: Rob Herring <robherring2@gmail.com>
+CC: Linus Walleij <linus.walleij@linaro.org>
+CC: Will Deacon <will.deacon@arm.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+---
+ .../devicetree/bindings/arm/global_timer.txt       |   21 ++
+ drivers/clocksource/Kconfig                        |   13 +
+ drivers/clocksource/Makefile                       |    1 +
+ drivers/clocksource/arm_global_timer.c             |  368 ++++++++++++++++++++
+ 4 files changed, 403 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/global_timer.txt
+ create mode 100644 drivers/clocksource/arm_global_timer.c
 
-Thanks a lot!
-Joey Lee
+diff --git a/Documentation/devicetree/bindings/arm/global_timer.txt b/Documentation/devicetree/bindings/arm/global_timer.txt
+new file mode 100644
+index 0000000..b64abac
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/global_timer.txt
+@@ -0,0 +1,21 @@
++
++* ARM Global Timer
++	Cortex-A9 are often associated with a per-core Global timer.
++
++** Timer node required properties:
++
++- compatible : Should be "arm,cortex-a9-global-timer"
++		Driver supports versions r2p0 and above.
++
++- interrupts : One interrupt to each core
++
++- reg : Specify the base address and the size of the GT timer
++	register window.
++
++Example:
++
++	timer@2c000600 {
++		compatible = "arm,cortex-a9-global-timer";
++		reg = <0x2c000600 0x20>;
++		interrupts = <1 13 0xf01>;
++	};
+diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+index f151c6c..b0c4c42 100644
+--- a/drivers/clocksource/Kconfig
++++ b/drivers/clocksource/Kconfig
+@@ -67,6 +67,19 @@ config ARM_ARCH_TIMER
+ 	bool
+ 	select CLKSRC_OF if OF
+ 
++config ARM_GLOBAL_TIMER
++	bool
++	select CLKSRC_OF if OF
++	help
++	  This options enables support for the ARM global timer unit
++
++config CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK
++	bool
++	depends on ARM_GLOBAL_TIMER
++	default y
++	help
++	 Use ARM global timer clock source as sched_clock
++
+ config CLKSRC_METAG_GENERIC
+ 	def_bool y if METAG
+ 	help
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index 8d979c7..b2363cb 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -28,4 +28,5 @@ obj-$(CONFIG_CLKSRC_EXYNOS_MCT)	+= exynos_mct.o
+ obj-$(CONFIG_CLKSRC_SAMSUNG_PWM)	+= samsung_pwm_timer.o
+ 
+ obj-$(CONFIG_ARM_ARCH_TIMER)		+= arm_arch_timer.o
++obj-$(CONFIG_ARM_GLOBAL_TIMER)		+= arm_global_timer.o
+ obj-$(CONFIG_CLKSRC_METAG_GENERIC)	+= metag_generic.o
+diff --git a/drivers/clocksource/arm_global_timer.c b/drivers/clocksource/arm_global_timer.c
+new file mode 100644
+index 0000000..e4bc4fe
+--- /dev/null
++++ b/drivers/clocksource/arm_global_timer.c
+@@ -0,0 +1,368 @@
++/*
++ * drivers/clocksource/arm_global_timer.c
++ *
++ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
++ * Author: Stuart Menefy <stuart.menefy@st.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/clocksource.h>
++#include <linux/clockchips.h>
++#include <linux/clk.h>
++#include <linux/clkdev.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/of_irq.h>
++#include <linux/of_address.h>
++
++#include <asm/sched_clock.h>
++#include <asm/mach/irq.h>
++#include <asm/cputype.h>
++#include <asm/localtimer.h>
++
++#define GT_COUNTER0	0x00
++#define GT_COUNTER1	0x04
++
++#define GT_CONTROL	0x08
++#define GT_CONTROL_TIMER_ENABLE		BIT(0)  /* this bit is NOT banked */
++#define GT_CONTROL_COMP_ENABLE		BIT(1)	/* banked */
++#define GT_CONTROL_IRQ_ENABLE		BIT(2)	/* banked */
++#define GT_CONTROL_AUTO_INC		BIT(3)	/* banked */
++
++#define GT_INT_STATUS	0x0c
++#define GT_INT_STATUS_EVENT_FLAG	BIT(0)
++
++#define GT_COMP0	0x10
++#define GT_COMP1	0x14
++#define GT_AUTO_INC	0x18
++
++/*
++ * We are expecting to be clocked by the ARM peripheral clock.
++ *
++ * Note: it is assumed we are using a prescaler value of zero, so this is
++ * the units for all operations.
++ */
++static void __iomem *gt_base;
++static unsigned long gt_clk_rate;
++static int gt_ppi;
++static struct clock_event_device __percpu **gt_evt;
++static DEFINE_PER_CPU(bool, percpu_init_called);
++static DEFINE_PER_CPU(struct clock_event_device, gt_clockevent);
++
++/*
++ * To get the value from the Global Timer Counter register proceed as follows:
++ * 1. Read the upper 32-bit timer counter register
++ * 2. Read the lower 32-bit timer counter register
++ * 3. Read the upper 32-bit timer counter register again. If the value is
++ *  different to the 32-bit upper value read previously, go back to step 2.
++ *  Otherwise the 64-bit timer counter value is correct.
++ */
++static u64 gt_counter_read(void)
++{
++	u64 counter;
++	u32 lower;
++	u32 upper, old_upper;
++
++	upper = __raw_readl(gt_base + GT_COUNTER1);
++	do {
++		old_upper = upper;
++		lower = __raw_readl(gt_base + GT_COUNTER0);
++		upper = __raw_readl(gt_base + GT_COUNTER1);
++	} while (upper != old_upper);
++
++	counter = upper;
++	counter <<= 32;
++	counter |= lower;
++	return counter;
++}
++
++/**
++ * To ensure that updates to comparator value register do not set the
++ * Interrupt Status Register proceed as follows:
++ * 1. Clear the Comp Enable bit in the Timer Control Register.
++ * 2. Write the lower 32-bit Comparator Value Register.
++ * 3. Write the upper 32-bit Comparator Value Register.
++ * 4. Set the Comp Enable bit and, if necessary, the IRQ enable bit.
++ */
++static void gt_compare_set(unsigned long delta, int periodic)
++{
++	u64 counter = gt_counter_read();
++	unsigned long ctrl = __raw_readl(gt_base + GT_CONTROL);
++
++	counter += delta;
++	ctrl &=  ~(GT_CONTROL_COMP_ENABLE | GT_CONTROL_IRQ_ENABLE);
++
++	__raw_writel(ctrl, gt_base + GT_CONTROL);
++	__raw_writel(lower_32_bits(counter), gt_base + GT_COMP0);
++	__raw_writel(upper_32_bits(counter), gt_base + GT_COMP1);
++
++	if (periodic) {
++		__raw_writel(delta, gt_base + GT_AUTO_INC);
++		ctrl |= GT_CONTROL_AUTO_INC;
++	}
++
++	ctrl |= GT_CONTROL_COMP_ENABLE | GT_CONTROL_IRQ_ENABLE;
++	__raw_writel(ctrl, gt_base + GT_CONTROL);
++}
++
++static void gt_clockevent_set_mode(enum clock_event_mode mode,
++				   struct clock_event_device *clk)
++{
++	unsigned long ctrl;
++
++	ctrl = __raw_readl(gt_base + GT_CONTROL);
++	switch (mode) {
++	case CLOCK_EVT_MODE_PERIODIC:
++		gt_compare_set(DIV_ROUND_CLOSEST(gt_clk_rate, HZ), 1);
++		break;
++	case CLOCK_EVT_MODE_ONESHOT:
++		ctrl &= ~(GT_CONTROL_AUTO_INC);
++		__raw_writel(ctrl, gt_base + GT_CONTROL);
++		break;
++	/* Can not shut down it as enable bit is not banked */
++	case CLOCK_EVT_MODE_UNUSED:
++	case CLOCK_EVT_MODE_SHUTDOWN:
++		ctrl &= ~(GT_CONTROL_COMP_ENABLE |
++				GT_CONTROL_IRQ_ENABLE | GT_CONTROL_AUTO_INC);
++		__raw_writel(ctrl, gt_base + GT_CONTROL);
++		break;
++	default:
++		break;
++	}
++}
++
++static int gt_clockevent_set_next_event(unsigned long evt,
++					struct clock_event_device *unused)
++{
++	gt_compare_set(evt, 0);
++	return 0;
++}
++
++static irqreturn_t gt_clockevent_interrupt(int irq, void *dev_id)
++{
++	struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
++
++	if (__raw_readl(gt_base + GT_INT_STATUS) & GT_INT_STATUS_EVENT_FLAG) {
++		/**
++		 * ERRATA 740657( Global Timer can send 2 interrupts for
++		 * the same event in single-shot mode)
++		 * Workaround:
++		 *	Either disable single-shot mode.
++		 *	Or
++		 *	Modify the Interrupt Handler to avoid the
++		 *	offending sequence. This is achieved by clearing
++		 *	the Global Timer flag _after_ having incremented
++		 *	the Comparator register	value to a higher value.
++		 */
++		if (!(__raw_readl(gt_base + GT_CONTROL) & GT_CONTROL_AUTO_INC))
++			gt_compare_set(ULONG_MAX, 0);
++
++		__raw_writel(GT_INT_STATUS_EVENT_FLAG, gt_base + GT_INT_STATUS);
++
++		evt->event_handler(evt);
++		return IRQ_HANDLED;
++	}
++
++	return IRQ_NONE;
++}
++
++static int __cpuinit gt_clockevents_init(struct clock_event_device *clk)
++{
++	struct clock_event_device **this_cpu_clk;
++	int cpu = smp_processor_id();
++
++	clk->name = "ARM global timer clock event";
++	clk->features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT;
++	clk->set_mode = gt_clockevent_set_mode;
++	clk->set_next_event = gt_clockevent_set_next_event;
++	this_cpu_clk = __this_cpu_ptr(gt_evt);
++	*this_cpu_clk = clk;
++	clk->cpumask = cpumask_of(cpu);
++	clk->irq = gt_ppi;
++	clockevents_config_and_register(clk, gt_clk_rate,
++					0, 0xffffffff);
++	per_cpu(percpu_init_called, cpu) = true;
++	enable_percpu_irq(clk->irq, IRQ_TYPE_NONE);
++	return 0;
++}
++
++static void gt_clockevents_stop(struct clock_event_device *clk)
++{
++	gt_clockevent_set_mode(CLOCK_EVT_MODE_UNUSED, clk);
++	disable_percpu_irq(clk->irq);
++}
++
++static int __cpuinit gt_clockevents_setup(struct clock_event_device *clk)
++{
++	/* Use existing clock_event for boot cpu */
++	if (per_cpu(percpu_init_called, smp_processor_id()))
++		return 0;
++
++	/* already enabled in gt_clocksource_init. */
++	return gt_clockevents_init(clk);
++}
++
++static cycle_t gt_clocksource_read(struct clocksource *cs)
++{
++	return gt_counter_read();
++}
++
++static struct clocksource gt_clocksource = {
++	.name	= "ARM global timer clock source",
++	.rating	= 300,
++	.read	= gt_clocksource_read,
++	.mask	= CLOCKSOURCE_MASK(64),
++	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
++};
++
++#ifdef CONFIG_CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK
++static u32 gt_sched_clock_read(void)
++{
++	if (!gt_base)
++		return 0;
++
++	return gt_counter_read();
++}
++#endif
++
++static void __init gt_clocksource_init(void)
++{
++	__raw_writel(0, gt_base + GT_CONTROL);
++	__raw_writel(0, gt_base + GT_COUNTER0);
++	__raw_writel(0, gt_base + GT_COUNTER1);
++	/* enables timer on all the cores */
++	__raw_writel(GT_CONTROL_TIMER_ENABLE, gt_base + GT_CONTROL);
++
++#ifdef CONFIG_CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK
++	setup_sched_clock(gt_sched_clock_read, 32, gt_clk_rate);
++#endif
++	clocksource_register_hz(&gt_clocksource, gt_clk_rate);
++}
++
++static struct clk *gt_get_clock(void)
++{
++	struct clk *clk;
++	int err;
++
++	clk = clk_get_sys("gt", NULL);
++	if (IS_ERR(clk)) {
++		pr_err("global-timer: clock not found: %ld\n", PTR_ERR(clk));
++		return clk;
++	}
++
++	err = clk_prepare_enable(clk);
++	if (err) {
++		pr_err("global-timer: clock prepare+enable failed: %d\n", err);
++		clk_put(clk);
++		return ERR_PTR(err);
++	}
++
++	return clk;
++}
++
++static struct local_timer_ops gt_lt_ops __cpuinitdata = {
++	.setup	= gt_clockevents_setup,
++	.stop	= gt_clockevents_stop,
++};
++
++int __init global_timer_init(void __iomem *base, unsigned int timer_irq)
++{
++	unsigned int cpu = smp_processor_id();
++	struct clock_event_device *evt = &per_cpu(gt_clockevent, cpu);
++	int err = 0;
++	struct clk *gt_clk;
++
++	if (gt_base) {
++		pr_warn("global-timer: invalid base address\n");
++		return -EINVAL;
++	}
++
++	gt_clk = gt_get_clock();
++	if (IS_ERR(gt_clk)) {
++		pr_warn("global-timer: clk not found\n");
++		return -EINVAL;
++	}
++
++	gt_evt = alloc_percpu(struct clock_event_device *);
++	if (!gt_evt) {
++		pr_warn("global-timer: can't allocate memory\n");
++		return -ENOMEM;
++	}
++
++	err = request_percpu_irq(timer_irq, gt_clockevent_interrupt,
++				 "gt", gt_evt);
++	if (err) {
++		pr_warn("global-timer: can't register interrupt %d (%d)\n",
++			timer_irq, err);
++		goto out_free;
++	}
++
++	gt_base = base;
++	gt_clk_rate = clk_get_rate(gt_clk);
++	gt_ppi = timer_irq;
++	gt_clocksource_init();
++	gt_clockevents_init(evt);
++#ifdef CONFIG_LOCAL_TIMERS
++	err =  local_timer_register(&gt_lt_ops);
++	if (err) {
++		pr_warn("global-timer: unable to register local timer.\n");
++		goto out_irq;
++	}
++#endif
++	return 0;
++
++out_irq:
++	free_percpu_irq(timer_irq, gt_evt);
++out_free:
++	free_percpu(gt_evt);
++	return err;
++}
++
++#ifdef CONFIG_OF
++static void __init global_timer_of_register(struct device_node *np)
++{
++	struct clk *clk;
++	int err = 0;
++	int gt_ppi;
++	static void __iomem *gt_base;
++
++	/*
++	 * In r2p0 the comparators for each processor with the global timer
++	 * fire when the timer value is greater than or equal to. In previous
++	 * revisions the comparators fired when the timer value was equal to.
++	 */
++	if ((read_cpuid_id() & 0xf0000f) < 0x200000)
++		goto out;
++
++	gt_ppi = irq_of_parse_and_map(np, 0);
++	if (!gt_ppi) {
++		err = -EINVAL;
++		goto out;
++	}
++
++	gt_base = of_iomap(np, 0);
++	if (!gt_base) {
++		err = -ENOMEM;
++		goto out;
++	}
++
++	clk = of_clk_get(np, 0);
++	if (!IS_ERR(clk))
++		clk_register_clkdev(clk, NULL, "gt");
++
++	global_timer_init(gt_base, gt_ppi);
++
++out:
++	WARN(err, "Global timer register failed (%d)\n", err);
++}
++
++/* Only tested on r2p2 and r3p0  */
++CLOCKSOURCE_OF_DECLARE(arm_gt, "arm,cortex-a9-global-timer",
++			global_timer_of_register);
++#endif
+-- 
+1.7.6.5
 
