@@ -1,114 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751773Ab3FJFPY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 01:15:24 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:34241 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296Ab3FJFPW (ORCPT
+	id S1751806Ab3FJFYU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 01:24:20 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:62864 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997Ab3FJFYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 01:15:22 -0400
+	Mon, 10 Jun 2013 01:24:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <1370764205-3933-1-git-send-email-chenxg@marvell.com>
-References: <1370764205-3933-1-git-send-email-chenxg@marvell.com>
-Date: Mon, 10 Jun 2013 10:45:21 +0530
-Message-ID: <CAKohpon+-bhn1OkPF24qciQBf=jHMaXsBbF0t6veZdAWYpw0QQ@mail.gmail.com>
-Subject: Re: [PATCH v2] cpufreq: fix governor start/stop race condition
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Xiaoguang Chen <chenxg@marvell.com>
-Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, njiang1@marvell.com, zjwu@marvell.com,
-        ylmao@marvell.com, chenxg.marvell@gmail.com
+In-Reply-To: <1369950320-22784-1-git-send-email-stepanm@codeaurora.org>
+References: <1369950320-22784-1-git-send-email-stepanm@codeaurora.org>
+Date: Mon, 10 Jun 2013 14:24:14 +0900
+Message-ID: <CANqRtoQERw46u7qyUPavd7XCj5P8TMVFFNy-xjEBMDEoR7U1Qw@mail.gmail.com>
+Subject: Re: [PATCH] arm: Prevent memory aliasing on non-LPAE kernels
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Stepan Moskovchenko <stepanm@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 June 2013 13:20, Xiaoguang Chen <chenxg@marvell.com> wrote:
-> cpufreq governor stop and start should be kept in sequence.
-> If not, there will be unexpected behavior, for example:
+Hello Stepan,
+
+On Fri, May 31, 2013 at 6:45 AM, Stepan Moskovchenko
+<stepanm@codeaurora.org> wrote:
+> Some LPAE-capable systems may use a Device Tree containing
+> memory nodes that describe memory extending beyond the 4GB
+> physical address boundary. Ignore or truncate these memory
+> nodes on kernels that have not been built with LPAE
+> support, to prevent the extended physical addresses from
+> being truncated and aliasing with physical addresses below
+> the 4GB boundary.
 >
-> we have 4 cpus and policy->cpu=cpu0, cpu1/2/3 are linked to cpu0.
-> the normal sequence is as below:
->
-> 1) Current governor is userspace, one application tries to set
-> governor to ondemand. it will call __cpufreq_set_policy in which it
-> will stop userspace governor and then start ondemand governor.
->
-> 2) Current governor is userspace, now cpu0 hotplugs in cpu3, it will
-> call cpufreq_add_policy_cpu. on which it first stops userspace
-> governor, and then starts userspace governor.
->
-> Now if the sequence of above two cases interleaves, it becames
-> below sequence:
->
-> 1) application stops userspace governor
-> 2)                                      hotplug stops userspace governor
-> 3) application starts ondemand governor
-> 4)                                      hotplug starts a governor
->
-> in step 4, hotplug is supposed to start userspace governor, but now
-> the governor has been changed by application to ondemand, so hotplug
-> starts ondemand governor again !!!!
->
-> The solution is: do not allow stop governor multi-times
-> Governor stop should only do once, after it is stopped,
-> no other governor stop should be executed.
->
-> Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
+> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
 > ---
->  drivers/cpufreq/cpufreq.c | 10 +++++++++-
->  include/linux/cpufreq.h   |  1 +
->  2 files changed, 10 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 2d53f47..c8d7cb2 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1562,6 +1562,11 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
->
->         pr_debug("__cpufreq_governor for CPU %u, event %u\n",
->                                                 policy->cpu, event);
-> +
-> +       if ((!policy->governor->enabled && (event == CPUFREQ_GOV_STOP)) ||
-> +           (policy->governor->enabled && (event == CPUFREQ_GOV_START)))
-> +               return 0;
-> +
->         ret = policy->governor->governor(policy, event);
->
->         if (!ret) {
-> @@ -1569,6 +1574,10 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
->                         policy->governor->initialized++;
->                 else if (event == CPUFREQ_GOV_POLICY_EXIT)
->                         policy->governor->initialized--;
-> +               else if (event == CPUFREQ_GOV_STOP)
-> +                       policy->governor->enabled = 0;
-> +               else if (event == CPUFREQ_GOV_START)
-> +                       policy->governor->enabled = 1;
->         }
->
->         /* we keep one module reference alive for
-> @@ -1581,7 +1590,6 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
->         return ret;
->  }
->
-> -
->  int cpufreq_register_governor(struct cpufreq_governor *governor)
->  {
->         int err;
-> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-> index 037d36a..16c5b70 100644
-> --- a/include/linux/cpufreq.h
-> +++ b/include/linux/cpufreq.h
-> @@ -199,6 +199,7 @@ struct cpufreq_governor {
->                         will fallback to performance governor */
->         struct list_head        governor_list;
->         struct module           *owner;
-> +       int enabled;
->  };
+>  arch/arm/kernel/devtree.c |   12 ++++++++++++
+>  1 files changed, 12 insertions(+), 0 deletions(-)
 
-This isn't sufficient.
+Thanks for your efforts on fixing this issue. Before I was aware of
+this patch I wrote a different implementation to solve most likely the
+same issue, please see the following patches for more information.
+Thanks to Arnd for pointing me in the right direction.
 
-If there are two groups of clk-sharing-cpus, i.e. if we have multiple
-policies and they are using same governor, then these functions
-gets called twice for governor x. And you will return 0 for the second
-policy.
+[PATCH 00/03] ARM: 64-bit memory fixes, APE6EVM second memory bank
+[PATCH 01/03] ARM: Let arm_add_memory() always use 64-bit arguments
+[PATCH 02/03] ARM: Handle 64-bit memory in case of 32-bit phys_addr_t
+[PATCH 03/03] ARM: shmobile: Add second memory bank to DTS for APE6EVM
+
+Regarding this patch, I have now tested it on my APE6EVM board
+together with this patch:
+
+[PATCH 03/03] ARM: shmobile: Add second memory bank to DTS for APE6EVM
+
+Without your patch the situation is as follows:
+
+HIGHMEM=n, LPAE=n - OK (busted, second bank ignored with message [1])
+HIGHMEM=y, LPAE=n - NG (busted, board hangs on boot)
+HIGHMEM=n, LPAE=y - OK
+HIGHMEM=y, LPAE=y - OK
+
+[1] Ignoring RAM at 00000000-3fffffff (vmalloc region overlap).
+
+With your patch applied I get the following:
+
+HIGHMEM=n, LPAE=n - OK (with message [2])
+HIGHMEM=y, LPAE=n - OK (with message [2])
+HIGHMEM=n, LPAE=y - OK
+HIGHMEM=y, LPAE=y - OK
+
+[2] Ignoring memory at 0x200000000 due to lack of LPAE support
+
+
+So your patch unbreaks the second memory on my board perfectly well, thank you!
+
+Regarding implementation details, I wonder if we only need to cover
+the DT memory banks by performing the check inside
+early_init_dt_add_memory_arch()?
+
+To me the root cause of this issue seems to be how phys_addr_t is
+configured when LPAE=n. It is understandable that the kernel cannot
+handle 64-bit addresses when phys_addr_t is 32-bit, but I believe we
+need some sane way to omit those memory banks. Your patch handles the
+non-LPAE case before phys_addr_t is involved which seems to work well.
+Your approach is much better compared to as-is today with potentially
+wrapping phys_addr_t parameters to arm_add_memory().
+
+The only question in my mind is about the location for this kind of
+test, shall it be done in early_init_dt_add_memory_arch() or
+arm_add_memory()?
+
+If we care about adding some bounds checking for the kernel command
+line mem=xxx option then arm_add_memory() seems to be the best
+location from my point of view.
+
+Any ideas?
+
+Please add me to CC if you respin your patch. I will give it a go on my board.
+
+Thanks,
+
+/ magnus
