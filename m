@@ -1,137 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753057Ab3FJS2R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 14:28:17 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:53868 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab3FJS2Q (ORCPT
+	id S1753975Ab3FJSa6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 14:30:58 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:41179 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752025Ab3FJSa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 14:28:16 -0400
+	Mon, 10 Jun 2013 14:30:56 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        patches@linaro.org, Sachin Kamat <sachin.kamat@linaro.org>
+Subject: Re: [PATCH 1/3] ARM: dts: exynos4210: Add LCD related pinctrl entries
+Date: Mon, 10 Jun 2013 20:30:50 +0200
+Message-ID: <3046864.Enssr3rlNj@flatron>
+User-Agent: KMail/4.10.4 (Linux/3.9.5-gentoo; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <51B551C3.8000003@linaro.org>
+References: <1370603235-11193-1-git-send-email-tushar.behera@linaro.org> <4895761.sVtM2qZnU3@flatron> <51B551C3.8000003@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <CA+QCeVQniT-3uP3o+VfQ5vGPhH5U6N_TM9jvn=gpTCdzPDaTog@mail.gmail.com>
-References: <CAG-aW07oTun9z_bOTLE25X+60KmCG1c0nMFecLrf_UAzNMF2Pw@mail.gmail.com>
-	<CA+QCeVRBF_MGFtZtjeDL_YaoobhArLHna-9VKEeHegJ5D=06Pg@mail.gmail.com>
-	<CAG-aW05AW+gO_bTG-jCs2PWPHNyJZWK-KUx1eHx6wy=m2XdbEQ@mail.gmail.com>
-	<CA+QCeVQniT-3uP3o+VfQ5vGPhH5U6N_TM9jvn=gpTCdzPDaTog@mail.gmail.com>
-Date: Mon, 10 Jun 2013 11:28:15 -0700
-X-Google-Sender-Auth: Clk9CaL0mr7NT09yXLIikOPC3J4
-Message-ID: <CAE9FiQXj4GUAqmRfGykKsedSi=B-ogbVFax2txe_p0gCP_bFng@mail.gmail.com>
-Subject: Re: 3.10-rc4: mtrr_cleanup: can not find optimal value, please
- specify mtrr_gran_size/mtrr_chunk_size
-From: Yinghai Lu <yinghai@kernel.org>
-To: Sergey Meirovich <rathamahata@gmail.com>
-Cc: Matt <jackdachef@gmail.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 11:00 AM, Sergey Meirovich
-<rathamahata@gmail.com> wrote:
+On Monday 10 of June 2013 09:40:43 Tushar Behera wrote:
+> On 06/08/2013 04:16 PM, Tomasz Figa wrote:
+> > Hi Tushar, Sachin,
+> > 
+> > On Friday 07 of June 2013 16:37:13 Tushar Behera wrote:
+> >> From: Sachin Kamat <sachin.kamat@linaro.org>
+> >> 
+> >> Adds pinctrl entries required by FIMD.
+> >> 
+> >> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> >> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> >> ---
+> >> 
+> >>  arch/arm/boot/dts/exynos4210-pinctrl.dtsi |   75
+> >> 
+> >> +++++++++++++++++++++++++++++ 1 file changed, 75 insertions(+)
+> >> 
+> >> diff --git a/arch/arm/boot/dts/exynos4210-pinctrl.dtsi
+> >> b/arch/arm/boot/dts/exynos4210-pinctrl.dtsi index 55a2efb..d241726
+> >> 100644
+> >> --- a/arch/arm/boot/dts/exynos4210-pinctrl.dtsi
+> >> +++ b/arch/arm/boot/dts/exynos4210-pinctrl.dtsi
+> >> @@ -330,6 +330,81 @@
+> >> 
+> >>  			samsung,pin-pud = <3>;
+> >>  			samsung,pin-drv = <0>;
+> >>  		
+> >>  		};
+> >> 
+> >> +
+> >> +		pwm0_out: pwm0-out {
+> >> +			samsung,pins = "gpd0-0";
+> >> +			samsung,pin-function = <2>;
+> >> +			samsung,pin-pud = <0>;
+> >> +			samsung,pin-drv = <0>;
+> >> +		};
+> >> +
+> >> +		pwm1_out: pwm1-out {
+> >> +			samsung,pins = "gpd0-1";
+> >> +			samsung,pin-function = <2>;
+> >> +			samsung,pin-pud = <0>;
+> >> +			samsung,pin-drv = <0>;
+> >> +		};
+> > 
+> > Hmm, these two seem to be unrelated. Rebase error? :)
+> 
+> Not a rebase error. pwm0_out needs to configured to get display on LCD.
 
-> 3.10-rc5 with patches has curred error messages in dmesg but MTRRs
-> still do not cover my entire memory (7748Mb) or anything close to it
-> ("total RAM covered: 2936M").Unfortunately, I don't have anything
-> other to compare to because this system started straight with 3.9.X
+Please split this into two separate patches than, one adding LCD pin 
+configuration nodes and one adding PWM pin configuration nodes.
 
-Your system is AMD 64bit, so there is TOM2.
+Also I think it would be better to just define all available PWM outputs 
+not only first two. if you are already at adding PWM pin configurations.
 
->
-> rathamahata@piledriver ~ $ free -m
->              total       used       free     shared    buffers     cached
-> Mem:          7748       1264       6483          0         56        513
-> -/+ buffers/cache:        695       7053
-> Swap:         3659          0       3659
-> rathamahata@piledriver ~ $
->
-> ...
-> [    0.000000] e820: last_pfn = 0x23f000 max_arch_pfn = 0x400000000
-> [    0.000000] MTRR default type: uncachable
-> [    0.000000] MTRR fixed ranges enabled:
-> [    0.000000]   00000-9FFFF write-back
-> [    0.000000]   A0000-BFFFF write-through
-> [    0.000000]   C0000-D2FFF write-protect
-> [    0.000000]   D3000-DFFFF uncachable
-> [    0.000000]   E0000-FFFFF write-protect
-> [    0.000000] MTRR variable ranges enabled:
-> [    0.000000]   0 base 000000000000 mask FFFF80000000 write-back
-> [    0.000000]   1 base 000080000000 mask FFFFC0000000 write-back
-> [    0.000000]   2 base 0000B7800000 mask FFFFFF800000 uncachable
-> [    0.000000]   3 base 0000B8000000 mask FFFFF8000000 uncachable
-> [    0.000000]   4 disabled
-> [    0.000000]   5 disabled
-> [    0.000000]   6 disabled
-> [    0.000000]   7 disabled
-> [    0.000000] TOM2: 000000023f000000 aka 9200M
-> [    0.000000] x86 PAT enabled: cpu 0, old 0x7040600070406, new 0x7010600070106
-> [    0.000000] original variable MTRRs
-> [    0.000000] reg 0, base: 0GB, range: 2GB, type WB
-> [    0.000000] reg 1, base: 2GB, range: 1GB, type WB
-> [    0.000000] reg 2, base: 2936MB, range: 8MB, type UC
-> [    0.000000] reg 3, base: 2944MB, range: 128MB, type UC
-> [    0.000000] total RAM covered: 2936M
-> [    0.000000] Found optimal setting for mtrr clean up
-> [    0.000000]  gran_size: 64K  chunk_size: 256M        num_reg: 4
->  lose cover RAM: 0G
-> [    0.000000] New variable MTRRs
-> [    0.000000] reg 0, base: 0GB, range: 2GB, type WB
-> [    0.000000] reg 1, base: 2GB, range: 1GB, type WB
-> [    0.000000] reg 2, base: 2936MB, range: 8MB, type UC
-> [    0.000000] reg 3, base: 2944MB, range: 128MB, type UC
-> [    0.000000] e820: update [mem 0xb7800000-0xffffffff] usable ==> reserved
-> [    0.000000] e820: last_pfn = 0xb7800 max_arch_pfn = 0x400000000
-> [    0.000000] Base memory trampoline at [ffff880000099000] 99000 size 24576
-> [    0.000000] Using GB pages for direct mapping
-> [    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]20:
-> last_pfn = 0x23f000 max_arch_pfn = 0x400000000
-> [    0.000000] MTRR default type: uncachable
-> [    0.000000] MTRR fixed ranges enabled:
-> [    0.000000]   00000-9FFFF write-back
-> [    0.000000]   A0000-BFFFF write-through
-> [    0.000000]   C0000-D2FFF write-protect
-> [    0.000000]   D3000-DFFFF uncachable
-> [    0.000000]   E0000-FFFFF write-protect
-> [    0.000000] MTRR variable ranges enabled:
-> [    0.000000]   0 base 000000000000 mask FFFF80000000 write-back
-> [    0.000000]   1 base 000080000000 mask FFFFC0000000 write-back
-> [    0.000000]   2 base 0000B7800000 mask FFFFFF800000 uncachable
-> [    0.000000]   3 base 0000B8000000 mask FFFFF8000000 uncachable
-> [    0.000000]   4 disabled
-> [    0.000000]   5 disabled
-> [    0.000000]   6 disabled
-> [    0.000000]   7 disabled
-> [    0.000000] TOM2: 000000023f000000 aka 9200M
+Thanks,
+Tomasz
 
-[4G, 9200M) is write-back automatically, there is no need to cover them
-again with VAR mtrr.
-
-> [    0.000000] x86 PAT enabled: cpu 0, old 0x7040600070406, new 0x7010600070106
-> [    0.000000] original variable MTRRs
-> [    0.000000] reg 0, base: 0GB, range: 2GB, type WB
-> [    0.000000] reg 1, base: 2GB, range: 1GB, type WB
-> [    0.000000] reg 2, base: 2936MB, range: 8MB, type UC
-> [    0.000000] reg 3, base: 2944MB, range: 128MB, type UC
-> [    0.000000] total RAM covered: 2936M
-
-It only count var really.
-
-> [    0.000000] Found optimal setting for mtrr clean up
-> [    0.000000]  gran_size: 64K  chunk_size: 256M        num_reg: 4
->  lose cover RAM: 0G
-> [    0.000000] New variable MTRRs
-> [    0.000000] reg 0, base: 0GB, range: 2GB, type WB
-> [    0.000000] reg 1, base: 2GB, range: 1GB, type WB
-> [    0.000000] reg 2, base: 2936MB, range: 8MB, type UC
-> [    0.000000] reg 3, base: 2944MB, range: 128MB, type UC
-> [    0.000000] e820: update [mem 0xb7800000-0xffffffff] usable ==> reserved
-> [    0.000000] e820: last_pfn = 0xb7800 max_arch_pfn = 0x400000000
-> [    0.000000] Base memory trampoline at [ffff880000099000] 99000 size 24576
-> [    0.000000] Using GB pages for direct mapping
-> [    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
-> ...
-
-so there is no problem with your system...
-
-Thanks
-
-Yinghai
