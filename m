@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408Ab3FJMzg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 08:55:36 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52011 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751034Ab3FJMze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 08:55:34 -0400
-Date: Mon, 10 Jun 2013 14:55:30 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Linux EFI <linux-efi@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Jiri Kosina <jkosina@suse.cz>,
-        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH 4/4] x86, efi: Map runtime services 1:1
-Message-ID: <20130610125530.GA11673@pd.tnic>
-References: <1370177770-26661-1-git-send-email-bp@alien8.de>
- <1370177770-26661-5-git-send-email-bp@alien8.de>
- <20130606131439.GI30420@console-pimps.org>
- <20130606132908.GE20972@pd.tnic>
- <20130606155822.GH20972@pd.tnic>
- <51B0E2D4.3040007@zytor.com>
- <20130606193612.GM20972@pd.tnic>
- <51B0E522.4070005@zytor.com>
+	id S1752675Ab3FJMzo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 08:55:44 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:59071 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539Ab3FJMzl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 08:55:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <51B0E522.4070005@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201306090201.17739.heiko@sntech.de>
+References: <201306090159.05383.heiko@sntech.de>
+	<201306090201.17739.heiko@sntech.de>
+Date: Mon, 10 Jun 2013 14:55:41 +0200
+Message-ID: <CACRpkdbiHRrP7Xun1sPJ+o45Hofp3gCe89GY0fFiuF1F7TUaxQ@mail.gmail.com>
+Subject: Re: [EXAMPLE PATCH] pinctrl: add pinctrl driver for Rockchip SoCs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: Patrice Chotard <patrice.chotard.st@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 12:38:10PM -0700, H. Peter Anvin wrote:
-> On 06/06/2013 12:36 PM, Borislav Petkov wrote:
-> > On Thu, Jun 06, 2013 at 12:28:20PM -0700, H. Peter Anvin wrote:
-> >> Or we could materialize mappings for this specific PGD. However,
-> >> adding a read of %cr3 in __do_page_fault sounds expensive.
-> > 
-> > Yes, I think we want to make sure all mappings are there when we do an
-> > EFI runtime call so that we never #PF while it executes.
-> > 
-> > Matt mentioned on IRC that the it could be that his EFI runtime is
-> > referencing EFI_RESERVED area which we don't map. However, we need to
-> > confirm/disprove that first, as it is currently only a hunch.
+On Sun, Jun 9, 2013 at 2:01 AM, Heiko Stübner <heiko@sntech.de> wrote:
 
-FWIW,
+> This driver adds support the Cortex-A9 based SoCs from Rockchip,
+> so at least the RK2928, RK3066 (a and b) and RK3188.
+> Earlier Rockchip SoCs seem to use similar mechanics for gpio
+> handling so should be supportable with relative small changes.
+> Pull handling on the rk3188 is currently a stub, due to it being
+> a bit different to the earlier SoCs.
+>
+> Pinmuxing as well as gpio (and interrupt-) handling tested on
+> a rk3066a based machine.
+>
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 
-booting the patchset on my Dell looks good here. Booting at least, I
-don't know about other stuff. If you have an EFI test suite or want me
-to try stuff out, let me know. efibootmgr output looks sane too.
+Patch applied.
 
-Btw, I've added a printk to the code so that we know that we've managed
-switching to the 1:1 thing:
+You've been super-helpful, so of course I'm happy to merge this
+into the pinctrl tree.
 
-[    0.073119] efi: Using 1:1 map.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Yours,
+Linus Walleij
