@@ -1,117 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300Ab3FJI53 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 04:57:29 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:55894 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620Ab3FJI50 convert rfc822-to-8bit (ORCPT
+	id S1752754Ab3FJI70 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 04:59:26 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:48396 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752284Ab3FJI7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 04:57:26 -0400
-Message-ID: <51B594F2.9030000@arm.com>
-Date: Mon, 10 Jun 2013 09:57:22 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
+	Mon, 10 Jun 2013 04:59:24 -0400
+Message-ID: <51B5955A.8090708@monstr.eu>
+Date: Mon, 10 Jun 2013 10:59:06 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Chen Gang <gang.chen@asianux.com>
-CC: Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH v2] arm64: kernel: compiling issue, need delete read_current_timer().
-References: <5199C725.8050102@asianux.com> <168084c28e8ba5124c05553e97463172@localhost> <20130520095606.GH31359@mudshark.cambridge.arm.com> <519AF2DC.2040200@asianux.com> <20130521085325.GB10453@mudshark.cambridge.arm.com> <519B425D.4030806@asianux.com> <51A32F40.1050309@asianux.com> <51B2B50A.1050305@asianux.com>
-In-Reply-To: <51B2B50A.1050305@asianux.com>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 10 Jun 2013 08:57:23.0387 (UTC) FILETIME=[85D268B0:01CE65B8]
-X-MC-Unique: 113061009572303201
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Graeme Smecher <gsmecher@threespeedlogic.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 1/2] xilinx systemace: Fix device name assignment for
+ SystemACE (from "xs`" to "xsa").
+References: <4b5d6615a1338145a461a6d4e1c7d3e42d4f4522.1369312303.git.michal.simek@xilinx.com> <51AC9068.7050203@monstr.eu> <20130603142242.GB7024@kroah.com> <51ACA928.4090601@monstr.eu> <20130603143722.GA7651@kroah.com>
+In-Reply-To: <20130603143722.GA7651@kroah.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2GGPETVBVDQNEHCHRLSOG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/13 05:37, Chen Gang wrote:
-> Hello Maintainers:
-> 
-> Please help check it, when you have time.
-> 
-> Thanks.
-> 
-> On 05/27/2013 06:02 PM, Chen Gang wrote:
->> Hello Maintainers:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2GGPETVBVDQNEHCHRLSOG
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On 06/03/2013 04:37 PM, Greg Kroah-Hartman wrote:
+> On Mon, Jun 03, 2013 at 04:33:12PM +0200, Michal Simek wrote:
+>> On 06/03/2013 04:22 PM, Greg Kroah-Hartman wrote:
+>>> On Mon, Jun 03, 2013 at 02:47:36PM +0200, Michal Simek wrote:
+>>>> Hi Greg,
+>>>>
+>>>> do you want to take these two patches through your tree?
+>>>
+>>> Why would I be sending in drivers/block/* patches?  I don't have a tr=
+ee
+>>> for that, do I?
 >>
->> Please help check this patch whether OK, when you have time.
+>> Ah ok. I took you because you are 3rd based on get_maintainer patch (5=
+0% commit signer)
 >>
->> Thanks.
 >>
->> On 05/21/2013 05:46 PM, Chen Gang wrote:
+>>>> Or should I take them through my microblaze tree?
 >>>
->>> Under arm64, we will calibrate the delay loop statically using a known
->>> timer frequency, so delete read_current_timer(), or it will cause
->>> compiling issue with allmodconfig.
->>>
->>> The related error:
->>>   ERROR: "read_current_timer" [lib/rbtree_test.ko] undefined!
->>>   ERROR: "read_current_timer" [lib/interval_tree_test.ko] undefined!
->>>   ERROR: "read_current_timer" [fs/ext4/ext4.ko] undefined!
->>>   ERROR: "read_current_timer" [crypto/tcrypt.ko] undefined!
->>>
->>>
->>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>> ---
->>>  arch/arm64/include/asm/timex.h |    6 +++---
->>>  arch/arm64/kernel/time.c       |    6 ------
->>>  2 files changed, 3 insertions(+), 9 deletions(-)
->>>
->>> diff --git a/arch/arm64/include/asm/timex.h b/arch/arm64/include/asm/timex.h
->>> index b24a31a..81a076e 100644
->>> --- a/arch/arm64/include/asm/timex.h
->>> +++ b/arch/arm64/include/asm/timex.h
->>> @@ -16,14 +16,14 @@
->>>  #ifndef __ASM_TIMEX_H
->>>  #define __ASM_TIMEX_H
->>>  
->>> +#include <asm/arch_timer.h>
->>> +
->>>  /*
->>>   * Use the current timer as a cycle counter since this is what we use for
->>>   * the delay loop.
->>>   */
->>> -#define get_cycles()	({ cycles_t c; read_current_timer(&c); c; })
->>> +#define get_cycles()	arch_counter_get_cntvct()
->>>  
->>>  #include <asm-generic/timex.h>
->>>  
->>> -#define ARCH_HAS_READ_CURRENT_TIMER
->>> -
->>>  #endif
->>> diff --git a/arch/arm64/kernel/time.c b/arch/arm64/kernel/time.c
->>> index a551f88..03dc371 100644
->>> --- a/arch/arm64/kernel/time.c
->>> +++ b/arch/arm64/kernel/time.c
->>> @@ -68,12 +68,6 @@ unsigned long long notrace sched_clock(void)
->>>  	return arch_timer_read_counter() * sched_clock_mult;
->>>  }
->>>  
->>> -int read_current_timer(unsigned long *timer_value)
->>> -{
->>> -	*timer_value = arch_timer_read_counter();
->>> -	return 0;
->>> -}
->>> -
->>>  void __init time_init(void)
->>>  {
->>>  	u32 arch_timer_rate;
+>>> Please do, or send them to the block maintainer.
+>>
+>> Who is drivers/block maintainer? I can't see anyone in MAINTAINERS fil=
+e.
+>=20
+> Jens is the block/ maintainer, so I imagine he's also the drivers/block=
+/
+> maintainer as well.  If not, he would know who.
+>=20
 
-Sorry for the delay replying. This looks good to me.
+We have nice follow up on this. It was applied as different patch to Linu=
+s tree.
 
-FWIW:
-Acked-by: Marc Zyngier <marc.zyngier@arm.com>
+commit 585dc0c2f68981c02a0bb6fc8fe191a3f513959c
+Author: Gernot Vormayr <gvormayr@gmail.com>
+Date:   Fri May 24 15:55:03 2013 -0700
 
-	M.
--- 
-Jazz is not dead. It just smells funny...
+    drivers/block/xsysace.c: fix id with missing port-number
 
+    If the port number is missing from the device-tree the device gets na=
+med
+    xs` instead of xsa.  This fixes the check for missing ids.
+
+    Tested on ml507 board.
+
+    Signed-off-by: Gernot Vormayr <gvormayr@gmail.com>
+    Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Cc: Jens Axboe <axboe@kernel.dk>
+    Cc: Grant Likely <grant.likely@linaro.org>
+    Cc: Rob Herring <rob.herring@calxeda.com>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+
+M
+
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+------enig2GGPETVBVDQNEHCHRLSOG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlG1lV8ACgkQykllyylKDCF8tgCgi7fvIv92J7w6sLnlQ2MT37gb
+FHQAoIREVLzLh7OBqjwS1rsGwkF4cVvC
+=f7SQ
+-----END PGP SIGNATURE-----
+
+------enig2GGPETVBVDQNEHCHRLSOG--
