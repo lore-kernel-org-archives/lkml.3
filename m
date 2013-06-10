@@ -1,111 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754271Ab3FJRbq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 13:31:46 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:63820 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740Ab3FJRbp (ORCPT
+	id S1754321Ab3FJRiT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 13:38:19 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:43790 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754126Ab3FJRiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 13:31:45 -0400
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Mon, 10 Jun 2013 12:31:44 -0500
-X-Originating-IP: 108.223.40.66
-From: Guenter Roeck <linux@roeck-us.net>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Yuanquan Chen <Yuanquan.Chen@freescale.com>,
-        Hiroo Matsumoto <matsumoto.hiroo@jp.fujitsu.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v2] powerpc/pci: Improve device hotplug initialization
-Date: Mon, 10 Jun 2013 10:18:08 -0700
-Message-Id: <1370884688-7753-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	Mon, 10 Jun 2013 13:38:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+QCeVRdOOuh4aVZsQhucBNETnDp5OhAZguigLTbyD9bOONO1A@mail.gmail.com>
+References: <1370845742-18919-1-git-send-email-yinghai@kernel.org>
+	<CA+QCeVRdOOuh4aVZsQhucBNETnDp5OhAZguigLTbyD9bOONO1A@mail.gmail.com>
+Date: Mon, 10 Jun 2013 10:38:16 -0700
+X-Google-Sender-Auth: AcW_OtpSShGGZAaXsTUppXw2tJc
+Message-ID: <CAE9FiQXacn2abVKeBhTazgRBCS9EtiACs=fbB6_Y27ZpLOTq3w@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] x86, range: Do not add new blank slot with add_range_with_merge
+From: Yinghai Lu <yinghai@kernel.org>
+To: Sergey Meirovich <rathamahata@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Joshua Covington <joshuacov@googlemail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 37f02195b (powerpc/pci: fix PCI-e devices rescan issue on powerpc
-platform) fixes a problem with interrupt and DMA initialization on hot
-plugged devices. With this commit, interrupt and DMA initialization for
-hot plugged devices is handled in the pci device enable function.
+On Mon, Jun 10, 2013 at 3:55 AM, Sergey Meirovich <rathamahata@gmail.com> wrote:
 
-This approach has a couple of drawbacks. First, it creates two code paths
-for device initialization, one for hot plugged devices and another for devices
-known during the initial PCI scan. Second, the initialization code for hot
-plugged devices is only called when the device is enabled, ie typically
-in the probe function. Also, the platform specific setup code is called each
-time pci_enable_device() is called, not only once during device discovery,
-meaning it is actually called multiple times, once for devices discovered
-during the initial scan and again each time a driver is re-loaded.
+> patches 1,2(latest one) have not helped me on 3.9.5:
 
-The visible result is that interrupt pins are only assigned to hot plugged
-devices when the device driver is loaded. Effectively this changes the PCI
-probe API, since pci_dev->irq and the device's dma configuration will now
-only be valid after pci_enable() was called at least once. A more subtle
-change is that platform specific PCI device setup is moved from device
-discovery into the driver's probe function, more specifically into the
-pci_enable_device() call.
+So v1:
+https://patchwork.kernel.org/patch/2694981/
+https://patchwork.kernel.org/patch/2694971/
 
-To fix the inconsistencies, add new function pcibios_add_device.
-Call pcibios_setup_device from pcibios_setup_bus_devices if device setup
-is not complete, and from pcibios_add_device if bus setup is complete.
+and v2:
+https://patchwork.kernel.org/patch/2695891/
+https://patchwork.kernel.org/patch/2695881/
 
-With this change, device setup code is moved back into device initialization,
-and called exactly once for both static and hot plugged devices.
+Neither of two versions fix the problem on your setup?
 
-Cc: Yuanquan Chen <Yuanquan.Chen@freescale.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Hiroo Matsumoto <matsumoto.hiroo@jp.fujitsu.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-v2: Ensure that PCI bus fixup code has been executed before calling
-    device setup code.
+Can you post boot log with mtrr_cleanup_debug on 3.9.4?
 
- arch/powerpc/kernel/pci-common.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+Thanks
 
-diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
-index 7f2273c..6909b13 100644
---- a/arch/powerpc/kernel/pci-common.c
-+++ b/arch/powerpc/kernel/pci-common.c
-@@ -992,7 +992,7 @@ void pcibios_setup_bus_self(struct pci_bus *bus)
- 		ppc_md.pci_dma_bus_setup(bus);
- }
- 
--void pcibios_setup_device(struct pci_dev *dev)
-+static void pcibios_setup_device(struct pci_dev *dev)
- {
- 	/* Fixup NUMA node as it may not be setup yet by the generic
- 	 * code and is needed by the DMA init
-@@ -1013,6 +1013,17 @@ void pcibios_setup_device(struct pci_dev *dev)
- 		ppc_md.pci_irq_fixup(dev);
- }
- 
-+int pcibios_add_device(struct pci_dev *dev)
-+{
-+	/*
-+	 * We can only call pcibios_setup_device() after bus setup is complete,
-+	 * since some of the platform specific DMA setup code depends on it.
-+	 */
-+	if (dev->bus->is_added)
-+		pcibios_setup_device(dev);
-+	return 0;
-+}
-+
- void pcibios_setup_bus_devices(struct pci_bus *bus)
- {
- 	struct pci_dev *dev;
-@@ -1467,10 +1478,6 @@ int pcibios_enable_device(struct pci_dev *dev, int mask)
- 		if (ppc_md.pcibios_enable_device_hook(dev))
- 			return -EINVAL;
- 
--	/* avoid pcie irq fix up impact on cardbus */
--	if (dev->hdr_type != PCI_HEADER_TYPE_CARDBUS)
--		pcibios_setup_device(dev);
--
- 	return pci_enable_resources(dev, mask);
- }
- 
--- 
-1.7.9.7
-
+Yinghai
