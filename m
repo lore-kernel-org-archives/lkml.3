@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177Ab3FJT4k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 15:56:40 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:44381 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab3FJT4j (ORCPT
+	id S1752440Ab3FJUA1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 16:00:27 -0400
+Received: from mail-ye0-f173.google.com ([209.85.213.173]:38313 "EHLO
+	mail-ye0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab3FJUA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 15:56:39 -0400
-Message-ID: <51B62F6B.8040308@oracle.com>
-Date: Mon, 10 Jun 2013 15:56:27 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 10 Jun 2013 16:00:26 -0400
+X-Greylist: delayed 422 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Jun 2013 16:00:26 EDT
+Message-ID: <51B62EAD.5000601@gmail.com>
+Date: Mon, 10 Jun 2013 14:53:17 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Christoph Lameter <cl@linux.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] slab: prevent warnings when allocating with __GFP_NOWARN
-References: <1370891880-2644-1-git-send-email-sasha.levin@oracle.com> <CAOJsxLGDH2iwznRkP-iwiMZw7Ee3mirhjLvhShrWLHR0qguRxA@mail.gmail.com>
-In-Reply-To: <CAOJsxLGDH2iwznRkP-iwiMZw7Ee3mirhjLvhShrWLHR0qguRxA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        =?ISO-8859-1?Q?Heiko_St=FC?= =?ISO-8859-1?Q?bner?= 
+	<heiko@sntech.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Patrice Chotard <patrice.chotard.st@gmail.com>
+Subject: Re: [EXAMPLE PATCH] pinctrl: add pinctrl driver for Rockchip SoCs
+References: <201306090159.05383.heiko@sntech.de> <201306090201.17739.heiko@sntech.de> <CACRpkdaEcZZ3NZzwKOhUPjvFg+bSZ=UbpyPT2EBcAfVv1-EsKA@mail.gmail.com> <51B619B9.8040204@wwwdotorg.org>
+In-Reply-To: <51B619B9.8040204@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2013 03:31 PM, Pekka Enberg wrote:
-> Hello Sasha,
->
-> On Mon, Jun 10, 2013 at 10:18 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->> slab would still spew a warning when a big allocation happens with the
->> __GFP_NOWARN fleg is set. Prevent that to conform to __GFP_NOWARN.
+On 06/10/2013 01:23 PM, Stephen Warren wrote:
+> On 06/10/2013 07:00 AM, Linus Walleij wrote:
+>> On Sun, Jun 9, 2013 at 2:01 AM, Heiko Stübner <heiko@sntech.de> wrote:
 >>
->> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
->> ---
->>   mm/slab_common.c | 4 +++-
->>   1 file changed, 3 insertions(+), 1 deletion(-)
+>> (...)
+>>> +#include <linux/irqchip/chained_irq.h>
+>>> +#include <linux/clk-provider.h>
+>>> +#include <dt-bindings/pinctrl/rockchip.h>
 >>
->> diff --git a/mm/slab_common.c b/mm/slab_common.c
->> index ff3218a..2d41450 100644
->> --- a/mm/slab_common.c
->> +++ b/mm/slab_common.c
->> @@ -373,8 +373,10 @@ struct kmem_cache *kmalloc_slab(size_t size, gfp_t flags)
->>   {
->>          int index;
+>> Hm I don't know if we're supposed to do things like this actually.
 >>
->> -       if (WARN_ON_ONCE(size > KMALLOC_MAX_SIZE))
->> +       if (size > KMALLOC_MAX_SIZE) {
->> +               WARN_ON_ONCE(!(flags & __GFP_NOWARN));
->>                  return NULL;
->> +       }
->
-> Does this fix a real problem you're seeing? __GFP_NOWARN is about not
-> warning if a memory allocation fails but this particular WARN_ON
-> suggests a kernel bug.
+>> It depends on whether the <dt-bindings/*> hierarchy is supposed
+>> to stay in the kernel after the device trees are moved out to a
+>> separate repo.
+>>
+>> Grant/Rob, shall we do this in drivers?
+> 
+> The entire reason I created the <dt-bindings/> directory (rather than
+> just putting *.h into e.g. arch/arm/boot/dts) was to provide a place to
+> share binding-defined constants between the DT files and drivers that
+> implement that binding. It's certainly my opinion that if/when *.dts
+> move out of the kernel, the <dt-bindings/> directory should continue to
+> be present in the kernel, and take updates mirrored from the upstream
+> binding repo.
 
-It fixes this warning:
+Yes, agreed. Only kernel headers in a dts would be a problem.
 
-[ 1691.703002] WARNING: CPU: 15 PID: 21519 at mm/slab_common.c:376 
-kmalloc_slab+0x2f/0xb0()
-[ 1691.706906] can: request_module (can-proto-4) failed.
-[ 1691.707827] mpoa: proc_mpc_write: could not parse ''
-[ 1691.713952] Modules linked in:
-[ 1691.715199] CPU: 15 PID: 21519 Comm: trinity-child15 Tainted: G 
-   W    3.10.0-rc4-next-20130607-sasha-00011-gcd78395-dirty #2
-[ 1691.719669]  0000000000000009 ffff880020a95e30 ffffffff83ff4041 
-0000000000000000
-[ 1691.797744]  ffff880020a95e68 ffffffff8111fe12 fffffffffffffff0 
-00000000000082d0
-[ 1691.802822]  0000000000080000 0000000000080000 0000000001400000 
-ffff880020a95e78
-[ 1691.807621] Call Trace:
-[ 1691.809473]  [<ffffffff83ff4041>] dump_stack+0x4e/0x82
-[ 1691.812783]  [<ffffffff8111fe12>] warn_slowpath_common+0x82/0xb0
-[ 1691.817011]  [<ffffffff8111fe55>] warn_slowpath_null+0x15/0x20
-[ 1691.819936]  [<ffffffff81243dcf>] kmalloc_slab+0x2f/0xb0
-[ 1691.824942]  [<ffffffff81278d54>] __kmalloc+0x24/0x4b0
-[ 1691.827285]  [<ffffffff8196ffe3>] ? security_capable+0x13/0x20
-[ 1691.829405]  [<ffffffff812a26b7>] ? pipe_fcntl+0x107/0x210
-[ 1691.831827]  [<ffffffff812a26b7>] pipe_fcntl+0x107/0x210
-[ 1691.833651]  [<ffffffff812b7ea0>] ? fget_raw_light+0x130/0x3f0
-[ 1691.835343]  [<ffffffff812aa5fb>] SyS_fcntl+0x60b/0x6a0
-[ 1691.837008]  [<ffffffff8403ca98>] tracesys+0xe1/0xe6
+Rob
 
-The caller specifically sets __GFP_NOWARN presumably to avoid this 
-warning on slub but I'm not sure if there's any other reason.
-
-
-Thanks,
-Sasha
