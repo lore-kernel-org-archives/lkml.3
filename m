@@ -1,139 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294Ab3FJJgR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 05:36:17 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40639 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753238Ab3FJJgN (ORCPT
+	id S1753081Ab3FJJoc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 05:44:32 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:64979 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751910Ab3FJJoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 05:36:13 -0400
-Date: Mon, 10 Jun 2013 10:35:11 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>,
-        devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <rob.herring@calxeda.com>,
-        Rob Landley <rob@landley.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: Re: [PATCH v2 01/11] serial:st-asc: Add ST ASC driver.
-Message-ID: <20130610093511.GT18614@n2100.arm.linux.org.uk>
-References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com> <1370856060-6403-1-git-send-email-srinivas.kandagatla@st.com>
+	Mon, 10 Jun 2013 05:44:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370856060-6403-1-git-send-email-srinivas.kandagatla@st.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1370382160-7576-1-git-send-email-taysom@chromium.org>
+References: <1370382160-7576-1-git-send-email-taysom@chromium.org>
+Date: Mon, 10 Jun 2013 11:44:29 +0200
+Message-ID: <CAPDyKFq-h_FDNMc-3rvcknBkGhWd13KDLnHhwBrcX4Rfc0qWGQ@mail.gmail.com>
+Subject: Re: [PATCH] drivers: mmc: reordered shutdown sequence in mmc_bld_remove_req
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Paul Taysom <taysom@chromium.org>
+Cc: Chris Ball <cjb@laptop.org>, Namjae Jeon <linkinjeon@gmail.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Konstantin Dorfman <kdorfman@codeaurora.org>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sonny@chromium.org, olofj@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 10:21:00AM +0100, Srinivas KANDAGATLA wrote:
-> This patch adds support to ASC (asynchronous serial controller)
-> driver, which is basically a standard serial driver. This IP is common
-> across all the ST parts for settop box platforms.
-> 
-> ASC is embedded in ST COMMS IP block. It supports Rx & Tx functionality.
-> It support all industry standard baud rates.
+On 4 June 2013 23:42, Paul Taysom <taysom@chromium.org> wrote:
+> We had a multi-partition SD-Card with two ext2 file systems. The partition
+> table was getting overwritten by a race between the card removal and
+> the unmount of the 2nd ext2 partition.
+>
+> What was observed:
+> 1. Suspend/resume would call to remove the device. The clearing
+>    of the device information is done asynchronously.
+> 2. A request is made to unmount the file system (this is called
+>    after the removal has started).
+> 3. The remapping table was cleared by the asynchronous part of
+>    the device removal.
+> 4. A write request to the super block (block 0 of the partition)
+>    was sent down and instead of being remapped to the partition
+>    offset, it was remapped to block 0 of the device which is where
+>    the partition table is located.
+> 5. Write was queued and written resulting in the overwriting
+>    of the partition table with the ext2 super block.
+> 6. The mmc_queue is cleaned up.
 
-Your driver is not POSIX compliant.
+Hi Paul,
 
-> +		for (; count != 0; count--) {
-> +			c = asc_in(port, ASC_RXBUF);
-> +			flag = TTY_NORMAL;
-> +			port->icount.rx++;
-> +
-> +			if (unlikely(c & ASC_RXBUF_FE)) {
-> +				if (c == ASC_RXBUF_FE) {
-> +					port->icount.brk++;
-> +					if (uart_handle_break(port))
-> +						continue;
-> +					flag = TTY_BREAK;
-> +				} else {
-> +					port->icount.frame++;
-> +					flag = TTY_FRAME;
-> +				}
-> +			} else if (ascport->check_parity &&
-> +				   unlikely(c & ASC_RXBUF_PE)) {
-> +				port->icount.parity++;
-> +				flag = TTY_PARITY;
-> +			}
-> +
-> +			if (uart_handle_sysrq_char(port, c))
-> +				continue;
-> +			tty_insert_flip_char(tport, c & 0xff, flag);
-> +		}
-> +		if (overrun) {
-> +			port->icount.overrun++;
-> +			tty_insert_flip_char(tport, 0, TTY_OVERRUN);
-> +		}
+An interesting bug you found here. My impression is that this is
+something that should be addressed through the blk layer, somehow.
 
-No support for ignoring error conditions.  No support for ignoring all
-input... and:
+Have you considered that this is not only a problem for SD cards, but
+for other block device drivers as well. I believe it is common to call
+del_gendisk before blk_cleanup_queue, which in principle is what you
+want to change.
 
-> +static void asc_set_termios(struct uart_port *port, struct ktermios *termios,
-> +			    struct ktermios *old)
-> +{
-> +	struct asc_port *ascport = to_asc_port(port);
-> +	unsigned int baud;
-> +	u32 ctrl_val;
-> +	tcflag_t cflag;
-> +	unsigned long flags;
-> +
-> +	port->uartclk = clk_get_rate(ascport->clk);
-> +
-> +	baud = uart_get_baud_rate(port, termios, old, 0, port->uartclk/16);
-> +	cflag = termios->c_cflag;
-> +
-> +	spin_lock_irqsave(&port->lock, flags);
-> +
-> +	/* read control register */
-> +	ctrl_val = asc_in(port, ASC_CTL);
-> +
-> +	/* stop serial port and reset value */
-> +	asc_out(port, ASC_CTL, (ctrl_val & ~ASC_CTL_RUN));
-> +	ctrl_val = ASC_CTL_RXENABLE | ASC_CTL_FIFOENABLE;
-> +
-> +	/* reset fifo rx & tx */
-> +	asc_out(port, ASC_TXRESET, 1);
-> +	asc_out(port, ASC_RXRESET, 1);
-> +
-> +	/* set character length */
-> +	if ((cflag & CSIZE) == CS7) {
-> +		ctrl_val |= ASC_CTL_MODE_7BIT_PAR;
-> +	} else {
-> +		ctrl_val |= (cflag & PARENB) ?  ASC_CTL_MODE_8BIT_PAR :
-> +						ASC_CTL_MODE_8BIT;
-> +	}
-> +
-> +	ascport->check_parity = (cflag & PARENB) ? 1 : 0;
-> +
-> +	/* set stop bit */
-> +	ctrl_val |= (cflag & CSTOPB) ? ASC_CTL_STOP_2BIT : ASC_CTL_STOP_1BIT;
-> +
-> +	/* odd parity */
-> +	if (cflag & PARODD)
-> +		ctrl_val |= ASC_CTL_PARITYODD;
-> +
-> +	/* hardware flow control */
-> +	if ((cflag & CRTSCTS) && ascport->hw_flow_control)
-> +		ctrl_val |= ASC_CTL_CTSENABLE;
+>
+> The mmc card device driver used to access SD cards, was calling del_gendisk
+> before calling mmc_cleanup-queue. The comment in the mmc_blk_remove_req
+> code indicated that it expected del_gendisk to block all further requests
+> from being queued but it doesn't. The mmc driver uses the presences of the
+> mmc_queue to determine if the request should be queued.
+>
+> The fix was to clean up the mmc_queue before the rest of the
+> the delete partition code is called.
+>
+> This prevents the overwriting of the partition table.
+>
+> However, the umount gets an error trying to write the super block.
+> The umount should be issued before the device is removed but that
+> is not always possible. The umount is still needed to cleanup other
+> data structures.
 
-This doesn't reflect those facts back into the termios structure to
-indicate that they aren't supported.
+So this clearly indicates to me that this is not the complete
+solution, even if it solves the most serious problem for this bug.
 
-Consider using uart_port's ignore and read status masks to implement
-the break, framing, parity and overrun checking in your interrupt
-handler using the same methodology as drivers like 8250, amba-pl011
-etc.  That will help you get these code sequences correct.
+I think it would be good to get a blk device maintainer's input to
+this discussion.
+
+Kind regards
+Ulf Hansson
+
+>
+> Addresses the problem described in http://crbug.com/240815
+>
+> Signed-off-by: Paul Taysom <taysom@chromium.org>
+> ---
+>  drivers/mmc/card/block.c | 14 ++++++++------
+>  1 file changed, 8 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+> index dd27b07..a79f113 100644
+> --- a/drivers/mmc/card/block.c
+> +++ b/drivers/mmc/card/block.c
+> @@ -2158,6 +2158,14 @@ static void mmc_blk_remove_req(struct mmc_blk_data *md)
+>         struct mmc_card *card;
+>
+>         if (md) {
+> +               /*
+> +                * Flush remaining requests and free queues. It
+> +                * is freeing the queue that stops new requests
+> +                * from being accepted.
+> +                */
+> +               mmc_cleanup_queue(&md->queue);
+> +               if (md->flags & MMC_BLK_PACKED_CMD)
+> +                       mmc_packed_clean(&md->queue);
+>                 card = md->queue.card;
+>                 if (md->disk->flags & GENHD_FL_UP) {
+>                         device_remove_file(disk_to_dev(md->disk), &md->force_ro);
+> @@ -2166,14 +2174,8 @@ static void mmc_blk_remove_req(struct mmc_blk_data *md)
+>                                 device_remove_file(disk_to_dev(md->disk),
+>                                         &md->power_ro_lock);
+>
+> -                       /* Stop new requests from getting into the queue */
+>                         del_gendisk(md->disk);
+>                 }
+> -
+> -               /* Then flush out any already in there */
+> -               mmc_cleanup_queue(&md->queue);
+> -               if (md->flags & MMC_BLK_PACKED_CMD)
+> -                       mmc_packed_clean(&md->queue);
+>                 mmc_blk_put(md);
+>         }
+>  }
+> --
+> 1.8.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
