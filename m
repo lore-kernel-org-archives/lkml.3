@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab3FJUSk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 16:18:40 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:53627 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab3FJUSj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 16:18:39 -0400
+	id S1752941Ab3FJU2u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 16:28:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12238 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751638Ab3FJU2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 16:28:49 -0400
+Date: Mon, 10 Jun 2013 17:19:33 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, eabatalov89@gmail.com
+Subject: Re: [PATCH] x86: kvmclock: zero initialize pvclock shared memory area
+Message-ID: <20130610201933.GA31409@amt.cnet>
+References: <bug-59521-28872@https.bugzilla.kernel.org/>
+ <1370881871-13130-1-git-send-email-imammedo@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20130610183300.GA14379@redhat.com>
-References: <20130610183300.GA14379@redhat.com>
-Date: Mon, 10 Jun 2013 13:18:39 -0700
-X-Google-Sender-Auth: 1PHHJJWKKCdBpkx7CSBLqvbmLvs
-Message-ID: <CANcMJZDoSMGGSaohRJXwpVcxwxZPL=zmuWeviyiQ7nZuf6Ynfg@mail.gmail.com>
-Subject: Re: [PATCH 0/3] de_thread() should update ->real_start_time
-From: John Stultz <john.stultz@linaro.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Tomas Smetana <tsmetana@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370881871-13130-1-git-send-email-imammedo@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 11:33 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> 1/3 is the obvious bugfix, 2 and 3 are minor cleanups
->
-> I am wondering, can't we kill task->real_start_time? What if we
-> simply change copy_process
->
->         -       do_posix_clock_monotonic_gettime(&p->start_time);
->         +       get_monotonic_boottime(&p->start_time);
+On Mon, Jun 10, 2013 at 06:31:11PM +0200, Igor Mammedov wrote:
+> ===
+> Could be the following an acceptable fix?
+> ===
 
+Read of kvmclock should return proper value from hypervisor: system
+timestamp + tsc delta.
 
-An additional thought: task_struct covers quite a bit of stuff, so I
-don't know if this would be too useful, but we could further change
-start_time to be a ktime_t, allowing possible additional space savings
-in the task_struct on 64bit systems.
+Should find the offender site and have it register MSR_KVM_SYSTEM_TIME 
+before reading the area.
 
-thanks
--john
+> kernel might hung in pvclock_clocksource_read() due to
+> uninitialized memory might contain odd version value in
+> following cycle:
+> 
+>         do {
+>                 version = __pvclock_read_cycles(src, &ret, &flags);
+>         } while ((src->version & 1) || version != src->version);
+> 
+> if secondary kvmclock is accessed before it's registered with kvm.
+> 
+> Clear garbage in pvclock shared memory area right after it's
+> allocated to avoid this issue.
+> 
+> Ref: https://bugzilla.kernel.org/show_bug.cgi?id=59521
+> Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+> ---
+>  arch/x86/kernel/kvmclock.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
+> index d2c3812..3dd37eb 100644
+> --- a/arch/x86/kernel/kvmclock.c
+> +++ b/arch/x86/kernel/kvmclock.c
+> @@ -242,6 +242,7 @@ void __init kvmclock_init(void)
+>  	if (!mem)
+>  		return;
+>  	hv_clock = __va(mem);
+> +	memset(hv_clock, 0, size);
+>  
+>  	if (kvm_register_clock("boot clock")) {
+>  		hv_clock = NULL;
+> -- 
+> 1.7.1
