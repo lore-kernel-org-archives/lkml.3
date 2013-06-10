@@ -1,128 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab3FJIfS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 04:35:18 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:47174 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971Ab3FJIfP (ORCPT
+	id S1752657Ab3FJIfc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 04:35:32 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:63295 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971Ab3FJIf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 04:35:15 -0400
-X-AuditID: cbfee68e-b7f276d000002279-d7-51b58fbdf0d9
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Doug Anderson'" <dianders@chromium.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Cc: "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Olof Johansson'" <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "'Sean Paul'" <seanpaul@chromium.org>,
-        "=?ISO-8859-1?Q?'St=E9phane_Marchesin'?=" <marcheu@chromium.org>,
-        "'Andrew Bresticker'" <abrestic@chromium.org>
-References: <000001ce4e1e$d1cc5de0$756519a0$@samsung.com>
- <CAD=FV=V9oBR1ZAEsMs5-x7NaD1fiHJO=9dn1mPAMg0MX6tnxYA@mail.gmail.com>
-In-reply-to: <CAD=FV=V9oBR1ZAEsMs5-x7NaD1fiHJO=9dn1mPAMg0MX6tnxYA@mail.gmail.com>
-Subject: RE: [PATCH] ARM: dts: add pin state information for DP HPD support to
- Exynos5250
-Date: Mon, 10 Jun 2013 17:35:08 +0900
-Message-id: <0ea201ce65b5$6a78ca30$3f6a5e90$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac5OkC29mAV/M7XtSq+hZ46zZYxXWwXJScXA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsVy+t8zY929/VsDDea/FbFY+f4vo8XZZQfZ
-	LC4vvMRqsenxNVaLy7vmsFnMOL+PyWLeod+MFqeuf2azuLvhLKPFsRlLGB24PGY3XGTxuHNt
-	D5vH5iX1HldONLF69G1ZxejxeZNcAFsUl01Kak5mWWqRvl0CV8bdayvYCl4LVDQ8Ws/awPiW
-	u4uRk0NCwERi58uZrBC2mMSFe+vZuhi5OIQEljFKbD39gQ2m6NuT1cwQiUWMEru6X7OAJIQE
-	/jJK7N9hD2KzCWhIHH7/jB3EFhHwl/h09TRYA7PAGyaJo2ceskJ0NzBKXLl4FaybUyBY4sf8
-	HYxdjBwcwgLREj/uMYGEWQRUJRYc7QE7iVfAVmJW62YmCFtQ4sfke2CtzAI6Evtbp7FB2PIS
-	m9e8ZQYZIyGgLvHory7EDUYSB5v2sEKUiEjse/GOEeQECYGJHBL9f36xQ+wSkPg2+RALRK+s
-	xKYDzBAPS0ocXHGDZQKjxCwkm2ch2TwLyeZZSFYsYGRZxSiaWpBcUJyUXmSkV5yYW1yal66X
-	nJ+7iRES5X07GG8esD7EmAy0fiKzlGhyPjBJ5JXEGxqbGVmYmpgaG5lbmpEmrCTOq9ZiHSgk
-	kJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBMWbGxKT24+YW6eIbGz0ctzze6+6gUNuXd2Zup+PX
-	qSGnowWFw2vlptzeajjz3IK7McxKe77XSDTp1YVuYA08PuOMKe+OLx5Hzz7bkVc4t0nC6vny
-	47tXf972MywpyXYp/w2T5SYlOW9Xhb/md6pnm2y+JapcsWX6hPNBn+cv8A68MmPx3OMNbEos
-	xRmJhlrMRcWJAEfmpa4IAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEKsWRmVeSWpSXmKPExsVy+t9jAd29/VsDDSY18VusfP+X0eLssoNs
-	FpcXXmK12PT4GqvF5V1z2CxmnN/HZDHv0G9Gi1PXP7NZ3N1wltHi2IwljA5cHrMbLrJ43Lm2
-	h81j85J6jysnmlg9+rasYvT4vEkugC2qgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX
-	0NLCXEkhLzE31VbJxSdA1y0zB+g0JYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYG
-	aCBhHWPG3Wsr2ApeC1Q0PFrP2sD4lruLkZNDQsBE4tuT1cwQtpjEhXvr2boYuTiEBBYxSuzq
-	fs0CkhAS+MsosX+HPYjNJqAhcfj9M3YQW0TAX+LT1dPMIA3MAm+YJI6eecgK0d3AKHHl4lWw
-	bk6BYIkf83cwdjFycAgLREv8uMcEEmYRUJVYcLSHFcTmFbCVmNW6mQnCFpT4MfkeWCuzgI7E
-	/tZpbBC2vMTmNW+ZQcZICKhLPPqrC3GDkcTBpj2sECUiEvtevGOcwCg0C8mkWUgmzUIyaRaS
-	lgWMLKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxglPIM6kdjCsbLA4xCnAwKvHwPvi1JVCI
-	NbGsuDL3EKMEB7OSCO+shq2BQrwpiZVVqUX58UWlOanFhxiTgR6dyCwlmpwPTG95JfGGxiZm
-	RpZGZhZGJubmpAkrifMeaLUOFBJITyxJzU5NLUgtgtnCxMEp1cAoujf7gNbK9Z+crtySFluk
-	Pzutk8PQbs8W8yYf+5zM/xJzDI4z/dy1MiTFuPmIfPiBHd63mFMb2wtYRDl3+ZzpnnE2r2Kx
-	tnrdpQczi7Z3ivkpFyYYhaV7F25ScfhW7ZVn/ku3JHrfhGjH4z+61lhtXrhGPW6u59dN3cKs
-	z+0+s5rMFT+g916JpTgj0VCLuag4EQDv5g5QZQMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 10 Jun 2013 04:35:28 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chao Xie <xiechao.mail@gmail.com>
+Subject: Re: [PATCH v2] ARM: mmp: bring up pxa988 with device tree support
+Date: Mon, 10 Jun 2013 10:35:20 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Neil Zhang <zhangwm@marvell.com>, Chao Xie <cxie4@marvell.com>,
+        "haojian.zhuang@gmail.com" <haojian.zhuang@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1369969115-4279-1-git-send-email-zhangwm@marvell.com> <201306061826.19551.arnd@arndb.de> <CADApbeixEKi984QED07LxA8vzfHmLGCGT8KxEbB5cqXzpW823Q@mail.gmail.com>
+In-Reply-To: <CADApbeixEKi984QED07LxA8vzfHmLGCGT8KxEbB5cqXzpW823Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306101035.20924.arnd@arndb.de>
+X-Provags-ID: V02:K0:XKlMDOH40yj3D5WsfGSPsiW5eDyMIOGUOY3vxYJIlvS
+ AYVubREeqr4pITZjPCVkZ6ayp7z8dZrLn8Qho9fIHWUzjIrZfZ
+ 1QkPtiWwh5iqH8GjvgjfBEiVGtMqaMrWxvnj9zeEAkYXudtEh3
+ kMbavbI4+oPwgw4MGe5Qgy7wA+NDkJlBGXdXEw/lrlj3V67Bep
+ LFT/66yBhIr338Yoe+dvoX6hV+BNbyR4XYBUJsXQ+qSUbJkcCH
+ IfbzMrGKE2vTZGqLeDXw4pgWyJiEzZxfmOGhUhbOn5/6kZXZ+h
+ JUYA5qWmPXSrZzdhP8vi8xqNIElqxnEYDSWD/2gs8s6CKhN0Jd
+ zKhDyWtdoSr77QUpJZ6A=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doug Anderson wrote:
+On Saturday 08 June 2013, Chao Xie wrote:
+> hi, Arnd
+> Thanks for your review.
 > 
-> Jingoo,
-> 
-> On Sat, May 11, 2013 at 1:09 AM, Jingoo Han <jg1.han@samsung.com> wrote:
-> > Add pin state information for DP HPD support that requires
-> > pin configuration support using pinctrl interface.
+> On Fri, Jun 7, 2013 at 12:26 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Thursday 06 June 2013, Neil Zhang wrote:
+> >>
+> >> The MACH_MMPX_DT here is for standard ARM core based SoC.
+> >> But PJ4 is modified by Marvell, which includes IWMMXT.
 > >
-> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> > ---
-> > Tested on Exynos5250
+> > That should not stop us from supporting them with the same kernel.
+> > We can already build a kernel that will work with IWMMXT on
+> > ArmadaXP (PJ4B) and Calxeda Highbank (Cortex-A9) for instance.
 > >
-> >  arch/arm/boot/dts/exynos5250-pinctrl.dtsi |    7 +++++++
-> >  arch/arm/boot/dts/exynos5250-smdk5250.dts |    3 +++
-> >  2 files changed, 10 insertions(+), 0 deletions(-)
+> Yes. We can compile it, because will fail to boot up the core.
+> The correct way to adding device tree support for
+> iwmmx(arch/arm/kernel/pj4-cp0.c).
+> I think we can do it if you agree with us.
+
+Ah, you mean the initcall in that file breaks when executed on a
+CPU that doesn't have iWMMXT?
+
+The easiest way for that is probably to call pj4_cp0_init()
+from the machine_descriptor init_late() callback. To do it properly,
+I think it should be hooked up with the CPU identification code
+in arch/arm/mm/proc-v7.S.
+
+> >> > __initdata = {
+> >> > >           .virtual        = (unsigned long)AXI_VIRT_BASE,
+> >> > >           .length         = AXI_PHYS_SIZE,
+> >> > >           .type           = MT_DEVICE,
+> >> > > - },
+> >> > > + }, {
+> >> > > +         .pfn            = __phys_to_pfn(MMP_CORE_PERIPH_PHYS_BASE),
+> >> > > +         .virtual        = (unsigned long)MMP_CORE_PERIPH_VIRT_BASE,
+> >> > > +         .length         = MMP_CORE_PERIPH_PHYS_SIZE,
+> >> > > +         .type           = MT_DEVICE,
+> >> > > + }
+> >> > >  };
+> >> > >
+> >> > >  void __init mmp_map_io(void)
+> >> >
+> >> > What is this needed for?
+> >>
+> >> This function is used to static map the device registers.
 > >
-> > diff --git a/arch/arm/boot/dts/exynos5250-pinctrl.dtsi b/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
-> > index d1650fb..e9cdee3 100644
-> > --- a/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
-> > +++ b/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
-> > @@ -553,6 +553,13 @@
-> >                         samsung,pin-pud = <0>;
-> >                         samaung,pin-drv = <0>;
-> >                 };
-> > +
-> > +               dp_hpd: dp_hpd {
-> > +                       samsung,pins = "gpx0-7";
-> > +                       samsung,pin-function = <3>;
-> > +                       samsung,pin-pud = <0>;
-> > +                       samaung,pin-drv = <0>;
-> > +               };
-> >         };
+> > I understand what map_io does. Why do you need a static mapping?
 > >
-> >         pinctrl@13400000 {
-> > diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-> > index 3e0c792..d53ea34 100644
-> > --- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
-> > +++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-> > @@ -224,6 +224,9 @@
-> >                 samsung,color-depth = <1>;
-> >                 samsung,link-rate = <0x0a>;
-> >                 samsung,lane-count = <4>;
-> > +
-> > +               pinctrl-names = "default";
-> > +               pinctrl-0 = <&dp_hpd>;
 > 
-> I was going to suggest moving this to exynos5250.dtsi but then
-> realized that I saw a board recently that used a non-standard HPD pin
-> recently!  ...so keeping it in the board file (like you've done) is
-> good.
-> 
-> ...so looks good to me.
-> 
-> Reviewed-by: Doug Anderson <dianders@chromium.org>
+> The AXI and APB bus register mapping, It does not need to be static mapping.
+> Because we define the registers for each peripharals in device tree.
+> The device driver can map it.
 
-Yeah, I agreed with Doug's comment :-)
+Ok. Please try if it all keeps working without these mappings (aside
+from the SCU). You can leave them in as a performance optimization
+since the registers will get mapped as large pages this way, but it
+should really work without them.
 
-Applied, thanks.
+I would also suggest defining the virtual base addresses locally in this
+file rather than globally, just to ensure that no driver starts relying
+on the static mapping.
 
-- Kukjin
+> There is a exception. The address space used by core for example CPU
+> SCU registers for CA9.
+> We have to read/write the registers even device tree has not been
+> build up in kernel, for example ->smp_prepare_cpus.
+> At this point, how can we get the base address for SCU?
 
+I guess that is a problem we have on other platforms as well, we should
+find a generic solution for that. It would be nice to reserve a page
+in "fixmap" and have common code map the SCU page into that.
+ 
+> >> > > +/* PXA988 */
+> >> > > +static const struct of_dev_auxdata pxa988_auxdata_lookup[] __initconst
+> >> > = {
+> >> > > + OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4017000, "pxa2xx-uart.0",
+> >> > NULL),
+> >> > > + OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4018000, "pxa2xx-uart.1",
+> >> > NULL),
+> >> > > + OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4036000, "pxa2xx-uart.2",
+> >> > NULL),
+> >> > > + OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4011000, "pxa2xx-i2c.0",
+> >> > NULL),
+> >> > > + OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4037000, "pxa2xx-i2c.1",
+> >> > NULL),
+> >> > > + OF_DEV_AUXDATA("mrvl,mmp-gpio", 0xd4019000, "pxa-gpio", NULL),
+> >> > > + OF_DEV_AUXDATA("mrvl,mmp-rtc", 0xd4010000, "sa1100-rtc", NULL),
+> >> > > + {}
+> >> > > +};
+> >> >
+> >> > Why do you need auxdata?
+> >>
+> >> Two reasons:
+> >> 1. some of the device still need platform data at this time.
+> >
+> > None of the ones above do apparently.
+> >
+> Now, some devices are not added. For example, USB.
+> I am trying to modify the USB driver to make it support device tree.
+> For example, separate the phy and PMIC support from USB driver.
+> The patches have been reviewed in USB maillist for a long time.
+> Now it is hold because the maintainer think HCD and PHY need do some fix.
+> So as a temporaty solution before us pushing USB patches, we have to
+> use platform data for USB.
+
+Ok, I see.
+
+	Arnd
