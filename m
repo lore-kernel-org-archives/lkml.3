@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659Ab3FJHGs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 03:06:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59323 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751305Ab3FJHGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 03:06:46 -0400
-Date: Mon, 10 Jun 2013 10:07:11 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: bhutchings@solarflare.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 0/2] fix kernel crash with macvtap on top of LRO
-Message-ID: <20130610070710.GA673@redhat.com>
-References: <1360193660.32217.39.camel@deadeye.wl.decadent.org.uk>
- <1360207111.28557.47.camel@edumazet-glaptop>
- <1360254046.3605.8.camel@bwh-desktop.uk.solarflarecom.com>
- <20130207.131420.1211188723341167971.davem@davemloft.net>
+	id S1751708Ab3FJHKP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 03:10:15 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:44199 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751390Ab3FJHKO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 03:10:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130207.131420.1211188723341167971.davem@davemloft.net>
+From: =?UTF-8?B?5Yav5Yqb?= <lifeng1519@gmail.com>
+Date: Mon, 10 Jun 2013 15:09:43 +0800
+Message-ID: <CAEK8JBBKfNaUVkk7nvHki4TDiLFExkoGR5QTxDujxgtk4QyvkQ@mail.gmail.com>
+Subject: [PATCH] fs/cepth compile error
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 07, 2013 at 01:14:20PM -0500, David Miller wrote:
-> From: Ben Hutchings <bhutchings@solarflare.com>
-> Date: Thu, 7 Feb 2013 16:20:46 +0000
-> 
-> > If the consensus is still that we must preserve packets exactly (aside
-> > from the usual modifications by IP routers) then LRO should be disabled
-> > on all devices for which forwarding is enabled.
-> 
-> I believe this is still undoubtedly the consensus.
+I try to compile kernel v3.9.2 v3.9.5, It outputs couldn't find fs/cepth/ioctl.o
+Go to the dir and couldn't find the ioctl.c,only a ioctl.h file.But
+the ioctl.h isn't included by other file.
+So simply remove ioctl.o from the Makefile to fix.
 
-With virtio we are getting packets from a linux host,
-so we could thinkably preserve packets exactly
-even with LRO. I am guessing other hardware could be
-doing this as well.
+Thanks
 
-I am not sure what information would need to be preserved -
-could someone help clarify please?
+commit d8e29a9f5a2474ac0dcb26baa3cf29075f3ce980
+Author: vonnyfly <lifeng1519@gmail.com>
+Date:   Mon Jun 10 14:53:38 2013 +0800
 
--- 
-MST
+    fix ioctl.o not find error
+---
+ fs/ceph/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fs/ceph/Makefile b/fs/ceph/Makefile
+index bd35212..e0d2294 100644
+--- a/fs/ceph/Makefile
++++ b/fs/ceph/Makefile
+@@ -4,7 +4,7 @@
+
+ obj-$(CONFIG_CEPH_FS) += ceph.o
+
+-ceph-y := super.o inode.o dir.o file.o locks.o addr.o ioctl.o \
++ceph-y := super.o inode.o dir.o file.o locks.o addr.o \
+        export.o caps.o snap.o xattr.o \
+        mds_client.o mdsmap.o strings.o ceph_frag.o \
+        debugfs.o
+
+--
+Thanks and Best Regards,
+vonnyfly
+
+Cell:13401157876
+Email :lifeng1519@gmail.com
+Addr: Rm. 911,DaYunCun,Zhichun Road,Haidian Districts Beijing,100191
