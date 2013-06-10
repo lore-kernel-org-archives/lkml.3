@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640Ab3FJLuW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 07:50:22 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:32814 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753604Ab3FJLuS (ORCPT
+	id S1753716Ab3FJLuc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 07:50:32 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:61205 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753676Ab3FJLu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 07:50:18 -0400
+	Mon, 10 Jun 2013 07:50:28 -0400
 From: Tushar Behera <tushar.behera@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: thierry.reding@gmail.com, patches@linaro.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 07/15] net: fec: Convert to use devm_ioremap_resource
-Date: Mon, 10 Jun 2013 17:05:05 +0530
-Message-Id: <1370864113-17895-8-git-send-email-tushar.behera@linaro.org>
+        linux-can@vger.kernel.org, Marc Kleine-Budde <mkl@pengutronix.de>,
+        Wolfgang Grandegger <wg@grandegger.com>
+Subject: [PATCH 09/15] net: can: Convert to use devm_ioremap_resource
+Date: Mon, 10 Jun 2013 17:05:07 +0530
+Message-Id: <1370864113-17895-10-git-send-email-tushar.behera@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
 References: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
@@ -27,39 +28,28 @@ devm_request_and_ioremap().
 
 Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
 CC: netdev@vger.kernel.org
-CC: "David S. Miller" <davem@davemloft.net>
+CC: linux-can@vger.kernel.org
+CC: Marc Kleine-Budde <mkl@pengutronix.de>
+CC: Wolfgang Grandegger <wg@grandegger.com>
 ---
- drivers/net/ethernet/freescale/fec_main.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/net/can/c_can/c_can_platform.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-index c42c42a..b0d36b7 100644
---- a/drivers/net/ethernet/freescale/fec_main.c
-+++ b/drivers/net/ethernet/freescale/fec_main.c
-@@ -1876,17 +1876,17 @@ fec_probe(struct platform_device *pdev)
- 	    (pdev->id_entry->driver_data & FEC_QUIRK_HAS_GBIT))
- 		fep->pause_flag |= FEC_PAUSE_FLAG_AUTONEG;
+diff --git a/drivers/net/can/c_can/c_can_platform.c b/drivers/net/can/c_can/c_can_platform.c
+index 6b6130b..b918c73 100644
+--- a/drivers/net/can/c_can/c_can_platform.c
++++ b/drivers/net/can/c_can/c_can_platform.c
+@@ -201,8 +201,8 @@ static int c_can_plat_probe(struct platform_device *pdev)
+ 			priv->instance = pdev->id;
  
--	fep->hwp = devm_request_and_ioremap(&pdev->dev, r);
-+	fep->hwp = devm_ioremap_resource(&pdev->dev, r);
-+	if (IS_ERR(fep->hwp)) {
-+		ret = PTR_ERR(fep->hwp);
-+		goto failed_ioremap;
-+	}
-+
- 	fep->pdev = pdev;
- 	fep->dev_id = dev_id++;
- 
- 	fep->bufdesc_ex = 0;
- 
--	if (!fep->hwp) {
--		ret = -ENOMEM;
--		goto failed_ioremap;
--	}
--
- 	platform_set_drvdata(pdev, ndev);
- 
- 	ret = of_get_phy_mode(pdev->dev.of_node);
+ 		res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+-		priv->raminit_ctrlreg =	devm_request_and_ioremap(&pdev->dev, res);
+-		if (!priv->raminit_ctrlreg || priv->instance < 0)
++		priv->raminit_ctrlreg = devm_ioremap_resource(&pdev->dev, res);
++		if (IS_ERR(priv->raminit_ctrlreg) || priv->instance < 0)
+ 			dev_info(&pdev->dev, "control memory is not used for raminit\n");
+ 		else
+ 			priv->raminit = c_can_hw_raminit;
 -- 
 1.7.9.5
 
