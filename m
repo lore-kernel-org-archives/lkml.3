@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807Ab3FJNPS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 09:15:18 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47496 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752038Ab3FJNPP (ORCPT
+	id S1752898Ab3FJNQN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 09:16:13 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:42450 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038Ab3FJNQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 09:15:15 -0400
-Date: Mon, 10 Jun 2013 14:15:13 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stuart Menefy <stuart.menefy@st.com>, Mark Brown <broonie@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: [PATCH v2 09/11] ARM:stixxxx: Add stixxxx options to
- multi_v7_defconfig
-Message-ID: <20130610131513.GB2513@e106331-lin.cambridge.arm.com>
-References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com>
- <1370856477-7237-1-git-send-email-srinivas.kandagatla@st.com>
- <20130610104032.GA2513@e106331-lin.cambridge.arm.com>
- <51B5B15E.50901@st.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51B5B15E.50901@st.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 10 Jun 2013 09:16:11 -0400
+Date: Mon, 10 Jun 2013 22:16:04 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, avi.kivity@gmail.com,
+        mtosatti@redhat.com, pbonzini@redhat.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v3 3/6] KVM: MMU: make return value of mmio page fault
+ handler more readable
+Message-Id: <20130610221604.87fa64de18c9cb56eed0e013@gmail.com>
+In-Reply-To: <20130610075750.GZ4725@redhat.com>
+References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+	<1370595088-3315-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+	<20130610075750.GZ4725@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 11:58:38AM +0100, Srinivas KANDAGATLA wrote:
-> Thanks for testing...
-> On 10/06/13 11:40, Mark Rutland wrote:
-> > On Mon, Jun 10, 2013 at 10:27:57AM +0100, Srinivas KANDAGATLA wrote:
-> >> > This patch adds stih415 and stih416 support to multi_v7_defconfig.
-> > This seems to drop a few options also:
-> > 
-> > CONFIG_ARM_ARCH_TIMER
-> 
-> Same as last comment 2:
-> > CONFIG_ARM_ERRATA_754322
-> ARM_ERRATA_754322 gets selected by the mach level Kconfig of stixxxx, so
-> it disappears, Should the mach level Kconfig select that?
-> 
+On Mon, 10 Jun 2013 10:57:50 +0300
+Gleb Natapov <gleb@redhat.com> wrote:
 
-I couldn't find the patch adding mach-stixxxx's Kconfig, though I seem to be
-missing patch 6 of the series. As long as CONFIG_ARM_ERRATA_754322 appears in
-the resulting .config, it should be fine.
+> On Fri, Jun 07, 2013 at 04:51:25PM +0800, Xiao Guangrong wrote:
 
-> > CONFIG_EXPERIMENTAL
-> > CONFIG_GPIO_PL061
-> > CONFIG_MMC_WMT
-> 
-> Comment 2: Without any modifications to multi_v7_defconfig if I run
-> savedefconfig CONFIG_ARM_ARCH_TIMER, CONFIG_EXPERIMENTAL,
-> CONFIG_GPIO_PL061 and CONFIG_MMC_WMT disappears.
-> Which suggests that these options seems to be selected by another
-> kconfigs or mach level. And since then the multi_v7_defconfig was not
-> run with savedefconfig.
+> > +
+> > +/*
+> > + * Return values of handle_mmio_page_fault_common:
+> > + * RET_MMIO_PF_EMULATE: it is a real mmio page fault, emulate the instruction
+> > + *			 directly.
+> > + * RET_MMIO_PF_RETRY: let CPU fault again on the address.
+> > + * RET_MMIO_PF_BUG: bug is detected.
+> > + */
+> > +enum {
+> > +	RET_MMIO_PF_EMULATE = 1,
+> > +	RET_MMIO_PF_RETRY = 0,
+> > +	RET_MMIO_PF_BUG = -1
+> > +};
+> I would order them from -1 to 1 and rename RET_MMIO_PF_BUG to
+> RET_MMIO_PF_ERROR, but no need to resend just for that.
 
-CONFIG_EXPERIMENTAL's gone as of 3d374d09f1: "final removal of
-CONFIG_EXPERIMENTAL", so that's fine to go. CONFIG_GPIO_PL061 and
-CONFIG_MMC_WMT get selected elsewhere, so that's fine.
+Why not just let compilers select the values? -- It's an enum.
+Any reason to make it start from -1?
 
-It looks like the architected timer deselection is fallout of my own making,
-the multi_v7_defconfig should now contain HAVE_ARM_ARCH_TIMER rather than
-ARM_ARCH_TIMER.
-
-Thanks,
-Mark.
+	Takuya
