@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764Ab3FJLxT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 07:53:19 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:48580 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab3FJLuP (ORCPT
+	id S1753457Ab3FJLt7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 07:49:59 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:62318 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab3FJLtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 07:50:15 -0400
+	Mon, 10 Jun 2013 07:49:55 -0400
 From: Tushar Behera <tushar.behera@linaro.org>
 To: linux-kernel@vger.kernel.org
-Cc: thierry.reding@gmail.com, patches@linaro.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 06/15] net: bcm63xx_enet: Convert to use devm_ioremap_resource
-Date: Mon, 10 Jun 2013 17:05:04 +0530
-Message-Id: <1370864113-17895-7-git-send-email-tushar.behera@linaro.org>
+Cc: thierry.reding@gmail.com, patches@linaro.org,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>
+Subject: [PATCH 02/15] sudmac: Convert to use devm_ioremap_resource
+Date: Mon, 10 Jun 2013 17:05:00 +0530
+Message-Id: <1370864113-17895-3-git-send-email-tushar.behera@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
 References: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
@@ -26,44 +26,29 @@ introduced devm_ioremap_resource() and deprecated the use of
 devm_request_and_ioremap().
 
 Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-CC: netdev@vger.kernel.org
-CC: "David S. Miller" <davem@davemloft.net>
+CC: Vinod Koul <vinod.koul@intel.com>
+CC: Dan Williams <djbw@fb.com>
 ---
-* Not compile tested.
+ drivers/dma/sh/sudmac.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
- drivers/net/ethernet/broadcom/bcm63xx_enet.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/net/ethernet/broadcom/bcm63xx_enet.c b/drivers/net/ethernet/broadcom/bcm63xx_enet.c
-index e46466c..d690308 100644
---- a/drivers/net/ethernet/broadcom/bcm63xx_enet.c
-+++ b/drivers/net/ethernet/broadcom/bcm63xx_enet.c
-@@ -1641,9 +1641,9 @@ static int bcm_enet_probe(struct platform_device *pdev)
- 	if (ret)
- 		goto out;
+diff --git a/drivers/dma/sh/sudmac.c b/drivers/dma/sh/sudmac.c
+index e7c94bb..0a81e30 100644
+--- a/drivers/dma/sh/sudmac.c
++++ b/drivers/dma/sh/sudmac.c
+@@ -360,9 +360,9 @@ static int sudmac_probe(struct platform_device *pdev)
  
--	priv->base = devm_request_and_ioremap(&pdev->dev, res_mem);
--	if (priv->base == NULL) {
--		ret = -ENOMEM;
-+	priv->base = devm_ioremap_resource(&pdev->dev, res_mem);
-+	if (IS_ERR(priv->base)) {
-+		ret = PTR_ERR(priv->base);
- 		goto out;
- 	}
+ 	dma_dev = &su_dev->shdma_dev.dma_dev;
  
-@@ -1871,9 +1871,9 @@ static int bcm_enet_shared_probe(struct platform_device *pdev)
- 	if (!res)
- 		return -ENODEV;
+-	su_dev->chan_reg = devm_request_and_ioremap(&pdev->dev, chan);
+-	if (!su_dev->chan_reg)
+-		return err;
++	su_dev->chan_reg = devm_ioremap_resource(&pdev->dev, chan);
++	if (IS_ERR(su_dev->chan_reg))
++		return PTR_ERR(su_dev->chan_reg);
  
--	bcm_enet_shared_base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!bcm_enet_shared_base)
--		return -ENOMEM;
-+	bcm_enet_shared_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(bcm_enet_shared_base))
-+		return PTR_ERR(bcp_enet_shared_base);
+ 	dma_cap_set(DMA_SLAVE, dma_dev->cap_mask);
  
- 	return 0;
- }
 -- 
 1.7.9.5
 
