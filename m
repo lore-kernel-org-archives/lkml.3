@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486Ab3FJUEQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 16:04:16 -0400
-Received: from mail-vb0-f47.google.com ([209.85.212.47]:61772 "EHLO
-	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab3FJUEO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 16:04:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1306102137560.3200@boston.corp.fedex.com>
-References: <Pine.LNX.4.64.1306102137560.3200@boston.corp.fedex.com>
-Date: Mon, 10 Jun 2013 13:04:13 -0700
-X-Google-Sender-Auth: YzlvMdM7Pz8MBEBuDIlFlmq4xLQ
-Message-ID: <CA+55aFyC2CEqkprnXD-LFr-WL6i7FJUDO4CUpgNsCSrd=SFxgQ@mail.gmail.com>
-Subject: Re: binfmt_misc broken
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1752316Ab3FJUJE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 16:09:04 -0400
+Received: from mout.gmx.net ([212.227.17.21]:53353 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751690Ab3FJUJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 16:09:02 -0400
+X-Authenticated: #9962044
+X-Provags-ID: V01U2FsdGVkX1915GgLPuV1RJD0syB4Q/w+KXhZ7m1JW3rpLvRiwe
+	sik07Blfwj3Dwo
+From: Marc Dietrich <marvin24@gmx.de>
+To: linux-kernel@vger.kernel.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org
+Subject: [PATCH] mfd: tps6586x: correct device name of the regulator cell
+Date: Mon, 10 Jun 2013 22:06:01 +0200
+Message-Id: <89e4451e14f324d8bd480f843fa5960b481e3188.1370894247.git.marvin24@gmx.de>
+X-Mailer: git-send-email 1.7.9.5
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 6:52 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
->
-> binfmt_misc is truncating e->size, so once ARM's magic is loaded, 32-bit x86
-> can no longer run.
+Change the device name of the regulator function to the one chosed for
+MODULE_ALIAS. This fixes kernel module loading for the regulator function.
+Also change the name of the platform driver to make everything consistent.
 
-That patch is really ugly. And it doesn't make much sense. Where does
-it now turn the hex into binary? And where does it check that the mask
-is the same size as the data? You have changed the meaning of "esize"
-to be the size of the original string, which is just wrong, and makes
-no sense, since it has to be the same value for magic and for mask. So
-the patch seems to make things just worse.
+Signed-off-by: Marc Dietrich <marvin24@gmx.de>
+---
+I don't think this "fix" can still go into 3.10, but I would love to see
+it there because otherwise many distro kernels supporting tegra2 would have
+to force load the driver.
 
-That said, there does seem to be *real* bugs, like "check_file()", that does
+ drivers/mfd/tps6586x.c                 |    2 +-
+ drivers/regulator/tps6586x-regulator.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-    if (p && !strcmp(e->magic, p + 1))
-
-which seems wrong. I think it should use "memcmp( ..., e->size)" instead.
-
-And from your /proc output, esize does get truncated. But where
-exactly does that happen? Is string_unescape() just broken? The code
-*shouldn't* look at zeroes in the magic/mask strings, because they
-should all be treated as memory regions with size 'e->size'.
-
-                Linus
+diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
+index 721b918..4b93ed4 100644
+--- a/drivers/mfd/tps6586x.c
++++ b/drivers/mfd/tps6586x.c
+@@ -107,7 +107,7 @@ static struct mfd_cell tps6586x_cell[] = {
+ 		.name = "tps6586x-gpio",
+ 	},
+ 	{
+-		.name = "tps6586x-pmic",
++		.name = "tps6586x-regulator",
+ 	},
+ 	{
+ 		.name = "tps6586x-rtc",
+diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
+index d8fa37d..2c9155b 100644
+--- a/drivers/regulator/tps6586x-regulator.c
++++ b/drivers/regulator/tps6586x-regulator.c
+@@ -439,7 +439,7 @@ static int tps6586x_regulator_remove(struct platform_device *pdev)
+ 
+ static struct platform_driver tps6586x_regulator_driver = {
+ 	.driver	= {
+-		.name	= "tps6586x-pmic",
++		.name	= "tps6586x-regulator",
+ 		.owner	= THIS_MODULE,
+ 	},
+ 	.probe		= tps6586x_regulator_probe,
+-- 
+1.7.9.5
