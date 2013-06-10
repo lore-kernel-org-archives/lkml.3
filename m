@@ -1,41 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901Ab3FKG2s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 02:28:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34701 "EHLO
+	id S1754025Ab3FKGaG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 02:30:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34719 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751907Ab3FKG2n (ORCPT
+	with ESMTP id S1752075Ab3FKG2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 02:28:43 -0400
-Date: Mon, 10 Jun 2013 14:03:40 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Lotfi Manseur <lotfi.manseur@gmail.com>
-Cc: stable@vger.kernel.org, Wojciech M Zabolotny <W.Zabolotny@elka.pw.edu.pl>,
-        Nicolas Palix <nicolas.palix@imag.fr>,
-        Lotfi Manseur <lotfi.manseur@imag.fr>, Willy Tarreau <w@1wt.eu>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: serial/ftdi_sio.c Fix kernel oops
-Message-ID: <20130610210340.GB1602@kroah.com>
-References: <1370610872-1309-1-git-send-email-lotfi.manseur@imag.fr>
+	Tue, 11 Jun 2013 02:28:47 -0400
+Subject: Patch "ftrace: Move ftrace_filter_lseek out of CONFIG_DYNAMIC_FTRACE section" has been added to the 3.0-stable tree
+To: lizefan@huawei.com, fweisbec@gmail.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, namhyung@kernel.org,
+        rostedt@goodmis.org, stable@vger.kernel.org
+Cc: <stable@vger.kernel.org>, <stable-commits@vger.kernel.org>
+From: <gregkh@linuxfoundation.org>
+Date: Mon, 10 Jun 2013 14:28:01 -0700
+In-Reply-To: <51B1A150.6030804@huawei.com>
+Message-ID: <13708996812812@kroah.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370610872-1309-1-git-send-email-lotfi.manseur@imag.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 03:14:32PM +0200, Lotfi Manseur wrote:
-> Handle null termios in ftdi_set_termios(), introduced in
-> commit 552f6bf1bb0eda0011c0525dd587aa9e7ba5b846
-> This has been corrected in the mainline by
-> commits c515598e0f5769916c31c00392cc2bfe6af74e55 and
 
-This commit showed up in 3.3, so it can't go into 3.4 at all.  Please be
-more careful when asking for stable patches to be applied.  That is why
-I want the _exact_ same patch to apply, don't try going and being smart
-by mushing them together into something else, this would have obviously
-not been correct for the 3.4 kernel at all.
+This is a note to let you know that I've just added the patch titled
 
-greg k-h
+    ftrace: Move ftrace_filter_lseek out of CONFIG_DYNAMIC_FTRACE section
+
+to the 3.0-stable tree which can be found at:
+    http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
+
+The filename of the patch is:
+     ftrace-move-ftrace_filter_lseek-out-of-config_dynamic_ftrace-section.patch
+and it can be found in the queue-3.0 subdirectory.
+
+If you, or anyone else, feels it should not be added to the stable tree,
+please let <stable@vger.kernel.org> know about it.
+
+
+>From lizefan@huawei.com  Mon Jun 10 14:16:48 2013
+From: Li Zefan <lizefan@huawei.com>
+Date: Fri, 7 Jun 2013 17:01:04 +0800
+Subject: ftrace: Move ftrace_filter_lseek out of CONFIG_DYNAMIC_FTRACE section
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Namhyung Kim <namhyung@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>, Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>
+Message-ID: <51B1A150.6030804@huawei.com>
+
+
+From: Steven Rostedt <rostedt@goodmis.org>
+
+commit 7f49ef69db6bbf756c0abca7e9b65b32e999eec8 upstream.
+
+As ftrace_filter_lseek is now used with ftrace_pid_fops, it needs to
+be moved out of the #ifdef CONFIG_DYNAMIC_FTRACE section as the
+ftrace_pid_fops is defined when DYNAMIC_FTRACE is not.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+[ lizf: adjust context ]
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ kernel/trace/ftrace.c |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
+
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -933,6 +933,19 @@ static __init void ftrace_profile_debugf
+ 
+ static struct pid * const ftrace_swapper_pid = &init_struct_pid;
+ 
++static loff_t
++ftrace_filter_lseek(struct file *file, loff_t offset, int whence)
++{
++	loff_t ret;
++
++	if (file->f_mode & FMODE_READ)
++		ret = seq_lseek(file, offset, whence);
++	else
++		file->f_pos = ret = 1;
++
++	return ret;
++}
++
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ 
+ #ifndef CONFIG_FTRACE_MCOUNT_RECORD
+@@ -2299,19 +2312,6 @@ ftrace_notrace_open(struct inode *inode,
+ 				 inode, file);
+ }
+ 
+-static loff_t
+-ftrace_filter_lseek(struct file *file, loff_t offset, int origin)
+-{
+-	loff_t ret;
+-
+-	if (file->f_mode & FMODE_READ)
+-		ret = seq_lseek(file, offset, origin);
+-	else
+-		file->f_pos = ret = 1;
+-
+-	return ret;
+-}
+-
+ static int ftrace_match(char *str, char *regex, int len, int type)
+ {
+ 	int matched = 0;
+
+
+Patches currently in stable-queue which might be from lizefan@huawei.com are
+
+queue-3.0/tracing-fix-possible-null-pointer-dereferences.patch
+queue-3.0/ftrace-move-ftrace_filter_lseek-out-of-config_dynamic_ftrace-section.patch
