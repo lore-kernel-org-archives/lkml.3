@@ -1,179 +1,601 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab3FJOFB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 10:05:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29285 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752303Ab3FJOFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 10:05:00 -0400
-Date: Mon, 10 Jun 2013 11:04:24 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        David Sharp <dhsharp@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Re: Re: [PATCH V2 1/1] kvm/vmx: Add a tracepoint write_tsc_offset
-Message-ID: <20130610140424.GA25632@amt.cnet>
-References: <20130604083616.22713.24922.stgit@yunodevel>
- <20130604083619.22713.25360.stgit@yunodevel>
- <20130606002322.GA24351@amt.cnet>
- <20130606113305.GB4725@redhat.com>
- <51B16E0E.5020208@hitachi.com>
- <20130609111442.GP4725@redhat.com>
- <51B59CC2.3060707@hitachi.com>
- <20130610100505.GB4725@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130610100505.GB4725@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753693Ab3FJOFi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 10:05:38 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:41687 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753481Ab3FJOFf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 10:05:35 -0400
+From: Dolev Raviv <draviv@codeaurora.org>
+To: linux-scsi@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, Dolev Raviv <draviv@codeaurora.org>,
+        Sujit Reddy Thumma <sthumma@codeaurora.org>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 2/2] scsi: ufs: Set fDeviceInit flag to initiate device initialization
+Date: Mon, 10 Jun 2013 17:05:18 +0300
+Message-Id: <1370873118-18468-3-git-send-email-draviv@codeaurora.org>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1370873118-18468-1-git-send-email-draviv@codeaurora.org>
+References: <1370873118-18468-1-git-send-email-draviv@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 01:05:05PM +0300, Gleb Natapov wrote:
-> On Mon, Jun 10, 2013 at 06:30:42PM +0900, Yoshihiro YUNOMAE wrote:
-> > Hi Gleb,
-> > 
-> > (2013/06/09 20:14), Gleb Natapov wrote:
-> > >On Fri, Jun 07, 2013 at 02:22:22PM +0900, Yoshihiro YUNOMAE wrote:
-> > >>(2013/06/06 20:33), Gleb Natapov wrote:
-> > >>>On Wed, Jun 05, 2013 at 09:23:22PM -0300, Marcelo Tosatti wrote:
-> > >>>>On Tue, Jun 04, 2013 at 05:36:19PM +0900, Yoshihiro YUNOMAE wrote:
-> > >>>>>Add a tracepoint write_tsc_offset for tracing TSC offset change.
-> > >>>>>We want to merge ftrace's trace data of guest OSs and the host OS using
-> > >>>>>TSC for timestamp in chronological order. We need "TSC offset" values for
-> > >>>>>each guest when merge those because the TSC value on a guest is always the
-> > >>>>>host TSC plus guest's TSC offset. If we get the TSC offset values, we can
-> > >>>>>calculate the host TSC value for each guest events from the TSC offset and
-> > >>>>>the event TSC value. The host TSC values of the guest events are used when we
-> > >>>>>want to merge trace data of guests and the host in chronological order.
-> > >>>>>(Note: the trace_clock of both the host and the guest must be set x86-tsc in
-> > >>>>>this case)
-> > >>>>>
-> > >>>>>TSC offset is stored in the VMCS by vmx_write_tsc_offset() or
-> > >>>>>vmx_adjust_tsc_offset(). KVM executes the former function when a guest boots.
-> > >>>>>The latter function is executed when kvm clock is updated. Only host can read
-> > >>>>>TSC offset value from VMCS, so a host needs to output TSC offset value
-> > >>>>>when TSC offset is changed.
-> > >>>>>
-> > >>>>>Since the TSC offset is not often changed, it could be overwritten by other
-> > >>>>>frequent events while tracing. To avoid that, I recommend to use a special
-> > >>>>>instance for getting this event:
-> > >>>>>
-> > >>>>>1. set a instance before booting a guest
-> > >>>>>  # cd /sys/kernel/debug/tracing/instances
-> > >>>>>  # mkdir tsc_offset
-> > >>>>>  # cd tsc_offset
-> > >>>>>  # echo x86-tsc > trace_clock
-> > >>>>>  # echo 1 > events/kvm/kvm_write_tsc_offset/enable
-> > >>>>>
-> > >>>>>2. boot a guest
-> > >>>>>
-> > >>>>>Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-> > >>>>>Cc: Marcelo Tosatti <mtosatti@redhat.com>
-> > >>>>>Cc: Gleb Natapov <gleb@redhat.com>
-> > >>>>>Cc: Thomas Gleixner <tglx@linutronix.de>
-> > >>>>>Cc: Ingo Molnar <mingo@redhat.com>
-> > >>>>>Cc: "H. Peter Anvin" <hpa@zytor.com>
-> > >>>>>---
-> > >>>>>  arch/x86/kvm/trace.h |   18 ++++++++++++++++++
-> > >>>>>  arch/x86/kvm/vmx.c   |    3 +++
-> > >>>>>  arch/x86/kvm/x86.c   |    1 +
-> > >>>>>  3 files changed, 22 insertions(+)
-> > >>>>>
-> > >>>>>diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
-> > >>>>>index fe5e00e..9c22e39 100644
-> > >>>>>--- a/arch/x86/kvm/trace.h
-> > >>>>>+++ b/arch/x86/kvm/trace.h
-> > >>>>>@@ -815,6 +815,24 @@ TRACE_EVENT(kvm_track_tsc,
-> > >>>>>  		  __print_symbolic(__entry->host_clock, host_clocks))
-> > >>>>>  );
-> > >>>>>
-> > >>>>>+TRACE_EVENT(kvm_write_tsc_offset,
-> > >>>>>+	TP_PROTO(__u64 previous_tsc_offset, __u64 next_tsc_offset),
-> > >>>>>+	TP_ARGS(previous_tsc_offset, next_tsc_offset),
-> > >>>>>+
-> > >>>>>+	TP_STRUCT__entry(
-> > >>>>>+		__field(	__u64,	previous_tsc_offset		)
-> > >>>>>+		__field(	__u64,	next_tsc_offset			)
-> > >>>>>+	),
-> > >>>>>+
-> > >>>>>+	TP_fast_assign(
-> > >>>>>+		__entry->previous_tsc_offset	= previous_tsc_offset;
-> > >>>>>+		__entry->next_tsc_offset	= next_tsc_offset;
-> > >>>>>+	),
-> > >>>>>+
-> > >>>>>+	TP_printk("previous=%llu next=%llu",
-> > >>>>>+		  __entry->previous_tsc_offset, __entry->next_tsc_offset)
-> > >>>>>+);
-> > >>>>>+
-> > >>>>
-> > >>>>Yoshihiro YUNOMAE,
-> > >>>>
-> > >>>>1) Why is previous_tsc_offset necessary?
-> > >>
-> > >>I was considering the situations where we did not enable
-> > >>kvm_write_tsc_offset event before booting a guest or where we did not
-> > >>use multiple buffers. Here, we will need another new I/F to get current
-> > >>TSC offset of a given VCPU. For example, if kvm_write_tsc_offset is not
-> > >>included in the host's trace data, we get the current TSC offset from
-> > >>the new I/F and apply it to all guest events. On the other hand, if
-> > >>kvm_write_tsc_offset event appears more than once, we apply the
-> > >>previous offset to guest events before the first TSC offset change.
-> > >>
-> > >>Since we support only for using multiple buffers now, we don't need to
-> > >>record previous TSC offset at this time. But I'm conscious that we have
-> > >>to change the format of kvm_write_tsc_offset event when we support
-> > >>those situations.
-> > >>
-> > >>>>2) The TSC offset traces should include vcpu number, so that its
-> > >>>>possible to correlate traces of SMP guests (the tool should use
-> > >>>>the individual vcpu tsc offsets when converting guests trace).
-> > >>>>
-> > >>>Why PID is not enough? No other trace, except kvm_entry, outputs vcpu id.
-> > >>
-> > >>As Gleb mentioned, a tool can understand TSC offset for each vcpu from
-> > >>PID and vcpu number of kvm_entry. IMO, that is indirect way, so I would
-> > >>be better off including vcpu number.
-> > >>
-> > >But doesn't the tool operates on vcpu's PID for all other events. I mean to
-> > >figure out what vcpu an event belongs too during merge. Why tsc offset
-> > >event is different?
-> > 
-> > In vcpu_load()@virt/kvm/kvm_main.c, it seems that PID of the vcpu thread
-> > can be changed. Are you familiar with this situation?
-> Recommended way of using KVM API is to have dedicated thread per vcpu
-> and this is how all known userspace implementations use it, but having
-> one thread drive several vcpus (not simultaneously obviously) also
-> works, but not recommended.
-> 
-> > If the situation can be occurred, outputting vcpu number is better, I
-> > think. If not occurred, as you say, we will be able to merge those data
-> > without vcpu number in write_tsc_offset event.
-> The thing is that all other traces that you want to merge do not contain
-> vcpu number, only pid, so if the situation occurs how do you merge the
-> data?
+Allow UFS device to complete its initialization and accept
+SCSI commands by setting fDeviceInit flag. The device may take
+time for this operation and hence the host should poll until
+fDeviceInit flag is toggled to zero. This step is mandated by
+UFS device specification for device initialization completion.
 
-Guest traces contain vcpu number and not pid (because guest is unaware
-of host PID).
+Signed-off-by: Dolev Raviv <draviv@codeaurora.org>
+Signed-off-by: Sujit Reddy Thumma <sthumma@codeaurora.org>
 
-> >                                                 However, when we
-> > focus on output data of the write_tsc_offset event, it is difficult to
-> > directly understand contents of the data if vcpu number information is
-> > not included. So, including the information is useful, I think.
-> > 
-> How your tool does it now?
-
-It merges guest trace with host trace (by converting the TSC timestamp 
-in the guest trace to host TSC using tsc_offset information).
-
-By not recording vcpu ID in the tsc_offset trace, it is necessary to
-supply the tool with PID<->VCPU_id tuples for translation (so its an
-additional step required, and it makes trace merge impossible
-if the information is not available).
-
+diff --git a/drivers/scsi/ufs/ufs.h b/drivers/scsi/ufs/ufs.h
+index 69c0328..6ce99b0 100644
+--- a/drivers/scsi/ufs/ufs.h
++++ b/drivers/scsi/ufs/ufs.h
+@@ -43,6 +43,8 @@
+ #define GENERAL_UPIU_REQUEST_SIZE 32
+ #define UPIU_HEADER_DATA_SEGMENT_MAX_SIZE	((ALIGNED_UPIU_SIZE) - \
+ 					(GENERAL_UPIU_REQUEST_SIZE))
++#define QUERY_OSF_SIZE			((GENERAL_UPIU_REQUEST_SIZE) - \
++					(sizeof(struct utp_upiu_header)))
+ 
+ #define UPIU_HEADER_DWORD(byte3, byte2, byte1, byte0)\
+ 			cpu_to_be32((byte3 << 24) | (byte2 << 16) |\
+@@ -68,7 +70,7 @@ enum {
+ 	UPIU_TRANSACTION_COMMAND	= 0x01,
+ 	UPIU_TRANSACTION_DATA_OUT	= 0x02,
+ 	UPIU_TRANSACTION_TASK_REQ	= 0x04,
+-	UPIU_TRANSACTION_QUERY_REQ	= 0x26,
++	UPIU_TRANSACTION_QUERY_REQ	= 0x16,
+ };
+ 
+ /* UTP UPIU Transaction Codes Target to Initiator */
+@@ -97,8 +99,19 @@ enum {
+ 	UPIU_TASK_ATTR_ACA	= 0x03,
+ };
+ 
+-/* UTP QUERY Transaction Specific Fields OpCode */
++/* UPIU Query request function */
+ enum {
++	UPIU_QUERY_FUNC_STANDARD_READ_REQUEST = 0x01,
++	UPIU_QUERY_FUNC_STANDARD_WRITE_REQUEST = 0x81,
++};
++
++/* Flag idn for Query Requests*/
++enum flag_idn {
++	QUERY_FLAG_IDN_FDEVICEINIT = 0x01,
++};
++
++/* UTP QUERY Transaction Specific Fields OpCode */
++enum query_opcode {
+ 	UPIU_QUERY_OPCODE_NOP		= 0x0,
+ 	UPIU_QUERY_OPCODE_READ_DESC	= 0x1,
+ 	UPIU_QUERY_OPCODE_WRITE_DESC	= 0x2,
+@@ -110,6 +123,21 @@ enum {
+ 	UPIU_QUERY_OPCODE_TOGGLE_FLAG	= 0x8,
+ };
+ 
++/* Query response result code */
++enum {
++	QUERY_RESULT_SUCCESS			= 0x00,
++	QUERY_RESULT_NOT_READABLE		= 0xF6,
++	QUERY_RESULT_NOT_WRITEABLE		= 0xF7,
++	QUERY_RESULT_ALREADY_WRITTEN		= 0xF8,
++	QUERY_RESULT_INVALID_LENGTH		= 0xF9,
++	QUERY_RESULT_INVALID_VALUE		= 0xFA,
++	QUERY_RESULT_INVALID_SELECTOR		= 0xFB,
++	QUERY_RESULT_INVALID_INDEX		= 0xFC,
++	QUERY_RESULT_INVALID_IDN		= 0xFD,
++	QUERY_RESULT_INVALID_OPCODE		= 0xFE,
++	QUERY_RESULT_GENERAL_FAILURE		= 0xFF,
++};
++
+ /* UTP Transfer Request Command Type (CT) */
+ enum {
+ 	UPIU_COMMAND_SET_TYPE_SCSI	= 0x0,
+@@ -127,6 +155,7 @@ enum {
+ 	MASK_SCSI_STATUS	= 0xFF,
+ 	MASK_TASK_RESPONSE	= 0xFF00,
+ 	MASK_RSP_UPIU_RESULT	= 0xFFFF,
++	MASK_QUERY_DATA_SEG_LEN	= 0xFFFF,
+ };
+ 
+ /* Task management service response */
+@@ -160,13 +189,40 @@ struct utp_upiu_cmd {
+ };
+ 
+ /**
++ * struct utp_upiu_query - upiu request buffer structure for
++ * query request.
++ * @opcode: command to perform B-0
++ * @idn: a value that indicates the particular type of data B-1
++ * @index: Index to further identify data B-2
++ * @selector: Index to further identify data B-3
++ * @reserved_osf: spec reserved field B-4,5
++ * @length: number of descriptor bytes to read/write B-6,7
++ * @value: Attribute value to be written DW-6
++ * @reserved: spec reserved DW-7,8
++ */
++struct utp_upiu_query {
++	u8 opcode;
++	u8 idn;
++	u8 index;
++	u8 selector;
++	u16 reserved_osf;
++	u16 length;
++	u32 value;
++	u32 reserved[2];
++};
++
++/**
+  * struct utp_upiu_req - general upiu request structure
+  * @header:UPIU header structure DW-0 to DW-2
+  * @sc: fields structure for scsi command
++ * @qr: fields structure for query request
+  */
+ struct utp_upiu_req {
+ 	struct utp_upiu_header header;
+-	struct utp_upiu_cmd sc;
++	union {
++		struct utp_upiu_cmd sc;
++		struct utp_upiu_query qr;
++	};
+ };
+ 
+ /**
+@@ -187,10 +243,14 @@ struct utp_cmd_rsp {
+  * struct utp_upiu_rsp - general upiu response structure
+  * @header: UPIU header structure DW-0 to DW-2
+  * @sc: fields structure for scsi command
++ * @qr: fields structure for query request
+  */
+ struct utp_upiu_rsp {
+ 	struct utp_upiu_header header;
+-	struct utp_cmd_rsp sc;
++	union {
++		struct utp_cmd_rsp sc;
++		struct utp_upiu_query qr;
++	};
+ };
+ 
+ /**
+@@ -223,4 +283,24 @@ struct utp_upiu_task_rsp {
+ 	u32 reserved[3];
+ };
+ 
++/**
++ * struct ufs_query_req - parameters for building a query request
++ * @query_func: UPIU header query function
++ * @upiu_req: the query request data
++ */
++struct ufs_query_req {
++	u8 query_func;
++	struct utp_upiu_query upiu_req;
++};
++
++/**
++ * struct ufs_query_resp - UPIU QUERY
++ * @response: device response code
++ * @upiu_res: query response data
++ */
++struct ufs_query_res {
++	u8 response;
++	struct utp_upiu_query upiu_res;
++};
++
+ #endif /* End of Header */
+diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+index d534c50..6d12fae 100644
+--- a/drivers/scsi/ufs/ufshcd.c
++++ b/drivers/scsi/ufs/ufshcd.c
+@@ -48,10 +48,20 @@
+ /* Timeout after 30 msecs if NOP OUT hangs without response */
+ #define NOP_OUT_TIMEOUT    30 /* msecs */
+ 
++/* Query request retries */
++#define QUERY_REQ_RETRIES 10
++/* Query request timeout */
++#define QUERY_REQ_TIMEOUT 30 /* msec */
++/* fDeviceInit max polling number */
++#define QUERY_MAX_POLL_ITER 100
++
+ #define SCSI_CMD_QUEUE_SIZE (hba->nutrs - 1)
+ /* Reserved tag for internal commands */
+ #define INTERNAL_CMD_TAG   (hba->nutrs - 1)
+ 
++/* Expose the flag value from utp_upiu_query.value */
++#define MASK_QUERY_UPIU_FLAG_LOC 0xFF
++
+ enum {
+ 	UFSHCD_MAX_CHANNEL	= 0,
+ 	UFSHCD_MAX_ID		= 1,
+@@ -378,6 +388,63 @@ static inline void ufshcd_copy_sense_data(struct ufshcd_lrb *lrbp)
+ }
+ 
+ /**
++ * ufshcd_query_to_cpu() - formats the buffer to native cpu endian
++ * @response: upiu query response to convert
++ */
++static inline void ufshcd_query_to_cpu(struct utp_upiu_query *response)
++{
++	response->length = be16_to_cpu(response->length);
++	response->value = be32_to_cpu(response->value);
++}
++
++/**
++ * ufshcd_query_to_be() - formats the buffer to big endian
++ * @request: upiu query request to convert
++ */
++static inline void ufshcd_query_to_be(struct utp_upiu_query *request)
++{
++	request->length = cpu_to_be16(request->length);
++	request->value = cpu_to_be32(request->value);
++}
++
++/**
++ * ufshcd_copy_query_response() - Copy the Query Response and the data
++ * descriptor
++ * @hba: per adapter instance
++ * @lrb - pointer to local reference block
++ */
++static
++void ufshcd_copy_query_response(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
++{
++	struct ufs_query_res *query_res = hba->i_cmd.query.response;
++
++	/* Get the UPIU response */
++	if (query_res) {
++		query_res->response = ufshcd_get_rsp_upiu_result(
++			lrbp->ucd_rsp_ptr) >> UPIU_RSP_CODE_OFFSET;
++
++		memcpy(&query_res->upiu_res, &lrbp->ucd_rsp_ptr->qr,
++			QUERY_OSF_SIZE);
++		ufshcd_query_to_cpu(&query_res->upiu_res);
++	}
++
++	/* Get the descriptor */
++	if (hba->i_cmd.query.descriptor && lrbp->ucd_rsp_ptr->qr.opcode ==
++			UPIU_QUERY_OPCODE_READ_DESC) {
++		u8 *descp = (u8 *)&lrbp->ucd_rsp_ptr +
++				GENERAL_UPIU_REQUEST_SIZE;
++		u16 len;
++
++		/* data segment length */
++		len = be32_to_cpu(lrbp->ucd_rsp_ptr->header.dword_2) &
++						MASK_QUERY_DATA_SEG_LEN;
++
++		memcpy(hba->i_cmd.query.descriptor, descp,
++			min_t(u16, len, UPIU_HEADER_DATA_SEGMENT_MAX_SIZE));
++	}
++}
++
++/**
+  * ufshcd_hba_capabilities - Read controller capabilities
+  * @hba: per adapter instance
+  */
+@@ -659,6 +726,47 @@ void ufshcd_prepare_utp_scsi_cmd_upiu(struct ufshcd_lrb *lrbp, u32 upiu_flags)
+ 		(min_t(unsigned short, lrbp->cmd->cmd_len, MAX_CDB_SIZE)));
+ }
+ 
++/**
++ * ufshcd_prepare_utp_query_req_upiu() - fills the utp_transfer_req_desc,
++ * for query requsts
++ * @hba: UFS hba
++ * @lrbp: local reference block pointer
++ * @upiu_flags: flags
++ */
++static void ufshcd_prepare_utp_query_req_upiu(struct ufs_hba *hba,
++					struct ufshcd_lrb *lrbp,
++					u32 upiu_flags)
++{
++	struct utp_upiu_req *ucd_req_ptr = lrbp->ucd_req_ptr;
++	u16 len = hba->i_cmd.query.request->upiu_req.length;
++	u8 *descp = (u8 *)lrbp->ucd_req_ptr + GENERAL_UPIU_REQUEST_SIZE;
++
++	/* Query request header */
++	ucd_req_ptr->header.dword_0 = UPIU_HEADER_DWORD(
++			UPIU_TRANSACTION_QUERY_REQ, upiu_flags,
++			lrbp->lun, lrbp->task_tag);
++	ucd_req_ptr->header.dword_1 = UPIU_HEADER_DWORD(
++			0, hba->i_cmd.query.request->query_func, 0, 0);
++
++	/* Data segment length */
++	ucd_req_ptr->header.dword_2 = UPIU_HEADER_DWORD(
++			0, 0, len >> 8, (u8)len);
++
++	/* Copy the Query Request buffer as is */
++	memcpy(&lrbp->ucd_req_ptr->qr, &hba->i_cmd.query.request->upiu_req,
++			QUERY_OSF_SIZE);
++	ufshcd_query_to_be(&lrbp->ucd_req_ptr->qr);
++
++	/* Copy the Descriptor */
++	if ((hba->i_cmd.query.descriptor != NULL) && (len > 0) &&
++		(hba->i_cmd.query.request->upiu_req.opcode ==
++					UPIU_QUERY_OPCODE_WRITE_DESC)) {
++		memcpy(descp, hba->i_cmd.query.descriptor,
++			min_t(u16, len, UPIU_HEADER_DATA_SEGMENT_MAX_SIZE));
++	}
++
++}
++
+ static inline void ufshcd_prepare_utp_nop_upiu(struct ufshcd_lrb *lrbp)
+ {
+ 	struct utp_upiu_req *ucd_req_ptr = lrbp->ucd_req_ptr;
+@@ -693,7 +801,10 @@ static int ufshcd_compose_upiu(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
+ 		break;
+ 	case UTP_CMD_TYPE_DEV_MANAGE:
+ 		ufshcd_prepare_req_desc(lrbp, &upiu_flags, DMA_NONE);
+-		if (hba->i_cmd.dev_cmd_type == DEV_CMD_TYPE_NOP)
++		if (hba->i_cmd.dev_cmd_type == DEV_CMD_TYPE_QUERY)
++			ufshcd_prepare_utp_query_req_upiu(
++					hba, lrbp, upiu_flags);
++		else if (hba->i_cmd.dev_cmd_type == DEV_CMD_TYPE_NOP)
+ 			ufshcd_prepare_utp_nop_upiu(lrbp);
+ 		else
+ 			ret = -EINVAL;
+@@ -837,6 +948,9 @@ ufshcd_internal_cmd_completion(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
+ 	switch (resp) {
+ 	case UPIU_TRANSACTION_NOP_IN:
+ 		break;
++	case UPIU_TRANSACTION_QUERY_RSP:
++		ufshcd_copy_query_response(hba, lrbp);
++		break;
+ 	case UPIU_TRANSACTION_REJECT_UPIU:
+ 		/* TODO: handle Reject UPIU Response */
+ 		dev_err(hba->dev, "Reject UPIU not fully implemented\n");
+@@ -896,6 +1010,121 @@ out:
+ }
+ 
+ /**
++ *  ufshcd_query_request() - API for issuing query request to the device.
++ *  @hba: ufs driver context
++ *  @query: params for query request
++ *  @descriptor: buffer for sending/receiving descriptor
++ *  @retries: number of times to try executing the command
++ *
++ *   All necessary fields for issuing a query and receiving its response
++ *   are stored in the UFS hba struct. We can use this method since we know
++ *   there is only one active query request or any internal command at all
++ *   times.
++ */
++static int ufshcd_send_query_request(struct ufs_hba *hba,
++					struct ufs_query_req *query,
++					u8 *descriptor,
++					struct ufs_query_res *response)
++{
++	int ret;
++
++	BUG_ON(!hba);
++	if (!query || !response) {
++		dev_err(hba->dev,
++			"%s: NULL pointer query = %p, response = %p\n",
++			__func__, query, response);
++		return -EINVAL;
++	}
++
++	mutex_lock(&hba->i_cmd.dev_cmd_lock);
++	hba->i_cmd.query.request = query;
++	hba->i_cmd.query.response = response;
++	hba->i_cmd.query.descriptor = descriptor;
++
++	ret = ufshcd_exec_internal_cmd(hba, DEV_CMD_TYPE_QUERY,
++					QUERY_REQ_TIMEOUT);
++
++	hba->i_cmd.query.request = NULL;
++	hba->i_cmd.query.response = NULL;
++	hba->i_cmd.query.descriptor = NULL;
++	mutex_unlock(&hba->i_cmd.dev_cmd_lock);
++
++	return ret;
++}
++
++/**
++ * ufshcd_query_flag() - Helper function for composing flag query requests
++ * hba: per-adapter instance
++ * query_opcode: flag query to perform
++ * idn: flag idn to access
++ * flag_res: the flag value after the query request completes
++ *
++ * Returns 0 for success, non-zero in case of failure
++ */
++static int ufshcd_query_flag(struct ufs_hba *hba, enum query_opcode opcode,
++			enum flag_idn idn, bool *flag_res)
++{
++	struct ufs_query_req *query;
++	struct ufs_query_res *response;
++	int err = -ENOMEM;
++
++	query = kzalloc(sizeof(struct ufs_query_req), GFP_KERNEL);
++	if (!query) {
++		dev_err(hba->dev,
++			"%s: Failed allocating ufs_query_req instance\n",
++			__func__);
++		goto out_no_mem;
++	}
++	response = kzalloc(sizeof(struct ufs_query_res), GFP_KERNEL);
++	if (!response) {
++		dev_err(hba->dev,
++			"%s: Failed allocating ufs_query_res instance\n",
++			__func__);
++		goto out_free_query;
++	}
++
++	switch (opcode) {
++	case UPIU_QUERY_OPCODE_SET_FLAG:
++	case UPIU_QUERY_OPCODE_CLEAR_FLAG:
++	case UPIU_QUERY_OPCODE_TOGGLE_FLAG:
++		query->query_func = UPIU_QUERY_FUNC_STANDARD_WRITE_REQUEST;
++		break;
++	case UPIU_QUERY_OPCODE_READ_FLAG:
++		query->query_func = UPIU_QUERY_FUNC_STANDARD_READ_REQUEST;
++		break;
++	default:
++		dev_err(hba->dev,
++			"%s: Expected query flag opcode but got = %d\n",
++			__func__, opcode);
++		err = -EINVAL;
++		goto out;
++	}
++	query->upiu_req.opcode = opcode;
++	query->upiu_req.idn = idn;
++
++	/* Send query request */
++	err = ufshcd_send_query_request(hba, query, NULL, response);
++
++	if (err) {
++		dev_err(hba->dev,
++			"%s: Sending flag query for idn %d failed, err = %d\n",
++			__func__, idn, err);
++		goto out;
++	}
++
++	if (flag_res)
++		*flag_res = (response->upiu_res.value &
++				MASK_QUERY_UPIU_FLAG_LOC) & 0x1;
++
++out:
++	kfree(response);
++out_free_query:
++	kfree(query);
++out_no_mem:
++	return err;
++}
++
++/**
+  * ufshcd_memory_alloc - allocate memory for host memory space data structures
+  * @hba: per adapter instance
+  *
+@@ -1064,6 +1293,59 @@ static int ufshcd_dme_link_startup(struct ufs_hba *hba)
+ }
+ 
+ /**
++ * ufshcd_validate_device_init() - checks device readiness
++ * hba: per-adapter instance
++ *
++ * Set fDeviceInit flag, than, query the flag until the device clears the
++ * flag.
++ */
++static int ufshcd_validate_device_init(struct ufs_hba *hba)
++{
++	int i, retries, err = 0;
++	bool flag_res = 0;
++
++	for (retries = QUERY_REQ_RETRIES; retries > 0; retries--) {
++		/* Set the fDeviceIntit flag */
++		err = ufshcd_query_flag(hba, UPIU_QUERY_OPCODE_SET_FLAG,
++					QUERY_FLAG_IDN_FDEVICEINIT, &flag_res);
++		if (!err || err == -ETIMEDOUT)
++			break;
++		dev_dbg(hba->dev, "%s: error %d retrying\n", __func__, err);
++	}
++	if (err) {
++		dev_err(hba->dev,
++			"%s setting fDeviceInit flag failed with error %d\n",
++			__func__, err);
++		goto out;
++	}
++
++	/* Start polling */
++	for (i = 0; i < QUERY_MAX_POLL_ITER && !err && flag_res; i++) {
++		retries = QUERY_REQ_RETRIES;
++		for (retries = QUERY_REQ_RETRIES; retries > 0; retries--) {
++			err = ufshcd_query_flag(hba,
++					UPIU_QUERY_OPCODE_READ_FLAG,
++					QUERY_FLAG_IDN_FDEVICEINIT, &flag_res);
++			if (!err || err == -ETIMEDOUT)
++				break;
++			dev_dbg(hba->dev, "%s: error %d retrying\n", __func__,
++					err);
++		}
++	}
++	if (err)
++		dev_err(hba->dev,
++			"%s reading fDeviceInit flag failed with error %d\n",
++			__func__, err);
++	else if (flag_res)
++		dev_err(hba->dev,
++			"%s fDeviceInit was not cleared by the device\n",
++			__func__);
++
++out:
++	return err;
++}
++
++/**
+  * ufshcd_make_hba_operational - Make UFS controller operational
+  * @hba: per adapter instance
+  *
+@@ -1910,6 +2192,10 @@ static void ufshcd_async_scan(void *data, async_cookie_t cookie)
+ 	if (ret)
+ 		goto out;
+ 
++	ret = ufshcd_validate_device_init(hba);
++	if (ret)
++		goto out;
++
+ 	scsi_scan_host(hba->host);
+ out:
+ 	return;
+diff --git a/drivers/scsi/ufs/ufshcd.h b/drivers/scsi/ufs/ufshcd.h
+index e41fa5e..4e4c56f 100644
+--- a/drivers/scsi/ufs/ufshcd.h
++++ b/drivers/scsi/ufs/ufshcd.h
+@@ -70,6 +70,7 @@
+ 
+ enum internal_cmd_type {
+ 	DEV_CMD_TYPE_NOP		= 0x0,
++	DEV_CMD_TYPE_QUERY		= 0x1,
+ };
+ 
+ /**
+@@ -125,15 +126,29 @@ struct ufshcd_lrb {
+ };
+ 
+ /**
++ * struct ufs_query - holds relevent data structures for query request
++ * @request: request upiu and function
++ * @descriptor: buffer for sending/receiving descriptor
++ * @response: response upiu and response
++ */
++struct ufs_query {
++	struct ufs_query_req *request;
++	u8 *descriptor;
++	struct ufs_query_res *response;
++};
++
++/**
+  * struct ufs_internal_cmd - all assosiated fields with internal commands
+  * @dev_cmd_type: device management command type - Query, NOP OUT
+  * @dev_cmd_lock: lock to allow one internal command at a time
+  * @dev_cmd_complete: internal commands completion
++ * @query: required query data structures for sending query request
+  */
+ struct ufs_internal_cmd {
+ 	enum internal_cmd_type dev_cmd_type;
+ 	struct mutex dev_cmd_lock;
+ 	struct completion *dev_cmd_complete;
++	struct ufs_query query;
+ };
+ 
+ /**
+diff --git a/drivers/scsi/ufs/ufshci.h b/drivers/scsi/ufs/ufshci.h
+index d5c5f14..f1e1b74 100644
+--- a/drivers/scsi/ufs/ufshci.h
++++ b/drivers/scsi/ufs/ufshci.h
+@@ -39,7 +39,7 @@
+ enum {
+ 	TASK_REQ_UPIU_SIZE_DWORDS	= 8,
+ 	TASK_RSP_UPIU_SIZE_DWORDS	= 8,
+-	ALIGNED_UPIU_SIZE		= 128,
++	ALIGNED_UPIU_SIZE		= 512,
+ };
+ 
+ /* UFSHCI Registers */
+-- 
+1.7.6
+-- 
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
