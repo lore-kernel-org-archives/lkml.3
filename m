@@ -1,68 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035Ab3FJCHp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 22:07:45 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55775 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750929Ab3FJCHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 22:07:44 -0400
-X-IronPort-AV: E=Sophos;i="4.87,833,1363104000"; 
-   d="scan'208";a="7511285"
-Message-ID: <51B5344C.3060405@cn.fujitsu.com>
-Date: Mon, 10 Jun 2013 10:05:00 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1751992Ab3FJCNg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 22:13:36 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:36228 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431Ab3FJCNe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jun 2013 22:13:34 -0400
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
-        riel@redhat.com, wangyun@linux.vnet.ibm.com,
-        Jason Low <jason.low2@hp.com>,
-        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        fweisbec@gmail.com
-Subject: Re: [patch v8 6/9] sched: compute runnable load avg in cpu_load and
- cpu_avg_load_per_task
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-7-git-send-email-alex.shi@intel.com> <51B530AE.3020004@cn.fujitsu.com> <51B53375.40102@intel.com>
-In-Reply-To: <51B53375.40102@intel.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/10 10:05:53,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/10 10:05:54,
-	Serialize complete at 2013/06/10 10:05:54
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CACRpkdYmOHX2bPMKHwY=V2L+4EN-+5KzD-YCJhQtfkFeKV5p8g@mail.gmail.com>
+References: <CAAVeFu+hQHScYYkvO1KOrUPLLaC0ju_O4SDZWyJE8KhLn_hibQ@mail.gmail.com>
+ <CACRpkdYmOHX2bPMKHwY=V2L+4EN-+5KzD-YCJhQtfkFeKV5p8g@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Mon, 10 Jun 2013 11:13:14 +0900
+Message-ID: <CAAVeFuJctmszhjyL7Z09pzYt9c_NhhYm5xbgm+Ns3gE5Y-xjJQ@mail.gmail.com>
+Subject: Re: Active-low behavior in gpiolib
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Jani Nikula <ext-jani.1.nikula@nokia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Arnd Bergmann <arnd@arndb.de>, linux-gpio@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2013 10:01 AM, Alex Shi wrote:
+On Fri, Jun 7, 2013 at 4:10 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> Well it is designed as a sysfs-only thing according to the comment:
+> drivers/gpio/gpiolib.c:#define FLAG_ACTIVE_LOW  6       /* sysfs value
+> has active low */
+>
+> So I think your actual question is whether it should also be
+> enabled for the kernel-internal interfaces.
 
-> On 06/10/2013 09:49 AM, Gu Zheng wrote:
->> On 06/07/2013 03:20 PM, Alex Shi wrote:
->>
->>>> They are the base values in load balance, update them with rq runnable
->>>> load average, then the load balance will consider runnable load avg
->>>> naturally.
->>>>
->>>> We also try to include the blocked_load_avg as cpu load in balancing,
->>>> but that cause kbuild performance drop 6% on every Intel machine, and
->>>> aim7/oltp drop on some of 4 CPU sockets machines.
->> Hi Alex,
->>    Could you explain me why including the blocked_load_avg causes performance drop ?
-> 
-> 
-> Thanks for review!
-> 
-> the 9th patch has few explanation. like, after the only task got into
-> sleep in a CPU, there is only blocked_load_avg left, it looks quite big
-> in short time. that, block it get tasks before sleep, drive task to
-> other cpu in periodic balance. So, it cause clear load imbalance.
-> 
+Yes, that's my question.
 
-Got it. Thanks very much for your explanation.:)
+> Currently we have things like this:
+>
+> /**
+>  * struct mmci_platform_data - platform configuration for the MMCI
+>  * (also known as PL180) block.
+> (...)
+>  * @gpio_cd: read this GPIO pin to detect card insertion
+>  * @cd_invert: true if the gpio_cd pin value is active low
+> (...)
+>         int     gpio_cd;
+>         bool    cd_invert;
+>
+> So the knowledge of whether a certain GPIO is active high or low
+> is spread out through drivers, and the API only drives the line in a
+> very explicit way.
+>
+> I am uncertain whether it is wise to move this into gpiolib for
+> in-kernel consumers, it is mainly a convention of where the
+> knowledge should sit. In the mentioned case, the flags will still
+> be needed because we need to have the information there to
+> set the flag toward the gpiolib API anyway.
+>
+> So the only thing gained is that gpiolib gets some knowledge
+> of how the pin is used. But what is the gain of that?
 
-Best regards,
-Gu
+Well, my problem is clearly highlighted by the example you mention,
+which is a very common usage pattern especially for DT-obtained GPIOs
+which can have this OF_GPIO_ACTIVE_LOW flag. E.g. we have a lot of
+this:
+
+    gpio = of_get_named_gpio_flags(np, "foo-gpios", 0, &flags);
+    active_low = flags & OF_GPIO_ACTIVE_LOW ? 1 : 0;
+    ...
+    state = (gpio_get_value(gpio) ? 1 : 0) ^ active_low;
+    ...
+    gpio_set_value(gpio, (value ? 1 : 0) ^ active_low;
+
+which could be simplified into this:
+
+    gpio = of_get_named_gpiod_flags(np, "foo-gpios", 0);
+    ...
+    state = gpiod_get_value(gpio);
+    ...
+    gpiod_set_value(gpio, value);
+
+Board design makes it possible to turn any GPIO active low for any
+(good or bad) reason, thus the drivers, which interact with gpiolib,
+are more likely to want to set the GPIO logical value (taking the
+active low parameter into account) rather than its raw level.
+
+In the end, drivers that are not using an active_low flag are most
+likely doing so just because they never encountered such a situation.
+In practice, I suspect nearly all drivers want to be aware of the
+active-low property.
+
+Since gpiolib is already half-aware of this property, through the
+sysfs active_low node and the OF_GPIO_ACTIVE_LOW DT property, why not
+complete the circle and ease the life of driver writers?
+
+As Stephen wrote, an alternative set of functions to get/set the
+actual raw value of the line could be provided, but my understanding
+is that an overwhelming majority of GPIO users would benefit from
+having the active low property being handled transparently.
+
+Alex.
