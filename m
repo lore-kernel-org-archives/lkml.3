@@ -1,113 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab3FJSev (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 14:34:51 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:41128 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747Ab3FJSeu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 14:34:50 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        patches@linaro.org, Sachin Kamat <sachin.kamat@linaro.org>
-Subject: Re: [PATCH 2/3] ARM: dts: Add FIMD node to Origen4210 board
-Date: Mon, 10 Jun 2013 20:34:44 +0200
-Message-ID: <4092650.9kTauzjmyN@flatron>
-User-Agent: KMail/4.10.4 (Linux/3.9.5-gentoo; KDE/4.10.4; x86_64; ; )
-In-Reply-To: <51B55296.5030006@linaro.org>
-References: <1370603235-11193-1-git-send-email-tushar.behera@linaro.org> <5527415.fcM1OgADxD@flatron> <51B55296.5030006@linaro.org>
+	id S1753747Ab3FJSg3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 14:36:29 -0400
+Received: from dinosaur.yandex.ru ([77.88.34.8]:9476 "EHLO dinosaur.yandex.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754010Ab3FJSgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 14:36:23 -0400
+X-Greylist: delayed 386 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Jun 2013 14:36:23 EDT
+Message-ID: <51B61B22.2010604@yandex-team.ru>
+Date: Mon, 10 Jun 2013 22:29:54 +0400
+From: "Boris B. Zhmurov" <zhmurov@yandex-team.ru>
+Reply-To: zhmurov@yandex-team.ru
+Organization: Yandex LLC
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: David Miller <davem@davemloft.net>
+CC: paulmck@linux.vnet.ibm.com, eric.dumazet@gmail.com, klamm@yandex-team.ru,
+        brouer@redhat.com, dipankar@in.ibm.com, zhmurov@yandex-team.ru,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, David.Laight@ACULAB.COM, stable@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
+ macro
+References: <1370229169.24311.119.camel@edumazet-glaptop> <20130602.202703.1059637861388689182.davem@davemloft.net> <20130603034254.GC29614@linux.vnet.ibm.com> <20130602.204915.334823676645400072.davem@davemloft.net>
+In-Reply-To: <20130602.204915.334823676645400072.davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 of June 2013 09:44:14 Tushar Behera wrote:
-> On 06/08/2013 04:19 PM, Tomasz Figa wrote:
-> > On Friday 07 of June 2013 16:37:14 Tushar Behera wrote:
-> >> From: Sachin Kamat <sachin.kamat@linaro.org>
-> >> 
-> >> Added FIMD and display timing node to Origen4210 board.
-> >> 
-> >> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> >> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> >> ---
-> >> 
-> >>  arch/arm/boot/dts/exynos4210-origen.dts |   21 +++++++++++++++++++++
-> >>  1 file changed, 21 insertions(+)
-> >> 
-> >> diff --git a/arch/arm/boot/dts/exynos4210-origen.dts
-> >> b/arch/arm/boot/dts/exynos4210-origen.dts index bcf8079..4c6c3cd
-> >> 100644
-> >> --- a/arch/arm/boot/dts/exynos4210-origen.dts
-> >> +++ b/arch/arm/boot/dts/exynos4210-origen.dts
-> >> @@ -290,4 +290,25 @@
-> >> 
-> >>  			clock-frequency = <24000000>;
-> >>  		
-> >>  		};
-> >>  	
-> >>  	};
-> >> 
-> >> +
-> >> +	fimd@11c00000 {
-> >> +		pinctrl-0 = <&lcd_en &lcd_clk &lcd_data24 &pwm0_out>;
-> > 
-> > Ahh, this would explain the two pwm pin groups from previous patch.
-> > 
-> > This seems somehow incorrect, though. AFAIK PWM outputs are not
-> > managed by FIMD in any way.
+On 06/03/2013 07:49 AM, David Miller wrote:
+
+
+>>>> Well, whole discussion went on linux kernel, and you were the original
+>>>> committer of this patch five years ago.
+>>>>
+>>>> http://git.kernel.org/cgit/linux/kernel/git/davem/net-next.git/commit/?id=bbaffaca4810de1a25e32ecaf836eeaacc7a3d11
+>>>>
+>>>> So please Paul or David make sure the patch goes in.
+>>>>
+>>>> My only concern is that Paul seems quite busy these days.
+>>>
+>>> Ok I can take it then, no problem.
+>>
+>> Or if you would like to take it:
+>>
+>> Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > 
-> I couldn't find any better place to put the pwm0_out pin configurations.
-> Without configuring pwm0_out pins, display doesn't come up on the LCD.
-> Any suggestions?
-
-Isn't there a PWM backlight driver? With my [PATCH 00/15] Final Samsung 
-PWM support cleanup patches, a DT-compatible PWM driver is being added, so 
-it should be possible to use it in your case.
+> Let's end this deadlock by me taking it :-)
 
 
-> >> +		pinctrl-names = "default";
-> >> +		status = "okay";
-> >> +	};
-> >> +
-> >> +	display-timings {
-> >> +		native-mode = <&timing0>;
-> >> +		timing0: timing {
-> >> +			clock-frequency = <50000>;
-> > 
-> > Hmm, 50 KHz for pixel clock? Isn't it a bit too low? Or am I missing
-> > something?
-> 
-> Actually clock-frequency value is not used by DRM-FIMD, but instead
-> required by the framework.
-> 
-> Still it would be better to provide the actual pixel clock value here.
-> So I would update this with 40MHz which is actual pixel clock used on my
-> board.
+Hello David,
 
-Yes, I think this is a much better idea.
+Do you think, this patch is "stable material" and should be included in
+3.0-stable and 3.4-stable trees? Thanks.
 
-Thanks,
-Tomasz
-
-> > Best regards,
-> > Tomasz
-> > 
-> >> +			hactive = <1024>;
-> >> +			vactive = <600>;
-> >> +			hfront-porch = <64>;
-> >> +			hback-porch = <16>;
-> >> +			hsync-len = <48>;
-> >> +			vback-porch = <64>;
-> >> +			vfront-porch = <16>;
-> >> +			vsync-len = <3>;
-> >> +		};
-> >> +	};
-> >> 
-> >>  };
-> 
-> Thanks for your review.
+-- 
+Boris B. Zhmurov
+Yandex.Search SRE Team
+*************
+т.: +7 (495) 739-70-00 ext.7160
+http://yandex.ru
+*************
