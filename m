@@ -1,93 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab3FJVIa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 17:08:30 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20926 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189Ab3FJVI2 (ORCPT
+	id S1753562Ab3FJVIp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 17:08:45 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:40283 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752867Ab3FJVIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 17:08:28 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wskK765KtKEA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=GqmPQ3klG2UA:10 a=wHZxKRnNx8T9UBDJ-0UA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1370898505.9844.123.camel@gandalf.local.home>
-Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, torvalds@linux-foundation.org
-Date: Mon, 10 Jun 2013 17:08:25 -0400
-In-Reply-To: <20130609193657.GA13392@linux.vnet.ibm.com>
-References: <20130609193657.GA13392@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Jun 2013 17:08:21 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: george.dunlap@eu.citrix.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: [PATCH] xen/pci: Deal with toolstack missing an 'XenbusStateClosing'.
+Date: Mon, 10 Jun 2013 17:06:39 -0400
+Message-Id: <1370898399-20968-2-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1370898399-20968-1-git-send-email-konrad.wilk@oracle.com>
+References: <20130610202456.GA17822@phenom.dumpdata.com>
+ <1370898399-20968-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-06-09 at 12:36 -0700, Paul E. McKenney wrote:
->  
-> +#else /* #ifndef CONFIG_TICKET_LOCK_QUEUED */
-> +
-> +bool tkt_spin_pass(arch_spinlock_t *ap, struct __raw_tickets inc);
-> +
-> +static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
-> +{
-> +	register struct __raw_tickets inc = { .tail = 2 };
-> +
-> +	inc = xadd(&lock->tickets, inc);
-> +	for (;;) {
-> +		if (inc.head == inc.tail || tkt_spin_pass(lock, inc))
-> +			break;
-> +		inc.head = ACCESS_ONCE(lock->tickets.head);
-> +	}
-> +	barrier(); /* smp_mb() on Power or ARM. */
-> +}
-> +
-> +#endif /* #else #ifndef CONFIG_TICKET_LOCK_QUEUED */
-> +
+There are two tool-stack that can instruct the Xen PCI frontend
+and backend to change states: 'xm' (Python code with a daemon),
+and 'xl' (C library - does not keep state changes).
 
-To avoid the above code duplication, I would have this instead:
+With the 'xm', the path to disconnect a PCI device (xm pci-detach
+<guest> <BDF>)is:
 
-#ifdef CONFIG_TICKET_LOCK_QUEUED
+4(Connected)->7(Reconfiguring*)-> 8(Reconfigured)-> 4(Connected)->5(Closing*).
 
-bool tkt_spin_pass(arch_spinlock_t *ap, struct __raw_tickets inc);
-#define __TKT_SPIN_INC 2
+The * is for states that the tool-stack sets. For 'xl', it is similar:
 
-#else
+4(Connected)->7(Reconfiguring*)-> 8(Reconfigured)-> 4(Connected)
 
-static inline bool tkt_spin_pass(arch_spinlock_t *ap, struct
-__raw_tickets inc)
-{
-	return false;
-}
+Both of them also tear down the XenBus structure, so the backend
+state ends up going in the 3(Initialised) and calls pcifront_xenbus_remove.
 
-#define __TKT_SPIN_INC 1
+When a PCI device is plugged in (xm pci-attach <guest> <BDF>)
+both of them follow the same pattern:
+2(InitWait*), 3(Initialized*), 4(Connected*)->4(Connected).
 
-#endif
+[xen-pcifront ignores the 2,3 state changes and only acts when
+4 (Connected) has been reached]
 
-static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
-{
-	register struct __raw_tickets inc = { .tail = __TKT_SPIN_INC };
+The problem is that git commit 3d925320e9e2de162bd138bf97816bda8c3f71be
+("xen/pcifront: Use Xen-SWIOTLB when initting if required") introduced
+a mechanism to initialize the SWIOTLB when the Xen PCI front moves to
+Connected state. It also had some aggressive seatbelt code check that
+would warn the user if one tried to change to Connected state without
+hitting first the Closing state:
 
-	inc = xadd(&lock->tickets, inc);
+ pcifront pci-0: PCI frontend already installed!
 
-	for (;;) {
-		if (inc.head == inc.tail || tkt_spin_pass(lock, inc))
-			break;
-		cpu_relax();
-		inc.head = ACCESS_ONCE(lock->tickets.head);
-	}
-	barrier;	/* make sure nothing creeps before the lock is taken */
-}
+However, that code can be relaxed and we can continue on working
+even if the frontend is instructed to be the 'Connected' state with
+no devices and then gets tickled to be in 'Connected' state again.
 
--- Steve
+In other words, this 4(Connected)->5(Closing)->4(Connected) state
+was expected, while 4(Connected)->.... anything but 5(Closing)->4(Connected)
+was not. This patch removes that aggressive check and allows
+Xen pcifront to work with the 'xl' toolstack.
 
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org
+Cc: stable@vger.kernel.org
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/pci/xen-pcifront.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
+index ac99515..cc46e253 100644
+--- a/drivers/pci/xen-pcifront.c
++++ b/drivers/pci/xen-pcifront.c
+@@ -675,10 +675,9 @@ static int pcifront_connect_and_init_dma(struct pcifront_device *pdev)
+ 	if (!pcifront_dev) {
+ 		dev_info(&pdev->xdev->dev, "Installing PCI frontend\n");
+ 		pcifront_dev = pdev;
+-	} else {
+-		dev_err(&pdev->xdev->dev, "PCI frontend already installed!\n");
++	} else
+ 		err = -EEXIST;
+-	}
++
+ 	spin_unlock(&pcifront_dev_lock);
+ 
+ 	if (!err && !swiotlb_nr_tbl()) {
+@@ -846,7 +845,7 @@ static int pcifront_try_connect(struct pcifront_device *pdev)
+ 		goto out;
+ 
+ 	err = pcifront_connect_and_init_dma(pdev);
+-	if (err) {
++	if (err && err != -EEXIST) {
+ 		xenbus_dev_fatal(pdev->xdev, err,
+ 				 "Error setting up PCI Frontend");
+ 		goto out;
+-- 
+1.8.1.4
 
