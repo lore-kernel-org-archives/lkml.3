@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101Ab3FJQI0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 12:08:26 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41014 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754057Ab3FJQIT (ORCPT
+	id S1754092Ab3FJQKq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 12:10:46 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:55229 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751940Ab3FJQKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 12:08:19 -0400
-Date: Mon, 10 Jun 2013 17:08:03 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: anish singh <anish198519851985@gmail.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        linux-kernel-mail <linux-kernel@vger.kernel.org>, arm@kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv2 4/6] sched_clock: Add support for >32 bit sched_clock
-Message-ID: <20130610160803.GW18614@n2100.arm.linux.org.uk>
-References: <1370155183-31421-1-git-send-email-sboyd@codeaurora.org> <1370155183-31421-5-git-send-email-sboyd@codeaurora.org> <20130603093938.GG18614@n2100.arm.linux.org.uk> <51AD069F.1060308@codeaurora.org> <20130603221210.GO18614@n2100.arm.linux.org.uk> <CAK7N6vrVvYPP8_y9F3uC=vZpdkb7_9gdzG96xSiyr0ASe6iMCQ@mail.gmail.com> <20130610153850.GU18614@n2100.arm.linux.org.uk> <CAK7N6vqao-O4hTLCNatu3LVC38OFR+L8MxZCc-gi1fikBSdYYA@mail.gmail.com>
+	Mon, 10 Jun 2013 12:10:45 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Subject: Re: [PATCH] vmcore: disable mmap_vmcore() if CONFIG_MMU is not defined
+Date: Mon, 10 Jun 2013 18:10:37 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <51B593C3.7030609@jp.fujitsu.com>
+In-Reply-To: <51B593C3.7030609@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK7N6vqao-O4hTLCNatu3LVC38OFR+L8MxZCc-gi1fikBSdYYA@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="iso-2022-jp"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306101810.37960.arnd@arndb.de>
+X-Provags-ID: V02:K0:SdmIYSzDw0HqDoInj9TxwixTRznlgQUcpk7m1JIlGGz
+ TMnzQuqo9hxpAmZDpABNcWC76VfZgBQjKwybIwTvv2joi5Al8F
+ m4UpMkgx+rTNP9XRbHLe3/U/jydahFFdnQM1sr+Zm8Y71FCi/p
+ eBrMQihfHlp5oPTFRcuVyC1reG3mZRYxTysHQLyb7cP30JMspA
+ el0iNz/TLD7cbVD8dIhOeFyyoVCRWjF1+iO2asjknnAXCFnlh6
+ SxCBKRiLFKtqx32zT8lrxyqUJsxJVzdvAzD2R6hyHNYK42MoOV
+ SSSt0i9mLIoTpbfpeeVPvatkdRutrNbBl7tglDfplhhUp2Qm+X
+ rTnMEQZ2ZCkiBgHCS/0c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 09:31:21PM +0530, anish singh wrote:
-> On Mon, Jun 10, 2013 at 9:08 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
+On Monday 10 June 2013, HATAYAMA Daisuke wrote:
+> Also, on no-MMU configuration, because we don't export buffer for ELF
+> note segment to user-space, we use vzalloc() to allocate the buffer.
+> Therefore, we use differnet functions to allocate the buffer for ELF
+> note segment. To avoid code duplication, introduce a helper
+> alloc_elfnotes_buf().
 > 
-> Least I can do is to say "Thanks".
-> > On Mon, Jun 10, 2013 at 08:46:36PM +0530, anish singh wrote:
-> >> Probably a trivial question.I was wondering why this particular requirement
-> >> exists in the first place.I looked into this commit 112f38a4a3 but couldn't
-> >> gather the reason.
-> >
-> > You're looking at a commit introducing an implementation.  The requirement
-> > isn't driven by the implementation.  It's driven by the code and the maths
-> > in the core scheduler, and its been a requirement for years.
-> >
-> > sched_clock() needs to be monotonic, and needs to wrap at 64-bit, because
-> > calculations are done by comparing the difference of two 64-bit values
-> > returned from this function.
-> 
-> Yes, and this is the question.If it is 32 bit then also it can overflow but
-> it will happen relatively fast.So I guess that is the reason why we use 64 bit
-> and this will avoid recalculations for recalibration.
+> Reported-by: Amd Bergmann <arnd@arndb.de>
+> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
 
-And that's why 112f38a4a3 is there - to ensure that we extend a 32-bit
-or smaller counter all the way up to the full 64-bits.  This replaces
-the previous generation code which only extended it to 63-bits.  Problems
-were reported!
+Thanks
 
-> > Let's take a trivial example - if you have a 16 bit counter, and you have
-> > a value of 0xc000 ns, and next time you read it, it has value 0x0001 ns,
-> > then what value do you end up with when you calculate the time passed
-> > using 64-bit maths.
-> >
-> > That's 0x0000000000000001 - 0x000000000000c000.  The answer is a very big
-> > number which is not the correct 16385.  This means that things like process
-> > timeslice counting and scheduler fairness is compromised - I'd expect even
-> 
-> So you mean when counter overflows the scheduler doesn't handle it?
+Note that my name is Arnd not Amd, otherwise
 
-There is no handling of counter overflows at scheduler level because
-the specification for sched_clock() is that this function _will_ return
-a monotonically increasing 64-bit value from 0 to the maximum 64-bit
-value.
-
-The reason for this is that there are popular architectures around
-which do this natively, so the powers that be do not want additional
-useless code cluttering their architectures.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
