@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202Ab3FJJOe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 05:14:34 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4041 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159Ab3FJJO0 (ORCPT
+	id S1753221Ab3FJJPM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 05:15:12 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:37933 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752715Ab3FJJPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 05:14:26 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 10 Jun 2013 02:13:05 -0700
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-To: <gregkh@linuxfoundation.org>
-CC: <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH 2/2] memory: tegra30-mc: Fix IRQ handler bugs.
-Date: Mon, 10 Jun 2013 12:13:44 +0300
-Message-ID: <1370855624-30564-3-git-send-email-ttynkkynen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1370855624-30564-1-git-send-email-ttynkkynen@nvidia.com>
-References: <1370855624-30564-1-git-send-email-ttynkkynen@nvidia.com>
-X-NVConfidentiality: public
+	Mon, 10 Jun 2013 05:15:09 -0400
+Date: Mon, 10 Jun 2013 10:15:03 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+Subject: Re: [PATCH 05/39] ARM: ux500: Stop passing MMC's platform data for
+ Device Tree boots
+Message-ID: <20130610091503.GF20297@gmail.com>
+References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
+ <1368611522-9984-6-git-send-email-lee.jones@linaro.org>
+ <CACRpkdbOxzhgR=ugXLrSBJ_Y1rw=0mcrvtuRi=-c5v039xsPWA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdbOxzhgR=ugXLrSBJ_Y1rw=0mcrvtuRi=-c5v039xsPWA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In Tegra30 memory controller any MC interrupt would cause an infinite loop in
-the IRQ handler. Additionally, a garbage pointer was used to read the MC
-status registers, which causes wrong values to be printed if a MC error
-occurred.
+On Wed, 15 May 2013, Linus Walleij wrote:
 
-Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
----
- drivers/memory/tegra30-mc.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+> On Wed, May 15, 2013 at 11:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > It was required to pass DMA channel configuration information to the
+> > MMC driver before the new DMA API was in place. Now that it is, and
+> > is fully compatible with Device Tree we can stop doing that.
+> >
+> > Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> So since the use of dma_request_slave_channel() is not upstream,
+> I guess this will break DMA use (i.e slow down transfers!) on all
+> device tree boots?
+> 
+> I'd be happy to apply it once the MMCI patch is in linux-next
+> indicating there may just be a window in the merge period
+> where it falls back to IRQ mode, but I don't want to disable
+> DMA on DT boots for an entire kernel cycle just like that.
+> 
+> Not applied as of yet.
 
-diff --git a/drivers/memory/tegra30-mc.c b/drivers/memory/tegra30-mc.c
-index f4ae074..a6a05a2 100644
---- a/drivers/memory/tegra30-mc.c
-+++ b/drivers/memory/tegra30-mc.c
-@@ -218,7 +218,7 @@ static void tegra30_mc_decode(struct tegra30_mc *mc, int n)
- 		return;
- 	}
- 
--	err = readl(mc + MC_ERR_STATUS);
-+	err = mc_readl(mc, MC_ERR_STATUS);
- 
- 	type = (err & MC_ERR_TYPE_MASK) >> MC_ERR_TYPE_SHIFT;
- 	perm = (err & MC_ERR_INVALID_SMMU_PAGE_MASK) >>
-@@ -235,7 +235,7 @@ static void tegra30_mc_decode(struct tegra30_mc *mc, int n)
- 	if (cid < ARRAY_SIZE(tegra30_mc_client))
- 		client = tegra30_mc_client[cid];
- 
--	addr = readl(mc + MC_ERR_ADR);
-+	addr = mc_readl(mc, MC_ERR_ADR);
- 
- 	dev_err_ratelimited(mc->dev, "%s (0x%08x): 0x%08x %s (%s %s %s %s)\n",
- 			   mc_int_err[idx], err, addr, client,
-@@ -313,8 +313,11 @@ static irqreturn_t tegra30_mc_isr(int irq, void *data)
- 	mask &= stat;
- 	if (!mask)
- 		return IRQ_NONE;
--	while ((bit = ffs(mask)) != 0)
-+	while ((bit = ffs(mask)) != 0) {
- 		tegra30_mc_decode(mc, bit - 1);
-+		mask &= BIT(bit);
-+	}
-+
- 	mc_writel(mc, stat, MC_INTSTATUS);
- 	return IRQ_HANDLED;
- }
+I believe it's now okay to apply this.
+
 -- 
-1.8.1.5
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
