@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221Ab3FJJPM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 05:15:12 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:37933 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715Ab3FJJPJ (ORCPT
+	id S1753154Ab3FJJPh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 05:15:37 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40585 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752700Ab3FJJPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 05:15:09 -0400
-Date: Mon, 10 Jun 2013 10:15:03 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Subject: Re: [PATCH 05/39] ARM: ux500: Stop passing MMC's platform data for
- Device Tree boots
-Message-ID: <20130610091503.GF20297@gmail.com>
-References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
- <1368611522-9984-6-git-send-email-lee.jones@linaro.org>
- <CACRpkdbOxzhgR=ugXLrSBJ_Y1rw=0mcrvtuRi=-c5v039xsPWA@mail.gmail.com>
+	Mon, 10 Jun 2013 05:15:35 -0400
+Date: Mon, 10 Jun 2013 10:14:15 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Chris Johnson <CJohnson@nvidia.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Varun Wadekar <vwadekar@nvidia.com>, Karan Jhavar <kjhavar@nvidia.com>,
+        Matthew Longnecker <MLongnecker@nvidia.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Joseph Lo <josephl@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: tegra: add basic SecureOS support
+Message-ID: <20130610091415.GS18614@n2100.arm.linux.org.uk>
+References: <1370503687-17767-1-git-send-email-acourbot@nvidia.com> <51B0BC80.9040007@wwwdotorg.org> <CAAVeFu+by44HnOzv_85kwgeCx5b9TxiMhr27x69QcUj9GRbk8A@mail.gmail.com> <51B20B46.4030501@wwwdotorg.org> <CAAVeFu+UMZikdWO20c9chvBcieOAUgOhz-nTEUpevFWnPNC_ZA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdbOxzhgR=ugXLrSBJ_Y1rw=0mcrvtuRi=-c5v039xsPWA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAVeFu+UMZikdWO20c9chvBcieOAUgOhz-nTEUpevFWnPNC_ZA@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 May 2013, Linus Walleij wrote:
-
-> On Wed, May 15, 2013 at 11:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > It was required to pass DMA channel configuration information to the
-> > MMC driver before the new DMA API was in place. Now that it is, and
-> > is fully compatible with Device Tree we can stop doing that.
+On Mon, Jun 10, 2013 at 05:11:15PM +0900, Alexandre Courbot wrote:
+> On Sat, Jun 8, 2013 at 1:33 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> >>> I think we need to separate the concept of support for *a* secure
+> >>> monitor, from support for a *particular* secure monitor.
+> >>
+> >> Agreed. In this case, can we assume that support for a specific secure
+> >> monitor is not arch-specific, and that this patch should be moved
+> >> outside of arch-tegra and down to arch/arm? In other words, the ABI of
+> >> a particular secure monitor should be the same no matter the chip,
+> >> shouldn't it?
 > >
-> > Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > I would like to believe that the Trusted Foundations monitor had the
+> > same ABI irrespective of which Soc it was running on. However, I have
+> > absolutely no idea at all if that's true. Even if there's some common
+> > subset of the ABI that is identical across all SoCs, I wouldn't be too
+> > surprised if there were custom extensions for each different SoC, or
+> > just perhaps even each product.
+> >
+> > Can you research this and find out the answer?
 > 
-> So since the use of dma_request_slave_channel() is not upstream,
-> I guess this will break DMA use (i.e slow down transfers!) on all
-> device tree boots?
-> 
-> I'd be happy to apply it once the MMCI patch is in linux-next
-> indicating there may just be a window in the merge period
-> where it falls back to IRQ mode, but I don't want to disable
-> DMA on DT boots for an entire kernel cycle just like that.
-> 
-> Not applied as of yet.
+> Will do. Information about TF is scarce unfortunately.
 
-I believe it's now okay to apply this.
+The answer is... there isn't a common ABI.  That is something I pressed
+ARM Ltd for when this stuff first appeared and they were adamant that
+they were not going to specify any kind of ABI for this interface.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+The net result is that everyone has invented their own interfaces around
+it.  Some pass all arguments in registers, some pass arguments in memory
+and pass pointers to those memory locations, and those memory locations
+have to be flushed in some way.
