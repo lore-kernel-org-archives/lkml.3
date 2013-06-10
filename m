@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492Ab3FJLuC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 07:50:02 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:48608 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752301Ab3FJLtw (ORCPT
+	id S1753533Ab3FJLuI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 07:50:08 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:39077 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752301Ab3FJLuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 07:49:52 -0400
+	Mon, 10 Jun 2013 07:50:04 -0400
 From: Tushar Behera <tushar.behera@linaro.org>
 To: linux-kernel@vger.kernel.org
-Cc: thierry.reding@gmail.com, patches@linaro.org, sparclinux@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 01/15] sparc,leon: Convert to use devm_ioremap_resource
-Date: Mon, 10 Jun 2013 17:04:59 +0530
-Message-Id: <1370864113-17895-2-git-send-email-tushar.behera@linaro.org>
+Cc: thierry.reding@gmail.com, patches@linaro.org, linux-gpio@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: [PATCH 04/15] gpio_msm: Convert to use devm_ioremap_resource
+Date: Mon, 10 Jun 2013 17:05:02 +0530
+Message-Id: <1370864113-17895-5-git-send-email-tushar.behera@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
 References: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
@@ -26,31 +27,38 @@ introduced devm_ioremap_resource() and deprecated the use of
 devm_request_and_ioremap().
 
 Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-CC: sparclinux@vger.kernel.org
-CC: "David S. Miller" <davem@davemloft.net>
+CC: linux-gpio@vger.kernel.org
+CC: Linus Walleij <linus.walleij@linaro.org>
+CC: Grant Likely <grant.likely@linaro.org>
 ---
-* Not compile tested.
- arch/sparc/kernel/leon_pci_grpci1.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpio/gpio-msm-v1.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/sparc/kernel/leon_pci_grpci1.c b/arch/sparc/kernel/leon_pci_grpci1.c
-index 7739a54..23497f4 100644
---- a/arch/sparc/kernel/leon_pci_grpci1.c
-+++ b/arch/sparc/kernel/leon_pci_grpci1.c
-@@ -536,10 +536,10 @@ static int grpci1_of_probe(struct platform_device *ofdev)
+diff --git a/drivers/gpio/gpio-msm-v1.c b/drivers/gpio/gpio-msm-v1.c
+index c798585a..c0ead43 100644
+--- a/drivers/gpio/gpio-msm-v1.c
++++ b/drivers/gpio/gpio-msm-v1.c
+@@ -652,14 +652,14 @@ static int __devinit gpio_msm_v1_probe(struct platform_device *pdev)
+ 		return irq2;
  
- 	/* find device register base address */
- 	res = platform_get_resource(ofdev, IORESOURCE_MEM, 0);
--	regs = devm_request_and_ioremap(&ofdev->dev, res);
--	if (!regs) {
-+	regs = devm_ioremap_resource(&ofdev->dev, res);
-+	if (IS_ERR(regs)) {
- 		dev_err(&ofdev->dev, "io-regs mapping failed\n");
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	base1 = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!base1)
 -		return -EADDRNOTAVAIL;
-+		return PTR_ERR(regs);
- 	}
++	base1 = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(base1))
++		return PTR_ERR(base1);
  
- 	/*
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+-	base2 = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!base2)
+-		return -EADDRNOTAVAIL;
++	base2 = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(base2))
++		return PTR_ERR(base2);
+ 
+ 	for (i = FIRST_GPIO_IRQ; i < FIRST_GPIO_IRQ + NR_GPIO_IRQS; i++) {
+ 		if (i - FIRST_GPIO_IRQ >=
 -- 
 1.7.9.5
 
