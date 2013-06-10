@@ -1,96 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027Ab3FJXkH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 19:40:07 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:47346 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752960Ab3FJXkF (ORCPT
+	id S1754173Ab3FJXk1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 19:40:27 -0400
+Received: from a194-210.smtp-out.amazonses.com ([199.255.194.210]:24624 "EHLO
+	a194-210.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753398Ab3FJXkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 19:40:05 -0400
+	Mon, 10 Jun 2013 19:40:06 -0400
+Date: Mon, 10 Jun 2013 23:40:05 +0000
+From: Christoph Lameter <cl@gentwo.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] slab: prevent warnings when allocating with
+ __GFP_NOWARN
+In-Reply-To: <51B62F6B.8040308@oracle.com>
+Message-ID: <0000013f3075f90d-735942a8-b4b8-413f-a09e-57d1de0c4974-000000@email.amazonses.com>
+References: <1370891880-2644-1-git-send-email-sasha.levin@oracle.com> <CAOJsxLGDH2iwznRkP-iwiMZw7Ee3mirhjLvhShrWLHR0qguRxA@mail.gmail.com> <51B62F6B.8040308@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20130609151601.GB2245@breakpoint.cc>
-References: <1370644273-10495-1-git-send-email-yinghai@kernel.org>
-	<1370644273-10495-6-git-send-email-yinghai@kernel.org>
-	<20130609151601.GB2245@breakpoint.cc>
-Date: Mon, 10 Jun 2013 16:40:04 -0700
-X-Google-Sender-Auth: 9WoloAP99cs7sDc4WUOAFnLArG8
-Message-ID: <CAE9FiQV6Qqhky0TDjc6gcW1=_1wCiAckAkCpc=E70iC=Nge2og@mail.gmail.com>
-Subject: Re: [PATCH v3 05/27] x86, irq: Make dmar_msi/hpet_msi irq_chip name consistent
-From: Yinghai Lu <yinghai@kernel.org>
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Joerg Roedel <joro@8bytes.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.210
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 9, 2013 at 8:16 AM, Sebastian Andrzej Siewior
-<sebastian@breakpoint.cc> wrote:
-> On Fri, Jun 07, 2013 at 03:30:51PM -0700, Yinghai Lu wrote:
->> All others are using "-" instead of "_".
+On Mon, 10 Jun 2013, Sasha Levin wrote:
+
+> [ 1691.807621] Call Trace:
+> [ 1691.809473]  [<ffffffff83ff4041>] dump_stack+0x4e/0x82
+> [ 1691.812783]  [<ffffffff8111fe12>] warn_slowpath_common+0x82/0xb0
+> [ 1691.817011]  [<ffffffff8111fe55>] warn_slowpath_null+0x15/0x20
+> [ 1691.819936]  [<ffffffff81243dcf>] kmalloc_slab+0x2f/0xb0
+> [ 1691.824942]  [<ffffffff81278d54>] __kmalloc+0x24/0x4b0
+> [ 1691.827285]  [<ffffffff8196ffe3>] ? security_capable+0x13/0x20
+> [ 1691.829405]  [<ffffffff812a26b7>] ? pipe_fcntl+0x107/0x210
+> [ 1691.831827]  [<ffffffff812a26b7>] pipe_fcntl+0x107/0x210
+> [ 1691.833651]  [<ffffffff812b7ea0>] ? fget_raw_light+0x130/0x3f0
+> [ 1691.835343]  [<ffffffff812aa5fb>] SyS_fcntl+0x60b/0x6a0
+> [ 1691.837008]  [<ffffffff8403ca98>] tracesys+0xe1/0xe6
 >
-> Who are "all others"? According to my grep it is 121 vs 44. So even without
-> your two here we still 42 doing it the other way around so it is not all.
+> The caller specifically sets __GFP_NOWARN presumably to avoid this warning on
+> slub but I'm not sure if there's any other reason.
 
-I mean in arch/x86
+There must be another reason. Lets fix this.
 
-arch/x86/kernel/apic/io_apic.c:struct irq_chip ioapic_chip __read_mostly = {
-arch/x86/kernel/apic/io_apic.c- .name                   = "IO-APIC",
---
-arch/x86/kernel/apic/io_apic.c:static struct irq_chip lapic_chip
-__read_mostly = {
-arch/x86/kernel/apic/io_apic.c- .name           = "local-APIC",
---
-arch/x86/kernel/apic/io_apic.c:struct irq_chip msi_chip = {
-arch/x86/kernel/apic/io_apic.c- .name                   = "PCI-MSI",
---
-arch/x86/kernel/apic/io_apic.c:static struct irq_chip dmar_msi_type = {
-arch/x86/kernel/apic/io_apic.c- .name                   = "DMAR_MSI",
---
-arch/x86/kernel/apic/io_apic.c:struct irq_chip hpet_msi_type = {
-arch/x86/kernel/apic/io_apic.c- .name = "HPET_MSI",
---
-arch/x86/kernel/apic/io_apic.c:static struct irq_chip ht_irq_chip = {
-arch/x86/kernel/apic/io_apic.c- .name                   = "PCI-HT",
---
-arch/x86/kernel/i8259.c:struct irq_chip i8259A_chip = {
-arch/x86/kernel/i8259.c-        .name           = "XT-PIC",
---
-arch/x86/lguest/boot.c:static struct irq_chip lguest_irq_controller = {
-arch/x86/lguest/boot.c- .name           = "lguest",
---
-arch/x86/platform/uv/uv_irq.c:static struct irq_chip uv_irq_chip = {
-arch/x86/platform/uv/uv_irq.c-  .name                   = "UV-CORE",
---
-arch/x86/platform/visws/visws_quirks.c:static struct irq_chip
-cobalt_irq_type = {
-arch/x86/platform/visws/visws_quirks.c- .name           = "Cobalt-APIC",
---
-arch/x86/platform/visws/visws_quirks.c:static struct irq_chip
-piix4_master_irq_type = {
-arch/x86/platform/visws/visws_quirks.c- .name           = "PIIX4-master",
---
-arch/x86/platform/visws/visws_quirks.c:static struct irq_chip
-piix4_virtual_irq_type = {
-arch/x86/platform/visws/visws_quirks.c- .name           = "PIIX4-virtual",
---
-
-
->
-> However it might make sense to use _ instead of " " within a chip's name and
-> - as a delimiter for modes like edge or level. However that is way beyond the
-> scope of this patch and I am not sure if anyone finds this usefull at all.
->
-> Saying this, I am fine with this patch :)
-
-ok.
-
-Thanks
-
-Yinghai
