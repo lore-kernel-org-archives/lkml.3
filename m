@@ -1,161 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155Ab3FJCAY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 22:00:24 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49926 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750929Ab3FJCAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 22:00:22 -0400
-X-IronPort-AV: E=Sophos;i="4.87,833,1363104000"; 
-   d="scan'208";a="7511174"
-Message-ID: <51B53293.7090100@cn.fujitsu.com>
-Date: Mon, 10 Jun 2013 09:57:39 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1752071Ab3FJCBe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 22:01:34 -0400
+Received: from mga03.intel.com ([143.182.124.21]:63834 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750929Ab3FJCBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jun 2013 22:01:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,833,1363158000"; 
+   d="scan'208";a="252746973"
+Message-ID: <51B53375.40102@intel.com>
+Date: Mon, 10 Jun 2013 10:01:25 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-CC: Linux-Scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH RESEND] scsi: Introduce a help function local_time_seconds()
- to simplify the getting time stamp operation
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/10 09:58:31,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/10 09:58:32,
-	Serialize complete at 2013/06/10 09:58:32
-Content-Transfer-Encoding: 7bit
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
+        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
+        riel@redhat.com, wangyun@linux.vnet.ibm.com,
+        Jason Low <jason.low2@hp.com>,
+        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
+        fweisbec@gmail.com
+Subject: Re: [patch v8 6/9] sched: compute runnable load avg in cpu_load and
+ cpu_avg_load_per_task
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-7-git-send-email-alex.shi@intel.com> <51B530AE.3020004@cn.fujitsu.com>
+In-Reply-To: <51B530AE.3020004@cn.fujitsu.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are four places convert system time in UTC to local time seconds as a time stamp in scsi-subsystem,
-so we introduce a help function local_time_seconds() to simplify these operations. 
+On 06/10/2013 09:49 AM, Gu Zheng wrote:
+> On 06/07/2013 03:20 PM, Alex Shi wrote:
+> 
+>> > They are the base values in load balance, update them with rq runnable
+>> > load average, then the load balance will consider runnable load avg
+>> > naturally.
+>> > 
+>> > We also try to include the blocked_load_avg as cpu load in balancing,
+>> > but that cause kbuild performance drop 6% on every Intel machine, and
+>> > aim7/oltp drop on some of 4 CPU sockets machines.
+> Hi Alex,
+>    Could you explain me why including the blocked_load_avg causes performance drop ?
 
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- drivers/scsi/3w-9xxx.c |   14 ++------------
- drivers/scsi/3w-sas.c  |   14 ++------------
- include/scsi/scsi.h    |    9 +++++++++
- 3 files changed, 13 insertions(+), 24 deletions(-)
+Thanks for review!
 
-diff --git a/drivers/scsi/3w-9xxx.c b/drivers/scsi/3w-9xxx.c
-index 5e1e12c..44b3ea8 100644
---- a/drivers/scsi/3w-9xxx.c
-+++ b/drivers/scsi/3w-9xxx.c
-@@ -374,8 +374,6 @@ out:
- /* This function will queue an event */
- static void twa_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_Header *header)
- {
--	u32 local_time;
--	struct timeval time;
- 	TW_Event *event;
- 	unsigned short aen;
- 	char host[16];
-@@ -398,9 +396,7 @@ static void twa_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_H
- 	memset(event, 0, sizeof(TW_Event));
- 
- 	event->severity = TW_SEV_OUT(header->status_block.severity__reserved);
--	do_gettimeofday(&time);
--	local_time = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
--	event->time_stamp_sec = local_time;
-+	event->time_stamp_sec = local_time_seconds();
- 	event->aen_code = aen;
- 	event->retrieved = TW_AEN_NOT_RETRIEVED;
- 	event->sequence_id = tw_dev->error_sequence_id;
-@@ -479,11 +475,9 @@ out:
- static void twa_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
- {
- 	u32 schedulertime;
--	struct timeval utc;
- 	TW_Command_Full *full_command_packet;
- 	TW_Command *command_packet;
- 	TW_Param_Apache *param;
--	u32 local_time;
- 
- 	/* Fill out the command packet */
- 	full_command_packet = tw_dev->command_packet_virt[request_id];
-@@ -503,11 +497,7 @@ static void twa_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
- 	param->parameter_id = cpu_to_le16(0x3); /* SchedulerTime */
- 	param->parameter_size_bytes = cpu_to_le16(4);
- 
--	/* Convert system time in UTC to local time seconds since last 
--           Sunday 12:00AM */
--	do_gettimeofday(&utc);
--	local_time = (u32)(utc.tv_sec - (sys_tz.tz_minuteswest * 60));
--	schedulertime = local_time - (3 * 86400);
-+	schedulertime = local_time_seconds() - (3 * 86400);
- 	schedulertime = cpu_to_le32(schedulertime % 604800);
- 
- 	memcpy(param->data, &schedulertime, sizeof(u32));
-diff --git a/drivers/scsi/3w-sas.c b/drivers/scsi/3w-sas.c
-index c845bdb..69f1d8a 100644
---- a/drivers/scsi/3w-sas.c
-+++ b/drivers/scsi/3w-sas.c
-@@ -236,8 +236,6 @@ out:
- /* This function will queue an event */
- static void twl_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_Header *header)
- {
--	u32 local_time;
--	struct timeval time;
- 	TW_Event *event;
- 	unsigned short aen;
- 	char host[16];
-@@ -256,9 +254,7 @@ static void twl_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_H
- 	memset(event, 0, sizeof(TW_Event));
- 
- 	event->severity = TW_SEV_OUT(header->status_block.severity__reserved);
--	do_gettimeofday(&time);
--	local_time = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
--	event->time_stamp_sec = local_time;
-+	event->time_stamp_sec = local_time_seconds();
- 	event->aen_code = aen;
- 	event->retrieved = TW_AEN_NOT_RETRIEVED;
- 	event->sequence_id = tw_dev->error_sequence_id;
-@@ -444,11 +440,9 @@ out:
- static void twl_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
- {
- 	u32 schedulertime;
--	struct timeval utc;
- 	TW_Command_Full *full_command_packet;
- 	TW_Command *command_packet;
- 	TW_Param_Apache *param;
--	u32 local_time;
- 
- 	/* Fill out the command packet */
- 	full_command_packet = tw_dev->command_packet_virt[request_id];
-@@ -468,11 +462,7 @@ static void twl_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
- 	param->parameter_id = cpu_to_le16(0x3); /* SchedulerTime */
- 	param->parameter_size_bytes = cpu_to_le16(4);
- 
--	/* Convert system time in UTC to local time seconds since last 
--           Sunday 12:00AM */
--	do_gettimeofday(&utc);
--	local_time = (u32)(utc.tv_sec - (sys_tz.tz_minuteswest * 60));
--	schedulertime = local_time - (3 * 86400);
-+	schedulertime = local_time_seconds() - (3 * 86400);
- 	schedulertime = cpu_to_le32(schedulertime % 604800);
- 
- 	memcpy(param->data, &schedulertime, sizeof(u32));
-diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
-index 66216c1..f3377ca 100644
---- a/include/scsi/scsi.h
-+++ b/include/scsi/scsi.h
-@@ -574,4 +574,13 @@ static inline __u32 scsi_to_u32(__u8 *ptr)
- 	return (ptr[0]<<24) + (ptr[1]<<16) + (ptr[2]<<8) + ptr[3];
- }
- 
-+/*
-+ * Convert system time in UTC to local time seconds.
-+ */
-+static inline u32 local_time_seconds(void)
-+{
-+	struct timeval utc;
-+	do_gettimeofday(&utc);
-+	return (u32)(utc.tv_sec - (sys_tz.tz_minuteswest * 60));
-+}
- #endif /* _SCSI_SCSI_H */
+the 9th patch has few explanation. like, after the only task got into
+sleep in a CPU, there is only blocked_load_avg left, it looks quite big
+in short time. that, block it get tasks before sleep, drive task to
+other cpu in periodic balance. So, it cause clear load imbalance.
+
 -- 
-1.7.7
-
+Thanks
+    Alex
