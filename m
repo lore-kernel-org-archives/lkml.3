@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885Ab3FJHYI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 03:24:08 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:45004 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462Ab3FJHYH (ORCPT
+	id S1751878Ab3FJHZe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 03:25:34 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:43175 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab3FJHZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 03:24:07 -0400
+	Mon, 10 Jun 2013 03:25:33 -0400
+Date: Mon, 10 Jun 2013 09:25:31 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linux Kernel Development <linux-kernel@vger.kernel.org>
+cc: Linux/PPC Development <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: Build regressions/improvements in v3.10-rc5
+In-Reply-To: <alpine.DEB.2.00.1306100922530.21948@ayla.of.borg>
+Message-ID: <alpine.DEB.2.00.1306100924570.22024@ayla.of.borg>
+References: <alpine.DEB.2.00.1306100922530.21948@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <51B57A7A.9040501@canonical.com>
-References: <20130606013518.GA9092@localhost>
-	<51B038E3.30800@canonical.com>
-	<20130606072856.GA32274@localhost>
-	<51B427A4.9030805@canonical.com>
-	<20130610015530.GA18906@localhost>
-	<51B57A7A.9040501@canonical.com>
-Date: Mon, 10 Jun 2013 09:24:05 +0200
-X-Google-Sender-Auth: 9ZeCZjMBILfjvKATXkx3uIa3Sfo
-Message-ID: <CAKMK7uFoa3A=u7HNTBMKV7xYQ8q4XQCxSO5eHTekYx7oTzBbZQ@mail.gmail.com>
-Subject: Re: [inconsistent HARDIRQ usage] &dev->mode_config.idr_mutex at drm_mode_object_find()
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 9:04 AM, Maarten Lankhorst
-<maarten.lankhorst@canonical.com> wrote:
-> ^ Stacktrace points at the warning being called from panic. At that point I no longer trust anything to be sane.
-> I don't know much about the panic handling in drm, but it's definitely not related to your original issue.
+On Mon, 10 Jun 2013, Geert Uytterhoeven wrote:
+> JFYI, when comparing v3.10-rc5 to v3.10-rc4[3], the summaries are:
+>   - build errors: +19/-10
+> [1] http://kisskb.ellerman.id.au/kisskb/head/6308/ (all 120 configs)
 
-The locking in the current drm panic handler is pretty much terminally
-broken. At best we're trying not too flood dmesg too badly when it
-happens.
--Daniel
+ + arch/powerpc/kernel/cacheinfo.c: error: 'associativity' may be used uninitialized in this function [-Werror=uninitialized]:  => 571:16
+  + arch/powerpc/kernel/cacheinfo.c: error: 'size_kb' may be used uninitialized in this function [-Werror=uninitialized]:  => 522:16
+  + arch/powerpc/kernel/pci_dn.c: error: 'ret' may be used uninitialized in this function [-Werror=uninitialized]:  => 97:8
+  + arch/powerpc/kvm/book3s_32_mmu.c: error: 'sr' may be used uninitialized in this function [-Werror=uninitialized]:  => 63:2
+  + arch/powerpc/kvm/book3s_64_mmu.c: error: 'slb' may be used uninitialized in this function [-Werror=uninitialized]:  => 485:3
+  + arch/powerpc/mm/hash_native_64.c: error: 'a_size' may be used uninitialized in this function [-Werror=uninitialized]:  => 67:31
+  + arch/powerpc/platforms/cell/spufs/inode.c: error: incompatible types when assigning to type 'kgid_t' from type 'int':  => 628:16
+  + arch/powerpc/platforms/cell/spufs/inode.c: error: incompatible types when assigning to type 'kuid_t' from type 'int':  => 623:16
+  + arch/powerpc/platforms/pseries/msi.c: error: 'total' may be used uninitialized in this function [-Werror=uninitialized]:  => 320:24
+  + arch/powerpc/platforms/pseries/pci.c: error: 'pcie_link_speed_stats' may be used uninitialized in this function [-Werror=uninitialized]:  => 150:31
+
+powerpc-randconfig
+
+> [3] http://kisskb.ellerman.id.au/kisskb/head/6290/ (all 120 configs)
+
+Gr{oetje,eeting}s,
+
+						Geert
+
 --
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
