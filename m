@@ -1,460 +1,333 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754403Ab3FJSym (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 14:54:42 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:33368 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754174Ab3FJSyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 14:54:40 -0400
-Date: Mon, 10 Jun 2013 13:54:36 -0500
-From: Russ Anderson <rja@sgi.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: joeyli <jlee@suse.com>, Matthew Garrett <matthew.garrett@nebula.com>,
-        "Fleming, Matt" <matt.fleming@intel.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "bp@alien8.de" <bp@alien8.de>, "jkosina@suse.cz" <jkosina@suse.cz>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "oneukum@suse.de" <oneukum@suse.de>
-Subject: Re: [PATCH] Modify UEFI anti-bricking code
-Message-ID: <20130610185435.GB14124@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <1370276021.30695.4.camel@linux-s257.site> <1370277079.6315.14.camel@x230.lan> <1370316933.30695.7.camel@linux-s257.site> <CAL01qptzxe5L6Vq+nBZLq+bQNxbe_i_2OdKMNJGZQDfMihaHOw@mail.gmail.com> <1370444007.6315.32.camel@x230.lan> <20130605155904.GC30420@console-pimps.org> <1370495110.6523.35.camel@linux-s257.site> <1370497321.6315.44.camel@x230.lan> <1370504426.6523.49.camel@linux-s257.site> <20130606092542.GE30420@console-pimps.org>
+	id S1754368Ab3FJS76 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 14:59:58 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:50316 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754129Ab3FJS74 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 14:59:56 -0400
+Date: Mon, 10 Jun 2013 20:59:51 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-pwm@vger.kernel.org,
+        linux-doc@vger.kernel.org, poeschel@lemonage.de,
+        Ryan Mallon <rmallon@gmail.com>, rob@landley.net,
+        hsweeten@visionengravers.com
+Subject: Re: [PATCH v3] pwm: add sysfs interface
+Message-ID: <20130610185950.GA25859@mithrandir>
+References: <201305301430.39692.hartleys@visionengravers.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="y0ulUmNC+osPPQO6"
 Content-Disposition: inline
-In-Reply-To: <20130606092542.GE30420@console-pimps.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <201305301430.39692.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 10:25:42AM +0100, Matt Fleming wrote:
-> On Thu, 06 Jun, at 03:40:26PM, joeyli wrote:
-> > OK, I moved volatile checking to the top of the function.
-> > New version, version 3 diff result like the following.
-> 
-> Thanks. This is what I've now got queued up.
 
-Is this (or similar) going to make it into 3.10?
+--y0ulUmNC+osPPQO6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Thu, May 30, 2013 at 02:30:39PM -0700, H Hartley Sweeten wrote:
+> Add a simple sysfs interface to the generic PWM framework.
 
-> 
-> ---
-> 
-> >From 118428bf3b207d9b390a27f32dfef6dc2979078d Mon Sep 17 00:00:00 2001
-> From: Matthew Garrett <matthew.garrett@nebula.com>
-> Date: Sat, 1 Jun 2013 16:06:20 -0400
-> Subject: [PATCH] Modify UEFI anti-bricking code
-> 
-> This patch reworks the UEFI anti-bricking code, including an effective
-> reversion of cc5a080c and 31ff2f20. It turns out that calling
-> QueryVariableInfo() from boot services results in some firmware
-> implementations jumping to physical addresses even after entering virtual
-> mode, so until we have 1:1 mappings for UEFI runtime space this isn't
-> going to work so well.
-> 
-> Reverting these gets us back to the situation where we'd refuse to create
-> variables on some systems because they classify deleted variables as "used"
-> until the firmware triggers a garbage collection run, which they won't do
-> until they reach a lower threshold. This results in it being impossible to
-> install a bootloader, which is unhelpful.
-> 
-> Feedback from Samsung indicates that the firmware doesn't need more than
-> 5KB of storage space for its own purposes, so that seems like a reasonable
-> threshold. However, there's still no guarantee that a platform will attempt
-> garbage collection merely because it drops below this threshold. It seems
-> that this is often only triggered if an attempt to write generates a
-> genuine EFI_OUT_OF_RESOURCES error. We can force that by attempting to
-> create a variable larger than the remaining space. This should fail, but if
-> it somehow succeeds we can then immediately delete it.
-> 
-> I've tested this on the UEFI machines I have available, but I don't have
-> a Samsung and so can't verify that it avoids the bricking problem.
-> 
-> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-> Signed-off-by: Lee, Chun-Y <jlee@suse.com> [ dummy variable cleanup ]
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-> ---
->  arch/x86/boot/compressed/eboot.c      |  47 ---------
->  arch/x86/include/asm/efi.h            |   7 --
->  arch/x86/include/uapi/asm/bootparam.h |   1 -
->  arch/x86/platform/efi/efi.c           | 188 ++++++++++++----------------------
->  4 files changed, 65 insertions(+), 178 deletions(-)
-> 
-> diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-> index 35ee62f..c205035 100644
-> --- a/arch/x86/boot/compressed/eboot.c
-> +++ b/arch/x86/boot/compressed/eboot.c
-> @@ -251,51 +251,6 @@ static void find_bits(unsigned long mask, u8 *pos, u8 *size)
->  	*size = len;
->  }
->  
-> -static efi_status_t setup_efi_vars(struct boot_params *params)
-> -{
-> -	struct setup_data *data;
-> -	struct efi_var_bootdata *efidata;
-> -	u64 store_size, remaining_size, var_size;
-> -	efi_status_t status;
-> -
-> -	if (sys_table->runtime->hdr.revision < EFI_2_00_SYSTEM_TABLE_REVISION)
-> -		return EFI_UNSUPPORTED;
-> -
-> -	data = (struct setup_data *)(unsigned long)params->hdr.setup_data;
-> -
-> -	while (data && data->next)
-> -		data = (struct setup_data *)(unsigned long)data->next;
-> -
-> -	status = efi_call_phys4((void *)sys_table->runtime->query_variable_info,
-> -				EFI_VARIABLE_NON_VOLATILE |
-> -				EFI_VARIABLE_BOOTSERVICE_ACCESS |
-> -				EFI_VARIABLE_RUNTIME_ACCESS, &store_size,
-> -				&remaining_size, &var_size);
-> -
-> -	if (status != EFI_SUCCESS)
-> -		return status;
-> -
-> -	status = efi_call_phys3(sys_table->boottime->allocate_pool,
-> -				EFI_LOADER_DATA, sizeof(*efidata), &efidata);
-> -
-> -	if (status != EFI_SUCCESS)
-> -		return status;
-> -
-> -	efidata->data.type = SETUP_EFI_VARS;
-> -	efidata->data.len = sizeof(struct efi_var_bootdata) -
-> -		sizeof(struct setup_data);
-> -	efidata->data.next = 0;
-> -	efidata->store_size = store_size;
-> -	efidata->remaining_size = remaining_size;
-> -	efidata->max_var_size = var_size;
-> -
-> -	if (data)
-> -		data->next = (unsigned long)efidata;
-> -	else
-> -		params->hdr.setup_data = (unsigned long)efidata;
-> -
-> -}
-> -
->  static efi_status_t setup_efi_pci(struct boot_params *params)
->  {
->  	efi_pci_io_protocol *pci;
-> @@ -1202,8 +1157,6 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
->  
->  	setup_graphics(boot_params);
->  
-> -	setup_efi_vars(boot_params);
-> -
->  	setup_efi_pci(boot_params);
->  
->  	status = efi_call_phys3(sys_table->boottime->allocate_pool,
-> diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
-> index 2fb5d58..60c89f3 100644
-> --- a/arch/x86/include/asm/efi.h
-> +++ b/arch/x86/include/asm/efi.h
-> @@ -102,13 +102,6 @@ extern void efi_call_phys_epilog(void);
->  extern void efi_unmap_memmap(void);
->  extern void efi_memory_uc(u64 addr, unsigned long size);
->  
-> -struct efi_var_bootdata {
-> -	struct setup_data data;
-> -	u64 store_size;
-> -	u64 remaining_size;
-> -	u64 max_var_size;
-> -};
-> -
->  #ifdef CONFIG_EFI
->  
->  static inline bool efi_is_native(void)
-> diff --git a/arch/x86/include/uapi/asm/bootparam.h b/arch/x86/include/uapi/asm/bootparam.h
-> index 0874424..c15ddaf 100644
-> --- a/arch/x86/include/uapi/asm/bootparam.h
-> +++ b/arch/x86/include/uapi/asm/bootparam.h
-> @@ -6,7 +6,6 @@
->  #define SETUP_E820_EXT			1
->  #define SETUP_DTB			2
->  #define SETUP_PCI			3
-> -#define SETUP_EFI_VARS			4
->  
->  /* ram_size flags */
->  #define RAMDISK_IMAGE_START_MASK	0x07FF
-> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-> index 82089d8..5ae2eb0 100644
-> --- a/arch/x86/platform/efi/efi.c
-> +++ b/arch/x86/platform/efi/efi.c
-> @@ -42,7 +42,6 @@
->  #include <linux/io.h>
->  #include <linux/reboot.h>
->  #include <linux/bcd.h>
-> -#include <linux/ucs2_string.h>
->  
->  #include <asm/setup.h>
->  #include <asm/efi.h>
-> @@ -54,12 +53,12 @@
->  
->  #define EFI_DEBUG	1
->  
-> -/*
-> - * There's some additional metadata associated with each
-> - * variable. Intel's reference implementation is 60 bytes - bump that
-> - * to account for potential alignment constraints
-> - */
-> -#define VAR_METADATA_SIZE 64
-> +#define EFI_MIN_RESERVE 5120
+Sorry for taking so long to review this.
+
+>   /sys/class/pwm/
+>   `-- pwmchipN/          for each PWM chip
+>       |-- export         (w/o) ask the kernel to export a PWM channel
+>       |-- npwn           (r/o) number of PWM channels in this PWM chip
+
+"npwm"?
+
+>       |-- pwmX/          for each exported PWM channel
+>       |   |-- duty_ns    (r/w) duty cycle (in nanoseconds)
+>       |   |-- enable     (r/w) enable/disable PWM
+>       |   |-- period_ns  (r/w) period (in nanoseconds)
+
+I'm not sure if we need the _ns suffix. If the documentation already
+specifies that it should be in nanoseconds, shouldn't that be enough?
+
+> diff --git a/Documentation/ABI/testing/sysfs-class-pwm b/Documentation/AB=
+I/testing/sysfs-class-pwm
+[...]
+> +What:		/sys/class/pwm/pwmchipN/pwmX/polarity
+> +Date:		May 2013
+> +KernelVersion:	3.11
+> +Contact:	H Hartley Sweeten <hsweeten@visionengravers.com>
+> +Description:
+> +		Sets the output polarity of the PWM.
+> +		0 is normal polarity
+> +		1 is inversed polarity
+
+I think this was discussed before, and I think it makes sense to use the
+string representation here. polarity =3D 0 or polarity =3D 1 aren't very
+intuitive notations in my opinion.
+
+> diff --git a/Documentation/pwm.txt b/Documentation/pwm.txt
+[...]
+> +The PWM channels are PWM chip specific from 0 to npwn-1.
+
+"npwm-1". "channels are PWM chip specific" sounds a bit confusing. Maybe
+something like "The PWM channels are numbered using a per-chip index
+=66rom 0 to npwm-1." is more precise?
+
+> +When a PWM channel is exported a pwmX directory will be created in the
+> +pwmchipN directory it is associated with, where X is the channel number
+> +that was exported.
+
+"..., where X is the number of the channel that was exported."?
+
+> The following properties will then be available:
 > +
-> +#define EFI_DUMMY_GUID \
-> +	EFI_GUID(0x4424ac57, 0xbe4b, 0x47dd, 0x9e, 0x97, 0xed, 0x50, 0xf0, 0x9f, 0x92, 0xa9)
+> +period_ns - The total period of the PWM (read/write).
+
+"PWM signal"?
+
+> +	Value is in nanoseconds and is the sum of the active and inactive
+> +	time of the PWM. If duty_ns is zero when this property is written
+> +	it will be automatically set to half the period_ns.
+
+I'm not sure that's the best approach. How about deferring the PWM
+configuration until both values have been set? Or only configure the PWM
+channel when it has been enabled, and refuse to enable unless both the
+period and the duty cycle have been set?
+
+> diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
+> index 94ba21e..fb92e1d 100644
+> --- a/drivers/pwm/Makefile
+> +++ b/drivers/pwm/Makefile
+> @@ -1,4 +1,5 @@
+>  obj-$(CONFIG_PWM)		+=3D core.o
+> +obj-$(CONFIG_PWM_SYSFS)		+=3D pwm-sysfs.o
+
+I'd prefer this to simple be named sysfs.[co] in order to differentiate
+it from drivers and make it consistent with the naming of core.[co].
+
+> diff --git a/drivers/pwm/pwm-sysfs.c b/drivers/pwm/pwm-sysfs.c
+[...]
+> +static struct pwm_device *dev_to_pwm_device(struct device *dev)
+> +{
+> +	struct pwm_export *pwm_export =3D dev_to_pwm_export(dev);
+
+Maybe drop the pwm_ prefix on the variable name?
+
+> +static ssize_t pwm_period_ns_store(struct device *dev,
+> +				   struct device_attribute *attr,
+> +				   const char *buf, size_t size)
+> +{
+> +	struct pwm_device *pwm =3D dev_to_pwm_device(dev);
+> +	unsigned int duty =3D pwm->duty;
+> +	unsigned int val;
+> +	int ret;
 > +
-> +static efi_char16_t efi_dummy_name[6] = { 'D', 'U', 'M', 'M', 'Y', 0 };
->  
->  struct efi __read_mostly efi = {
->  	.mps        = EFI_INVALID_TABLE_ADDR,
-> @@ -79,13 +78,6 @@ struct efi_memory_map memmap;
->  static struct efi efi_phys __initdata;
->  static efi_system_table_t efi_systab __initdata;
->  
-> -static u64 efi_var_store_size;
-> -static u64 efi_var_remaining_size;
-> -static u64 efi_var_max_var_size;
-> -static u64 boot_used_size;
-> -static u64 boot_var_size;
-> -static u64 active_size;
-> -
->  unsigned long x86_efi_facility;
->  
->  /*
-> @@ -188,53 +180,8 @@ static efi_status_t virt_efi_get_next_variable(unsigned long *name_size,
->  					       efi_char16_t *name,
->  					       efi_guid_t *vendor)
->  {
-> -	efi_status_t status;
-> -	static bool finished = false;
-> -	static u64 var_size;
-> -
-> -	status = efi_call_virt3(get_next_variable,
-> -				name_size, name, vendor);
-> -
-> -	if (status == EFI_NOT_FOUND) {
-> -		finished = true;
-> -		if (var_size < boot_used_size) {
-> -			boot_var_size = boot_used_size - var_size;
-> -			active_size += boot_var_size;
-> -		} else {
-> -			printk(KERN_WARNING FW_BUG  "efi: Inconsistent initial sizes\n");
-> -		}
-> -	}
-> -
-> -	if (boot_used_size && !finished) {
-> -		unsigned long size = 0;
-> -		u32 attr;
-> -		efi_status_t s;
-> -		void *tmp;
-> -
-> -		s = virt_efi_get_variable(name, vendor, &attr, &size, NULL);
-> -
-> -		if (s != EFI_BUFFER_TOO_SMALL || !size)
-> -			return status;
-> -
-> -		tmp = kmalloc(size, GFP_ATOMIC);
-> -
-> -		if (!tmp)
-> -			return status;
-> -
-> -		s = virt_efi_get_variable(name, vendor, &attr, &size, tmp);
-> -
-> -		if (s == EFI_SUCCESS && (attr & EFI_VARIABLE_NON_VOLATILE)) {
-> -			var_size += size;
-> -			var_size += ucs2_strsize(name, 1024);
-> -			active_size += size;
-> -			active_size += VAR_METADATA_SIZE;
-> -			active_size += ucs2_strsize(name, 1024);
-> -		}
-> -
-> -		kfree(tmp);
-> -	}
-> -
-> -	return status;
-> +	return efi_call_virt3(get_next_variable,
-> +			      name_size, name, vendor);
->  }
->  
->  static efi_status_t virt_efi_set_variable(efi_char16_t *name,
-> @@ -243,34 +190,9 @@ static efi_status_t virt_efi_set_variable(efi_char16_t *name,
->  					  unsigned long data_size,
->  					  void *data)
->  {
-> -	efi_status_t status;
-> -	u32 orig_attr = 0;
-> -	unsigned long orig_size = 0;
-> -
-> -	status = virt_efi_get_variable(name, vendor, &orig_attr, &orig_size,
-> -				       NULL);
-> -
-> -	if (status != EFI_BUFFER_TOO_SMALL)
-> -		orig_size = 0;
-> -
-> -	status = efi_call_virt5(set_variable,
-> -				name, vendor, attr,
-> -				data_size, data);
-> -
-> -	if (status == EFI_SUCCESS) {
-> -		if (orig_size) {
-> -			active_size -= orig_size;
-> -			active_size -= ucs2_strsize(name, 1024);
-> -			active_size -= VAR_METADATA_SIZE;
-> -		}
-> -		if (data_size) {
-> -			active_size += data_size;
-> -			active_size += ucs2_strsize(name, 1024);
-> -			active_size += VAR_METADATA_SIZE;
-> -		}
-> -	}
-> -
-> -	return status;
-> +	return efi_call_virt5(set_variable,
-> +			      name, vendor, attr,
-> +			      data_size, data);
->  }
->  
->  static efi_status_t virt_efi_query_variable_info(u32 attr,
-> @@ -786,9 +708,6 @@ void __init efi_init(void)
->  	char vendor[100] = "unknown";
->  	int i = 0;
->  	void *tmp;
-> -	struct setup_data *data;
-> -	struct efi_var_bootdata *efi_var_data;
-> -	u64 pa_data;
->  
->  #ifdef CONFIG_X86_32
->  	if (boot_params.efi_info.efi_systab_hi ||
-> @@ -806,22 +725,6 @@ void __init efi_init(void)
->  	if (efi_systab_init(efi_phys.systab))
->  		return;
->  
-> -	pa_data = boot_params.hdr.setup_data;
-> -	while (pa_data) {
-> -		data = early_ioremap(pa_data, sizeof(*efi_var_data));
-> -		if (data->type == SETUP_EFI_VARS) {
-> -			efi_var_data = (struct efi_var_bootdata *)data;
-> -
-> -			efi_var_store_size = efi_var_data->store_size;
-> -			efi_var_remaining_size = efi_var_data->remaining_size;
-> -			efi_var_max_var_size = efi_var_data->max_var_size;
-> -		}
-> -		pa_data = data->next;
-> -		early_iounmap(data, sizeof(*efi_var_data));
-> -	}
-> -
-> -	boot_used_size = efi_var_store_size - efi_var_remaining_size;
-> -
->  	set_bit(EFI_SYSTEM_TABLES, &x86_efi_facility);
->  
->  	/*
-> @@ -1085,6 +988,13 @@ void __init efi_enter_virtual_mode(void)
->  		runtime_code_page_mkexec();
->  
->  	kfree(new_memmap);
+> +	ret =3D kstrtouint(buf, 0, &val);
+> +	if (ret)
+> +		return ret;
 > +
-> +	/* clean DUMMY object */
-> +	efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
-> +			 EFI_VARIABLE_NON_VOLATILE |
-> +			 EFI_VARIABLE_BOOTSERVICE_ACCESS |
-> +			 EFI_VARIABLE_RUNTIME_ACCESS,
-> +			 0, NULL);
->  }
->  
->  /*
-> @@ -1136,33 +1046,65 @@ efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
->  	efi_status_t status;
->  	u64 storage_size, remaining_size, max_size;
->  
-> +	if (!(attributes & EFI_VARIABLE_NON_VOLATILE))
-> +		return 0;
+> +	/* if not set, default to 50% duty cycle */
+> +	if (duty =3D=3D 0)
+> +		duty =3D val / 2;
+
+How does this differentiate between the case where the user explicitly
+sets the duty cycle to 0 to "disable" the PWM?
+
+> +static ssize_t pwm_enable_store(struct device *dev,
+> +				struct device_attribute *attr,
+> +				const char *buf, size_t size)
+> +{
+> +	struct pwm_device *pwm =3D dev_to_pwm_device(dev);
+> +	int val;
+> +	int ret;
+
+These could go on one line.
+
 > +
->  	status = efi.query_variable_info(attributes, &storage_size,
->  					 &remaining_size, &max_size);
->  	if (status != EFI_SUCCESS)
->  		return status;
->  
-> -	if (!max_size && remaining_size > size)
-> -		printk_once(KERN_ERR FW_BUG "Broken EFI implementation"
-> -			    " is returning MaxVariableSize=0\n");
->  	/*
->  	 * Some firmware implementations refuse to boot if there's insufficient
->  	 * space in the variable store. We account for that by refusing the
->  	 * write if permitting it would reduce the available space to under
-> -	 * 50%. However, some firmware won't reclaim variable space until
-> -	 * after the used (not merely the actively used) space drops below
-> -	 * a threshold. We can approximate that case with the value calculated
-> -	 * above. If both the firmware and our calculations indicate that the
-> -	 * available space would drop below 50%, refuse the write.
-> +	 * 5KB. This figure was provided by Samsung, so should be safe.
->  	 */
-> +	if ((remaining_size - size < EFI_MIN_RESERVE) &&
-> +		!efi_no_storage_paranoia) {
+> +	ret =3D kstrtoint(buf, 0, &val);
+> +	if (ret)
+> +		return ret;
 > +
-> +		/*
-> +		 * Triggering garbage collection may require that the firmware
-> +		 * generate a real EFI_OUT_OF_RESOURCES error. We can force
-> +		 * that by attempting to use more space than is available.
-> +		 */
-> +		unsigned long dummy_size = remaining_size + 1024;
-> +		void *dummy = kmalloc(dummy_size, GFP_ATOMIC);
+> +	switch (val) {
+> +	case 0:
+> +		pwm_disable(pwm);
+> +		ret =3D 0;
+
+I don't think ret can be anything other than 0 given the above validity
+check.
+
+> +static ssize_t pwm_polarity_show(struct device *dev,
+> +				 struct device_attribute *attr,
+> +				 char *buf)
+> +{
+> +	const struct pwm_device *pwm =3D dev_to_pwm_device(dev);
 > +
-> +		status = efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
-> +					  EFI_VARIABLE_NON_VOLATILE |
-> +					  EFI_VARIABLE_BOOTSERVICE_ACCESS |
-> +					  EFI_VARIABLE_RUNTIME_ACCESS,
-> +					  dummy_size, dummy);
+> +	return sprintf(buf, "%d\n", pwm->polarity);
+> +}
 > +
-> +		if (status == EFI_SUCCESS) {
-> +			/*
-> +			 * This should have failed, so if it didn't make sure
-> +			 * that we delete it...
-> +			 */
-> +			efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
-> +					 EFI_VARIABLE_NON_VOLATILE |
-> +					 EFI_VARIABLE_BOOTSERVICE_ACCESS |
-> +					 EFI_VARIABLE_RUNTIME_ACCESS,
-> +					 0, dummy);
-> +		}
->  
-> -	if (!storage_size || size > remaining_size ||
-> -	    (max_size && size > max_size))
-> -		return EFI_OUT_OF_RESOURCES;
-> +		/*
-> +		 * The runtime code may now have triggered a garbage collection
-> +		 * run, so check the variable info again
-> +		 */
-> +		status = efi.query_variable_info(attributes, &storage_size,
-> +						 &remaining_size, &max_size);
->  
-> -	if (!efi_no_storage_paranoia &&
-> -	    ((active_size + size + VAR_METADATA_SIZE > storage_size / 2) &&
-> -	     (remaining_size - size < storage_size / 2)))
-> -		return EFI_OUT_OF_RESOURCES;
-> +		if (status != EFI_SUCCESS)
-> +			return status;
+> +static ssize_t pwm_polarity_store(struct device *dev,
+> +				  struct device_attribute *attr,
+> +				  const char *buf, size_t size)
+> +{
+> +	struct pwm_device *pwm =3D dev_to_pwm_device(dev);
+> +	enum pwm_polarity polarity;
+> +	int val;
+> +	int ret;
+
+Could go on a single line.
+
 > +
-> +		/*
-> +		 * There still isn't enough room, so return an error
-> +		 */
-> +		if (remaining_size - size < EFI_MIN_RESERVE)
-> +			return EFI_OUT_OF_RESOURCES;
+> +	ret =3D kstrtoint(buf, 0, &val);
+> +	if (ret)
+> +		return ret;
+> +
+> +	switch (val) {
+> +	case 0:
+> +		polarity =3D PWM_POLARITY_NORMAL;
+> +		break;
+> +	case 1:
+> +		polarity =3D PWM_POLARITY_INVERSED;
+> +		break;
+> +	default:
+> +		return -EINVAL;
 > +	}
->  
->  	return EFI_SUCCESS;
->  }
-> -- 
-> 1.8.1.4
-> 
-> -- 
-> Matt Fleming, Intel Open Source Technology Center
+> +
+> +	ret =3D pwm_set_polarity(pwm, polarity);
+> +
+> +	return ret ? : size;
+> +}
+> +
+> +static DEVICE_ATTR(period_ns, 0644, pwm_period_ns_show, pwm_period_ns_st=
+ore);
+> +static DEVICE_ATTR(duty_ns, 0644, pwm_duty_ns_show, pwm_duty_ns_store);
+> +static DEVICE_ATTR(enable, 0644, pwm_enable_show, pwm_enable_store);
+> +static DEVICE_ATTR(polarity, 0644, pwm_polarity_show, pwm_polarity_store=
+);
+> +
+> +static struct attribute *pwm_attrs[] =3D {
+> +	&dev_attr_period_ns.attr,
+> +	&dev_attr_duty_ns.attr,
+> +	&dev_attr_enable.attr,
+> +	&dev_attr_polarity.attr,
+> +	NULL
+> +};
+> +
+> +static struct attribute_group pwm_attr_group =3D {
+> +	.attrs		=3D pwm_attrs,
+> +};
 
--- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+static const?
+
+> +static void pwm_export_release(struct device *dev)
+> +{
+> +	struct pwm_export *pwm_export =3D dev_to_pwm_export(dev);
+> +
+> +	kfree(pwm_export);
+> +}
+
+Again, the pwm_ prefix for the variable name seems gratuitous here.
+
+> +
+> +static int pwm_export(struct device *dev, struct pwm_device *pwm)
+> +{
+> +	struct pwm_export *pwm_export;
+
+And here as well.
+
+> +static int pwm_unexport_match(struct device *dev, void *data)
+> +{
+> +	return dev_to_pwm_device(dev) =3D=3D data;
+> +}
+> +
+> +static int pwm_unexport(struct device *dev, struct pwm_device *pwm)
+
+I think the current naming of variables is very confusing. It's hard to
+keep track of what's what. Maybe dev --> parent, or dev --> chip?
+Then...
+
+> +{
+> +	struct device *export_dev;
+
+export_dev --> dev, and...
+
+> +	struct pwm_export *pwm_export;
+
+pwm_export --> export?
+
+> +
+> +	if (!test_and_clear_bit(PWMF_EXPORTED, &pwm->flags))
+> +		return -ENODEV;
+> +
+> +	export_dev =3D device_find_child(dev, pwm, pwm_unexport_match);
+> +	pwm_export =3D dev_to_pwm_export(export_dev);
+> +	put_device(&pwm_export->dev);
+> +	device_unregister(&pwm_export->dev);
+
+device_unregister() already calls put_device(), why do you do it again
+here?
+
+> +	pwm_put(pwm);
+> +
+> +	return 0;
+> +}
+> +
+
+[...]
+> +void pwmchip_sysfs_export(struct pwm_chip *chip)
+> +{
+> +	/*
+> +	 * If device_create() fails the pwm_chip is still usable by
+> +	 * the kernel its just not exported.
+> +	 */
+> +	device_create(&pwm_class, chip->dev, MKDEV(0, 0), chip,
+> +		      "pwmchip%d", chip->base);
+> +}
+
+Maybe a warning message would still be useful in that case?
+
+> +void pwmchip_sysfs_unexport(struct pwm_chip *chip)
+> +{
+> +	struct device *dev;
+> +
+> +	dev =3D class_find_device(&pwm_class, NULL, chip, pwmchip_sysfs_match);
+> +	if (dev) {
+> +		put_device(dev);
+> +		device_unregister(dev);
+
+device_unregister() already calls put_device(), why do you do it again
+here?
+
+> diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+[...]
+> +	unsigned int		duty;	/* in nanoseconds */
+
+I'd prefer this to be called duty_cycle.
+
+Thierry
+
+--y0ulUmNC+osPPQO6
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRtiImAAoJEN0jrNd/PrOhSisP/1ItS3ha7PNizRkL9SpBTYNG
+Hu3by3fP6K8DXI6bsVi2qFnM2qx7hWcS2uF70fHc78IFTx/BAZcVADvJPeBjKK1b
+P3BIepCrR5U7o7LKneEaQAOyuKQdRQd2KuJ537jFeto3H7GJJz0cVwd+zurvU80N
+DRwg3WENY90qsY+x5aERSySTSdgQmsCy3IXK6smRfR3czjb05D7u/Z9wtp7FKn/9
+PuX6kIICsZlHEqKD1om8VctB6OchwvJfLBHfV+I9U7Fgn3qus2maKoAVClLvQlNg
+Rky9zNItgks9lCJXPzdonSj4hNsJLdoKFL38M/FheoeEKElv73TxvINSirbaxS5W
+RhivwlXFxK4CoUzs97mcNmbWam1juu2JrR1IIBJkCRftochO0o4cFNQvPtooJiLM
+bMbI1KzA2EyS07vOVkKOahzBt9klELHEg5Ll6RZbpjRndKuH5OphrtNKDaBusP9f
+hTiVDmUUvQEgMRXnRLt7fYXhNec4aiwfNaHTIE9Ycc+pPNXv+HcdIGCw7IUOsrWu
+UQm72AU0r+8GxvISK9j0S/LZEY0EB5cLI8mO5UnLEcRrOBfZH4RLORfo1sJJ3SAz
+OQ6hPdrnI4dGl/qXHcynLYlYKV9cC2r14FVgzsD0I/X1d1EWkV80sSnYU0gf8Mle
+Uf6blAhzPH8EmGGH+EY4
+=bqEj
+-----END PGP SIGNATURE-----
+
+--y0ulUmNC+osPPQO6--
