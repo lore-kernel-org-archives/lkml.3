@@ -1,61 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab3FJNs3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 09:48:29 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:34734 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753360Ab3FJNs2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 09:48:28 -0400
-Date: Mon, 10 Jun 2013 15:48:17 +0200
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-To: HATAYAMA Daisuke <d.hatayama@gmail.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH v5 2/5] s390/vmcore: Use ELF header in new memory
- feature
-Message-ID: <20130610154817.3275672f@holzheu>
-In-Reply-To: <CABOkKT13E-nkhu1j06OPqR2dMiK6WbTMp2rPj4mzom_+uDBziQ@mail.gmail.com>
-References: <1370624161-2298-1-git-send-email-holzheu@linux.vnet.ibm.com>
-	<1370624161-2298-3-git-send-email-holzheu@linux.vnet.ibm.com>
-	<CABOkKT13E-nkhu1j06OPqR2dMiK6WbTMp2rPj4mzom_+uDBziQ@mail.gmail.com>
-Organization: IBM
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061013-3548-0000-0000-000005A225C5
+	id S1753472Ab3FJNvE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 09:51:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19515 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751308Ab3FJNvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 09:51:02 -0400
+Date: Mon, 10 Jun 2013 15:51:56 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 10/27] genirq: Split __irq_reserve_irqs from
+ irq_alloc_descs
+Message-ID: <20130610135154.GA11905@dhcp-26-207.brq.redhat.com>
+References: <1370644273-10495-1-git-send-email-yinghai@kernel.org>
+ <1370644273-10495-11-git-send-email-yinghai@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370644273-10495-11-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Jun 2013 22:36:57 +0900
-HATAYAMA Daisuke <d.hatayama@gmail.com> wrote:
-
-> > -static int setup_kdump_elfcorehdr(void)
-> > +void elfcorehdr_free(void)
-> >  {
-> > -       size_t elfcorebuf_sz;
-> > -       char *elfcorebuf;
-> > -
-> > -       if (!OLDMEM_BASE || is_kdump_kernel())
-> > -               return -EINVAL;
-> > -       s390_elf_corehdr_create(&elfcorebuf, &elfcorebuf_sz);
-> > -       elfcorehdr_addr = (unsigned long long) elfcorebuf;
-> > -       elfcorehdr_size = elfcorebuf_sz;
-> > -       return 0;
-> > +       if (!elfcorehdr_newmem)
-> > +               return;
-> > +       vfree(elfcorehdr_newmem);  
+On Fri, Jun 07, 2013 at 03:30:56PM -0700, Yinghai Lu wrote:
+> irq_alloc_descs and irq_reserve_irqs are almost the same.
+> Separate code out to __irq_reserved_irqs, and other two reuse
+> __irq_reserve_irqs.
 > 
-> kfree is correct here?
+> We will use __irq_reserve_irqs for coming ioapic hotplug support.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Alexander Gordeev <agordeev@redhat.com>
+> ---
+>  include/linux/irq.h  |  1 +
+>  kernel/irq/irqdesc.c | 54 ++++++++++++++++++++++++++++++----------------------
+>  2 files changed, 32 insertions(+), 23 deletions(-)
+> 
+> diff --git a/include/linux/irq.h b/include/linux/irq.h
+> index bc4e066..4e0fcbb 100644
+> --- a/include/linux/irq.h
+> +++ b/include/linux/irq.h
+> @@ -600,6 +600,7 @@ int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
+>  
+>  void irq_free_descs(unsigned int irq, unsigned int cnt);
+>  int irq_reserve_irqs(unsigned int from, unsigned int cnt);
+> +int __irq_reserve_irqs(int irq, unsigned int from, unsigned int cnt);
+>  
+>  static inline void irq_free_desc(unsigned int irq)
+>  {
+> diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+> index 192a302..3b9fb92 100644
+> --- a/kernel/irq/irqdesc.c
+> +++ b/kernel/irq/irqdesc.c
+> @@ -340,18 +340,15 @@ void irq_free_descs(unsigned int from, unsigned int cnt)
+>  EXPORT_SYMBOL_GPL(irq_free_descs);
+>  
+>  /**
+> - * irq_alloc_descs - allocate and initialize a range of irq descriptors
+> - * @irq:	Allocate for specific irq number if irq >= 0
+> + * __irq_reserve_descs - reserve and initialize a range of irq descriptors
+> + * @irq:	Reserve for specific irq number if irq >= 0
+>   * @from:	Start the search from this irq number
+> - * @cnt:	Number of consecutive irqs to allocate.
+> - * @node:	Preferred node on which the irq descriptor should be allocated
+> - * @owner:	Owning module (can be NULL)
+> + * @cnt:	Number of consecutive irqs to reserve.
+>   *
+>   * Returns the first irq number or error code
+>   */
+>  int __ref
+> -__irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
+> -		  struct module *owner)
+> +__irq_reserve_irqs(int irq, unsigned int from, unsigned int cnt)
+>  {
+>  	int start, ret;
+>  
+> @@ -369,7 +366,7 @@ __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
+>  	start = bitmap_find_next_zero_area(allocated_irqs, IRQ_BITMAP_BITS,
+>  					   from, cnt, 0);
+>  	ret = -EEXIST;
+> -	if (irq >=0 && start != irq)
+> +	if (irq >= 0 && start != irq)
+>  		goto err;
+>  
+>  	if (start + cnt > nr_irqs) {
+> @@ -380,12 +377,36 @@ __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
+>  
+>  	bitmap_set(allocated_irqs, start, cnt);
+>  	mutex_unlock(&sparse_irq_lock);
+> -	return alloc_descs(start, cnt, node, owner);
+> +	return start;
+>  
+>  err:
+>  	mutex_unlock(&sparse_irq_lock);
+>  	return ret;
+>  }
+> +
+> +/**
+> + * irq_alloc_descs - allocate and initialize a range of irq descriptors
+> + * @irq:	Allocate for specific irq number if irq >= 0
+> + * @from:	Start the search from this irq number
+> + * @cnt:	Number of consecutive irqs to allocate.
+> + * @node:	Preferred node on which the irq descriptor should be allocated
+> + * @owner:	Owning module (can be NULL)
+> + *
+> + * Returns the first irq number or error code
+> + */
+> +int __ref
+> +__irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
+> +		  struct module *owner)
+> +{
+> +	int start;
+> +
+> +	start = __irq_reserve_irqs(irq, from, cnt);
+> +
+> +	if (start < 0)
+> +		return start;
+> +
+> +	return alloc_descs(start, cnt, node, owner);
 
-You are right, I fixed that!
+I think alloc_descs() fail path is needed before return.
 
-Thanks!
-Michael
+> +}
+>  EXPORT_SYMBOL_GPL(__irq_alloc_descs);
+>  
+>  /**
+> @@ -397,20 +418,7 @@ EXPORT_SYMBOL_GPL(__irq_alloc_descs);
+>   */
+>  int irq_reserve_irqs(unsigned int from, unsigned int cnt)
+>  {
+> -	unsigned int start;
+> -	int ret = 0;
+> -
+> -	if (!cnt || (from + cnt) > nr_irqs)
+> -		return -EINVAL;
+> -
+> -	mutex_lock(&sparse_irq_lock);
+> -	start = bitmap_find_next_zero_area(allocated_irqs, nr_irqs, from, cnt, 0);
+> -	if (start == from)
+> -		bitmap_set(allocated_irqs, start, cnt);
+> -	else
+> -		ret = -EEXIST;
+> -	mutex_unlock(&sparse_irq_lock);
+> -	return ret;
+> +	return __irq_reserve_irqs(from, from, cnt);
+>  }
+>  
+>  /**
+> -- 
+> 1.8.1.4
+> 
 
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
