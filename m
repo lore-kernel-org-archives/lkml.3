@@ -1,180 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122Ab3FJKkg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 06:40:36 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44298 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751843Ab3FJKke (ORCPT
+	id S1753138Ab3FJKn3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 06:43:29 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:52985 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751843Ab3FJKn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 06:40:34 -0400
-Date: Mon, 10 Jun 2013 11:40:32 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Stuart Menefy <stuart.menefy@st.com>, Mark Brown <broonie@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH v2 09/11] ARM:stixxxx: Add stixxxx options to
- multi_v7_defconfig
-Message-ID: <20130610104032.GA2513@e106331-lin.cambridge.arm.com>
-References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com>
- <1370856477-7237-1-git-send-email-srinivas.kandagatla@st.com>
+	Mon, 10 Jun 2013 06:43:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370856477-7237-1-git-send-email-srinivas.kandagatla@st.com>
-Thread-Topic: [PATCH v2 09/11] ARM:stixxxx: Add stixxxx options to
- multi_v7_defconfig
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1370274671-23812-1-git-send-email-pranavkumar@linaro.org>
+References: <1370274671-23812-1-git-send-email-pranavkumar@linaro.org>
+Date: Mon, 10 Jun 2013 16:13:27 +0530
+Message-ID: <CAAHg+HiWNumV52BmiGmWyGTq7a=JH5O2ptQuHt7ywjnWzUYcvg@mail.gmail.com>
+Subject: Re: [PATCH] arm64: Add support to pass earlyprintk argument via
+ device tree
+From: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+To: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Cc: "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
+        Anup Patel <anup.patel@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 10:27:57AM +0100, Srinivas KANDAGATLA wrote:
-> This patch adds stih415 and stih416 support to multi_v7_defconfig.
+Hi,
 
-This seems to drop a few options also:
+On 3 June 2013 21:21, Pranavkumar Sawargaonkar <pranavkumar@linaro.org> wrote:
+> This patch adds support for defining and passing earlyprintk
+> related information i.e. device and address information via
+> device tree by adding it inside "chosen" node.
+>
+> This will help user to just specify "earlyprintk" from bootargs
+> without actually knowing the address and device to enable
+> earlyprintk.
+>
+> Mechanism:
+>
+> One can just append earlyprintk=device-type,address (same as we pass
+> through command line) in "/chosen" node to notify kernel which is the
+> earlyprintk device and what is its address.
+>
+> Backward Compatibility:
+>
+> This patch also allows existing method of specifying earlyprintk
+> parameter via bootargs.
+>
+> Existing method i.e. passing via bootargs will still have precedence
+> over device tree i.e. if one specifies earlyprintk=device-type,address
+> in bootargs then kernel will use information from bootargs instead of
+> device tree.
+>
+> If user just specifies earlyprintk (without =...) then kernel will
+> look for device tree earlyprintk parameter.
+>
+> Signed-off-by: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+> Signed-off-by: Anup Patel <anup.patel@linaro.org>
+> ---
+>  arch/arm64/kernel/early_printk.c |    7 +++++++
+>  arch/arm64/kernel/setup.c        |   21 ++++++++++++++++++++-
+>  2 files changed, 27 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/arm64/kernel/early_printk.c b/arch/arm64/kernel/early_printk.c
+> index fbb6e18..4e6f845 100644
+> --- a/arch/arm64/kernel/early_printk.c
+> +++ b/arch/arm64/kernel/early_printk.c
+> @@ -29,6 +29,8 @@
+>  static void __iomem *early_base;
+>  static void (*printch)(char ch);
+>
+> +extern char *earlyprintk_dt_args;
+> +
+>  /*
+>   * PL011 single character TX.
+>   */
+> @@ -116,6 +118,11 @@ static int __init setup_early_printk(char *buf)
+>         phys_addr_t paddr = 0;
+>
+>         if (!buf) {
+> +               /* Try to check if Device Tree has this argument or not ? */
+> +               buf = earlyprintk_dt_args;
+> +       }
+> +
+> +       if (!buf) {
+>                 pr_warning("No earlyprintk arguments passed.\n");
+>                 return 0;
+>         }
+> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+> index 6a9a532..fb2d56f 100644
+> --- a/arch/arm64/kernel/setup.c
+> +++ b/arch/arm64/kernel/setup.c
+> @@ -60,6 +60,8 @@ EXPORT_SYMBOL(processor_id);
+>  unsigned int elf_hwcap __read_mostly;
+>  EXPORT_SYMBOL_GPL(elf_hwcap);
+>
+> +char *earlyprintk_dt_args;
+> +
+>  static const char *cpu_name;
+>  static const char *machine_name;
+>  phys_addr_t __fdt_pointer __initdata;
+> @@ -122,6 +124,23 @@ static void __init setup_processor(void)
+>         elf_hwcap = 0;
+>  }
+>
+> +int __init early_init_dt_scan_chosen_arm64(unsigned long node,
+> +                                          const char *uname,
+> +                                          int depth, void *data)
+> +{
+> +       char *prop;
+> +
+> +       /* Check if this is chosen node */
+> +       if (early_init_dt_scan_chosen(node, uname, depth, data) == 0)
+> +               return 0;
+> +
+> +       prop = of_get_flat_dt_prop(node, "earlyprintk", NULL);
+> +       if (prop)
+> +               earlyprintk_dt_args = prop;
+> +
+> +       return 1;
+> +}
+> +
+>  static void __init setup_machine_fdt(phys_addr_t dt_phys)
+>  {
+>         struct boot_param_header *devtree;
+> @@ -165,7 +184,7 @@ static void __init setup_machine_fdt(phys_addr_t dt_phys)
+>         pr_info("Machine: %s\n", machine_name);
+>
+>         /* Retrieve various information from the /chosen node */
+> -       of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
+> +       of_scan_flat_dt(early_init_dt_scan_chosen_arm64, boot_command_line);
+>         /* Initialize {size,address}-cells info */
+>         of_scan_flat_dt(early_init_dt_scan_root, NULL);
+>         /* Setup memory, calling early_init_dt_add_memory_arch */
+> --
+> 1.7.9.5
+>
 
-CONFIG_ARM_ARCH_TIMER
-CONFIG_ARM_ERRATA_754322
-CONFIG_EXPERIMENTAL
-CONFIG_GPIO_PL061
-CONFIG_MMC_WMT
-
-I just applied this to v3.10-rc5, and ran `make ARCH=arm multi_v7_defconfig`.
-It seems MMC_WMT and GPIO_PL061 get selected elsewhere, but ARM_ARCH_TIMER and
-ARM_ERRATA_754322 are left unselected.
+Ccing to devicetree-discuss@lists.ozlabs.org for comments.
+Original RFC posted for this patch is:
+https://patchwork.kernel.org/patch/2601411/
 
 Thanks,
-Mark.
-
-> 
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> CC: Arnd Bergmann <arnd@arndb.de>
-> ---
->  arch/arm/configs/multi_v7_defconfig |   32 +++++++++++++++-----------------
->  1 files changed, 15 insertions(+), 17 deletions(-)
-> 
-> diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-> index 2e67a27..8a5cd5c 100644
-> --- a/arch/arm/configs/multi_v7_defconfig
-> +++ b/arch/arm/configs/multi_v7_defconfig
-> @@ -1,23 +1,20 @@
-> -CONFIG_EXPERIMENTAL=y
->  CONFIG_NO_HZ=y
->  CONFIG_HIGH_RES_TIMERS=y
->  CONFIG_ARCH_MVEBU=y
->  CONFIG_MACH_ARMADA_370=y
-> -CONFIG_ARCH_SIRF=y
->  CONFIG_MACH_ARMADA_XP=y
->  CONFIG_ARCH_HIGHBANK=y
->  CONFIG_ARCH_SOCFPGA=y
-> -CONFIG_ARCH_SUNXI=y
-> -CONFIG_ARCH_WM8850=y
-> -# CONFIG_ARCH_VEXPRESS_CORTEX_A5_A9_ERRATA is not set
-> -CONFIG_ARCH_ZYNQ=y
-> -CONFIG_ARM_ERRATA_754322=y
->  CONFIG_PLAT_SPEAR=y
->  CONFIG_ARCH_SPEAR13XX=y
->  CONFIG_MACH_SPEAR1310=y
->  CONFIG_MACH_SPEAR1340=y
-> +CONFIG_ARCH_STIXXXX=y
-> +CONFIG_ARCH_SUNXI=y
-> +CONFIG_ARCH_SIRF=y
-> +CONFIG_ARCH_WM8850=y
-> +CONFIG_ARCH_ZYNQ=y
->  CONFIG_SMP=y
-> -CONFIG_ARM_ARCH_TIMER=y
->  CONFIG_AEABI=y
->  CONFIG_HIGHMEM=y
->  CONFIG_HIGHPTE=y
-> @@ -25,27 +22,30 @@ CONFIG_ARM_APPENDED_DTB=y
->  CONFIG_VFP=y
->  CONFIG_NEON=y
->  CONFIG_NET=y
-> +CONFIG_DEVTMPFS=y
->  CONFIG_BLK_DEV_SD=y
->  CONFIG_ATA=y
-> +CONFIG_SATA_AHCI_PLATFORM=y
->  CONFIG_SATA_HIGHBANK=y
->  CONFIG_SATA_MV=y
-> -CONFIG_SATA_AHCI_PLATFORM=y
->  CONFIG_NETDEVICES=y
->  CONFIG_NET_CALXEDA_XGMAC=y
->  CONFIG_SMSC911X=y
->  CONFIG_STMMAC_ETH=y
-> +CONFIG_KEYBOARD_SPEAR=y
->  CONFIG_SERIO_AMBAKMI=y
->  CONFIG_SERIAL_8250=y
->  CONFIG_SERIAL_8250_CONSOLE=y
->  CONFIG_SERIAL_8250_DW=y
-> -CONFIG_KEYBOARD_SPEAR=y
->  CONFIG_SERIAL_AMBA_PL011=y
->  CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
-> -CONFIG_SERIAL_OF_PLATFORM=y
->  CONFIG_SERIAL_SIRFSOC=y
->  CONFIG_SERIAL_SIRFSOC_CONSOLE=y
->  CONFIG_SERIAL_VT8500=y
->  CONFIG_SERIAL_VT8500_CONSOLE=y
-> +CONFIG_SERIAL_OF_PLATFORM=y
-> +CONFIG_SERIAL_ST_ASC=y
-> +CONFIG_SERIAL_ST_ASC_CONSOLE=y
->  CONFIG_IPMI_HANDLER=y
->  CONFIG_IPMI_SI=y
->  CONFIG_I2C=y
-> @@ -54,7 +54,6 @@ CONFIG_I2C_SIRF=y
->  CONFIG_SPI=y
->  CONFIG_SPI_PL022=y
->  CONFIG_SPI_SIRF=y
-> -CONFIG_GPIO_PL061=y
->  CONFIG_FB=y
->  CONFIG_FB_ARMCLCD=y
->  CONFIG_FB_WM8505=y
-> @@ -67,7 +66,6 @@ CONFIG_MMC_ARMMMCI=y
->  CONFIG_MMC_SDHCI=y
->  CONFIG_MMC_SDHCI_PLTFM=y
->  CONFIG_MMC_SDHCI_SPEAR=y
-> -CONFIG_MMC_WMT=y
->  CONFIG_EDAC=y
->  CONFIG_EDAC_MM_EDAC=y
->  CONFIG_EDAC_HIGHBANK_MC=y
-> @@ -75,9 +73,9 @@ CONFIG_EDAC_HIGHBANK_L2=y
->  CONFIG_RTC_CLASS=y
->  CONFIG_RTC_DRV_PL031=y
->  CONFIG_RTC_DRV_VT8500=y
-> -CONFIG_PWM=y
-> -CONFIG_PWM_VT8500=y
->  CONFIG_DMADEVICES=y
-> -CONFIG_PL330_DMA=y
-> -CONFIG_SIRF_DMA=y
->  CONFIG_DW_DMAC=y
-> +CONFIG_SIRF_DMA=y
-> +CONFIG_PL330_DMA=y
-> +CONFIG_PWM=y
-> +CONFIG_PWM_VT8500=y
-> -- 
-> 1.7.6.5
-> 
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
-> 
+Pranav
