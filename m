@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab3FJLvh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 07:51:37 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:49949 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753795Ab3FJLuq (ORCPT
+	id S1753748Ab3FJLui (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 07:50:38 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:48176 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753721Ab3FJLud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 07:50:46 -0400
+	Mon, 10 Jun 2013 07:50:33 -0400
 From: Tushar Behera <tushar.behera@linaro.org>
 To: linux-kernel@vger.kernel.org
-Cc: thierry.reding@gmail.com, patches@linaro.org, linux-pci@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 13/15] pci: mvebu: Convert to use devm_ioremap_resource
-Date: Mon, 10 Jun 2013 17:05:11 +0530
-Message-Id: <1370864113-17895-14-git-send-email-tushar.behera@linaro.org>
+Cc: thierry.reding@gmail.com, patches@linaro.org, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 10/15] Staging: netlogic: Convert to use devm_ioremap_resource
+Date: Mon, 10 Jun 2013 17:05:08 +0530
+Message-Id: <1370864113-17895-11-git-send-email-tushar.behera@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
 References: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
@@ -26,37 +26,33 @@ introduced devm_ioremap_resource() and deprecated the use of
 devm_request_and_ioremap().
 
 Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-CC: linux-pci@vger.kernel.org
-CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: devel@driverdev.osuosl.org
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/pci/host/pci-mvebu.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/staging/netlogic/xlr_net.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/pci/host/pci-mvebu.c b/drivers/pci/host/pci-mvebu.c
-index 13a633b..e714876 100644
---- a/drivers/pci/host/pci-mvebu.c
-+++ b/drivers/pci/host/pci-mvebu.c
-@@ -752,7 +752,7 @@ mvebu_pcie_map_registers(struct platform_device *pdev,
- 	if (ret)
- 		return NULL;
+diff --git a/drivers/staging/netlogic/xlr_net.c b/drivers/staging/netlogic/xlr_net.c
+index dd98cb1..c30fa54 100644
+--- a/drivers/staging/netlogic/xlr_net.c
++++ b/drivers/staging/netlogic/xlr_net.c
+@@ -1020,12 +1020,12 @@ static int xlr_net_probe(struct platform_device *pdev)
+ 		goto err_gmac;
+ 	}
  
--	return devm_request_and_ioremap(&pdev->dev, &regs);
-+	return devm_ioremap_resource(&pdev->dev, &regs);
- }
+-	ndev->base_addr = (unsigned long) devm_request_and_ioremap
++	ndev->base_addr = (unsigned long) devm_ioremap_resource
+ 		(&pdev->dev, res);
+-	if (!ndev->base_addr) {
++	if (IS_ERR_VALUE(ndev->base_addr)) {
+ 		dev_err(&pdev->dev,
+-				"devm_request_and_ioremap failed\n");
+-		return -EBUSY;
++				"devm_ioremap_resource failed\n");
++		return ndev->base_addr;
+ 	}
  
- static int __init mvebu_pcie_probe(struct platform_device *pdev)
-@@ -842,9 +842,10 @@ static int __init mvebu_pcie_probe(struct platform_device *pdev)
- 			continue;
- 
- 		port->base = mvebu_pcie_map_registers(pdev, child, port);
--		if (!port->base) {
-+		if (IS_ERR(port->base)) {
- 			dev_err(&pdev->dev, "PCIe%d.%d: cannot map registers\n",
- 				port->port, port->lane);
-+			port->base = NULL;
- 			continue;
- 		}
- 
+ 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 -- 
 1.7.9.5
 
