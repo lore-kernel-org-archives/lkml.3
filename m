@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab3FJIl4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 04:41:56 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:62356 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752520Ab3FJIjr (ORCPT
+	id S1752763Ab3FJIqA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 04:46:00 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:54324 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752600Ab3FJIp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 04:39:47 -0400
-Message-ID: <51B590C9.9080009@gmail.com>
-Date: Mon, 10 Jun 2013 16:39:37 +0800
+	Mon, 10 Jun 2013 04:45:59 -0400
+Message-ID: <51B5923F.9050801@gmail.com>
+Date: Mon, 10 Jun 2013 16:45:51 +0800
 From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
@@ -16,136 +16,106 @@ To: Gleb Natapov <gleb@redhat.com>
 CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, avi.kivity@gmail.com,
         mtosatti@redhat.com, pbonzini@redhat.com, linux-kernel@vger.kernel.org,
         kvm@vger.kernel.org
-Subject: Re: [PATCH v3 0/6] KVM: MMU: fast invalidate all mmio sptes
-References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130610075656.GY4725@redhat.com>
-In-Reply-To: <20130610075656.GY4725@redhat.com>
+Subject: Re: [PATCH v3 3/6] KVM: MMU: make return value of mmio page fault
+ handler more readable
+References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1370595088-3315-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130610075750.GZ4725@redhat.com>
+In-Reply-To: <20130610075750.GZ4725@redhat.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2013 03:56 PM, Gleb Natapov wrote:
-> On Fri, Jun 07, 2013 at 04:51:22PM +0800, Xiao Guangrong wrote:
->> Changelog:
->> V3:
->>   All of these changes are from Gleb's review:
->>   1) rename RET_MMIO_PF_EMU to RET_MMIO_PF_EMULATE.
->>   2) smartly adjust kvm generation number in kvm_current_mmio_generatio()
->>      to avoid kvm_memslots->generation overflow.
+On 06/10/2013 03:57 PM, Gleb Natapov wrote:
+> On Fri, Jun 07, 2013 at 04:51:25PM +0800, Xiao Guangrong wrote:
+>> Define some meaningful names instead of raw code
 >>
->> V2:
->>   - rename kvm_mmu_invalid_mmio_spte to kvm_mmu_invalid_mmio_sptes
->>   - use kvm->memslots->generation as kvm global generation-number
->>   - fix comment and codestyle
->>   - init kvm generation close to mmio wrap-around value
->>   - keep kvm_mmu_zap_mmio_sptes
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/kvm/mmu.c | 15 +++++----------
+>>  arch/x86/kvm/mmu.h | 14 ++++++++++++++
+>>  arch/x86/kvm/vmx.c |  4 ++--
+>>  3 files changed, 21 insertions(+), 12 deletions(-)
 >>
->> The current way is holding hot mmu-lock and walking all shadow pages, this
->> is not scale. This patchset tries to introduce a very simple and scale way
->> to fast invalidate all mmio sptes - it need not walk any shadow pages and hold
->> any locks.
->>
->> The idea is simple:
->> KVM maintains a global mmio valid generation-number which is stored in
->> kvm->memslots.generation and every mmio spte stores the current global
->> generation-number into his available bits when it is created
->>
->> When KVM need zap all mmio sptes, it just simply increase the global
->> generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
->> then it walks the shadow page table and get the mmio spte. If the
->> generation-number on the spte does not equal the global generation-number,
->> it will go to the normal #PF handler to update the mmio spte
->>
->> Since 19 bits are used to store generation-number on mmio spte, we zap all
->> mmio sptes when the number is round
->>
-> Looks good to me, but doesn't tis obsolete kvm_mmu_zap_mmio_sptes() and
-> sp->mmio_cached, so they should be removed as part of the patch series?
+>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>> index eca91bd..044d8c0 100644
+>> --- a/arch/x86/kvm/mmu.c
+>> +++ b/arch/x86/kvm/mmu.c
+>> @@ -3222,17 +3222,12 @@ static u64 walk_shadow_page_get_mmio_spte(struct kvm_vcpu *vcpu, u64 addr)
+>>  	return spte;
+>>  }
+>>  
+>> -/*
+>> - * If it is a real mmio page fault, return 1 and emulat the instruction
+>> - * directly, return 0 to let CPU fault again on the address, -1 is
+>> - * returned if bug is detected.
+>> - */
+>>  int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct)
+>>  {
+>>  	u64 spte;
+>>  
+>>  	if (quickly_check_mmio_pf(vcpu, addr, direct))
+>> -		return 1;
+>> +		return RET_MMIO_PF_EMULATE;
+>>  
+>>  	spte = walk_shadow_page_get_mmio_spte(vcpu, addr);
+>>  
+>> @@ -3245,7 +3240,7 @@ int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct)
+>>  
+>>  		trace_handle_mmio_page_fault(addr, gfn, access);
+>>  		vcpu_cache_mmio_info(vcpu, addr, gfn, access);
+>> -		return 1;
+>> +		return RET_MMIO_PF_EMULATE;
+>>  	}
+>>  
+>>  	/*
+>> @@ -3253,13 +3248,13 @@ int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct)
+>>  	 * it's a BUG if the gfn is not a mmio page.
+>>  	 */
+>>  	if (direct && !check_direct_spte_mmio_pf(spte))
+>> -		return -1;
+>> +		return RET_MMIO_PF_BUG;
+>>  
+>>  	/*
+>>  	 * If the page table is zapped by other cpus, let CPU fault again on
+>>  	 * the address.
+>>  	 */
+>> -	return 0;
+>> +	return RET_MMIO_PF_RETRY;
+>>  }
+>>  EXPORT_SYMBOL_GPL(handle_mmio_page_fault_common);
+>>  
+>> @@ -3269,7 +3264,7 @@ static int handle_mmio_page_fault(struct kvm_vcpu *vcpu, u64 addr,
+>>  	int ret;
+>>  
+>>  	ret = handle_mmio_page_fault_common(vcpu, addr, direct);
+>> -	WARN_ON(ret < 0);
+>> +	WARN_ON(ret == RET_MMIO_PF_BUG);
+>>  	return ret;
+>>  }
+>>  
+>> diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
+>> index 922bfae..ba6a19c 100644
+>> --- a/arch/x86/kvm/mmu.h
+>> +++ b/arch/x86/kvm/mmu.h
+>> @@ -52,6 +52,20 @@
+>>  
+>>  int kvm_mmu_get_spte_hierarchy(struct kvm_vcpu *vcpu, u64 addr, u64 sptes[4]);
+>>  void kvm_mmu_set_mmio_spte_mask(u64 mmio_mask);
+>> +
+>> +/*
+>> + * Return values of handle_mmio_page_fault_common:
+>> + * RET_MMIO_PF_EMULATE: it is a real mmio page fault, emulate the instruction
+>> + *			 directly.
+>> + * RET_MMIO_PF_RETRY: let CPU fault again on the address.
+>> + * RET_MMIO_PF_BUG: bug is detected.
+>> + */
+>> +enum {
+>> +	RET_MMIO_PF_EMULATE = 1,
+>> +	RET_MMIO_PF_RETRY = 0,
+>> +	RET_MMIO_PF_BUG = -1
+>> +};
+> I would order them from -1 to 1 and rename RET_MMIO_PF_BUG to
+> RET_MMIO_PF_ERROR, but no need to resend just for that.
 
-Yes, i agree, they should be removed. :)
-
-There is the patch to do these things:
-
->From bc1bc36e2640059f06c4860af802ecc74e1f3d2d Mon Sep 17 00:00:00 2001
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Date: Mon, 10 Jun 2013 16:28:55 +0800
-Subject: [PATCH 7/6] KVM: MMU: drop kvm_mmu_zap_mmio_sptes
-
-Drop kvm_mmu_zap_mmio_sptes and use kvm_mmu_invalidate_zap_all_pages
-instead to handle mmio generation number overflow
-
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- arch/x86/include/asm/kvm_host.h |  1 -
- arch/x86/kvm/mmu.c              | 22 +---------------------
- 2 files changed, 1 insertion(+), 22 deletions(-)
-
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 90d05ed..966f265 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -230,7 +230,6 @@ struct kvm_mmu_page {
- #endif
-
- 	int write_flooding_count;
--	bool mmio_cached;
- };
-
- struct kvm_pio_request {
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 35cd0b6..c87b19d 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -246,13 +246,11 @@ static unsigned int kvm_current_mmio_generation(struct kvm *kvm)
- static void mark_mmio_spte(struct kvm *kvm, u64 *sptep, u64 gfn,
- 			   unsigned access)
- {
--	struct kvm_mmu_page *sp =  page_header(__pa(sptep));
- 	unsigned int gen = kvm_current_mmio_generation(kvm);
- 	u64 mask = generation_mmio_spte_mask(gen);
-
- 	access &= ACC_WRITE_MASK | ACC_USER_MASK;
- 	mask |= shadow_mmio_mask | access | gfn << PAGE_SHIFT;
--	sp->mmio_cached = true;
-
- 	trace_mark_mmio_spte(sptep, gfn, access, gen);
- 	mmu_spte_set(sptep, mask);
-@@ -4362,24 +4360,6 @@ void kvm_mmu_invalidate_zap_all_pages(struct kvm *kvm)
- 	spin_unlock(&kvm->mmu_lock);
- }
-
--static void kvm_mmu_zap_mmio_sptes(struct kvm *kvm)
--{
--	struct kvm_mmu_page *sp, *node;
--	LIST_HEAD(invalid_list);
--
--	spin_lock(&kvm->mmu_lock);
--restart:
--	list_for_each_entry_safe(sp, node, &kvm->arch.active_mmu_pages, link) {
--		if (!sp->mmio_cached)
--			continue;
--		if (kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list))
--			goto restart;
--	}
--
--	kvm_mmu_commit_zap_page(kvm, &invalid_list);
--	spin_unlock(&kvm->mmu_lock);
--}
--
- static bool kvm_has_zapped_obsolete_pages(struct kvm *kvm)
- {
- 	return unlikely(!list_empty_careful(&kvm->arch.zapped_obsolete_pages));
-@@ -4395,7 +4375,7 @@ void kvm_mmu_invalidate_mmio_sptes(struct kvm *kvm)
- 	 * when mark memslot invalid.
- 	 */
- 	if (unlikely(kvm_current_mmio_generation(kvm) >= (MMIO_MAX_GEN - 1)))
--		kvm_mmu_zap_mmio_sptes(kvm);
-+		kvm_mmu_invalidate_zap_all_pages(kvm);
- }
-
- static int mmu_shrink(struct shrinker *shrink, struct shrink_control *sc)
--- 
-1.8.1.4
-
-
+Fine to me. Will make a separate patch to update it later. Thanks for your review!
