@@ -1,55 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab3FJV1z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 17:27:55 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2813 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741Ab3FJV1M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 17:27:12 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 10 Jun 2013 14:25:37 -0700
-From: Rhyland Klein <rklein@nvidia.com>
-To: Anton Vorontsov <cbou@mail.ru>, Stephen Warren <swarren@wwwdotorg.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Rhyland Klein <rklein@nvidia.com>
-Subject: [PATCH 2/4] power: sbs-battery: Add dt to power_supply struct
-Date: Mon, 10 Jun 2013 17:26:40 -0400
-Message-ID: <1370899602-22123-3-git-send-email-rklein@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370899602-22123-1-git-send-email-rklein@nvidia.com>
-References: <1370899602-22123-1-git-send-email-rklein@nvidia.com>
-X-NVConfidentiality: public
+	id S1753548Ab3FJVah (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 17:30:37 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:38875 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751997Ab3FJVag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 17:30:36 -0400
+Date: Mon, 10 Jun 2013 14:30:24 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, torvalds@linux-foundation.org
+Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
+Message-ID: <20130610213023.GS5146@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130609193657.GA13392@linux.vnet.ibm.com>
+ <1370898505.9844.123.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370898505.9844.123.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061021-5806-0000-0000-000021A33177
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By passing in the dt node of this device, we enable the logic for
-linking power_supplies together from dt. This is specified by adding
-a "power-supplies" property with a phandle to the charger for a
-given supply.
+On Mon, Jun 10, 2013 at 05:08:25PM -0400, Steven Rostedt wrote:
+> On Sun, 2013-06-09 at 12:36 -0700, Paul E. McKenney wrote:
+> >  
+> > +#else /* #ifndef CONFIG_TICKET_LOCK_QUEUED */
+> > +
+> > +bool tkt_spin_pass(arch_spinlock_t *ap, struct __raw_tickets inc);
+> > +
+> > +static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+> > +{
+> > +	register struct __raw_tickets inc = { .tail = 2 };
+> > +
+> > +	inc = xadd(&lock->tickets, inc);
+> > +	for (;;) {
+> > +		if (inc.head == inc.tail || tkt_spin_pass(lock, inc))
+> > +			break;
+> > +		inc.head = ACCESS_ONCE(lock->tickets.head);
+> > +	}
+> > +	barrier(); /* smp_mb() on Power or ARM. */
+> > +}
+> > +
+> > +#endif /* #else #ifndef CONFIG_TICKET_LOCK_QUEUED */
+> > +
+> 
+> To avoid the above code duplication, I would have this instead:
 
-Enable this logic now for the sbs-battery driver.
+Nice!  I have updated accordingly.
 
-Signed-off-by: Rhyland Klein <rklein@nvidia.com>
----
- drivers/power/sbs-battery.c |    1 +
- 1 file changed, 1 insertion(+)
+							Thanx, Paul
 
-diff --git a/drivers/power/sbs-battery.c b/drivers/power/sbs-battery.c
-index c8c78a7..b5f2a76 100644
---- a/drivers/power/sbs-battery.c
-+++ b/drivers/power/sbs-battery.c
-@@ -704,6 +704,7 @@ static int sbs_probe(struct i2c_client *client,
- 	chip->power_supply.properties = sbs_properties;
- 	chip->power_supply.num_properties = ARRAY_SIZE(sbs_properties);
- 	chip->power_supply.get_property = sbs_get_property;
-+	chip->power_supply.of_node = client->dev.of_node;
- 	/* ignore first notification of external change, it is generated
- 	 * from the power_supply_register call back
- 	 */
--- 
-1.7.9.5
+> #ifdef CONFIG_TICKET_LOCK_QUEUED
+> 
+> bool tkt_spin_pass(arch_spinlock_t *ap, struct __raw_tickets inc);
+> #define __TKT_SPIN_INC 2
+> 
+> #else
+> 
+> static inline bool tkt_spin_pass(arch_spinlock_t *ap, struct
+> __raw_tickets inc)
+> {
+> 	return false;
+> }
+> 
+> #define __TKT_SPIN_INC 1
+> 
+> #endif
+> 
+> static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+> {
+> 	register struct __raw_tickets inc = { .tail = __TKT_SPIN_INC };
+> 
+> 	inc = xadd(&lock->tickets, inc);
+> 
+> 	for (;;) {
+> 		if (inc.head == inc.tail || tkt_spin_pass(lock, inc))
+> 			break;
+> 		cpu_relax();
+> 		inc.head = ACCESS_ONCE(lock->tickets.head);
+> 	}
+> 	barrier;	/* make sure nothing creeps before the lock is taken */
+> }
+> 
+> -- Steve
+> 
+> 
 
