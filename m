@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349Ab3FJLDe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 07:03:34 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48226 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752347Ab3FJLDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 07:03:33 -0400
-Message-ID: <51B5B268.8090908@ti.com>
-Date: Mon, 10 Jun 2013 16:33:04 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1753338Ab3FJLE1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 07:04:27 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40842 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752347Ab3FJLE0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 07:04:26 -0400
+Date: Mon, 10 Jun 2013 13:04:23 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        kernel list <linux-kernel@vger.kernel.org>, marcel@holtmann.org,
+        gustavo@padovan.org, linux-bluetooth@vger.kernel.org
+Subject: Re: 3.10-rc: bluetooth disappeared on thinkpad x60 (regression)
+Message-ID: <20130610110423.GA8834@amd.pavel.ucw.cz>
+References: <20130610092907.GA5487@amd.pavel.ucw.cz>
+ <20130610100519.GA9816@x220.ger.corp.intel.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Laxman Dewangan <ldewangan@nvidia.com>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
-        "balbi@ti.com" <balbi@ti.com>
-Subject: Re: [RFC PATCH] regulator: palmas: enable all modes for SMPS10
-References: <20130530113247.GI5180@sirena.org.uk> <51A74D70.5060303@nvidia.com> <20130601184511.GC16790@sirena.org.uk> <51AA456E.3030307@nvidia.com> <20130601210511.GT16790@sirena.org.uk> <51ADAE78.4050900@ti.com> <20130604093816.GY31367@sirena.org.uk> <51ADB6BF.6020205@ti.com> <20130604100511.GA31367@sirena.org.uk> <51B5A14E.6000500@ti.com> <20130610100330.GO31367@sirena.org.uk>
-In-Reply-To: <20130610100330.GO31367@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130610100519.GA9816@x220.ger.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi!
 
-On Monday 10 June 2013 03:33 PM, Mark Brown wrote:
-> On Mon, Jun 10, 2013 at 03:20:06PM +0530, Kishon Vijay Abraham I wrote:
->> On Tuesday 04 June 2013 03:35 PM, Mark Brown wrote:
->>> On Tue, Jun 04, 2013 at 03:13:27PM +0530, Kishon Vijay Abraham I wrote:
->>>> On Tuesday 04 June 2013 03:08 PM, Mark Brown wrote:
->
->>>>> No.  A boost regulator is still a voltage regulator, it just happens to
->>>>> raise rather than lower the voltage but it's otherwise a normal
->>>>> regulator.  I'm not sure what you mean by "SWITCH" - from the name it'd
->>>>> just be a bypass?
->
->> SMPS10 has two outputs OUT2 and OUT1. In order to connect OUT2 to
->> OUT1 we have to set "SWITCH_EN" bit in SMPS10_CTRL register.
->
-> Is that not just a normal enable?
+> > root@amd:~# hciconfig hci0 up
+> > Can't init device hci0: Operation not supported (95)
+> > root@amd:~# hcitool inq
+> > Inquiring ...
+> > Inquiry failed.: No such device
+> > root@amd:~# 
+> 
+> Could you take logs of the HCI traffic that happens when you try this.
+> You can use the btmon tool from BlueZ for it. Based on a quick look at
+> the code it seems like this particular error could only come if one of
+> the HCI commands used for device initialization fails.
 
-IIUC, normal enable should be when output is driven through OUT2.
+Where can I get btmon? I tried 
 
-Thanks
-Kishon
+root@amd:~# apt-get install bluez-utils
+
+but it is not there. (Can I just add printk somewhere?)
+
+> The Bluetooth HCI init sequence is constructed using only commands that
+> should be expected to work assuming the hardware follows the
+> specification, but occasionally we do encounter Bluetooth hardware that
+> is broken in one way or another and needs a work around to the sequence.
+> E.g. recently we added a couple of extra commands to read some new
+> parameters from the hardware, commands that are mandatory for hardware
+> beyond a specific version (something we check for), but could be that
+> the chip on the X60 doesn't support these.
+
+I don't expect strace is enough?
+
+set_thread_area({entry_number:-1 -> 6, base_addr:0xb7624b20,
+limit:1048575, seg_32bit:1, contents:0, read_exec_only:0,
+limit_in_pages:1, seg_not_present:0, useable:1}) = 0
+mprotect(0xb7766000, 8192, PROT_READ)   = 0
+mprotect(0xb77b2000, 4096, PROT_READ)   = 0
+munmap(0xb7782000, 76642)               = 0
+socket(PF_BLUETOOTH, SOCK_RAW, 1)       = 3
+ioctl(3, 0x800448d3, 0xb77cc420)        = 0
+ioctl(3, 0x400448c9, 0)                 = -1 EOPNOTSUPP (Operation not
+supported)
+write(2, "Can't init device hci0: Operatio"..., 53Can't init device
+hci0: Operation not supported (95)
+) = 53
+exit_group(1)                           = ?
+root@amd:~# btmon
+
+Thanks,
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
