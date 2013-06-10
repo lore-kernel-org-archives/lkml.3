@@ -1,150 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138Ab3FJKn3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 06:43:29 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:52985 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843Ab3FJKn2 (ORCPT
+	id S1753177Ab3FJKqy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 06:46:54 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:45766 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751843Ab3FJKqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 06:43:28 -0400
+	Mon, 10 Jun 2013 06:46:53 -0400
+Date: Mon, 10 Jun 2013 11:46:29 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Message-ID: <20130610104629.GS31367@sirena.org.uk>
+References: <20130610100615.GP31367@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1370274671-23812-1-git-send-email-pranavkumar@linaro.org>
-References: <1370274671-23812-1-git-send-email-pranavkumar@linaro.org>
-Date: Mon, 10 Jun 2013 16:13:27 +0530
-Message-ID: <CAAHg+HiWNumV52BmiGmWyGTq7a=JH5O2ptQuHt7ywjnWzUYcvg@mail.gmail.com>
-Subject: Re: [PATCH] arm64: Add support to pass earlyprintk argument via
- device tree
-From: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-To: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Cc: "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
-        Anup Patel <anup.patel@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0myWGHcy9pFzWWmx"
+Content-Disposition: inline
+In-Reply-To: <20130610100615.GP31367@sirena.org.uk>
+X-Cookie: Are you a turtle?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [GIT PULL] regmap updates for v3.10
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On 3 June 2013 21:21, Pranavkumar Sawargaonkar <pranavkumar@linaro.org> wrote:
-> This patch adds support for defining and passing earlyprintk
-> related information i.e. device and address information via
-> device tree by adding it inside "chosen" node.
->
-> This will help user to just specify "earlyprintk" from bootargs
-> without actually knowing the address and device to enable
-> earlyprintk.
->
-> Mechanism:
->
-> One can just append earlyprintk=device-type,address (same as we pass
-> through command line) in "/chosen" node to notify kernel which is the
-> earlyprintk device and what is its address.
->
-> Backward Compatibility:
->
-> This patch also allows existing method of specifying earlyprintk
-> parameter via bootargs.
->
-> Existing method i.e. passing via bootargs will still have precedence
-> over device tree i.e. if one specifies earlyprintk=device-type,address
-> in bootargs then kernel will use information from bootargs instead of
-> device tree.
->
-> If user just specifies earlyprintk (without =...) then kernel will
-> look for device tree earlyprintk parameter.
->
-> Signed-off-by: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-> Signed-off-by: Anup Patel <anup.patel@linaro.org>
-> ---
->  arch/arm64/kernel/early_printk.c |    7 +++++++
->  arch/arm64/kernel/setup.c        |   21 ++++++++++++++++++++-
->  2 files changed, 27 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/arm64/kernel/early_printk.c b/arch/arm64/kernel/early_printk.c
-> index fbb6e18..4e6f845 100644
-> --- a/arch/arm64/kernel/early_printk.c
-> +++ b/arch/arm64/kernel/early_printk.c
-> @@ -29,6 +29,8 @@
->  static void __iomem *early_base;
->  static void (*printch)(char ch);
->
-> +extern char *earlyprintk_dt_args;
-> +
->  /*
->   * PL011 single character TX.
->   */
-> @@ -116,6 +118,11 @@ static int __init setup_early_printk(char *buf)
->         phys_addr_t paddr = 0;
->
->         if (!buf) {
-> +               /* Try to check if Device Tree has this argument or not ? */
-> +               buf = earlyprintk_dt_args;
-> +       }
-> +
-> +       if (!buf) {
->                 pr_warning("No earlyprintk arguments passed.\n");
->                 return 0;
->         }
-> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-> index 6a9a532..fb2d56f 100644
-> --- a/arch/arm64/kernel/setup.c
-> +++ b/arch/arm64/kernel/setup.c
-> @@ -60,6 +60,8 @@ EXPORT_SYMBOL(processor_id);
->  unsigned int elf_hwcap __read_mostly;
->  EXPORT_SYMBOL_GPL(elf_hwcap);
->
-> +char *earlyprintk_dt_args;
-> +
->  static const char *cpu_name;
->  static const char *machine_name;
->  phys_addr_t __fdt_pointer __initdata;
-> @@ -122,6 +124,23 @@ static void __init setup_processor(void)
->         elf_hwcap = 0;
->  }
->
-> +int __init early_init_dt_scan_chosen_arm64(unsigned long node,
-> +                                          const char *uname,
-> +                                          int depth, void *data)
-> +{
-> +       char *prop;
-> +
-> +       /* Check if this is chosen node */
-> +       if (early_init_dt_scan_chosen(node, uname, depth, data) == 0)
-> +               return 0;
-> +
-> +       prop = of_get_flat_dt_prop(node, "earlyprintk", NULL);
-> +       if (prop)
-> +               earlyprintk_dt_args = prop;
-> +
-> +       return 1;
-> +}
-> +
->  static void __init setup_machine_fdt(phys_addr_t dt_phys)
->  {
->         struct boot_param_header *devtree;
-> @@ -165,7 +184,7 @@ static void __init setup_machine_fdt(phys_addr_t dt_phys)
->         pr_info("Machine: %s\n", machine_name);
->
->         /* Retrieve various information from the /chosen node */
-> -       of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
-> +       of_scan_flat_dt(early_init_dt_scan_chosen_arm64, boot_command_line);
->         /* Initialize {size,address}-cells info */
->         of_scan_flat_dt(early_init_dt_scan_root, NULL);
->         /* Setup memory, calling early_init_dt_add_memory_arch */
-> --
-> 1.7.9.5
->
+--0myWGHcy9pFzWWmx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Ccing to devicetree-discuss@lists.ozlabs.org for comments.
-Original RFC posted for this patch is:
-https://patchwork.kernel.org/patch/2601411/
+On Mon, Jun 10, 2013 at 11:06:15AM +0100, Mark Brown wrote:
 
-Thanks,
-Pranav
+> feature.  Otherwise we've got a couple of fairly small cleanups which
+> would have been sent sooner were it not for letting Lars-Peter's patch
+> soak for a while.
+
+Having just seen the -rc5 announcment I should probably say that the
+cleanups are really relatively minor fixes rather than just cleanups.  I
+can respin if they're too minor for your taste though the rbtree one is
+a definite bug.
+
+--0myWGHcy9pFzWWmx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRta6CAAoJELSic+t+oim9SvoQAJYsqXQhQz22YUlN9uxms7nc
+VWiOvs0h9gOzuNW9vSzBXGcTHLb3k8AlZFirDz8Ec7CcoSq8F36YoVzSHG2d8B0a
+PK02oUZnV4cvVHjec1ZvJr1FuUUVrFSbeC30UNU//orn+hprz7IJK/vowiM7sVCS
+l9bh5zrgSTGaEIVSs414R/3nPsPiojULwu/YzaJ4ETLWjjWVyBm9bR3bv1JwB9hn
+T5D5YTh8xcQLo0omRMX6xYSfvHpH0A1QlNkNbC02vt58+fyvRccZ6w00IscZsNwU
+jYxVTpxSFvCnmmODzMPg17eJK3yxBEw3PFVWUnvQfROzEjlwRAl4EUhaCyUeT6+8
+/YQhbj9yeiQT8ynCluyi/BMY8rQFC/E8vAUqVdkrRaSguoGeWcqNmp31iHyN8qcU
+wzPW6Fn7P1glhaph9DZSnpEP6OM1ZADWs6bvSGSJBVT1S/wofJ3HddC/ss8Bwoyn
+DaSvXa+HsaLCyp3Gp/t+yTOqwfZnoW531oEMaQGv5TloCxVnMKdUbgaCT+oJzund
+jLfH0SxrMbl3gdRjUmM7sUtCRkuadCpktrMjokvFVRFf/DtYe55ByRA95A9S7bim
+37w8w9jVEhisvr7G60xCM7jzJaHfmNvNHoHa1Dg76BJoDMBHmwqWClLTxeqgvMbP
+8B2E3u3L5zpvCo9in9pi
+=YR9v
+-----END PGP SIGNATURE-----
+
+--0myWGHcy9pFzWWmx--
