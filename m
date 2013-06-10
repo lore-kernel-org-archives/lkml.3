@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806Ab3FJBgF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 21:36:05 -0400
-Received: from mga03.intel.com ([143.182.124.21]:19023 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751284Ab3FJBgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 21:36:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,833,1363158000"; 
-   d="scan'208";a="252742293"
-Message-ID: <51B52D7C.6090009@intel.com>
-Date: Mon, 10 Jun 2013 09:35:56 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1751524Ab3FJBwW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 21:52:22 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61063 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750800Ab3FJBwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jun 2013 21:52:21 -0400
+X-IronPort-AV: E=Sophos;i="4.87,833,1363104000"; 
+   d="scan'208";a="7511140"
+Message-ID: <51B530AE.3020004@cn.fujitsu.com>
+Date: Mon, 10 Jun 2013 09:49:34 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: mingo@redhat.com, peterz@infradead.org
-CC: Alex Shi <alex.shi@intel.com>, tglx@linutronix.de,
+To: Alex Shi <alex.shi@intel.com>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
         namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
         vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
@@ -24,108 +23,118 @@ CC: Alex Shi <alex.shi@intel.com>, tglx@linutronix.de,
         Jason Low <jason.low2@hp.com>,
         Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
         fweisbec@gmail.com
-Subject: Re: [patch 0/9] sched: use runnable load avg in balance
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1370589652-24549-1-git-send-email-alex.shi@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [patch v8 6/9] sched: compute runnable load avg in cpu_load and
+ cpu_avg_load_per_task
+References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-7-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1370589652-24549-7-git-send-email-alex.shi@intel.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/10 09:50:27,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/10 09:50:30,
+	Serialize complete at 2013/06/10 09:50:30
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo & Peter:
-
-How are you?
-I know you are very very busy since services for wide key kernel parts.
-So hope this email don't disturb you. :)
-
-PJT's runnable load was introduced into kernel from 3.8 kernel. But
-besides increase longer code path, it does nothing help now.
-
-This patch try to enable the runnable load into scheduler balance. Most
-of this patchset are bug fixing related except 6~8th which are direct
-service for introducing runnable load into balance.
-The patchset was talked in LKML from last Nov, adopted many suggestions
-from PTJ, MikeG, Morten, PeterZ etc. Also tested on x86 and arm
-platforms, both got positive feedback.
-
-With this patchset, CFS scheduler will has better and stabler
-performance on hackbench, sysbench, pgbench. etc benchmarks. You will
-like the performance number which mentioned in last emails.
-
-I appreciated for any further review and comments!
-
-Wish you all best!
-Alex
-
-
 On 06/07/2013 03:20 PM, Alex Shi wrote:
-> Peter&Ingo:
+
+> They are the base values in load balance, update them with rq runnable
+> load average, then the load balance will consider runnable load avg
+> naturally.
 > 
-> v8: add a marco div64_ul and used it in task_h_load()
-> v7: rebasing on tip/sched/core tree.
+> We also try to include the blocked_load_avg as cpu load in balancing,
+> but that cause kbuild performance drop 6% on every Intel machine, and
+> aim7/oltp drop on some of 4 CPU sockets machines.
+
+Hi Alex,
+   Could you explain me why including the blocked_load_avg causes performance drop ?
+
+Thanks,
+Gu
+
 > 
-> I tested on Intel core2, NHM, SNB, IVB, 2 and 4 sockets machines with
-> benchmark kbuild, aim7, dbench, tbench, hackbench, oltp, and netperf
-> loopback etc. 
-> 
-> On SNB EP 4 sockets machine, the hackbench increased about 50%, and
-> result become stable. on other machines, hackbench increased about
-> 2~10%. oltp increased about 30% in NHM EX box. netperf loopback also
-> increased on SNB EP 4 sockets box. 
-> No clear changes on other benchmarks.
-> 
-> Michael Wang gotten better performance on pgbench on his box with this
-> patchset. https://lkml.org/lkml/2013/5/16/82
-> 
-> And Morten tested previous version with better power consumption.
-> http://comments.gmane.org/gmane.linux.kernel/1463371
-> 
-> Changlong found ltp cgroup stress testing get faster on SNB EP
-> machine with the last patch.  https://lkml.org/lkml/2013/5/23/65
-> ---
-> 3.10-rc1          patch1-7         patch1-8
-> duration=764   duration=754   duration=750
-> duration=764   duration=754   duration=751
-> duration=763   duration=755   duration=751
-> 
-> duration means the seconds of testing cost.
-> ---
-> 
-> Jason also found java server load benefited on his 8 sockets machine
-> with last patch. https://lkml.org/lkml/2013/5/29/673
-> ---
-> When using a 3.10-rc2 tip kernel with patches 1-8, there was about a 40%
-> improvement in performance of the workload compared to when using the
-> vanilla 3.10-rc2 tip kernel with no patches. When using a 3.10-rc2 tip
-> kernel with just patches 1-7, the performance improvement of the
-> workload over the vanilla 3.10-rc2 tip kernel was about 25%.
-> ---
-> 
-> We also tried to include blocked load avg in balance. but find many
-> benchmark performance drop a lot! Seems accumulating current
-> blocked_load_avg into cpu load isn't a good idea. Because:
-> 1, The blocked_load_avg is decayed same as runnable load, sometime is far
-> bigger than runnable load, that drive tasks to other idle or slight
-> load cpu, than cause both performance and power issue. But if the
-> blocked load is decayed too fast, it lose its effect. 
-> 2, Another issue of blocked load is that when waking up task, we can not 
-> know blocked load proportion of the task on rq. So, the blocked load is
-> meaningless in wake affine decision.  
-> 
-> According to above problem, we can not figure out a right way now to use 
-> blocked_load_avg in balance.
-> 
-> Since using runnable load avg in balance brings much benefit on
-> performance and power. and this patch was reviewed for long time.
-> So seems it's time to let it be clobbered in some sub tree, like 
-> tip or linux-next.  Any comments?
-> 
-> Regards
-> Alex
-> 
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
 
 
--- 
-Thanks
-    Alex
+Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+
+> ---
+>  kernel/sched/fair.c |  5 +++--
+>  kernel/sched/proc.c | 17 +++++++++++++++--
+>  2 files changed, 18 insertions(+), 4 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 42c7be0..eadd2e7 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -2962,7 +2962,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>  /* Used instead of source_load when we know the type == 0 */
+>  static unsigned long weighted_cpuload(const int cpu)
+>  {
+> -	return cpu_rq(cpu)->load.weight;
+> +	return cpu_rq(cpu)->cfs.runnable_load_avg;
+>  }
+>  
+>  /*
+> @@ -3007,9 +3007,10 @@ static unsigned long cpu_avg_load_per_task(int cpu)
+>  {
+>  	struct rq *rq = cpu_rq(cpu);
+>  	unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
+> +	unsigned long load_avg = rq->cfs.runnable_load_avg;
+>  
+>  	if (nr_running)
+> -		return rq->load.weight / nr_running;
+> +		return load_avg / nr_running;
+>  
+>  	return 0;
+>  }
+> diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
+> index bb3a6a0..ce5cd48 100644
+> --- a/kernel/sched/proc.c
+> +++ b/kernel/sched/proc.c
+> @@ -501,6 +501,18 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+>  	sched_avg_update(this_rq);
+>  }
+>  
+> +#ifdef CONFIG_SMP
+> +unsigned long get_rq_runnable_load(struct rq *rq)
+> +{
+> +	return rq->cfs.runnable_load_avg;
+> +}
+> +#else
+> +unsigned long get_rq_runnable_load(struct rq *rq)
+> +{
+> +	return rq->load.weight;
+> +}
+> +#endif
+> +
+>  #ifdef CONFIG_NO_HZ_COMMON
+>  /*
+>   * There is no sane way to deal with nohz on smp when using jiffies because the
+> @@ -522,7 +534,7 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+>  void update_idle_cpu_load(struct rq *this_rq)
+>  {
+>  	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+> -	unsigned long load = this_rq->load.weight;
+> +	unsigned long load = get_rq_runnable_load(this_rq);
+>  	unsigned long pending_updates;
+>  
+>  	/*
+> @@ -568,11 +580,12 @@ void update_cpu_load_nohz(void)
+>   */
+>  void update_cpu_load_active(struct rq *this_rq)
+>  {
+> +	unsigned long load = get_rq_runnable_load(this_rq);
+>  	/*
+>  	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
+>  	 */
+>  	this_rq->last_load_update_tick = jiffies;
+> -	__update_cpu_load(this_rq, this_rq->load.weight, 1);
+> +	__update_cpu_load(this_rq, load, 1);
+>  
+>  	calc_load_account_active(this_rq);
+>  }
+
+
