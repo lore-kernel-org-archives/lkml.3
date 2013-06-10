@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956Ab3FJU33 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 16:29:29 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.182]:5838 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750929Ab3FJU32 (ORCPT
+	id S1753095Ab3FJUeY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 16:34:24 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:51772 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752316Ab3FJUeW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 16:29:28 -0400
-X-Greylist: delayed 570 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Jun 2013 16:29:28 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjtbABK/CFFFxKyU/2dsb2JhbABEgkADgQWzWoEegnWDcI12oAihIo1hgykDpHqBXoMT
-X-IPAS-Result: AjtbABK/CFFFxKyU/2dsb2JhbABEgkADgQWzWoEegnWDcI12oAihIo1hgykDpHqBXoMT
-X-IronPort-AV: E=Sophos;i="4.84,565,1355115600"; 
-   d="scan'208";a="16066927"
-Subject: 3.10.0-rcX vmstat regression
-From: Shane Shrybman <shrybman@teksavvy.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain
-Date: Mon, 10 Jun 2013 16:19:56 -0400
-Message-Id: <1370895596.4198.17.camel@mars>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.1 
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Jun 2013 16:34:22 -0400
+Date: Mon, 10 Jun 2013 13:33:55 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        fweisbec@gmail.com, rostedt@goodmis.org
+Subject: Re: Another RCU trace. (3.10-rc5)
+Message-ID: <20130610203355.GO5146@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130610195145.GA26068@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130610195145.GA26068@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061020-4834-0000-0000-000007EE4C82
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, Jun 10, 2013 at 03:51:45PM -0400, Dave Jones wrote:
+> Something in this code still isn't right in rc5.
+> I got a pretty mangled trace (and then total lockup) pretty quickly..
+> 
+> [ 1300.705212] ===============================
+> [ 1300.707514] [ INFO: suspicious RCU usage. ]
+> [ 1300.709794] 3.10.0-rc5+ #6 Not tainted
+> [ 1300.712064] -------------------------------
+> [ 1300.714363] include/linux/rcupdate.h:780 rcu_read_lock() used illegally while idle!
+> [ 1300.717516] 
+> [ 1300.717516] other info that might help us debug this:
+> [ 1300.717516] 
+> [ 1300.723450] 
+> [ 1300.723450] RCU used illegally from idle CPU!
+> [ 1300.723450] rcu_scheduler_active = 1, debug_locks = 0
+> [ 1300.730124] RCU used illegally from extended quiescent state!
+> [ 1300.732971] 2 locks held by kworker/0:0/12904:
+> [ 1300.735395]  #0:  (&(&(&p->vtime_seqlock)->lock)->rlock){-.-.-.}, at: [<ffffffff8109203e>] vtime_account_system.part.1+0x1e/0x50
+> [ 1300.740229]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff810a5815>] cpuacct_account_field+0x5/0x200
+> [ 1300.744305] 
+> [ 1300.744305] stack backtrace:
+> [ 1300.747817] CPU: 0 PID: 12904 Comm: kworker/0:0 Not tainted 3.10.0-rc5+ #6 
+> [ 1300.756486] ------------[ cut here ]------------
+> [ 1300.759463] WARNING: at kernel/sched/cputime.c:652 get_vtime_delta+0x64/0x80()
+> [ 1300.780868] CPU: 0 PID: 12904 Comm: kworker/0:0 Not tainted 3.10.0-rc5+ #6
+> [ 1300.783521] ------------[ cut here ]------------
+> [ 1300.784848] WARNING: at kernel/rcutree.c:502 rcu_eqs_exit_common+0x357/0x380()
+> [ 1300.792216] CPU: 0 PID: 12904 Comm: kworker/0:0 Not tainted 3.10.0-rc5+ #6
+> [ 1300.795211] ------------[ cut here ]------------
+> [ 1300.796734] WARNING: at kernel/sched/cputime.c:652 get_vtime_delta+0x64/0x80()
+> [ 1300.804965] CPU: 0 PID: 12904 Comm: kworker/0:0 Not tainted 3.10.0-rc5+ #6
+> [ 1300.808270] ------------[ cut here ]------------
+> [ 1300.809921] WARNING: at kernel/rcutree.c:502 rcu_eqs_exit_common+0x357/0x380()
+> [ 1300.811591] Modules linked in: tun rfcomm fuse bnep hidp ipt_ULOG nfnetlink scsi_transport_iscsi can_raw af_rxrpc rds nfc can_bcm netrom decnet rose af_key af_802154 can appletalk x25 bluetooth llc2 rfkill pppoe caif_socket pppox caif ppp_generic slhc irda ipx p8023 psnap p8022 llc crc_ccitt atm ax25 phonet nfsv3 nfs_acl nfs lockd sunrpc fscache coretemp hwmon kvm_intel snd_hda_codec_realtek kvm crc32c_intel snd_hda_codec_hdmi ghash_clmulni_intel microcode pcspkr snd_hda_intel snd_hda_codec snd_hwdep snd_seq e1000e snd_seq_device usb_debug snd_pcm ptp snd_page_alloc pps_core snd_timer snd soundcore xfs libcrc32c
+> [ 1300.818924] CPU: 0 PID: 12904 Comm: kworker/0:0 Not tainted 3.10.0-rc5+ #6
+> [ 1300.822581] ------------[ cut here ]------------
+> [ 1300.824419] WARNING: at kernel/sched/cputime.c:652 get_vtime_delta+0x64/0x80()
+> [ 1300.826271] Modules linked in: tun rfcomm fuse bnep hidp ipt_ULOG nfnetlink scsi_transport_iscsi can_raw af_rxrpc rds nfc can_bcm netrom decnet rose af_key af_802154 can appletalk x25 bluetooth llc2 rfkill pppoe caif_socket pppox caif ppp_generic slhc irda ipx p8023 psnap p8022 llc crc_ccitt atm ax25 phonet nfsv3 nfs_acl nfs lockd sunrpc fscache coretemp hwmon kvm_intel snd_hda_codec_realtek kvm crc32c_intel snd_hda_codec_hdmi ghash_clmulni_intel microcode pcspkr snd_hda_intel snd_hda_codec snd_hwdep snd_seq e1000e snd_seq_device usb_debug snd_pcm ptp snd_page_alloc pps_core snd_timer snd soundcore xfs libcrc32c
+> [ 1300.834252] CPU: 0 PID: 12904 Comm: kworker/0:0 Not tainted 3.10.0-rc5+ #6
+> [ 1300.838244] ------------[ cut here ]------------
+> [ 1300.840231] WARNING: at kernel/rcutree.c:502 rcu_eqs_exit_common+0x357/0x380()
+> [ 1300.895079] WARNING: at kernel/sched/cputime.c:652 get_v[ 1300.8 af_802154 can appletalk x25 bluetooth llc2 rfkill pppoe nfs_acl nfs lockd sunrpc fscache coretemp hwmon kvm_intel snd_h snd_hda_intel snd_hda_codec snd_hwdep snd_seq e1000e sn
+> [ 1300.907729] CPU: 0 PID: 12904 Comm: kworker/0:0 Not
+> [ 1300.914988]  ffffffff8104a1b1 000000000b89a53f ffff
+> [ 1300.917385]  0000000000000008 ffffffff81101b57 ffff
+> [ 1300.919760] Call Trace:
+> [ 1300.922120]  [<ffffffff816e39db>] dump_stack+0x19/0x1b
+> [ 1300.924429]  [<ffffffff8104a1b1>] warn_slowpath_common+0x61/0x80
+> [ 1300.926721]  [<ffffffff81101b57>] ? rcu_eqs_exit_common+0x357/0x380
+> [ 1300.928993]  [<ffffffff8104a28a>] warn_slowpath_null+0x1a/0x20
+> [ 1300.931243]  [<ffffffff81091b94>] get_vtime_delta+0x64/0x80
+> [ 1300.933487]  [<ffffffff810922f9>] vtime_account_user+0x29/0x[ 1300.935702]  [<ffffffff81145285>] user_exit+0[ 1300.937882]  [<ffffffff816f0591>] do_page_fau[ 1300.940037]  [<ffffffff816ed162>] page_fault+0x22/0x3[ 1300.942158]  [<ffffffff81101b57>] ? rcu_eqs_e[ 1300.944270]  [<ffffffff81308fb9>] ? copy_user[ 1300.946365]  [<ffffffff8114b46c>] ? __probe_k[ 1300.948437]  [<ffffffff81072598>] print_worke[ 1300.950502]  [<ffffffff8104de32>] dump_stack_[ 1300.952543]  [<ffffffff816e39d2>] dum[ 1300.954546]  [<ffffffff8104a1b1>] warn_slowpa[ 1300.956525]  [<ffffffff8104a28a>] warn_slowpa[ 1300.958471]  [<ffffffff81101b57>] rcu[ 1300.960401]  [<ffffffff81091b94>] ? get_vtime[ 1300.962309]  [<ffffffff81101bda>] rcu[ 1300.964196]  [<ffffffff811039e3>] rcu_user_ex[ 1300.966071]  [<ffffffff81145275>] use[ 1300.967911]  [<ffffffff816f0591>] do_[ 1300.969729]  [<ffffffff816ed162>] pag[ 1300.971510]  [<ffffffff81091b94>] ? get_vtime[ 1300.973270]  [<ffffffff81308fb9>] ? c[ 1300.975014]  [ 1300.989735]  [ 1300.991250]  [<ffffffff816f05[ 1300.992759]  [<ffffffff816ed1[ 1300.994234]  [<ffffffff81101b57>] ? r[ 1300.995698]  [<ffffffff81308f[ 1300.997130]  [<ffffffff8114b4[ 1300.998534]  [<ffffffff810725[ 1300.999918]  [<ffffffff8104de[ 1301.001284]  [<ffffffff816e39[ 1301.002620]  [<ffffffff8104a1[ 1301.003955]  [<ffffff[ 1301.005255]  [<ffffffff81101b[ 1301.006533]  [<ffffffff81091b[ 1301.007780]  [<ffffff[ 1301.008997]  [<ffffffff811039[ 1301.010190]  [<ffffff[ 1301.011355]  [<ffffff[ 1301.012504]  [<ffffffff816ed1[ 1301.013642]  [<ffffff[ 1301.014758]  [<ffffff[ 1301.015852]  [<ffffff[ 1301.016913]  [<ffffff[ 1301.017948]  [<ffffff[ 1301.018965]  [<ffffff[ 1301.019951]  [<ffffff[ 1301.020924]  [ 1301.021895]  [<ffffff[ 1301.022861]  [<ffffff[ 1301.023820]  [<ffffff[ 1301.024776]  [<ffffff[ 1301.025726]  [ 1301.026679]  [<ffffff[ 1301.027626]  [<ffffff[ 1301.028585]  [<ffffff[ 1301.029544]  [ 1301.030502]  [<ffffff[ 1301.031463]  [<ffffff[ 1301.032430]  [<ffffff[ 1301.033391]  [<ffffff[ 1301.034351]  [ 1301.035305]  [<ffffff[ 1301.036264]  [<ffffff[ 1301.037218]  [ 1301.038171]  [<ffffff[ 1301.039122]  [<ffffff[ 1301.040069]  [<ffffff[ 1301.041018]  [ 1301.041965]  [<ffffff[ 1301.042916]  [<ffffff[ 1301.043880]  [<ffffff[ 1301.044842]  [<ffffff[ 1301.045808]  [ 1301.046780]  [<ffffff[ 1301.047737]  [<ffffff[ 1301.048705]  [<ffffff[ 1301.049669]  [ 1301.050632]  [<ffffff[ 1301.051594]  [<ffffff[ 1301.052557]  [<ffffff[ 1301.053517]  [<ffffff[ 1301.054476]  [ 1301.055430]  [<ffffff[ 1301.056392]  [<ffffff[ 1301.057361]  [<ffffff[ 1301.058329]  [ 1301.059303]  [<ffffff[ 1301.060281]  [<ffffff[ 1301.061247]  [<ffffff[ 1301.062217]  [<ffffff[ 1301.063180]  [ 1301.064146]  [<ffffff[ 1301.065110]  [<ffffff[ 1301.066069]  [<ffffff[ 1301.067028]  [<ffffff[ 1301.067982]  [ 1301.068944]  [<ffffff[ 1301.069899]  [<ffffff[ 1301.070860]  [<ffffff[ 1301.071834]  [ 1301.072808]  [<ffffff[ 1301.073781]  [<ffffff[ 1301.074761]  [<ffffff[ 1301.075732]  [<ffffff[ 1301.0[ 1301.0[ 1301.092183]  [<ffffff[ 1301.093150]  [ 1301.094113]  [<ffffff[ 1301.095081]  [<ffffff[ 1301.096050]  [<ffffff[ 1301.097011]  [<ffffff[ 1301.097975]  [ 1301.098944]  [<ffffff[ 1301.099917]  [<ffffff[ 1301.100891]  [<ffffff[ 1301.101859]  [<ffffff[ 1301.102834] -[ 1301.103835] Thread ov
+> 
+> and then total lockup.
+> 
+> 
+> I saw some of Steven's patches get merged on Friday, is there anything else
+> outstanding that didn't make it in yet that I could test ?
+> Or is this another new bug ?
 
-x86_64 with 32 bit user space, seen on all 3.10.0-rc's
+I have three fixes queued up at:
 
-A typical 'vmstat 1' run looks like this:
+git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/urgent
 
-~$ vmstat 1
-procs -----------memory---------- ---swap-- -----io---- -system--
-----cpu----
- r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy
-id wa
- 0  0  0 3624776  26060 209808  0   0  1232     7  399  463  1  0 81 18
- 0  0  0 3624816  26060 209856  0   0     0     0  625  526  0  0 100  0
- 0  0  0 3624612  26064 209852  0   0     4    56 1174 1574  0  0 99  1
- 1  0  0 3624652  26064 209900  0   0     4     0 1501 2126  0  0 100  0
- 1  0  0 3624576  26076 209888  0   0     8   132 1299 1941  0  0 98  2
- 1  0  0 3624044  26088 210268  0   0   380     0 1642 2996  0  0 93  7
- 1  0  0 3628992  26140 219896  0   0  2783     7 1727 3284  0  0 85 15
- 0  1  0 3588504  26288 244572  0   0  5955     0 2096 3874  0  0 27 73
- 1  2  0 3572732  26428 253152  0   0  8792   212 1730 2374  0  0 27 73
- 1  7  0 3566128  26492 257696  0   0  1915   268 1832 2885  0  0 11 89
- 5 37  0 3527996  26576 270212  0   0  5668     0 2382 5117  0  0  9 91
- 3  3  0 3471676  26668 284616  0   0  8504    12 2334 4502  0  0 15 85
- 1  5  0 3485732  26852 264932  0   0  4556     0 1861 3648  0  0  8 92
- 3  4  0 3438112  26872 270956  0   0  1822     0 1770 5000  0  0  0 100
- 5  2  0 3405560  26916 274628  0   0  3413    96 2360 5571  0  0  9 91
- 5  1  0 3378800  26952 273024  0   0  1805     0 1968 4489  0  0  0 100
-Floating point exception
+Kind of hard to tell whether they are relevant given the interleaved
+stack traces, but can't hurt to try them out.
 
-Two problems are shown: the floating point exception and the user and
-system stats are always 0, it looks like us and sys time are showing up
-as wait time.
-
-CONFIG_TICK_ONESHOT=y
-CONFIG_NO_HZ_COMMON=y
-# CONFIG_HZ_PERIODIC is not set
-# CONFIG_NO_HZ_IDLE is not set
-CONFIG_NO_HZ_FULL=y
-CONFIG_NO_HZ_FULL_ALL=y
-CONFIG_NO_HZ=y
-# CONFIG_HIGH_RES_TIMERS is not set
-
-Sorry if this report is a duplicate,
-
-Shane
+							Thanx, Paul
 
