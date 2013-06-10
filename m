@@ -1,308 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab3FJQEU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 12:04:20 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52962 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751443Ab3FJQER (ORCPT
+	id S1753941Ab3FJQHe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 12:07:34 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:64010 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751443Ab3FJQHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 12:04:17 -0400
-Message-ID: <51B5F8FE.5090508@linaro.org>
-Date: Mon, 10 Jun 2013 18:04:14 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 10 Jun 2013 12:07:32 -0400
+Date: Mon, 10 Jun 2013 19:07:23 +0300
+From: Johan Hedberg <johan.hedberg@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        kernel list <linux-kernel@vger.kernel.org>, marcel@holtmann.org,
+        gustavo@padovan.org, linux-bluetooth@vger.kernel.org
+Subject: Re: 3.10-rc: bluetooth disappeared on thinkpad x60 (regression)
+Message-ID: <20130610160723.GA18282@x220.P-661HNU-F1>
+Mail-Followup-To: Pavel Machek <pavel@ucw.cz>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	kernel list <linux-kernel@vger.kernel.org>, marcel@holtmann.org,
+	gustavo@padovan.org, linux-bluetooth@vger.kernel.org
+References: <20130610092907.GA5487@amd.pavel.ucw.cz>
+ <20130610100519.GA9816@x220.ger.corp.intel.com>
+ <20130610110423.GA8834@amd.pavel.ucw.cz>
+ <20130610115938.GA12892@x220.ger.corp.intel.com>
+ <20130610133834.GA4058@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 2/6] clocksource: add Marvell Orion SoC timer
-References: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com> <1370856955-10514-1-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1370856955-10514-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130610133834.GA4058@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2013 11:35 AM, Sebastian Hesselbarth wrote:
-> This patch add a DT enabled driver for timers found on Marvell Orion SoCs
-> (Kirkwood, Dove, Orion5x, and Discovery Innovation). It installs a free-
-> running clocksource on timer0 and a clockevent source on timer1.
-> Corresponding device tree documentation is also added.
+Hi Pavel,
+
+On Mon, Jun 10, 2013, Pavel Machek wrote:
+> I ran hcidump, while I did hciconfig hci0 up on other console.
 > 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-
-It looks good for me.
-
-Sebastian,
-
-shall I take it through my tree (it will go to Thomas's tree) ?
-
-Thanks
-  -- Daniel
-
-> ---
-> Changelog:
-> v3->v4:
-> - export thread-safe access to TIMER_CTRL register to use with watchdog
-> - remove IRQF_DISABLED and add .irq to clock event (Suggested by Daniel Lezcano)
+> root@amd:~# hcidump hci0
+> HCI sniffer - Bluetooth packet analyzer ver 1.42
+> device: hci0 snap_len: 1028 filter: 0xffffffff
+> < HCI Command: Reset (0x03|0x0003) plen 0
+> > HCI Event: Command Complete (0x0e) plen 4
+> < HCI Command: Read Local Supported Features (0x04|0x0003) plen 0
+> > HCI Event: Command Complete (0x0e) plen 12
+> < HCI Command: Read Local Version Information (0x04|0x0001) plen 0
+> > HCI Event: Command Complete (0x0e) plen 12
+> < HCI Command: Read BD ADDR (0x04|0x0009) plen 0
+> > HCI Event: Command Complete (0x0e) plen 10
+> < HCI Command: Read Buffer Size (0x04|0x0005) plen 0
+> > HCI Event: Command Complete (0x0e) plen 11
+> < HCI Command: Read Class of Device (0x03|0x0023) plen 0
+> > HCI Event: Command Complete (0x0e) plen 7
+> < HCI Command: Read Local Name (0x03|0x0014) plen 0
+> > HCI Event: Command Complete (0x0e) plen 252
+> < HCI Command: Read Voice Setting (0x03|0x0025) plen 0
+> > HCI Event: Command Complete (0x0e) plen 6
+> < HCI Command: Set Event Filter (0x03|0x0005) plen 1
+> > HCI Event: Command Complete (0x0e) plen 4
+> < HCI Command: Write Connection Accept Timeout (0x03|0x0016) plen 2
+> > HCI Event: Command Complete (0x0e) plen 4
+> < HCI Command: Delete Stored Link Key (0x03|0x0012) plen 7
+> > HCI Event: Command Complete (0x0e) plen 4
 > 
-> Notes:
-> - This is only an update to clocksource driver, the remaining patches are
->   not resent as they have not been changed.
-> - I will not rework orion watchdog driver for this patch set. It is written
->   Kirkwood/Orion5x specific although it will also work on Dove and it is messing
->   with shared registers. It has done it before, so I consider it broken anyway.
->   I (or somebody else) will take care of proper watchdog later.
-> - An updated branch can be found on
->   git://github.com/shesselba/linux-dove.git orion-irqchip-for-v3.11_v4
-> 
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Rob Landley <rob@landley.net>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Cc: Gregory Clement <gregory.clement@free-electrons.com>
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: linux-doc@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  .../bindings/timer/marvell,orion-timer.txt         |   17 +++
->  drivers/clocksource/Kconfig                        |    5 +
->  drivers/clocksource/Makefile                       |    1 +
->  drivers/clocksource/time-orion.c                   |  150 ++++++++++++++++++++
->  4 files changed, 173 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/timer/marvell,orion-timer.txt
->  create mode 100644 drivers/clocksource/time-orion.c
-> 
-> diff --git a/Documentation/devicetree/bindings/timer/marvell,orion-timer.txt b/Documentation/devicetree/bindings/timer/marvell,orion-timer.txt
-> new file mode 100644
-> index 0000000..62bb826
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/timer/marvell,orion-timer.txt
-> @@ -0,0 +1,17 @@
-> +Marvell Orion SoC timer
-> +
-> +Required properties:
-> +- compatible: shall be "marvell,orion-timer"
-> +- reg: base address of the timer register starting with TIMERS CONTROL register
-> +- interrupt-parent: phandle of the bridge interrupt controller
-> +- interrupts: should contain the interrupts for Timer0 and Timer1
-> +- clocks: phandle of timer reference clock (tclk)
-> +
-> +Example:
-> +	timer: timer {
-> +		compatible = "marvell,orion-timer";
-> +		reg = <0x20300 0x20>;
-> +		interrupt-parent = <&bridge_intc>;
-> +		interrupts = <1>, <2>;
-> +		clocks = <&core_clk 0>;
-> +	};
-> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-> index f151c6c..2404869 100644
-> --- a/drivers/clocksource/Kconfig
-> +++ b/drivers/clocksource/Kconfig
-> @@ -25,6 +25,11 @@ config DW_APB_TIMER_OF
->  config ARMADA_370_XP_TIMER
->  	bool
->  
-> +config ORION_TIMER
-> +	select CLKSRC_OF
-> +	select CLKSRC_MMIO
-> +	bool
-> +
->  config SUN4I_TIMER
->  	bool
->  
-> diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-> index 8d979c7..d1e8d68 100644
-> --- a/drivers/clocksource/Makefile
-> +++ b/drivers/clocksource/Makefile
-> @@ -15,6 +15,7 @@ obj-$(CONFIG_DW_APB_TIMER_OF)	+= dw_apb_timer_of.o
->  obj-$(CONFIG_CLKSRC_NOMADIK_MTU)	+= nomadik-mtu.o
->  obj-$(CONFIG_CLKSRC_DBX500_PRCMU)	+= clksrc-dbx500-prcmu.o
->  obj-$(CONFIG_ARMADA_370_XP_TIMER)	+= time-armada-370-xp.o
-> +obj-$(CONFIG_ORION_TIMER)	+= time-orion.o
->  obj-$(CONFIG_ARCH_BCM2835)	+= bcm2835_timer.o
->  obj-$(CONFIG_ARCH_MARCO)	+= timer-marco.o
->  obj-$(CONFIG_ARCH_MXS)		+= mxs_timer.o
-> diff --git a/drivers/clocksource/time-orion.c b/drivers/clocksource/time-orion.c
-> new file mode 100644
-> index 0000000..ad7df17
-> --- /dev/null
-> +++ b/drivers/clocksource/time-orion.c
-> @@ -0,0 +1,150 @@
-> +/*
-> + * Marvell Orion SoC timer handling.
-> + *
-> + * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2.  This program is licensed "as is" without any
-> + * warranty of any kind, whether express or implied.
-> + *
-> + * Timer 0 is used as free-running clocksource, while timer 1 is
-> + * used as clock_event_device.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/bitops.h>
-> +#include <linux/clk.h>
-> +#include <linux/clockchips.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/spinlock.h>
-> +#include <asm/sched_clock.h>
-> +
-> +#define TIMER_CTRL		0x00
-> +#define  TIMER0_EN		BIT(0)
-> +#define  TIMER0_RELOAD_EN	BIT(1)
-> +#define  TIMER1_EN		BIT(2)
-> +#define  TIMER1_RELOAD_EN	BIT(3)
-> +#define TIMER0_RELOAD		0x10
-> +#define TIMER0_VAL		0x14
-> +#define TIMER1_RELOAD		0x18
-> +#define TIMER1_VAL		0x1c
-> +
-> +#define ORION_ONESHOT_MIN	1
-> +#define ORION_ONESHOT_MAX	0xfffffffe
-> +
-> +static void __iomem *timer_base;
-> +static DEFINE_SPINLOCK(timer_ctrl_lock);
-> +
-> +/*
-> + * Thread-safe access to TIMER_CTRL register
-> + * (shared with watchdog timer)
-> + */
-> +void orion_timer_ctrl_clrset(u32 clr, u32 set)
-> +{
-> +	spin_lock(&timer_ctrl_lock);
-> +	writel((readl(timer_base + TIMER_CTRL) & ~clr) | set,
-> +		timer_base + TIMER_CTRL);
-> +	spin_unlock(&timer_ctrl_lock);
-> +} 
-> +EXPORT_SYMBOL(orion_timer_ctrl_clrset);
-> +
-> +/*
-> + * Free-running clocksource handling.
-> + */
-> +static u32 notrace orion_read_sched_clock(void)
-> +{
-> +	return ~readl(timer_base + TIMER0_VAL);
-> +}
-> +
-> +/*
-> + * Clockevent handling.
-> + */
-> +static u32 ticks_per_jiffy;
-> +
-> +static int orion_clkevt_next_event(unsigned long delta,
-> +				   struct clock_event_device *dev)
-> +{
-> +	/* setup and enable one-shot timer */
-> +	writel(delta, timer_base + TIMER1_VAL);
-> +	orion_timer_ctrl_clrset(TIMER1_RELOAD_EN, TIMER1_EN);
-> +
-> +	return 0;
-> +}
-> +
-> +static void orion_clkevt_mode(enum clock_event_mode mode,
-> +			      struct clock_event_device *dev)
-> +{
-> +	if (mode == CLOCK_EVT_MODE_PERIODIC) {
-> +		/* setup and enable periodic timer at 1/HZ intervals */
-> +		writel(ticks_per_jiffy - 1, timer_base + TIMER1_RELOAD);
-> +		writel(ticks_per_jiffy - 1, timer_base + TIMER1_VAL);
-> +		orion_timer_ctrl_clrset(0, TIMER1_RELOAD_EN | TIMER1_EN);
-> +	} else {
-> +		/* disable timer */
-> +		orion_timer_ctrl_clrset(TIMER1_RELOAD_EN | TIMER1_EN, 0);
-> +	}
-> +}
-> +
-> +static struct clock_event_device orion_clkevt = {
-> +	.name		= "orion_event",
-> +	.features	= CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_FEAT_PERIODIC,
-> +	.shift		= 32,
-> +	.rating		= 300,
-> +	.set_next_event	= orion_clkevt_next_event,
-> +	.set_mode	= orion_clkevt_mode,
-> +};
-> +
-> +static irqreturn_t orion_clkevt_irq_handler(int irq, void *dev_id)
-> +{
-> +	orion_clkevt.event_handler(&orion_clkevt);
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static struct irqaction orion_clkevt_irq = {
-> +	.name		= "orion_event",
-> +	.flags		= IRQF_TIMER,
-> +	.handler	= orion_clkevt_irq_handler,
-> +};
-> +
-> +static void __init orion_timer_init(struct device_node *np)
-> +{
-> +	struct clk *clk;
-> +	int irq;
-> +
-> +	/* timer registers are shared with watchdog timer */
-> +	timer_base = of_iomap(np, 0);
-> +	if (!timer_base)
-> +		panic("%s: unable to map resource\n", np->name);
-> +
-> +	clk = of_clk_get(np, 0);
-> +	if (IS_ERR(clk))
-> +		panic("%s: unable to get clk\n", np->name);
-> +	clk_prepare_enable(clk);
-> +
-> +	/* we are only interested in timer1 irq */
-> +	irq = irq_of_parse_and_map(np, 1);
-> +	if (irq <= 0)
-> +		panic("%s: unable to parse timer1 irq\n", np->name);
-> +
-> +	/* setup timer0 as free-running clocksource */
-> +	writel(~0, timer_base + TIMER0_VAL);
-> +	writel(~0, timer_base + TIMER0_RELOAD);
-> +	orion_timer_ctrl_clrset(0, TIMER0_RELOAD_EN | TIMER0_EN);
-> +	clocksource_mmio_init(timer_base + TIMER0_VAL, "orion_clocksource",
-> +			      clk_get_rate(clk), 300, 32,
-> +			      clocksource_mmio_readl_down);
-> +	setup_sched_clock(orion_read_sched_clock, 32, clk_get_rate(clk));
-> +
-> +	/* setup timer1 as clockevent timer */
-> +	if (setup_irq(irq, &orion_clkevt_irq))
-> +		panic("%s: unable to setup irq\n", np->name);
-> +
-> +	ticks_per_jiffy = (clk_get_rate(clk) + HZ/2) / HZ;
-> +	orion_clkevt.cpumask = cpumask_of(0);
-> +	orion_clkevt.irq = irq;
-> +	clockevents_config_and_register(&orion_clkevt, clk_get_rate(clk),
-> +					ORION_ONESHOT_MIN, ORION_ONESHOT_MAX);
-> +}
-> +CLOCKSOURCE_OF_DECLARE(orion_timer, "marvell,orion-timer", orion_timer_init);
-> 
+> Hope this helps,
 
+It gives a better idea but is still lacking a bit of information since
+hcidump is by default quite restrictive in what it outputs. Could you
+try once more, but this time pass the -X and -V command line switches to
+hcidump. It should make it output the full set of parameters of the HCI
+commands and events. What I'd also ask is if you could make an
+additional binary HCI log in the btsnoop format so that we could analyze
+the log with btmon (which has better decoders than hcidump). You get
+hcidump to do this by passing "-B -w <filename>" as parameters and can
+verify that the produced file is correct by running hcidump -r <file>.
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Johan
