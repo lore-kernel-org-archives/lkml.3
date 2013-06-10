@@ -1,77 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267Ab3FJJ3P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 05:29:15 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35894 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753133Ab3FJJ3J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 05:29:09 -0400
-Date: Mon, 10 Jun 2013 11:29:07 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        kernel list <linux-kernel@vger.kernel.org>, marcel@holtmann.org,
-        gustavo@padovan.org, johan.hedberg@gmail.com,
-        linux-bluetooth@vger.kernel.org
-Subject: 3.10-rc: bluetooth disappeared on thinkpad x60 (regression)
-Message-ID: <20130610092907.GA5487@amd.pavel.ucw.cz>
+	id S1753275Ab3FJJaH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 05:30:07 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44371 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752651Ab3FJJaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 05:30:04 -0400
+Message-ID: <51B59C8B.9000405@ti.com>
+Date: Mon, 10 Jun 2013 11:29:47 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "J, KEERTHY" <j-keerthy@ti.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>
+Subject: Re: [PATCH] ARM: dts: add dtsi for palmas
+References: <1370604504-32310-1-git-send-email-j-keerthy@ti.com>,<51B23AD5.8060006@wwwdotorg.org> <DC88CAD03C0052499C1907B327FC63229EAA39@DBDE04.ent.ti.com>
+In-Reply-To: <DC88CAD03C0052499C1907B327FC63229EAA39@DBDE04.ent.ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi Keerthy,
 
->From start of 3.10-rc series, bluetooth seems to be gone on thinkpad
-x60.
+On 06/10/2013 06:03 AM, J, KEERTHY wrote:
+> Hi Stephen,
+> 
+> Thanks for the review comments.
+> 
+> ________________________________________
+> From: Stephen Warren [swarren@wwwdotorg.org]
+> Sent: Saturday, June 08, 2013 1:26 AM
+> To: J, KEERTHY
+> Cc: Cousson, Benoit; devicetree-discuss@lists.ozlabs.org; linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org; ldewangan@nvidia.com; grant.likely@secretlab.ca; swarren@nvidia.com; sameo@linux.intel.com; gg@slimlogic.co.uk; lee.jones@linaro.org
+> Subject: Re: [PATCH] ARM: dts: add dtsi for palmas
+> 
+> On 06/07/2013 05:28 AM, J Keerthy wrote:
+>> Adds palmas mfd and palmas regulator nodes. This is
+>> based on the patch series:
+>>
+>> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg89957.html
+>>
+>> The device tree nodes are based on:
+>> https://lkml.org/lkml/2013/6/6/25
+> 
+>> diff --git a/arch/arm/boot/dts/palmas.dtsi b/arch/arm/boot/dts/palmas.dtsi
+> 
+>> +&palmas {
+> 
+> Hmmm. That (i.e. requiring the board file to declare the node, then
+> setting up all the content by later including this file) is an
+> interesting approach. I guess it's reasonable. The one issue is that it
+> makes it a little harder for the board file to override any of the
+> properties in this file., although it certainly is possible by including
+> those overrides after the include.
+> 
+> Irrespective of that, some comments on this:
+> 
+>> +     palmas_pmic {
+> 
+>> +             ti,ldo6-vibrator;
+> 
+> For example, what if the board doesn't want to have the property set?
+> 
+>> +
+>> +             regulators {
+>> +                     smps123_reg: smps123 {
+>> +                             regulator-name = "smps123";
+>> +                             regulator-min-microvolt = < 600000>;
+>> +                             regulator-max-microvolt = <1500000>;
+> 
+> Or what if the board wants to limit the voltage range of this regulator
+> due to what it's used for on the board.
+> 
+>> +                             regulator-always-on;
+>> +                             regulator-boot-on;
+> 
+> And those two properties are almost certainly board-specific policy.
+> 
+> Totally agree to all the above concerns. So can we have a custom .dtsi file
+> for a board+pmic combination? Or have only the required properties over ridden
+> in the board file?
 
-root@amd:~# uname -a
-Linux amd 3.10.0-rc5+ #261 SMP Mon Jun 10 02:59:55 CEST 2013 i686
-GNU/Linux
+Yes, you can do that potentially if most OMAP5 boards will reuse the
+same kind of settings. Kevin has just done that for OMAP3 + twl4030.
 
-pavel@amd:~$ lsusb 
-Bus 005 Device 003: ID 0483:2016 SGS Thomson Microelectronics
-Fingerprint Reader
-Bus 005 Device 002: ID 0a5c:2110 Broadcom Corp. Bluetooth Controller
-Bus 005 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
-Bus 004 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
-Bus 003 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
-Bus 002 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
-Bus 001 Device 007: ID 046d:c05a Logitech, Inc. Optical Mouse M90
-Bus 001 Device 006: ID 04f2:0111 Chicony Electronics Co., Ltd KU-9908
-Keyboard
-Bus 001 Device 003: ID 17ef:1000 Lenovo 
-Bus 001 Device 002: ID 0421:01c7 Nokia Mobile Phones N900 (Storage
-Mode)
-Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+In this case, since we do have only one board, I'm not sure it worth the
+effort.
 
-root@amd:~# hciconfig hci0 up
-Can't init device hci0: Operation not supported (95)
-root@amd:~# hcitool inq
-Inquiring ...
-Inquiry failed.: No such device
-root@amd:~# 
+Regards,
+Benoit
 
-(This is regression from 3.9.)
-
-dmesg does not show much:
-
-thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is unblocked
-thinkpad_acpi: warning: userspace override of important firmware LEDs
-is enabled
-thinkpad_acpi: Standard ACPI backlight interface available, not
-loading native one
-thinkpad_acpi: volume: disabled as there is no ALSA support in this
-kernel
-
-Bluetooth LED is on (and wifi works), so it is not hardware kill
-switch.
-
-
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
