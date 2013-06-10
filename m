@@ -1,93 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab3FJNy1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 09:54:27 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:54019 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753725Ab3FJNyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 09:54:25 -0400
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+	id S1753859Ab3FJNzO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 09:55:14 -0400
+Received: from eu1sys200aog125.obsmtp.com ([207.126.144.159]:44324 "EHLO
+	eu1sys200aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752657Ab3FJNzK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 09:55:10 -0400
+Message-ID: <51B5DA26.6070707@st.com>
+Date: Mon, 10 Jun 2013 14:52:38 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
 To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 0/2] pinctrl: common handling of generic pinconfig props in dt
-Date: Mon, 10 Jun 2013 15:54:21 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Patrice Chotard <patrice.chotard.st@gmail.com>,
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stuart Menefy <stuart.menefy@st.com>, Mark Brown <broonie@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-References: <201306090159.05383.heiko@sntech.de> <201306101506.36098.heiko@sntech.de> <CACRpkdbnf2MJtnYrwGMVWyz4S=7tuDKv84p7eNgveSNCeLv15g@mail.gmail.com>
-In-Reply-To: <CACRpkdbnf2MJtnYrwGMVWyz4S=7tuDKv84p7eNgveSNCeLv15g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201306101554.21671.heiko@sntech.de>
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH v2 04/11] mfd:stixxxx-syscfg: Add ST System Configuration
+ support.
+References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com> <1370856147-6552-1-git-send-email-srinivas.kandagatla@st.com> <CACRpkdaW2ALTWCB7Rd8m=aAGQwh3T_dJVncxJn_eXer4X3J6_g@mail.gmail.com>
+In-Reply-To: <CACRpkdaW2ALTWCB7Rd8m=aAGQwh3T_dJVncxJn_eXer4X3J6_g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 10. Juni 2013, 15:39:26 schrieb Linus Walleij:
-> On Mon, Jun 10, 2013 at 3:06 PM, Heiko Stübner <heiko@sntech.de> wrote:
-> > Am Montag, 10. Juni 2013, 14:52:13 schrieb Linus Walleij:
-> >> On Sun, Jun 9, 2013 at 1:59 AM, Heiko Stübner <heiko@sntech.de> wrote:
-> >> > following your suggestions for a common handling of things like pulls
-> >> > in dt, I've come up with the following solution - hopefully I've
-> >> > gotten the correct meaning of your explanaitions.
-> >> > 
-> >> > It handles all the pinconfigs that either ignore the argument, or have
-> >> > very simple one, like PIN_CONFIG_OUTPUT does.
-> >> 
-> >> OK patches applied. It needs some rough fixes like NULL check
-> >> on kmalloc() but it'll do for a starter.
-> > 
-> > gah, sorry ... I have urge to crawl under a rock now for forgetting
-> > something this obvious ;-) .
-> > 
-> > Apart from the NULL check what more did I mess up? Should I send a fixup
-> > patch or do you want to do it?
+On 10/06/13 14:16, Linus Walleij wrote:
+> On Mon, Jun 10, 2013 at 11:22 AM, Srinivas KANDAGATLA
+> <srinivas.kandagatla@st.com> wrote:
 > 
-> I can fix this.
+>> This mfd driver provides higher level inialization routines for various
+>> IPs like Ethernet, USB, PCIE, SATA and so on. Also it provides way to
+>> get to syscfg registers via standard regmap api which is usefull for
+>> drivers like pinctrl.
+>>
+>> This patch adds support to ST System Configuration registers, which can
+>> be configured by the drivers.
+>>
+>> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>> CC: Stuart Menefy <stuart.menefy@st.com>
+>> CC: Stephen Gallimore <stephen.gallimore@st.com>
+>> CC: Linus Walleij <linus.walleij@linaro.org>
+>> CC: Mark Brown <broonie@kernel.org>
 > 
-> But now I just wondered about one thing:
+> What is this driver doing that drivers/mfd/syscon.c is not already
+> doing?
+As of now, the driver is very much similar to syscon + some additional
+functionality, but we are planning to use this file to add higher level
+functions to configure different IPs like ethernet, usb, power, reset
+and so on which are very much specific to ST System Configuration Registers.
+
+Thanks,
+srini
 > 
-> Does this design imply that we will never be able to support any
-> more than 32 bits (well, the number of bits in unsigned long)
-> i.e. 32 different generic pin configurations?
+> I just get the feeling that you're reinventing the wheel here.
 > 
-> In that case I suspect this might not be so wise. :-(
-
-hmm, yes this would be the limit ... so back to the drawing board
-
-
-> What about instead of using bitstuffed numbers using some
-> representation similar to what can be found in
-> Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
+> Yours,
+> Linus Walleij
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
 > 
-> So instead of using <dt-bindings/pinctrl/pinconfig.h> and
-> enumerators it would be more like using node properties
-> like this:
-> 
-> my_config: my_config {
->         bias-disable;
->         drive-push-pull = <6>;
->         output-high;
-> };
-> 
-> It will make the device trees bigger for sure, but maybe more
-> readable as well?
 
-There was a discussion about each of the merits of the two approaches 
-(bitstuffed vs. individual properties) between Tomasz Figa and Jean-Christophe 
-PLAGNIOL-VILLARD a bit back if I remember correctly.
-
-
-Also I don't think having the configs central like Nomadik does would bloat 
-the dt to much, as most of the time most pins share one config or another.
-
-And it still would be possible to write short pin statements as
-
-	pins = <bank pin mux &config_node>;
-
-if I'm not mistaken.
