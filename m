@@ -1,100 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752478Ab3FJW4q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 18:56:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60458 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124Ab3FJW4p (ORCPT
+	id S1753011Ab3FJW5Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 18:57:24 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:47115 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752095Ab3FJW5W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 18:56:45 -0400
-Date: Mon, 10 Jun 2013 15:56:43 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [IPC] INFO: suspicious RCU usage.
-Message-Id: <20130610155643.89b890cb55e118a19dcb9dec@linux-foundation.org>
-In-Reply-To: <1370540122.1724.3.camel@buesod1.americas.hpqcorp.net>
-References: <20130606132522.GA18959@localhost>
-	<1370540122.1724.3.camel@buesod1.americas.hpqcorp.net>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Jun 2013 18:57:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <1370824712.22405.18.camel@lcm>
+References: <1370694303-2738-1-git-send-email-linkinjeon@gmail.com>
+	<1370824712.22405.18.camel@lcm>
+Date: Tue, 11 Jun 2013 07:57:21 +0900
+Message-ID: <CAKYAXd-V9iF0o5nvFyFPgJX0waDLh4c_eNJ7V_o-tbbrtX1JLQ@mail.gmail.com>
+Subject: Re: [f2fs-dev] [PATCH 1/4] f2fs: reorganize the f2fs_setattr() function.
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Changman Lee <cm224.lee@samsung.com>
+Cc: jaegeuk.kim@samsung.com, Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 06 Jun 2013 10:35:22 -0700 Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
+2013/6/10, Changman Lee <cm224.lee@samsung.com>:
+> Hello, Namjae
+Hi. Changman.
+>
+> If using ACL, whenever i_mode is changed we should update acl_mode which
+> is written to xattr block, too. And vice versa.
+> Because update_inode() is called at any reason and anytime, so we should
+> sync both the moment xattr is written.
+> We don't hope that only i_mode is written to disk and xattr is not. So
+> f2fs_setattr is dirty.
+Yes, agreed this could be issue.
+>
+> And, below code has a bug. When error is occurred, inode->i_mode
+> shouldn't be changed. Please, check one more time, Namjae.
+And, below code has a bug. When error is occurred, inode->i_mode
+shouldn't be changed. Please, check one more time, Namjae.
 
-> > [   51.524946] 
-> > [   51.525983] ===============================
-> > [   51.532875] [ INFO: suspicious RCU usage. ]
-> > [   51.535385] 3.10.0-rc4-next-20130606 #6 Not tainted
-> > [   51.538304] -------------------------------
-> > [   51.540937] /c/kernel-tests/src/stable/include/linux/rcupdate.h:471 Illegal context switch in RCU read-side critical section!
-> > [   51.548110] 
-> > [   51.548110] other info that might help us debug this:
-> > [   51.548110] 
-> > [   51.553055] 
-> > [   51.553055] rcu_scheduler_active = 1, debug_locks = 1
-> > [   51.557199] 2 locks held by trinity/1107:
-> > [   51.560168]  #0:  (&ids->rw_mutex){+.+.+.}, at: [<ffffffff811e15ee>] ipcget+0x38/0x2b3
-> > [   51.566465]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff811e7698>] newseg+0x19d/0x3fd
-> > [   51.572413] 
-> > [   51.572413] stack backtrace:
-> > [   51.574761] CPU: 0 PID: 1107 Comm: trinity Not tainted 3.10.0-rc4-next-20130606 #6
-> > [   51.579331] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-> > [   51.583068]  0000000000000001 ffff880004a07d88 ffffffff817b1f5c ffff880004a07db8
-> > [   51.592119]  ffffffff810f2f1d ffffffff81b78569 00000000000001a8 0000000000000000
-> > [   51.596726]  0000000000000000 ffff880004a07de8 ffffffff810ded5e ffff880004a07fd8
-> > [   51.605189] Call Trace:
-> > [   51.606409]  [<ffffffff817b1f5c>] dump_stack+0x19/0x1b
-> > [   51.609632]  [<ffffffff810f2f1d>] lockdep_rcu_suspicious+0xeb/0xf4
-> > [   51.612905]  [<ffffffff810ded5e>] __might_sleep+0x59/0x1dc
-> > [   51.618614]  [<ffffffff81238623>] idr_preload+0x9b/0x142
-> > [   51.621939]  [<ffffffff811e0e56>] ipc_addid+0x3d/0x193
-> > [   51.624373]  [<ffffffff811e771c>] newseg+0x221/0x3fd
-> > [   51.626596]  [<ffffffff811e7698>] ? newseg+0x19d/0x3fd
-> > [   51.630177]  [<ffffffff811e1774>] ipcget+0x1be/0x2b3
-> > [   51.633174]  [<ffffffff817bc094>] ? retint_swapgs+0x13/0x1b
-> > [   51.636356]  [<ffffffff811e7a5a>] SyS_shmget+0x59/0x5d
-> > [   51.639576]  [<ffffffff811e74fb>] ? shm_try_destroy_orphaned+0xbf/0xbf
-> > [   51.643673]  [<ffffffff811e6ce5>] ? shm_get_unmapped_area+0x20/0x20
-> > [   51.647321]  [<ffffffff811e6cf0>] ? shm_security+0xb/0xb
-> > [   51.650831]  [<ffffffff817bcb27>] system_call_fastpath+0x16/0x1b
-> 
-> I suspect this is caused because now we call idr_preload() in ipc_addid
-> with the rcu lock held by the caller. So, we can either have a two level
-> rcu locking or a two level idr_preload/idr_preload_end.
+This was part of the default code, when ‘acl’ is not set for file’
+Then, inode should be updated by these conditions (i.e., it covers the
+‘chmod’ and ‘setacl’ scenario).
+When ACL is not present on the file and ‘chmod’ is done, then mode is
+changed from this part, as f2fs_get_acl() will fail and cause the
+below code to be executed:
 
-I'm not sure what to suggest really, apart from the use of explosives.
+    if (err || is_inode_flag_set(fi, FI_ACL_MODE)) {
+             inode->i_mode = fi->i_acl_mode;
+             clear_inode_flag(fi, FI_ACL_MODE);
+      }
 
-ipc_addid():
+Now, in order to make it consistent and work on all scenario we need
+to make further change like this in addition to the patch changes.
+setattr_copy(inode, attr);
+        if (attr->ia_valid & ATTR_MODE) {
++             set_acl_inode(fi, inode->i_mode);
+              err = f2fs_acl_chmod(inode);
+              if (err || is_inode_flag_set(fi, FI_ACL_MODE)) {
 
-	spin_lock_init(&new->lock);
-	new->deleted = 0;
-	spin_lock(&new->lock);
+Let me know your opinion.
+Thanks.
 
-this makes no sense.  If we can run spin_lock_init() against a lock
-then it had darn well better be the case that no other thread is able
-to access that lock.  And if no other thread can access that lock then
-there's no need to lock it!
-
-Presumably at some point in the future, other threads can look up this
-object and then the lock becomes useful.  Perhaps that's the
-rcu_read_unlock() after a successful idr_alloc() - it's unclear from a
-quick read.
-
-
-Also, ipc_addid() undoes its caller's rcu_read_lock() if idr_alloc()
-failed.  This is strange from an interface point of view, is not
-documented in the ipc_addid() interface description and will cause
-newseg() (at least) to perform a double rcu_read_unlock().
-
-
-As for this particular trace: I'd view the putting of rcu_read_lock()
-around the ipc_addid() call as being the core mistake.  By its very
-nature, ipc_addid() allocates memory and hence should be called in
-GFP_KERNEL context.
+>
+> diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+> index deefd25..29cd449 100644
+> --- a/fs/f2fs/file.c
+> +++ b/fs/f2fs/file.c
+> @@ -352,10 +352,8 @@ int f2fs_setattr(struct dentry *dentry, struct
+> iattr *attr)
+>
+>         if (attr->ia_valid & ATTR_MODE) {
+>                 err = f2fs_acl_chmod(inode);
+> -               if (err || is_inode_flag_set(fi, FI_ACL_MODE)) {
+> -                       inode->i_mode = fi->i_acl_mode;
+> +               if (err || is_inode_flag_set(fi, FI_ACL_MODE))
+>                         clear_inode_flag(fi, FI_ACL_MODE);
+> -               }
+>         }
+>
+> Thanks.
+>
+>
+> On 토, 2013-06-08 at 21:25 +0900, Namjae Jeon wrote:
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>>
+>> Remove the redundant code from this function and make it aligned with
+>> usages of latest generic vfs layer function e.g using the setattr_copy()
+>> instead of using the f2fs specific function.
+>>
+>> Also correct the condition for updating the size of file via
+>> truncate_setsize().
+>>
+>> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+>> Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
+>> ---
+>>  fs/f2fs/acl.c  |    5 +----
+>>  fs/f2fs/file.c |   47 +++++------------------------------------------
+>>  2 files changed, 6 insertions(+), 46 deletions(-)
+>>
+>> diff --git a/fs/f2fs/acl.c b/fs/f2fs/acl.c
+>> index 44abc2f..2d13f44 100644
+>> --- a/fs/f2fs/acl.c
+>> +++ b/fs/f2fs/acl.c
+>> @@ -17,9 +17,6 @@
+>>  #include "xattr.h"
+>>  #include "acl.h"
+>>
+>> -#define get_inode_mode(i)	((is_inode_flag_set(F2FS_I(i), FI_ACL_MODE)) ?
+>> \
+>> -					(F2FS_I(i)->i_acl_mode) : ((i)->i_mode))
+>> -
+>>  static inline size_t f2fs_acl_size(int count)
+>>  {
+>>  	if (count <= 4) {
+>> @@ -299,7 +296,7 @@ int f2fs_acl_chmod(struct inode *inode)
+>>  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+>>  	struct posix_acl *acl;
+>>  	int error;
+>> -	umode_t mode = get_inode_mode(inode);
+>> +	umode_t mode = inode->i_mode;
+>>
+>>  	if (!test_opt(sbi, POSIX_ACL))
+>>  		return 0;
+>> diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+>> index deefd25..8dfc1da 100644
+>> --- a/fs/f2fs/file.c
+>> +++ b/fs/f2fs/file.c
+>> @@ -300,63 +300,26 @@ static int f2fs_getattr(struct vfsmount *mnt,
+>>  	return 0;
+>>  }
+>>
+>> -#ifdef CONFIG_F2FS_FS_POSIX_ACL
+>> -static void __setattr_copy(struct inode *inode, const struct iattr
+>> *attr)
+>> -{
+>> -	struct f2fs_inode_info *fi = F2FS_I(inode);
+>> -	unsigned int ia_valid = attr->ia_valid;
+>> -
+>> -	if (ia_valid & ATTR_UID)
+>> -		inode->i_uid = attr->ia_uid;
+>> -	if (ia_valid & ATTR_GID)
+>> -		inode->i_gid = attr->ia_gid;
+>> -	if (ia_valid & ATTR_ATIME)
+>> -		inode->i_atime = timespec_trunc(attr->ia_atime,
+>> -						inode->i_sb->s_time_gran);
+>> -	if (ia_valid & ATTR_MTIME)
+>> -		inode->i_mtime = timespec_trunc(attr->ia_mtime,
+>> -						inode->i_sb->s_time_gran);
+>> -	if (ia_valid & ATTR_CTIME)
+>> -		inode->i_ctime = timespec_trunc(attr->ia_ctime,
+>> -						inode->i_sb->s_time_gran);
+>> -	if (ia_valid & ATTR_MODE) {
+>> -		umode_t mode = attr->ia_mode;
+>> -
+>> -		if (!in_group_p(inode->i_gid) && !capable(CAP_FSETID))
+>> -			mode &= ~S_ISGID;
+>> -		set_acl_inode(fi, mode);
+>> -	}
+>> -}
+>> -#else
+>> -#define __setattr_copy setattr_copy
+>> -#endif
+>> -
+>>  int f2fs_setattr(struct dentry *dentry, struct iattr *attr)
+>>  {
+>>  	struct inode *inode = dentry->d_inode;
+>> -	struct f2fs_inode_info *fi = F2FS_I(inode);
+>>  	int err;
+>>
+>>  	err = inode_change_ok(inode, attr);
+>>  	if (err)
+>>  		return err;
+>>
+>> -	if ((attr->ia_valid & ATTR_SIZE) &&
+>> -			attr->ia_size != i_size_read(inode)) {
+>> -		truncate_setsize(inode, attr->ia_size);
+>> +	if ((attr->ia_valid & ATTR_SIZE)) {
+>> +		if (attr->ia_size != i_size_read(inode))
+>> +			truncate_setsize(inode, attr->ia_size);
+>>  		f2fs_truncate(inode);
+>>  		f2fs_balance_fs(F2FS_SB(inode->i_sb));
+>>  	}
+>>
+>> -	__setattr_copy(inode, attr);
+>> +	setattr_copy(inode, attr);
+>>
+>> -	if (attr->ia_valid & ATTR_MODE) {
+>> +	if (attr->ia_valid & ATTR_MODE)
+>>  		err = f2fs_acl_chmod(inode);
+>> -		if (err || is_inode_flag_set(fi, FI_ACL_MODE)) {
+>> -			inode->i_mode = fi->i_acl_mode;
+>> -			clear_inode_flag(fi, FI_ACL_MODE);
+>> -		}
+>> -	}
+>>
+>>  	mark_inode_dirty(inode);
+>>  	return err;
+>
+>
+>
