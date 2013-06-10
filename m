@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab3FJONG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 10:13:06 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56637 "EHLO
+	id S1753291Ab3FJOQq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 10:16:46 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56657 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab3FJONE (ORCPT
+	with ESMTP id S1752547Ab3FJOQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 10:13:04 -0400
-Date: Mon, 10 Jun 2013 16:12:09 +0200 (CEST)
+	Mon, 10 Jun 2013 10:16:45 -0400
+Date: Mon, 10 Jun 2013 16:15:24 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
 To: Chen Gang <gang.chen@asianux.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: timer: looping issue, need reset variable
- 'found'
-In-Reply-To: <51B4A408.4050909@asianux.com>
-Message-ID: <alpine.LFD.2.02.1306101501160.22970@ionos>
-References: <51B4A408.4050909@asianux.com>
+cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/softirq.c: delete 'while' looping to improve a
+ little performance and beautify code
+In-Reply-To: <51B4755B.4020205@asianux.com>
+Message-ID: <alpine.LFD.2.02.1306101613200.22970@ionos>
+References: <51B4755B.4020205@asianux.com>
 User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -27,23 +32,21 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Sun, 9 Jun 2013, Chen Gang wrote:
-
+> After finish the internal 'while', need not test TASKLET_STATE_SCHED
+> again, so looping back to outside 'while' is only for set_bit().
 > 
-> According to __internal_add_timer(), in _next_timer_interrupt(), when
-> 'tv1.vec' find one, but need 'cascade bucket(s)', we still need find
-> each slot of 'tv*.vec'.
+> When use 'if' and set_bit() instead of 'while', it will save at least
+> one running conditional instruction, and also will be clearer for readers
+> (although the binary size will be a little bigger).
 
-No, we do not. We only need to scan the first cascade array after the
-enqueued timer. If there is nothing in tv2 which might come before the
-found timer, then any timer in tv3 will be later than the one we found
-in the primary wheel.
+And by doing that you break the atomicity of test_and_set_bit. There
+is a good reason why this is an atomic operation and why the code is
+written as is.
+ 
+> The related patch is "1da177e Linux-2.6.12-rc2"
 
-> So need reset variable 'found', so can fully scan ''do {...} while()''
-> for 'tv*.vec'.
+How is that patch related to the problem?
 
-And thereby lose the information, that we already found a timer in the
-scan of the primary array.
-
-Thanks,
+Thanks
 
 	tglx
