@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab3FJTbS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 15:31:18 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:54461 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab3FJTbR (ORCPT
+	id S1753264Ab3FJTd7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 15:33:59 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:57581 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab3FJTd5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 15:31:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <1370891880-2644-1-git-send-email-sasha.levin@oracle.com>
-References: <1370891880-2644-1-git-send-email-sasha.levin@oracle.com>
-Date: Mon, 10 Jun 2013 22:31:15 +0300
-X-Google-Sender-Auth: mgolzQHV7eTYKvLTG-V2zrQx-MM
-Message-ID: <CAOJsxLGDH2iwznRkP-iwiMZw7Ee3mirhjLvhShrWLHR0qguRxA@mail.gmail.com>
-Subject: Re: [PATCH] slab: prevent warnings when allocating with __GFP_NOWARN
-From: Pekka Enberg <penberg@kernel.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 10 Jun 2013 15:33:57 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
+        Sanjay Lal <sanjayl@kymasys.com>, Gleb Natapov <gleb@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: [PATCH 0/2] kvm/mips: ABI fix for 3.10
+Date: Mon, 10 Jun 2013 12:33:46 -0700
+Message-Id: <1370892828-21676-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sasha,
+From: David Daney <david.daney@cavium.com>
 
-On Mon, Jun 10, 2013 at 10:18 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> slab would still spew a warning when a big allocation happens with the
-> __GFP_NOWARN fleg is set. Prevent that to conform to __GFP_NOWARN.
->
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->  mm/slab_common.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
->
-> diff --git a/mm/slab_common.c b/mm/slab_common.c
-> index ff3218a..2d41450 100644
-> --- a/mm/slab_common.c
-> +++ b/mm/slab_common.c
-> @@ -373,8 +373,10 @@ struct kmem_cache *kmalloc_slab(size_t size, gfp_t flags)
->  {
->         int index;
->
-> -       if (WARN_ON_ONCE(size > KMALLOC_MAX_SIZE))
-> +       if (size > KMALLOC_MAX_SIZE) {
-> +               WARN_ON_ONCE(!(flags & __GFP_NOWARN));
->                 return NULL;
-> +       }
+As requested by Gleb Natapov, we need to define and use KVM_REG_MIPS
+when using the GET_ONE_REG/SET_ONE_REG ioctl.  Since this is part of
+the MIPS kvm support that is new in 3.10, it should be merged before a
+bad ABI leaks out into an 'official' kernel release.
 
-Does this fix a real problem you're seeing? __GFP_NOWARN is about not
-warning if a memory allocation fails but this particular WARN_ON
-suggests a kernel bug.
+David Daney (2):
+  kvm: Add definition of KVM_REG_MIPS
+  mips/kvm: Use KVM_REG_MIPS and proper size indicators for *_ONE_REG
 
-                         Pekka
+ arch/mips/include/uapi/asm/kvm.h | 81 +++++++++++++++++++--------------------
+ arch/mips/kvm/kvm_mips.c         | 83 ++++++++++++++++++++++++++--------------
+ include/uapi/linux/kvm.h         |  1 +
+ 3 files changed, 94 insertions(+), 71 deletions(-)
+
+-- 
+1.7.11.7
+
