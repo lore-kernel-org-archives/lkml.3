@@ -1,42 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752370Ab3FJRNn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 13:13:43 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:28198
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751484Ab3FJRNm convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 13:13:42 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zz98dIc89bhzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh906i1155h192ch)
-Date: Mon, 10 Jun 2013 10:13:32 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>
-CC: Shawn Guo <shawn.guo@linaro.org>, Olof Johansson <olof@lixom.net>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm: dt: zynq: Add support for the zc706 platform
-References: <1370884204-2297-1-git-send-email-soren.brinkmann@xilinx.com>
+	id S1753057Ab3FJROc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 13:14:32 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:57508 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab3FJROa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 13:14:30 -0400
+Message-ID: <51B60973.1080506@gmail.com>
+Date: Mon, 10 Jun 2013 10:14:27 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <1370884204-2297-1-git-send-email-soren.brinkmann@xilinx.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <546c1098-93ed-4ac0-851a-0ade4e356154@AM1EHSMHS010.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
+To: Sanjay Lal <sanjayl@kymasys.com>
+CC: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 00/31] KVM/MIPS: Implement hardware virtualization via
+ the MIPS-VZ extensions.
+References: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com> <8D7771A4-B51E-4FA8-9342-621FE41792DE@kymasys.com>
+In-Reply-To: <8D7771A4-B51E-4FA8-9342-621FE41792DE@kymasys.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 10:10:04AM -0700, Soren Brinkmann wrote:
-> Add a DT fragment for the zc706 Zynq platform. Also, adding a
-> corresponding target to the Makefile and adding an appropriate
-> compatibility string in the BSP.
-I forgot to mention: This patch depends on the branch armsoc/zynq/clk.
+On 06/10/2013 09:43 AM, Sanjay Lal wrote:
+>
+> On Jun 7, 2013, at 4:03 PM, David Daney wrote:
+>
+>> From: David Daney <david.daney@cavium.com>
+>>
+>> These patches take a somewhat different approach to MIPS
+>> virtualization via the MIPS-VZ extensions than the patches previously
+>> sent by Sanjay Lal.
+>>
+>> Several facts about the code:
+>>
+>>
+>> o Currently probably only usable on the OCTEON III CPU model, as some
+>>   MIPS-VZ implementation-defined behaviors were assumed to have the
+>>   OCTEON III behavior.
+>>
+>
+>
+> I've only briefly gone over the patches, but I was wondering if the Cavium implementation has support for GuestIDs, which are optional in the VZ-ASE?
+>
 
-	Sören
+No, OCTEON III does not support this optional behavior.  For the most 
+part this only impacts TLB management.  I think in the context of KVM, 
+you cannot leave foreign Guest's TLB entries present in the Guest TLB 
+anyhow, so the feature is of little use.
 
+Since MIPS TLBs are managed by software, it is valid for a guest to 
+populate the TLB in any way it desires.  To have the hypervisor (KVM) 
+come and randomly invalidate the TLB, via the GuestID mechanism, would 
+both be detectable by the guest, and potentially make the guest operate 
+incorrectly.
+
+David Daney
+
+> Regards
+> Sanjay
+>
+>
+>
+>
 
