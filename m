@@ -1,93 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569Ab3FJWwn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 18:52:43 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:25719 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751051Ab3FJWwl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 18:52:41 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1be0I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz177df4h17326ah8275eh8275dha1495iz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
-Date: Mon, 10 Jun 2013 17:52:33 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [BUG] PCI related panic on powerpc based board with 3.10-rcX
-To: Michael Guntsche <michael.guntsche@it-loops.com>
-CC: Rojhalat Ibrahim <imr@rtschenk.de>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-References: <CALG0vJu9-640D=Q-2RoSOnWtR=sERwj0fSCibK+ijprcf-T6Ag@mail.gmail.com>
-	<7927838.NMrLdRWptT@pcimr>
-	<CALG0vJtjS2wP_s=-iyG1ABKw_ct=B9OdNXY9YCrnkhAnpaN1Zw@mail.gmail.com>
-In-Reply-To: <CALG0vJtjS2wP_s=-iyG1ABKw_ct=B9OdNXY9YCrnkhAnpaN1Zw@mail.gmail.com> (from
-	michael.guntsche@it-loops.com on Mon Jun 10 12:07:43 2013)
-X-Mailer: Balsa 2.4.12
-Message-ID: <1370904753.18413.19@snotra>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+	id S1752478Ab3FJW4q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 18:56:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60458 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab3FJW4p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 18:56:45 -0400
+Date: Mon, 10 Jun 2013 15:56:43 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [IPC] INFO: suspicious RCU usage.
+Message-Id: <20130610155643.89b890cb55e118a19dcb9dec@linux-foundation.org>
+In-Reply-To: <1370540122.1724.3.camel@buesod1.americas.hpqcorp.net>
+References: <20130606132522.GA18959@localhost>
+	<1370540122.1724.3.camel@buesod1.americas.hpqcorp.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2013 12:07:43 PM, Michael Guntsche wrote:
-> Good evening,
-> 
-> On Mon, Jun 10, 2013 at 1:41 PM, Rojhalat Ibrahim <imr@rtschenk.de>  
-> wrote:
-> > Hi Mike,
-> >
-> > could you please try this patch:
-> > https://lists.ozlabs.org/pipermail/linuxppc-dev/2013-May/106624.html
-> > http://patchwork.ozlabs.org/patch/244515/
-> >
-> >    Rojhalat
-> >
-> >
-> > On Saturday 08 June 2013 21:39:37 Michael Guntsche wrote:
-> >> After bisecting I found the responsible commit.
-> >>
-> >> 50d8f87d2b3: powerpc/fsl-pci Make PCIe hotplug work with Freescale
-> >> PCIe controllers
-> >>
-> >> Reverting this commit allowed my board to boot again.
-> >>
-> >> @Rojhalat: Please have a look at
-> >> http://marc.info/?l=linux-kernel&m=137071294204858&w=2
-> >> for my initial bugreport.
-> >>
-> >> What I do not understand at all is why this is affecting my  
-> platform.
-> >> AFAIK there is no PCIe hardware on it AND I completely disabled  
-> PCIe
-> >> support in config.
-> >>
-> >> Kind regards,
-> >> Mike
-> 
-> This patch does not fix the problem, during boot the kernel still
-> panics. I had a closer look at the commit and the following patch
-> fixes it for me....
-> 
-> diff --git a/arch/powerpc/sysdev/fsl_pci.c  
-> b/arch/powerpc/sysdev/fsl_pci.c
-> index 028ac1f..21b687f 100644
-> --- a/arch/powerpc/sysdev/fsl_pci.c
-> +++ b/arch/powerpc/sysdev/fsl_pci.c
-> @@ -814,7 +814,7 @@ int __init mpc83xx_add_bridge(struct device_node  
-> *dev)
->                 if (ret)
->                         goto err0;
->         } else {
-> -               fsl_setup_indirect_pci(hose, rsrc_cfg.start,
-> +               setup_indirect_pci(hose, rsrc_cfg.start,
->                                        rsrc_cfg.start + 4, 0);
->         }
+On Thu, 06 Jun 2013 10:35:22 -0700 Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
 
-The only difference here is that you're not setting hose->ops to  
-fsl_indirect_pci_ops.  Do you know why that is helping, and what  
-hose->ops is set to instead?
+> > [   51.524946] 
+> > [   51.525983] ===============================
+> > [   51.532875] [ INFO: suspicious RCU usage. ]
+> > [   51.535385] 3.10.0-rc4-next-20130606 #6 Not tainted
+> > [   51.538304] -------------------------------
+> > [   51.540937] /c/kernel-tests/src/stable/include/linux/rcupdate.h:471 Illegal context switch in RCU read-side critical section!
+> > [   51.548110] 
+> > [   51.548110] other info that might help us debug this:
+> > [   51.548110] 
+> > [   51.553055] 
+> > [   51.553055] rcu_scheduler_active = 1, debug_locks = 1
+> > [   51.557199] 2 locks held by trinity/1107:
+> > [   51.560168]  #0:  (&ids->rw_mutex){+.+.+.}, at: [<ffffffff811e15ee>] ipcget+0x38/0x2b3
+> > [   51.566465]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff811e7698>] newseg+0x19d/0x3fd
+> > [   51.572413] 
+> > [   51.572413] stack backtrace:
+> > [   51.574761] CPU: 0 PID: 1107 Comm: trinity Not tainted 3.10.0-rc4-next-20130606 #6
+> > [   51.579331] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+> > [   51.583068]  0000000000000001 ffff880004a07d88 ffffffff817b1f5c ffff880004a07db8
+> > [   51.592119]  ffffffff810f2f1d ffffffff81b78569 00000000000001a8 0000000000000000
+> > [   51.596726]  0000000000000000 ffff880004a07de8 ffffffff810ded5e ffff880004a07fd8
+> > [   51.605189] Call Trace:
+> > [   51.606409]  [<ffffffff817b1f5c>] dump_stack+0x19/0x1b
+> > [   51.609632]  [<ffffffff810f2f1d>] lockdep_rcu_suspicious+0xeb/0xf4
+> > [   51.612905]  [<ffffffff810ded5e>] __might_sleep+0x59/0x1dc
+> > [   51.618614]  [<ffffffff81238623>] idr_preload+0x9b/0x142
+> > [   51.621939]  [<ffffffff811e0e56>] ipc_addid+0x3d/0x193
+> > [   51.624373]  [<ffffffff811e771c>] newseg+0x221/0x3fd
+> > [   51.626596]  [<ffffffff811e7698>] ? newseg+0x19d/0x3fd
+> > [   51.630177]  [<ffffffff811e1774>] ipcget+0x1be/0x2b3
+> > [   51.633174]  [<ffffffff817bc094>] ? retint_swapgs+0x13/0x1b
+> > [   51.636356]  [<ffffffff811e7a5a>] SyS_shmget+0x59/0x5d
+> > [   51.639576]  [<ffffffff811e74fb>] ? shm_try_destroy_orphaned+0xbf/0xbf
+> > [   51.643673]  [<ffffffff811e6ce5>] ? shm_get_unmapped_area+0x20/0x20
+> > [   51.647321]  [<ffffffff811e6cf0>] ? shm_security+0xb/0xb
+> > [   51.650831]  [<ffffffff817bcb27>] system_call_fastpath+0x16/0x1b
+> 
+> I suspect this is caused because now we call idr_preload() in ipc_addid
+> with the rcu lock held by the caller. So, we can either have a two level
+> rcu locking or a two level idr_preload/idr_preload_end.
 
--Scott
+I'm not sure what to suggest really, apart from the use of explosives.
+
+ipc_addid():
+
+	spin_lock_init(&new->lock);
+	new->deleted = 0;
+	spin_lock(&new->lock);
+
+this makes no sense.  If we can run spin_lock_init() against a lock
+then it had darn well better be the case that no other thread is able
+to access that lock.  And if no other thread can access that lock then
+there's no need to lock it!
+
+Presumably at some point in the future, other threads can look up this
+object and then the lock becomes useful.  Perhaps that's the
+rcu_read_unlock() after a successful idr_alloc() - it's unclear from a
+quick read.
+
+
+Also, ipc_addid() undoes its caller's rcu_read_lock() if idr_alloc()
+failed.  This is strange from an interface point of view, is not
+documented in the ipc_addid() interface description and will cause
+newseg() (at least) to perform a double rcu_read_unlock().
+
+
+As for this particular trace: I'd view the putting of rcu_read_lock()
+around the ipc_addid() call as being the core mistake.  By its very
+nature, ipc_addid() allocates memory and hence should be called in
+GFP_KERNEL context.
