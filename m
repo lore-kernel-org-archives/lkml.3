@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753743Ab3FJPZN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 11:25:13 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:58916 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752072Ab3FJPZL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 11:25:11 -0400
-Date: Mon, 10 Jun 2013 16:25:07 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Message-ID: <20130610152507.GF1403@sirena.org.uk>
-References: <1370621488-18130-1-git-send-email-lee.jones@linaro.org>
- <CACRpkdbygDNdsO=EzigPiBSnMmF-NVnF95HeBBavkry93i+ubQ@mail.gmail.com>
- <20130610151208.GK20297@gmail.com>
+	id S1753922Ab3FJP2S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 11:28:18 -0400
+Received: from sauhun.de ([89.238.76.85]:40142 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752133Ab3FJP2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 11:28:17 -0400
+Date: Mon, 10 Jun 2013 17:29:55 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Christian Ruppert <christian.ruppert@abilis.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-i2c@vger.kernel.org,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>
+Subject: Re: [PATCH REBASE] i2c-designware: make SDA hold time configurable
+Message-ID: <20130610152954.GE2987@katana>
+References: <20130514110745.GA10906@intel.com>
+ <1368536642-7158-1-git-send-email-christian.ruppert@abilis.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qp4W5+cUSnZs0RIF"
+	protocol="application/pgp-signature"; boundary="IU5/I01NYhRvwH70"
 Content-Disposition: inline
-In-Reply-To: <20130610151208.GK20297@gmail.com>
-X-Cookie: Tomorrow, you can be anywhere.
+In-Reply-To: <1368536642-7158-1-git-send-email-christian.ruppert@abilis.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 00/10] regulator: ab8500-ext: Refactorings
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---qp4W5+cUSnZs0RIF
+--IU5/I01NYhRvwH70
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jun 10, 2013 at 04:12:08PM +0100, Lee Jones wrote:
+On Tue, May 14, 2013 at 03:04:02PM +0200, Christian Ruppert wrote:
+> This patch makes the SDA hold time configurable through device tree.
+>=20
+> [rebased to i2c-current/i2c-next/mainline-3.10-rc1]
+>=20
+> Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+> Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
 
-> The 'ux500: regulator_supply' patch, relies on the 'regulator:
-> supply_name' one however. Mark has taken two of them, I don't know why
-> the others were missed/intentionally left.
+Hmm, I really have problems adding a generic property. I need to better
+understand why this is needed? What is the usecase? Can't a safe value
+be calculated depending on the bus-speed? Is there a public datasheet
+available somewhere?
 
-> Mark, was there a reason for this?
+Thanks,
 
-IIRC they were more involved and since you decided to pick a random
-e-mail address to send them to that goes nowhere near the mailboxes I
-use for upstream they're not going to bubble up particularly quickly.
+   Wolfram
 
---qp4W5+cUSnZs0RIF
+
+--IU5/I01NYhRvwH70
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRte/QAAoJELSic+t+oim9QrIP/jXzThhKqrc63wNG/pVaC0Iz
-TdZ1a6CDGGYT4azvcAVj1B8tusXyX+HBIpFJfwbzQ+ywH+jCj82lKCOOotAzQIiI
-Gw/q4q5pGZBGZyf7zlZtn2hcRVHeFnUn51pDP8jrQz32S520orB1Mp6pHCvecM8M
-Y5WCNkVXfL0Wc1xmp6QtNzohkeJA1SwSlkqUUlHRr+yXWoSAk+kkHyhCLKHCORfG
-g6uuyjAnsbqw2UPupQD9pfgsWvcOsV5Rflxrl0Qf/r7lqtht9FFA+2wN9Km0bkTu
-7KKAQbzplQNZysNrpBDPzYCcFm7QLMOsXrgE5ZklmKPqGU3BaY0wmcmZOzy0prwD
-KZBFlavV1CYwATB8suhliZwUsxWFEPtHTrNvQMXnC7w5lXv1WzGUp/10DXgY8sKP
-6QB1n2Bn8ZnS1Y+nQKc/Fm9QQoxkbl6PT+nbyq+a51uANBMJhzRlI3CsnHQh4q/g
-OmsOPaW2uk0Z/znSvRx/9xirveHmRpzncOb+sVoshREsvQJ+hRPokfE/8gStE00J
-WgDwYKHIlqYLaRjeYhdSA0hqlv9pvTUA4pRdMaT5uXE+gMBnQUOml1T6WjpbloxL
-ZyrpQqAPQKrZ80OTF6tnIp/y0sMnQhjATboZZA/NgEVoFpN2iqcFVnlJ8DVxLjIK
-n0MsGamPTmjdJOUAVwXy
-=UjbP
+iQIcBAEBAgAGBQJRtfDyAAoJEBQN5MwUoCm224EP/Rf3V7bWv+RErWc9/UrPKlvS
+fkwU6fckWq2DVPn7L85VcqBIshBoNa37KlXX/R8ldTXe5w17LdrJB9RGyitDRUGn
+d7TfRO4f9pUrn+eNbTxMoFMh0nh6nVzI2LARyWTDcI4qfP3DN4JvFpI/CaXRQBpW
+lud+Mt9xB/fNvTP19pjFWHqslRoIFTk4NUOqWFaOJ3n6mzh9t8udsTZ8Yqk19bWC
+CEWTuR2MQkWK1DGjYhSaBcQcIankCDv40m5700DQ1AdG7OfILSDrD9eO+P2BmS52
+i80TvqcFpADIo1ccZKI3AmqjrbjRU8Dew/9Z6qsPX1D86Ee30Ou/FhuiUAE6uY1T
+6sDLUOr7BJueEeRNoBv29kY6NHB3kVw9ghNynr+xrC3fVhgFnyE/TIfP/eX8bF6P
+Y8eyakaOocbScfm/WePz2yLGzTVrkyPYHIagPMiEtY0CsuWkq51VfUGm3Qf1M5rT
+DeAFfdZghKpWzTTmCZvH+HwTSMym07AJK3khrvs+IKtptSH0MwefOcu7XKyLDkTH
+pSoJfSSGMjGUP1LbsDY0xAHcOjQ2fod3dhghJdE0khGdBt8lvDohLnnZ6NUWa28H
+3FFsOkDS+3iJsrbNADinPn8WIa6W3A+080CSpWsoubE1Z6OJAw/vmV5q+jtnpQ66
+/fOtoxe6eXcSTm5cfjFK
+=3Uig
 -----END PGP SIGNATURE-----
 
---qp4W5+cUSnZs0RIF--
+--IU5/I01NYhRvwH70--
