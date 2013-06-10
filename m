@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab3FJW0a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 18:26:30 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:41533 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124Ab3FJW01 (ORCPT
+	id S1753731Ab3FJWce (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 18:32:34 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:45421 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab3FJWcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 18:26:27 -0400
+	Mon, 10 Jun 2013 18:32:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <51B30285.6020503@asianux.com>
-References: <51B30285.6020503@asianux.com>
-Date: Mon, 10 Jun 2013 15:26:26 -0700
-Message-ID: <CA+8MBbK_nfOhZGsd5wU-hyiwh3pHS5c42eiBfxLpCjDgBKUqJg@mail.gmail.com>
-Subject: Re: [Suggestion] arch/*/include/asm/bitops.h: about __set_bit() API.
-From: Tony Luck <tony.luck@gmail.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Richard Henderson <rth@twiddle.net>, ink@jurassic.park.msu.ru,
-        Matt Turner <mattst88@gmail.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>, yasutake.koichi@jp.panasonic.com,
-        linux-alpha@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        linux-am33-list@redhat.com, Linux-Arch <linux-arch@vger.kernel.org>
+In-Reply-To: <51B61982.2050903@candelatech.com>
+References: <51B61982.2050903@candelatech.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Mon, 10 Jun 2013 23:32:12 +0100
+X-Google-Sender-Auth: bJO79sccOeMAnF9GSpOwlLVt5RI
+Message-ID: <CAHkRjk5SDCbqr0Br24YQuHr=j7DmnpYk9CShrz1qiuYff7+qAw@mail.gmail.com>
+Subject: Re: kmemleak reports in kernel 3.9.5+
+To: Ben Greear <greearb@candelatech.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 8, 2013 at 3:08 AM, Chen Gang <gang.chen@asianux.com> wrote:
-> using 'unsigned int *', implicitly:
->   ./ia64/include/asm/bitops.h:63:__set_bit (int nr, volatile void *addr)
+On 10 June 2013 19:22, Ben Greear <greearb@candelatech.com> wrote:
+> We had a system go OOM while doing lots of wireless
+> stations.  (System had 8GB of RAM, so I suspect a leak).
+>
+> I enabled kmemleak in a 3.9.5 (plus some local patches) and
+> I see the entries below.  Any idea if these are real or not?
+>
+> unreferenced object 0xffff880212281c80 (size 128):
+>   comm "systemd", pid 1, jiffies 4294682684 (age 1159.517s)
+>   hex dump (first 32 bytes):
+>     60 39 27 12 02 88 ff ff 00 02 20 00 00 00 ad de  `9'....... .....
+>     10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+>   backtrace:
+>     [<ffffffff815de7bf>] kmemleak_alloc+0x73/0x98
+>     [<ffffffff8118b4d4>] slab_post_alloc_hook+0x28/0x2a
+>     [<ffffffff8118d605>] __kmalloc+0xf9/0x122
+>     [<ffffffff8154946d>] kzalloc.clone.0+0xe/0x10
+>     [<ffffffff81549494>] fib_default_rule_add+0x25/0x7a
+>     [<ffffffffa014f5a9>] ip6mr_net_init+0x7e/0x118 [ipv6]
+>     [<ffffffff8152c992>] ops_init+0xd6/0xf7
+>     [<ffffffff8152cb51>] register_pernet_operations+0xc2/0x16b
+>     [<ffffffff8152cc87>] register_pernet_subsys+0x2e/0x47
+>     [<ffffffffa016db69>] 0xffffffffa016db69
+>     [<ffffffffa016d109>] 0xffffffffa016d109
+>     [<ffffffff8100207f>] do_one_initcall+0x7f/0x13e
+>     [<ffffffff810f3985>] do_init_module+0x44/0x18f
+>     [<ffffffff810f5da7>] load_module+0x14d1/0x168e
+>     [<ffffffff810f6114>] sys_init_module+0xfd/0x101
+>     [<ffffffff815f6599>] system_call_fastpath+0x16/0x1b
 
-There is some downside on ia64 to your suggestion.  If "addr" is properly
-aligned for an "int", but misaligned for a long ... i.e. addr%8 == 4, then I'll
-take an unaligned reference trap if I work with long* where the current code
-working with int* does not.
+No idea yet. You can try:
 
-Now perhaps all the callers do guarantee long* alignment?  But I don't know.
+echo clear > /sys/kernel/debug/kmemleak
 
-Apart from uniformity, there doesn't see to be any upside to changing this.
+and see if there are more appearing after. All seem to have a common
+allocation path via debug_object_activate -> ... ->
+rcuhead_fixup_activate -> ... -> __debug_object_init.
 
--Tony Luck
+--
+Catalin
