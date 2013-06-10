@@ -1,199 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab3FJIkq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 04:40:46 -0400
-Received: from mga11.intel.com ([192.55.52.93]:33745 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752951Ab3FJIkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 04:40:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,835,1363158000"; 
-   d="scan'208";a="350781727"
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: [PATCH v10 net-next 6/6] ixgbe: add extra stats for ndo_ll_poll
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Eric Dumazet <erdnetdev@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Mon, 10 Jun 2013 11:40:31 +0300
-Message-ID: <20130610084030.6955.89381.stgit@ladj378.jer.intel.com>
-In-Reply-To: <20130610083929.6955.87206.stgit@ladj378.jer.intel.com>
-References: <20130610083929.6955.87206.stgit@ladj378.jer.intel.com>
-User-Agent: StGIT/0.14.3
+	id S1752945Ab3FJIl4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 04:41:56 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:62356 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752520Ab3FJIjr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 04:39:47 -0400
+Message-ID: <51B590C9.9080009@gmail.com>
+Date: Mon, 10 Jun 2013 16:39:37 +0800
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Gleb Natapov <gleb@redhat.com>
+CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, avi.kivity@gmail.com,
+        mtosatti@redhat.com, pbonzini@redhat.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v3 0/6] KVM: MMU: fast invalidate all mmio sptes
+References: <1370595088-3315-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130610075656.GY4725@redhat.com>
+In-Reply-To: <20130610075656.GY4725@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add additional statistics to the ixgbe driver for ndo_ll_poll
-Defined under LL_EXTENDED_STATS
+On 06/10/2013 03:56 PM, Gleb Natapov wrote:
+> On Fri, Jun 07, 2013 at 04:51:22PM +0800, Xiao Guangrong wrote:
+>> Changelog:
+>> V3:
+>>   All of these changes are from Gleb's review:
+>>   1) rename RET_MMIO_PF_EMU to RET_MMIO_PF_EMULATE.
+>>   2) smartly adjust kvm generation number in kvm_current_mmio_generatio()
+>>      to avoid kvm_memslots->generation overflow.
+>>
+>> V2:
+>>   - rename kvm_mmu_invalid_mmio_spte to kvm_mmu_invalid_mmio_sptes
+>>   - use kvm->memslots->generation as kvm global generation-number
+>>   - fix comment and codestyle
+>>   - init kvm generation close to mmio wrap-around value
+>>   - keep kvm_mmu_zap_mmio_sptes
+>>
+>> The current way is holding hot mmu-lock and walking all shadow pages, this
+>> is not scale. This patchset tries to introduce a very simple and scale way
+>> to fast invalidate all mmio sptes - it need not walk any shadow pages and hold
+>> any locks.
+>>
+>> The idea is simple:
+>> KVM maintains a global mmio valid generation-number which is stored in
+>> kvm->memslots.generation and every mmio spte stores the current global
+>> generation-number into his available bits when it is created
+>>
+>> When KVM need zap all mmio sptes, it just simply increase the global
+>> generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
+>> then it walks the shadow page table and get the mmio spte. If the
+>> generation-number on the spte does not equal the global generation-number,
+>> it will go to the normal #PF handler to update the mmio spte
+>>
+>> Since 19 bits are used to store generation-number on mmio spte, we zap all
+>> mmio sptes when the number is round
+>>
+> Looks good to me, but doesn't tis obsolete kvm_mmu_zap_mmio_sptes() and
+> sp->mmio_cached, so they should be removed as part of the patch series?
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Yes, i agree, they should be removed. :)
+
+There is the patch to do these things:
+
+>From bc1bc36e2640059f06c4860af802ecc74e1f3d2d Mon Sep 17 00:00:00 2001
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Date: Mon, 10 Jun 2013 16:28:55 +0800
+Subject: [PATCH 7/6] KVM: MMU: drop kvm_mmu_zap_mmio_sptes
+
+Drop kvm_mmu_zap_mmio_sptes and use kvm_mmu_invalidate_zap_all_pages
+instead to handle mmio generation number overflow
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
+ arch/x86/include/asm/kvm_host.h |  1 -
+ arch/x86/kvm/mmu.c              | 22 +---------------------
+ 2 files changed, 1 insertion(+), 22 deletions(-)
 
- drivers/net/ethernet/intel/ixgbe/ixgbe.h         |   14 ++++++++
- drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c |   40 ++++++++++++++++++++++
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c    |    6 +++
- 3 files changed, 60 insertions(+), 0 deletions(-)
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 90d05ed..966f265 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -230,7 +230,6 @@ struct kvm_mmu_page {
+ #endif
 
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe.h b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-index e9d9862..fb098b4 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-@@ -54,6 +54,9 @@
- 
- #include <net/ll_poll.h>
- 
-+#ifdef CONFIG_NET_LL_RX_POLL
-+#define LL_EXTENDED_STATS
-+#endif
- /* common prefix used by pr_<> macros */
- #undef pr_fmt
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-@@ -184,6 +187,11 @@ struct ixgbe_rx_buffer {
- struct ixgbe_queue_stats {
- 	u64 packets;
- 	u64 bytes;
-+#ifdef LL_EXTENDED_STATS
-+	u64 yields;
-+	u64 misses;
-+	u64 cleaned;
-+#endif  /* LL_EXTENDED_STATS */
+ 	int write_flooding_count;
+-	bool mmio_cached;
  };
- 
- struct ixgbe_tx_queue_stats {
-@@ -391,6 +399,9 @@ static inline bool ixgbe_qv_lock_napi(struct ixgbe_q_vector *q_vector)
- 		WARN_ON(q_vector->state & IXGBE_QV_STATE_NAPI);
- 		q_vector->state |= IXGBE_QV_STATE_NAPI_YIELD;
- 		rc = false;
-+#ifdef LL_EXTENDED_STATS
-+		q_vector->tx.ring->stats.yields++;
-+#endif
- 	} else
- 		/* we don't care if someone yielded */
- 		q_vector->state = IXGBE_QV_STATE_NAPI;
-@@ -421,6 +432,9 @@ static inline bool ixgbe_qv_lock_poll(struct ixgbe_q_vector *q_vector)
- 	if ((q_vector->state & IXGBE_QV_LOCKED)) {
- 		q_vector->state |= IXGBE_QV_STATE_POLL_YIELD;
- 		rc = false;
-+#ifdef LL_EXTENDED_STATS
-+		q_vector->rx.ring->stats.yields++;
-+#endif
- 	} else
- 		/* preserve yield marks */
- 		q_vector->state |= IXGBE_QV_STATE_POLL;
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-index d375472..24e2e7a 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-@@ -1054,6 +1054,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i] = 0;
- 			data[i+1] = 0;
- 			i += 2;
-+#ifdef LL_EXTENDED_STATS
-+			data[i] = 0;
-+			data[i+1] = 0;
-+			data[i+2] = 0;
-+			i += 3;
-+#endif
- 			continue;
- 		}
- 
-@@ -1063,6 +1069,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i+1] = ring->stats.bytes;
- 		} while (u64_stats_fetch_retry_bh(&ring->syncp, start));
- 		i += 2;
-+#ifdef LL_EXTENDED_STATS
-+		data[i] = ring->stats.yields;
-+		data[i+1] = ring->stats.misses;
-+		data[i+2] = ring->stats.cleaned;
-+		i += 3;
-+#endif
- 	}
- 	for (j = 0; j < IXGBE_NUM_RX_QUEUES; j++) {
- 		ring = adapter->rx_ring[j];
-@@ -1070,6 +1082,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i] = 0;
- 			data[i+1] = 0;
- 			i += 2;
-+#ifdef LL_EXTENDED_STATS
-+			data[i] = 0;
-+			data[i+1] = 0;
-+			data[i+2] = 0;
-+			i += 3;
-+#endif
- 			continue;
- 		}
- 
-@@ -1079,6 +1097,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i+1] = ring->stats.bytes;
- 		} while (u64_stats_fetch_retry_bh(&ring->syncp, start));
- 		i += 2;
-+#ifdef LL_EXTENDED_STATS
-+		data[i] = ring->stats.yields;
-+		data[i+1] = ring->stats.misses;
-+		data[i+2] = ring->stats.cleaned;
-+		i += 3;
-+#endif
- 	}
- 
- 	for (j = 0; j < IXGBE_MAX_PACKET_BUFFERS; j++) {
-@@ -1115,12 +1139,28 @@ static void ixgbe_get_strings(struct net_device *netdev, u32 stringset,
- 			p += ETH_GSTRING_LEN;
- 			sprintf(p, "tx_queue_%u_bytes", i);
- 			p += ETH_GSTRING_LEN;
-+#ifdef LL_EXTENDED_STATS
-+			sprintf(p, "tx_q_%u_napi_yield", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "tx_q_%u_misses", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "tx_q_%u_cleaned", i);
-+			p += ETH_GSTRING_LEN;
-+#endif /* LL_EXTENDED_STATS */
- 		}
- 		for (i = 0; i < IXGBE_NUM_RX_QUEUES; i++) {
- 			sprintf(p, "rx_queue_%u_packets", i);
- 			p += ETH_GSTRING_LEN;
- 			sprintf(p, "rx_queue_%u_bytes", i);
- 			p += ETH_GSTRING_LEN;
-+#ifdef LL_EXTENDED_STATS
-+			sprintf(p, "rx_q_%u_ll_poll_yield", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "rx_q_%u_misses", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "rx_q_%u_cleaned", i);
-+			p += ETH_GSTRING_LEN;
-+#endif /* LL_EXTENDED_STATS */
- 		}
- 		for (i = 0; i < IXGBE_MAX_PACKET_BUFFERS; i++) {
- 			sprintf(p, "tx_pb_%u_pxon", i);
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index 9a7dc40..047ebaa 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -2016,6 +2016,12 @@ static int ixgbe_low_latency_recv(struct napi_struct *napi)
- 
- 	ixgbe_for_each_ring(ring, q_vector->rx) {
- 		found = ixgbe_clean_rx_irq(q_vector, ring, 4);
-+#ifdef LL_EXTENDED_STATS
-+		if (found)
-+			ring->stats.cleaned += found;
-+		else
-+			ring->stats.misses++;
-+#endif
- 		if (found)
- 			break;
- 	}
+
+ struct kvm_pio_request {
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 35cd0b6..c87b19d 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -246,13 +246,11 @@ static unsigned int kvm_current_mmio_generation(struct kvm *kvm)
+ static void mark_mmio_spte(struct kvm *kvm, u64 *sptep, u64 gfn,
+ 			   unsigned access)
+ {
+-	struct kvm_mmu_page *sp =  page_header(__pa(sptep));
+ 	unsigned int gen = kvm_current_mmio_generation(kvm);
+ 	u64 mask = generation_mmio_spte_mask(gen);
+
+ 	access &= ACC_WRITE_MASK | ACC_USER_MASK;
+ 	mask |= shadow_mmio_mask | access | gfn << PAGE_SHIFT;
+-	sp->mmio_cached = true;
+
+ 	trace_mark_mmio_spte(sptep, gfn, access, gen);
+ 	mmu_spte_set(sptep, mask);
+@@ -4362,24 +4360,6 @@ void kvm_mmu_invalidate_zap_all_pages(struct kvm *kvm)
+ 	spin_unlock(&kvm->mmu_lock);
+ }
+
+-static void kvm_mmu_zap_mmio_sptes(struct kvm *kvm)
+-{
+-	struct kvm_mmu_page *sp, *node;
+-	LIST_HEAD(invalid_list);
+-
+-	spin_lock(&kvm->mmu_lock);
+-restart:
+-	list_for_each_entry_safe(sp, node, &kvm->arch.active_mmu_pages, link) {
+-		if (!sp->mmio_cached)
+-			continue;
+-		if (kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list))
+-			goto restart;
+-	}
+-
+-	kvm_mmu_commit_zap_page(kvm, &invalid_list);
+-	spin_unlock(&kvm->mmu_lock);
+-}
+-
+ static bool kvm_has_zapped_obsolete_pages(struct kvm *kvm)
+ {
+ 	return unlikely(!list_empty_careful(&kvm->arch.zapped_obsolete_pages));
+@@ -4395,7 +4375,7 @@ void kvm_mmu_invalidate_mmio_sptes(struct kvm *kvm)
+ 	 * when mark memslot invalid.
+ 	 */
+ 	if (unlikely(kvm_current_mmio_generation(kvm) >= (MMIO_MAX_GEN - 1)))
+-		kvm_mmu_zap_mmio_sptes(kvm);
++		kvm_mmu_invalidate_zap_all_pages(kvm);
+ }
+
+ static int mmu_shrink(struct shrinker *shrink, struct shrink_control *sc)
+-- 
+1.8.1.4
+
 
