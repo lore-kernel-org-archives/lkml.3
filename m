@@ -1,80 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401Ab3FJLUd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 07:20:33 -0400
-Received: from mx3.schottelius.org ([77.109.138.221]:48615 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753050Ab3FJLUc (ORCPT
+	id S1753196Ab3FJLVZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 07:21:25 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54125 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751843Ab3FJLVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 07:20:32 -0400
-X-Greylist: delayed 341 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Jun 2013 07:20:32 EDT
-Date: Mon, 10 Jun 2013 13:14:45 +0200
-From: Nico Schottelius <nico-linuxsetlocalversion@schottelius.org>
-To: Christian Kujau <lists@nerdbynature.de>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] scripts/setlocalversion on write-protected source tree
-Message-ID: <20130610111445.GA17553@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-linuxsetlocalversion@schottelius.org>,
-	Christian Kujau <lists@nerdbynature.de>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <alpine.DEB.2.10.1306091640270.13746@trent.utfs.org>
+	Mon, 10 Jun 2013 07:21:23 -0400
+Date: Mon, 10 Jun 2013 12:20:50 +0100
+From: Dave Martin <Dave.Martin@arm.com>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Chris Johnson <CJohnson@nvidia.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Karan Jhavar <kjhavar@nvidia.com>,
+        Matthew Longnecker <MLongnecker@nvidia.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Joseph Lo <josephl@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: tegra: add basic SecureOS support
+Message-ID: <20130610112050.GB3674@localhost.localdomain>
+References: <1370503687-17767-1-git-send-email-acourbot@nvidia.com>
+ <51B0BC80.9040007@wwwdotorg.org>
+ <20130606180824.GC3320@localhost.localdomain>
+ <CAAVeFuJkV3VVfeinLrjCCef9ZqJNvKurQwVWnJsW-bZqniTQ1w@mail.gmail.com>
+ <20130607181318.GC29344@localhost.localdomain>
+ <CAAVeFuKsa=GsxexQOSOYPYvkAXaEZXfW1+zRmv25CtFEY=T_GQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1306091640270.13746@trent.utfs.org>
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: bento (Linux 3.9.3-1-ARCH x86_64)
+In-Reply-To: <CAAVeFuKsa=GsxexQOSOYPYvkAXaEZXfW1+zRmv25CtFEY=T_GQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Christian,
-
-Christian Kujau [Sun, Jun 09, 2013 at 05:50:49PM -0700]:
-> Hi,
+On Mon, Jun 10, 2013 at 05:05:04PM +0900, Alexandre Courbot wrote:
+> On Sat, Jun 8, 2013 at 3:13 AM, Dave Martin <Dave.Martin@arm.com> wrote:
+> > One way to make the backend generic would be to have something like
+> > one of the following (some syntax omitted due to laziness):
+> >
+> >         u32 __naked __call_smc(u32 r0, ...)
+> >         {
+> >                 asm volatile (
+> >                         stmfd   sp!, {r4-r11,lr}
+> >                         smc     #0
+> >                         ldmfd   sp!, {r4-r11,pc}
+> >                         ::: "memory"
+> >                 );
+> >         }
+> >
+> >         /* The above works for up to 4 u32 arguments */
+> >
+> >         u32 __naked __call_smc(u32 r0, ...)
+> >         {
+> >                 asm volatile (
+> >                         mov     ip, sp
+> >                         stmfd   sp!, {r4-r11,lr}
+> >                         ldmia   ip, {r4-r11}
+> >                         smc     #0
+> >                         ldmfd   sp!, {r4-r11,pc}
+> >                         ::: "memory"
+> >                 );
+> >         }
+> >
+> >         /*
+> >          * Works for up to 13 u32 arguments, provided the stack is deep
+> >          * enough to provide suitable garbage data to fill the registers
+> >          * if the caller supplied fewer arguments (a bit of a hack)
+> >          */
+> >
+> >         u32 __naked __call_smc(struct pt_regs *regs) {
+> >
+> >                 asm(
+> >                         stmfd   sp!, {r4-r11,lr}
+> >                         /* load regs from <regs> */
+> >                         smc #0
+> >                         /* save regs back to <regs> */
+> >                         ldmfd   sp!, {r4-r11,pc}
+> >                 );
+> >         }
+> >
+> >         /*
+> >          * Most generic,  least-efficient version.
+> >          * Can return up to 13 u32 results instead of just one.
+> >          * For convenience, the r0 value returned by the SMC could be
+> >          * left in r0 so that it also determines the return value of the
+> >          * function.
+> >          *
+> >          * Most of the time, SMC shouldn't be called on any hot path,
+> >          * otherwise the performance battle is already lost -- so it may
+> >          * not be crucial to reach the maximum possible efficiency for
+> >          * these calls.
+> >          */
+> >
+> >
+> > A particular firmware's Linux glue code might have to put extra stuff
+> > around calls to generic_smc, but at least generic_smc itself wouldn't
+> > need to be reinvented, and the firmware-specific glue code could usually
+> > avoid asm.
+> >
+> >> Another example is the function that Tomasz shown
+> >> (https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/arch/arm/mach-exynos/exynos-smc.S?id=refs/tags/next-20130606
+> >> ), which preserves r4-r11 but also assumes r3 is an argument - that's
+> >> again another slightly different convention.
+> >
+> > ... for which the above implementations of __call_smc() should work too.
+> >
+> >> All in all the needs of the various firmwares might end up being just
+> >> different enough that we need to have a different backend for each of
+> >> them. The firmware_ops defined in arch/arm/include/asm/firmware.h
+> >> perform the abstraction at a higher level, which seems more fit here
+> >> IMHO.
+> >>
+> >> Alex.
+> >
+> > Indeed.  If you think you could work with one of the above generics, we
+> > could try it and see what it looks like though.
+> >
+> > If it's an awkward fit, I might be being too optimistic.
 > 
-> [errors when using git update-index - different scenarios]
-> [...]
-> 
-> On a side note, I don't think a kernel compilation should alter the source 
-> tree (or the .git directory) in any way and I don't see how removing 
-> "git update-index" could do any harm. The Mercurial and SVN routines in 
-> scripts/setlocalversion don't have any tree-modifying commands, AFAICS. 
-> So, maybe the attached patch would be acceptable.
-> 
-> [...]
+> I agree that your versions would most likely work in our (and probably
+> many others) case. But I wonder if individual platforms will not
+> prefer to sacrifice the ease of use of a generic version for the
+> ability to write faster code that will just preserve what is needed
+> (whether that performance gain is justified or not is of course
+> subject to debate). I don't have enough hindsight to decide which
+> approach is the best, but until we have more examples of firmwares
+> that would justify such a factorization, I think I'd like to go with
+> our own version first - for there is already more than enough to fix
+> in this patch. :)
 
-As --refresh is being used, I guess (!) the motivation was to update the
-index for stat changes that may have taken place elsewhere (like on
-NFS) - not sure whether this actually matches (can somebody confirm /
-overturn this theory?).
+Sure, I'll have another think based on your repost.
 
-I do however agree with you that setlocalversion should probably not
-try to fix this problem, but leave it to the user to update the index,
-if necessary.
-
-So I'd personally go for your second patch.
-
-Cheers,
-
-Nico
-
-> diff --git a/scripts/setlocalversion b/scripts/setlocalversion
-> index 84b88f1..d105a44 100755
-> --- a/scripts/setlocalversion
-> +++ b/scripts/setlocalversion
-> @@ -71,9 +71,6 @@ scm_version()
->  			printf -- '-svn%s' "`git svn find-rev $head`"
->  		fi
->  
-> -		# Update index only on r/w media
-> -		[ -w . ] && git update-index --refresh --unmerged > /dev/null
-> -
->  		# Check for uncommitted changes
->  		if git diff-index --name-only HEAD | grep -qv "^scripts/package"; then
->  			printf '%s' -dirty
-
-
--- 
-PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+Cheers
+---Dave
