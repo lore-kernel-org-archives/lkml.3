@@ -1,646 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752279Ab3FJJ4Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 05:56:24 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:60403 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751528Ab3FJJ4U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 05:56:20 -0400
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Arnd Bergmann <arnd@arndb.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux@arm.linux.org.uk,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <rob.herring@calxeda.com>,
-        Rob Landley <rob@landley.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: =?UTF-8?q?=5BPATCH=20v2=2007/11=5D=20ARM=3Astixxxx=3A=20Add=20STiH416=20SOC=20support?=
-Date: Mon, 10 Jun 2013 10:27:05 +0100
-Message-Id: <1370856425-7135-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com>
+	id S1752419Ab3FJKAb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 06:00:31 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:35698 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752090Ab3FJKAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 06:00:30 -0400
+X-IronPort-AV: E=Sophos;i="4.87,836,1363104000"; 
+   d="scan'208";a="7513157"
+Message-ID: <51B596B3.8050005@cn.fujitsu.com>
+Date: Mon, 10 Jun 2013 17:04:51 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+CC: Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] vmcore: disable mmap_vmcore() if CONFIG_MMU is not defined
+References: <51B593C3.7030609@jp.fujitsu.com>
+In-Reply-To: <51B593C3.7030609@jp.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/10 17:05:47,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/10 17:06:09,
+	Serialize complete at 2013/06/10 17:06:09
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The STiH416 is advanced HD AVC processor with 3D graphics acceleration
-and 1.2-GHz ARM Cortex-A9 SMP CPU.
+On 06/10/2013 04:52 PM, HATAYAMA Daisuke wrote:
+> Hello,
+> 
+> This patch fixes the issue reported by Amd on an overlook of no-MMU configuration.
+> 
+> This patch is made on top of v3.10-rc4-mmotm-2013-06-06-16-19.
+> 
+> I tested this on x86_64 and x86 with 1GB and 5GB memory.
+> 
+> I build this on arm without CONFIG_MMU configuration.
+> 
+> Thanks.
+> HATAYAMA, Daisuke
+> 
+>>From e2f067a497872a9c60002c56ea550e4600072166 Mon Sep 17 00:00:00 2001
+> From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+> Date: Sat, 8 Jun 2013 20:46:57 +0900
+> Subject: [PATCH] vmcore: disable mmap_vmcore() if CONFIG_MMU is not defined
+> 
+>>From Amd's report of a link-time build error in vmcore.c, it turned
+> out that mmap_vmcore() work overlooked no-MMU configuraiton.
+> 
+> In the current design, it's impossible to implement mmap_vmcore() for
+> no-MMU configuration since MMU is essential in order to map physically
+> non-contiguous objects (ELF header, ELF note segment and memory
+> regions in the 1st kernel pointed to by PT_LOAD entries) into
+> virtually contiguous user-space in ELF layout.
+> 
+> Hence, this patch disables mmap_vmcore() if CONFIG_MMU is not defined,
+> returning -ENOSYS.
+> 
+> Another change is to fix the build error by using vmalloc_user()
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-CC: Stephen Gallimore <stephen.gallimore@st.com>
-CC: Stuart Menefy <stuart.menefy@st.com>
-CC: Arnd Bergmann <arnd@arndb.de>
-CC: Linus Walleij <linus.walleij@linaro.org>
----
- Documentation/arm/stixxxx/stih416-overview.txt |   12 +
- arch/arm/boot/dts/stih416-clock.dtsi           |   41 +++
- arch/arm/boot/dts/stih416-pinctrl.dtsi         |  377 ++++++++++++++++++++++++
- arch/arm/boot/dts/stih416.dtsi                 |  111 +++++++
- arch/arm/mach-stixxxx/board-dt.c               |    3 +-
- 5 files changed, 543 insertions(+), 1 deletions(-)
- create mode 100644 Documentation/arm/stixxxx/stih416-overview.txt
- create mode 100644 arch/arm/boot/dts/stih416-clock.dtsi
- create mode 100644 arch/arm/boot/dts/stih416-pinctrl.dtsi
- create mode 100644 arch/arm/boot/dts/stih416.dtsi
+Yeah, I think this change makes code more clear by hiding vmcore-irrelevant
+details.
 
-diff --git a/Documentation/arm/stixxxx/stih416-overview.txt b/Documentation/arm/stixxxx/stih416-overview.txt
-new file mode 100644
-index 0000000..e060867
---- /dev/null
-+++ b/Documentation/arm/stixxxx/stih416-overview.txt
-@@ -0,0 +1,12 @@
-+			STiH416 Overview
-+			================
-+
-+Introduction
-+------------
-+
-+    The STiH416 is the next generation of HD, AVC set-top box processors
-+    for satellite, cable, terrestrial and IP-STB markets.
-+
-+    Features
-+    - ARM Cortex-A9 1.2 GHz dual core CPU
-+    - SATA2×2,USB 2.0×3, PCIe, Gbit Ethernet MAC×2
-diff --git a/arch/arm/boot/dts/stih416-clock.dtsi b/arch/arm/boot/dts/stih416-clock.dtsi
-new file mode 100644
-index 0000000..7026bf1
---- /dev/null
-+++ b/arch/arm/boot/dts/stih416-clock.dtsi
-@@ -0,0 +1,41 @@
-+/*
-+ * Copyright (C) 2013 STMicroelectronics R&D Limited
-+ * <stlinux-devel@stlinux.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+/ {
-+	clocks {
-+		/*
-+		 * Fixed 30MHz oscillator inputs to SoC
-+		 */
-+		CLK_SYSIN: CLK_SYSIN {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <30000000>;
-+			clock-output-names = "CLK_SYSIN";
-+		};
-+
-+		/*
-+		 * ARM Peripheral clock for timers
-+		 */
-+		arm_periph_clk: arm_periph_clk {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <600000000>;
-+		};
-+
-+		/*
-+		 * Bootloader initialized system infrastructure clock for
-+		 * serial devices.
-+		 */
-+		CLK_S_ICN_REG_0: clockgenA0@4 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <100000000>;
-+			clock-output-names = "CLK_S_ICN_REG_0";
-+		};
-+	};
-+};
-diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
-new file mode 100644
-index 0000000..15843a9
---- /dev/null
-+++ b/arch/arm/boot/dts/stih416-pinctrl.dtsi
-@@ -0,0 +1,377 @@
-+
-+/*
-+ * Copyright (C) 2013 STMicroelectronics Limited.
-+ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * publishhed by the Free Software Foundation.
-+ */
-+#include "stixxxx-pincfg.h"
-+/ {
-+
-+	aliases {
-+		gpio0	= &PIO0;
-+		gpio1	= &PIO1;
-+		gpio2	= &PIO2;
-+		gpio3	= &PIO3;
-+		gpio4	= &PIO4;
-+		gpio5	= &PIO40;
-+		gpio6	= &PIO5;
-+		gpio7	= &PIO6;
-+		gpio8	= &PIO7;
-+		gpio9	= &PIO8;
-+		gpio10	= &PIO9;
-+		gpio11	= &PIO10;
-+		gpio12	= &PIO11;
-+		gpio13	= &PIO12;
-+		gpio14	= &PIO30;
-+		gpio15	= &PIO31;
-+		gpio16	= &PIO13;
-+		gpio17	= &PIO14;
-+		gpio18	= &PIO15;
-+		gpio19	= &PIO16;
-+		gpio20	= &PIO17;
-+		gpio21	= &PIO18;
-+		gpio22	= &PIO100;
-+		gpio23	= &PIO101;
-+		gpio24	= &PIO102;
-+		gpio25	= &PIO103;
-+		gpio26	= &PIO104;
-+		gpio27	= &PIO105;
-+		gpio28	= &PIO106;
-+		gpio29	= &PIO107;
-+	};
-+
-+	soc {
-+		pin-controller-sbc {
-+			#address-cells	= <1>;
-+			#size-cells	= <1>;
-+			compatible	= "st,stih416-pinctrl", "simple-bus";
-+			st,retime-in-delay	= <0 300 500 750 1000 1250 1500 1750 2000 2250 2500 2750 3000 3250>;
-+			st,retime-out-delay	= <0 300 500 750 1000 1250 1500 1750 2000 2250 2500 2750 3000 3250>;
-+			st,syscfg		= <&syscfg_sbc>;
-+			st,syscfg-offsets	= <0 40 50 60 100>;
-+			ranges;
-+			PIO0: pinctrl@fe610000 {
-+				#gpio-cells = <1>;
-+				compatible = "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfe610000 0x100>;
-+				st,bank-name  = "PIO0";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+			PIO1: pinctrl@fe611000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfe611000 0x100>;
-+				st,bank-name  = "PIO1";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+			PIO2: pinctrl@fe612000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfe612000 0x100>;
-+				st,bank-name  = "PIO2";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+			PIO3: pinctrl@fe613000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfe613000 0x100>;
-+				st,bank-name  = "PIO3";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+
-+			PIO4: pinctrl@fe614000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfe614000 0x100>;
-+				st,bank-name  = "PIO4";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+
-+			PIO40: pinctrl@fe615000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfe615000 0x100>;
-+				st,bank-name  = "PIO40";
-+				st,retime-pin-mask = <0x7f>;
-+			};
-+
-+			sbc_serial1 {
-+				pinctrl_sbc_serial1: sbc_serial1 {
-+					st,function = <ALT3>;
-+					st,pins {
-+						tx	= <&PIO2 6 OUT>;
-+						rx	= <&PIO2 7 IN>;
-+					};
-+				};
-+			};
-+		};
-+
-+		pin-controller-front {
-+			#address-cells	= <1>;
-+			#size-cells	= <1>;
-+			compatible	= "st,stih416-pinctrl", "simple-bus";
-+			st,retime-in-delay	= <0 300 500 750 1000 1250 1500 1750 2000 2250 2500 2750 3000 3250>;
-+			st,retime-out-delay	= <0 300 500 750 1000 1250 1500 1750 2000 2250 2500 2750 3000 3250>;
-+			st,syscfg		= <&syscfg_front>;
-+			st,syscfg-offsets	= <0 40 50 60 100>;
-+			ranges;
-+
-+			PIO5: pinctrl@fee00000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfee00000 0x100>;
-+				st,bank-name  = "PIO5";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+			PIO6: pinctrl@fee01000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfee01000 0x100>;
-+				st,bank-name  = "PIO6";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+			PIO7: pinctrl@fee02000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfee02000 0x100>;
-+				st,bank-name  = "PIO7";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+			PIO8: pinctrl@fee03000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfee03000 0x100>;
-+				st,bank-name  = "PIO8";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+
-+			PIO9: pinctrl@fee04000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfee04000 0x100>;
-+				st,bank-name  = "PIO9";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+			PIO10: pinctrl@fee05000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfee05000 0x100>;
-+				st,bank-name  = "PIO10";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+			PIO11: pinctrl@fee06000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfee06000 0x100>;
-+				st,bank-name  = "PIO11";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+			PIO12: pinctrl@fee07000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfee07000 0x100>;
-+				st,bank-name  = "PIO12";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+
-+			PIO30: pinctrl@fee08000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfee08000 0x100>;
-+				st,bank-name  = "PIO30";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+
-+			PIO31: pinctrl@fee09000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfee09000 0x100>;
-+				st,bank-name  = "PIO31";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+		};
-+
-+		pin-controller-rear {
-+			#address-cells	= <1>;
-+			#size-cells	= <1>;
-+			compatible	= "st,stih416-pinctrl", "simple-bus";
-+			st,retime-in-delay	= <0 300 500 750 1000 1250 1500 1750 2000 2250 2500 2750 3000 3250>;
-+			st,retime-out-delay	= <0 300 500 750 1000 1250 1500 1750 2000 2250 2500 2750 3000 3250>;
-+			st,syscfg		= <&syscfg_rear>;
-+			st,syscfg-offsets	= <0 40 50 60 100>;
-+			ranges;
-+
-+			PIO13: pinctrl@fe820000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfe820000 0x100>;
-+				st,bank-name  = "PIO13";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+			PIO14: pinctrl@fe821000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfe821000 0x100>;
-+				st,bank-name  = "PIO14";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+			PIO15: pinctrl@fe822000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfe822000 0x100>;
-+				st,bank-name  = "PIO15";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+			PIO16: pinctrl@fe823000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfe823000 0x100>;
-+				st,bank-name  = "PIO16";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+
-+			PIO17: pinctrl@fe824000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfe824000 0x100>;
-+				st,bank-name  = "PIO17";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+
-+			PIO18: pinctrl@fe825000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfe825000 0x100>;
-+				st,bank-name  = "PIO18";
-+				st,retime-pin-mask = <0xf>;
-+			};
-+
-+			serial2 {
-+				pinctrl_serial2: serial2-0 {
-+					st,function = <ALT2>;
-+					st,pins {
-+						tx	= <&PIO17 4 OUT>;
-+						rx	= <&PIO17 5 IN>;
-+						output-enable	= <&PIO11 3 OUT>;
-+					};
-+				};
-+			};
-+		};
-+
-+		pin-controller-fvdp-fe {
-+			#address-cells	= <1>;
-+			#size-cells	= <1>;
-+			compatible	= "st,stih416-pinctrl", "simple-bus";
-+			st,retime-in-delay	= <0 300 500 750 1000 1250 1500 1750 2000 2250 2500 2750 3000 3250>;
-+			st,retime-out-delay	= <0 300 500 750 1000 1250 1500 1750 2000 2250 2500 2750 3000 3250>;
-+			st,syscfg		= <&syscfg_fvdp_fe>;
-+			st,syscfg-offsets	= <0 40 50 60 100>;
-+			ranges;
-+
-+			PIO100: pinctrl@fd6b0000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfd6b0000 0x100>;
-+				st,bank-name  = "PIO100";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+
-+			PIO101: pinctrl@fd6b1000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfd6b1000 0x100>;
-+				st,bank-name  = "PIO101";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+
-+			PIO102: pinctrl@fd6b2000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfd6b2000 0x100>;
-+				st,bank-name  = "PIO102";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+		};
-+
-+		pin-controller-fvdp-lite {
-+			#address-cells	= <1>;
-+			#size-cells	= <1>;
-+			compatible	= "st,stih416-pinctrl", "simple-bus";
-+			st,retime-in-delay	= <0 300 500 750 1000 1250 1500 1750 2000 2250 2500 2750 3000 3250>;
-+			st,retime-out-delay	= <0 300 500 750 1000 1250 1500 1750 2000 2250 2500 2750 3000 3250>;
-+			st,syscfg		= <&syscfg_fvdp_lite>;
-+			st,syscfg-offsets	= <0 40 50 60 100>;
-+			ranges;
-+
-+			PIO103: pinctrl@fd330000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfd330000 0x100>;
-+				st,bank-name  = "PIO103";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+			PIO104: pinctrl@fd331000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfd331000 0x100>;
-+				st,bank-name  = "PIO104";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+			PIO105: pinctrl@fd332000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfd332000 0x100>;
-+				st,bank-name  = "PIO105";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+			PIO106: pinctrl@fd333000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfd333000 0x100>;
-+				st,bank-name  = "PIO106";
-+				st,retime-pin-mask = <0xff>;
-+			};
-+
-+			PIO107: pinctrl@fd334000 {
-+				#gpio-cells	= <1>;
-+				compatible	= "st,stixxxx-gpio";
-+				gpio-controller;
-+				reg = <0xfd334000 0x100>;
-+				st,bank-name  = "PIO107";
-+				st,retime-pin-mask = <0xf>;
-+			};
-+		};
-+	};
-+};
-diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
-new file mode 100644
-index 0000000..7dbe450
---- /dev/null
-+++ b/arch/arm/boot/dts/stih416.dtsi
-@@ -0,0 +1,111 @@
-+/*
-+ * Copyright (C) 2012 STMicroelectronics Limited.
-+ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * publishhed by the Free Software Foundation.
-+ */
-+#include "stih41x.dtsi"
-+#include "stih416-clock.dtsi"
-+#include "stih416-pinctrl.dtsi"
-+/ {
-+	L2: cache-controller {
-+		compatible = "arm,pl310-cache";
-+		reg = <0xfffe2000 0x1000>;
-+		arm,data-latency = <3 3 3>;
-+		arm,tag-latency = <2 2 2>;
-+		cache-unified;
-+		cache-level = <2>;
-+	};
-+
-+	soc {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		interrupt-parent = <&intc>;
-+		ranges;
-+		compatible	= "simple-bus";
-+
-+		syscfg_sbc:syscfg@fe600000{
-+			compatible	= "st,stih416-syscfg";
-+			reg		= <0xfe600000 0x1000>;
-+			syscfg-range	= <0 999>;
-+			syscfg-name	= "SYSCFG_SBC";
-+		};
-+		syscfg_front:syscfg@fee10000{
-+			compatible	= "st,stih416-syscfg";
-+			reg		= <0xfee10000 0x1000>;
-+			syscfg-range	= <1000 999>;
-+			syscfg-name	= "SYSCFG_FRONT";
-+		};
-+		syscfg_rear:syscfg@fe830000{
-+			compatible	= "st,stih416-syscfg";
-+			reg		= <0xfe830000 0x1000>;
-+			syscfg-range	= <2000 999>;
-+			syscfg-name	= "SYSCFG_REAR";
-+		};
-+
-+		/* MPE */
-+		syscfg_fvdp_fe:syscfg@fddf0000{
-+			compatible	= "st,stih416-syscfg";
-+			reg		= <0xfddf0000 0x1000>;
-+			syscfg-range	= <5000 999>;
-+			syscfg-name	= "SYSCFG_FVDP_FE";
-+		};
-+		syscfg_fvdp_lite:syscfg@fd6a0000{
-+			compatible	= "st,stih416-syscfg";
-+			reg		= <0xfd6a0000 0x1000>;
-+			syscfg-range	= <6000 999>;
-+			syscfg-name	= "SYSCFG_FVDP_LITE";
-+		};
-+
-+		syscfg_cpu:syscfg@fdde0000{
-+			compatible	= "st,stih416-syscfg";
-+			reg		= <0xfdde0000 0x1000>;
-+			syscfg-range	= <7000 999>;
-+			syscfg-name	= "SYSCFG_CPU";
-+		};
-+
-+		syscfg_compo:syscfg@fd320000{
-+			compatible	= "st,stih416-syscfg";
-+			reg		= <0xfd320000 0x1000>;
-+			syscfg-range	= <8000 999>;
-+			syscfg-name	= "SYSCFG_COMPO";
-+		};
-+
-+		syscfg_transport:syscfg@fd690000{
-+			compatible	= "st,stih416-syscfg";
-+			reg		= <0xfd690000 0x1000>;
-+			syscfg-range	= <9000 999>;
-+			syscfg-name	= "SYSCFG_TRANSPORT";
-+		};
-+
-+		syscfg_lpm:syscfg@fe4b5100{
-+			compatible	= "st,stih416-syscfg";
-+			reg		= <0xfe4b5100 0x8>;
-+			syscfg-range	= <0 10>;
-+			syscfg-name	= "LPM_CFG_REGS";
-+		};
-+
-+		serial2: serial@fed32000{
-+			compatible	= "st,asc";
-+			status 		= "disabled";
-+			reg		= <0xfed32000 0x2c>;
-+			interrupts	= <0 197 0>;
-+			clocks          = <&CLK_S_ICN_REG_0>;
-+			pinctrl-names 	= "default";
-+			pinctrl-0 	= <&pinctrl_serial2>;
-+		};
-+
-+		/* SBC_UART1 */
-+		sbc_serial1: serial@fe531000 {
-+			compatible	= "st,asc";
-+			status 		= "disabled";
-+			reg		= <0xfe531000 0x2c>;
-+			interrupts	= <0 210 0>;
-+			pinctrl-names 	= "default";
-+			pinctrl-0 	= <&pinctrl_sbc_serial1>;
-+			clocks          = <&CLK_SYSIN>;
-+		};
-+	};
-+};
-diff --git a/arch/arm/mach-stixxxx/board-dt.c b/arch/arm/mach-stixxxx/board-dt.c
-index 52ce665..2b2552e 100644
---- a/arch/arm/mach-stixxxx/board-dt.c
-+++ b/arch/arm/mach-stixxxx/board-dt.c
-@@ -37,10 +37,11 @@ static void __init stih41x_timer_init(void)
- 
- static const char *stih41x_dt_match[] __initdata = {
- 	"st,stih415",
-+	"st,stih416",
- 	NULL
- };
- 
--DT_MACHINE_START(STM, "STiH415 SoC with Flattened Device Tree")
-+DT_MACHINE_START(STM, "STiH415/416 SoC with Flattened Device Tree")
- 	.init_time	= stih41x_timer_init,
- 	.smp		= smp_ops(stixxxx_smp_ops),
- 	.dt_compat	= stih41x_dt_match,
+> instead of calling vzalloc() and find_vm_area() in order, by which we
+> no longer need to call find_vm_area() in vmcore.c that has no
+> counterpart on non-MMU configuration.
+> 
+> Also, on no-MMU configuration, because we don't export buffer for ELF
+> note segment to user-space, we use vzalloc() to allocate the buffer.
+> Therefore, we use differnet functions to allocate the buffer for ELF
+> note segment. To avoid code duplication, introduce a helper
+> alloc_elfnotes_buf().
+> 
+> Reported-by: Amd Bergmann <arnd@arndb.de>
+> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+> ---
+>  fs/proc/vmcore.c |   57 +++++++++++++++++++++++++++++++++++------------------
+>  1 files changed, 37 insertions(+), 20 deletions(-)
+> 
+> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+> index 0f6db52..2850317 100644
+> --- a/fs/proc/vmcore.c
+> +++ b/fs/proc/vmcore.c
+> @@ -195,6 +195,35 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+>  	return acc;
+>  }
+>  
+> +/**
+> + * alloc_elfnotes_buf - allocate buffer for ELF note segment in
+> + *                      vmalloc memory
+> + *
+> + * @notes_sz: size of buffer
+> + *
+> + * If CONFIG_MMU is defined, use vmalloc_user() to allow users to mmap
+> + * the buffer to user-space by means of remap_vmalloc_range().
+> + *
+> + * If CONFIG_MMU is not defined, use vzalloc() since mmap_vmcore() is
+> + * disabled and there's no need to allow users to mmap the buffer.
+> + */
+> +static inline char *alloc_elfnotes_buf(size_t notes_sz)
+> +{
+> +#ifdef CONFIG_MMU
+> +	return vmalloc_user(notes_sz);
+> +#else
+> +	return vzalloc(notes_sz);
+> +#endif
+> +}
+> +
+> +/*
+> + * Disable mmap_vmcore() if CONFIG_MMU is not defined. MMU is
+> + * essential for mmap_vmcore() in order to map physically
+> + * non-contiguous objects (ELF header, ELF note segment and memory
+> + * regions in the 1st kernel pointed to by PT_LOAD entries) into
+> + * virtually contiguous user-space in ELF layout.
+> + */
+> +#ifdef CONFIG_MMU
+>  static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+>  {
+>  	size_t size = vma->vm_end - vma->vm_start;
+> @@ -271,6 +300,12 @@ fail:
+>  	do_munmap(vma->vm_mm, vma->vm_start, len);
+>  	return -EAGAIN;
+>  }
+> +#else
+> +static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+> +{
+> +	return -ENOSYS;
+> +}
+> +#endif
+>  
+>  static const struct file_operations proc_vmcore_operations = {
+>  	.read		= read_vmcore,
+> @@ -427,7 +462,6 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+>  	Elf64_Ehdr *ehdr_ptr;
+>  	Elf64_Phdr phdr;
+>  	u64 phdr_sz = 0, note_off;
+> -	struct vm_struct *vm;
+>  
+>  	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+>  
+> @@ -440,18 +474,10 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+>  		return rc;
+>  
+>  	*notes_sz = roundup(phdr_sz, PAGE_SIZE);
+> -	*notes_buf = vzalloc(*notes_sz);
+> +	*notes_buf = alloc_elfnotes_buf(*notes_sz);
+>  	if (!*notes_buf)
+>  		return -ENOMEM;
+>  
+> -	/*
+> -	 * Allow users to remap ELF note segment buffer on vmalloc memory using
+> -	 * remap_vmalloc_range.()
+> -	 */
+> -	vm = find_vm_area(*notes_buf);
+> -	BUG_ON(!vm);
+> -	vm->flags |= VM_USERMAP;
+> -
+>  	rc = copy_notes_elf64(ehdr_ptr, *notes_buf);
+>  	if (rc < 0)
+>  		return rc;
+> @@ -615,7 +641,6 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
+>  	Elf32_Ehdr *ehdr_ptr;
+>  	Elf32_Phdr phdr;
+>  	u64 phdr_sz = 0, note_off;
+> -	struct vm_struct *vm;
+>  
+>  	ehdr_ptr = (Elf32_Ehdr *)elfptr;
+>  
+> @@ -628,18 +653,10 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
+>  		return rc;
+>  
+>  	*notes_sz = roundup(phdr_sz, PAGE_SIZE);
+> -	*notes_buf = vzalloc(*notes_sz);
+> +	*notes_buf = alloc_elfnotes_buf(*notes_sz);
+>  	if (!*notes_buf)
+>  		return -ENOMEM;
+>  
+> -	/*
+> -	 * Allow users to remap ELF note segment buffer on vmalloc memory using
+> -	 * remap_vmalloc_range()
+> -	 */
+> -	vm = find_vm_area(*notes_buf);
+> -	BUG_ON(!vm);
+> -	vm->flags |= VM_USERMAP;
+> -
+>  	rc = copy_notes_elf32(ehdr_ptr, *notes_buf);
+>  	if (rc < 0)
+>  		return rc;
+
+
 -- 
-1.7.6.5
-
+Thanks.
+Zhang Yanfei
