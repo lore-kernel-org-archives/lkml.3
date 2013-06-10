@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab3FJMGw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 08:06:52 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:41147 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753225Ab3FJMGv (ORCPT
+	id S1753597Ab3FJMKN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 08:10:13 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:63604 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753116Ab3FJMKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 08:06:51 -0400
+	Mon, 10 Jun 2013 08:10:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <1370864113-17895-13-git-send-email-tushar.behera@linaro.org>
-References: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
-	<1370864113-17895-13-git-send-email-tushar.behera@linaro.org>
-Date: Mon, 10 Jun 2013 17:36:50 +0530
-Message-ID: <CAK9yfHygMQYpVRqrieyESJw9oZC5OzKoWWSUhYDYEd6KJigegA@mail.gmail.com>
-Subject: Re: [PATCH 12/15] ASoC: spear: Convert to use devm_ioremap_resource
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: linux-kernel@vger.kernel.org, thierry.reding@gmail.com, patches@linaro.org,
-        alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>
+In-Reply-To: <20130608144237.GA21423@roeck-us.net>
+References: <20130607195816.GA28479@kroah.com>
+	<20130608035312.GA16419@roeck-us.net>
+	<20130608140817.GA7303@kroah.com>
+	<20130608144237.GA21423@roeck-us.net>
+Date: Mon, 10 Jun 2013 08:10:11 -0400
+Message-ID: <CA+5PVA5qoTspk6idt4-9U9e2X=Nt_mOi6LPEiRb3hEUFLSWmjg@mail.gmail.com>
+Subject: Re: Linux 3.9.5
+From: Josh Boyer <jwboyer@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>, lwn@lwn.net,
+        Jiri Slaby <jslaby@suse.cz>, Michael Neuling <mikey@neuling.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 June 2013 17:05, Tushar Behera <tushar.behera@linaro.org> wrote:
-> Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
-> introduced devm_ioremap_resource() and deprecated the use of
-> devm_request_and_ioremap().
+On Sat, Jun 8, 2013 at 10:42 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On Sat, Jun 08, 2013 at 07:08:17AM -0700, Greg KH wrote:
+>> On Fri, Jun 07, 2013 at 08:53:12PM -0700, Guenter Roeck wrote:
+>> > On Fri, Jun 07, 2013 at 12:58:16PM -0700, Greg KH wrote:
+>> > > I'm announcing the release of the 3.9.5 kernel.
+>> > >
+>> > > All users of the 3.9 kernel series must upgrade.
+>> > >
+>> > > The updated 3.9.y git tree can be found at:
+>> > >   git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.9.y
+>> > > and can be browsed at the normal kernel.org git web browser:
+>> > >   http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
+>> > >
+>> > > thanks,
+>> > >
+>> > > greg k-h
+>> > >
+>> > powerpc build fails:
+>> >
+>> > arch/powerpc/kernel/traps.c: In function 'alignment_exception':
+>> > arch/powerpc/kernel/traps.c:1154:3: error: label 'bail' used but not defined
+>> > make[1]: *** [arch/powerpc/kernel/traps.o] Error 1
+>> > make[1]: *** Waiting for unfinished jobs....
+>> >
+>> > Due to commit 6ce6c629 (powerpc/tm: Abort on emulation and alignment faults).
+>>
+>> Is there a upstream patch that fixes this problem that I should apply?
+>>
+> No, this is not a problem upstream. The missing label was introduced by patch
+> ba12eedee (powerpc: Exception hooks for context tracking subsystem) which, if I
+> understand correctly, was necessary due to 6ba3c97a388 (x86: Exception hooks
+> for userspace RCU extended QS) and a couple of other patches. All that doesn't
+> look like stable material to me.
 
-This patch does a little more than just conversion. May that change
-could be mentioned here.
+This can probably be fixed just by replacing 'goto bail' with 'return'
+on that line.
+Mikey, does that sound right?
 
->
-> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> CC: alsa-devel@alsa-project.org
-> CC: Liam Girdwood <lgirdwood@gmail.com>
-> CC: Mark Brown <broonie@kernel.org>
-> ---
->  sound/soc/spear/spdif_out.c |   20 +++++---------------
->  1 file changed, 5 insertions(+), 15 deletions(-)
->
-> diff --git a/sound/soc/spear/spdif_out.c b/sound/soc/spear/spdif_out.c
-> index 4bde512..896ee7f 100644
-> --- a/sound/soc/spear/spdif_out.c
-> +++ b/sound/soc/spear/spdif_out.c
-> @@ -282,27 +282,17 @@ static int spdif_out_probe(struct platform_device *pdev)
->         struct resource *res;
->         int ret;
->
-> -       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -       if (!res)
-> -               return -EINVAL;
-> -
-> -       if (!devm_request_mem_region(&pdev->dev, res->start,
-> -                               resource_size(res), pdev->name)) {
-> -               dev_warn(&pdev->dev, "Failed to get memory resourse\n");
-> -               return -ENOENT;
-> -       }
-> -
->         host = devm_kzalloc(&pdev->dev, sizeof(*host), GFP_KERNEL);
->         if (!host) {
->                 dev_warn(&pdev->dev, "kzalloc fail\n");
->                 return -ENOMEM;
->         }
->
-> -       host->io_base = devm_request_and_ioremap(&pdev->dev, res->start,
-> -                               resource_size(res));
-> -       if (!host->io_base) {
-> -               dev_warn(&pdev->dev, "ioremap failed\n");
-> -               return -ENOMEM;
-> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +       host->io_base = devm_ioremap_resource(&pdev->dev, res);
-> +       if (IS_ERR(host->io_base)) {
-> +               dev_warn(&pdev->dev, "devm_ioremap_resource failed\n");
-
-This print is not needed as devm_ioremap_resource prints its own messages.
-
-
-> +               return PTR_ERR(host->io_base);
->         }
->
->         host->clk = devm_clk_get(&pdev->dev, NULL);
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-With warm regards,
-Sachin
+josh
