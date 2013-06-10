@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab3FJJPq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 05:15:46 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57585 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155Ab3FJJPo (ORCPT
+	id S1752717Ab3FJJRd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 05:17:33 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:54434 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751910Ab3FJJRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 05:15:44 -0400
-Date: Mon, 10 Jun 2013 10:15:39 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130610091539.GG31367@sirena.org.uk>
-References: <1369753080-1929-1-git-send-email-srinivas.kandagatla@st.com>
- <51B4A693.4080503@metafoo.de>
+	Mon, 10 Jun 2013 05:17:30 -0400
+Date: Mon, 10 Jun 2013 10:17:24 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+Subject: Re: [PATCH 06/39] ARM: ux500: Move SDI (MMC) and UART devices under
+ more descriptive heading
+Message-ID: <20130610091724.GG20297@gmail.com>
+References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
+ <1368611522-9984-7-git-send-email-lee.jones@linaro.org>
+ <CACRpkdZ=NJR3VRNJE2pSTJ8t1VCMq+wjH_s0NOi4AHko3no_KA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="n5yZ2e1mC2Fd8Xdv"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <51B4A693.4080503@metafoo.de>
-X-Cookie: Are you a turtle?
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdZ=NJR3VRNJE2pSTJ8t1VCMq+wjH_s0NOi4AHko3no_KA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC] regmap: Add regmap_field APIs
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 15 May 2013, Linus Walleij wrote:
 
---n5yZ2e1mC2Fd8Xdv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Wed, May 15, 2013 at 11:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > Now DMA DT bindings exist and are in use by he MMC and UART drivers, it
+> > should be possible to remove them from the auxdata structure. However,
+> > after doing so the drivers fail. Common clk is still reliant on the
+> > dev_name() call to do device name matching, which will fail due to the
+> > fact that Device Tree naming differs somewhat do the more traditional
+> > conventions.
+> >
+> > Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> Cannot be applied due to dependency on 5/39.
 
-On Sun, Jun 09, 2013 at 06:00:19PM +0200, Lars-Peter Clausen wrote:
+I think this can be applied now (if it hasn't already).
 
-> > +int regmap_field_write(struct regmap_field *field, unsigned int val)
-> > +{
-> > +	int field_bits;
-> > +	unsigned int reg_mask;
-> > +	field_bits = field->msb - field->lsb + 1;
-> > +	reg_mask = ((BIT(field_bits) - 1) << field->lsb);
-> > +	return regmap_update_bits(field->regmap, field->reg,
-> > +				reg_mask, val << field->lsb);
-
-> Considering that you'd do the same calculations over and over again it would
-> probably make more sense store the mask rather than the msb in the struct
-
-However as an interface for registering either is OK - the current
-MSB/LSB approach is probably better as that's what datasheets tend to
-include (which is why I didn't say anything).
-
---n5yZ2e1mC2Fd8Xdv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRtZk4AAoJELSic+t+oim9XcQP/2ztbs1BmU+Ck6KKizsISkyf
-mGUwLS6NNGthpLEITI7wFcQtDUtF1zh19AY16i5SKOhXE9xnmI3/h9jBR7UPQX0E
-FhUNAPydXN00r//GbDbQayIyTCCVHLQiQ6E3JWkA96R26UWwuLd3pdteaPYaJlWl
-5YN31lcBndO13slxo8HlHErt8qi3FQyPteZhy7/ip///I5Tj9CQ2AGKDA2YQDcRY
-qT5JKbPbGlIZCU5H+Wk2pLZQCToWQF46p0FTnBVk/iBP0sPNzBV8Kux+dN5Cxqef
-TXdHYsB/rjFyE2wV7Xswf4QPf08QqM4m8bhPyZtObO4gm5535rmoq02ygPA1u7KT
-StJUzqUQzab06Ta798YrdaCWn2QYlL0YI6tsK11+dRlRSGtLTr73hwSCPailQhm0
-4Y5YMV5+jWLONv/dX9KEi6VbQTtIAaWS8OmWJ7r33kYcRysSuGMXKKagNoDDuuEE
-S9PlMu0hzyP2eUDuM+1N8CJ9EKR7nXGiDDS2vRwhXExGVrMVM022Fxrwo3i/MsBD
-WCGpeTJ5jH2WLxZT8GJ1h5yF5m4mRdMp5qAHacThkR7Vr1ZGbTPm2mG4h5t3Ycy3
-tb5NBURZ9LLCK+3rynFwyLJoNVQnuKhIIMuyjcjKo9sP5XA2PPJCDRbtXvyMNipM
-MKDt6fW/NCumAmPkJhnu
-=xmcV
------END PGP SIGNATURE-----
-
---n5yZ2e1mC2Fd8Xdv--
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
