@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862Ab3FJJWm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 05:22:42 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4479 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647Ab3FJJWl (ORCPT
+	id S1753015Ab3FJJWv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 05:22:51 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:55211 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752700Ab3FJJWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 05:22:41 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 10 Jun 2013 02:22:19 -0700
-Message-ID: <51B59B81.8040208@nvidia.com>
-Date: Mon, 10 Jun 2013 14:55:21 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: J Keerthy <j-keerthy@ti.com>
-CC: "b-cousson@ti.com" <b-cousson@ti.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>
-Subject: Re: [PATCH v2 1/2] ARM: dts: add dtsi for palmas
-References: <1370855059-5342-1-git-send-email-j-keerthy@ti.com> <1370855059-5342-2-git-send-email-j-keerthy@ti.com>
-In-Reply-To: <1370855059-5342-2-git-send-email-j-keerthy@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Mon, 10 Jun 2013 05:22:43 -0400
+Message-ID: <1370856152.3252.2.camel@edumazet-glaptop>
+Subject: Re: [PATCH v10 net-next 1/6] net: add napi_id and hash
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Mon, 10 Jun 2013 02:22:32 -0700
+In-Reply-To: <20130610083940.6955.67403.stgit@ladj378.jer.intel.com>
+References: <20130610083929.6955.87206.stgit@ladj378.jer.intel.com>
+	 <20130610083940.6955.67403.stgit@ladj378.jer.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 June 2013 02:34 PM, J Keerthy wrote:
-> Adds palmas mfd and palmas regulator nodes.
->
-> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-> Signed-off-by: J Keerthy <j-keerthy@ti.com>
+On Mon, 2013-06-10 at 11:39 +0300, Eliezer Tamir wrote:
+> Adds a napi_id and a hashing mechanism to lookup a napi by id.
+> This will be used by subsequent patches to implement low latency
+> Ethernet device polling.
+> Based on a code sample by Eric Dumazet.
+> 
+> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
 > ---
->   arch/arm/boot/dts/palmas.dtsi |   98 +++++++++++++++++++++++++++++++++++++++++
+> 
+>  include/linux/netdevice.h |   29 ++++++++++++++++++++++
+>  net/core/dev.c            |   59 +++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 88 insertions(+), 0 deletions(-)
 
-Hi Keerthy,
-Can you please add documentation for dt binding:
-Documentation/devicetree/bindings/mfd
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 
-Most of time we refer from this document for dt population.
 
-Thanks,
-Laxman
