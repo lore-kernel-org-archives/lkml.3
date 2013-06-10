@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824Ab3FJOlx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 10:41:53 -0400
-Received: from relay.parallels.com ([195.214.232.42]:60951 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753472Ab3FJOlv (ORCPT
+	id S1752862Ab3FJOoS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 10:44:18 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:50256 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366Ab3FJOoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 10:41:51 -0400
-Message-ID: <51B5E59E.1000501@parallels.com>
-Date: Mon, 10 Jun 2013 18:41:34 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Mon, 10 Jun 2013 10:44:17 -0400
 MIME-Version: 1.0
-To: <Trond.Myklebust@netapp.com>
-CC: <linux-nfs@vger.kernel.org>, <devel@openvz.org>,
-        <linux-kernel@vger.kernel.org>, <jlayton@redhat.com>
-Subject: Re: [PATCH 0/3] SUNRPC: PipeFS races fixes
-References: <20130610143725.7498.72391.stgit@localhost.localdomain>
-In-Reply-To: <20130610143725.7498.72391.stgit@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.18.163]
+In-Reply-To: <1370621488-18130-1-git-send-email-lee.jones@linaro.org>
+References: <1370621488-18130-1-git-send-email-lee.jones@linaro.org>
+Date: Mon, 10 Jun 2013 16:35:56 +0200
+Message-ID: <CACRpkdbygDNdsO=EzigPiBSnMmF-NVnF95HeBBavkry93i+ubQ@mail.gmail.com>
+Subject: Re: [PATCH 00/10] regulator: ab8500-ext: Refactorings
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>, broonie@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series has flaws. Will fix and resend.
-Sorry for noise.
+On Fri, Jun 7, 2013 at 6:11 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-10.06.2013 18:39, Stanislav Kinsbursky пишет:
-> This series fixed races between PipeFS mount/umount notification calls and
-> SUNRPC clients creation and destruction.
+> This patch aims to do the following:
 >
-> https://bugzilla.redhat.com/show_bug.cgi?id=924649
->
-> The following series implements...
->
-> ---
->
-> Stanislav Kinsbursky (3):
->        SUNRPC: fix races on PipeFS UMOUNT notifications
->        SUNRPC: fix races on PipeFS UMOUNT notifications
->        SUNRPC: PipeFS MOUNT notification optimization for dying clients
->
->
->   net/sunrpc/clnt.c     |   14 +++++++++-----
->   net/sunrpc/rpc_pipe.c |    5 ++++-
->   2 files changed, 13 insertions(+), 6 deletions(-)
->
+>  - Separate the AB8500 External Regulator out from the AB8500 core
+>    one for added control and reduced complexity
+>  - Enable the AB8500 External Regulator for Device Tree
+>  - Ensure EXT3 supplies the AUX regulators with voltage
 
+The series:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
--- 
-Best regards,
-Stanislav Kinsbursky
+Once the changes to MFD+Regulator are in I'm happy to take the
+DT patches onto my ux500-devicetree branch. However I fear
+I'll break something if I do it right now?
+
+Yours,
+Linus Walleij
