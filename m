@@ -1,257 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab3FJKQf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 06:16:35 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38866 "EHLO arroyo.ext.ti.com"
+	id S1752456Ab3FJKSR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 06:18:17 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:46381 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751834Ab3FJKQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 06:16:33 -0400
+	id S1751752Ab3FJKSQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 06:18:16 -0400
 From: "J, KEERTHY" <j-keerthy@ti.com>
-To: Lee Jones <lee.jones@linaro.org>
-CC: "Cousson, Benoit" <b-cousson@ti.com>,
+To: "Cousson, Benoit" <b-cousson@ti.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
         "devicetree-discuss@lists.ozlabs.org" 
 	<devicetree-discuss@lists.ozlabs.org>,
         "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
         "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
         "swarren@nvidia.com" <swarren@nvidia.com>,
         "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
-Subject: RE: [PATCH v2 2/2] ARM: dts: OMAP5: add palmas node and omap
- specific palmas regulator properties
-Thread-Topic: [PATCH v2 2/2] ARM: dts: OMAP5: add palmas node and omap
- specific palmas regulator properties
-Thread-Index: AQHOZbmzE+cagM526UGEdcQsLXChsJkuMo8AgACH2PA=
-Date: Mon, 10 Jun 2013 10:16:07 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229EABA5@DBDE04.ent.ti.com>
-References: <1370855059-5342-1-git-send-email-j-keerthy@ti.com>
- <1370855059-5342-3-git-send-email-j-keerthy@ti.com>
- <20130610100540.GI20297@gmail.com>
-In-Reply-To: <20130610100540.GI20297@gmail.com>
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>
+Subject: RE: [PATCH] ARM: dts: add dtsi for palmas
+Thread-Topic: [PATCH] ARM: dts: add dtsi for palmas
+Thread-Index: AQHOY3QMPa6kmxyASkaofO5W52VCRJkqJRKAgAQxKl///9bYgIAAk0ug
+Date: Mon, 10 Jun 2013 10:17:58 +0000
+Message-ID: <DC88CAD03C0052499C1907B327FC63229EABB4@DBDE04.ent.ti.com>
+References: <1370604504-32310-1-git-send-email-j-keerthy@ti.com>,<51B23AD5.8060006@wwwdotorg.org>
+ <DC88CAD03C0052499C1907B327FC63229EAA39@DBDE04.ent.ti.com>
+ <51B59C8B.9000405@ti.com>
+In-Reply-To: <51B59C8B.9000405@ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5AAHEJF003264
 
-Hello Lee jones,
+Hi Benoit,
 
 > -----Original Message-----
-> From: Lee Jones [mailto:lee.jones@linaro.org]
-> Sent: Monday, June 10, 2013 3:36 PM
+> From: Cousson, Benoit
+> Sent: Monday, June 10, 2013 3:00 PM
 > To: J, KEERTHY
-> Cc: Cousson, Benoit; devicetree-discuss@lists.ozlabs.org; linux-
+> Cc: Stephen Warren; devicetree-discuss@lists.ozlabs.org; linux-
 > omap@vger.kernel.org; linux-kernel@vger.kernel.org;
-> ldewangan@nvidia.com; grant.likely@secretlab.ca; swarren@wwwdotorg.org;
-> swarren@nvidia.com; sameo@linux.intel.com; gg@slimlogic.co.uk
-> Subject: Re: [PATCH v2 2/2] ARM: dts: OMAP5: add palmas node and omap
-> specific palmas regulator properties
+> ldewangan@nvidia.com; grant.likely@secretlab.ca; swarren@nvidia.com;
+> sameo@linux.intel.com; gg@slimlogic.co.uk; lee.jones@linaro.org
+> Subject: Re: [PATCH] ARM: dts: add dtsi for palmas
 > 
-> On Mon, 10 Jun 2013, J Keerthy wrote:
+> Hi Keerthy,
 > 
-> > Add palmas node and omap specific palmas regulator properties.
+> On 06/10/2013 06:03 AM, J, KEERTHY wrote:
+> > Hi Stephen,
 > >
-> > Signed-off-by: J Keerthy <j-keerthy@ti.com>
-> > ---
-> >  arch/arm/boot/dts/omap5-uevm.dts |  147
-> > ++++++++++++++++++++++++++++++++++++++
-> >  1 files changed, 147 insertions(+), 0 deletions(-)
+> > Thanks for the review comments.
 > >
-> > diff --git a/arch/arm/boot/dts/omap5-uevm.dts
-> > b/arch/arm/boot/dts/omap5-uevm.dts
-> > index 927db1e..ffbcc3f 100644
-> > --- a/arch/arm/boot/dts/omap5-uevm.dts
-> > +++ b/arch/arm/boot/dts/omap5-uevm.dts
-> > @@ -8,6 +8,8 @@
-> >  /dts-v1/;
+> > ________________________________________
+> > From: Stephen Warren [swarren@wwwdotorg.org]
+> > Sent: Saturday, June 08, 2013 1:26 AM
+> > To: J, KEERTHY
+> > Cc: Cousson, Benoit; devicetree-discuss@lists.ozlabs.org;
+> > linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org;
+> > ldewangan@nvidia.com; grant.likely@secretlab.ca; swarren@nvidia.com;
+> > sameo@linux.intel.com; gg@slimlogic.co.uk; lee.jones@linaro.org
+> > Subject: Re: [PATCH] ARM: dts: add dtsi for palmas
 > >
-> >  #include "omap5.dtsi"
-> > +#include <dt-bindings/interrupt-controller/irq.h>
-> > +#include <dt-bindings/interrupt-controller/arm-gic.h>
+> > On 06/07/2013 05:28 AM, J Keerthy wrote:
+> >> Adds palmas mfd and palmas regulator nodes. This is based on the
+> >> patch series:
+> >>
+> >> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg89957.html
+> >>
+> >> The device tree nodes are based on:
+> >> https://lkml.org/lkml/2013/6/6/25
 > >
-> >  / {
-> >  	model = "TI OMAP5 uEVM board";
-> > @@ -254,6 +256,151 @@
-> >  	pinctrl-0 = <&i2c1_pins>;
+> >> diff --git a/arch/arm/boot/dts/palmas.dtsi
+> >> b/arch/arm/boot/dts/palmas.dtsi
 > >
-> >  	clock-frequency = <400000>;
-> > +
-> > +	palmas: palmas@48 {
-> > +		reg = <0x48>;
-> > +		/* SPI = 0, IRQ# = 7, active high level-sensitive */
+> >> +&palmas {
+> >
+> > Hmmm. That (i.e. requiring the board file to declare the node, then
+> > setting up all the content by later including this file) is an
+> > interesting approach. I guess it's reasonable. The one issue is that
+> > it makes it a little harder for the board file to override any of the
+> > properties in this file., although it certainly is possible by
+> > including those overrides after the include.
+> >
+> > Irrespective of that, some comments on this:
+> >
+> >> +     palmas_pmic {
+> >
+> >> +             ti,ldo6-vibrator;
+> >
+> > For example, what if the board doesn't want to have the property set?
+> >
+> >> +
+> >> +             regulators {
+> >> +                     smps123_reg: smps123 {
+> >> +                             regulator-name = "smps123";
+> >> +                             regulator-min-microvolt = < 600000>;
+> >> +                             regulator-max-microvolt = <1500000>;
+> >
+> > Or what if the board wants to limit the voltage range of this
+> > regulator due to what it's used for on the board.
+> >
+> >> +                             regulator-always-on;
+> >> +                             regulator-boot-on;
+> >
+> > And those two properties are almost certainly board-specific policy.
+> >
+> > Totally agree to all the above concerns. So can we have a custom
+> .dtsi
+> > file for a board+pmic combination? Or have only the required
+> > properties over ridden in the board file?
 > 
-> I still think this is superfluous, especially now you're using the
-> defines which basically say the same thing.
+> Yes, you can do that potentially if most OMAP5 boards will reuse the
+> same kind of settings. Kevin has just done that for OMAP3 + twl4030.
+> 
+> In this case, since we do have only one board, I'm not sure it worth
+> the effort.
 
-I retained the whole comment as it was needed to specify IRQ# as 7
-And thought it completely described the below interrupt property.
+I sent a V2 with only the most generic property in palmas.dtsi and the
+Configurable parameter under the board file. Let me know if that patch set
+Is fine.
 
-I can knock it off if it is totally unnecessary.
-
-If there are no further comments. Can I add a Reviewed-by?
 
 > 
-> > +		interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>; /* IRQ_SYS_1N
-> */
-> > +		interrupt-parent = <&gic>;
-> > +	};
-> > +
-> > +};
-> > +
-> > +#include "palmas.dtsi"
-> > +
-> > +&palmas {
-> > +	palmas_pmic {
-> > +		ti,ldo6-vibrator;
-> > +
-> > +		regulators {
-> > +			smps123_reg: smps123 {
-> > +				regulator-min-microvolt = < 600000>;
-> > +				regulator-max-microvolt = <1500000>;
-> > +				regulator-always-on;
-> > +				regulator-boot-on;
-> > +			};
-> > +
-> > +			smps45_reg: smps45 {
-> > +				regulator-min-microvolt = < 600000>;
-> > +				regulator-max-microvolt = <1310000>;
-> > +				regulator-always-on;
-> > +				regulator-boot-on;
-> > +			};
-> > +
-> > +			smps6_reg: smps6 {
-> > +				regulator-min-microvolt = <1200000>;
-> > +				regulator-max-microvolt = <1200000>;
-> > +				regulator-always-on;
-> > +				regulator-boot-on;
-> > +			};
-> > +
-> > +			smps7_reg: smps7 {
-> > +				regulator-min-microvolt = <1800000>;
-> > +				regulator-max-microvolt = <1800000>;
-> > +				regulator-always-on;
-> > +				regulator-boot-on;
-> > +			};
-> > +
-> > +			smps8_reg: smps8 {
-> > +				regulator-min-microvolt = < 600000>;
-> > +				regulator-max-microvolt = <1310000>;
-> > +				regulator-always-on;
-> > +				regulator-boot-on;
-> > +			};
-> > +
-> > +			smps9_reg: smps9 {
-> > +				regulator-min-microvolt = <2100000>;
-> > +				regulator-max-microvolt = <2100000>;
-> > +				regulator-always-on;
-> > +				regulator-boot-on;
-> > +				ti,smps-range = <0x80>;
-> > +			};
-> > +
-> > +			smps10_reg: smps10 {
-> > +				regulator-min-microvolt = <5000000>;
-> > +				regulator-max-microvolt = <5000000>;
-> > +				regulator-always-on;
-> > +				regulator-boot-on;
-> > +			};
-> > +
-> > +			ldo1_reg: ldo1 {
-> > +				regulator-min-microvolt = <2800000>;
-> > +				regulator-max-microvolt = <2800000>;
-> > +				regulator-always-on;
-> > +				regulator-boot-on;
-> > +			};
-> > +
-> > +			ldo2_reg: ldo2 {
-> > +				regulator-min-microvolt = <2900000>;
-> > +				regulator-max-microvolt = <2900000>;
-> > +				regulator-always-on;
-> > +				regulator-boot-on;
-> > +			};
-> > +
-> > +			ldo3_reg: ldo3 {
-> > +				regulator-min-microvolt = <3000000>;
-> > +				regulator-max-microvolt = <3000000>;
-> > +				regulator-always-on;
-> > +				regulator-boot-on;
-> > +			};
-> > +
-> > +			ldo4_reg: ldo4 {
-> > +				regulator-min-microvolt = <2200000>;
-> > +				regulator-max-microvolt = <2200000>;
-> > +				regulator-always-on;
-> > +				regulator-boot-on;
-> > +			};
-> > +
-> > +			ldo5_reg: ldo5 {
-> > +				regulator-min-microvolt = <1800000>;
-> > +				regulator-max-microvolt = <1800000>;
-> > +				regulator-always-on;
-> > +				regulator-boot-on;
-> > +			};
-> > +
-> > +			ldo6_reg: ldo6 {
-> > +				regulator-min-microvolt = <1500000>;
-> > +				regulator-max-microvolt = <1500000>;
-> > +				regulator-always-on;
-> > +				regulator-boot-on;
-> > +			};
-> > +
-> > +			ldo7_reg: ldo7 {
-> > +				regulator-min-microvolt = <1500000>;
-> > +				regulator-max-microvolt = <1500000>;
-> > +				regulator-always-on;
-> > +				regulator-boot-on;
-> > +			};
-> > +
-> > +			ldo8_reg: ldo8 {
-> > +				regulator-min-microvolt = <1500000>;
-> > +				regulator-max-microvolt = <1500000>;
-> > +				regulator-always-on;
-> > +				regulator-boot-on;
-> > +			};
-> > +
-> > +			ldo9_reg: ldo9 {
-> > +				regulator-min-microvolt = <1800000>;
-> > +				regulator-max-microvolt = <3300000>;
-> > +				regulator-always-on;
-> > +				regulator-boot-on;
-> > +			};
-> > +
-> > +			ldoln_reg: ldoln {
-> > +				regulator-min-microvolt = <1800000>;
-> > +				regulator-max-microvolt = <1800000>;
-> > +				regulator-always-on;
-> > +				regulator-boot-on;
-> > +			};
-> > +
-> > +			ldousb_reg: ldousb {
-> > +				regulator-min-microvolt = <3250000>;
-> > +				regulator-max-microvolt = <3250000>;
-> > +				regulator-always-on;
-> > +				regulator-boot-on;
-> > +			};
-> > +		};
-> > +	};
-> >  };
-> >
-> >  &i2c5 {
-> 
-> --
-> Lee Jones
-> Linaro ST-Ericsson Landing Team Lead
-> Linaro.org ‚îÇ Open source software for ARM SoCs Follow Linaro: Facebook
-> | Twitter | Blog
+> Regards,
+> Benoit
 
 Regards,
 Keerthy
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
