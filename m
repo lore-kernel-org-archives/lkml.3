@@ -1,216 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362Ab3FJRi1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 13:38:27 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:29301 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754332Ab3FJRiW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 13:38:22 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH 1/2 v4] SELinux: Reduce overhead of mls_level_isvalid() function call
-Date: Mon, 10 Jun 2013 13:37:50 -0400
-Message-Id: <1370885870-64818-1-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-To: Stephen Smalley <sds@tycho.nsa.gov>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@parisplace.org>
+	id S1754397Ab3FJRjD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 13:39:03 -0400
+Received: from shell.v3.sk ([195.168.3.45]:33965 "EHLO norkia.v3.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754314Ab3FJRjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 13:39:01 -0400
+Subject: Re: [PATCH] [media] usbtv: Add driver for Fushicai USBTV007 video
+ frame grabber
+From: Lubomir Rintel <lkundrak@v3.sk>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: linux-media@vger.kernel.org, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <201306101305.05038.hverkuil@xs4all.nl>
+References: <1370857931-6586-1-git-send-email-lkundrak@v3.sk>
+	 <201306101305.05038.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 Jun 2013 19:38:54 +0200
+Message-ID: <1370885934.9757.11.camel@hobbes.kokotovo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v3->v4:
-  - Merge the 2 separate while loops in ebitmap_contains() into
-    a single one.
+On Mon, 2013-06-10 at 13:05 +0200, Hans Verkuil wrote:
+> > Also, I the hardware uses V4L2_FIELD_ALTERNATE interlacing, but I couldn't make
+> > it work,
+> 
+> What didn't work exactly?
 
-v2->v3:
-  - Remove unused local variables i, node from mls_level_isvalid().
+Both mplayer and gstream v4l2src displayed only half of an image. Not
+sure which combinations of flags did I use anymore.
 
-v1->v2:
- - Move the new ebitmap comparison logic from mls_level_isvalid()
-   into the ebitmap_contains() helper function.
- - Rerun perf and performance tests on the latest v3.10-rc4 kernel.
+> > +static int usbtv_queryctrl(struct file *file, void *priv,
+> > +				struct v4l2_queryctrl *ctrl)
+> > +{
+> > +	return -EINVAL;
+> > +}
+> 
+> Drop this ioctl. If it doesn't do anything, then don't specify it.
 
-While running the high_systime workload of the AIM7 benchmark on
-a 2-socket 12-core Westmere x86-64 machine running 3.10-rc4 kernel
-(with HT on), it was found that a pretty sizable amount of time was
-spent in the SELinux code. Below was the perf trace of the "perf
-record -a -s" of a test run at 1500 users:
+It actually does something; EINVAL here for any ctrl signals there's
+zero controls.
 
-  5.04%            ls  [kernel.kallsyms]     [k] ebitmap_get_bit
-  1.96%            ls  [kernel.kallsyms]     [k] mls_level_isvalid
-  1.95%            ls  [kernel.kallsyms]     [k] find_next_bit
+When undefined, ENOTTY that is returned is considered invalid by
+gstreamer source.
 
-The ebitmap_get_bit() was the hottest function in the perf-report
-output.  Both the ebitmap_get_bit() and find_next_bit() functions
-were, in fact, called by mls_level_isvalid(). As a result, the
-mls_level_isvalid() call consumed 8.95% of the total CPU time of
-all the 24 virtual CPUs which is quite a lot. The majority of the
-mls_level_isvalid() function invocations come from the socket creation
-system call.
+> It doesn't look too bad :-) You're using all the latest frameworks which is
+> excellent.
 
-Looking at the mls_level_isvalid() function, it is checking to see
-if all the bits set in one of the ebitmap structure are also set in
-another one as well as the highest set bit is no bigger than the one
-specified by the given policydb data structure. It is doing it in
-a bit-by-bit manner. So if the ebitmap structure has many bits set,
-the iteration loop will be done many times.
+Thanks for your time. I'll follow up with a new version that aims to
+address all the concerns above (apart for the queryctl change, which
+would break with gstreamer).
 
-The current code can be rewritten to use a similar algorithm as the
-ebitmap_contains() function with an additional check for the
-highest set bit. The ebitmap_contains() function was extended to
-cover an optional additional check for the highest set bit, and the
-mls_level_isvalid() function was modified to call ebitmap_contains().
+> Can you run the v4l2-compliance tool and post the output of that tool?
 
-With that change, the perf trace showed that the used CPU time drop
-down to just 0.08% (ebitmap_contains + mls_level_isvalid) of the
-total which is about 100X less than before.
+Driver Info:
+	Driver name   : usbtv
+	Card type     : usbtv
+	Bus info      : usb-0000:00:1d.7-5
+	Driver version: 3.10.0
+	Capabilities  : 0x85000001
+		Video Capture
+		Read/Write
+		Streaming
+		Device Capabilities
+	Device Caps   : 0x05000001
+		Video Capture
+		Read/Write
+		Streaming
 
-  0.07%            ls  [kernel.kallsyms]     [k] ebitmap_contains
-  0.05%            ls  [kernel.kallsyms]     [k] ebitmap_get_bit
-  0.01%            ls  [kernel.kallsyms]     [k] mls_level_isvalid
-  0.01%            ls  [kernel.kallsyms]     [k] find_next_bit
+Compliance test for device /dev/video1 (not using libv4l2):
 
-The remaining ebitmap_get_bit() and find_next_bit() functions calls
-are made by other kernel routines as the new mls_level_isvalid()
-function will not call them anymore.
+Required ioctls:
+	test VIDIOC_QUERYCAP: OK
 
-This patch also improves the high_systime AIM7 benchmark result,
-though the improvement is not as impressive as is suggested by the
-reduction in CPU time spent in the ebitmap functions. The table below
-shows the performance change on the 2-socket x86-64 system (with HT
-on) mentioned above.
+Allow for multiple opens:
+	test second video open: OK
+	test VIDIOC_QUERYCAP: OK
+	test VIDIOC_G/S_PRIORITY: OK
 
-+--------------+---------------+----------------+-----------------+
-|   Workload   | mean % change | mean % change  | mean % change   |
-|              | 10-100 users  | 200-1000 users | 1100-2000 users |
-+--------------+---------------+----------------+-----------------+
-| high_systime |     +0.1%     |     +0.9%      |     +2.6%       |
-+--------------+---------------+----------------+-----------------+
+Debug ioctls:
+	test VIDIOC_DBG_G/S_REGISTER: OK (Not Supported)
+	test VIDIOC_LOG_STATUS: OK (Not Supported)
 
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
----
- security/selinux/ss/ebitmap.c   |   20 ++++++++++++++++++--
- security/selinux/ss/ebitmap.h   |    2 +-
- security/selinux/ss/mls.c       |   22 +++++++---------------
- security/selinux/ss/mls_types.h |    2 +-
- 4 files changed, 27 insertions(+), 19 deletions(-)
+Input ioctls:
+	test VIDIOC_G/S_TUNER: OK (Not Supported)
+	test VIDIOC_G/S_FREQUENCY: OK (Not Supported)
+	test VIDIOC_S_HW_FREQ_SEEK: OK (Not Supported)
+	test VIDIOC_ENUMAUDIO: OK (Not Supported)
+	test VIDIOC_G/S/ENUMINPUT: OK
+	test VIDIOC_G/S_AUDIO: OK (Not Supported)
+	Inputs: 1 Audio Inputs: 0 Tuners: 0
 
-diff --git a/security/selinux/ss/ebitmap.c b/security/selinux/ss/ebitmap.c
-index 30f119b..105141b 100644
---- a/security/selinux/ss/ebitmap.c
-+++ b/security/selinux/ss/ebitmap.c
-@@ -213,7 +213,12 @@ netlbl_import_failure:
- }
- #endif /* CONFIG_NETLABEL */
- 
--int ebitmap_contains(struct ebitmap *e1, struct ebitmap *e2)
-+/*
-+ * Check to see if all the bits set in e2 are also set in e1. Optionally,
-+ * if last_e2bit is non-zero, the highest set bit in e2 cannot exceed
-+ * last_e2bit.
-+ */
-+int ebitmap_contains(struct ebitmap *e1, struct ebitmap *e2, u32 last_e2bit)
- {
- 	struct ebitmap_node *n1, *n2;
- 	int i;
-@@ -223,14 +228,25 @@ int ebitmap_contains(struct ebitmap *e1, struct ebitmap *e2)
- 
- 	n1 = e1->node;
- 	n2 = e2->node;
-+
- 	while (n1 && n2 && (n1->startbit <= n2->startbit)) {
- 		if (n1->startbit < n2->startbit) {
- 			n1 = n1->next;
- 			continue;
- 		}
--		for (i = 0; i < EBITMAP_UNIT_NUMS; i++) {
-+		for (i = EBITMAP_UNIT_NUMS - 1; (i >= 0) && !n2->maps[i]; )
-+			i--;	/* Skip trailing NULL map entries */
-+		if (last_e2bit && (i >= 0)) {
-+			u32 lastsetbit = n2->startbit + i * EBITMAP_UNIT_SIZE +
-+                                         __fls(n2->maps[i]);
-+			if (lastsetbit > last_e2bit)
-+				return 0;
-+		}
-+
-+		while (i >= 0) {
- 			if ((n1->maps[i] & n2->maps[i]) != n2->maps[i])
- 				return 0;
-+			i--;
- 		}
- 
- 		n1 = n1->next;
-diff --git a/security/selinux/ss/ebitmap.h b/security/selinux/ss/ebitmap.h
-index 922f8af..e7eb3a9 100644
---- a/security/selinux/ss/ebitmap.h
-+++ b/security/selinux/ss/ebitmap.h
-@@ -117,7 +117,7 @@ static inline void ebitmap_node_clr_bit(struct ebitmap_node *n,
- 
- int ebitmap_cmp(struct ebitmap *e1, struct ebitmap *e2);
- int ebitmap_cpy(struct ebitmap *dst, struct ebitmap *src);
--int ebitmap_contains(struct ebitmap *e1, struct ebitmap *e2);
-+int ebitmap_contains(struct ebitmap *e1, struct ebitmap *e2, u32 last_e2bit);
- int ebitmap_get_bit(struct ebitmap *e, unsigned long bit);
- int ebitmap_set_bit(struct ebitmap *e, unsigned long bit, int value);
- void ebitmap_destroy(struct ebitmap *e);
-diff --git a/security/selinux/ss/mls.c b/security/selinux/ss/mls.c
-index 40de8d3..c85bc1e 100644
---- a/security/selinux/ss/mls.c
-+++ b/security/selinux/ss/mls.c
-@@ -160,8 +160,6 @@ void mls_sid_to_context(struct context *context,
- int mls_level_isvalid(struct policydb *p, struct mls_level *l)
- {
- 	struct level_datum *levdatum;
--	struct ebitmap_node *node;
--	int i;
- 
- 	if (!l->sens || l->sens > p->p_levels.nprim)
- 		return 0;
-@@ -170,19 +168,13 @@ int mls_level_isvalid(struct policydb *p, struct mls_level *l)
- 	if (!levdatum)
- 		return 0;
- 
--	ebitmap_for_each_positive_bit(&l->cat, node, i) {
--		if (i > p->p_cats.nprim)
--			return 0;
--		if (!ebitmap_get_bit(&levdatum->level->cat, i)) {
--			/*
--			 * Category may not be associated with
--			 * sensitivity.
--			 */
--			return 0;
--		}
--	}
--
--	return 1;
-+	/*
-+	 * Return 1 iff all the bits set in l->cat are also be set in
-+	 * levdatum->level->cat and no bit in l->cat is larger than
-+	 * p->p_cats.nprim.
-+	 */
-+	return ebitmap_contains(&levdatum->level->cat, &l->cat,
-+				p->p_cats.nprim);
- }
- 
- int mls_range_isvalid(struct policydb *p, struct mls_range *r)
-diff --git a/security/selinux/ss/mls_types.h b/security/selinux/ss/mls_types.h
-index 03bed52..e936487 100644
---- a/security/selinux/ss/mls_types.h
-+++ b/security/selinux/ss/mls_types.h
-@@ -35,7 +35,7 @@ static inline int mls_level_eq(struct mls_level *l1, struct mls_level *l2)
- static inline int mls_level_dom(struct mls_level *l1, struct mls_level *l2)
- {
- 	return ((l1->sens >= l2->sens) &&
--		ebitmap_contains(&l1->cat, &l2->cat));
-+		ebitmap_contains(&l1->cat, &l2->cat, 0));
- }
- 
- #define mls_level_incomp(l1, l2) \
+Output ioctls:
+	test VIDIOC_G/S_MODULATOR: OK (Not Supported)
+	test VIDIOC_G/S_FREQUENCY: OK (Not Supported)
+	test VIDIOC_ENUMAUDOUT: OK (Not Supported)
+	test VIDIOC_G/S/ENUMOUTPUT: OK (Not Supported)
+	test VIDIOC_G/S_AUDOUT: OK (Not Supported)
+	Outputs: 0 Audio Outputs: 0 Modulators: 0
+
+Control ioctls:
+	test VIDIOC_QUERYCTRL/MENU: OK
+	test VIDIOC_G/S_CTRL: OK (Not Supported)
+	test VIDIOC_G/S/TRY_EXT_CTRLS: OK (Not Supported)
+	test VIDIOC_(UN)SUBSCRIBE_EVENT/DQEVENT: OK (Not Supported)
+	test VIDIOC_G/S_JPEGCOMP: OK (Not Supported)
+	Standard Controls: 0 Private Controls: 0
+
+Input/Output configuration ioctls:
+	test VIDIOC_ENUM/G/S/QUERY_STD: OK
+	test VIDIOC_ENUM/G/S/QUERY_DV_TIMINGS: OK (Not Supported)
+	test VIDIOC_DV_TIMINGS_CAP: OK (Not Supported)
+
+Format ioctls:
+	test VIDIOC_ENUM_FMT/FRAMESIZES/FRAMEINTERVALS: OK
+	test VIDIOC_G/S_PARM: OK
+	test VIDIOC_G_FBUF: OK (Not Supported)
+	test VIDIOC_G_FMT: OK
+	test VIDIOC_TRY_FMT: OK
+	test VIDIOC_S_FMT: OK
+	test VIDIOC_G_SLICED_VBI_CAP: OK (Not Supported)
+
+Codec ioctls:
+	test VIDIOC_(TRY_)ENCODER_CMD: OK (Not Supported)
+	test VIDIOC_G_ENC_INDEX: OK (Not Supported)
+	test VIDIOC_(TRY_)DECODER_CMD: OK (Not Supported)
+
+Buffer ioctls:
+	test VIDIOC_REQBUFS/CREATE_BUFS/QUERYBUF: OK
+
+Total: 36, Succeeded: 36, Failed: 0, Warnings: 0
+
 -- 
-1.7.1
+Lubomir Rintel <lkundrak@v3.sk>
 
