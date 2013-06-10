@@ -1,148 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751051Ab3FJFFX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 01:05:23 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:57456 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707Ab3FJFFW (ORCPT
+	id S1751773Ab3FJFPY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 01:15:24 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:34241 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296Ab3FJFPW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 01:05:22 -0400
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: keith.busch@intel.com, vishal.l.verma@linux.intel.com,
-        matthew.r.wilcox@intel.com
-Subject: [PATCH] NVMe: Use kzalloc instead of kmalloc+memset
-Date: Mon, 10 Jun 2013 10:20:55 +0530
-Message-Id: <1370839855-1357-1-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 10 Jun 2013 01:15:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <1370764205-3933-1-git-send-email-chenxg@marvell.com>
+References: <1370764205-3933-1-git-send-email-chenxg@marvell.com>
+Date: Mon, 10 Jun 2013 10:45:21 +0530
+Message-ID: <CAKohpon+-bhn1OkPF24qciQBf=jHMaXsBbF0t6veZdAWYpw0QQ@mail.gmail.com>
+Subject: Re: [PATCH v2] cpufreq: fix governor start/stop race condition
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Xiaoguang Chen <chenxg@marvell.com>
+Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, njiang1@marvell.com, zjwu@marvell.com,
+        ylmao@marvell.com, chenxg.marvell@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use kzalloc instead of kmalloc and a susbsequent memset.
+On 9 June 2013 13:20, Xiaoguang Chen <chenxg@marvell.com> wrote:
+> cpufreq governor stop and start should be kept in sequence.
+> If not, there will be unexpected behavior, for example:
+>
+> we have 4 cpus and policy->cpu=cpu0, cpu1/2/3 are linked to cpu0.
+> the normal sequence is as below:
+>
+> 1) Current governor is userspace, one application tries to set
+> governor to ondemand. it will call __cpufreq_set_policy in which it
+> will stop userspace governor and then start ondemand governor.
+>
+> 2) Current governor is userspace, now cpu0 hotplugs in cpu3, it will
+> call cpufreq_add_policy_cpu. on which it first stops userspace
+> governor, and then starts userspace governor.
+>
+> Now if the sequence of above two cases interleaves, it becames
+> below sequence:
+>
+> 1) application stops userspace governor
+> 2)                                      hotplug stops userspace governor
+> 3) application starts ondemand governor
+> 4)                                      hotplug starts a governor
+>
+> in step 4, hotplug is supposed to start userspace governor, but now
+> the governor has been changed by application to ondemand, so hotplug
+> starts ondemand governor again !!!!
+>
+> The solution is: do not allow stop governor multi-times
+> Governor stop should only do once, after it is stopped,
+> no other governor stop should be executed.
+>
+> Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
+> ---
+>  drivers/cpufreq/cpufreq.c | 10 +++++++++-
+>  include/linux/cpufreq.h   |  1 +
+>  2 files changed, 10 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 2d53f47..c8d7cb2 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1562,6 +1562,11 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+>
+>         pr_debug("__cpufreq_governor for CPU %u, event %u\n",
+>                                                 policy->cpu, event);
+> +
+> +       if ((!policy->governor->enabled && (event == CPUFREQ_GOV_STOP)) ||
+> +           (policy->governor->enabled && (event == CPUFREQ_GOV_START)))
+> +               return 0;
+> +
+>         ret = policy->governor->governor(policy, event);
+>
+>         if (!ret) {
+> @@ -1569,6 +1574,10 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+>                         policy->governor->initialized++;
+>                 else if (event == CPUFREQ_GOV_POLICY_EXIT)
+>                         policy->governor->initialized--;
+> +               else if (event == CPUFREQ_GOV_STOP)
+> +                       policy->governor->enabled = 0;
+> +               else if (event == CPUFREQ_GOV_START)
+> +                       policy->governor->enabled = 1;
+>         }
+>
+>         /* we keep one module reference alive for
+> @@ -1581,7 +1590,6 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+>         return ret;
+>  }
+>
+> -
+>  int cpufreq_register_governor(struct cpufreq_governor *governor)
+>  {
+>         int err;
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+> index 037d36a..16c5b70 100644
+> --- a/include/linux/cpufreq.h
+> +++ b/include/linux/cpufreq.h
+> @@ -199,6 +199,7 @@ struct cpufreq_governor {
+>                         will fallback to performance governor */
+>         struct list_head        governor_list;
+>         struct module           *owner;
+> +       int enabled;
+>  };
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
----
- drivers/block/nvme-scsi.c |   24 ++++++++----------------
- 1 file changed, 8 insertions(+), 16 deletions(-)
+This isn't sufficient.
 
-diff --git a/drivers/block/nvme-scsi.c b/drivers/block/nvme-scsi.c
-index fed54b0..51d39a0 100644
---- a/drivers/block/nvme-scsi.c
-+++ b/drivers/block/nvme-scsi.c
-@@ -934,13 +934,12 @@ static int nvme_trans_bdev_char_page(struct nvme_ns *ns, struct sg_io_hdr *hdr,
- 	int res = SNTI_TRANSLATION_SUCCESS;
- 	int xfer_len;
- 
--	inq_response = kmalloc(EXTENDED_INQUIRY_DATA_PAGE_LENGTH, GFP_KERNEL);
-+	inq_response = kzalloc(EXTENDED_INQUIRY_DATA_PAGE_LENGTH, GFP_KERNEL);
- 	if (inq_response == NULL) {
- 		res = -ENOMEM;
- 		goto out_mem;
- 	}
- 
--	memset(inq_response, 0, EXTENDED_INQUIRY_DATA_PAGE_LENGTH);
- 	inq_response[1] = INQ_BDEV_CHARACTERISTICS_PAGE;    /* Page Code */
- 	inq_response[2] = 0x00;    /* Page Length MSB */
- 	inq_response[3] = 0x3C;    /* Page Length LSB */
-@@ -965,12 +964,11 @@ static int nvme_trans_log_supp_pages(struct nvme_ns *ns, struct sg_io_hdr *hdr,
- 	int xfer_len;
- 	u8 *log_response;
- 
--	log_response = kmalloc(LOG_PAGE_SUPPORTED_LOG_PAGES_LENGTH, GFP_KERNEL);
-+	log_response = kzalloc(LOG_PAGE_SUPPORTED_LOG_PAGES_LENGTH, GFP_KERNEL);
- 	if (log_response == NULL) {
- 		res = -ENOMEM;
- 		goto out_mem;
- 	}
--	memset(log_response, 0, LOG_PAGE_SUPPORTED_LOG_PAGES_LENGTH);
- 
- 	log_response[0] = LOG_PAGE_SUPPORTED_LOG_PAGES_PAGE;
- 	/* Subpage=0x00, Page Length MSB=0 */
-@@ -1001,12 +999,11 @@ static int nvme_trans_log_info_exceptions(struct nvme_ns *ns,
- 	u8 temp_c;
- 	u16 temp_k;
- 
--	log_response = kmalloc(LOG_INFO_EXCP_PAGE_LENGTH, GFP_KERNEL);
-+	log_response = kzalloc(LOG_INFO_EXCP_PAGE_LENGTH, GFP_KERNEL);
- 	if (log_response == NULL) {
- 		res = -ENOMEM;
- 		goto out_mem;
- 	}
--	memset(log_response, 0, LOG_INFO_EXCP_PAGE_LENGTH);
- 
- 	mem = dma_alloc_coherent(&dev->pci_dev->dev,
- 					sizeof(struct nvme_smart_log),
-@@ -1070,12 +1067,11 @@ static int nvme_trans_log_temperature(struct nvme_ns *ns, struct sg_io_hdr *hdr,
- 	u8 temp_c_cur, temp_c_thresh;
- 	u16 temp_k;
- 
--	log_response = kmalloc(LOG_TEMP_PAGE_LENGTH, GFP_KERNEL);
-+	log_response = kzalloc(LOG_TEMP_PAGE_LENGTH, GFP_KERNEL);
- 	if (log_response == NULL) {
- 		res = -ENOMEM;
- 		goto out_mem;
- 	}
--	memset(log_response, 0, LOG_TEMP_PAGE_LENGTH);
- 
- 	mem = dma_alloc_coherent(&dev->pci_dev->dev,
- 					sizeof(struct nvme_smart_log),
-@@ -1381,12 +1377,11 @@ static int nvme_trans_mode_page_create(struct nvme_ns *ns,
- 	blk_desc_offset = mph_size;
- 	mode_pages_offset_1 = blk_desc_offset + blk_desc_len;
- 
--	response = kmalloc(resp_size, GFP_KERNEL);
-+	response = kzalloc(resp_size, GFP_KERNEL);
- 	if (response == NULL) {
- 		res = -ENOMEM;
- 		goto out_mem;
- 	}
--	memset(response, 0, resp_size);
- 
- 	res = nvme_trans_fill_mode_parm_hdr(&response[0], mph_size, cdb10,
- 					llbaa, mode_data_length, blk_desc_len);
-@@ -2481,12 +2476,11 @@ static int nvme_trans_read_capacity(struct nvme_ns *ns, struct sg_io_hdr *hdr,
- 	}
- 	id_ns = mem;
- 
--	response = kmalloc(resp_size, GFP_KERNEL);
-+	response = kzalloc(resp_size, GFP_KERNEL);
- 	if (response == NULL) {
- 		res = -ENOMEM;
- 		goto out_dma;
- 	}
--	memset(response, 0, resp_size);
- 	nvme_trans_fill_read_cap(response, id_ns, cdb16);
- 
- 	xfer_len = min(alloc_len, resp_size);
-@@ -2555,12 +2549,11 @@ static int nvme_trans_report_luns(struct nvme_ns *ns, struct sg_io_hdr *hdr,
- 			goto out_dma;
- 		}
- 
--		response = kmalloc(resp_size, GFP_KERNEL);
-+		response = kzalloc(resp_size, GFP_KERNEL);
- 		if (response == NULL) {
- 			res = -ENOMEM;
- 			goto out_dma;
- 		}
--		memset(response, 0, resp_size);
- 
- 		/* The first LUN ID will always be 0 per the SAM spec */
- 		for (lun_id = 0; lun_id < le32_to_cpu(id_ctrl->nn); lun_id++) {
-@@ -2601,12 +2594,11 @@ static int nvme_trans_request_sense(struct nvme_ns *ns, struct sg_io_hdr *hdr,
- 
- 	resp_size = ((desc_format) ? (DESC_FMT_SENSE_DATA_SIZE) :
- 					(FIXED_FMT_SENSE_DATA_SIZE));
--	response = kmalloc(resp_size, GFP_KERNEL);
-+	response = kzalloc(resp_size, GFP_KERNEL);
- 	if (response == NULL) {
- 		res = -ENOMEM;
- 		goto out;
- 	}
--	memset(response, 0, resp_size);
- 
- 	if (desc_format == DESCRIPTOR_FORMAT_SENSE_DATA_TYPE) {
- 		/* Descriptor Format Sense Data */
--- 
-1.7.9.5
-
+If there are two groups of clk-sharing-cpus, i.e. if we have multiple
+policies and they are using same governor, then these functions
+gets called twice for governor x. And you will return 0 for the second
+policy.
