@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599Ab3FJPSo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 11:18:44 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:38503 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751497Ab3FJPSn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 11:18:43 -0400
+	id S1753814Ab3FJPS7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 11:18:59 -0400
+Received: from blackhole.sdinet.de ([176.9.52.58]:52751 "EHLO mail.sdinet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753700Ab3FJPS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 11:18:58 -0400
+X-Greylist: delayed 421 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Jun 2013 11:18:57 EDT
+Date: Mon, 10 Jun 2013 17:11:49 +0200 (CEST)
+From: Sven-Haegar Koch <haegar@sdinet.de>
+To: Willy Tarreau <w@1wt.eu>
+cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: Linux 2.6.32.61
+In-Reply-To: <20130610101557.GA3235@1wt.eu>
+Message-ID: <alpine.DEB.2.10.1306101708360.1713@aurora64.sdinet.de>
+References: <20130610101557.GA3235@1wt.eu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1370621488-18130-3-git-send-email-lee.jones@linaro.org>
-References: <1370621488-18130-1-git-send-email-lee.jones@linaro.org>
-	<1370621488-18130-3-git-send-email-lee.jones@linaro.org>
-Date: Mon, 10 Jun 2013 17:18:42 +0200
-Message-ID: <CACRpkdZWc74MQqUdXbW=cEgzHbC7Og==Tq1iEbhQSeG891BWrA@mail.gmail.com>
-Subject: Re: [PATCH 02/10] ARM: ux500: Provide a supply name for the AB8500
- AUX regulators to use
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Mark Brown <broonie@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 7, 2013 at 6:11 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On Mon, 10 Jun 2013, Willy Tarreau wrote:
 
-> AB8500 AUX regulators are supplied by EXT3 on some boards. This supply
-> phandle lookup will enable the regulator core to search for and locate
-> the EXT3 supply at registration time.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Willy Tarreau (2):
+>       x86, ptrace: fix build breakage with gcc 4.7
 
-Patch applied to my ux500-devicetree branch.
+This change breaks "make headers_install":
 
-Yours,
-Linus Walleij
+  CHECK   include (0 files)
+  CHECK   include/asm (54 files)
+/home/haegar/src/2.6.32/linux/usr/include/asm/ptrace.h:5: included file 'linux/linkage.h' is not exported
+make[3]: *** [/home/haegar/src/2.6.32/linux/usr/include/asm/.check] Error 123
+make[2]: *** [headers_check] Error 2
+make[1]: *** [deb-pkg] Error 2
+make: *** [deb-pkg] Error 2
+
+c'ya
+sven-haegar
+
+-- 
+Three may keep a secret, if two of them are dead.
+- Ben F.
