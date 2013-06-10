@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab3FJU27 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 16:28:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37752 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753078Ab3FJU25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 16:28:57 -0400
-Date: Mon, 10 Jun 2013 17:28:23 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        David Sharp <dhsharp@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Re: Re: [PATCH V2 1/1] kvm/vmx: Add a tracepoint write_tsc_offset
-Message-ID: <20130610202823.GC31409@amt.cnet>
-References: <20130604083616.22713.24922.stgit@yunodevel>
- <20130604083619.22713.25360.stgit@yunodevel>
- <20130606002322.GA24351@amt.cnet>
- <20130606113305.GB4725@redhat.com>
- <51B16E0E.5020208@hitachi.com>
- <20130609111442.GP4725@redhat.com>
- <51B59CC2.3060707@hitachi.com>
- <20130610100505.GB4725@redhat.com>
- <20130610140424.GA25632@amt.cnet>
- <20130610163834.GG29022@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130610163834.GG29022@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752956Ab3FJU33 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 16:29:29 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.182]:5838 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750929Ab3FJU32 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 16:29:28 -0400
+X-Greylist: delayed 570 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Jun 2013 16:29:28 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjtbABK/CFFFxKyU/2dsb2JhbABEgkADgQWzWoEegnWDcI12oAihIo1hgykDpHqBXoMT
+X-IPAS-Result: AjtbABK/CFFFxKyU/2dsb2JhbABEgkADgQWzWoEegnWDcI12oAihIo1hgykDpHqBXoMT
+X-IronPort-AV: E=Sophos;i="4.84,565,1355115600"; 
+   d="scan'208";a="16066927"
+Subject: 3.10.0-rcX vmstat regression
+From: Shane Shrybman <shrybman@teksavvy.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain
+Date: Mon, 10 Jun 2013 16:19:56 -0400
+Message-Id: <1370895596.4198.17.camel@mars>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 07:38:34PM +0300, Gleb Natapov wrote:
-> > Guest traces contain vcpu number and not pid (because guest is unaware
-> > of host PID).
-> > 
-> No, guest trace is just a regular ftrace done inside a guest. It contains
-> guest's PIDs which is useless for host. 
+Hello,
 
-# tracer: nop
-#
-# entries-in-buffer/entries-written: 5333/5333   #P:4
-#
-#                              _-----=> irqs-off
-#                             / _----=> need-resched
-#                            | / _---=> hardirq/softirq
-#                            || / _--=> preempt-depth
-#                            ||| /     delay
-#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-#              | |       |   ||||       |         |
+x86_64 with 32 bit user space, seen on all 3.10.0-rc's
 
-Traces contain CPU ID.
+A typical 'vmstat 1' run looks like this:
 
-> I do not know how exactly guest traces are transfered to a host, if
-> each vcpu buffer is transfered separately host can figure out what
-> trace entry belong to which vcpu based on what buffer the trace is in.
-> But the information about what buffer belongs to which vcpu id should
-> be transfered to a host somehow too.
-> 
-> > > >                                                 However, when we
-> > > > focus on output data of the write_tsc_offset event, it is difficult to
-> > > > directly understand contents of the data if vcpu number information is
-> > > > not included. So, including the information is useful, I think.
-> > > > 
-> > > How your tool does it now?
-> > 
-> > It merges guest trace with host trace (by converting the TSC timestamp 
-> > in the guest trace to host TSC using tsc_offset information).
-> > 
-> I mean how it does it now without vcpu id. The answer is that it works
-> for only one vcpu now.
+~$ vmstat 1
+procs -----------memory---------- ---swap-- -----io---- -system--
+----cpu----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy
+id wa
+ 0  0  0 3624776  26060 209808  0   0  1232     7  399  463  1  0 81 18
+ 0  0  0 3624816  26060 209856  0   0     0     0  625  526  0  0 100  0
+ 0  0  0 3624612  26064 209852  0   0     4    56 1174 1574  0  0 99  1
+ 1  0  0 3624652  26064 209900  0   0     4     0 1501 2126  0  0 100  0
+ 1  0  0 3624576  26076 209888  0   0     8   132 1299 1941  0  0 98  2
+ 1  0  0 3624044  26088 210268  0   0   380     0 1642 2996  0  0 93  7
+ 1  0  0 3628992  26140 219896  0   0  2783     7 1727 3284  0  0 85 15
+ 0  1  0 3588504  26288 244572  0   0  5955     0 2096 3874  0  0 27 73
+ 1  2  0 3572732  26428 253152  0   0  8792   212 1730 2374  0  0 27 73
+ 1  7  0 3566128  26492 257696  0   0  1915   268 1832 2885  0  0 11 89
+ 5 37  0 3527996  26576 270212  0   0  5668     0 2382 5117  0  0  9 91
+ 3  3  0 3471676  26668 284616  0   0  8504    12 2334 4502  0  0 15 85
+ 1  5  0 3485732  26852 264932  0   0  4556     0 1861 3648  0  0  8 92
+ 3  4  0 3438112  26872 270956  0   0  1822     0 1770 5000  0  0  0 100
+ 5  2  0 3405560  26916 274628  0   0  3413    96 2360 5571  0  0  9 91
+ 5  1  0 3378800  26952 273024  0   0  1805     0 1968 4489  0  0  0 100
+Floating point exception
 
-Yes.
+Two problems are shown: the floating point exception and the user and
+system stats are always 0, it looks like us and sys time are showing up
+as wait time.
 
-> > By not recording vcpu ID in the tsc_offset trace, it is necessary to
-> > supply the tool with PID<->VCPU_id tuples for translation (so its an
-> > additional step required, and it makes trace merge impossible
-> > if the information is not available).
-> The tool needs PID<->VCPU_id tuples to do the merging of any trace
-> entry. Without that it does not know how to interpret entry timestamps
-> (which offset to use). Apparently it will get this information from
-> vmentry trace point. What is so special about tsc_offset tracing that
-> it needs to contain vcpuid by itself.
+CONFIG_TICK_ONESHOT=y
+CONFIG_NO_HZ_COMMON=y
+# CONFIG_HZ_PERIODIC is not set
+# CONFIG_NO_HZ_IDLE is not set
+CONFIG_NO_HZ_FULL=y
+CONFIG_NO_HZ_FULL_ALL=y
+CONFIG_NO_HZ=y
+# CONFIG_HIGH_RES_TIMERS is not set
 
-If the tsc_offset tracepoint contains vcpu ID, its possible to lookup
-guest trace entry (which contains CPU ID), and match on that.
+Sorry if this report is a duplicate,
 
-Without that, PID<->VCPU_id tuples are necessary. Yes?
+Shane
 
