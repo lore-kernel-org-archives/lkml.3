@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905Ab3FJD2g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 23:28:36 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:60274 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab3FJD2f (ORCPT
+	id S1751985Ab3FJDgT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 23:36:19 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:60767 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459Ab3FJDgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 23:28:35 -0400
+	Sun, 9 Jun 2013 23:36:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <1369032694-13183-1-git-send-email-ks.giri@samsung.com>
-References: <1369032694-13183-1-git-send-email-ks.giri@samsung.com>
-Date: Mon, 10 Jun 2013 08:58:33 +0530
-Message-ID: <CAKrE-Kd22BM=zS=KZN_a69yAN8zSSdq-Rh-x_dsNRZD4JffPwg@mail.gmail.com>
-Subject: Re: [PATCH v1 0/3] Polling support for s3c64xx spi controller
-From: Girish KS <girishks2000@gmail.com>
-To: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: grant.likely@secretlab.ca, broonie@opensource.wolfsonmicro.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CA+55aFxJxY3J2X7DsEY4nz050PmNFgsZRewQEPoVWc1gzdiLGw@mail.gmail.com>
+References: <1370764616.14883.28.camel@pasglop>
+	<CA+55aFz_E+x=Mr9Z6_09wzh1mXFr3a2VigPX77LzrsyLUFeb+Q@mail.gmail.com>
+	<CA+55aFxAC4EksZcz7SaZNjF9mfKkwLjWp2rEKxMZT8m-7uBeNQ@mail.gmail.com>
+	<51B53DAB.10501@ozlabs.org>
+	<CA+55aFzHT3NWrF6gq+BaLcZmEtrFwkiXv0_qZ0jGjxTO6-8iPQ@mail.gmail.com>
+	<CA+55aFxJxY3J2X7DsEY4nz050PmNFgsZRewQEPoVWc1gzdiLGw@mail.gmail.com>
+Date: Sun, 9 Jun 2013 20:36:17 -0700
+X-Google-Sender-Auth: 6zmGGI_HsFrgnXzTYbU41pnsgxs
+Message-ID: <CA+55aFx684C7k8=2Fk53AOvfSkfUb_6DncCnOM8zU=jdhOQMuA@mail.gmail.com>
+Subject: Re: [git pull] Please pull powerpc.git merge branch
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jeremy Kerr <jk@ozlabs.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Patchwork ML <patchwork@lists.ozlabs.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mark,
-
-pls let me know if there is any issue with this series
-
-
-
-On Mon, May 20, 2013 at 12:21 PM, Girish K S <girishks2000@gmail.com> wrote:
-> This patch series adds support for the polling mode only. Also 2nd patch
-> in the series adds support for dedicated cs pin. After Thomas's patch for
-> using default gpio is merged(commit id: 00ab539), one of the patch in this
-> series is dropped and new series is generated.
+On Sun, Jun 9, 2013 at 8:20 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> Girish K S (3):
->   spi: s3c64xx: added support for polling mode
->   spi: s3c64xx: Added provision for dedicated cs pin
->   spi: s3c64xx: Added support for exynos5440 spi
+> .. the rationale for this is that the work pattern of people is
+> actually interesting information. You can do things like this:
 >
->  drivers/spi/spi-s3c64xx.c |  197 ++++++++++++++++++++++++++++++++-------------
->  1 files changed, 140 insertions(+), 57 deletions(-)
->
-> --
-> 1.7.5.4
->
+>     git log --pretty=%aD --author=Torvalds
+
+Final side note: for me, and other git users that apply other peoples
+patches, it's probably better to use
+
+   git log --pretty=%cD --committer=Torvalds
+
+instead.
+
+Interestingly, that shows a different pattern than my "authorship"
+statistics, which are mainly pull requests. It turns out I commit
+patches much more in the afternoon. The reason is probably simple: in
+the mornings, I have pull requests waiting from overnight, so a fair
+number of pull requests where I am author at 9-11. But my biggest
+source of patches tends to be Andrew Morton, who sends the patches in
+the afternoon, so suddenly the commit counts skew towards being
+between 3pm-8pm when you take all my commits into accoint.
+
+Doing
+
+    git log --since=6.months --pretty=%aD --grep=Signed.*Andrew.Morton
+
+backs that up: most of the commits that have sign-offs by Andrew are
+sent in the afternoon.
+
+I just find details like that really interesting, where you can
+actually mine for the workpatterns of people.
+
+                   Linus
