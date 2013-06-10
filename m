@@ -1,101 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751149Ab3FJEEG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 00:04:06 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50512 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750707Ab3FJEEE convert rfc822-to-8bit (ORCPT
+	id S1751124Ab3FJEHn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 00:07:43 -0400
+Received: from out04.mta.xmission.com ([166.70.13.234]:48039 "EHLO
+	out04.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707Ab3FJEHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 00:04:04 -0400
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "Cousson, Benoit" <b-cousson@ti.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>
-Subject: RE: [PATCH] ARM: dts: add dtsi for palmas
-Thread-Topic: [PATCH] ARM: dts: add dtsi for palmas
-Thread-Index: AQHOY3QMPa6kmxyASkaofO5W52VCRJkqJRKAgAQxKl8=
-Date: Mon, 10 Jun 2013 04:03:37 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229EAA39@DBDE04.ent.ti.com>
-References: <1370604504-32310-1-git-send-email-j-keerthy@ti.com>,<51B23AD5.8060006@wwwdotorg.org>
-In-Reply-To: <51B23AD5.8060006@wwwdotorg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.154]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 10 Jun 2013 00:07:41 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Sergey Dyasly <dserrg@gmail.com>, linux-kernel@vger.kernel.org
+References: <20130609170023.GA5233@redhat.com>
+Date: Sun, 09 Jun 2013 21:07:13 -0700
+In-Reply-To: <20130609170023.GA5233@redhat.com> (Oleg Nesterov's message of
+	"Sun, 9 Jun 2013 19:00:23 +0200")
+Message-ID: <87obbevcb2.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/jm6UH8N6vEIU1p2iJJIz44gPwBDssI4I=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0136]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Oleg Nesterov <oleg@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 1/4] de_thread: use change_pid() rather than detach_pid/attach_pid
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Oleg Nesterov <oleg@redhat.com> writes:
 
-Thanks for the review comments.
+> de_thread() can use change_pid() instead of detach + attach.
+> This looks better and this ensures that, say, next_thread()
+> can never see a task with ->pid == NULL.
 
-________________________________________
-From: Stephen Warren [swarren@wwwdotorg.org]
-Sent: Saturday, June 08, 2013 1:26 AM
-To: J, KEERTHY
-Cc: Cousson, Benoit; devicetree-discuss@lists.ozlabs.org; linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org; ldewangan@nvidia.com; grant.likely@secretlab.ca; swarren@nvidia.com; sameo@linux.intel.com; gg@slimlogic.co.uk; lee.jones@linaro.org
-Subject: Re: [PATCH] ARM: dts: add dtsi for palmas
+I want to say that there I though there was a good reason something
+to do with the exit logic.
 
-On 06/07/2013 05:28 AM, J Keerthy wrote:
-> Adds palmas mfd and palmas regulator nodes. This is
-> based on the patch series:
+However I just read through attach_pid, detach_pid, and change_pid.
+And the sequence detach_pid(...); attach_pid(...)  is equiavalent
+to change_pid(...);
+
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  fs/exec.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
 >
-> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg89957.html
->
-> The device tree nodes are based on:
-> https://lkml.org/lkml/2013/6/6/25
-
-> diff --git a/arch/arm/boot/dts/palmas.dtsi b/arch/arm/boot/dts/palmas.dtsi
-
-> +&palmas {
-
-Hmmm. That (i.e. requiring the board file to declare the node, then
-setting up all the content by later including this file) is an
-interesting approach. I guess it's reasonable. The one issue is that it
-makes it a little harder for the board file to override any of the
-properties in this file., although it certainly is possible by including
-those overrides after the include.
-
-Irrespective of that, some comments on this:
-
-> +     palmas_pmic {
-
-> +             ti,ldo6-vibrator;
-
-For example, what if the board doesn't want to have the property set?
-
-> +
-> +             regulators {
-> +                     smps123_reg: smps123 {
-> +                             regulator-name = "smps123";
-> +                             regulator-min-microvolt = < 600000>;
-> +                             regulator-max-microvolt = <1500000>;
-
-Or what if the board wants to limit the voltage range of this regulator
-due to what it's used for on the board.
-
-> +                             regulator-always-on;
-> +                             regulator-boot-on;
-
-And those two properties are almost certainly board-specific policy.
-
-Totally agree to all the above concerns. So can we have a custom .dtsi file
-for a board+pmic combination? Or have only the required properties over ridden
-in the board file?
-
-Regards,
-Keerthy 
+> diff --git a/fs/exec.c b/fs/exec.c
+> index 6430195..00eaba7 100644
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -945,9 +945,8 @@ static int de_thread(struct task_struct *tsk)
+>  		 * Note: The old leader also uses this pid until release_task
+>  		 *       is called.  Odd but simple and correct.
+>  		 */
+> -		detach_pid(tsk, PIDTYPE_PID);
+>  		tsk->pid = leader->pid;
+> -		attach_pid(tsk, PIDTYPE_PID,  task_pid(leader));
+> +		change_pid(tsk, PIDTYPE_PID, task_pid(leader));
+>  		transfer_pid(leader, tsk, PIDTYPE_PGID);
+>  		transfer_pid(leader, tsk, PIDTYPE_SID);
