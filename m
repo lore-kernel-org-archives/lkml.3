@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446Ab3FJTSW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 15:18:22 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:22824 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027Ab3FJTSV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 15:18:21 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: penberg@kernel.org, cl@linux.com
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] slab: prevent warnings when allocating with __GFP_NOWARN
-Date: Mon, 10 Jun 2013 15:18:00 -0400
-Message-Id: <1370891880-2644-1-git-send-email-sasha.levin@oracle.com>
+	id S1752039Ab3FJT3j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 15:29:39 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:41307 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751051Ab3FJT3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 15:29:38 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Marek Belisko <marek.belisko@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] staging: ft1000: fix memory leak on error path in ft1000_probe()
+Date: Mon, 10 Jun 2013 23:29:16 +0400
+Message-Id: <1370892556-14503-1-git-send-email-khoroshilov@ispras.ru>
 X-Mailer: git-send-email 1.8.1.2
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-slab would still spew a warning when a big allocation happens with the
-__GFP_NOWARN fleg is set. Prevent that to conform to __GFP_NOWARN.
+ft1000dev->tx_urb and ft1000dev->rx_urb are not deallocated
+if something goes wrong in ft1000_probe(). Also there is no
+check for success of urb allocation. The patch fixes the both issues.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+By the way, there is no sense in GFP_ATOMIC for urb allocation here,
+so it is changed to GFP_KERNEL.
+
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 ---
- mm/slab_common.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/staging/ft1000/ft1000-usb/ft1000_usb.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index ff3218a..2d41450 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -373,8 +373,10 @@ struct kmem_cache *kmalloc_slab(size_t size, gfp_t flags)
- {
- 	int index;
- 
--	if (WARN_ON_ONCE(size > KMALLOC_MAX_SIZE))
-+	if (size > KMALLOC_MAX_SIZE) {
-+		WARN_ON_ONCE(!(flags & __GFP_NOWARN));
- 		return NULL;
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
+index 614db55..29a7cd2 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
+@@ -79,8 +79,12 @@ static int ft1000_probe(struct usb_interface *interface,
+ 	ft1000dev->dev = dev;
+ 	ft1000dev->status = 0;
+ 	ft1000dev->net = NULL;
+-	ft1000dev->tx_urb = usb_alloc_urb(0, GFP_ATOMIC);
+-	ft1000dev->rx_urb = usb_alloc_urb(0, GFP_ATOMIC);
++	ft1000dev->tx_urb = usb_alloc_urb(0, GFP_KERNEL);
++	ft1000dev->rx_urb = usb_alloc_urb(0, GFP_KERNEL);
++	if (!ft1000dev->tx_urb || !ft1000dev->rx_urb) {
++		ret = -ENOMEM;
++		goto err_fw;
 +	}
  
- 	if (size <= 192) {
- 		if (!size)
+ 	DEBUG("ft1000_probe is called\n");
+ 	numaltsetting = interface->num_altsetting;
+@@ -209,6 +213,8 @@ err_thread:
+ err_load:
+ 	kfree(pFileStart);
+ err_fw:
++	usb_free_urb(ft1000dev->rx_urb);
++	usb_free_urb(ft1000dev->tx_urb);
+ 	kfree(ft1000dev);
+ 	return ret;
+ }
 -- 
-1.8.2.1
+1.8.1.2
 
