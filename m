@@ -1,162 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab3FJNvE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 09:51:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19515 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751308Ab3FJNvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 09:51:02 -0400
-Date: Mon, 10 Jun 2013 15:51:56 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 10/27] genirq: Split __irq_reserve_irqs from
- irq_alloc_descs
-Message-ID: <20130610135154.GA11905@dhcp-26-207.brq.redhat.com>
-References: <1370644273-10495-1-git-send-email-yinghai@kernel.org>
- <1370644273-10495-11-git-send-email-yinghai@kernel.org>
+	id S1753532Ab3FJNwJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 09:52:09 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:56214 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752979Ab3FJNwG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 09:52:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, linux@arm.linux.org.uk,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Olof Johansson <olof@lixom.net>, Rob Herring <rob.herring@calxeda.com>,
+        Rob Landley <rob@landley.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: Re: [PATCH v2 07/11] ARM:stixxxx: Add STiH416 SOC support
+Date: Mon, 10 Jun 2013 15:52:07 +0200
+Message-ID: <3733079.FxbR14kFrs@wuerfel>
+User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
+In-Reply-To: <1370856425-7135-1-git-send-email-srinivas.kandagatla@st.com>
+References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com> <1370856425-7135-1-git-send-email-srinivas.kandagatla@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370644273-10495-11-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Obu4nClBoz8p23BWbc03FBxojBcMFHr0FNADEJHrvvX
+ x5+WseMB13T/tkhqO6Bm3AuuOSnBzH2827xgUIYYsYhcnqwApT
+ OYhnFkiSztMK0J6nUTkqv8LptWu7J7srSo3eHD08wmWa1+PEht
+ THg4zxeN5WLCzNYJ840XmmTHsYfMQbZbvj0S0XRx8AAIRDyZo+
+ uAYEAuC8yCq0Uj6mcJdbZYMzNPJWm5YfvZXBUfye16ehC3XUPu
+ YnRTmbgez+MCdF9EKhpBuqaTBtJU9vJB4D2oCHKKHkuZJtBMAe
+ m/jHdtHkpOIgupsRUwe5gT94NPfHCt67Kl3qg3zqzbXfIsls5A
+ CklWUDZYeQ6abiCV/dWw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 03:30:56PM -0700, Yinghai Lu wrote:
-> irq_alloc_descs and irq_reserve_irqs are almost the same.
-> Separate code out to __irq_reserved_irqs, and other two reuse
-> __irq_reserve_irqs.
-> 
-> We will use __irq_reserve_irqs for coming ioapic hotplug support.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Alexander Gordeev <agordeev@redhat.com>
-> ---
->  include/linux/irq.h  |  1 +
->  kernel/irq/irqdesc.c | 54 ++++++++++++++++++++++++++++++----------------------
->  2 files changed, 32 insertions(+), 23 deletions(-)
-> 
-> diff --git a/include/linux/irq.h b/include/linux/irq.h
-> index bc4e066..4e0fcbb 100644
-> --- a/include/linux/irq.h
-> +++ b/include/linux/irq.h
-> @@ -600,6 +600,7 @@ int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
->  
->  void irq_free_descs(unsigned int irq, unsigned int cnt);
->  int irq_reserve_irqs(unsigned int from, unsigned int cnt);
-> +int __irq_reserve_irqs(int irq, unsigned int from, unsigned int cnt);
->  
->  static inline void irq_free_desc(unsigned int irq)
->  {
-> diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-> index 192a302..3b9fb92 100644
-> --- a/kernel/irq/irqdesc.c
-> +++ b/kernel/irq/irqdesc.c
-> @@ -340,18 +340,15 @@ void irq_free_descs(unsigned int from, unsigned int cnt)
->  EXPORT_SYMBOL_GPL(irq_free_descs);
->  
->  /**
-> - * irq_alloc_descs - allocate and initialize a range of irq descriptors
-> - * @irq:	Allocate for specific irq number if irq >= 0
-> + * __irq_reserve_descs - reserve and initialize a range of irq descriptors
-> + * @irq:	Reserve for specific irq number if irq >= 0
->   * @from:	Start the search from this irq number
-> - * @cnt:	Number of consecutive irqs to allocate.
-> - * @node:	Preferred node on which the irq descriptor should be allocated
-> - * @owner:	Owning module (can be NULL)
-> + * @cnt:	Number of consecutive irqs to reserve.
->   *
->   * Returns the first irq number or error code
->   */
->  int __ref
-> -__irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
-> -		  struct module *owner)
-> +__irq_reserve_irqs(int irq, unsigned int from, unsigned int cnt)
->  {
->  	int start, ret;
->  
-> @@ -369,7 +366,7 @@ __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
->  	start = bitmap_find_next_zero_area(allocated_irqs, IRQ_BITMAP_BITS,
->  					   from, cnt, 0);
->  	ret = -EEXIST;
-> -	if (irq >=0 && start != irq)
-> +	if (irq >= 0 && start != irq)
->  		goto err;
->  
->  	if (start + cnt > nr_irqs) {
-> @@ -380,12 +377,36 @@ __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
->  
->  	bitmap_set(allocated_irqs, start, cnt);
->  	mutex_unlock(&sparse_irq_lock);
-> -	return alloc_descs(start, cnt, node, owner);
-> +	return start;
->  
->  err:
->  	mutex_unlock(&sparse_irq_lock);
->  	return ret;
->  }
-> +
-> +/**
-> + * irq_alloc_descs - allocate and initialize a range of irq descriptors
-> + * @irq:	Allocate for specific irq number if irq >= 0
-> + * @from:	Start the search from this irq number
-> + * @cnt:	Number of consecutive irqs to allocate.
-> + * @node:	Preferred node on which the irq descriptor should be allocated
-> + * @owner:	Owning module (can be NULL)
-> + *
-> + * Returns the first irq number or error code
-> + */
-> +int __ref
-> +__irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
-> +		  struct module *owner)
-> +{
-> +	int start;
-> +
-> +	start = __irq_reserve_irqs(irq, from, cnt);
-> +
-> +	if (start < 0)
-> +		return start;
-> +
-> +	return alloc_descs(start, cnt, node, owner);
+On Monday 10 June 2013 10:27:05 Srinivas KANDAGATLA wrote:
 
-I think alloc_descs() fail path is needed before return.
+> +	soc {
+> +		pin-controller-sbc {
+> +			#address-cells	= <1>;
+> +			#size-cells	= <1>;
+> +			compatible	= "st,stih416-pinctrl", "simple-bus";
 
-> +}
->  EXPORT_SYMBOL_GPL(__irq_alloc_descs);
->  
->  /**
-> @@ -397,20 +418,7 @@ EXPORT_SYMBOL_GPL(__irq_alloc_descs);
->   */
->  int irq_reserve_irqs(unsigned int from, unsigned int cnt)
->  {
-> -	unsigned int start;
-> -	int ret = 0;
-> -
-> -	if (!cnt || (from + cnt) > nr_irqs)
-> -		return -EINVAL;
-> -
-> -	mutex_lock(&sparse_irq_lock);
-> -	start = bitmap_find_next_zero_area(allocated_irqs, nr_irqs, from, cnt, 0);
-> -	if (start == from)
-> -		bitmap_set(allocated_irqs, start, cnt);
-> -	else
-> -		ret = -EEXIST;
-> -	mutex_unlock(&sparse_irq_lock);
-> -	return ret;
-> +	return __irq_reserve_irqs(from, from, cnt);
->  }
->  
->  /**
-> -- 
-> 1.8.1.4
-> 
+Why is this both its own device with a compatible string and a
+"simple-bus" at the same time? Wouldn't it be simpler to just
+scan the child device nodes from the "st,stih416-pinctrl"
+driver instead of having a separate platform_driver for them?
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+> +			st,retime-in-delay	= <0 300 500 750 1000 1250 1500 1750 2000 2250 2500 2750 3000 3250>;
+> +			st,retime-out-delay	= <0 300 500 750 1000 1250 1500 1750 2000 2250 2500 2750 3000 3250>;
+> +			st,syscfg		= <&syscfg_sbc>;
+> +			st,syscfg-offsets	= <0 40 50 60 100>;
+> +			ranges;
+> +			PIO0: pinctrl@fe610000 {
+> +				#gpio-cells = <1>;
+> +				compatible = "st,stixxxx-gpio";
+> +				gpio-controller;
+> +				reg = <0xfe610000 0x100>;
+> +				st,bank-name  = "PIO0";
+> +				st,retime-pin-mask = <0xff>;
+> +			};
+> +			PIO1: pinctrl@fe611000 {
+> +				#gpio-cells	= <1>;
+> +				compatible	= "st,stixxxx-gpio";
+> +				gpio-controller;
+> +				reg = <0xfe611000 0x100>;
+> +				st,bank-name  = "PIO1";
+> +				st,retime-pin-mask = <0xff>;
+> +			};
+
+What is in the ranges between these registers? It seems you have
+256 bytes for each pinctrl node, with 4kb spacing. I wonder if
+it would make sense to declare the entire range to belong to a single
+pinctrl device. At least since all of the registers are in a single
+range, you could add a property like
+
+	ranges = <0 0xfe610000 0x10000>;
+
+and use relative addresses in the sub-nodes.
+
+Please don't use identifiers with 'xxx' in them. Instead use numbers
+of actual chips, ideally using the first one that this is compatible
+with.
+
+> +		syscfg_sbc:syscfg@fe600000{
+> +			compatible	= "st,stih416-syscfg";
+> +			reg		= <0xfe600000 0x1000>;
+> +			syscfg-range	= <0 999>;
+> +			syscfg-name	= "SYSCFG_SBC";
+> +		};
+> +		syscfg_front:syscfg@fee10000{
+> +			compatible	= "st,stih416-syscfg";
+> +			reg		= <0xfee10000 0x1000>;
+> +			syscfg-range	= <1000 999>;
+> +			syscfg-name	= "SYSCFG_FRONT";
+> +		};
+
+Did you mean to declare ranges excluding 1000 and 2000 here?
+Normally I would expect inclusive ranges like syscfg-range=<0 1000>;
+
+What is the idea of the 'syscfg-name'? If the nodes are all different,
+I would expect them to have distinct "compatible" values and not
+need them.
+
+	Arnd
