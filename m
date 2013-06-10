@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890Ab3FJNGn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 09:06:43 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:53534 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752408Ab3FJNGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 09:06:42 -0400
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 0/2] pinctrl: common handling of generic pinconfig props in dt
-Date: Mon, 10 Jun 2013 15:06:35 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Patrice Chotard <patrice.chotard.st@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <201306090159.05383.heiko@sntech.de> <CACRpkdaV0ipY4mYHt998D=NNKrpDaFhCA949V0-93NkOKcvHyA@mail.gmail.com>
-In-Reply-To: <CACRpkdaV0ipY4mYHt998D=NNKrpDaFhCA949V0-93NkOKcvHyA@mail.gmail.com>
+	id S1752862Ab3FJNJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 09:09:42 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50660 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354Ab3FJNJk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 09:09:40 -0400
+Message-ID: <51B5D007.8050005@pengutronix.de>
+Date: Mon, 10 Jun 2013 15:09:27 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201306101506.36098.heiko@sntech.de>
+To: Tushar Behera <tushar.behera@linaro.org>
+CC: linux-kernel@vger.kernel.org, thierry.reding@gmail.com, patches@linaro.org,
+        netdev@vger.kernel.org, linux-can@vger.kernel.org,
+        Wolfgang Grandegger <wg@grandegger.com>
+Subject: Re: [PATCH 09/15] net: can: Convert to use devm_ioremap_resource
+References: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org> <1370864113-17895-10-git-send-email-tushar.behera@linaro.org>
+In-Reply-To: <1370864113-17895-10-git-send-email-tushar.behera@linaro.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2HOPDDRMHMUDPMUODDQBC"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 10. Juni 2013, 14:52:13 schrieb Linus Walleij:
-> On Sun, Jun 9, 2013 at 1:59 AM, Heiko Stübner <heiko@sntech.de> wrote:
-> > following your suggestions for a common handling of things like pulls in
-> > dt, I've come up with the following solution - hopefully I've gotten the
-> > correct meaning of your explanaitions.
-> > 
-> > It handles all the pinconfigs that either ignore the argument, or have
-> > very simple one, like PIN_CONFIG_OUTPUT does.
-> 
-> OK patches applied. It needs some rough fixes like NULL check
-> on kmalloc() but it'll do for a starter.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2HOPDDRMHMUDPMUODDQBC
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-gah, sorry ... I have urge to crawl under a rock now for forgetting something 
-this obvious ;-) .
+On 06/10/2013 01:35 PM, Tushar Behera wrote:
+> Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
+> introduced devm_ioremap_resource() and deprecated the use of
+> devm_request_and_ioremap().
 
-Apart from the NULL check what more did I mess up? Should I send a fixup patch 
-or do you want to do it?
+Acked-by: Marc Kleine-Budde <mkl@pengutronix.de>
 
+Are the patches going over the individual subsystem maintainers?
 
-> Now I can tell everyone to
-> use this and refer to it.
-> 
-> > I've also attached my current rockchip pinctrl driver to show how it is
-> > using this currently.
-> 
-> OK I might just merge it. If you take the rest of the patches through
-> ARM SoC they will need to pull in my tree anyway if it's intended to
-> go in this merge window.
-
-go ahead if you like - this is the most current version of the driver and 
-would be one patch less to worry about. It would after all come together 
-during the merge window again.
-
-And very basic boot of the SoC works even without the pinctrl driver, as the 
-uart pins are of course set up by the bootloader.
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
-Thanks
-Heiko
+------enig2HOPDDRMHMUDPMUODDQBC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlG10A0ACgkQjTAFq1RaXHOgrgCfc5EAxsxXoVlmBUx8FsblfoWg
+oYQAn3dbgReZJpqQR7ynY5UYUwNzoot5
+=z0Sn
+-----END PGP SIGNATURE-----
+
+------enig2HOPDDRMHMUDPMUODDQBC--
