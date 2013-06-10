@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753048Ab3FJJZJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 05:25:09 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:47575 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752511Ab3FJJZG (ORCPT
+	id S1753193Ab3FJJZR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 05:25:17 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:37034 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752511Ab3FJJZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 05:25:06 -0400
+	Mon, 10 Jun 2013 05:25:11 -0400
 From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Arnd Bergmann <arnd@arndb.de>,
@@ -25,10 +25,12 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Arnd Bergmann <arnd@arndb.de>,
         Stephen Gallimore <stephen.gallimore@st.com>,
         Stuart Menefy <stuart.menefy@st.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH v2 04/11] mfd:stixxxx-syscfg: Add ST System Configuration support.
-Date: Mon, 10 Jun 2013 10:22:27 +0100
-Message-Id: <1370856147-6552-1-git-send-email-srinivas.kandagatla@st.com>
+        Tony Prisk <linux@prisktech.co.nz>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH v2 03/11] regmap: Add regmap_field APIs
+Date: Mon, 10 Jun 2013 10:21:58 +0100
+Message-Id: <1370856118-6503-1-git-send-email-srinivas.kandagatla@st.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com>
 References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com>
@@ -36,306 +38,253 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-System configuration(aka syscfg) registers are very basic configuration
-registers arranged in groups across ST Settop Box parts.
+It is common to access regmap registers at bit level, using
+regmap_update_bits or regmap_read functions, however the end user has to
+take care of a mask or shifting. This becomes overhead when such use
+cases are high. Having a common function to do this is much convenient
+and less error prone.
 
-The SOCs are assembled from existing IP blocks, which don't change very
-often. However these blocks are assembled in different configurations to
-meet the device requirements. So most IP blocks as well as having a bus
-interface through which their own registers are accessible, will also
-have a number of bristles(wires) which are signals that are going in and
-out of the IP for configuration and status. To make these signals
-accessible to software they are wired to "System Configuration
-Registers".
+The idea of regmap_field is simple, regmap_field gives a logical
+structure to bits of the regmap register, and the driver can use this
+logical entity without the knowledge of the bit postions and masks all
+over the code. This way code looks much neat and it need not handle the
+masks, shifts every time it access the those entities.
 
-Drivers target the IP blocks, which don't change much. Where as the
-mapping of IP specific bristles(wires) to "System Configuration
-Registers" do change per each SOC, and therefore we do not want this
-information to be part of the driver.
+With this new regmap_field_read/write apis the end user can setup a
+regmap field using regmap_field_init and use the return regmap_field to
+read write the register field without worrying about the masks or
+shifts.
 
-Having a System Configuration infrastructure gives much flexibility and
-abstraction to drivers to configure them. Typically in a SOC there will
-be more than hundreds of these registers, which are again divided into
-groups. The IP related config registers tend to much regular in latest
-ST SOCs, so having a common place for configuring these registers makes
-sense and avoid lot of code duplication.
-
-This mfd driver provides higher level inialization routines for various
-IPs like Ethernet, USB, PCIE, SATA and so on. Also it provides way to
-get to syscfg registers via standard regmap api which is usefull for
-drivers like pinctrl.
-
-This patch adds support to ST System Configuration registers, which can
-be configured by the drivers.
+Also this apis will be usefull for drivers which are based on regmaps,
+like some clocks or pinctrls which can work on the regmap_fields
+directly without having to worry about bit positions.
 
 Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-CC: Stuart Menefy <stuart.menefy@st.com>
-CC: Stephen Gallimore <stephen.gallimore@st.com>
-CC: Linus Walleij <linus.walleij@linaro.org>
 CC: Mark Brown <broonie@kernel.org>
+CC: Arnd Bergmann <arnd@arndb.de>
+CC: Alexander Shiyan <shc_work@mail.ru>
+CC: Lars-Peter Clausen <lars@metafoo.de>
 ---
- .../devicetree/bindings/mfd/stixxxx-syscfg.txt     |   18 ++
- drivers/mfd/Kconfig                                |   10 ++
- drivers/mfd/Makefile                               |    1 +
- drivers/mfd/stixxxx-syscfg.c                       |  168 ++++++++++++++++++++
- include/linux/mfd/stixxxx-syscfg.h                 |   15 ++
- 5 files changed, 212 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/stixxxx-syscfg.txt
- create mode 100644 drivers/mfd/stixxxx-syscfg.c
- create mode 100644 include/linux/mfd/stixxxx-syscfg.h
+ drivers/base/regmap/internal.h |    8 +++
+ drivers/base/regmap/regmap.c   |  104 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/regmap.h         |   42 ++++++++++++++++
+ 3 files changed, 154 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/mfd/stixxxx-syscfg.txt b/Documentation/devicetree/bindings/mfd/stixxxx-syscfg.txt
-new file mode 100644
-index 0000000..428c751
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/stixxxx-syscfg.txt
-@@ -0,0 +1,18 @@
-+*STixxxx SYSCFG
-+
-+- compatible : should be "st,<SOC>-syscfg" like "st,stih415-syscfg"
-+			or "st,stih416-syscfg".
-+- reg, reg-names, interrupts, interrupt-names	: Standard way to define device
-+			resources with names. look in
-+			Documentation/devicetree/bindings/resource-names.txt
-+- syscfg-range <start size> : Should be syscfg number range for this bank.
-+- syscfg-name		    : Should be name of the syscfg, will be used in debugfs.
-+
-+Example of a SBC_SYSCFG bank node:
-+
-+syscfg_sbc: syscfg@fe600000{
-+	compatible      = "st,stih415-syscfg";
-+	reg		= <0xfe600000 0xb4>;
-+	syscfg-range	= <0 44>;
-+	syscfg-name	= "SYSCFG_SBC";
-+};
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index d54e985..af49b58 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -649,6 +649,16 @@ config MFD_STA2X11
- 	select MFD_CORE
- 	select REGMAP_MMIO
+diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
+index c130536..c5f6ebd 100644
+--- a/drivers/base/regmap/internal.h
++++ b/drivers/base/regmap/internal.h
+@@ -174,6 +174,14 @@ struct regmap_range_node {
+ 	unsigned int window_len;
+ };
  
-+config MFD_STIXXXX_SYSCFG
-+	bool "ST System Configuration Registers(aka syscfg) via regmap"
-+	select REGMAP_MMIO
-+	help
-+	  Select this option to enable accessing STMicroelectronics
-+	  System Configuration Registers via standard regmap apis with
-+	  lookup helper functions.
++struct regmap_field {
++	struct regmap *regmap;
++	unsigned int mask;
++	/* lsb */
++	unsigned int shift;
++	unsigned int reg;
++};
 +
-+	  If unsure, say N.
+ #ifdef CONFIG_DEBUG_FS
+ extern void regmap_debugfs_initcall(void);
+ extern void regmap_debugfs_init(struct regmap *map, const char *name);
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index a941dcf..8d967cc 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -801,6 +801,67 @@ struct regmap *devm_regmap_init(struct device *dev,
+ }
+ EXPORT_SYMBOL_GPL(devm_regmap_init);
+ 
++static void regmap_field_init(struct regmap_field *rm_field,
++	struct regmap *regmap, struct reg_field reg_field)
++{
++	int field_bits = reg_field.msb - reg_field.lsb + 1;
++	rm_field->regmap = regmap;
++	rm_field->reg = reg_field.reg;
++	rm_field->shift = reg_field.lsb;
++	rm_field->mask = ((BIT(field_bits) - 1) << reg_field.lsb);
++}
 +
- config MFD_SYSCON
- 	bool "System Controller Register R/W Based on Regmap"
- 	select REGMAP_MMIO
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 718e94a..c1f6570 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -150,6 +150,7 @@ obj-$(CONFIG_MFD_PALMAS)	+= palmas.o
- obj-$(CONFIG_MFD_VIPERBOARD)    += viperboard.o
- obj-$(CONFIG_MFD_RC5T583)	+= rc5t583.o rc5t583-irq.o
- obj-$(CONFIG_MFD_SEC_CORE)	+= sec-core.o sec-irq.o
-+obj-$(CONFIG_MFD_STIXXXX_SYSCFG)	+= stixxxx-syscfg.o
- obj-$(CONFIG_MFD_SYSCON)	+= syscon.o
- obj-$(CONFIG_MFD_LM3533)	+= lm3533-core.o lm3533-ctrlbank.o
- obj-$(CONFIG_VEXPRESS_CONFIG)	+= vexpress-config.o vexpress-sysreg.o
-diff --git a/drivers/mfd/stixxxx-syscfg.c b/drivers/mfd/stixxxx-syscfg.c
-new file mode 100644
-index 0000000..10ea4e4
---- /dev/null
-+++ b/drivers/mfd/stixxxx-syscfg.c
-@@ -0,0 +1,168 @@
-+/*
-+ * Copyright (C) 2013 STMicroelectronics Limited
-+ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
++/**
++ * devm_regmap_field_alloc(): Allocate and initialise a register field
++ * in a register map.
 + *
-+ * May be copied or modified under the terms of the GNU General Public
-+ * License.  See linux/COPYING for more information.
++ * @dev: Device that will be interacted with
++ * @regmap: regmap bank in which this register field is located.
++ * @reg_field: Register field with in the bank.
 + *
-+ * Syscfg driver is used to configure various devices like Ethernet,
-+ * USB, PCIE, SATA and so on.
++ * The return value will be an ERR_PTR() on error or a valid pointer
++ * to a struct regmap_field. The regmap_field will be automatically freed
++ * by the device management code.
++ */
++struct regmap_field *devm_regmap_field_alloc(struct device *dev,
++		struct regmap *regmap, struct reg_field reg_field)
++{
++	struct regmap_field *rm_field = devm_kzalloc(dev,
++					sizeof(*rm_field), GFP_KERNEL);
++	if (!rm_field)
++		return ERR_PTR(-ENOMEM);
++
++	regmap_field_init(rm_field, regmap, reg_field);
++
++	return rm_field;
++
++}
++EXPORT_SYMBOL_GPL(devm_regmap_field_alloc);
++/**
++ * regmap_field_alloc(): Allocate and initialise a register field
++ * in a register map.
++ *
++ * @regmap: regmap bank in which this register field is located.
++ * @reg_field: Register field with in the bank.
++ *
++ * The return value will be an ERR_PTR() on error or a valid pointer
++ * to a struct regmap_field. The regmap_field should be freed by the
++ * user once its finished working with it using regmap_field_free().
++ */
++struct regmap_field *regmap_field_alloc(struct regmap *regmap,
++		struct reg_field reg_field)
++{
++	struct regmap_field *rm_field = kzalloc(sizeof(*rm_field), GFP_KERNEL);
++
++	if (!rm_field)
++		return ERR_PTR(-ENOMEM);
++
++	regmap_field_init(rm_field, regmap, reg_field);
++
++	return rm_field;
++}
++EXPORT_SYMBOL_GPL(regmap_field_alloc);
++
+ /**
+  * regmap_reinit_cache(): Reinitialise the current register cache
+  *
+@@ -1249,6 +1310,23 @@ int regmap_raw_write(struct regmap *map, unsigned int reg,
+ }
+ EXPORT_SYMBOL_GPL(regmap_raw_write);
+ 
++/**
++ * regmap_field_write(): Write a value to a single register field
++ *
++ * @field: Register field to write to
++ * @val: Value to be written
++ *
++ * A value of zero will be returned on success, a negative errno will
++ * be returned in error cases.
 + */
 +
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/platform_device.h>
-+#include <linux/types.h>
-+#include <linux/delay.h>
++int regmap_field_write(struct regmap_field *field, unsigned int val)
++{
++	return regmap_update_bits(field->regmap, field->reg,
++				field->mask, val << field->shift);
++}
++EXPORT_SYMBOL_GPL(regmap_field_write);
++
+ /*
+  * regmap_bulk_write(): Write multiple registers to the device
+  *
+@@ -1532,6 +1610,32 @@ int regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
+ EXPORT_SYMBOL_GPL(regmap_raw_read);
+ 
+ /**
++ * regmap_field_read(): Read a value to a single register field
++ *
++ * @field: Register field to read from
++ * @val: Pointer to store read value
++ *
++ * A value of zero will be returned on success, a negative errno will
++ * be returned in error cases.
++ */
++
++int regmap_field_read(struct regmap_field *field, unsigned int *val)
++{
++	int ret;
++	unsigned int reg_val;
++	ret = regmap_read(field->regmap, field->reg, &reg_val);
++	if (ret != 0)
++		return ret;
++
++	reg_val &= field->mask;
++	reg_val >>= field->shift;
++	*val = reg_val;
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(regmap_field_read);
++
++/**
+  * regmap_bulk_read(): Read multiple registers from the device
+  *
+  * @map: Register map to write to
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 02d84e2..557a54e 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -15,6 +15,8 @@
+ 
+ #include <linux/list.h>
+ #include <linux/rbtree.h>
++#include <linux/device.h>
 +#include <linux/slab.h>
-+#include <linux/regmap.h>
-+#include <linux/mfd/stixxxx-syscfg.h>
-+
-+#define DRIVER_NAME "stixxxx-syscfg"
-+
-+static struct platform_driver syscfg_driver;
-+struct syscfg {
-+	void __iomem *base;
-+	struct regmap *regmap;
-+	int	start, end;
-+	const char *name;
-+	struct device_node *of_node;
-+};
-+
-+static int syscfg_match_name(struct device *dev, void *data)
-+{
-+	struct syscfg *syscfg = dev_get_drvdata(dev);
-+
-+	if (syscfg)
-+		if (!strcmp(syscfg->name, (const char *)data))
-+			return 1;
-+	return 0;
-+}
-+
-+struct regmap *syscfg_regmap_lookup_by_name(const char *name)
-+{
-+	struct syscfg *syscfg;
-+	struct device *dev;
-+
-+	dev = driver_find_device(&syscfg_driver.driver, NULL, (void *)name,
-+				 syscfg_match_name);
-+	if (!dev)
-+		return ERR_PTR(-EPROBE_DEFER);
-+
-+	syscfg = dev_get_drvdata(dev);
-+
-+	return syscfg->regmap;
-+}
-+
-+static int syscfg_match_node(struct device *dev, void *data)
-+{
-+	struct device_node *dn = data;
-+
-+	return (dev->of_node == dn) ? 1 : 0;
-+}
-+
-+struct regmap *syscfg_node_to_regmap(struct device_node *np)
-+{
-+	struct syscfg *syscfg;
-+	struct device *dev;
-+
-+	dev = driver_find_device(&syscfg_driver.driver, NULL, np,
-+				 syscfg_match_node);
-+	if (!dev)
-+		return ERR_PTR(-EPROBE_DEFER);
-+
-+	syscfg = dev_get_drvdata(dev);
-+
-+	return syscfg->regmap;
-+}
-+EXPORT_SYMBOL_GPL(syscfg_node_to_regmap);
-+
-+struct regmap *syscfg_regmap_lookup_by_phandle(struct device_node *np,
-+					const char *property)
-+{
-+	struct device_node *syscfg_np;
-+	struct regmap *regmap;
-+
-+	syscfg_np = of_parse_phandle(np, property, 0);
-+	if (!syscfg_np)
-+		return ERR_PTR(-ENODEV);
-+
-+	regmap = syscfg_node_to_regmap(syscfg_np);
-+	of_node_put(syscfg_np);
-+
-+	return regmap;
-+}
-+EXPORT_SYMBOL_GPL(syscfg_regmap_lookup_by_phandle);
-+
-+static struct regmap_config syscfg_regmap_config = {
-+	.reg_bits = 32,
-+	.val_bits = 32,
-+	.reg_stride = 4,
-+};
-+
-+static int syscfg_probe(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	struct syscfg *syscfg;
-+	struct resource *res;
-+	u32 range[2];
-+
-+	if (!np)
-+		return -EINVAL;
-+
-+	syscfg = devm_kzalloc(&pdev->dev, sizeof(*syscfg), GFP_KERNEL);
-+	if (!syscfg)
-+		return -ENOMEM;
-+
-+	syscfg->of_node = np;
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	syscfg->base = devm_request_and_ioremap(&pdev->dev, res);
-+	if (!syscfg->base) {
-+		dev_err(&pdev->dev, "Unable to ioremap registers|\n");
-+		return -ENODATA;
-+	}
-+
-+	of_property_read_u32_array(np, "syscfg-range", (u32 *)&range, 2);
-+	syscfg->start = range[0];
-+	syscfg->end = range[0] + range[1];
-+	of_property_read_string(np, "syscfg-name", &syscfg->name);
-+
-+	syscfg_regmap_config.name = kasprintf(GFP_KERNEL, "%s", syscfg->name);
-+	syscfg_regmap_config.max_register = res->end - res->start - 3;
-+	syscfg->regmap = devm_regmap_init_mmio(&pdev->dev, syscfg->base,
-+					&syscfg_regmap_config);
-+	if (IS_ERR(syscfg->regmap)) {
-+		dev_err(&pdev->dev, "regmap init failed\n");
-+		return PTR_ERR(syscfg->regmap);
-+	}
-+
-+	platform_set_drvdata(pdev, syscfg);
-+	dev_info(&pdev->dev,
-+		"%s[%d - %d] sucessfully intialized\n",
-+		syscfg->name, syscfg->start, syscfg->end);
-+	return 0;
-+}
-+
-+static struct of_device_id syscfg_match[] = {
-+	{ .compatible = "st,stih415-syscfg", },
-+	{ .compatible = "st,stih416-syscfg", },
-+	{},
-+};
-+
-+static struct platform_driver syscfg_driver = {
-+	.probe		= syscfg_probe,
-+	.driver	= {
-+		.name	= DRIVER_NAME,
-+		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(syscfg_match),
-+	},
-+};
-+
-+static int __init syscfg_init(void)
-+{
-+	return platform_driver_register(&syscfg_driver);
-+}
-+postcore_initcall(syscfg_init);
-diff --git a/include/linux/mfd/stixxxx-syscfg.h b/include/linux/mfd/stixxxx-syscfg.h
-new file mode 100644
-index 0000000..18ed6da7
---- /dev/null
-+++ b/include/linux/mfd/stixxxx-syscfg.h
-@@ -0,0 +1,15 @@
-+/*
-+ * Copyright (C) 2013 STMicroelectronics R&D Limited
+ 
+ struct module;
+ struct device;
+@@ -23,6 +25,7 @@ struct irq_domain;
+ struct spi_device;
+ struct regmap;
+ struct regmap_range_cfg;
++struct regmap_field;
+ 
+ /* An enum of all the supported cache types */
+ enum regcache_type {
+@@ -412,6 +415,45 @@ bool regmap_reg_in_ranges(unsigned int reg,
+ 			  unsigned int nranges);
+ 
+ /**
++ * Description of an register field
 + *
-+ * May be copied or modified under the terms of the GNU General Public
-+ * License.  See linux/COPYING for more information.
++ * @reg: Offset of the register within the regmap bank
++ * @lsb: lsb of the register field.
++ * @reg: msb of the register field.
 + */
++struct reg_field {
++	unsigned int reg;
++	unsigned int lsb;
++	unsigned int msb;
++};
 +
-+#ifndef __LINUX_MFD_STIXXXX_SYSCFG_H
-+#define __LINUX_MFD_STIXXXX_SYSCFG_H
++#define REG_FIELD(_reg, _lsb, _msb) {		\
++				.reg = _reg,	\
++				.lsb = _lsb,	\
++				.msb = _msb,	\
++				}
 +
-+struct regmap *syscfg_regmap_lookup_by_phandle(struct device_node *np,
-+					const char *property);
-+struct regmap *syscfg_regmap_lookup_by_name(const char *name);
++struct regmap_field *regmap_field_alloc(struct regmap *regmap,
++		struct reg_field reg_field);
 +
-+#endif /* __LINUX_MFD_STIXXXX_SYSCFG_H */
++struct regmap_field *devm_regmap_field_alloc(struct device *dev,
++		struct regmap *regmap, struct reg_field reg_field);
++
++static inline void regmap_field_free(struct regmap_field *field)
++{
++	kfree(field);
++}
++
++static inline void devm_regmap_field_free(struct device *dev,
++	struct regmap_field *field)
++{
++	devm_kfree(dev, field);
++}
++
++int regmap_field_read(struct regmap_field *field, unsigned int *val);
++int regmap_field_write(struct regmap_field *field, unsigned int val);
++
++/**
+  * Description of an IRQ for the generic regmap irq_chip.
+  *
+  * @reg_offset: Offset of the status/mask register within the bank
 -- 
 1.7.6.5
 
