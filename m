@@ -1,155 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387Ab3FJSxR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 14:53:17 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48033 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752616Ab3FJSxP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 14:53:15 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        mturquette@linaro.org, kgene.kim@samsung.com, patches@linaro.org,
-        swarren@wwwdotorg.org, grant.likely@linaro.org,
-        rob.herring@calxeda.com, devicetree-discuss@lists.ozlabs.org,
-        broonie@kernel.org, l.majewski@samsung.com, s.nawrocki@samsung.com
-Subject: Re: [PATCH 2/2] clk: exynos4: Add alias for cpufreq related clocks
-Date: Mon, 10 Jun 2013 20:53:09 +0200
-Message-ID: <3226068.I7g6oVyl1p@flatron>
-User-Agent: KMail/4.10.4 (Linux/3.9.5-gentoo; KDE/4.10.4; x86_64; ; )
-In-Reply-To: <51B54B4F.3000503@linaro.org>
-References: <1370517749-29892-1-git-send-email-tushar.behera@linaro.org> <2070978.AjQD2isvSl@flatron> <51B54B4F.3000503@linaro.org>
+	id S1754223Ab3FJSyT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 14:54:19 -0400
+Received: from nm22-vm1.bullet.mail.bf1.yahoo.com ([98.139.212.127]:44159 "EHLO
+	nm22-vm1.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752316Ab3FJSyR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 14:54:17 -0400
+X-Greylist: delayed 316 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Jun 2013 14:54:17 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 559964.34716.bm@omp1004.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=Qqjs8Uw7jtEMaGizRajvvVsjtVc0dNh5pKrZyaLTBoOpou8DTGrXd8x+GljW2IZNzj0MbKhUB5LgecMVPkK8eEWxRhXw81VmC+SkG44QWMOCbP9izCQ3b7LjUp3h0SCwBqfMyXPZ+jPOINMWj8RGacTKy5ZKd+Du4jfL6faFOVY=;
+X-YMail-OSG: noFg58MVM1ms5t3iciGv4M4DMM18r9LUsfDcJgoOmkMg7Zs
+ uZToSU6RZ0GI8ClcuXfM8WULdRjjBrxzrtCAIYNVZqXDu11tP5ZxBuE8Sb4a
+ U_AvwseAfo12orRb_rrzr7Eyqj7NiUZDRpeU6O8mdV_pjGh2qF5q4bgRRCin
+ P64mDDlh8XNBsAHW2iHhkSlCChcbyDjrw38.PFQy9Hk4R6PeU6F.3vQBCk.x
+ 63BYMkuRXHY9FmlS5EMPzRZEMccWXim5AE1HnGYcufu87uA24.6ASLkoIV4k
+ SgVDtGTt_kP0XEe6yHU59.5RMDFjTqfE8YBZ0z7ZTTyGv5Ys5GaIxjXxt0BK
+ u3I_Tt_gr8.RbITW3A3pq.DcloRJ_TDBbkZEr0uQ.ekK1wy3DdP5uIdq5B_E
+ 7waXb48c1MdtXwNrDXoATI5FaJvUEqMsPnoHuoP6S8K1g1R0OdEGzjO9eCsS
+ wV_nAngfDgcwkw.XBvPakbFBroipPAKDhMwV9eiKVS5IDn33wkLNN.6T5Vk_
+ 5DLMU_LYl0229ViwTjBYXY4FwmUEs4q8pbGAiPMiEJtFQY8ga.3gFSOkxk5l
+ HDkdKsh03vPoJyu0cZNpxrittcfKXy_q8QWCXdXkg6h8Ax6GUZBA2jSFgqZm
+ U0oXUmzGkq32sOAAqYSaL9UHTZNTJFYcIPspWps98ckfr8TYYfBT1zAyRaOe
+ TaBr92TcwWqDTv0Kvyp6hBBuu74TLgcWu1V6JtA.KUfChG66qvszrQhN0It9
+ v.LPCrhLqHdgQ
+X-Rocket-MIMEInfo: 002.001,Pl9fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fCj4gRnJvbTogYW5pc2ggc2luZ2ggPGFuaXNoMTk4NTE5ODUxOTg1QGdtYWlsLmNvbT4KPlRvOiBQSU5UVSBLVU1BUiA8cGludHVfYWdhcndhbEB5YWhvby5jb20.IAo.Q2M6ICJsaW51eC1rZXJuZWxAdmdlci5rZXJuZWwub3JnIiA8bGludXgta2VybmVsQHZnZXIua2VybmVsLm9yZz47ICJsaW51eC1tbUBrdmFjay5vcmciIDxsaW51eC1tbUBrdmFjay5vcmc.IAo.U2VudDogU3VuZGF5LCA5IEp1bmUgMjAxMyAxMDo1OCBQTQo.U3ViamVjdDogUmU6IFsBMAEBAQE-
+X-Mailer: YahooMailWebService/0.8.146.552
+References: <1370843475.58124.YahooMailNeo@web160106.mail.bf1.yahoo.com> <CAK7N6vrQFK=9OQi7dDUgGWWNQk71x3BeqPA9x3Pq66baA61PrQ@mail.gmail.com>
+Message-ID: <1370890140.99216.YahooMailNeo@web160102.mail.bf1.yahoo.com>
+Date: Mon, 10 Jun 2013 11:49:00 -0700 (PDT)
+From: PINTU KUMAR <pintu_agarwal@yahoo.com>
+Reply-To: PINTU KUMAR <pintu_agarwal@yahoo.com>
+Subject: Re: [checkpatch] - Confusion
+To: anish singh <anish198519851985@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+In-Reply-To: <CAK7N6vrQFK=9OQi7dDUgGWWNQk71x3BeqPA9x3Pq66baA61PrQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 of June 2013 09:13:11 Tushar Behera wrote:
-> On 06/08/2013 05:20 PM, Tomasz Figa wrote:
-> > On Thursday 06 of June 2013 16:52:28 Tushar Behera wrote:
-> >> cpufreq driver for EXYNOS4 based SoCs are not platform drivers, hence
-> >> we cannot currently pass the clock names through a device tree node.
-> >> Instead, we need to make them available through a global alias.
-> >> 
-> >> 'armclk', 'moutcore', 'mout_mpll' and 'mout_apll' clock aliases are
-> >> defined.
-> >> 
-> >> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> >> ---
-> >> 
-> >>  drivers/clk/samsung/clk-exynos4.c |   10 +++++-----
-> >>  1 file changed, 5 insertions(+), 5 deletions(-)
-> >> 
-> >> diff --git a/drivers/clk/samsung/clk-exynos4.c
-> >> b/drivers/clk/samsung/clk-exynos4.c index 3c1f888..1e4258a 100644
-> >> --- a/drivers/clk/samsung/clk-exynos4.c
-> >> +++ b/drivers/clk/samsung/clk-exynos4.c
-> >> @@ -356,8 +356,8 @@ struct samsung_fixed_rate_clock
-> >> exynos4210_fixed_rate_clks[] __initdata = {
-> >> 
-> >>  /* list of mux clocks supported in all exynos4 soc's */
-> >>  struct samsung_mux_clock exynos4_mux_clks[] __initdata = {
-> >> 
-> >> -	MUX_F(mout_apll, "mout_apll", mout_apll_p, SRC_CPU, 0, 1,
-> >> -			CLK_SET_RATE_PARENT, 0),
-> >> +	MUX_FA(mout_apll, "mout_apll", mout_apll_p, SRC_CPU, 0, 1,
-> >> +			CLK_SET_RATE_PARENT, 0, "mout_apll"),
-> >> 
-> >>  	MUX(none, "mout_hdmi", mout_hdmi_p, SRC_TV, 0, 1),
-> >>  	MUX(none, "mout_mfc1", sclk_evpll_p, SRC_MFC, 4, 1),
-> >>  	MUX(none, "mout_mfc", mout_mfc_p, SRC_MFC, 8, 1),
-> >> 
-> >> @@ -385,9 +385,9 @@ struct samsung_mux_clock exynos4210_mux_clks[]
-> >> __initdata = { MUX(none, "mout_g2d", mout_g2d_p, E4210_SRC_IMAGE, 8,
-> >> 1),
-> >> 
-> >>  	MUX(none, "mout_fimd1", group1_p4210, E4210_SRC_LCD1, 0, 4),
-> >>  	MUX(none, "mout_mipi1", group1_p4210, E4210_SRC_LCD1, 12, 4),
-> >> 
-> >> -	MUX_A(sclk_mpll, "sclk_mpll", mout_mpll_p, SRC_CPU, 8, 1,
-> > 
-> > "sclk_mpll"),
-> > 
-> >> +	MUX_A(sclk_mpll, "sclk_mpll", mout_mpll_p, SRC_CPU, 8, 1,
-> > 
-> > "mout_mpll"),
-> > 
-> > This is not fully compliant with patch description. I'm not sure if
-> > there weren't any users of the sclk_mpll alias.
+>________________________________
+> From: anish singh <anish198519851985@gmail.com>
+>To: PINTU KUMAR <pintu_agarwal@yahoo.com> 
+>Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>; "linux-mm@kvack.org" <linux-mm@kvack.org> 
+>Sent: Sunday, 9 June 2013 10:58 PM
+>Subject: Re: [checkpatch] - Confusion
 > 
-> As of now, there are no other users of sclk_mpll other than a debug
-> print within the same file.
+>
+>On Mon, Jun 10, 2013 at 11:21 AM, PINTU KUMAR <pintu_agarwal@yahoo.com> wrote:
+>> Hi,
+>>
+>> I wanted to submit my first patch.
+>> But I have some confusion about the /scripts/checkpatch.pl errors.
+>>
+>> After correcting some checkpatch errors, when I run checkpatch.pl, it showed me 0 errors.
+>> But when I create patches are git format-patch, it is showing me 1 error.
+>did  you run the checkpatch.pl on the file which gets created
+>after git format-patch?
+>If yes, then I think it is not necessary.You can use git-am to apply
+>your own patch on a undisturbed file and if it applies properly then
+>you are good to go i.e. you can send your patch.
 
-OK.
+Yes, first I ran checkpatch directly on the file(mm/page_alloc.c) and fixed all the errors.
+It showed me (0) errors.
+Then I created a patch using _git format-patch_ and ran checkpatch again on the created patch.
+But now it is showing me 1 error.
+According to me this error is false positive (irrelevant), because I did not change anything related to the error and also the similar change already exists somewhere else too.
+Do you mean, shall I go ahead and submit the patch with this 1 error??
+ERROR: need consistent spacing around '*' (ctx:WxV)
 
-> >>  	MUX_A(mout_core, "mout_core", mout_core_p4210,
-> >> 
-> >> -			SRC_CPU, 16, 1, "mout_core"),
-> >> +			SRC_CPU, 16, 1, "moutcore"),
-> > 
-> > IMHO those typo corrections are not part of this patch.
-> 
-> But the older drivers (before migration to CCF) were using the clock
-> "moutcore" (not "mout_core").
+#153: FILE: mm/page_alloc.c:5476:
++int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
 
-I mean, this should be placed in a separate patch, as this change is not 
-"adding alias for cpufreq related clocks", but rather fixing a typo.
 
-> >>  	MUX_A(sclk_vpll, "sclk_vpll", sclk_vpll_p4210,
-> >>  	
-> >>  			SRC_TOP0, 8, 1, "sclk_vpll"),
-> >>  	
-> >>  	MUX(mout_fimc0, "mout_fimc0", group1_p4210, SRC_CAM, 0, 4),
-> >> 
-> >> @@ -534,7 +534,7 @@ struct samsung_div_clock exynos4_div_clks[]
-> >> __initdata = { DIV(none, "div_spi_pre2", "div_spi2", DIV_PERIL2, 8,
-> >> 8),
-> >> 
-> >>  	DIV(none, "div_audio1", "mout_audio1", DIV_PERIL4, 0, 4),
-> >>  	DIV(none, "div_audio2", "mout_audio2", DIV_PERIL4, 16, 4),
-> >> 
-> >> -	DIV_A(arm_clk, "arm_clk", "div_core2", DIV_CPU0, 28, 3,
-> > 
-> > "arm_clk"),
-> > 
-> >> +	DIV_A(arm_clk, "arm_clk", "div_core2", DIV_CPU0, 28, 3, "armclk"),
-> > 
-> > Same here.
-> 
-> Same as above, "armclk" is used elsewhere, not "arm_clk".
-> 
-> >>  	DIV_A(sclk_apll, "sclk_apll", "mout_apll",
-> >>  	
-> >>  			DIV_CPU0, 24, 3, "sclk_apll"),
-> >>  	
-> >>  	DIV_F(none, "div_mipi_pre0", "div_mipi0", DIV_LCD0, 20, 4,
-> > 
-> > Basically I don't like the idea of those global aliases, which IMHO
-> > should be completely dropped. Someone might not like it, but I'd go
-> > with the conversion of our cpufreq drivers to platform drivers
-> > instead, which could receive things like clocks and regulators using
-> > DT-based lookups.
-> I agree. Migration of exynos-cpufreq driver as a platform driver is the
-> best solution. But unless someone picks up that work, cpufreq support
-> for EXYNOS4 based systems is broken because of the incorrect clock
-> aliases.
 
-We have patches for this in our internal tree. I will clean them up a bit 
-and submit soon.
-
-Thanks,
-Tomasz
-
-> > This is especially important in case of regulators, which currently
-> > have to be hacked by using vdd_arm as regulator name in device tree.
-> Agree.
-> 
-> > CCing people that might be interested in this topic.
-> > 
-> > Best regards,
-> > Tomasz
-> 
-> Thanks.
+>>
+>> If I fix error in patch, it showed me back again in files.
+>>
+>> Now, I am confused which error to fix while submitting patches, the file or the patch errors.
+>>
+>> Please provide your opinion.
+>>
+>> File: mm/page_alloc.c
+>> Previous file errors:
+>> total: 16 errors, 110 warnings, 6255 lines checked
+>>
+>> After fixing errors:
+>> total: 0 errors, 105 warnings, 6255 lines checked
+>>
+>>
+>> And, after running on patch:
+>> ERROR: need consistent spacing around '*' (ctx:WxV)
+>> #153: FILE: mm/page_alloc.c:5476:
+>> +int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
+>>
+>>
+>>
+>>
+>> - Pintu
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>--
+>To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>the body to majordomo@kvack.org.  For more info on Linux MM,
+>see: http://www.linux-mm.org/ .
+>Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+>
+>
