@@ -1,147 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab3FIX6r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 19:58:47 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:52337 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340Ab3FIX6p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 19:58:45 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: dwmw2@infradead.org, artem.bityutskiy@linux.intel.com, andrew@lunn.ch,
-        wfp5p@virginia.edu, jg1.han@samsung.com
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH v2] mtd: orion_nand: Improve error handling in orion_nand_probe
-Date: Mon, 10 Jun 2013 02:00:42 +0200
-Message-Id: <1370822442-25217-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752646Ab3FJACx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 20:02:53 -0400
+Received: from sauhun.de ([89.238.76.85]:54660 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752415Ab3FJACw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jun 2013 20:02:52 -0400
+Date: Mon, 10 Jun 2013 02:04:47 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [PATCH] pwm: devm: alloc correct pointer size
+Message-ID: <20130610000446.GA2928@katana>
+References: <1370291306-3276-1-git-send-email-wsa@the-dreams.de>
+ <CAHp75Vcvhz892D4gytneptB4wLWPjfKmf5OXgnChXw338nLBAA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DocE+STaALJfprDB"
+Content-Disposition: inline
+In-Reply-To: <CAHp75Vcvhz892D4gytneptB4wLWPjfKmf5OXgnChXw338nLBAA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes some issues in the error handling and simplifies
-the code by converting to devm* functions.
 
-If the kzalloc call fails it is unnecessary to use the label no_res
-and pass a NULL pointer to kfree. If the devm_kzalloc call fails on
-line 110 we forget to call iounmap for the previous ioremap call.
+--DocE+STaALJfprDB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The following changes are introduced:
-- Convert to devm_kzalloc and remove calls to kfree.
-- Convert to devm_ioremap_resource that adds a missing call to
-  *request_mem_region and remove calls to iounmap.
-- The devm_ioremap_resource function checks the passed resource so
-  we can remove the NULL check after the platform_get_resource call.
+On Thu, Jun 06, 2013 at 10:43:41PM +0300, Andy Shevchenko wrote:
+> On Mon, Jun 3, 2013 at 11:27 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
+> > The allocated object should be the size of what the pointer is pointing
+> > to and not the size of the pointer itself.
+>=20
+> All devm_* functions in this module use **ptr as a parameter (except
+> allocation).
+> May be we first should understand why it so?
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
-This patch is only build tested
-v2: Fix change log typo and remove error messages for kzalloc calls
+Huh? **ptr is already created on the stack, but assigned the alloced
+memory. Later, the mem it points to is set to 'pwm' which is then added
+to devres. So, the alloced memory must be able to contain '*ptr' (or
+*pwm which would be more readable IMO, but other subsystems also stick
+to *ptr), no?
 
- drivers/mtd/nand/orion_nand.c |   49 +++++++++++++----------------------------
- 1 file changed, 15 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/mtd/nand/orion_nand.c b/drivers/mtd/nand/orion_nand.c
-index 8fbd002..76b9fba 100644
---- a/drivers/mtd/nand/orion_nand.c
-+++ b/drivers/mtd/nand/orion_nand.c
-@@ -85,35 +85,24 @@ static int __init orion_nand_probe(struct platform_device *pdev)
- 	int ret = 0;
- 	u32 val = 0;
- 
--	nc = kzalloc(sizeof(struct nand_chip) + sizeof(struct mtd_info), GFP_KERNEL);
--	if (!nc) {
--		printk(KERN_ERR "orion_nand: failed to allocate device structure.\n");
--		ret = -ENOMEM;
--		goto no_res;
--	}
-+	nc = devm_kzalloc(&pdev->dev, sizeof(struct nand_chip) +
-+			  sizeof(struct mtd_info), GFP_KERNEL);
-+	if (!nc)
-+		return -ENOMEM;
-+
- 	mtd = (struct mtd_info *)(nc + 1);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		ret = -ENODEV;
--		goto no_res;
--	}
--
--	io_base = ioremap(res->start, resource_size(res));
--	if (!io_base) {
--		printk(KERN_ERR "orion_nand: ioremap failed\n");
--		ret = -EIO;
--		goto no_res;
--	}
-+	io_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(io_base))
-+		return PTR_ERR(io_base);
- 
- 	if (pdev->dev.of_node) {
- 		board = devm_kzalloc(&pdev->dev, sizeof(struct orion_nand_data),
--					GFP_KERNEL);
--		if (!board) {
--			printk(KERN_ERR "orion_nand: failed to allocate board structure.\n");
--			ret = -ENOMEM;
--			goto no_res;
--		}
-+				     GFP_KERNEL);
-+		if (!board)
-+			return -ENOMEM;
-+
- 		if (!of_property_read_u32(pdev->dev.of_node, "cle", &val))
- 			board->cle = (u8)val;
- 		else
-@@ -167,7 +156,7 @@ static int __init orion_nand_probe(struct platform_device *pdev)
- 
- 	if (nand_scan(mtd, 1)) {
- 		ret = -ENXIO;
--		goto no_dev;
-+		goto disable_clk;
- 	}
- 
- 	mtd->name = "orion_nand";
-@@ -176,20 +165,17 @@ static int __init orion_nand_probe(struct platform_device *pdev)
- 			board->parts, board->nr_parts);
- 	if (ret) {
- 		nand_release(mtd);
--		goto no_dev;
-+		goto disable_clk;
- 	}
- 
- 	return 0;
- 
--no_dev:
-+disable_clk:
- 	if (!IS_ERR(clk)) {
- 		clk_disable_unprepare(clk);
- 		clk_put(clk);
- 	}
- 	platform_set_drvdata(pdev, NULL);
--	iounmap(io_base);
--no_res:
--	kfree(nc);
- 
- 	return ret;
- }
-@@ -197,15 +183,10 @@ no_res:
- static int orion_nand_remove(struct platform_device *pdev)
- {
- 	struct mtd_info *mtd = platform_get_drvdata(pdev);
--	struct nand_chip *nc = mtd->priv;
- 	struct clk *clk;
- 
- 	nand_release(mtd);
- 
--	iounmap(nc->IO_ADDR_W);
--
--	kfree(nc);
--
- 	clk = clk_get(&pdev->dev, NULL);
- 	if (!IS_ERR(clk)) {
- 		clk_disable_unprepare(clk);
--- 
-1.7.10.4
+--DocE+STaALJfprDB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRtRgeAAoJEBQN5MwUoCm2dwMP/icQJldmh/mBSpa1rP7LMX9Y
+JcTnW031AOs2d+1Bmq5YOi7BSfDDNS+fmVlsRVggZOIMq1aMKJtx/VjLWLreCxHq
+BbtSt24x5Yqjzxplv0ATXftx1ZZSU3N0vPeK+t5paoZsnkoec5rWAF8g+ASxkjie
+Blrjd8Vr0I+uLyYrvIp0wkaGZSzPYNI5zlW9TwY8cjwgypo3BLhn+lOaFVPMCojc
+/Q923r6SHfGBFfbclgN4gZ/yl6g04ZcJEZw40DgThMQKMdovyWcohk+DdP5MFHcq
+53BG+vR7mnbGNODo4chzGStc5zWz8iSdL4bsI2pGum5DjD5VB/95sHcZg5VHR/Xe
+wA+vvsfdKhscheOAwHiRUzVdTsZTUuGleObrCJ2Obdtu7g47ZgCVHGNBN/SyR6MF
+SbzlirWjFhsqFI/a5Ut7DIPC1eB9vk/uM0KMNPWW6EcbpVImraNLCAF8EW5V6uLt
+48wz6g+wCtOSVh9VKP0DrJF1Gsp6GulCTYkXali2dzrymqJbD5EeHBTYxrjChSpY
+n5mUW2RB+huz10MLDoUWMR4uccmIGftmGHAi46zFTQNNO/j/h5znhbryeyw9wwFI
+LFq3Wv23mw7wW6pgMJxuLcVyuKw1pPNPbBOkksayyBd5xvgo7xQSMlKdc54Erbin
+o3eaUJp5UMcYNTA2W2cT
+=8a4P
+-----END PGP SIGNATURE-----
+
+--DocE+STaALJfprDB--
