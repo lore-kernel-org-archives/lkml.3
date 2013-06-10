@@ -1,140 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751524Ab3FJBwW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 21:52:22 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:61063 "EHLO song.cn.fujitsu.com"
+	id S1752109Ab3FJBwq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jun 2013 21:52:46 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:60197 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750800Ab3FJBwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 21:52:21 -0400
+	id S1751918Ab3FJBwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jun 2013 21:52:38 -0400
 X-IronPort-AV: E=Sophos;i="4.87,833,1363104000"; 
-   d="scan'208";a="7511140"
-Message-ID: <51B530AE.3020004@cn.fujitsu.com>
-Date: Mon, 10 Jun 2013 09:49:34 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+   d="scan'208";a="7511141"
+Message-ID: <51B531CC.2020604@cn.fujitsu.com>
+Date: Mon, 10 Jun 2013 09:54:20 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
-        riel@redhat.com, wangyun@linux.vnet.ibm.com,
-        Jason Low <jason.low2@hp.com>,
-        Changlong Xie <changlongx.xie@intel.com>, sgruszka@redhat.com,
-        fweisbec@gmail.com
-Subject: Re: [patch v8 6/9] sched: compute runnable load avg in cpu_load and
- cpu_avg_load_per_task
-References: <1370589652-24549-1-git-send-email-alex.shi@intel.com> <1370589652-24549-7-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1370589652-24549-7-git-send-email-alex.shi@intel.com>
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+CC: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        eparis@redhat.com, linux-audit@redhat.com, ebiederm@xmission.com,
+        davem@davemloft.net
+Subject: Re: [PATCH RFC 00/48] Add namespace support for audit
+References: <1367893269-9308-1-git-send-email-gaofeng@cn.fujitsu.com> <519B3B4E.1070405@cn.fujitsu.com> <20130606215255.GA28978@tp> <20130606224710.GA30502@tp>
+In-Reply-To: <20130606224710.GA30502@tp>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/10 09:50:27,
+ 2013/06/10 09:50:47,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/10 09:50:30,
-	Serialize complete at 2013/06/10 09:50:30
+ 2013/06/10 09:50:47,
+	Serialize complete at 2013/06/10 09:50:47
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2013 03:20 PM, Alex Shi wrote:
-
-> They are the base values in load balance, update them with rq runnable
-> load average, then the load balance will consider runnable load avg
-> naturally.
+On 06/07/2013 06:47 AM, Serge Hallyn wrote:
+> Quoting Serge Hallyn (serge.hallyn@ubuntu.com):
+>> Quoting Gao feng (gaofeng@cn.fujitsu.com):
+>>> On 05/07/2013 10:20 AM, Gao feng wrote:
+>>>> This patchset try to add namespace support for audit.
+>>>>
+>>>> I choose to assign audit to the user namespace.
+>>>> Right now,there are six kinds of namespaces, such as
+>>>> net, mount, ipc, pid, uts and user. the first five
+>>>> namespaces have special usage. the audit isn't suitable to
+>>>> belong to these five namespaces, so the user namespace
+>>>> may be the best choice.
+>>>>
+>>>> Through I decide to make audit related resources per user
+>>>> namespace, but audit uses netlink to communicate between kernel
+>>>> space and user space, and the netlink is a private resource
+>>>> of per net namespace. So we need the capability to allow the
+>>>> netlink sockets to communicate with each other in the same user
+>>>> namespace even they are in different net namespace. [PATCH 2/48]
+>>>> does this job, it adds a new function "compare" for per netlink
+>>>> table to compare two sockets. it means the netlink protocols can
+>>>> has its own compare fuction, For other protocols, two netlink
+>>>> sockets are different if they belong to the different net namespace.
+>>>> For audit protocol, two sockets can be the same even they in different
+>>>> net namespace,we use user namespace not net namespace to make the
+>>>> decision.
+>>>>
+>>>> There is one point that some people may dislike,in [PATCH 1/48],
+>>>> the kernel side audit netlink socket is created only when we create
+>>>> the first netns for the userns, and this userns will hold the netns
+>>>> until we destroy this userns.
+>>>>
+>>>> The other patches just make the audit related resources per
+>>>> user namespace.
+>>>>
+>>>> This patchset is sent as an RFC,any comments are welcome.
+>>
+>> Hi,
+>>
+>> thanks for sending this.  I think you need to ping the selinux folks
+>> for comment though.  It appears to me that, after this patchset, the
+>> kernel with CONFIG_USER_NS=y could not be LSPP-compliant, because
+>> the selinux-generated audit messages do not always go to init_user_ns.
+>>
+>> Additionally, the only type of namespacing selinux wants is where it
+>> is enforced by policy compiler and installer using typenames - i.e.
+>> 'container1.user_t' vs 'user_t'.  Selinux does not want user namespaces
+>> to affect selinux enforcement at all.  (at least last I knew, several
+>> years ago at a mini-summit, I believe this was from Stephen Smalley).
 > 
-> We also try to include the blocked_load_avg as cpu load in balancing,
-> but that cause kbuild performance drop 6% on every Intel machine, and
-> aim7/oltp drop on some of 4 CPU sockets machines.
+> That sort of sounds like I'm distancing myself from that, which I
+> don't mean to do.  I agree with the decison:  MAC (selinux, apparmor
+> and smack) should not be confuddled by user namespaces.  (posix caps
+> are, as always, a bit different).
 
-Hi Alex,
-   Could you explain me why including the blocked_load_avg causes performance drop ?
+
+Thanks for your comments!
+
+Very useful information, it sounds reasonable.
+
+Let's just drop those patches.
 
 Thanks,
-Gu
-
+Gao
 > 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-
-
-Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-
-> ---
->  kernel/sched/fair.c |  5 +++--
->  kernel/sched/proc.c | 17 +++++++++++++++--
->  2 files changed, 18 insertions(+), 4 deletions(-)
+>> I think it's good to have userspace-generated audit messages (i.e.
+>> auditctl -m 'hi there') sent to the same user namespace.  But the
+>> selinux messages, near as I can tell, need to all go to init_user_ns.
+>>
+>> thanks,
+>> -serge
+>> _______________________________________________
+>> Containers mailing list
+>> Containers@lists.linux-foundation.org
+>> https://lists.linuxfoundation.org/mailman/listinfo/containers
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 42c7be0..eadd2e7 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -2962,7 +2962,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
->  /* Used instead of source_load when we know the type == 0 */
->  static unsigned long weighted_cpuload(const int cpu)
->  {
-> -	return cpu_rq(cpu)->load.weight;
-> +	return cpu_rq(cpu)->cfs.runnable_load_avg;
->  }
->  
->  /*
-> @@ -3007,9 +3007,10 @@ static unsigned long cpu_avg_load_per_task(int cpu)
->  {
->  	struct rq *rq = cpu_rq(cpu);
->  	unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
-> +	unsigned long load_avg = rq->cfs.runnable_load_avg;
->  
->  	if (nr_running)
-> -		return rq->load.weight / nr_running;
-> +		return load_avg / nr_running;
->  
->  	return 0;
->  }
-> diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
-> index bb3a6a0..ce5cd48 100644
-> --- a/kernel/sched/proc.c
-> +++ b/kernel/sched/proc.c
-> @@ -501,6 +501,18 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
->  	sched_avg_update(this_rq);
->  }
->  
-> +#ifdef CONFIG_SMP
-> +unsigned long get_rq_runnable_load(struct rq *rq)
-> +{
-> +	return rq->cfs.runnable_load_avg;
-> +}
-> +#else
-> +unsigned long get_rq_runnable_load(struct rq *rq)
-> +{
-> +	return rq->load.weight;
-> +}
-> +#endif
-> +
->  #ifdef CONFIG_NO_HZ_COMMON
->  /*
->   * There is no sane way to deal with nohz on smp when using jiffies because the
-> @@ -522,7 +534,7 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
->  void update_idle_cpu_load(struct rq *this_rq)
->  {
->  	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
-> -	unsigned long load = this_rq->load.weight;
-> +	unsigned long load = get_rq_runnable_load(this_rq);
->  	unsigned long pending_updates;
->  
->  	/*
-> @@ -568,11 +580,12 @@ void update_cpu_load_nohz(void)
->   */
->  void update_cpu_load_active(struct rq *this_rq)
->  {
-> +	unsigned long load = get_rq_runnable_load(this_rq);
->  	/*
->  	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
->  	 */
->  	this_rq->last_load_update_tick = jiffies;
-> -	__update_cpu_load(this_rq, this_rq->load.weight, 1);
-> +	__update_cpu_load(this_rq, load, 1);
->  
->  	calc_load_account_active(this_rq);
->  }
-
 
