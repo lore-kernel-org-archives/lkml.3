@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569Ab3FJPqj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 11:46:39 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:45517 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976Ab3FJPqi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 11:46:38 -0400
-Date: Mon, 10 Jun 2013 16:46:33 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Subject: Re: [PATCH 00/10] regulator: ab8500-ext: Refactorings
-Message-ID: <20130610154633.GL20297@gmail.com>
-References: <1370621488-18130-1-git-send-email-lee.jones@linaro.org>
- <CACRpkdbygDNdsO=EzigPiBSnMmF-NVnF95HeBBavkry93i+ubQ@mail.gmail.com>
- <20130610151208.GK20297@gmail.com>
- <20130610152507.GF1403@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1753611Ab3FJPwm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 11:52:42 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:42836 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab3FJPwk convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Mon, 10 Jun 2013 11:52:40 -0400
+Message-Id: <51B6126302000078000DCC1C@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Mon, 10 Jun 2013 16:52:35 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: <david.vrabel@citrix.com>, <roger.pau@citrix.com>,
+        "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>,
+        <stable@vger.kernel.org>
+Subject: Re: [PATCH] xen/blkback: Check for insane amounts of request
+ on the ring.
+References: <1370375826-7311-1-git-send-email-konrad.wilk@oracle.com>
+ <20130607201140.GA22115@phenom.dumpdata.com>
+In-Reply-To: <20130607201140.GA22115@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130610152507.GF1403@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Jun 2013, Mark Brown wrote:
-
-> On Mon, Jun 10, 2013 at 04:12:08PM +0100, Lee Jones wrote:
+>>> On 07.06.13 at 22:11, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> On Tue, Jun 04, 2013 at 03:57:06PM -0400, Konrad Rzeszutek Wilk wrote:
+>> +	/* N.B. 'rp', not 'rc'. */
+>> +	if (RING_REQUEST_CONS_OVERFLOW(&blk_rings->common, rp)) {
+>> +		pr_warn(DRV_PFX "Frontend provided bogus ring requests (%d - %d = %d). 
+> Halting ring processing on dev=%04x\n",
+>> +			rp, rc, rp - rc, blkif->vbd.pdevice);
 > 
-> > The 'ux500: regulator_supply' patch, relies on the 'regulator:
-> > supply_name' one however. Mark has taken two of them, I don't know why
-> > the others were missed/intentionally left.
+> Hm, I seem to be able to get:
 > 
-> > Mark, was there a reason for this?
+> [  189.398095] xen-blkback:Frontend provided bogus ring requests (125 - 115 = 
+> 10). Halting ring processing on dev=800011
+> or:
+> [  478.558699] xen-blkback:Frontend provided bogus ring requests (95 - 94 = 
+> 1). Halting ring processing on dev=800011
 > 
-> IIRC they were more involved and since you decided to pick a random
-> e-mail address to send them to that goes nowhere near the mailboxes I
-> use for upstream they're not going to bubble up particularly quickly.
+> Which is clearly wrong. Piggybacking on the rsp_prod_pvt does not seem to 
+> cut it.
 
-Not as random as you might think.
+We see that too, but not very frequently. One thing is that
+rsp_prod_pvt doesn't get printed along with rc and rp, thus
+making it not immediately obvious how this can be off in any way.
 
-I knew you'd left your old place, so I did:
+Among the instance there are cases where the printed
+difference is 32, which makes me wonder whether part of the
+problem is the >= in the macro (we may want > here).
 
-  `git log --author="Mark Brown" --format=%ae next/master | uniq -c | head`
+And then we might have been living with some sort of issue in the
+past, because the existing use of the macro just causes the loop
+to be exited, with it getting re-entered subsequently (i.e. at worst
+causing performance issues).
 
-... to see what you were using most recently. I recieved:
+Jan
 
-     67 broonie@linaro.org
-      1 broonie@kernel.org
-      1 broonie@linaro.org
-     59 broonie@opensource.wolfsonmicro.com
-     28 broonie@sirena.org.uk
-    763 broonie@opensource.wolfsonmicro.com
-      1 broonie@sirena.org.uk
-    428 broonie@opensource.wolfsonmicro.com
-      1 broonie@sirena.org.uk
-     23 broonie@opensource.wolfsonmicro.com
-
-... hence why I used your linaro address.
-
-I'll send it out again to your kernel.org one if it make you happy. :)
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
