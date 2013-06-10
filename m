@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab3FJVcU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 17:32:20 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:60060 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab3FJVcS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 17:32:18 -0400
-Date: Mon, 10 Jun 2013 14:32:16 -0700 (PDT)
-Message-Id: <20130610.143216.418315514574898268.davem@davemloft.net>
-To: mst@redhat.com
-Cc: jasowang@redhat.com, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vhost_net: clear msg.control for non-zerocopy case
- during tx
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130605090252.GA31830@redhat.com>
-References: <1370418046-11851-1-git-send-email-jasowang@redhat.com>
-	<20130605090252.GA31830@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1753832Ab3FJVcp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 17:32:45 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:42569 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753558Ab3FJVcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 17:32:43 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Hans Verkuil <hverkuil@xs4all.nl>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] [media] usbvision-video: fix memory leak of alt_max_pkt_size
+Date: Tue, 11 Jun 2013 01:32:29 +0400
+Message-Id: <1370899949-16987-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Wed, 5 Jun 2013 12:02:52 +0300
+1. usbvision->alt_max_pkt_size is not deallocated anywhere.
+2. if allocation of usbvision->alt_max_pkt_size fails,
+there is no proper deallocation of already acquired resources.
 
-> On Wed, Jun 05, 2013 at 03:40:46PM +0800, Jason Wang wrote:
->> When we decide not use zero-copy, msg.control should be set to NULL otherwise
->> macvtap/tap may set zerocopy callbacks which may decrease the kref of ubufs
->> wrongly.
->> 
->> Bug were introduced by commit cedb9bdce099206290a2bdd02ce47a7b253b6a84
->> (vhost-net: skip head management if no outstanding).
->> 
->> This solves the following warnings:
->> 
->> WARNING: at include/linux/kref.h:47 handle_tx+0x477/0x4b0 [vhost_net]()
->> Modules linked in: vhost_net macvtap macvlan tun nfsd exportfs bridge stp llc openvswitch kvm_amd kvm bnx2 megaraid_sas [last unloaded: tun]
->> CPU: 5 PID: 8670 Comm: vhost-8668 Not tainted 3.10.0-rc2+ #1566
->> Hardware name: Dell Inc. PowerEdge R715/00XHKG, BIOS 1.5.2 04/19/2011
->> ffffffffa0198323 ffff88007c9ebd08 ffffffff81796b73 ffff88007c9ebd48
->> ffffffff8103d66b 000000007b773e20 ffff8800779f0000 ffff8800779f43f0
->> ffff8800779f8418 000000000000015c 0000000000000062 ffff88007c9ebd58
->> Call Trace:
->> [<ffffffff81796b73>] dump_stack+0x19/0x1e
->> [<ffffffff8103d66b>] warn_slowpath_common+0x6b/0xa0
->> [<ffffffff8103d6b5>] warn_slowpath_null+0x15/0x20
->> [<ffffffffa0197627>] handle_tx+0x477/0x4b0 [vhost_net]
->> [<ffffffffa0197690>] handle_tx_kick+0x10/0x20 [vhost_net]
->> [<ffffffffa019541e>] vhost_worker+0xfe/0x1a0 [vhost_net]
->> [<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
->> [<ffffffffa0195320>] ? vhost_attach_cgroups_work+0x30/0x30 [vhost_net]
->> [<ffffffff81061f46>] kthread+0xc6/0xd0
->> [<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
->> [<ffffffff817a1aec>] ret_from_fork+0x7c/0xb0
->> [<ffffffff81061e80>] ? kthread_freezable_should_stop+0x70/0x70
->> 
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> 
-> Good catch.
-> 
-> Acked-by: Michael S. Tsirkin <mst@redhat.com>
-> 
-> This needs to go into stable as well.
+The patch adds kfree(usbvision->alt_max_pkt_size) to
+usbvision_release() as soon as other deallocations happen there.
+It calls usbvision_release() if allocation of
+usbvision->alt_max_pkt_size fails as soon as usbvision_release()
+is safe to work with incompletely initialized usbvision structure.
 
-Applied and queued up for -stable.
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/media/usb/usbvision/usbvision-video.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/media/usb/usbvision/usbvision-video.c b/drivers/media/usb/usbvision/usbvision-video.c
+index d34c2af..443e783 100644
+--- a/drivers/media/usb/usbvision/usbvision-video.c
++++ b/drivers/media/usb/usbvision/usbvision-video.c
+@@ -1459,6 +1459,7 @@ static void usbvision_release(struct usb_usbvision *usbvision)
+ 
+ 	usbvision_remove_sysfs(usbvision->vdev);
+ 	usbvision_unregister_video(usbvision);
++	kfree(usbvision->alt_max_pkt_size);
+ 
+ 	usb_free_urb(usbvision->ctrl_urb);
+ 
+@@ -1574,6 +1575,7 @@ static int usbvision_probe(struct usb_interface *intf,
+ 	usbvision->alt_max_pkt_size = kmalloc(32 * usbvision->num_alt, GFP_KERNEL);
+ 	if (usbvision->alt_max_pkt_size == NULL) {
+ 		dev_err(&intf->dev, "usbvision: out of memory!\n");
++		usbvision_release(usbvision);
+ 		return -ENOMEM;
+ 	}
+ 
+-- 
+1.8.1.2
+
