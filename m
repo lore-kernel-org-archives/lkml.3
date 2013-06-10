@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab3FJVCG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 17:02:06 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58453 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752819Ab3FJVCE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 17:02:04 -0400
-Date: Mon, 10 Jun 2013 23:01:50 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, torvalds@linux-foundation.org
-Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
-In-Reply-To: <1370897278.9844.115.camel@gandalf.local.home>
-Message-ID: <alpine.LFD.2.02.1306102250590.22970@ionos>
-References: <20130609193657.GA13392@linux.vnet.ibm.com> <1370897278.9844.115.camel@gandalf.local.home>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1753475Ab3FJVDy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 17:03:54 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:36148 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753185Ab3FJVDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 17:03:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:date:message-id:mime-version:content-type; q=dns; s=
+	sasl; b=p5aOioz+r/Lbkqg6bLrTsdVOw4dvhsZUT4QUcvCF+r02QZT2028pvEHk
+	p00ak8CaWGE1TvJdMyot3Dch3rh8rQPpmwfdlytZfOJW8XNxtrsIZLHuzbIvQj6G
+	G++u6BxjLMaMgUzAmwUiWm+nIWnlM3HcmaOsSNC0vhBwhcsm524=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] Git v1.8.3.1
+Date: Mon, 10 Jun 2013 14:03:49 -0700
+Message-ID: <7vy5ahekzu.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 408D77CA-D211-11E2-9334-E56BAAC0D69C-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Jun 2013, Steven Rostedt wrote:
-> On Sun, 2013-06-09 at 12:36 -0700, Paul E. McKenney wrote:
-> > +#ifdef __BIG_ENDIAN__
-> 
-> Is there such a thing as a BIG_ENDIAN x86 box? This is in
-> arch/x86/include/asm/spinlock_types.h
+The latest maintenance release Git v1.8.3.1 is now available at the
+usual places.
 
-That's just an habit for people who have been forced to deal with BE
-CPUs.
+This is primarily to push out fixes to two regressions that seem to
+affect many people, namely, the ".gitignore !directory" bug and the
+"daemon cannot read from $HOME owned by root" bug.
 
-The sad thing is that BE CPUs have been designed by folks who blindly
-expanded BCD computing without understanding the hardware
-implications.
+The release tarballs are found at:
 
-Unfortunately they managed to inflict BE to the network protocols
-which in turn manifested the only excuse of keeping the BE nonsense
-alive.
+    http://code.google.com/p/git-core/downloads/list
 
-Thanks,
+and their SHA-1 checksums are:
 
-	tglx
+32562a231fe4422bc033bf872fffa61f41ee2669  git-1.8.3.1.tar.gz
+94d48f6f8684aec851124e7d0b835b338a9187ad  git-htmldocs-1.8.3.1.tar.gz
+0cd759579d4bd75f1cf1ba073b1ab96c49390426  git-manpages-1.8.3.1.tar.gz
+
+The following public repositories all have a copy of the v1.8.3.1
+tag and the maint branch that the tag points at:
+
+  url = https://kernel.googlesource.com/pub/scm/git/git
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+Also, http://www.kernel.org/pub/software/scm/git/ has copies of the
+release tarballs.
+
+Git v1.8.3.1 Release Notes
+========================
+
+Fixes since v1.8.3
+------------------
+
+ * When $HOME is misconfigured to point at an unreadable directory, we
+   used to complain and die. The check has been loosened.
+
+ * Handling of negative exclude pattern for directories "!dir" was
+   broken in the update to v1.8.3.
+
+Also contains a handful of trivial code clean-ups, documentation
+updates, updates to the test suite, etc.
