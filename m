@@ -1,103 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599Ab3FJRIY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 13:08:24 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:36681 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743Ab3FJRIX (ORCPT
+	id S1752546Ab3FJRKA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 13:10:00 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:32252 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750887Ab3FJRJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 13:08:23 -0400
-Message-ID: <51B607FE.3020108@gmail.com>
-Date: Tue, 11 Jun 2013 01:08:14 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	Mon, 10 Jun 2013 13:09:58 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18UtV85Q8ukko7LR8JjO8dBwN/kMhRbFxM=
+Date: Mon, 10 Jun 2013 13:09:21 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 2/6] clocksource: add Marvell Orion SoC timer
+Message-ID: <20130610170921.GM23859@titan.lakedaemon.net>
+References: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1370856955-10514-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <51B5F8FE.5090508@linaro.org>
+ <51B5FF51.6090708@gmail.com>
+ <51B60267.9000600@linaro.org>
+ <51B6031B.4030204@gmail.com>
+ <51B6079E.5090602@linaro.org>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
-        xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [RFC PATCH v2, part3 07/11] PCI, xen-pcifront: use new PCI interfaces
- to simplify implementation
-References: <1368719459-24800-1-git-send-email-jiang.liu@huawei.com> <1368719459-24800-8-git-send-email-jiang.liu@huawei.com> <20130607145024.GA16631@phenom.dumpdata.com> <20130607153822.GA24882@phenom.dumpdata.com> <51B20F57.7050100@gmail.com> <20130607170706.GB3730@phenom.dumpdata.com> <51B4B266.5010100@gmail.com> <20130610165801.GA24823@phenom.dumpdata.com>
-In-Reply-To: <20130610165801.GA24823@phenom.dumpdata.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51B6079E.5090602@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 11 Jun 2013 12:58:01 AM CST, Konrad Rzeszutek Wilk wrote:
-> On Mon, Jun 10, 2013 at 12:50:46AM +0800, Jiang Liu wrote:
->> On Sat 08 Jun 2013 01:07:06 AM CST, Konrad Rzeszutek Wilk wrote:
->>> On Sat, Jun 08, 2013 at 12:50:31AM +0800, Jiang Liu wrote:
->>>> On 06/07/2013 11:38 PM, Konrad Rzeszutek Wilk wrote:
->>>>> On Fri, Jun 07, 2013 at 10:50:24AM -0400, Konrad Rzeszutek Wilk wrote:
->>>>>> On Thu, May 16, 2013 at 11:50:55PM +0800, Jiang Liu wrote:
->>>>>>> Use new PCI interfaces to simplify xen-pcifront implementation:
->>>>>>> 1) Use pci_create_root_bus() instead of pci_scan_bus_parented()
->>>>>>>    because pci_scan_bus_parented() is marked as __deprecated.This
->>>>>>>    also gets rid of a duplicated call of pci_bus_start_devices().
->>>>>>> 2) Use pci_stop_root_bus() and pci_remove_root_bus() instead of
->>>>>>>    open-coded private implementation.
->>>>>>> 3) Use pci_set_host_bridge_release() to release data structures
->>>>>>>    associated with PCI root buses.
->>>>>>> 4) Use pci_bus_get()/pci_bus_put() to manage PCI root bus reference
->>>>>>>    count.
->>>>>>>
->>>>>>> This is also a preparation for coming PCI bus lock enhancement.
->>>>>
->>>>> With this patch from :
->>>>>
->>>>>  Merge branch 'pci_lock_v3' of https://github.com/jiangliu/linux into testing
->>>>>
->>>>>
->>>>> it blows up when detaching the device.
->>>> Hi Konrad,
->>>>    Thanks for testing! According to the log messages, this issue should
->>>> be related to pci bus reference counter management. Seems we have done
->>>> an extra(unbalanced) release of pci bus device.
->>>>    Will investigate it tomorrow!
->>>
->>> That is quite commendable that you are willing to look over this on
->>> the weekend but I am not going to be able to rerun this test until
->>> some time in the week. You could enjoy the weekend and just look at
->>> this during the week.
->>
->> Hi Konrad,
->>      We should have root-caused this bug, which is caused by
->> for_each_pci_root_bus().
->> Current implementation doesn't support root bus deletion when walking
->> PCI root
->> buses by for_each_pci_root_bus(). The reference counter
->> (pci_bus->dev.knode_class.n_ref)
->> becomes zero after returning from pci_remove_root_bus(), so it triggers
->> kref warnings
->> and double-free of klist_node object when we call
->> pci_get_next_root_bus() to get the
->> next PCI root bus.
->>      So we will first revert to  list_for_each_entry_safe(bus, temp,
->> &pci_root_buses, node)
->> and solve this issue in next version of for_each_pci_root_bus().
->
-> That definitly solves the issue. Thanks!
->
-> I used pci_lock_v3 of https://github.com/jiangliu/linux and the fix
-> below.
->
-> Is there a new patchset you are going to be posting or a git branch
-> that I can look over?
->
-> Thanks.
-Hi Konrad,
-     Really appreciate your support! I will try to post a new version 
-tomorrow,
-but I think there won't be big changes except addressing some review
-comments from you.
-    Thanks!
-    Gerry
+On Mon, Jun 10, 2013 at 07:06:38PM +0200, Daniel Lezcano wrote:
+> On 06/10/2013 06:47 PM, Sebastian Hesselbarth wrote:
+> > On 06/10/13 18:44, Daniel Lezcano wrote:
+> >> On 06/10/2013 06:31 PM, Sebastian Hesselbarth wrote:
+> >>> On 06/10/13 18:04, Daniel Lezcano wrote:
+> >>>> On 06/10/2013 11:35 AM, Sebastian Hesselbarth wrote:
+> >>>>> This patch add a DT enabled driver for timers found on Marvell Orion
+> >>>>> SoCs
+> >>>>> (Kirkwood, Dove, Orion5x, and Discovery Innovation). It installs a
+> >>>>> free-
+> >>>>> running clocksource on timer0 and a clockevent source on timer1.
+> >>>>> Corresponding device tree documentation is also added.
+> >>>>>
+> >>>>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> >>>>
+> >>>> It looks good for me.
+> >>>>
+> >>>> Sebastian,
+> >>>>
+> >>>> shall I take it through my tree (it will go to Thomas's tree) ?
+> >>>
+> >>> Daniel,
+> >>>
+> >>> I checked MAINTAINERS and thought clocksource, i.e. patch 2/6, would go
+> >>> through Thomas' or John's tree? If you want to take it, I am fine with
+> >>> it but guess I am not the one to choose here ;)
+> >>
+> >> Actually, I am giving a hand to John and Thomas. I take the patches for
+> >> clockevents (and also for clocksource if both are mixed and John did not
+> >> pick it yet) and Thomas pulls from my tree [1].
+> >>
+> >> If there is no dependency with any other patches of your patchset, which
+> >> seems to be the case, I will queue it for 3.11.
+> > 
+> > Ok, thanks!
+> 
+> I have a lot of ^M in the patch ... dos2unix removed them but I am
+> wondering how they get there ?
+
+He sent it with git-send-mail, how are you extracting it from
+Thunderbird?
+
+thx,
+
+Jason.
