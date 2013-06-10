@@ -1,240 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754407Ab3FJSw1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 14:52:27 -0400
-Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:35484 "EHLO
-	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754355Ab3FJSwY (ORCPT
+	id S1754387Ab3FJSxR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 14:53:17 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48033 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616Ab3FJSxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 14:52:24 -0400
-Date: Mon, 10 Jun 2013 13:45:59 -0500
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-Subject: Re: 3.10-rc4 stalls during mmap writes
-Message-ID: <20130610184559.GA3594@sbohrermbp13-local.rgmadvisors.com>
-References: <20130607193712.GD2995@sbohrermbp13-local.rgmadvisors.com>
- <20130609033744.GA29376@dastard>
+	Mon, 10 Jun 2013 14:53:15 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        mturquette@linaro.org, kgene.kim@samsung.com, patches@linaro.org,
+        swarren@wwwdotorg.org, grant.likely@linaro.org,
+        rob.herring@calxeda.com, devicetree-discuss@lists.ozlabs.org,
+        broonie@kernel.org, l.majewski@samsung.com, s.nawrocki@samsung.com
+Subject: Re: [PATCH 2/2] clk: exynos4: Add alias for cpufreq related clocks
+Date: Mon, 10 Jun 2013 20:53:09 +0200
+Message-ID: <3226068.I7g6oVyl1p@flatron>
+User-Agent: KMail/4.10.4 (Linux/3.9.5-gentoo; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <51B54B4F.3000503@linaro.org>
+References: <1370517749-29892-1-git-send-email-tushar.behera@linaro.org> <2070978.AjQD2isvSl@flatron> <51B54B4F.3000503@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20130609033744.GA29376@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 09, 2013 at 01:37:44PM +1000, Dave Chinner wrote:
-> On Fri, Jun 07, 2013 at 02:37:12PM -0500, Shawn Bohrer wrote:
-> > So I guess my question is does anyone know why I'm now seeing these
-> > stalls with 3.10?
+On Monday 10 of June 2013 09:13:11 Tushar Behera wrote:
+> On 06/08/2013 05:20 PM, Tomasz Figa wrote:
+> > On Thursday 06 of June 2013 16:52:28 Tushar Behera wrote:
+> >> cpufreq driver for EXYNOS4 based SoCs are not platform drivers, hence
+> >> we cannot currently pass the clock names through a device tree node.
+> >> Instead, we need to make them available through a global alias.
+> >> 
+> >> 'armclk', 'moutcore', 'mout_mpll' and 'mout_apll' clock aliases are
+> >> defined.
+> >> 
+> >> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> >> ---
+> >> 
+> >>  drivers/clk/samsung/clk-exynos4.c |   10 +++++-----
+> >>  1 file changed, 5 insertions(+), 5 deletions(-)
+> >> 
+> >> diff --git a/drivers/clk/samsung/clk-exynos4.c
+> >> b/drivers/clk/samsung/clk-exynos4.c index 3c1f888..1e4258a 100644
+> >> --- a/drivers/clk/samsung/clk-exynos4.c
+> >> +++ b/drivers/clk/samsung/clk-exynos4.c
+> >> @@ -356,8 +356,8 @@ struct samsung_fixed_rate_clock
+> >> exynos4210_fixed_rate_clks[] __initdata = {
+> >> 
+> >>  /* list of mux clocks supported in all exynos4 soc's */
+> >>  struct samsung_mux_clock exynos4_mux_clks[] __initdata = {
+> >> 
+> >> -	MUX_F(mout_apll, "mout_apll", mout_apll_p, SRC_CPU, 0, 1,
+> >> -			CLK_SET_RATE_PARENT, 0),
+> >> +	MUX_FA(mout_apll, "mout_apll", mout_apll_p, SRC_CPU, 0, 1,
+> >> +			CLK_SET_RATE_PARENT, 0, "mout_apll"),
+> >> 
+> >>  	MUX(none, "mout_hdmi", mout_hdmi_p, SRC_TV, 0, 1),
+> >>  	MUX(none, "mout_mfc1", sclk_evpll_p, SRC_MFC, 4, 1),
+> >>  	MUX(none, "mout_mfc", mout_mfc_p, SRC_MFC, 8, 1),
+> >> 
+> >> @@ -385,9 +385,9 @@ struct samsung_mux_clock exynos4210_mux_clks[]
+> >> __initdata = { MUX(none, "mout_g2d", mout_g2d_p, E4210_SRC_IMAGE, 8,
+> >> 1),
+> >> 
+> >>  	MUX(none, "mout_fimd1", group1_p4210, E4210_SRC_LCD1, 0, 4),
+> >>  	MUX(none, "mout_mipi1", group1_p4210, E4210_SRC_LCD1, 12, 4),
+> >> 
+> >> -	MUX_A(sclk_mpll, "sclk_mpll", mout_mpll_p, SRC_CPU, 8, 1,
+> > 
+> > "sclk_mpll"),
+> > 
+> >> +	MUX_A(sclk_mpll, "sclk_mpll", mout_mpll_p, SRC_CPU, 8, 1,
+> > 
+> > "mout_mpll"),
+> > 
+> > This is not fully compliant with patch description. I'm not sure if
+> > there weren't any users of the sclk_mpll alias.
 > 
-> Because we made all metadata updates in XFS fully transactional in
-> 3.4:
+> As of now, there are no other users of sclk_mpll other than a debug
+> print within the same file.
+
+OK.
+
+> >>  	MUX_A(mout_core, "mout_core", mout_core_p4210,
+> >> 
+> >> -			SRC_CPU, 16, 1, "mout_core"),
+> >> +			SRC_CPU, 16, 1, "moutcore"),
+> > 
+> > IMHO those typo corrections are not part of this patch.
 > 
-> commit 8a9c9980f24f6d86e0ec0150ed35fba45d0c9f88
-> Author: Christoph Hellwig <hch@infradead.org>
-> Date:   Wed Feb 29 09:53:52 2012 +0000
+> But the older drivers (before migration to CCF) were using the clock
+> "moutcore" (not "mout_core").
+
+I mean, this should be placed in a separate patch, as this change is not 
+"adding alias for cpufreq related clocks", but rather fixing a typo.
+
+> >>  	MUX_A(sclk_vpll, "sclk_vpll", sclk_vpll_p4210,
+> >>  	
+> >>  			SRC_TOP0, 8, 1, "sclk_vpll"),
+> >>  	
+> >>  	MUX(mout_fimc0, "mout_fimc0", group1_p4210, SRC_CAM, 0, 4),
+> >> 
+> >> @@ -534,7 +534,7 @@ struct samsung_div_clock exynos4_div_clks[]
+> >> __initdata = { DIV(none, "div_spi_pre2", "div_spi2", DIV_PERIL2, 8,
+> >> 8),
+> >> 
+> >>  	DIV(none, "div_audio1", "mout_audio1", DIV_PERIL4, 0, 4),
+> >>  	DIV(none, "div_audio2", "mout_audio2", DIV_PERIL4, 16, 4),
+> >> 
+> >> -	DIV_A(arm_clk, "arm_clk", "div_core2", DIV_CPU0, 28, 3,
+> > 
+> > "arm_clk"),
+> > 
+> >> +	DIV_A(arm_clk, "arm_clk", "div_core2", DIV_CPU0, 28, 3, "armclk"),
+> > 
+> > Same here.
 > 
->     xfs: log timestamp updates
->     
->     Timestamps on regular files are the last metadata that XFS does not update
->     transactionally.  Now that we use the delaylog mode exclusively and made
->     the log scode scale extremly well there is no need to bypass that code for
->     timestamp updates.  Logging all updates allows to drop a lot of code, and
->     will allow for further performance improvements later on.
->     
->     Note that this patch drops optimized handling of fdatasync - it will be
->     added back in a separate commit.
->     
->     Reviewed-by: Dave Chinner <dchinner@redhat.com>
->     Signed-off-by: Christoph Hellwig <hch@lst.de>
->     Reviewed-by: Mark Tinguely <tinguely@sgi.com>
->     Signed-off-by: Ben Myers <bpm@sgi.com>
-> $ git describe --contains 8a9c998
-> v3.4-rc1~55^2~23
+> Same as above, "armclk" is used elsewhere, not "arm_clk".
 > 
-> IOWs, you're just lucky you haven't noticed it on 3.4....
-> 
-> > Are there any suggestions for how to eliminate them?
-> 
-> Nope. You're stuck with it - there's far more places in the page
-> fault path where you can get stuck on the same lock for the same
-> reason - e.g. during block mapping for the newly added pagecache
-> page...
-> 
-> Hint: mmap() does not provide -deterministic- low latency access to
-> mapped pages - it is only "mostly low latency".
+> >>  	DIV_A(sclk_apll, "sclk_apll", "mout_apll",
+> >>  	
+> >>  			DIV_CPU0, 24, 3, "sclk_apll"),
+> >>  	
+> >>  	DIV_F(none, "div_mipi_pre0", "div_mipi0", DIV_LCD0, 20, 4,
+> > 
+> > Basically I don't like the idea of those global aliases, which IMHO
+> > should be completely dropped. Someone might not like it, but I'd go
+> > with the conversion of our cpufreq drivers to platform drivers
+> > instead, which could receive things like clocks and regulators using
+> > DT-based lookups.
+> I agree. Migration of exynos-cpufreq driver as a platform driver is the
+> best solution. But unless someone picks up that work, cpufreq support
+> for EXYNOS4 based systems is broken because of the incorrect clock
+> aliases.
 
-Hi Dave, I appreciate your time and analysis.  I am sadly aware that
-doing file I/O and expecting low latency is a bit of a stretch.  This
-is also not the first time I've battled these types of stalls and
-realize that the best I can do is search for opportunities to reduce
-the probability of a stall, or find ways to reduce the duration of a
-stall.
-
-In this case since updating timestamps has been transactional and in
-place since 3.4, it is obvious to me that this is not the cause of
-both the increased rate and duration of the stalls on 3.10.  I assure
-you on 3.4 we have very few stalls that are greater than 10
-milliseconds in our normal workload and with 3.10 I'm seeing them
-regularly.  Since we know I can, and likely do, hit the same code path
-on 3.4 that tells me that me that the xfs_ilock() is likely being held
-for a longer duration on the new kernel.  Let's see if we can
-determine why the lock is held for so long.
-
-Here is an attempt at that, as events unfold in time order.  I'm in no
-way a filesystem developer so any input or analysis of what we're
-waiting on is appreciated.  There is also multiple kworker threads
-involved which certainly complicates things.
-
-
-It starts with kworker/u49:0 which aquires xfs_ilock() inside
-iomap_write_allocate().
-
-
-   kworker/u49:0-15748 [004] 256032.180361: funcgraph_entry:                   |  xfs_iomap_write_allocate() {
-   kworker/u49:0-15748 [004] 256032.180363: funcgraph_entry:        0.074 us   |    xfs_ilock();
-
-
-In the next two chunks it appears that kworker/u49:0 calls
-xfs_bmapi_allocate which offloads that work to kworker/4:0 calling
-__xfs_bmapi_allocate().  kworker/4:0 ends up blocking on xfs_buf_lock().
-
-
-     kworker/4:0-27520 [004] 256032.180389: sched_switch:         prev_comm=kworker/4:0 prev_pid=27520 prev_prio=120 prev_state=D ==> next_comm=kworker/u49:0 next_pid=15748 next_prio=120
-     kworker/4:0-27520 [004] 256032.180393: kernel_stack:         <stack trace>
-=> schedule (ffffffff814ca379)
-=> schedule_timeout (ffffffff814c810d)
-=> __down_common (ffffffff814c8e5e)
-=> __down (ffffffff814c8f26)
-=> down (ffffffff810658e1)
-=> xfs_buf_lock (ffffffff811c12a4)
-=> _xfs_buf_find (ffffffff811c1469)
-=> xfs_buf_get_map (ffffffff811c16e4)
-=> xfs_buf_read_map (ffffffff811c2691)
-=> xfs_trans_read_buf_map (ffffffff81225fa9)
-=> xfs_btree_read_buf_block.constprop.6 (ffffffff811f2242)
-=> xfs_btree_lookup_get_block (ffffffff811f22fb)
-=> xfs_btree_lookup (ffffffff811f6707)
-=> xfs_alloc_ag_vextent_near (ffffffff811d9d52)
-=> xfs_alloc_ag_vextent (ffffffff811da8b5)
-=> xfs_alloc_vextent (ffffffff811db545)
-=> xfs_bmap_btalloc (ffffffff811e6951)
-=> xfs_bmap_alloc (ffffffff811e6dee)
-=> __xfs_bmapi_allocate (ffffffff811ec024)
-=> xfs_bmapi_allocate_worker (ffffffff811ec283)
-=> process_one_work (ffffffff81059104)
-=> worker_thread (ffffffff8105a1bc)
-=> kthread (ffffffff810605f0)
-=> ret_from_fork (ffffffff814d395c)
-
-kworker/u49:0-15748 [004] 256032.180403: sched_switch:         prev_comm=kworker/u49:0 prev_pid=15748 prev_prio=120 prev_state=D ==> next_comm=kworker/4:1H next_pid=3921 next_prio=100
-   kworker/u49:0-15748 [004] 256032.180408: kernel_stack:         <stack trace>
-=> schedule (ffffffff814ca379)
-=> schedule_timeout (ffffffff814c810d)
-=> wait_for_completion (ffffffff814ca2e5)
-=> xfs_bmapi_allocate (ffffffff811eea57)
-=> xfs_bmapi_write (ffffffff811eef33)
-=> xfs_iomap_write_allocate (ffffffff811ce49e)
-=> return_to_handler (ffffffff814d3845)
-=> xfs_map_blocks (ffffffff811bf145)
-=> xfs_vm_writepage (ffffffff811bfbc2)
-=> __writepage (ffffffff810f14e7)
-=> write_cache_pages (ffffffff810f189e)
-=> generic_writepages (ffffffff810f1b3a)
-=> xfs_vm_writepages (ffffffff811bef8d)
-=> do_writepages (ffffffff810f3380)
-=> __writeback_single_inode (ffffffff81166ae5)
-=> writeback_sb_inodes (ffffffff81167d4d)
-=> __writeback_inodes_wb (ffffffff8116800e)
-=> wb_writeback (ffffffff811682bb)
-=> wb_check_old_data_flush (ffffffff811683ff)
-=> wb_do_writeback (ffffffff81169bd1)
-=> bdi_writeback_workfn (ffffffff81169cca)
-=> process_one_work (ffffffff81059104)
-=> worker_thread (ffffffff8105a1bc)
-=> kthread (ffffffff810605f0)
-=> ret_from_fork (ffffffff814d395c)
-
-
-Here I have kworker/2:1H which appears to get its work scheduled from
-a softirq.
-
-          <idle>-0     [002] 256032.890594: sched_wakeup:         comm=kworker/2:1H pid=2176 prio=100 success=1 target_cpu=002
-          <idle>-0     [002] 256032.890598: kernel_stack:         <stack trace>
-=> ttwu_do_activate.constprop.34 (ffffffff8106c556)
-=> try_to_wake_up (ffffffff8106e996)
-=> wake_up_process (ffffffff8106ea87)
-=> wake_up_worker (ffffffff810568c4)
-=> insert_work (ffffffff8105821d)
-=> __queue_work (ffffffff81058391)
-=> queue_work_on (ffffffff81058605)
-=> xfs_buf_ioend (ffffffff811c1a37)
-=> _xfs_buf_ioend.constprop.1 (ffffffff811c1aaa)
-=> xfs_buf_bio_end_io (ffffffff811c1f58)
-=> bio_endio (ffffffff8117362d)
-=> blk_update_request (ffffffff8124f1b8)
-=> blk_update_bidi_request (ffffffff8124f511)
-=> blk_end_bidi_request (ffffffff8124f59c)
-=> blk_end_request (ffffffff8124f630)
-=> scsi_io_completion (ffffffff8136156f)
-=> scsi_finish_command (ffffffff81357e11)
-=> scsi_softirq_done (ffffffff813613bf)
-=> blk_done_softirq (ffffffff81255fe3)
-=> __do_softirq (ffffffff81044230)
-=> irq_exit (ffffffff81044505)
-=> smp_call_function_single_interrupt (ffffffff81024475)
-=> call_function_single_interrupt (ffffffff814d477a)
-=> arch_cpu_idle (ffffffff8100ad8e)
-=> cpu_startup_entry (ffffffff8107b39e)
-=> start_secondary (ffffffff81b259f3)
-          <idle>-0     [002] 256032.890603: sched_switch:         prev_comm=swapper/2 prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=kworker/2:1H next_pid=2176 next_prio=100
-
-
-kworker/2:1H calls xfs_buf_unlock() which then wakes up kworker/4:0
-
-
-    kworker/2:1H-2176  [002] 256032.890607: sched_wakeup:         comm=kworker/4:0 pid=27520 prio=120 success=1 target_cpu=004
-    kworker/2:1H-2176  [002] 256032.890609: kernel_stack:         <stack trace>
-=> ttwu_do_activate.constprop.34 (ffffffff8106c556)
-=> try_to_wake_up (ffffffff8106e996)
-=> wake_up_process (ffffffff8106ea87)
-=> __up (ffffffff814c8dce)
-=> up (ffffffff81065762)
-=> xfs_buf_unlock (ffffffff811c163d)
-=> xfs_buf_iodone_work (ffffffff811c1908)
-=> xfs_buf_ioend (ffffffff811c198b)
-=> xfs_buf_iodone_callbacks (ffffffff812222b6)
-=> xfs_buf_iodone_work (ffffffff811c18be)
-=> process_one_work (ffffffff81059104)
-=> worker_thread (ffffffff8105a1bc)
-=> kthread (ffffffff810605f0)
-=> ret_from_fork (ffffffff814d395c)
-
-kworker/4:0 wakes up kworker/u49:0 which which releases xfs_iunlock()
-ending the delay.
-
-     kworker/4:0-27520 [004] 256032.890646: sched_wakeup:         comm=kworker/u49:0 pid=15748 prio=120 success=1 target_cpu=006
-   kworker/u49:0-15748 [006] 256032.890665: funcgraph_entry:        1.143 us   |    xfs_iunlock();
-   kworker/u49:0-15748 [006] 256032.890666: funcgraph_exit:       ! 710304.855 us |  }
-
-
-So to summarize it appears that most of the time was spent with
-kworker/4:0 blocking in xfs_buf_lock() and kworker/2:1H, which is woken
-up by a softirq, is the one that calls xfs_buf_unlock().  Assuming I'm
-not missing some important intermediate steps does this provide any
-more information about what resource I'm actually waiting for?  Does
-this point to any changes that happened after 3.4?  Are there any tips
-that could help minimize these contentions?
+We have patches for this in our internal tree. I will clean them up a bit 
+and submit soon.
 
 Thanks,
-Shawn
+Tomasz
 
--- 
-
----------------------------------------------------------------
-This email, along with any attachments, is confidential. If you 
-believe you received this message in error, please contact the 
-sender immediately and delete all copies of the message.  
-Thank you.
+> > This is especially important in case of regulators, which currently
+> > have to be hacked by using vdd_arm as regulator name in device tree.
+> Agree.
+> 
+> > CCing people that might be interested in this topic.
+> > 
+> > Best regards,
+> > Tomasz
+> 
+> Thanks.
