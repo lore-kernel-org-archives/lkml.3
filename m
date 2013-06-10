@@ -1,57 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301Ab3FJGTJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 02:19:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4054 "EHLO mx1.redhat.com"
+	id S1751411Ab3FJGZw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 02:25:52 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57229 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751088Ab3FJGTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 02:19:08 -0400
-Date: Mon, 10 Jun 2013 09:18:49 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: David Daney <david.s.daney@gmail.com>
-Cc: David Daney <ddaney@caviumnetworks.com>,
-        David Daney <ddaney.cavm@gmail.com>, kvm@vger.kernel.org,
-        linux-mips@linux-mips.org, ralf@linux-mips.org,
-        Sanjay Lal <sanjayl@kymasys.com>, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH 00/31] KVM/MIPS: Implement hardware virtualization via
- the MIPS-VZ extensions.
-Message-ID: <20130610061849.GX4725@redhat.com>
-References: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com>
- <51B26974.5000306@caviumnetworks.com>
- <20130609073115.GE4725@redhat.com>
- <51B50E87.2060501@gmail.com>
+	id S1751257Ab3FJGZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 02:25:51 -0400
+From: J Keerthy <j-keerthy@ti.com>
+To: <b-cousson@ti.com>, <devicetree-discuss@lists.ozlabs.org>
+CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <ldewangan@nvidia.com>, <grant.likely@secretlab.ca>,
+        <swarren@wwwdotorg.org>, <swarren@nvidia.com>, <sameo@linux.intel.com>,
+        <gg@slimlogic.co.uk>, <lee.jones@linaro.org>,
+        J Keerthy <j-keerthy@ti.com>
+Subject: [PATCH 1/2] ARM: dts: add dtsi for palmas
+Date: Mon, 10 Jun 2013 11:52:14 +0530
+Message-ID: <1370845335-14926-2-git-send-email-j-keerthy@ti.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1370845335-14926-1-git-send-email-j-keerthy@ti.com>
+References: <1370845335-14926-1-git-send-email-j-keerthy@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51B50E87.2060501@gmail.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 09, 2013 at 04:23:51PM -0700, David Daney wrote:
-> On 06/09/2013 12:31 AM, Gleb Natapov wrote:
-> >On Fri, Jun 07, 2013 at 04:15:00PM -0700, David Daney wrote:
-> >>I should also add that I will shortly send patches for the kvm tool
-> >>required to drive this VM as well as a small set of patches that
-> >>create a para-virtualized MIPS/Linux guest kernel.
-> >>
-> >>The idea is that because there is no standard SMP linux system, we
-> >>create a standard para-virtualized system that uses a handful of
-> >>hypercalls, but mostly just uses virtio devices.  It has no emulated
-> >>real hardware (no 8250 UART, no emulated legacy anything...)
-> >>
-> >Virtualization is useful for running legacy code. Why dismiss support
-> >for non pv guests so easily?
-> 
-> Just because we create standard PV system devices, doesn't preclude
-> emulating real hardware.  In fact Sanjay Lal's work includes QEMU
-> support for doing just this for a MIPS malta board.  I just wanted a
-> very simple system I could implement with the kvm tool in a couple
-> of days, so that is what I initially did.
-> 
-That makes sense. From your wording I misunderstood that there is something
-in proposed patches that requires PV to run a guest.
+Adds palmas mfd and palmas regulator nodes.
 
---
-			Gleb.
+Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+Signed-off-by: J Keerthy <j-keerthy@ti.com>
+---
+ arch/arm/boot/dts/palmas.dtsi |   98 +++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 98 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/boot/dts/palmas.dtsi
+
+diff --git a/arch/arm/boot/dts/palmas.dtsi b/arch/arm/boot/dts/palmas.dtsi
+new file mode 100644
+index 0000000..4c5162f
+--- /dev/null
++++ b/arch/arm/boot/dts/palmas.dtsi
+@@ -0,0 +1,98 @@
++/*
++ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <dt-bindings/interrupt-controller/irq.h>
++
++&palmas {
++	compatible = "ti,palmas";
++	interrupt-controller;
++	#interrupt-cells = <2>;
++
++	palmas_pmic {
++		compatible = "ti,palmas-pmic";
++		interrupt-parent = <&palmas>;
++		interrupts = <14 IRQ_TYPE_NONE>;
++		interrupt-name = "short-irq";
++
++		ti,ldo6-vibrator;
++
++		regulators {
++			smps123_reg: smps123 {
++				regulator-name = "smps123";
++			};
++
++			smps45_reg: smps45 {
++				regulator-name = "smps45";
++			};
++
++			smps6_reg: smps6 {
++				regulator-name = "smps6";
++			};
++
++			smps7_reg: smps7 {
++				regulator-name = "smps7";
++			};
++
++			smps8_reg: smps8 {
++				regulator-name = "smps8";
++			};
++
++			smps9_reg: smps9 {
++				regulator-name = "smps9";
++			};
++
++			smps10_reg: smps10 {
++				regulator-name = "smps10";
++			};
++
++			ldo1_reg: ldo1 {
++				regulator-name = "ldo1";
++			};
++
++			ldo2_reg: ldo2 {
++				regulator-name = "ldo2";
++			};
++
++			ldo3_reg: ldo3 {
++				regulator-name = "ldo3";
++			};
++
++			ldo4_reg: ldo4 {
++				regulator-name = "ldo4";
++			};
++
++			ldo5_reg: ldo5 {
++				regulator-name = "ldo5";
++			};
++
++			ldo6_reg: ldo6 {
++				regulator-name = "ldo6";
++			};
++
++			ldo7_reg: ldo7 {
++				regulator-name = "ldo7";
++			};
++
++			ldo8_reg: ldo8 {
++				regulator-name = "ldo8";
++			};
++
++			ldo9_reg: ldo9 {
++				regulator-name = "ldo9";
++			};
++
++			ldoln_reg: ldoln {
++				regulator-name = "ldoln";
++			};
++
++			ldousb_reg: ldousb {
++				regulator-name = "ldousb";
++			};
++		};
++	};
++};
+-- 
+1.7.5.4
+
