@@ -1,215 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753009Ab3FJKFt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 06:05:49 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:63816 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752919Ab3FJKFr (ORCPT
+	id S1753034Ab3FJKGU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 06:06:20 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:39831 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751768Ab3FJKGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 06:05:47 -0400
-Date: Mon, 10 Jun 2013 11:05:40 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: J Keerthy <j-keerthy@ti.com>
-Cc: b-cousson@ti.com, devicetree-discuss@lists.ozlabs.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldewangan@nvidia.com, grant.likely@secretlab.ca, swarren@wwwdotorg.org,
-        swarren@nvidia.com, sameo@linux.intel.com, gg@slimlogic.co.uk
-Subject: Re: [PATCH v2 2/2] ARM: dts: OMAP5: add palmas node and omap
- specific palmas regulator properties
-Message-ID: <20130610100540.GI20297@gmail.com>
-References: <1370855059-5342-1-git-send-email-j-keerthy@ti.com>
- <1370855059-5342-3-git-send-email-j-keerthy@ti.com>
+	Mon, 10 Jun 2013 06:06:19 -0400
+Date: Mon, 10 Jun 2013 11:06:15 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Message-ID: <20130610100615.GP31367@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Mdo7Sfo9s1ayEb6q"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1370855059-5342-3-git-send-email-j-keerthy@ti.com>
+X-Cookie: Are you a turtle?
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [GIT PULL] regmap updates for v3.10
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Jun 2013, J Keerthy wrote:
 
-> Add palmas node and omap specific palmas regulator properties.
-> 
-> Signed-off-by: J Keerthy <j-keerthy@ti.com>
-> ---
->  arch/arm/boot/dts/omap5-uevm.dts |  147 ++++++++++++++++++++++++++++++++++++++
->  1 files changed, 147 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/omap5-uevm.dts b/arch/arm/boot/dts/omap5-uevm.dts
-> index 927db1e..ffbcc3f 100644
-> --- a/arch/arm/boot/dts/omap5-uevm.dts
-> +++ b/arch/arm/boot/dts/omap5-uevm.dts
-> @@ -8,6 +8,8 @@
->  /dts-v1/;
->  
->  #include "omap5.dtsi"
-> +#include <dt-bindings/interrupt-controller/irq.h>
-> +#include <dt-bindings/interrupt-controller/arm-gic.h>
->  
->  / {
->  	model = "TI OMAP5 uEVM board";
-> @@ -254,6 +256,151 @@
->  	pinctrl-0 = <&i2c1_pins>;
->  
->  	clock-frequency = <400000>;
-> +
-> +	palmas: palmas@48 {
-> +		reg = <0x48>;
-> +		/* SPI = 0, IRQ# = 7, active high level-sensitive */
+--Mdo7Sfo9s1ayEb6q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I still think this is superfluous, especially now you're using the
-defines which basically say the same thing.
+The following changes since commit d683b96b072dc4680fc74964eca77e6a23d1fa6e:
 
-> +		interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>; /* IRQ_SYS_1N */
-> +		interrupt-parent = <&gic>;
-> +	};
-> +
-> +};
-> +
-> +#include "palmas.dtsi"
-> +
-> +&palmas {
-> +	palmas_pmic {
-> +		ti,ldo6-vibrator;
-> +
-> +		regulators {
-> +			smps123_reg: smps123 {
-> +				regulator-min-microvolt = < 600000>;
-> +				regulator-max-microvolt = <1500000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +			};
-> +
-> +			smps45_reg: smps45 {
-> +				regulator-min-microvolt = < 600000>;
-> +				regulator-max-microvolt = <1310000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +			};
-> +
-> +			smps6_reg: smps6 {
-> +				regulator-min-microvolt = <1200000>;
-> +				regulator-max-microvolt = <1200000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +			};
-> +
-> +			smps7_reg: smps7 {
-> +				regulator-min-microvolt = <1800000>;
-> +				regulator-max-microvolt = <1800000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +			};
-> +
-> +			smps8_reg: smps8 {
-> +				regulator-min-microvolt = < 600000>;
-> +				regulator-max-microvolt = <1310000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +			};
-> +
-> +			smps9_reg: smps9 {
-> +				regulator-min-microvolt = <2100000>;
-> +				regulator-max-microvolt = <2100000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +				ti,smps-range = <0x80>;
-> +			};
-> +
-> +			smps10_reg: smps10 {
-> +				regulator-min-microvolt = <5000000>;
-> +				regulator-max-microvolt = <5000000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +			};
-> +
-> +			ldo1_reg: ldo1 {
-> +				regulator-min-microvolt = <2800000>;
-> +				regulator-max-microvolt = <2800000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +			};
-> +
-> +			ldo2_reg: ldo2 {
-> +				regulator-min-microvolt = <2900000>;
-> +				regulator-max-microvolt = <2900000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +			};
-> +
-> +			ldo3_reg: ldo3 {
-> +				regulator-min-microvolt = <3000000>;
-> +				regulator-max-microvolt = <3000000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +			};
-> +
-> +			ldo4_reg: ldo4 {
-> +				regulator-min-microvolt = <2200000>;
-> +				regulator-max-microvolt = <2200000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +			};
-> +
-> +			ldo5_reg: ldo5 {
-> +				regulator-min-microvolt = <1800000>;
-> +				regulator-max-microvolt = <1800000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +			};
-> +
-> +			ldo6_reg: ldo6 {
-> +				regulator-min-microvolt = <1500000>;
-> +				regulator-max-microvolt = <1500000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +			};
-> +
-> +			ldo7_reg: ldo7 {
-> +				regulator-min-microvolt = <1500000>;
-> +				regulator-max-microvolt = <1500000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +			};
-> +
-> +			ldo8_reg: ldo8 {
-> +				regulator-min-microvolt = <1500000>;
-> +				regulator-max-microvolt = <1500000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +			};
-> +
-> +			ldo9_reg: ldo9 {
-> +				regulator-min-microvolt = <1800000>;
-> +				regulator-max-microvolt = <3300000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +			};
-> +
-> +			ldoln_reg: ldoln {
-> +				regulator-min-microvolt = <1800000>;
-> +				regulator-max-microvolt = <1800000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +			};
-> +
-> +			ldousb_reg: ldousb {
-> +				regulator-min-microvolt = <3250000>;
-> +				regulator-max-microvolt = <3250000>;
-> +				regulator-always-on;
-> +				regulator-boot-on;
-> +			};
-> +		};
-> +	};
->  };
->  
->  &i2c5 {
+  Linux 3.10-rc4 (2013-06-02 17:11:17 +0900)
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/regmap-v3.10-rc4
+
+for you to fetch changes up to 998a4f2f1caf3106dfa8ce7abd8e87c118ea4fc9:
+
+  Merge remote-tracking branch 'regmap/fix/debugfs' into regmap-linus (2013-06-03 18:07:38 +0100)
+
+----------------------------------------------------------------
+
+regmap: Fixes for v3.10
+
+The biggest fix here is Lars-Peter's fix for custom locking callbacks
+which is pretty localised but important for those devices that use the
+feature.  Otherwise we've got a couple of fairly small cleanups which
+would have been sent sooner were it not for letting Lars-Peter's patch
+soak for a while.
+
+----------------------------------------------------------------
+Dimitris Papastamos (1):
+      regmap: debugfs: Check return value of regmap_write()
+
+Lars-Peter Clausen (1):
+      regmap: regcache: Fixup locking for custom lock callbacks
+
+Maarten ter Huurne (1):
+      regmap: rbtree: Fixed node range check on sync
+
+Mark Brown (2):
+      Merge remote-tracking branch 'regmap/fix/cache' into regmap-linus
+      Merge remote-tracking branch 'regmap/fix/debugfs' into regmap-linus
+
+ drivers/base/regmap/regcache-rbtree.c |    6 ++----
+ drivers/base/regmap/regcache.c        |   20 ++++++++++----------
+ drivers/base/regmap/regmap-debugfs.c  |    5 ++++-
+ 3 files changed, 16 insertions(+), 15 deletions(-)
+
+--Mdo7Sfo9s1ayEb6q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRtaUUAAoJELSic+t+oim9q2IP/iQjHedDTcB/CR2pKdSTi254
+zlB4OK2yDcAZYQbSK0g1uw89tGFnJzN6iaUi9Yrj8XsT6YkYnZkkUdVuEVFzjOeh
+sJoyPNl9jqQrjsNZ8YGa2J4XYCrCMKshVQKRlYv4+tmIJS6I2og4G0MGXLzzK/VT
+MWsJbs2QMA9NKNFQpBDNdb5+IQmcrT/eDtX6Jstni7XpsIEb3XfCE7EyDp7ppuBW
+epX92g59CYLtwpHi/WuqQcBsDN6HOuram/2x2nsplMWG3GBAXI1pwgMSwM4ozx+G
+u9x+IiKDxfOf/4Znie/qdn7X+Z9RJhkW4w0/Hr/GKWv9VuQYs9hAjHw+lbufdQL9
+74rx/xia4T+jvEuRCp636jUhUNoREeFm9yggNQICZ3JQhJeN4i1/+U0FhIKIY9sd
+VC3Sk0UrpKfHq+NdM+62ZWX3225wSUEY7lN08sC7Cl9VFE6Ts4eZrCL2bGggfAD9
+L3h/9u9cQkwwt0FqmXKnNsj4yvUWxsw+yEfcHQFclHGaq7TeP3pkUzIbibqfVQ/5
+VY5HfuftbiqRdQmx1o85YN8PVMeebJ8qJU3aiQW/QIh0acgVCQqw9igPiavEy4iR
+PcQ4Gf0iH+tueTNtTRNLz6Px+TrAuCZQ6C2z6fyVk/K4rznxy9tqaDdCX83gd9Uu
+9vuKUejsN8CMzhoCxik+
+=lqKM
+-----END PGP SIGNATURE-----
+
+--Mdo7Sfo9s1ayEb6q--
