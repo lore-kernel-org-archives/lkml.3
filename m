@@ -1,94 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421Ab3FJLQs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 07:16:48 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:45670 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753209Ab3FJLQr (ORCPT
+	id S1753449Ab3FJLRG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 07:17:06 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:49134 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209Ab3FJLRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 07:16:47 -0400
-Date: Mon, 10 Jun 2013 12:16:07 +0100
-From: Dave Martin <Dave.Martin@arm.com>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Chris Johnson <CJohnson@nvidia.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Karan Jhavar <kjhavar@nvidia.com>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Joseph Lo <josephl@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: tegra: add basic SecureOS support
-Message-ID: <20130610111601.GA3674@localhost.localdomain>
-References: <1370503687-17767-1-git-send-email-acourbot@nvidia.com>
- <51B0BC80.9040007@wwwdotorg.org>
- <CAAVeFu+by44HnOzv_85kwgeCx5b9TxiMhr27x69QcUj9GRbk8A@mail.gmail.com>
- <51B20B46.4030501@wwwdotorg.org>
- <CAAVeFu+UMZikdWO20c9chvBcieOAUgOhz-nTEUpevFWnPNC_ZA@mail.gmail.com>
+	Mon, 10 Jun 2013 07:17:04 -0400
+Date: Mon, 10 Jun 2013 13:16:42 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: "Maciej W. Rozycki" <macro@linux-mips.org>
+Cc: David Daney <david.s.daney@gmail.com>, Gleb Natapov <gleb@redhat.com>,
+        David Daney <ddaney@caviumnetworks.com>,
+        David Daney <ddaney.cavm@gmail.com>, kvm@vger.kernel.org,
+        linux-mips@linux-mips.org, Sanjay Lal <sanjayl@kymasys.com>,
+        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH 00/31] KVM/MIPS: Implement hardware virtualization via
+ the MIPS-VZ extensions.
+Message-ID: <20130610111642.GF28380@linux-mips.org>
+References: <1370646215-6543-1-git-send-email-ddaney.cavm@gmail.com>
+ <51B26974.5000306@caviumnetworks.com>
+ <20130609073115.GE4725@redhat.com>
+ <51B50E87.2060501@gmail.com>
+ <alpine.LFD.2.03.1306100030210.18329@linux-mips.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAAVeFu+UMZikdWO20c9chvBcieOAUgOhz-nTEUpevFWnPNC_ZA@mail.gmail.com>
+In-Reply-To: <alpine.LFD.2.03.1306100030210.18329@linux-mips.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 05:11:15PM +0900, Alexandre Courbot wrote:
-> On Sat, Jun 8, 2013 at 1:33 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> >>> I think we need to separate the concept of support for *a* secure
-> >>> monitor, from support for a *particular* secure monitor.
-> >>
-> >> Agreed. In this case, can we assume that support for a specific secure
-> >> monitor is not arch-specific, and that this patch should be moved
-> >> outside of arch-tegra and down to arch/arm? In other words, the ABI of
-> >> a particular secure monitor should be the same no matter the chip,
-> >> shouldn't it?
-> >
-> > I would like to believe that the Trusted Foundations monitor had the
-> > same ABI irrespective of which Soc it was running on. However, I have
-> > absolutely no idea at all if that's true. Even if there's some common
-> > subset of the ABI that is identical across all SoCs, I wouldn't be too
-> > surprised if there were custom extensions for each different SoC, or
-> > just perhaps even each product.
-> >
-> > Can you research this and find out the answer?
+On Mon, Jun 10, 2013 at 12:40:42AM +0100, Maciej W. Rozycki wrote:
+
+> > >   How different MIPS SMP systems are?
+> > 
+> > o Old SGI heavy metal (several different system architectures).
+> > 
+> > o Cavium OCTEON SMP SoCs.
+> > 
+> > o Broadcom (several flavors) SoCs
+> > 
+> > o Loongson
 > 
-> Will do. Information about TF is scarce unfortunately.
-
-I don't have full information on this topic, but there is certainly no
-common standard ABI.  Every example I've seen is different so far,
-though some will be less different than others.
-
-ARM are baking some proposabls for that, but that doesn't change the
-existing software, and it's impossible to predict how rapidly a new
-standards proposal would be adopted.  So unfortunately, diversity is
-something we will have to cope with for the foreseeable future.
-
-> > What we can always do is make a compatible property that lists
-> > everything[1], and have the driver match on the most specific value for
-> > now, but relax the driver's matching later if it turns out that the ABI
-> > is indeed common.
-> >
-> > [1] That'd need to be at least secure OS name, and secure OS version.
-> > Perhaps the SoC and board data can be deduced from the DT's top-level
-> > compatible properties; nvidia,tegra114-shield, nvidia,tegra114?
+> o Old DEC hardware (DECsystem 58x0, R3000-based).
 > 
-> They can probably, but in theory nothing prevents a board from coming
-> with different secure monitors (or none at all). In this case, just
-> having the board name might not be enough.
-> 
-> Having a proper node for the firmware like David and Tomasz suggested
-> seems to be the best way to make sure we cover all cases - I think I
-> will try to do it this way for the next version, and hopefully come
-> with a binding that is useful for everyone.
+> o Malta-based MIPS Technologies CMP solutions (1004K, 1074K, interAptiv).
 
-Since existing SMC based firmwares are not safely probeable, describing
-what's there using DT feels like the best bet for now.
+And more.  It's fairly accurate that MIPS SMP system tend to have little
+of their system architecture in common beyond the underlying processor
+architecture and everything else should be treated as a lucky coincidence.
 
-Cheers
----Dave
+  Ralf
