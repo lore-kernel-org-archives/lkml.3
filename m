@@ -1,107 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab3FJDwU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jun 2013 23:52:20 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34690 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab3FJDwR (ORCPT
+	id S1751149Ab3FJEEG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 00:04:06 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50512 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750707Ab3FJEEE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jun 2013 23:52:17 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <51B54D51.2070505@jp.fujitsu.com>
-Date: Mon, 10 Jun 2013 12:51:45 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Mon, 10 Jun 2013 00:04:04 -0400
+From: "J, KEERTHY" <j-keerthy@ti.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "Cousson, Benoit" <b-cousson@ti.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>
+Subject: RE: [PATCH] ARM: dts: add dtsi for palmas
+Thread-Topic: [PATCH] ARM: dts: add dtsi for palmas
+Thread-Index: AQHOY3QMPa6kmxyASkaofO5W52VCRJkqJRKAgAQxKl8=
+Date: Mon, 10 Jun 2013 04:03:37 +0000
+Message-ID: <DC88CAD03C0052499C1907B327FC63229EAA39@DBDE04.ent.ti.com>
+References: <1370604504-32310-1-git-send-email-j-keerthy@ti.com>,<51B23AD5.8060006@wwwdotorg.org>
+In-Reply-To: <51B23AD5.8060006@wwwdotorg.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.154]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: li guang <lig.fnst@cn.fujitsu.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
-        <platform-driver-x86@vger.kernel.org>,
-        =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
-        Igor Mammedov <imammedo@redhat.com>
-Subject: Re: [PATCH RFC v2 0/3] add cpu physically hotplug driver
-References: <1370482835-764-1-git-send-email-lig.fnst@cn.fujitsu.com>  <5449620.11SBDUltzF@vostro.rjw.lan> <1370824567.21655.10.camel@liguang.fnst.cn.fujitsu.com>
-In-Reply-To: <1370824567.21655.10.camel@liguang.fnst.cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/06/10 9:36, li guang wrote:
-> Hi, Rafael
->
-> 在 2013-06-06四的 13:00 +0200，Rafael J. Wysocki写道：
->> On Thursday, June 06, 2013 09:40:32 AM liguang wrote:
->>> This patch-set try to support physically hot-plug/unplug
->>> a cpu automatically, that is:
->>> if you offline a cpu, it will automatically actually remove
->>> a cpu, and if you hot-plug a cpu, then it will online this
->>> cpu automatically.
->>
->> No and no.
->
-> Hmm... are you saying cpu online/offline designed to distinguish
-> with real cpu plug/unplug?
-> but, what the actual usage of online/offline?
-> forgive my foolish.
->
->>
->> Why do you need this?
->>
->
-> e.g. for QEMU case, if hot-plug a cpu,
+Hi Stephen,
 
-> we have to online a cpu manually if there's
-> no user space support like udev to do it automatically.
+Thanks for the review comments.
 
-I could not understand why you do not use udev.
-Please explain in detail.
+________________________________________
+From: Stephen Warren [swarren@wwwdotorg.org]
+Sent: Saturday, June 08, 2013 1:26 AM
+To: J, KEERTHY
+Cc: Cousson, Benoit; devicetree-discuss@lists.ozlabs.org; linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org; ldewangan@nvidia.com; grant.likely@secretlab.ca; swarren@nvidia.com; sameo@linux.intel.com; gg@slimlogic.co.uk; lee.jones@linaro.org
+Subject: Re: [PATCH] ARM: dts: add dtsi for palmas
 
-> and also, I think maybe online/offline should be naturally
-> integrated with real plug/unplug process of CPU.
-
-I could not understand this explanation too.
-Why do we need it?
-
-Thanks,
-Yasuaki Ishimatsu
-
+On 06/07/2013 05:28 AM, J Keerthy wrote:
+> Adds palmas mfd and palmas regulator nodes. This is
+> based on the patch series:
 >
->>
->>
->>> so, offline is just like eject, but eject attribute seems not
->>> available since recent kernel(can't figure out when), with
->>> this driver, if allowed, it will trigger a eject cpu process.
->>> and for automatically online, it was said there are objections,
->>> don't know the reason, so, send this patch-set boldly.
->>>
->>> of course, this approach is for QEMU 's hotplug cpu emulation
->>> only, but not limited, if someone like to explore ec space to
->>> implment cpu hot-plug/unplug for real platform please
->>> feel free to continue.
->>>
->>> Li Guang (3)
->>> 	 drivers/platform/x86: add cpu physically hotplug driver
->>> 	 ec: add ec space notifier
->>> 	 cpu_physic_hotplug: register handler for ec space notifier
->>>
->>> drivers/acpi/ec.c                         | 32 ++++++++++++++++++++++++++++++++
->>> drivers/platform/x86/Kconfig              |  8 ++++
->>> drivers/platform/x86/Makefile             |  1 +
->>> drivers/platform/x86/cpu_physic_hotplug.c | 90 +++++++++++++++++++++++++++++
->>> include/linux/acpi.h                      |  2 ++
->>> 5 files changed, 130 insertions(+), 3 deletions(-)
->>>   create mode 100644 drivers/platform/x86/cpu_physic_hotplug.c
+> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg89957.html
 >
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> The device tree nodes are based on:
+> https://lkml.org/lkml/2013/6/6/25
 
+> diff --git a/arch/arm/boot/dts/palmas.dtsi b/arch/arm/boot/dts/palmas.dtsi
 
+> +&palmas {
+
+Hmmm. That (i.e. requiring the board file to declare the node, then
+setting up all the content by later including this file) is an
+interesting approach. I guess it's reasonable. The one issue is that it
+makes it a little harder for the board file to override any of the
+properties in this file., although it certainly is possible by including
+those overrides after the include.
+
+Irrespective of that, some comments on this:
+
+> +     palmas_pmic {
+
+> +             ti,ldo6-vibrator;
+
+For example, what if the board doesn't want to have the property set?
+
+> +
+> +             regulators {
+> +                     smps123_reg: smps123 {
+> +                             regulator-name = "smps123";
+> +                             regulator-min-microvolt = < 600000>;
+> +                             regulator-max-microvolt = <1500000>;
+
+Or what if the board wants to limit the voltage range of this regulator
+due to what it's used for on the board.
+
+> +                             regulator-always-on;
+> +                             regulator-boot-on;
+
+And those two properties are almost certainly board-specific policy.
+
+Totally agree to all the above concerns. So can we have a custom .dtsi file
+for a board+pmic combination? Or have only the required properties over ridden
+in the board file?
+
+Regards,
+Keerthy 
