@@ -1,146 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab3FJJah (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 05:30:37 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:44332 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753167Ab3FJJad (ORCPT
+	id S1753360Ab3FJJas (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 05:30:48 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:35013 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753185Ab3FJJap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 05:30:33 -0400
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Arnd Bergmann <arnd@arndb.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux@arm.linux.org.uk,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <rob.herring@calxeda.com>,
-        Rob Landley <rob@landley.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH v2 09/11] ARM:stixxxx: Add stixxxx options to multi_v7_defconfig
-Date: Mon, 10 Jun 2013 10:27:57 +0100
-Message-Id: <1370856477-7237-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com>
+	Mon, 10 Jun 2013 05:30:45 -0400
+X-AuditID: 85900ec0-d38c8b900000151e-30-51b59cc2d3c1
+Message-ID: <51B59CC2.3060707@hitachi.com>
+Date: Mon, 10 Jun 2013 18:30:42 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, David Sharp <dhsharp@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Re: Re: [PATCH V2 1/1] kvm/vmx: Add a tracepoint write_tsc_offset
+References: <20130604083616.22713.24922.stgit@yunodevel> <20130604083619.22713.25360.stgit@yunodevel> <20130606002322.GA24351@amt.cnet> <20130606113305.GB4725@redhat.com> <51B16E0E.5020208@hitachi.com> <20130609111442.GP4725@redhat.com>
+In-Reply-To: <20130609111442.GP4725@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds stih415 and stih416 support to multi_v7_defconfig.
+Hi Gleb,
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-CC: Arnd Bergmann <arnd@arndb.de>
----
- arch/arm/configs/multi_v7_defconfig |   32 +++++++++++++++-----------------
- 1 files changed, 15 insertions(+), 17 deletions(-)
+(2013/06/09 20:14), Gleb Natapov wrote:
+> On Fri, Jun 07, 2013 at 02:22:22PM +0900, Yoshihiro YUNOMAE wrote:
+>> (2013/06/06 20:33), Gleb Natapov wrote:
+>>> On Wed, Jun 05, 2013 at 09:23:22PM -0300, Marcelo Tosatti wrote:
+>>>> On Tue, Jun 04, 2013 at 05:36:19PM +0900, Yoshihiro YUNOMAE wrote:
+>>>>> Add a tracepoint write_tsc_offset for tracing TSC offset change.
+>>>>> We want to merge ftrace's trace data of guest OSs and the host OS using
+>>>>> TSC for timestamp in chronological order. We need "TSC offset" values for
+>>>>> each guest when merge those because the TSC value on a guest is always the
+>>>>> host TSC plus guest's TSC offset. If we get the TSC offset values, we can
+>>>>> calculate the host TSC value for each guest events from the TSC offset and
+>>>>> the event TSC value. The host TSC values of the guest events are used when we
+>>>>> want to merge trace data of guests and the host in chronological order.
+>>>>> (Note: the trace_clock of both the host and the guest must be set x86-tsc in
+>>>>> this case)
+>>>>>
+>>>>> TSC offset is stored in the VMCS by vmx_write_tsc_offset() or
+>>>>> vmx_adjust_tsc_offset(). KVM executes the former function when a guest boots.
+>>>>> The latter function is executed when kvm clock is updated. Only host can read
+>>>>> TSC offset value from VMCS, so a host needs to output TSC offset value
+>>>>> when TSC offset is changed.
+>>>>>
+>>>>> Since the TSC offset is not often changed, it could be overwritten by other
+>>>>> frequent events while tracing. To avoid that, I recommend to use a special
+>>>>> instance for getting this event:
+>>>>>
+>>>>> 1. set a instance before booting a guest
+>>>>>   # cd /sys/kernel/debug/tracing/instances
+>>>>>   # mkdir tsc_offset
+>>>>>   # cd tsc_offset
+>>>>>   # echo x86-tsc > trace_clock
+>>>>>   # echo 1 > events/kvm/kvm_write_tsc_offset/enable
+>>>>>
+>>>>> 2. boot a guest
+>>>>>
+>>>>> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+>>>>> Cc: Marcelo Tosatti <mtosatti@redhat.com>
+>>>>> Cc: Gleb Natapov <gleb@redhat.com>
+>>>>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>>>>> Cc: Ingo Molnar <mingo@redhat.com>
+>>>>> Cc: "H. Peter Anvin" <hpa@zytor.com>
+>>>>> ---
+>>>>>   arch/x86/kvm/trace.h |   18 ++++++++++++++++++
+>>>>>   arch/x86/kvm/vmx.c   |    3 +++
+>>>>>   arch/x86/kvm/x86.c   |    1 +
+>>>>>   3 files changed, 22 insertions(+)
+>>>>>
+>>>>> diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
+>>>>> index fe5e00e..9c22e39 100644
+>>>>> --- a/arch/x86/kvm/trace.h
+>>>>> +++ b/arch/x86/kvm/trace.h
+>>>>> @@ -815,6 +815,24 @@ TRACE_EVENT(kvm_track_tsc,
+>>>>>   		  __print_symbolic(__entry->host_clock, host_clocks))
+>>>>>   );
+>>>>>
+>>>>> +TRACE_EVENT(kvm_write_tsc_offset,
+>>>>> +	TP_PROTO(__u64 previous_tsc_offset, __u64 next_tsc_offset),
+>>>>> +	TP_ARGS(previous_tsc_offset, next_tsc_offset),
+>>>>> +
+>>>>> +	TP_STRUCT__entry(
+>>>>> +		__field(	__u64,	previous_tsc_offset		)
+>>>>> +		__field(	__u64,	next_tsc_offset			)
+>>>>> +	),
+>>>>> +
+>>>>> +	TP_fast_assign(
+>>>>> +		__entry->previous_tsc_offset	= previous_tsc_offset;
+>>>>> +		__entry->next_tsc_offset	= next_tsc_offset;
+>>>>> +	),
+>>>>> +
+>>>>> +	TP_printk("previous=%llu next=%llu",
+>>>>> +		  __entry->previous_tsc_offset, __entry->next_tsc_offset)
+>>>>> +);
+>>>>> +
+>>>>
+>>>> Yoshihiro YUNOMAE,
+>>>>
+>>>> 1) Why is previous_tsc_offset necessary?
+>>
+>> I was considering the situations where we did not enable
+>> kvm_write_tsc_offset event before booting a guest or where we did not
+>> use multiple buffers. Here, we will need another new I/F to get current
+>> TSC offset of a given VCPU. For example, if kvm_write_tsc_offset is not
+>> included in the host's trace data, we get the current TSC offset from
+>> the new I/F and apply it to all guest events. On the other hand, if
+>> kvm_write_tsc_offset event appears more than once, we apply the
+>> previous offset to guest events before the first TSC offset change.
+>>
+>> Since we support only for using multiple buffers now, we don't need to
+>> record previous TSC offset at this time. But I'm conscious that we have
+>> to change the format of kvm_write_tsc_offset event when we support
+>> those situations.
+>>
+>>>> 2) The TSC offset traces should include vcpu number, so that its
+>>>> possible to correlate traces of SMP guests (the tool should use
+>>>> the individual vcpu tsc offsets when converting guests trace).
+>>>>
+>>> Why PID is not enough? No other trace, except kvm_entry, outputs vcpu id.
+>>
+>> As Gleb mentioned, a tool can understand TSC offset for each vcpu from
+>> PID and vcpu number of kvm_entry. IMO, that is indirect way, so I would
+>> be better off including vcpu number.
+>>
+> But doesn't the tool operates on vcpu's PID for all other events. I mean to
+> figure out what vcpu an event belongs too during merge. Why tsc offset
+> event is different?
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index 2e67a27..8a5cd5c 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -1,23 +1,20 @@
--CONFIG_EXPERIMENTAL=y
- CONFIG_NO_HZ=y
- CONFIG_HIGH_RES_TIMERS=y
- CONFIG_ARCH_MVEBU=y
- CONFIG_MACH_ARMADA_370=y
--CONFIG_ARCH_SIRF=y
- CONFIG_MACH_ARMADA_XP=y
- CONFIG_ARCH_HIGHBANK=y
- CONFIG_ARCH_SOCFPGA=y
--CONFIG_ARCH_SUNXI=y
--CONFIG_ARCH_WM8850=y
--# CONFIG_ARCH_VEXPRESS_CORTEX_A5_A9_ERRATA is not set
--CONFIG_ARCH_ZYNQ=y
--CONFIG_ARM_ERRATA_754322=y
- CONFIG_PLAT_SPEAR=y
- CONFIG_ARCH_SPEAR13XX=y
- CONFIG_MACH_SPEAR1310=y
- CONFIG_MACH_SPEAR1340=y
-+CONFIG_ARCH_STIXXXX=y
-+CONFIG_ARCH_SUNXI=y
-+CONFIG_ARCH_SIRF=y
-+CONFIG_ARCH_WM8850=y
-+CONFIG_ARCH_ZYNQ=y
- CONFIG_SMP=y
--CONFIG_ARM_ARCH_TIMER=y
- CONFIG_AEABI=y
- CONFIG_HIGHMEM=y
- CONFIG_HIGHPTE=y
-@@ -25,27 +22,30 @@ CONFIG_ARM_APPENDED_DTB=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- CONFIG_NET=y
-+CONFIG_DEVTMPFS=y
- CONFIG_BLK_DEV_SD=y
- CONFIG_ATA=y
-+CONFIG_SATA_AHCI_PLATFORM=y
- CONFIG_SATA_HIGHBANK=y
- CONFIG_SATA_MV=y
--CONFIG_SATA_AHCI_PLATFORM=y
- CONFIG_NETDEVICES=y
- CONFIG_NET_CALXEDA_XGMAC=y
- CONFIG_SMSC911X=y
- CONFIG_STMMAC_ETH=y
-+CONFIG_KEYBOARD_SPEAR=y
- CONFIG_SERIO_AMBAKMI=y
- CONFIG_SERIAL_8250=y
- CONFIG_SERIAL_8250_CONSOLE=y
- CONFIG_SERIAL_8250_DW=y
--CONFIG_KEYBOARD_SPEAR=y
- CONFIG_SERIAL_AMBA_PL011=y
- CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
--CONFIG_SERIAL_OF_PLATFORM=y
- CONFIG_SERIAL_SIRFSOC=y
- CONFIG_SERIAL_SIRFSOC_CONSOLE=y
- CONFIG_SERIAL_VT8500=y
- CONFIG_SERIAL_VT8500_CONSOLE=y
-+CONFIG_SERIAL_OF_PLATFORM=y
-+CONFIG_SERIAL_ST_ASC=y
-+CONFIG_SERIAL_ST_ASC_CONSOLE=y
- CONFIG_IPMI_HANDLER=y
- CONFIG_IPMI_SI=y
- CONFIG_I2C=y
-@@ -54,7 +54,6 @@ CONFIG_I2C_SIRF=y
- CONFIG_SPI=y
- CONFIG_SPI_PL022=y
- CONFIG_SPI_SIRF=y
--CONFIG_GPIO_PL061=y
- CONFIG_FB=y
- CONFIG_FB_ARMCLCD=y
- CONFIG_FB_WM8505=y
-@@ -67,7 +66,6 @@ CONFIG_MMC_ARMMMCI=y
- CONFIG_MMC_SDHCI=y
- CONFIG_MMC_SDHCI_PLTFM=y
- CONFIG_MMC_SDHCI_SPEAR=y
--CONFIG_MMC_WMT=y
- CONFIG_EDAC=y
- CONFIG_EDAC_MM_EDAC=y
- CONFIG_EDAC_HIGHBANK_MC=y
-@@ -75,9 +73,9 @@ CONFIG_EDAC_HIGHBANK_L2=y
- CONFIG_RTC_CLASS=y
- CONFIG_RTC_DRV_PL031=y
- CONFIG_RTC_DRV_VT8500=y
--CONFIG_PWM=y
--CONFIG_PWM_VT8500=y
- CONFIG_DMADEVICES=y
--CONFIG_PL330_DMA=y
--CONFIG_SIRF_DMA=y
- CONFIG_DW_DMAC=y
-+CONFIG_SIRF_DMA=y
-+CONFIG_PL330_DMA=y
-+CONFIG_PWM=y
-+CONFIG_PWM_VT8500=y
+In vcpu_load()@virt/kvm/kvm_main.c, it seems that PID of the vcpu thread
+can be changed. Are you familiar with this situation?
+If the situation can be occurred, outputting vcpu number is better, I
+think. If not occurred, as you say, we will be able to merge those data
+without vcpu number in write_tsc_offset event. However, when we
+focus on output data of the write_tsc_offset event, it is difficult to
+directly understand contents of the data if vcpu number information is
+not included. So, including the information is useful, I think.
+
+Thanks,
 -- 
-1.7.6.5
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
+
 
