@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519Ab3FJG3S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 02:29:18 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:24295 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab3FJG3Q (ORCPT
+	id S1751639Ab3FJGaR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 02:30:17 -0400
+Received: from smtp6-v.fe.bosch.de ([139.15.237.11]:47263 "EHLO
+	smtp6-v.fe.bosch.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106Ab3FJGaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 02:29:16 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Joshua Covington <joshuacov@googlemail.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        <stable@vger.kernel.org>
-Subject: [PATCH v2 1/2] x86,mtrr: Fix original mtrr range get for mtrr_cleanup
-Date: Sun,  9 Jun 2013 23:28:48 -0700
-Message-Id: <1370845728-18885-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Mon, 10 Jun 2013 02:30:14 -0400
+Message-ID: <51B57266.9050107@de.bosch.com>
+Date: Mon, 10 Jun 2013 08:29:58 +0200
+From: Dirk Behme <dirk.behme@de.bosch.com>
+Organization: Robert Bosch Car Multimedia GmbH
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Oded Gabbay <ogabbay@advaoptical.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH 3/3] MMC: FSL SDHC: Add support for hard-wired (permanent)
+ card. Kernel version 3.4.47
+References: <1370155128-680-1-git-send-email-ogabbay@advaoptical.com>
+In-Reply-To: <1370155128-680-1-git-send-email-ogabbay@advaoptical.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.34.218.101]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joshua reported: Commit cd7b304dfaf1 (x86, range: fix missing merge
-during add range) broke mtrr cleanup on his setup in 3.9.5.
-corresponding commit in upstream is fbe06b7bae7c.
+On 02.06.2013 08:38, Oded Gabbay wrote:
+> This patch adds support of recognizing hard-wired (permanent) cards
+> to Freescale's SDHC host driver. This is done by adding the option
+> "fsl,card-wired" to the SDHC device-tree entry. Detection of this
+> option is done in the probe function. Update documentation in file
+> fsl-esdhc.txt
 
-  *BAD*gran_size: 64K chunk_size: 16M num_reg: 6 lose cover RAM: -0G
+Why don't you want to introduce "fsl,card-wired"? Why don't you use 
+"non-removable"?
 
-https://bugzilla.kernel.org/show_bug.cgi?id=59491
+To my understanding the patch
 
-So it rejects new var mtrr layout.
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=7f217794ffa72f208a250b79ab0b7ea3de19677f
 
-It turns out we have some problem with initial mtrr range retrievel.
-current sequence is:
-	x86_get_mtrr_mem_range
-		==> bunchs of add_range_with_merge
-		==> bunchs of subract_range
-		==> clean_sort_range
-	add_range_with_merge for [0,1M)
-	sort_range()
+explicitly removed "fsl,card-wired". So I don't think re-introducing it 
+is a good idea?
 
-add_range_with_merge could have blank slots, so we can not just
-sort only, that will have final result have extra blank slot in head.
+Best regards
 
-So move that calling add_range_with_merge for [0,1M), with that we
-could avoid extra clean_sort_range calling.
-
-Reported-by: Joshua Covington <joshuacov@googlemail.com>
-Tested-by: Joshua Covington <joshuacov@googlemail.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: <stable@vger.kernel.org> v3.9
-
----
- arch/x86/kernel/cpu/mtrr/cleanup.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-Index: linux-2.6/arch/x86/kernel/cpu/mtrr/cleanup.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/mtrr/cleanup.c
-+++ linux-2.6/arch/x86/kernel/cpu/mtrr/cleanup.c
-@@ -714,15 +714,15 @@ int __init mtrr_cleanup(unsigned address
- 	if (mtrr_tom2)
- 		x_remove_size = (mtrr_tom2 >> PAGE_SHIFT) - x_remove_base;
- 
--	nr_range = x86_get_mtrr_mem_range(range, 0, x_remove_base, x_remove_size);
- 	/*
- 	 * [0, 1M) should always be covered by var mtrr with WB
- 	 * and fixed mtrrs should take effect before var mtrr for it:
- 	 */
--	nr_range = add_range_with_merge(range, RANGE_NUM, nr_range, 0,
-+	nr_range = add_range_with_merge(range, RANGE_NUM, 0, 0,
- 					1ULL<<(20 - PAGE_SHIFT));
--	/* Sort the ranges: */
--	sort_range(range, nr_range);
-+	/* add from var mtrr at last */
-+	nr_range = x86_get_mtrr_mem_range(range, nr_range,
-+					  x_remove_base, x_remove_size);
- 
- 	range_sums = sum_ranges(range, nr_range);
- 	printk(KERN_INFO "total RAM covered: %ldM\n",
+Dirk
