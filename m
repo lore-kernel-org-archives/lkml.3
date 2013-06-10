@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826Ab3FJHkj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 03:40:39 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:55752 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117Ab3FJHkh (ORCPT
+	id S1752092Ab3FJHlS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 03:41:18 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:41628 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751910Ab3FJHlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 03:40:37 -0400
-Date: Mon, 10 Jun 2013 09:40:31 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: linux-acpi@vger.kernel.org, seth.forshee@canonical.com,
-        joeyli.kernel@gmail.com, daniel.vetter@ffwll.ch,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, lenb@kernel.org, rjw@sisk.pl
-Subject: Re: [PATCH 3/3] i915: Don't provide ACPI backlight interface if
- firmware expects Windows 8
-Message-ID: <20130610074031.GG22870@phenom.ffwll.local>
-Mail-Followup-To: Matthew Garrett <matthew.garrett@nebula.com>,
-	linux-acpi@vger.kernel.org, seth.forshee@canonical.com,
-	joeyli.kernel@gmail.com, intel-gfx@lists.freedesktop.org,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	lenb@kernel.org, rjw@sisk.pl
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
- <1370818899-8595-4-git-send-email-matthew.garrett@nebula.com>
+	Mon, 10 Jun 2013 03:41:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370818899-8595-4-git-send-email-matthew.garrett@nebula.com>
-X-Operating-System: Linux phenom 3.9.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1370838666.51b5568a8e82c@mobinnet.kayako.com>
+References: <1370838666.51b5568a8e82c@mobinnet.kayako.com>
+Date: Mon, 10 Jun 2013 08:41:02 +0100
+Message-ID: <CAPweEDyYoJgbSyZ4nuN2TbWxEVw4U9Q2awSskTmV1OFvW0OVBw@mail.gmail.com>
+Subject: Re: [#TCI-363-37182]: Re: [Arm-netbook] getting allwinner SoC support
+ upstream (was Re: Uploading linux (3.9.4-1))
+From: "luke.leighton" <luke.leighton@gmail.com>
+To: sasupport@mobinnet.net
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        thomas.petazzoni@free-electrons.com, devicetree-discuss@ozlabs.org,
+        swarren@wwwdotorg.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 09, 2013 at 07:01:39PM -0400, Matthew Garrett wrote:
-> Windows 8 leaves backlight control up to individual graphics drivers rather
-> than making ACPI calls itself. There's plenty of evidence to suggest that
-> the Intel driver for Windows doesn't use the ACPI interface, including the
-> fact that it's broken on a bunch of machines when the OS claims to support
-> Windows 8. The simplest thing to do appears to be to disable the ACPI
-> backlight interface on these systems.
-> 
-> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+On Mon, Jun 10, 2013 at 5:31 AM, MobinNet <sasupport@mobinnet.net> wrote:
+> luke.leighton,
 
-Make sense and I guess it's easier to merge this all through the acpi
-tree. So
+ yes, automated service that i was subscribed to without my
+authorisation or permission: what can i do you for?
 
-Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> This email concerns your recent ticket: Re: [Arm-netbook] getting allwinner
+> SoC support upstream (was Re: Uploading linux (3.9.4-1)) (TCI-363-37182)
+>
+> As part of our commitment to improving your customer support experience, we
+> would like to know how you think we are doing.
 
-> ---
->  drivers/gpu/drm/i915/i915_dma.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-> index 3b315ba..23b6292 100644
-> --- a/drivers/gpu/drm/i915/i915_dma.c
-> +++ b/drivers/gpu/drm/i915/i915_dma.c
-> @@ -1661,6 +1661,9 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
->  		/* Must be done after probing outputs */
->  		intel_opregion_init(dev);
->  		acpi_video_register();
-> +		/* Don't use ACPI backlight functions on Windows 8 platforms */
-> +		if (acpi_osi_version() >= ACPI_OSI_WIN_8)
-> +			acpi_video_backlight_unregister();
->  	}
->  
->  	if (IS_GEN5(dev))
-> -- 
-> 1.8.2.1
-> 
+ sure. you're sending unsolicited messages to a number of technical
+lists, using an automated service.  generally this is considered to be
+Bad.  these technical lists are archived forever so the mistake that
+has been made is one which is irreversible, leaving a permanent and
+uneraseable public record.
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+> You are invited to complete a short satisfaction survey consisting of just a
+> few multiple-choice questions.
+
+ i'm pleased to observe that it's an invitation not an order: i
+decline.  please don't ever send out such "invitations" ever again.
+
+ much obliged.
+
+l.
+
+[btw if someone subscribed my email address without my authorisation,
+the joke appears to have backfired]
