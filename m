@@ -1,61 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751268Ab3FJEMP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 00:12:15 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:55386 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707Ab3FJEMN (ORCPT
+	id S1751386Ab3FJEMu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 00:12:50 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:16556 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750707Ab3FJEMs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 00:12:13 -0400
-Message-ID: <51B55218.9040401@gmail.com>
-Date: Sun, 09 Jun 2013 23:12:08 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        arm@kernel.org, John Stultz <john.stultz@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv2 4/6] sched_clock: Add support for >32 bit sched_clock
-References: <1370155183-31421-1-git-send-email-sboyd@codeaurora.org> <1370155183-31421-5-git-send-email-sboyd@codeaurora.org> <20130603093938.GG18614@n2100.arm.linux.org.uk> <51AD069F.1060308@codeaurora.org> <20130603221210.GO18614@n2100.arm.linux.org.uk> <51AD483F.2010206@codeaurora.org> <20130604102114.GU18614@n2100.arm.linux.org.uk>
-In-Reply-To: <20130604102114.GU18614@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Jun 2013 00:12:48 -0400
+X-IronPort-AV: E=Sophos;i="4.87,834,1363104000"; 
+   d="scan'208";a="7511766"
+Subject: Re: [PATCH RFC v2 0/3] add cpu physically hotplug driver
+From: li guang <lig.fnst@cn.fujitsu.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org,
+        Andreas =?ISO-8859-1?Q?F=E4rber?= <afaerber@suse.de>,
+        Igor Mammedov <imammedo@redhat.com>
+In-Reply-To: <51B54D51.2070505@jp.fujitsu.com>
+References: <1370482835-764-1-git-send-email-lig.fnst@cn.fujitsu.com>
+	 <5449620.11SBDUltzF@vostro.rjw.lan>
+	 <1370824567.21655.10.camel@liguang.fnst.cn.fujitsu.com>
+	 <51B54D51.2070505@jp.fujitsu.com>
+Date: Mon, 10 Jun 2013 12:04:21 +0800
+Message-ID: <1370837061.21655.54.camel@liguang.fnst.cn.fujitsu.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/10 12:04:05,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/10 12:04:09,
+	Serialize complete at 2013/06/10 12:04:09
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2013 05:21 AM, Russell King - ARM Linux wrote:
-> On Mon, Jun 03, 2013 at 06:51:59PM -0700, Stephen Boyd wrote:
->> On 06/03/13 15:12, Russell King - ARM Linux wrote:
->>> If you have a 56-bit clock which ticks at a period of 1ns, then
->>> cd.rate = 1, and your sched_clock() values will be truncated to 56-bits.
->>> The scheduler always _requires_ 64-bits from sched_clock.  That's why we
->>> have the complicated code to extend the 32-bits-or-less to a _full_
->>> 64-bit value.
->>>
->>> Let me make this clearer: sched_clock() return values _must_ without
->>> exception monotonically increment from zero to 2^64-1 and then wrap
->>> back to zero.  No other behaviour is acceptable for sched_clock().
->>
->> Ok so you're saying if we have less than 64 bits of useable information
->> we _must_ do something to find where the wraparound will occur and
->> adjust for it so that epoch_ns is always incrementing until 2^64-1. Fair
->> enough. I was trying to avoid more work because on arm architected timer
->> platforms it takes many years for that to happen.
->>
->> I'll see what I can do.
+在 2013-06-10一的 12:51 +0900，Yasuaki Ishimatsu写道：
+> 2013/06/10 9:36, li guang wrote:
+> > Hi, Rafael
+> >
+> > 在 2013-06-06四的 13:00 +0200，Rafael J. Wysocki写道：
+> >> On Thursday, June 06, 2013 09:40:32 AM liguang wrote:
+> >>> This patch-set try to support physically hot-plug/unplug
+> >>> a cpu automatically, that is:
+> >>> if you offline a cpu, it will automatically actually remove
+> >>> a cpu, and if you hot-plug a cpu, then it will online this
+> >>> cpu automatically.
+> >>
+> >> No and no.
+> >
+> > Hmm... are you saying cpu online/offline designed to distinguish
+> > with real cpu plug/unplug?
+> > but, what the actual usage of online/offline?
+> > forgive my foolish.
+> >
+> >>
+> >> Why do you need this?
+> >>
+> >
+> > e.g. for QEMU case, if hot-plug a cpu,
 > 
-> Well, 56 bits at 1ns intervals is 833 days (2^56 / (1000000000*60*60*24)).
-> We used to say that 497 days was enough several years ago, and that got
-> fixed.  We used to say 640K was enough memory for anything, and that
-> got fixed.
+> > we have to online a cpu manually if there's
+> > no user space support like udev to do it automatically.
+> 
+> I could not understand why you do not use udev.
+> Please explain in detail.
 
-The ARM ARM states a minimum resolution of 40 years AND at least 56-bits
-of resolution. So a 1Gz counter would have to have more that 56 bits.
+I did not say I can't use udev now,
+just for in case someone can't.
 
-Rob
+> 
+> > and also, I think maybe online/offline should be naturally
+> > integrated with real plug/unplug process of CPU.
+> 
+> I could not understand this explanation too.
+> Why do we need it?
+> 
+
+actually, I am asking if CPU online/offline have real purpose,
+you offline a CPU, then threads can't run on it,
+you online a CPU, then threads can run on it,
+so, the purpose here is just bouncing threads?
+obviously not, any profound historical reasons?
+
+I boldly think maybe online/offline should be integrated into
+real plug/unplug process of CPU.
+
+Thanks!
+
+> >
+> >>
+> >>
+> >>> so, offline is just like eject, but eject attribute seems not
+> >>> available since recent kernel(can't figure out when), with
+> >>> this driver, if allowed, it will trigger a eject cpu process.
+> >>> and for automatically online, it was said there are objections,
+> >>> don't know the reason, so, send this patch-set boldly.
+> >>>
+> >>> of course, this approach is for QEMU 's hotplug cpu emulation
+> >>> only, but not limited, if someone like to explore ec space to
+> >>> implment cpu hot-plug/unplug for real platform please
+> >>> feel free to continue.
+> >>>
+> >>> Li Guang (3)
+> >>> 	 drivers/platform/x86: add cpu physically hotplug driver
+> >>> 	 ec: add ec space notifier
+> >>> 	 cpu_physic_hotplug: register handler for ec space notifier
+> >>>
+> >>> drivers/acpi/ec.c                         | 32 ++++++++++++++++++++++++++++++++
+> >>> drivers/platform/x86/Kconfig              |  8 ++++
+> >>> drivers/platform/x86/Makefile             |  1 +
+> >>> drivers/platform/x86/cpu_physic_hotplug.c | 90 +++++++++++++++++++++++++++++
+> >>> include/linux/acpi.h                      |  2 ++
+> >>> 5 files changed, 130 insertions(+), 3 deletions(-)
+> >>>   create mode 100644 drivers/platform/x86/cpu_physic_hotplug.c
+> >
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> >
+> 
+> 
+
 
