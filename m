@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753050Ab3FJQgE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 12:36:04 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35443 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987Ab3FJQgB (ORCPT
+	id S1753271Ab3FJQhK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 12:37:10 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:61626 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751987Ab3FJQhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 12:36:01 -0400
-Message-ID: <51B6006D.7010409@wwwdotorg.org>
-Date: Mon, 10 Jun 2013 10:35:57 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 10 Jun 2013 12:37:08 -0400
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Alexandre Courbot <gnurou@gmail.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Chris Johnson <CJohnson@nvidia.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Varun Wadekar <vwadekar@nvidia.com>, Karan Jhavar <kjhavar@nvidia.com>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Joseph Lo <josephl@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: tegra: add basic SecureOS support
-References: <1370503687-17767-1-git-send-email-acourbot@nvidia.com> <51B0BC80.9040007@wwwdotorg.org> <CAAVeFu+by44HnOzv_85kwgeCx5b9TxiMhr27x69QcUj9GRbk8A@mail.gmail.com> <51B20B46.4030501@wwwdotorg.org> <CAAVeFu+UMZikdWO20c9chvBcieOAUgOhz-nTEUpevFWnPNC_ZA@mail.gmail.com> <20130610091415.GS18614@n2100.arm.linux.org.uk>
-In-Reply-To: <20130610091415.GS18614@n2100.arm.linux.org.uk>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <1370874576.3252.3.camel@edumazet-glaptop>
+References: <20130610083929.6955.87206.stgit@ladj378.jer.intel.com>
+ <20130610083950.6955.9813.stgit@ladj378.jer.intel.com> <1370874576.3252.3.camel@edumazet-glaptop>
+From: Willem de Bruijn <willemb@google.com>
+Date: Mon, 10 Jun 2013 12:36:37 -0400
+Message-ID: <CA+FuTSfvShAH4EfDpM+4Ur_H5O=phKax-Xee9iLD3O4SUYiH8w@mail.gmail.com>
+Subject: Re: [PATCH v10 net-next 2/6] net: add low latency socket poll
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        David Miller <davem@davemloft.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel <e1000-devel@lists.sourceforge.net>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2013 03:14 AM, Russell King - ARM Linux wrote:
-> On Mon, Jun 10, 2013 at 05:11:15PM +0900, Alexandre Courbot wrote:
->> On Sat, Jun 8, 2013 at 1:33 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>>>> I think we need to separate the concept of support for *a* secure
->>>>> monitor, from support for a *particular* secure monitor.
->>>>
->>>> Agreed. In this case, can we assume that support for a specific secure
->>>> monitor is not arch-specific, and that this patch should be moved
->>>> outside of arch-tegra and down to arch/arm? In other words, the ABI of
->>>> a particular secure monitor should be the same no matter the chip,
->>>> shouldn't it?
->>>
->>> I would like to believe that the Trusted Foundations monitor had the
->>> same ABI irrespective of which Soc it was running on. However, I have
->>> absolutely no idea at all if that's true. Even if there's some common
->>> subset of the ABI that is identical across all SoCs, I wouldn't be too
->>> surprised if there were custom extensions for each different SoC, or
->>> just perhaps even each product.
->>>
->>> Can you research this and find out the answer?
+On Mon, Jun 10, 2013 at 10:29 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Mon, 2013-06-10 at 11:39 +0300, Eliezer Tamir wrote:
+>> Adds an ndo_ll_poll method and the code that supports it.
+>> This method can be used by low latency applications to busy-poll
+>> Ethernet device queues directly from the socket code.
+>> sysctl_net_ll_poll controls how many microseconds to poll.
+>> Default is zero (disabled).
+>> Individual protocol support will be added by subsequent patches.
 >>
->> Will do. Information about TF is scarce unfortunately.
-> 
-> The answer is... there isn't a common ABI.  That is something I pressed
-> ARM Ltd for when this stuff first appeared and they were adamant that
-> they were not going to specify any kind of ABI for this interface.
+>> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+>> Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+>> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+>> ---
+>>
+>>  Documentation/sysctl/net.txt |    7 ++
+>>  include/linux/netdevice.h    |    3 +
+>>  include/linux/skbuff.h       |    8 ++
+>>  include/net/ll_poll.h        |  148 ++++++++++++++++++++++++++++++++++++++++++
+>>  include/net/sock.h           |    4 +
+>>  include/uapi/linux/snmp.h    |    1
+>>  net/Kconfig                  |   12 +++
+>>  net/core/skbuff.c            |    4 +
+>>  net/core/sock.c              |    6 ++
+>>  net/core/sysctl_net_core.c   |   10 +++
+>>  net/ipv4/proc.c              |    1
+>>  net/socket.c                 |    6 ++
+>>  12 files changed, 208 insertions(+), 2 deletions(-)
+>>  create mode 100644 include/net/ll_poll.h
+>
+> Acked-by: Eric Dumazet <edumazet@google.com>
+>
 
-Right, there certainly isn't a common ABI across all secure monitors,
-but in this case I was wondering something more specific: whether for
-this specific implementation/provider of a secure monitor, if they had a
-consistent ABI across all SoCs (or even boards) that they implemented it on.
+Tested-by: Willem de Bruijn <willemb@google.com>
+
+Per Eliezer's request, I applied v10 to a small set of workloads
+(netperf tcp_rr, udp_rr, 100x tcp_rr, 100x udp_rr and a poll()-based
+tcp rr) for some functional testing.
