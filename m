@@ -1,70 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069Ab3FJNg7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 09:36:59 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:44809 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752363Ab3FJNg6 (ORCPT
+	id S1752997Ab3FJNii (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 09:38:38 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51197 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab3FJNih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 09:36:58 -0400
+	Mon, 10 Jun 2013 09:38:37 -0400
+Date: Mon, 10 Jun 2013 15:38:34 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        kernel list <linux-kernel@vger.kernel.org>, marcel@holtmann.org,
+        gustavo@padovan.org, linux-bluetooth@vger.kernel.org
+Subject: Re: 3.10-rc: bluetooth disappeared on thinkpad x60 (regression)
+Message-ID: <20130610133834.GA4058@amd.pavel.ucw.cz>
+References: <20130610092907.GA5487@amd.pavel.ucw.cz>
+ <20130610100519.GA9816@x220.ger.corp.intel.com>
+ <20130610110423.GA8834@amd.pavel.ucw.cz>
+ <20130610115938.GA12892@x220.ger.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1370624161-2298-3-git-send-email-holzheu@linux.vnet.ibm.com>
-References: <1370624161-2298-1-git-send-email-holzheu@linux.vnet.ibm.com>
-	<1370624161-2298-3-git-send-email-holzheu@linux.vnet.ibm.com>
-Date: Mon, 10 Jun 2013 22:36:57 +0900
-Message-ID: <CABOkKT13E-nkhu1j06OPqR2dMiK6WbTMp2rPj4mzom_+uDBziQ@mail.gmail.com>
-Subject: Re: [PATCH v5 2/5] s390/vmcore: Use ELF header in new memory feature
-From: HATAYAMA Daisuke <d.hatayama@gmail.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130610115938.GA12892@x220.ger.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/6/8 Michael Holzheu <holzheu@linux.vnet.ibm.com>:
-<cut>
-> @@ -417,27 +416,44 @@ static void s390_elf_corehdr_create(char **elfcorebuf, size_t *elfcorebuf_sz)
->         ptr = notes_init(phdr_notes, ptr, ((unsigned long) hdr) + hdr_off);
->         /* Init loads */
->         hdr_off = PTR_DIFF(ptr, hdr);
-> -       loads_init(phdr_loads, ((unsigned long) hdr) + hdr_off);
-> -       *elfcorebuf_sz = hdr_off;
-> -       *elfcorebuf = (void *) relocate((unsigned long) hdr);
-> -       BUG_ON(*elfcorebuf_sz > alloc_size);
-> +       loads_init(phdr_loads, hdr_off);
-> +       elfcorehdr_addr = (unsigned long long) hdr;
-> +       elfcorehdr_size = (unsigned long long) hdr_off;
-> +       elfcorehdr_newmem = hdr;
-> +       BUG_ON(elfcorehdr_size > alloc_size);
-> +       return 0;
->  }
->
->  /*
-> - * Create kdump ELF core header in new kernel, if it has not been passed via
-> - * the "elfcorehdr" kernel parameter
-> + * Free ELF core header (new kernel)
->   */
-> -static int setup_kdump_elfcorehdr(void)
-> +void elfcorehdr_free(void)
->  {
-> -       size_t elfcorebuf_sz;
-> -       char *elfcorebuf;
-> -
-> -       if (!OLDMEM_BASE || is_kdump_kernel())
-> -               return -EINVAL;
-> -       s390_elf_corehdr_create(&elfcorebuf, &elfcorebuf_sz);
-> -       elfcorehdr_addr = (unsigned long long) elfcorebuf;
-> -       elfcorehdr_size = elfcorebuf_sz;
-> -       return 0;
-> +       if (!elfcorehdr_newmem)
-> +               return;
-> +       vfree(elfcorehdr_newmem);
+Hi!
 
-kfree is correct here?
+> > (Can I just add printk somewhere?)
+> 
+> If you want, the Bluetooth subsystem does support the dynamic debug
+> feature, so you could enable logs for hci_core.c and hci_event.c.
+> However, this will likely still not be enough and the HCI logs would
+> anyway be needed. One thing to note is that btmon is a quite new tool
+> which may not yet be packaged by your distro (it appeared in BlueZ 5,
+> released 6 months ago). An alternative which should work too is hcidump,
+> probably packed in a bluez-hcidump package on your distro.
 
-Thanks.
-HATAYAMA, Daisuke
+hcidump. Sounds good, I can do hcidump :-).
+
+I ran hcidump, while I did hciconfig hci0 up on other console.
+
+root@amd:~# hcidump hci0
+HCI sniffer - Bluetooth packet analyzer ver 1.42
+device: hci0 snap_len: 1028 filter: 0xffffffff
+< HCI Command: Reset (0x03|0x0003) plen 0
+> HCI Event: Command Complete (0x0e) plen 4
+< HCI Command: Read Local Supported Features (0x04|0x0003) plen 0
+> HCI Event: Command Complete (0x0e) plen 12
+< HCI Command: Read Local Version Information (0x04|0x0001) plen 0
+> HCI Event: Command Complete (0x0e) plen 12
+< HCI Command: Read BD ADDR (0x04|0x0009) plen 0
+> HCI Event: Command Complete (0x0e) plen 10
+< HCI Command: Read Buffer Size (0x04|0x0005) plen 0
+> HCI Event: Command Complete (0x0e) plen 11
+< HCI Command: Read Class of Device (0x03|0x0023) plen 0
+> HCI Event: Command Complete (0x0e) plen 7
+< HCI Command: Read Local Name (0x03|0x0014) plen 0
+> HCI Event: Command Complete (0x0e) plen 252
+< HCI Command: Read Voice Setting (0x03|0x0025) plen 0
+> HCI Event: Command Complete (0x0e) plen 6
+< HCI Command: Set Event Filter (0x03|0x0005) plen 1
+> HCI Event: Command Complete (0x0e) plen 4
+< HCI Command: Write Connection Accept Timeout (0x03|0x0016) plen 2
+> HCI Event: Command Complete (0x0e) plen 4
+< HCI Command: Delete Stored Link Key (0x03|0x0012) plen 7
+> HCI Event: Command Complete (0x0e) plen 4
+
+Now I turned off the bluetooth via hw switch (it disappeared from
+lsusb), turned it on, and same procedure:
+
+root@amd:~# hcidump hci0
+HCI sniffer - Bluetooth packet analyzer ver 1.42
+device: hci0 snap_len: 1028 filter: 0xffffffff
+< HCI Command: Reset (0x03|0x0003) plen 0
+> HCI Event: Command Complete (0x0e) plen 4
+< HCI Command: Read Local Supported Features (0x04|0x0003) plen 0
+> HCI Event: Command Complete (0x0e) plen 12
+< HCI Command: Read Local Version Information (0x04|0x0001) plen 0
+> HCI Event: Command Complete (0x0e) plen 12
+< HCI Command: Read BD ADDR (0x04|0x0009) plen 0
+> HCI Event: Command Complete (0x0e) plen 10
+< HCI Command: Read Buffer Size (0x04|0x0005) plen 0
+> HCI Event: Command Complete (0x0e) plen 11
+< HCI Command: Read Class of Device (0x03|0x0023) plen 0
+> HCI Event: Command Complete (0x0e) plen 7
+< HCI Command: Read Local Name (0x03|0x0014) plen 0
+> HCI Event: Command Complete (0x0e) plen 252
+< HCI Command: Read Voice Setting (0x03|0x0025) plen 0
+> HCI Event: Command Complete (0x0e) plen 6
+< HCI Command: Set Event Filter (0x03|0x0005) plen 1
+> HCI Event: Command Complete (0x0e) plen 4
+< HCI Command: Write Connection Accept Timeout (0x03|0x0016) plen 2
+> HCI Event: Command Complete (0x0e) plen 4
+< HCI Command: Delete Stored Link Key (0x03|0x0012) plen 7
+> HCI Event: Command Complete (0x0e) plen 4
+
+Hope this helps,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
