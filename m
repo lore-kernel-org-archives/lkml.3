@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab3FKLLt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:11:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21525 "EHLO mx1.redhat.com"
+	id S1754726Ab3FKLJv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:09:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55290 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754741Ab3FKLJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:09:53 -0400
+	id S1754625Ab3FKLJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 07:09:45 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org
 Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
@@ -15,189 +15,115 @@ Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
         linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
         cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
-Subject: [PATCH v2 14/14] locks: move file_lock_list to a set of percpu hlist_heads and convert file_lock_lock to an lglock
-Date: Tue, 11 Jun 2013 07:09:08 -0400
-Message-Id: <1370948948-31784-15-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v2 05/14] locks: encapsulate the fl_link list handling
+Date: Tue, 11 Jun 2013 07:08:59 -0400
+Message-Id: <1370948948-31784-6-git-send-email-jlayton@redhat.com>
 In-Reply-To: <1370948948-31784-1-git-send-email-jlayton@redhat.com>
 References: <1370948948-31784-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The file_lock_list is only used for /proc/locks. The vastly common case
-is for locks to be put onto the list and come off again, without ever
-being traversed.
-
-Help optimize for this use-case by moving to percpu hlist_head-s. At the
-same time, we can make the locking less contentious by moving to an
-lglock. When iterating over the lists for /proc/locks, we must take the
-global lock and then iterate over each CPU's list in turn.
-
-This change necessitates a new fl_link_cpu field to keep track of which
-CPU the entry is on. On x86_64 at least, this field is placed within an
-existing hole in the struct to avoid growing its real size.
+Move the fl_link list handling routines into a separate set of helpers.
+Also move the global list handling out of locks_insert_block, and into
+the caller that ends up triggering it as that allows us to eliminate the
+IS_POSIX check there.
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Acked-by: J. Bruce Fields <bfields@fieldses.org>
 ---
- fs/locks.c         |   57 +++++++++++++++++++++++++++++++++++----------------
- include/linux/fs.h |    1 +
- 2 files changed, 40 insertions(+), 18 deletions(-)
+ fs/locks.c |   37 +++++++++++++++++++++++++++++++------
+ 1 files changed, 31 insertions(+), 6 deletions(-)
 
 diff --git a/fs/locks.c b/fs/locks.c
-index 8124fc1..094eb4d 100644
+index c186649..e451d18 100644
 --- a/fs/locks.c
 +++ b/fs/locks.c
-@@ -127,6 +127,8 @@
- #include <linux/rcupdate.h>
- #include <linux/pid_namespace.h>
- #include <linux/hashtable.h>
-+#include <linux/percpu.h>
-+#include <linux/lglock.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -165,8 +167,8 @@ int lease_break_time = 45;
- static DEFINE_SPINLOCK(blocked_hash_lock);
- static DEFINE_HASHTABLE(blocked_hash, BLOCKED_HASH_BITS);
- 
--static DEFINE_SPINLOCK(file_lock_lock);
--static HLIST_HEAD(file_lock_list);
-+DEFINE_STATIC_LGLOCK(file_lock_lglock);
-+static DEFINE_PER_CPU(struct hlist_head, file_lock_list);
- 
- static struct kmem_cache *filelock_cache __read_mostly;
- 
-@@ -512,17 +514,21 @@ locks_delete_global_blocked(struct file_lock *waiter)
- static inline void
- locks_insert_global_locks(struct file_lock *waiter)
- {
--	spin_lock(&file_lock_lock);
--	hlist_add_head(&waiter->fl_link, &file_lock_list);
--	spin_unlock(&file_lock_lock);
-+	lg_local_lock(&file_lock_lglock);
-+	waiter->fl_link_cpu = smp_processor_id();
-+	hlist_add_head(&waiter->fl_link, this_cpu_ptr(&file_lock_list));
-+	lg_local_unlock(&file_lock_lglock);
+@@ -484,13 +484,38 @@ static int posix_same_owner(struct file_lock *fl1, struct file_lock *fl2)
+ 	return fl1->fl_owner == fl2->fl_owner;
  }
  
- static inline void
- locks_delete_global_locks(struct file_lock *waiter)
- {
--	spin_lock(&file_lock_lock);
-+	/* avoid taking lock if already unhashed */
-+	if (hlist_unhashed(&waiter->fl_link))
-+		return;
-+	lg_local_lock_cpu(&file_lock_lglock, waiter->fl_link_cpu);
- 	hlist_del_init(&waiter->fl_link);
--	spin_unlock(&file_lock_lock);
-+	lg_local_unlock_cpu(&file_lock_lglock, waiter->fl_link_cpu);
- }
- 
++/* Remove a blocker or lock from one of the global lists */
++static inline void
++locks_insert_global_blocked(struct file_lock *waiter)
++{
++	list_add(&waiter->fl_link, &blocked_list);
++}
++
++static inline void
++locks_delete_global_blocked(struct file_lock *waiter)
++{
++	list_del_init(&waiter->fl_link);
++}
++
++static inline void
++locks_insert_global_locks(struct file_lock *waiter)
++{
++	list_add_tail(&waiter->fl_link, &file_lock_list);
++}
++
++static inline void
++locks_delete_global_locks(struct file_lock *waiter)
++{
++	list_del_init(&waiter->fl_link);
++}
++
  /* Remove waiter from blocker's block list.
-@@ -2228,6 +2234,11 @@ EXPORT_SYMBOL_GPL(vfs_cancel_lock);
- #include <linux/proc_fs.h>
- #include <linux/seq_file.h>
- 
-+struct locks_iterator {
-+	int	li_cpu;
-+	loff_t	li_pos;
-+};
-+
- static void lock_get_status(struct seq_file *f, struct file_lock *fl,
- 			    loff_t id, char *pfx)
+  * When blocker ends up pointing to itself then the list is empty.
+  */
+ static void __locks_delete_block(struct file_lock *waiter)
  {
-@@ -2302,16 +2313,17 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
- static int locks_show(struct seq_file *f, void *v)
- {
- 	int bkt;
-+	struct locks_iterator *iter = f->private;
- 	struct file_lock *fl, *bfl;
- 
- 	fl = hlist_entry(v, struct file_lock, fl_link);
- 
--	lock_get_status(f, fl, *((loff_t *)f->private), "");
-+	lock_get_status(f, fl, iter->li_pos, "");
- 
- 	spin_lock(&blocked_hash_lock);
- 	hash_for_each(blocked_hash, bkt, bfl, fl_link) {
- 		if (bfl->fl_next == fl)
--			lock_get_status(f, bfl, *((loff_t *)f->private), " ->");
-+			lock_get_status(f, bfl, iter->li_pos, " ->");
- 	}
- 	spin_unlock(&blocked_hash_lock);
- 
-@@ -2320,23 +2332,24 @@ static int locks_show(struct seq_file *f, void *v)
- 
- static void *locks_start(struct seq_file *f, loff_t *pos)
- {
--	loff_t *p = f->private;
-+	struct locks_iterator *iter = f->private;
- 
--	spin_lock(&file_lock_lock);
--	*p = (*pos + 1);
--	return seq_hlist_start(&file_lock_list, *pos);
-+	iter->li_pos = *pos + 1;
-+	lg_global_lock(&file_lock_lglock);
-+	return seq_hlist_start_percpu(&file_lock_list, &iter->li_cpu, *pos);
++	locks_delete_global_blocked(waiter);
+ 	list_del_init(&waiter->fl_block);
+-	list_del_init(&waiter->fl_link);
+ 	waiter->fl_next = NULL;
  }
  
- static void *locks_next(struct seq_file *f, void *v, loff_t *pos)
- {
--	loff_t *p = f->private;
--	++*p;
--	return seq_hlist_next(v, &file_lock_list, pos);
-+	struct locks_iterator *iter = f->private;
-+
-+	++iter->li_pos;
-+	return seq_hlist_next_percpu(v, &file_lock_list, &iter->li_cpu, pos);
+@@ -514,8 +539,6 @@ static void locks_insert_block(struct file_lock *blocker,
+ 	BUG_ON(!list_empty(&waiter->fl_block));
+ 	list_add_tail(&waiter->fl_block, &blocker->fl_block);
+ 	waiter->fl_next = blocker;
+-	if (IS_POSIX(blocker))
+-		list_add(&waiter->fl_link, &blocked_list);
  }
  
- static void locks_stop(struct seq_file *f, void *v)
+ /*
+@@ -543,13 +566,13 @@ static void locks_wake_up_blocks(struct file_lock *blocker)
+  */
+ static void locks_insert_lock(struct file_lock **pos, struct file_lock *fl)
  {
--	spin_unlock(&file_lock_lock);
-+	lg_global_unlock(&file_lock_lglock);
+-	list_add(&fl->fl_link, &file_lock_list);
+-
+ 	fl->fl_nspid = get_pid(task_tgid(current));
+ 
+ 	/* insert into file's list */
+ 	fl->fl_next = *pos;
+ 	*pos = fl;
++
++	locks_insert_global_locks(fl);
  }
  
- static const struct seq_operations locks_seq_operations = {
-@@ -2348,7 +2361,8 @@ static const struct seq_operations locks_seq_operations = {
- 
- static int locks_open(struct inode *inode, struct file *filp)
+ /*
+@@ -562,9 +585,10 @@ static void locks_delete_lock(struct file_lock **thisfl_p)
  {
--	return seq_open_private(filp, &locks_seq_operations, sizeof(loff_t));
-+	return seq_open_private(filp, &locks_seq_operations,
-+					sizeof(struct locks_iterator));
- }
+ 	struct file_lock *fl = *thisfl_p;
  
- static const struct file_operations proc_locks_operations = {
-@@ -2448,9 +2462,16 @@ EXPORT_SYMBOL(lock_may_write);
- 
- static int __init filelock_init(void)
- {
-+	int i;
++	locks_delete_global_locks(fl);
 +
- 	filelock_cache = kmem_cache_create("file_lock_cache",
- 			sizeof(struct file_lock), 0, SLAB_PANIC, NULL);
+ 	*thisfl_p = fl->fl_next;
+ 	fl->fl_next = NULL;
+-	list_del_init(&fl->fl_link);
  
-+	lg_lock_init(&file_lock_lglock, "file_lock_lglock");
-+
-+	for_each_possible_cpu(i)
-+		INIT_HLIST_HEAD(per_cpu_ptr(&file_lock_list, i));
-+
- 	return 0;
- }
- 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 232a345..18e59b8 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -953,6 +953,7 @@ struct file_lock {
- 	unsigned int fl_flags;
- 	unsigned char fl_type;
- 	unsigned int fl_pid;
-+	int fl_link_cpu;		/* what cpu's list is this on? */
- 	struct pid *fl_nspid;
- 	wait_queue_head_t fl_wait;
- 	struct file *fl_file;
+ 	if (fl->fl_nspid) {
+ 		put_pid(fl->fl_nspid);
+@@ -830,6 +854,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+ 				goto out;
+ 			error = FILE_LOCK_DEFERRED;
+ 			locks_insert_block(fl, request);
++			locks_insert_global_blocked(request);
+ 			goto out;
+   		}
+   	}
 -- 
 1.7.1
 
