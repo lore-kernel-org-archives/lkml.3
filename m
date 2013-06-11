@@ -1,75 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab3FKNAb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 09:00:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7474 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752570Ab3FKMzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755513Ab3FKNA3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 09:00:29 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:58010 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753146Ab3FKMzB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Jun 2013 08:55:01 -0400
-Date: Tue, 11 Jun 2013 14:54:56 +0200 (CEST)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lczerner@localhost.localdomain
-To: "Theodore Ts'o" <tytso@mit.edu>
-cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, tracek@redhat.com
-Subject: Re: [PATCH v4 20/20] ext4: Allow punch hole with bigalloc enabled
-In-Reply-To: <20130531151454.GB19561@thunk.org>
-Message-ID: <alpine.LFD.2.00.1306111436290.14711@localhost.localdomain>
-References: <1368549454-8930-1-git-send-email-lczerner@redhat.com> <1368549454-8930-21-git-send-email-lczerner@redhat.com> <20130531151454.GB19561@thunk.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+To: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        amit.kachhap@gmail.com, Kukjin Kim <kgene.kim@samsung.com>,
+        jonghwa3.lee@samsung.com
+Subject: [PATCH V5 14/30] thermal: exynos: Modify private_data to appropriate name driver_data
+Date: Tue, 11 Jun 2013 18:23:24 +0530
+Message-Id: <1370955220-2949-15-git-send-email-amit.daniel@samsung.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1370955220-2949-1-git-send-email-amit.daniel@samsung.com>
+References: <1370955220-2949-1-git-send-email-amit.daniel@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 May 2013, Theodore Ts'o wrote:
+This patch renames member private_data to driver_data of the thermal
+zone registration structure as this item stores the driver related
+data and uses it to call the driver related callbacks.
 
-> Date: Fri, 31 May 2013 11:14:54 -0400
-> From: Theodore Ts'o <tytso@mit.edu>
-> To: Lukas Czerner <lczerner@redhat.com>
-> Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
->     linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
->     akpm@linux-foundation.org, hughd@google.com
-> Subject: Re: [PATCH v4 20/20] ext4: Allow punch hole with bigalloc enabled
-> 
-> On Tue, May 14, 2013 at 06:37:34PM +0200, Lukas Czerner wrote:
-> > In commits 5f95d21fb6f2aaa52830e5b7fb405f6c71d3ab85 and
-> > 30bc2ec9598a1b156ad75217f2e7d4560efdeeab we've reworked punch_hole
-> > implementation and there is noting holding us back from using punch hole
-> > on file system with bigalloc feature enabled.
-> > 
-> > This has been tested with fsx and xfstests.
-> > 
-> > Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-> > Reviewed-by: Jan Kara <jack@suse.cz>
-> 
-> This patch is causing a test failure with bigalloc enabled with the
-> xfstests shared/298.
-> 
-> Since it's at the end of the invalidate page range tests, I'm going to
-> drop this patch for now.  Could you take a look at this?
-> 
-> Thanks!!
-> 
-> 					- Ted
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+---
+ drivers/thermal/samsung/exynos_thermal_common.c |    4 ++--
+ drivers/thermal/samsung/exynos_thermal_common.h |    2 +-
+ drivers/thermal/samsung/exynos_tmu.c            |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-Hi Ted,
+diff --git a/drivers/thermal/samsung/exynos_thermal_common.c b/drivers/thermal/samsung/exynos_thermal_common.c
+index 2af1e3b..7064eb7 100644
+--- a/drivers/thermal/samsung/exynos_thermal_common.c
++++ b/drivers/thermal/samsung/exynos_thermal_common.c
+@@ -221,7 +221,7 @@ static int exynos_get_temp(struct thermal_zone_device *thermal,
+ 		pr_info("Temperature sensor not initialised\n");
+ 		return -EINVAL;
+ 	}
+-	data = th_zone->sensor_conf->private_data;
++	data = th_zone->sensor_conf->driver_data;
+ 	*temp = th_zone->sensor_conf->read_temperature(data);
+ 	/* convert the temperature into millicelsius */
+ 	*temp = *temp * MCELSIUS;
+@@ -240,7 +240,7 @@ static int exynos_set_emul_temp(struct thermal_zone_device *thermal,
+ 		pr_info("Temperature sensor not initialised\n");
+ 		return -EINVAL;
+ 	}
+-	data = th_zone->sensor_conf->private_data;
++	data = th_zone->sensor_conf->driver_data;
+ 	if (th_zone->sensor_conf->write_emul_temp)
+ 		ret = th_zone->sensor_conf->write_emul_temp(data, temp);
+ 	return ret;
+diff --git a/drivers/thermal/samsung/exynos_thermal_common.h b/drivers/thermal/samsung/exynos_thermal_common.h
+index a845c2d..1e9a326 100644
+--- a/drivers/thermal/samsung/exynos_thermal_common.h
++++ b/drivers/thermal/samsung/exynos_thermal_common.h
+@@ -83,7 +83,7 @@ struct thermal_sensor_conf {
+ 	int (*write_emul_temp)(void *drv_data, unsigned long temp);
+ 	struct thermal_trip_point_conf trip_data;
+ 	struct thermal_cooling_conf cooling_data;
+-	void *private_data;
++	void *driver_data;
+ 	void *pzone_data;
+ };
+ 
+diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+index a7bba69..40e0cfd 100644
+--- a/drivers/thermal/samsung/exynos_tmu.c
++++ b/drivers/thermal/samsung/exynos_tmu.c
+@@ -504,7 +504,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
+ 	exynos_tmu_control(pdev, true);
+ 
+ 	/* Register the sensor with thermal management interface */
+-	(&exynos_sensor_conf)->private_data = data;
++	(&exynos_sensor_conf)->driver_data = data;
+ 	exynos_sensor_conf.trip_data.trip_count = pdata->trigger_enable[0] +
+ 			pdata->trigger_enable[1] + pdata->trigger_enable[2]+
+ 			pdata->trigger_enable[3];
+-- 
+1.7.1
 
-I should have really noticed this earlier. This test (shared/298)
-have nothing to do with bigalloc, nor punch hole. It tests file
-system discard implementation.
-
-The most likely reason it failed for you is that the tests does not
-count with bigalloc feature. However it seems to be working for me
-without any problems. Can you provide more information about the
-problem you've seen, or at least your xfstest configuration so we
-can see what went wrong and possibly fix the test ?
-
-Tom can you take a look at this ? (Adding Tomas Racek to the CC)
-
-So, since this failure is not really related to the patch itself,
-can we re-include the patch (it might be already too late I guess).
-
-Thanks!
--Lukas
