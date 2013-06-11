@@ -1,89 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab3FKMG1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 08:06:27 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:38930 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753125Ab3FKMGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 08:06:25 -0400
-From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Subject: Re: [PATCH v3 1/7] clk: divider: add flag to limit possible dividers to even numbers
-Date: Tue, 11 Jun 2013 14:06:14 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-References: <201306111328.52679.heiko@sntech.de> <201306111329.32749.heiko@sntech.de> <CAHp75VcaNkPeUQ=OPY5F7Mqb_cM87xh8A8wUxdCgnRtfjoqoHw@mail.gmail.com>
-In-Reply-To: <CAHp75VcaNkPeUQ=OPY5F7Mqb_cM87xh8A8wUxdCgnRtfjoqoHw@mail.gmail.com>
+	id S1754700Ab3FKMHn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 08:07:43 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:64221 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753125Ab3FKMHm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 08:07:42 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201306111406.14850.heiko@sntech.de>
+In-Reply-To: <20130611100108.GC9216@laptop>
+References: <1370266965-7901-1-git-send-email-lee.jones@linaro.org>
+	<CAPDyKFrJumd79hHWJkGWvRKzhoaprPHu=U6HOHXzVL8WyNS6jw@mail.gmail.com>
+	<20130611100108.GC9216@laptop>
+Date: Tue, 11 Jun 2013 14:07:41 +0200
+Message-ID: <CAPDyKFoopE9CSnZB3m0rv+YiEesqck_Jmws+Q7T=n9FrK-mYRQ@mail.gmail.com>
+Subject: Re: [PATCH 00/21] ARM: ux500: Enable Clock look-up from Device Tree
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 11. Juni 2013, 13:51:56 schrieb Andy Shevchenko:
-> On Tue, Jun 11, 2013 at 2:29 PM, Heiko Stübner <heiko@sntech.de> wrote:
-> > SoCs like the Rockchip Cortex-A9 ones contain divider some clocks
-> > that use the regular mechanisms for storage but allow only even
-> > dividers and 1 to be used.
-> > 
-> > Therefore add a flag that lets _is_valid_div limit the valid dividers
-> > to these values. _get_maxdiv is also adapted to return even values
-> > for the CLK_DIVIDER_ONE_BASED case.
-> 
-> Just one nitpick below (I'm okay with current implementation, but you
-> might find my proposal useful).
-> 
-> > --- a/drivers/clk/clk-divider.c
-> > +++ b/drivers/clk/clk-divider.c
-> > 
-> > @@ -141,6 +149,8 @@ static bool _is_valid_div(struct clk_divider
-> > *divider, unsigned int div)
-> > 
-> >                 return is_power_of_2(div);
-> >         
-> >         if (divider->table)
-> >         
-> >                 return _is_valid_table_div(divider->table, div);
-> > 
-> > +       if (divider->flags & CLK_DIVIDER_EVEN && div != 1 && (div % 2) !=
-> > 0) +               return false;
-> > 
-> >         return true;
-> >  
-> >  }
-> 
-> What if rewrite like
-> 
->  if (divider->flags & CLK_DIVIDER_EVEN == 0)
->  return true;
-> 
-> return div < 2 || div % 2 == 0;
+On 11 June 2013 12:01, Lee Jones <lee.jones@linaro.org> wrote:
+>> > Nice and simple implementation using standard Clk APIs.
+>> Hi Lee,
+>>
+>> I may be a bit tired, but I am having a bit hard to follow the steps
+>> taken in this patch set. :-)
+>>
+>> I should of course tell you why:
+>> 1. You start out by adding DT definitions in the DT files, should that
+>> not be done as the final step, after the DT support has been added in
+>> ux500 clk driver?
+>
+> No, let me tell you why. ;)
+>
+> a) The DT definitions will be going in via a separate tree, so it
+> doesn't really matter where they are placed in _this_ patchset. and b)
+> they will remain completely dormant until they are backed up with
+> driver bindings, so there is no harm in putting them in first.
 
-hmm, the current structure is of the form of testing for each feature and 
-doing a applicable action if the flag is set. So it also is extensible for 
-future flags and checking for the absence of an attribute while the rest of 
-the conditionals check for the presence also might make the code harder to 
-read.
+Okay, was not aware of that those were to be merged on it's own.
 
-So for me the current variant somehow looks more intuitive.
+>
+>> 2. Moreover, I think it would be enough to group the definitions
+>> patches into one patch or at least significant fewer. Same feeling
+>> about the patches were you remove the AUXDATA, this would simplify the
+>> review for me.
+>
+> It's generally accepted that lots of lines of code split over a
+> greater number of patches (so long as they are in consistent groups of
+> functionality) are easier to review and thus have a greater chance of
+> acceptance. It also makes things like reverting easier and bisecting
+> more precise (rather than finding a big patch using bisect, then
+> having to complete a manual mini-bisect to find the offending change.
+>
+> Arnd provides the maths for calculating the ease of upstreaming a
+> patch, which he calls 'weight' (NB: this is from memory, it might be a
+> little off):
+>
+> (patch_weight * patch_weight) * patch_count = delta_weight
+>
+> So if we had a 100 lines split over 2 patches, it would be:
+>
+> (50 * 50) * 2 = 5000
+>
+> Whereas if we split those lines over 4 patches we would see:
+>
+> (25 * 25) * 4 = 1000
+>
+> Thus, by this convention it would (generally) considered to be twice
+> as difficult to upstream - at least that's the theory. There is a more
+> extravagant formula for calculating how difficult it would be to
+> upstream an entire tree of delta if a) all patches were contained on a
+> single branch compared to b) if patches were split into topic branches.
+>
+> Something like:
+>
+> ((patch_weight * patch_weight) * patch_count)  *
+>  (patch_weight * patch_weight) * patch_count)) *
+>   branch_count = delta_weight
+>
+> So following on from the example above and placing 100 lines over 2
+> patches on 1 branch you would get:
+>
+> (((25 * 25) * 4) * (25 * 25) * 4) * 1 = 6250000
+>
+> Whereas if you spread the patches over two branches you'd have:
+>
+> (((25 * 25) * 2) * (25 * 25) * 2) * 2 = 3125000
+>
+> Obviously the branch number comparison works better with the larger
+> numbers you'd expect to find in a typical downstream BSP, but you get
+> the idea.
+>
+> </tangent> ... whoops, sorry! :)
 
-But I'll just let the majority decide ;-)
+Hehe, I stopped reading long before this line. Go ahead, keep them as
+is then! :-)
 
-
-Heiko
+>
+>> 3. The rest will be commented per patch.
+>>
+>> Kind regards
+>> Ulf Hansson
+>>
+>> >
+>> >  arch/arm/boot/dts/dbx5x0.dtsi    |   94 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+>> >  arch/arm/boot/dts/snowball.dts   |    3 ++-
+>> >  arch/arm/mach-ux500/cpu-db8500.c |   36 +--------------------------
+>> >  drivers/clk/ux500/u8500_clk.c    |  154 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+>> >  4 files changed, 249 insertions(+), 38 deletions(-)
+>> >
+>> >
+>
+> --
+> Lee Jones
+> Linaro ST-Ericsson Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
