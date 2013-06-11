@@ -1,106 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741Ab3FKLT4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:19:56 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:42697 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752553Ab3FKLTy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:19:54 -0400
-Message-ID: <51B709F5.8070909@gmail.com>
-Date: Tue, 11 Jun 2013 21:28:53 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S1753341Ab3FKL3G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:29:06 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:38254 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751700Ab3FKL3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 07:29:04 -0400
+To: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v3 0/7] arm: add basic support for Rockchip Cortex-A9 SoCs
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
+Date: Tue, 11 Jun 2013 13:28:52 +0200
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: H Hartley Sweeten <hartleys@visionengravers.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-pwm@vger.kernel.org,
-        linux-doc@vger.kernel.org, poeschel@lemonage.de, rob@landley.net
-Subject: Re: [PATCH v4] pwm: add sysfs interface
-References: <201306101612.07708.hartleys@visionengravers.com> <20130611101432.GA932@manwe>
-In-Reply-To: <20130611101432.GA932@manwe>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201306111328.52679.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/13 20:14, Thierry Reding wrote:
+Third version of basic Rockchip A9 support.
 
-> On Mon, Jun 10, 2013 at 04:12:07PM -0700, H Hartley Sweeten wrote:
-> [...]
->> +What:		/sys/class/pwm/pwmchipN/pwmX/duty
->> +Date:		May 2013
->> +KernelVersion:	3.11
->> +Contact:	H Hartley Sweeten <hsweeten@visionengravers.com>
->> +Description:
->> +		Sets the PWM duty cycle in nanoseconds.
-> 
-> Sorry, I should've been more specific before. I'd like this to be named
-> duty_cycle. We now have the pwm_{set,get}_duty_cycle() accessors and I'd
-> like to eventually use the spelled-out form consistently.
-> 
->> +config PWM_SYSFS
->> +	bool "/sys/class/pwm/... (sysfs interface)"
->> +	depends on SYSFS
->> +	help
->> +	  Say Y here to provide a sysfs interface to control PWMs.
->> +
->> +	  For every instance of a PWM device there is a pwmchipN directory
->> +	  created in /sys/class/pwm. Use the export attribute to request
->> +	  a PWM to be accessible from userspace and the unexport attribute
->> +	  to return the PWM to the kernel. Each exported PWM will have a
->> +	  pwmX directory in the pwmchipN it is associated with.
-> 
-> I have a small quibble with this. Introducing options like this make it
-> increasingly difficult to compile-test all the various combinations, so
-> I'd like to see this converted to a form that will play well with the
-> IS_ENABLED() macro. We already have the same issue with DEBUG_FS, only
-> to a lesser degree because it doesn't have an additional PWM-specific
-> Kconfig option.
-> 
-> In order not to burden you with too much work, one option for now would
-> be to unconditionally build the sysfs.c file and use something along
-> these lines in pwmchip_sysfs_{,un}export():
-> 
-> 	if (!IS_ENABLED(CONFIG_PWM_SYSFS))
-> 		return;
-> 
-> Which should allow the compiler to throw away all PWM_SYSFS-related
-> code in that file, leaving an empty function.
+The biggest change is probably the missing pinctrl driver which already found
+its way into the pinctrl tree from Linus Walleij as part of the pinconfig
+generalisation and should find its way into the mainline kernel from there.
+But startup of rk3066-based boards will even suceed without the pinctrl driver
+present, as the bootloader sets up the most basic pins like uarts too.
 
 
-Won't that also cause the compiler to spew a bunch of warnings about
-unreachable code in the !CONFIG_PWM_SYSFS case? We have the
-unreachable() macro, but that isn't supported nicely by all compilers.
+Changes since v2:
+- use common (pending review) HIWORD_MASK clock flag from Haojian Zhuang and me
+- pinctrl driver is already in the pinctrl tree
+- add core-periph clock that supplies the twd
+- split "mmc: dw_mmc-pltfm: add Rockchip variant" into move and feature parts
+  as suggested by Andy Shevchenko
 
-If CONFIG_SYSFS is not enabled and sysfs.c is using functions that now
-do not exist, that will cause compile errors, since the compiler will
-still attempt to compile all of the code, even though it will remove
-most of it after doing so.
-
-Also, any functions that are extern will also end up generating empty
-functions in the kernel binary (static linkage functions should
-disappear completely). This is obviously very negligible in size,
-but using a proper Kconfig option results in zero size if the option
-is compiled out.
-
-> It's not the optimal
-> solution, which would require the sysfs code to go into core.c and be
-> conditionalized there, but it's good enough. I can always go and clean
-> up that code later (maybe doing the same for DEBUG_FS while at it).
-
-> 
-
-> The big advantage of this is that we get full compile coverage of the
-> sysfs interface, whether it's enabled or not. Calling an empty function
-> once when the chip is registered is an acceptable overhead.
+Changes since v1:
+- addressed Linus Walleij's comments to the pinctrl driver, including the
+  move to generic pinconfig (hopefully I did catch all)
+- renamed the clocks to use the SoC name of the initial user
+  as suggested by Olof Johansson
+- fixed the uart address, found by Arnd Bergmann
+- address Arnd's comments on the board file (use of_clk_init and friends,
+  remove map_io, use real soc names)
+- removed Makefile.boot as suggested by Thomas Petazzoni
 
 
-Why not just make CONFIG_PWM_SYSFS default y, so that if CONFIG_SYSFS is
-enabled (which should be true for the vast majority of test configs) that
-pwm sysfs is also enabled?
+Dependencies:
+- the 3 clock changes of "support Hisilicon SoC" from Haojian Zhuang
+- "mmc: dw_mmc: Add support DW SD/MMC driver on SOCFPGA" from Dinh Nguyen that
+  moves the SDMMC_CMD_USE_HOLD_REG constant into the common header, which is
+  required on these Rockchip SoCs 
+- series "dw_apb_timer: osc as sched_clock, clocks and clocksource_of support"
 
-The IS_ENABLED method just seems very messy for a very small gain.
 
-~Ryan
+Heiko Stuebner (7):
+  clk: divider: add flag to limit possible dividers to even numbers
+  mmc: dw_mmc-pltfm: remove static from dw_mci_pltfm_remove
+  mmc: dw_mmc-pltfm: move probe and remove below dt match table
+  mmc: dw_mmc-pltfm: add Rockchip variant
+  clk: add basic Rockchip rk3066a clock support
+  arm: add debug uarts for rockchip rk29xx and rk3xxx series
+  arm: add basic support for Rockchip RK3066a boards
+
+ arch/arm/Kconfig                        |    2 +
+ arch/arm/Kconfig.debug                  |   34 +++
+ arch/arm/Makefile                       |    1 +
+ arch/arm/boot/dts/rk3066a-clocks.dtsi   |  467 +++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/rk3066a.dtsi          |  390 ++++++++++++++++++++++++++
+ arch/arm/include/debug/rockchip.S       |   42 +++
+ arch/arm/mach-rockchip/Kconfig          |   16 +
+ arch/arm/mach-rockchip/Makefile         |    1 +
+ arch/arm/mach-rockchip/rockchip.c       |   54 ++++
+ drivers/clk/Makefile                    |    1 +
+ drivers/clk/clk-divider.c               |   14 +-
+ drivers/clk/rockchip/Makefile           |    6 +
+ drivers/clk/rockchip/clk-rockchip-pll.c |  131 +++++++++
+ drivers/clk/rockchip/clk-rockchip-pll.h |   19 ++
+ drivers/clk/rockchip/clk-rockchip.c     |  330 ++++++++++++++++++++++
+ drivers/mmc/host/dw_mmc-pltfm.c         |   47 +++-
+ include/linux/clk-provider.h            |    2 +
+ 17 files changed, 1541 insertions(+), 16 deletions(-)
+ create mode 100644 arch/arm/boot/dts/rk3066a-clocks.dtsi
+ create mode 100644 arch/arm/boot/dts/rk3066a.dtsi
+ create mode 100644 arch/arm/include/debug/rockchip.S
+ create mode 100644 arch/arm/mach-rockchip/Kconfig
+ create mode 100644 arch/arm/mach-rockchip/Makefile
+ create mode 100644 arch/arm/mach-rockchip/rockchip.c
+ create mode 100644 drivers/clk/rockchip/Makefile
+ create mode 100644 drivers/clk/rockchip/clk-rockchip-pll.c
+ create mode 100644 drivers/clk/rockchip/clk-rockchip-pll.h
+ create mode 100644 drivers/clk/rockchip/clk-rockchip.c
+
+-- 
+1.7.2.3
+
