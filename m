@@ -1,154 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755731Ab3FKTZc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 15:25:32 -0400
-Received: from tulikuusama.dnainternet.net ([83.102.40.132]:38552 "EHLO
-	tulikuusama.dnainternet.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752127Ab3FKTZa (ORCPT
+	id S1755796Ab3FKT1B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 15:27:01 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:58321 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754587Ab3FKT07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 15:25:30 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -1
-Subject: [PATCH] crypto: aesni_intel - fix accessing of unaligned memory
-To: linux-crypto@vger.kernel.org
-From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Cc: Dave Jones <davej@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Date: Tue, 11 Jun 2013 22:25:22 +0300
-Message-ID: <20130611192522.12995.57979.stgit@localhost6.localdomain6>
-In-Reply-To: <20130611191746.GA31945@redhat.com>
-References: <20130611191746.GA31945@redhat.com>
-User-Agent: StGit/0.16
+	Tue, 11 Jun 2013 15:26:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAE9FiQXCj+H=h+SPcfW82dBK5n6aDGuX+pmg7zr+6mKtdD4nMg@mail.gmail.com>
+References: <20130611184113.GA2288@www.outflux.net>
+	<CAE9FiQXCj+H=h+SPcfW82dBK5n6aDGuX+pmg7zr+6mKtdD4nMg@mail.gmail.com>
+Date: Tue, 11 Jun 2013 12:26:58 -0700
+X-Google-Sender-Auth: xLyiLxZcEqT_kz7jwDXCHpqMStE
+Message-ID: <CAGXu5jLnHTuMSQbLUPbJXAADMwOZAeNv_WyknuEiggCaqA5gpw@mail.gmail.com>
+Subject: Re: [PATCH] x86, boot: access cmdline when loaded high
+From: Kees Cook <keescook@chromium.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Gokul Caushik <caushik1@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new XTS code for aesni_intel uses input buffers directly as memory operands
-for pxor instructions, which causes crash if those buffers are not aligned to
-16 bytes.
+On Tue, Jun 11, 2013 at 12:17 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Tue, Jun 11, 2013 at 11:41 AM, Kees Cook <keescook@chromium.org> wrote:
+>> The __cmdline_find_option routine requires that the kernel cmdline be
+>> located under 0x10000. When running the compressed boot code, if the
+>> cmdline is loaded above this range, it will be ignored. This breaks
+>> recognition of things like "earlyprintk=...". Since the compressed boot
+>> code is already tricking the cmdline routines about locations, take it all
+>> the way and access the cmdline via offset instead of via actual location.
+>
+> Hi,
+>
+> What is point of the patch?
+> It looks like it try to fix one bug, but it doesn't,
+> as there is no bug out there.
+>
+> Before the patch, command line that is loaded high
+> can be processed correctly in arch/x86/boot/compressed/cmdline.c.
 
-Patch changes XTS code to handle unaligned memory correctly, by loading memory
-with movdqu instead.
+It can't. Here is the code from arch/x86/boot/cmdline.c:
 
-Reported-by: Dave Jones <davej@redhat.com>
-Tested-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
----
- arch/x86/crypto/aesni-intel_asm.S |   48 +++++++++++++++++++++++++------------
- 1 file changed, 32 insertions(+), 16 deletions(-)
+int __cmdline_find_option(unsigned long cmdline_ptr, const char
+*option, char *buffer, int bufsize)
+...
+        if (!cmdline_ptr)
+                return -1;      /* No command line */
 
-diff --git a/arch/x86/crypto/aesni-intel_asm.S b/arch/x86/crypto/aesni-intel_asm.S
-index 62fe22c..477e9d7 100644
---- a/arch/x86/crypto/aesni-intel_asm.S
-+++ b/arch/x86/crypto/aesni-intel_asm.S
-@@ -2681,56 +2681,68 @@ ENTRY(aesni_xts_crypt8)
- 	addq %rcx, KEYP
- 
- 	movdqa IV, STATE1
--	pxor 0x00(INP), STATE1
-+	movdqu 0x00(INP), INC
-+	pxor INC, STATE1
- 	movdqu IV, 0x00(OUTP)
- 
- 	_aesni_gf128mul_x_ble()
- 	movdqa IV, STATE2
--	pxor 0x10(INP), STATE2
-+	movdqu 0x10(INP), INC
-+	pxor INC, STATE2
- 	movdqu IV, 0x10(OUTP)
- 
- 	_aesni_gf128mul_x_ble()
- 	movdqa IV, STATE3
--	pxor 0x20(INP), STATE3
-+	movdqu 0x20(INP), INC
-+	pxor INC, STATE3
- 	movdqu IV, 0x20(OUTP)
- 
- 	_aesni_gf128mul_x_ble()
- 	movdqa IV, STATE4
--	pxor 0x30(INP), STATE4
-+	movdqu 0x30(INP), INC
-+	pxor INC, STATE4
- 	movdqu IV, 0x30(OUTP)
- 
- 	call *%r11
- 
--	pxor 0x00(OUTP), STATE1
-+	movdqu 0x00(OUTP), INC
-+	pxor INC, STATE1
- 	movdqu STATE1, 0x00(OUTP)
- 
- 	_aesni_gf128mul_x_ble()
- 	movdqa IV, STATE1
--	pxor 0x40(INP), STATE1
-+	movdqu 0x40(INP), INC
-+	pxor INC, STATE1
- 	movdqu IV, 0x40(OUTP)
- 
--	pxor 0x10(OUTP), STATE2
-+	movdqu 0x10(OUTP), INC
-+	pxor INC, STATE2
- 	movdqu STATE2, 0x10(OUTP)
- 
- 	_aesni_gf128mul_x_ble()
- 	movdqa IV, STATE2
--	pxor 0x50(INP), STATE2
-+	movdqu 0x50(INP), INC
-+	pxor INC, STATE2
- 	movdqu IV, 0x50(OUTP)
- 
--	pxor 0x20(OUTP), STATE3
-+	movdqu 0x20(OUTP), INC
-+	pxor INC, STATE3
- 	movdqu STATE3, 0x20(OUTP)
- 
- 	_aesni_gf128mul_x_ble()
- 	movdqa IV, STATE3
--	pxor 0x60(INP), STATE3
-+	movdqu 0x60(INP), INC
-+	pxor INC, STATE3
- 	movdqu IV, 0x60(OUTP)
- 
--	pxor 0x30(OUTP), STATE4
-+	movdqu 0x30(OUTP), INC
-+	pxor INC, STATE4
- 	movdqu STATE4, 0x30(OUTP)
- 
- 	_aesni_gf128mul_x_ble()
- 	movdqa IV, STATE4
--	pxor 0x70(INP), STATE4
-+	movdqu 0x70(INP), INC
-+	pxor INC, STATE4
- 	movdqu IV, 0x70(OUTP)
- 
- 	_aesni_gf128mul_x_ble()
-@@ -2738,16 +2750,20 @@ ENTRY(aesni_xts_crypt8)
- 
- 	call *%r11
- 
--	pxor 0x40(OUTP), STATE1
-+	movdqu 0x40(OUTP), INC
-+	pxor INC, STATE1
- 	movdqu STATE1, 0x40(OUTP)
- 
--	pxor 0x50(OUTP), STATE2
-+	movdqu 0x50(OUTP), INC
-+	pxor INC, STATE2
- 	movdqu STATE2, 0x50(OUTP)
- 
--	pxor 0x60(OUTP), STATE3
-+	movdqu 0x60(OUTP), INC
-+	pxor INC, STATE3
- 	movdqu STATE3, 0x60(OUTP)
- 
--	pxor 0x70(OUTP), STATE4
-+	movdqu 0x70(OUTP), INC
-+	pxor INC, STATE4
- 	movdqu STATE4, 0x70(OUTP)
- 
- 	ret
+        cptr = cmdline_ptr & 0xf;
+        set_fs(cmdline_ptr >> 4);
 
+        while (cptr < 0x10000 && (c = rdfs8(cptr++))) {
+
+
+This means that if get_cmd_line_ptr() returns an address >= 0x10000,
+__cmdline_find_option will simply ignore the cmdline.
+
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>>  arch/x86/boot/compressed/cmdline.c |   21 +++++++++------------
+>>  1 file changed, 9 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/arch/x86/boot/compressed/cmdline.c b/arch/x86/boot/compressed/cmdline.c
+>> index bffd73b..2e39280 100644
+>> --- a/arch/x86/boot/compressed/cmdline.c
+>> +++ b/arch/x86/boot/compressed/cmdline.c
+>> @@ -2,32 +2,29 @@
+>>
+>>  #ifdef CONFIG_EARLY_PRINTK
+>>
+>> +/*
+>> + * We know where the cmdline is, so just retain it, and use a non-zero
+>> + * offset to trick __cmdline_find_option into running.
+>> + */
+>>  static unsigned long fs;
+>>  static inline void set_fs(unsigned long seg)
+>>  {
+>> -       fs = seg << 4;  /* shift it back */
+>> +       fs = real_mode->hdr.cmd_line_ptr;
+>> +       fs |= (u64)real_mode->ext_cmd_line_ptr << 32;
+>>  }
+>>  typedef unsigned long addr_t;
+>>  static inline char rdfs8(addr_t addr)
+>>  {
+>> -       return *((char *)(fs + addr));
+>> +       return *((char *)(fs + addr - 0x1));
+>>  }
+>>  #include "../cmdline.c"
+>> -static unsigned long get_cmd_line_ptr(void)
+>> -{
+>> -       unsigned long cmd_line_ptr = real_mode->hdr.cmd_line_ptr;
+>> -
+>> -       cmd_line_ptr |= (u64)real_mode->ext_cmd_line_ptr << 32;
+>> -
+>> -       return cmd_line_ptr;
+>> -}
+>>  int cmdline_find_option(const char *option, char *buffer, int bufsize)
+>>  {
+>> -       return __cmdline_find_option(get_cmd_line_ptr(), option, buffer, bufsize);
+>> +       return __cmdline_find_option(0x1, option, buffer, bufsize);
+>
+> that's funny, why do you pick 0x1 here?
+> why not use 0x10 or 0?
+
+0 cannot be used because of the !cmdline_ptr test in
+__cmdline_find_option. There is no reason it's 1, except that it's the
+further possible from 0x10000 without being 0.
+
+-Kees
+
+>
+>>  }
+>>  int cmdline_find_option_bool(const char *option)
+>>  {
+>> -       return __cmdline_find_option_bool(get_cmd_line_ptr(), option);
+>> +       return __cmdline_find_option_bool(0x1, option);
+>>  }
+>>
+>>  #endif
+>> --
+>> 1.7.9.5
+>>
+>>
+>> --
+>> Kees Cook
+>> Chrome OS Security
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+--
+Kees Cook
+Chrome OS Security
