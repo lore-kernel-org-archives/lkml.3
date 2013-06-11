@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755741Ab3FKRJh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 13:09:37 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48184 "EHLO bear.ext.ti.com"
+	id S1755809Ab3FKRMp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 13:12:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58821 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755685Ab3FKRJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 13:09:33 -0400
-From: Illia Smyrnov <illia.smyrnov@ti.com>
-To: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Mark Brown <broonie@kernel.org>
-CC: Illia Smyrnov <illia.smyrnov@ti.com>, Daniel Mack <zonque@gmail.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        <spi-devel-general@lists.sourceforge.net>,
-        <linux-omap@vger.kernel.org>
-Subject: [PATCH v2 0/2] spi: omap2-mcspi: add FIFO buffer support
-Date: Tue, 11 Jun 2013 20:09:13 +0300
-Message-ID: <1370970556-11713-1-git-send-email-illia.smyrnov@ti.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1751598Ab3FKRMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 13:12:43 -0400
+Date: Tue, 11 Jun 2013 19:12:41 +0200
+From: David Sterba <dsterba@suse.cz>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: axboe@kernel.dk, tytso@mit.edu, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Neil Brown <neilb@suse.de>,
+        Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com
+Subject: Re: [PATCH 22/26] block: Make generic_make_request handle arbitrary
+ sized bios
+Message-ID: <20130611171241.GA5316@twin.jikos.cz>
+Reply-To: dsterba@suse.cz
+Mail-Followup-To: dsterba@suse.cz,
+	Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk,
+	tytso@mit.edu, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org, Neil Brown <neilb@suse.de>,
+	Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com
+References: <1370744348-15407-1-git-send-email-koverstreet@google.com>
+ <1370744348-15407-23-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370744348-15407-23-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches introduce FIFO support for TI OMAP4/OMAP5 MCSPI controller.
-Using FIFO unload the DMA and improve data throughput. On Blaze (OMAP 4460) 
-ethernet throughput with MTU 1500 was increased:
-* for TX from 6.9476 Mbps (FIFO disabled) to 7.7982 Mbps (FIFO enabled),
-* for RX from 6.5120 Mbps (FIFO disabled) to 7.5461 Mbps (FIFO enabled).
+On Sat, Jun 08, 2013 at 07:19:04PM -0700, Kent Overstreet wrote:
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -467,6 +468,7 @@ struct request_queue {
+>  #define QUEUE_FLAG_SECDISCARD  17	/* supports SECDISCARD */
+>  #define QUEUE_FLAG_SAME_FORCE  18	/* force complete on same CPU */
+>  #define QUEUE_FLAG_DEAD        19	/* queue tear-down finished */
+> +#define QUEUE_FLAG_LARGEBIOS   19	/* no limits on bio size */
+                                  ^^
+				  20 ?
 
-The FIFO sanity test on OMAP5 Panda board also has been done. 
-
-The FIFO could be enabled for MCSPI by "ti,spi-fifo-enabled" in DT. If enabled,
-driver will calculate the largest possible FIFO buffer size taking into account
-MCSPI FIFO constraints for each SPI transfer.
-
-The MCSPI FIFO constraints are:
-* FIFO depth size defined as a multiple of the SPI word length;
-* transfer's data size is a multiple of FIFO depth;
-* transfer's words count less or equal 65535.
-
-Also FIFO buffer with 1 byte size is insignificant, so driver will setup FIFO if
-calculated size is within the 2 to 64 bytes range.
-
---------------------
-v2:
-* driver calculate and setup optimal FIFO size for each SPI transfer;
-* "ti,spi-fifo-enabled" parameter in MCSPI DT node to enable FIFO;
-* no FIFO settings in SPI slaves nodes in DT;
-* Matthias Brugger patch was excluded from patch set.
-
-Illia Smyrnov (2):
-  spi: omap2-mcspi: Move bytes per word calculation to the function
-  spi: omap2-mcspi: Add FIFO buffer support
-
- Documentation/devicetree/bindings/spi/omap-spi.txt |    8 +
- drivers/spi/spi-omap2-mcspi.c                      |  173 +++++++++++++++++---
- 2 files changed, 158 insertions(+), 23 deletions(-)
-
+david
