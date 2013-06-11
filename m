@@ -1,98 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755635Ab3FKRIa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 13:08:30 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:61247 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754968Ab3FKRI3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 13:08:29 -0400
+	id S1755766Ab3FKRJj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 13:09:39 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48186 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755695Ab3FKRJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 13:09:34 -0400
+From: Illia Smyrnov <illia.smyrnov@ti.com>
+To: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Mark Brown <broonie@kernel.org>
+CC: Illia Smyrnov <illia.smyrnov@ti.com>, Daniel Mack <zonque@gmail.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        <spi-devel-general@lists.sourceforge.net>,
+        <linux-omap@vger.kernel.org>
+Subject: [PATCH v2 1/2] spi: omap2-mcspi: Move bytes per word calculation to the function
+Date: Tue, 11 Jun 2013 20:09:14 +0300
+Message-ID: <1370970556-11713-2-git-send-email-illia.smyrnov@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1370970556-11713-1-git-send-email-illia.smyrnov@ti.com>
+References: <1370970556-11713-1-git-send-email-illia.smyrnov@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQWOvP+tTQ0Vakc9f-t61dv6Lo6dJm0+oH1On5k=6nvbXw@mail.gmail.com>
-References: <1370845742-18919-1-git-send-email-yinghai@kernel.org>
-	<CA+QCeVRdOOuh4aVZsQhucBNETnDp5OhAZguigLTbyD9bOONO1A@mail.gmail.com>
-	<CAE9FiQXacn2abVKeBhTazgRBCS9EtiACs=fbB6_Y27ZpLOTq3w@mail.gmail.com>
-	<CAKL7Q7rxkXDx49CgSjoVJSbER7ou+-yXa-yZg4hT4ktG_4gvHw@mail.gmail.com>
-	<CAKL7Q7qUwTGexhr+8d88qN94YSCfSeOS-oLMh=KQ2NiOZRLbLQ@mail.gmail.com>
-	<CAE9FiQWOvP+tTQ0Vakc9f-t61dv6Lo6dJm0+oH1On5k=6nvbXw@mail.gmail.com>
-Date: Tue, 11 Jun 2013 19:08:27 +0200
-Message-ID: <CAKL7Q7pbdVKFy=5Kq_KHnJ=rg0OjsUXFpTQrcdZXksR6qixszQ@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] x86, range: Do not add new blank slot with add_range_with_merge
-From: "Joshua C." <joshuacov@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Sergey Meirovich <rathamahata@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/6/11 Yinghai Lu <yinghai@kernel.org>:
-> On Tue, Jun 11, 2013 at 3:04 AM, Joshua C. <joshuacov@gmail.com> wrote:
->> 2013/6/11 Joshua C. <joshuacov@gmail.com>:
->>> 2013/6/10 Yinghai Lu <yinghai@kernel.org>:
->>>> On Mon, Jun 10, 2013 at 3:55 AM, Sergey Meirovich <rathamahata@gmail.com> wrote:
->>>>
->>>>> patches 1,2(latest one) have not helped me on 3.9.5:
->>>>
->>>> So v1:
->>>> https://patchwork.kernel.org/patch/2694981/
->>>> https://patchwork.kernel.org/patch/2694971/
->>>>
->>>> and v2:
->>>> https://patchwork.kernel.org/patch/2695891/
->>>> https://patchwork.kernel.org/patch/2695881/
->>>>
->>>> Neither of two versions fix the problem on your setup?
->>>>
->>>> Can you post boot log with mtrr_cleanup_debug on 3.9.4?
->>>>
->>>> Thanks
->>>>
->>>> Yinghai
->>>
->>> I got some warnings when trying to build v2 of the patches:
->>>
->>> # make -s ARCH=x86_64 V=1 -j4 bzImage
->>> kernel/range.c: In function 'add_range_with_merge':
->>> kernel/range.c:51:3: error: implicit declaration of function 'memmove'
->>> [-Werror=implicit-function-declaration]
->>> kernel/range.c:51:3: warning: incompatible implicit declaration of
->>> built-in function 'memmove' [enabled by default]
->>> cc1: some warnings being treated as errors
->>> scripts/Makefile.build:307: recipe for target 'kernel/range.o' failed
->>> make[1]: *** [kernel/range.o] Error 1
->>> Makefile:793: recipe for target 'kernel' failed
->>> make: *** [kernel] Error 2
->>> make: *** Waiting for unfinished jobs....
->>>
->>>
->>> --
->>> --joshua
->
-> it does not report warning when I compile it with
->
-> gcc (SUSE Linux) 4.7.2 20130108 [gcc-4_7-branch revision 195012
->
->>
->> A trivial fix for the above warnings:
->>
->> --- linux-2.6.orig/kernel/range.c
->> +++ linux-2.6/kernel/range.c
->> @@ -4,6 +4,7 @@
->>  #include <linux/kernel.h>
->>  #include <linux/init.h>
->>  #include <linux/sort.h>
->> +#include <linux/string.h>
->>
->>  #include <linux/range.h>
->>
+Introduce mcspi_bytes_per_word function as replacement for the next code
+fragment:
 
-I use fedora17 with gcc version 4.7.3 (git checkout on 20130411). I
-have no idea where this came from...
+int c = (word_len <= 8)  ? 1 :
+	(word_len <= 16) ? 2 :
+	/* word_len <= 32 */ 4;
 
+This code used 2 times in current driver code and will be used 2 times in
+the next FIFO buffer support patch. Replace it with inline function with clear
+name to improve code legibility.
 
---
---joshua
+Signed-off-by: Illia Smyrnov <illia.smyrnov@ti.com>
+---
+ drivers/spi/spi-omap2-mcspi.c |   19 +++++++++++++------
+ 1 files changed, 13 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+index 86d2158..707f1db 100644
+--- a/drivers/spi/spi-omap2-mcspi.c
++++ b/drivers/spi/spi-omap2-mcspi.c
+@@ -187,6 +187,16 @@ static inline void mcspi_write_chconf0(const struct spi_device *spi, u32 val)
+ 	mcspi_read_cs_reg(spi, OMAP2_MCSPI_CHCONF0);
+ }
+ 
++static inline int mcspi_bytes_per_word(int word_len)
++{
++	if (word_len <= 8)
++		return 1;
++	else if (word_len <= 16)
++		return 2;
++	else /* word_len <= 32 */
++		return 4;
++}
++
+ static void omap2_mcspi_set_dma_req(const struct spi_device *spi,
+ 		int is_read, int enable)
+ {
+@@ -433,10 +443,9 @@ omap2_mcspi_rx_dma(struct spi_device *spi, struct spi_transfer *xfer,
+ 			else /* word_len <= 32 */
+ 				((u32 *)xfer->rx_buf)[elements++] = w;
+ 		} else {
++			int bytes_per_word = mcspi_bytes_per_word(word_len);
+ 			dev_err(&spi->dev, "DMA RX penultimate word empty");
+-			count -= (word_len <= 8)  ? 2 :
+-				(word_len <= 16) ? 4 :
+-				/* word_len <= 32 */ 8;
++			count -= (bytes_per_word << 1);
+ 			omap2_mcspi_set_enable(spi, 1);
+ 			return count;
+ 		}
+@@ -454,9 +463,7 @@ omap2_mcspi_rx_dma(struct spi_device *spi, struct spi_transfer *xfer,
+ 			((u32 *)xfer->rx_buf)[elements] = w;
+ 	} else {
+ 		dev_err(&spi->dev, "DMA RX last word empty");
+-		count -= (word_len <= 8)  ? 1 :
+-			 (word_len <= 16) ? 2 :
+-		       /* word_len <= 32 */ 4;
++		count -= mcspi_bytes_per_word(word_len);
+ 	}
+ 	omap2_mcspi_set_enable(spi, 1);
+ 	return count;
+-- 
+1.7.0.4
+
