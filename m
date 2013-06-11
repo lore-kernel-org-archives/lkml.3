@@ -1,115 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090Ab3FKGvP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 02:51:15 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35494 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751388Ab3FKGvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 02:51:14 -0400
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: "Nori, Sekhar" <nsekhar@ti.com>
-CC: "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 00/11] Convert GPIO Davinci to platform driver
-Thread-Topic: [PATCH 00/11] Convert GPIO Davinci to platform driver
-Thread-Index: AQHOVrs+awgkY/qffE2oH2hm7rW75JkpeXoAgAVE88CAAMlDgIAAmNlA
-Date: Tue, 11 Jun 2013 06:49:27 +0000
-Deferred-Delivery: Tue, 11 Jun 2013 06:49:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3EAD9BD5@DBDE04.ent.ti.com>
-References: <1369206634-6778-1-git-send-email-avinashphilip@ti.com>
- <51B1958C.3050704@ti.com>
- <518397C60809E147AF5323E0420B992E3EAD887C@DBDE04.ent.ti.com>
- <51B6A9F5.5020300@ti.com>
-In-Reply-To: <51B6A9F5.5020300@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1753465Ab3FKGwp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 02:52:45 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:50454 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753125Ab3FKGwn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 02:52:43 -0400
+From: Matt Fleming <matt@console-pimps.org>
+To: linux-efi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Zach Bobroff <zacharyb@ami.com>, <stable@vger.kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH] x86, efi: retry ExitBootServices() on failure
+Date: Tue, 11 Jun 2013 07:52:38 +0100
+Message-Id: <1370933558-10128-1-git-send-email-matt@console-pimps.org>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5B6pJ5p010008
 
-On Tue, Jun 11, 2013 at 10:09:17, Nori, Sekhar wrote:
-> 
-> On 6/10/2013 2:32 PM, Philip, Avinash wrote:
-> > On Fri, Jun 07, 2013 at 13:40:52, Nori, Sekhar wrote:
-> >> Hi Avinash,
-> >>
-> >> On 5/22/2013 12:40 PM, Philip Avinash wrote:
-> >>> GPIO Davinci driver converted to platform driver to support DT booting.
-> >>> In this patch series
-> >>> - Cleaned gpio Davinci driver code with proper commenting style and appropriate
-> >>>   variable names.
-> >>> - Create platform driver for GPIO Davinci in da8xx and dm* platforms and removed
-> >>>   gpio related member updation in davinci_soc_info structure.
-> >>> - DT support added for da850 board and tested on da850 EVM.
-> >>> - Remove soc_info reference in the gpio davinci driver and start uses
-> >>>   gpiolib interface.
-> >>
-> >> Can you please document which platforms this series was tested on and how?
-> > 
-> > This series being tested on da850 EVM. Tested by setting VPIF_DOUT[12] as GPIO
-> > pin [2] and reading GPIO status from GPIO[7,4]
-> > 
-> > GPIO[7,4] will reflect the status switch number 8 of the S7 dip switch in DA850 EVM.
-> > 
-> > Testing Procedure
-> > 
-> > Requirement GPIO SYSFS support [1]
-> > 
-> > #echo 116 > /sys/class/gpio/export
-> > setting GPIO[7,4] as input GPIO
-> > #echo "in" > /sys/class/gpio/gpio116/direction
-> > #mount -t debugfs debugfs /sys/kernel/debug
-> > Reading GPIO pin status
-> > #cat /sys/kernel/debug/gpio
-> > #echo 116 > /sys/class/gpio/unexport
-> > 
-> > 
-> > 1. Enable GPIO SYSFS support through menconfig
-> > --- GPIO Support
-> > 	[ ]   Debug GPIO calls
-> >                [ ]   /sys/class/gpio/... (sysfs interface)
-> >  
-> > 2. Patch for pinmux support for GPIO[7,4] is available at
-> > https://github.com/avinashphilip/am335x_linux/commits/linux_davinci_v3.10_soc_gpio
-> 
-> Can you check interrupt generation too since there are significant
-> changes in that area? You can generate an interrupt using the MMC/SD
-> card detect pin (inserting an MMC/SD card into the slot should generate
-> an interrupt). You can also write a new value to any GPIO pin. That will
-> also trigger an interrupt.
+From: Zach Bobroff <zacharyb@ami.com>
 
-I have tested GPIO interrupt with GPIO[7,4] by inserting a kernel module in DA850 EVM.
-For GPIO interrupt generation DIP switch position changed.
+ExitBootServices is absolutely supposed to return a failure if any
+ExitBootServices event handler changes the memory map.  Basically the
+get_map loop should run again if ExitBootServices returns an error the
+first time.  I would say it would be fair that if ExitBootServices gives
+an error the second time then Linux would be fine in returning control
+back to BIOS.
 
-Source code for GPIO test kernel module is shared at
-https://github.com/avinashphilip/am335x_linux/commit/affc0c1841beacd8430af689f7f12dcab0cbaf28
+The second change is the following line:
 
-> 
-> It will be nice if you can test this series on DM365 as well (read/write
-> as well as interrupt).
+again:
+        size += sizeof(*mem_map) * 2;
 
-Don't have any DM365 board for testing.
+Originally you were incrementing it by the size of one memory map entry.
+The issue here is all related to the low_alloc routine you are using.
+In this routine you are making allocations to get the memory map itself.
+Doing this allocation or allocations can affect the memory map by more
+than one record.
 
-Thanks
-Avinash
+[ mfleming - changelog, code style ]
+Signed-off-by: Zach Bobroff <zacharyb@ami.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+---
+ arch/x86/boot/compressed/eboot.c | 20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
 
-> 
-> Thanks,
-> Sekhar
-> 
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 35ee62f..7c6e5d9 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -1037,18 +1037,20 @@ static efi_status_t exit_boot(struct boot_params *boot_params,
+ 	efi_memory_desc_t *mem_map;
+ 	efi_status_t status;
+ 	__u32 desc_version;
++	bool called_exit = false;
+ 	u8 nr_entries;
+ 	int i;
+ 
+ 	size = sizeof(*mem_map) * 32;
+ 
+ again:
+-	size += sizeof(*mem_map);
++	size += sizeof(*mem_map) * 2;
+ 	_size = size;
+ 	status = low_alloc(size, 1, (unsigned long *)&mem_map);
+ 	if (status != EFI_SUCCESS)
+ 		return status;
+ 
++get_map:
+ 	status = efi_call_phys5(sys_table->boottime->get_memory_map, &size,
+ 				mem_map, &key, &desc_size, &desc_version);
+ 	if (status == EFI_BUFFER_TOO_SMALL) {
+@@ -1074,8 +1076,20 @@ again:
+ 	/* Might as well exit boot services now */
+ 	status = efi_call_phys2(sys_table->boottime->exit_boot_services,
+ 				handle, key);
+-	if (status != EFI_SUCCESS)
+-		goto free_mem_map;
++	if (status != EFI_SUCCESS) {
++		/*
++		 * ExitBootServices() will fail if any of the event
++		 * handlers change the memory map. In which case, we
++		 * must be prepared to retry, but only once so that
++		 * we're guaranteed to exit on repeated failures instead
++		 * of spinning forever.
++		 */
++		if (called_exit)
++			goto free_mem_map;
++
++		called_exit = true;
++		goto get_map;
++	}
+ 
+ 	/* Historic? */
+ 	boot_params->alt_mem_k = 32 * 1024;
+-- 
+1.8.1.4
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
