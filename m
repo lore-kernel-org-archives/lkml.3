@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757097Ab3FKURF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:17:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41901 "EHLO
+	id S1757165Ab3FKUR0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:17:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41897 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756610Ab3FKUDu (ORCPT
+	with ESMTP id S1756621Ab3FKUDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Jun 2013 16:03:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Ellerman <michael@ellerman.id.au>,
+        Michael Neuling <mikey@neuling.org>,
+        "Gorelik, Jacob (335F)" <jacob.gorelik@jpl.nasa.gov>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 44/79] powerpc/perf: Fix deadlock caused by calling printk() in PMU exception
-Date: Tue, 11 Jun 2013 13:03:10 -0700
-Message-Id: <20130611195321.682207518@linuxfoundation.org>
+Subject: [ 43/79] powerpc/hw_breakpoints: Add DABRX cpu feature to fix 32-bit regression
+Date: Tue, 11 Jun 2013 13:03:09 -0700
+Message-Id: <20130611195321.560201431@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -27,55 +28,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Ellerman <michael@ellerman.id.au>
+From: Michael Neuling <mikey@neuling.org>
 
-commit 6772faa1ba22eba18d087c2459030a683b65be57 upstream.
+commit 82a9f16adc12f51c3f8ea59a7c3c120241aff836 upstream.
 
-In commit bc09c21 "Fix finding overflowed PMC in interrupt" we added
-a printk() to the PMU exception handler. Unfortunately that is not safe.
+When introducing support for DABRX in 4474ef0, we broke older 32-bit CPUs
+that don't have that register.
 
-The problem is that the PMU exception may run even when interrupts are
-soft disabled, aka NMI context. We do this so that we can profile parts
-of the kernel that have interrupts soft-disabled.
+Some CPUs have a DABR but not DABRX.  Configuration are:
+- No 32bit CPUs have DABRX but some have DABR.
+- POWER4+ and below have the DABR but no DABRX.
+- 970 and POWER5 and above have DABR and DABRX.
+- POWER8 has DAWR, hence no DABRX.
 
-But by calling printk() from the exception handler, we can potentially
-deadlock in the printk code on logbuf_lock, eg:
+This introduces CPU_FTR_DABRX and sets it on appropriate CPUs.  We use
+the top 64 bits for CPU FTR bits since only 64 bit CPUs have this.
 
-  [c00000038ba575c0] c000000000081928 .vprintk_emit+0xa8/0x540
-  [c00000038ba576a0] c0000000007bcde8 .printk+0x48/0x58
-  [c00000038ba57710] c000000000076504 .perf_event_interrupt+0x2d4/0x490
-  [c00000038ba57810] c00000000001f6f8 .performance_monitor_exception+0x48/0x60
-  [c00000038ba57880] c0000000000032cc performance_monitor_common+0x14c/0x180
-  --- Exception: f01 (Performance Monitor) at c0000000007b25d4 ._raw_spin_lock_irq
-  +0x64/0xc0
-  [c00000038ba57bf0] c00000000007ed90 .devkmsg_read+0xd0/0x5a0
-  [c00000038ba57d00] c0000000001c2934 .vfs_read+0xc4/0x1e0
-  [c00000038ba57d90] c0000000001c2cd8 .SyS_read+0x58/0xd0
-  [c00000038ba57e30] c000000000009d54 syscall_exit+0x0/0x98
-  --- Exception: c01 (System Call) at 00001fffffbf6f7c
-  SP (3ffff6d4de10) is in userspace
+Processors that don't have the DABRX will still work as they will fall
+back to software filtering these breakpoints via perf_exclude_event().
 
-Fix it by making sure we only call printk() when we are not in NMI
-context.
-
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Reported-by: "Gorelik, Jacob (335F)" <jacob.gorelik@jpl.nasa.gov>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/perf/core-book3s.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/include/asm/cputable.h |   17 ++++++++++-------
+ arch/powerpc/kernel/process.c       |    3 ++-
+ 2 files changed, 12 insertions(+), 8 deletions(-)
 
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -1528,7 +1528,7 @@ static void perf_event_interrupt(struct
- 			}
- 		}
- 	}
--	if ((!found) && printk_ratelimit())
-+	if (!found && !nmi && printk_ratelimit())
- 		printk(KERN_WARNING "Can't find PMC that caused IRQ\n");
+--- a/arch/powerpc/include/asm/cputable.h
++++ b/arch/powerpc/include/asm/cputable.h
+@@ -175,6 +175,7 @@ extern const char *powerpc_base_platform
+ #define CPU_FTR_BCTAR			LONG_ASM_CONST(0x0100000000000000)
+ #define	CPU_FTR_HAS_PPR			LONG_ASM_CONST(0x0200000000000000)
+ #define CPU_FTR_DAWR			LONG_ASM_CONST(0x0400000000000000)
++#define CPU_FTR_DABRX			LONG_ASM_CONST(0x0800000000000000)
  
- 	/*
+ #ifndef __ASSEMBLY__
+ 
+@@ -391,19 +392,20 @@ extern const char *powerpc_base_platform
+ 	    CPU_FTR_PPCAS_ARCH_V2 | CPU_FTR_CTRL | CPU_FTR_ARCH_201 | \
+ 	    CPU_FTR_ALTIVEC_COMP | CPU_FTR_CAN_NAP | CPU_FTR_MMCRA | \
+ 	    CPU_FTR_CP_USE_DCBTZ | CPU_FTR_STCX_CHECKS_ADDRESS | \
+-	    CPU_FTR_HVMODE)
++	    CPU_FTR_HVMODE | CPU_FTR_DABRX)
+ #define CPU_FTRS_POWER5	(CPU_FTR_USE_TB | CPU_FTR_LWSYNC | \
+ 	    CPU_FTR_PPCAS_ARCH_V2 | CPU_FTR_CTRL | \
+ 	    CPU_FTR_MMCRA | CPU_FTR_SMT | \
+ 	    CPU_FTR_COHERENT_ICACHE | CPU_FTR_PURR | \
+-	    CPU_FTR_STCX_CHECKS_ADDRESS | CPU_FTR_POPCNTB)
++	    CPU_FTR_STCX_CHECKS_ADDRESS | CPU_FTR_POPCNTB | CPU_FTR_DABRX)
+ #define CPU_FTRS_POWER6 (CPU_FTR_USE_TB | CPU_FTR_LWSYNC | \
+ 	    CPU_FTR_PPCAS_ARCH_V2 | CPU_FTR_CTRL | \
+ 	    CPU_FTR_MMCRA | CPU_FTR_SMT | \
+ 	    CPU_FTR_COHERENT_ICACHE | \
+ 	    CPU_FTR_PURR | CPU_FTR_SPURR | CPU_FTR_REAL_LE | \
+ 	    CPU_FTR_DSCR | CPU_FTR_UNALIGNED_LD_STD | \
+-	    CPU_FTR_STCX_CHECKS_ADDRESS | CPU_FTR_POPCNTB | CPU_FTR_CFAR)
++	    CPU_FTR_STCX_CHECKS_ADDRESS | CPU_FTR_POPCNTB | CPU_FTR_CFAR | \
++	    CPU_FTR_DABRX)
+ #define CPU_FTRS_POWER7 (CPU_FTR_USE_TB | CPU_FTR_LWSYNC | \
+ 	    CPU_FTR_PPCAS_ARCH_V2 | CPU_FTR_CTRL | CPU_FTR_ARCH_206 |\
+ 	    CPU_FTR_MMCRA | CPU_FTR_SMT | \
+@@ -412,7 +414,7 @@ extern const char *powerpc_base_platform
+ 	    CPU_FTR_DSCR | CPU_FTR_SAO  | CPU_FTR_ASYM_SMT | \
+ 	    CPU_FTR_STCX_CHECKS_ADDRESS | CPU_FTR_POPCNTB | CPU_FTR_POPCNTD | \
+ 	    CPU_FTR_ICSWX | CPU_FTR_CFAR | CPU_FTR_HVMODE | \
+-	    CPU_FTR_VMX_COPY | CPU_FTR_HAS_PPR)
++	    CPU_FTR_VMX_COPY | CPU_FTR_HAS_PPR | CPU_FTR_DABRX)
+ #define CPU_FTRS_POWER8 (CPU_FTR_USE_TB | CPU_FTR_LWSYNC | \
+ 	    CPU_FTR_PPCAS_ARCH_V2 | CPU_FTR_CTRL | CPU_FTR_ARCH_206 |\
+ 	    CPU_FTR_MMCRA | CPU_FTR_SMT | \
+@@ -427,14 +429,15 @@ extern const char *powerpc_base_platform
+ 	    CPU_FTR_PPCAS_ARCH_V2 | CPU_FTR_CTRL | \
+ 	    CPU_FTR_ALTIVEC_COMP | CPU_FTR_MMCRA | CPU_FTR_SMT | \
+ 	    CPU_FTR_PAUSE_ZERO  | CPU_FTR_CELL_TB_BUG | CPU_FTR_CP_USE_DCBTZ | \
+-	    CPU_FTR_UNALIGNED_LD_STD)
++	    CPU_FTR_UNALIGNED_LD_STD | CPU_FTR_DABRX)
+ #define CPU_FTRS_PA6T (CPU_FTR_USE_TB | CPU_FTR_LWSYNC | \
+ 	    CPU_FTR_PPCAS_ARCH_V2 | CPU_FTR_ALTIVEC_COMP | \
+-	    CPU_FTR_PURR | CPU_FTR_REAL_LE)
++	    CPU_FTR_PURR | CPU_FTR_REAL_LE | CPU_FTR_DABRX)
+ #define CPU_FTRS_COMPATIBLE	(CPU_FTR_USE_TB | CPU_FTR_PPCAS_ARCH_V2)
+ 
+ #define CPU_FTRS_A2 (CPU_FTR_USE_TB | CPU_FTR_SMT | CPU_FTR_DBELL | \
+-		     CPU_FTR_NOEXECUTE | CPU_FTR_NODSISRALIGN | CPU_FTR_ICSWX)
++		     CPU_FTR_NOEXECUTE | CPU_FTR_NODSISRALIGN | \
++		     CPU_FTR_ICSWX | CPU_FTR_DABRX )
+ 
+ #ifdef __powerpc64__
+ #ifdef CONFIG_PPC_BOOK3E
+--- a/arch/powerpc/kernel/process.c
++++ b/arch/powerpc/kernel/process.c
+@@ -392,7 +392,8 @@ static inline int __set_dabr(unsigned lo
+ static inline int __set_dabr(unsigned long dabr, unsigned long dabrx)
+ {
+ 	mtspr(SPRN_DABR, dabr);
+-	mtspr(SPRN_DABRX, dabrx);
++	if (cpu_has_feature(CPU_FTR_DABRX))
++		mtspr(SPRN_DABRX, dabrx);
+ 	return 0;
+ }
+ #else
 
 
