@@ -1,86 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab3FKQ6E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 12:58:04 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:38502 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753666Ab3FKQ6C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 12:58:02 -0400
-Message-ID: <51B757E1.2080205@metafoo.de>
-Date: Tue, 11 Jun 2013 19:01:21 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	id S1755465Ab3FKRBA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 13:01:00 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:19255
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754154Ab3FKRA6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 13:00:58 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
+Date: Tue, 11 Jun 2013 12:00:51 -0500
+From: Scott Wood <scottwood@freescale.com>
+Subject: Re: [BUG] PCI related panic on powerpc based board with 3.10-rcX
+To: Rojhalat Ibrahim <imr@rtschenk.de>
+CC: Michael Guntsche <michael.guntsche@it-loops.com>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+In-Reply-To: <10631172.HfDeIDHqX3@pcimr> (from imr@rtschenk.de on Tue Jun 11
+	02:24:28 2013)
+X-Mailer: Balsa 2.4.12
+Message-ID: <1370970051.18413.24@snotra>
 MIME-Version: 1.0
-To: Jonathan Cameron <jic23@kernel.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Lee Jones <lee.jones@linaro.org>,
-        =?UTF-8?B?QmVub8OudCBDb3Vzc29u?= <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: am335x: TSC & ADC reworking including DT pieces, take 4
-References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de> <20130611142358.GG29135@zurbaran> <20130611160415.GA379@core.coreip.homeip.net> <20130611161506.GK29135@zurbaran> <1565f2fb-7f16-4910-8fa2-cd5700e8986d@email.android.com>
-In-Reply-To: <1565f2fb-7f16-4910-8fa2-cd5700e8986d@email.android.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2013 06:27 PM, Jonathan Cameron wrote:
+On 06/11/2013 02:24:28 AM, Rojhalat Ibrahim wrote:
+> On Monday 10 June 2013 17:52:33 Scott Wood wrote:
+> > On 06/10/2013 12:07:43 PM, Michael Guntsche wrote:
+> > > Good evening,
+> > >
+> > > This patch does not fix the problem, during boot the kernel still
+> > > panics. I had a closer look at the commit and the following patch
+> > > fixes it for me....
+> > >
+> > > diff --git a/arch/powerpc/sysdev/fsl_pci.c
+> > > b/arch/powerpc/sysdev/fsl_pci.c
+> > > index 028ac1f..21b687f 100644
+> > > --- a/arch/powerpc/sysdev/fsl_pci.c
+> > > +++ b/arch/powerpc/sysdev/fsl_pci.c
+> > > @@ -814,7 +814,7 @@ int __init mpc83xx_add_bridge(struct  
+> device_node
+> > > *dev)
+> > >
+> > >                 if (ret)
+> > >
+> > >                         goto err0;
+> > >
+> > >         } else {
+> > >
+> > > -               fsl_setup_indirect_pci(hose, rsrc_cfg.start,
+> > > +               setup_indirect_pci(hose, rsrc_cfg.start,
+> > >
+> > >                                        rsrc_cfg.start + 4, 0);
+> > >
+> > >         }
+> >
+> > The only difference here is that you're not setting hose->ops to
+> > fsl_indirect_pci_ops.  Do you know why that is helping, and what
+> > hose->ops is set to instead?
+> >
+> > -Scott
 > 
+> The difference is only the read function in hose->ops, which is set to
+> indirect_read_config instead of fsl_indirect_read_config.
 > 
-> Samuel Ortiz <sameo@linux.intel.com> wrote:
-> 
->> Hi Dmitry,
->>
->> On Tue, Jun 11, 2013 at 09:04:16AM -0700, Dmitry Torokhov wrote:
->>> On Tue, Jun 11, 2013 at 04:23:58PM +0200, Samuel Ortiz wrote:
->>>> Hi Sebastian,
->>>>
->>>> On Tue, Jun 11, 2013 at 01:30:46PM +0200, Sebastian Andrzej Siewior
->> wrote:
->>>>> I believe the whole thing should go via the MFD tree. It touches
->> also
->>>>> input & iio subsystem. I collected ACKs where I got some in the
->> meantime.
->>>> Please fix your commit logs, and your subject lines. It should be
->> e.g.
->>>> mfd: input: ti_am335x_adc: Blablabla
->>>>
->>>> if it's mostly an mfd patch that also touches an input driver.
->>>>
->>>> Then, this is a pretty big patchset, with iio, input and mfd all
->> mixed
->>>> together and it is likely to create merge conflicts.
->>>> From what I can see from it, and please correct me if I'm
->>>> wrong, the iio and input changes depend on the mfd ones, and not
->> the
->>>> other way around. If that's so, I'm going to ask you to reshuffle
->> your
->>>> patch set and separate the MFD changes from the iio and input ones.
->> I'll
->>>> take the MFD ones and will create an immutable branch for Jonathan
->> and
->>>> Dmitry to pull from and apply the iio and input changes on top of
->> it.
->>>> Merge conflicts should be mostly avoided that way.
->>>
->>> I purposely left this driver alone as I expected it would be merged
->>> through MFD tree, so there should not be any merging issues on my
->> side.
->> Thanks for the notice.
->> Jonathan, can you guarantee the same for the iio parts ?
-> I have also been avoiding taking any of these and there are unlikely to be any iio wide changes merging at this stage in cycle.  Hence these going through MFD is best plan.
-> 
-> Lars raised a couple of issues so would be best to wait for his ack if he hasn't already looked at this revision.
+> fsl_indirect_read_config calls fsl_pcie_check_link, which is where  
+> the Oops
+> occurs.
 
-The IIO bits look fine to me in this version.
+Why is fsl_pcie_check_link being called for non-PCIe buses?
 
-- Lars
+> Mike, can you find out where exactly in fsl_pcie_check_link the bad  
+> access
+> happens? Enabling CONFIG_DEBUG_BUGVERBOSE might help.
 
+Why does it matter?  You shouldn't be calling that function at all.
+
+-Scott
