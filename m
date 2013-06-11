@@ -1,107 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756194Ab3FKVJY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 17:09:24 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:54747 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756041Ab3FKVJX (ORCPT
+	id S1756377Ab3FKVP0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 17:15:26 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:56094 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756041Ab3FKVPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 17:09:23 -0400
-Date: Tue, 11 Jun 2013 14:09:14 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Waiman Long <waiman.long@hp.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, torvalds@linux-foundation.org,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>
-Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
-Message-ID: <20130611210914.GJ5146@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130609193657.GA13392@linux.vnet.ibm.com>
- <51B748DA.2070306@hp.com>
- <20130611163607.GG5146@linux.vnet.ibm.com>
- <51B76F77.6020004@hp.com>
- <20130611194927.GX5146@linux.vnet.ibm.com>
- <1370984210.9844.225.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370984210.9844.225.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061121-7606-0000-0000-00000C623DFE
+	Tue, 11 Jun 2013 17:15:24 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCHv2] irqchip: Add support for TI-NSPIRE irqchip
+To: Daniel Tang <dt.tangr@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <AA3869CB-3720-4F1F-8D5C-DDEB3BF4BDC0@gmail.com>
+References: <AA3869CB-3720-4F1F-8D5C-DDEB3BF4BDC0@gmail.com>
+Date: Tue, 11 Jun 2013 22:15:20 +0100
+Message-Id: <20130611211520.CDC943E0D8D@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 04:56:50PM -0400, Steven Rostedt wrote:
-> On Tue, 2013-06-11 at 12:49 -0700, Paul E. McKenney wrote:
+On Sat, 8 Jun 2013 11:58:55 +1000, Daniel Tang <dt.tangr@gmail.com> wrote:
+> This patch adds support for the interrupt controllers found in some
+> TI-Nspire models.
 > 
-> > +config TICKET_LOCK_QUEUED
-> > +	bool "Dynamically switch between ticket and queued locking"
-> > +	depends on SMP
-> > +	default n
-> > +	---help---
-> > +	  Enable dynamic switching between ticketlock and queued locking
-> > +	  on a per-lock basis.  This option will slow down low-contention
-> > +	  acquisition and release very slightly (additional conditional
-> > +	  in release path), but will provide more efficient operation at
-> > +	  high levels of lock contention.  High-contention operation will
-> > +	  not be quite as efficient as would be a pure queued lock, but
-> > +	  this dynamic approach consumes less memory than queud locks
-> > +	  and also runs faster at low levels of contention.
-> > +
-> > +	  Say "Y" if you are running on a large system with a workload
-> > +	  that is likely to result in high levels of contention.
-> > +
-> > +	  Say "N" if you are unsure.
-> > +
-> > +config TICKET_LOCK_QUEUED_SWITCH
-> > +	int "When to switch from ticket to queued locking"
-> > +	depends on TICKET_LOCK_QUEUED
-> > +	default 8
-> > +	range 3 32
-> > +	---help---
-> > +	  Specify how many tasks should be spinning on the lock before
-> > +	  switching to queued mode.  Systems with low-latency memory/cache
-> > +	  interconnects will prefer larger numbers, while extreme low-latency
-> > +	  and real-time workloads will prefer a smaller number.  Of course,
-> > +	  extreme real-time workloads would be even happier if contention
-> > +	  on the locks were reduced to the point that there was never any
-> > +	  need for queued locking in the first place.
+> FIQ support was taken out to simplify the driver
+> code and may be added in later. Since Linux on this platform doesn't
+> really use FIQs, this wasn't really that important in the first
+> place.
 > 
-> Are you sure real-time wants low numbers? I would think that real-time
-> would want this off. This is just a way to help prevent cache ping
-> ponging, but it adds to non-deterministic behavior. As I mentioned
-> before, even though you fixed the thundering herd on setup, once the
-> queue is set, then we will get a thundering herd of tasks trying to
-> queue itself, and the task that was spinning the longest could very well
-> become the one at the end of the FIFO.
+> Changes from v1 to v2:
+> * Converted to use generic IRQ chips.
+> * Removed FIQ for now to simplify driver code.
+> * Based against tip/irq/core and uses IRQ domain support for generic 
+>   chips.
+> 
+> 
+> Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
 
-Me?  I think that real-time just wants contention to remain low, so that
-this sort of thing isn't needed in the first place.  And now that you
-mention it, I suppose that is one of the few things that real-time and
-real-fast workloads have in common.
+Looks right to me.
 
-But if you had some mixed workload on a large system that was mostly
-real-fast, but had a real-time component, and if the real-fast portion
-needed TICKET_LOCK_QUEUED=y, then I would guess that the real-time
-portion would want a relatively low number for TICKET_LOCK_QUEUED_SWITCH.
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-							Thanx, Paul
+> ---
+>  .../interrupt-controller/lsi,zevio-intc.txt        |  18 +++
+>  drivers/irqchip/Makefile                           |   1 +
+>  drivers/irqchip/irq-zevio.c                        | 129 +++++++++++++++++++++
+>  3 files changed, 148 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/interrupt-controller/lsi,zevio-intc.txt
+>  create mode 100644 drivers/irqchip/irq-zevio.c
+> 
+> diff --git a/Documentation/devicetree/bindings/interrupt-controller/lsi,zevio-intc.txt b/Documentation/devicetree/bindings/interrupt-controller/lsi,zevio-intc.txt
+> new file mode 100644
+> index 0000000..aee38e7
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/interrupt-controller/lsi,zevio-intc.txt
+> @@ -0,0 +1,18 @@
+> +TI-NSPIRE interrupt controller
+> +
+> +Required properties:
+> +- compatible: Compatible property value should be "lsi,zevio-intc".
+> +
+> +- reg: Physical base address of the controller and length of memory mapped
+> +	region.
+> +
+> +- interrupt-controller : Identifies the node as an interrupt controller
+> +
+> +Example:
+> +
+> +interrupt-controller {
+> +	compatible = "lsi,zevio-intc";
+> +	interrupt-controller;
+> +	reg = <0xDC000000 0x1000>;
+> +	#interrupt-cells = <1>;
+> +};
+> diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+> index cda4cb5..f313d14 100644
+> --- a/drivers/irqchip/Makefile
+> +++ b/drivers/irqchip/Makefile
+> @@ -15,4 +15,5 @@ obj-$(CONFIG_SIRF_IRQ)			+= irq-sirfsoc.o
+>  obj-$(CONFIG_RENESAS_INTC_IRQPIN)	+= irq-renesas-intc-irqpin.o
+>  obj-$(CONFIG_RENESAS_IRQC)		+= irq-renesas-irqc.o
+>  obj-$(CONFIG_VERSATILE_FPGA_IRQ)	+= irq-versatile-fpga.o
+> +obj-$(CONFIG_ARCH_NSPIRE)		+= irq-zevio.o
+>  obj-$(CONFIG_ARCH_VT8500)		+= irq-vt8500.o
+> diff --git a/drivers/irqchip/irq-zevio.c b/drivers/irqchip/irq-zevio.c
+> new file mode 100644
+> index 0000000..92e6c7b
+> --- /dev/null
+> +++ b/drivers/irqchip/irq-zevio.c
+> @@ -0,0 +1,129 @@
+> +/*
+> + *  linux/drivers/irqchip/irq-zevio.c
+> + *
+> + *  Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2, as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#include <linux/io.h>
+> +#include <linux/irq.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+> +
+> +#include <asm/mach/irq.h>
+> +#include <asm/exception.h>
+> +
+> +#include "irqchip.h"
+> +
+> +#define IO_STATUS	0x000
+> +#define IO_RAW_STATUS	0x004
+> +#define IO_ENABLE	0x008
+> +#define IO_DISABLE	0x00C
+> +#define IO_CURRENT	0x020
+> +#define IO_RESET	0x028
+> +#define IO_MAX_PRIOTY	0x02C
+> +
+> +#define IO_IRQ_BASE	0x000
+> +#define IO_FIQ_BASE	0x100
+> +
+> +#define IO_INVERT_SEL	0x200
+> +#define IO_STICKY_SEL	0x204
+> +#define IO_PRIORITY_SEL	0x300
+> +
+> +#define MAX_INTRS	32
+> +#define FIQ_START	MAX_INTRS
+> +
+> +static struct irq_domain *zevio_irq_domain;
+> +static void __iomem *zevio_irq_io;
+> +
+> +static void zevio_irq_ack(struct irq_data *irqd)
+> +{
+> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(irqd);
+> +	struct irq_chip_regs *regs =
+> +		&container_of(irqd->chip, struct irq_chip_type, chip)->regs;
+> +
+> +	irq_gc_lock(gc);
+> +	readl(gc->reg_base + regs->ack);
+> +	irq_gc_unlock(gc);
+> +}
+> +
+> +static void init_base(void __iomem *base)
+> +{
+> +	/* Disable all interrupts */
+> +	writel(~0, base + IO_DISABLE);
+> +
+> +	/* Accept interrupts of all priorities */
+> +	writel(0xF, base + IO_MAX_PRIOTY);
+> +
+> +	/* Reset existing interrupts */
+> +	readl(base + IO_RESET);
+> +}
+> +
+> +asmlinkage void __exception_irq_entry zevio_handle_irq(struct pt_regs *regs)
+> +{
+> +	int irqnr;
+> +
+> +	while (readl(zevio_irq_io + IO_STATUS)) {
+> +		irqnr = readl(zevio_irq_io + IO_CURRENT);
+> +		irqnr = irq_find_mapping(zevio_irq_domain, irqnr);
+> +		handle_IRQ(irqnr, regs);
+> +	};
+> +}
+> +
+> +static int __init zevio_of_init(struct device_node *node,
+> +				struct device_node *parent)
+> +{
+> +	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
+> +	struct irq_chip_generic *gc;
+> +	int ret;
+> +
+> +	if (WARN_ON(zevio_irq_io || zevio_irq_domain))
+> +		return -EBUSY;
+> +
+> +	zevio_irq_io = of_iomap(node, 0);
+> +	BUG_ON(!zevio_irq_io);
+> +
+> +	/* Do not invert interrupt status bits */
+> +	writel(~0, zevio_irq_io + IO_INVERT_SEL);
+> +
+> +	/* Disable sticky interrupts */
+> +	writel(0, zevio_irq_io + IO_STICKY_SEL);
+> +
+> +	/* We don't use IRQ priorities. Set each IRQ to highest priority. */
+> +	memset_io(zevio_irq_io + IO_PRIORITY_SEL, 0, MAX_INTRS * sizeof(u32));
+> +
+> +	/* Init IRQ and FIQ */
+> +	init_base(zevio_irq_io + IO_IRQ_BASE);
+> +	init_base(zevio_irq_io + IO_FIQ_BASE);
+> +
+> +	zevio_irq_domain = irq_domain_add_linear(node, MAX_INTRS,
+> +						 &irq_generic_chip_ops, NULL);
+> +	BUG_ON(!zevio_irq_domain);
+> +
+> +	ret = irq_alloc_domain_generic_chips(zevio_irq_domain, MAX_INTRS, 1,
+> +					     "zevio_intc", handle_level_irq,
+> +					     clr, 0, IRQ_GC_INIT_MASK_CACHE);
+> +	BUG_ON(ret);
+> +
+> +	gc = irq_get_domain_generic_chip(zevio_irq_domain, 0);
+> +	gc->reg_base				= zevio_irq_io;
+> +	gc->chip_types[0].chip.irq_ack		= zevio_irq_ack;
+> +	gc->chip_types[0].chip.irq_mask		= irq_gc_mask_disable_reg;
+> +	gc->chip_types[0].chip.irq_unmask	= irq_gc_unmask_enable_reg;
+> +	gc->chip_types[0].regs.mask		= IO_IRQ_BASE + IO_ENABLE;
+> +	gc->chip_types[0].regs.enable		= IO_IRQ_BASE + IO_ENABLE;
+> +	gc->chip_types[0].regs.disable		= IO_IRQ_BASE + IO_DISABLE;
+> +	gc->chip_types[0].regs.ack		= IO_IRQ_BASE + IO_RESET;
+> +
+> +	set_handle_irq(zevio_handle_irq);
+> +
+> +	pr_info("TI-NSPIRE classic IRQ controller\n");
+> +	return 0;
+> +}
+> +
+> +IRQCHIP_DECLARE(zevio_irq, "lsi,zevio-intc", zevio_of_init);
+> -- 
+> 1.8.1.3
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-> -- Steve
-> 
-> 
-> 
-> > +
-> > +	  Take the default if you are unsure.
-> > diff --git a/kernel/Makefile b/kernel/Makefile
-> 
-> 
-
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
