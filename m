@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757360Ab3FKU1A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:27:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41750 "EHLO
+	id S1757344Ab3FKU07 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:26:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41754 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756444Ab3FKUDY (ORCPT
+	with ESMTP id S1756282Ab3FKUDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Jun 2013 16:03:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ying Xue <ying.xue@windriver.com>,
-        Lotfi Manseur <lotfi.manseur@gmail.com>
-Subject: [ 29/32] USB: ftdi_sio: Quiet sparse noise about using plain integer was NULL pointer
-Date: Tue, 11 Jun 2013 13:03:28 -0700
-Message-Id: <20130611200129.458595649@linuxfoundation.org>
+        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+Subject: [ 30/32] drm/gma500: Increase max resolution for mode setting
+Date: Tue, 11 Jun 2013 13:03:29 -0700
+Message-Id: <20130611200129.562507375@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611200126.214442788@linuxfoundation.org>
 References: <20130611200126.214442788@linuxfoundation.org>
@@ -27,32 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ying Xue <ying.xue@windriver.com>
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 
-commit a816e3113b63753c330ca4751ea1d208e93e3015 upstream.
+commit cbbd379aa43890f36da934f5af619d2fb8ec3d87 upstream.
 
-Pointers should not be compared to plain integers.
-Quiets the sparse warning:
-warning: Using plain integer as NULL pointer
+By having a higher max resolution we can now set up a virtual
+framebuffer that spans several monitors. 4096 should be ok since we're
+gen 3 or higher and should be enough for most dual head setups.
 
-Signed-off-by: Ying Xue <ying.xue@windriver.com>
-Cc: Lotfi Manseur <lotfi.manseur@gmail.com>
+Bugzilla:
+https://bugs.launchpad.net/ubuntu/+source/xserver-xorg-video-modesetting/+bug/1169147
+Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/gma500/framebuffer.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -2173,7 +2173,7 @@ static void ftdi_set_termios(struct tty_
+--- a/drivers/gpu/drm/gma500/framebuffer.c
++++ b/drivers/gpu/drm/gma500/framebuffer.c
+@@ -782,8 +782,8 @@ void psb_modeset_init(struct drm_device
+ 	for (i = 0; i < dev_priv->num_pipe; i++)
+ 		psb_intel_crtc_init(dev, i, mode_dev);
  
- 	cflag = termios->c_cflag;
+-	dev->mode_config.max_width = 2048;
+-	dev->mode_config.max_height = 2048;
++	dev->mode_config.max_width = 4096;
++	dev->mode_config.max_height = 4096;
  
--	if (old_termios == 0)
-+	if (!old_termios)
- 		goto no_skip;
- 
- 	if (old_termios->c_cflag == termios->c_cflag
+ 	psb_setup_outputs(dev);
+ }
 
 
