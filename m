@@ -1,117 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755063Ab3FKLPS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:15:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38532 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754627Ab3FKLJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:09:45 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org
-Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
-        swhiteho@redhat.com, Trond.Myklebust@netapp.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-afs@lists.infradead.org, ceph-devel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
-Subject: [PATCH v2 03/14] locks: comment cleanups and clarifications
-Date: Tue, 11 Jun 2013 07:08:57 -0400
-Message-Id: <1370948948-31784-4-git-send-email-jlayton@redhat.com>
-In-Reply-To: <1370948948-31784-1-git-send-email-jlayton@redhat.com>
-References: <1370948948-31784-1-git-send-email-jlayton@redhat.com>
+	id S1753741Ab3FKLT4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:19:56 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:42697 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752553Ab3FKLTy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 07:19:54 -0400
+Message-ID: <51B709F5.8070909@gmail.com>
+Date: Tue, 11 Jun 2013 21:28:53 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: H Hartley Sweeten <hartleys@visionengravers.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-pwm@vger.kernel.org,
+        linux-doc@vger.kernel.org, poeschel@lemonage.de, rob@landley.net
+Subject: Re: [PATCH v4] pwm: add sysfs interface
+References: <201306101612.07708.hartleys@visionengravers.com> <20130611101432.GA932@manwe>
+In-Reply-To: <20130611101432.GA932@manwe>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/locks.c         |   21 +++++++++++++--------
- include/linux/fs.h |   18 ++++++++++++++++++
- 2 files changed, 31 insertions(+), 8 deletions(-)
+On 11/06/13 20:14, Thierry Reding wrote:
 
-diff --git a/fs/locks.c b/fs/locks.c
-index e3140b8..1e6301b 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -518,9 +518,10 @@ static void locks_insert_block(struct file_lock *blocker,
- 		list_add(&waiter->fl_link, &blocked_list);
- }
- 
--/* Wake up processes blocked waiting for blocker.
-- * If told to wait then schedule the processes until the block list
-- * is empty, otherwise empty the block list ourselves.
-+/*
-+ * Wake up processes blocked waiting for blocker.
-+ *
-+ * Must be called with the file_lock_lock held!
-  */
- static void locks_wake_up_blocks(struct file_lock *blocker)
- {
-@@ -806,6 +807,11 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
- 	}
- 
- 	lock_flocks();
-+	/*
-+	 * New lock request. Walk all POSIX locks and look for conflicts. If
-+	 * there are any, either return error or put the request on the
-+	 * blocker's list of waiters and the global blocked_list.
-+	 */
- 	if (request->fl_type != F_UNLCK) {
- 		for_each_lock(inode, before) {
- 			fl = *before;
-@@ -844,7 +850,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
- 		before = &fl->fl_next;
- 	}
- 
--	/* Process locks with this owner.  */
-+	/* Process locks with this owner. */
- 	while ((fl = *before) && posix_same_owner(request, fl)) {
- 		/* Detect adjacent or overlapping regions (if same lock type)
- 		 */
-@@ -930,10 +936,9 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
- 	}
- 
- 	/*
--	 * The above code only modifies existing locks in case of
--	 * merging or replacing.  If new lock(s) need to be inserted
--	 * all modifications are done bellow this, so it's safe yet to
--	 * bail out.
-+	 * The above code only modifies existing locks in case of merging or
-+	 * replacing. If new lock(s) need to be inserted all modifications are
-+	 * done below this, so it's safe yet to bail out.
- 	 */
- 	error = -ENOLCK; /* "no luck" */
- 	if (right && left == right && !new_fl2)
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index b9d7816..94105d2 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -926,6 +926,24 @@ int locks_in_grace(struct net *);
- /* that will die - we need it for nfs_lock_info */
- #include <linux/nfs_fs_i.h>
- 
-+/*
-+ * struct file_lock represents a generic "file lock". It's used to represent
-+ * POSIX byte range locks, BSD (flock) locks, and leases. It's important to
-+ * note that the same struct is used to represent both a request for a lock and
-+ * the lock itself, but the same object is never used for both.
-+ *
-+ * FIXME: should we create a separate "struct lock_request" to help distinguish
-+ * these two uses?
-+ *
-+ * The i_flock list is ordered by:
-+ *
-+ * 1) lock type -- FL_LEASEs first, then FL_FLOCK, and finally FL_POSIX
-+ * 2) lock owner
-+ * 3) lock range start
-+ * 4) lock range end
-+ *
-+ * Obviously, the last two criteria only matter for POSIX locks.
-+ */
- struct file_lock {
- 	struct file_lock *fl_next;	/* singly linked list for this inode  */
- 	struct list_head fl_link;	/* doubly linked list of all locks */
--- 
-1.7.1
+> On Mon, Jun 10, 2013 at 04:12:07PM -0700, H Hartley Sweeten wrote:
+> [...]
+>> +What:		/sys/class/pwm/pwmchipN/pwmX/duty
+>> +Date:		May 2013
+>> +KernelVersion:	3.11
+>> +Contact:	H Hartley Sweeten <hsweeten@visionengravers.com>
+>> +Description:
+>> +		Sets the PWM duty cycle in nanoseconds.
+> 
+> Sorry, I should've been more specific before. I'd like this to be named
+> duty_cycle. We now have the pwm_{set,get}_duty_cycle() accessors and I'd
+> like to eventually use the spelled-out form consistently.
+> 
+>> +config PWM_SYSFS
+>> +	bool "/sys/class/pwm/... (sysfs interface)"
+>> +	depends on SYSFS
+>> +	help
+>> +	  Say Y here to provide a sysfs interface to control PWMs.
+>> +
+>> +	  For every instance of a PWM device there is a pwmchipN directory
+>> +	  created in /sys/class/pwm. Use the export attribute to request
+>> +	  a PWM to be accessible from userspace and the unexport attribute
+>> +	  to return the PWM to the kernel. Each exported PWM will have a
+>> +	  pwmX directory in the pwmchipN it is associated with.
+> 
+> I have a small quibble with this. Introducing options like this make it
+> increasingly difficult to compile-test all the various combinations, so
+> I'd like to see this converted to a form that will play well with the
+> IS_ENABLED() macro. We already have the same issue with DEBUG_FS, only
+> to a lesser degree because it doesn't have an additional PWM-specific
+> Kconfig option.
+> 
+> In order not to burden you with too much work, one option for now would
+> be to unconditionally build the sysfs.c file and use something along
+> these lines in pwmchip_sysfs_{,un}export():
+> 
+> 	if (!IS_ENABLED(CONFIG_PWM_SYSFS))
+> 		return;
+> 
+> Which should allow the compiler to throw away all PWM_SYSFS-related
+> code in that file, leaving an empty function.
 
+
+Won't that also cause the compiler to spew a bunch of warnings about
+unreachable code in the !CONFIG_PWM_SYSFS case? We have the
+unreachable() macro, but that isn't supported nicely by all compilers.
+
+If CONFIG_SYSFS is not enabled and sysfs.c is using functions that now
+do not exist, that will cause compile errors, since the compiler will
+still attempt to compile all of the code, even though it will remove
+most of it after doing so.
+
+Also, any functions that are extern will also end up generating empty
+functions in the kernel binary (static linkage functions should
+disappear completely). This is obviously very negligible in size,
+but using a proper Kconfig option results in zero size if the option
+is compiled out.
+
+> It's not the optimal
+> solution, which would require the sysfs code to go into core.c and be
+> conditionalized there, but it's good enough. I can always go and clean
+> up that code later (maybe doing the same for DEBUG_FS while at it).
+
+> 
+
+> The big advantage of this is that we get full compile coverage of the
+> sysfs interface, whether it's enabled or not. Calling an empty function
+> once when the chip is registered is an acceptable overhead.
+
+
+Why not just make CONFIG_PWM_SYSFS default y, so that if CONFIG_SYSFS is
+enabled (which should be true for the vast majority of test configs) that
+pwm sysfs is also enabled?
+
+The IS_ENABLED method just seems very messy for a very small gain.
+
+~Ryan
