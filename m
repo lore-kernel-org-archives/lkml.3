@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756437Ab3FKUDW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:03:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41715 "EHLO
+	id S1757327Ab3FKU1v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:27:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41741 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754658Ab3FKUDT (ORCPT
+	with ESMTP id S1756432Ab3FKUDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:19 -0400
+	Tue, 11 Jun 2013 16:03:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Tim Richardson <tim@tim-richardson.net>
-Subject: [ 15/32] USB: revert periodic scheduling bugfix
-Date: Tue, 11 Jun 2013 13:03:14 -0700
-Message-Id: <20130611200127.927399876@linuxfoundation.org>
+        Egbert Eich <eich@suse.de>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 26/32] drm/i915/sdvo: Use &intel_sdvo->ddc instead of intel_sdvo->i2c for DDC.
+Date: Tue, 11 Jun 2013 13:03:25 -0700
+Message-Id: <20130611200129.131389237@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611200126.214442788@linuxfoundation.org>
 References: <20130611200126.214442788@linuxfoundation.org>
@@ -28,46 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Egbert Eich <eich@suse.de>
 
-commit fdc03438f53a00294ed9939eb3a1f6db6f3d8963 upstream.
+commit 53d3b4d7778daf15900867336c85d3f8dd70600c upstream.
 
-This patch reverts commit 3e619d04159be54b3daa0b7036b0ce9e067f4b5d
-(USB: EHCI: fix bug in scheduling periodic split transfers).  The
-commit was valid -- it fixed a real bug -- but the periodic scheduler
-in ehci-hcd is in such bad shape (especially the part that handles
-split transactions) that fixing one bug is very likely to cause
-another to surface.  That's what happened in this case; the result was
-choppy and noisy playback on certain 24-bit audio devices.
+In intel_sdvo_get_lvds_modes() the wrong i2c adapter record is used
+for DDC. Thus the code will always have to rely on a LVDS panel
+mode supplied by VBT.
+In most cases this succeeds, so this didn't get detected for quite
+a while.
 
-The only real fix will be to rewrite this entire section of code.  My
-next project...
+This regression seems to have been introduced in
 
-This fixes https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1136110.
+commit f899fc64cda8569d0529452aafc0da31c042df2e
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Tue Jul 20 15:44:45 2010 -0700
 
-Thanks to Tim Richardson for extra testing and feedback, and to Joseph
-Salisbury and Tyson Tan for tracking down the original source of the
-problem.
+    drm/i915: use GMBUS to manage i2c links
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Joseph Salisbury <joseph.salisbury@canonical.com>
-CC: Tim Richardson <tim@tim-richardson.net>
+Signed-off-by: Egbert Eich <eich@suse.de>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+[danvet: Add note about which commit likely introduced this issue.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-sched.c |    2 +-
+ drivers/gpu/drm/i915/intel_sdvo.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -236,7 +236,7 @@ static inline unsigned char tt_start_ufr
- }
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -1581,7 +1581,7 @@ static void intel_sdvo_get_lvds_modes(st
+ 	 * Assume that the preferred modes are
+ 	 * arranged in priority order.
+ 	 */
+-	intel_ddc_get_modes(connector, intel_sdvo->i2c);
++	intel_ddc_get_modes(connector, &intel_sdvo->ddc);
+ 	if (list_empty(&connector->probed_modes) == false)
+ 		goto end;
  
- static const unsigned char
--max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 125, 25 };
-+max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 30, 0 };
- 
- /* carryover low/fullspeed bandwidth that crosses uframe boundries */
- static inline void carryover_tt_bandwidth(unsigned short tt_usecs[8])
 
 
