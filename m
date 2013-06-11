@@ -1,58 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab3FKGtm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 02:49:42 -0400
-Received: from mga03.intel.com ([143.182.124.21]:19385 "EHLO mga03.intel.com"
+	id S1752803Ab3FKGuu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 02:50:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17358 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751388Ab3FKGtk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 02:49:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,843,1363158000"; 
-   d="scan'208";a="253334397"
-Message-ID: <51B6C87B.70101@linux.intel.com>
-Date: Tue, 11 Jun 2013 09:49:31 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1751597Ab3FKGut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 02:50:49 -0400
+Date: Tue, 11 Jun 2013 09:50:37 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        David Sharp <dhsharp@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Re: Re: [PATCH V2 1/1] kvm/vmx: Add a tracepoint write_tsc_offset
+Message-ID: <20130611065037.GC4725@redhat.com>
+References: <20130604083619.22713.25360.stgit@yunodevel>
+ <20130606002322.GA24351@amt.cnet>
+ <20130606113305.GB4725@redhat.com>
+ <51B16E0E.5020208@hitachi.com>
+ <20130609111442.GP4725@redhat.com>
+ <51B59CC2.3060707@hitachi.com>
+ <20130610100505.GB4725@redhat.com>
+ <20130610140424.GA25632@amt.cnet>
+ <20130610163834.GG29022@redhat.com>
+ <20130610202823.GC31409@amt.cnet>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        jesse.brandeburg@intel.com, donald.c.skidmore@intel.com,
-        e1000-devel@lists.sourceforge.net, willemb@google.com,
-        erdnetdev@gmail.com, bhutchings@solarflare.com, andi@firstfloor.org,
-        hpa@zytor.com, eilong@broadcom.com, or.gerlitz@gmail.com,
-        amirv@mellanox.com, eliezer@tamir.org.il
-Subject: Re: [PATCH v10 net-next 0/6] net: low latency Ethernet device polling
-References: <20130610083929.6955.87206.stgit@ladj378.jer.intel.com> <20130610.134116.1913599114372510768.davem@davemloft.net> <51B68AA6.1050105@linux.intel.com> <20130610.212443.1096102996038709384.davem@davemloft.net>
-In-Reply-To: <20130610.212443.1096102996038709384.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130610202823.GC31409@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2013 07:24, David Miller wrote:
-> From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-> Date: Tue, 11 Jun 2013 05:25:42 +0300
->
->> Here is the text from the RFC and v2 cover letters, updated and
->> merged.  If this is too long, please tell me what you think should
->> be removed.
->
-> It's perfect, and since this went through so many iterations I
-> included the changelog too.
->
+On Mon, Jun 10, 2013 at 05:28:23PM -0300, Marcelo Tosatti wrote:
+> On Mon, Jun 10, 2013 at 07:38:34PM +0300, Gleb Natapov wrote:
+> > > Guest traces contain vcpu number and not pid (because guest is unaware
+> > > of host PID).
+> > > 
+> > No, guest trace is just a regular ftrace done inside a guest. It contains
+> > guest's PIDs which is useless for host. 
+> 
+> # tracer: nop
+> #
+> # entries-in-buffer/entries-written: 5333/5333   #P:4
+> #
+> #                              _-----=> irqs-off
+> #                             / _----=> need-resched
+> #                            | / _---=> hardirq/softirq
+> #                            || / _--=> preempt-depth
+> #                            ||| /     delay
+> #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+> #              | |       |   ||||       |         |
+> 
+> Traces contain CPU ID.
+> 
+Doh, yes it does, but this is not vcpu_id. vcpu_id is seen as apic id in
+a guest, so additional step is needed to map between numbers that you see
+in the trace and vcpu_id. This is easy to do by looking at /proc/cpuinfo
+of a guest.
 
-Thank you.
+> > I do not know how exactly guest traces are transfered to a host, if
+> > each vcpu buffer is transfered separately host can figure out what
+> > trace entry belong to which vcpu based on what buffer the trace is in.
+> > But the information about what buffer belongs to which vcpu id should
+> > be transfered to a host somehow too.
+> > 
+> > > > >                                                 However, when we
+> > > > > focus on output data of the write_tsc_offset event, it is difficult to
+> > > > > directly understand contents of the data if vcpu number information is
+> > > > > not included. So, including the information is useful, I think.
+> > > > > 
+> > > > How your tool does it now?
+> > > 
+> > > It merges guest trace with host trace (by converting the TSC timestamp 
+> > > in the guest trace to host TSC using tsc_offset information).
+> > > 
+> > I mean how it does it now without vcpu id. The answer is that it works
+> > for only one vcpu now.
+> 
+> Yes.
+> 
+> > > By not recording vcpu ID in the tsc_offset trace, it is necessary to
+> > > supply the tool with PID<->VCPU_id tuples for translation (so its an
+> > > additional step required, and it makes trace merge impossible
+> > > if the information is not available).
+> > The tool needs PID<->VCPU_id tuples to do the merging of any trace
+> > entry. Without that it does not know how to interpret entry timestamps
+> > (which offset to use). Apparently it will get this information from
+> > vmentry trace point. What is so special about tsc_offset tracing that
+> > it needs to contain vcpuid by itself.
+> 
+> If the tsc_offset tracepoint contains vcpu ID, its possible to lookup
+> guest trace entry (which contains CPU ID), and match on that.
+> 
+> Without that, PID<->VCPU_id tuples are necessary. Yes?
+Ah, I think I see it now. For some reason I assumed that merge is done
+for each vcpu separately, so you need to separate host events per vcpu
+too, but this is not the case, host and guest event are merged based on
+tsc timestamp only. In this case I see the merits of having vcpu id in
+tsc_offset change trace point. It will make things easier a bit.
 
-I would like to hear opinions on what needs to be added to make this
-feature complete.
-
-The list I have so far is:
-1. add a socket option
-2. support for poll/select
-3. support for epoll
-
-Also, would you accept a trailing whitespace cleanup patch for
-fs/select.c?
-
--Eliezer
+--
+			Gleb.
