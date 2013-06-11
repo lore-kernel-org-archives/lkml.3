@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711Ab3FKUED (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:04:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41943 "EHLO
+	id S1757077Ab3FKUMz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:12:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41956 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756689Ab3FKUD7 (ORCPT
+	with ESMTP id S1756707Ab3FKUEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:59 -0400
+	Tue, 11 Jun 2013 16:04:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ash Willis <ashwillis@programmer.net>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 30/79] ACPI / video: ignore BIOS initial backlight value for HP Pavilion g6
-Date: Tue, 11 Jun 2013 13:02:56 -0700
-Message-Id: <20130611195316.427835063@linuxfoundation.org>
+        Tony Luck <tony.luck@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 58/79] Revert "ACPI / scan: do not match drivers against objects having scan handlers"
+Date: Tue, 11 Jun 2013 13:03:24 -0700
+Message-Id: <20130611195323.728572673@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -27,40 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ash Willis <ashwillis.kernel@gmail.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 780a6ec640a3fed671fc2c40e4dd30c03eca3ac3 upstream.
+commit ea7f665612fcc73da6b7698f468cd5fc03a30d47 upstream.
 
-This patch addresses kernel bug 56661. BIOS reports an incorrect
-backlight value, causing the driver to switch off the backlight
-completely during startup. This patch ignores the incorrect value from
-BIOS.
+Commit 9f29ab11ddbf ("ACPI / scan: do not match drivers against objects
+having scan handlers") introduced a boot regression on Tony's ia64 HP
+rx2600.  Tony says:
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=56661
-Signed-off-by: Ash Willis <ashwillis@programmer.net>
+  "It panics with the message:
+
+   Kernel panic - not syncing: Unable to find SBA IOMMU: Try a generic or DIG kernel
+
+   [...] my problem comes from arch/ia64/hp/common/sba_iommu.c
+   where the code in sba_init() says:
+
+        acpi_bus_register_driver(&acpi_sba_ioc_driver);
+        if (!ioc_list) {
+
+   but because of this change we never managed to call ioc_init()
+   so ioc_list doesn't get set up, and we die."
+
+Revert it to avoid this breakage and we'll fix the problem it attempted
+to address later.
+
+Reported-by: Tony Luck <tony.luck@gmail.com>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/video.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/acpi/scan.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -449,6 +449,14 @@ static struct dmi_system_id video_dmi_ta
- 	},
- 	{
- 	 .callback = video_ignore_initial_backlight,
-+	 .ident = "HP Pavilion g6 Notebook PC",
-+	 .matches = {
-+		 DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
-+		 DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion g6 Notebook PC"),
-+		},
-+	},
-+	{
-+	 .callback = video_ignore_initial_backlight,
- 	 .ident = "HP Pavilion m4",
- 	 .matches = {
- 		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -553,10 +553,6 @@ static int acpi_bus_match(struct device
+ 	struct acpi_device *acpi_dev = to_acpi_device(dev);
+ 	struct acpi_driver *acpi_drv = to_acpi_driver(drv);
+ 
+-	/* Skip ACPI device objects with scan handlers attached. */
+-	if (acpi_dev->handler)
+-		return 0;
+-
+ 	return acpi_dev->flags.match_driver
+ 		&& !acpi_match_device_ids(acpi_dev, acpi_drv->ids);
+ }
 
 
