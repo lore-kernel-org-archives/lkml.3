@@ -1,85 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab3FKR0n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 13:26:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23135 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752287Ab3FKR0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 13:26:41 -0400
-Date: Tue, 11 Jun 2013 13:26:24 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: jussi.kivilinna@iki.fi, herbert@gondor.hengli.com.au
-Subject: GPF in aesni_xts_crypt8 (3.10-rc5)
-Message-ID: <20130611172624.GA20496@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, jussi.kivilinna@iki.fi,
-	herbert@gondor.apana.org.au
+	id S1755351Ab3FKR3O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 13:29:14 -0400
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:49742
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753666Ab3FKR3L convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 13:29:11 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
+Date: Tue, 11 Jun 2013 12:28:59 -0500
+From: Scott Wood <scottwood@freescale.com>
+Subject: Re: [BUG] PCI related panic on powerpc based board with 3.10-rcX
+To: Michael Guntsche <michael.guntsche@it-loops.com>
+CC: Rojhalat Ibrahim <imr@rtschenk.de>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+In-Reply-To: <CALG0vJumuRobQtHdWAuWtbC3oS3_CMpDim=dtSNECCO25SgJUA@mail.gmail.com> (from
+	michael.guntsche@it-loops.com on Tue Jun 11 12:09:42 2013)
+X-Mailer: Balsa 2.4.12
+Message-ID: <1370971739.18413.27@snotra>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just found that 3.10-rc doesn't boot on my laptop with encrypted disk.
+On 06/11/2013 12:09:42 PM, Michael Guntsche wrote:
+> On Tue, Jun 11, 2013 at 7:00 PM, Scott Wood <scottwood@freescale.com>  
+> wrote:
+> > On 06/11/2013 02:24:28 AM, Rojhalat Ibrahim wrote:
+> >>
+> >> On Monday 10 June 2013 17:52:33 Scott Wood wrote:
+> >> > On 06/10/2013 12:07:43 PM, Michael Guntsche wrote:
+> >> > > Good evening,
+> >> > >
+> >> > > This patch does not fix the problem, during boot the kernel  
+> still
+> >> > > panics. I had a closer look at the commit and the following  
+> patch
+> >> > > fixes it for me....
+> >> > >
+> >> > > diff --git a/arch/powerpc/sysdev/fsl_pci.c
+> >> > > b/arch/powerpc/sysdev/fsl_pci.c
+> >> > > index 028ac1f..21b687f 100644
+> >> > > --- a/arch/powerpc/sysdev/fsl_pci.c
+> >> > > +++ b/arch/powerpc/sysdev/fsl_pci.c
+> >> > > @@ -814,7 +814,7 @@ int __init mpc83xx_add_bridge(struct  
+> device_node
+> >> > > *dev)
+> >> > >
+> >> > >                 if (ret)
+> >> > >
+> >> > >                         goto err0;
+> >> > >
+> >> > >         } else {
+> >> > >
+> >> > > -               fsl_setup_indirect_pci(hose, rsrc_cfg.start,
+> >> > > +               setup_indirect_pci(hose, rsrc_cfg.start,
+> >> > >
+> >> > >                                        rsrc_cfg.start + 4, 0);
+> >> > >
+> >> > >         }
+> >> >
+> >> > The only difference here is that you're not setting hose->ops to
+> >> > fsl_indirect_pci_ops.  Do you know why that is helping, and what
+> >> > hose->ops is set to instead?
+> >> >
+> >> > -Scott
+> >>
+> >> The difference is only the read function in hose->ops, which is  
+> set to
+> >> indirect_read_config instead of fsl_indirect_read_config.
+> >>
+> >> fsl_indirect_read_config calls fsl_pcie_check_link, which is where  
+> the
+> >> Oops
+> >> occurs.
+> >
+> >
+> > Why is fsl_pcie_check_link being called for non-PCIe buses?
+> >
+> >
+> >> Mike, can you find out where exactly in fsl_pcie_check_link the  
+> bad access
+> >> happens? Enabling CONFIG_DEBUG_BUGVERBOSE might help.
+> >
+> >
+> > Why does it matter?  You shouldn't be calling that function at all.
+> >
+> > -Scott
+> 
+> For the record BUGVERBOSE is already set with this build so this is
+> the most detailed trace I get. And regarding Scott's remark, maybe I
+> was not clear enough in my first report. This is a PCI only board so I
+> also wondered about the call to fsl_pcie_check_link in the first
+> place.
 
+Yes, I figured it was non-PCIe because the code change that you said  
+helped was on the non-PCIe branch of the if/else.  Generally it's good  
+to explicitly mention the chip you're using, though.
 
-general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Modules linked in: xfs libcrc32c dm_crypt crc32c_intel ghash_clmulni_intel aesni_intel glue_helper ablk_helper i915 i2c_algo_bit drm_kms_helper drm i2c_core video
-CPU: 1 PID: 53 Comm: kworker/1:1 Not tainted 3.10.0-rc5+ #5 
-Hardware name: LENOVO 2356JK8/2356JK8, BIOS G7ET94WW (2.54 ) 04/30/2013
-Workqueue: kcryptd kcryptd_crypt [dm_crypt]
-task: ffff880135c58000 ti: ffff880135c54000 task.ti: ffff880135c54000
-RIP: 0010:[<ffffffffa01433a2>]  [<ffffffffa01433a2>] aesni_xts_crypt8+0x42/0x1e0 [aesni_intel]
-RSP: 0018:ffff880135c55b68  EFLAGS: 00010282
-RAX: ffffffffa0142eb8 RBX: 0000000000000080 RCX: 00000000000000f0
-RDX: ffff8801316eeaa8 RSI: ffff8801316eeaa8 RDI: ffff88012fd84440
-RBP: ffff880135c55b70 R08: ffff8801304fe118 R09: 0000000000000020
-R10: 00000000000000f0 R11: ffffffffa0142eb8 R12: ffff8801316eeb28
-R13: 0000000000000080 R14: ffff8801316eeb28 R15: 0000000000000180
-FS:  0000000000000000(0000) GS:ffff880139400000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00000039e88bc720 CR3: 0000000001c0b000 CR4: 00000000001407e0
-Stack:
- ffffffffa0143683 ffff880135c55c40 ffffffffa00602fb ffff880135c55c70
- ffffffffa0146060 0000000001ad0190 ffffffffa0146060 ffffea0004c5bb80
- ffff8801316eeaa8 ffffea0004c5bb80 ffff8801316eeaa8 ffff8801304fe0c0
-Call Trace:
- [<ffffffffa0143683>] ? aesni_xts_dec8+0x13/0x20 [aesni_intel]
- [<ffffffffa00602fb>] glue_xts_crypt_128bit+0x10b/0x1c0 [glue_helper]
- [<ffffffffa014358b>] xts_decrypt+0x4b/0x50 [aesni_intel]
- [<ffffffffa000617f>] ablk_decrypt+0x4f/0xd0 [ablk_helper]
- [<ffffffffa0067202>] crypt_convert+0x352/0x3b0 [dm_crypt]
- [<ffffffffa00675b5>] kcryptd_crypt+0x355/0x4e0 [dm_crypt]
- [<ffffffff81061b35>] ? process_one_work+0x1a5/0x700
- [<ffffffff81061ba1>] process_one_work+0x211/0x700
- [<ffffffff81061b35>] ? process_one_work+0x1a5/0x700
- [<ffffffff810621ab>] worker_thread+0x11b/0x3a0
- [<ffffffff81062090>] ? process_one_work+0x700/0x700
- [<ffffffff81069f4d>] kthread+0xed/0x100
- [<ffffffff81069e60>] ? insert_kthread_work+0x80/0x80
- [<ffffffff815fd41c>] ret_from_fork+0x7c/0xb0
- [<ffffffff81069e60>] ? insert_kthread_work+0x80/0x80
-Code: 8d 04 25 b8 2e 14 a0 41 0f 44 ca 4c 0f 44 d8 66 44 0f 6f 14 25 00 70 14 a0 41 0f 10 18 44 8b 8f e0 01 00 00 48 01 cf 66 0f 6f c3 <66> 0f ef 02 f3 0f 7f 1e 66 44 0f 70 db 13 66 0f d4 db 66 41 0f 
-RIP  [<ffffffffa01433a2>] aesni_xts_crypt8+0x42/0x1e0 [aesni_intel]
- RSP <ffff880135c55b68>
+fsl_setup_indirect_pci should be renamed to fsl_setup_indirect_pcie.   
+Your patch above should be applied, and fsl_setup_indirect_pcie should  
+be moved into the booke/86xx ifdef to avoid an unused function warning.
 
-   0:	8d 04 25 b8 2e 14 a0 	lea    0xffffffffa0142eb8,%eax
-   7:	41 0f 44 ca          	cmove  %r10d,%ecx
-   b:	4c 0f 44 d8          	cmove  %rax,%r11
-   f:	66 44 0f 6f 14 25 00 	movdqa 0xffffffffa0147000,%xmm10
-  16:	70 14 a0 
-  19:	41 0f 10 18          	movups (%r8),%xmm3
-  1d:	44 8b 8f e0 01 00 00 	mov    0x1e0(%rdi),%r9d
-  24:	48 01 cf             	add    %rcx,%rdi
-  27:	66 0f 6f c3          	movdqa %xmm3,%xmm0
-  2b:*	66 0f ef 02          	pxor   (%rdx),%xmm0     <-- trapping instruction
-  2f:	f3 0f 7f 1e          	movdqu %xmm3,(%rsi)
-  33:	66 44 0f 70 db 13    	pshufd $0x13,%xmm3,%xmm11
-  39:	66 0f d4 db          	paddq  %xmm3,%xmm3
-  3d:	66                   	data16
-  3e:	41                   	rex.B
-  3f:	
-
+-Scott
