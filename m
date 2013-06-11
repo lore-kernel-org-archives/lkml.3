@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233Ab3FKUTF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:19:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41860 "EHLO
+	id S1757213Ab3FKUTE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:19:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41863 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756544Ab3FKUDn (ORCPT
+	with ESMTP id S1756569Ab3FKUDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Jun 2013 16:03:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 19/79] USB: zte_ev: fix broken open
-Date: Tue, 11 Jun 2013 13:02:45 -0700
-Message-Id: <20130611195314.979496081@linuxfoundation.org>
+        Robert Butora <robert.butora.fi@gmail.com>
+Subject: [ 20/79] USB: Serial: cypress_M8: Enable FRWD Dongle hidcom device
+Date: Tue, 11 Jun 2013 13:02:46 -0700
+Message-Id: <20130611195315.121909188@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -26,41 +26,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Robert Butora <robert.butora.fi@gmail.com>
 
-commit d8a1d0d54d5fdac0347b75e9afd554b3dfaa465f upstream.
+commit 6529591e3eef65f0f528a81ac169f6e294b947a7 upstream.
 
-Remove bogus port-number check in open and close, which prevented this
-driver from being used with a minor number different from zero.
+The patch adds a new HIDCOM device and does not affect other devices
+driven by the cypress_M8 module. Changes are:
+- add VendorID ProductID to device tables
+- skip unstable speed check because FRWD uses 115200bps
+- skip reset at probe which is an issue workaround for this
+particular device.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Robert Butora <robert.butora.fi@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/zte_ev.c |    6 ------
- 1 file changed, 6 deletions(-)
+ drivers/usb/serial/cypress_m8.c |   18 +++++++++++++++++-
+ drivers/usb/serial/cypress_m8.h |    4 ++++
+ 2 files changed, 21 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/zte_ev.c
-+++ b/drivers/usb/serial/zte_ev.c
-@@ -41,9 +41,6 @@ static int zte_ev_usb_serial_open(struct
- 	int len;
- 	unsigned char *buf;
+--- a/drivers/usb/serial/cypress_m8.c
++++ b/drivers/usb/serial/cypress_m8.c
+@@ -65,6 +65,7 @@ static const struct usb_device_id id_tab
+ static const struct usb_device_id id_table_cyphidcomrs232[] = {
+ 	{ USB_DEVICE(VENDOR_ID_CYPRESS, PRODUCT_ID_CYPHIDCOM) },
+ 	{ USB_DEVICE(VENDOR_ID_POWERCOM, PRODUCT_ID_UPS) },
++	{ USB_DEVICE(VENDOR_ID_FRWD, PRODUCT_ID_CYPHIDCOM_FRWD) },
+ 	{ }						/* Terminating entry */
+ };
  
--	if (port->number != 0)
--		return -ENODEV;
--
- 	buf = kmalloc(MAX_SETUP_DATA_SIZE, GFP_KERNEL);
- 	if (!buf)
+@@ -78,6 +79,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(VENDOR_ID_DELORME, PRODUCT_ID_EARTHMATEUSB_LT20) },
+ 	{ USB_DEVICE(VENDOR_ID_CYPRESS, PRODUCT_ID_CYPHIDCOM) },
+ 	{ USB_DEVICE(VENDOR_ID_POWERCOM, PRODUCT_ID_UPS) },
++	{ USB_DEVICE(VENDOR_ID_FRWD, PRODUCT_ID_CYPHIDCOM_FRWD) },
+ 	{ USB_DEVICE(VENDOR_ID_DAZZLE, PRODUCT_ID_CA42) },
+ 	{ }						/* Terminating entry */
+ };
+@@ -230,6 +232,12 @@ static struct usb_serial_driver * const
+  * Cypress serial helper functions
+  *****************************************************************************/
+ 
++/* FRWD Dongle hidcom needs to skip reset and speed checks */
++static inline bool is_frwd(struct usb_device *dev)
++{
++	return ((le16_to_cpu(dev->descriptor.idVendor) == VENDOR_ID_FRWD) &&
++		(le16_to_cpu(dev->descriptor.idProduct) == PRODUCT_ID_CYPHIDCOM_FRWD));
++}
+ 
+ static int analyze_baud_rate(struct usb_serial_port *port, speed_t new_rate)
+ {
+@@ -239,6 +247,10 @@ static int analyze_baud_rate(struct usb_
+ 	if (unstable_bauds)
+ 		return new_rate;
+ 
++	/* FRWD Dongle uses 115200 bps */
++	if (is_frwd(port->serial->dev))
++		return new_rate;
++
+ 	/*
+ 	 * The general purpose firmware for the Cypress M8 allows for
+ 	 * a maximum speed of 57600bps (I have no idea whether DeLorme
+@@ -449,7 +461,11 @@ static int cypress_generic_port_probe(st
  		return -ENOMEM;
-@@ -166,9 +163,6 @@ static void zte_ev_usb_serial_close(stru
- 	int len;
- 	unsigned char *buf;
+ 	}
  
--	if (port->number != 0)
--		return;
--
- 	buf = kmalloc(MAX_SETUP_DATA_SIZE, GFP_KERNEL);
- 	if (!buf)
- 		return;
+-	usb_reset_configuration(serial->dev);
++	/* Skip reset for FRWD device. It is a workaound:
++	   device hangs if it receives SET_CONFIGURE in Configured
++	   state. */
++	if (!is_frwd(serial->dev))
++		usb_reset_configuration(serial->dev);
+ 
+ 	priv->cmd_ctrl = 0;
+ 	priv->line_control = 0;
+--- a/drivers/usb/serial/cypress_m8.h
++++ b/drivers/usb/serial/cypress_m8.h
+@@ -24,6 +24,10 @@
+ #define VENDOR_ID_CYPRESS		0x04b4
+ #define PRODUCT_ID_CYPHIDCOM		0x5500
+ 
++/* FRWD Dongle - a GPS sports watch */
++#define VENDOR_ID_FRWD			0x6737
++#define PRODUCT_ID_CYPHIDCOM_FRWD	0x0001
++
+ /* Powercom UPS, chip CY7C63723 */
+ #define VENDOR_ID_POWERCOM		0x0d9f
+ #define PRODUCT_ID_UPS			0x0002
 
 
