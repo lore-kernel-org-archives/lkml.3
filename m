@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab3FKQPO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 12:15:14 -0400
-Received: from mga02.intel.com ([134.134.136.20]:41347 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751945Ab3FKQPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 12:15:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,845,1363158000"; 
-   d="scan'208";a="327775056"
-Date: Tue, 11 Jun 2013 18:15:06 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Lee Jones <lee.jones@linaro.org>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: am335x: TSC & ADC reworking including DT pieces, take 4
-Message-ID: <20130611161506.GK29135@zurbaran>
-References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
- <20130611142358.GG29135@zurbaran>
- <20130611160415.GA379@core.coreip.homeip.net>
+	id S1754747Ab3FKQRo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 12:17:44 -0400
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:33951 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752168Ab3FKQRm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 12:17:42 -0400
+X-Greylist: delayed 77496 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Jun 2013 12:17:42 EDT
+Date: Tue, 11 Jun 2013 11:17:35 -0500
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
+Subject: Re: 3.10-rc4 stalls during mmap writes
+Message-ID: <20130611161735.GA3955@sbohrermbp13-local.rgmadvisors.com>
+References: <20130607193712.GD2995@sbohrermbp13-local.rgmadvisors.com>
+ <20130609033744.GA29376@dastard>
+ <20130610184559.GA3594@sbohrermbp13-local.rgmadvisors.com>
+ <20130610205315.GB29376@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130611160415.GA379@core.coreip.homeip.net>
+In-Reply-To: <20130610205315.GB29376@dastard>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
-
-On Tue, Jun 11, 2013 at 09:04:16AM -0700, Dmitry Torokhov wrote:
-> On Tue, Jun 11, 2013 at 04:23:58PM +0200, Samuel Ortiz wrote:
-> > Hi Sebastian,
-> > 
-> > On Tue, Jun 11, 2013 at 01:30:46PM +0200, Sebastian Andrzej Siewior wrote:
-> > > I believe the whole thing should go via the MFD tree. It touches also
-> > > input & iio subsystem. I collected ACKs where I got some in the meantime.
-> > Please fix your commit logs, and your subject lines. It should be e.g.
-> > mfd: input: ti_am335x_adc: Blablabla
-> > 
-> > if it's mostly an mfd patch that also touches an input driver.
-> > 
-> > Then, this is a pretty big patchset, with iio, input and mfd all mixed
-> > together and it is likely to create merge conflicts.
-> > From what I can see from it, and please correct me if I'm
-> > wrong, the iio and input changes depend on the mfd ones, and not the
-> > other way around. If that's so, I'm going to ask you to reshuffle your
-> > patch set and separate the MFD changes from the iio and input ones. I'll
-> > take the MFD ones and will create an immutable branch for Jonathan and
-> > Dmitry to pull from and apply the iio and input changes on top of it.
-> > Merge conflicts should be mostly avoided that way.
+On Tue, Jun 11, 2013 at 06:53:15AM +1000, Dave Chinner wrote:
+> On Mon, Jun 10, 2013 at 01:45:59PM -0500, Shawn Bohrer wrote:
+> > On Sun, Jun 09, 2013 at 01:37:44PM +1000, Dave Chinner wrote:
+> > > On Fri, Jun 07, 2013 at 02:37:12PM -0500, Shawn Bohrer wrote:
+> > So to summarize it appears that most of the time was spent with
+> > kworker/4:0 blocking in xfs_buf_lock() and kworker/2:1H, which is woken
+> > up by a softirq, is the one that calls xfs_buf_unlock().  Assuming I'm
+> > not missing some important intermediate steps does this provide any
+> > more information about what resource I'm actually waiting for?  Does
+> > this point to any changes that happened after 3.4?  Are there any tips
+> > that could help minimize these contentions?
 > 
-> I purposely left this driver alone as I expected it would be merged
-> through MFD tree, so there should not be any merging issues on my side.
-Thanks for the notice.
-Jonathan, can you guarantee the same for the iio parts ?
+> The only difference between this and 3.4 is the allocation workqueue
+> thread. That, however, won't be introducing second long delays. What
+> you are seeing here is simply a the latency of waiting for
+> background metadata IO to complete during an allocation which has
+> the ilock held....
 
-Sabastian, hold on before reworking your patchset.
+Again thank you for your analysis Dave.  I've taken a step back to
+look at the big picture and that allowed me to identify what _has_
+changed between 3.4 and 3.10.  What changed is the behavior of
+vm.dirty_expire_centisecs.  Honestly, the previous behavior never made
+any sense to me and I'm not entirely sure the current behavior does
+either.
 
-Cheers,
-Samuel.
+In the workload I've been debugging we append data to many small files
+using mmap.  The writes are small and the total data rate is very low
+thus for most files it may take several minutes to fill a page.
+Having low-latency writes are important, but as you know stalls are
+always possible.  One way to reduce the probability of a stall is to
+reduce the frequency of writeback, and adjusting
+vm.dirty_expire_centisecs and/or vm.dirty_writeback_centisecs should
+allow us to do that.
+
+On kernels 3.4 and older we chose to increase
+vm.dirty_expire_centisecs to 30000 since we can comfortably loose 5
+minutes of data in the event of a system failure and we believed this
+would cause a fairly consistent low data rate as every
+vm.dirty_writeback_centisecs (5s) it would writeback all dirty pages
+that were vm.dirty_expire_centisecs (5min) old.  On old kernels that
+isn't exactly what happened.  Instead every 5 minutes there would be a
+burst of writeback and a slow trickle at all other times.  This also
+reduced the total amount of data written back since the same dirty
+page wasn't written back every 30 seconds.  This also virtually
+eliminated the stalls we saw so it was left alone.
+
+On 3.10 vm.dirty_expire_centisecs=30000 no longer does the same thing.
+Honestly I'm not sure what it does, but the result is a fairly
+consistent high data rate being written back to disk.  The fact that
+is consistent might lead me to believe that it writes back all pages
+that are vm.dirty_expire_centisecs old every
+vm.dirty_writeback_centisecs, but the data rate is far too high for
+that to be true.  It appears that I can effectively get the same old
+behavior by setting vm.dirty_writeback_centisecs=30000.
+
+--
+Shawn
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+
+---------------------------------------------------------------
+This email, along with any attachments, is confidential. If you 
+believe you received this message in error, please contact the 
+sender immediately and delete all copies of the message.  
+Thank you.
