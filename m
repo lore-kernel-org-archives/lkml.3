@@ -1,90 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614Ab3FKU4y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:56:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9271 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160Ab3FKU4w (ORCPT
+	id S1756060Ab3FKU72 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:59:28 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:59769 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755141Ab3FKU71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:56:52 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wskK765KtKEA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=GqmPQ3klG2UA:10 a=zBYaxKdOuRR6g7Cm3kIA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1370984210.9844.225.camel@gandalf.local.home>
-Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Waiman Long <waiman.long@hp.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, torvalds@linux-foundation.org,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>
-Date: Tue, 11 Jun 2013 16:56:50 -0400
-In-Reply-To: <20130611194927.GX5146@linux.vnet.ibm.com>
-References: <20130609193657.GA13392@linux.vnet.ibm.com>
-	 <51B748DA.2070306@hp.com> <20130611163607.GG5146@linux.vnet.ibm.com>
-	 <51B76F77.6020004@hp.com> <20130611194927.GX5146@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Jun 2013 16:59:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAE9FiQWfpK6oVaeY8tv+TrTq0pu-s1BMVsQ91E10XF6qTAv5mw@mail.gmail.com>
+References: <20130611184113.GA2288@www.outflux.net>
+	<CAE9FiQXCj+H=h+SPcfW82dBK5n6aDGuX+pmg7zr+6mKtdD4nMg@mail.gmail.com>
+	<CAGXu5jLnHTuMSQbLUPbJXAADMwOZAeNv_WyknuEiggCaqA5gpw@mail.gmail.com>
+	<CAE9FiQWfpK6oVaeY8tv+TrTq0pu-s1BMVsQ91E10XF6qTAv5mw@mail.gmail.com>
+Date: Tue, 11 Jun 2013 13:59:26 -0700
+X-Google-Sender-Auth: aDRueeSWeovVgnOx5JReLGRJ_jk
+Message-ID: <CAE9FiQUvdqcUnVjZVV2Qi4S9anrXQuWg0060WDV6yEyFRsWX2Q@mail.gmail.com>
+Subject: Re: [PATCH] x86, boot: access cmdline when loaded high
+From: Yinghai Lu <yinghai@kernel.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Gokul Caushik <caushik1@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-11 at 12:49 -0700, Paul E. McKenney wrote:
+On Tue, Jun 11, 2013 at 1:54 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>
+>>> Before the patch, command line that is loaded high
+>>> can be processed correctly in arch/x86/boot/compressed/cmdline.c.
+>>
+>> It can't. Here is the code from arch/x86/boot/cmdline.c:
+>
+> Are you sure?
+>
+> I tested that with kexec loaded second kernel high.
+>
+> How do you test that?
 
-> +config TICKET_LOCK_QUEUED
-> +	bool "Dynamically switch between ticket and queued locking"
-> +	depends on SMP
-> +	default n
-> +	---help---
-> +	  Enable dynamic switching between ticketlock and queued locking
-> +	  on a per-lock basis.  This option will slow down low-contention
-> +	  acquisition and release very slightly (additional conditional
-> +	  in release path), but will provide more efficient operation at
-> +	  high levels of lock contention.  High-contention operation will
-> +	  not be quite as efficient as would be a pure queued lock, but
-> +	  this dynamic approach consumes less memory than queud locks
-> +	  and also runs faster at low levels of contention.
-> +
-> +	  Say "Y" if you are running on a large system with a workload
-> +	  that is likely to result in high levels of contention.
-> +
-> +	  Say "N" if you are unsure.
-> +
-> +config TICKET_LOCK_QUEUED_SWITCH
-> +	int "When to switch from ticket to queued locking"
-> +	depends on TICKET_LOCK_QUEUED
-> +	default 8
-> +	range 3 32
-> +	---help---
-> +	  Specify how many tasks should be spinning on the lock before
-> +	  switching to queued mode.  Systems with low-latency memory/cache
-> +	  interconnects will prefer larger numbers, while extreme low-latency
-> +	  and real-time workloads will prefer a smaller number.  Of course,
-> +	  extreme real-time workloads would be even happier if contention
-> +	  on the locks were reduced to the point that there was never any
-> +	  need for queued locking in the first place.
+double checked, it works already:
 
-Are you sure real-time wants low numbers? I would think that real-time
-would want this off. This is just a way to help prevent cache ping
-ponging, but it adds to non-deterministic behavior. As I mentioned
-before, even though you fixed the thundering herd on setup, once the
-queue is set, then we will get a thundering herd of tasks trying to
-queue itself, and the task that was spinning the longest could very well
-become the one at the end of the FIFO.
+10:~/k # sh kk
+add_buffer: base:11fff6000 bufsz:80e0 memsz:a000
+add_buffer: base:11fff0000 bufsz:44ce memsz:44ce
+add_buffer: base:11d000000 bufsz:9084f0 memsz:2c43000
+add_buffer: base:11acef000 bufsz:230f6ec memsz:230f6ec
+[   33.551046] cpu0 machine_kexec: fn: ffffffff81076960, data: ffff880116a20000
+10:~/k # kexec -d -e
+[   52.939049] psmouse serio1: shutdown
+...
+[   52.965553] Starting new kernel
+early console in decompress_kernel                  ============> from misc.c
+decompress_kernel:
+  input: [0x11ea902c2-0x11f390ba1], output: 0x11d000000, heap:
+[0x11f398500-0x11f3a04ff]                               ============>
+from misc.c
 
--- Steve
-
-
-
-> +
-> +	  Take the default if you are unsure.
-> diff --git a/kernel/Makefile b/kernel/Makefile
-
-
+Decompressing Linux... xz... Parsing ELF... done.    ========> from misc.c
+Booting the kernel.
+[    0.000000]    real_mode_data :      phys 000000011fff0000
+[    0.000000]    real_mode_data :      virt ffff88011fff0000
+[    0.000000]       boot_params : init virt ffffffff82f839a0
+[    0.000000]       boot_params :      phys 000000011ef839a0
+[    0.000000]       boot_params :      virt ffff88011ef839a0
+[    0.000000] boot_command_line : init virt ffffffff82e51020
+[    0.000000] boot_command_line :      phys 000000011ee51020   ===> is high ?
+[    0.000000] boot_command_line :      virt ffff88011ee51020
+[    0.000000] Kernel Layout:
+[    0.000000]   .text: [0x11d000000-0x11e0ae480]
+[    0.000000] .rodata: [0x11e200000-0x11e9cefff]
+[    0.000000]   .data: [0x11ea00000-0x11ebd3fbf]
+[    0.000000]   .init: [0x11ebd5000-0x11ef6efff]
+[    0.000000]    .bss: [0x11ef7d000-0x11fc1dfff]
+[    0.000000]    .brk: [0x11fc1e000-0x11fc42fff]
+[    0.000000] memblock_reserve: [0x0009f000-0x000fffff] * BIOS reserved
+[    0.000000] Initializing cgroup subsys cpuset
+[    0.000000] Initializing cgroup subsys cpu
+[    0.000000] Initializing cgroup subsys cpuacct
+[    0.000000] Linux version 3.10.0-rc5-yh-00864-g9cca511-dirty
+(yhlu@linux-siqj.site) (gcc version 4.7.2 20130108 [gcc-4_7-branch
+revision 195012] (SUSE Linux) ) #1732 SMP Tue Jun 11 13:47:35 PDT 2013
+[    0.000000] memblock_reserve: [0x11d000000-0x11fc1dfff] TEXT DATA BSS
+[    0.000000] memblock_reserve: [0x11acef000-0x11cffefff] RAMDISK
+[    0.000000] Command line: initcall_debug pci=routeirq debug
+ignore_loglevel apic=debug ramdisk_size=262144 root=/dev/ram0 rw
+ip=dhcp console=uart8250,io,0x3f8,115200n8
