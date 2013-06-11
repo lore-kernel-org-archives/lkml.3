@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159Ab3FKXs1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 19:48:27 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36997 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752686Ab3FKXsZ (ORCPT
+	id S1756256Ab3FKXst (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 19:48:49 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:61396 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756190Ab3FKXsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 19:48:25 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <51B7B728.9000803@jp.fujitsu.com>
-Date: Wed, 12 Jun 2013 08:47:52 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Tue, 11 Jun 2013 19:48:47 -0400
+Date: Tue, 11 Jun 2013 16:48:51 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL v2] at91: USBA DT support / drivers update for 3.11 #1
+Message-ID: <20130611234851.GH23774@quad.lixom.net>
+References: <20130526083430.GP24476@game.jcrosoft.org>
+ <1370279139-7181-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-CC: Vivek Goyal <vgoyal@redhat.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, kexec@lists.infradead.org,
-        Jan Willeke <willeke@de.ibm.com>, linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH v5 5/5] s390/vmcore: Use vmcore for zfcpdump
-References: <1370624161-2298-1-git-send-email-holzheu@linux.vnet.ibm.com> <1370624161-2298-6-git-send-email-holzheu@linux.vnet.ibm.com>
-In-Reply-To: <1370624161-2298-6-git-send-email-holzheu@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370279139-7181-1-git-send-email-nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/06/08 1:56), Michael Holzheu wrote:
-<cut>
-> @@ -82,6 +116,43 @@ int remap_oldmem_pfn_range(struct vm_area_struct *vma, unsigned long from,
->   }
->
->   /*
-> + * Remap "oldmem" for zfcpdump
-> + *
-> + * We only map available memory above ZFCPDUMP_HSA_SIZE. Memory below
-> + * ZFCPDUMP_HSA_SIZE is read on demand using the copy_oldmem_page() function.
-> + */
-> +static int remap_oldmem_pfn_range_zfcpdump(struct vm_area_struct *vma,
-> +					   unsigned long from,
-> +					   unsigned long pfn,
-> +					   unsigned long size, pgprot_t prot)
-> +{
-> +	unsigned long size_hsa;
-> +
-> +	if (pfn < ZFCPDUMP_HSA_SIZE >> PAGE_SHIFT) {
-> +		size_hsa = min(size, OLDMEM_SIZE - (pfn << PAGE_SHIFT));
+On Mon, Jun 03, 2013 at 07:05:39PM +0200, Nicolas Ferre wrote:
+> Arnd, Olof,
+> 
+> This is a rework of the previous pull-request done by Jean-Christophe
+> PLAGNIOL-VILLARD last week ([GIT PULL] at91: USBA DT support for 3.11).
+> You should see that this material is based on the cleanup branch that you
+> already have in arm-soc/at91/cleanup.
+> 
+> This adds the DT support for USBA gadget driver present in the most recent
+> AT91 SoCs.
+> As agreed with Arnd and Felipe we send these drivers updates via arm-soc.
+> 
+> Thanks, best regards,
+> 
+> The following changes since commit b3f442b0eedbc20b5ce3f4a96530588d14901199:
+> 
+>   ARM: at91: udpate defconfigs (2013-05-17 15:05:08 +0200)
+> 
+> are available in the git repository at:
+> 
+>   git://github.com/at91linux/linux-at91.git tags/at91-drivers
+> 
+> for you to fetch changes up to a375f12dde25a7e89acd75d066d0225657d7dfc2:
+> 
+>   ARM: at91: sam9m10g45ek add udc DT support (2013-05-24 07:15:20 +0800)
+> 
+> ----------------------------------------------------------------
+> Adding the DT support to UBB gadget High-Speed aka usba.
+> It updates the driver and all device tree files
+> 
+> ----------------------------------------------------------------
+> Jean-Christophe PLAGNIOL-VILLARD (7):
+>       USB: gadget: atmel_usba: move global struct usba_ep usba_ep to struct usba_udc
+>       USB: gadget: atmel_usba: allow multi instance
+>       USB: gadget: atmel_usba: add DT support
+>       ARM: at91: sam9x5 add udc DT support
+>       ARM: at91: sam9x5ek add udc DT support
+>       ARM: at91: sam9g45 add udc DT support
+>       ARM: at91: sam9m10g45ek add udc DT support
 
-ZFCPDUMP_HSA_SIZE?
+Hi,
 
--- 
-Thanks.
-HATAYAMA, Daisuke
+So, now you have multiple branches updating the DT files on at91, and they all
+conflict due to add/add or add/change.
 
+This branch is really two separate things already: three driver patches for
+next/drivers, and 4 devicetree updates that can go on top of the previous
+at91/dt branch. That should remove every DT conflict.
+
+Care to reshuffle?
+
+Thanks,
+
+-Olof
