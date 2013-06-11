@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755388Ab3FKLl0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:41:26 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33586 "EHLO
+	id S1755450Ab3FKLlf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:41:35 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33606 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754628Ab3FKLlV (ORCPT
+	with ESMTP id S1755404Ab3FKLlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:41:21 -0400
+	Tue, 11 Jun 2013 07:41:31 -0400
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
 Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
@@ -15,10 +15,11 @@ Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
         Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
         linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
         linux-input@vger.kernel.org,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 20/22] input/ti_am335x_tsc: return IRQ_NONE if there was no IRQ for us
-Date: Tue, 11 Jun 2013 13:31:06 +0200
-Message-Id: <1370950268-7224-21-git-send-email-bigeasy@linutronix.de>
+Subject: [PATCH 13/22] mfd/ti_tscadc: deal with partial activation
+Date: Tue, 11 Jun 2013 13:30:59 +0200
+Message-Id: <1370950268-7224-14-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
 References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
@@ -29,38 +30,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previous patch ("input/ti_am335x_tsc: ACK the HW_PEN irq in ISR")
-acked the interrupt so we don't freeze if we don't handle an enabled
-interrupt source. The interrupt core has a mechanism for this and to get
-it work one should only say that it handled an interrupt if it is
-actually the case.
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
 
+Fix the mfd device in the case where a subdevice might not be activated.
+
+Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+[bigeasy: split out this chunk from the orignal patch, check for neither
+          ADC nor TSC channels]
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/input/touchscreen/ti_am335x_tsc.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/mfd/ti_am335x_tscadc.c       |   38 ++++++++++++++++++++++------------
+ include/linux/mfd/ti_am335x_tscadc.h |    8 +++----
+ 2 files changed, 28 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
-index 84859da..6327169 100644
---- a/drivers/input/touchscreen/ti_am335x_tsc.c
-+++ b/drivers/input/touchscreen/ti_am335x_tsc.c
-@@ -314,10 +314,12 @@ static irqreturn_t titsc_irq(int irq, void *dev)
- 		titsc_writel(ts_dev, REG_IRQCLR, IRQENB_HW_PEN);
- 	}
+diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
+index f9ad26f..74e4694 100644
+--- a/drivers/mfd/ti_am335x_tscadc.c
++++ b/drivers/mfd/ti_am335x_tscadc.c
+@@ -96,11 +96,14 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
+ 	of_property_read_u32(node, "ti,adc-channels", &adc_channels);
  
--	titsc_writel(ts_dev, REG_IRQSTATUS, irqclr);
+ 	total_channels = tsc_wires + adc_channels;
 -
--	am335x_tsc_se_update(ts_dev->mfd_tscadc);
--	return IRQ_HANDLED;
-+	if (irqclr) {
-+		titsc_writel(ts_dev, REG_IRQSTATUS, irqclr);
-+		am335x_tsc_se_update(ts_dev->mfd_tscadc);
-+		return IRQ_HANDLED;
+ 	if (total_channels > 8) {
+ 		dev_err(&pdev->dev, "Number of i/p channels more than 8\n");
+ 		return -EINVAL;
+ 	}
++	if (total_channels == 0) {
++		dev_err(&pdev->dev, "Need atleast one channel.\n");
++		return -EINVAL;
 +	}
-+	return IRQ_NONE;
- }
  
- static int titsc_parse_dt(struct platform_device *pdev,
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+@@ -183,28 +186,37 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
+ 	ctrl |= CNTRLREG_TSCSSENB;
+ 	tscadc_writel(tscadc, REG_CTRL, ctrl);
+ 
++	tscadc->used_cells = 0;
++	tscadc->tsc_cell = -1;
++	tscadc->adc_cell = -1;
++
+ 	/* TSC Cell */
+-	cell = &tscadc->cells[TSC_CELL];
+-	cell->name = "tsc";
+-	cell->of_compatible = "ti,am3359-tsc";
+-	cell->platform_data = &tscadc;
+-	cell->pdata_size = sizeof(tscadc);
++	if (tsc_wires > 0) {
++		tscadc->tsc_cell = tscadc->used_cells;
++		cell = &tscadc->cells[tscadc->used_cells++];
++		cell->name = "tsc";
++		cell->of_compatible = "ti,am3359-tsc";
++		cell->platform_data = &tscadc;
++		cell->pdata_size = sizeof(tscadc);
++	}
+ 
+ 	/* ADC Cell */
+-	cell = &tscadc->cells[ADC_CELL];
+-	cell->name = "tiadc";
+-	cell->of_compatible = "ti,am3359-adc";
+-	cell->platform_data = &tscadc;
+-	cell->pdata_size = sizeof(tscadc);
++	if (adc_channels > 0) {
++		tscadc->adc_cell = tscadc->used_cells;
++		cell = &tscadc->cells[tscadc->used_cells++];
++		cell->name = "tiadc";
++		cell->of_compatible = "ti,am3359-adc";
++		cell->platform_data = &tscadc;
++		cell->pdata_size = sizeof(tscadc);
++	}
+ 
+ 	err = mfd_add_devices(&pdev->dev, pdev->id, tscadc->cells,
+-			TSCADC_CELLS, NULL, 0, NULL);
++			tscadc->used_cells, NULL, 0, NULL);
+ 	if (err < 0)
+ 		goto err_disable_clk;
+ 
+ 	device_init_wakeup(&pdev->dev, true);
+ 	platform_set_drvdata(pdev, tscadc);
+-
+ 	return 0;
+ 
+ err_disable_clk:
+diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
+index 2d78af8..b6e7ac6 100644
+--- a/include/linux/mfd/ti_am335x_tscadc.h
++++ b/include/linux/mfd/ti_am335x_tscadc.h
+@@ -127,11 +127,6 @@
+ 
+ #define TSCADC_CELLS		2
+ 
+-enum tscadc_cells {
+-	TSC_CELL,
+-	ADC_CELL,
+-};
+-
+ struct mfd_tscadc_board {
+ 	struct tsc_data *tsc_init;
+ 	struct adc_data *adc_init;
+@@ -141,6 +136,9 @@ struct ti_tscadc_dev {
+ 	struct device *dev;
+ 	void __iomem *tscadc_base;
+ 	int irq;
++	int used_cells;	/* 1-2 */
++	int tsc_cell;	/* -1 if not used */
++	int adc_cell;	/* -1 if not used */
+ 	struct mfd_cell cells[TSCADC_CELLS];
+ 	u32 reg_se_cache;
+ 	spinlock_t reg_lock;
 -- 
 1.7.10.4
 
