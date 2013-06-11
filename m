@@ -1,116 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317Ab3FKKtj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 06:49:39 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40354 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab3FKKtf (ORCPT
+	id S1754524Ab3FKKvF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 06:51:05 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:63726 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752151Ab3FKKvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 06:49:35 -0400
-Date: Tue, 11 Jun 2013 11:48:41 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>,
-        devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux@arm.linux.org.uk,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <rob.herring@calxeda.com>,
-        Rob Landley <rob@landley.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tony Prisk <linux@prisktech.co.nz>,
-        Alexander Shiyan <shc_work@mail.ru>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Message-ID: <20130611104841.GX1403@sirena.org.uk>
-References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com>
- <1370856118-6503-1-git-send-email-srinivas.kandagatla@st.com>
+	Tue, 11 Jun 2013 06:51:03 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7WMexqIhC8AwFtpM"
-Content-Disposition: inline
-In-Reply-To: <1370856118-6503-1-git-send-email-srinivas.kandagatla@st.com>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 03/11] regmap: Add regmap_field APIs
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <51B64877.4040908@schinagl.nl>
+References: <1370185130-15332-1-git-send-email-oliver+list@schinagl.nl>
+	<1370185130-15332-2-git-send-email-oliver+list@schinagl.nl>
+	<CAHp75Vdqc9xiPBvQUB3Hfb4EBFUsoVxyuH8MK=9spJ4+rieoDQ@mail.gmail.com>
+	<51B64877.4040908@schinagl.nl>
+Date: Tue, 11 Jun 2013 13:51:01 +0300
+Message-ID: <CAHp75Vf8-JRjTHjoUDQPXA3LK3SQSeCzyroF=J4ZLmHMzy6jvw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Oliver Schinagl <oliver+list@schinagl.nl>
+Cc: "maxime.ripard" <maxime.ripard@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm Mailing List <linux-arm-kernel@lists.infradead.org>,
+        Oliver Schinagl <oliver@schinagl.nl>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 11, 2013 at 12:43 AM, Oliver Schinagl
+<oliver+list@schinagl.nl> wrote:
+> On 06/06/13 21:16, Andy Shevchenko wrote:
+>> On Sun, Jun 2, 2013 at 5:58 PM, Oliver Schinagl <oliver+list@schinagl.nl>
+>> wrote:
+>>> From: Oliver Schinagl <oliver@schinagl.nl>
 
---7WMexqIhC8AwFtpM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+>>> +       if (likely((SID_SIZE))) {
+>>
+>> Extra braces.
+>> Use antipattern here.
+>
+> While I accidentally dropped the pointer here, sorry for the confusion, what
+> is antipattern? I have asked around and nobody really knew.
 
-On Mon, Jun 10, 2013 at 10:21:58AM +0100, Srinivas KANDAGATLA wrote:
-> It is common to access regmap registers at bit level, using
-> regmap_update_bits or regmap_read functions, however the end user has to
-> take care of a mask or shifting. This becomes overhead when such use
-> cases are high. Having a common function to do this is much convenient
-> and less error prone.
+In this case instead of doing...
 
-So this looks basically good.  A couple of smallish nits below, if you
-could respin I'll apply this on a branch so it can be pulled in as
-dependency for the other things that use it.
+if (likely(condition)) {
+ do_smth();
+}
+do_very_few_ops();
+return;
 
-> +	regmap_field_init(rm_field, regmap, reg_field);
-> +
-> +	return rm_field;
-> +
-> +}
-> +EXPORT_SYMBOL_GPL(devm_regmap_field_alloc);
-> +/**
-> + * regmap_field_alloc(): Allocate and initialise a register field
+...better to do
 
-Needs a blank line between the two functions.
+if(unlikely(!condition)) {
+ do_very_few_ops();
+ return;
+}
 
-> +#include <linux/device.h>
-> +#include <linux/slab.h>
+do_smth();
+return;
 
-> +static inline void regmap_field_free(struct regmap_field *field)
-> +{
-> +	kfree(field);
-> +}
+It takes more lines of code, but increases readability a lot.
 
-> +static inline void devm_regmap_field_free(struct device *dev,
-> +	struct regmap_field *field)
-> +{
-> +	devm_kfree(dev, field);
-> +}
+>>> +       if (unlikely(!pdev->dev.of_node)) {
+>>> +               dev_err(dev, "No devicetree data available\n");
+>>> +               ret = -EFAULT;
+>>> +               goto exit;
+>>
+>>
+>> Plain return here and in entire function where it applies.
+>
+> Why? I know there's conflicting preferences here. The general consensus
+> seems, don't return mid function if you don't absolutely have to. Yet, you
+> make it sound, just return wherever. I take it that really is just a
+> preference? I think i see both constructs throughout the kernel. So one
+> review prefers the one method, the next the other?
 
-Probably not worth inlining these, just put them in the code.
+Usually it makes sense when you have to free resources or do something
+like that. You have plain return statement under exit label.
 
---7WMexqIhC8AwFtpM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>>> +       ret = device_create_bin_file(dev, &sid_bin_attr);
+>>> +       if (unlikely(ret)) {
+>>
+>> Any benifit of (un)likely in probe()?
+>
+> Does it hurt however in any way though? It's just a compiler optimization
+> isn't it.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+It hurts readability. probe() function is usually doesn't require
+fastest execution. Moreover, [1] tells us "You should use it only in
+cases when the likeliest branch is very very very likely, or when the
+unlikeliest branch is very very very unlikely."
 
-iQIcBAEBAgAGBQJRtwCGAAoJELSic+t+oim9juYQAJPLATgvMslyR8CbZBdkMYrr
-5JHA77lEL/wOXbk+rdvqP6W82d12p/3UGgKIOvINb2bvadCQXmkJr1wdpwXx3cHO
-cCqQ1aOt49hx7QS7i751s/f9k6kMQbdEYH8AjvG/CzlSZ8HM0bHPoIbDSpTWutPL
-scAzrnEHVKGGC2XPgNF6fjCDiIfg9KtaLf+vnCIL7Yddlj6uEtcv+j2LaZsqy9CM
-ZuITB3V21AJ7uKpQRFvU3jhp9lbsTfWAt0vYZqU8ysuoMmKhRbrEy4pFosV9aTAQ
-JEW28Wn8qqZPVO57GFCuEc6HPN2+Rjr2ap2CVeoHNK7Spobwv9Q+JaRjm340eU1E
-FVjshYADBVejTSz4zwwuU7T1dZaGxJ6P02NHF3Wi/cvWla7s2KOAf9tG6MZueufu
-kMneeHgJpzSNnHgJQyXHElGUDwJi9GFkz+yfnsnBs9tTxxAKs9GJtUp59K/Lv4JH
-g0vpUOyNAXD/wl/LrTgS7197KSaGM+xnQDh3LtNvFfqvVAp1+qLLAiAzblcDSmLc
-q3RRSAJ+mRZAv7MlpQyJP9fSykRZMjYU65eTewo/gwW7gS+/JVd+v+H/nT15Eotv
-bgY/pnRfEr+Sw1Wb3WOARQbnTAZM/ieua3Ira44nNJqsl12u/k2DE5XK6lVOquee
-aTYlrj01KDxafDg7vfka
-=BL7K
------END PGP SIGNATURE-----
+There also an article [2] about cache issues. Bad usage of the
+likely/unlikely macros might lead to performance degradation (cache
+misses). You have to think about those macros really carefully.
 
---7WMexqIhC8AwFtpM--
+[1] http://kernelnewbies.org/FAQ/LikelyUnlikely
+[2] http://dslab.lzu.edu.cn:8080/docs/publications/NicholasMcGuire.pdf
+
+--
+With Best Regards,
+Andy Shevchenko
