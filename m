@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757175Ab3FKUQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:16:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41917 "EHLO
+	id S1757197Ab3FKUQu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:16:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41905 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755918Ab3FKUDz (ORCPT
+	with ESMTP id S1756635Ab3FKUDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:55 -0400
+	Tue, 11 Jun 2013 16:03:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 33/79] x86 / platform / hp_wmi: Fix bluetooth_rfkill misuse in hp_wmi_rfkill_setup()
-Date: Tue, 11 Jun 2013 13:02:59 -0700
-Message-Id: <20130611195316.797818010@linuxfoundation.org>
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [ 45/79] dmaengine: ste_dma40: fix pm runtime ref counting
+Date: Tue, 11 Jun 2013 13:03:11 -0700
+Message-Id: <20130611195321.820880802@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -27,60 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "lan,Tianyu" <tianyu.lan@intel.com>
+From: Rabin Vincent <rabin.vincent@stericsson.com>
 
-commit af1d486c18bad7820b0ca52b413458914231102c upstream.
+commit 9ecb41bd8cf002fd8f3e063db4df81647ddd623c upstream.
 
-HP wmi platform driver fails to initialize GPS and causes poweroff
-failure in HP Elitebook 6930p.
+The pm runtime reference counting of the driver is broken for the case
+when there is more than one transfer queued, leading to the device being
+runtime suspend while active.  Fix it.
 
-Call Trace:
- [<ffffffffa088d25a>] hp_wmi_bios_setup+0x25a/0x3a0 [hp_wmi]
- [<ffffffff8135978c>] platform_drv_probe+0x3c/0x70
- [<ffffffff81356d6a>] ? driver_sysfs_add+0x7a/0xb0
- [<ffffffff81357407>] driver_probe_device+0x87/0x3a0
- [<ffffffff813577f3>] __driver_attach+0x93/0xa0
- [<ffffffff81357760>] ? __device_attach+0x40/0x40
- [<ffffffff81355403>] bus_for_each_dev+0x63/0xa0
- [<ffffffff81356e8e>] driver_attach+0x1e/0x20
- [<ffffffff81356a28>] bus_add_driver+0x1f8/0x2b0
- [<ffffffff81357e81>] driver_register+0x71/0x150
- [<ffffffff813594e6>] platform_driver_register+0x46/0x50
- [<ffffffff813595ab>] platform_driver_probe+0x1b/0xa0
- [<ffffffffa088d55e>] hp_wmi_init+0x1be/0x1fb [hp_wmi]
- [<ffffffffa088d3a0>] ? hp_wmi_bios_setup+0x3a0/0x3a0 [hp_wmi]
- [<ffffffff8100210a>] do_one_initcall+0x10a/0x160
- [<ffffffff810bdac6>] load_module+0x1b46/0x2640
- [<ffffffff8128da20>] ? ddebug_proc_write+0xf0/0xf0
- [<ffffffff810be662>] sys_init_module+0xa2/0xf0
- [<ffffffff814d975d>] system_call_fastpath+0x1a/0x1f
-Code: 48 ff ff ff 80 7b 24 00 74 d2 41 83 e5 01 45 38 ec 74 c9 48 8d bb a0 03 00 00 e8 ed fb aa e0 5b 41 5c 41 5d 44 89 f0 41 5e 5d c3 <0f> 0b 66 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 66 66 66 66
-RIP  [<ffffffffa05c57af>] rfkill_set_hw_state+0x9f/0xb0 [rfkill]
- RSP <ffff880071523b60>
-
-Check code and find this error is caused by misusing variable bluetooth_rfkill
-where gps_rfkill should be.
-
-Reported-and-tested-by: Iru Cai <mytbk920423@gmail.com>
-References: https://bugzilla.kernel.org/show_bug.cgi?id=58401
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/platform/x86/hp-wmi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/dma/ste_dma40.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/platform/x86/hp-wmi.c
-+++ b/drivers/platform/x86/hp-wmi.c
-@@ -679,7 +679,7 @@ static int hp_wmi_rfkill_setup(struct pl
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -1566,10 +1566,12 @@ static void dma_tc_handle(struct d40_cha
+ 			return;
  		}
- 		rfkill_init_sw_state(gps_rfkill,
- 				     hp_wmi_get_sw_state(HPWMI_GPS));
--		rfkill_set_hw_state(bluetooth_rfkill,
-+		rfkill_set_hw_state(gps_rfkill,
- 				    hp_wmi_get_hw_state(HPWMI_GPS));
- 		err = rfkill_register(gps_rfkill);
- 		if (err)
+ 
+-		if (d40_queue_start(d40c) == NULL)
++		if (d40_queue_start(d40c) == NULL) {
+ 			d40c->busy = false;
+-		pm_runtime_mark_last_busy(d40c->base->dev);
+-		pm_runtime_put_autosuspend(d40c->base->dev);
++
++			pm_runtime_mark_last_busy(d40c->base->dev);
++			pm_runtime_put_autosuspend(d40c->base->dev);
++		}
+ 
+ 		d40_desc_remove(d40d);
+ 		d40_desc_done(d40c, d40d);
 
 
