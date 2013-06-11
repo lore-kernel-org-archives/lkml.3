@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623Ab3FKUUW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:20:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41851 "EHLO
+	id S1757209Ab3FKUUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:20:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41812 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756548Ab3FKUDl (ORCPT
+	with ESMTP id S1756455Ab3FKUDi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:41 -0400
+	Tue, 11 Jun 2013 16:03:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hovold <jhovold@gmail.com>
-Subject: [ 16/79] USB: ark3116: fix control-message timeout
-Date: Tue, 11 Jun 2013 13:02:42 -0700
-Message-Id: <20130611195314.587295104@linuxfoundation.org>
+Subject: [ 27/79] USB: mos7720: fix hardware flow control
+Date: Tue, 11 Jun 2013 13:02:53 -0700
+Message-Id: <20130611195316.056332497@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -28,28 +28,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 634371911730a462626071065b64cd6e1fe213e0 upstream.
+commit a26f009a070e840fadacb91013b2391ba7ab6cc2 upstream.
 
-The control-message timeout is specified in milliseconds and should not
-depend on HZ.
+The register access to enable hardware flow control depends on the
+device port number and not the port minor number.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ark3116.c |    2 +-
+ drivers/usb/serial/mos7720.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ark3116.c
-+++ b/drivers/usb/serial/ark3116.c
-@@ -43,7 +43,7 @@
- #define DRIVER_NAME "ark3116"
- 
- /* usb timeout of 1 second */
--#define ARK_TIMEOUT (1*HZ)
-+#define ARK_TIMEOUT 1000
- 
- static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x6547, 0x0232) },
+--- a/drivers/usb/serial/mos7720.c
++++ b/drivers/usb/serial/mos7720.c
+@@ -1644,7 +1644,7 @@ static void change_port_settings(struct
+ 		mos7720_port->shadowMCR |= (UART_MCR_XONANY);
+ 		/* To set hardware flow control to the specified *
+ 		 * serial port, in SP1/2_CONTROL_REG             */
+-		if (port->number)
++		if (port_number)
+ 			write_mos_reg(serial, dummy, SP_CONTROL_REG, 0x01);
+ 		else
+ 			write_mos_reg(serial, dummy, SP_CONTROL_REG, 0x02);
 
 
