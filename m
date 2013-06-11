@@ -1,92 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab3FKDvf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 23:51:35 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:56272 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638Ab3FKDve (ORCPT
+	id S1751587Ab3FKELT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 00:11:19 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40346 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751225Ab3FKELR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 23:51:34 -0400
-Message-ID: <51B69EBD.5000706@linaro.org>
-Date: Tue, 11 Jun 2013 09:21:25 +0530
-From: Tushar Behera <tushar.behera@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 11 Jun 2013 00:11:17 -0400
+From: "J, KEERTHY" <j-keerthy@ti.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "Cousson, Benoit" <b-cousson@ti.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>
+Subject: RE: [PATCH v2 1/2] ARM: dts: add dtsi for palmas
+Thread-Topic: [PATCH v2 1/2] ARM: dts: add dtsi for palmas
+Thread-Index: AQHOZbmzfoqUH8UdZUCRG0oZF40Mz5kunb8AgAFGeDA=
+Date: Tue, 11 Jun 2013 04:10:50 +0000
+Message-ID: <DC88CAD03C0052499C1907B327FC63229EAD1B@DBDE04.ent.ti.com>
+References: <1370855059-5342-1-git-send-email-j-keerthy@ti.com>
+ <1370855059-5342-2-git-send-email-j-keerthy@ti.com>
+ <51B5FEDE.5070900@wwwdotorg.org>
+In-Reply-To: <51B5FEDE.5070900@wwwdotorg.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Sachin Kamat <sachin.kamat@linaro.org>
-CC: linux-kernel@vger.kernel.org, thierry.reding@gmail.com, patches@linaro.org,
-        alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: Re: [PATCH 12/15] ASoC: spear: Convert to use devm_ioremap_resource
-References: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org> <1370864113-17895-13-git-send-email-tushar.behera@linaro.org> <CAK9yfHygMQYpVRqrieyESJw9oZC5OzKoWWSUhYDYEd6KJigegA@mail.gmail.com>
-In-Reply-To: <CAK9yfHygMQYpVRqrieyESJw9oZC5OzKoWWSUhYDYEd6KJigegA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2013 05:36 PM, Sachin Kamat wrote:
-> On 10 June 2013 17:05, Tushar Behera <tushar.behera@linaro.org> wrote:
->> Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
->> introduced devm_ioremap_resource() and deprecated the use of
->> devm_request_and_ioremap().
-> 
-> This patch does a little more than just conversion. May that change
-> could be mentioned here.
-> 
+Hi Stephen,
 
-Sure. I will update that.
-
->>
->> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
->> CC: alsa-devel@alsa-project.org
->> CC: Liam Girdwood <lgirdwood@gmail.com>
->> CC: Mark Brown <broonie@kernel.org>
->> ---
->>  sound/soc/spear/spdif_out.c |   20 +++++---------------
->>  1 file changed, 5 insertions(+), 15 deletions(-)
->>
->> diff --git a/sound/soc/spear/spdif_out.c b/sound/soc/spear/spdif_out.c
->> index 4bde512..896ee7f 100644
->> --- a/sound/soc/spear/spdif_out.c
->> +++ b/sound/soc/spear/spdif_out.c
->> @@ -282,27 +282,17 @@ static int spdif_out_probe(struct platform_device *pdev)
->>         struct resource *res;
->>         int ret;
->>
->> -       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> -       if (!res)
->> -               return -EINVAL;
->> -
->> -       if (!devm_request_mem_region(&pdev->dev, res->start,
->> -                               resource_size(res), pdev->name)) {
->> -               dev_warn(&pdev->dev, "Failed to get memory resourse\n");
->> -               return -ENOENT;
->> -       }
->> -
->>         host = devm_kzalloc(&pdev->dev, sizeof(*host), GFP_KERNEL);
->>         if (!host) {
->>                 dev_warn(&pdev->dev, "kzalloc fail\n");
->>                 return -ENOMEM;
->>         }
->>
->> -       host->io_base = devm_request_and_ioremap(&pdev->dev, res->start,
->> -                               resource_size(res));
->> -       if (!host->io_base) {
->> -               dev_warn(&pdev->dev, "ioremap failed\n");
->> -               return -ENOMEM;
->> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +       host->io_base = devm_ioremap_resource(&pdev->dev, res);
->> +       if (IS_ERR(host->io_base)) {
->> +               dev_warn(&pdev->dev, "devm_ioremap_resource failed\n");
+> -----Original Message-----
+> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> Sent: Monday, June 10, 2013 9:59 PM
+> To: J, KEERTHY
+> Cc: Cousson, Benoit; devicetree-discuss@lists.ozlabs.org; linux-
+> omap@vger.kernel.org; linux-kernel@vger.kernel.org;
+> ldewangan@nvidia.com; grant.likely@secretlab.ca; swarren@nvidia.com;
+> sameo@linux.intel.com; gg@slimlogic.co.uk; lee.jones@linaro.org
+> Subject: Re: [PATCH v2 1/2] ARM: dts: add dtsi for palmas
 > 
-> This print is not needed as devm_ioremap_resource prints its own messages.
+> On 06/10/2013 03:04 AM, J Keerthy wrote:
+> > Adds palmas mfd and palmas regulator nodes.
 > 
+> Nits:
 > 
+> Well, you're really adding files that provide the nodes, not the nodes
+> themselves.
+> 
+> Palmas and MFD should be correctly capitalized.
 
 Ok.
 
-Thanks.
+> 
+> > diff --git a/arch/arm/boot/dts/palmas.dtsi
+> > b/arch/arm/boot/dts/palmas.dtsi
+> 
+> > +&palmas {
+> ...
+> > +	palmas_pmic {
+> ...
+> > +		ti,ldo6-vibrator;
+> 
+> Isn't that board-specific? I don't know the HW well enough to say, but
+> I assume that since there's a property, the whole point must be that
+> some boards want it set and some don't.
+> 
 
--- 
-Tushar Behera
+Yes. I will make this part of board file.
+
+> > +		regulators {
+> > +			smps123_reg: smps123 {
+> > +				regulator-name = "smps123";
+> > +			};
+> 
+> So the node labels here duplicate those in omap5-uevm.dts in patch 2/2.
+> While dtc allows this, I don't think there's much point duplicating the
+> labels. I'd tend to only put the labels in omap5-uevm.dts and not put
+> them here. That will completely avoid the possibility of the labels in
+> this file from conflicting with any other labels in any top-level
+> board.dts file.
+> 
+> I also wonder if this file is actually terribly useful. The only thing
+> that this file provides is the regulator-name property. It seems
+> simpler just to put that into each board.dts file. The added advantage
+> of doing that, is that if a board doesn't use a particular regulator,
+> the node won't appear, and the regulator won't get registered.
+
+Ok. I will transfer the entire code to omap5-uevm.dts.
+
+Thanks for the review comments.
+
+Regards,
+Keerthy
