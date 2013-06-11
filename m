@@ -1,119 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381Ab3FKKBR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 06:01:17 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:33565 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754265Ab3FKKBO (ORCPT
+	id S1754422Ab3FKKE3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 06:04:29 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:44841 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704Ab3FKKE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 06:01:14 -0400
-Date: Tue, 11 Jun 2013 11:01:08 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com
-Subject: Re: [PATCH 00/21] ARM: ux500: Enable Clock look-up from Device Tree
-Message-ID: <20130611100108.GC9216@laptop>
-References: <1370266965-7901-1-git-send-email-lee.jones@linaro.org>
- <CAPDyKFrJumd79hHWJkGWvRKzhoaprPHu=U6HOHXzVL8WyNS6jw@mail.gmail.com>
+	Tue, 11 Jun 2013 06:04:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPDyKFrJumd79hHWJkGWvRKzhoaprPHu=U6HOHXzVL8WyNS6jw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKL7Q7rxkXDx49CgSjoVJSbER7ou+-yXa-yZg4hT4ktG_4gvHw@mail.gmail.com>
+References: <1370845742-18919-1-git-send-email-yinghai@kernel.org>
+	<CA+QCeVRdOOuh4aVZsQhucBNETnDp5OhAZguigLTbyD9bOONO1A@mail.gmail.com>
+	<CAE9FiQXacn2abVKeBhTazgRBCS9EtiACs=fbB6_Y27ZpLOTq3w@mail.gmail.com>
+	<CAKL7Q7rxkXDx49CgSjoVJSbER7ou+-yXa-yZg4hT4ktG_4gvHw@mail.gmail.com>
+Date: Tue, 11 Jun 2013 12:04:26 +0200
+Message-ID: <CAKL7Q7qUwTGexhr+8d88qN94YSCfSeOS-oLMh=KQ2NiOZRLbLQ@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] x86, range: Do not add new blank slot with add_range_with_merge
+From: "Joshua C." <joshuacov@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Sergey Meirovich <rathamahata@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Nice and simple implementation using standard Clk APIs.
-> Hi Lee,
-> 
-> I may be a bit tired, but I am having a bit hard to follow the steps
-> taken in this patch set. :-)
-> 
-> I should of course tell you why:
-> 1. You start out by adding DT definitions in the DT files, should that
-> not be done as the final step, after the DT support has been added in
-> ux500 clk driver?
+2013/6/11 Joshua C. <joshuacov@gmail.com>:
+> 2013/6/10 Yinghai Lu <yinghai@kernel.org>:
+>> On Mon, Jun 10, 2013 at 3:55 AM, Sergey Meirovich <rathamahata@gmail.com> wrote:
+>>
+>>> patches 1,2(latest one) have not helped me on 3.9.5:
+>>
+>> So v1:
+>> https://patchwork.kernel.org/patch/2694981/
+>> https://patchwork.kernel.org/patch/2694971/
+>>
+>> and v2:
+>> https://patchwork.kernel.org/patch/2695891/
+>> https://patchwork.kernel.org/patch/2695881/
+>>
+>> Neither of two versions fix the problem on your setup?
+>>
+>> Can you post boot log with mtrr_cleanup_debug on 3.9.4?
+>>
+>> Thanks
+>>
+>> Yinghai
+>
+> I got some warnings when trying to build v2 of the patches:
+>
+> # make -s ARCH=x86_64 V=1 -j4 bzImage
+> kernel/range.c: In function 'add_range_with_merge':
+> kernel/range.c:51:3: error: implicit declaration of function 'memmove'
+> [-Werror=implicit-function-declaration]
+> kernel/range.c:51:3: warning: incompatible implicit declaration of
+> built-in function 'memmove' [enabled by default]
+> cc1: some warnings being treated as errors
+> scripts/Makefile.build:307: recipe for target 'kernel/range.o' failed
+> make[1]: *** [kernel/range.o] Error 1
+> Makefile:793: recipe for target 'kernel' failed
+> make: *** [kernel] Error 2
+> make: *** Waiting for unfinished jobs....
+>
+>
+> --
+> --joshua
 
-No, let me tell you why. ;)
+A trivial fix for the above warnings:
 
-a) The DT definitions will be going in via a separate tree, so it
-doesn't really matter where they are placed in _this_ patchset. and b)
-they will remain completely dormant until they are backed up with
-driver bindings, so there is no harm in putting them in first.
+--- linux-2.6.orig/kernel/range.c
++++ linux-2.6/kernel/range.c
+@@ -4,6 +4,7 @@
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/sort.h>
++#include <linux/string.h>
 
-> 2. Moreover, I think it would be enough to group the definitions
-> patches into one patch or at least significant fewer. Same feeling
-> about the patches were you remove the AUXDATA, this would simplify the
-> review for me.
+ #include <linux/range.h>
 
-It's generally accepted that lots of lines of code split over a
-greater number of patches (so long as they are in consistent groups of
-functionality) are easier to review and thus have a greater chance of
-acceptance. It also makes things like reverting easier and bisecting
-more precise (rather than finding a big patch using bisect, then
-having to complete a manual mini-bisect to find the offending change.
 
-Arnd provides the maths for calculating the ease of upstreaming a
-patch, which he calls 'weight' (NB: this is from memory, it might be a
-little off):
 
-(patch_weight * patch_weight) * patch_count = delta_weight
-
-So if we had a 100 lines split over 2 patches, it would be:
-
-(50 * 50) * 2 = 5000
-
-Whereas if we split those lines over 4 patches we would see:
-
-(25 * 25) * 4 = 1000
-
-Thus, by this convention it would (generally) considered to be twice
-as difficult to upstream - at least that's the theory. There is a more
-extravagant formula for calculating how difficult it would be to
-upstream an entire tree of delta if a) all patches were contained on a
-single branch compared to b) if patches were split into topic branches.
-
-Something like:
-
-((patch_weight * patch_weight) * patch_count)  *
- (patch_weight * patch_weight) * patch_count)) *
-  branch_count = delta_weight
-
-So following on from the example above and placing 100 lines over 2
-patches on 1 branch you would get:
-
-(((25 * 25) * 4) * (25 * 25) * 4) * 1 = 6250000
-
-Whereas if you spread the patches over two branches you'd have:
-
-(((25 * 25) * 2) * (25 * 25) * 2) * 2 = 3125000
-
-Obviously the branch number comparison works better with the larger
-numbers you'd expect to find in a typical downstream BSP, but you get
-the idea.
-
-</tangent> ... whoops, sorry! :)
-
-> 3. The rest will be commented per patch.
-> 
-> Kind regards
-> Ulf Hansson
-> 
-> >
-> >  arch/arm/boot/dts/dbx5x0.dtsi    |   94 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
-> >  arch/arm/boot/dts/snowball.dts   |    3 ++-
-> >  arch/arm/mach-ux500/cpu-db8500.c |   36 +--------------------------
-> >  drivers/clk/ux500/u8500_clk.c    |  154 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
-> >  4 files changed, 249 insertions(+), 38 deletions(-)
-> >
-> >
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+--
+--joshua
