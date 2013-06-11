@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755792Ab3FKRKQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 13:10:16 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:52250 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755349Ab3FKRKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 13:10:11 -0400
-Message-ID: <51B759C7.7080806@ti.com>
-Date: Tue, 11 Jun 2013 20:09:27 +0300
-From: Illia Smyrnov <x0194613@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1755349Ab3FKRKZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 13:10:25 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:61379 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755350Ab3FKRKW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 13:10:22 -0400
+Date: Tue, 11 Jun 2013 12:10:19 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [RFC] is it time to split up the MAINTAINERS file?
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1370934825.22004.21.camel@joe-AO722> (from joe@perches.com on
+	Tue Jun 11 02:13:45 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1370970619.2776.97@driftwood>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Illia Smyrnov <illia.smyrnov@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Daniel Mack <zonque@gmail.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        <spi-devel-general@lists.sourceforge.net>
-Subject: Re: [PATCH 2/2] spi: omap2-mcspi: Add FIFO buffer support
-References: <1370432398-7796-1-git-send-email-illia.smyrnov@ti.com> <1370432398-7796-3-git-send-email-illia.smyrnov@ti.com> <20130605120346.GZ31367@sirena.org.uk> <51B05FB8.6050903@ti.com> <20130606103032.GR31367@sirena.org.uk>
-In-Reply-To: <20130606103032.GR31367@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.193]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2013 01:30 PM, Mark Brown wrote:
-> On Thu, Jun 06, 2013 at 01:08:56PM +0300, Illia Smyrnov wrote:
->> On 06/05/2013 03:03 PM, Mark Brown wrote:
->
->>> Why is this defined for slaves?  Surely the size of the FIFO in the
->>> controller is a property of the controller not the slave?
->
->> According to OMAP TRM [1] the FIFO buffer can be used by only one
->> channel at a time. If several channels are selected and several FIFO
->> enable bit fields are set to 1, the controller forces the buffer not
->> to be used.
->
-> The controller ought to be able to figure this out for itself.  As a
-> first pass just grabbing the FIFO on a first come first served basis
-> will probably work well most of the time, the device would have to be
-> very active for it to constantly be doing transfers on all channels.
->
-> If there's more contention than that we probably ought to be looking at
-> how we handle this in general, it seems like we'd have more problems
-> than just the FIFO to worry about.
->
->> If there are several slaves on the controller we must select which
->> of slaves will use the FIFO for SPI transfers. Also, optimal FIFO
->
-> A single controller is only going to be able to talk to one slave at
-> once, everything on the bus except chip select is shared.
->
->> size is heavily dependent of the SPI transfers length specific for
->> certain slave.
->
-> The transfer length doesn't seem like something that we want to be
-> encoding in DT, particularly not indirectly - it is obviously readily
-> available at runtime, variable during runtime (eg, firmware download may
-> do large transfers on a device that only does small transfers most of
-> the time) and is something that updates to the drivers could change.
+On 06/11/2013 02:13:45 AM, Joe Perches wrote:
+> On Mon, 2013-06-10 at 23:49 -0500, Rob Landley wrote:
+> > You could either have the same entry in more than one MAINTAINERS  
+> file
+> > or keep it at a higher level. (This wouldn't eliminate the top level
+> > MAINTAINERS, merely trim it down a bit.)
+> >
+> > Just throwing it out there. Seems like it might be a thing, someday
+> > anyway...
+> 
+> Patches talk...
 
-I sent patches for v2 of the MCSPI FIFO support implementation. In this 
-version driver will calculate the largest possible FIFO buffer size for 
-each SPI transfer.
-Also FIFO could be enabled by setting up parameter in the MCSPI 
-controller (master) DT node.
+So you suggest sending a patch series to break out arch directories and  
+go "here, a whole new task for you the architecture maintainer to take  
+on!" and that's the _polite_ way to ask whether or not it's a good idea?
+
+> or add an initial / for the absolutes
+> 
+> F:	*/			(everything at this directory and lower)
+> F:	foo.c			(single file)
+> F:	/Documentation/foo.txt	(absolute single file)
+
+That one, obviously. (Optimize for the common case.)
+
+> make could be taught to create an overall integrated
+> MAINTAINERS, which would not be part of the files
+> managed by git/cvs from these submaintainer files.
+
+Why? (What's the point? Does it make finding who is in charge of $THING  
+easier?)
+
+> Still, I think the "best" approach would be to enhance
+> git to manage this additional information instead.
+
+Oh please no.
+
+> Something akin to:
+> https://lkml.org/lkml/2007/8/14/256
+
+I'm sorry I brought it up.
+
+> Maybe some standardization of "git notes" or
+> "git annotate" might work.
+
+The horror! The horror!
+
+> A script could be written to create something like the
+> existing MAINTAINERS file from that too.
+
+I won't mention it again.
+
+*shudder*
+
+Rob
