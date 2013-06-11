@@ -1,241 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab3FKTJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 15:09:38 -0400
-Received: from saarni.dnainternet.net ([83.102.40.136]:50289 "EHLO
-	saarni.dnainternet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792Ab3FKTJh (ORCPT
+	id S1755021Ab3FKTRr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 15:17:47 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:58677 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332Ab3FKTRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 15:09:37 -0400
-X-Greylist: delayed 509 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Jun 2013 15:09:37 EDT
-X-Spam-Flag: NO
-X-Spam-Score: -1
-Message-ID: <51B773ED.9080308@iki.fi>
-Date: Tue, 11 Jun 2013 22:01:01 +0300
-From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 11 Jun 2013 15:17:46 -0400
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        herbert@gondor.hengli.com.au,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>
-Subject: Re: GPF in aesni_xts_crypt8 (3.10-rc5)
-References: <20130611172624.GA20496@redhat.com>
-In-Reply-To: <20130611172624.GA20496@redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/mixed;
- boundary="------------010303060502000304030708"
+In-Reply-To: <20130611184113.GA2288@www.outflux.net>
+References: <20130611184113.GA2288@www.outflux.net>
+Date: Tue, 11 Jun 2013 12:17:46 -0700
+X-Google-Sender-Auth: Gh7aywNppac73GoH4oxSDOJtJj0
+Message-ID: <CAE9FiQXCj+H=h+SPcfW82dBK5n6aDGuX+pmg7zr+6mKtdD4nMg@mail.gmail.com>
+Subject: Re: [PATCH] x86, boot: access cmdline when loaded high
+From: Yinghai Lu <yinghai@kernel.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Gokul Caushik <caushik1@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010303060502000304030708
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+On Tue, Jun 11, 2013 at 11:41 AM, Kees Cook <keescook@chromium.org> wrote:
+> The __cmdline_find_option routine requires that the kernel cmdline be
+> located under 0x10000. When running the compressed boot code, if the
+> cmdline is loaded above this range, it will be ignored. This breaks
+> recognition of things like "earlyprintk=...". Since the compressed boot
+> code is already tricking the cmdline routines about locations, take it all
+> the way and access the cmdline via offset instead of via actual location.
 
-Hello,
+Hi,
 
-Does attached patch help?
+What is point of the patch?
+It looks like it try to fix one bug, but it doesn't,
+as there is no bug out there.
 
--Jussi
+Before the patch, command line that is loaded high
+can be processed correctly in arch/x86/boot/compressed/cmdline.c.
 
-On 11.06.2013 20:26, Dave Jones wrote:
-> Just found that 3.10-rc doesn't boot on my laptop with encrypted disk.
-> 
-> 
-> general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> Modules linked in: xfs libcrc32c dm_crypt crc32c_intel ghash_clmulni_intel aesni_intel glue_helper ablk_helper i915 i2c_algo_bit drm_kms_helper drm i2c_core video
-> CPU: 1 PID: 53 Comm: kworker/1:1 Not tainted 3.10.0-rc5+ #5 
-> Hardware name: LENOVO 2356JK8/2356JK8, BIOS G7ET94WW (2.54 ) 04/30/2013
-> Workqueue: kcryptd kcryptd_crypt [dm_crypt]
-> task: ffff880135c58000 ti: ffff880135c54000 task.ti: ffff880135c54000
-> RIP: 0010:[<ffffffffa01433a2>]  [<ffffffffa01433a2>] aesni_xts_crypt8+0x42/0x1e0 [aesni_intel]
-> RSP: 0018:ffff880135c55b68  EFLAGS: 00010282
-> RAX: ffffffffa0142eb8 RBX: 0000000000000080 RCX: 00000000000000f0
-> RDX: ffff8801316eeaa8 RSI: ffff8801316eeaa8 RDI: ffff88012fd84440
-> RBP: ffff880135c55b70 R08: ffff8801304fe118 R09: 0000000000000020
-> R10: 00000000000000f0 R11: ffffffffa0142eb8 R12: ffff8801316eeb28
-> R13: 0000000000000080 R14: ffff8801316eeb28 R15: 0000000000000180
-> FS:  0000000000000000(0000) GS:ffff880139400000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> CR2: 00000039e88bc720 CR3: 0000000001c0b000 CR4: 00000000001407e0
-> Stack:
->  ffffffffa0143683 ffff880135c55c40 ffffffffa00602fb ffff880135c55c70
->  ffffffffa0146060 0000000001ad0190 ffffffffa0146060 ffffea0004c5bb80
->  ffff8801316eeaa8 ffffea0004c5bb80 ffff8801316eeaa8 ffff8801304fe0c0
-> Call Trace:
->  [<ffffffffa0143683>] ? aesni_xts_dec8+0x13/0x20 [aesni_intel]
->  [<ffffffffa00602fb>] glue_xts_crypt_128bit+0x10b/0x1c0 [glue_helper]
->  [<ffffffffa014358b>] xts_decrypt+0x4b/0x50 [aesni_intel]
->  [<ffffffffa000617f>] ablk_decrypt+0x4f/0xd0 [ablk_helper]
->  [<ffffffffa0067202>] crypt_convert+0x352/0x3b0 [dm_crypt]
->  [<ffffffffa00675b5>] kcryptd_crypt+0x355/0x4e0 [dm_crypt]
->  [<ffffffff81061b35>] ? process_one_work+0x1a5/0x700
->  [<ffffffff81061ba1>] process_one_work+0x211/0x700
->  [<ffffffff81061b35>] ? process_one_work+0x1a5/0x700
->  [<ffffffff810621ab>] worker_thread+0x11b/0x3a0
->  [<ffffffff81062090>] ? process_one_work+0x700/0x700
->  [<ffffffff81069f4d>] kthread+0xed/0x100
->  [<ffffffff81069e60>] ? insert_kthread_work+0x80/0x80
->  [<ffffffff815fd41c>] ret_from_fork+0x7c/0xb0
->  [<ffffffff81069e60>] ? insert_kthread_work+0x80/0x80
-> Code: 8d 04 25 b8 2e 14 a0 41 0f 44 ca 4c 0f 44 d8 66 44 0f 6f 14 25 00 70 14 a0 41 0f 10 18 44 8b 8f e0 01 00 00 48 01 cf 66 0f 6f c3 <66> 0f ef 02 f3 0f 7f 1e 66 44 0f 70 db 13 66 0f d4 db 66 41 0f 
-> RIP  [<ffffffffa01433a2>] aesni_xts_crypt8+0x42/0x1e0 [aesni_intel]
->  RSP <ffff880135c55b68>
-> 
->    0:	8d 04 25 b8 2e 14 a0 	lea    0xffffffffa0142eb8,%eax
->    7:	41 0f 44 ca          	cmove  %r10d,%ecx
->    b:	4c 0f 44 d8          	cmove  %rax,%r11
->    f:	66 44 0f 6f 14 25 00 	movdqa 0xffffffffa0147000,%xmm10
->   16:	70 14 a0 
->   19:	41 0f 10 18          	movups (%r8),%xmm3
->   1d:	44 8b 8f e0 01 00 00 	mov    0x1e0(%rdi),%r9d
->   24:	48 01 cf             	add    %rcx,%rdi
->   27:	66 0f 6f c3          	movdqa %xmm3,%xmm0
->   2b:*	66 0f ef 02          	pxor   (%rdx),%xmm0     <-- trapping instruction
->   2f:	f3 0f 7f 1e          	movdqu %xmm3,(%rsi)
->   33:	66 44 0f 70 db 13    	pshufd $0x13,%xmm3,%xmm11
->   39:	66 0f d4 db          	paddq  %xmm3,%xmm3
->   3d:	66                   	data16
->   3e:	41                   	rex.B
->   3f:	
-> 
-> 
+>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  arch/x86/boot/compressed/cmdline.c |   21 +++++++++------------
+>  1 file changed, 9 insertions(+), 12 deletions(-)
+>
+> diff --git a/arch/x86/boot/compressed/cmdline.c b/arch/x86/boot/compressed/cmdline.c
+> index bffd73b..2e39280 100644
+> --- a/arch/x86/boot/compressed/cmdline.c
+> +++ b/arch/x86/boot/compressed/cmdline.c
+> @@ -2,32 +2,29 @@
+>
+>  #ifdef CONFIG_EARLY_PRINTK
+>
+> +/*
+> + * We know where the cmdline is, so just retain it, and use a non-zero
+> + * offset to trick __cmdline_find_option into running.
+> + */
+>  static unsigned long fs;
+>  static inline void set_fs(unsigned long seg)
+>  {
+> -       fs = seg << 4;  /* shift it back */
+> +       fs = real_mode->hdr.cmd_line_ptr;
+> +       fs |= (u64)real_mode->ext_cmd_line_ptr << 32;
+>  }
+>  typedef unsigned long addr_t;
+>  static inline char rdfs8(addr_t addr)
+>  {
+> -       return *((char *)(fs + addr));
+> +       return *((char *)(fs + addr - 0x1));
+>  }
+>  #include "../cmdline.c"
+> -static unsigned long get_cmd_line_ptr(void)
+> -{
+> -       unsigned long cmd_line_ptr = real_mode->hdr.cmd_line_ptr;
+> -
+> -       cmd_line_ptr |= (u64)real_mode->ext_cmd_line_ptr << 32;
+> -
+> -       return cmd_line_ptr;
+> -}
+>  int cmdline_find_option(const char *option, char *buffer, int bufsize)
+>  {
+> -       return __cmdline_find_option(get_cmd_line_ptr(), option, buffer, bufsize);
+> +       return __cmdline_find_option(0x1, option, buffer, bufsize);
 
+that's funny, why do you pick 0x1 here?
+why not use 0x10 or 0?
 
---------------010303060502000304030708
-Content-Type: text/x-patch;
- name="05-aesni_intel-xts-fix-unaligned-mem-access.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="05-aesni_intel-xts-fix-unaligned-mem-access.patch"
-
-crypto: aesni_intel - fix accessing of unaligned memory
-
-From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-
-The new XTS code for aesni_intel uses input buffers directly as memory operands
-for pxor instructions, which causes crash if those buffers are not aligned to
-16 bytes.
-
-Patch change XTS code to handle unaligned memory correctly, by loading memory
-with movdqu instead.
-
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
----
- arch/x86/crypto/aesni-intel_asm.S |   48 +++++++++++++++++++++++++------------
- 1 file changed, 32 insertions(+), 16 deletions(-)
-
-diff --git a/arch/x86/crypto/aesni-intel_asm.S b/arch/x86/crypto/aesni-intel_asm.S
-index 62fe22c..477e9d7 100644
---- a/arch/x86/crypto/aesni-intel_asm.S
-+++ b/arch/x86/crypto/aesni-intel_asm.S
-@@ -2681,56 +2681,68 @@ ENTRY(aesni_xts_crypt8)
- 	addq %rcx, KEYP
- 
- 	movdqa IV, STATE1
--	pxor 0x00(INP), STATE1
-+	movdqu 0x00(INP), INC
-+	pxor INC, STATE1
- 	movdqu IV, 0x00(OUTP)
- 
- 	_aesni_gf128mul_x_ble()
- 	movdqa IV, STATE2
--	pxor 0x10(INP), STATE2
-+	movdqu 0x10(INP), INC
-+	pxor INC, STATE2
- 	movdqu IV, 0x10(OUTP)
- 
- 	_aesni_gf128mul_x_ble()
- 	movdqa IV, STATE3
--	pxor 0x20(INP), STATE3
-+	movdqu 0x20(INP), INC
-+	pxor INC, STATE3
- 	movdqu IV, 0x20(OUTP)
- 
- 	_aesni_gf128mul_x_ble()
- 	movdqa IV, STATE4
--	pxor 0x30(INP), STATE4
-+	movdqu 0x30(INP), INC
-+	pxor INC, STATE4
- 	movdqu IV, 0x30(OUTP)
- 
- 	call *%r11
- 
--	pxor 0x00(OUTP), STATE1
-+	movdqu 0x00(OUTP), INC
-+	pxor INC, STATE1
- 	movdqu STATE1, 0x00(OUTP)
- 
- 	_aesni_gf128mul_x_ble()
- 	movdqa IV, STATE1
--	pxor 0x40(INP), STATE1
-+	movdqu 0x40(INP), INC
-+	pxor INC, STATE1
- 	movdqu IV, 0x40(OUTP)
- 
--	pxor 0x10(OUTP), STATE2
-+	movdqu 0x10(OUTP), INC
-+	pxor INC, STATE2
- 	movdqu STATE2, 0x10(OUTP)
- 
- 	_aesni_gf128mul_x_ble()
- 	movdqa IV, STATE2
--	pxor 0x50(INP), STATE2
-+	movdqu 0x50(INP), INC
-+	pxor INC, STATE2
- 	movdqu IV, 0x50(OUTP)
- 
--	pxor 0x20(OUTP), STATE3
-+	movdqu 0x20(OUTP), INC
-+	pxor INC, STATE3
- 	movdqu STATE3, 0x20(OUTP)
- 
- 	_aesni_gf128mul_x_ble()
- 	movdqa IV, STATE3
--	pxor 0x60(INP), STATE3
-+	movdqu 0x60(INP), INC
-+	pxor INC, STATE3
- 	movdqu IV, 0x60(OUTP)
- 
--	pxor 0x30(OUTP), STATE4
-+	movdqu 0x30(OUTP), INC
-+	pxor INC, STATE4
- 	movdqu STATE4, 0x30(OUTP)
- 
- 	_aesni_gf128mul_x_ble()
- 	movdqa IV, STATE4
--	pxor 0x70(INP), STATE4
-+	movdqu 0x70(INP), INC
-+	pxor INC, STATE4
- 	movdqu IV, 0x70(OUTP)
- 
- 	_aesni_gf128mul_x_ble()
-@@ -2738,16 +2750,20 @@ ENTRY(aesni_xts_crypt8)
- 
- 	call *%r11
- 
--	pxor 0x40(OUTP), STATE1
-+	movdqu 0x40(OUTP), INC
-+	pxor INC, STATE1
- 	movdqu STATE1, 0x40(OUTP)
- 
--	pxor 0x50(OUTP), STATE2
-+	movdqu 0x50(OUTP), INC
-+	pxor INC, STATE2
- 	movdqu STATE2, 0x50(OUTP)
- 
--	pxor 0x60(OUTP), STATE3
-+	movdqu 0x60(OUTP), INC
-+	pxor INC, STATE3
- 	movdqu STATE3, 0x60(OUTP)
- 
--	pxor 0x70(OUTP), STATE4
-+	movdqu 0x70(OUTP), INC
-+	pxor INC, STATE4
- 	movdqu STATE4, 0x70(OUTP)
- 
- 	ret
-
---------------010303060502000304030708--
+>  }
+>  int cmdline_find_option_bool(const char *option)
+>  {
+> -       return __cmdline_find_option_bool(get_cmd_line_ptr(), option);
+> +       return __cmdline_find_option_bool(0x1, option);
+>  }
+>
+>  #endif
+> --
+> 1.7.9.5
+>
+>
+> --
+> Kees Cook
+> Chrome OS Security
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
