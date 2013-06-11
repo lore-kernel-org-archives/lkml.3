@@ -1,228 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab3FKLub (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:50:31 -0400
-Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:63240 "EHLO nsa.gov"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753035Ab3FKLu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:50:26 -0400
-X-TM-IMSS-Message-ID: <b648cb1e000249a7@nsa.gov>
-Message-ID: <51B70EE4.5030209@tycho.nsa.gov>
-Date: Tue, 11 Jun 2013 07:49:56 -0400
-From: Stephen Smalley <sds@tycho.nsa.gov>
-Organization: National Security Agency
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1754773Ab3FKLvs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:51:48 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:54983 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035Ab3FKLvp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 07:51:45 -0400
+Date: Tue, 11 Jun 2013 12:51:40 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com,
+        Mike Turquette <mturquette@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH 20/33 v2] clk: ux500: Add Device Tree support for the PRCC
+ Peripheral clock
+Message-ID: <20130611115140.GE3330@laptop>
+References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
+ <1370521041-32318-21-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-To: Waiman Long <Waiman.Long@hp.com>
-CC: James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@parisplace.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH 1/2 v5] SELinux: Reduce overhead of mls_level_isvalid()
- function call
-References: <1370886908-65256-1-git-send-email-Waiman.Long@hp.com>
-In-Reply-To: <1370886908-65256-1-git-send-email-Waiman.Long@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370521041-32318-21-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2013 01:55 PM, Waiman Long wrote:
-> v4->v5:
->    - Fix scripts/checkpatch.pl warning.
->
-> v3->v4:
->    - Merge the 2 separate while loops in ebitmap_contains() into
->      a single one.
->
-> v2->v3:
->    - Remove unused local variables i, node from mls_level_isvalid().
->
-> v1->v2:
->   - Move the new ebitmap comparison logic from mls_level_isvalid()
->     into the ebitmap_contains() helper function.
->   - Rerun perf and performance tests on the latest v3.10-rc4 kernel.
->
-> While running the high_systime workload of the AIM7 benchmark on
-> a 2-socket 12-core Westmere x86-64 machine running 3.10-rc4 kernel
-> (with HT on), it was found that a pretty sizable amount of time was
-> spent in the SELinux code. Below was the perf trace of the "perf
-> record -a -s" of a test run at 1500 users:
->
->    5.04%            ls  [kernel.kallsyms]     [k] ebitmap_get_bit
->    1.96%            ls  [kernel.kallsyms]     [k] mls_level_isvalid
->    1.95%            ls  [kernel.kallsyms]     [k] find_next_bit
->
-> The ebitmap_get_bit() was the hottest function in the perf-report
-> output.  Both the ebitmap_get_bit() and find_next_bit() functions
-> were, in fact, called by mls_level_isvalid(). As a result, the
-> mls_level_isvalid() call consumed 8.95% of the total CPU time of
-> all the 24 virtual CPUs which is quite a lot. The majority of the
-> mls_level_isvalid() function invocations come from the socket creation
-> system call.
->
-> Looking at the mls_level_isvalid() function, it is checking to see
-> if all the bits set in one of the ebitmap structure are also set in
-> another one as well as the highest set bit is no bigger than the one
-> specified by the given policydb data structure. It is doing it in
-> a bit-by-bit manner. So if the ebitmap structure has many bits set,
-> the iteration loop will be done many times.
->
-> The current code can be rewritten to use a similar algorithm as the
-> ebitmap_contains() function with an additional check for the
-> highest set bit. The ebitmap_contains() function was extended to
-> cover an optional additional check for the highest set bit, and the
-> mls_level_isvalid() function was modified to call ebitmap_contains().
->
-> With that change, the perf trace showed that the used CPU time drop
-> down to just 0.08% (ebitmap_contains + mls_level_isvalid) of the
-> total which is about 100X less than before.
->
->    0.07%            ls  [kernel.kallsyms]     [k] ebitmap_contains
->    0.05%            ls  [kernel.kallsyms]     [k] ebitmap_get_bit
->    0.01%            ls  [kernel.kallsyms]     [k] mls_level_isvalid
->    0.01%            ls  [kernel.kallsyms]     [k] find_next_bit
->
-> The remaining ebitmap_get_bit() and find_next_bit() functions calls
-> are made by other kernel routines as the new mls_level_isvalid()
-> function will not call them anymore.
->
-> This patch also improves the high_systime AIM7 benchmark result,
-> though the improvement is not as impressive as is suggested by the
-> reduction in CPU time spent in the ebitmap functions. The table below
-> shows the performance change on the 2-socket x86-64 system (with HT
-> on) mentioned above.
->
-> +--------------+---------------+----------------+-----------------+
-> |   Workload   | mean % change | mean % change  | mean % change   |
-> |              | 10-100 users  | 200-1000 users | 1100-2000 users |
-> +--------------+---------------+----------------+-----------------+
-> | high_systime |     +0.1%     |     +0.9%      |     +2.6%       |
-> +--------------+---------------+----------------+-----------------+
->
-> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+This patch enables clocks to be specified from Device Tree via phandles
+to the "prcc-periph-clock" node.
 
-Acked-by:  Stephen Smalley <sds@tycho.nsa.gov>
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-> ---
->   security/selinux/ss/ebitmap.c   |   20 ++++++++++++++++++--
->   security/selinux/ss/ebitmap.h   |    2 +-
->   security/selinux/ss/mls.c       |   22 +++++++---------------
->   security/selinux/ss/mls_types.h |    2 +-
->   4 files changed, 27 insertions(+), 19 deletions(-)
->
-> diff --git a/security/selinux/ss/ebitmap.c b/security/selinux/ss/ebitmap.c
-> index 30f119b..820313a 100644
-> --- a/security/selinux/ss/ebitmap.c
-> +++ b/security/selinux/ss/ebitmap.c
-> @@ -213,7 +213,12 @@ netlbl_import_failure:
->   }
->   #endif /* CONFIG_NETLABEL */
->
-> -int ebitmap_contains(struct ebitmap *e1, struct ebitmap *e2)
-> +/*
-> + * Check to see if all the bits set in e2 are also set in e1. Optionally,
-> + * if last_e2bit is non-zero, the highest set bit in e2 cannot exceed
-> + * last_e2bit.
-> + */
-> +int ebitmap_contains(struct ebitmap *e1, struct ebitmap *e2, u32 last_e2bit)
->   {
->   	struct ebitmap_node *n1, *n2;
->   	int i;
-> @@ -223,14 +228,25 @@ int ebitmap_contains(struct ebitmap *e1, struct ebitmap *e2)
->
->   	n1 = e1->node;
->   	n2 = e2->node;
-> +
->   	while (n1 && n2 && (n1->startbit <= n2->startbit)) {
->   		if (n1->startbit < n2->startbit) {
->   			n1 = n1->next;
->   			continue;
->   		}
-> -		for (i = 0; i < EBITMAP_UNIT_NUMS; i++) {
-> +		for (i = EBITMAP_UNIT_NUMS - 1; (i >= 0) && !n2->maps[i]; )
-> +			i--;	/* Skip trailing NULL map entries */
-> +		if (last_e2bit && (i >= 0)) {
-> +			u32 lastsetbit = n2->startbit + i * EBITMAP_UNIT_SIZE +
-> +					 __fls(n2->maps[i]);
-> +			if (lastsetbit > last_e2bit)
-> +				return 0;
-> +		}
-> +
-> +		while (i >= 0) {
->   			if ((n1->maps[i] & n2->maps[i]) != n2->maps[i])
->   				return 0;
-> +			i--;
->   		}
->
->   		n1 = n1->next;
-> diff --git a/security/selinux/ss/ebitmap.h b/security/selinux/ss/ebitmap.h
-> index 922f8af..e7eb3a9 100644
-> --- a/security/selinux/ss/ebitmap.h
-> +++ b/security/selinux/ss/ebitmap.h
-> @@ -117,7 +117,7 @@ static inline void ebitmap_node_clr_bit(struct ebitmap_node *n,
->
->   int ebitmap_cmp(struct ebitmap *e1, struct ebitmap *e2);
->   int ebitmap_cpy(struct ebitmap *dst, struct ebitmap *src);
-> -int ebitmap_contains(struct ebitmap *e1, struct ebitmap *e2);
-> +int ebitmap_contains(struct ebitmap *e1, struct ebitmap *e2, u32 last_e2bit);
->   int ebitmap_get_bit(struct ebitmap *e, unsigned long bit);
->   int ebitmap_set_bit(struct ebitmap *e, unsigned long bit, int value);
->   void ebitmap_destroy(struct ebitmap *e);
-> diff --git a/security/selinux/ss/mls.c b/security/selinux/ss/mls.c
-> index 40de8d3..c85bc1e 100644
-> --- a/security/selinux/ss/mls.c
-> +++ b/security/selinux/ss/mls.c
-> @@ -160,8 +160,6 @@ void mls_sid_to_context(struct context *context,
->   int mls_level_isvalid(struct policydb *p, struct mls_level *l)
->   {
->   	struct level_datum *levdatum;
-> -	struct ebitmap_node *node;
-> -	int i;
->
->   	if (!l->sens || l->sens > p->p_levels.nprim)
->   		return 0;
-> @@ -170,19 +168,13 @@ int mls_level_isvalid(struct policydb *p, struct mls_level *l)
->   	if (!levdatum)
->   		return 0;
->
-> -	ebitmap_for_each_positive_bit(&l->cat, node, i) {
-> -		if (i > p->p_cats.nprim)
-> -			return 0;
-> -		if (!ebitmap_get_bit(&levdatum->level->cat, i)) {
-> -			/*
-> -			 * Category may not be associated with
-> -			 * sensitivity.
-> -			 */
-> -			return 0;
-> -		}
-> -	}
-> -
-> -	return 1;
-> +	/*
-> +	 * Return 1 iff all the bits set in l->cat are also be set in
-> +	 * levdatum->level->cat and no bit in l->cat is larger than
-> +	 * p->p_cats.nprim.
-> +	 */
-> +	return ebitmap_contains(&levdatum->level->cat, &l->cat,
-> +				p->p_cats.nprim);
->   }
->
->   int mls_range_isvalid(struct policydb *p, struct mls_range *r)
-> diff --git a/security/selinux/ss/mls_types.h b/security/selinux/ss/mls_types.h
-> index 03bed52..e936487 100644
-> --- a/security/selinux/ss/mls_types.h
-> +++ b/security/selinux/ss/mls_types.h
-> @@ -35,7 +35,7 @@ static inline int mls_level_eq(struct mls_level *l1, struct mls_level *l2)
->   static inline int mls_level_dom(struct mls_level *l1, struct mls_level *l2)
->   {
->   	return ((l1->sens >= l2->sens) &&
-> -		ebitmap_contains(&l1->cat, &l2->cat));
-> +		ebitmap_contains(&l1->cat, &l2->cat, 0));
->   }
->
->   #define mls_level_incomp(l1, l2) \
->
-
+diff --git a/drivers/clk/ux500/u8500_clk.c b/drivers/clk/ux500/u8500_clk.c
+index c8ebd19..ff02a26 100644
+--- a/drivers/clk/ux500/u8500_clk.c
++++ b/drivers/clk/ux500/u8500_clk.c
+@@ -15,10 +15,16 @@
+ #include <linux/platform_data/clk-ux500.h>
+ #include "clk.h"
+ 
++#define PRCC_NUM_PERIPH_CLUSTERS 6
++#define PRCC_PERIPHS_PER_CLUSTER 32
++
+ static struct clk *prcmu_clk[PRCMU_NUM_CLKS];
++static struct clk *prcc_pclk[(PRCC_NUM_PERIPH_CLUSTERS + 1) * PRCC_PERIPHS_PER_CLUSTER];
+ 
+ #define PRCC_SHOW(clk, base, bit) \
+ 	clk[(base * PRCC_PERIPHS_PER_CLUSTER) + bit]
++#define PRCC_PCLK_STORE(clk, base, bit)	\
++	prcc_pclk[(base * PRCC_PERIPHS_PER_CLUSTER) + bit] = clk
+ 
+ struct clk *ux500_twocell_get(struct of_phandle_args *clkspec, void *data)
+ {
+@@ -288,143 +294,176 @@ void u8500_clk_init(u32 clkrst1_base, u32 clkrst2_base, u32 clkrst3_base,
+ 	clk = clk_reg_prcc_pclk("p1_pclk0", "per1clk", clkrst1_base,
+ 				BIT(0), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "uart0");
++	PRCC_PCLK_STORE(clk, 1, 0);
+ 
+ 	clk = clk_reg_prcc_pclk("p1_pclk1", "per1clk", clkrst1_base,
+ 				BIT(1), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "uart1");
++	PRCC_PCLK_STORE(clk, 1, 1);
+ 
+ 	clk = clk_reg_prcc_pclk("p1_pclk2", "per1clk", clkrst1_base,
+ 				BIT(2), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "nmk-i2c.1");
++	PRCC_PCLK_STORE(clk, 1, 2);
+ 
+ 	clk = clk_reg_prcc_pclk("p1_pclk3", "per1clk", clkrst1_base,
+ 				BIT(3), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "msp0");
+ 	clk_register_clkdev(clk, "apb_pclk", "ux500-msp-i2s.0");
++	PRCC_PCLK_STORE(clk, 1, 3);
+ 
+ 	clk = clk_reg_prcc_pclk("p1_pclk4", "per1clk", clkrst1_base,
+ 				BIT(4), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "msp1");
+ 	clk_register_clkdev(clk, "apb_pclk", "ux500-msp-i2s.1");
++	PRCC_PCLK_STORE(clk, 1, 4);
+ 
+ 	clk = clk_reg_prcc_pclk("p1_pclk5", "per1clk", clkrst1_base,
+ 				BIT(5), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "sdi0");
++	PRCC_PCLK_STORE(clk, 1, 5);
+ 
+ 	clk = clk_reg_prcc_pclk("p1_pclk6", "per1clk", clkrst1_base,
+ 				BIT(6), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "nmk-i2c.2");
++	PRCC_PCLK_STORE(clk, 1, 6);
+ 
+ 	clk = clk_reg_prcc_pclk("p1_pclk7", "per1clk", clkrst1_base,
+ 				BIT(7), 0);
+ 	clk_register_clkdev(clk, NULL, "spi3");
++	PRCC_PCLK_STORE(clk, 1, 7);
+ 
+ 	clk = clk_reg_prcc_pclk("p1_pclk8", "per1clk", clkrst1_base,
+ 				BIT(8), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "slimbus0");
++	PRCC_PCLK_STORE(clk, 1, 8);
+ 
+ 	clk = clk_reg_prcc_pclk("p1_pclk9", "per1clk", clkrst1_base,
+ 				BIT(9), 0);
+ 	clk_register_clkdev(clk, NULL, "gpio.0");
+ 	clk_register_clkdev(clk, NULL, "gpio.1");
+ 	clk_register_clkdev(clk, NULL, "gpioblock0");
++	PRCC_PCLK_STORE(clk, 1, 9);
+ 
+ 	clk = clk_reg_prcc_pclk("p1_pclk10", "per1clk", clkrst1_base,
+ 				BIT(10), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "nmk-i2c.4");
++	PRCC_PCLK_STORE(clk, 1, 10);
+ 
+ 	clk = clk_reg_prcc_pclk("p1_pclk11", "per1clk", clkrst1_base,
+ 				BIT(11), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "msp3");
+ 	clk_register_clkdev(clk, "apb_pclk", "ux500-msp-i2s.3");
++	PRCC_PCLK_STORE(clk, 1, 11);
+ 
+ 	clk = clk_reg_prcc_pclk("p2_pclk0", "per2clk", clkrst2_base,
+ 				BIT(0), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "nmk-i2c.3");
++	PRCC_PCLK_STORE(clk, 2, 0);
+ 
+ 	clk = clk_reg_prcc_pclk("p2_pclk1", "per2clk", clkrst2_base,
+ 				BIT(1), 0);
+ 	clk_register_clkdev(clk, NULL, "spi2");
++	PRCC_PCLK_STORE(clk, 2, 1);
+ 
+ 	clk = clk_reg_prcc_pclk("p2_pclk2", "per2clk", clkrst2_base,
+ 				BIT(2), 0);
+ 	clk_register_clkdev(clk, NULL, "spi1");
++	PRCC_PCLK_STORE(clk, 2, 2);
+ 
+ 	clk = clk_reg_prcc_pclk("p2_pclk3", "per2clk", clkrst2_base,
+ 				BIT(3), 0);
+ 	clk_register_clkdev(clk, NULL, "pwl");
++	PRCC_PCLK_STORE(clk, 2, 3);
+ 
+ 	clk = clk_reg_prcc_pclk("p2_pclk4", "per2clk", clkrst2_base,
+ 				BIT(4), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "sdi4");
++	PRCC_PCLK_STORE(clk, 2, 4);
+ 
+ 	clk = clk_reg_prcc_pclk("p2_pclk5", "per2clk", clkrst2_base,
+ 				BIT(5), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "msp2");
+ 	clk_register_clkdev(clk, "apb_pclk", "ux500-msp-i2s.2");
++	PRCC_PCLK_STORE(clk, 2, 5);
+ 
+ 	clk = clk_reg_prcc_pclk("p2_pclk6", "per2clk", clkrst2_base,
+ 				BIT(6), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "sdi1");
++	PRCC_PCLK_STORE(clk, 2, 6);
+ 
+ 	clk = clk_reg_prcc_pclk("p2_pclk7", "per2clk", clkrst2_base,
+ 				BIT(7), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "sdi3");
++	PRCC_PCLK_STORE(clk, 2, 7);
+ 
+ 	clk = clk_reg_prcc_pclk("p2_pclk8", "per2clk", clkrst2_base,
+ 				BIT(8), 0);
+ 	clk_register_clkdev(clk, NULL, "spi0");
++	PRCC_PCLK_STORE(clk, 2, 8);
+ 
+ 	clk = clk_reg_prcc_pclk("p2_pclk9", "per2clk", clkrst2_base,
+ 				BIT(9), 0);
+ 	clk_register_clkdev(clk, "hsir_hclk", "ste_hsi.0");
++	PRCC_PCLK_STORE(clk, 2, 9);
+ 
+ 	clk = clk_reg_prcc_pclk("p2_pclk10", "per2clk", clkrst2_base,
+ 				BIT(10), 0);
+ 	clk_register_clkdev(clk, "hsit_hclk", "ste_hsi.0");
++	PRCC_PCLK_STORE(clk, 2, 10);
+ 
+ 	clk = clk_reg_prcc_pclk("p2_pclk11", "per2clk", clkrst2_base,
+ 				BIT(11), 0);
+ 	clk_register_clkdev(clk, NULL, "gpio.6");
+ 	clk_register_clkdev(clk, NULL, "gpio.7");
+ 	clk_register_clkdev(clk, NULL, "gpioblock1");
++	PRCC_PCLK_STORE(clk, 2, 1);
+ 
+ 	clk = clk_reg_prcc_pclk("p2_pclk12", "per2clk", clkrst2_base,
+ 				BIT(12), 0);
++	PRCC_PCLK_STORE(clk, 2, 12);
+ 
+ 	clk = clk_reg_prcc_pclk("p3_pclk0", "per3clk", clkrst3_base,
+ 				BIT(0), 0);
+ 	clk_register_clkdev(clk, "fsmc", NULL);
+ 	clk_register_clkdev(clk, NULL, "smsc911x");
++	PRCC_PCLK_STORE(clk, 3, 0);
+ 
+ 	clk = clk_reg_prcc_pclk("p3_pclk1", "per3clk", clkrst3_base,
+ 				BIT(1), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "ssp0");
++	PRCC_PCLK_STORE(clk, 3, 1);
+ 
+ 	clk = clk_reg_prcc_pclk("p3_pclk2", "per3clk", clkrst3_base,
+ 				BIT(2), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "ssp1");
++	PRCC_PCLK_STORE(clk, 3, 2);
+ 
+ 	clk = clk_reg_prcc_pclk("p3_pclk3", "per3clk", clkrst3_base,
+ 				BIT(3), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "nmk-i2c.0");
++	PRCC_PCLK_STORE(clk, 3, 3);
+ 
+ 	clk = clk_reg_prcc_pclk("p3_pclk4", "per3clk", clkrst3_base,
+ 				BIT(4), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "sdi2");
++	PRCC_PCLK_STORE(clk, 3, 4);
+ 
+ 	clk = clk_reg_prcc_pclk("p3_pclk5", "per3clk", clkrst3_base,
+ 				BIT(5), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "ske");
+ 	clk_register_clkdev(clk, "apb_pclk", "nmk-ske-keypad");
++	PRCC_PCLK_STORE(clk, 3, 5);
+ 
+ 	clk = clk_reg_prcc_pclk("p3_pclk6", "per3clk", clkrst3_base,
+ 				BIT(6), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "uart2");
++	PRCC_PCLK_STORE(clk, 3, 6);
+ 
+ 	clk = clk_reg_prcc_pclk("p3_pclk7", "per3clk", clkrst3_base,
+ 				BIT(7), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "sdi5");
++	PRCC_PCLK_STORE(clk, 3, 7);
+ 
+ 	clk = clk_reg_prcc_pclk("p3_pclk8", "per3clk", clkrst3_base,
+ 				BIT(8), 0);
+@@ -433,48 +472,59 @@ void u8500_clk_init(u32 clkrst1_base, u32 clkrst2_base, u32 clkrst3_base,
+ 	clk_register_clkdev(clk, NULL, "gpio.4");
+ 	clk_register_clkdev(clk, NULL, "gpio.5");
+ 	clk_register_clkdev(clk, NULL, "gpioblock2");
++	PRCC_PCLK_STORE(clk, 3, 8);
+ 
+ 	clk = clk_reg_prcc_pclk("p5_pclk0", "per5clk", clkrst5_base,
+ 				BIT(0), 0);
+ 	clk_register_clkdev(clk, "usb", "musb-ux500.0");
++	PRCC_PCLK_STORE(clk, 5, 0);
+ 
+ 	clk = clk_reg_prcc_pclk("p5_pclk1", "per5clk", clkrst5_base,
+ 				BIT(1), 0);
+ 	clk_register_clkdev(clk, NULL, "gpio.8");
+ 	clk_register_clkdev(clk, NULL, "gpioblock3");
++	PRCC_PCLK_STORE(clk, 5, 1);
+ 
+ 	clk = clk_reg_prcc_pclk("p6_pclk0", "per6clk", clkrst6_base,
+ 				BIT(0), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "rng");
++	PRCC_PCLK_STORE(clk, 6, 0);
+ 
+ 	clk = clk_reg_prcc_pclk("p6_pclk1", "per6clk", clkrst6_base,
+ 				BIT(1), 0);
+ 	clk_register_clkdev(clk, NULL, "cryp0");
+ 	clk_register_clkdev(clk, NULL, "cryp1");
++	PRCC_PCLK_STORE(clk, 6, 1);
+ 
+ 	clk = clk_reg_prcc_pclk("p6_pclk2", "per6clk", clkrst6_base,
+ 				BIT(2), 0);
+ 	clk_register_clkdev(clk, NULL, "hash0");
++	PRCC_PCLK_STORE(clk, 6, 2);
+ 
+ 	clk = clk_reg_prcc_pclk("p6_pclk3", "per6clk", clkrst6_base,
+ 				BIT(3), 0);
+ 	clk_register_clkdev(clk, NULL, "pka");
++	PRCC_PCLK_STORE(clk, 6, 3);
+ 
+ 	clk = clk_reg_prcc_pclk("p6_pclk4", "per6clk", clkrst6_base,
+ 				BIT(4), 0);
+ 	clk_register_clkdev(clk, NULL, "hash1");
++	PRCC_PCLK_STORE(clk, 6, 4);
+ 
+ 	clk = clk_reg_prcc_pclk("p6_pclk5", "per6clk", clkrst6_base,
+ 				BIT(5), 0);
+ 	clk_register_clkdev(clk, NULL, "cfgreg");
++	PRCC_PCLK_STORE(clk, 6, 5);
+ 
+ 	clk = clk_reg_prcc_pclk("p6_pclk6", "per6clk", clkrst6_base,
+ 				BIT(6), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "mtu0");
++	PRCC_PCLK_STORE(clk, 6, 6);
+ 
+ 	clk = clk_reg_prcc_pclk("p6_pclk7", "per6clk", clkrst6_base,
+ 				BIT(7), 0);
+ 	clk_register_clkdev(clk, "apb_pclk", "mtu1");
++	PRCC_PCLK_STORE(clk, 6, 7);
+ 
+ 	/* PRCC K-clocks
+ 	 *
+@@ -606,5 +656,7 @@ void u8500_clk_init(u32 clkrst1_base, u32 clkrst2_base, u32 clkrst3_base,
+ 			clk_data.clk_num = ARRAY_SIZE(prcmu_clk);
+ 			of_clk_add_provider(child, of_clk_src_onecell_get, &clk_data);
+ 		}
++		if (!of_node_cmp(child->name, "prcc-periph-clock"))
++			of_clk_add_provider(child, ux500_twocell_get, prcc_pclk);
+ 	}
+ }
