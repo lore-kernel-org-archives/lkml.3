@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab3FKQ3d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 12:29:33 -0400
-Received: from mail.windriver.com ([147.11.1.11]:48664 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168Ab3FKQ3c (ORCPT
+	id S1755129Ab3FKQdR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 12:33:17 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46571 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab3FKQdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 12:29:32 -0400
-Message-ID: <51B75088.8050800@windriver.com>
-Date: Tue, 11 Jun 2013 12:30:00 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 11 Jun 2013 12:33:15 -0400
+Message-ID: <51B75148.5080701@wwwdotorg.org>
+Date: Tue, 11 Jun 2013 10:33:12 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Markos Chandras <markos.chandras@imgtec.com>
-CC: <linux-kernel@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        <netdev@vger.kernel.org>
-Subject: Re: [PATCH] drivers/net/ethernet/3com: Drop EISA dependency from
- VORTEX
-References: <1370962642-12097-1-git-send-email-markos.chandras@imgtec.com>
-In-Reply-To: <1370962642-12097-1-git-send-email-markos.chandras@imgtec.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
+        Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org, Hebbar Gururaja <gururaja.hebbar@ti.com>,
+        Mark Brown <broonie@kernel.org>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] drivers: pinctrl: add active state to core
+References: <1370938616-5952-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1370938616-5952-1-git-send-email-linus.walleij@stericsson.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-06-11 10:57 AM, Markos Chandras wrote:
-> The Vortex driver depends on PCI with optional support for EISA.
+On 06/11/2013 02:16 AM, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> This fixes build problems when EISA is selected but not PCI.
-> 
-> drivers/net/ethernet/3com/3c59x.c:1031:2: error: implicit declaration of
-> function 'pci_iomap' [-Werror=implicit-function-declaration]
-> drivers/net/ethernet/3com/3c59x.c:1044:3: error: implicit declaration of
-> function 'pci_iounmap' [-Werror=implicit-function-declaration]
-> 
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Cc: netdev@vger.kernel.org
-> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-> ---
->  drivers/net/ethernet/3com/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/net/ethernet/3com/Kconfig b/drivers/net/ethernet/3com/Kconfig
-> index 1c71c76..5c67f44 100644
-> --- a/drivers/net/ethernet/3com/Kconfig
-> +++ b/drivers/net/ethernet/3com/Kconfig
-> @@ -66,7 +66,7 @@ config PCMCIA_3C589
->  
->  config VORTEX
->  	tristate "3c590/3c900 series (592/595/597) \"Vortex/Boomerang\" support"
-> -	depends on (PCI || EISA) && HAS_IOPORT
-> +	depends on PCI && HAS_IOPORT
+> In addition to the recently introduced pinctrl core
+> control, the PM runtime pin control for the OMAP platforms
+> require a fourth state in addtition to the default, idle and
+> sleep states already handled by the core: an explicit "active"
+> state. Let's introduce this to the core in addition to the
+> other states already defined.
 
-How can this fix it?  The way I read your change is that you
-have now made it impossible to select for EISA=y and PCI=n,
-thus breaking EISA only configurations who would find their
-driver support gone when they run "make oldconfig".
+Surely "default" /is/ "active"? That's what it's meant so far.
 
-P.
---
+Since the pinctrl states are represented in DT, the DT bindings of all
+devices potentially get affected by changes like this. They'd need to be
+documented in a DT binding document, and the exact semantics of the
+different states clearly explained.
 
->  	select NET_CORE
->  	select MII
->  	---help---
-> 
+It may be better for struct device, struct platform_driver, or similar,
+to contain a list of the states that are required by the driver or its
+binding. That way, the list of states (or states beyond the basic
+default) is driver-/DT-binding- specific, and custom stuff like this for
+OMAP wouldn't require explicit code in drivers/base/pinctrl.c, but
+rather simply iterating over a custom list.
+
+Related to that, I'm not sure we should be deriving what we put into DT
+based on the runtime PM requirements of drivers; DT is supposed to be
+driven by HW definitions, although I suppose you could argue that the
+drivers implement what they do because they're implementing the HW
+requirements.
