@@ -1,125 +1,457 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165Ab3FKMmR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 08:42:17 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:57454 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754979Ab3FKMmQ (ORCPT
+	id S1755018Ab3FKMpz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 08:45:55 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:59981 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754099Ab3FKMpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 08:42:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130610173739.4d88d4ec@holzheu>
-References: <1370624161-2298-1-git-send-email-holzheu@linux.vnet.ibm.com>
-	<1370624161-2298-4-git-send-email-holzheu@linux.vnet.ibm.com>
-	<CABOkKT0yk6tytN=aTSdpECQWw_30m5qrZYH-W1msovkeiSeZCA@mail.gmail.com>
-	<20130610173739.4d88d4ec@holzheu>
-Date: Tue, 11 Jun 2013 21:42:15 +0900
-Message-ID: <CABOkKT05VR3V9rEz1LWnEJSEvkevhBFfQVVX5_DS0Z4rBG9EyA@mail.gmail.com>
-Subject: Re: [PATCH v5 3/5] vmcore: Introduce remap_oldmem_pfn_range()
-From: HATAYAMA Daisuke <d.hatayama@gmail.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 11 Jun 2013 08:45:52 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH 3/3] gpio: msm: Add device tree and irqdomain support for gpio-msm-v2
+To: Rohit Vaswani <rvaswani@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+In-Reply-To: <1370904621-19948-4-git-send-email-rvaswani@codeaurora.org>
+References: <1370904621-19948-1-git-send-email-rvaswani@codeaurora.org> <1370904621-19948-4-git-send-email-rvaswani@codeaurora.org>
+Date: Tue, 11 Jun 2013 13:45:47 +0100
+Message-Id: <20130611124547.E6AAB3E0A90@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/6/11 Michael Holzheu <holzheu@linux.vnet.ibm.com>:
-> On Mon, 10 Jun 2013 22:40:24 +0900
-> HATAYAMA Daisuke <d.hatayama@gmail.com> wrote:
->
->> 2013/6/8 Michael Holzheu <holzheu@linux.vnet.ibm.com>:
->> <cut>
->> > @@ -225,6 +251,56 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
->> >         return acc;
->> >  }
->> >
->> > +static ssize_t read_vmcore(struct file *file, char __user *buffer,
->> > +                          size_t buflen, loff_t *fpos)
->> > +{
->> > +       return __read_vmcore(buffer, buflen, fpos, 1);
->> > +}
->> > +
->> > +/*
->> > + * The vmcore fault handler uses the page cache and fills data using the
->> > + * standard __vmcore_read() function.
->> > + */
->> > +static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
->> > +{
->> > +       struct address_space *mapping = vma->vm_private_data;
->> > +       pgoff_t index = vmf->pgoff;
->> > +       struct page *page;
->> > +       loff_t src;
->> > +       char *buf;
->> > +       int rc;
->> > +
->> > +find_page:
->> > +       page = find_lock_page(mapping, index);
->> > +       if (page) {
->> > +               unlock_page(page);
->> > +               rc = VM_FAULT_MINOR;
->> > +       } else {
->> > +               page = page_cache_alloc_cold(mapping);
->> > +               if (!page)
->> > +                       return VM_FAULT_OOM;
->> > +               rc = add_to_page_cache_lru(page, mapping, index, GFP_KERNEL);
->> > +               if (rc) {
->> > +                       page_cache_release(page);
->> > +                       if (rc == -EEXIST)
->> > +                               goto find_page;
->> > +                       /* Probably ENOMEM for radix tree node */
->> > +                       return VM_FAULT_OOM;
->> > +               }
->> > +               buf = (void *) (page_to_pfn(page) << PAGE_SHIFT);
->> > +               src = index << PAGE_CACHE_SHIFT;
->> > +               __read_vmcore(buf, PAGE_SIZE, &src, 0);
->> > +               unlock_page(page);
->> > +               rc = VM_FAULT_MAJOR;
->> > +       }
->> > +       vmf->page = page;
->> > +       return rc;
->> > +}
->>
->> How about reusing find_or_create_page()?
->
-> The function would then look like the following:
->
-> static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-> {
->         struct address_space *mapping = vma->vm_private_data;
->         pgoff_t index = vmf->pgoff;
->         struct page *page;
->         loff_t src;
->         char *buf;
->
->         page = find_or_create_page(mapping, index, GFP_KERNEL);
->         if (!page)
->                 return VM_FAULT_OOM;
->         src = index << PAGE_CACHE_SHIFT;
->         buf = (void *) (page_to_pfn(page) << PAGE_SHIFT);
->         __read_vmcore(buf, PAGE_SIZE, &src, 0);
->         unlock_page(page);
->         vmf->page = page;
->         return 0;
-> }
->
-> I agree that this makes the function simpler but we have to copy
-> the page also if it has already been filled, correct?
->
+On Mon, 10 Jun 2013 15:50:21 -0700, Rohit Vaswani <rvaswani@codeaurora.org> wrote:
+> This cleans up the gpio-msm-v2 driver of all the global define usage.
+> The number of gpios are now defined in the device tree. This enables
+> adding irqdomain support as well.
+> 
+> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
 
-You can use for the purpose PG_uptodate flag.
+Looks good to me. Go ahead and take it through the same tree as patches
+1/3 and 2/3 with my ack since it appears that the patches need to be
+applied together.
 
-> But since normally only one process uses /proc/vmcore this might be
-> acceptable.
->
-> BTW: I also removed the VM_FAULT_MAJOR/MINOR because I think the fault
-> handler should return 0 if a page has been found.
->
-> Michael
->
+Acked-by: Grant Likely <grant.likely@linaro.org>
 
-Thanks.
-HATAYAMA, Daisuke
+g.
+
+> ---
+>  .../devicetree/bindings/gpio/gpio-msm.txt          |   26 +++
+>  arch/arm/boot/dts/msm8660-surf.dts                 |   11 ++
+>  arch/arm/boot/dts/msm8960-cdp.dts                  |   11 ++
+>  drivers/gpio/Kconfig                               |    2 +-
+>  drivers/gpio/gpio-msm-v2.c                         |  190 ++++++++++++--------
+>  5 files changed, 162 insertions(+), 78 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/gpio/gpio-msm.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/gpio/gpio-msm.txt b/Documentation/devicetree/bindings/gpio/gpio-msm.txt
+> new file mode 100644
+> index 0000000..ac20e68
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/gpio/gpio-msm.txt
+> @@ -0,0 +1,26 @@
+> +MSM GPIO controller bindings
+> +
+> +Required properties:
+> +- compatible:
+> +  - "qcom,msm-gpio" for MSM controllers
+> +- #gpio-cells : Should be two.
+> +  - first cell is the pin number
+> +  - second cell is used to specify optional parameters (unused)
+> +- gpio-controller : Marks the device node as a GPIO controller.
+> +- #interrupt-cells : Should be 2.
+> +- interrupt-controller: Mark the device node as an interrupt controller
+> +- interrupts : Specify the TLMM summary interrupt number
+> +- ngpio : Specify the number of MSM GPIOs
+> +
+> +Example:
+> +
+> +	msmgpio: gpio@fd510000 {
+> +		compatible = "qcom,msm-gpio";
+> +		gpio-controller;
+> +		#gpio-cells = <2>;
+> +		interrupt-controller;
+> +		#interrupt-cells = <2>;
+> +		reg = <0xfd510000 0x4000>;
+> +		interrupts = <0 208 0>;
+> +		ngpio = <150>;
+> +	};
+> diff --git a/arch/arm/boot/dts/msm8660-surf.dts b/arch/arm/boot/dts/msm8660-surf.dts
+> index 9bf49b3..8931906 100644
+> --- a/arch/arm/boot/dts/msm8660-surf.dts
+> +++ b/arch/arm/boot/dts/msm8660-surf.dts
+> @@ -26,6 +26,17 @@
+>  		cpu-offset = <0x40000>;
+>  	};
+>  
+> +	msmgpio: gpio@800000 {
+> +		compatible = "qcom,msm-gpio";
+> +		reg = <0x00800000 0x1000>;
+> +		gpio-controller;
+> +		#gpio-cells = <2>;
+> +		ngpio = <173>;
+> +		interrupts = <0 32 0x4>;
+> +		interrupt-controller;
+> +		#interrupt-cells = <2>;
+> +	};
+> +
+>  	serial@19c400000 {
+>  		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
+>  		reg = <0x19c40000 0x1000>,
+> diff --git a/arch/arm/boot/dts/msm8960-cdp.dts b/arch/arm/boot/dts/msm8960-cdp.dts
+> index 2e4d87a..52fe253 100644
+> --- a/arch/arm/boot/dts/msm8960-cdp.dts
+> +++ b/arch/arm/boot/dts/msm8960-cdp.dts
+> @@ -26,6 +26,17 @@
+>  		cpu-offset = <0x80000>;
+>  	};
+>  
+> +	msmgpio: gpio@fd510000 {
+> +		compatible = "qcom,msm-gpio";
+> +		gpio-controller;
+> +		#gpio-cells = <2>;
+> +		ngpio = <150>;
+> +		interrupts = <0 32 0x4>;
+> +		interrupt-controller;
+> +		#interrupt-cells = <2>;
+> +		reg = <0xfd510000 0x4000>;
+> +	};
+> +
+>  	serial@19c400000 {
+>  		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
+>  		reg = <0x16440000 0x1000>,
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 87d5670..6d61a12 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -165,7 +165,7 @@ config GPIO_MSM_V1
+>  
+>  config GPIO_MSM_V2
+>  	tristate "Qualcomm MSM GPIO v2"
+> -	depends on GPIOLIB && ARCH_MSM
+> +	depends on GPIOLIB && OF && ARCH_MSM
+>  	help
+>  	  Say yes here to support the GPIO interface on ARM v7 based
+>  	  Qualcomm MSM chips.  Most of the pins on the MSM can be
+> diff --git a/drivers/gpio/gpio-msm-v2.c b/drivers/gpio/gpio-msm-v2.c
+> index 75cc821..f4491a4 100644
+> --- a/drivers/gpio/gpio-msm-v2.c
+> +++ b/drivers/gpio/gpio-msm-v2.c
+> @@ -19,17 +19,21 @@
+>  
+>  #include <linux/bitmap.h>
+>  #include <linux/bitops.h>
+> +#include <linux/err.h>
+>  #include <linux/gpio.h>
+>  #include <linux/init.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/io.h>
+>  #include <linux/irqchip/chained_irq.h>
+>  #include <linux/irq.h>
+> +#include <linux/irqdomain.h>
+>  #include <linux/module.h>
+> +#include <linux/of_address.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/spinlock.h>
+> +#include <linux/slab.h>
+>  
+> -#include <mach/msm_iomap.h>
+> +#define MAX_NR_GPIO 300
+>  
+>  /* Bits of interest in the GPIO_IN_OUT register.
+>   */
+> @@ -76,13 +80,6 @@ enum {
+>  	TARGET_PROC_NONE     = 7,
+>  };
+>  
+> -
+> -#define GPIO_INTR_CFG_SU(gpio)    (MSM_TLMM_BASE + 0x0400 + (0x04 * (gpio)))
+> -#define GPIO_CONFIG(gpio)         (MSM_TLMM_BASE + 0x1000 + (0x10 * (gpio)))
+> -#define GPIO_IN_OUT(gpio)         (MSM_TLMM_BASE + 0x1004 + (0x10 * (gpio)))
+> -#define GPIO_INTR_CFG(gpio)       (MSM_TLMM_BASE + 0x1008 + (0x10 * (gpio)))
+> -#define GPIO_INTR_STATUS(gpio)    (MSM_TLMM_BASE + 0x100c + (0x10 * (gpio)))
+> -
+>  /**
+>   * struct msm_gpio_dev: the MSM8660 SoC GPIO device structure
+>   *
+> @@ -101,11 +98,27 @@ enum {
+>   */
+>  struct msm_gpio_dev {
+>  	struct gpio_chip gpio_chip;
+> -	DECLARE_BITMAP(enabled_irqs, NR_GPIO_IRQS);
+> -	DECLARE_BITMAP(wake_irqs, NR_GPIO_IRQS);
+> -	DECLARE_BITMAP(dual_edge_irqs, NR_GPIO_IRQS);
+> +	DECLARE_BITMAP(enabled_irqs, MAX_NR_GPIO);
+> +	DECLARE_BITMAP(wake_irqs, MAX_NR_GPIO);
+> +	DECLARE_BITMAP(dual_edge_irqs, MAX_NR_GPIO);
+> +	struct irq_domain *domain;
+> +	unsigned int summary_irq;
+> +	void __iomem *msm_tlmm_base;
+>  };
+>  
+> +struct msm_gpio_dev msm_gpio;
+
+As commented before; this is okay for now, but you should have a
+follow-on patch to make msm_gpio allocated dymically in the probe
+function.
+
+> +
+> +#define GPIO_INTR_CFG_SU(gpio)    (msm_gpio.msm_tlmm_base + 0x0400 + \
+> +								(0x04 * (gpio)))
+> +#define GPIO_CONFIG(gpio)         (msm_gpio.msm_tlmm_base + 0x1000 + \
+> +								(0x10 * (gpio)))
+> +#define GPIO_IN_OUT(gpio)         (msm_gpio.msm_tlmm_base + 0x1004 + \
+> +								(0x10 * (gpio)))
+> +#define GPIO_INTR_CFG(gpio)       (msm_gpio.msm_tlmm_base + 0x1008 + \
+> +								(0x10 * (gpio)))
+> +#define GPIO_INTR_STATUS(gpio)    (msm_gpio.msm_tlmm_base + 0x100c + \
+> +								(0x10 * (gpio)))
+> +
+>  static DEFINE_SPINLOCK(tlmm_lock);
+>  
+>  static inline struct msm_gpio_dev *to_msm_gpio_dev(struct gpio_chip *chip)
+> @@ -168,27 +181,19 @@ static void msm_gpio_free(struct gpio_chip *chip, unsigned offset)
+>  
+>  static int msm_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+>  {
+> -	return MSM_GPIO_TO_INT(chip->base + offset);
+> +	struct msm_gpio_dev *g_dev = to_msm_gpio_dev(chip);
+> +	struct irq_domain *domain = g_dev->domain;
+> +
+> +	return irq_create_mapping(domain, offset);
+>  }
+>  
+>  static inline int msm_irq_to_gpio(struct gpio_chip *chip, unsigned irq)
+>  {
+> -	return irq - MSM_GPIO_TO_INT(chip->base);
+> +	struct irq_data *irq_data = irq_get_irq_data(irq);
+> +
+> +	return irq_data->hwirq;
+>  }
+>  
+> -static struct msm_gpio_dev msm_gpio = {
+> -	.gpio_chip = {
+> -		.base             = 0,
+> -		.ngpio            = NR_GPIO_IRQS,
+> -		.direction_input  = msm_gpio_direction_input,
+> -		.direction_output = msm_gpio_direction_output,
+> -		.get              = msm_gpio_get,
+> -		.set              = msm_gpio_set,
+> -		.to_irq           = msm_gpio_to_irq,
+> -		.request          = msm_gpio_request,
+> -		.free             = msm_gpio_free,
+> -	},
+> -};
+
+This block has been deleted and replaced by open-coding the assignments
+in msm_gpio_probe(). It is true that some of the values need to be set
+at runtime (.ngpio for example), but the majority of them 
+>  
+>  /* For dual-edge interrupts in software, since the hardware has no
+>   * such support:
+> @@ -226,9 +231,9 @@ static void msm_gpio_update_dual_edge_pos(unsigned gpio)
+>  		if (intstat || val == val2)
+>  			return;
+>  	} while (loop_limit-- > 0);
+> -	pr_err("dual-edge irq failed to stabilize, "
+> +	pr_err("%s: dual-edge irq failed to stabilize, "
+>  	       "interrupts dropped. %#08x != %#08x\n",
+> -	       val, val2);
+> +	       __func__, val, val2);
+>  }
+>  
+>  static void msm_gpio_irq_ack(struct irq_data *d)
+> @@ -315,10 +320,10 @@ static void msm_summary_irq_handler(unsigned int irq, struct irq_desc *desc)
+>  
+>  	chained_irq_enter(chip, desc);
+>  
+> -	for_each_set_bit(i, msm_gpio.enabled_irqs, NR_GPIO_IRQS) {
+> +	for_each_set_bit(i, msm_gpio.enabled_irqs, MAX_NR_GPIO) {
+>  		if (readl(GPIO_INTR_STATUS(i)) & BIT(INTR_STATUS))
+> -			generic_handle_irq(msm_gpio_to_irq(&msm_gpio.gpio_chip,
+> -							   i));
+> +			generic_handle_irq(irq_find_mapping(msm_gpio.domain,
+> +								i));
+>  	}
+>  
+>  	chained_irq_exit(chip, desc);
+> @@ -329,13 +334,13 @@ static int msm_gpio_irq_set_wake(struct irq_data *d, unsigned int on)
+>  	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, d->irq);
+>  
+>  	if (on) {
+> -		if (bitmap_empty(msm_gpio.wake_irqs, NR_GPIO_IRQS))
+> -			irq_set_irq_wake(TLMM_SCSS_SUMMARY_IRQ, 1);
+> +		if (bitmap_empty(msm_gpio.wake_irqs, MAX_NR_GPIO))
+> +			irq_set_irq_wake(msm_gpio.summary_irq, 1);
+>  		set_bit(gpio, msm_gpio.wake_irqs);
+>  	} else {
+>  		clear_bit(gpio, msm_gpio.wake_irqs);
+> -		if (bitmap_empty(msm_gpio.wake_irqs, NR_GPIO_IRQS))
+> -			irq_set_irq_wake(TLMM_SCSS_SUMMARY_IRQ, 0);
+> +		if (bitmap_empty(msm_gpio.wake_irqs, MAX_NR_GPIO))
+> +			irq_set_irq_wake(msm_gpio.summary_irq, 0);
+>  	}
+>  
+>  	return 0;
+> @@ -350,30 +355,86 @@ static struct irq_chip msm_gpio_irq_chip = {
+>  	.irq_set_wake	= msm_gpio_irq_set_wake,
+>  };
+>  
+> -static int msm_gpio_probe(struct platform_device *dev)
+> +static struct lock_class_key msm_gpio_lock_class;
+> +
+> +static int msm_gpio_irq_domain_map(struct irq_domain *d, unsigned int irq,
+> +				   irq_hw_number_t hwirq)
+> +{
+> +	irq_set_lockdep_class(irq, &msm_gpio_lock_class);
+> +	irq_set_chip_and_handler(irq, &msm_gpio_irq_chip,
+> +			handle_level_irq);
+> +	set_irq_flags(irq, IRQF_VALID);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct irq_domain_ops msm_gpio_irq_domain_ops = {
+> +	.xlate = irq_domain_xlate_twocell,
+> +	.map = msm_gpio_irq_domain_map,
+> +};
+> +
+> +static int msm_gpio_probe(struct platform_device *pdev)
+>  {
+> -	int i, irq, ret;
+> +	int ret, ngpio;
+> +	struct resource *res;
+> +
+> +	if (!of_property_read_u32(pdev->dev.of_node, "ngpio", &ngpio)) {
+> +		dev_err(&pdev->dev, "%s: ngpio property missing\n", __func__);
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (ngpio > MAX_NR_GPIO)
+> +		WARN(1, "ngpio exceeds the MAX_NR_GPIO. Increase MAX_NR_GPIO\n");
+> +
+> +	bitmap_zero(msm_gpio.enabled_irqs, MAX_NR_GPIO);
+> +	bitmap_zero(msm_gpio.wake_irqs, MAX_NR_GPIO);
+> +	bitmap_zero(msm_gpio.dual_edge_irqs, MAX_NR_GPIO);
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	msm_gpio.msm_tlmm_base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(msm_gpio.msm_tlmm_base))
+> +		return PTR_ERR(msm_gpio.msm_tlmm_base);
+> +
+> +	msm_gpio.gpio_chip.ngpio = ngpio;
+> +	msm_gpio.gpio_chip.label = pdev->name;
+> +	msm_gpio.gpio_chip.dev = &pdev->dev;
+> +	msm_gpio.gpio_chip.base = 0;
+> +	msm_gpio.gpio_chip.direction_input = msm_gpio_direction_input;
+> +	msm_gpio.gpio_chip.direction_output = msm_gpio_direction_output;
+> +	msm_gpio.gpio_chip.get = msm_gpio_get;
+> +	msm_gpio.gpio_chip.set = msm_gpio_set;
+> +	msm_gpio.gpio_chip.to_irq = msm_gpio_to_irq;
+> +	msm_gpio.gpio_chip.request = msm_gpio_request;
+> +	msm_gpio.gpio_chip.free = msm_gpio_free;
+>  
+> -	bitmap_zero(msm_gpio.enabled_irqs, NR_GPIO_IRQS);
+> -	bitmap_zero(msm_gpio.wake_irqs, NR_GPIO_IRQS);
+> -	bitmap_zero(msm_gpio.dual_edge_irqs, NR_GPIO_IRQS);
+> -	msm_gpio.gpio_chip.label = dev->name;
+>  	ret = gpiochip_add(&msm_gpio.gpio_chip);
+> -	if (ret < 0)
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "gpiochip_add failed with error %d\n", ret);
+>  		return ret;
+> +	}
+>  
+> -	for (i = 0; i < msm_gpio.gpio_chip.ngpio; ++i) {
+> -		irq = msm_gpio_to_irq(&msm_gpio.gpio_chip, i);
+> -		irq_set_chip_and_handler(irq, &msm_gpio_irq_chip,
+> -					 handle_level_irq);
+> -		set_irq_flags(irq, IRQF_VALID);
+> +	msm_gpio.summary_irq = platform_get_irq(pdev, 0);
+> +	if (msm_gpio.summary_irq < 0) {
+> +		dev_err(&pdev->dev, "No Summary irq defined for msmgpio\n");
+> +		return msm_gpio.summary_irq;
+>  	}
+>  
+> -	irq_set_chained_handler(TLMM_SCSS_SUMMARY_IRQ,
+> -				msm_summary_irq_handler);
+> +	msm_gpio.domain = irq_domain_add_linear(pdev->dev.of_node, ngpio,
+> +						&msm_gpio_irq_domain_ops,
+> +						&msm_gpio);
+> +	if (!msm_gpio.domain)
+> +		return -ENODEV;
+> +
+> +	irq_set_chained_handler(msm_gpio.summary_irq, msm_summary_irq_handler);
+> +
+>  	return 0;
+>  }
+>  
+> +static struct of_device_id msm_gpio_of_match[] = {
+> +	{ .compatible = "qcom,msm-gpio", },
+> +	{ },
+> +};
+> +
+>  static int msm_gpio_remove(struct platform_device *dev)
+>  {
+>  	int ret = gpiochip_remove(&msm_gpio.gpio_chip);
+> @@ -381,7 +442,7 @@ static int msm_gpio_remove(struct platform_device *dev)
+>  	if (ret < 0)
+>  		return ret;
+>  
+> -	irq_set_handler(TLMM_SCSS_SUMMARY_IRQ, NULL);
+> +	irq_set_handler(msm_gpio.summary_irq, NULL);
+>  
+>  	return 0;
+>  }
+> @@ -392,36 +453,11 @@ static struct platform_driver msm_gpio_driver = {
+>  	.driver = {
+>  		.name = "msmgpio",
+>  		.owner = THIS_MODULE,
+> +		.of_match_table = msm_gpio_of_match,
+>  	},
+>  };
+>  
+> -static struct platform_device msm_device_gpio = {
+> -	.name = "msmgpio",
+> -	.id   = -1,
+> -};
+> -
+> -static int __init msm_gpio_init(void)
+> -{
+> -	int rc;
+> -
+> -	rc = platform_driver_register(&msm_gpio_driver);
+> -	if (!rc) {
+> -		rc = platform_device_register(&msm_device_gpio);
+> -		if (rc)
+> -			platform_driver_unregister(&msm_gpio_driver);
+> -	}
+> -
+> -	return rc;
+> -}
+> -
+> -static void __exit msm_gpio_exit(void)
+> -{
+> -	platform_device_unregister(&msm_device_gpio);
+> -	platform_driver_unregister(&msm_gpio_driver);
+> -}
+> -
+> -postcore_initcall(msm_gpio_init);
+> -module_exit(msm_gpio_exit);
+> +module_platform_driver(msm_gpio_driver)
+>  
+>  MODULE_AUTHOR("Gregory Bean <gbean@codeaurora.org>");
+>  MODULE_DESCRIPTION("Driver for Qualcomm MSM TLMMv2 SoC GPIOs");
+> -- 
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
+
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
