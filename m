@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab3FKWcu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 18:32:50 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:42375 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756167Ab3FKWct (ORCPT
+	id S1756982Ab3FKWe5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 18:34:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43609 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756403Ab3FKWe4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 18:32:49 -0400
-Message-ID: <1370989954.21540.4.camel@misato.fc.hp.com>
-Subject: Re: cpu hotplug:  possible_cpus broken (again?) next-20130607
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, youquan.song@intel.com
-Cc: Dave Hansen <dave@sr71.net>, LKML <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        akpm@linux-foundation.org
-Date: Tue, 11 Jun 2013 16:32:34 -0600
-In-Reply-To: <27437213.QrmAtijARn@vostro.rjw.lan>
-References: <51B79BE5.80804@sr71.net> <1637965.BN0HgQKvFj@vostro.rjw.lan>
-	 <51B7A1F8.6080507@sr71.net> <27437213.QrmAtijARn@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Tue, 11 Jun 2013 18:34:56 -0400
+Date: Tue, 11 Jun 2013 15:34:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@gentwo.org>, Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] slab: prevent warnings when allocating with
+ __GFP_NOWARN
+Message-Id: <20130611153454.6ab17ce44bc4a678b8bf72d4@linux-foundation.org>
+In-Reply-To: <51B73F38.6040802@kernel.org>
+References: <1370891880-2644-1-git-send-email-sasha.levin@oracle.com>
+	<CAOJsxLGDH2iwznRkP-iwiMZw7Ee3mirhjLvhShrWLHR0qguRxA@mail.gmail.com>
+	<51B62F6B.8040308@oracle.com>
+	<0000013f3075f90d-735942a8-b4b8-413f-a09e-57d1de0c4974-000000@email.amazonses.com>
+	<51B67553.6020205@oracle.com>
+	<CAOJsxLH56xqCoDikYYaY_guqCX=S4rcVfDJQ4ki=r-PkNQW9ug@mail.gmail.com>
+	<51B72323.8040207@oracle.com>
+	<0000013f33cdc631-eadb07d1-ef08-4e2c-a218-1997eb86cde9-000000@email.amazonses.com>
+	<51B73F38.6040802@kernel.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-12 at 00:34 +0200, Rafael J. Wysocki wrote:
-> On Tuesday, June 11, 2013 03:17:28 PM Dave Hansen wrote:
-> > On 06/11/2013 03:05 PM, Rafael J. Wysocki wrote:
-> > > On Tuesday, June 11, 2013 02:51:33 PM Dave Hansen wrote:
-> > >> possible_cpus looks broken again.  I'm booting with:
-> > >>
-> > >>  maxcpus=10 possible_cpus=160
-> > >>
-> > >> But I only get 0-9 in sysfs:
-> > >>
-> > >>> # ls /sys/devices/system/cpu/
-> > >>> cpu0  cpu2  cpu4  cpu6  cpu8  cpufreq  kernel_max  offline  possible  probe    uevent
-> > >>> cpu1  cpu3  cpu5  cpu7  cpu9  cpuidle  modalias    online   present   release
-> > > 
-> > > Can you please test the acpi-hotplug branch of the linux-pm.git tree?
-> > 
-> > That branch seems to work happily.
+On Tue, 11 Jun 2013 18:16:08 +0300 Pekka Enberg <penberg@kernel.org> wrote:
+
+> On Tue, 11 Jun 2013, Sasha Levin wrote:
+> >> I think that leaving the warning makes sense to catch similar
+> >> things which are actually bugs - we had a similar issue with
+> >> /dev/kmsg (if I remember correctly) which actually pointed to
+> >> a bug.
 > 
-> In that case the problem may have been reintroduced by a merge conflict fix in
-> linux-next.
+> On 6/11/13 6:14 PM, Christoph Lameter wrote:
+> > Right. Requesting an allocation larger than even supported by the page
+> > allocator from the slab allocators that are specializing in allocations of
+> > small objects is usually an indication of a problem in the code.
+> 
+> So you're OK with going forward with Sasha's patch?
 
-I believe the problem was introduced by the following change.  From the
-description, though, this is exactly what this patch was trying to
-change...  Adding Youguan to the list.
+Yes please.  slab should honour __GFP_NOWARN.
 
-commit 3e275a5ba367ab74b3a4e49114307baed989fcac
-Author: Youquan Song <youquan.song@intel.com>
-Date:   Fri Jun 7 10:07:08 2013 +1000
+__GFP_NOWARN is frequently used by kernel code to probe for "how big an
+allocation can I get".  That's a bit lame, but it's used on slow paths
+and is pretty simple.
 
-    drivers/base/cpu.c: fix maxcpus boot option
-
-
-Thanks,
--Toshi
-    
-
-
-
+In the case of pipe_set_size(), it's userspace who is doing the
+probing: an application can request a huge pipe buffer and if that
+fails, try again with a smaller one.  It's just wrong to emit a kernel
+warning in this case.  Plus, we've already reported the failure
+anyway, by returning -ENOMEM from pipe_fcntl().
