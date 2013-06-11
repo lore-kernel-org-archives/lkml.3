@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756329Ab3FKUga (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:36:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41651 "EHLO
+	id S1757527Ab3FKUgu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:36:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41647 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756237Ab3FKUDB (ORCPT
+	with ESMTP id S1756228Ab3FKUDA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:01 -0400
+	Tue, 11 Jun 2013 16:03:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Worsley <amworsley@gmail.com>,
-        Lotfi Manseur <lotfi.manseur@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [ 18/21] USB: serial: ftdi_sio: Handle the old_termios == 0 case e.g.  uart_resume_port()
-Date: Tue, 11 Jun 2013 13:03:12 -0700
-Message-Id: <20130611195522.132297591@linuxfoundation.org>
+        Egbert Eich <eich@suse.de>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 17/21] drm/i915/sdvo: Use &intel_sdvo->ddc instead of intel_sdvo->i2c for DDC.
+Date: Tue, 11 Jun 2013 13:03:11 -0700
+Message-Id: <20130611195522.018319688@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195520.003233586@linuxfoundation.org>
 References: <20130611195520.003233586@linuxfoundation.org>
@@ -28,40 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Worsley <amworsley@gmail.com>
+From: Egbert Eich <eich@suse.de>
 
-commit c515598e0f5769916c31c00392cc2bfe6af74e55 upstream.
+commit 53d3b4d7778daf15900867336c85d3f8dd70600c upstream.
 
-  Handle null old_termios in ftdi_set_termios() calls from uart_resume_port().
+In intel_sdvo_get_lvds_modes() the wrong i2c adapter record is used
+for DDC. Thus the code will always have to rely on a LVDS panel
+mode supplied by VBT.
+In most cases this succeeds, so this didn't get detected for quite
+a while.
 
-Signed-off-by: Andrew Worsley <amworsley@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Lotfi Manseur <lotfi.manseur@gmail.com>
+This regression seems to have been introduced in
+
+commit f899fc64cda8569d0529452aafc0da31c042df2e
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Tue Jul 20 15:44:45 2010 -0700
+
+    drm/i915: use GMBUS to manage i2c links
+
+Signed-off-by: Egbert Eich <eich@suse.de>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+[danvet: Add note about which commit likely introduced this issue.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/i915/intel_sdvo.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -2141,6 +2141,9 @@ static void ftdi_set_termios(struct tty_
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -1609,7 +1609,7 @@ static void intel_sdvo_get_lvds_modes(st
+ 	 * Assume that the preferred modes are
+ 	 * arranged in priority order.
+ 	 */
+-	intel_ddc_get_modes(connector, intel_sdvo->i2c);
++	intel_ddc_get_modes(connector, &intel_sdvo->ddc);
+ 	if (list_empty(&connector->probed_modes) == false)
+ 		goto end;
  
- 	cflag = termios->c_cflag;
- 
-+	if (old_termios == 0)
-+		goto no_skip;
-+
- 	if (old_termios->c_cflag == termios->c_cflag
- 	    && old_termios->c_ispeed == termios->c_ispeed
- 	    && old_termios->c_ospeed == termios->c_ospeed)
-@@ -2154,6 +2157,7 @@ static void ftdi_set_termios(struct tty_
- 	    (termios->c_cflag & (CSIZE|PARODD|PARENB|CMSPAR|CSTOPB)))
- 		goto no_data_parity_stop_changes;
- 
-+no_skip:
- 	/* Set number of data bits, parity, stop bits */
- 
- 	urb_value = 0;
 
 
