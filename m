@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310Ab3FKUYo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:24:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41781 "EHLO
+	id S1757294Ab3FKUYn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:24:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41789 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756469Ab3FKUD1 (ORCPT
+	with ESMTP id S1756475Ab3FKUD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:27 -0400
+	Tue, 11 Jun 2013 16:03:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 11/79] ALSA: usb-audio: fix Roland/Cakewalk UM-3G support
-Date: Tue, 11 Jun 2013 13:02:37 -0700
-Message-Id: <20130611195313.885564838@linuxfoundation.org>
+        Richard Weinberger <richard@nod.at>
+Subject: [ 01/79] USB: serial: Add Option GTM681W to qcserial device table.
+Date: Tue, 11 Jun 2013 13:02:27 -0700
+Message-Id: <20130611195312.551688819@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -26,37 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Richard Weinberger <richard@nod.at>
 
-commit a0c6d309c6df14655f9962f666d1da96318b0b7c upstream.
+commit 8a2f132a01c2dd4c3905fa560f92019761ed72b1 upstream.
 
-Commit 927c9423dd5f2d1c0b93d5e694ab84b4a5559713 (ALSA: usb-audio: add
-Edirol UM-3G support) used a wrong quirk type, which would make the
-driver refuse to attach with the error message "MIDIStreaming interface
-descriptor not found".
+The Option GTM681W uses a qualcomm chip and can be
+served by the qcserial device driver.
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Richard Weinberger <richard@nod.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/quirks-table.h |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/usb/serial/qcserial.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/usb/quirks-table.h
-+++ b/sound/usb/quirks-table.h
-@@ -1714,7 +1714,11 @@ YAMAHA_DEVICE(0x7010, "UB99"),
- 	USB_DEVICE_VENDOR_SPEC(0x0582, 0x0108),
- 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
- 		.ifnum = 0,
--		.type = QUIRK_MIDI_STANDARD_INTERFACE
-+		.type = QUIRK_MIDI_FIXED_ENDPOINT,
-+		.data = & (const struct snd_usb_midi_endpoint_info) {
-+			.out_cables = 0x0007,
-+			.in_cables  = 0x0007
-+		}
- 	}
- },
- {
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -118,6 +118,7 @@ static const struct usb_device_id id_tab
+ 	{USB_DEVICE(0x1199, 0x901b)},	/* Sierra Wireless MC7770 */
+ 	{USB_DEVICE(0x12D1, 0x14F0)},	/* Sony Gobi 3000 QDL */
+ 	{USB_DEVICE(0x12D1, 0x14F1)},	/* Sony Gobi 3000 Composite */
++	{USB_DEVICE(0x0AF0, 0x8120)},	/* Option GTM681W */
+ 
+ 	/* non Gobi Qualcomm serial devices */
+ 	{USB_DEVICE_INTERFACE_NUMBER(0x0f3d, 0x68a2, 0)},	/* Sierra Wireless MC7700 Device Management */
 
 
