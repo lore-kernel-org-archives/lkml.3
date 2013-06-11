@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754297Ab3FKKJp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 06:09:45 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:1396 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab3FKKJo (ORCPT
+	id S1754613Ab3FKKLy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 06:11:54 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1335 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752717Ab3FKKLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 06:09:44 -0400
+	Tue, 11 Jun 2013 06:11:51 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 11 Jun 2013 03:09:42 -0700
-Message-ID: <51B6F763.2080004@nvidia.com>
-Date: Tue, 11 Jun 2013 13:09:39 +0300
+	by hqnvupgp07.nvidia.com on Tue, 11 Jun 2013 03:10:28 -0700
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+To: <gregkh@linuxfoundation.org>
+CC: <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Subject: [PATCH 2/2] memory: tegra30-mc: Fix IRQ handler.
+Date: Tue, 11 Jun 2013 13:11:19 +0300
+Message-ID: <1370945479-2917-3-git-send-email-ttynkkynen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1370945479-2917-1-git-send-email-ttynkkynen@nvidia.com>
+References: <1370945479-2917-1-git-send-email-ttynkkynen@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] memory: tegra20-mc: Fix hang in IRQ handler.
-References: <1370855624-30564-1-git-send-email-ttynkkynen@nvidia.com> <1370855624-30564-2-git-send-email-ttynkkynen@nvidia.com> <20130610203641.GA26036@mithrandir>
-In-Reply-To: <20130610203641.GA26036@mithrandir>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2013 11:36 PM, Thierry Reding wrote:
-> On Mon, Jun 10, 2013 at 12:13:43PM +0300, Tuomas Tynkkynen wrote:
->> In Tegra20 memory controller any MC interrupt would cause an
->> infinite loop in the IRQ handler.
->>
->> Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
->> ---
->>  drivers/memory/tegra20-mc.c | 5 ++++-
->>  1 file changed, 4 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/memory/tegra20-mc.c b/drivers/memory/tegra20-mc.c
->> index 2ca5f28..bd5a553 100644
->> --- a/drivers/memory/tegra20-mc.c
->> +++ b/drivers/memory/tegra20-mc.c
->> @@ -193,8 +193,11 @@ static irqreturn_t tegra20_mc_isr(int irq, void *data)
->>  	mask &= stat;
->>  	if (!mask)
->>  		return IRQ_NONE;
->> -	while ((bit = ffs(mask)) != 0)
->> +	while ((bit = ffs(mask)) != 0) {
->>  		tegra20_mc_decode(mc, bit - 1);
->> +		mask &= BIT(bit);
-> 
-> Shouldn't this be "mask &= ~BIT(bit);"? The intent of the code is to
-> clear the bit which was handled by the loop body, right? The above
-> clears all other bits instead.
-> 
-> Thierry
+In Tegra30 any memory controller interrupt would cause an infinite loop in the
+IRQ handler. Additionally, a garbage pointer was used to read the MC
+status registers, which causes wrong values to be printed if a MC error
+occurred.
 
-Whoops, yes it should be clearing just one bit. And since ffs() returned
-a one-based bit-index, it seemed to work in practice.
+Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+---
+ drivers/memory/tegra30-mc.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-I'll fix those & resend.
+diff --git a/drivers/memory/tegra30-mc.c b/drivers/memory/tegra30-mc.c
+index f4ae074..58d2979 100644
+--- a/drivers/memory/tegra30-mc.c
++++ b/drivers/memory/tegra30-mc.c
+@@ -218,7 +218,7 @@ static void tegra30_mc_decode(struct tegra30_mc *mc, int n)
+ 		return;
+ 	}
+ 
+-	err = readl(mc + MC_ERR_STATUS);
++	err = mc_readl(mc, MC_ERR_STATUS);
+ 
+ 	type = (err & MC_ERR_TYPE_MASK) >> MC_ERR_TYPE_SHIFT;
+ 	perm = (err & MC_ERR_INVALID_SMMU_PAGE_MASK) >>
+@@ -235,7 +235,7 @@ static void tegra30_mc_decode(struct tegra30_mc *mc, int n)
+ 	if (cid < ARRAY_SIZE(tegra30_mc_client))
+ 		client = tegra30_mc_client[cid];
+ 
+-	addr = readl(mc + MC_ERR_ADR);
++	addr = mc_readl(mc, MC_ERR_ADR);
+ 
+ 	dev_err_ratelimited(mc->dev, "%s (0x%08x): 0x%08x %s (%s %s %s %s)\n",
+ 			   mc_int_err[idx], err, addr, client,
+@@ -313,8 +313,11 @@ static irqreturn_t tegra30_mc_isr(int irq, void *data)
+ 	mask &= stat;
+ 	if (!mask)
+ 		return IRQ_NONE;
+-	while ((bit = ffs(mask)) != 0)
++	while ((bit = ffs(mask)) != 0) {
+ 		tegra30_mc_decode(mc, bit - 1);
++		mask &= ~BIT(bit - 1);
++	}
++
+ 	mc_writel(mc, stat, MC_INTSTATUS);
+ 	return IRQ_HANDLED;
+ }
+-- 
+1.8.1.5
 
-- Tuomas
