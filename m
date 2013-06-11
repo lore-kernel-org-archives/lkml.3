@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756858Ab3FKUEW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:04:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42039 "EHLO
+	id S1756888Ab3FKUFL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:05:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42080 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756811Ab3FKUEQ (ORCPT
+	with ESMTP id S1756811Ab3FKUEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:04:16 -0400
+	Tue, 11 Jun 2013 16:04:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
-Subject: [ 62/79] pci: Set dev->dev.type in alloc_pci_dev
-Date: Tue, 11 Jun 2013 13:03:28 -0700
-Message-Id: <20130611195324.232019468@linuxfoundation.org>
+        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+Subject: [ 61/79] drm/gma500: Increase max resolution for mode setting
+Date: Tue, 11 Jun 2013 13:03:27 -0700
+Message-Id: <20130611195324.107826856@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -29,41 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian King <brking@linux.vnet.ibm.com>
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 
-commit 88e7b167a079f090405ab4390b629b5effdab41a upstream.
+commit cbbd379aa43890f36da934f5af619d2fb8ec3d87 upstream.
 
-Set dev->dev.type in alloc_pci_dev so that archs that have their own
-versions of pci_setup_device get this set properly in order to ensure
-things like the boot_vga sysfs parameter get created as expected.
+By having a higher max resolution we can now set up a virtual
+framebuffer that spans several monitors. 4096 should be ok since we're
+gen 3 or higher and should be enough for most dual head setups.
 
-Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
-Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+Bugzilla:
+https://bugs.launchpad.net/ubuntu/+source/xserver-xorg-video-modesetting/+bug/1169147
+Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/probe.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/gma500/framebuffer.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -988,7 +988,6 @@ int pci_setup_device(struct pci_dev *dev
- 	dev->sysdata = dev->bus->sysdata;
- 	dev->dev.parent = dev->bus->bridge;
- 	dev->dev.bus = &pci_bus_type;
--	dev->dev.type = &pci_dev_type;
- 	dev->hdr_type = hdr_type & 0x7f;
- 	dev->multifunction = !!(hdr_type & 0x80);
- 	dev->error_state = pci_channel_io_normal;
-@@ -1208,6 +1207,7 @@ struct pci_dev *alloc_pci_dev(void)
- 		return NULL;
+--- a/drivers/gpu/drm/gma500/framebuffer.c
++++ b/drivers/gpu/drm/gma500/framebuffer.c
+@@ -772,8 +772,8 @@ void psb_modeset_init(struct drm_device
+ 	for (i = 0; i < dev_priv->num_pipe; i++)
+ 		psb_intel_crtc_init(dev, i, mode_dev);
  
- 	INIT_LIST_HEAD(&dev->bus_list);
-+	dev->dev.type = &pci_dev_type;
+-	dev->mode_config.max_width = 2048;
+-	dev->mode_config.max_height = 2048;
++	dev->mode_config.max_width = 4096;
++	dev->mode_config.max_height = 4096;
  
- 	return dev;
- }
+ 	psb_setup_outputs(dev);
+ 
 
 
