@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754944Ab3FKNMr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 09:12:47 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:49524 "EHLO
+	id S1755073Ab3FKNNW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 09:13:22 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:54551 "EHLO
 	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843Ab3FKNMp (ORCPT
+	with ESMTP id S1751598Ab3FKNNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 09:12:45 -0400
-X-Nat-Received: from [202.181.97.72]:49460 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1370956363.15889
+	Tue, 11 Jun 2013 09:13:20 -0400
+X-Nat-Received: from [202.181.97.72]:58377 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1370956398.19538
 To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-security-module@vger.kernel.org
-Subject: [PATCH 1/4] LSM: Add security_bprm_aborting_creds() hook.
+Subject: [PATCH 2/4] LSM: Revive security_task_alloc() hook.
 From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 References: <201306112211.GBH48909.SOFOFJHMtFQVLO@I-love.SAKURA.ne.jp>
 In-Reply-To: <201306112211.GBH48909.SOFOFJHMtFQVLO@I-love.SAKURA.ne.jp>
-Message-Id: <201306112212.JHI90114.HOOLMVJFStQFFO@I-love.SAKURA.ne.jp>
+Message-Id: <201306112213.DJJ13067.SLtQFOFOJFHMVO@I-love.SAKURA.ne.jp>
 X-Mailer: Winbiff [Version 2.51 PL2]
 X-Accept-Language: ja,en,zh
-Date: Tue, 11 Jun 2013 22:12:42 +0900
+Date: Tue, 11 Jun 2013 22:13:16 +0900
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 11062013 #10379665, status: clean
@@ -26,116 +26,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 27dfd0d7652917601a53f4439678097c8ce67b2b Mon Sep 17 00:00:00 2001
+>From 5fc4d5f6d39e36f6b91ce6b26d084ef2354488c0 Mon Sep 17 00:00:00 2001
 From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Tue, 11 Jun 2013 21:26:53 +0900
-Subject: [PATCH 1/4] LSM: Add security_bprm_aborting_creds() hook.
+Date: Tue, 11 Jun 2013 21:33:49 +0900
+Subject: [PATCH 2/4] LSM: Revive security_task_alloc() hook.
 
-Add a LSM hook which is called only when an execve operation failed after
-prepare_bprm_creds() succeeded. This hook is used by TOMOYO for synchronously
-cleaning up resources allocated during an execve operation.
+Revive a LSM hook which is called when a task_struct is allocated.
+This hook is used by TOMOYO for inheriting per a task_struct variables.
 
 Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 ---
- fs/exec.c                |    1 +
- include/linux/security.h |   11 +++++++++++
- security/capability.c    |    5 +++++
+ include/linux/security.h |   10 ++++++++++
+ kernel/fork.c            |    7 ++++++-
+ security/capability.c    |    6 ++++++
  security/security.c      |    5 +++++
- 4 files changed, 22 insertions(+), 0 deletions(-)
+ 4 files changed, 27 insertions(+), 1 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 6430195..f71b2ae 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1175,6 +1175,7 @@ void free_bprm(struct linux_binprm *bprm)
- {
- 	free_arg_pages(bprm);
- 	if (bprm->cred) {
-+		security_bprm_aborting_creds(bprm);
- 		mutex_unlock(&current->signal->cred_guard_mutex);
- 		abort_creds(bprm->cred);
- 	}
 diff --git a/include/linux/security.h b/include/linux/security.h
-index 40560f4..6f03e37 100644
+index 6f03e37..46566e3 100644
 --- a/include/linux/security.h
 +++ b/include/linux/security.h
-@@ -232,6 +232,11 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	linux_binprm structure.  This hook is a good place to perform state
-  *	changes on the process such as clearing out non-inheritable signal
-  *	state.  This is called immediately after commit_creds().
-+ * @bprm_aborting_creds:
-+ *	This hook is called when an execve operation failed after
-+ *	prepare_bprm_creds() succeeded so that we can synchronously clean up
-+ *	resources used by an execve operation.
-+ *	@bprm points to the linux_binprm structure.
-  * @bprm_secureexec:
-  *	Return a boolean value (0 or 1) indicating whether a "secure exec"
-  *	is required.  The flag is passed in the auxiliary table
-@@ -1426,6 +1431,7 @@ struct security_operations {
- 	int (*bprm_secureexec) (struct linux_binprm *bprm);
- 	void (*bprm_committing_creds) (struct linux_binprm *bprm);
- 	void (*bprm_committed_creds) (struct linux_binprm *bprm);
-+	void (*bprm_aborting_creds) (struct linux_binprm *bprm);
+@@ -660,6 +660,9 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
+  *	manual page for definitions of the @clone_flags.
+  *	@clone_flags contains the flags indicating what should be shared.
+  *	Return 0 if permission is granted.
++ * @task_alloc:
++ *	@task task being allocated.
++ *	Handle allocation of task-related resources.
+  * @task_free:
+  *	@task task being freed
+  *	Handle release of task-related resources. (Note that this can be called
+@@ -1528,6 +1531,7 @@ struct security_operations {
+ 	int (*file_open) (struct file *file, const struct cred *cred);
  
- 	int (*sb_alloc_security) (struct super_block *sb);
- 	void (*sb_free_security) (struct super_block *sb);
-@@ -1714,6 +1720,7 @@ int security_bprm_set_creds(struct linux_binprm *bprm);
- int security_bprm_check(struct linux_binprm *bprm);
- void security_bprm_committing_creds(struct linux_binprm *bprm);
- void security_bprm_committed_creds(struct linux_binprm *bprm);
-+void security_bprm_aborting_creds(struct linux_binprm *bprm);
- int security_bprm_secureexec(struct linux_binprm *bprm);
- int security_sb_alloc(struct super_block *sb);
- void security_sb_free(struct super_block *sb);
-@@ -1954,6 +1961,10 @@ static inline void security_bprm_committed_creds(struct linux_binprm *bprm)
- {
+ 	int (*task_create) (unsigned long clone_flags);
++	int (*task_alloc) (struct task_struct *task);
+ 	void (*task_free) (struct task_struct *task);
+ 	int (*cred_alloc_blank) (struct cred *cred, gfp_t gfp);
+ 	void (*cred_free) (struct cred *cred);
+@@ -1792,6 +1796,7 @@ int security_file_send_sigiotask(struct task_struct *tsk,
+ int security_file_receive(struct file *file);
+ int security_file_open(struct file *file, const struct cred *cred);
+ int security_task_create(unsigned long clone_flags);
++int security_task_alloc(struct task_struct *task);
+ void security_task_free(struct task_struct *task);
+ int security_cred_alloc_blank(struct cred *cred, gfp_t gfp);
+ void security_cred_free(struct cred *cred);
+@@ -2281,6 +2286,11 @@ static inline int security_task_create(unsigned long clone_flags)
+ 	return 0;
  }
  
-+static inline void security_bprm_aborting_creds(struct linux_binprm *bprm)
++static inline int security_task_alloc(struct task_struct *task)
 +{
++	return 0;
 +}
 +
- static inline int security_bprm_secureexec(struct linux_binprm *bprm)
- {
- 	return cap_bprm_secureexec(bprm);
+ static inline void security_task_free(struct task_struct *task)
+ { }
+ 
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 987b28a..fed8f5d 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1315,9 +1315,12 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	retval = perf_event_init_task(p);
+ 	if (retval)
+ 		goto bad_fork_cleanup_policy;
+-	retval = audit_alloc(p);
++	retval = security_task_alloc(p);
+ 	if (retval)
+ 		goto bad_fork_cleanup_policy;
++	retval = audit_alloc(p);
++	if (retval)
++		goto bad_fork_cleanup_security;
+ 	/* copy all the process information */
+ 	retval = copy_semundo(clone_flags, p);
+ 	if (retval)
+@@ -1512,6 +1515,8 @@ bad_fork_cleanup_semundo:
+ 	exit_sem(p);
+ bad_fork_cleanup_audit:
+ 	audit_free(p);
++bad_fork_cleanup_security:
++	security_task_free(p);
+ bad_fork_cleanup_policy:
+ 	perf_event_free_task(p);
+ #ifdef CONFIG_NUMA
 diff --git a/security/capability.c b/security/capability.c
-index 1728d4e..34b6f09 100644
+index 34b6f09..3ddc282 100644
 --- a/security/capability.c
 +++ b/security/capability.c
-@@ -40,6 +40,10 @@ static void cap_bprm_committed_creds(struct linux_binprm *bprm)
- {
+@@ -363,6 +363,11 @@ static int cap_task_create(unsigned long clone_flags)
+ 	return 0;
  }
  
-+static void cap_bprm_aborting_creds(struct linux_binprm *bprm)
++static int cap_task_alloc(struct task_struct *task)
 +{
++	return 0;
 +}
 +
- static int cap_sb_alloc_security(struct super_block *sb)
+ static void cap_task_free(struct task_struct *task)
  {
- 	return 0;
-@@ -916,6 +920,7 @@ void __init security_fixup_ops(struct security_operations *ops)
- 	set_to_cap_if_null(ops, bprm_set_creds);
- 	set_to_cap_if_null(ops, bprm_committing_creds);
- 	set_to_cap_if_null(ops, bprm_committed_creds);
-+	set_to_cap_if_null(ops, bprm_aborting_creds);
- 	set_to_cap_if_null(ops, bprm_check_security);
- 	set_to_cap_if_null(ops, bprm_secureexec);
- 	set_to_cap_if_null(ops, sb_alloc_security);
+ }
+@@ -990,6 +995,7 @@ void __init security_fixup_ops(struct security_operations *ops)
+ 	set_to_cap_if_null(ops, file_receive);
+ 	set_to_cap_if_null(ops, file_open);
+ 	set_to_cap_if_null(ops, task_create);
++	set_to_cap_if_null(ops, task_alloc);
+ 	set_to_cap_if_null(ops, task_free);
+ 	set_to_cap_if_null(ops, cred_alloc_blank);
+ 	set_to_cap_if_null(ops, cred_free);
 diff --git a/security/security.c b/security/security.c
-index a3dce87..7123178 100644
+index 7123178..3aeaecf 100644
 --- a/security/security.c
 +++ b/security/security.c
-@@ -235,6 +235,11 @@ void security_bprm_committed_creds(struct linux_binprm *bprm)
- 	security_ops->bprm_committed_creds(bprm);
+@@ -782,6 +782,11 @@ int security_task_create(unsigned long clone_flags)
+ 	return security_ops->task_create(clone_flags);
  }
  
-+void security_bprm_aborting_creds(struct linux_binprm *bprm)
++int security_task_alloc(struct task_struct *task)
 +{
-+	security_ops->bprm_aborting_creds(bprm);
++	return security_ops->task_alloc(task);
 +}
 +
- int security_bprm_secureexec(struct linux_binprm *bprm)
+ void security_task_free(struct task_struct *task)
  {
- 	return security_ops->bprm_secureexec(bprm);
+ #ifdef CONFIG_SECURITY_YAMA_STACKED
 -- 
 1.7.1
