@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab3FKUEQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:04:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41966 "EHLO
+	id S1756909Ab3FKUIC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:08:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42035 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756710Ab3FKUED (ORCPT
+	with ESMTP id S1756803Ab3FKUEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:04:03 -0400
+	Tue, 11 Jun 2013 16:04:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        George Cherian <george.cherian@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 60/79] usb: dwc3: gadget: free trb pool only from epnum 2
-Date: Tue, 11 Jun 2013 13:03:26 -0700
-Message-Id: <20130611195323.981440108@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 77/79] xen/smp: Fixup NOHZ per cpu data when onlining an offline CPU.
+Date: Tue, 11 Jun 2013 13:03:43 -0700
+Message-Id: <20130611195326.126101357@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -26,51 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: George Cherian <george.cherian@ti.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 5bf8fae33d14cc5c3c53a926f9079f92c8b082b0 upstream.
+commit 466318a87f28cb3ba0d08a3b7ef1a37ae73d5aa7 upstream.
 
-we never allocate a TRB pool for physical endpoints
-0 and 1 so trying to free it (a invalid TRB pool pointer)
-will lead us in a warning while removing dwc3.ko module.
+The xen_play_dead is an undead function. When the vCPU is told to
+offline it ends up calling xen_play_dead wherin it calls the
+VCPUOP_down hypercall which offlines the vCPU. However, when the
+vCPU is onlined back, it resumes execution right after
+VCPUOP_down hypercall.
 
-In order to fix the situation, all we have to do is skip
-dwc3_free_trb_pool() for physical endpoints 0 and 1 just
-as we while deleting endpoints from the endpoints list.
+That was OK (albeit the API for play_dead assumes that the CPU
+stays dead and never returns) but with commit 4b0c0f294
+(tick: Cleanup NOHZ per cpu data on cpu down) that is no longer safe
+as said commit resets the ts->inidle which at the start of the
+cpu_idle loop was set.
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+The net effect is that we get this warn:
+
+Broke affinity for irq 16
+installing Xen timer for CPU 1
+cpu 1 spinlock event irq 48
+------------[ cut here ]------------
+WARNING: at /home/konrad/linux-linus/kernel/time/tick-sched.c:935 tick_nohz_idle_exit+0x195/0x1b0()
+Modules linked in: dm_multipath dm_mod xen_evtchn iscsi_boot_sysfs
+CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.10.0-rc3upstream-00068-gdcdbe33 #1
+Hardware name: BIOSTAR Group N61PB-M2S/N61PB-M2S, BIOS 6.00 PG 09/03/2009
+ ffffffff8193b448 ffff880039da5e60 ffffffff816707c8 ffff880039da5ea0
+ ffffffff8108ce8b ffff880039da4010 ffff88003fa8e500 ffff880039da4010
+ 0000000000000001 ffff880039da4000 ffff880039da4010 ffff880039da5eb0
+Call Trace:
+ [<ffffffff816707c8>] dump_stack+0x19/0x1b
+ [<ffffffff8108ce8b>] warn_slowpath_common+0x6b/0xa0
+ [<ffffffff8108ced5>] warn_slowpath_null+0x15/0x20
+ [<ffffffff810e4745>] tick_nohz_idle_exit+0x195/0x1b0
+ [<ffffffff810da755>] cpu_startup_entry+0x205/0x250
+ [<ffffffff81661070>] cpu_bringup_and_idle+0x13/0x15
+---[ end trace 915c8c486004dda1 ]---
+
+b/c ts_inidle is set to zero. Thomas suggested that we just add a workaround
+to call tick_nohz_idle_enter before returning from xen_play_dead() - and
+that is what this patch does and fixes the issue.
+
+We also add the stable part b/c git commit 4b0c0f294 is on the stable
+tree.
+
+Suggested-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
 ---
- drivers/usb/dwc3/gadget.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ arch/x86/xen/smp.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -1637,10 +1637,20 @@ static void dwc3_gadget_free_endpoints(s
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -17,6 +17,7 @@
+ #include <linux/slab.h>
+ #include <linux/smp.h>
+ #include <linux/irq_work.h>
++#include <linux/tick.h>
  
- 	for (epnum = 0; epnum < DWC3_ENDPOINTS_NUM; epnum++) {
- 		dep = dwc->eps[epnum];
--		dwc3_free_trb_pool(dep);
+ #include <asm/paravirt.h>
+ #include <asm/desc.h>
+@@ -436,6 +437,13 @@ static void __cpuinit xen_play_dead(void
+ 	play_dead_common();
+ 	HYPERVISOR_vcpu_op(VCPUOP_down, smp_processor_id(), NULL);
+ 	cpu_bringup();
++	/*
++	 * commit 4b0c0f294 (tick: Cleanup NOHZ per cpu data on cpu down)
++	 * clears certain data that the cpu_idle loop (which called us
++	 * and that we return from) expects. The only way to get that
++	 * data back is to call:
++	 */
++	tick_nohz_idle_enter();
+ }
  
--		if (epnum != 0 && epnum != 1)
-+		/*
-+		 * Physical endpoints 0 and 1 are special; they form the
-+		 * bi-directional USB endpoint 0.
-+		 *
-+		 * For those two physical endpoints, we don't allocate a TRB
-+		 * pool nor do we add them the endpoints list. Due to that, we
-+		 * shouldn't do these two operations otherwise we would end up
-+		 * with all sorts of bugs when removing dwc3.ko.
-+		 */
-+		if (epnum != 0 && epnum != 1) {
-+			dwc3_free_trb_pool(dep);
- 			list_del(&dep->endpoint.ep_list);
-+		}
- 
- 		kfree(dep);
- 	}
+ #else /* !CONFIG_HOTPLUG_CPU */
 
 
