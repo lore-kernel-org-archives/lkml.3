@@ -1,189 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753753Ab3FKCVO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 22:21:14 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:47530 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab3FKCVL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 22:21:11 -0400
+	id S1754585Ab3FKCZu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 22:25:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:37343 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752347Ab3FKCZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 22:25:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,841,1363158000"; 
+   d="scan'208";a="351432672"
+Message-ID: <51B68AA6.1050105@linux.intel.com>
+Date: Tue, 11 Jun 2013 05:25:42 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <51B19DF3.2070009@jp.fujitsu.com>
-References: <1368509365-2260-1-git-send-email-indou.takao@jp.fujitsu.com>
- <CAErSpo4t_2Xw76p3Z9FVzyyK-MBovavDu9D=pYoPMjESSxgT=w@mail.gmail.com> <51B19DF3.2070009@jp.fujitsu.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 10 Jun 2013 20:20:50 -0600
-Message-ID: <CAErSpo6dfEnzriHD_aWZB_3E-kSzauhNRHPd+VuFX5HONVKgqw@mail.gmail.com>
-Subject: Re: [PATCH v2] PCI: Reset PCIe devices to stop ongoing DMA
-To: Takao Indoh <indou.takao@jp.fujitsu.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        kexec@lists.infradead.org, ishii.hironobu@jp.fujitsu.com,
-        Don Dutile <ddutile@redhat.com>, bill.sumner@hp.com,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Miller <davem@davemloft.net>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        jesse.brandeburg@intel.com, donald.c.skidmore@intel.com,
+        e1000-devel@lists.sourceforge.net, willemb@google.com,
+        erdnetdev@gmail.com, bhutchings@solarflare.com, andi@firstfloor.org,
+        hpa@zytor.com, eilong@broadcom.com, or.gerlitz@gmail.com,
+        amirv@mellanox.com, eliezer@tamir.org.il
+Subject: Re: [PATCH v10 net-next 0/6] net: low latency Ethernet device polling
+References: <20130610083929.6955.87206.stgit@ladj378.jer.intel.com> <20130610.134116.1913599114372510768.davem@davemloft.net>
+In-Reply-To: <20130610.134116.1913599114372510768.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 7, 2013 at 2:46 AM, Takao Indoh <indou.takao@jp.fujitsu.com> wrote:
-> (2013/06/07 13:14), Bjorn Helgaas wrote:
-
->> One thing I'm not sure about is that you are only resetting PCIe
->> devices, but I don't think the problem is actually specific to PCIe,
->> is it?  I think the same issue could occur on any system with an
->> IOMMU.  In the x86 PC world, most IOMMUs are connected with PCIe, but
->> there are systems with IOMMUs for plain old PCI devices, e.g.,
->> PA-RISC.
+On 10/06/2013 23:41, David Miller wrote:
+> From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+> Date: Mon, 10 Jun 2013 11:39:30 +0300
 >
-> Right, this is not specific to PCIe. The reasons why the target is only
-> PCIe is just to make algorithm to reset simple. It is possible to reset
-> legacy PCI devices in my patch, but code becomes somewhat complicated. I
-> thought recently most systems used PCIe and there was little demand for
-> resetting legacy PCI. Therefore I decided not to reset legacy PCI
-> devices, but I'll do if there are requests :-)
-
-I'm not sure you need to reset legacy devices (or non-PCI devices)
-yet, but the current hook isn't anchored anywhere -- it's just an
-fs_initcall() that doesn't give the reader any clue about the
-connection between the reset and the problem it's solving.
-
-If we do something like this patch, I think it needs to be done at the
-point where we enable or disable the IOMMU.  That way, it's connected
-to the important event, and there's a clue about how to make
-corresponding fixes for other IOMMUs.
-
-We already have a "reset_devices" boot option.  This is for the same
-purpose, as far as I can tell, and I'm not sure there's value in
-having both "reset_devices" and "pci=pcie_reset_endpoint_devices".  In
-fact, there's nothing specific even to PCI here.  The Intel VT-d docs
-seem carefully written so they could apply to either PCIe or non-PCI
-devices.
-
->> I tried to make a list of the interesting scenarios and the events
->> that are relevant to this problem:
->>
->>      Case 1: IOMMU off in system, off in kdump kernel
->>        system kernel leaves IOMMU off
->>          DMA targets system-kernel memory
->>        kexec to kdump kernel (IOMMU off, devices untouched)
->>          DMA targets system-kernel memory (harmless)
->>        kdump kernel re-inits device
->>          DMA targets kdump-kernel memory
->>
->>      Case 2: IOMMU off in system kernel, on in kdump kernel
->>        system kernel leaves IOMMU off
->>          DMA targets system-kernel memory
->>        kexec to kdump kernel (IOMMU off, devices untouched)
->>          DMA targets system-kernel memory (harmless)
->>        kdump kernel enables IOMMU with no valid mappings
->>          DMA causes IOMMU errors (annoying but harmless)
->>        kdump kernel re-inits device
->>          DMA targets IOMMU-mapped kdump-kernel memory
->>
->>      Case 3a: IOMMU on in system kernel, kdump kernel doesn't touch IOMMU
->>        system kernel enables IOMMU
->>          DMA targets IOMMU-mapped system-kernel memory
->>        kexec to kdump kernel (IOMMU on, devices untouched)
->>          DMA targets IOMMU-mapped system-kernel memory
->>        kdump kernel doesn't know about IOMMU or doesn't touch it
->>          DMA targets IOMMU-mapped system-kernel memory
->>        kdump kernel re-inits device
->>          kernel assumes no IOMMU, so all new DMA mappings are invalid
->> because DMAs actually do go through the IOMMU
->>          (** corruption or other non-recoverable error likely **)
->>
->>      Case 3b: IOMMU on in system kernel, kdump kernel disables IOMMU
->>        system kernel enables IOMMU
->>          DMA targets IOMMU-mapped system-kernel memory
->>        kexec to kdump kernel (IOMMU on, devices untouched)
->>          DMA targets IOMMU-mapped system-kernel memory
->>        kdump kernel disables IOMMU
->>          DMA targets IOMMU-mapped system-kernel memory, but IOMMU is disabled
->>          (** corruption or other non-recoverable error likely **)
->>        kdump kernel re-inits device
->>          DMA targets kdump-kernel memory
->>
->>      Case 4: IOMMU on in system kernel, on in kdump kernel
->>        system kernel enables IOMMU
->>          DMA targets IOMMU-mapped system-kernel memory
->>        kexec to kdump kernel (IOMMU on, devices untouched)
->>          DMA targets IOMMU-mapped system-kernel memory
->>        kdump kernel enables IOMMU with no valid mappings
->>          DMA causes IOMMU errors (annoying but harmless)
->>        kdump kernel re-inits device
->>          DMA targets IOMMU-mapped kdump-kernel memory
+>> I removed the select/poll patch (was 5/7 in v9) from the set.
+>> The rest are the same patches that were in v9.
 >
-> This is not harmless. Errors like PCI SERR are detected here, and it
-> makes driver or system unstable, and kdump fails. I also got report that
-> system hangs up due to this.
-
-OK, let's take this slowly.  Does an IOMMU error in the system kernel
-also cause SERR or make the system unstable?  Is that the expected
-behavior on IOMMU errors, or is there something special about the
-kdump scenario that causes SERRs?  I see lots of DMAR errors, e.g.,
-those in https://bugzilla.redhat.com/show_bug.cgi?id=743790, that are
-reported with printk and don't seem to cause an SERR.  Maybe the SERR
-is system-specific behavior?
-
-https://bugzilla.redhat.com/show_bug.cgi?id=568153 is another (public)
-report of IOMMU errors related to a driver bug where we just get
-printks, not SERR.
-
-https://bugzilla.redhat.com/show_bug.cgi?id=743495 looks like a hang
-when the kdump kernel reboots (after successfully saving a crashdump).
- But it is using "iommu=pt", which I don't believe makes sense.  The
-scenario is basically case 4 above, but instead of the kdump kernel
-starting with no valid IOMMU mappings, it identity-maps bus addresses
-to physical memory addresses.  That's completely bogus because it's
-certainly not what the system kernel did, so it's entirely likely to
-make the system unstable or hang.  This is not an argument for doing a
-reset; it's an argument for doing something smarter than "iommu=pt" in
-the kdump kernel.
-
-We might still want to reset PCIe devices, but I want to make sure
-that we're not papering over other issues when we do.  Therefore, I'd
-like to understand why IOMMU errors seem harmless in some cases but
-not in others.
-
-> Case 1:  Harmless
-> Case 2:  Not tested
-> Case 3a: Not tested
-> Case 3b: Cause problem, fixed by my patch
-> Case 4:  Cause problem, fixed by my patch
+> Reply to this email with some text to put in the merge commit,
+> including basic benchmark results, so that I can apply this series.
 >
-> I have never tested case 2 and 3a, but I think it also causes problem.
+sorry,
 
-I do not believe we need to support case 3b (IOMMU on in system kernel
-but disabled in kdump kernel).  There is no way to make that reliable
-unless every single device that may perform DMA is reset, and since
-you don't reset legacy PCI or VGA devices, you're not even proposing
-to do that.
+Here is the text from the RFC and v2 cover letters, updated and merged.
+If this is too long, please tell me what you think should be removed.
 
-I think we need to support case 1 (for systems with no IOMMU at all)
-and case 4 (IOMMU enabled in both system kernel and kdump kernel).  If
-the kdump kernel can detect whether the IOMMU is enabled, that should
-be enough -- it could figure out automatically whether we're in case 1
-or 4.
+Thanks,
+Eliezer
 
->> Do you have any bugzilla references or problem report URLs you could
->> include here?
->
-> I know three Red Hat bugzilla, but I think these are private article and
-> you cannot see. I'll add you Cc list in bz so that you can see.
->
-> BZ#743790: Kdump fails with intel_iommu=on
-> https://bugzilla.redhat.com/show_bug.cgi?id=743790
->
-> BZ#743495: Hardware error is detected with intel_iommu=on
-> https://bugzilla.redhat.com/show_bug.cgi?id=743495
->
-> BZ#833299: megaraid_sas doesn't work well with intel_iommu=on and iommu=pt
-> https://bugzilla.redhat.com/show_bug.cgi?id=833299
+---
 
-Thanks for adding me to the CC lists.  I looked all three and I'm not
-sure there's anything sensitive in them.  It'd be nice if they could
-be made public if there's not.
+This patch set adds the ability for the socket layer code to
+poll directly on an Ethernet device's RX queue.
+This eliminates the cost of the interrupt and context switch
+and with proper tuning allows us to get very close to the HW latency.
 
-Bjorn
+This is a follow up to Jesse Brandeburg's Kernel Plumbers talk from last 
+year
+http://www.linuxplumbersconf.org/2012/wp-content/uploads/2012/09/2012-lpc-Low-Latency-Sockets-slides-brandeburg.pdf
+
+Patch 1 adds a napi_id and a hashing mechanism to lookup a napi by id.
+Patch 2 adds an ndo_ll_poll method and the code that supports it.
+Patch 3 adds support for busy-polling on UDP sockets.
+Patch 4 adds support for TCP.
+Patch 5 adds the ixgbe driver code implementing ndo_ll_poll.
+Patch 6 adds additional statistics to the ixgbe driver for ndo_ll_poll.
+
+
+Performance numbers:
+      setup                         TCP_RR           UDP_RR
+kernel  Config     C3/6 rx-usecs tps cpu% S.dem  tps cpu% S.dem
+patched optimized  on   100      87k 3.13 11.4   94K 3.17 10.7
+patched optimized  on   0        71k 3.12 14.0   84k 3.19 12.0
+patched optimized  on   adaptive 80k 3.13 12.5   90k 3.46 12.2
+patched typical    on   100      72  3.13 14.0   79k 3.17 12.8
+patched typical    on   0        60k 2.13 16.5   71k 3.18 14.0
+patched typical    on   adaptive 67k 3.51 16.7   75k 3.36 14.5
+3.9     optimized  on   adaptive 25k 1.0  12.7   28k 0.98 11.2
+3.9     typical    off  0        48k 1.09  7.3   52k 1.11 4.18
+3.9     typical    0ff  adaptive 35k 1.12 4.08   38k 0.65 5.49
+3.9     optimized  off  adaptive 40k 0.82 4.83   43k 0.70 5.23
+3.9     optimized  off  0        57k 1.17 4.08   62k 1.04 3.95
+
+Test setup details:
+Machines: each with two Intel Xeon 2680 CPUs and X520 (82599) optical NICs
+Tests: Netperf tcp_rr and udp_rr, 1 byte (round trips per second)
+Kernel: unmodified 3.9 and patched 3.9
+Config: typical is derived from RH6.2, optimized is a stripped down config.
+Interrupt coalescing (ethtool rx-usecs) settings: 0=off, 1=adaptive, 100 us
+When C3/6 states were turned on (via BIOS) the performance governor was 
+used.
+
+These performance numbers were measured with v2 of the patch set.
+Performance of the optimized config with an rx-usecs setting of 100
+(the first line in the table above) was tracked during the evolution
+of the patches and has never varied by more than 1%.
+
+
+Design:
+A global hash table that allows us to look up a struct napi by a unique 
+id was added.
+
+A napi_id field was added both to struct sk_buff and struct sk.
+This is used to track which NAPI we need to poll for a specific socket.
+
+The device driver marks every incoming skb with this id.
+This is propagated to the sk when the socket is looked up in the 
+protocol handler.
+
+When the socket code does not find any more data on the socket queue,
+it now may call ndo_ll_poll which will crank the device's rx queue and
+feed incoming packets to the stack directly from the context of the
+socket.
+
+A sysctl value (net.core4.low_latency_poll) controls how many
+microseconds we busy-wait before giving up. (setting to 0 globally 
+disables busy-polling)
+
+
+Locking:
+
+1. Locking between napi poll and ndo_ll_poll:
+Since what needs to be locked between a device's NAPI poll and
+ndo_ll_poll, is highly device / configuration dependent, we do this
+inside the Ethernet driver.
+For example, when packets for high priority connections are sent to
+separate rx queues, you might not need locking between napi poll and
+ndo_ll_poll at all.
+
+For ixgbe we only lock the RX queue.
+ndo_ll_poll does not touch the interrupt state or the TX queues.
+(earlier versions of this patchset did touch them,
+but this design is simpler and works better.)
+
+If a queue is actively polled by a socket (on another CPU) napi poll
+will not service it, but will wait until the queue can be locked
+and cleaned before doing a napi_complete().
+If a socket can't lock the queue because another CPU has it,
+either from napi or from another socket polling on the queue,
+the socket code can busy wait on the socket's skb queue.
+
+Ndo_ll_poll does not have preferential treatment for the data from the
+calling socket vs. data from others, so if another CPU is polling,
+you will see your data on this socket's queue when it arrives.
+
+Ndo_ll_poll is called with local BHs disabled, so it won't race on
+the same CPU with net_rx_action, which calls the napi poll method.
+
+2. Napi_hash
+The napi hash mechanism uses RCU.
+napi_by_id() must be called under rcu_read_lock().
+After a call to napi_hash_del(), caller must take care to wait an rcu
+grace period before freeing the memory containing the napi struct.
+(Ixgbe already had this because the queue vector structure uses rcu to
+protect the statistics counters in it.)
+
+
+how to test:
+
+1. The patchset should apply cleanly to net-next.
+(don't forget to configure INET_LL_RX_POLL).
+
+2. The ethtool -c setting for rx-usecs should be on the order of 100.
+
+3. Use ethtool -K to disable GRO and LRO
+(You are encouraged to try it both ways. If you find that your workload
+does better with GRO on do tell us.)
+
+4. Sysctl value net.core.low_latency_poll controls how long
+(in us) to busy-wait for more data, You are encouraged to play
+with this and see what works for you. The default is now 0 so you need to
+set it to turn the feature on. I recommend a value around 50.
+
+4. benchmark thread and IRQ should be bound to separate cores.
+Both cores should be on the same CPU NUMA node as the NIC.
+When the app and the IRQ run on the same CPU  you get a small penalty.
+If interrupt coalescing is set to a low value this penalty can be very
+large.
+
+5. If you suspect that your machine is not configured properly,
+use numademo to make sure that the CPU to memory BW is OK.
+numademo 128m memcpy local copy numbers should be more than
+8GB/s on a properly configured machine.
+
+Credit:
+Jesse Brandeburg, Arun Chekhov Ilango, Julie Cummings,
+Alexander Duyck, Eric Geisler, Jason Neighbors, Yadong Li,
+Mike Polehn, Anil Vasudevan, Don Wood
+Special thanks for finding bugs in earlier versions:
+Willem de Bruijn and Andi Kleen
+---
