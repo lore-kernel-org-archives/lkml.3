@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606Ab3FKLAw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:00:52 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:56399 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754505Ab3FKLAu (ORCPT
+	id S1754258Ab3FKLCx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:02:53 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:15296 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752042Ab3FKLCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:00:50 -0400
-MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <20130611104800.GA29395@mithrandir>
-References: <1368791388-31441-1-git-send-email-amerilainen@nvidia.com>
-	<1368791388-31441-3-git-send-email-amerilainen@nvidia.com>
-	<20130526101243.GB1652@mithrandir>
-	<51A30372.6080907@nvidia.com>
-	<20130528103927.GB11547@mithrandir>
-	<86y5ay6hrn.fsf@miki.keithp.com>
-	<20130611104800.GA29395@mithrandir>
-Date: Tue, 11 Jun 2013 13:00:50 +0200
-X-Google-Sender-Auth: RPOVWxwUd_Y9Du_G9DudSIVaZaA
-Message-ID: <CAKMK7uF=A9zZ3VgdwzU3gfOjXaYsCqfCUSPmkLdL98nKX94jFQ@mail.gmail.com>
-Subject: Re: [PATCH 2/6] gpu: host1x: Fix syncpoint wait return value
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Keith Packard <keithp@keithp.com>, Terje Bergstrom <tbergstrom@nvidia.com>,
-        "X.Org development" <xorg-devel@lists.x.org>,
+	Tue, 11 Jun 2013 07:02:51 -0400
+X-AuditID: cbfec7f4-b7fd76d0000035e1-0f-51b703d98374
+Message-id: <51B703D7.8050804@samsung.com>
+Date: Tue, 11 Jun 2013 13:02:47 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509
+ Thunderbird/17.0.6
+MIME-version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Michal Simek <michal.simek@xilinx.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Michal Simek <monstr@monstr.eu>, Arnd Bergmann <arnd@arndb.de>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] dma-mapping: Add BUG_ON for uninitialized dma_ops
+References: <f35c5051a207b0a117f2fff27365d0ea892d1610.1370263476.git.michal.simek@xilinx.com>
+ <CAErSpo6kss-v0w_1ker__vPqNCRNLx+z8nk+0r=D-40D3TuDCA@mail.gmail.com>
+In-reply-to: <CAErSpo6kss-v0w_1ker__vPqNCRNLx+z8nk+0r=D-40D3TuDCA@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t/xa7o3mbcHGqz8zWfxd9IxdoslTRkW
+	Hbu+slhc3jWHzeLdywiLJx9Psziwefz+NYnRY8GmUo+/XVOYPT5vkvPY+/k3SwBrFJdNSmpO
+	Zllqkb5dAlfGqaP/WAtW8lX0rr/F2MB4kruLkZNDQsBEYsu8OewQtpjEhXvr2UBsIYGljBIL
+	V5hC2M1MEpenhoPYvAJaEgdnXWUEsVkEVCWeztkL1ssmYCjR9bYLqJeDQ1QgVOL3SnOIckGJ
+	H5PvsYDYIgLqEguPvmfqYuTiYBa4wShx/MATsISwgJvE+X07mSB2LWOU2PXQG8TmFAiW2NvV
+	BRZnFjCTeNSyjhnClpfYvOYt8wRGgVlIdsxCUjYLSdkCRuZVjKKppckFxUnpuYZ6xYm5xaV5
+	6XrJ+bmbGCEh/WUH4+JjVocYBTgYlXh4DXdsCxRiTSwrrsw9xCjBwawkwivJuD1QiDclsbIq
+	tSg/vqg0J7X4ECMTB6dUAyPb864nN+8VG987XPX/9gdtw9fHvmTtfrfO4edejhUbhb+6s2x+
+	dn7WVKannybuM5g/+W68i9js1seTu/UfRhqq+Oo//LT1afETI90nsu8vTSmaUihgbrszzL3j
+	udsih8LFz6peqUvwn/P+Fyx+5mnV328x8ZMT0+pktiV/LdfL2PUp6FKyXu9GJZbijERDLeai
+	4kQAEWa2q0cCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 12:48 PM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> On Tue, May 28, 2013 at 01:12:12PM -0600, Keith Packard wrote:
->> Thierry Reding <thierry.reding@gmail.com> writes:
->>
->>
->> > That doesn't sound right. Maybe drmIoctl() needs fixing instead. Looking
->> > at the history, drmIoctl() was introduced to automatically loop if a
->> > signal was received (commit 8b9ab108ec1f2ba2b503f713769c4946849b3cb2).
->> > However the ioctl(3p) manpage doesn't mention that ioctl() returns
->> > EAGAIN in case it is interrupted by a signal.
->>
->> EAGAIN is being returned when the GPU is wedged to ask the application
->> to re-submit the request, which will presumably be held until the  GPU
->> is un-wedged.
->
-> Isn't that a bit risky? What if something special needs to be done to
-> unwedge the GPU other than re-submit the request, or if it just can't
-> be reasonably unwedged. In that case drmIoctl() will keep looping
-> indefinitely.
->
-> If the above is indeed the expected behaviour for drivers, then we need
-> a different error code for the SYNCPT_WAIT ioctl. EAGAIN is the best fit
-> and anything else doesn't quite match the use-case. A different option
-> might be not to use drmIoctl() on Tegra.
+Hello,
 
-We don't use the EAGAIN ioctl restarting to resubmit the batchbuffer
-which blew up the gpu (that one has been submitted already in a
-different ioctl call), but to be able to restart the ioctl after the
-reset has completed: We need to kick every thread which is potentially
-holding GEM locks and make sure that we block them (at a point where
-they don't hold any locks) until the reset handler completed. To avoid
-a validation nightmare we use the same codepaths as we use for signal
-interrupts, so ioctl restarting is a very natural fit for this.
+On 6/11/2013 4:34 AM, Bjorn Helgaas wrote:
+> [+cc Marek]
+>
+> On Mon, Jun 3, 2013 at 6:44 AM, Michal Simek <michal.simek@xilinx.com> wrote:
+> > Check that dma_ops are initialized correctly.
+> >
+> > Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> > ---
+> > Functions dma_mmap_attrs(), dma_get_sgtable_attrs()
+> > already have this checking.
+> >
+> > ---
+> >  include/asm-generic/dma-mapping-common.h | 12 ++++++++++++
+> >  1 file changed, 12 insertions(+)
+> >
+> > diff --git a/include/asm-generic/dma-mapping-common.h b/include/asm-generic/dma-mapping-common.h
+> > index de8bf89..d430cab 100644
+> > --- a/include/asm-generic/dma-mapping-common.h
+> > +++ b/include/asm-generic/dma-mapping-common.h
+> > @@ -16,6 +16,7 @@ static inline dma_addr_t dma_map_single_attrs(struct device *dev, void *ptr,
+> >         dma_addr_t addr;
+> >
+> >         kmemcheck_mark_initialized(ptr, size);
+> > +       BUG_ON(!ops);
+>
+> Does this actually help anything?  I expected that if "ops" is NULL,
+> we would just oops anyway when we attempted to call "ops->map_page()"
+> because we already trap null pointer dereferences.  At least, when I
+> tried leaving a pci_bus.ops pointer NULL, I got a nice panic and
+> backtrace even without adding an explicit BUG_ON().
+>
+> I cc'd Marek, who added the similar BUG_ON()s in dma_mmap_attrs() and
+> dma_get_sgtable_attrs() with d2b7428eb0 and 64ccc9c033.
 
-Resubmitting victim workloads when a gpu crash happened is something
-the reset handler would do (kernel work item currently), not any
-userspace process doing an ioctl. But atm we don't resubmit victimized
-workloads.
--Daniel
---
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+I think that I've copied it from dma_alloc_coherent() in microblaze. You 
+are right that lack
+of this check will also trigger oops in ops==NULL case, but I think that 
+adding explicit check
+in all functions, which use it, is a good idea. It serves as a kind of 
+documentation and
+emphasizes that missing ops is really an issue.
+
+Best regards
+-- 
+Marek Szyprowski
+Samsung R&D Institute Poland
+
+
