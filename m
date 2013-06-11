@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757155Ab3FKUPo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:15:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41925 "EHLO
+	id S1757175Ab3FKUQc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:16:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41917 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756651Ab3FKUD4 (ORCPT
+	with ESMTP id S1755918Ab3FKUDz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:56 -0400
+	Tue, 11 Jun 2013 16:03:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Riesen <raa.lkml@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 35/79] ALSA: hda/via - Fix wrongly cleared pins after suspend on VT1802
-Date: Tue, 11 Jun 2013 13:03:01 -0700
-Message-Id: <20130611195317.037014412@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 33/79] x86 / platform / hp_wmi: Fix bluetooth_rfkill misuse in hp_wmi_rfkill_setup()
+Date: Tue, 11 Jun 2013 13:02:59 -0700
+Message-Id: <20130611195316.797818010@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -26,40 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: "lan,Tianyu" <tianyu.lan@intel.com>
 
-commit 5a6f294e87974e6ec68d7113553ffd975d83bf15 upstream.
+commit af1d486c18bad7820b0ca52b413458914231102c upstream.
 
-VIA driver has a special suspend handling only for VT1802 to reduce
-the pop noise.  During the transition to the generic parser, the
-behavior of snd_hda_set_pin_ctl() was also changed to modify the
-cached values, too.  And this caused a regression where the pin is
-still cleared even after the resume (including the resume from power
-save), resulting in the silent output.
+HP wmi platform driver fails to initialize GPS and causes poweroff
+failure in HP Elitebook 6930p.
 
-The fix is simply to replace snd_hda_set_pin_ctl() with the explicit
-call of snd_hda_codec_write() again.
+Call Trace:
+ [<ffffffffa088d25a>] hp_wmi_bios_setup+0x25a/0x3a0 [hp_wmi]
+ [<ffffffff8135978c>] platform_drv_probe+0x3c/0x70
+ [<ffffffff81356d6a>] ? driver_sysfs_add+0x7a/0xb0
+ [<ffffffff81357407>] driver_probe_device+0x87/0x3a0
+ [<ffffffff813577f3>] __driver_attach+0x93/0xa0
+ [<ffffffff81357760>] ? __device_attach+0x40/0x40
+ [<ffffffff81355403>] bus_for_each_dev+0x63/0xa0
+ [<ffffffff81356e8e>] driver_attach+0x1e/0x20
+ [<ffffffff81356a28>] bus_add_driver+0x1f8/0x2b0
+ [<ffffffff81357e81>] driver_register+0x71/0x150
+ [<ffffffff813594e6>] platform_driver_register+0x46/0x50
+ [<ffffffff813595ab>] platform_driver_probe+0x1b/0xa0
+ [<ffffffffa088d55e>] hp_wmi_init+0x1be/0x1fb [hp_wmi]
+ [<ffffffffa088d3a0>] ? hp_wmi_bios_setup+0x3a0/0x3a0 [hp_wmi]
+ [<ffffffff8100210a>] do_one_initcall+0x10a/0x160
+ [<ffffffff810bdac6>] load_module+0x1b46/0x2640
+ [<ffffffff8128da20>] ? ddebug_proc_write+0xf0/0xf0
+ [<ffffffff810be662>] sys_init_module+0xa2/0xf0
+ [<ffffffff814d975d>] system_call_fastpath+0x1a/0x1f
+Code: 48 ff ff ff 80 7b 24 00 74 d2 41 83 e5 01 45 38 ec 74 c9 48 8d bb a0 03 00 00 e8 ed fb aa e0 5b 41 5c 41 5d 44 89 f0 41 5e 5d c3 <0f> 0b 66 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 66 66 66 66
+RIP  [<ffffffffa05c57af>] rfkill_set_hw_state+0x9f/0xb0 [rfkill]
+ RSP <ffff880071523b60>
 
-Reported-by: Alex Riesen <raa.lkml@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Check code and find this error is caused by misusing variable bluetooth_rfkill
+where gps_rfkill should be.
+
+Reported-and-tested-by: Iru Cai <mytbk920423@gmail.com>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=58401
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_via.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/platform/x86/hp-wmi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_via.c
-+++ b/sound/pci/hda/patch_via.c
-@@ -483,7 +483,9 @@ static int via_suspend(struct hda_codec
- 		/* Fix pop noise on headphones */
- 		int i;
- 		for (i = 0; i < spec->gen.autocfg.hp_outs; i++)
--			snd_hda_set_pin_ctl(codec, spec->gen.autocfg.hp_pins[i], 0);
-+			snd_hda_codec_write(codec, spec->gen.autocfg.hp_pins[i],
-+					    0, AC_VERB_SET_PIN_WIDGET_CONTROL,
-+					    0x00);
- 	}
- 
- 	return 0;
+--- a/drivers/platform/x86/hp-wmi.c
++++ b/drivers/platform/x86/hp-wmi.c
+@@ -679,7 +679,7 @@ static int hp_wmi_rfkill_setup(struct pl
+ 		}
+ 		rfkill_init_sw_state(gps_rfkill,
+ 				     hp_wmi_get_sw_state(HPWMI_GPS));
+-		rfkill_set_hw_state(bluetooth_rfkill,
++		rfkill_set_hw_state(gps_rfkill,
+ 				    hp_wmi_get_hw_state(HPWMI_GPS));
+ 		err = rfkill_register(gps_rfkill);
+ 		if (err)
 
 
