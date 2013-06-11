@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756982Ab3FKWe5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 18:34:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43609 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756403Ab3FKWe4 (ORCPT
+	id S1757260Ab3FKWkp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 18:40:45 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:42343 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756342Ab3FKWkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 18:34:56 -0400
-Date: Tue, 11 Jun 2013 15:34:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@gentwo.org>, Sasha Levin <sasha.levin@oracle.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] slab: prevent warnings when allocating with
- __GFP_NOWARN
-Message-Id: <20130611153454.6ab17ce44bc4a678b8bf72d4@linux-foundation.org>
-In-Reply-To: <51B73F38.6040802@kernel.org>
-References: <1370891880-2644-1-git-send-email-sasha.levin@oracle.com>
-	<CAOJsxLGDH2iwznRkP-iwiMZw7Ee3mirhjLvhShrWLHR0qguRxA@mail.gmail.com>
-	<51B62F6B.8040308@oracle.com>
-	<0000013f3075f90d-735942a8-b4b8-413f-a09e-57d1de0c4974-000000@email.amazonses.com>
-	<51B67553.6020205@oracle.com>
-	<CAOJsxLH56xqCoDikYYaY_guqCX=S4rcVfDJQ4ki=r-PkNQW9ug@mail.gmail.com>
-	<51B72323.8040207@oracle.com>
-	<0000013f33cdc631-eadb07d1-ef08-4e2c-a218-1997eb86cde9-000000@email.amazonses.com>
-	<51B73F38.6040802@kernel.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Jun 2013 18:40:43 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmcQABSnt1F5LO/z/2dsb2JhbABZgwm6EYUxBAGBABd0giMBAQQBOhwjBQsIAw4KCSUPBSUDIROIBwW6JxaNf4EdB4NgA5c/kUODISo
+Date: Wed, 12 Jun 2013 08:40:15 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Shawn Bohrer <sbohrer@rgmadvisors.com>
+Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
+Subject: Re: 3.10-rc4 stalls during mmap writes
+Message-ID: <20130611224015.GQ29338@dastard>
+References: <20130607193712.GD2995@sbohrermbp13-local.rgmadvisors.com>
+ <20130609033744.GA29376@dastard>
+ <20130610184559.GA3594@sbohrermbp13-local.rgmadvisors.com>
+ <20130610205315.GB29376@dastard>
+ <20130611161735.GA3955@sbohrermbp13-local.rgmadvisors.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130611161735.GA3955@sbohrermbp13-local.rgmadvisors.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Jun 2013 18:16:08 +0300 Pekka Enberg <penberg@kernel.org> wrote:
-
-> On Tue, 11 Jun 2013, Sasha Levin wrote:
-> >> I think that leaving the warning makes sense to catch similar
-> >> things which are actually bugs - we had a similar issue with
-> >> /dev/kmsg (if I remember correctly) which actually pointed to
-> >> a bug.
+On Tue, Jun 11, 2013 at 11:17:35AM -0500, Shawn Bohrer wrote:
+> In the workload I've been debugging we append data to many small files
+> using mmap.  The writes are small and the total data rate is very low
+> thus for most files it may take several minutes to fill a page.
+> Having low-latency writes are important, but as you know stalls are
+> always possible.  One way to reduce the probability of a stall is to
+> reduce the frequency of writeback, and adjusting
+> vm.dirty_expire_centisecs and/or vm.dirty_writeback_centisecs should
+> allow us to do that.
 > 
-> On 6/11/13 6:14 PM, Christoph Lameter wrote:
-> > Right. Requesting an allocation larger than even supported by the page
-> > allocator from the slab allocators that are specializing in allocations of
-> > small objects is usually an indication of a problem in the code.
-> 
-> So you're OK with going forward with Sasha's patch?
+> On kernels 3.4 and older we chose to increase
+> vm.dirty_expire_centisecs to 30000 since we can comfortably loose 5
+> minutes of data in the event of a system failure and we believed this
+> would cause a fairly consistent low data rate as every
+> vm.dirty_writeback_centisecs (5s) it would writeback all dirty pages
+> that were vm.dirty_expire_centisecs (5min) old.
 
-Yes please.  slab should honour __GFP_NOWARN.
+I'm not surprised that behaviour ni the VM has changed - delaying
+flusher thread execution for up to 5 minutes on dirty inodes means
+that memory pressure is determining your writeback patterns.
 
-__GFP_NOWARN is frequently used by kernel code to probe for "how big an
-allocation can I get".  That's a bit lame, but it's used on slow paths
-and is pretty simple.
+> On old kernels that
+> isn't exactly what happened.  Instead every 5 minutes there would be a
+> burst of writeback and a slow trickle at all other times.  This also
+> reduced the total amount of data written back since the same dirty
+> page wasn't written back every 30 seconds.  This also virtually
+> eliminated the stalls we saw so it was left alone.
 
-In the case of pipe_set_size(), it's userspace who is doing the
-probing: an application can request a huge pipe buffer and if that
-fails, try again with a smaller one.  It's just wrong to emit a kernel
-warning in this case.  Plus, we've already reported the failure
-anyway, by returning -ENOMEM from pipe_fcntl().
+So the slow trickle is memory pressure driven writeback....
+
+> On 3.10 vm.dirty_expire_centisecs=30000 no longer does the same thing.
+> Honestly I'm not sure what it does, but the result is a fairly
+> consistent high data rate being written back to disk.  The fact that
+> is consistent might lead me to believe that it writes back all pages
+> that are vm.dirty_expire_centisecs old every
+> vm.dirty_writeback_centisecs, but the data rate is far too high for
+> that to be true.  It appears that I can effectively get the same old
+> behavior by setting vm.dirty_writeback_centisecs=30000.
+
+You probably need to do some tracepoint analysis to find out what is
+triggering the writeback. Once we have an idea of the writeback
+trigger, we might be able to explain the difference in behaviour.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
