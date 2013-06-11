@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228Ab3FKOfB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 10:35:01 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34731 "EHLO
+	id S1753011Ab3FKOgE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 10:36:04 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34742 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752213Ab3FKOe7 (ORCPT
+	with ESMTP id S1751143Ab3FKOgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 10:34:59 -0400
-Message-ID: <51B7358D.7000605@linutronix.de>
-Date: Tue, 11 Jun 2013 16:34:53 +0200
+	Tue, 11 Jun 2013 10:36:02 -0400
+Message-ID: <51B735CC.9080909@linutronix.de>
+Date: Tue, 11 Jun 2013 16:35:56 +0200
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
@@ -19,10 +19,10 @@ CC: Lee Jones <lee.jones@linaro.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
         linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 01/22] mfd/ti_am335x_tscadc: remove regmap
-References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de> <1370950268-7224-2-git-send-email-bigeasy@linutronix.de> <20130611142336.GE29135@zurbaran>
-In-Reply-To: <20130611142336.GE29135@zurbaran>
+        linux-input@vger.kernel.org, "Patil, Rachna" <rachna@ti.com>
+Subject: Re: [PATCH 04/22] input/ti_am33x_tsc: Order of TSC wires, made configurable
+References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de> <1370950268-7224-5-git-send-email-bigeasy@linutronix.de> <20130611142324.GD29135@zurbaran>
+In-Reply-To: <20130611142324.GD29135@zurbaran>
 X-Enigmail-Version: 1.4.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -38,19 +38,28 @@ On 06/11/2013 04:23 PM, Samuel Ortiz wrote:
 
 Hi Samuel,
 
->> Therefore this patch removes regmap part of the driver.
-> NAK. Using regmap is better than open coding your register accesses, and
-> the children not using this API is not a reason for the MFD driver to do
-> the same.
+> On Tue, Jun 11, 2013 at 01:30:50PM +0200, Sebastian Andrzej Siewior wrote:
+>> diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
+>> index eeead15..2d78af8 100644
+>> --- a/include/linux/mfd/ti_am335x_tscadc.h
+>> +++ b/include/linux/mfd/ti_am335x_tscadc.h
+>> @@ -116,6 +113,13 @@
+>>  #define CNTRLREG_8WIRE		CNTRLREG_AFE_CTRL(3)
+>>  #define CNTRLREG_TSCENB		BIT(7)
+>>  
+>> +#define XPP			STEPCONFIG_XPP
+>> +#define XNP			STEPCONFIG_XNP
+>> +#define XNN			STEPCONFIG_XNN
+>> +#define YPP			STEPCONFIG_YPP
+>> +#define YPN			STEPCONFIG_YPN
+>> +#define YNN			STEPCONFIG_YNN
+> What is that for ? Isn't STEPCONFIG_XPP explicit enough ?
 
-There is no advantage over using regmap in the first place. It goes
-through a few layers, uses no caching because almost all registers are
-volatile and this is a direct bus. In the end it complicates more than
-it helps.
+Yeah :P It was added by the original author of the patch, I have no
+problem getting rid of it.
 
 > 
 > Cheers,
 > Samuel.
-> 
 
 Sebastian
