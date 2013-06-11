@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab3FKU1C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:27:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41744 "EHLO
+	id S1757360Ab3FKU1A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:27:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41750 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756441Ab3FKUDX (ORCPT
+	with ESMTP id S1756444Ab3FKUDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:23 -0400
+	Tue, 11 Jun 2013 16:03:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Beulich <jbeulich@suse.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 28/32] xen-pciback: rate limit error messages from xen_pcibk_enable_msi{,x}()
-Date: Tue, 11 Jun 2013 13:03:27 -0700
-Message-Id: <20130611200129.359917239@linuxfoundation.org>
+        Ying Xue <ying.xue@windriver.com>,
+        Lotfi Manseur <lotfi.manseur@gmail.com>
+Subject: [ 29/32] USB: ftdi_sio: Quiet sparse noise about using plain integer was NULL pointer
+Date: Tue, 11 Jun 2013 13:03:28 -0700
+Message-Id: <20130611200129.458595649@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611200126.214442788@linuxfoundation.org>
 References: <20130611200126.214442788@linuxfoundation.org>
@@ -28,73 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <jbeulich@suse.com>
+From: Ying Xue <ying.xue@windriver.com>
 
-commit 51ac8893a7a51b196501164e645583bf78138699 upstream.
+commit a816e3113b63753c330ca4751ea1d208e93e3015 upstream.
 
-... as being guest triggerable (e.g. by invoking
-XEN_PCI_OP_enable_msi{,x} on a device not being MSI/MSI-X capable).
+Pointers should not be compared to plain integers.
+Quiets the sparse warning:
+warning: Using plain integer as NULL pointer
 
-This is CVE-2013-0231 / XSA-43.
-
-Also make the two messages uniform in both their wording and severity.
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-[stable tree: Added two extra #include files]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Ying Xue <ying.xue@windriver.com>
+Cc: Lotfi Manseur <lotfi.manseur@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/xen-pciback/pciback_ops.c |   16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ drivers/usb/serial/ftdi_sio.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/xen/xen-pciback/pciback_ops.c
-+++ b/drivers/xen/xen-pciback/pciback_ops.c
-@@ -9,6 +9,8 @@
- #include <xen/events.h>
- #include <linux/sched.h>
- #include "pciback.h"
-+#include <linux/ratelimit.h>
-+#include <linux/printk.h>
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -2173,7 +2173,7 @@ static void ftdi_set_termios(struct tty_
  
- int verbose_request;
- module_param(verbose_request, int, 0644);
-@@ -136,7 +138,6 @@ int xen_pcibk_enable_msi(struct xen_pcib
- 			 struct pci_dev *dev, struct xen_pci_op *op)
- {
- 	struct xen_pcibk_dev_data *dev_data;
--	int otherend = pdev->xdev->otherend_id;
- 	int status;
+ 	cflag = termios->c_cflag;
  
- 	if (unlikely(verbose_request))
-@@ -145,8 +146,9 @@ int xen_pcibk_enable_msi(struct xen_pcib
- 	status = pci_enable_msi(dev);
+-	if (old_termios == 0)
++	if (!old_termios)
+ 		goto no_skip;
  
- 	if (status) {
--		printk(KERN_ERR "error enable msi for guest %x status %x\n",
--			otherend, status);
-+		pr_warn_ratelimited(DRV_NAME ": %s: error enabling MSI for guest %u: err %d\n",
-+				    pci_name(dev), pdev->xdev->otherend_id,
-+				    status);
- 		op->value = 0;
- 		return XEN_PCI_ERR_op_failed;
- 	}
-@@ -224,10 +226,10 @@ int xen_pcibk_enable_msix(struct xen_pci
- 						pci_name(dev), i,
- 						op->msix_entries[i].vector);
- 		}
--	} else {
--		printk(KERN_WARNING DRV_NAME ": %s: failed to enable MSI-X: err %d!\n",
--			pci_name(dev), result);
--	}
-+	} else
-+		pr_warn_ratelimited(DRV_NAME ": %s: error enabling MSI-X for guest %u: err %d!\n",
-+				    pci_name(dev), pdev->xdev->otherend_id,
-+				    result);
- 	kfree(entries);
- 
- 	op->value = result;
+ 	if (old_termios->c_cflag == termios->c_cflag
 
 
