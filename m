@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754923Ab3FKPhi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 11:37:38 -0400
-Received: from mga11.intel.com ([192.55.52.93]:8268 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752182Ab3FKPhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 11:37:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,845,1363158000"; 
-   d="scan'208";a="351529801"
-Message-ID: <51B74439.3030203@linux.intel.com>
-Date: Tue, 11 Jun 2013 18:37:29 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1752582Ab3FKPmA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 11:42:00 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35257 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462Ab3FKPl6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 11:41:58 -0400
+Message-ID: <51B74540.2020608@linutronix.de>
+Date: Tue, 11 Jun 2013 17:41:52 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH net-next 2/2] net:add socket option for low latency polling
-References: <20130611142415.17879.75569.stgit@ladj378.jer.intel.com>  <20130611142438.17879.6389.stgit@ladj378.jer.intel.com> <1370961930.3252.32.camel@edumazet-glaptop>
-In-Reply-To: <1370961930.3252.32.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: Lee Jones <lee.jones@linaro.org>,
+        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, "Patil, Rachna" <rachna@ti.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: Re: [PATCH 10/22] mfd/ti_am335x_tscadc: Add DT support
+References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de> <1370950268-7224-11-git-send-email-bigeasy@linutronix.de> <20130611142347.GF29135@zurbaran> <51B73756.5010004@linutronix.de> <20130611150505.GI29135@zurbaran>
+In-Reply-To: <20130611150505.GI29135@zurbaran>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2013 17:45, Eric Dumazet wrote:
-> On Tue, 2013-06-11 at 17:24 +0300, Eliezer Tamir wrote:
->> adds a socket option for low latency polling.
->> This allows overriding the global sysctl value with a per-socket one.
->>
->> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
->> ---
->>
->>
->> -static inline cycles_t ll_end_time(void)
->> +static inline cycles_t ll_end_time(struct sock *sk)
->>   {
->> -	return TSC_MHZ * ACCESS_ONCE(sysctl_net_ll_poll) + get_cycles();
->> +	return TSC_MHZ * ACCESS_ONCE(sk->sk_ll_usec) + get_cycles();
->>   }
->
-> Hmm, sk_ll_usec is an unsigned int.
+On 06/11/2013 05:05 PM, Samuel Ortiz wrote:
+> Hi Sebastian,
 
-We changed it to an unsigned long in v7, I guess that was gratuitous.
-Re-reading your comments on v6 2/5 I realize a cast would have sufficed.
-Should I send a patch to revert it to an unsigned int?
+Hi Samuel,
 
-Thanks,
-Eliezer
+> On Tue, Jun 11, 2013 at 04:42:30PM +0200, Sebastian Andrzej Siewior wrote:
+>> In the end I would like not to post a patch with "From: != me" and
+>> don't make change which the original author did not do. Also dropping
+>> their authorship isn't nice. What could we agree on?
+> You probably don't want to change authorship unless the final patch is
+> really far from the original one. In which case you can change it and
+> mention the original author name in the commit log.
+> If you have only made a few changes on top of the original patch, please
+> say so explicitely in the commit log. Don't bother if we're talking
+> about small changes or cosmetic ones. But your commit log has to be
+> readable and clear.
 
+Commit 06c9494 on of many examples where cosmetic are recorded. But to
+make some progress I rewrite the commit log to resolve this and don't
+add anything to the sign-off area.
+
+> Cheers,
+> Samuel.
+
+Sebastian
