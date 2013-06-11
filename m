@@ -1,85 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123Ab3FKMld (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 08:41:33 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:40844 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504Ab3FKMlc (ORCPT
+	id S1755165Ab3FKMmR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 08:42:17 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:57454 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754979Ab3FKMmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 08:41:32 -0400
-Message-ID: <51B71AF6.1090108@gmail.com>
-Date: Tue, 11 Jun 2013 14:41:26 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 11 Jun 2013 08:42:16 -0400
 MIME-Version: 1.0
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] Marvell Orion SoC irqchip and clocksource
-References: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130611123521.GA3996@localhost>
-In-Reply-To: <20130611123521.GA3996@localhost>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130610173739.4d88d4ec@holzheu>
+References: <1370624161-2298-1-git-send-email-holzheu@linux.vnet.ibm.com>
+	<1370624161-2298-4-git-send-email-holzheu@linux.vnet.ibm.com>
+	<CABOkKT0yk6tytN=aTSdpECQWw_30m5qrZYH-W1msovkeiSeZCA@mail.gmail.com>
+	<20130610173739.4d88d4ec@holzheu>
+Date: Tue, 11 Jun 2013 21:42:15 +0900
+Message-ID: <CABOkKT05VR3V9rEz1LWnEJSEvkevhBFfQVVX5_DS0Z4rBG9EyA@mail.gmail.com>
+Subject: Re: [PATCH v5 3/5] vmcore: Introduce remap_oldmem_pfn_range()
+From: HATAYAMA Daisuke <d.hatayama@gmail.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jan Willeke <willeke@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/13 14:35, Ezequiel Garcia wrote:
-> On Thu, Jun 06, 2013 at 06:27:08PM +0200, Sebastian Hesselbarth wrote:
->> This patch set introduces DT-aware irqchip and clocksource drivers for
->> Marvell Orion SoCs (Kirkwood, Dove, Orion5x, MV78x00) and corresponding
->> patches for Dove and Kirkwood to enable them for DT-boards.
->>
->> The irqchip driver, of course, depends on Thomas Gleixner's work on
->> irqdomain support for generic chip (tip irq/core).
->>
->> The ARM part of this patch set has a quite ridiculuous dependency havoc
->> of mv643xx_eth DT support (current net-next) that will add to both irqchip
->> and clocksource branches respectively. Therefore, I suggest that irq
->> and clocksource maintainers take in the mere drivers (Patches 1+2) and
->> Jason Cooper handles the remaining patches when all three drivers have
->> surfaced on mainline linux.
->>
-[...]
->> Sebastian Hesselbarth (6):
->>    irqchip: add support for Marvell Orion SoCs
->>    clocksource: add Marvell Orion SoC timer
->>    ARM: dove: move device tree nodes to DT irqchip and clocksource
->>    ARM: kirkwood: move device tree nodes to DT irqchip and clocksource
->>    ARM: dove: convert to DT irqchip and clocksource
->>    ARM: kirkwood: convert to DT irqchip and clocksource
->>
+2013/6/11 Michael Holzheu <holzheu@linux.vnet.ibm.com>:
+> On Mon, 10 Jun 2013 22:40:24 +0900
+> HATAYAMA Daisuke <d.hatayama@gmail.com> wrote:
 >
-> I've done some tests on my Kirkwood Openblocks A6 using the latest
-> branch orion-irqchip-for-v3.11-v4. Everything works fine so:
+>> 2013/6/8 Michael Holzheu <holzheu@linux.vnet.ibm.com>:
+>> <cut>
+>> > @@ -225,6 +251,56 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+>> >         return acc;
+>> >  }
+>> >
+>> > +static ssize_t read_vmcore(struct file *file, char __user *buffer,
+>> > +                          size_t buflen, loff_t *fpos)
+>> > +{
+>> > +       return __read_vmcore(buffer, buflen, fpos, 1);
+>> > +}
+>> > +
+>> > +/*
+>> > + * The vmcore fault handler uses the page cache and fills data using the
+>> > + * standard __vmcore_read() function.
+>> > + */
+>> > +static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+>> > +{
+>> > +       struct address_space *mapping = vma->vm_private_data;
+>> > +       pgoff_t index = vmf->pgoff;
+>> > +       struct page *page;
+>> > +       loff_t src;
+>> > +       char *buf;
+>> > +       int rc;
+>> > +
+>> > +find_page:
+>> > +       page = find_lock_page(mapping, index);
+>> > +       if (page) {
+>> > +               unlock_page(page);
+>> > +               rc = VM_FAULT_MINOR;
+>> > +       } else {
+>> > +               page = page_cache_alloc_cold(mapping);
+>> > +               if (!page)
+>> > +                       return VM_FAULT_OOM;
+>> > +               rc = add_to_page_cache_lru(page, mapping, index, GFP_KERNEL);
+>> > +               if (rc) {
+>> > +                       page_cache_release(page);
+>> > +                       if (rc == -EEXIST)
+>> > +                               goto find_page;
+>> > +                       /* Probably ENOMEM for radix tree node */
+>> > +                       return VM_FAULT_OOM;
+>> > +               }
+>> > +               buf = (void *) (page_to_pfn(page) << PAGE_SHIFT);
+>> > +               src = index << PAGE_CACHE_SHIFT;
+>> > +               __read_vmcore(buf, PAGE_SIZE, &src, 0);
+>> > +               unlock_page(page);
+>> > +               rc = VM_FAULT_MAJOR;
+>> > +       }
+>> > +       vmf->page = page;
+>> > +       return rc;
+>> > +}
+>>
+>> How about reusing find_or_create_page()?
 >
-> Tested-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+> The function would then look like the following:
+>
+> static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+> {
+>         struct address_space *mapping = vma->vm_private_data;
+>         pgoff_t index = vmf->pgoff;
+>         struct page *page;
+>         loff_t src;
+>         char *buf;
+>
+>         page = find_or_create_page(mapping, index, GFP_KERNEL);
+>         if (!page)
+>                 return VM_FAULT_OOM;
+>         src = index << PAGE_CACHE_SHIFT;
+>         buf = (void *) (page_to_pfn(page) << PAGE_SHIFT);
+>         __read_vmcore(buf, PAGE_SIZE, &src, 0);
+>         unlock_page(page);
+>         vmf->page = page;
+>         return 0;
+> }
+>
+> I agree that this makes the function simpler but we have to copy
+> the page also if it has already been filled, correct?
+>
 
-Ezequiel, thanks for testing!
+You can use for the purpose PG_uptodate flag.
 
-> For patches 3 to 6 I'm wondering if there's any reason why the irqchip and
-> clocksource changes are not separated. I'm probably being too picky but,
-> unless you have a good reason for having them together,
-> I think they should go separated, i.e. patches for irqchip on one side,
-> and patches for clocksource on the other.
+> But since normally only one process uses /proc/vmcore this might be
+> acceptable.
+>
+> BTW: I also removed the VM_FAULT_MAJOR/MINOR because I think the fault
+> handler should return 0 if a page has been found.
+>
+> Michael
+>
 
-The only reason is that when switching from current non-irqdomain irq
-controller to irqdomain-based above, there is no 1:1 mapping between
-irq numbers and hwirqs anymore. But you are right, for the ARM part
-patches that will be merged first thing when v3.11-rc1 is out, the
-correct order is mv643xx_eth, clocksource, irqchip.
-
-I will prepare new, rebased patches for Jason Cooper then anyway.
-
-With Thomas Gleixner's Review now only somebody has to take the irqchip
-patch then all three drivers are queued for next release.
-
-Sebastian
+Thanks.
+HATAYAMA, Daisuke
