@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab3FKKHD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 06:07:03 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:45885 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752061Ab3FKKHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 06:07:00 -0400
-Date: Tue, 11 Jun 2013 03:06:52 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        =?utf-8?B?6LWW5rGf5bGx?= <laijs@cn.fujitsu.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Josh Triplett <josh@joshtriplett.org>, niv@us.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        David Howells <dhowells@redhat.com>,
-        Eric Dumazet <edumazet@google.com>, Darren Hart <darren@dvhart.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
-Message-ID: <20130611100652.GB5146@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130609193657.GA13392@linux.vnet.ibm.com>
- <1370911480.9844.160.camel@gandalf.local.home>
- <CA+55aFxeLszgfTZeG7L6289DcaoKT+uhtf5nwB6r=2i9Sy4Mrg@mail.gmail.com>
+	id S1754297Ab3FKKJp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 06:09:45 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:1396 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752042Ab3FKKJo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 06:09:44 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 11 Jun 2013 03:09:42 -0700
+Message-ID: <51B6F763.2080004@nvidia.com>
+Date: Tue, 11 Jun 2013 13:09:39 +0300
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxeLszgfTZeG7L6289DcaoKT+uhtf5nwB6r=2i9Sy4Mrg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061110-7182-0000-0000-00000741D533
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] memory: tegra20-mc: Fix hang in IRQ handler.
+References: <1370855624-30564-1-git-send-email-ttynkkynen@nvidia.com> <1370855624-30564-2-git-send-email-ttynkkynen@nvidia.com> <20130610203641.GA26036@mithrandir>
+In-Reply-To: <20130610203641.GA26036@mithrandir>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 05:51:14PM -0700, Linus Torvalds wrote:
-> On Mon, Jun 10, 2013 at 5:44 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >
-> > OK, I haven't found a issue here yet, but youss are beiing trickssy! We
-> > don't like trickssy, and we must find precccciouss!!!
-
-Heh!  You should see what it looks like if you make slightly different
-design decisions.  For example, just you try switching back from queued
-to ticket mode while there are still CPUs spinning on the lock!  ;-)
-
-> .. and I personally have my usual reservations. I absolutely hate
-> papering over scalability issues, and historically whenever people
-> have ever thought that we want complex spinlocks, the problem has
-> always been that the locking sucks.
+On 06/10/2013 11:36 PM, Thierry Reding wrote:
+> On Mon, Jun 10, 2013 at 12:13:43PM +0300, Tuomas Tynkkynen wrote:
+>> In Tegra20 memory controller any MC interrupt would cause an
+>> infinite loop in the IRQ handler.
+>>
+>> Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+>> ---
+>>  drivers/memory/tegra20-mc.c | 5 ++++-
+>>  1 file changed, 4 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/memory/tegra20-mc.c b/drivers/memory/tegra20-mc.c
+>> index 2ca5f28..bd5a553 100644
+>> --- a/drivers/memory/tegra20-mc.c
+>> +++ b/drivers/memory/tegra20-mc.c
+>> @@ -193,8 +193,11 @@ static irqreturn_t tegra20_mc_isr(int irq, void *data)
+>>  	mask &= stat;
+>>  	if (!mask)
+>>  		return IRQ_NONE;
+>> -	while ((bit = ffs(mask)) != 0)
+>> +	while ((bit = ffs(mask)) != 0) {
+>>  		tegra20_mc_decode(mc, bit - 1);
+>> +		mask &= BIT(bit);
 > 
-> So reinforced by previous events, I really feel that code that needs
-> this kind of spinlock is broken and needs to be fixed, rather than
-> actually introduce tricky spinlocks.
-
-If the only effect of this patch submission is to give people a bit more
-motivation to solve the underlying lock-contention problems, I am happy.
-
-> So in order to merge something like this, I want (a) numbers for real
-> loads and (b) explanations for why the spinlock users cannot be fixed.
+> Shouldn't this be "mask &= ~BIT(bit);"? The intent of the code is to
+> clear the bit which was handled by the loop body, right? The above
+> clears all other bits instead.
 > 
-> Because "we might hit loads" is just not good enough. I would counter
-> with "hiding problems causes more of them".
+> Thierry
 
-Agreed.  As I said in the first paragraph of the commit log:
+Whoops, yes it should be clearing just one bit. And since ffs() returned
+a one-based bit-index, it seemed to work in practice.
 
-	... if we must have high-contention locks, why not make them
-	automatically switch between light-weight ticket locks at low
-	contention and queued locks at high contention?
+I'll fix those & resend.
 
-The reason that I created this patch was that I was seeing people
-arguing for locks optimized for high contention, and the ones that I
-saw required the developer to predict which locks would encounter high
-levels of contention.  Changes in workloads would of course invalidate
-those predictions.
-
-But again, if the only effect of this patch submission is to give people
-a bit more motivation to solve the underlying lock-contention problems,
-I am happy.
-
-							Thanx, Paul
-
+- Tuomas
