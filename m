@@ -1,335 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab3FKOp2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 10:45:28 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:40085 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752057Ab3FKOp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 10:45:26 -0400
-Date: Tue, 11 Jun 2013 10:45:25 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Lin Feng <linfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, khlebnikov@openvz.org, walken@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, jiang.liu@huawei.com, zab@redhat.com,
-        jmoyer@redhat.com, linux-mm@kvack.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [WiP]: aio support for migrating pages (Re: [PATCH V2 1/2] mm: hotplug: implement non-movable version of get_user_pages() called get_user_pages_non_movable())
-Message-ID: <20130611144525.GB14404@kvack.org>
-References: <20130513091902.GP11497@suse.de> <5191B5B3.7080406@cn.fujitsu.com> <20130515132453.GB11497@suse.de> <5194748A.5070700@cn.fujitsu.com> <20130517002349.GI1008@kvack.org> <5195A3F4.70803@cn.fujitsu.com> <20130517143718.GK1008@kvack.org> <519AD6F8.2070504@cn.fujitsu.com> <20130521022733.GT1008@kvack.org> <51B6F107.80501@cn.fujitsu.com>
+	id S1754683Ab3FKOpi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 10:45:38 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:52115 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063Ab3FKOpf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 10:45:35 -0400
+Message-ID: <1370961930.3252.32.camel@edumazet-glaptop>
+Subject: Re: [PATCH net-next 2/2] net:add socket option for low latency
+ polling
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Tue, 11 Jun 2013 07:45:30 -0700
+In-Reply-To: <20130611142438.17879.6389.stgit@ladj378.jer.intel.com>
+References: <20130611142415.17879.75569.stgit@ladj378.jer.intel.com>
+	 <20130611142438.17879.6389.stgit@ladj378.jer.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51B6F107.80501@cn.fujitsu.com>
-User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tang,
-
-On Tue, Jun 11, 2013 at 05:42:31PM +0800, Tang Chen wrote:
-> Hi Benjamin,
+On Tue, 2013-06-11 at 17:24 +0300, Eliezer Tamir wrote:
+> adds a socket option for low latency polling.
+> This allows overriding the global sysctl value with a per-socket one.
 > 
-> Are you still working on this problem ?
+> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+> ---
 > 
-> Thanks. :)
+>  
+> -static inline cycles_t ll_end_time(void)
+> +static inline cycles_t ll_end_time(struct sock *sk)
+>  {
+> -	return TSC_MHZ * ACCESS_ONCE(sysctl_net_ll_poll) + get_cycles();
+> +	return TSC_MHZ * ACCESS_ONCE(sk->sk_ll_usec) + get_cycles();
+>  }
 
-Below is a copy of the most recent version of this patch I have worked 
-on.  This version works and stands up to my testing using move_pages() to 
-force the migration of the aio ring buffer.  A test program is available 
-at http://www.kvack.org/~bcrl/aio/aio-numa-test.c .  Please note that 
-this version is not suitable for mainline as the modifactions to the 
-anon inode code are undesirable, so that part needs reworking.
+Hmm, sk_ll_usec is an unsigned int.
 
-		-ben
+(cycles_t)TSC_MHZ * ACCESS_ONCE(sk->sk_ll_usec) + get_cycles();
+
+>  
+> +#ifdef CONFIG_NET_LL_RX_POLL
+> +	case SO_LL:
+> +		if (!capable(CAP_NET_ADMIN))
+> +			ret = -EACCES;
+> +		else {
+> +			unsigned long ulval;
+
+Why an "unsigned long" ?
 
 
- fs/aio.c                |  113 ++++++++++++++++++++++++++++++++++++++++++++----
- fs/anon_inodes.c        |   14 ++++-
- include/linux/migrate.h |    3 +
- mm/migrate.c            |    2 
- mm/swap.c               |    1 
- 5 files changed, 121 insertions(+), 12 deletions(-)
+> +
+> +			if (!copy_from_user(&ulval, optval, sizeof(ulval))
+> +							&& ulval >= 0)
+> +				sk->sk_ll_usec = ulval;
+> +
+> +			else
+> +				ret = -EINVAL;
 
-diff --git a/fs/aio.c b/fs/aio.c
-index c5b1a8c..a951690 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -35,6 +35,9 @@
- #include <linux/eventfd.h>
- #include <linux/blkdev.h>
- #include <linux/compat.h>
-+#include <linux/anon_inodes.h>
-+#include <linux/migrate.h>
-+#include <linux/ramfs.h>
- 
- #include <asm/kmap_types.h>
- #include <asm/uaccess.h>
-@@ -108,6 +111,7 @@ struct kioctx {
- 	} ____cacheline_aligned_in_smp;
- 
- 	struct page		*internal_pages[AIO_RING_PAGES];
-+	struct file		*ctx_file;
- };
- 
- /*------ sysctl variables----*/
-@@ -136,18 +140,80 @@ __initcall(aio_setup);
- 
- static void aio_free_ring(struct kioctx *ctx)
- {
--	long i;
--
--	for (i = 0; i < ctx->nr_pages; i++)
--		put_page(ctx->ring_pages[i]);
-+	int i;
- 
- 	if (ctx->mmap_size)
- 		vm_munmap(ctx->mmap_base, ctx->mmap_size);
- 
-+	if (ctx->ctx_file)
-+		truncate_setsize(ctx->ctx_file->f_inode, 0);
-+
-+	for (i = 0; i < ctx->nr_pages; i++) {
-+		pr_debug("pid(%d) [%d] page->count=%d\n", current->pid, i,
-+			 page_count(ctx->ring_pages[i]));
-+		put_page(ctx->ring_pages[i]);
-+	}
-+
- 	if (ctx->ring_pages && ctx->ring_pages != ctx->internal_pages)
- 		kfree(ctx->ring_pages);
-+
-+	if (ctx->ctx_file) {
-+		truncate_setsize(ctx->ctx_file->f_inode, 0);
-+		pr_debug("pid(%d) i_nlink=%u d_count=%d, d_unhashed=%d i_count=%d\n",
-+			 current->pid, ctx->ctx_file->f_inode->i_nlink,
-+			 ctx->ctx_file->f_path.dentry->d_count,
-+			 d_unhashed(ctx->ctx_file->f_path.dentry),
-+			 atomic_read(&ctx->ctx_file->f_path.dentry->d_inode->i_count));
-+		fput(ctx->ctx_file);
-+		ctx->ctx_file = NULL;
-+	}
-+}
-+
-+static int aio_ctx_mmap(struct file *file, struct vm_area_struct *vma)
-+{
-+	vma->vm_ops = &generic_file_vm_ops;
-+	return 0;
-+}
-+
-+static const struct file_operations aio_ctx_fops = {
-+	.mmap	= aio_ctx_mmap,
-+};
-+
-+static int aio_set_page_dirty(struct page *page)
-+{
-+	return 0;
-+}
-+
-+static int aio_migratepage(struct address_space *mapping, struct page *new,
-+			   struct page *old, enum migrate_mode mode)
-+{
-+	struct kioctx *ctx = mapping->private_data;
-+	unsigned long flags;
-+	unsigned idx = old->index;
-+	int rc;
-+
-+	BUG_ON(PageWriteback(old));    /* Writeback must be complete */
-+	put_page(old);
-+	rc = migrate_page_move_mapping(mapping, new, old, NULL, mode);
-+	if (rc != MIGRATEPAGE_SUCCESS) {
-+		get_page(old);
-+		return rc;
-+	}
-+	get_page(new);
-+
-+	spin_lock_irqsave(&ctx->completion_lock, flags);
-+	migrate_page_copy(new, old);
-+	ctx->ring_pages[idx] = new;
-+	spin_unlock_irqrestore(&ctx->completion_lock, flags);
-+
-+	return MIGRATEPAGE_SUCCESS;
- }
- 
-+static const struct address_space_operations aio_ctx_aops = {
-+	.set_page_dirty = aio_set_page_dirty,
-+	.migratepage	= aio_migratepage,
-+};
-+
- static int aio_setup_ring(struct kioctx *ctx)
- {
- 	struct aio_ring *ring;
-@@ -155,6 +221,7 @@ static int aio_setup_ring(struct kioctx *ctx)
- 	struct mm_struct *mm = current->mm;
- 	unsigned long size, populate;
- 	int nr_pages;
-+	int i;
- 
- 	/* Compensate for the ring buffer's head/tail overlap entry */
- 	nr_events += 2;	/* 1 is required, 2 for good luck */
-@@ -166,6 +233,28 @@ static int aio_setup_ring(struct kioctx *ctx)
- 	if (nr_pages < 0)
- 		return -EINVAL;
- 
-+	ctx->ctx_file = anon_inode_getfile("[aio]", &aio_ctx_fops, ctx, O_RDWR);
-+	if (IS_ERR(ctx->ctx_file)) {
-+		ctx->ctx_file = NULL;
-+		return -EAGAIN;
-+	}
-+	ctx->ctx_file->f_inode->i_mapping->a_ops = &aio_ctx_aops;
-+	ctx->ctx_file->f_inode->i_mapping->private_data = ctx;
-+	ctx->ctx_file->f_inode->i_size = PAGE_SIZE * (loff_t)nr_pages;
-+
-+	for (i=0; i<nr_pages; i++) {
-+		struct page *page;
-+		page = find_or_create_page(ctx->ctx_file->f_inode->i_mapping,
-+					   i, GFP_HIGHUSER | __GFP_ZERO);
-+		if (!page)
-+			break;
-+		pr_debug("pid(%d) page[%d]->count=%d\n",
-+			 current->pid, i, page_count(page));
-+		SetPageUptodate(page);
-+		SetPageDirty(page);
-+		unlock_page(page);
-+	}
-+
- 	nr_events = (PAGE_SIZE * nr_pages - sizeof(struct aio_ring)) / sizeof(struct io_event);
- 
- 	ctx->nr_events = 0;
-@@ -180,20 +269,25 @@ static int aio_setup_ring(struct kioctx *ctx)
- 	ctx->mmap_size = nr_pages * PAGE_SIZE;
- 	pr_debug("attempting mmap of %lu bytes\n", ctx->mmap_size);
- 	down_write(&mm->mmap_sem);
--	ctx->mmap_base = do_mmap_pgoff(NULL, 0, ctx->mmap_size,
--				       PROT_READ|PROT_WRITE,
--				       MAP_ANONYMOUS|MAP_PRIVATE, 0, &populate);
-+	ctx->mmap_base = do_mmap_pgoff(ctx->ctx_file, 0, ctx->mmap_size,
-+				       PROT_READ | PROT_WRITE,
-+				       MAP_SHARED | MAP_POPULATE, 0,
-+				       &populate);
- 	if (IS_ERR((void *)ctx->mmap_base)) {
- 		up_write(&mm->mmap_sem);
- 		ctx->mmap_size = 0;
- 		aio_free_ring(ctx);
- 		return -EAGAIN;
- 	}
-+	up_write(&mm->mmap_sem);
-+	mm_populate(ctx->mmap_base, populate);
- 
- 	pr_debug("mmap address: 0x%08lx\n", ctx->mmap_base);
- 	ctx->nr_pages = get_user_pages(current, mm, ctx->mmap_base, nr_pages,
- 				       1, 0, ctx->ring_pages, NULL);
--	up_write(&mm->mmap_sem);
-+	for (i=0; i<ctx->nr_pages; i++) {
-+		put_page(ctx->ring_pages[i]);
-+	}
- 
- 	if (unlikely(ctx->nr_pages != nr_pages)) {
- 		aio_free_ring(ctx);
-@@ -403,6 +497,8 @@ out_cleanup:
- 	err = -EAGAIN;
- 	aio_free_ring(ctx);
- out_freectx:
-+	if (ctx->ctx_file)
-+		fput(ctx->ctx_file);
- 	kmem_cache_free(kioctx_cachep, ctx);
- 	pr_debug("error allocating ioctx %d\n", err);
- 	return ERR_PTR(err);
-@@ -852,6 +948,7 @@ SYSCALL_DEFINE2(io_setup, unsigned, nr_events, aio_context_t __user *, ctxp)
- 	ioctx = ioctx_alloc(nr_events);
- 	ret = PTR_ERR(ioctx);
- 	if (!IS_ERR(ioctx)) {
-+		ctx = ioctx->user_id;
- 		ret = put_user(ioctx->user_id, ctxp);
- 		if (ret)
- 			kill_ioctx(ioctx);
-diff --git a/fs/anon_inodes.c b/fs/anon_inodes.c
-index 47a65df..376d289 100644
---- a/fs/anon_inodes.c
-+++ b/fs/anon_inodes.c
-@@ -131,6 +131,7 @@ struct file *anon_inode_getfile(const char *name,
- 	struct qstr this;
- 	struct path path;
- 	struct file *file;
-+	struct inode *inode;
- 
- 	if (IS_ERR(anon_inode_inode))
- 		return ERR_PTR(-ENODEV);
-@@ -138,6 +139,12 @@ struct file *anon_inode_getfile(const char *name,
- 	if (fops->owner && !try_module_get(fops->owner))
- 		return ERR_PTR(-ENOENT);
- 
-+	inode = anon_inode_mkinode(anon_inode_inode->i_sb);
-+	if (IS_ERR(inode)) {
-+		file = ERR_PTR(-ENOMEM);
-+		goto err_module;
-+	}
-+
- 	/*
- 	 * Link the inode to a directory entry by creating a unique name
- 	 * using the inode sequence number.
-@@ -155,17 +162,18 @@ struct file *anon_inode_getfile(const char *name,
- 	 * We know the anon_inode inode count is always greater than zero,
- 	 * so ihold() is safe.
- 	 */
--	ihold(anon_inode_inode);
-+	//ihold(inode);
- 
--	d_instantiate(path.dentry, anon_inode_inode);
-+	d_instantiate(path.dentry, inode);
- 
- 	file = alloc_file(&path, OPEN_FMODE(flags), fops);
- 	if (IS_ERR(file))
- 		goto err_dput;
--	file->f_mapping = anon_inode_inode->i_mapping;
-+	file->f_mapping = inode->i_mapping;
- 
- 	file->f_flags = flags & (O_ACCMODE | O_NONBLOCK);
- 	file->private_data = priv;
-+	drop_nlink(inode);
- 
- 	return file;
- 
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index a405d3dc..b6f3289 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -55,6 +55,9 @@ extern int migrate_vmas(struct mm_struct *mm,
- extern void migrate_page_copy(struct page *newpage, struct page *page);
- extern int migrate_huge_page_move_mapping(struct address_space *mapping,
- 				  struct page *newpage, struct page *page);
-+extern int migrate_page_move_mapping(struct address_space *mapping,
-+                struct page *newpage, struct page *page,
-+                struct buffer_head *head, enum migrate_mode mode);
- #else
- 
- static inline void putback_lru_pages(struct list_head *l) {}
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 27ed225..ac9c3a9 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -294,7 +294,7 @@ static inline bool buffer_migrate_lock_buffers(struct buffer_head *head,
-  * 2 for pages with a mapping
-  * 3 for pages with a mapping and PagePrivate/PagePrivate2 set.
-  */
--static int migrate_page_move_mapping(struct address_space *mapping,
-+int migrate_page_move_mapping(struct address_space *mapping,
- 		struct page *newpage, struct page *page,
- 		struct buffer_head *head, enum migrate_mode mode)
- {
-diff --git a/mm/swap.c b/mm/swap.c
-index dfd7d71..bbfba0a 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -160,6 +160,7 @@ skip_lock_tail:
- 
- void put_page(struct page *page)
- {
-+	BUG_ON(page_count(page) <= 0);
- 	if (unlikely(PageCompound(page)))
- 		put_compound_page(page);
- 	else if (put_page_testzero(page))
+Just use
+	sk->sk_ll_usec = val;
+
+> +
+> +		}
+> +		break;
+> +#endif
+>  	default:
+>  		ret = -ENOPROTOOPT;
+>  		break;
+> @@ -944,6 +961,7 @@ int sock_getsockopt(struct socket *sock, int level, int optname,
+>  
+>  	union {
+>  		int val;
+> +		unsigned long ulval;
+
+Why an unsigned long ? 32bit are more than enough.
+
+>  		struct linger ling;
+>  		struct timeval tm;
+>  	} v;
+> @@ -1170,6 +1188,13 @@ int sock_getsockopt(struct socket *sock, int level, int optname,
+>  		v.val = sock_flag(sk, SOCK_SELECT_ERR_QUEUE);
+>  		break;
+>  
+> +#ifdef CONFIG_NET_LL_RX_POLL
+> +	case SO_LL:
+> +		len = sizeof(v.ulval);
+> +		v.ulval = sk->sk_ll_usec;
+> +		break;
+> +#endif
+> +
+
+
+
