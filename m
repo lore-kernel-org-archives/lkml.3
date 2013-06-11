@@ -1,134 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab3FKGAa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 02:00:30 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:18532 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638Ab3FKGA1 (ORCPT
+	id S1752653Ab3FKGJI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 02:09:08 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35335 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751809Ab3FKGJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 02:00:27 -0400
-X-AuditID: cbfee68e-b7f276d000002279-db-51b6bcf97c6c
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Arnd Bergmann'" <arnd@arndb.de>
-Cc: "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
-        linux-arm-kernel@lists.infradead.org,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        linux-samsung-soc@vger.kernel.org,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
-        linux-pci@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'Andrew Murray'" <andrew.murray@arm.com>,
-        Jingoo Han <jg1.han@samsung.com>
-References: <00c001ce277b$92b26ab0$b8174010$%han@samsung.com>
- <201306071943.18407.arnd@arndb.de>
- <000001ce65b5$e45477f0$acfd67d0$@samsung.com>
- <201306101722.10146.arnd@arndb.de>
-In-reply-to: <201306101722.10146.arnd@arndb.de>
-Subject: Re: [PATCH 6/6] ARM: dts: Add pcie controller node for Samsung
- EXYNOS5440 SoC
-Date: Tue, 11 Jun 2013 15:00:25 +0900
-Message-id: <002e01ce6668$f785dc20$e6919460$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQFyr6c5AKxr6zs5JXOh3KubdCPksAHFjqq9AWqMh6UBHmRjK5nE/Hxw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsVy+t8zfd1fe7YFGhzvZrJo/r+d1eLvpGPs
-	FkuaMiwOzH7IavHqzEY2i8sLL7FafL9hatG74CqbxabH11gtLu+aw2Zxdt5xNosZ5/cxWaxo
-	2sposfjicmaL3SuXsFgcm7GE0eLpgyYmB0GPNfPWMHr8/jWJ0aNvylU2jyebLjJ6LNhU6nHn
-	2h42j81L6j3Oz1jI6PF9Ry9QwZZVjB4/X+p4fN4kF8ATxWWTkpqTWZZapG+XwJWxoXU3W8Fj
-	noq1i/tZGhgvcnYxcnJICJhIdO+6yARhi0lcuLeerYuRi0NIYBmjxO25C5hhio6tO8oKYgsJ
-	TGeU6FlWClH0i1Hi35JVYEVsAmoSX74cZgexRQSUJY6/vMMCUsQscIhVYs/6DawQHdsZJZpb
-	PgI5HBycAvoSL+/LgjQIC0RIXHn+GOwMFgFVibaD58G28QpYSrzbf4AJwhaU+DH5HguIzSyg
-	JbF+53EmCFteYvOat1CXKkjsOPuaEeIIN4mJ784zQtSISOx78Y4R5AYJgSccEpMaPjJDLBOQ
-	+Db5EAvIPRICshKbDkDNkZQ4uOIGywRGiVlIVs9CsnoWktWzkKxYwMiyilE0tSC5oDgpvchI
-	rzgxt7g0L10vOT93EyMkwfTtYLx5wPoQYzLQ+onMUqLJ+cAElVcSb2hsZmRhamJqbGRuaUaa
-	sJI4r1qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxlb1iQcalb9/qeqbIsCU51/GJDZt
-	t6eyQNmG5H/y1VbujeH37a+1yUdn3ZBStT2pu5tvVjP7CevsEl6vDBGb1Ue+Vi/47nxX6vta
-	xQ0/3xfFOTm+7zzdFePdmC5/w/xkgvWTNT8brVlD//8LiE7e6idic/zVdLm6OVoSd4/fZDjx
-	aGKR6+rbSizFGYmGWsxFxYkAR1T3vUYDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAJsWRmVeSWpSXmKPExsVy+t9jQd2fe7YFGhxbamHR/H87q8XfScfY
-	LZY0ZVgcmP2Q1eLVmY1sFpcXXmK1+H7D1KJ3wVU2i02Pr7FaXN41h83i7LzjbBYzzu9jsljR
-	tJXRYvHF5cwWu1cuYbE4NmMJo8XTB01MDoIea+atYfT4/WsSo0fflKtsHk82XWT0WLCp1OPO
-	tT1sHpuX1Hucn7GQ0eP7jl6ggi2rGD1+vtTx+LxJLoAnqoHRJiM1MSW1SCE1Lzk/JTMv3VbJ
-	OzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwfoLyWFssScUqBQQGJxsZK+HaYJoSFuuhYw
-	jRG6viFBcD1GBmggYR1jxobW3WwFj3kq1i7uZ2lgvMjZxcjJISFgInFs3VFWCFtM4sK99Wwg
-	tpDAdEaJnmWlXYxcQPYvRol/S1YxgyTYBNQkvnw5zA5iiwgoSxx/eYcFpIhZ4BCrxJ71G1gh
-	OrYzSjS3fARyODg4BfQlXt6XBWkQFoiQuPL8MROIzSKgKtF28DzYZl4BS4l3+w8wQdiCEj8m
-	32MBsZkFtCTW7zzOBGHLS2xe85YZ4lIFiR1nXzNCHOEmMfHdeUaIGhGJfS/eMU5gFJqFZNQs
-	JKNmIRk1C0nLAkaWVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjB6euZ9A7GVQ0WhxgFOBiV
-	eHgTGLcFCrEmlhVX5h5ilOBgVhLhNd0OFOJNSaysSi3Kjy8qzUktPsSYDPTpRGYp0eR8YGrN
-	K4k3NDYxM7I0MrMwMjE3J01YSZz3YKt1oJBAemJJanZqakFqEcwWJg5OqQZGkee+G60TJzif
-	fNdUVtTzP+DsMSnrZVdSpsRnql0s/f3xlsZSHc5ns2ZYH7lmn5lj9IBxm5rrjnWKrL5iRllm
-	xis+icXcb6r7fczeT3tOkl7j3hfrTJXceQMX8Fw6yZ3A9H6Z2ine2ZpzF//eO+/RdUkRsfXh
-	k20N5rrMnWztdjTsus4Gnc2nlViKMxINtZiLihMBf1sWbaMDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 11 Jun 2013 02:09:06 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <51B6BEDB.3000509@jp.fujitsu.com>
+Date: Tue, 11 Jun 2013 15:08:27 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: bhelgaas@google.com
+CC: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
+        ishii.hironobu@jp.fujitsu.com, ddutile@redhat.com, bill.sumner@hp.com,
+        alex.williamson@redhat.com
+Subject: Re: [PATCH v2] PCI: Reset PCIe devices to stop ongoing DMA
+References: <1368509365-2260-1-git-send-email-indou.takao@jp.fujitsu.com> <CAErSpo4t_2Xw76p3Z9FVzyyK-MBovavDu9D=pYoPMjESSxgT=w@mail.gmail.com> <51B19DF3.2070009@jp.fujitsu.com> <CAErSpo6dfEnzriHD_aWZB_3E-kSzauhNRHPd+VuFX5HONVKgqw@mail.gmail.com>
+In-Reply-To: <CAErSpo6dfEnzriHD_aWZB_3E-kSzauhNRHPd+VuFX5HONVKgqw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 11, 2013 12:22 AM, Arnd Bergmann wrote:
-> On Monday 10 June 2013, Jingoo Han wrote:
-> > On Saturday, June 08, 2013 2:43 AM, Arnd Bergmann wrote:
-> > For multiple domains, how can I fix the DT properties?
+(2013/06/11 11:20), Bjorn Helgaas wrote:
+> On Fri, Jun 7, 2013 at 2:46 AM, Takao Indoh <indou.takao@jp.fujitsu.com> wrote:
+>> (2013/06/07 13:14), Bjorn Helgaas wrote:
 > 
-> Domains are a Linux concept, you have to pick a new domain number for each
-> struct hw_pci you register.
+>>> One thing I'm not sure about is that you are only resetting PCIe
+>>> devices, but I don't think the problem is actually specific to PCIe,
+>>> is it?  I think the same issue could occur on any system with an
+>>> IOMMU.  In the x86 PC world, most IOMMUs are connected with PCIe, but
+>>> there are systems with IOMMUs for plain old PCI devices, e.g.,
+>>> PA-RISC.
+>>
+>> Right, this is not specific to PCIe. The reasons why the target is only
+>> PCIe is just to make algorithm to reset simple. It is possible to reset
+>> legacy PCI devices in my patch, but code becomes somewhat complicated. I
+>> thought recently most systems used PCIe and there was little demand for
+>> resetting legacy PCI. Therefore I decided not to reset legacy PCI
+>> devices, but I'll do if there are requests :-)
+> 
+> I'm not sure you need to reset legacy devices (or non-PCI devices)
+> yet, but the current hook isn't anchored anywhere -- it's just an
+> fs_initcall() that doesn't give the reader any clue about the
+> connection between the reset and the problem it's solving.
+> 
+> If we do something like this patch, I think it needs to be done at the
+> point where we enable or disable the IOMMU.  That way, it's connected
+> to the important event, and there's a clue about how to make
+> corresponding fixes for other IOMMUs.
 
-Hi Arnd,
+Ok. pci_iommu_init() is appropriate place to add this hook?
 
-Thank you for your reply.
-It is very helpful. :)
+> We already have a "reset_devices" boot option.  This is for the same
+> purpose, as far as I can tell, and I'm not sure there's value in
+> having both "reset_devices" and "pci=pcie_reset_endpoint_devices".  In
+> fact, there's nothing specific even to PCI here.  The Intel VT-d docs
+> seem carefully written so they could apply to either PCIe or non-PCI
+> devices.
 
-I will set domain numbers for each struct hw_pci.
+Yeah, I can integrate this option into reset_devices. The reason why
+I separate them is to avoid regression.
+
+I have tested my patch on many machines and basically it worked, but I
+found two machines where this reset patch caused problem. The first one
+was caused by bug of raid card firmware. After updating firmware, this
+patch worked. The second one was due to bug of PCIe switch chip. I
+reported this bug to the vendor but it is not fixed yet.
+
+Anyway, this patch may cause problems on such a buggy machine, so I
+introduced new boot parameter so that user can enable or disable this
+function aside from reset_devices.
+
+Actually Vivek Goyal, kdump maintainer said same thing. He proposed using
+reset_devices instead of adding new one, and using quirk or something to
+avoid such a buggy devices.
+
+So, basically I agree with using reset_devices, but I want to prepare
+workaround in case this reset causes something wrong.
+
 
 > 
-> > Current DT properties are as below:
-> >
-> > +	pcie0@40000000 {
-> > +		compatible = "samsung,exynos5440-pcie";
-> > +		reg = <0x40000000 0x4000
-> > +			0x290000 0x1000
-> > +			0x270000 0x1000
-> > +			0x271000 0x40>;
-> > +		interrupts = <0 20 0>, <0 21 0>, <0 22 0>;
-> > +		#address-cells = <3>;
-> > +		#size-cells = <2>;
-> > +		device_type = "pci";
-> > +		ranges = <0x00000800 0 0x40000000 0x40000000 0 0x00200000   /* configuration space */
-> > +			  0x81000000 0 0	  0x40200000 0 0x00004000   /* downstream I/O */
-> > +			  0x82000000 0 0	  0x40204000 0 0x10000000>; /* non-prefetchable memory */
-> > +	};
+>>> I tried to make a list of the interesting scenarios and the events
+>>> that are relevant to this problem:
+>>>
+>>>       Case 1: IOMMU off in system, off in kdump kernel
+>>>         system kernel leaves IOMMU off
+>>>           DMA targets system-kernel memory
+>>>         kexec to kdump kernel (IOMMU off, devices untouched)
+>>>           DMA targets system-kernel memory (harmless)
+>>>         kdump kernel re-inits device
+>>>           DMA targets kdump-kernel memory
+>>>
+>>>       Case 2: IOMMU off in system kernel, on in kdump kernel
+>>>         system kernel leaves IOMMU off
+>>>           DMA targets system-kernel memory
+>>>         kexec to kdump kernel (IOMMU off, devices untouched)
+>>>           DMA targets system-kernel memory (harmless)
+>>>         kdump kernel enables IOMMU with no valid mappings
+>>>           DMA causes IOMMU errors (annoying but harmless)
+>>>         kdump kernel re-inits device
+>>>           DMA targets IOMMU-mapped kdump-kernel memory
+>>>
+>>>       Case 3a: IOMMU on in system kernel, kdump kernel doesn't touch IOMMU
+>>>         system kernel enables IOMMU
+>>>           DMA targets IOMMU-mapped system-kernel memory
+>>>         kexec to kdump kernel (IOMMU on, devices untouched)
+>>>           DMA targets IOMMU-mapped system-kernel memory
+>>>         kdump kernel doesn't know about IOMMU or doesn't touch it
+>>>           DMA targets IOMMU-mapped system-kernel memory
+>>>         kdump kernel re-inits device
+>>>           kernel assumes no IOMMU, so all new DMA mappings are invalid
+>>> because DMAs actually do go through the IOMMU
+>>>           (** corruption or other non-recoverable error likely **)
+>>>
+>>>       Case 3b: IOMMU on in system kernel, kdump kernel disables IOMMU
+>>>         system kernel enables IOMMU
+>>>           DMA targets IOMMU-mapped system-kernel memory
+>>>         kexec to kdump kernel (IOMMU on, devices untouched)
+>>>           DMA targets IOMMU-mapped system-kernel memory
+>>>         kdump kernel disables IOMMU
+>>>           DMA targets IOMMU-mapped system-kernel memory, but IOMMU is disabled
+>>>           (** corruption or other non-recoverable error likely **)
+>>>         kdump kernel re-inits device
+>>>           DMA targets kdump-kernel memory
+>>>
+>>>       Case 4: IOMMU on in system kernel, on in kdump kernel
+>>>         system kernel enables IOMMU
+>>>           DMA targets IOMMU-mapped system-kernel memory
+>>>         kexec to kdump kernel (IOMMU on, devices untouched)
+>>>           DMA targets IOMMU-mapped system-kernel memory
+>>>         kdump kernel enables IOMMU with no valid mappings
+>>>           DMA causes IOMMU errors (annoying but harmless)
+>>>         kdump kernel re-inits device
+>>>           DMA targets IOMMU-mapped kdump-kernel memory
+>>
+>> This is not harmless. Errors like PCI SERR are detected here, and it
+>> makes driver or system unstable, and kdump fails. I also got report that
+>> system hangs up due to this.
 > 
-> An unrelated comment: your first "reg" field seems to overlap with part
-> of your configuration space. Is that intentional?
+> OK, let's take this slowly.  Does an IOMMU error in the system kernel
+> also cause SERR or make the system unstable?  Is that the expected
+> behavior on IOMMU errors, or is there something special about the
+> kdump scenario that causes SERRs?  I see lots of DMAR errors, e.g.,
+> those in https://bugzilla.redhat.com/show_bug.cgi?id=743790, that are
+> reported with printk and don't seem to cause an SERR.  Maybe the SERR
+> is system-specific behavior?
+> 
+> https://bugzilla.redhat.com/show_bug.cgi?id=568153 is another (public)
+> report of IOMMU errors related to a driver bug where we just get
+> printks, not SERR.
 
-Yes, intentional.
-But, I will try to remove it.
+Yes, it depends on platform or devices. At least PCI SERR is detected on
+Fujitsu PRIMERGY BX920S2 and TX300S6.
+
+Intel VT-d documents[1] says:
+
+    3.5.1 Hardware Handling of Faulting DMA Requests
+    DMA requests that result in remapping faults must be blocked by
+    hardware. The exact method of DMA blocking is
+    implementation-specific.  For example:
+
+    - Faulting DMA write requests may be handled in much the same way as
+      hardware handles write requests to non-existent memory. For
+      example, the DMA request is discarded in a manner convenient for
+      implementations (such as by dropping the cycle, completing the
+      write request to memory with all byte enables masked off,
+      re-directed to a dummy memory location, etc.).
+
+    - Faulting DMA read requests may be handled in much the same way as
+      hardware handles read requests to non-existent memory. For
+      example, the request may be redirected to a dummy memory location,
+      returned as all 0’s or 1’s in a manner convenient to the
+      implementation, or the request may be completed with an explicit
+      error indication (preferred). For faulting DMA read requests from
+      PCI Express devices, hardware must indicate "Unsupported Request"
+      (UR) in the completion status field of the PCI Express read
+      completion.
+
+So, after IOMMU error, its behavior is implementation-specific.
+
+[1]
+Intel Virtualization Technology for Directed I/O Architecture
+Specification Rev1.3
 
 > 
-> Also, shouldn't your memory space end on a 256MB boundary, rather than
-> extend up to 0x50203fff?
-
-According to the manual of Exynos PCIe, each memory space for Exynos PCIe
-can support 512MB, including I/O, CFG regions.
-
-Is there any problem when over 256MB boundary is used?
-Please let me know. :)
-
-
-Best regards,
-Jingoo Han
-
+> https://bugzilla.redhat.com/show_bug.cgi?id=743495 looks like a hang
+> when the kdump kernel reboots (after successfully saving a crashdump).
+>   But it is using "iommu=pt", which I don't believe makes sense.  The
+> scenario is basically case 4 above, but instead of the kdump kernel
+> starting with no valid IOMMU mappings, it identity-maps bus addresses
+> to physical memory addresses.  That's completely bogus because it's
+> certainly not what the system kernel did, so it's entirely likely to
+> make the system unstable or hang.  This is not an argument for doing a
+> reset; it's an argument for doing something smarter than "iommu=pt" in
+> the kdump kernel.
 > 
-> 	Arnd
+> We might still want to reset PCIe devices, but I want to make sure
+> that we're not papering over other issues when we do.  Therefore, I'd
+> like to understand why IOMMU errors seem harmless in some cases but
+> not in others.
+
+As I wrote above, IOMMU behavior on error is up to platform/devcies. I
+think it also depends on the value of Uncorrectable Error Mask Register
+in AER registers of each device.
+
+>> Case 1:  Harmless
+>> Case 2:  Not tested
+>> Case 3a: Not tested
+>> Case 3b: Cause problem, fixed by my patch
+>> Case 4:  Cause problem, fixed by my patch
+>>
+>> I have never tested case 2 and 3a, but I think it also causes problem.
+> 
+> I do not believe we need to support case 3b (IOMMU on in system kernel
+> but disabled in kdump kernel).  There is no way to make that reliable
+> unless every single device that may perform DMA is reset, and since
+> you don't reset legacy PCI or VGA devices, you're not even proposing
+> to do that.
+> 
+> I think we need to support case 1 (for systems with no IOMMU at all)
+> and case 4 (IOMMU enabled in both system kernel and kdump kernel).  If
+> the kdump kernel can detect whether the IOMMU is enabled, that should
+> be enough -- it could figure out automatically whether we're in case 1
+> or 4.
+
+Ok, I completely agree.
+
+
+>>> Do you have any bugzilla references or problem report URLs you could
+>>> include here?
+>>
+>> I know three Red Hat bugzilla, but I think these are private article and
+>> you cannot see. I'll add you Cc list in bz so that you can see.
+>>
+>> BZ#743790: Kdump fails with intel_iommu=on
+>> https://bugzilla.redhat.com/show_bug.cgi?id=743790
+>>
+>> BZ#743495: Hardware error is detected with intel_iommu=on
+>> https://bugzilla.redhat.com/show_bug.cgi?id=743495
+>>
+>> BZ#833299: megaraid_sas doesn't work well with intel_iommu=on and iommu=pt
+>> https://bugzilla.redhat.com/show_bug.cgi?id=833299
+> 
+> Thanks for adding me to the CC lists.  I looked all three and I'm not
+> sure there's anything sensitive in them.  It'd be nice if they could
+> be made public if there's not.
+
+I really appreciate your comments! I'll confirm I can make it public.
+
+Thanks,
+Takao Indoh
 
