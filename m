@@ -1,122 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757510Ab3FKUdr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:33:47 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:53686 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757460Ab3FKUdo (ORCPT
+	id S1756313Ab3FKUDJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:03:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41670 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754658Ab3FKUDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:33:44 -0400
-Date: Tue, 11 Jun 2013 13:33:40 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Hocko <mhocko@suse.cz>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch] mm, memcg: add oom killer delay
-In-Reply-To: <20130610142321.GE5138@dhcp22.suse.cz>
-Message-ID: <alpine.DEB.2.02.1306111321360.32688@chino.kir.corp.google.com>
-References: <20130531112116.GC32491@dhcp22.suse.cz> <alpine.DEB.2.02.1305311224330.3434@chino.kir.corp.google.com> <20130601102058.GA19474@dhcp22.suse.cz> <alpine.DEB.2.02.1306031102480.7956@chino.kir.corp.google.com> <20130603193147.GC23659@dhcp22.suse.cz>
- <alpine.DEB.2.02.1306031411380.22083@chino.kir.corp.google.com> <20130604095514.GC31242@dhcp22.suse.cz> <alpine.DEB.2.02.1306042329320.20610@chino.kir.corp.google.com> <20130605093937.GK15997@dhcp22.suse.cz> <alpine.DEB.2.02.1306051657001.29626@chino.kir.corp.google.com>
- <20130610142321.GE5138@dhcp22.suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 11 Jun 2013 16:03:05 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Sergio Aguirre <sergio.a.aguirre.rodriguez@intel.com>,
+        David Cohen <david.a.cohen@intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 03/32] xhci-mem: init list heads at the beginning of init
+Date: Tue, 11 Jun 2013 13:03:02 -0700
+Message-Id: <20130611200126.577612856@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.254.g5578ad7
+In-Reply-To: <20130611200126.214442788@linuxfoundation.org>
+References: <20130611200126.214442788@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Jun 2013, Michal Hocko wrote:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> > > > I don't think you yet understand the problem, which is probably my fault.  
-> > > > I'm not insisting this be implemented in the kernel, I'm saying it's not 
-> > > > possible to do it in userspace.  
-> > > 
-> > > Because you still insist on having this fallback mode running inside
-> > > untrusted environment AFAIU.
-> > > 
-> > 
-> > -ENOPARSE. 
-> 
-> Either the global watchdog is running as a trusted code and you _can_
-> implement it without dealocks (this is what I claim and I haven't heard
-> strong arguments against that) or even the watchdog runs as an untrusted
-> code and then I would ask why.
-> 
+------------------
 
-As I already said, no global entity could possibly know and monitor the 
-entire set of memcgs when users are given the power to create their own 
-child memcgs within their tree.  Not only would it be unnecessarily 
-expensive to scan the entire memcg tree all the time, but it would also be 
-racy and miss oom events when a child memcg is created and hits its limit 
-before the global entity can scan for it.
+From: Sergio Aguirre <sergio.a.aguirre.rodriguez@intel.com>
 
-> Your only objection against userspace handling so far was that admin
-> has no control over sub-hierarchies. But that is hardly a problem. A
-> periodic tree scan would solve this easily (just to make sure we are on
-> the same page - this is still the global watchdog living in a trusted
-> root cgroup which is marked as unkillable for the global oom).
-> 
+commit 331de00a64e5027365145bdf51da27b9ce15dfd5 upstream.
 
-There's no way a "periodic tree scan" would solve this easily, it's 
-completely racy and leaves the possibility of missing oom events when they 
-happen in a new memcg before the next tree scan.
+It is possible that we fail on xhci_mem_init, just before doing
+the INIT_LIST_HEAD, and calling xhci_mem_cleanup.
 
-Not only that, but what happens when the entire machine is oom?  The 
-global watchdog can't allocate any memory to handle the event, yet it is 
-supposed to always be doing entire memcg tree scans, registering oom 
-handlers, and handling wakeups when notified?
+Problem is that, the list_for_each_entry_safe macro, assumes
+list heads are initialized (not NULL), and dereferences their 'next'
+pointer, causing a kernel panic if this is not yet initialized.
 
-How does this "global watchdog" know when to stop the timer?  In the 
-kernel that would happen if the user expands the memcg limit or there's an 
-uncharge to the memcg.  The global watchdog stores the limit at the time 
-of oom and compares it before killing something?  How many memcgs do we 
-have to store this value for without allocating memory in a global oom 
-condition?  You expect us to run with all this memory mlocked in memory 
-forever?
+Let's protect from that by moving inits to the beginning.
 
-How does the global watchdog know that there was an uncharge and then a 
-charge in the memcg so it is still oom?  This would reset the timer in the 
-kernel but not in userspace and may result in unnecessary killing.  If 
-the timeout is 10s, the memcg is oom for 9s, uncharges, recharges, and the 
-global watchdog checks at 10s that it is still oom, we don't want the kill 
-because we do get uncharge events.
+This patch should be backported to kernels as old as 3.2, that
+contain the commit 9574323c39d1f8359a04843075d89c9f32d8b7e6 "xHCI: test
+USB2 software LPM".
 
-This idea for a global watchdog just doesn't work.
+Signed-off-by: Sergio Aguirre <sergio.a.aguirre.rodriguez@intel.com>
+Acked-by: David Cohen <david.a.cohen@intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-> > Meanwhile, the trusted resource has no knowledge whatsoever of these
-> > user subcontainers and it can't infinitely scan the memcg tree to find
-> > them because that requires memory that may not be available because of
-> > global oom or because of slab accounting.
-> 
-> Global oom can be handled by oom_adj for the global watchdog and
-> slab accounting should be non issue as the limit cannot be set for the
-> root cgroup - or the watchdog can live in an unlimited group.
-> 
+---
+ drivers/usb/host/xhci-mem.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-I'm referring to a global oom condition where physical RAM is exhausted, 
-not anything to do with memcg.
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -2274,6 +2274,9 @@ int xhci_mem_init(struct xhci_hcd *xhci,
+ 	u32 page_size, temp;
+ 	int i;
+ 
++	INIT_LIST_HEAD(&xhci->lpm_failed_devs);
++	INIT_LIST_HEAD(&xhci->cancel_cmd_list);
++
+ 	page_size = xhci_readl(xhci, &xhci->op_regs->page_size);
+ 	xhci_dbg(xhci, "Supported page size register = 0x%x\n", page_size);
+ 	for (i = 0; i < 16; i++) {
+@@ -2352,7 +2355,6 @@ int xhci_mem_init(struct xhci_hcd *xhci,
+ 	xhci->cmd_ring = xhci_ring_alloc(xhci, 1, 1, TYPE_COMMAND, flags);
+ 	if (!xhci->cmd_ring)
+ 		goto fail;
+-	INIT_LIST_HEAD(&xhci->cancel_cmd_list);
+ 	xhci_dbg(xhci, "Allocated command ring at %p\n", xhci->cmd_ring);
+ 	xhci_dbg(xhci, "First segment DMA is 0x%llx\n",
+ 			(unsigned long long)xhci->cmd_ring->first_seg->dma);
+@@ -2453,8 +2455,6 @@ int xhci_mem_init(struct xhci_hcd *xhci,
+ 	if (xhci_setup_port_arrays(xhci, flags))
+ 		goto fail;
+ 
+-	INIT_LIST_HEAD(&xhci->lpm_failed_devs);
+-
+ 	/* Enable USB 3.0 device notifications for function remote wake, which
+ 	 * is necessary for allowing USB 3.0 devices to do remote wakeup from
+ 	 * U3 (device suspend).
 
-> Besides that. How much memory are we talking about here (per
-> memcg)? Have you measure that? Is it possible that your untrusted
-> users could cause a DoS by creating too many groups? I would be really
-> surprised and argument about global watchdog quality then.
-> 
 
-We limit the number of css_id in children but not the top level of memcgs 
-that are created by the trusted resource.
-
-> David, maybe I am still missing something but it seems to me that the
-> in-kernel timeout is not necessary because the user-space variant is not
-> that hard to implement and I really do not want to add new knobs for
-> something that can live outside.
-
-It's vitally necessary and unless you answer the questions I've asked 
-about your proposed "global watchdog" that exists only in your theory then 
-we'll just continue to have this circular argument.  You cannot implement 
-a userspace variant that works this way and insisting that you can is 
-ridiculous.  These are problems that real users face and we insist on the 
-problem being addressed.
