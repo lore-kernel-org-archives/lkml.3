@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab3FKCO7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 22:14:59 -0400
-Received: from mga14.intel.com ([143.182.124.37]:47544 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753143Ab3FKCO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 22:14:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,841,1363158000"; 
-   d="scan'208";a="347883819"
-Date: Tue, 11 Jun 2013 10:14:55 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: WARNING: at kernel/rcutorture.c:1243 rcu_torture_printk
-Message-ID: <20130611021455.GB8872@localhost>
-References: <20130610074728.GA20886@localhost>
- <20130610145110.GL5146@linux.vnet.ibm.com>
+	id S1754590Ab3FKCRS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 22:17:18 -0400
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:47801 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754348Ab3FKCRR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 22:17:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130610145110.GL5146@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130611015149.GB4165@ZenIV.linux.org.uk>
+References: <Pine.LNX.4.64.1306102137560.3200@boston.corp.fedex.com>
+	<20130611015149.GB4165@ZenIV.linux.org.uk>
+Date: Tue, 11 Jun 2013 10:17:16 +0800
+Message-ID: <CAAJw_ZtqZrS8jVAiCTUc4GjXE0H1jghhM2K2QfN-WVORfpDwHg@mail.gmail.com>
+Subject: Re: binfmt_misc broken
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul,
+On Tue, Jun 11, 2013 at 9:51 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
 
-On Mon, Jun 10, 2013 at 07:51:10AM -0700, Paul E. McKenney wrote:
-> On Mon, Jun 10, 2013 at 03:47:28PM +0800, Fengguang Wu wrote:
-> > Greetings,
-> > 
-> > I got the below dmesg and the first bad commit is
-> > 
-> > commit 911af505ef407c2511106c224dd640f882f0f590
-> > Author: Paul E. McKenney <paul.mckenney@linaro.org>
-> > Date:   Mon Feb 11 10:23:27 2013 -0800
-> > 
-> >     rcu: Provide compile-time control for no-CBs CPUs
-> >     
-> >     Currently, the only way to specify no-CBs CPUs is via the rcu_nocbs
-> >     kernel command-line parameter.  This is inconvenient in some cases,
-> >     particularly for randconfig testing, so this commit adds a new set of
-> >     kernel configuration parameters.  CONFIG_RCU_NOCB_CPU_NONE (the default)
-> >     retains the old behavior, CONFIG_RCU_NOCB_CPU_ZERO offloads callback
-> >     processing from CPU 0 (along with any other CPUs specified by the
-> >     rcu_nocbs boot-time parameter), and CONFIG_RCU_NOCB_CPU_ALL offloads
-> >     callback processing from all CPUs.
-> >     
-> >     Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > 
-> > However I guess it's a wrong bisect, the commit should be unmasking an
-> > old bug because it merely provides more kconfig options.
-> > 
-> > This warning happened only once in 74 boots of the kernel.
-> > 
-> > I also attached the 2nd dmesg which shows boot hang for the same
-> > kernel.
-> > 
-> > Note that there are also 2 kernel hangs in the 74 boots.  It should
-> > not be an RCU problem, however for completeness, I also attach a dmesg
-> > for your reference when considering this RCU warning.
-> 
-> Either way, that is a nasty warning!  You get this on recent kernels as
-> well, I take it?
 
-Yes, the warning is still in recent kernels, indicated from the last
-lines of the bisect log.
+> Patch is complete BS and I really wonder what kernel have you observed that bug on -
+> with mainline on amd64 your example yields
+> root@kvm-amd64:~# cat /proc/sys/fs/binfmt_misc/arm
+> enabled
+> interpreter /usr/bin/qemu-arm-static
+> flags:
+> offset 0
+> magic 7f454c4601010100000000000000000002002800
+> mask ffffffffffffff00fffffffffffffffffeffffff
+>
+> A reproducer, please...  As for the memcmp() Linus has suggested - it's !Magic case, i.e.
+> what we are comparing there is not the file contents, it's the extension.  IOW, strcmp()
+> is the right thing to use there - pathnames do not contain NULs in the middle...
 
-911af505ef407c2511106c224dd640f882f0f590 is bad and its parent
-34ed62461ae4970695974afb9a60ac3df0086830 is good:
-> > git bisect  bad 911af505ef407c2511106c224dd640f882f0f590  #    65  2013-06-07 16:14:41  rcu: Provide compile-time control for no-CBs CPUs
-> > git bisect good 34ed62461ae4970695974afb9a60ac3df0086830  #   900  2013-06-08 04:57:34  rcu: Remove restrictions on no-CBs CPUs
+BS ... yes, after testing it again, you may be right. Not intented, sorry.
 
-After bisect, the script tries to confirm that
-34ed62461ae4970695974afb9a60ac3df0086830 is really good by boot
-testing it 2700 more times:
+I did another test with bash.
 
-> > git bisect good 34ed62461ae4970695974afb9a60ac3df0086830  #  2700  2013-06-10 14:33:56  rcu: Remove restrictions on no-CBs CPUs
+# bash -version
+GNU bash, version 4.2.45(2)-release (x86_64-unknown-linux-gnu)
 
-And continue to find out whether the linus/master and
-linux-next/master are good/bad (here the results are both bad):
+# echo ':arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-arm-static:'
+:arm:M::ELF(:ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿþÿÿÿ:/usr/bin/qemu-arm-static:
 
-> > git bisect  bad f43e7a34255a387930bc2bb826ec17c052ce975e  # 14:34      0  Merge branch 'for-next'
-> > git bisect  bad c04efed734409f5a44715b54a6ca1b54b0ccf215  # 14:41     11  Add linux-next specific files for 20130607
+# echo ':arm:M::\\x7fELF\\x01\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x28\\x00:\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\x00\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:/usr/bin/qemu-arm-static:'
+:arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-arm-static:
+
+I supposed it's my bash configured with opt_xpg_echo=yes that's
+sending in different data to the kernel.
+
+Sending in the double-escape solved the problem. BS totally! My fault.
 
 Thanks,
-Fengguang
+Jeff
