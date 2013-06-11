@@ -1,135 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab3FKQnQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 12:43:16 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:46118 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754843Ab3FKQnN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 12:43:13 -0400
-From: Robert Richter <rric@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <robert.richter@linaro.org>,
-        Robert Richter <rric@kernel.org>
-Subject: [PATCH v2 14/14] perf, persistent: Allow multiple users for an event
-Date: Tue, 11 Jun 2013 18:42:40 +0200
-Message-Id: <1370968960-22527-15-git-send-email-rric@kernel.org>
-X-Mailer: git-send-email 1.8.1.1
-In-Reply-To: <1370968960-22527-1-git-send-email-rric@kernel.org>
-References: <1370968960-22527-1-git-send-email-rric@kernel.org>
+	id S1755539Ab3FKQnt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 12:43:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12959 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755094Ab3FKQnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 12:43:47 -0400
+Date: Tue, 11 Jun 2013 12:43:36 -0400
+From: Dave Jones <davej@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@gentwo.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] slab: prevent warnings when allocating with __GFP_NOWARN
+Message-ID: <20130611164336.GA17241@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Eric Dumazet <eric.dumazet@gmail.com>,
+	Sasha Levin <sasha.levin@oracle.com>,
+	Christoph Lameter <cl@gentwo.org>,
+	Pekka Enberg <penberg@kernel.org>,
+	"linux-mm@kvack.org" <linux-mm@kvack.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <51B67553.6020205@oracle.com>
+ <CAOJsxLH56xqCoDikYYaY_guqCX=S4rcVfDJQ4ki=r-PkNQW9ug@mail.gmail.com>
+ <51B72323.8040207@oracle.com>
+ <0000013f33cdc631-eadb07d1-ef08-4e2c-a218-1997eb86cde9-000000@email.amazonses.com>
+ <51B73F38.6040802@kernel.org>
+ <0000013f33d58923-88767793-2187-476d-b500-dba3c22607aa-000000@email.amazonses.com>
+ <51B745F9.9080609@oracle.com>
+ <1370967193.3252.47.camel@edumazet-glaptop>
+ <51B74E28.4070906@oracle.com>
+ <1370968655.3252.49.camel@edumazet-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370968655.3252.49.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Richter <robert.richter@linaro.org>
+On Tue, Jun 11, 2013 at 09:37:35AM -0700, Eric Dumazet wrote:
+ > On Tue, 2013-06-11 at 12:19 -0400, Sasha Levin wrote:
+ > 
+ > > It might be, but you need CAP_SYS_RESOURCE to go into the dangerous
+ > > zone (>pipe_max_size).
+ > > 
+ > > So if root (or someone with that cap) wants to go there, as Rusty says:
+ > > "Root asked, we do."
+ > 
+ > Yes and no : adding a test to select vmalloc()/vfree() instead of
+ > kmalloc()/kfree() will slow down regular users asking 32 pages in their
+ > pipe.
+ > 
+ > If there is no _sensible_ use for large pipes even for root, please do
+ > not bloat the code just because we can.
 
-Usually a fd close leads to the release of the event too. For
-persistent events this is different as the events should be
-permanently enabled in the system. Using reference counting to avoid
-releasing an event during a fd close. This also allows it to have
-multiple users (open file descriptors) for a single persistent event.
+It's not even that this is the only place that this happens.
+I've reported similar traces from the ieee802.154 code for some time.
 
-While at this, we don't need desc->fd any longer. The fd is attached
-to a task and reference counting keeps the event. Removing desc->fd.
+I wouldn't be surprised to find that there are other similar cases where
+a user can ask the kernel to do some incredibly huge allocation.
 
-Signed-off-by: Robert Richter <robert.richter@linaro.org>
-Signed-off-by: Robert Richter <rric@kernel.org>
----
- kernel/events/persistent.c | 46 ++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 36 insertions(+), 10 deletions(-)
+For my fuzz testing runs, I ended up with the patch below to stop the page allocator warnings.
 
-diff --git a/kernel/events/persistent.c b/kernel/events/persistent.c
-index 8be7c05..dd20b55 100644
---- a/kernel/events/persistent.c
-+++ b/kernel/events/persistent.c
-@@ -11,7 +11,6 @@
- struct pers_event_desc {
- 	struct perf_event *event;
- 	struct list_head plist;
--	int fd;
- };
- 
- struct pers_event {
-@@ -88,6 +87,18 @@ out:
- 	return event;
- }
- 
-+static void detach_persistent_event(struct pers_event_desc *desc)
-+{
-+	list_del(&desc->plist);
-+	kfree(desc);
-+}
-+
-+static void release_persistent_event(struct perf_event *event)
-+{
-+	perf_event_disable(event);
-+	perf_event_release_kernel(event);
-+}
-+
- static void del_persistent_event(int cpu, struct perf_event_attr *attr)
+	Dave
+
+--- /home/davej/src/kernel/git-trees/linux/net/ieee802154/af_ieee802154.c	2013-01-04 18:57:17.677270225 -0500
++++ linux-dj/net/ieee802154/af_ieee802154.c	2013-05-06 20:34:30.702926471 -0400
+@@ -108,6 +108,12 @@ static int ieee802154_sock_sendmsg(struc
  {
- 	struct pers_event_desc *desc;
-@@ -100,12 +111,14 @@ static void del_persistent_event(int cpu, struct perf_event_attr *attr)
- 		goto out;
- 	event = desc->event;
+ 	struct sock *sk = sock->sk;
  
--	list_del(&desc->plist);
--
--	perf_event_disable(event);
--	perf_event_release_kernel(event);
--	put_unused_fd(desc->fd);
--	kfree(desc);
-+	/*
-+	 * We primarily want to remove desc from the list. If there
-+	 * are no open files, the refcount is 0 and we need to release
-+	 * the event too.
-+	 */
-+	detach_persistent_event(desc);
-+	if (atomic_long_dec_and_test(&event->refcount))
-+		release_persistent_event(event);
- out:
- 	mutex_unlock(&per_cpu(pers_events_lock, cpu));
- }
-@@ -182,6 +195,7 @@ fail:
- int perf_get_persistent_event_fd(unsigned cpu, struct perf_event_attr *attr)
- {
- 	struct pers_event_desc *desc;
-+	struct perf_event *event;
- 	int event_fd = -ENODEV;
- 
- 	if (cpu >= (unsigned)nr_cpu_ids)
-@@ -190,13 +204,25 @@ int perf_get_persistent_event_fd(unsigned cpu, struct perf_event_attr *attr)
- 	mutex_lock(&per_cpu(pers_events_lock, cpu));
- 
- 	desc = get_persistent_event(cpu, attr);
--	if (!desc)
-+
-+	/* Increment refcount to keep event on put_event() */
-+	if (!desc || !atomic_long_inc_not_zero(&desc->event->refcount))
- 		goto out;
- 
- 	event_fd = anon_inode_getfd("[pers_event]", &perf_fops,
- 				desc->event, O_RDONLY);
--	if (event_fd >= 0)
--		desc->fd = event_fd;
-+
-+	if (event_fd < 0) {
-+		event = desc->event;
-+		if (WARN_ON(atomic_long_dec_and_test(&event->refcount))) {
-+			/*
-+			 * May not happen since decrementing refcount is
-+			 * protected by pers_events_lock.
-+			 */
-+			detach_persistent_event(desc);
-+			release_persistent_event(event);
-+		}
++	if (len > MAX_ORDER_NR_PAGES * PAGE_SIZE) {
++		printk_once("Massive alloc in %s!: %d > %d\n", __func__,
++			(unsigned int) len, (unsigned int) (MAX_ORDER_NR_PAGES * PAGE_SIZE));
++		return -EINVAL;
 +	}
- out:
- 	mutex_unlock(&per_cpu(pers_events_lock, cpu));
++
+ 	return sk->sk_prot->sendmsg(iocb, sk, msg, len);
+ }
  
--- 
-1.8.1.1
-
