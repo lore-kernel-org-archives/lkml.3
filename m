@@ -1,14 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab3FKL3G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:29:06 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:38254 "EHLO gloria.sntech.de"
+	id S1754330Ab3FKL3n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:29:43 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:38285 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751700Ab3FKL3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:29:04 -0400
+	id S1753496Ab3FKL3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 07:29:41 -0400
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
 To: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v3 0/7] arm: add basic support for Rockchip Cortex-A9 SoCs
+Subject: [PATCH v3 1/7] clk: divider: add flag to limit possible dividers to even numbers
+Date: Tue, 11 Jun 2013 13:29:32 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Mike Turquette <mturquette@linaro.org>,
         Seungwon Jeon <tgih.jun@samsung.com>,
@@ -21,90 +24,83 @@ Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Olof Johansson <olof@lixom.net>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Andy Shevchenko <andy.shevchenko@gmail.com>
-From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-Date: Tue, 11 Jun 2013 13:28:52 +0200
+References: <201306111328.52679.heiko@sntech.de>
+In-Reply-To: <201306111328.52679.heiko@sntech.de>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201306111328.52679.heiko@sntech.de>
+Message-Id: <201306111329.32749.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Third version of basic Rockchip A9 support.
+SoCs like the Rockchip Cortex-A9 ones contain divider some clocks
+that use the regular mechanisms for storage but allow only even
+dividers and 1 to be used.
 
-The biggest change is probably the missing pinctrl driver which already found
-its way into the pinctrl tree from Linus Walleij as part of the pinconfig
-generalisation and should find its way into the mainline kernel from there.
-But startup of rk3066-based boards will even suceed without the pinctrl driver
-present, as the bootloader sets up the most basic pins like uarts too.
+Therefore add a flag that lets _is_valid_div limit the valid dividers
+to these values. _get_maxdiv is also adapted to return even values
+for the CLK_DIVIDER_ONE_BASED case.
 
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+---
+ drivers/clk/clk-divider.c    |   14 ++++++++++++--
+ include/linux/clk-provider.h |    2 ++
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
-Changes since v2:
-- use common (pending review) HIWORD_MASK clock flag from Haojian Zhuang and me
-- pinctrl driver is already in the pinctrl tree
-- add core-periph clock that supplies the twd
-- split "mmc: dw_mmc-pltfm: add Rockchip variant" into move and feature parts
-  as suggested by Andy Shevchenko
-
-Changes since v1:
-- addressed Linus Walleij's comments to the pinctrl driver, including the
-  move to generic pinconfig (hopefully I did catch all)
-- renamed the clocks to use the SoC name of the initial user
-  as suggested by Olof Johansson
-- fixed the uart address, found by Arnd Bergmann
-- address Arnd's comments on the board file (use of_clk_init and friends,
-  remove map_io, use real soc names)
-- removed Makefile.boot as suggested by Thomas Petazzoni
-
-
-Dependencies:
-- the 3 clock changes of "support Hisilicon SoC" from Haojian Zhuang
-- "mmc: dw_mmc: Add support DW SD/MMC driver on SOCFPGA" from Dinh Nguyen that
-  moves the SDMMC_CMD_USE_HOLD_REG constant into the common header, which is
-  required on these Rockchip SoCs 
-- series "dw_apb_timer: osc as sched_clock, clocks and clocksource_of support"
-
-
-Heiko Stuebner (7):
-  clk: divider: add flag to limit possible dividers to even numbers
-  mmc: dw_mmc-pltfm: remove static from dw_mci_pltfm_remove
-  mmc: dw_mmc-pltfm: move probe and remove below dt match table
-  mmc: dw_mmc-pltfm: add Rockchip variant
-  clk: add basic Rockchip rk3066a clock support
-  arm: add debug uarts for rockchip rk29xx and rk3xxx series
-  arm: add basic support for Rockchip RK3066a boards
-
- arch/arm/Kconfig                        |    2 +
- arch/arm/Kconfig.debug                  |   34 +++
- arch/arm/Makefile                       |    1 +
- arch/arm/boot/dts/rk3066a-clocks.dtsi   |  467 +++++++++++++++++++++++++++++++
- arch/arm/boot/dts/rk3066a.dtsi          |  390 ++++++++++++++++++++++++++
- arch/arm/include/debug/rockchip.S       |   42 +++
- arch/arm/mach-rockchip/Kconfig          |   16 +
- arch/arm/mach-rockchip/Makefile         |    1 +
- arch/arm/mach-rockchip/rockchip.c       |   54 ++++
- drivers/clk/Makefile                    |    1 +
- drivers/clk/clk-divider.c               |   14 +-
- drivers/clk/rockchip/Makefile           |    6 +
- drivers/clk/rockchip/clk-rockchip-pll.c |  131 +++++++++
- drivers/clk/rockchip/clk-rockchip-pll.h |   19 ++
- drivers/clk/rockchip/clk-rockchip.c     |  330 ++++++++++++++++++++++
- drivers/mmc/host/dw_mmc-pltfm.c         |   47 +++-
- include/linux/clk-provider.h            |    2 +
- 17 files changed, 1541 insertions(+), 16 deletions(-)
- create mode 100644 arch/arm/boot/dts/rk3066a-clocks.dtsi
- create mode 100644 arch/arm/boot/dts/rk3066a.dtsi
- create mode 100644 arch/arm/include/debug/rockchip.S
- create mode 100644 arch/arm/mach-rockchip/Kconfig
- create mode 100644 arch/arm/mach-rockchip/Makefile
- create mode 100644 arch/arm/mach-rockchip/rockchip.c
- create mode 100644 drivers/clk/rockchip/Makefile
- create mode 100644 drivers/clk/rockchip/clk-rockchip-pll.c
- create mode 100644 drivers/clk/rockchip/clk-rockchip-pll.h
- create mode 100644 drivers/clk/rockchip/clk-rockchip.c
-
+diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
+index ce5cfe9..bdee7cf 100644
+--- a/drivers/clk/clk-divider.c
++++ b/drivers/clk/clk-divider.c
+@@ -45,8 +45,16 @@ static unsigned int _get_table_maxdiv(const struct clk_div_table *table)
+ 
+ static unsigned int _get_maxdiv(struct clk_divider *divider)
+ {
+-	if (divider->flags & CLK_DIVIDER_ONE_BASED)
+-		return div_mask(divider);
++	if (divider->flags & CLK_DIVIDER_ONE_BASED) {
++		unsigned int div = div_mask(divider);
++
++		/* decrease to even number */
++		if (divider->flags & CLK_DIVIDER_EVEN)
++			div--;
++
++		return div;
++	}
++
+ 	if (divider->flags & CLK_DIVIDER_POWER_OF_TWO)
+ 		return 1 << div_mask(divider);
+ 	if (divider->table)
+@@ -141,6 +149,8 @@ static bool _is_valid_div(struct clk_divider *divider, unsigned int div)
+ 		return is_power_of_2(div);
+ 	if (divider->table)
+ 		return _is_valid_table_div(divider->table, div);
++	if (divider->flags & CLK_DIVIDER_EVEN && div != 1 && (div % 2) != 0)
++		return false;
+ 	return true;
+ }
+ 
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 1ec14a7..bd52e52 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -266,6 +266,7 @@ struct clk_div_table {
+  *   of this register, and mask of divider bits are in higher 16-bit of this
+  *   register.  While setting the divider bits, higher 16-bit should also be
+  *   updated to indicate changing divider bits.
++ * CLK_DIVIDER_EVEN - only allow even divider values
+  */
+ struct clk_divider {
+ 	struct clk_hw	hw;
+@@ -281,6 +282,7 @@ struct clk_divider {
+ #define CLK_DIVIDER_POWER_OF_TWO	BIT(1)
+ #define CLK_DIVIDER_ALLOW_ZERO		BIT(2)
+ #define CLK_DIVIDER_HIWORD_MASK		BIT(3)
++#define CLK_DIVIDER_EVEN		BIT(4)
+ 
+ extern const struct clk_ops clk_divider_ops;
+ struct clk *clk_register_divider(struct device *dev, const char *name,
 -- 
 1.7.2.3
 
