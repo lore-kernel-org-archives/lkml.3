@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526Ab3FKMz2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 08:55:28 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:47524 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720Ab3FKMzY (ORCPT
+	id S1755657Ab3FKM6r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 08:58:47 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:39460 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755508Ab3FKMz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 08:55:24 -0400
+	Tue, 11 Jun 2013 08:55:28 -0400
 From: Amit Daniel Kachhap <amit.daniel@samsung.com>
 To: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
         Eduardo Valentin <eduardo.valentin@ti.com>
 Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         amit.kachhap@gmail.com, Kukjin Kim <kgene.kim@samsung.com>,
         jonghwa3.lee@samsung.com
-Subject: [PATCH V5 19/30] thermal: exynos: Add TMU features to check instead of using SOC type
-Date: Tue, 11 Jun 2013 18:23:29 +0530
-Message-Id: <1370955220-2949-20-git-send-email-amit.daniel@samsung.com>
+Subject: [PATCH V5 20/30] thermal: exynos: use device resource management infrastructure
+Date: Tue, 11 Jun 2013 18:23:30 +0530
+Message-Id: <1370955220-2949-21-git-send-email-amit.daniel@samsung.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1370955220-2949-1-git-send-email-amit.daniel@samsung.com>
 References: <1370955220-2949-1-git-send-email-amit.daniel@samsung.com>
@@ -23,159 +23,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds several features supported by TMU as bitfields.
-This features varies across different SOC type and comparing
-the features present in the TMU is more logical than comparing
-the soc itself.
+This patch uses the device pointer stored in the configuration structure
+and converts to dev_* prints and devm API's.
 
 Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 ---
- drivers/thermal/samsung/exynos_tmu.c      |   26 +++++++++++++++---------
- drivers/thermal/samsung/exynos_tmu.h      |   31 +++++++++++++++++++++++++++++
- drivers/thermal/samsung/exynos_tmu_data.c |    6 ++++-
- 3 files changed, 52 insertions(+), 11 deletions(-)
+ drivers/thermal/samsung/exynos_thermal_common.c |   39 ++++++++++++++--------
+ 1 files changed, 25 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index 1880c4e..877dab8 100644
---- a/drivers/thermal/samsung/exynos_tmu.c
-+++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -142,13 +142,15 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- 	mutex_lock(&data->lock);
- 	clk_enable(data->clk);
- 
--	status = readb(data->base + reg->tmu_status);
--	if (!status) {
--		ret = -EBUSY;
--		goto out;
-+	if (TMU_SUPPORTS(pdata, READY_STATUS)) {
-+		status = readb(data->base + reg->tmu_status);
-+		if (!status) {
-+			ret = -EBUSY;
-+			goto out;
-+		}
+diff --git a/drivers/thermal/samsung/exynos_thermal_common.c b/drivers/thermal/samsung/exynos_thermal_common.c
+index 2873ca3..59b47e3 100644
+--- a/drivers/thermal/samsung/exynos_thermal_common.c
++++ b/drivers/thermal/samsung/exynos_thermal_common.c
+@@ -52,7 +52,8 @@ static int exynos_set_mode(struct thermal_zone_device *thermal,
+ {
+ 	struct exynos_thermal_zone *th_zone = thermal->devdata;
+ 	if (!th_zone) {
+-		pr_notice("thermal zone not registered\n");
++		dev_err(th_zone->sensor_conf->dev,
++			"thermal zone not registered\n");
+ 		return 0;
  	}
  
--	if (data->soc == SOC_ARCH_EXYNOS)
-+	if (TMU_SUPPORTS(pdata, TRIM_RELOAD))
- 		__raw_writel(1, data->base + reg->triminfo_ctrl);
+@@ -68,8 +69,9 @@ static int exynos_set_mode(struct thermal_zone_device *thermal,
  
- 	/* Save trimming info in order to perform calibration */
-@@ -287,7 +289,7 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
- 			pdata->trigger_enable[2] << reg->inten_rise2_shift |
- 			pdata->trigger_enable[1] << reg->inten_rise1_shift |
- 			pdata->trigger_enable[0] << reg->inten_rise0_shift;
--		if (pdata->threshold_falling)
-+		if (TMU_SUPPORTS(pdata, FALLING_TRIP))
- 			interrupt_en |=
- 				interrupt_en << reg->inten_fall0_shift;
- 	} else {
-@@ -329,7 +331,7 @@ static int exynos_tmu_set_emulation(void *drv_data, unsigned long temp)
- 	unsigned int val;
- 	int ret = -EINVAL;
+ 	th_zone->mode = mode;
+ 	thermal_zone_device_update(thermal);
+-	pr_info("thermal polling set for duration=%d msec\n",
+-				thermal->polling_delay);
++	dev_dbg(th_zone->sensor_conf->dev,
++		"thermal polling set for duration=%d msec\n",
++		thermal->polling_delay);
+ 	return 0;
+ }
  
--	if (data->soc == SOC_ARCH_EXYNOS4210)
-+	if (!TMU_SUPPORTS(pdata, EMULATION))
- 		goto out;
+@@ -159,7 +161,8 @@ static int exynos_bind(struct thermal_zone_device *thermal,
+ 		case WARN_ZONE:
+ 			if (thermal_zone_bind_cooling_device(thermal, i, cdev,
+ 								level, 0)) {
+-				pr_err("error binding cdev inst %d\n", i);
++				dev_err(data->dev,
++					"error unbinding cdev inst=%d\n", i);
+ 				ret = -EINVAL;
+ 			}
+ 			th_zone->bind = true;
+@@ -204,7 +207,8 @@ static int exynos_unbind(struct thermal_zone_device *thermal,
+ 		case WARN_ZONE:
+ 			if (thermal_zone_unbind_cooling_device(thermal, i,
+ 								cdev)) {
+-				pr_err("error unbinding cdev inst=%d\n", i);
++				dev_err(data->dev,
++					"error unbinding cdev inst=%d\n", i);
+ 				ret = -EINVAL;
+ 			}
+ 			th_zone->bind = false;
+@@ -224,7 +228,8 @@ static int exynos_get_temp(struct thermal_zone_device *thermal,
+ 	void *data;
  
- 	if (temp && temp < MCELSIUS)
-@@ -343,9 +345,13 @@ static int exynos_tmu_set_emulation(void *drv_data, unsigned long temp)
- 	if (temp) {
- 		temp /= MCELSIUS;
- 
--		val = (EXYNOS_EMUL_TIME << reg->emul_time_shift) |
--			(temp_to_code(data, temp)
--			 << reg->emul_temp_shift) | EXYNOS_EMUL_ENABLE;
-+		if (TMU_SUPPORTS(pdata, EMUL_TIME)) {
-+			val &= ~(EXYNOS_EMUL_TIME_MASK << reg->emul_time_shift);
-+			val |= (EXYNOS_EMUL_TIME << reg->emul_time_shift);
-+		}
-+		val &= ~(EXYNOS_EMUL_DATA_MASK << reg->emul_temp_shift);
-+		val |= (temp_to_code(data, temp) << reg->emul_temp_shift) |
-+			EXYNOS_EMUL_ENABLE;
- 	} else {
- 		val &= ~EXYNOS_EMUL_ENABLE;
+ 	if (!th_zone->sensor_conf) {
+-		pr_info("Temperature sensor not initialised\n");
++		dev_err(th_zone->sensor_conf->dev,
++			"Temperature sensor not initialised\n");
+ 		return -EINVAL;
  	}
-diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-index b614407..6f55673 100644
---- a/drivers/thermal/samsung/exynos_tmu.h
-+++ b/drivers/thermal/samsung/exynos_tmu.h
-@@ -41,6 +41,34 @@ enum soc_type {
- };
+ 	data = th_zone->sensor_conf->driver_data;
+@@ -243,7 +248,8 @@ static int exynos_set_emul_temp(struct thermal_zone_device *thermal,
+ 	struct exynos_thermal_zone *th_zone = thermal->devdata;
  
- /**
-+ * EXYNOS TMU supported features.
-+ * TMU_SUPPORT_EMULATION - This features is used to set user defined
-+ *			temperature to the TMU controller.
-+ * TMU_SUPPORT_MULTI_INST - This features denotes that the soc
-+ *			has many instances of TMU.
-+ * TMU_SUPPORT_TRIM_RELOAD - This features shows that trimming can
-+ *			be reloaded.
-+ * TMU_SUPPORT_FALLING_TRIP - This features shows that interrupt can
-+ *			be registered for falling trips also.
-+ * TMU_SUPPORT_READY_STATUS - This feature tells that the TMU current
-+ *			state(active/idle) can be checked.
-+ * TMU_SUPPORT_EMUL_TIME - This features allows to set next temp emulation
-+ *			sample time.
-+ * TMU_SUPPORT_SHARED_MEMORY - This feature tells that the different TMU
-+ *			sensors shares some common registers.
-+ * TMU_SUPPORT - macro to compare the above features with the supplied.
-+ */
-+#define TMU_SUPPORT_EMULATION			BIT(0)
-+#define TMU_SUPPORT_MULTI_INST			BIT(1)
-+#define TMU_SUPPORT_TRIM_RELOAD			BIT(2)
-+#define TMU_SUPPORT_FALLING_TRIP		BIT(3)
-+#define TMU_SUPPORT_READY_STATUS		BIT(4)
-+#define TMU_SUPPORT_EMUL_TIME			BIT(5)
-+#define TMU_SUPPORT_SHARED_MEMORY		BIT(6)
-+
-+#define TMU_SUPPORTS(a, b)	(a->features & TMU_SUPPORT_ ## b)
-+
-+/**
-  * struct exynos_tmu_register - register descriptors to access registers and
-  * bitfields. The register validity, offsets and bitfield values may vary
-  * slightly across different exynos SOC's.
-@@ -220,6 +248,8 @@ struct exynos_tmu_registers {
-  *	applicable to only some of the trigger levels.
-  * @registers: Pointer to structure containing all the TMU controller registers
-  *	and bitfields shifts and masks.
-+ * @features: a bitfield value indicating the features supported in SOC like
-+ *	emulation, multi instance etc
-  *
-  * This structure is required for configuration of exynos_tmu driver.
-  */
-@@ -247,6 +277,7 @@ struct exynos_tmu_platform_data {
- 	struct freq_clip_table freq_tab[4];
- 	unsigned int freq_tab_count;
- 	const struct exynos_tmu_registers *registers;
-+	unsigned int features;
- };
+ 	if (!th_zone->sensor_conf) {
+-		pr_info("Temperature sensor not initialised\n");
++		dev_err(th_zone->sensor_conf->dev,
++			"Temperature sensor not initialised\n");
+ 		return -EINVAL;
+ 	}
+ 	data = th_zone->sensor_conf->driver_data;
+@@ -337,11 +343,13 @@ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
+ 	struct exynos_thermal_zone *th_zone;
  
- /**
-diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-index 06ecfb0..694557e 100644
---- a/drivers/thermal/samsung/exynos_tmu_data.c
-+++ b/drivers/thermal/samsung/exynos_tmu_data.c
-@@ -83,6 +83,7 @@ struct exynos_tmu_init_data const exynos4210_default_tmu_data = {
- 		.freq_tab_count = 2,
- 		.type = SOC_ARCH_EXYNOS4210,
- 		.registers = &exynos4210_tmu_registers,
-+		.features = TMU_SUPPORT_READY_STATUS,
- 		},
- 	},
- 	.tmu_count = 1,
-@@ -162,7 +163,10 @@ static const struct exynos_tmu_registers exynos5250_tmu_registers = {
- 	}, \
- 	.freq_tab_count = 2, \
- 	.type = SOC_ARCH_EXYNOS, \
--	.registers = &exynos5250_tmu_registers,
-+	.registers = &exynos5250_tmu_registers, \
-+	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
-+			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
-+			TMU_SUPPORT_EMUL_TIME)
+ 	if (!sensor_conf || !sensor_conf->read_temperature) {
+-		pr_err("Temperature sensor not initialised\n");
++		dev_err(sensor_conf->dev,
++				"Temperature sensor not initialised\n");
+ 		return -EINVAL;
+ 	}
  
- struct exynos_tmu_init_data const exynos5250_default_tmu_data = {
- 	.tmu_data = {
+-	th_zone = kzalloc(sizeof(struct exynos_thermal_zone), GFP_KERNEL);
++	th_zone = devm_kzalloc(sensor_conf->dev,
++				sizeof(struct exynos_thermal_zone), GFP_KERNEL);
+ 	if (!th_zone)
+ 		return -ENOMEM;
+ 
+@@ -350,7 +358,8 @@ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
+ 		cpumask_set_cpu(0, &mask_val);
+ 		th_zone->cool_dev[0] = cpufreq_cooling_register(&mask_val);
+ 		if (IS_ERR(th_zone->cool_dev[0])) {
+-			pr_err("Failed to register cpufreq cooling device\n");
++			dev_err(sensor_conf->dev,
++				"Failed to register cpufreq cooling device\n");
+ 			ret = -EINVAL;
+ 			goto err_unregister;
+ 		}
+@@ -364,14 +373,16 @@ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
+ 			IDLE_INTERVAL);
+ 
+ 	if (IS_ERR(th_zone->therm_dev)) {
+-		pr_err("Failed to register thermal zone device\n");
++		dev_err(sensor_conf->dev,
++			"Failed to register thermal zone device\n");
+ 		ret = PTR_ERR(th_zone->therm_dev);
+ 		goto err_unregister;
+ 	}
+ 	th_zone->mode = THERMAL_DEVICE_ENABLED;
+ 	sensor_conf->pzone_data = th_zone;
+ 
+-	pr_info("Exynos: Kernel Thermal management registered\n");
++	dev_info(sensor_conf->dev,
++		"Exynos: Thermal zone(%s) registered\n", sensor_conf->name);
+ 
+ 	return 0;
+ 
+@@ -397,6 +408,6 @@ void exynos_unregister_thermal(struct thermal_sensor_conf *sensor_conf)
+ 			cpufreq_cooling_unregister(th_zone->cool_dev[i]);
+ 	}
+ 
+-	kfree(th_zone);
+-	pr_info("Exynos: Kernel Thermal management unregistered\n");
++	dev_info(sensor_conf->dev,
++		"Exynos: Kernel Thermal management unregistered\n");
+ }
 -- 
 1.7.1
 
