@@ -1,153 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753761Ab3FKCeZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 22:34:25 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:45590 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539Ab3FKCeX (ORCPT
+	id S1753678Ab3FKDAY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 23:00:24 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:29238 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751638Ab3FKDAX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 22:34:23 -0400
+	Mon, 10 Jun 2013 23:00:23 -0400
+X-IronPort-AV: E=Sophos;i="4.87,841,1363104000"; 
+   d="scan'208";a="7517301"
+Message-ID: <51B688B4.90802@cn.fujitsu.com>
+Date: Tue, 11 Jun 2013 10:17:24 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <f35c5051a207b0a117f2fff27365d0ea892d1610.1370263476.git.michal.simek@xilinx.com>
-References: <f35c5051a207b0a117f2fff27365d0ea892d1610.1370263476.git.michal.simek@xilinx.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 10 Jun 2013 20:34:03 -0600
-Message-ID: <CAErSpo6kss-v0w_1ker__vPqNCRNLx+z8nk+0r=D-40D3TuDCA@mail.gmail.com>
-Subject: Re: [PATCH] dma-mapping: Add BUG_ON for uninitialized dma_ops
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Simek <monstr@monstr.eu>, Arnd Bergmann <arnd@arndb.de>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: jaegeuk.kim@samsung.com
+CC: linux-f2fs-devel@lists.sourceforge.net,
+        linux-kernel <linux-kernel@vger.kernel.org>, guz.fnst@cn.fujitsu.com
+Subject: [PATCH] f2fs: Remove the second argument "sbi" of func parse_options()
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/11 10:18:17,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/11 10:18:26
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Marek]
+We can get f2fs_sb_info via F2FS_SB(sb)，so remove the second argument "sbi" of func parse_options().
+f2fs_fill_super(), as the only user of parse_options() now, setting sb->s_fs_info = sbi before calling
+parse_options().
 
-On Mon, Jun 3, 2013 at 6:44 AM, Michal Simek <michal.simek@xilinx.com> wrote:
-> Check that dma_ops are initialized correctly.
->
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> ---
-> Functions dma_mmap_attrs(), dma_get_sgtable_attrs()
-> already have this checking.
->
-> ---
->  include/asm-generic/dma-mapping-common.h | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
->
-> diff --git a/include/asm-generic/dma-mapping-common.h b/include/asm-generic/dma-mapping-common.h
-> index de8bf89..d430cab 100644
-> --- a/include/asm-generic/dma-mapping-common.h
-> +++ b/include/asm-generic/dma-mapping-common.h
-> @@ -16,6 +16,7 @@ static inline dma_addr_t dma_map_single_attrs(struct device *dev, void *ptr,
->         dma_addr_t addr;
->
->         kmemcheck_mark_initialized(ptr, size);
-> +       BUG_ON(!ops);
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ fs/f2fs/super.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-Does this actually help anything?  I expected that if "ops" is NULL,
-we would just oops anyway when we attempted to call "ops->map_page()"
-because we already trap null pointer dereferences.  At least, when I
-tried leaving a pci_bus.ops pointer NULL, I got a nice panic and
-backtrace even without adding an explicit BUG_ON().
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index 8555f7d..58516b5 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -303,9 +303,9 @@ static const struct export_operations f2fs_export_ops = {
+ 	.get_parent = f2fs_get_parent,
+ };
+ 
+-static int parse_options(struct super_block *sb, struct f2fs_sb_info *sbi,
+-				char *options)
++static int parse_options(struct super_block *sb, char *options)
+ {
++	struct f2fs_sb_info *sbi = F2FS_SB(sb);
+ 	substring_t args[MAX_OPT_ARGS];
+ 	char *p;
+ 	int arg = 0;
+@@ -541,6 +541,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+ 		if (err)
+ 			goto free_sb_buf;
+ 	}
++	sb->s_fs_info = sbi;
+ 	/* init some FS parameters */
+ 	sbi->active_logs = NR_CURSEG_TYPE;
+ 
+@@ -553,7 +554,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+ 	set_opt(sbi, POSIX_ACL);
+ #endif
+ 	/* parse mount options */
+-	err = parse_options(sb, sbi, (char *)data);
++	err = parse_options(sb, (char *)data);
+ 	if (err)
+ 		goto free_sb_buf;
+ 
+@@ -565,7 +566,6 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+ 	sb->s_xattr = f2fs_xattr_handlers;
+ 	sb->s_export_op = &f2fs_export_ops;
+ 	sb->s_magic = F2FS_SUPER_MAGIC;
+-	sb->s_fs_info = sbi;
+ 	sb->s_time_gran = 1;
+ 	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
+ 		(test_opt(sbi, POSIX_ACL) ? MS_POSIXACL : 0);
+-- 
+1.7.7
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
 
-I cc'd Marek, who added the similar BUG_ON()s in dma_mmap_attrs() and
-dma_get_sgtable_attrs() with d2b7428eb0 and 64ccc9c033.
-
->         BUG_ON(!valid_dma_direction(dir));
->         addr = ops->map_page(dev, virt_to_page(ptr),
->                              (unsigned long)ptr & ~PAGE_MASK, size,
-> @@ -33,6 +34,7 @@ static inline void dma_unmap_single_attrs(struct device *dev, dma_addr_t addr,
->  {
->         struct dma_map_ops *ops = get_dma_ops(dev);
->
-> +       BUG_ON(!ops);
->         BUG_ON(!valid_dma_direction(dir));
->         if (ops->unmap_page)
->                 ops->unmap_page(dev, addr, size, dir, attrs);
-> @@ -49,6 +51,7 @@ static inline int dma_map_sg_attrs(struct device *dev, struct scatterlist *sg,
->
->         for_each_sg(sg, s, nents, i)
->                 kmemcheck_mark_initialized(sg_virt(s), s->length);
-> +       BUG_ON(!ops);
->         BUG_ON(!valid_dma_direction(dir));
->         ents = ops->map_sg(dev, sg, nents, dir, attrs);
->         debug_dma_map_sg(dev, sg, nents, ents, dir);
-> @@ -62,6 +65,7 @@ static inline void dma_unmap_sg_attrs(struct device *dev, struct scatterlist *sg
->  {
->         struct dma_map_ops *ops = get_dma_ops(dev);
->
-> +       BUG_ON(!ops);
->         BUG_ON(!valid_dma_direction(dir));
->         debug_dma_unmap_sg(dev, sg, nents, dir);
->         if (ops->unmap_sg)
-> @@ -76,6 +80,7 @@ static inline dma_addr_t dma_map_page(struct device *dev, struct page *page,
->         dma_addr_t addr;
->
->         kmemcheck_mark_initialized(page_address(page) + offset, size);
-> +       BUG_ON(!ops);
->         BUG_ON(!valid_dma_direction(dir));
->         addr = ops->map_page(dev, page, offset, size, dir, NULL);
->         debug_dma_map_page(dev, page, offset, size, dir, addr, false);
-> @@ -88,6 +93,7 @@ static inline void dma_unmap_page(struct device *dev, dma_addr_t addr,
->  {
->         struct dma_map_ops *ops = get_dma_ops(dev);
->
-> +       BUG_ON(!ops);
->         BUG_ON(!valid_dma_direction(dir));
->         if (ops->unmap_page)
->                 ops->unmap_page(dev, addr, size, dir, NULL);
-> @@ -100,6 +106,7 @@ static inline void dma_sync_single_for_cpu(struct device *dev, dma_addr_t addr,
->  {
->         struct dma_map_ops *ops = get_dma_ops(dev);
->
-> +       BUG_ON(!ops);
->         BUG_ON(!valid_dma_direction(dir));
->         if (ops->sync_single_for_cpu)
->                 ops->sync_single_for_cpu(dev, addr, size, dir);
-> @@ -112,6 +119,7 @@ static inline void dma_sync_single_for_device(struct device *dev,
->  {
->         struct dma_map_ops *ops = get_dma_ops(dev);
->
-> +       BUG_ON(!ops);
->         BUG_ON(!valid_dma_direction(dir));
->         if (ops->sync_single_for_device)
->                 ops->sync_single_for_device(dev, addr, size, dir);
-> @@ -126,6 +134,7 @@ static inline void dma_sync_single_range_for_cpu(struct device *dev,
->  {
->         const struct dma_map_ops *ops = get_dma_ops(dev);
->
-> +       BUG_ON(!ops);
->         BUG_ON(!valid_dma_direction(dir));
->         if (ops->sync_single_for_cpu)
->                 ops->sync_single_for_cpu(dev, addr + offset, size, dir);
-> @@ -140,6 +149,7 @@ static inline void dma_sync_single_range_for_device(struct device *dev,
->  {
->         const struct dma_map_ops *ops = get_dma_ops(dev);
->
-> +       BUG_ON(!ops);
->         BUG_ON(!valid_dma_direction(dir));
->         if (ops->sync_single_for_device)
->                 ops->sync_single_for_device(dev, addr + offset, size, dir);
-> @@ -152,6 +162,7 @@ dma_sync_sg_for_cpu(struct device *dev, struct scatterlist *sg,
->  {
->         struct dma_map_ops *ops = get_dma_ops(dev);
->
-> +       BUG_ON(!ops);
->         BUG_ON(!valid_dma_direction(dir));
->         if (ops->sync_sg_for_cpu)
->                 ops->sync_sg_for_cpu(dev, sg, nelems, dir);
-> @@ -164,6 +175,7 @@ dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
->  {
->         struct dma_map_ops *ops = get_dma_ops(dev);
->
-> +       BUG_ON(!ops);
->         BUG_ON(!valid_dma_direction(dir));
->         if (ops->sync_sg_for_device)
->                 ops->sync_sg_for_device(dev, sg, nelems, dir);
-> --
-> 1.8.2.3
->
