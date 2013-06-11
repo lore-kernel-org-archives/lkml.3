@@ -1,90 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab3FKQeR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 12:34:17 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:58273 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168Ab3FKQeQ (ORCPT
+	id S1755194Ab3FKQhm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 12:37:42 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:55132 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752956Ab3FKQhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 12:34:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAKL7Q7qUwTGexhr+8d88qN94YSCfSeOS-oLMh=KQ2NiOZRLbLQ@mail.gmail.com>
-References: <1370845742-18919-1-git-send-email-yinghai@kernel.org>
-	<CA+QCeVRdOOuh4aVZsQhucBNETnDp5OhAZguigLTbyD9bOONO1A@mail.gmail.com>
-	<CAE9FiQXacn2abVKeBhTazgRBCS9EtiACs=fbB6_Y27ZpLOTq3w@mail.gmail.com>
-	<CAKL7Q7rxkXDx49CgSjoVJSbER7ou+-yXa-yZg4hT4ktG_4gvHw@mail.gmail.com>
-	<CAKL7Q7qUwTGexhr+8d88qN94YSCfSeOS-oLMh=KQ2NiOZRLbLQ@mail.gmail.com>
-Date: Tue, 11 Jun 2013 09:34:16 -0700
-X-Google-Sender-Auth: WuCiiw2UTIhuD79GNZ0sVfJ-tV0
-Message-ID: <CAE9FiQWOvP+tTQ0Vakc9f-t61dv6Lo6dJm0+oH1On5k=6nvbXw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] x86, range: Do not add new blank slot with add_range_with_merge
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Joshua C." <joshuacov@gmail.com>
-Cc: Sergey Meirovich <rathamahata@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	Tue, 11 Jun 2013 12:37:41 -0400
+Message-ID: <1370968655.3252.49.camel@edumazet-glaptop>
+Subject: Re: [PATCH] slab: prevent warnings when allocating with __GFP_NOWARN
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Christoph Lameter <cl@gentwo.org>, Pekka Enberg <penberg@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 11 Jun 2013 09:37:35 -0700
+In-Reply-To: <51B74E28.4070906@oracle.com>
+References: <1370891880-2644-1-git-send-email-sasha.levin@oracle.com>
+	  <CAOJsxLGDH2iwznRkP-iwiMZw7Ee3mirhjLvhShrWLHR0qguRxA@mail.gmail.com>
+	  <51B62F6B.8040308@oracle.com>
+	  <0000013f3075f90d-735942a8-b4b8-413f-a09e-57d1de0c4974-000000@email.amazonses.com>
+	  <51B67553.6020205@oracle.com>
+	  <CAOJsxLH56xqCoDikYYaY_guqCX=S4rcVfDJQ4ki=r-PkNQW9ug@mail.gmail.com>
+	  <51B72323.8040207@oracle.com>
+	  <0000013f33cdc631-eadb07d1-ef08-4e2c-a218-1997eb86cde9-000000@email.amazonses.com>
+	  <51B73F38.6040802@kernel.org>
+	  <0000013f33d58923-88767793-2187-476d-b500-dba3c22607aa-000000@email.amazonses.com>
+	  <51B745F9.9080609@oracle.com> <1370967193.3252.47.camel@edumazet-glaptop>
+	 <51B74E28.4070906@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 3:04 AM, Joshua C. <joshuacov@gmail.com> wrote:
-> 2013/6/11 Joshua C. <joshuacov@gmail.com>:
->> 2013/6/10 Yinghai Lu <yinghai@kernel.org>:
->>> On Mon, Jun 10, 2013 at 3:55 AM, Sergey Meirovich <rathamahata@gmail.com> wrote:
->>>
->>>> patches 1,2(latest one) have not helped me on 3.9.5:
->>>
->>> So v1:
->>> https://patchwork.kernel.org/patch/2694981/
->>> https://patchwork.kernel.org/patch/2694971/
->>>
->>> and v2:
->>> https://patchwork.kernel.org/patch/2695891/
->>> https://patchwork.kernel.org/patch/2695881/
->>>
->>> Neither of two versions fix the problem on your setup?
->>>
->>> Can you post boot log with mtrr_cleanup_debug on 3.9.4?
->>>
->>> Thanks
->>>
->>> Yinghai
->>
->> I got some warnings when trying to build v2 of the patches:
->>
->> # make -s ARCH=x86_64 V=1 -j4 bzImage
->> kernel/range.c: In function 'add_range_with_merge':
->> kernel/range.c:51:3: error: implicit declaration of function 'memmove'
->> [-Werror=implicit-function-declaration]
->> kernel/range.c:51:3: warning: incompatible implicit declaration of
->> built-in function 'memmove' [enabled by default]
->> cc1: some warnings being treated as errors
->> scripts/Makefile.build:307: recipe for target 'kernel/range.o' failed
->> make[1]: *** [kernel/range.o] Error 1
->> Makefile:793: recipe for target 'kernel' failed
->> make: *** [kernel] Error 2
->> make: *** Waiting for unfinished jobs....
->>
->>
->> --
->> --joshua
+On Tue, 2013-06-11 at 12:19 -0400, Sasha Levin wrote:
 
-it does not report warning when I compile it with
+> It might be, but you need CAP_SYS_RESOURCE to go into the dangerous
+> zone (>pipe_max_size).
+> 
+> So if root (or someone with that cap) wants to go there, as Rusty says:
+> "Root asked, we do."
 
-gcc (SUSE Linux) 4.7.2 20130108 [gcc-4_7-branch revision 195012
+Yes and no : adding a test to select vmalloc()/vfree() instead of
+kmalloc()/kfree() will slow down regular users asking 32 pages in their
+pipe.
 
->
-> A trivial fix for the above warnings:
->
-> --- linux-2.6.orig/kernel/range.c
-> +++ linux-2.6/kernel/range.c
-> @@ -4,6 +4,7 @@
->  #include <linux/kernel.h>
->  #include <linux/init.h>
->  #include <linux/sort.h>
-> +#include <linux/string.h>
->
->  #include <linux/range.h>
->
+If there is no _sensible_ use for large pipes even for root, please do
+not bloat the code just because we can.
+
+
+
