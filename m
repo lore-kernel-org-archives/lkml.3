@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915Ab3FKHW1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 03:22:27 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:35739 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751998Ab3FKHWZ (ORCPT
+	id S1753250Ab3FKHXA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 03:23:00 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:56877 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388Ab3FKHW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 03:22:25 -0400
-Date: Tue, 11 Jun 2013 08:22:22 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: linux-efi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Zach Bobroff <zacharyb@ami.com>, stable@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH] x86, efi: retry ExitBootServices() on failure
-Message-ID: <20130611072222.GH31198@console-pimps.org>
-References: <1370933558-10128-1-git-send-email-matt@console-pimps.org>
+	Tue, 11 Jun 2013 03:22:58 -0400
+Date: Tue, 11 Jun 2013 10:22:45 +0300
+From: Johan Hedberg <johan.hedberg@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        kernel list <linux-kernel@vger.kernel.org>, marcel@holtmann.org,
+        gustavo@padovan.org, linux-bluetooth@vger.kernel.org
+Subject: Re: 3.10-rc: bluetooth disappeared on thinkpad x60 (regression)
+Message-ID: <20130611072245.GA12463@x220>
+Mail-Followup-To: Pavel Machek <pavel@ucw.cz>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	kernel list <linux-kernel@vger.kernel.org>, marcel@holtmann.org,
+	gustavo@padovan.org, linux-bluetooth@vger.kernel.org
+References: <20130610092907.GA5487@amd.pavel.ucw.cz>
+ <20130610100519.GA9816@x220.ger.corp.intel.com>
+ <20130610110423.GA8834@amd.pavel.ucw.cz>
+ <20130610115938.GA12892@x220.ger.corp.intel.com>
+ <20130610133834.GA4058@amd.pavel.ucw.cz>
+ <20130610160723.GA18282@x220.P-661HNU-F1>
+ <20130610193746.GA30801@amd.pavel.ucw.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370933558-10128-1-git-send-email-matt@console-pimps.org>
+In-Reply-To: <20130610193746.GA30801@amd.pavel.ucw.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Jun, at 07:52:38AM, Matt Fleming wrote:
-> From: Zach Bobroff <zacharyb@ami.com>
-> 
-> ExitBootServices is absolutely supposed to return a failure if any
-> ExitBootServices event handler changes the memory map.  Basically the
-> get_map loop should run again if ExitBootServices returns an error the
-> first time.  I would say it would be fair that if ExitBootServices gives
-> an error the second time then Linux would be fine in returning control
-> back to BIOS.
-> 
-> The second change is the following line:
-> 
-> again:
->         size += sizeof(*mem_map) * 2;
-> 
-> Originally you were incrementing it by the size of one memory map entry.
-> The issue here is all related to the low_alloc routine you are using.
-> In this routine you are making allocations to get the memory map itself.
-> Doing this allocation or allocations can affect the memory map by more
-> than one record.
-> 
-> [ mfleming - changelog, code style ]
-> Signed-off-by: Zach Bobroff <zacharyb@ami.com>
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-> ---
->  arch/x86/boot/compressed/eboot.c | 20 +++++++++++++++++---
->  1 file changed, 17 insertions(+), 3 deletions(-)
+Hi Pavel,
 
-I've queued this patch up for v3.11 in my 'next' branch.
+On Mon, Jun 10, 2013, Pavel Machek wrote:
+> < HCI Command: Delete Stored Link Key (0x03|0x0012) plen 7
+>     bdaddr 00:00:00:00:00:00 all 1
+> > HCI Event: Command Complete (0x0e) plen 4
+>     Delete Stored Link Key (0x03|0x0012) ncmd 1
+>     status 0x11 deleted 0
+>     Error: Unsupported Feature or Parameter Value
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Here's the cause of your issue. It's not one of the recently added HCI
+commands but one that's been around for quite some time. I just checked
+and it's even there in kernel 3.9, so I'm surprised that you're saying
+this is a regression since that version. Are you completely sure about
+it?
+
+Johan
