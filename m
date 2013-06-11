@@ -1,233 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756377Ab3FKVP0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 17:15:26 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:56094 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756041Ab3FKVPY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 17:15:24 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCHv2] irqchip: Add support for TI-NSPIRE irqchip
-To: Daniel Tang <dt.tangr@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <AA3869CB-3720-4F1F-8D5C-DDEB3BF4BDC0@gmail.com>
-References: <AA3869CB-3720-4F1F-8D5C-DDEB3BF4BDC0@gmail.com>
-Date: Tue, 11 Jun 2013 22:15:20 +0100
-Message-Id: <20130611211520.CDC943E0D8D@localhost>
+	id S1756462Ab3FKVQJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 17:16:09 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:47363 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756141Ab3FKVQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 17:16:08 -0400
+Date: Tue, 11 Jun 2013 17:16:01 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH, RFC] mm: Implement RLIMIT_RSS
+Message-ID: <20130611211601.GA29426@cmpxchg.org>
+References: <20130611182921.GB25941@logfs.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130611182921.GB25941@logfs.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 8 Jun 2013 11:58:55 +1000, Daniel Tang <dt.tangr@gmail.com> wrote:
-> This patch adds support for the interrupt controllers found in some
-> TI-Nspire models.
+On Tue, Jun 11, 2013 at 02:29:21PM -0400, Jörn Engel wrote:
+> I've seen a couple of instances where people try to impose a vsize
+> limit simply because there is no rss limit in Linux.  The vsize limit
+> is a horrible approximation and even this patch seems to be an
+> improvement.
 > 
-> FIQ support was taken out to simplify the driver
-> code and may be added in later. Since Linux on this platform doesn't
-> really use FIQs, this wasn't really that important in the first
-> place.
+> Would there be strong opposition to actually supporting RLIMIT_RSS?
 > 
-> Changes from v1 to v2:
-> * Converted to use generic IRQ chips.
-> * Removed FIQ for now to simplify driver code.
-> * Based against tip/irq/core and uses IRQ domain support for generic 
->   chips.
-> 
-> 
-> Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
-
-Looks right to me.
-
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
-
-> ---
->  .../interrupt-controller/lsi,zevio-intc.txt        |  18 +++
->  drivers/irqchip/Makefile                           |   1 +
->  drivers/irqchip/irq-zevio.c                        | 129 +++++++++++++++++++++
->  3 files changed, 148 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/interrupt-controller/lsi,zevio-intc.txt
->  create mode 100644 drivers/irqchip/irq-zevio.c
-> 
-> diff --git a/Documentation/devicetree/bindings/interrupt-controller/lsi,zevio-intc.txt b/Documentation/devicetree/bindings/interrupt-controller/lsi,zevio-intc.txt
-> new file mode 100644
-> index 0000000..aee38e7
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/interrupt-controller/lsi,zevio-intc.txt
-> @@ -0,0 +1,18 @@
-> +TI-NSPIRE interrupt controller
-> +
-> +Required properties:
-> +- compatible: Compatible property value should be "lsi,zevio-intc".
-> +
-> +- reg: Physical base address of the controller and length of memory mapped
-> +	region.
-> +
-> +- interrupt-controller : Identifies the node as an interrupt controller
-> +
-> +Example:
-> +
-> +interrupt-controller {
-> +	compatible = "lsi,zevio-intc";
-> +	interrupt-controller;
-> +	reg = <0xDC000000 0x1000>;
-> +	#interrupt-cells = <1>;
-> +};
-> diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-> index cda4cb5..f313d14 100644
-> --- a/drivers/irqchip/Makefile
-> +++ b/drivers/irqchip/Makefile
-> @@ -15,4 +15,5 @@ obj-$(CONFIG_SIRF_IRQ)			+= irq-sirfsoc.o
->  obj-$(CONFIG_RENESAS_INTC_IRQPIN)	+= irq-renesas-intc-irqpin.o
->  obj-$(CONFIG_RENESAS_IRQC)		+= irq-renesas-irqc.o
->  obj-$(CONFIG_VERSATILE_FPGA_IRQ)	+= irq-versatile-fpga.o
-> +obj-$(CONFIG_ARCH_NSPIRE)		+= irq-zevio.o
->  obj-$(CONFIG_ARCH_VT8500)		+= irq-vt8500.o
-> diff --git a/drivers/irqchip/irq-zevio.c b/drivers/irqchip/irq-zevio.c
-> new file mode 100644
-> index 0000000..92e6c7b
-> --- /dev/null
-> +++ b/drivers/irqchip/irq-zevio.c
-> @@ -0,0 +1,129 @@
-> +/*
-> + *  linux/drivers/irqchip/irq-zevio.c
-> + *
-> + *  Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2, as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +
-> +#include <linux/io.h>
-> +#include <linux/irq.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_irq.h>
-> +
-> +#include <asm/mach/irq.h>
-> +#include <asm/exception.h>
-> +
-> +#include "irqchip.h"
-> +
-> +#define IO_STATUS	0x000
-> +#define IO_RAW_STATUS	0x004
-> +#define IO_ENABLE	0x008
-> +#define IO_DISABLE	0x00C
-> +#define IO_CURRENT	0x020
-> +#define IO_RESET	0x028
-> +#define IO_MAX_PRIOTY	0x02C
-> +
-> +#define IO_IRQ_BASE	0x000
-> +#define IO_FIQ_BASE	0x100
-> +
-> +#define IO_INVERT_SEL	0x200
-> +#define IO_STICKY_SEL	0x204
-> +#define IO_PRIORITY_SEL	0x300
-> +
-> +#define MAX_INTRS	32
-> +#define FIQ_START	MAX_INTRS
-> +
-> +static struct irq_domain *zevio_irq_domain;
-> +static void __iomem *zevio_irq_io;
-> +
-> +static void zevio_irq_ack(struct irq_data *irqd)
-> +{
-> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(irqd);
-> +	struct irq_chip_regs *regs =
-> +		&container_of(irqd->chip, struct irq_chip_type, chip)->regs;
-> +
-> +	irq_gc_lock(gc);
-> +	readl(gc->reg_base + regs->ack);
-> +	irq_gc_unlock(gc);
-> +}
-> +
-> +static void init_base(void __iomem *base)
-> +{
-> +	/* Disable all interrupts */
-> +	writel(~0, base + IO_DISABLE);
-> +
-> +	/* Accept interrupts of all priorities */
-> +	writel(0xF, base + IO_MAX_PRIOTY);
-> +
-> +	/* Reset existing interrupts */
-> +	readl(base + IO_RESET);
-> +}
-> +
-> +asmlinkage void __exception_irq_entry zevio_handle_irq(struct pt_regs *regs)
-> +{
-> +	int irqnr;
-> +
-> +	while (readl(zevio_irq_io + IO_STATUS)) {
-> +		irqnr = readl(zevio_irq_io + IO_CURRENT);
-> +		irqnr = irq_find_mapping(zevio_irq_domain, irqnr);
-> +		handle_IRQ(irqnr, regs);
-> +	};
-> +}
-> +
-> +static int __init zevio_of_init(struct device_node *node,
-> +				struct device_node *parent)
-> +{
-> +	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
-> +	struct irq_chip_generic *gc;
-> +	int ret;
-> +
-> +	if (WARN_ON(zevio_irq_io || zevio_irq_domain))
-> +		return -EBUSY;
-> +
-> +	zevio_irq_io = of_iomap(node, 0);
-> +	BUG_ON(!zevio_irq_io);
-> +
-> +	/* Do not invert interrupt status bits */
-> +	writel(~0, zevio_irq_io + IO_INVERT_SEL);
-> +
-> +	/* Disable sticky interrupts */
-> +	writel(0, zevio_irq_io + IO_STICKY_SEL);
-> +
-> +	/* We don't use IRQ priorities. Set each IRQ to highest priority. */
-> +	memset_io(zevio_irq_io + IO_PRIORITY_SEL, 0, MAX_INTRS * sizeof(u32));
-> +
-> +	/* Init IRQ and FIQ */
-> +	init_base(zevio_irq_io + IO_IRQ_BASE);
-> +	init_base(zevio_irq_io + IO_FIQ_BASE);
-> +
-> +	zevio_irq_domain = irq_domain_add_linear(node, MAX_INTRS,
-> +						 &irq_generic_chip_ops, NULL);
-> +	BUG_ON(!zevio_irq_domain);
-> +
-> +	ret = irq_alloc_domain_generic_chips(zevio_irq_domain, MAX_INTRS, 1,
-> +					     "zevio_intc", handle_level_irq,
-> +					     clr, 0, IRQ_GC_INIT_MASK_CACHE);
-> +	BUG_ON(ret);
-> +
-> +	gc = irq_get_domain_generic_chip(zevio_irq_domain, 0);
-> +	gc->reg_base				= zevio_irq_io;
-> +	gc->chip_types[0].chip.irq_ack		= zevio_irq_ack;
-> +	gc->chip_types[0].chip.irq_mask		= irq_gc_mask_disable_reg;
-> +	gc->chip_types[0].chip.irq_unmask	= irq_gc_unmask_enable_reg;
-> +	gc->chip_types[0].regs.mask		= IO_IRQ_BASE + IO_ENABLE;
-> +	gc->chip_types[0].regs.enable		= IO_IRQ_BASE + IO_ENABLE;
-> +	gc->chip_types[0].regs.disable		= IO_IRQ_BASE + IO_DISABLE;
-> +	gc->chip_types[0].regs.ack		= IO_IRQ_BASE + IO_RESET;
-> +
-> +	set_handle_irq(zevio_handle_irq);
-> +
-> +	pr_info("TI-NSPIRE classic IRQ controller\n");
-> +	return 0;
-> +}
-> +
-> +IRQCHIP_DECLARE(zevio_irq, "lsi,zevio-intc", zevio_of_init);
-> -- 
-> 1.8.1.3
-> 
+> Jörn
 > 
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> It's not whether you win or lose, it's how you place the blame.
+> -- unknown
+> 
+> 
+> Not quite perfect, but close enough for many purposes.  This checks rss
+> limit inside may_expand_vm() and will fail if we are already over the
+> limit.
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+This is trivial to exploit by creating the mappings first and
+populating them later, so while it may cover some use cases, it does
+not have the protection against malicious programs aspect that all the
+other rlimits have.
+
+The right place to enforce the limit is at the point of memory
+allocation, which raises the question what to do when the limit is
+exceeded in a page fault.  Reclaim from the process's memory?  Kill
+it?
+
+I guess the answer to these questions is "memory cgroups", so that's
+why there is no real motivation to implement RLIMIT_RSS separately...
