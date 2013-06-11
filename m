@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303Ab3FKUhZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:37:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41632 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756200Ab3FKUC5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756198Ab3FKUC5 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Jun 2013 16:02:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41605 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756124Ab3FKUCw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 16:02:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ash Willis <ashwillis@programmer.net>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 14/21] ACPI / video: ignore BIOS initial backlight value for HP Pavilion g6
-Date: Tue, 11 Jun 2013 13:03:08 -0700
-Message-Id: <20130611195521.662569695@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Tim Richardson <tim@tim-richardson.net>
+Subject: [ 09/21] USB: revert periodic scheduling bugfix
+Date: Tue, 11 Jun 2013 13:03:03 -0700
+Message-Id: <20130611195521.110829029@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195520.003233586@linuxfoundation.org>
 References: <20130611195520.003233586@linuxfoundation.org>
@@ -27,40 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ash Willis <ashwillis.kernel@gmail.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 780a6ec640a3fed671fc2c40e4dd30c03eca3ac3 upstream.
+commit fdc03438f53a00294ed9939eb3a1f6db6f3d8963 upstream.
 
-This patch addresses kernel bug 56661. BIOS reports an incorrect
-backlight value, causing the driver to switch off the backlight
-completely during startup. This patch ignores the incorrect value from
-BIOS.
+This patch reverts commit 3e619d04159be54b3daa0b7036b0ce9e067f4b5d
+(USB: EHCI: fix bug in scheduling periodic split transfers).  The
+commit was valid -- it fixed a real bug -- but the periodic scheduler
+in ehci-hcd is in such bad shape (especially the part that handles
+split transactions) that fixing one bug is very likely to cause
+another to surface.  That's what happened in this case; the result was
+choppy and noisy playback on certain 24-bit audio devices.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=56661
-Signed-off-by: Ash Willis <ashwillis@programmer.net>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+The only real fix will be to rewrite this entire section of code.  My
+next project...
+
+This fixes https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1136110.
+
+Thanks to Tim Richardson for extra testing and feedback, and to Joseph
+Salisbury and Tyson Tan for tracking down the original source of the
+problem.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+CC: Joseph Salisbury <joseph.salisbury@canonical.com>
+CC: Tim Richardson <tim@tim-richardson.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/video.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/host/ehci-sched.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -450,6 +450,14 @@ static struct dmi_system_id video_dmi_ta
- 	},
- 	{
- 	 .callback = video_ignore_initial_backlight,
-+	 .ident = "HP Pavilion g6 Notebook PC",
-+	 .matches = {
-+		 DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
-+		 DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion g6 Notebook PC"),
-+		},
-+	},
-+	{
-+	 .callback = video_ignore_initial_backlight,
- 	 .ident = "HP Pavilion m4",
- 	 .matches = {
- 		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -236,7 +236,7 @@ static inline unsigned char tt_start_ufr
+ }
+ 
+ static const unsigned char
+-max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 125, 25 };
++max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 30, 0 };
+ 
+ /* carryover low/fullspeed bandwidth that crosses uframe boundries */
+ static inline void carryover_tt_bandwidth(unsigned short tt_usecs[8])
 
 
