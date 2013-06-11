@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757043Ab3FKUMi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:12:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41985 "EHLO
+	id S1756711Ab3FKUED (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:04:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41943 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756574Ab3FKUEG (ORCPT
+	with ESMTP id S1756689Ab3FKUD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:04:06 -0400
+	Tue, 11 Jun 2013 16:03:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tyler Hicks <tyhicks@canonical.com>, Paul Taysom <taysom@chromium.org>,
-        Olof Johansson <olofj@chromium.org>
-Subject: [ 51/79] eCryptfs: Check return of filemap_write_and_wait during fsync
-Date: Tue, 11 Jun 2013 13:03:17 -0700
-Message-Id: <20130611195322.800333846@linuxfoundation.org>
+        Ash Willis <ashwillis@programmer.net>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 30/79] ACPI / video: ignore BIOS initial backlight value for HP Pavilion g6
+Date: Tue, 11 Jun 2013 13:02:56 -0700
+Message-Id: <20130611195316.427835063@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -27,36 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: Ash Willis <ashwillis.kernel@gmail.com>
 
-commit bc5abcf7e411b889f73ea2a90439071a0f451011 upstream.
+commit 780a6ec640a3fed671fc2c40e4dd30c03eca3ac3 upstream.
 
-Error out of ecryptfs_fsync() if filemap_write_and_wait() fails.
+This patch addresses kernel bug 56661. BIOS reports an incorrect
+backlight value, causing the driver to switch off the backlight
+completely during startup. This patch ignores the incorrect value from
+BIOS.
 
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Cc: Paul Taysom <taysom@chromium.org>
-Cc: Olof Johansson <olofj@chromium.org>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=56661
+Signed-off-by: Ash Willis <ashwillis@programmer.net>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ecryptfs/file.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/acpi/video.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/fs/ecryptfs/file.c
-+++ b/fs/ecryptfs/file.c
-@@ -294,7 +294,12 @@ static int ecryptfs_release(struct inode
- static int
- ecryptfs_fsync(struct file *file, loff_t start, loff_t end, int datasync)
- {
--	filemap_write_and_wait(file->f_mapping);
-+	int rc;
-+
-+	rc = filemap_write_and_wait(file->f_mapping);
-+	if (rc)
-+		return rc;
-+
- 	return vfs_fsync(ecryptfs_file_to_lower(file), datasync);
- }
- 
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -449,6 +449,14 @@ static struct dmi_system_id video_dmi_ta
+ 	},
+ 	{
+ 	 .callback = video_ignore_initial_backlight,
++	 .ident = "HP Pavilion g6 Notebook PC",
++	 .matches = {
++		 DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
++		 DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion g6 Notebook PC"),
++		},
++	},
++	{
++	 .callback = video_ignore_initial_backlight,
+ 	 .ident = "HP Pavilion m4",
+ 	 .matches = {
+ 		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
 
 
