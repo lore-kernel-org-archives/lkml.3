@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756521Ab3FKWNs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 18:13:48 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:56874 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756432Ab3FKWNq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 18:13:46 -0400
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
-        Valdis.Kletnieks@vt.edu, Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH] mm/page_alloc: don't re-init pageset in zone_pcp_update()
-Date: Tue, 11 Jun 2013 15:12:59 -0700
-Message-Id: <1370988779-7586-1-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.3
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061122-5518-0000-0000-00000F8EB82D
+	id S1756513Ab3FKWPD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 18:15:03 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:34463 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756475Ab3FKWPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 18:15:01 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI: Remove unused flags in acpi_device_flags
+Date: Wed, 12 Jun 2013 00:24:12 +0200
+Message-ID: <1929531.s4Kmz37sNk@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1370382985-12163-1-git-send-email-toshi.kani@hp.com>
+References: <1370382985-12163-1-git-send-email-toshi.kani@hp.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factor pageset_set_high_and_batch() (which contains all needed logic too
-set a pageset's ->high and ->batch inrespective of system state) out of
-zone_pageset_init(), which avoids us calling pageset_init(), and
-unsafely blowing away a pageset at runtime (leaked pages and
-potentially some funky allocations would be the result) when memory
-hotplug is triggered.
+On Tuesday, June 04, 2013 03:56:25 PM Toshi Kani wrote:
+> suprise_removal_ok and performance_manageable in struct
+> acpi_device_flags are not used by any code.  So, remove
+> them.
+> 
+> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
----
+Queued up for 3.11.
 
-Unless memory hotplug is being triggered on boot, this should *not* be cause of Valdis
-Kletnieks' reported bug in -next:
-         "next-20130607 BUG: Bad page state in process systemd pfn:127643"
+Thanks,
+Rafael
 
----
 
- mm/page_alloc.c | 17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 18102e1..f62c7ac 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4111,11 +4111,9 @@ static void pageset_set_high(struct per_cpu_pageset *p,
- 	pageset_update(&p->pcp, high, batch);
- }
- 
--static void __meminit zone_pageset_init(struct zone *zone, int cpu)
-+static void __meminit pageset_set_high_and_batch(struct zone *zone,
-+		struct per_cpu_pageset *pcp)
- {
--	struct per_cpu_pageset *pcp = per_cpu_ptr(zone->pageset, cpu);
--
--	pageset_init(pcp);
- 	if (percpu_pagelist_fraction)
- 		pageset_set_high(pcp,
- 			(zone->managed_pages /
-@@ -4124,6 +4122,14 @@ static void __meminit zone_pageset_init(struct zone *zone, int cpu)
- 		pageset_set_batch(pcp, zone_batchsize(zone));
- }
- 
-+static void __meminit zone_pageset_init(struct zone *zone, int cpu)
-+{
-+	struct per_cpu_pageset *pcp = per_cpu_ptr(zone->pageset, cpu);
-+
-+	pageset_init(pcp);
-+	pageset_set_high_and_batch(zone, pcp);
-+}
-+
- static void __meminit setup_zone_pageset(struct zone *zone)
- {
- 	int cpu;
-@@ -6173,7 +6179,8 @@ void __meminit zone_pcp_update(struct zone *zone)
- 	unsigned cpu;
- 	mutex_lock(&pcp_batch_high_lock);
- 	for_each_possible_cpu(cpu)
--		zone_pageset_init(zone, cpu);
-+		pageset_set_high_and_batch(zone,
-+				per_cpu_ptr(zone->pageset, cpu));
- 	mutex_unlock(&pcp_batch_high_lock);
- }
- #endif
+> ---
+>  include/acpi/acpi_bus.h |    4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+> 
+> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+> index 1a681ee..9efc52f 100644
+> --- a/include/acpi/acpi_bus.h
+> +++ b/include/acpi/acpi_bus.h
+> @@ -156,12 +156,10 @@ struct acpi_device_flags {
+>  	u32 dynamic_status:1;
+>  	u32 removable:1;
+>  	u32 ejectable:1;
+> -	u32 suprise_removal_ok:1;
+>  	u32 power_manageable:1;
+> -	u32 performance_manageable:1;
+>  	u32 eject_pending:1;
+>  	u32 match_driver:1;
+> -	u32 reserved:24;
+> +	u32 reserved:26;
+>  };
+>  
+>  /* File System */
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 -- 
-1.8.3
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
