@@ -1,77 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067Ab3FKLNF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:13:05 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:46341 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755039Ab3FKLNA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:13:00 -0400
-Date: Tue, 11 Jun 2013 12:12:54 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com,
-        Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH 19/33] clk: ux500: Add Device Tree support for the PRCMU
- clock
-Message-ID: <20130611111254.GD3330@laptop>
-References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
- <1370521041-32318-20-git-send-email-lee.jones@linaro.org>
- <CAPDyKFozMRxcpeEfaqKQrZ1_xxr=UMLw2EybdKiRM2zWcppikw@mail.gmail.com>
- <20130611111050.GC3330@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130611111050.GC3330@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755124Ab3FKLNf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:13:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57522 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754689Ab3FKLJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 07:09:48 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org
+Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
+        swhiteho@redhat.com, Trond.Myklebust@netapp.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-afs@lists.infradead.org, ceph-devel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
+Subject: [PATCH v2 09/14] locks: convert fl_link to a hlist_node
+Date: Tue, 11 Jun 2013 07:09:03 -0400
+Message-Id: <1370948948-31784-10-git-send-email-jlayton@redhat.com>
+In-Reply-To: <1370948948-31784-1-git-send-email-jlayton@redhat.com>
+References: <1370948948-31784-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Jun 2013, Lee Jones wrote:
+Testing has shown that iterating over the blocked_list for deadlock
+detection turns out to be a bottleneck. In order to alleviate that,
+begin the process of turning it into a hashtable. We start by turning
+the fl_link into a hlist_node and the global lists into hlists. A later
+patch will do the conversion of the blocked_list to a hashtable.
 
-> On Mon, 10 Jun 2013, Ulf Hansson wrote:
-> 
-> > On 6 June 2013 14:17, Lee Jones <lee.jones@linaro.org> wrote:
-> > > This patch enables clocks to be specified from Device Tree via phandles
-> > > to the "prcmu-clock" node.
-> > >
-> > > Cc: Mike Turquette <mturquette@linaro.org>
-> > > Cc: Ulf Hansson <ulf.hansson@linaro.org>
-> > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > > ---
-> > >  drivers/clk/ux500/u8500_clk.c |   50 +++++++++++++++++++++++++++++++++++++++--
-> > >  1 file changed, 48 insertions(+), 2 deletions(-)
-> > >
-> > > diff --git a/drivers/clk/ux500/u8500_clk.c b/drivers/clk/ux500/u8500_clk.c
-> > > index 3a7040b..4f5ad4c 100644
-> > > --- a/drivers/clk/ux500/u8500_clk.c
-> > > +++ b/drivers/clk/ux500/u8500_clk.c
-> > > @@ -15,6 +15,8 @@
-> > >  #include <linux/platform_data/clk-ux500.h>
-> > >  #include "clk.h"
-> > >
-> > > +static struct clk *prcmu_clk[PRCMU_NUM_CLKS];
-> > > +
-> > >  struct clk *ux500_twocell_get(struct of_phandle_args *clkspec, void *data)
-> > 
-> > Actually I thought ux500_twocell_get was going to be used in this
-> > patch, since the previous one was adding this helper function, but it
-> > isn't?
-> 
-> Yes it is:
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/locks.c         |   26 +++++++++++++-------------
+ include/linux/fs.h |    2 +-
+ 2 files changed, 14 insertions(+), 14 deletions(-)
 
-Whoops! No, it's using it in the next patch.
-
-There's no requirement for these things to be sequential. I thought it
-was better to put adding the clocks sequential, rather than have a
-random addition of a call-back function in the middle of them.
-
+diff --git a/fs/locks.c b/fs/locks.c
+index b8cd1b1..28959bc 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -153,8 +153,8 @@ int lease_break_time = 45;
+ #define for_each_lock(inode, lockp) \
+ 	for (lockp = &inode->i_flock; *lockp != NULL; lockp = &(*lockp)->fl_next)
+ 
+-static LIST_HEAD(file_lock_list);
+-static LIST_HEAD(blocked_list);
++static HLIST_HEAD(file_lock_list);
++static HLIST_HEAD(blocked_list);
+ 
+ /* Protects the two list heads above */
+ static DEFINE_SPINLOCK(file_lock_lock);
+@@ -163,7 +163,7 @@ static struct kmem_cache *filelock_cache __read_mostly;
+ 
+ static void locks_init_lock_heads(struct file_lock *fl)
+ {
+-	INIT_LIST_HEAD(&fl->fl_link);
++	INIT_HLIST_NODE(&fl->fl_link);
+ 	INIT_LIST_HEAD(&fl->fl_block);
+ 	init_waitqueue_head(&fl->fl_wait);
+ }
+@@ -197,7 +197,7 @@ void locks_free_lock(struct file_lock *fl)
+ {
+ 	BUG_ON(waitqueue_active(&fl->fl_wait));
+ 	BUG_ON(!list_empty(&fl->fl_block));
+-	BUG_ON(!list_empty(&fl->fl_link));
++	BUG_ON(!hlist_unhashed(&fl->fl_link));
+ 
+ 	locks_release_private(fl);
+ 	kmem_cache_free(filelock_cache, fl);
+@@ -475,13 +475,13 @@ static int posix_same_owner(struct file_lock *fl1, struct file_lock *fl2)
+ static inline void
+ locks_insert_global_blocked(struct file_lock *waiter)
+ {
+-	list_add(&waiter->fl_link, &blocked_list);
++	hlist_add_head(&waiter->fl_link, &blocked_list);
+ }
+ 
+ static inline void
+ __locks_delete_global_blocked(struct file_lock *waiter)
+ {
+-	list_del_init(&waiter->fl_link);
++	hlist_del_init(&waiter->fl_link);
+ }
+ 
+ static inline void
+@@ -496,7 +496,7 @@ static inline void
+ locks_insert_global_locks(struct file_lock *waiter)
+ {
+ 	spin_lock(&file_lock_lock);
+-	list_add_tail(&waiter->fl_link, &file_lock_list);
++	hlist_add_head(&waiter->fl_link, &file_lock_list);
+ 	spin_unlock(&file_lock_lock);
+ }
+ 
+@@ -504,7 +504,7 @@ static inline void
+ locks_delete_global_locks(struct file_lock *waiter)
+ {
+ 	spin_lock(&file_lock_lock);
+-	list_del_init(&waiter->fl_link);
++	hlist_del_init(&waiter->fl_link);
+ 	spin_unlock(&file_lock_lock);
+ }
+ 
+@@ -729,7 +729,7 @@ static struct file_lock *what_owner_is_waiting_for(struct file_lock *block_fl)
+ {
+ 	struct file_lock *fl;
+ 
+-	list_for_each_entry(fl, &blocked_list, fl_link) {
++	hlist_for_each_entry(fl, &blocked_list, fl_link) {
+ 		if (posix_same_owner(fl, block_fl))
+ 			return fl->fl_next;
+ 	}
+@@ -2286,11 +2286,11 @@ static int locks_show(struct seq_file *f, void *v)
+ {
+ 	struct file_lock *fl, *bfl;
+ 
+-	fl = list_entry(v, struct file_lock, fl_link);
++	fl = hlist_entry(v, struct file_lock, fl_link);
+ 
+ 	lock_get_status(f, fl, *((loff_t *)f->private), "");
+ 
+-	list_for_each_entry(bfl, &blocked_list, fl_link) {
++	hlist_for_each_entry(bfl, &blocked_list, fl_link) {
+ 		if (bfl->fl_next == fl)
+ 			lock_get_status(f, bfl, *((loff_t *)f->private), " ->");
+ 	}
+@@ -2304,14 +2304,14 @@ static void *locks_start(struct seq_file *f, loff_t *pos)
+ 
+ 	spin_lock(&file_lock_lock);
+ 	*p = (*pos + 1);
+-	return seq_list_start(&file_lock_list, *pos);
++	return seq_hlist_start(&file_lock_list, *pos);
+ }
+ 
+ static void *locks_next(struct seq_file *f, void *v, loff_t *pos)
+ {
+ 	loff_t *p = f->private;
+ 	++*p;
+-	return seq_list_next(v, &file_lock_list, pos);
++	return seq_hlist_next(v, &file_lock_list, pos);
+ }
+ 
+ static void locks_stop(struct seq_file *f, void *v)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index e2f896d..3b340f7 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -946,7 +946,7 @@ int locks_in_grace(struct net *);
+  */
+ struct file_lock {
+ 	struct file_lock *fl_next;	/* singly linked list for this inode  */
+-	struct list_head fl_link;	/* doubly linked list of all locks */
++	struct hlist_node fl_link;	/* node in global lists */
+ 	struct list_head fl_block;	/* circular list of blocked processes */
+ 	fl_owner_t fl_owner;
+ 	unsigned int fl_flags;
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.1
+
