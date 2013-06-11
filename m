@@ -1,39 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347Ab3FKXWe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 19:22:34 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13532 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752657Ab3FKXWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 19:22:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,848,1363158000"; 
-   d="scan'208";a="351967431"
-Message-ID: <51B7B128.60909@intel.com>
-Date: Tue, 11 Jun 2013 16:22:16 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756078Ab3FKXWw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 19:22:52 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59538 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754237Ab3FKXWu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 19:22:50 -0400
+Date: Tue, 11 Jun 2013 17:53:20 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH, RFC] mm: Implement RLIMIT_RSS
+Message-ID: <20130611215319.GA29368@logfs.org>
+References: <20130611182921.GB25941@logfs.org>
+ <20130611211601.GA29426@cmpxchg.org>
 MIME-Version: 1.0
-To: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jan kara <jack@suse.cz>
-Subject: ext4 extent status tree LRU locking
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130611211601.GA29426@cmpxchg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've got a test case which I intended to use to stress the VM a bit.  It
-fills memory up with page cache a couple of times.  It essentially runs
-30 or so cp's in parallel.
+On Tue, 11 June 2013 17:16:01 -0400, Johannes Weiner wrote:
+> On Tue, Jun 11, 2013 at 02:29:21PM -0400, Jörn Engel wrote:
+> > I've seen a couple of instances where people try to impose a vsize
+> > limit simply because there is no rss limit in Linux.  The vsize limit
+> > is a horrible approximation and even this patch seems to be an
+> > improvement.
+> > 
+> > Would there be strong opposition to actually supporting RLIMIT_RSS?
+> 
+> This is trivial to exploit by creating the mappings first and
+> populating them later, so while it may cover some use cases, it does
+> not have the protection against malicious programs aspect that all the
+> other rlimits have.
 
-98% of my CPU is system time, and 96% of _that_ is being spent on the
-spinlock in ext4_es_lru_add().  I think the LRU list head and its lock
-end up being *REALLY* hot cachelines and are *the* bottleneck on this
-test.  Note that this is _before_ we go in to reclaim and actually start
-calling in to the shrinker.  There is zero memory pressure in this test.
+Hm.  The use case I have is that an application wants to limit itself.
+It is effectively a special assert to catch memory leaks and the like.
+So malicious programs are not my immediate concern.
 
-I'm not sure the benefits of having a proper in-order LRU during reclaim
-outweigh such a drastic downside for the common case.
+Of course the moment Linux supports RLIMIT_RSS people will use it to
+limit malicious programs, no matter how many scary warning we put in.
 
-Any thoughts?
+> The right place to enforce the limit is at the point of memory
+> allocation, which raises the question what to do when the limit is
+> exceeded in a page fault.  Reclaim from the process's memory?  Kill
+> it?
+> 
+> I guess the answer to these questions is "memory cgroups", so that's
+> why there is no real motivation to implement RLIMIT_RSS separately...
+
+Lack of opposition would be enough for me.  But I guess we need a bit
+more for a mergeable patch than I did and I only did the existing
+patch because it seemed easy, not because it is important.  Will keep
+the patch in my junk code folder for now.
+
+Jörn
+
+--
+A surrounded army must be given a way out.
+-- Sun Tzu
