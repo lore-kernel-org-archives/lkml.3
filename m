@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991Ab3FKIn5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 04:43:57 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:56465 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753562Ab3FKInz (ORCPT
+	id S1754025Ab3FKIpw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 04:45:52 -0400
+Received: from www.linutronix.de ([62.245.132.108]:60666 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752151Ab3FKIpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 04:43:55 -0400
+	Tue, 11 Jun 2013 04:45:50 -0400
+Date: Tue, 11 Jun 2013 10:45:40 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        John Stultz <john.stultz@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] Marvell Orion SoC irqchip and clocksource
+In-Reply-To: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Message-ID: <alpine.LFD.2.02.1306111043200.22970@ionos>
+References: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20130610102333.GJ20297@gmail.com>
-References: <1369232581-18923-1-git-send-email-lee.jones@linaro.org>
-	<1369232581-18923-8-git-send-email-lee.jones@linaro.org>
-	<20130610102333.GJ20297@gmail.com>
-Date: Tue, 11 Jun 2013 10:43:53 +0200
-Message-ID: <CACRpkdYt7m+wabPwbG2k16WYmV5wrk+R1aQQexvRv3cSk9gE+A@mail.gmail.com>
-Subject: Re: [PATCH 7/7 v2] Documentation: Update binding for Nomadik and
- DBx5x based platforms
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 12:23 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On Thu, 6 Jun 2013, Sebastian Hesselbarth wrote:
 
-> Change compatible string to something more standard.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> This patch set introduces DT-aware irqchip and clocksource drivers for
+> Marvell Orion SoCs (Kirkwood, Dove, Orion5x, MV78x00) and corresponding
+> patches for Dove and Kirkwood to enable them for DT-boards.
+> 
+> The irqchip driver, of course, depends on Thomas Gleixner's work on
+> irqdomain support for generic chip (tip irq/core).
+> 
+> The ARM part of this patch set has a quite ridiculuous dependency havoc
+> of mv643xx_eth DT support (current net-next) that will add to both irqchip
+> and clocksource branches respectively. Therefore, I suggest that irq
+> and clocksource maintainers take in the mere drivers (Patches 1+2) and
+> Jason Cooper handles the remaining patches when all three drivers have
+> surfaced on mainline linux.
 
-Thanks, applied to ux500-devicetree.
+I provided a tip branch irq/for-arm, which contains only these changes
+and can be pulled by SoC/subarch maintainers so we don't end up with a
+dependency nightmare. Just mention that you pulled it from me when
+sending the pull request to Linus.
+ 
+Thanks,
 
-Yours,
-Linus Walleij
+	tglx
