@@ -1,95 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752Ab3FKLnn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:43:43 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37209 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755394Ab3FKLl3 (ORCPT
+	id S1754863Ab3FKLoK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:44:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33593 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755362Ab3FKLlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:41:29 -0400
-Message-ID: <51B70CBD.5030003@ti.com>
-Date: Tue, 11 Jun 2013 17:10:45 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "Philip, Avinash" <avinashphilip@ti.com>
-CC: "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/11] Convert GPIO Davinci to platform driver
-References: <1369206634-6778-1-git-send-email-avinashphilip@ti.com> <51B1958C.3050704@ti.com> <518397C60809E147AF5323E0420B992E3EAD887C@DBDE04.ent.ti.com> <51B6A9F5.5020300@ti.com> <518397C60809E147AF5323E0420B992E3EAD9BD5@DBDE04.ent.ti.com>
-In-Reply-To: <518397C60809E147AF5323E0420B992E3EAD9BD5@DBDE04.ent.ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Jun 2013 07:41:24 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 12/22] iio/ti_tscadc: provide datasheet_name and scan_type
+Date: Tue, 11 Jun 2013 13:30:58 +0200
+Message-Id: <1370950268-7224-13-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
+References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/11/2013 12:19 PM, Philip, Avinash wrote:
-> On Tue, Jun 11, 2013 at 10:09:17, Nori, Sekhar wrote:
->>
->> On 6/10/2013 2:32 PM, Philip, Avinash wrote:
->>> On Fri, Jun 07, 2013 at 13:40:52, Nori, Sekhar wrote:
->>>> Hi Avinash,
->>>>
->>>> On 5/22/2013 12:40 PM, Philip Avinash wrote:
->>>>> GPIO Davinci driver converted to platform driver to support DT booting.
->>>>> In this patch series
->>>>> - Cleaned gpio Davinci driver code with proper commenting style and appropriate
->>>>>   variable names.
->>>>> - Create platform driver for GPIO Davinci in da8xx and dm* platforms and removed
->>>>>   gpio related member updation in davinci_soc_info structure.
->>>>> - DT support added for da850 board and tested on da850 EVM.
->>>>> - Remove soc_info reference in the gpio davinci driver and start uses
->>>>>   gpiolib interface.
->>>>
->>>> Can you please document which platforms this series was tested on and how?
->>>
->>> This series being tested on da850 EVM. Tested by setting VPIF_DOUT[12] as GPIO
->>> pin [2] and reading GPIO status from GPIO[7,4]
->>>
->>> GPIO[7,4] will reflect the status switch number 8 of the S7 dip switch in DA850 EVM.
->>>
->>> Testing Procedure
->>>
->>> Requirement GPIO SYSFS support [1]
->>>
->>> #echo 116 > /sys/class/gpio/export
->>> setting GPIO[7,4] as input GPIO
->>> #echo "in" > /sys/class/gpio/gpio116/direction
->>> #mount -t debugfs debugfs /sys/kernel/debug
->>> Reading GPIO pin status
->>> #cat /sys/kernel/debug/gpio
->>> #echo 116 > /sys/class/gpio/unexport
->>>
->>>
->>> 1. Enable GPIO SYSFS support through menconfig
->>> --- GPIO Support
->>> 	[ ]   Debug GPIO calls
->>>                [ ]   /sys/class/gpio/... (sysfs interface)
->>>  
->>> 2. Patch for pinmux support for GPIO[7,4] is available at
->>> https://github.com/avinashphilip/am335x_linux/commits/linux_davinci_v3.10_soc_gpio
->>
->> Can you check interrupt generation too since there are significant
->> changes in that area? You can generate an interrupt using the MMC/SD
->> card detect pin (inserting an MMC/SD card into the slot should generate
->> an interrupt). You can also write a new value to any GPIO pin. That will
->> also trigger an interrupt.
-> 
-> I have tested GPIO interrupt with GPIO[7,4] by inserting a kernel module in DA850 EVM.
-> For GPIO interrupt generation DIP switch position changed.
-> 
-> Source code for GPIO test kernel module is shared at
-> https://github.com/avinashphilip/am335x_linux/commit/affc0c1841beacd8430af689f7f12dcab0cbaf28
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
 
-Thanks for the test report.
+This patch provides the members "datasheet_name" and scan_type. This is
+the remaining part of the earlier patch where I (bigeasy) removed iio_map
+because it is now supplied by the device tree.
 
-Regards,
-Sekhar
+Acked-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+[bigeasy: use static AIN[0-8] names, use kcalloc(), removed iio_map,
+	patch description]
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/iio/adc/ti_am335x_adc.c |   29 ++++++++++++++++++++++++-----
+ 1 file changed, 24 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+index 2868c0c..9939810 100644
+--- a/drivers/iio/adc/ti_am335x_adc.c
++++ b/drivers/iio/adc/ti_am335x_adc.c
+@@ -24,6 +24,8 @@
+ #include <linux/iio/iio.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
++#include <linux/iio/machine.h>
++#include <linux/iio/driver.h>
+ 
+ #include <linux/mfd/ti_am335x_tscadc.h>
+ 
+@@ -84,29 +86,46 @@ static void tiadc_step_config(struct tiadc_device *adc_dev)
+ 	am335x_tsc_se_set(adc_dev->mfd_tscadc, step_en);
+ }
+ 
++static const char * const chan_name_ain[] = {
++	"AIN0",
++	"AIN1",
++	"AIN2",
++	"AIN3",
++	"AIN4",
++	"AIN5",
++	"AIN6",
++	"AIN7",
++};
++
+ static int tiadc_channel_init(struct iio_dev *indio_dev, int channels)
+ {
++	struct tiadc_device *adc_dev = iio_priv(indio_dev);
+ 	struct iio_chan_spec *chan_array;
++	struct iio_chan_spec *chan;
+ 	int i;
+ 
+ 	indio_dev->num_channels = channels;
+-	chan_array = kcalloc(indio_dev->num_channels,
++	chan_array = kcalloc(channels,
+ 			sizeof(struct iio_chan_spec), GFP_KERNEL);
+-
+ 	if (chan_array == NULL)
+ 		return -ENOMEM;
+ 
+-	for (i = 0; i < (indio_dev->num_channels); i++) {
+-		struct iio_chan_spec *chan = chan_array + i;
++	chan = chan_array;
++	for (i = 0; i < channels; i++, chan++) {
++
+ 		chan->type = IIO_VOLTAGE;
+ 		chan->indexed = 1;
+ 		chan->channel = i;
+ 		chan->info_mask_separate = BIT(IIO_CHAN_INFO_RAW);
++		chan->datasheet_name = chan_name_ain[i];
++		chan->scan_type.sign = 'u';
++		chan->scan_type.realbits = 12;
++		chan->scan_type.storagebits = 32;
+ 	}
+ 
+ 	indio_dev->channels = chan_array;
+ 
+-	return indio_dev->num_channels;
++	return 0;
+ }
+ 
+ static void tiadc_channels_remove(struct iio_dev *indio_dev)
+-- 
+1.7.10.4
+
