@@ -1,148 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab3FKMyi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 08:54:38 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:48626 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826Ab3FKMye (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 08:54:34 -0400
-From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-To: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        amit.kachhap@gmail.com, Kukjin Kim <kgene.kim@samsung.com>,
-        jonghwa3.lee@samsung.com
-Subject: [PATCH V5 08/30] thermal: exynos: Add missing definations and code cleanup
-Date: Tue, 11 Jun 2013 18:23:18 +0530
-Message-Id: <1370955220-2949-9-git-send-email-amit.daniel@samsung.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1370955220-2949-1-git-send-email-amit.daniel@samsung.com>
-References: <1370955220-2949-1-git-send-email-amit.daniel@samsung.com>
+	id S1755432Ab3FKNCH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 09:02:07 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50743 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752826Ab3FKMyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 08:54:41 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+CC: "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 01/11] ARM: davinci: GPIO: Add platform data structure
+Thread-Topic: [PATCH 01/11] ARM: davinci: GPIO: Add platform data structure
+Thread-Index: AQHOVrtGGV4yV5slj0ah6CgS1Uq5CZkv63AAgACRxbA=
+Date: Tue, 11 Jun 2013 12:53:02 +0000
+Deferred-Delivery: Tue, 11 Jun 2013 12:53:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3EAD9D64@DBDE04.ent.ti.com>
+References: <1369206634-6778-1-git-send-email-avinashphilip@ti.com>
+ <1369206634-6778-2-git-send-email-avinashphilip@ti.com>
+ <51B6FDA2.8080003@ti.com>
+In-Reply-To: <51B6FDA2.8080003@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5BD2CEN012309
 
-This patch adds some extra register bitfield definations and cleans
-up the code to prepare for moving register macros and definations inside
-the TMU data section.
+On Tue, Jun 11, 2013 at 16:06:18, Nori, Sekhar wrote:
+> On 5/22/2013 12:40 PM, Philip Avinash wrote:
+> > From: KV Sujith <sujithkv@ti.com>
+> > 
+> > Add struct davinci_gpio_platform_data davinci gpio module.
+> > 
+> > Signed-off-by: KV Sujith <sujithkv@ti.com>
+> > Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+> 
+> As Linus commented before, this should be merged with 03/11.
 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
----
- drivers/thermal/samsung/exynos_tmu.c |   62 +++++++++++++++++++++++++---------
- 1 files changed, 46 insertions(+), 16 deletions(-)
+Ok
 
-diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index 5df04a1..fa33a48 100644
---- a/drivers/thermal/samsung/exynos_tmu.c
-+++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -43,9 +43,12 @@
- 
- #define EXYNOS_TMU_TRIM_TEMP_MASK	0xff
- #define EXYNOS_TMU_GAIN_SHIFT		8
-+#define EXYNOS_TMU_GAIN_MASK		0xf
- #define EXYNOS_TMU_REF_VOLTAGE_SHIFT	24
--#define EXYNOS_TMU_CORE_ON		3
--#define EXYNOS_TMU_CORE_OFF		2
-+#define EXYNOS_TMU_REF_VOLTAGE_MASK	0x1f
-+#define EXYNOS_TMU_BUF_SLOPE_SEL_MASK	0xf
-+#define EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT	8
-+#define EXYNOS_TMU_CORE_EN_SHIFT	0
- #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET	50
- 
- /* Exynos4210 specific registers */
-@@ -63,6 +66,7 @@
- #define EXYNOS4210_TMU_TRIG_LEVEL1_MASK	0x10
- #define EXYNOS4210_TMU_TRIG_LEVEL2_MASK	0x100
- #define EXYNOS4210_TMU_TRIG_LEVEL3_MASK	0x1000
-+#define EXYNOS4210_TMU_TRIG_LEVEL_MASK	0x1111
- #define EXYNOS4210_TMU_INTCLEAR_VAL	0x1111
- 
- /* Exynos5250 and Exynos4412 specific registers */
-@@ -72,17 +76,30 @@
- #define EXYNOS_EMUL_CON		0x80
- 
- #define EXYNOS_TRIMINFO_RELOAD		0x1
-+#define EXYNOS_TRIMINFO_SHIFT		0x0
-+#define EXYNOS_TMU_RISE_INT_MASK	0x111
-+#define EXYNOS_TMU_RISE_INT_SHIFT	0
-+#define EXYNOS_TMU_FALL_INT_MASK	0x111
-+#define EXYNOS_TMU_FALL_INT_SHIFT	12
- #define EXYNOS_TMU_CLEAR_RISE_INT	0x111
- #define EXYNOS_TMU_CLEAR_FALL_INT	(0x111 << 12)
--#define EXYNOS_MUX_ADDR_VALUE		6
--#define EXYNOS_MUX_ADDR_SHIFT		20
- #define EXYNOS_TMU_TRIP_MODE_SHIFT	13
-+#define EXYNOS_TMU_TRIP_MODE_MASK	0x7
-+
-+#define EXYNOS_TMU_INTEN_RISE0_SHIFT	0
-+#define EXYNOS_TMU_INTEN_RISE1_SHIFT	4
-+#define EXYNOS_TMU_INTEN_RISE2_SHIFT	8
-+#define EXYNOS_TMU_INTEN_RISE3_SHIFT	12
-+#define EXYNOS_TMU_INTEN_FALL0_SHIFT	16
-+#define EXYNOS_TMU_INTEN_FALL1_SHIFT	20
-+#define EXYNOS_TMU_INTEN_FALL2_SHIFT	24
- 
- #define EFUSE_MIN_VALUE 40
- #define EFUSE_MAX_VALUE 100
- 
- #ifdef CONFIG_THERMAL_EMULATION
- #define EXYNOS_EMUL_TIME	0x57F0
-+#define EXYNOS_EMUL_TIME_MASK	0xffff
- #define EXYNOS_EMUL_TIME_SHIFT	16
- #define EXYNOS_EMUL_DATA_SHIFT	8
- #define EXYNOS_EMUL_DATA_MASK	0xFF
-@@ -261,24 +278,37 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
- 	mutex_lock(&data->lock);
- 	clk_enable(data->clk);
- 
--	con = pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
--		pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
-+	con = readl(data->base + EXYNOS_TMU_REG_CONTROL);
- 
--	if (data->soc == SOC_ARCH_EXYNOS) {
--		con |= pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT;
--		con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
-+	if (pdata->reference_voltage) {
-+		con &= ~(EXYNOS_TMU_REF_VOLTAGE_MASK <<
-+				EXYNOS_TMU_REF_VOLTAGE_SHIFT);
-+		con |= pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT;
-+	}
-+
-+	if (pdata->gain) {
-+		con &= ~(EXYNOS_TMU_GAIN_MASK << EXYNOS_TMU_GAIN_SHIFT);
-+		con |= (pdata->gain << EXYNOS_TMU_GAIN_SHIFT);
-+	}
-+
-+	if (pdata->noise_cancel_mode) {
-+		con &= ~(EXYNOS_TMU_TRIP_MODE_MASK <<
-+					EXYNOS_TMU_TRIP_MODE_SHIFT);
-+		con |= (pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT);
- 	}
- 
- 	if (on) {
--		con |= EXYNOS_TMU_CORE_ON;
--		interrupt_en = pdata->trigger_level3_en << 12 |
--			pdata->trigger_level2_en << 8 |
--			pdata->trigger_level1_en << 4 |
--			pdata->trigger_level0_en;
-+		con |= (1 << EXYNOS_TMU_CORE_EN_SHIFT);
-+		interrupt_en =
-+		pdata->trigger_level3_en << EXYNOS_TMU_INTEN_RISE3_SHIFT |
-+		pdata->trigger_level2_en << EXYNOS_TMU_INTEN_RISE2_SHIFT |
-+		pdata->trigger_level1_en << EXYNOS_TMU_INTEN_RISE1_SHIFT |
-+		pdata->trigger_level0_en << EXYNOS_TMU_INTEN_RISE0_SHIFT;
- 		if (pdata->threshold_falling)
--			interrupt_en |= interrupt_en << 16;
-+			interrupt_en |=
-+				interrupt_en << EXYNOS_TMU_INTEN_FALL0_SHIFT;
- 	} else {
--		con |= EXYNOS_TMU_CORE_OFF;
-+		con &= ~(1 << EXYNOS_TMU_CORE_EN_SHIFT);
- 		interrupt_en = 0; /* Disable all interrupts */
- 	}
- 	writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN);
--- 
-1.7.1
+> 
+> > ---
+> >  include/linux/platform_data/gpio-davinci.h |   27 +++++++++++++++++++++++++++
+> >  1 file changed, 27 insertions(+)
+> >  create mode 100644 include/linux/platform_data/gpio-davinci.h
+> > 
+> > diff --git a/include/linux/platform_data/gpio-davinci.h b/include/linux/platform_data/gpio-davinci.h
+> > new file mode 100644
+> > index 0000000..f1c8277
+> > --- /dev/null
+> > +++ b/include/linux/platform_data/gpio-davinci.h
+> > @@ -0,0 +1,27 @@
+> > +/*
+> > + * gpio-davinci.h
+> 
+> I would drop this unnecessary filename mention as well.
 
+Ok
+
+> 
+> > + *
+> > + * DaVinci GPIO Platform Related Defines
+> > + *
+> > + * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > + * modify it under the terms of the GNU General Public License as
+> > + * published by the Free Software Foundation version 2.
+> > + *
+> > + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+> > + * kind, whether express or implied; without even the implied warranty
+> > + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + */
+> > +
+> > +#ifndef __ASM_ARCH_DAVINCI_GPIO_H
+> > +#define __ASM_ARCH_DAVINCI_GPIO_H
+> 
+> This should now be __PLATFORM_DATA_DAVINCI_GPIO_H__ or some such since
+> the file as been moved out of arch specific folder.
+
+As Sergei pointed out, macro name will change to __GPIO_DAVINCI_H in next revision.
+
+Thanks
+Avinash
+
+> 
+> Thanks,
+> Sekhar
+> 
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
