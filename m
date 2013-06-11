@@ -1,159 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651Ab3FKG25 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 02:28:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34745 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915Ab3FKG2t (ORCPT
+	id S1753563Ab3FKG24 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 02:28:56 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:48118 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752978Ab3FKG2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 02:28:49 -0400
-Subject: Patch "tracing: Fix possible NULL pointer dereferences" has been added to the 3.4-stable tree
-To: namhyung.kim@lge.com, fweisbec@gmail.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, lizefan@huawei.com, mingo@kernel.org,
-        namhyung@kernel.org, rostedt@goodmis.org, stable@vger.kernel.org
-Cc: <stable@vger.kernel.org>, <stable-commits@vger.kernel.org>
-From: <gregkh@linuxfoundation.org>
-Date: Mon, 10 Jun 2013 14:28:03 -0700
-In-Reply-To: <51B1A15C.5040108@huawei.com>
-Message-ID: <13708996832884@kroah.org>
+	Tue, 11 Jun 2013 02:28:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ASCII
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <51B67553.6020205@oracle.com>
+References: <1370891880-2644-1-git-send-email-sasha.levin@oracle.com>
+	<CAOJsxLGDH2iwznRkP-iwiMZw7Ee3mirhjLvhShrWLHR0qguRxA@mail.gmail.com>
+	<51B62F6B.8040308@oracle.com>
+	<0000013f3075f90d-735942a8-b4b8-413f-a09e-57d1de0c4974-000000@email.amazonses.com>
+	<51B67553.6020205@oracle.com>
+Date: Tue, 11 Jun 2013 09:28:50 +0300
+X-Google-Sender-Auth: 8MRNoZe8qRmy48IE63IDq97ry5E
+Message-ID: <CAOJsxLH56xqCoDikYYaY_guqCX=S4rcVfDJQ4ki=r-PkNQW9ug@mail.gmail.com>
+Subject: Re: [PATCH] slab: prevent warnings when allocating with __GFP_NOWARN
+From: Pekka Enberg <penberg@kernel.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Christoph Lameter <cl@gentwo.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Sasha,
 
-This is a note to let you know that I've just added the patch titled
+On Tue, Jun 11, 2013 at 3:54 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> On 06/10/2013 07:40 PM, Christoph Lameter wrote:
+>>
+>> On Mon, 10 Jun 2013, Sasha Levin wrote:
+>>
+>>> [ 1691.807621] Call Trace:
+>>> [ 1691.809473]  [<ffffffff83ff4041>] dump_stack+0x4e/0x82
+>>> [ 1691.812783]  [<ffffffff8111fe12>] warn_slowpath_common+0x82/0xb0
+>>> [ 1691.817011]  [<ffffffff8111fe55>] warn_slowpath_null+0x15/0x20
+>>> [ 1691.819936]  [<ffffffff81243dcf>] kmalloc_slab+0x2f/0xb0
+>>> [ 1691.824942]  [<ffffffff81278d54>] __kmalloc+0x24/0x4b0
+>>> [ 1691.827285]  [<ffffffff8196ffe3>] ? security_capable+0x13/0x20
+>>> [ 1691.829405]  [<ffffffff812a26b7>] ? pipe_fcntl+0x107/0x210
+>>> [ 1691.831827]  [<ffffffff812a26b7>] pipe_fcntl+0x107/0x210
+>>> [ 1691.833651]  [<ffffffff812b7ea0>] ? fget_raw_light+0x130/0x3f0
+>>> [ 1691.835343]  [<ffffffff812aa5fb>] SyS_fcntl+0x60b/0x6a0
+>>> [ 1691.837008]  [<ffffffff8403ca98>] tracesys+0xe1/0xe6
+>>>
+>>> The caller specifically sets __GFP_NOWARN presumably to avoid this
+>>> warning on
+>>> slub but I'm not sure if there's any other reason.
+>>
+>>
+>> There must be another reason. Lets fix this.
+>
+> My, I feel silly now.
+>
+> I was the one who added __GFP_NOFAIL in the first place in
+> 2ccd4f4d ("pipe: fail cleanly when root tries F_SETPIPE_SZ
+> with big size").
+>
+> What happens is that root can go ahead and specify any size
+> it wants to be used as buffer size - and the kernel will
+> attempt to comply by allocation that buffer. Which fails
+> if the size is too big.
+>
+> Either way, even if we do end up doing something different,
+> shouldn't we prevent slab from spewing a warning if
+> __GFP_NOWARN is passed?
 
-    tracing: Fix possible NULL pointer dereferences
+Yeah, this is the size-from-userspace case I was thinking about. I think
+we have two options: either use your patch or drop the WARN_ON
+completely.
 
-to the 3.4-stable tree which can be found at:
-    http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
+Christoph, which one do you prefer?
 
-The filename of the patch is:
-     tracing-fix-possible-null-pointer-dereferences.patch
-and it can be found in the queue-3.4 subdirectory.
-
-If you, or anyone else, feels it should not be added to the stable tree,
-please let <stable@vger.kernel.org> know about it.
-
-
->From lizefan@huawei.com  Mon Jun 10 14:15:28 2013
-From: Namhyung Kim <namhyung.kim@lge.com>
-Date: Fri, 7 Jun 2013 17:01:16 +0800
-Subject: tracing: Fix possible NULL pointer dereferences
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Namhyung Kim <namhyung@kernel.org>, Steven Rostedt <rostedt@goodmis.org>, Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>
-Message-ID: <51B1A15C.5040108@huawei.com>
-
-
-From: Namhyung Kim <namhyung.kim@lge.com>
-
-commit 6a76f8c0ab19f215af2a3442870eeb5f0e81998d upstream.
-
-Currently set_ftrace_pid and set_graph_function files use seq_lseek
-for their fops.  However seq_open() is called only for FMODE_READ in
-the fops->open() so that if an user tries to seek one of those file
-when she open it for writing, it sees NULL seq_file and then panic.
-
-It can be easily reproduced with following command:
-
-  $ cd /sys/kernel/debug/tracing
-  $ echo 1234 | sudo tee -a set_ftrace_pid
-
-In this example, GNU coreutils' tee opens the file with fopen(, "a")
-and then the fopen() internally calls lseek().
-
-Link:
-http://lkml.kernel.org/r/1365663302-2170-1-git-send-email-namhyung@kernel.org
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[ lizf: adjust context ]
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/ftrace.h     |    2 +-
- kernel/trace/ftrace.c      |   10 +++++-----
- kernel/trace/trace_stack.c |    2 +-
- 3 files changed, 7 insertions(+), 7 deletions(-)
-
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -299,7 +299,7 @@ ssize_t ftrace_filter_write(struct file
- 			    size_t cnt, loff_t *ppos);
- ssize_t ftrace_notrace_write(struct file *file, const char __user *ubuf,
- 			     size_t cnt, loff_t *ppos);
--loff_t ftrace_regex_lseek(struct file *file, loff_t offset, int origin);
-+loff_t ftrace_filter_lseek(struct file *file, loff_t offset, int origin);
- int ftrace_regex_release(struct inode *inode, struct file *file);
- 
- void __init
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2626,7 +2626,7 @@ ftrace_notrace_open(struct inode *inode,
- }
- 
- loff_t
--ftrace_regex_lseek(struct file *file, loff_t offset, int origin)
-+ftrace_filter_lseek(struct file *file, loff_t offset, int origin)
- {
- 	loff_t ret;
- 
-@@ -3445,7 +3445,7 @@ static const struct file_operations ftra
- 	.open = ftrace_filter_open,
- 	.read = seq_read,
- 	.write = ftrace_filter_write,
--	.llseek = ftrace_regex_lseek,
-+	.llseek = ftrace_filter_lseek,
- 	.release = ftrace_regex_release,
- };
- 
-@@ -3453,7 +3453,7 @@ static const struct file_operations ftra
- 	.open = ftrace_notrace_open,
- 	.read = seq_read,
- 	.write = ftrace_notrace_write,
--	.llseek = ftrace_regex_lseek,
-+	.llseek = ftrace_filter_lseek,
- 	.release = ftrace_regex_release,
- };
- 
-@@ -3659,8 +3659,8 @@ static const struct file_operations ftra
- 	.open		= ftrace_graph_open,
- 	.read		= seq_read,
- 	.write		= ftrace_graph_write,
-+	.llseek		= ftrace_filter_lseek,
- 	.release	= ftrace_graph_release,
--	.llseek		= seq_lseek,
- };
- #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
- 
-@@ -4261,7 +4261,7 @@ static const struct file_operations ftra
- 	.open		= ftrace_pid_open,
- 	.write		= ftrace_pid_write,
- 	.read		= seq_read,
--	.llseek		= seq_lseek,
-+	.llseek		= ftrace_filter_lseek,
- 	.release	= ftrace_pid_release,
- };
- 
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -384,7 +384,7 @@ static const struct file_operations stac
- 	.open = stack_trace_filter_open,
- 	.read = seq_read,
- 	.write = ftrace_filter_write,
--	.llseek = ftrace_regex_lseek,
-+	.llseek = ftrace_filter_lseek,
- 	.release = ftrace_regex_release,
- };
- 
-
-
-Patches currently in stable-queue which might be from namhyung.kim@lge.com are
-
-queue-3.4/tracing-fix-possible-null-pointer-dereferences.patch
+                                Pekka
