@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430Ab3FKNhY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 09:37:24 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:53065 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab3FKNhX (ORCPT
+	id S1752994Ab3FKNhu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 09:37:50 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:49582 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751488Ab3FKNhs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 09:37:23 -0400
-Message-ID: <51B7280B.7080604@gmail.com>
-Date: Tue, 11 Jun 2013 15:37:15 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 11 Jun 2013 09:37:48 -0400
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        John Stultz <john.stultz@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/6] irqchip: add support for Marvell Orion SoCs
-References: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com> <1370536034-23956-2-git-send-email-sebastian.hesselbarth@gmail.com> <alpine.LFD.2.02.1306111045520.22970@ionos> <alpine.LFD.2.02.1306111525180.22970@ionos>
-In-Reply-To: <alpine.LFD.2.02.1306111525180.22970@ionos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.00.1305122245510.5463@ayla.of.borg>
+References: <alpine.DEB.2.00.1305122130270.3789@ayla.of.borg>
+ <alpine.DEB.2.00.1305122239040.5463@ayla.of.borg> <alpine.DEB.2.00.1305122245510.5463@ayla.of.borg>
+From: Markos Chandras <markos.chandras@gmail.com>
+Date: Tue, 11 Jun 2013 14:37:07 +0100
+Message-ID: <CAG2jQ8gLOGM4YkPi_utj6+2SkXRyQj8cwUTfaJiZMjqEMPHenA@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.10-rc1 (mips)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        "Linux/MIPS Development" <linux-mips@linux-mips.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/13 15:30, Thomas Gleixner wrote:
-> On Tue, 11 Jun 2013, Thomas Gleixner wrote:
+On 12 May 2013 21:46, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Sun, 12 May 2013, Geert Uytterhoeven wrote:
+>> However, the full list of errors isn't that unmanageable, so I'm following
+>> up with a digested list...
 >
->> On Thu, 6 Jun 2013, Sebastian Hesselbarth wrote:
->>
->>> This patch adds an irqchip driver for the main interrupt controller found
->>> on Marvell Orion SoCs (Kirkwood, Dove, Orion5x, Discovery Innovation).
->>> Corresponding device tree documentation is also added.
->>>
->>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->>
->> Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+> arch/mips/kernel/crash_dump.c:67:17: error: assignment makes pointer from integer without a cast [-Werror]: 1 errors in 1 logs
+> arch/mips/kernel/crash_dump.c:67:2: error: implicit declaration of function 'kmalloc' [-Werror=implicit-function-declaration]: 1 errors in 1 logs
+>         v3.10-rc1/mips/mips-allmodconfig
 >
-> Second thoughts:
 >
->> +static void orion_bridge_irq_handler(unsigned int irq, struct irq_desc *desc)
->> +{
->> +	struct irq_domain *d = irq_get_handler_data(irq);
->> +	struct irq_chip_generic *gc = irq_get_domain_generic_chip(d, irq);
->> +	u32 stat = readl_relaxed(gc->reg_base + ORION_BRIDGE_IRQ_CAUSE) &
->> +		gc->mask_cache;
+> drivers/net/ethernet/3com/3c59x.c:1026:2: error: implicit declaration of function 'pci_iomap' [-Werror=implicit-function-declaration]: 1 errors in 1 logs
+> drivers/net/ethernet/3com/3c59x.c:1038:3: error: implicit declaration of function 'pci_iounmap' [-Werror=implicit-function-declaration]: 1 errors in 1 logs
+>         v3.10-rc1/mips/mips-allmodconfig
 >
-> In init you map the first irq of that chip and install the chain
-> handler for it. Now if that first irq fires, isn't that set in the
-> cause register as well? And what acks that first irq?
+>
+> sound/oss/soundcard.c:69:31: error: 'MAX_DMA_CHANNELS' undeclared here (not in a function): 1 errors in 1 logs
+>         v3.10-rc1/mips/mips-allmodconfig
+>
+> Gr{oetje,eeting}s,
+>
+>                                                 Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                                             -- Linus Torvalds
+>
 
-It is "acked" by acking all unmasked bridge irqs.
+Hi Geert,
 
-Sebastian
+My understanding is that this driver shouldn't depend on (PCI || EISA)
+but rather on PCI because the PCI support in that driver do not
+seem to be optional.
 
+--
+Regards,
+Markos Chandras
