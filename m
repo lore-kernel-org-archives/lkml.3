@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754941Ab3FKPeu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 11:34:50 -0400
-Received: from mga14.intel.com ([143.182.124.37]:16323 "EHLO mga14.intel.com"
+	id S1754979Ab3FKPfI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 11:35:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:27454 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752717Ab3FKPco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752182Ab3FKPco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Jun 2013 11:32:44 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,845,1363158000"; 
-   d="scan'208";a="315387145"
+   d="scan'208";a="327750820"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 2/8] thp, mm: avoid PageUnevictable on active/inactive lru lists
-Date: Tue, 11 Jun 2013 18:35:13 +0300
-Message-Id: <1370964919-16187-3-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH 4/8] mm: cleanup add_to_page_cache_locked()
+Date: Tue, 11 Jun 2013 18:35:15 +0300
+Message-Id: <1370964919-16187-5-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1370964919-16187-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1370964919-16187-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,117 +33,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-active/inactive lru lists can contain unevicable pages (i.e. ramfs pages
-that have been placed on the LRU lists when first allocated), but these
-pages must not have PageUnevictable set - otherwise shrink_[in]active_list
-goes crazy:
+The patch makes add_to_page_cache_locked() cleaner:
+ - unindent most code of the function by inverting one condition;
+ - streamline code no-error path;
+ - move insert error path outside normal code path;
+ - call radix_tree_preload_end() earlier;
 
-kernel BUG at /home/space/kas/git/public/linux-next/mm/vmscan.c:1122!
-
-1090 static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
-1091                 struct lruvec *lruvec, struct list_head *dst,
-1092                 unsigned long *nr_scanned, struct scan_control *sc,
-1093                 isolate_mode_t mode, enum lru_list lru)
-1094 {
-...
-1108                 switch (__isolate_lru_page(page, mode)) {
-1109                 case 0:
-...
-1116                 case -EBUSY:
-...
-1121                 default:
-1122                         BUG();
-1123                 }
-1124         }
-...
-1130 }
-
-__isolate_lru_page() returns EINVAL for PageUnevictable(page).
-
-For lru_add_page_tail(), it means we should not set PageUnevictable()
-for tail pages unless we're sure that it will go to LRU_UNEVICTABLE.
-Let's just copy PG_active and PG_unevictable from head page in
-__split_huge_page_refcount(), it will simplify lru_add_page_tail().
-
-This will fix one more bug in lru_add_page_tail():
-if page_evictable(page_tail) is false and PageLRU(page) is true, page_tail
-will go to the same lru as page, but nobody cares to sync page_tail
-active/inactive state with page. So we can end up with inactive page on
-active lru.
-The patch will fix it as well since we copy PG_active from head page.
+No functional changes.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
- mm/huge_memory.c |    4 +++-
- mm/swap.c        |   20 ++------------------
- 2 files changed, 5 insertions(+), 19 deletions(-)
+ mm/filemap.c |   48 +++++++++++++++++++++++++-----------------------
+ 1 file changed, 25 insertions(+), 23 deletions(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index ed26ccb..d94f7de 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1625,7 +1625,9 @@ static void __split_huge_page_refcount(struct page *page,
- 				     ((1L << PG_referenced) |
- 				      (1L << PG_swapbacked) |
- 				      (1L << PG_mlocked) |
--				      (1L << PG_uptodate)));
-+				      (1L << PG_uptodate) |
-+				      (1L << PG_active) |
-+				      (1L << PG_unevictable)));
- 		page_tail->flags |= (1L << PG_dirty);
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 61158ac..bb6ad8c 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -467,32 +467,34 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
+ 	error = mem_cgroup_cache_charge(page, current->mm,
+ 					gfp_mask & GFP_RECLAIM_MASK);
+ 	if (error)
+-		goto out;
++		return error;
  
- 		/* clear PageTail before overwriting first_page */
-diff --git a/mm/swap.c b/mm/swap.c
-index 2056d54..a19d4e5 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -770,8 +770,6 @@ EXPORT_SYMBOL(__pagevec_release);
- void lru_add_page_tail(struct page *page, struct page *page_tail,
- 		       struct lruvec *lruvec, struct list_head *list)
- {
--	int uninitialized_var(active);
--	enum lru_list lru;
- 	const int file = 0;
- 
- 	VM_BUG_ON(!PageHead(page));
-@@ -783,20 +781,6 @@ void lru_add_page_tail(struct page *page, struct page *page_tail,
- 	if (!list)
- 		SetPageLRU(page_tail);
- 
--	if (page_evictable(page_tail)) {
--		if (PageActive(page)) {
--			SetPageActive(page_tail);
--			active = 1;
--			lru = LRU_ACTIVE_ANON;
--		} else {
--			active = 0;
--			lru = LRU_INACTIVE_ANON;
--		}
--	} else {
--		SetPageUnevictable(page_tail);
--		lru = LRU_UNEVICTABLE;
--	}
+ 	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
+-	if (error == 0) {
+-		page_cache_get(page);
+-		page->mapping = mapping;
+-		page->index = offset;
 -
- 	if (likely(PageLRU(page)))
- 		list_add_tail(&page_tail->lru, &page->lru);
- 	else if (list) {
-@@ -812,13 +796,13 @@ void lru_add_page_tail(struct page *page, struct page *page_tail,
- 		 * Use the standard add function to put page_tail on the list,
- 		 * but then correct its position so they all end up in order.
- 		 */
--		add_page_to_lru_list(page_tail, lruvec, lru);
-+		add_page_to_lru_list(page_tail, lruvec, page_lru(page_tail));
- 		list_head = page_tail->lru.prev;
- 		list_move_tail(&page_tail->lru, list_head);
- 	}
- 
- 	if (!PageUnevictable(page))
--		update_page_reclaim_stat(lruvec, file, active);
-+		update_page_reclaim_stat(lruvec, file, PageActive(page_tail));
+-		spin_lock_irq(&mapping->tree_lock);
+-		error = radix_tree_insert(&mapping->page_tree, offset, page);
+-		if (likely(!error)) {
+-			mapping->nrpages++;
+-			__inc_zone_page_state(page, NR_FILE_PAGES);
+-			spin_unlock_irq(&mapping->tree_lock);
+-			trace_mm_filemap_add_to_page_cache(page);
+-		} else {
+-			page->mapping = NULL;
+-			/* Leave page->index set: truncation relies upon it */
+-			spin_unlock_irq(&mapping->tree_lock);
+-			mem_cgroup_uncharge_cache_page(page);
+-			page_cache_release(page);
+-		}
+-		radix_tree_preload_end();
+-	} else
++	if (error) {
+ 		mem_cgroup_uncharge_cache_page(page);
+-out:
++		return error;
++	}
++
++	page_cache_get(page);
++	page->mapping = mapping;
++	page->index = offset;
++
++	spin_lock_irq(&mapping->tree_lock);
++	error = radix_tree_insert(&mapping->page_tree, offset, page);
++	radix_tree_preload_end();
++	if (unlikely(!error))
++		goto err_insert;
++	mapping->nrpages++;
++	__inc_zone_page_state(page, NR_FILE_PAGES);
++	spin_unlock_irq(&mapping->tree_lock);
++	trace_mm_filemap_add_to_page_cache(page);
++	return 0;
++err_insert:
++	page->mapping = NULL;
++	/* Leave page->index set: truncation relies upon it */
++	spin_unlock_irq(&mapping->tree_lock);
++	mem_cgroup_uncharge_cache_page(page);
++	page_cache_release(page);
+ 	return error;
  }
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
- 
+ EXPORT_SYMBOL(add_to_page_cache_locked);
 -- 
 1.7.10.4
 
