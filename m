@@ -1,107 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab3FKSf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 14:35:28 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:35762 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752588Ab3FKSf0 (ORCPT
+	id S1756094Ab3FKSgS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 14:36:18 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:57505 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752588Ab3FKSgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 14:35:26 -0400
-Date: Tue, 11 Jun 2013 20:35:22 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Ryan Mallon <rmallon@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "poeschel@lemonage.de" <poeschel@lemonage.de>,
-        "rob@landley.net" <rob@landley.net>
-Subject: Re: [PATCH v4] pwm: add sysfs interface
-Message-ID: <20130611183521.GC29842@mithrandir>
-References: <201306101612.07708.hartleys@visionengravers.com>
- <20130611101432.GA932@manwe>
- <51B709F5.8070909@gmail.com>
- <ADE657CA350FB648AAC2C43247A983F0021DA690F61B@AUSP01VMBX24.collaborationhost.net>
- <ADE657CA350FB648AAC2C43247A983F0021DA690F63A@AUSP01VMBX24.collaborationhost.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="adJ1OR3c6QgCpb/j"
-Content-Disposition: inline
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0021DA690F63A@AUSP01VMBX24.collaborationhost.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 11 Jun 2013 14:36:16 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: next-20130607 BUG: sleeping function called from invalid context at lib/idr.c:424
+From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1370975638_1896P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 11 Jun 2013 14:33:58 -0400
+Message-ID: <19828.1370975638@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020201.51B76D98.0134,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2013-04-19 10:07:54,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---adJ1OR3c6QgCpb/j
+--==_Exmh_1370975638_1896P
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jun 11, 2013 at 11:47:23AM -0500, H Hartley Sweeten wrote:
-> On Tuesday, June 11, 2013 9:09 AM, H Hartley Sweeten wrote:
-> > On Tuesday, June 11, 2013 4:29 AM, Ryan Mallon wrote:
-> >> On 11/06/13 20:14, Thierry Reding wrote:
-> >>> On Mon, Jun 10, 2013 at 04:12:07PM -0700, H Hartley Sweeten wrote:
-> >>>> +config PWM_SYSFS
-> >>>> +	bool "/sys/class/pwm/... (sysfs interface)"
-> >>>> +	depends on SYSFS
-> >>>> +	help
-> >>>> +	  Say Y here to provide a sysfs interface to control PWMs.
-> >>>> +
-> >>>> +	  For every instance of a PWM device there is a pwmchipN directory
-> >>>> +	  created in /sys/class/pwm. Use the export attribute to request
-> >>>> +	  a PWM to be accessible from userspace and the unexport attribute
-> >>>> +	  to return the PWM to the kernel. Each exported PWM will have a
-> >>>> +	  pwmX directory in the pwmchipN it is associated with.
-> >>>=20
-> >>> I have a small quibble with this. Introducing options like this make =
-it
-> >>> increasingly difficult to compile-test all the various combinations, =
-so
-> >>> I'd like to see this converted to a form that will play well with the
-> >>> IS_ENABLED() macro. We already have the same issue with DEBUG_FS, only
-> >>> to a lesser degree because it doesn't have an additional PWM-specific
-> >>> Kconfig option.
-> >
-> > How about removing the Kconfig option and just doing:
-> >
-> > obj-$(CONFIG_SYSFS)			+=3D sysfs.o
-> >
-> > This way the PWM sysfs interface is always compiled and included in the=
- build
-> > as long as CONFIG_SYSFS is enabled. The check in the header would chang=
-e to
->=20
-> That didn't work. As Ryan pointed out we get undefined references due to
-> sysfs.c being compiled but not core.c when CONFIG_PWM is not enabled.
+Tried to boot next-20130607, got this during early boot.  -0603 is OK, so
+whatever did it is a recent patch. Not sure who's fault it is, as idr_preload()
+has been there since February, apparently something in the SyS_semget()
+path has been changed...
 
-Why not add dummies for the missing functions? It was my impression that
-we had dummies for all of them already, but if not they should certainly
-be added to match what other subsystems do.
+Looking at 'git blame', I see a bunch of patches from Davidlohr Bueso on 06/07
+that hit ipc/util.c and friends.
 
-Thierry
+[   17.332871] BUG: sleeping function called from invalid context at lib/idr.c:424
+[   17.333013] in_atomic(): 0, irqs_disabled(): 0, pid: 231, name: systemd-cryptse
+[   17.333135] 2 locks held by systemd-cryptse/231:
+[   17.333226]  #0:  (&ids->rw_mutex){+++++.}, at: [<ffffffff811de265>] ipcget+0x58/0x162
+[   17.333650]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff811e020e>] rcu_read_lock+0x0/0x6c
+[   17.334103] CPU: 0 PID: 231 Comm: systemd-cryptse Not tainted 3.10.0-rc4-next-20130607 #79
+[   17.334227] Hardware name: Dell Inc. Latitude E6530/07Y85M, BIOS A11 03/12/2013
+[   17.334347]  0000000000000000 ffff8801254e3e18 ffffffff815ebdd7 ffff88012545ecc0
+[   17.334706]  ffff8801254e3e40 ffffffff8105b59b ffff8801262a1600 ffffffff81a3ee28
+[   17.335088]  00000000000000d0 ffff8801254e3e70 ffffffff812377ec ffff8801262a1618
+[   17.335445] Call Trace:
+[   17.335535]  [<ffffffff815ebdd7>] dump_stack+0x4f/0x9a
+[   17.335633]  [<ffffffff8105b59b>] __might_sleep+0x19e/0x1a5
+[   17.335730]  [<ffffffff812377ec>] idr_preload+0xb7/0x15c
+[   17.335827]  [<ffffffff811ddd0c>] ipc_addid+0x3a/0x168
+[   17.335924]  [<ffffffff811e055f>] newary+0xa5/0x1b7
+[   17.336040]  [<ffffffff811de349>] ipcget+0x13c/0x162
+[   17.336139]  [<ffffffff811e19a8>] SyS_semget+0x5d/0x69
+[   17.336233]  [<ffffffff811e04ba>] ? semctl_nolock.constprop.15+0x240/0x240
+[   17.336332]  [<ffffffff811dfb4c>] ? sysvipc_sem_proc_show+0x9b/0x9b
+[   17.336430]  [<ffffffff811df9f5>] ? __ticket_spin_is_locked+0x11/0x11
+[   17.336529]  [<ffffffff815f9dd2>] system_call_fastpath+0x16/0x1b
+[   17.344508] bio: create slab <bio-1> at 1
 
---adJ1OR3c6QgCpb/j
+
+
+--==_Exmh_1370975638_1896P
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Version: GnuPG v1.4.13 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-iQIcBAEBAgAGBQJRt23pAAoJEN0jrNd/PrOhIxIP/RPyE1M8jFMvtlMsAjJnP1Mo
-WoPRAq9jPFGA8i7Tym0bc7X1tCdJnVMHoBbzHG4uNg07mexiDnzVRzhJkzVa7/or
-1GoY12JTrO6NQJDmgZrCOolqG85kxFrWP2BJy5gn7Nj3kixTzIWE2pn1IZIzLDI9
-DMckTFB5DB+3GkG7R89RGZGUurVfxz++NuQcUIY7TYJtj8FFQNPk258R6zlPgYbi
-VypO105Xrr6i3rgJ24Q+S0UVXGwNslGU9e2a0KK++NytVTkzyQk+T+4XUnqmMR+T
-MbL2df8bbY0g9+fX1iKzNYF1BayHgNplV2FdthvyZsMyTgdVpQ8MQ7vmYPYaN7GB
-7WVevPvoSqGxiQ8UZT8er5UnxJdR2vIpeHLEibEypOZpwpk8pw/pA0lio/acj+Yn
-HbNL8rZPBRXuJ1UeuktkNyTHZNa/cyE4QufZ55G8JMxB4mb2X+4yZctvkL7tMhLI
-/iwsx43g+/UZJYHuG0NzGECh1aKm0F7u4FjvA1d21iqz0XwU7bIQGQT2LRsMFjde
-hvU/WQ8n9KI3fOtNx5ADfJi6CYJSvvtf+96NsSKXswLYF0bkybBMhRDbBdf/cbzN
-T/09h6ulWVXHfYQ/rwXH3whxmoX++q5QVGvBMaYdJBhvsBZmQbUl0dSROKEc5daJ
-jr6KeBSYOwS4LuitBfpL
-=3dyc
+iQIVAwUBUbdtlgdmEQWDXROgAQKm9Q//RMfMbS3tPJ5c/6hTHkmeOqxXLNOJlbmu
+IdctLqXxBJKSkAYQgKOnM4PgBn3jRpLHyxFxExHEPQjYXCy2CimdNQnWBKHQGdwx
+yH0DQdvK5JOyURFNzEezdeCbq/o6Y3FFC2WfM4o9FmTgRPfzR4HwU1dk/Hgt9+S+
+1bkn6EiIqOCZJVB7cgLspfu1qyiv9F/WT+IEBNwY+G316fTgSPnEt9TJjXrcUp7P
+wvRWOtNbiexETFdUoRwkXubfYmE5DS5K9KVMf4N5f0oNfol9w5A4JPnZWmoTXUD+
+C2slIkKRUwSlNrZAsTaESEofAszOOrw1biz09yelpVKB3iETcJE5Ng7GrczGGSFi
+5uUEnN0Nmmodm+76VdWMBj3OSw2IcdtXfQW999K0JnWcDk6IEOH0YdqP2P/knVWo
+sqohgoZQkvVQjHYpD/1mwpD+eg6eCiNUMBUzhEAWMjWhH/dCJMtSlAxwFmm9HVOy
+CF83rcf+eHRb6/w58GUPVzrxhL7mS2jRd4+fkUz8nTqJDoPPh9a4/U1v1CCDpgNQ
+rNqllH6z9Kd9rddSx9heOaW7gbzs71ubHsTvPFx6LqAsziJDpB5Y92/bzRkodVvs
+4mxPsvu6VeXHNwfnwc5X/m9hGwhCk90pf5FjKXuaJ6dZEvovY4RtZCqAzsmux8x/
+V5RDEPMCUwA=
+=6qz0
 -----END PGP SIGNATURE-----
 
---adJ1OR3c6QgCpb/j--
+--==_Exmh_1370975638_1896P--
+
