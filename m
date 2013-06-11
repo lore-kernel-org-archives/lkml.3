@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754781Ab3FKLmO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:42:14 -0400
-Received: from s3.sipsolutions.net ([144.76.43.152]:37317 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754717Ab3FKLmK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:42:10 -0400
-Message-ID: <1370950926.8356.14.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH] mac80211: Fix bogus RCU warning from
- ieee80211_get_tx_rates (Was: Re: rcu)
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Calvin Owens <jcalvinowens@gmail.com>
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 11 Jun 2013 13:42:06 +0200
-In-Reply-To: <20130610042959.GA1902@gmail.com> (sfid-20130610_063023_078105_2ADDB0AE)
-References: <20130609225120.GA2789@gmail.com>
-	 <20130610042959.GA1902@gmail.com> (sfid-20130610_063023_078105_2ADDB0AE)
+	id S1754808Ab3FKLmz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:42:55 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47424 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752218Ab3FKLmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 07:42:53 -0400
+Message-ID: <51B70D1B.1080208@ti.com>
+Date: Tue, 11 Jun 2013 17:12:19 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Philip Avinash <avinashphilip@ti.com>
+CC: <khilman@deeprootsystems.com>, <linux@arm.linux.org.uk>,
+        <grant.likely@secretlab.ca>, <linus.walleij@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/11] gpio: davinci: coding style correction
+References: <1369206634-6778-1-git-send-email-avinashphilip@ti.com> <1369206634-6778-3-git-send-email-avinashphilip@ti.com>
+In-Reply-To: <1369206634-6778-3-git-send-email-avinashphilip@ti.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-1 
-Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-06-09 at 23:29 -0500, Calvin Owens wrote:
-> rate_control_fill_sta_table(), whose sole caller is ieee80211_get_tx_rates(),
-> is guaranteed by mac80211 not to be called concurrently with
-> rate_control_set_rates() [1], the sole function that touches the rate table
-> pointer/data in struct ieee80211_sta. The RCU dereference is therefore safe.
+On 5/22/2013 12:40 PM, Philip Avinash wrote:
+> 1. Corrects coding and commenting styles
+> 2. Variables name change to meaningful name
+> 3. Remove unnecessary variable usage
+> 4. Add BINTEN macro definition
+> 
+> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
 
-No, this is wrong. ieee80211_get_tx_rates() can be called by drivers in
-any context and at any time, that was the whole point of using RCU here.
+As Russell mentioned, the 80 char limit changes are churn. I looked at
+the variable name renaming and that's also churn with little benefit.
+The only changes that are probably worth doing are alphabetical ordering
+of include files, fixes for mult-line commenting style and usage of
+macro for register offset.
 
-This needs to be fixed in ath9k, calling ieee80211_get_tx_rates() must
-be done under RCU protection.
+As I started reviewing these patches, I also started fixing some of the
+comments I had and I have pushed the resulting work here:
 
-johannes
+https://git.kernel.org/cgit/linux/kernel/git/nsekhar/linux-davinci.git/log/?h=devel-gpio
 
+It is only compile tested, but I hope this will serve as good starting
+point for your next submission.
+
+Thanks,
+Sekhar
