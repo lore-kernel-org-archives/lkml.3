@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737Ab3FKIOd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 04:14:33 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:36825 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab3FKIOa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 04:14:30 -0400
-Date: Tue, 11 Jun 2013 01:14:27 -0700 (PDT)
-Message-Id: <20130611.011427.2250431661196003301.davem@davemloft.net>
-To: eliezer.tamir@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        jesse.brandeburg@intel.com, donald.c.skidmore@intel.com,
-        e1000-devel@lists.sourceforge.net, willemb@google.com,
-        erdnetdev@gmail.com, bhutchings@solarflare.com, andi@firstfloor.org,
-        hpa@zytor.com, eilong@broadcom.com, or.gerlitz@gmail.com,
-        amirv@mellanox.com, eliezer@tamir.org.il
-Subject: Re: [PATCH v10 net-next 0/6] net: low latency Ethernet device
- polling
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <51B6C87B.70101@linux.intel.com>
-References: <51B68AA6.1050105@linux.intel.com>
-	<20130610.212443.1096102996038709384.davem@davemloft.net>
-	<51B6C87B.70101@linux.intel.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752406Ab3FKIUS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 04:20:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35503 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751700Ab3FKIUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 04:20:16 -0400
+From: Oliver Neukum <oneukum@suse.de>
+To: "Morales, Alejandra" <alejandra.morales@tum.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Questions about Runtime Power Management
+Date: Tue, 11 Jun 2013 10:21:37 +0200
+Message-ID: <6962070.dqPY4e5mso@linux-5eaq.site>
+Organization: SUSE
+User-Agent: KMail/4.10.3 (Linux/3.7.10-1.11-desktop; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <9E3F9C2076C45D4783F09B90D5BE77CE171D3B@BADWLRZ-SWMBX14.ads.mwn.de>
+References: <9E3F9C2076C45D4783F09B90D5BE77CE16B4E6@BADWLRZ-SWMBX13.ads.mwn.de> <8961845.QtBW1c5NsD@linux-5eaq.site> <9E3F9C2076C45D4783F09B90D5BE77CE171D3B@BADWLRZ-SWMBX14.ads.mwn.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Date: Tue, 11 Jun 2013 09:49:31 +0300
+On Tuesday 11 June 2013 07:53:10 Morales, Alejandra wrote:
+> 2013/6/10 Oliver Neukum <oneukum@suse.de>
 
-> I would like to hear opinions on what needs to be added to make this
-> feature complete.
+> > You need to furthermore realise that there are forms of runtime PM independent
+> > of the generic kernel based runtime PM (hdparm, USB LPM, ...)
 > 
-> The list I have so far is:
-> 1. add a socket option
-> 2. support for poll/select
-> 3. support for epoll
+> 
+> Thanks Oliver, that was helpful. I will try now to do my testing using USB devices as it will likely be easier.
 
-I actually would like to see the Kconfig option go away, that's
-my only request.
+Note:
 
-> Also, would you accept a trailing whitespace cleanup patch for
-> fs/select.c?
+1. for most usb devices the default for runtime PM is off (powertop will help)
+2. all a device's interface drivers must support it (look at the kernel source for .supports_autosuspend = 1)
+3. If you want the HCD to go to D3 you need ACPI 5.0
 
-That's not really for my tree, sorry.
+	HTH
+		Oliver
+
