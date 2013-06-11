@@ -1,94 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442Ab3FKLAa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:00:30 -0400
-Received: from 16.mo1.mail-out.ovh.net ([178.33.104.224]:46089 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754264Ab3FKLA2 (ORCPT
+	id S1754606Ab3FKLAw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:00:52 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:56399 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754505Ab3FKLAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:00:28 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Wim Van Sebroeck <wim@iguana.be>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [RFC PATCH 2/4] watchdog: at91sam9_wdt: update device tree doc
-Date: Tue, 11 Jun 2013 12:51:27 +0200
-Message-Id: <1370947890-954-3-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370947890-954-1-git-send-email-b.brezillon@overkiz.com>
-References: <1370947890-954-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 60235645362927802
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Tue, 11 Jun 2013 07:00:50 -0400
+MIME-Version: 1.0
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <20130611104800.GA29395@mithrandir>
+References: <1368791388-31441-1-git-send-email-amerilainen@nvidia.com>
+	<1368791388-31441-3-git-send-email-amerilainen@nvidia.com>
+	<20130526101243.GB1652@mithrandir>
+	<51A30372.6080907@nvidia.com>
+	<20130528103927.GB11547@mithrandir>
+	<86y5ay6hrn.fsf@miki.keithp.com>
+	<20130611104800.GA29395@mithrandir>
+Date: Tue, 11 Jun 2013 13:00:50 +0200
+X-Google-Sender-Auth: RPOVWxwUd_Y9Du_G9DudSIVaZaA
+Message-ID: <CAKMK7uF=A9zZ3VgdwzU3gfOjXaYsCqfCUSPmkLdL98nKX94jFQ@mail.gmail.com>
+Subject: Re: [PATCH 2/6] gpu: host1x: Fix syncpoint wait return value
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Keith Packard <keithp@keithp.com>, Terje Bergstrom <tbergstrom@nvidia.com>,
+        "X.Org development" <xorg-devel@lists.x.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new at91sam9 watchdog properties to the documentation.
+On Tue, Jun 11, 2013 at 12:48 PM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+> On Tue, May 28, 2013 at 01:12:12PM -0600, Keith Packard wrote:
+>> Thierry Reding <thierry.reding@gmail.com> writes:
+>>
+>>
+>> > That doesn't sound right. Maybe drmIoctl() needs fixing instead. Looking
+>> > at the history, drmIoctl() was introduced to automatically loop if a
+>> > signal was received (commit 8b9ab108ec1f2ba2b503f713769c4946849b3cb2).
+>> > However the ioctl(3p) manpage doesn't mention that ioctl() returns
+>> > EAGAIN in case it is interrupted by a signal.
+>>
+>> EAGAIN is being returned when the GPU is wedged to ask the application
+>> to re-submit the request, which will presumably be held until the  GPU
+>> is un-wedged.
+>
+> Isn't that a bit risky? What if something special needs to be done to
+> unwedge the GPU other than re-submit the request, or if it just can't
+> be reasonably unwedged. In that case drmIoctl() will keep looping
+> indefinitely.
+>
+> If the above is indeed the expected behaviour for drivers, then we need
+> a different error code for the SYNCPT_WAIT ioctl. EAGAIN is the best fit
+> and anything else doesn't quite match the use-case. A different option
+> might be not to use drmIoctl() on Tegra.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- .../devicetree/bindings/watchdog/atmel-wdt.txt     |   30 ++++++++++++++++++--
- 1 file changed, 28 insertions(+), 2 deletions(-)
+We don't use the EAGAIN ioctl restarting to resubmit the batchbuffer
+which blew up the gpu (that one has been submitted already in a
+different ioctl call), but to be able to restart the ioctl after the
+reset has completed: We need to kick every thread which is potentially
+holding GEM locks and make sure that we block them (at a point where
+they don't hold any locks) until the reset handler completed. To avoid
+a validation nightmare we use the same codepaths as we use for signal
+interrupts, so ioctl restarting is a very natural fit for this.
 
-diff --git a/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt b/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
-index fcdd48f..e043106 100644
---- a/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
-+++ b/Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
-@@ -9,11 +9,37 @@ Required properties:
- 
- Optional properties:
- - timeout-sec: contains the watchdog timeout in seconds.
-+- interrupts : Should contain WDT interrupt.
-+- atmel,max-heartbeat-sec : Should contain the maximum heartbeat value in
-+	seconds. This value should be less than 16. It is used to compute the
-+	WDV field.
-+- atmel,max-heartbeat-sec : Should contain the minimum heartbeat value in
-+	seconds. This value should be less than 4 times the max-heartbeat-sec
-+	value. It is used to compute the WDD field.
-+- atmel,watchdog-type : Should be "hardware" or "software". Hardware watchdog
-+	use the at91 watchdog reset. Software watchdog use the watcdog interrup
-+	to trigger a software reset.
-+- atmel,reset-type : Should be "proc" or "all".
-+	"all" : assert peripherals and processor reset signals
-+	"proc" : assert the processor reset signal
-+	This is valid only when using "hardware" watchdog.
-+- atmel,disable : Should be present if you want to disable the watchdog.
-+- atmel,idle-halt : Should be present if you want to stop the watchdog when
-+	entering idle state.
-+- atmel,dbg-halt : Should be present if you want to stop the watchdog when
-+	entering debug state.
- 
- Example:
--
- 	watchdog@fffffd40 {
- 		compatible = "atmel,at91sam9260-wdt";
- 		reg = <0xfffffd40 0x10>;
--		timeout-sec = <10>;
-+		interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-+		timeout-sec = <15>;
-+		atmel,watchdog-type = "hardware";
-+		atmel,reset-type = "all";
-+		atmel,dbg-halt;
-+		atmel,idle-halt;
-+		atmel,max-heartbeat-sec = <16>;
-+		atmel,min-heartbeat-sec = <0>;
-+		status = "okay";
- 	};
--- 
-1.7.9.5
-
+Resubmitting victim workloads when a gpu crash happened is something
+the reset handler would do (kernel work item currently), not any
+userspace process doing an ioctl. But atm we don't resubmit victimized
+workloads.
+-Daniel
+--
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
