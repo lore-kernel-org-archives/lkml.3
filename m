@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232Ab3FKGg3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 02:36:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34871 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330Ab3FKGg2 (ORCPT
+	id S1751998Ab3FKGtS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 02:49:18 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:57155 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751079Ab3FKGtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 02:36:28 -0400
-Date: Mon, 10 Jun 2013 23:37:03 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Belisko Marek <marek.belisko@gmail.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, devel@driverdev.osuosl.org,
-        ldv-project@linuxtesting.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: ft1000: fix memory leak on error path in
- ft1000_probe()
-Message-ID: <20130611063703.GB2380@kroah.com>
-References: <1370892556-14503-1-git-send-email-khoroshilov@ispras.ru>
- <CAAfyv348JfJs-FbL3zvQgQ1i=MONVJWdhgfmqzdYOvGxcPAK0Q@mail.gmail.com>
+	Tue, 11 Jun 2013 02:49:16 -0400
+Date: Tue, 11 Jun 2013 07:49:12 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Linux EFI <linux-efi@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Jiri Kosina <jkosina@suse.cz>,
+        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH 1/4] efi: Convert runtime services function ptrs
+Message-ID: <20130611064912.GG31198@console-pimps.org>
+References: <1370177770-26661-1-git-send-email-bp@alien8.de>
+ <1370177770-26661-2-git-send-email-bp@alien8.de>
+ <20130606100745.GF30420@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAAfyv348JfJs-FbL3zvQgQ1i=MONVJWdhgfmqzdYOvGxcPAK0Q@mail.gmail.com>
+In-Reply-To: <20130606100745.GF30420@console-pimps.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 10:40:19PM +0200, Belisko Marek wrote:
-> Hi Alexey,
-> 
-> On Mon, Jun 10, 2013 at 9:29 PM, Alexey Khoroshilov
-> <khoroshilov@ispras.ru> wrote:
-> > ft1000dev->tx_urb and ft1000dev->rx_urb are not deallocated
-> > if something goes wrong in ft1000_probe(). Also there is no
-> > check for success of urb allocation. The patch fixes the both issues.
-> >
-> > By the way, there is no sense in GFP_ATOMIC for urb allocation here,
-> > so it is changed to GFP_KERNEL.
-> >
-> > Found by Linux Driver Verification project (linuxtesting.org).
-> >
-> > Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-> > ---
-> >  drivers/staging/ft1000/ft1000-usb/ft1000_usb.c | 10 ++++++++--
-> >  1 file changed, 8 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
-> > index 614db55..29a7cd2 100644
-> > --- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
-> > +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
-> > @@ -79,8 +79,12 @@ static int ft1000_probe(struct usb_interface *interface,
-> >         ft1000dev->dev = dev;
-> >         ft1000dev->status = 0;
-> >         ft1000dev->net = NULL;
-> > -       ft1000dev->tx_urb = usb_alloc_urb(0, GFP_ATOMIC);
-> > -       ft1000dev->rx_urb = usb_alloc_urb(0, GFP_ATOMIC);
-> > +       ft1000dev->tx_urb = usb_alloc_urb(0, GFP_KERNEL);
-> Can we check return value for tx here? If allocation fails it makes no sense to
-> try allocate also rx. Otherwise looks good. Thanks.
-> > +       ft1000dev->rx_urb = usb_alloc_urb(0, GFP_KERNEL);
-> Same for rx here.
-> > +       if (!ft1000dev->tx_urb || !ft1000dev->rx_urb) {
+On Thu, 06 Jun, at 11:07:45AM, Matt Fleming wrote:
+> Thanks! I've chucked this into my 'urgent' queue because it's a pretty
+> straight forward cleanup and there's no point in allowing it to bitrot
+> any further (the change to eboot.c is already stale).
 
-Both of these allocations are checked here, so it's fine, no need to
-change anything.
+OK, I chickened out of sending this in my latest pull request after
+reading Linus' -rc5 email about him not wanting to see any non-critical
+changes. I've stuck it in the 'next' branch with the rest of the stuff
+for v3.11.
 
-greg k-h
+-- 
+Matt Fleming, Intel Open Source Technology Center
