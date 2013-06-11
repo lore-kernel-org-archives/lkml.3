@@ -1,130 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357Ab3FKUDO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:03:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41665 "EHLO
+	id S1756540Ab3FKUDi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:03:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41808 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756287Ab3FKUDE (ORCPT
+	with ESMTP id S1756504Ab3FKUDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:04 -0400
+	Tue, 11 Jun 2013 16:03:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tony Camuso <tcamuso@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Sergio Aguirre <sergio.a.aguirre.rodriguez@intel.com>,
+        David Cohen <david.a.cohen@intel.com>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 02/32] xhci - correct comp_mode_recovery_timer on return from hibernate
-Date: Tue, 11 Jun 2013 13:03:01 -0700
-Message-Id: <20130611200126.471760872@linuxfoundation.org>
+Subject: [ 06/79] xhci-mem: init list heads at the beginning of init
+Date: Tue, 11 Jun 2013 13:02:32 -0700
+Message-Id: <20130611195313.238620370@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
-In-Reply-To: <20130611200126.214442788@linuxfoundation.org>
-References: <20130611200126.214442788@linuxfoundation.org>
+In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
+References: <20130611195312.352656079@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.9-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tony Camuso <tcamuso@redhat.com>
+From: Sergio Aguirre <sergio.a.aguirre.rodriguez@intel.com>
 
-commit 77df9e0b799b03e1d5d9c68062709af5f637e834 upstream.
+commit 331de00a64e5027365145bdf51da27b9ce15dfd5 upstream.
 
-Commit 71c731a2 (usb: host: xhci: Fix Compliance Mode on SN65LVPE502CP
-Hardware) was a workaround for systems using the SN65LVPE502CP,
-controller, but it introduced a bug in resume from hibernate.
+It is possible that we fail on xhci_mem_init, just before doing
+the INIT_LIST_HEAD, and calling xhci_mem_cleanup.
 
-The fix created a timer, comp_mode_recovery_timer, which is deleted from
-a timer list when xhci_suspend() is called. However, the hibernate image,
-including the timer list containing the comp_mode_recovery_timer, had
-already been saved before the timer was deleted.
+Problem is that, the list_for_each_entry_safe macro, assumes
+list heads are initialized (not NULL), and dereferences their 'next'
+pointer, causing a kernel panic if this is not yet initialized.
 
-Upon resume from hibernate, the list containing the comp_mode_recovery_timer
-is restored from the image saved to disk, and xhci_resume(), assuming that
-the timer had been deleted by xhci_suspend(), makes a call to
-compliance_mode_recoery_timer_init(), which creates a new instance of the
-comp_mode_recovery_timer and attempts to place it into the same list in which
-it is already active, thus corrupting the list during the list_add() call.
-
-At this point, a call trace is emitted indicating the list corruption.
-Soon afterward, the system locks up, the watchdog times out, and the
-ensuing NMI crashes the system.
-
-The problem did not occur when resuming from suspend. In suspend, the
-image in RAM remains exactly as it was when xhci_suspend() deleted the
-comp_mode_recovery_timer, so there is no problem when xhci_resume()
-creates a new instance of this timer and places it in the still empty
-list.
-
-This patch avoids the problem by deleting the timer in xhci_resume()
-when resuming from hibernate. Now xhci_resume() can safely make the
-call to create a new instance of this timer, whether returning from
-suspend or hibernate.
-
-Thanks to Alan Stern for his help with understanding the problem.
-
-[Sarah reworked this patch to cover the case where the xHCI restore
-register operation fails, and (temp & STS_SRE) is true (and we re-init
-the host, including re-init for the compliance mode), but hibernate is
-false.  The original patch would have caused list corruption in this
-case.]
+Let's protect from that by moving inits to the beginning.
 
 This patch should be backported to kernels as old as 3.2, that
-contain the commit 71c731a296f1b08a3724bd1b514b64f1bda87a23 "usb: host:
-xhci: Fix Compliance Mode on SN65LVPE502CP Hardware"
+contain the commit 9574323c39d1f8359a04843075d89c9f32d8b7e6 "xHCI: test
+USB2 software LPM".
 
-Signed-off-by: Tony Camuso <tcamuso@redhat.com>
-Tested-by: Tony Camuso <tcamuso@redhat.com>
-Acked-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Sergio Aguirre <sergio.a.aguirre.rodriguez@intel.com>
+Acked-by: David Cohen <david.a.cohen@intel.com>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/usb/host/xhci-mem.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -947,6 +947,7 @@ int xhci_resume(struct xhci_hcd *xhci, b
- 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
- 	struct usb_hcd		*secondary_hcd;
- 	int			retval = 0;
-+	bool			comp_timer_running = false;
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -2256,6 +2256,9 @@ int xhci_mem_init(struct xhci_hcd *xhci,
+ 	u32 page_size, temp;
+ 	int i;
  
- 	/* Wait a bit if either of the roothubs need to settle from the
- 	 * transition into bus suspend.
-@@ -984,6 +985,13 @@ int xhci_resume(struct xhci_hcd *xhci, b
++	INIT_LIST_HEAD(&xhci->lpm_failed_devs);
++	INIT_LIST_HEAD(&xhci->cancel_cmd_list);
++
+ 	page_size = xhci_readl(xhci, &xhci->op_regs->page_size);
+ 	xhci_dbg(xhci, "Supported page size register = 0x%x\n", page_size);
+ 	for (i = 0; i < 16; i++) {
+@@ -2334,7 +2337,6 @@ int xhci_mem_init(struct xhci_hcd *xhci,
+ 	xhci->cmd_ring = xhci_ring_alloc(xhci, 1, 1, TYPE_COMMAND, flags);
+ 	if (!xhci->cmd_ring)
+ 		goto fail;
+-	INIT_LIST_HEAD(&xhci->cancel_cmd_list);
+ 	xhci_dbg(xhci, "Allocated command ring at %p\n", xhci->cmd_ring);
+ 	xhci_dbg(xhci, "First segment DMA is 0x%llx\n",
+ 			(unsigned long long)xhci->cmd_ring->first_seg->dma);
+@@ -2445,8 +2447,6 @@ int xhci_mem_init(struct xhci_hcd *xhci,
+ 	if (xhci_setup_port_arrays(xhci, flags))
+ 		goto fail;
  
- 	/* If restore operation fails, re-initialize the HC during resume */
- 	if ((temp & STS_SRE) || hibernated) {
-+
-+		if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) &&
-+				!(xhci_all_ports_seen_u0(xhci))) {
-+			del_timer_sync(&xhci->comp_mode_recovery_timer);
-+			xhci_dbg(xhci, "Compliance Mode Recovery Timer deleted!\n");
-+		}
-+
- 		/* Let the USB core know _both_ roothubs lost power. */
- 		usb_root_hub_lost_power(xhci->main_hcd->self.root_hub);
- 		usb_root_hub_lost_power(xhci->shared_hcd->self.root_hub);
-@@ -1026,6 +1034,8 @@ int xhci_resume(struct xhci_hcd *xhci, b
- 		retval = xhci_init(hcd->primary_hcd);
- 		if (retval)
- 			return retval;
-+		comp_timer_running = true;
-+
- 		xhci_dbg(xhci, "Start the primary HCD\n");
- 		retval = xhci_run(hcd->primary_hcd);
- 		if (!retval) {
-@@ -1067,7 +1077,7 @@ int xhci_resume(struct xhci_hcd *xhci, b
- 	 * to suffer the Compliance Mode issue again. It doesn't matter if
- 	 * ports have entered previously to U0 before system's suspension.
- 	 */
--	if (xhci->quirks & XHCI_COMP_MODE_QUIRK)
-+	if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) && !comp_timer_running)
- 		compliance_mode_recovery_timer_init(xhci);
- 
- 	/* Re-enable port polling. */
+-	INIT_LIST_HEAD(&xhci->lpm_failed_devs);
+-
+ 	/* Enable USB 3.0 device notifications for function remote wake, which
+ 	 * is necessary for allowing USB 3.0 devices to do remote wakeup from
+ 	 * U3 (device suspend).
 
 
