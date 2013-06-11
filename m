@@ -1,61 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757473Ab3FKUfZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:35:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41662 "EHLO
+	id S1756261Ab3FKUDB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:03:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41636 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756281Ab3FKUDE (ORCPT
+	with ESMTP id S1756188Ab3FKUC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:04 -0400
+	Tue, 11 Jun 2013 16:02:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Graham Inggs <graham.inggs@uct.ac.za>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 01/32] USB: option: blacklist network interface on Huawei E1820
-Date: Tue, 11 Jun 2013 13:03:00 -0700
-Message-Id: <20130611200126.364691192@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>
+Subject: [ 15/21] hwmon: (adm1021) Strengthen chip detection for ADM1021, LM84 and MAX1617
+Date: Tue, 11 Jun 2013 13:03:09 -0700
+Message-Id: <20130611195521.771509591@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
-In-Reply-To: <20130611200126.214442788@linuxfoundation.org>
-References: <20130611200126.214442788@linuxfoundation.org>
+In-Reply-To: <20130611195520.003233586@linuxfoundation.org>
+References: <20130611195520.003233586@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit b8a24e6281d37243c06b9497dcbfaa98c1e2ad35 upstream.
+commit 591bfcfc334a003ba31c0deff03b22e73349939b upstream.
 
-The mode used by Windows for the Huawei E1820 will use the
-same ff/ff/ff class codes for both serial and network
-functions.
+On a system with both MAX1617 and JC42 sensors, JC42 sensors can be misdetected
+as LM84. Strengthen detection sufficiently enough to avoid this misdetection.
+Also improve detection for ADM1021.
 
-Reported-by: Graham Inggs <graham.inggs@uct.ac.za>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Modeled after chip detection code in sensors-detect command.
+
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Tested-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/hwmon/adm1021.c |   58 +++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 50 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -593,6 +593,8 @@ static const struct usb_device_id option
- 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x14ac, 0xff, 0xff, 0xff),	/* Huawei E1820 */
-+		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0xff, 0xff) },
+--- a/drivers/hwmon/adm1021.c
++++ b/drivers/hwmon/adm1021.c
+@@ -311,26 +311,68 @@ static int adm1021_detect(struct i2c_cli
+ 	man_id = i2c_smbus_read_byte_data(client, ADM1021_REG_MAN_ID);
+ 	dev_id = i2c_smbus_read_byte_data(client, ADM1021_REG_DEV_ID);
+ 
++	if (man_id < 0 || dev_id < 0)
++		return -ENODEV;
++
+ 	if (man_id == 0x4d && dev_id == 0x01)
+ 		type_name = "max1617a";
+ 	else if (man_id == 0x41) {
+ 		if ((dev_id & 0xF0) == 0x30)
+ 			type_name = "adm1023";
+-		else
++		else if ((dev_id & 0xF0) == 0x00)
+ 			type_name = "adm1021";
++		else
++			return -ENODEV;
+ 	} else if (man_id == 0x49)
+ 		type_name = "thmc10";
+ 	else if (man_id == 0x23)
+ 		type_name = "gl523sm";
+ 	else if (man_id == 0x54)
+ 		type_name = "mc1066";
+-	/* LM84 Mfr ID in a different place, and it has more unused bits */
+-	else if (conv_rate == 0x00
+-		 && (config & 0x7F) == 0x00
+-		 && (status & 0xAB) == 0x00)
+-		type_name = "lm84";
+-	else
+-		type_name = "max1617";
++	else {
++		int lte, rte, lhi, rhi, llo, rlo;
++
++		/* extra checks for LM84 and MAX1617 to avoid misdetections */
++
++		llo = i2c_smbus_read_byte_data(client, ADM1021_REG_THYST_R(0));
++		rlo = i2c_smbus_read_byte_data(client, ADM1021_REG_THYST_R(1));
++
++		/* fail if any of the additional register reads failed */
++		if (llo < 0 || rlo < 0)
++			return -ENODEV;
++
++		lte = i2c_smbus_read_byte_data(client, ADM1021_REG_TEMP(0));
++		rte = i2c_smbus_read_byte_data(client, ADM1021_REG_TEMP(1));
++		lhi = i2c_smbus_read_byte_data(client, ADM1021_REG_TOS_R(0));
++		rhi = i2c_smbus_read_byte_data(client, ADM1021_REG_TOS_R(1));
++
++		/*
++		 * Fail for negative temperatures and negative high limits.
++		 * This check also catches read errors on the tested registers.
++		 */
++		if ((s8)lte < 0 || (s8)rte < 0 || (s8)lhi < 0 || (s8)rhi < 0)
++			return -ENODEV;
++
++		/* fail if all registers hold the same value */
++		if (lte == rte && lte == lhi && lte == rhi && lte == llo
++		    && lte == rlo)
++			return -ENODEV;
++
++		/*
++		 * LM84 Mfr ID is in a different place,
++		 * and it has more unused bits.
++		 */
++		if (conv_rate == 0x00
++		    && (config & 0x7F) == 0x00
++		    && (status & 0xAB) == 0x00) {
++			type_name = "lm84";
++		} else {
++			/* fail if low limits are larger than high limits */
++			if ((s8)llo > lhi || (s8)rlo > rhi)
++				return -ENODEV;
++			type_name = "max1617";
++		}
++	}
+ 
+ 	pr_debug("adm1021: Detected chip %s at adapter %d, address 0x%02x.\n",
+ 		 type_name, i2c_adapter_id(adapter), client->addr);
 
 
