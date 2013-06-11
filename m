@@ -1,65 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab3FKKwb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 06:52:31 -0400
-Received: from 5.mo1.mail-out.ovh.net ([178.33.45.107]:52740 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752478Ab3FKKwa (ORCPT
+	id S1754274Ab3FKK4V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 06:56:21 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:54911 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752042Ab3FKK4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 06:52:30 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Wim Van Sebroeck <wim@iguana.be>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>,
-        Russell King <linux@arm.linux.org.uk>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [RFC PATCH 4/4] ARM: at91/dt: add watchdog properties to kizbox board
-Date: Tue, 11 Jun 2013 12:51:29 +0200
-Message-Id: <1370947890-954-5-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1370947890-954-1-git-send-email-b.brezillon@overkiz.com>
-References: <1370947890-954-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 69242844617668796
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrgeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Tue, 11 Jun 2013 06:56:20 -0400
+From: Pawel Moll <pawel.moll@arm.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: [PATCH v2] mfd: vexpress: Make the driver optional for arm and arm64
+Date: Tue, 11 Jun 2013 11:56:02 +0100
+Message-Id: <1370948162-18895-1-git-send-email-pawel.moll@arm.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <20130610232249.GH18614@n2100.arm.linux.org.uk>
+References: <20130610232249.GH18614@n2100.arm.linux.org.uk>
+X-OriginalArrivalTime: 11 Jun 2013 10:56:16.0629 (UTC) FILETIME=[4BFA8250:01CE6692]
+X-MC-Unique: 113061111561800501
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r5BAuRq0011360
 
-Add watchdog specific config for kizbox board.
+The driver can be used on either arm or arm64 platforms, but
+the latter doesn't have any platform-specific configuration
+options, so it must be possible to manually enable the driver.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+As the gpiolib is optional for arm64 arch, the gpio/led code
+must be compiled conditionally.
+
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm/boot/dts/kizbox.dts |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/mfd/Kconfig           |  3 ++-
+ drivers/mfd/vexpress-sysreg.c | 10 ++++++++--
+ 2 files changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/boot/dts/kizbox.dts b/arch/arm/boot/dts/kizbox.dts
-index 02df191..928f6ee 100644
---- a/arch/arm/boot/dts/kizbox.dts
-+++ b/arch/arm/boot/dts/kizbox.dts
-@@ -53,6 +53,12 @@
- 				status = "okay";
- 			};
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index d54e985..6959b8d 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -1144,7 +1144,8 @@ config MCP_UCB1200_TS
+ endmenu
  
-+			watchdog@fffffd40 {
-+				timeout-sec = <15>;
-+				atmel,max-heartbeat-sec = <16>;
-+				atmel,min-heartbeat-sec = <0>;
-+				status = "okay";
-+			};
- 		};
+ config VEXPRESS_CONFIG
+-	bool
++	bool "ARM Versatile Express platform infrastructure"
++	depends on ARM || ARM64
+ 	help
+ 	  Platform configuration infrastructure for the ARM Ltd.
+ 	  Versatile Express.
+diff --git a/drivers/mfd/vexpress-sysreg.c b/drivers/mfd/vexpress-sysreg.c
+index 96a020b..981bef4 100644
+--- a/drivers/mfd/vexpress-sysreg.c
++++ b/drivers/mfd/vexpress-sysreg.c
+@@ -351,6 +351,8 @@ void __init vexpress_sysreg_of_early_init(void)
+ }
  
- 		nand0: nand@40000000 {
+ 
++#ifdef CONFIG_GPIOLIB
++
+ #define VEXPRESS_SYSREG_GPIO(_name, _reg, _value) \
+ 	[VEXPRESS_GPIO_##_name] = { \
+ 		.reg = _reg, \
+@@ -445,6 +447,8 @@ struct gpio_led_platform_data vexpress_sysreg_leds_pdata = {
+ 	.leds = vexpress_sysreg_leds,
+ };
+ 
++#endif
++
+ 
+ static ssize_t vexpress_sysreg_sys_id_show(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
+@@ -480,6 +484,9 @@ static int vexpress_sysreg_probe(struct platform_device *pdev)
+ 	setup_timer(&vexpress_sysreg_config_timer,
+ 			vexpress_sysreg_config_complete, 0);
+ 
++	vexpress_sysreg_dev = &pdev->dev;
++
++#ifdef CONFIG_GPIOLIB
+ 	vexpress_sysreg_gpio_chip.dev = &pdev->dev;
+ 	err = gpiochip_add(&vexpress_sysreg_gpio_chip);
+ 	if (err) {
+@@ -490,11 +497,10 @@ static int vexpress_sysreg_probe(struct platform_device *pdev)
+ 		return err;
+ 	}
+ 
+-	vexpress_sysreg_dev = &pdev->dev;
+-
+ 	platform_device_register_data(vexpress_sysreg_dev, "leds-gpio",
+ 			PLATFORM_DEVID_AUTO, &vexpress_sysreg_leds_pdata,
+ 			sizeof(vexpress_sysreg_leds_pdata));
++#endif
+ 
+ 	device_create_file(vexpress_sysreg_dev, &dev_attr_sys_id);
+ 
 -- 
-1.7.9.5
+1.8.1.2
+
 
