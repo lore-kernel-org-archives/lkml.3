@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755791Ab3FKM6K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 08:58:10 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:54162 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755550Ab3FKMzi (ORCPT
+	id S1755526Ab3FKMz2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 08:55:28 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:47524 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720Ab3FKMzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 08:55:38 -0400
+	Tue, 11 Jun 2013 08:55:24 -0400
 From: Amit Daniel Kachhap <amit.daniel@samsung.com>
 To: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
         Eduardo Valentin <eduardo.valentin@ti.com>
 Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         amit.kachhap@gmail.com, Kukjin Kim <kgene.kim@samsung.com>,
         jonghwa3.lee@samsung.com
-Subject: [PATCH V5 22/30] thermal: exynos: Add support to access common register for multistance
-Date: Tue, 11 Jun 2013 18:23:32 +0530
-Message-Id: <1370955220-2949-23-git-send-email-amit.daniel@samsung.com>
+Subject: [PATCH V5 19/30] thermal: exynos: Add TMU features to check instead of using SOC type
+Date: Tue, 11 Jun 2013 18:23:29 +0530
+Message-Id: <1370955220-2949-20-git-send-email-amit.daniel@samsung.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1370955220-2949-1-git-send-email-amit.daniel@samsung.com>
 References: <1370955220-2949-1-git-send-email-amit.daniel@samsung.com>
@@ -23,79 +23,159 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support to parse one more common set of TMU register. First
-set of register belongs to each instance of TMU and second set belongs to
-common TMU registers.
+This patch adds several features supported by TMU as bitfields.
+This features varies across different SOC type and comparing
+the features present in the TMU is more logical than comparing
+the soc itself.
 
 Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 ---
- .../devicetree/bindings/thermal/exynos-thermal.txt |    6 +++++-
- drivers/thermal/samsung/exynos_tmu.c               |   20 ++++++++++++++++++++
- 2 files changed, 25 insertions(+), 1 deletions(-)
+ drivers/thermal/samsung/exynos_tmu.c      |   26 +++++++++++++++---------
+ drivers/thermal/samsung/exynos_tmu.h      |   31 +++++++++++++++++++++++++++++
+ drivers/thermal/samsung/exynos_tmu_data.c |    6 ++++-
+ 3 files changed, 52 insertions(+), 11 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-index 535fd0e..0ea33f7 100644
---- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-+++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-@@ -7,7 +7,11 @@
- 	       "samsung,exynos4210-tmu"
- 	       "samsung,exynos5250-tmu"
- - interrupt-parent : The phandle for the interrupt controller
--- reg : Address range of the thermal registers
-+- reg : Address range of the thermal registers. For soc's which has multiple
-+	instances of TMU and some registers are shared across all TMU's like
-+	interrupt related then 2 set of register has to supplied. First set
-+	belongs	to each instance of TMU and second set belongs to common TMU
-+	registers.
- - interrupts : Should contain interrupt for thermal system
- - clocks : The main clock for TMU device
- - clock-names : Thermal system clock name
 diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index 877dab8..150a869 100644
+index 1880c4e..877dab8 100644
 --- a/drivers/thermal/samsung/exynos_tmu.c
 +++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -40,6 +40,7 @@
-  * @id: identifier of the one instance of the TMU controller.
-  * @pdata: pointer to the tmu platform/configuration data
-  * @base: base address of the single instance of the TMU controller.
-+ * @base_common: base address of the common registers of the TMU controller.
-  * @irq: irq number of the TMU controller.
-  * @soc: id of the SOC type.
-  * @irq_work: pointer to the irq work structure.
-@@ -53,6 +54,7 @@ struct exynos_tmu_data {
- 	int id;
- 	struct exynos_tmu_platform_data *pdata;
- 	void __iomem *base;
-+	void __iomem *base_common;
- 	int irq;
- 	enum soc_type soc;
- 	struct work_struct irq_work;
-@@ -478,6 +480,24 @@ static int exynos_map_dt_data(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 	data->pdata = pdata;
-+	/*
-+	 * Check if the TMU shares some registers and then try to map the
-+	 * memory of common registers.
-+	 */
-+	if (!TMU_SUPPORTS(pdata, SHARED_MEMORY))
-+		return 0;
-+
-+	if (of_address_to_resource(pdev->dev.of_node, 1, &res)) {
-+		dev_err(&pdev->dev, "failed to get Resource 1\n");
-+		return -ENODEV;
-+	}
-+
-+	data->base_common = devm_ioremap(&pdev->dev, res.start,
-+					resource_size(&res));
-+	if (!data->base) {
-+		dev_err(&pdev->dev, "Failed to ioremap memory\n");
-+		return -ENOMEM;
-+	}
+@@ -142,13 +142,15 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 	mutex_lock(&data->lock);
+ 	clk_enable(data->clk);
  
- 	return 0;
- }
+-	status = readb(data->base + reg->tmu_status);
+-	if (!status) {
+-		ret = -EBUSY;
+-		goto out;
++	if (TMU_SUPPORTS(pdata, READY_STATUS)) {
++		status = readb(data->base + reg->tmu_status);
++		if (!status) {
++			ret = -EBUSY;
++			goto out;
++		}
+ 	}
+ 
+-	if (data->soc == SOC_ARCH_EXYNOS)
++	if (TMU_SUPPORTS(pdata, TRIM_RELOAD))
+ 		__raw_writel(1, data->base + reg->triminfo_ctrl);
+ 
+ 	/* Save trimming info in order to perform calibration */
+@@ -287,7 +289,7 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
+ 			pdata->trigger_enable[2] << reg->inten_rise2_shift |
+ 			pdata->trigger_enable[1] << reg->inten_rise1_shift |
+ 			pdata->trigger_enable[0] << reg->inten_rise0_shift;
+-		if (pdata->threshold_falling)
++		if (TMU_SUPPORTS(pdata, FALLING_TRIP))
+ 			interrupt_en |=
+ 				interrupt_en << reg->inten_fall0_shift;
+ 	} else {
+@@ -329,7 +331,7 @@ static int exynos_tmu_set_emulation(void *drv_data, unsigned long temp)
+ 	unsigned int val;
+ 	int ret = -EINVAL;
+ 
+-	if (data->soc == SOC_ARCH_EXYNOS4210)
++	if (!TMU_SUPPORTS(pdata, EMULATION))
+ 		goto out;
+ 
+ 	if (temp && temp < MCELSIUS)
+@@ -343,9 +345,13 @@ static int exynos_tmu_set_emulation(void *drv_data, unsigned long temp)
+ 	if (temp) {
+ 		temp /= MCELSIUS;
+ 
+-		val = (EXYNOS_EMUL_TIME << reg->emul_time_shift) |
+-			(temp_to_code(data, temp)
+-			 << reg->emul_temp_shift) | EXYNOS_EMUL_ENABLE;
++		if (TMU_SUPPORTS(pdata, EMUL_TIME)) {
++			val &= ~(EXYNOS_EMUL_TIME_MASK << reg->emul_time_shift);
++			val |= (EXYNOS_EMUL_TIME << reg->emul_time_shift);
++		}
++		val &= ~(EXYNOS_EMUL_DATA_MASK << reg->emul_temp_shift);
++		val |= (temp_to_code(data, temp) << reg->emul_temp_shift) |
++			EXYNOS_EMUL_ENABLE;
+ 	} else {
+ 		val &= ~EXYNOS_EMUL_ENABLE;
+ 	}
+diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
+index b614407..6f55673 100644
+--- a/drivers/thermal/samsung/exynos_tmu.h
++++ b/drivers/thermal/samsung/exynos_tmu.h
+@@ -41,6 +41,34 @@ enum soc_type {
+ };
+ 
+ /**
++ * EXYNOS TMU supported features.
++ * TMU_SUPPORT_EMULATION - This features is used to set user defined
++ *			temperature to the TMU controller.
++ * TMU_SUPPORT_MULTI_INST - This features denotes that the soc
++ *			has many instances of TMU.
++ * TMU_SUPPORT_TRIM_RELOAD - This features shows that trimming can
++ *			be reloaded.
++ * TMU_SUPPORT_FALLING_TRIP - This features shows that interrupt can
++ *			be registered for falling trips also.
++ * TMU_SUPPORT_READY_STATUS - This feature tells that the TMU current
++ *			state(active/idle) can be checked.
++ * TMU_SUPPORT_EMUL_TIME - This features allows to set next temp emulation
++ *			sample time.
++ * TMU_SUPPORT_SHARED_MEMORY - This feature tells that the different TMU
++ *			sensors shares some common registers.
++ * TMU_SUPPORT - macro to compare the above features with the supplied.
++ */
++#define TMU_SUPPORT_EMULATION			BIT(0)
++#define TMU_SUPPORT_MULTI_INST			BIT(1)
++#define TMU_SUPPORT_TRIM_RELOAD			BIT(2)
++#define TMU_SUPPORT_FALLING_TRIP		BIT(3)
++#define TMU_SUPPORT_READY_STATUS		BIT(4)
++#define TMU_SUPPORT_EMUL_TIME			BIT(5)
++#define TMU_SUPPORT_SHARED_MEMORY		BIT(6)
++
++#define TMU_SUPPORTS(a, b)	(a->features & TMU_SUPPORT_ ## b)
++
++/**
+  * struct exynos_tmu_register - register descriptors to access registers and
+  * bitfields. The register validity, offsets and bitfield values may vary
+  * slightly across different exynos SOC's.
+@@ -220,6 +248,8 @@ struct exynos_tmu_registers {
+  *	applicable to only some of the trigger levels.
+  * @registers: Pointer to structure containing all the TMU controller registers
+  *	and bitfields shifts and masks.
++ * @features: a bitfield value indicating the features supported in SOC like
++ *	emulation, multi instance etc
+  *
+  * This structure is required for configuration of exynos_tmu driver.
+  */
+@@ -247,6 +277,7 @@ struct exynos_tmu_platform_data {
+ 	struct freq_clip_table freq_tab[4];
+ 	unsigned int freq_tab_count;
+ 	const struct exynos_tmu_registers *registers;
++	unsigned int features;
+ };
+ 
+ /**
+diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
+index 06ecfb0..694557e 100644
+--- a/drivers/thermal/samsung/exynos_tmu_data.c
++++ b/drivers/thermal/samsung/exynos_tmu_data.c
+@@ -83,6 +83,7 @@ struct exynos_tmu_init_data const exynos4210_default_tmu_data = {
+ 		.freq_tab_count = 2,
+ 		.type = SOC_ARCH_EXYNOS4210,
+ 		.registers = &exynos4210_tmu_registers,
++		.features = TMU_SUPPORT_READY_STATUS,
+ 		},
+ 	},
+ 	.tmu_count = 1,
+@@ -162,7 +163,10 @@ static const struct exynos_tmu_registers exynos5250_tmu_registers = {
+ 	}, \
+ 	.freq_tab_count = 2, \
+ 	.type = SOC_ARCH_EXYNOS, \
+-	.registers = &exynos5250_tmu_registers,
++	.registers = &exynos5250_tmu_registers, \
++	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
++			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
++			TMU_SUPPORT_EMUL_TIME)
+ 
+ struct exynos_tmu_init_data const exynos5250_default_tmu_data = {
+ 	.tmu_data = {
 -- 
 1.7.1
 
