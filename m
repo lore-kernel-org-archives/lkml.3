@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755998Ab3FKUCl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:02:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41577 "EHLO
+	id S1756221Ab3FKUC6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:02:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41629 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754014Ab3FKUCk (ORCPT
+	with ESMTP id S1756188Ab3FKUC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:02:40 -0400
+	Tue, 11 Jun 2013 16:02:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Graham Inggs <graham.inggs@uct.ac.za>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 01/21] USB: option: blacklist network interface on Huawei E1820
-Date: Tue, 11 Jun 2013 13:02:55 -0700
-Message-Id: <20130611195520.183050813@linuxfoundation.org>
+        Alex Hung <alex.hung@canonical.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 13/21] ACPI / video: ignore BIOS initial backlight value for HP m4
+Date: Tue, 11 Jun 2013 13:03:07 -0700
+Message-Id: <20130611195521.555250066@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195520.003233586@linuxfoundation.org>
 References: <20130611195520.003233586@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,32 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Alex Hung <alex.hung@canonical.com>
 
-commit b8a24e6281d37243c06b9497dcbfaa98c1e2ad35 upstream.
+commit fedbe9bc6fd3e14b1ffbb3dac407777ac4a3650c upstream.
 
-The mode used by Windows for the Huawei E1820 will use the
-same ff/ff/ff class codes for both serial and network
-functions.
+On HP m4 lapops, BIOS reports minimum backlight on boot and
+causes backlight to dim completely. This ignores the initial backlight
+values and set to max brightness.
 
-Reported-by: Graham Inggs <graham.inggs@uct.ac.za>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+References: https://bugs.launchpad.net/bugs/1184501
+Signed-off-by: Alex Hung <alex.hung@canonical.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/acpi/video.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -593,6 +593,8 @@ static const struct usb_device_id option
- 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x14ac, 0xff, 0xff, 0xff),	/* Huawei E1820 */
-+		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0xff, 0xff) },
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -448,6 +448,14 @@ static struct dmi_system_id video_dmi_ta
+ 		DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13 - 2000 Notebook PC"),
+ 		},
+ 	},
++	{
++	 .callback = video_ignore_initial_backlight,
++	 .ident = "HP Pavilion m4",
++	 .matches = {
++		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion m4 Notebook PC"),
++		},
++	},
+ 	{}
+ };
+ 
 
 
