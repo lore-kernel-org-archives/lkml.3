@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab3FKHby (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 03:31:54 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15584 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753816Ab3FKHbw (ORCPT
+	id S1754180Ab3FKHcw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 03:32:52 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:44699 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753291Ab3FKHcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 03:31:52 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 11 Jun 2013 00:30:51 -0700
-Date: Tue, 11 Jun 2013 10:30:48 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Jay Agarwal <jagarwal@nvidia.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "olof@lixom.net" <olof@lixom.net>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Juha Tukkinen <jtukkinen@nvidia.com>,
-        Krishna Thota <kthota@nvidia.com>
-Subject: Re: [PATCH V3 3/4] ARM: dts: tegra: Correct PCIe entry
-Message-ID: <20130611073048.GR3847@tbergstrom-lnx.Nvidia.com>
-References: <1370372252-4332-1-git-send-email-jagarwal@nvidia.com>
- <1370372252-4332-3-git-send-email-jagarwal@nvidia.com>
- <20130610195511.GC25859@mithrandir>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130610195511.GC25859@mithrandir>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 11 Jun 2013 03:32:50 -0400
+Message-ID: <1370935964.3252.24.camel@edumazet-glaptop>
+Subject: Re: [PATCH v10 net-next 0/6] net: low latency Ethernet device
+ polling
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, jesse.brandeburg@intel.com,
+        donald.c.skidmore@intel.com, e1000-devel@lists.sourceforge.net,
+        willemb@google.com, bhutchings@solarflare.com, andi@firstfloor.org,
+        hpa@zytor.com, eilong@broadcom.com, or.gerlitz@gmail.com,
+        amirv@mellanox.com, eliezer@tamir.org.il
+Date: Tue, 11 Jun 2013 00:32:44 -0700
+In-Reply-To: <51B6C87B.70101@linux.intel.com>
+References: <20130610083929.6955.87206.stgit@ladj378.jer.intel.com>
+	 <20130610.134116.1913599114372510768.davem@davemloft.net>
+	 <51B68AA6.1050105@linux.intel.com>
+	 <20130610.212443.1096102996038709384.davem@davemloft.net>
+	 <51B6C87B.70101@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 09:55:12PM +0200, Thierry Reding wrote:
-> * PGP Signed by an unknown key
+On Tue, 2013-06-11 at 09:49 +0300, Eliezer Tamir wrote:
+
+> I would like to hear opinions on what needs to be added to make this
+> feature complete.
 > 
-> On Wed, Jun 05, 2013 at 12:27:31AM +0530, Jay Agarwal wrote:
-> [...]
-> > @@ -29,7 +29,7 @@
-> >  		ranges = <0x82000000 0 0x00000000 0x00000000 0 0x00001000   /* port 0 configuration space */
-> >  			  0x82000000 0 0x00001000 0x00001000 0 0x00001000   /* port 1 configuration space */
-> >  			  0x82000000 0 0x00004000 0x00004000 0 0x00001000   /* port 2 configuration space */
-> > -			  0x81000000 0 0          0x02000000 0 0x00010000   /* downstream I/O */
-> > +			  0x81000000 0 0          0x02000000 0 0x00100000   /* downstream I/O */
-> >  			  0x82000000 0 0x20000000 0x20000000 0 0x10000000   /* non-prefetchable memory */
-> >  			  0xc2000000 0 0x30000000 0x30000000 0 0x10000000>; /* prefetchable memory */
+> The list I have so far is:
+> 1. add a socket option
+
+Yes, please. I do not believe all sockets on the machine are candidate
+for low latency. In fact very few of them should be, depending on the
+number of cpu and/or RX queues.
+
+> 2. support for poll/select
+
+As long as the cost of llpoll is bounded per poll()/select() call it
+will be ok.
+
+> 3. support for epoll
+
+For this one, I honestly do not know how to proceed.
+
+epoll Edge Trigger model is driven by the wakeups events.
+
+The wakeups come from frames being delivered by the NIC (for UDP/TCP
+sockets)
+
+If epoll_wait() has to scan the list of epitem to be able to perform the
+llpoll callback, it will be too slow : We come back to poll() model,
+with O(N) execution time.
+
+Ideally we would have to callback llpoll not from the tcp_poll(), but
+right before putting current thread in wait mode.
+
 > 
-> That increases the I/O region size from 64 KiB to 1 MiB. Why is that
-> necessary? I/O operations can only address 64 KiB, so I don't think
-> adding more makes any sense.
+> Also, would you accept a trailing whitespace cleanup patch for
+> fs/select.c?
 
-At least PCI allows 32bit I/O addresses. No idea if anyone uses them though.
+This has to be submitted to lkml
 
-Cheers,
 
-Peter.
+
