@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248Ab3FKUiz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:38:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41614 "EHLO
+	id S1756131Ab3FKUCw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:02:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41585 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756153Ab3FKUCx (ORCPT
+	with ESMTP id S1756027Ab3FKUCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:02:53 -0400
+	Tue, 11 Jun 2013 16:02:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Li Zefan <lizefan@huawei.com>
-Subject: [ 20/21] tracing: Fix possible NULL pointer dereferences
-Date: Tue, 11 Jun 2013 13:03:14 -0700
-Message-Id: <20130611195522.366381469@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 02/21] ALSA: usb-audio - Apply Logitech QuickCam Pro 9000 quirk only to audio iface
+Date: Tue, 11 Jun 2013 13:02:56 -0700
+Message-Id: <20130611195520.298614767@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195520.003233586@linuxfoundation.org>
 References: <20130611195520.003233586@linuxfoundation.org>
@@ -29,86 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Takashi Iwai <tiwai@suse.de>
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+commit 8eafc0a161123d90617c9ca2eddfe87b382b1b89 upstream.
 
-commit 6a76f8c0ab19f215af2a3442870eeb5f0e81998d upstream.
+... instead of applying to all interfaces.
 
-Currently set_ftrace_pid and set_graph_function files use seq_lseek
-for their fops.  However seq_open() is called only for FMODE_READ in
-the fops->open() so that if an user tries to seek one of those file
-when she open it for writing, it sees NULL seq_file and then panic.
+Reference: http://forums.gentoo.org/viewtopic-p-6886404.html
 
-It can be easily reproduced with following command:
-
-  $ cd /sys/kernel/debug/tracing
-  $ echo 1234 | sudo tee -a set_ftrace_pid
-
-In this example, GNU coreutils' tee opens the file with fopen(, "a")
-and then the fopen() internally calls lseek().
-
-Link:
-http://lkml.kernel.org/r/1365663302-2170-1-git-send-email-namhyung@kernel.org
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[ lizf: adjust context ]
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- kernel/trace/ftrace.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2300,7 +2300,7 @@ ftrace_notrace_open(struct inode *inode,
- }
- 
- static loff_t
--ftrace_regex_lseek(struct file *file, loff_t offset, int origin)
-+ftrace_filter_lseek(struct file *file, loff_t offset, int origin)
+---
+ sound/usb/quirks-table.h |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+--- a/sound/usb/quirks-table.h
++++ b/sound/usb/quirks-table.h
+@@ -146,7 +146,13 @@
+ 	.bInterfaceSubClass = USB_SUBCLASS_AUDIOCONTROL
+ },
  {
- 	loff_t ret;
- 
-@@ -3118,7 +3118,7 @@ static const struct file_operations ftra
- 	.open = ftrace_filter_open,
- 	.read = seq_read,
- 	.write = ftrace_filter_write,
--	.llseek = ftrace_regex_lseek,
-+	.llseek = ftrace_filter_lseek,
- 	.release = ftrace_regex_release,
- };
- 
-@@ -3126,7 +3126,7 @@ static const struct file_operations ftra
- 	.open = ftrace_notrace_open,
- 	.read = seq_read,
- 	.write = ftrace_notrace_write,
--	.llseek = ftrace_regex_lseek,
-+	.llseek = ftrace_filter_lseek,
- 	.release = ftrace_regex_release,
- };
- 
-@@ -3335,8 +3335,8 @@ static const struct file_operations ftra
- 	.open		= ftrace_graph_open,
- 	.read		= seq_read,
- 	.write		= ftrace_graph_write,
-+	.llseek		= ftrace_filter_lseek,
- 	.release	= ftrace_graph_release,
--	.llseek		= seq_lseek,
- };
- #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
- 
-@@ -3822,7 +3822,7 @@ static const struct file_operations ftra
- 	.open		= ftrace_pid_open,
- 	.write		= ftrace_pid_write,
- 	.read		= seq_read,
--	.llseek		= seq_lseek,
-+	.llseek		= ftrace_filter_lseek,
- 	.release	= ftrace_pid_release,
- };
- 
+-	USB_DEVICE(0x046d, 0x0990),
++	.match_flags = USB_DEVICE_ID_MATCH_DEVICE |
++		       USB_DEVICE_ID_MATCH_INT_CLASS |
++		       USB_DEVICE_ID_MATCH_INT_SUBCLASS,
++	.idVendor = 0x046d,
++	.idProduct = 0x0990,
++	.bInterfaceClass = USB_CLASS_AUDIO,
++	.bInterfaceSubClass = USB_SUBCLASS_AUDIOCONTROL,
+ 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
+ 		.vendor_name = "Logitech, Inc.",
+ 		.product_name = "QuickCam Pro 9000",
 
 
