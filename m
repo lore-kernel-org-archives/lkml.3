@@ -1,84 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755465Ab3FKRBA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 13:01:00 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:19255
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754154Ab3FKRA6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 13:00:58 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
-Date: Tue, 11 Jun 2013 12:00:51 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [BUG] PCI related panic on powerpc based board with 3.10-rcX
-To: Rojhalat Ibrahim <imr@rtschenk.de>
-CC: Michael Guntsche <michael.guntsche@it-loops.com>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-In-Reply-To: <10631172.HfDeIDHqX3@pcimr> (from imr@rtschenk.de on Tue Jun 11
-	02:24:28 2013)
-X-Mailer: Balsa 2.4.12
-Message-ID: <1370970051.18413.24@snotra>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+	id S1755588Ab3FKRB7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 13:01:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5630 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754199Ab3FKRB6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 13:01:58 -0400
+X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wskK765KtKEA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=GqmPQ3klG2UA:10 a=BwKYX66jYyDMaeh__qQA:9 a=QEXdDO2ut3YA:10 a=jJooYxnUmyLXkiAx:21 a=zFQGuUqExv4yfY1U:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1370970115.9844.189.camel@gandalf.local.home>
+Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Waiman Long <waiman.long@hp.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, torvalds@linux-foundation.org
+Date: Tue, 11 Jun 2013 13:01:55 -0400
+In-Reply-To: <20130611163607.GG5146@linux.vnet.ibm.com>
+References: <20130609193657.GA13392@linux.vnet.ibm.com>
+	 <51B748DA.2070306@hp.com> <20130611163607.GG5146@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2013 02:24:28 AM, Rojhalat Ibrahim wrote:
-> On Monday 10 June 2013 17:52:33 Scott Wood wrote:
-> > On 06/10/2013 12:07:43 PM, Michael Guntsche wrote:
-> > > Good evening,
-> > >
-> > > This patch does not fix the problem, during boot the kernel still
-> > > panics. I had a closer look at the commit and the following patch
-> > > fixes it for me....
-> > >
-> > > diff --git a/arch/powerpc/sysdev/fsl_pci.c
-> > > b/arch/powerpc/sysdev/fsl_pci.c
-> > > index 028ac1f..21b687f 100644
-> > > --- a/arch/powerpc/sysdev/fsl_pci.c
-> > > +++ b/arch/powerpc/sysdev/fsl_pci.c
-> > > @@ -814,7 +814,7 @@ int __init mpc83xx_add_bridge(struct  
-> device_node
-> > > *dev)
-> > >
-> > >                 if (ret)
-> > >
-> > >                         goto err0;
-> > >
-> > >         } else {
-> > >
-> > > -               fsl_setup_indirect_pci(hose, rsrc_cfg.start,
-> > > +               setup_indirect_pci(hose, rsrc_cfg.start,
-> > >
-> > >                                        rsrc_cfg.start + 4, 0);
-> > >
-> > >         }
-> >
-> > The only difference here is that you're not setting hose->ops to
-> > fsl_indirect_pci_ops.  Do you know why that is helping, and what
-> > hose->ops is set to instead?
-> >
-> > -Scott
+On Tue, 2013-06-11 at 09:36 -0700, Paul E. McKenney wrote:
+
+> > I am a bit concern about the size of the head queue table itself.
+> > RHEL6, for example, had defined CONFIG_NR_CPUS to be 4096 which mean
+> > a table size of 256. Maybe it is better to dynamically allocate the
+> > table at init time depending on the actual number of CPUs in the
+> > system.
 > 
-> The difference is only the read function in hose->ops, which is set to
-> indirect_read_config instead of fsl_indirect_read_config.
-> 
-> fsl_indirect_read_config calls fsl_pcie_check_link, which is where  
-> the Oops
-> occurs.
+> But if your kernel is built for 4096 CPUs, the 32*256=8192 bytes of memory
+> is way down in the noise.  Systems that care about that small an amount
+> of memory probably have a small enough number of CPUs that they can just
+> turn off queueing at build time using CONFIG_TICKET_LOCK_QUEUED=n, right?
 
-Why is fsl_pcie_check_link being called for non-PCIe buses?
+If this turns out to work for large machines, that means that distros
+will enable it, and distros tend to up the NR_CPUS, which is defined at
+compile time and is set regardless of if you are running with 2 CPUs or
+a 1000 CPUs.
 
-> Mike, can you find out where exactly in fsl_pcie_check_link the bad  
-> access
-> happens? Enabling CONFIG_DEBUG_BUGVERBOSE might help.
+For now it's fine to use NR_CPUS, but I always try to avoid it. Working
+in the ARM and POWER environment you are use to lots of kernels compiled
+specifically for the target. But in the x86 world, it is basically one
+kernel for all environments, where NR_CPUS does make a big difference.
 
-Why does it matter?  You shouldn't be calling that function at all.
+-- Steve
 
--Scott
+
