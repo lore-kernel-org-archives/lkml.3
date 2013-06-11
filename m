@@ -1,201 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332Ab3FKF5u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 01:57:50 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54898 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330Ab3FKF5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 01:57:48 -0400
-X-IronPort-AV: E=Sophos;i="4.87,842,1363104000"; 
-   d="scan'208";a="7517949"
-Message-ID: <51B6BCBE.7060608@cn.fujitsu.com>
-Date: Tue, 11 Jun 2013 13:59:26 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: "Serge E. Hallyn" <serge@hallyn.com>
-CC: Serge Hallyn <serge.hallyn@ubuntu.com>,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        eparis@redhat.com, linux-audit@redhat.com, ebiederm@xmission.com,
-        davem@davemloft.net
-Subject: Re: [PATCH RFC 00/48] Add namespace support for audit
-References: <1367893269-9308-1-git-send-email-gaofeng@cn.fujitsu.com> <519B3B4E.1070405@cn.fujitsu.com> <20130606215255.GA28978@tp> <20130606224710.GA30502@tp> <51B531CC.2020604@cn.fujitsu.com> <20130610212437.GA11940@austin.hallyn.com>
-In-Reply-To: <20130610212437.GA11940@austin.hallyn.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/11 13:55:52,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/11 13:55:55,
-	Serialize complete at 2013/06/11 13:55:55
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752526Ab3FKGAa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 02:00:30 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:18532 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab3FKGA1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 02:00:27 -0400
+X-AuditID: cbfee68e-b7f276d000002279-db-51b6bcf97c6c
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
+        linux-samsung-soc@vger.kernel.org,
+        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
+        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
+        linux-pci@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "'Andrew Murray'" <andrew.murray@arm.com>,
+        Jingoo Han <jg1.han@samsung.com>
+References: <00c001ce277b$92b26ab0$b8174010$%han@samsung.com>
+ <201306071943.18407.arnd@arndb.de>
+ <000001ce65b5$e45477f0$acfd67d0$@samsung.com>
+ <201306101722.10146.arnd@arndb.de>
+In-reply-to: <201306101722.10146.arnd@arndb.de>
+Subject: Re: [PATCH 6/6] ARM: dts: Add pcie controller node for Samsung
+ EXYNOS5440 SoC
+Date: Tue, 11 Jun 2013 15:00:25 +0900
+Message-id: <002e01ce6668$f785dc20$e6919460$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQFyr6c5AKxr6zs5JXOh3KubdCPksAHFjqq9AWqMh6UBHmRjK5nE/Hxw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsVy+t8zfd1fe7YFGhzvZrJo/r+d1eLvpGPs
+	FkuaMiwOzH7IavHqzEY2i8sLL7FafL9hatG74CqbxabH11gtLu+aw2Zxdt5xNosZ5/cxWaxo
+	2sposfjicmaL3SuXsFgcm7GE0eLpgyYmB0GPNfPWMHr8/jWJ0aNvylU2jyebLjJ6LNhU6nHn
+	2h42j81L6j3Oz1jI6PF9Ry9QwZZVjB4/X+p4fN4kF8ATxWWTkpqTWZZapG+XwJWxoXU3W8Fj
+	noq1i/tZGhgvcnYxcnJICJhIdO+6yARhi0lcuLeerYuRi0NIYBmjxO25C5hhio6tO8oKYgsJ
+	TGeU6FlWClH0i1Hi35JVYEVsAmoSX74cZgexRQSUJY6/vMMCUsQscIhVYs/6DawQHdsZJZpb
+	PgI5HBycAvoSL+/LgjQIC0RIXHn+GOwMFgFVibaD58G28QpYSrzbf4AJwhaU+DH5HguIzSyg
+	JbF+53EmCFteYvOat1CXKkjsOPuaEeIIN4mJ784zQtSISOx78Y4R5AYJgSccEpMaPjJDLBOQ
+	+Db5EAvIPRICshKbDkDNkZQ4uOIGywRGiVlIVs9CsnoWktWzkKxYwMiyilE0tSC5oDgpvchI
+	rzgxt7g0L10vOT93EyMkwfTtYLx5wPoQYzLQ+onMUqLJ+cAElVcSb2hsZmRhamJqbGRuaUaa
+	sJI4r1qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxlb1iQcalb9/qeqbIsCU51/GJDZt
+	t6eyQNmG5H/y1VbujeH37a+1yUdn3ZBStT2pu5tvVjP7CevsEl6vDBGb1Ue+Vi/47nxX6vta
+	xQ0/3xfFOTm+7zzdFePdmC5/w/xkgvWTNT8brVlD//8LiE7e6idic/zVdLm6OVoSd4/fZDjx
+	aGKR6+rbSizFGYmGWsxFxYkAR1T3vUYDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAJsWRmVeSWpSXmKPExsVy+t9jQd2fe7YFGhxbamHR/H87q8XfScfY
+	LZY0ZVgcmP2Q1eLVmY1sFpcXXmK1+H7D1KJ3wVU2i02Pr7FaXN41h83i7LzjbBYzzu9jsljR
+	tJXRYvHF5cwWu1cuYbE4NmMJo8XTB01MDoIea+atYfT4/WsSo0fflKtsHk82XWT0WLCp1OPO
+	tT1sHpuX1Hucn7GQ0eP7jl6ggi2rGD1+vtTx+LxJLoAnqoHRJiM1MSW1SCE1Lzk/JTMv3VbJ
+	OzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwfoLyWFssScUqBQQGJxsZK+HaYJoSFuuhYw
+	jRG6viFBcD1GBmggYR1jxobW3WwFj3kq1i7uZ2lgvMjZxcjJISFgInFs3VFWCFtM4sK99Wwg
+	tpDAdEaJnmWlXYxcQPYvRol/S1YxgyTYBNQkvnw5zA5iiwgoSxx/eYcFpIhZ4BCrxJ71G1gh
+	OrYzSjS3fARyODg4BfQlXt6XBWkQFoiQuPL8MROIzSKgKtF28DzYZl4BS4l3+w8wQdiCEj8m
+	32MBsZkFtCTW7zzOBGHLS2xe85YZ4lIFiR1nXzNCHOEmMfHdeUaIGhGJfS/eMU5gFJqFZNQs
+	JKNmIRk1C0nLAkaWVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjB6euZ9A7GVQ0WhxgFOBiV
+	eHgTGLcFCrEmlhVX5h5ilOBgVhLhNd0OFOJNSaysSi3Kjy8qzUktPsSYDPTpRGYp0eR8YGrN
+	K4k3NDYxM7I0MrMwMjE3J01YSZz3YKt1oJBAemJJanZqakFqEcwWJg5OqQZGkee+G60TJzif
+	fNdUVtTzP+DsMSnrZVdSpsRnql0s/f3xlsZSHc5ns2ZYH7lmn5lj9IBxm5rrjnWKrL5iRllm
+	xis+icXcb6r7fczeT3tOkl7j3hfrTJXceQMX8Fw6yZ3A9H6Z2ine2ZpzF//eO+/RdUkRsfXh
+	k20N5rrMnWztdjTsus4Gnc2nlViKMxINtZiLihMBf1sWbaMDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2013 05:24 AM, Serge E. Hallyn wrote:
-> Quoting Gao feng (gaofeng@cn.fujitsu.com):
->> On 06/07/2013 06:47 AM, Serge Hallyn wrote:
->>> Quoting Serge Hallyn (serge.hallyn@ubuntu.com):
->>>> Quoting Gao feng (gaofeng@cn.fujitsu.com):
->>>>> On 05/07/2013 10:20 AM, Gao feng wrote:
->>>>>> This patchset try to add namespace support for audit.
->>>>>>
->>>>>> I choose to assign audit to the user namespace.
->>>>>> Right now,there are six kinds of namespaces, such as
->>>>>> net, mount, ipc, pid, uts and user. the first five
->>>>>> namespaces have special usage. the audit isn't suitable to
->>>>>> belong to these five namespaces, so the user namespace
->>>>>> may be the best choice.
->>>>>>
->>>>>> Through I decide to make audit related resources per user
->>>>>> namespace, but audit uses netlink to communicate between kernel
->>>>>> space and user space, and the netlink is a private resource
->>>>>> of per net namespace. So we need the capability to allow the
->>>>>> netlink sockets to communicate with each other in the same user
->>>>>> namespace even they are in different net namespace. [PATCH 2/48]
->>>>>> does this job, it adds a new function "compare" for per netlink
->>>>>> table to compare two sockets. it means the netlink protocols can
->>>>>> has its own compare fuction, For other protocols, two netlink
->>>>>> sockets are different if they belong to the different net namespace.
->>>>>> For audit protocol, two sockets can be the same even they in different
->>>>>> net namespace,we use user namespace not net namespace to make the
->>>>>> decision.
->>>>>>
->>>>>> There is one point that some people may dislike,in [PATCH 1/48],
->>>>>> the kernel side audit netlink socket is created only when we create
->>>>>> the first netns for the userns, and this userns will hold the netns
->>>>>> until we destroy this userns.
->>>>>>
->>>>>> The other patches just make the audit related resources per
->>>>>> user namespace.
->>>>>>
->>>>>> This patchset is sent as an RFC,any comments are welcome.
->>>>
->>>> Hi,
->>>>
->>>> thanks for sending this.  I think you need to ping the selinux folks
->>>> for comment though.  It appears to me that, after this patchset, the
->>>> kernel with CONFIG_USER_NS=y could not be LSPP-compliant, because
->>>> the selinux-generated audit messages do not always go to init_user_ns.
->>>>
->>>> Additionally, the only type of namespacing selinux wants is where it
->>>> is enforced by policy compiler and installer using typenames - i.e.
->>>> 'container1.user_t' vs 'user_t'.  Selinux does not want user namespaces
->>>> to affect selinux enforcement at all.  (at least last I knew, several
->>>> years ago at a mini-summit, I believe this was from Stephen Smalley).
->>>
->>> That sort of sounds like I'm distancing myself from that, which I
->>> don't mean to do.  I agree with the decison:  MAC (selinux, apparmor
->>> and smack) should not be confuddled by user namespaces.  (posix caps
->>> are, as always, a bit different).
->>
->>
->> Thanks for your comments!
->>
->> Very useful information, it sounds reasonable.
->>
->> Let's just drop those patches.
->>
+On Tuesday, June 11, 2013 12:22 AM, Arnd Bergmann wrote:
+> On Monday 10 June 2013, Jingoo Han wrote:
+> > On Saturday, June 08, 2013 2:43 AM, Arnd Bergmann wrote:
+> > For multiple domains, how can I fix the DT properties?
 > 
-> Hi Gao,
-> 
-> proceeding then,
-> 
-> The netfilter related changes I think make sense.  They log to the userns
-> which owns the netns in question, which seems right.
-> 
-> However looking at Audit-tty-translate-audit_log_start-to-audit_log_sta.patch,
-> it appears to log to the userns of the task which is doing the operation.
-> 
-> Keeping in mind that an unprivileged user can create a new user namespace,
-> this doesn't seem right.
-> 
-> Also, you are introducing per-userns syscall filter.  It looks like I
-> can then create a new userns to escape my existing syscall filter, since
-> the filters up the user_ns parent chain are not being applied.  Is that
-> correct?
+> Domains are a Linux concept, you have to pick a new domain number for each
+> struct hw_pci you register.
 
-Hi Serge,
+Hi Arnd,
 
-I admit that the global resources related audit message should be logged to
-parent and ancestor. but this is more complex than the way I implemented.
-Because we should send message to all ancestor and we should consider not
-to exceed the rate_limit of all ancestor.
+Thank you for your reply.
+It is very helpful. :)
 
-I prefer to don't make these filters/rules per user namespace right now.
+I will set domain numbers for each struct hw_pci.
 
 > 
-> Did you have a particular rationale written out for what precisely you're
-> wanting to make per-userns?  That would be helpful in trying to figure
-> out which bits are appropriate.  Again I so far haven't seen a single
-> problem with the code itself, it's just a question of which bits we
-> actually want (and are safe).
+> > Current DT properties are as below:
+> >
+> > +	pcie0@40000000 {
+> > +		compatible = "samsung,exynos5440-pcie";
+> > +		reg = <0x40000000 0x4000
+> > +			0x290000 0x1000
+> > +			0x270000 0x1000
+> > +			0x271000 0x40>;
+> > +		interrupts = <0 20 0>, <0 21 0>, <0 22 0>;
+> > +		#address-cells = <3>;
+> > +		#size-cells = <2>;
+> > +		device_type = "pci";
+> > +		ranges = <0x00000800 0 0x40000000 0x40000000 0 0x00200000   /* configuration space */
+> > +			  0x81000000 0 0	  0x40200000 0 0x00004000   /* downstream I/O */
+> > +			  0x82000000 0 0	  0x40204000 0 0x10000000>; /* non-prefetchable memory */
+> > +	};
 > 
+> An unrelated comment: your first "reg" field seems to overlap with part
+> of your configuration space. Is that intentional?
 
-In my option, the audit rules(inode, tree_list, filter) , some of audit
-controller related resources(enabled,pid,portid...) and skb queue, audit
-netlink sockets,kauditd thread should be per-userns. The audit user message
-which generated by the user in container should be per-userns too.
+Yes, intentional.
+But, I will try to remove it.
 
-Since netns is not implemented as a hierarchy, and the network related
-resources are not global. so network related audit message should be per-userns too.
-
-The security related audit message should be send to init user namespace
-as we discussed before. Maybe tty related audit message should be send
-to init user namespace too, I have no idea now.
-
-The next step, I will post a new patchset which only make the audit user
-message and the basic audit resource per userns. I think this patchset
-will easy to be reviewed and accepted, And will not influence the host.
-This patchset contains the below patches:
-
-Gao feng (21):
-  Audit: make audit kernel side netlink sock per userns
-  netlink: Add compare function for netlink_table
-  Audit: implement audit self-defined compare function
-  Audit: make audit_skb_queue per user namespace
-  Audit: make audit_skb_hold_queue per user namespace
-  Audit: make kauditd_task per user namespace
-  Audit: make audit_pid per user namespace
-  Audit: make audit_nlk_portid per user namesapce
-  Audit: make audit_enabled per user namespace
-  Audit: make audit_ever_enabled per user namespace
-  Audit: make audit_initialized per user namespace
-  Audit: only allow init user namespace to change rate limit
-  Audit: only allow init user namespace to change audit_failure
-  Audit: allow to send netlink message to auditd in uninit user
-    namespace
-  Audit: make kauditd_wait per user namespace
-  Audit: make audit_backlog_wait per user namespace
-  Audit: introduce new audit logging interface for user namespace
-  Audit: pass proper user namespace to audit_log_common_recv_msg
-  Audit: Log audit config change in uninit user namespace
-  Audit: send reply message to the auditd in proper user namespace
-  Audit: Allow GET,SET,USER MSG operations in uninit user namespace
-
- include/linux/audit.h          |  39 +++-
- include/linux/netlink.h        |   1 +
- include/linux/user_namespace.h |  33 +++-
- kernel/audit.c                 | 422 ++++++++++++++++++++++++++---------------
- kernel/audit.h                 |   5 +-
- kernel/auditsc.c               |  11 +-
- kernel/user_namespace.c        |   3 +
- net/netlink/af_netlink.c       |  32 +++-
- net/netlink/af_netlink.h       |   1 +
- 9 files changed, 369 insertions(+), 178 deletions(-)
-
-Do you have any comments or advice to this plan? After the above patchs
-been accepted, I think it's easy to push other audit namespace related
-patches into upstream.
-
-Thanks,
-Gao
-
-> -serge
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
 > 
+> Also, shouldn't your memory space end on a 256MB boundary, rather than
+> extend up to 0x50203fff?
+
+According to the manual of Exynos PCIe, each memory space for Exynos PCIe
+can support 512MB, including I/O, CFG regions.
+
+Is there any problem when over 256MB boundary is used?
+Please let me know. :)
+
+
+Best regards,
+Jingoo Han
+
+> 
+> 	Arnd
 
