@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab3FKQ47 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 12:56:59 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:2074 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754847Ab3FKQ46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 12:56:58 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Message-ID: <51B756CD.1070500@broadcom.com>
-Date: Tue, 11 Jun 2013 09:56:45 -0700
-From: "Christian Daudt" <csd@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510
- Thunderbird/17.0.6
+	id S1755394Ab3FKQ6E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 12:58:04 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:38502 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753666Ab3FKQ6C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 12:58:02 -0400
+Message-ID: <51B757E1.2080205@metafoo.de>
+Date: Tue, 11 Jun 2013 19:01:21 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-To: "Olof Johansson" <olof@lixom.net>
-cc: "Matt Porter" <matt.porter@linaro.org>, "Arnd Bergmann" <arnd@arndb.de>,
-        "Stephen Warren" <swarren@nvidia.com>,
-        "Linux ARM Kernel List" <linux-arm-kernel@lists.infradead.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "Linaro Patches" <patches@linaro.org>
-Subject: Re: [PATCH 0/2] ARM dts: bcm281xx: use preprocessor for device
- trees
-References: <1370497295-12682-1-git-send-email-matt.porter@linaro.org>
- <20130611070344.GF6688@quad.lixom.net>
-In-Reply-To: <20130611070344.GF6688@quad.lixom.net>
-X-WSS-ID: 7DA98A7831W34797859-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
+To: Jonathan Cameron <jic23@kernel.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Lee Jones <lee.jones@linaro.org>,
+        =?UTF-8?B?QmVub8OudCBDb3Vzc29u?= <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-iio@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: am335x: TSC & ADC reworking including DT pieces, take 4
+References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de> <20130611142358.GG29135@zurbaran> <20130611160415.GA379@core.coreip.homeip.net> <20130611161506.GK29135@zurbaran> <1565f2fb-7f16-4910-8fa2-cd5700e8986d@email.android.com>
+In-Reply-To: <1565f2fb-7f16-4910-8fa2-cd5700e8986d@email.android.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-06-11 12:03 AM, Olof Johansson wrote:
-> On Thu, Jun 06, 2013 at 01:41:33AM -0400, Matt Porter wrote:
->> This series follows the same approach as taken on Tegra and
->> OMAP DT files to use the C preprocessor in order to improve
->> readability. Since bcm281xx does not yet have gpio and pinctrl
->> support, this series just enables the C preprocessor and removes
->> the magic constants from existing irq properties. Any new
->> additions can come in using human readable definitions.
+On 06/11/2013 06:27 PM, Jonathan Cameron wrote:
+> 
+> 
+> Samuel Ortiz <sameo@linux.intel.com> wrote:
+> 
+>> Hi Dmitry,
 >>
->> The resulting dtb was diff-tested to validate it versus the non
->> preprocessed dts version.
->>
->> Matt Porter (2):
->>    ARM: dts: bcm281xx: use #include for device tree files
->>    ARM: dts: bcm281xx: use existing defines for irqs
-> Acked-by: Olof Johansson <olof@lixom.net>
-Acked-by: Christian Daudt <csd@broadcom.com>
->
-> Not sure what else you'll have for 3.11 devicetree-wise, Christian -- your
-> choice if you want to send a pull request or ack these and we'll apply them
-> directly.
->
-I can add them to my tree. I already have a pending dt commit to push.
+>> On Tue, Jun 11, 2013 at 09:04:16AM -0700, Dmitry Torokhov wrote:
+>>> On Tue, Jun 11, 2013 at 04:23:58PM +0200, Samuel Ortiz wrote:
+>>>> Hi Sebastian,
+>>>>
+>>>> On Tue, Jun 11, 2013 at 01:30:46PM +0200, Sebastian Andrzej Siewior
+>> wrote:
+>>>>> I believe the whole thing should go via the MFD tree. It touches
+>> also
+>>>>> input & iio subsystem. I collected ACKs where I got some in the
+>> meantime.
+>>>> Please fix your commit logs, and your subject lines. It should be
+>> e.g.
+>>>> mfd: input: ti_am335x_adc: Blablabla
+>>>>
+>>>> if it's mostly an mfd patch that also touches an input driver.
+>>>>
+>>>> Then, this is a pretty big patchset, with iio, input and mfd all
+>> mixed
+>>>> together and it is likely to create merge conflicts.
+>>>> From what I can see from it, and please correct me if I'm
+>>>> wrong, the iio and input changes depend on the mfd ones, and not
+>> the
+>>>> other way around. If that's so, I'm going to ask you to reshuffle
+>> your
+>>>> patch set and separate the MFD changes from the iio and input ones.
+>> I'll
+>>>> take the MFD ones and will create an immutable branch for Jonathan
+>> and
+>>>> Dmitry to pull from and apply the iio and input changes on top of
+>> it.
+>>>> Merge conflicts should be mostly avoided that way.
+>>>
+>>> I purposely left this driver alone as I expected it would be merged
+>>> through MFD tree, so there should not be any merging issues on my
+>> side.
+>> Thanks for the notice.
+>> Jonathan, can you guarantee the same for the iio parts ?
+> I have also been avoiding taking any of these and there are unlikely to be any iio wide changes merging at this stage in cycle.  Hence these going through MFD is best plan.
+> 
+> Lars raised a couple of issues so would be best to wait for his ack if he hasn't already looked at this revision.
 
-  thanks,
-    csd
+The IIO bits look fine to me in this version.
 
-
-
+- Lars
 
