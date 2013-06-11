@@ -1,91 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753753Ab3FKP3b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 11:29:31 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35007 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343Ab3FKP33 (ORCPT
+	id S1754634Ab3FKP3h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 11:29:37 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:42376 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754027Ab3FKP3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 11:29:29 -0400
-Message-ID: <51B74252.5090906@linutronix.de>
-Date: Tue, 11 Jun 2013 17:29:22 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Lee Jones <lee.jones@linaro.org>,
-        =?windows-1252?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: am335x: TSC & ADC reworking including DT pieces, take 4
-References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de> <20130611142358.GG29135@zurbaran>
-In-Reply-To: <20130611142358.GG29135@zurbaran>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 11 Jun 2013 11:29:34 -0400
+From: Robert Richter <rric@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        Robert Richter <robert.richter@linaro.org>,
+        Robert Richter <rric@kernel.org>
+Subject: [PATCH] perf tools: Use default include path notation for libtraceevent headers
+Date: Tue, 11 Jun 2013 17:29:18 +0200
+Message-Id: <1370964558-8599-1-git-send-email-rric@kernel.org>
+X-Mailer: git-send-email 1.8.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2013 04:23 PM, Samuel Ortiz wrote:
-> Hi Sebastian,
+From: Robert Richter <robert.richter@linaro.org>
 
-Hi Samuel,
+Header files of libtraceevent or no longer local headers. Thus, use
+default path notation for them. Also removing extra traceevent include
+path and instead handle this similar to liblk.
 
-> On Tue, Jun 11, 2013 at 01:30:46PM +0200, Sebastian Andrzej Siewior wrote:
->> I believe the whole thing should go via the MFD tree. It touches also
->> input & iio subsystem. I collected ACKs where I got some in the meantime.
-> Please fix your commit logs, and your subject lines. It should be e.g.
-> mfd: input: ti_am335x_adc: Blablabla
-> 
-> if it's mostly an mfd patch that also touches an input driver.
+Signed-off-by: Robert Richter <robert.richter@linaro.org>
+Signed-off-by: Robert Richter <rric@kernel.org>
+---
+ tools/perf/Makefile               | 2 +-
+ tools/perf/builtin-trace.c        | 2 +-
+ tools/perf/config/Makefile        | 5 +++--
+ tools/perf/tests/evsel-tp-sched.c | 2 +-
+ tools/perf/util/evsel.c           | 8 ++++----
+ tools/perf/util/session.c         | 2 +-
+ tools/perf/util/trace-event.h     | 2 +-
+ 7 files changed, 12 insertions(+), 11 deletions(-)
 
-I usually do "subsystem / driver: short description" but if you want
-the ":" as delimiter I can do this.
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 641fccd..5b7c6db 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -281,7 +281,7 @@ LIB_H += util/cpumap.h
+ LIB_H += util/top.h
+ LIB_H += $(ARCH_INCLUDE)
+ LIB_H += util/cgroup.h
+-LIB_H += $(TRACE_EVENT_DIR)event-parse.h
++LIB_H += $(LIB_INCLUDE)traceevent/event-parse.h
+ LIB_H += util/target.h
+ LIB_H += util/rblist.h
+ LIB_H += util/intlist.h
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index ab3ed4a..87fc7d0 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -1,3 +1,4 @@
++#include <traceevent/event-parse.h>
+ #include "builtin.h"
+ #include "util/color.h"
+ #include "util/evlist.h"
+@@ -5,7 +6,6 @@
+ #include "util/thread.h"
+ #include "util/parse-options.h"
+ #include "util/thread_map.h"
+-#include "event-parse.h"
+ 
+ #include <libaudit.h>
+ #include <stdlib.h>
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index f446895..d071077 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -46,6 +46,8 @@ ifneq ($(obj-perf),)
+ obj-perf := $(abspath $(obj-perf))/
+ endif
+ 
++LIB_INCLUDE := $(srctree)/tools/lib/
++
+ # include ARCH specific config
+ -include $(src-perf)/arch/$(ARCH)/Makefile
+ 
+@@ -121,8 +123,7 @@ endif
+ 
+ CFLAGS += -I$(src-perf)/util
+ CFLAGS += -I$(src-perf)
+-CFLAGS += -I$(TRACE_EVENT_DIR)
+-CFLAGS += -I$(srctree)/tools/lib/
++CFLAGS += -I$(LIB_INCLUDE)
+ 
+ CFLAGS += -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ 
+diff --git a/tools/perf/tests/evsel-tp-sched.c b/tools/perf/tests/evsel-tp-sched.c
+index a5d2fcc..f79e7d0 100644
+--- a/tools/perf/tests/evsel-tp-sched.c
++++ b/tools/perf/tests/evsel-tp-sched.c
+@@ -1,6 +1,6 @@
++#include <traceevent/event-parse.h>
+ #include "evsel.h"
+ #include "tests.h"
+-#include "event-parse.h"
+ 
+ static int perf_evsel__test_field(struct perf_evsel *evsel, const char *name,
+ 				  int size, bool should_be_signed)
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 63b6f8c..dea0684 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -9,17 +9,17 @@
+ 
+ #include <byteswap.h>
+ #include <linux/bitops.h>
+-#include "asm/bug.h"
+ #include <lk/debugfs.h>
+-#include "event-parse.h"
++#include <traceevent/event-parse.h>
++#include <linux/hw_breakpoint.h>
++#include <linux/perf_event.h>
++#include "asm/bug.h"
+ #include "evsel.h"
+ #include "evlist.h"
+ #include "util.h"
+ #include "cpumap.h"
+ #include "thread_map.h"
+ #include "target.h"
+-#include <linux/hw_breakpoint.h>
+-#include <linux/perf_event.h>
+ #include "perf_regs.h"
+ 
+ static struct {
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index cf1fe01..ad47fb9 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1,4 +1,5 @@
+ #include <linux/kernel.h>
++#include <traceevent/event-parse.h>
+ 
+ #include <byteswap.h>
+ #include <unistd.h>
+@@ -12,7 +13,6 @@
+ #include "sort.h"
+ #include "util.h"
+ #include "cpumap.h"
+-#include "event-parse.h"
+ #include "perf_regs.h"
+ #include "vdso.h"
+ 
+diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
+index 1978c39..11eb7fd 100644
+--- a/tools/perf/util/trace-event.h
++++ b/tools/perf/util/trace-event.h
+@@ -1,8 +1,8 @@
+ #ifndef _PERF_UTIL_TRACE_EVENT_H
+ #define _PERF_UTIL_TRACE_EVENT_H
+ 
++#include <traceevent/event-parse.h>
+ #include "parse-events.h"
+-#include "event-parse.h"
+ #include "session.h"
+ 
+ struct machine;
+-- 
+1.8.1.1
 
-> Then, this is a pretty big patchset, with iio, input and mfd all mixed
-> together and it is likely to create merge conflicts.
-They somehow depend on each other. Otherwise I would have sent three
-series, one per subsystem.
-
->>From what I can see from it, and please correct me if I'm
-> wrong, the iio and input changes depend on the mfd ones, and not the
-> other way around. If that's so, I'm going to ask you to reshuffle your
-> patch set and separate the MFD changes from the iio and input ones. I'll
-> take the MFD ones and will create an immutable branch for Jonathan and
-> Dmitry to pull from and apply the iio and input changes on top of it.
-> Merge conflicts should be mostly avoided that way.
-> AFAICT, only patch #2 should be kept with input and iio bits mixed
-> together with MFD as otherwise this would introduce functional breakage.
-> Otherwise, all MFD bits from the other patches could be either separated
-> or merged together (e.g. MFD bits from patches #6 and #8, and #16 and
-> #17).
-> 
-> Does that sound doable to you ?
-
-The device renaming shouldn't matter since I added DT nodes for the mfd
-child devices earlier. But then the of_compatible assignments should
-go hand in hand. However if I split this then the driver won't work
-but then it does not now as well (because there is no platform_data
-provider in tree).
-
-Still. There is #18 which reworks the "step addressing" and involves
-changes in both (iio & input) at the same time.
-There is #21. Adding this to the initial "DT support" patch would be bad
-I think because it requires some changes on the iio side which have
-nothing to do with DT. Putting the iio changes before DT would require
-to make some change to platform-data part which will go away anyway.
-
-So I started collecting ACKs from input and iio to avoid this split. If
-you really want the split then I will start doing so…
-
-> Cheers,
-> Samuel.
-
-Sebastian
