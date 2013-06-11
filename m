@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab3FKUju (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:39:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41596 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756073Ab3FKUCv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756085Ab3FKUCv (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Jun 2013 16:02:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41589 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756034Ab3FKUCs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 16:02:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robert Butora <robert.butora.fi@gmail.com>
-Subject: [ 06/21] USB: Serial: cypress_M8: Enable FRWD Dongle hidcom device
-Date: Tue, 11 Jun 2013 13:03:00 -0700
-Message-Id: <20130611195520.774277020@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 03/21] USB: iuu_phoenix: fix bulk-message timeout
+Date: Tue, 11 Jun 2013 13:02:57 -0700
+Message-Id: <20130611195520.423382550@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195520.003233586@linuxfoundation.org>
 References: <20130611195520.003233586@linuxfoundation.org>
@@ -26,92 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Butora <robert.butora.fi@gmail.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 6529591e3eef65f0f528a81ac169f6e294b947a7 upstream.
+commit 6c13ff68a7ce01da7a51b44241a7aad8eaaedde7 upstream.
 
-The patch adds a new HIDCOM device and does not affect other devices
-driven by the cypress_M8 module. Changes are:
-- add VendorID ProductID to device tables
-- skip unstable speed check because FRWD uses 115200bps
-- skip reset at probe which is an issue workaround for this
-particular device.
+The bulk-message timeout is specified in milliseconds and should not
+depend on HZ.
 
-Signed-off-by: Robert Butora <robert.butora.fi@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cypress_m8.c |   18 +++++++++++++++++-
- drivers/usb/serial/cypress_m8.h |    4 ++++
- 2 files changed, 21 insertions(+), 1 deletion(-)
+ drivers/usb/serial/iuu_phoenix.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/cypress_m8.c
-+++ b/drivers/usb/serial/cypress_m8.c
-@@ -96,6 +96,7 @@ static const struct usb_device_id id_tab
- static const struct usb_device_id id_table_cyphidcomrs232[] = {
- 	{ USB_DEVICE(VENDOR_ID_CYPRESS, PRODUCT_ID_CYPHIDCOM) },
- 	{ USB_DEVICE(VENDOR_ID_POWERCOM, PRODUCT_ID_UPS) },
-+	{ USB_DEVICE(VENDOR_ID_FRWD, PRODUCT_ID_CYPHIDCOM_FRWD) },
- 	{ }						/* Terminating entry */
- };
+--- a/drivers/usb/serial/iuu_phoenix.c
++++ b/drivers/usb/serial/iuu_phoenix.c
+@@ -327,7 +327,7 @@ static int bulk_immediate(struct usb_ser
+ 	    usb_bulk_msg(serial->dev,
+ 			 usb_sndbulkpipe(serial->dev,
+ 					 port->bulk_out_endpointAddress), buf,
+-			 count, &actual, HZ * 1);
++			 count, &actual, 1000);
  
-@@ -109,6 +110,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(VENDOR_ID_DELORME, PRODUCT_ID_EARTHMATEUSB_LT20) },
- 	{ USB_DEVICE(VENDOR_ID_CYPRESS, PRODUCT_ID_CYPHIDCOM) },
- 	{ USB_DEVICE(VENDOR_ID_POWERCOM, PRODUCT_ID_UPS) },
-+	{ USB_DEVICE(VENDOR_ID_FRWD, PRODUCT_ID_CYPHIDCOM_FRWD) },
- 	{ USB_DEVICE(VENDOR_ID_DAZZLE, PRODUCT_ID_CA42) },
- 	{ }						/* Terminating entry */
- };
-@@ -268,6 +270,12 @@ static struct usb_serial_driver cypress_
-  * Cypress serial helper functions
-  *****************************************************************************/
+ 	if (status != IUU_OPERATION_OK)
+ 		dbg("%s - error = %2x", __func__, status);
+@@ -350,7 +350,7 @@ static int read_immediate(struct usb_ser
+ 	    usb_bulk_msg(serial->dev,
+ 			 usb_rcvbulkpipe(serial->dev,
+ 					 port->bulk_in_endpointAddress), buf,
+-			 count, &actual, HZ * 1);
++			 count, &actual, 1000);
  
-+/* FRWD Dongle hidcom needs to skip reset and speed checks */
-+static inline bool is_frwd(struct usb_device *dev)
-+{
-+	return ((le16_to_cpu(dev->descriptor.idVendor) == VENDOR_ID_FRWD) &&
-+		(le16_to_cpu(dev->descriptor.idProduct) == PRODUCT_ID_CYPHIDCOM_FRWD));
-+}
- 
- static int analyze_baud_rate(struct usb_serial_port *port, speed_t new_rate)
- {
-@@ -277,6 +285,10 @@ static int analyze_baud_rate(struct usb_
- 	if (unstable_bauds)
- 		return new_rate;
- 
-+	/* FRWD Dongle uses 115200 bps */
-+	if (is_frwd(port->serial->dev))
-+		return new_rate;
-+
- 	/*
- 	 * The general purpose firmware for the Cypress M8 allows for
- 	 * a maximum speed of 57600bps (I have no idea whether DeLorme
-@@ -490,7 +502,11 @@ static int generic_startup(struct usb_se
- 	}
- 	init_waitqueue_head(&priv->delta_msr_wait);
- 
--	usb_reset_configuration(serial->dev);
-+	/* Skip reset for FRWD device. It is a workaound:
-+	   device hangs if it receives SET_CONFIGURE in Configured
-+	   state. */
-+	if (!is_frwd(serial->dev))
-+		usb_reset_configuration(serial->dev);
- 
- 	priv->cmd_ctrl = 0;
- 	priv->line_control = 0;
---- a/drivers/usb/serial/cypress_m8.h
-+++ b/drivers/usb/serial/cypress_m8.h
-@@ -24,6 +24,10 @@
- #define VENDOR_ID_CYPRESS		0x04b4
- #define PRODUCT_ID_CYPHIDCOM		0x5500
- 
-+/* FRWD Dongle - a GPS sports watch */
-+#define VENDOR_ID_FRWD			0x6737
-+#define PRODUCT_ID_CYPHIDCOM_FRWD	0x0001
-+
- /* Powercom UPS, chip CY7C63723 */
- #define VENDOR_ID_POWERCOM		0x0d9f
- #define PRODUCT_ID_UPS			0x0002
+ 	if (status != IUU_OPERATION_OK)
+ 		dbg("%s - error = %2x", __func__, status);
 
 
