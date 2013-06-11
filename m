@@ -1,249 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151Ab3FKFt4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 01:49:56 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:16244 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751079Ab3FKFty convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 01:49:54 -0400
-X-AuditID: cbfee68e-b7f276d000002279-70-51b6ba7f188c
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-Message-id: <1370929716.14857.8.camel@lcm>
-Subject: Re: [f2fs-dev] [PATCH 1/4] f2fs: reorganize the f2fs_setattr()
- function.
-From: Changman Lee <cm224.lee@samsung.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: jaegeuk.kim@samsung.com, Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Date: Tue, 11 Jun 2013 14:48:36 +0900
-In-reply-to: <CAKYAXd-V9iF0o5nvFyFPgJX0waDLh4c_eNJ7V_o-tbbrtX1JLQ@mail.gmail.com>
-References: <1370694303-2738-1-git-send-email-linkinjeon@gmail.com>
- <1370824712.22405.18.camel@lcm>
- <CAKYAXd-V9iF0o5nvFyFPgJX0waDLh4c_eNJ7V_o-tbbrtX1JLQ@mail.gmail.com>
-X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsVy+t8zA936XdsCDf4csbG4vusvk8X1u7eY
-	LS4tcrfYs/cki8XlXXPYLH5Mr7f4ses8swO7x85Zd9k9di/4zOTRt2UVo8fnTXIBLFFcNimp
-	OZllqUX6dglcGe0LWpkLbplUnF1s2sB4WaOLkZNDQsBE4sHNL0wQtpjEhXvr2boYuTiEBJYx
-	Slz/O4MFpuja6h5WEFtIYBGjxOHVBiA2r4CgxI/J98BqmAXUJSbNW8QMYYtIXN31mhXC1pZY
-	tvA1M8TQ14wSHzZeZ4do1pJY8201kM3BISwQLNG6gBMkzAYUbj+9lgUkLCKgJjHhWSpIK7PA
-	RUaJ1R/nMYLUsAioStx80gO2lxOoddObRYwQt61hlPizIAviZiWJ3e2d7CDNEgKn2CVWT13B
-	BNEsIPFt8iGwBRICshKbDjBD1EtKHFxxg2UCo/gsJK/NQvLaLCSvzULy2gJGllWMoqkFyQXF
-	SelFRnrFibnFpXnpesn5uZsYIVHZt4Px5gHrQ4zJQOsnMkuJJucDozqvJN7Q2MzIwtTE1NjI
-	3NKMNGElcV61FutAIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYwBG/Y+XcdmvE9FeGMo66mY
-	dRuPduo8dP95+3zL6sKb0pvSZ/1Rj1jd/11Ntyjt7uLZLzcd2KDpohevNS3x6DHm/k3XeVc0
-	KOVab5ctK/rUK+23eYZKUIB455bqW7+/yp7mLLnPl5vrbezILckr/0hiEfeGPN2VClJLtBbe
-	WbT7zW71u1o/7ogpsRRnJBpqMRcVJwIAXQE2F+ACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAd36XdsCDS4vNLe4vusvk8X1u7eY
-	LS4tcrfYs/cki8XlXXPYLH5Mr7f4ses8swO7x85Zd9k9di/4zOTRt2UVo8fnTXIBLFENjDYZ
-	qYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QAcoKZQl5pQC
-	hQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwnrGDNO7bvPVPDEuOLh3Q7GBsa76l2MnBwS
-	AiYS11b3sELYYhIX7q1nA7GFBBYxShxebQBi8woISvyYfI+li5GDg1lAXuLIpWyQMLOAusSk
-	eYuYuxi5gMpfM0p82HidHaJeS2LNt9XsIPXCAsESrQs4QcJsQOH202vBxogIqElMeJYK0sos
-	cJFRYvXHeYwgNSwCqhI3n/SwgNicQK2b3ixihDhnDaPEnwVZEGcqSexu72SfwCgwC8l1sxCu
-	m4XkugWMzKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgiP4mfQOxlUNFocYBTgYlXh4Exi3
-	BQqxJpYVV+YeYpTgYFYS4TXdDhTiTUmsrEotyo8vKs1JLT7EmAx07ERmKdHkfGByySuJNzQ2
-	MTOyNDKzMDIxNydNWEmc92CrdaCQQHpiSWp2ampBahHMFiYOTqkGRgfdf2f9c4LEvvdPKhY7
-	H6b50tO755KX2r1bot0z7HbMWnoyKOa/4rX76w+u2+K6NFFeT+bimkmX0t4YuV/JkOD5e+jf
-	lii/yz8f5U0vYAm9JbKMb8cOCSaGjMotMsbzb+72mdlVtq70iHR2WPv+Vz/bQsVWvLG+FZ8a
-	p3Iy4MfGg1qXLm6tcVNiKc5INNRiLipOBABW4NLjJAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752332Ab3FKF5u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 01:57:50 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54898 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751330Ab3FKF5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 01:57:48 -0400
+X-IronPort-AV: E=Sophos;i="4.87,842,1363104000"; 
+   d="scan'208";a="7517949"
+Message-ID: <51B6BCBE.7060608@cn.fujitsu.com>
+Date: Tue, 11 Jun 2013 13:59:26 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: "Serge E. Hallyn" <serge@hallyn.com>
+CC: Serge Hallyn <serge.hallyn@ubuntu.com>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        eparis@redhat.com, linux-audit@redhat.com, ebiederm@xmission.com,
+        davem@davemloft.net
+Subject: Re: [PATCH RFC 00/48] Add namespace support for audit
+References: <1367893269-9308-1-git-send-email-gaofeng@cn.fujitsu.com> <519B3B4E.1070405@cn.fujitsu.com> <20130606215255.GA28978@tp> <20130606224710.GA30502@tp> <51B531CC.2020604@cn.fujitsu.com> <20130610212437.GA11940@austin.hallyn.com>
+In-Reply-To: <20130610212437.GA11940@austin.hallyn.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/11 13:55:52,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/06/11 13:55:55,
+	Serialize complete at 2013/06/11 13:55:55
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 화, 2013-06-11 at 07:57 +0900, Namjae Jeon wrote:
-> 2013/6/10, Changman Lee <cm224.lee@samsung.com>:
-> > Hello, Namjae
-> Hi. Changman.
-> >
-> > If using ACL, whenever i_mode is changed we should update acl_mode which
-> > is written to xattr block, too. And vice versa.
-> > Because update_inode() is called at any reason and anytime, so we should
-> > sync both the moment xattr is written.
-> > We don't hope that only i_mode is written to disk and xattr is not. So
-> > f2fs_setattr is dirty.
-> Yes, agreed this could be issue.
-> >
-> > And, below code has a bug. When error is occurred, inode->i_mode
-> > shouldn't be changed. Please, check one more time, Namjae.
-> And, below code has a bug. When error is occurred, inode->i_mode
-> shouldn't be changed. Please, check one more time, Namjae.
+On 06/11/2013 05:24 AM, Serge E. Hallyn wrote:
+> Quoting Gao feng (gaofeng@cn.fujitsu.com):
+>> On 06/07/2013 06:47 AM, Serge Hallyn wrote:
+>>> Quoting Serge Hallyn (serge.hallyn@ubuntu.com):
+>>>> Quoting Gao feng (gaofeng@cn.fujitsu.com):
+>>>>> On 05/07/2013 10:20 AM, Gao feng wrote:
+>>>>>> This patchset try to add namespace support for audit.
+>>>>>>
+>>>>>> I choose to assign audit to the user namespace.
+>>>>>> Right now,there are six kinds of namespaces, such as
+>>>>>> net, mount, ipc, pid, uts and user. the first five
+>>>>>> namespaces have special usage. the audit isn't suitable to
+>>>>>> belong to these five namespaces, so the user namespace
+>>>>>> may be the best choice.
+>>>>>>
+>>>>>> Through I decide to make audit related resources per user
+>>>>>> namespace, but audit uses netlink to communicate between kernel
+>>>>>> space and user space, and the netlink is a private resource
+>>>>>> of per net namespace. So we need the capability to allow the
+>>>>>> netlink sockets to communicate with each other in the same user
+>>>>>> namespace even they are in different net namespace. [PATCH 2/48]
+>>>>>> does this job, it adds a new function "compare" for per netlink
+>>>>>> table to compare two sockets. it means the netlink protocols can
+>>>>>> has its own compare fuction, For other protocols, two netlink
+>>>>>> sockets are different if they belong to the different net namespace.
+>>>>>> For audit protocol, two sockets can be the same even they in different
+>>>>>> net namespace,we use user namespace not net namespace to make the
+>>>>>> decision.
+>>>>>>
+>>>>>> There is one point that some people may dislike,in [PATCH 1/48],
+>>>>>> the kernel side audit netlink socket is created only when we create
+>>>>>> the first netns for the userns, and this userns will hold the netns
+>>>>>> until we destroy this userns.
+>>>>>>
+>>>>>> The other patches just make the audit related resources per
+>>>>>> user namespace.
+>>>>>>
+>>>>>> This patchset is sent as an RFC,any comments are welcome.
+>>>>
+>>>> Hi,
+>>>>
+>>>> thanks for sending this.  I think you need to ping the selinux folks
+>>>> for comment though.  It appears to me that, after this patchset, the
+>>>> kernel with CONFIG_USER_NS=y could not be LSPP-compliant, because
+>>>> the selinux-generated audit messages do not always go to init_user_ns.
+>>>>
+>>>> Additionally, the only type of namespacing selinux wants is where it
+>>>> is enforced by policy compiler and installer using typenames - i.e.
+>>>> 'container1.user_t' vs 'user_t'.  Selinux does not want user namespaces
+>>>> to affect selinux enforcement at all.  (at least last I knew, several
+>>>> years ago at a mini-summit, I believe this was from Stephen Smalley).
+>>>
+>>> That sort of sounds like I'm distancing myself from that, which I
+>>> don't mean to do.  I agree with the decison:  MAC (selinux, apparmor
+>>> and smack) should not be confuddled by user namespaces.  (posix caps
+>>> are, as always, a bit different).
+>>
+>>
+>> Thanks for your comments!
+>>
+>> Very useful information, it sounds reasonable.
+>>
+>> Let's just drop those patches.
+>>
 > 
-> This was part of the default code, when ‘acl’ is not set for file’
-> Then, inode should be updated by these conditions (i.e., it covers the
-> ‘chmod’ and ‘setacl’ scenario).
-> When ACL is not present on the file and ‘chmod’ is done, then mode is
-> changed from this part, as f2fs_get_acl() will fail and cause the
-> below code to be executed:
+> Hi Gao,
 > 
->     if (err || is_inode_flag_set(fi, FI_ACL_MODE)) {
->              inode->i_mode = fi->i_acl_mode;
->              clear_inode_flag(fi, FI_ACL_MODE);
->       }
+> proceeding then,
 > 
-> Now, in order to make it consistent and work on all scenario we need
-> to make further change like this in addition to the patch changes.
-> setattr_copy(inode, attr);
->         if (attr->ia_valid & ATTR_MODE) {
-> +             set_acl_inode(fi, inode->i_mode);
->               err = f2fs_acl_chmod(inode);
->               if (err || is_inode_flag_set(fi, FI_ACL_MODE)) {
+> The netfilter related changes I think make sense.  They log to the userns
+> which owns the netns in question, which seems right.
 > 
-> Let me know your opinion.
-> Thanks.
+> However looking at Audit-tty-translate-audit_log_start-to-audit_log_sta.patch,
+> it appears to log to the userns of the task which is doing the operation.
+> 
+> Keeping in mind that an unprivileged user can create a new user namespace,
+> this doesn't seem right.
+> 
+> Also, you are introducing per-userns syscall filter.  It looks like I
+> can then create a new userns to escape my existing syscall filter, since
+> the filters up the user_ns parent chain are not being applied.  Is that
+> correct?
+
+Hi Serge,
+
+I admit that the global resources related audit message should be logged to
+parent and ancestor. but this is more complex than the way I implemented.
+Because we should send message to all ancestor and we should consider not
+to exceed the rate_limit of all ancestor.
+
+I prefer to don't make these filters/rules per user namespace right now.
+
+> 
+> Did you have a particular rationale written out for what precisely you're
+> wanting to make per-userns?  That would be helpful in trying to figure
+> out which bits are appropriate.  Again I so far haven't seen a single
+> problem with the code itself, it's just a question of which bits we
+> actually want (and are safe).
 > 
 
-setattr_copy changes inode->i_mode, this is not our expectation.
-So I made redundant __setatt_copy that copy attr->mode to
-fi->i_acl_mode.
-When acl_mode is reflected in xattr, acl_mode is copied to
-inode->i_mode.
+In my option, the audit rules(inode, tree_list, filter) , some of audit
+controller related resources(enabled,pid,portid...) and skb queue, audit
+netlink sockets,kauditd thread should be per-userns. The audit user message
+which generated by the user in container should be per-userns too.
 
-Agree?
+Since netns is not implemented as a hierarchy, and the network related
+resources are not global. so network related audit message should be per-userns too.
 
-> >
-> > diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-> > index deefd25..29cd449 100644
-> > --- a/fs/f2fs/file.c
-> > +++ b/fs/f2fs/file.c
-> > @@ -352,10 +352,8 @@ int f2fs_setattr(struct dentry *dentry, struct
-> > iattr *attr)
-> >
-> >         if (attr->ia_valid & ATTR_MODE) {
-> >                 err = f2fs_acl_chmod(inode);
-> > -               if (err || is_inode_flag_set(fi, FI_ACL_MODE)) {
-> > -                       inode->i_mode = fi->i_acl_mode;
-> > +               if (err || is_inode_flag_set(fi, FI_ACL_MODE))
-> >                         clear_inode_flag(fi, FI_ACL_MODE);
-> > -               }
-> >         }
-> >
-> > Thanks.
-> >
-> >
-> > On 토, 2013-06-08 at 21:25 +0900, Namjae Jeon wrote:
-> >> From: Namjae Jeon <namjae.jeon@samsung.com>
-> >>
-> >> Remove the redundant code from this function and make it aligned with
-> >> usages of latest generic vfs layer function e.g using the setattr_copy()
-> >> instead of using the f2fs specific function.
-> >>
-> >> Also correct the condition for updating the size of file via
-> >> truncate_setsize().
-> >>
-> >> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> >> Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
-> >> ---
-> >>  fs/f2fs/acl.c  |    5 +----
-> >>  fs/f2fs/file.c |   47 +++++------------------------------------------
-> >>  2 files changed, 6 insertions(+), 46 deletions(-)
-> >>
-> >> diff --git a/fs/f2fs/acl.c b/fs/f2fs/acl.c
-> >> index 44abc2f..2d13f44 100644
-> >> --- a/fs/f2fs/acl.c
-> >> +++ b/fs/f2fs/acl.c
-> >> @@ -17,9 +17,6 @@
-> >>  #include "xattr.h"
-> >>  #include "acl.h"
-> >>
-> >> -#define get_inode_mode(i)	((is_inode_flag_set(F2FS_I(i), FI_ACL_MODE)) ?
-> >> \
-> >> -					(F2FS_I(i)->i_acl_mode) : ((i)->i_mode))
-> >> -
-> >>  static inline size_t f2fs_acl_size(int count)
-> >>  {
-> >>  	if (count <= 4) {
-> >> @@ -299,7 +296,7 @@ int f2fs_acl_chmod(struct inode *inode)
-> >>  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-> >>  	struct posix_acl *acl;
-> >>  	int error;
-> >> -	umode_t mode = get_inode_mode(inode);
-> >> +	umode_t mode = inode->i_mode;
-> >>
-> >>  	if (!test_opt(sbi, POSIX_ACL))
-> >>  		return 0;
-> >> diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-> >> index deefd25..8dfc1da 100644
-> >> --- a/fs/f2fs/file.c
-> >> +++ b/fs/f2fs/file.c
-> >> @@ -300,63 +300,26 @@ static int f2fs_getattr(struct vfsmount *mnt,
-> >>  	return 0;
-> >>  }
-> >>
-> >> -#ifdef CONFIG_F2FS_FS_POSIX_ACL
-> >> -static void __setattr_copy(struct inode *inode, const struct iattr
-> >> *attr)
-> >> -{
-> >> -	struct f2fs_inode_info *fi = F2FS_I(inode);
-> >> -	unsigned int ia_valid = attr->ia_valid;
-> >> -
-> >> -	if (ia_valid & ATTR_UID)
-> >> -		inode->i_uid = attr->ia_uid;
-> >> -	if (ia_valid & ATTR_GID)
-> >> -		inode->i_gid = attr->ia_gid;
-> >> -	if (ia_valid & ATTR_ATIME)
-> >> -		inode->i_atime = timespec_trunc(attr->ia_atime,
-> >> -						inode->i_sb->s_time_gran);
-> >> -	if (ia_valid & ATTR_MTIME)
-> >> -		inode->i_mtime = timespec_trunc(attr->ia_mtime,
-> >> -						inode->i_sb->s_time_gran);
-> >> -	if (ia_valid & ATTR_CTIME)
-> >> -		inode->i_ctime = timespec_trunc(attr->ia_ctime,
-> >> -						inode->i_sb->s_time_gran);
-> >> -	if (ia_valid & ATTR_MODE) {
-> >> -		umode_t mode = attr->ia_mode;
-> >> -
-> >> -		if (!in_group_p(inode->i_gid) && !capable(CAP_FSETID))
-> >> -			mode &= ~S_ISGID;
-> >> -		set_acl_inode(fi, mode);
-> >> -	}
-> >> -}
-> >> -#else
-> >> -#define __setattr_copy setattr_copy
-> >> -#endif
-> >> -
-> >>  int f2fs_setattr(struct dentry *dentry, struct iattr *attr)
-> >>  {
-> >>  	struct inode *inode = dentry->d_inode;
-> >> -	struct f2fs_inode_info *fi = F2FS_I(inode);
-> >>  	int err;
-> >>
-> >>  	err = inode_change_ok(inode, attr);
-> >>  	if (err)
-> >>  		return err;
-> >>
-> >> -	if ((attr->ia_valid & ATTR_SIZE) &&
-> >> -			attr->ia_size != i_size_read(inode)) {
-> >> -		truncate_setsize(inode, attr->ia_size);
-> >> +	if ((attr->ia_valid & ATTR_SIZE)) {
-> >> +		if (attr->ia_size != i_size_read(inode))
-> >> +			truncate_setsize(inode, attr->ia_size);
-> >>  		f2fs_truncate(inode);
-> >>  		f2fs_balance_fs(F2FS_SB(inode->i_sb));
-> >>  	}
-> >>
-> >> -	__setattr_copy(inode, attr);
-> >> +	setattr_copy(inode, attr);
-> >>
-> >> -	if (attr->ia_valid & ATTR_MODE) {
-> >> +	if (attr->ia_valid & ATTR_MODE)
-> >>  		err = f2fs_acl_chmod(inode);
-> >> -		if (err || is_inode_flag_set(fi, FI_ACL_MODE)) {
-> >> -			inode->i_mode = fi->i_acl_mode;
-> >> -			clear_inode_flag(fi, FI_ACL_MODE);
-> >> -		}
-> >> -	}
-> >>
-> >>  	mark_inode_dirty(inode);
-> >>  	return err;
-> >
-> >
-> >
+The security related audit message should be send to init user namespace
+as we discussed before. Maybe tty related audit message should be send
+to init user namespace too, I have no idea now.
 
+The next step, I will post a new patchset which only make the audit user
+message and the basic audit resource per userns. I think this patchset
+will easy to be reviewed and accepted, And will not influence the host.
+This patchset contains the below patches:
+
+Gao feng (21):
+  Audit: make audit kernel side netlink sock per userns
+  netlink: Add compare function for netlink_table
+  Audit: implement audit self-defined compare function
+  Audit: make audit_skb_queue per user namespace
+  Audit: make audit_skb_hold_queue per user namespace
+  Audit: make kauditd_task per user namespace
+  Audit: make audit_pid per user namespace
+  Audit: make audit_nlk_portid per user namesapce
+  Audit: make audit_enabled per user namespace
+  Audit: make audit_ever_enabled per user namespace
+  Audit: make audit_initialized per user namespace
+  Audit: only allow init user namespace to change rate limit
+  Audit: only allow init user namespace to change audit_failure
+  Audit: allow to send netlink message to auditd in uninit user
+    namespace
+  Audit: make kauditd_wait per user namespace
+  Audit: make audit_backlog_wait per user namespace
+  Audit: introduce new audit logging interface for user namespace
+  Audit: pass proper user namespace to audit_log_common_recv_msg
+  Audit: Log audit config change in uninit user namespace
+  Audit: send reply message to the auditd in proper user namespace
+  Audit: Allow GET,SET,USER MSG operations in uninit user namespace
+
+ include/linux/audit.h          |  39 +++-
+ include/linux/netlink.h        |   1 +
+ include/linux/user_namespace.h |  33 +++-
+ kernel/audit.c                 | 422 ++++++++++++++++++++++++++---------------
+ kernel/audit.h                 |   5 +-
+ kernel/auditsc.c               |  11 +-
+ kernel/user_namespace.c        |   3 +
+ net/netlink/af_netlink.c       |  32 +++-
+ net/netlink/af_netlink.h       |   1 +
+ 9 files changed, 369 insertions(+), 178 deletions(-)
+
+Do you have any comments or advice to this plan? After the above patchs
+been accepted, I think it's easy to push other audit namespace related
+patches into upstream.
+
+Thanks,
+Gao
+
+> -serge
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
