@@ -1,96 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755766Ab3FKRJj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 13:09:39 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48186 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755695Ab3FKRJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 13:09:34 -0400
-From: Illia Smyrnov <illia.smyrnov@ti.com>
-To: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Mark Brown <broonie@kernel.org>
-CC: Illia Smyrnov <illia.smyrnov@ti.com>, Daniel Mack <zonque@gmail.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        <spi-devel-general@lists.sourceforge.net>,
-        <linux-omap@vger.kernel.org>
-Subject: [PATCH v2 1/2] spi: omap2-mcspi: Move bytes per word calculation to the function
-Date: Tue, 11 Jun 2013 20:09:14 +0300
-Message-ID: <1370970556-11713-2-git-send-email-illia.smyrnov@ti.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1370970556-11713-1-git-send-email-illia.smyrnov@ti.com>
-References: <1370970556-11713-1-git-send-email-illia.smyrnov@ti.com>
+	id S1755797Ab3FKRJq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 13:09:46 -0400
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:48967 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755773Ab3FKRJn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 13:09:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+X-Originating-IP: [84.115.78.137]
+In-Reply-To: <1370970051.18413.24@snotra>
+References: <10631172.HfDeIDHqX3@pcimr>
+	<1370970051.18413.24@snotra>
+Date: Tue, 11 Jun 2013 19:09:42 +0200
+Message-ID: <CALG0vJumuRobQtHdWAuWtbC3oS3_CMpDim=dtSNECCO25SgJUA@mail.gmail.com>
+Subject: Re: [BUG] PCI related panic on powerpc based board with 3.10-rcX
+From: Michael Guntsche <michael.guntsche@it-loops.com>
+To: Scott Wood <scottwood@freescale.com>
+Cc: Rojhalat Ibrahim <imr@rtschenk.de>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce mcspi_bytes_per_word function as replacement for the next code
-fragment:
+On Tue, Jun 11, 2013 at 7:00 PM, Scott Wood <scottwood@freescale.com> wrote:
+> On 06/11/2013 02:24:28 AM, Rojhalat Ibrahim wrote:
+>>
+>> On Monday 10 June 2013 17:52:33 Scott Wood wrote:
+>> > On 06/10/2013 12:07:43 PM, Michael Guntsche wrote:
+>> > > Good evening,
+>> > >
+>> > > This patch does not fix the problem, during boot the kernel still
+>> > > panics. I had a closer look at the commit and the following patch
+>> > > fixes it for me....
+>> > >
+>> > > diff --git a/arch/powerpc/sysdev/fsl_pci.c
+>> > > b/arch/powerpc/sysdev/fsl_pci.c
+>> > > index 028ac1f..21b687f 100644
+>> > > --- a/arch/powerpc/sysdev/fsl_pci.c
+>> > > +++ b/arch/powerpc/sysdev/fsl_pci.c
+>> > > @@ -814,7 +814,7 @@ int __init mpc83xx_add_bridge(struct device_node
+>> > > *dev)
+>> > >
+>> > >                 if (ret)
+>> > >
+>> > >                         goto err0;
+>> > >
+>> > >         } else {
+>> > >
+>> > > -               fsl_setup_indirect_pci(hose, rsrc_cfg.start,
+>> > > +               setup_indirect_pci(hose, rsrc_cfg.start,
+>> > >
+>> > >                                        rsrc_cfg.start + 4, 0);
+>> > >
+>> > >         }
+>> >
+>> > The only difference here is that you're not setting hose->ops to
+>> > fsl_indirect_pci_ops.  Do you know why that is helping, and what
+>> > hose->ops is set to instead?
+>> >
+>> > -Scott
+>>
+>> The difference is only the read function in hose->ops, which is set to
+>> indirect_read_config instead of fsl_indirect_read_config.
+>>
+>> fsl_indirect_read_config calls fsl_pcie_check_link, which is where the
+>> Oops
+>> occurs.
+>
+>
+> Why is fsl_pcie_check_link being called for non-PCIe buses?
+>
+>
+>> Mike, can you find out where exactly in fsl_pcie_check_link the bad access
+>> happens? Enabling CONFIG_DEBUG_BUGVERBOSE might help.
+>
+>
+> Why does it matter?  You shouldn't be calling that function at all.
+>
+> -Scott
 
-int c = (word_len <= 8)  ? 1 :
-	(word_len <= 16) ? 2 :
-	/* word_len <= 32 */ 4;
+For the record BUGVERBOSE is already set with this build so this is
+the most detailed trace I get. And regarding Scott's remark, maybe I
+was not clear enough in my first report. This is a PCI only board so I
+also wondered about the call to fsl_pcie_check_link in the first
+place. Since apparently the 83xx related add bridge code already has a
+case for boards with PCIe support. So I think the change should really
+happen somewhere in this code and not in the PCI only path.
 
-This code used 2 times in current driver code and will be used 2 times in
-the next FIFO buffer support patch. Replace it with inline function with clear
-name to improve code legibility.
-
-Signed-off-by: Illia Smyrnov <illia.smyrnov@ti.com>
----
- drivers/spi/spi-omap2-mcspi.c |   19 +++++++++++++------
- 1 files changed, 13 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-index 86d2158..707f1db 100644
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -187,6 +187,16 @@ static inline void mcspi_write_chconf0(const struct spi_device *spi, u32 val)
- 	mcspi_read_cs_reg(spi, OMAP2_MCSPI_CHCONF0);
- }
- 
-+static inline int mcspi_bytes_per_word(int word_len)
-+{
-+	if (word_len <= 8)
-+		return 1;
-+	else if (word_len <= 16)
-+		return 2;
-+	else /* word_len <= 32 */
-+		return 4;
-+}
-+
- static void omap2_mcspi_set_dma_req(const struct spi_device *spi,
- 		int is_read, int enable)
- {
-@@ -433,10 +443,9 @@ omap2_mcspi_rx_dma(struct spi_device *spi, struct spi_transfer *xfer,
- 			else /* word_len <= 32 */
- 				((u32 *)xfer->rx_buf)[elements++] = w;
- 		} else {
-+			int bytes_per_word = mcspi_bytes_per_word(word_len);
- 			dev_err(&spi->dev, "DMA RX penultimate word empty");
--			count -= (word_len <= 8)  ? 2 :
--				(word_len <= 16) ? 4 :
--				/* word_len <= 32 */ 8;
-+			count -= (bytes_per_word << 1);
- 			omap2_mcspi_set_enable(spi, 1);
- 			return count;
- 		}
-@@ -454,9 +463,7 @@ omap2_mcspi_rx_dma(struct spi_device *spi, struct spi_transfer *xfer,
- 			((u32 *)xfer->rx_buf)[elements] = w;
- 	} else {
- 		dev_err(&spi->dev, "DMA RX last word empty");
--		count -= (word_len <= 8)  ? 1 :
--			 (word_len <= 16) ? 2 :
--		       /* word_len <= 32 */ 4;
-+		count -= mcspi_bytes_per_word(word_len);
- 	}
- 	omap2_mcspi_set_enable(spi, 1);
- 	return count;
--- 
-1.7.0.4
-
+/Mike
