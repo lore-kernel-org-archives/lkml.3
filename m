@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753761Ab3FKHbi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 03:31:38 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16759 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753125Ab3FKHbh convert rfc822-to-8bit (ORCPT
+	id S1754008Ab3FKHby (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 03:31:54 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:15584 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753816Ab3FKHbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 03:31:37 -0400
+	Tue, 11 Jun 2013 03:31:52 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 11 Jun 2013 00:30:10 -0700
-Message-ID: <51B6D239.5030905@nvidia.com>
-Date: Tue, 11 Jun 2013 13:01:05 +0530
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Paul Walmsley <pwalmsley@nvidia.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+	by hqnvupgp08.nvidia.com on Tue, 11 Jun 2013 00:30:51 -0700
+Date: Tue, 11 Jun 2013 10:30:48 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Jay Agarwal <jagarwal@nvidia.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "olof@lixom.net" <olof@lixom.net>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
         "mturquette@linaro.org" <mturquette@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Aleksandr Frid <afrid@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 3/3] clk: tegra: T114: add DFLL DVCO reset control
-References: <20130607121505.21868.72360.stgit@dusk.lan> <20130607121901.21868.65416.stgit@dusk.lan> <51B21105.1080301@wwwdotorg.org> <alpine.DEB.2.02.1306071703050.7753@utopia.booyaka.com>
-In-Reply-To: <alpine.DEB.2.02.1306071703050.7753@utopia.booyaka.com>
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Juha Tukkinen <jtukkinen@nvidia.com>,
+        Krishna Thota <kthota@nvidia.com>
+Subject: Re: [PATCH V3 3/4] ARM: dts: tegra: Correct PCIe entry
+Message-ID: <20130611073048.GR3847@tbergstrom-lnx.Nvidia.com>
+References: <1370372252-4332-1-git-send-email-jagarwal@nvidia.com>
+ <1370372252-4332-3-git-send-email-jagarwal@nvidia.com>
+ <20130610195511.GC25859@mithrandir>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130610195511.GC25859@mithrandir>
 X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 8BIT
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 June 2013 10:36 PM, Paul Walmsley wrote:
-> Hi Stephen,
->
-> On Fri, 7 Jun 2013, Stephen Warren wrote:
->
->> On 06/07/2013 06:19 AM, Paul Walmsley wrote:
->>> Add DFLL DVCO reset line control functions to the CAR IP block driver.
->>>
->>> The DVCO present in the DFLL IP block has a separate reset line,
->>> exposed via the CAR IP block.  This reset line is asserted upon SoC
->>> reset.  Unless something (such as the DFLL driver) deasserts this
->>> line, the DVCO will not oscillate, although reads and writes to the
->>> DFLL IP block will complete.
->>>
->>> Thanks to Aleksandr Frid <afrid@nvidia.com> for identifying this and
->>> saving hours of debugging time.
->>> diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
->>>   void tegra114_clock_tune_cpu_trimmers_high(void);
->>>   void tegra114_clock_tune_cpu_trimmers_low(void);
->>>   void tegra114_clock_tune_cpu_trimmers_init(void);
->>> +void tegra114_clock_assert_dfll_dvco_reset(void);
->>> +void tegra114_clock_deassert_dfll_dvco_reset(void);
->> Where/what is the code that will call these new APIs? If it's going to
->> be something in drivers/clk, that seems fine.
-> That's correct - they'll be used by the DFLL clocksource code, which will
-> live in drivers/clk/tegra.  You've seen the patches already ;-)
+On Mon, Jun 10, 2013 at 09:55:12PM +0200, Thierry Reding wrote:
+> * PGP Signed by an unknown key
+> 
+> On Wed, Jun 05, 2013 at 12:27:31AM +0530, Jay Agarwal wrote:
+> [...]
+> > @@ -29,7 +29,7 @@
+> >  		ranges = <0x82000000 0 0x00000000 0x00000000 0 0x00001000   /* port 0 configuration space */
+> >  			  0x82000000 0 0x00001000 0x00001000 0 0x00001000   /* port 1 configuration space */
+> >  			  0x82000000 0 0x00004000 0x00004000 0 0x00001000   /* port 2 configuration space */
+> > -			  0x81000000 0 0          0x02000000 0 0x00010000   /* downstream I/O */
+> > +			  0x81000000 0 0          0x02000000 0 0x00100000   /* downstream I/O */
+> >  			  0x82000000 0 0x20000000 0x20000000 0 0x10000000   /* non-prefetchable memory */
+> >  			  0xc2000000 0 0x30000000 0x30000000 0 0x10000000>; /* prefetchable memory */
+> 
+> That increases the I/O region size from 64 KiB to 1 MiB. Why is that
+> necessary? I/O operations can only address 64 KiB, so I don't think
+> adding more makes any sense.
 
-Why not implement these APIs in DFLL clock driver itself and pass RST 
-address register to driver?
+At least PCI allows 32bit I/O addresses. No idea if anyone uses them though.
 
->> The reset assert/de-assert functions at least might be worth exposing
->> using the new generic module reset API. I believe Prashant Gaikwad is
->> working on converting the Tegra clock driver to be a module reset
->> provider, hence removing the existing custom
->> tegra_periph_reset_{de,}assert() APIs.
-> OK, will take a look to see if this can be done without getting in the way
-> of Prashant's work.  I'd naïvely assume that it might be best to convert
-> these as part of his series - that way we won't duplicate effort.
->
-> Prashant, what stage are you at in the conversion?  If you're close to
-> completion, maybe we can just add this functionality in with your patches?
->
+Cheers,
 
-You can continue with this patch. I do not see any need to add this 
-reset control to generic reset module.
-
-> - Paul
-
+Peter.
