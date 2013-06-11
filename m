@@ -1,85 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737Ab3FKEbb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 00:31:31 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:63618 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751079Ab3FKEb3 (ORCPT
+	id S1751956Ab3FKEkI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 00:40:08 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:46540 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158Ab3FKEkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 00:31:29 -0400
-Message-ID: <51B6A819.9020603@linaro.org>
-Date: Tue, 11 Jun 2013 10:01:21 +0530
-From: Tushar Behera <tushar.behera@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 11 Jun 2013 00:40:07 -0400
+Message-ID: <51B6A9F5.5020300@ti.com>
+Date: Tue, 11 Jun 2013 10:09:17 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Sachin Kamat <sachin.kamat@linaro.org>
-CC: linux-kernel@vger.kernel.org, thierry.reding@gmail.com, patches@linaro.org,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-Subject: Re: [PATCH 11/15] regulator: ti-abb: Convert to use devm_ioremap_resource
-References: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org> <1370864113-17895-12-git-send-email-tushar.behera@linaro.org> <CAK9yfHySr3J8roLmntGvUi3-DkBCW397TjO65Qr0Zej8C7ROdg@mail.gmail.com>
-In-Reply-To: <CAK9yfHySr3J8roLmntGvUi3-DkBCW397TjO65Qr0Zej8C7ROdg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Philip, Avinash" <avinashphilip@ti.com>
+CC: "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/11] Convert GPIO Davinci to platform driver
+References: <1369206634-6778-1-git-send-email-avinashphilip@ti.com> <51B1958C.3050704@ti.com> <518397C60809E147AF5323E0420B992E3EAD887C@DBDE04.ent.ti.com>
+In-Reply-To: <518397C60809E147AF5323E0420B992E3EAD887C@DBDE04.ent.ti.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2013 05:31 PM, Sachin Kamat wrote:
-> On 10 June 2013 17:05, Tushar Behera <tushar.behera@linaro.org> wrote:
->> Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
->> introduced devm_ioremap_resource() and deprecated the use of
->> devm_request_and_ioremap().
+
+On 6/10/2013 2:32 PM, Philip, Avinash wrote:
+> On Fri, Jun 07, 2013 at 13:40:52, Nori, Sekhar wrote:
+>> Hi Avinash,
 >>
->> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
->> CC: Mark Brown <broonie@kernel.org>
->> CC: Liam Girdwood <lgirdwood@gmail.com>
->> ---
->>  drivers/regulator/ti-abb-regulator.c |   12 ++++++------
->>  1 file changed, 6 insertions(+), 6 deletions(-)
+>> On 5/22/2013 12:40 PM, Philip Avinash wrote:
+>>> GPIO Davinci driver converted to platform driver to support DT booting.
+>>> In this patch series
+>>> - Cleaned gpio Davinci driver code with proper commenting style and appropriate
+>>>   variable names.
+>>> - Create platform driver for GPIO Davinci in da8xx and dm* platforms and removed
+>>>   gpio related member updation in davinci_soc_info structure.
+>>> - DT support added for da850 board and tested on da850 EVM.
+>>> - Remove soc_info reference in the gpio davinci driver and start uses
+>>>   gpiolib interface.
 >>
->> diff --git a/drivers/regulator/ti-abb-regulator.c b/drivers/regulator/ti-abb-regulator.c
->> index 870d209..f494a11 100644
->> --- a/drivers/regulator/ti-abb-regulator.c
->> +++ b/drivers/regulator/ti-abb-regulator.c
->> @@ -722,10 +722,10 @@ static int ti_abb_probe(struct platform_device *pdev)
->>                 ret = -ENODEV;
->>                 goto err;
->>         }
->> -       abb->base = devm_request_and_ioremap(dev, res);
->> -       if (!abb->base) {
->> +       abb->base = devm_ioremap_resource(dev, res);
->> +       if (IS_ERR(abb->base)) {
->>                 dev_err(dev, "Unable to map '%s'\n", pname);
+>> Can you please document which platforms this series was tested on and how?
 > 
-> You may remove the above error message as devm_ioremap_resource prints
-> its own error messages.
+> This series being tested on da850 EVM. Tested by setting VPIF_DOUT[12] as GPIO
+> pin [2] and reading GPIO status from GPIO[7,4]
 > 
-
-There are a few other error messages in the driver (related to
-devm_ioremap_nocache) in the same format. I would prefer to leave this
-error message right now.
-
->> -               ret = -ENOMEM;
->> +               ret = PTR_ERR(abb->base);
->>                 goto err;
->>         }
->>
->> @@ -776,10 +776,10 @@ static int ti_abb_probe(struct platform_device *pdev)
->>                 ret = -ENODEV;
->>                 goto skip_opt;
->>         }
->> -       abb->ldo_base = devm_request_and_ioremap(dev, res);
->> -       if (!abb->ldo_base) {
->> +       abb->ldo_base = devm_ioremap_resource(dev, res);
->> +       if (IS_ERR(abb->ldo_base)) {
->>                 dev_err(dev, "Unable to map '%s'\n", pname);
+> GPIO[7,4] will reflect the status switch number 8 of the S7 dip switch in DA850 EVM.
 > 
-> ditto
+> Testing Procedure
 > 
+> Requirement GPIO SYSFS support [1]
+> 
+> #echo 116 > /sys/class/gpio/export
+> setting GPIO[7,4] as input GPIO
+> #echo "in" > /sys/class/gpio/gpio116/direction
+> #mount -t debugfs debugfs /sys/kernel/debug
+> Reading GPIO pin status
+> #cat /sys/kernel/debug/gpio
+> #echo 116 > /sys/class/gpio/unexport
+> 
+> 
+> 1. Enable GPIO SYSFS support through menconfig
+> --- GPIO Support
+> 	[ ]   Debug GPIO calls
+>                [ ]   /sys/class/gpio/... (sysfs interface)
+>  
+> 2. Patch for pinmux support for GPIO[7,4] is available at
+> https://github.com/avinashphilip/am335x_linux/commits/linux_davinci_v3.10_soc_gpio
 
-Same as above.
+Can you check interrupt generation too since there are significant
+changes in that area? You can generate an interrupt using the MMC/SD
+card detect pin (inserting an MMC/SD card into the slot should generate
+an interrupt). You can also write a new value to any GPIO pin. That will
+also trigger an interrupt.
 
-Thanks.
+It will be nice if you can test this series on DM365 as well (read/write
+as well as interrupt).
 
--- 
-Tushar Behera
+Thanks,
+Sekhar
