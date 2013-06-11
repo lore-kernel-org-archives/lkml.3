@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab3FKNA3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 09:00:29 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:58010 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753146Ab3FKMzB (ORCPT
+	id S1755479Ab3FKNBG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 09:01:06 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:53547 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755155Ab3FKMy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 08:55:01 -0400
+	Tue, 11 Jun 2013 08:54:57 -0400
 From: Amit Daniel Kachhap <amit.daniel@samsung.com>
 To: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
         Eduardo Valentin <eduardo.valentin@ti.com>
 Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         amit.kachhap@gmail.com, Kukjin Kim <kgene.kim@samsung.com>,
         jonghwa3.lee@samsung.com
-Subject: [PATCH V5 14/30] thermal: exynos: Modify private_data to appropriate name driver_data
-Date: Tue, 11 Jun 2013 18:23:24 +0530
-Message-Id: <1370955220-2949-15-git-send-email-amit.daniel@samsung.com>
+Subject: [PATCH V5 13/30] thermal: exynos: Add support for instance based register/unregister
+Date: Tue, 11 Jun 2013 18:23:23 +0530
+Message-Id: <1370955220-2949-14-git-send-email-amit.daniel@samsung.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1370955220-2949-1-git-send-email-amit.daniel@samsung.com>
 References: <1370955220-2949-1-git-send-email-amit.daniel@samsung.com>
@@ -23,66 +23,246 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch renames member private_data to driver_data of the thermal
-zone registration structure as this item stores the driver related
-data and uses it to call the driver related callbacks.
+This code modifies the thermal driver to have multiple thermal zone
+support by replacing the global thermal zone variable with device data
+member of thermal_zone_device.
 
 Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 ---
- drivers/thermal/samsung/exynos_thermal_common.c |    4 ++--
- drivers/thermal/samsung/exynos_thermal_common.h |    2 +-
- drivers/thermal/samsung/exynos_tmu.c            |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/thermal/samsung/exynos_thermal_common.c |   36 ++++++++++++++--------
+ drivers/thermal/samsung/exynos_thermal_common.h |    9 +++--
+ drivers/thermal/samsung/exynos_tmu.c            |   15 +++++----
+ 3 files changed, 36 insertions(+), 24 deletions(-)
 
 diff --git a/drivers/thermal/samsung/exynos_thermal_common.c b/drivers/thermal/samsung/exynos_thermal_common.c
-index 2af1e3b..7064eb7 100644
+index dd49c9f..2af1e3b 100644
 --- a/drivers/thermal/samsung/exynos_thermal_common.c
 +++ b/drivers/thermal/samsung/exynos_thermal_common.c
-@@ -221,7 +221,7 @@ static int exynos_get_temp(struct thermal_zone_device *thermal,
- 		pr_info("Temperature sensor not initialised\n");
- 		return -EINVAL;
- 	}
--	data = th_zone->sensor_conf->private_data;
-+	data = th_zone->sensor_conf->driver_data;
- 	*temp = th_zone->sensor_conf->read_temperature(data);
- 	/* convert the temperature into millicelsius */
- 	*temp = *temp * MCELSIUS;
-@@ -240,7 +240,7 @@ static int exynos_set_emul_temp(struct thermal_zone_device *thermal,
- 		pr_info("Temperature sensor not initialised\n");
- 		return -EINVAL;
- 	}
--	data = th_zone->sensor_conf->private_data;
-+	data = th_zone->sensor_conf->driver_data;
- 	if (th_zone->sensor_conf->write_emul_temp)
- 		ret = th_zone->sensor_conf->write_emul_temp(data, temp);
- 	return ret;
-diff --git a/drivers/thermal/samsung/exynos_thermal_common.h b/drivers/thermal/samsung/exynos_thermal_common.h
-index a845c2d..1e9a326 100644
---- a/drivers/thermal/samsung/exynos_thermal_common.h
-+++ b/drivers/thermal/samsung/exynos_thermal_common.h
-@@ -83,7 +83,7 @@ struct thermal_sensor_conf {
- 	int (*write_emul_temp)(void *drv_data, unsigned long temp);
- 	struct thermal_trip_point_conf trip_data;
- 	struct thermal_cooling_conf cooling_data;
--	void *private_data;
-+	void *driver_data;
- 	void *pzone_data;
+@@ -36,12 +36,11 @@ struct exynos_thermal_zone {
+ 	bool bind;
  };
  
+-static struct exynos_thermal_zone *th_zone;
+-
+ /* Get mode callback functions for thermal zone */
+ static int exynos_get_mode(struct thermal_zone_device *thermal,
+ 			enum thermal_device_mode *mode)
+ {
++	struct exynos_thermal_zone *th_zone = thermal->devdata;
+ 	if (th_zone)
+ 		*mode = th_zone->mode;
+ 	return 0;
+@@ -51,25 +50,26 @@ static int exynos_get_mode(struct thermal_zone_device *thermal,
+ static int exynos_set_mode(struct thermal_zone_device *thermal,
+ 			enum thermal_device_mode mode)
+ {
+-	if (!th_zone->therm_dev) {
++	struct exynos_thermal_zone *th_zone = thermal->devdata;
++	if (!th_zone) {
+ 		pr_notice("thermal zone not registered\n");
+ 		return 0;
+ 	}
+ 
+-	mutex_lock(&th_zone->therm_dev->lock);
++	mutex_lock(&thermal->lock);
+ 
+ 	if (mode == THERMAL_DEVICE_ENABLED &&
+ 		!th_zone->sensor_conf->trip_data.trigger_falling)
+-		th_zone->therm_dev->polling_delay = IDLE_INTERVAL;
++		thermal->polling_delay = IDLE_INTERVAL;
+ 	else
+-		th_zone->therm_dev->polling_delay = 0;
++		thermal->polling_delay = 0;
+ 
+-	mutex_unlock(&th_zone->therm_dev->lock);
++	mutex_unlock(&thermal->lock);
+ 
+ 	th_zone->mode = mode;
+-	thermal_zone_device_update(th_zone->therm_dev);
++	thermal_zone_device_update(thermal);
+ 	pr_info("thermal polling set for duration=%d msec\n",
+-				th_zone->therm_dev->polling_delay);
++				thermal->polling_delay);
+ 	return 0;
+ }
+ 
+@@ -96,6 +96,8 @@ static int exynos_get_trip_type(struct thermal_zone_device *thermal, int trip,
+ static int exynos_get_trip_temp(struct thermal_zone_device *thermal, int trip,
+ 				unsigned long *temp)
+ {
++	struct exynos_thermal_zone *th_zone = thermal->devdata;
++
+ 	if (trip < GET_TRIP(MONITOR_ZONE) || trip > GET_TRIP(PANIC_ZONE))
+ 		return -EINVAL;
+ 
+@@ -122,6 +124,7 @@ static int exynos_bind(struct thermal_zone_device *thermal,
+ {
+ 	int ret = 0, i, tab_size, level;
+ 	struct freq_clip_table *tab_ptr, *clip_data;
++	struct exynos_thermal_zone *th_zone = thermal->devdata;
+ 	struct thermal_sensor_conf *data = th_zone->sensor_conf;
+ 
+ 	tab_ptr = (struct freq_clip_table *)data->cooling_data.freq_data;
+@@ -168,6 +171,7 @@ static int exynos_unbind(struct thermal_zone_device *thermal,
+ 			struct thermal_cooling_device *cdev)
+ {
+ 	int ret = 0, i, tab_size;
++	struct exynos_thermal_zone *th_zone = thermal->devdata;
+ 	struct thermal_sensor_conf *data = th_zone->sensor_conf;
+ 
+ 	if (th_zone->bind == false)
+@@ -210,6 +214,7 @@ static int exynos_unbind(struct thermal_zone_device *thermal,
+ static int exynos_get_temp(struct thermal_zone_device *thermal,
+ 			unsigned long *temp)
+ {
++	struct exynos_thermal_zone *th_zone = thermal->devdata;
+ 	void *data;
+ 
+ 	if (!th_zone->sensor_conf) {
+@@ -229,6 +234,7 @@ static int exynos_set_emul_temp(struct thermal_zone_device *thermal,
+ {
+ 	void *data;
+ 	int ret = -EINVAL;
++	struct exynos_thermal_zone *th_zone = thermal->devdata;
+ 
+ 	if (!th_zone->sensor_conf) {
+ 		pr_info("Temperature sensor not initialised\n");
+@@ -276,11 +282,12 @@ static struct thermal_zone_device_ops const exynos_dev_ops = {
+  * This function may be called from interrupt based temperature sensor
+  * when threshold is changed.
+  */
+-void exynos_report_trigger(void)
++void exynos_report_trigger(struct thermal_sensor_conf *conf)
+ {
+ 	unsigned int i;
+ 	char data[10];
+ 	char *envp[] = { data, NULL };
++	struct exynos_thermal_zone *th_zone = conf->pzone_data;
+ 
+ 	if (!th_zone || !th_zone->therm_dev)
+ 		return;
+@@ -321,6 +328,7 @@ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
+ {
+ 	int ret;
+ 	struct cpumask mask_val;
++	struct exynos_thermal_zone *th_zone;
+ 
+ 	if (!sensor_conf || !sensor_conf->read_temperature) {
+ 		pr_err("Temperature sensor not initialised\n");
+@@ -342,7 +350,7 @@ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
+ 	th_zone->cool_dev_size++;
+ 
+ 	th_zone->therm_dev = thermal_zone_device_register(sensor_conf->name,
+-			EXYNOS_ZONE_COUNT, 0, NULL, &exynos_dev_ops, NULL, 0,
++			EXYNOS_ZONE_COUNT, 0, th_zone, &exynos_dev_ops, NULL, 0,
+ 			sensor_conf->trip_data.trigger_falling ?
+ 			0 : IDLE_INTERVAL);
+ 
+@@ -352,20 +360,22 @@ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
+ 		goto err_unregister;
+ 	}
+ 	th_zone->mode = THERMAL_DEVICE_ENABLED;
++	sensor_conf->pzone_data = th_zone;
+ 
+ 	pr_info("Exynos: Kernel Thermal management registered\n");
+ 
+ 	return 0;
+ 
+ err_unregister:
+-	exynos_unregister_thermal();
++	exynos_unregister_thermal(sensor_conf);
+ 	return ret;
+ }
+ 
+ /* Un-Register with the in-kernel thermal management */
+-void exynos_unregister_thermal(void)
++void exynos_unregister_thermal(struct thermal_sensor_conf *sensor_conf)
+ {
+ 	int i;
++	struct exynos_thermal_zone *th_zone = sensor_conf->pzone_data;
+ 
+ 	if (!th_zone)
+ 		return;
+diff --git a/drivers/thermal/samsung/exynos_thermal_common.h b/drivers/thermal/samsung/exynos_thermal_common.h
+index fd789a5..a845c2d 100644
+--- a/drivers/thermal/samsung/exynos_thermal_common.h
++++ b/drivers/thermal/samsung/exynos_thermal_common.h
+@@ -84,22 +84,23 @@ struct thermal_sensor_conf {
+ 	struct thermal_trip_point_conf trip_data;
+ 	struct thermal_cooling_conf cooling_data;
+ 	void *private_data;
++	void *pzone_data;
+ };
+ 
+ /*Functions used exynos based thermal sensor driver*/
+ #ifdef CONFIG_EXYNOS_THERMAL_CORE
+-void exynos_unregister_thermal(void);
++void exynos_unregister_thermal(struct thermal_sensor_conf *sensor_conf);
+ int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf);
+-void exynos_report_trigger(void);
++void exynos_report_trigger(struct thermal_sensor_conf *sensor_conf);
+ #else
+ static inline void
+-exynos_unregister_thermal(void) { return; }
++exynos_unregister_thermal(struct thermal_sensor_conf *sensor_conf) { return; }
+ 
+ static inline int
+ exynos_register_thermal(struct thermal_sensor_conf *sensor_conf) { return 0; }
+ 
+ static inline void
+-exynos_report_trigger(void) { return; }
++exynos_report_trigger(struct thermal_sensor_conf *sensor_conf) { return; }
+ 
+ #endif /* CONFIG_EXYNOS_THERMAL_CORE */
+ #endif /* _EXYNOS_THERMAL_COMMON_H */
 diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index a7bba69..40e0cfd 100644
+index f6f63ca..a7bba69 100644
 --- a/drivers/thermal/samsung/exynos_tmu.c
 +++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -504,7 +504,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
- 	exynos_tmu_control(pdev, true);
+@@ -345,6 +345,12 @@ static int exynos_tmu_set_emulation(void *drv_data,	unsigned long temp)
+ 	{ return -EINVAL; }
+ #endif/*CONFIG_THERMAL_EMULATION*/
  
- 	/* Register the sensor with thermal management interface */
--	(&exynos_sensor_conf)->private_data = data;
-+	(&exynos_sensor_conf)->driver_data = data;
- 	exynos_sensor_conf.trip_data.trip_count = pdata->trigger_enable[0] +
- 			pdata->trigger_enable[1] + pdata->trigger_enable[2]+
- 			pdata->trigger_enable[3];
++static struct thermal_sensor_conf exynos_sensor_conf = {
++	.name			= "exynos-therm",
++	.read_temperature	= (int (*)(void *))exynos_tmu_read,
++	.write_emul_temp	= exynos_tmu_set_emulation,
++};
++
+ static void exynos_tmu_work(struct work_struct *work)
+ {
+ 	struct exynos_tmu_data *data = container_of(work,
+@@ -353,7 +359,7 @@ static void exynos_tmu_work(struct work_struct *work)
+ 	const struct exynos_tmu_registers *reg = pdata->registers;
+ 	unsigned int val_irq;
+ 
+-	exynos_report_trigger();
++	exynos_report_trigger(&exynos_sensor_conf);
+ 	mutex_lock(&data->lock);
+ 	clk_enable(data->clk);
+ 
+@@ -377,11 +383,6 @@ static irqreturn_t exynos_tmu_irq(int irq, void *id)
+ 
+ 	return IRQ_HANDLED;
+ }
+-static struct thermal_sensor_conf exynos_sensor_conf = {
+-	.name			= "exynos-therm",
+-	.read_temperature	= (int (*)(void *))exynos_tmu_read,
+-	.write_emul_temp	= exynos_tmu_set_emulation,
+-};
+ 
+ #ifdef CONFIG_OF
+ static const struct of_device_id exynos_tmu_match[] = {
+@@ -541,7 +542,7 @@ static int exynos_tmu_remove(struct platform_device *pdev)
+ 
+ 	exynos_tmu_control(pdev, false);
+ 
+-	exynos_unregister_thermal();
++	exynos_unregister_thermal(&exynos_sensor_conf);
+ 
+ 	clk_unprepare(data->clk);
+ 
 -- 
 1.7.1
 
