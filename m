@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019Ab3FKUAq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:00:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41567 "EHLO
+	id S1755998Ab3FKUCl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:02:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41577 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755370Ab3FKUAo (ORCPT
+	with ESMTP id S1754014Ab3FKUCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:00:44 -0400
-Date: Tue, 11 Jun 2013 13:00:42 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v8, part3 10/14] mm: use a dedicated lock to protect
- totalram_pages and zone->managed_pages
-Message-Id: <20130611130042.3dec2cc6737f21180bc09bb1@linux-foundation.org>
-In-Reply-To: <1369575522-26405-11-git-send-email-jiang.liu@huawei.com>
-References: <1369575522-26405-1-git-send-email-jiang.liu@huawei.com>
-	<1369575522-26405-11-git-send-email-jiang.liu@huawei.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Jun 2013 16:02:40 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Graham Inggs <graham.inggs@uct.ac.za>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [ 01/21] USB: option: blacklist network interface on Huawei E1820
+Date: Tue, 11 Jun 2013 13:02:55 -0700
+Message-Id: <20130611195520.183050813@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.254.g5578ad7
+In-Reply-To: <20130611195520.003233586@linuxfoundation.org>
+References: <20130611195520.003233586@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 26 May 2013 21:38:38 +0800 Jiang Liu <liuj97@gmail.com> wrote:
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-> Currently lock_memory_hotplug()/unlock_memory_hotplug() are used to
-> protect totalram_pages and zone->managed_pages. Other than the memory
-> hotplug driver, totalram_pages and zone->managed_pages may also be
-> modified at runtime by other drivers, such as Xen balloon,
-> virtio_balloon etc. For those cases, memory hotplug lock is a little
-> too heavy, so introduce a dedicated lock to protect totalram_pages
-> and zone->managed_pages.
-> 
-> Now we have a simplified locking rules totalram_pages and
-> zone->managed_pages as:
-> 1) no locking for read accesses because they are unsigned long.
-> 2) no locking for write accesses at boot time in single-threaded context.
-> 3) serialize write accesses at runtime by acquiring the dedicated
->    managed_page_count_lock.
-> 
-> Also adjust zone->managed_pages when freeing reserved pages into the
-> buddy system, to keep totalram_pages and zone->managed_pages in
-> consistence.
-> 
-> ...
->
-> +void adjust_managed_page_count(struct page *page, long count)
-> +{
-> +	spin_lock(&managed_page_count_lock);
-> +	page_zone(page)->managed_pages += count;
-> +	totalram_pages += count;
-> +	spin_unlock(&managed_page_count_lock);
-> +}
-> +EXPORT_SYMBOL(adjust_managed_page_count);
+------------------
 
-This is exported to modules but there are no modular callers at this
-time.
+From: Bjørn Mork <bjorn@mork.no>
 
-I assume this was done for some forthcoming xen/virtio_balloon/etc
-patches?  If so, it would be better to avoid adding the export until it
-is actually needed.
+commit b8a24e6281d37243c06b9497dcbfaa98c1e2ad35 upstream.
 
+The mode used by Windows for the Huawei E1820 will use the
+same ff/ff/ff class codes for both serial and network
+functions.
+
+Reported-by: Graham Inggs <graham.inggs@uct.ac.za>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -593,6 +593,8 @@ static const struct usb_device_id option
+ 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x14ac, 0xff, 0xff, 0xff),	/* Huawei E1820 */
++		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
+ 	{ USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0xff, 0xff, 0xff) },
 
 
