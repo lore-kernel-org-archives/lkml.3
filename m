@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754999Ab3FKMjh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 08:39:37 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:60999 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751960Ab3FKMjf convert rfc822-to-8bit (ORCPT
+	id S1755048Ab3FKMkX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 08:40:23 -0400
+Received: from mga09.intel.com ([134.134.136.24]:55649 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754743Ab3FKMkW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 08:39:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAHp75VeQOSns1nL7p+rU1TS2stPuWibFtN_K9mFvzuGW+3WqOA@mail.gmail.com>
-References: <201306111328.52679.heiko@sntech.de>
-	<201306111329.32749.heiko@sntech.de>
-	<CAHp75VcaNkPeUQ=OPY5F7Mqb_cM87xh8A8wUxdCgnRtfjoqoHw@mail.gmail.com>
-	<201306111406.14850.heiko@sntech.de>
-	<CAHp75VeQOSns1nL7p+rU1TS2stPuWibFtN_K9mFvzuGW+3WqOA@mail.gmail.com>
-Date: Tue, 11 Jun 2013 15:39:34 +0300
-Message-ID: <CAHp75Vd4yXqRM9Cm=Eiv6XVZUuUC1_CaT3Ad=Eu=2qeA8bwOAQ@mail.gmail.com>
-Subject: Re: [PATCH v3 1/7] clk: divider: add flag to limit possible dividers
- to even numbers
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 Jun 2013 08:40:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,845,1363158000"; 
+   d="scan'208";a="351675904"
+Message-ID: <1370954397.29283.329.camel@smile>
+Subject: Re: [PATCH v2 0/4] dw_dmac: move to own folder and split
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
+        viresh.kumar@linaro.org, Arnd Bergmann <arnd@arndb.de>,
+        Felipe Balbi <balbi@ti.com>
+Date: Tue, 11 Jun 2013 15:39:57 +0300
+In-Reply-To: <1370435206-13474-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1370435206-13474-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 3:37 PM, Andy Shevchenko
-<andy.shevchenko@gmail.com> wrote:
-> On Tue, Jun 11, 2013 at 3:06 PM, Heiko Stübner <heiko@sntech.de> wrote:
->> Am Dienstag, 11. Juni 2013, 13:51:56 schrieb Andy Shevchenko:
->>> On Tue, Jun 11, 2013 at 2:29 PM, Heiko Stübner <heiko@sntech.de> wrote:
+On Wed, 2013-06-05 at 15:26 +0300, Andy Shevchenko wrote: 
+> This is split of the dw_dmac driver as suggested by Arnd et al [1,2].
+> There are three most important patches:
+>  2/4 moves driver to its own folder
+>  3/4 does the actual split
+>  4/4 introduces PCI part of the driver
+> 
+> During this files are renamed: mostly means that dw_dmac prefix is eliminated.
+> I hope to get it ready to be included in v3.11.
+> 
+> [1] http://www.spinics.net/lists/kernel/msg1408174.html
+> [2] http://www.spinics.net/lists/kernel/msg1408495.html
+> 
+> Changes v1->v2:
+>  - address Arnd's comments
+>  - compile test when !CONFIG_PM
+>  - apply ACKs
+> 
+> Cnages v0->v1:
+>  - apply Viresh's ACKs
+>  - append PCI part of the driver
+>  - test altogether on Intel Medfield
+>  - add 1/4 to the series as it based on it, but Vinod didn't apply it yet to
+>    his tree.
 
-> This variant I think fits:
->
-> if (!(divider->flags & CLK_DIVIDER_EVEN))
+Vinod, do you have any comments on this?
 
-Oops, without "!()" of course.
-
->   return div < 2 || div % 2 == 0;
->
-> You check for feature and do accordingly.
+We would like to have this scheduled for v3.11.
+I think we still have few days if you think we need to improve this
+patchset.
 
 
---
-With Best Regards,
-Andy Shevchenko
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
