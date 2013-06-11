@@ -1,126 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab3FKMHn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 08:07:43 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:64221 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753125Ab3FKMHm convert rfc822-to-8bit (ORCPT
+	id S1753926Ab3FKMJe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 08:09:34 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:54037 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752218Ab3FKMJc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 08:07:42 -0400
+	Tue, 11 Jun 2013 08:09:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130611100108.GC9216@laptop>
-References: <1370266965-7901-1-git-send-email-lee.jones@linaro.org>
-	<CAPDyKFrJumd79hHWJkGWvRKzhoaprPHu=U6HOHXzVL8WyNS6jw@mail.gmail.com>
-	<20130611100108.GC9216@laptop>
-Date: Tue, 11 Jun 2013 14:07:41 +0200
-Message-ID: <CAPDyKFoopE9CSnZB3m0rv+YiEesqck_Jmws+Q7T=n9FrK-mYRQ@mail.gmail.com>
-Subject: Re: [PATCH 00/21] ARM: ux500: Enable Clock look-up from Device Tree
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com
-Content-Type: text/plain; charset=UTF-8
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <51B70D52.9060601@nvidia.com>
+References: <1368791388-31441-1-git-send-email-amerilainen@nvidia.com>
+	<1368791388-31441-3-git-send-email-amerilainen@nvidia.com>
+	<20130526101243.GB1652@mithrandir>
+	<51A30372.6080907@nvidia.com>
+	<20130528103927.GB11547@mithrandir>
+	<86y5ay6hrn.fsf@miki.keithp.com>
+	<20130611104800.GA29395@mithrandir>
+	<CAKMK7uF=A9zZ3VgdwzU3gfOjXaYsCqfCUSPmkLdL98nKX94jFQ@mail.gmail.com>
+	<51B70D52.9060601@nvidia.com>
+Date: Tue, 11 Jun 2013 14:09:31 +0200
+X-Google-Sender-Auth: y2ww1S2BfkbnQShFwsglTE2OTZ0
+Message-ID: <CAKMK7uGRW4uqsSaDEehTZwknZH+mNEgyKB6-4TgfgUOaTOcoLA@mail.gmail.com>
+Subject: Re: [PATCH 2/6] gpu: host1x: Fix syncpoint wait return value
+From: Daniel Vetter <daniel@ffwll.ch>
+To: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Keith Packard <keithp@keithp.com>,
+        "X.Org development" <xorg-devel@lists.x.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 June 2013 12:01, Lee Jones <lee.jones@linaro.org> wrote:
->> > Nice and simple implementation using standard Clk APIs.
->> Hi Lee,
+On Tue, Jun 11, 2013 at 1:43 PM, Terje Bergström <tbergstrom@nvidia.com> wrote:
+> On 11.06.2013 14:00, Daniel Vetter wrote:
+>> We don't use the EAGAIN ioctl restarting to resubmit the batchbuffer
+>> which blew up the gpu (that one has been submitted already in a
+>> different ioctl call), but to be able to restart the ioctl after the
+>> reset has completed: We need to kick every thread which is potentially
+>> holding GEM locks and make sure that we block them (at a point where
+>> they don't hold any locks) until the reset handler completed. To avoid
+>> a validation nightmare we use the same codepaths as we use for signal
+>> interrupts, so ioctl restarting is a very natural fit for this.
 >>
->> I may be a bit tired, but I am having a bit hard to follow the steps
->> taken in this patch set. :-)
->>
->> I should of course tell you why:
->> 1. You start out by adding DT definitions in the DT files, should that
->> not be done as the final step, after the DT support has been added in
->> ux500 clk driver?
+>> Resubmitting victim workloads when a gpu crash happened is something
+>> the reset handler would do (kernel work item currently), not any
+>> userspace process doing an ioctl. But atm we don't resubmit victimized
+>> workloads.
 >
-> No, let me tell you why. ;)
->
-> a) The DT definitions will be going in via a separate tree, so it
-> doesn't really matter where they are placed in _this_ patchset. and b)
-> they will remain completely dormant until they are backed up with
-> driver bindings, so there is no harm in putting them in first.
+> I don't understand the end-to-end of how resubmit is supposed to work.
+> User space is not supposed to resubmit, but still EAGAIN is returned to
+> user space, and drmIoctl() in user space just calls the came ioctl
+> again. Sounds like drmIoctl() is completely wrong.
 
-Okay, was not aware of that those were to be merged on it's own.
+Maybe it wasn't clear, but -EAGAIN does _not_ resubmit work. -EAGAIN
+is used to restart the ioctl if we had to kick a thread (to make sure
+it doesn't hold any locks), e.g. for a blocking wait on oustanding
+rendering. The codepaths taken work exactly as if the thread is
+interrupt with a signal.
 
->
->> 2. Moreover, I think it would be enough to group the definitions
->> patches into one patch or at least significant fewer. Same feeling
->> about the patches were you remove the AUXDATA, this would simplify the
->> review for me.
->
-> It's generally accepted that lots of lines of code split over a
-> greater number of patches (so long as they are in consistent groups of
-> functionality) are easier to review and thus have a greater chance of
-> acceptance. It also makes things like reverting easier and bisecting
-> more precise (rather than finding a big patch using bisect, then
-> having to complete a manual mini-bisect to find the offending change.
->
-> Arnd provides the maths for calculating the ease of upstreaming a
-> patch, which he calls 'weight' (NB: this is from memory, it might be a
-> little off):
->
-> (patch_weight * patch_weight) * patch_count = delta_weight
->
-> So if we had a 100 lines split over 2 patches, it would be:
->
-> (50 * 50) * 2 = 5000
->
-> Whereas if we split those lines over 4 patches we would see:
->
-> (25 * 25) * 4 = 1000
->
-> Thus, by this convention it would (generally) considered to be twice
-> as difficult to upstream - at least that's the theory. There is a more
-> extravagant formula for calculating how difficult it would be to
-> upstream an entire tree of delta if a) all patches were contained on a
-> single branch compared to b) if patches were split into topic branches.
->
-> Something like:
->
-> ((patch_weight * patch_weight) * patch_count)  *
->  (patch_weight * patch_weight) * patch_count)) *
->   branch_count = delta_weight
->
-> So following on from the example above and placing 100 lines over 2
-> patches on 1 branch you would get:
->
-> (((25 * 25) * 4) * (25 * 25) * 4) * 1 = 6250000
->
-> Whereas if you spread the patches over two branches you'd have:
->
-> (((25 * 25) * 2) * (25 * 25) * 2) * 2 = 3125000
->
-> Obviously the branch number comparison works better with the larger
-> numbers you'd expect to find in a typical downstream BSP, but you get
-> the idea.
->
-> </tangent> ... whoops, sorry! :)
+> In Tegra, when a job blows up, we reset the involved units, and set the
+> pushbuffer pointer of host1x to point to the next job, and re-enable
+> units. There's no need for anybody to resubmit anything, as kernel
+> already has them.
 
-Hehe, I stopped reading long before this line. Go ahead, keep them as
-is then! :-)
-
->
->> 3. The rest will be commented per patch.
->>
->> Kind regards
->> Ulf Hansson
->>
->> >
->> >  arch/arm/boot/dts/dbx5x0.dtsi    |   94 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
->> >  arch/arm/boot/dts/snowball.dts   |    3 ++-
->> >  arch/arm/mach-ux500/cpu-db8500.c |   36 +--------------------------
->> >  drivers/clk/ux500/u8500_clk.c    |  154 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
->> >  4 files changed, 249 insertions(+), 38 deletions(-)
->> >
->> >
->
-> --
-> Lee Jones
-> Linaro ST-Ericsson Landing Team Lead
-> Linaro.org â”‚ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+Yeah, that's how it works in i915.ko, too.
+-Daniel
+--
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
