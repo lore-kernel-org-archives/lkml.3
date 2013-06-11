@@ -1,101 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027Ab3FKVbJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 17:31:09 -0400
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:46489 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574Ab3FKVbI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 17:31:08 -0400
-Message-ID: <51B79718.1030402@gmail.com>
-Date: Tue, 11 Jun 2013 23:31:04 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	id S1756547Ab3FKVkO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 17:40:14 -0400
+Received: from mga01.intel.com ([192.55.52.88]:43573 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755918Ab3FKVkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 17:40:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,847,1363158000"; 
+   d="scan'208";a="351695216"
+From: "Keller, Jacob E" <jacob.e.keller@intel.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>,
+        Eliezer Tamir <eliezer.tamir@linux.intel.com>
+CC: David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        Willem de Bruijn <willemb@google.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: RE: [PATCH v10 net-next 5/6] ixgbe: add support for ndo_ll_poll
+Thread-Topic: [PATCH v10 net-next 5/6] ixgbe: add support for ndo_ll_poll
+Thread-Index: AQHOZbZahmUIX4XMxUu5CAKDe8BPCJkvgB8AgAGMyJA=
+Date: Tue, 11 Jun 2013 21:40:09 +0000
+Message-ID: <02874ECE860811409154E81DA85FBB58564F93E8@ORSMSX104.amr.corp.intel.com>
+References: <20130610083929.6955.87206.stgit@ladj378.jer.intel.com>
+	 <20130610084020.6955.48255.stgit@ladj378.jer.intel.com>
+ <1370876366.3252.6.camel@edumazet-glaptop>
+In-Reply-To: <1370876366.3252.6.camel@edumazet-glaptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Francisco Jerez <currojerez@riseup.net>
-CC: Daniel Vetter <daniel@ffwll.ch>, linux-arm-kernel@lists.infradead.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] drm: encoder_slave: respect of_node on i2c encoder init
-References: <1370899422-1281-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130611072433.GP22870@phenom.ffwll.local> <51B6D91D.3000906@gmail.com> <8738soptt7.fsf@riseup.net>
-In-Reply-To: <8738soptt7.fsf@riseup.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5BLeLNw016100
 
-On 06/11/2013 05:10 PM, Francisco Jerez wrote:
-> Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>  writes:
->>> - I think we could also drop the call to ->set_config since presumably an
->>>     of-enabled driver grabbed any required info already from the dt.
->> [...]
->>> I think this way we could still share encoder slaves across tons of
->>> platforms, only the init sequence (and specifically how they get at their
->
-> The "set_config" hook is just the way a DRM driver communicates those
-> board-specific differences in the init sequence to the slave encoder
-> driver.  I don't think it would make sense to remove it unless we make
-> sure it's being called elsewhere.
+> -----Original Message-----
+> From: netdev-owner@vger.kernel.org [mailto:netdev-
+> owner@vger.kernel.org] On Behalf Of Eric Dumazet
+> Sent: Monday, June 10, 2013 7:59 AM
+> To: Eliezer Tamir
+> Cc: David Miller; linux-kernel@vger.kernel.org; netdev@vger.kernel.org;
+> Brandeburg, Jesse; Skidmore, Donald C; e1000-
+> devel@lists.sourceforge.net; Willem de Bruijn; Ben Hutchings; Andi
+> Kleen; HPA; Eilon Greenstien; Or Gerlitz; Amir Vadai; Eliezer Tamir
+> Subject: Re: [PATCH v10 net-next 5/6] ixgbe: add support for ndo_ll_poll
+> 
+> On Mon, 2013-06-10 at 11:40 +0300, Eliezer Tamir wrote:
+> > Add the ixgbe driver code implementing ndo_ll_poll.
+> > Adds ndo_ll_poll method and locking between it and the napi poll.
+> > When receiving a packet we use skb_mark_ll to record the napi it came
+> from.
+> > Add each napi to the napi_hash right after netif_napi_add().
+> >
+> > Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+> > Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+> > Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+> > ---
+> 
+> Reviewed-by: Eric Dumazet <edumazet@google.com>
+> 
+> 
+> --
 
-Francisco,
+Acked-by: Jacob Keller <jacob.e.keller@intel.com>
 
-for the non-DT case all probe related stuff could be passed with 
-board_info.platform_data. For the DT case, the i2c device driver
-will parse properties into .platform_data. IMHO in the end,
-.set_config can be safely removed. But for now and especially because
-I only have a DT-only platform to test, leave it there and rework
-existing drivers and drm master encoders to pass it that way.
-
->> IMHO, the whole i2c encoder stuff is just wrong. Not any i2c slave
->> driver is even really using its probe(). Everything is packed somewhere
->> because it just worked.. this is at least a start.
->>
-> Why is that?  What do you mean by the probe hooks not being used?
-> ch7006 and sil164 rely on it being called on initialization.
-
-You are right, I remembered wrong.
-
->> I suggest this to get merged to at least allow to have DT slaves,
->> then start with improving tda998x as an example, then maybe rethink
->> drm_slave_encoder completely, e.g.
->>
->> - generalize the concept to SPI attached encoders, "internal" encoders..
->
-> drm_encoder_slave is bus-agnostic.  drm_i2c_encoder_init() is just a
-> helper function taking care of bus-specific details like the creation of
-> the underlying I2C device object, which cannot be made bus-agnostic for
-> obvious reasons.  You're welcome to implement SPI and internal
-> counterparts of drm_i2c_encoder_init().
-
-Hehe, true again. I like to help and improve it wherever possible. But
-to be honest, DRM is not an easy starter for blindly touch commonly
-shared functions. If I break Dove, there is little people complaining.
-If I also break x86 complaining quickly becomes ranting ;)
-
->> - find a way to setup .encoder_type and .connector_type correctly
->
-> I guess encoder_type could be initialized correctly from the slave
-> encoder_init() hook -- that hasn't been necessary until now because the
-> DRM driver making use of the slave encoder has been expected to have
-> some other means to find out encoder types [e.g. device-specific BIOS
-> tables].  OTOH, I don't think that setting connector types is the slave
-> encoder's business.
-
-Well, I do not completely agree here. Actually, the connector type
-cannot be set from any encoder in the chain in a consitent way. But
-at least the slave encoder is closer to it.
-
-For Dove (and many other SoCs) the lcd controller is just a dumb rgb
-scan-out controller. It makes no difference if you directly connect an
-LCD panel or have a HDMI encoder finally connected to an DVI plug.
-The LCD controller shouldn't really care because it always sees a dumb
-rgb receiver, the HDMI encoder at least can say it is either HDMI or
-DVI plug.
-
-For DT, I tend to have a video-card node comprising lcd controllers,
-video memory range, external encoder phandle. Maybe put the board-
-specific connector here, and then it is up the the master encoder
-(or video card "driver") to set the correct connector.
-
-Sebastian
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
