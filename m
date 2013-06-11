@@ -1,165 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327Ab3FKLfF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:35:05 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33398 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754683Ab3FKLbj (ORCPT
+	id S1754637Ab3FKLk4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:40:56 -0400
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:37035 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752151Ab3FKLky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:31:39 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 02/22] mfd & input & iio/ti_am335x_adc: use one structure for ti_tscadc_dev
-Date: Tue, 11 Jun 2013 13:30:48 +0200
-Message-Id: <1370950268-7224-3-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
-References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 11 Jun 2013 07:40:54 -0400
+Message-ID: <51B70BB1.6040703@st.com>
+Date: Tue, 11 Jun 2013 12:36:17 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, linux-doc@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>, linux@arm.linux.org.uk,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        linux-serial@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH v2 03/11] regmap: Add regmap_field APIs
+References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com> <1370856118-6503-1-git-send-email-srinivas.kandagatla@st.com> <20130611104841.GX1403@sirena.org.uk>
+In-Reply-To: <20130611104841.GX1403@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mfd driver creates platform data for the child devices and it is the
-ti_tscadc_dev struct. This struct is copied for the two devices.
-The copy of the structure makes a common lock in this structure a little
-less usefull. Therefore the platform data is not a pointer to the
-structure and the same structure is used.
-While doing the change I noticed that the suspend/resume code assumes
-the wrong pointer for ti_tscadc_dev and this has been fixed as well.
+On 11/06/13 11:48, Mark Brown wrote:
+> On Mon, Jun 10, 2013 at 10:21:58AM +0100, Srinivas KANDAGATLA wrote:
+>> It is common to access regmap registers at bit level, using
+>> regmap_update_bits or regmap_read functions, however the end user has to
+>> take care of a mask or shifting. This becomes overhead when such use
+>> cases are high. Having a common function to do this is much convenient
+>> and less error prone.
+> 
+> So this looks basically good.  A couple of smallish nits below, if you
+> could respin I'll apply this on a branch so it can be pulled in as
+> dependency for the other things that use it.
+> 
+Thankyou for the comments,
+I will fix it and send a v3 patch.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- drivers/iio/adc/ti_am335x_adc.c           |    5 +++--
- drivers/input/touchscreen/ti_am335x_tsc.c |   16 +++++++++-------
- drivers/mfd/ti_am335x_tscadc.c            |    8 ++++----
- include/linux/mfd/ti_am335x_tscadc.h      |    7 +++++++
- 4 files changed, 23 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-index 5f9a7e7..9db352e 100644
---- a/drivers/iio/adc/ti_am335x_adc.c
-+++ b/drivers/iio/adc/ti_am335x_adc.c
-@@ -140,7 +140,7 @@ static int tiadc_probe(struct platform_device *pdev)
- {
- 	struct iio_dev		*indio_dev;
- 	struct tiadc_device	*adc_dev;
--	struct ti_tscadc_dev	*tscadc_dev = pdev->dev.platform_data;
-+	struct ti_tscadc_dev	*tscadc_dev = ti_tscadc_dev_get(pdev);
- 	struct mfd_tscadc_board	*pdata;
- 	int			err;
- 
-@@ -205,9 +205,10 @@ static int tiadc_suspend(struct device *dev)
- {
- 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
- 	struct tiadc_device *adc_dev = iio_priv(indio_dev);
--	struct ti_tscadc_dev *tscadc_dev = dev->platform_data;
-+	struct ti_tscadc_dev *tscadc_dev;
- 	unsigned int idle;
- 
-+	tscadc_dev = ti_tscadc_dev_get(to_platform_device(dev));
- 	if (!device_may_wakeup(tscadc_dev->dev)) {
- 		idle = tiadc_readl(adc_dev, REG_CTRL);
- 		idle &= ~(CNTRLREG_TSCSSENB);
-diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
-index 51e7b87..16077d3 100644
---- a/drivers/input/touchscreen/ti_am335x_tsc.c
-+++ b/drivers/input/touchscreen/ti_am335x_tsc.c
-@@ -262,7 +262,7 @@ static int titsc_probe(struct platform_device *pdev)
- {
- 	struct titsc *ts_dev;
- 	struct input_dev *input_dev;
--	struct ti_tscadc_dev *tscadc_dev = pdev->dev.platform_data;
-+	struct ti_tscadc_dev *tscadc_dev = ti_tscadc_dev_get(pdev);
- 	struct mfd_tscadc_board	*pdata;
- 	int err;
- 
-@@ -329,8 +329,8 @@ static int titsc_probe(struct platform_device *pdev)
- 
- static int titsc_remove(struct platform_device *pdev)
- {
--	struct ti_tscadc_dev *tscadc_dev = pdev->dev.platform_data;
--	struct titsc *ts_dev = tscadc_dev->tsc;
-+	struct titsc *ts_dev = platform_get_drvdata(pdev);
-+	u32 steps;
- 
- 	free_irq(ts_dev->irq, ts_dev);
- 
-@@ -344,10 +344,11 @@ static int titsc_remove(struct platform_device *pdev)
- #ifdef CONFIG_PM
- static int titsc_suspend(struct device *dev)
- {
--	struct ti_tscadc_dev *tscadc_dev = dev->platform_data;
--	struct titsc *ts_dev = tscadc_dev->tsc;
-+	struct titsc *ts_dev = dev_get_drvdata(dev);
-+	struct ti_tscadc_dev *tscadc_dev;
- 	unsigned int idle;
- 
-+	tscadc_dev = ti_tscadc_dev_get(to_platform_device(dev));
- 	if (device_may_wakeup(tscadc_dev->dev)) {
- 		idle = titsc_readl(ts_dev, REG_IRQENABLE);
- 		titsc_writel(ts_dev, REG_IRQENABLE,
-@@ -359,9 +360,10 @@ static int titsc_suspend(struct device *dev)
- 
- static int titsc_resume(struct device *dev)
- {
--	struct ti_tscadc_dev *tscadc_dev = dev->platform_data;
--	struct titsc *ts_dev = tscadc_dev->tsc;
-+	struct titsc *ts_dev = dev_get_drvdata(dev);
-+	struct ti_tscadc_dev *tscadc_dev;
- 
-+	tscadc_dev = ti_tscadc_dev_get(to_platform_device(dev));
- 	if (device_may_wakeup(tscadc_dev->dev)) {
- 		titsc_writel(ts_dev, REG_IRQWAKEUP,
- 				0x00);
-diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-index 804e61e..490b2bd 100644
---- a/drivers/mfd/ti_am335x_tscadc.c
-+++ b/drivers/mfd/ti_am335x_tscadc.c
-@@ -157,14 +157,14 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
- 	/* TSC Cell */
- 	cell = &tscadc->cells[TSC_CELL];
- 	cell->name = "tsc";
--	cell->platform_data = tscadc;
--	cell->pdata_size = sizeof(*tscadc);
-+	cell->platform_data = &tscadc;
-+	cell->pdata_size = sizeof(tscadc);
- 
- 	/* ADC Cell */
- 	cell = &tscadc->cells[ADC_CELL];
- 	cell->name = "tiadc";
--	cell->platform_data = tscadc;
--	cell->pdata_size = sizeof(*tscadc);
-+	cell->platform_data = &tscadc;
-+	cell->pdata_size = sizeof(tscadc);
- 
- 	err = mfd_add_devices(&pdev->dev, pdev->id, tscadc->cells,
- 			TSCADC_CELLS, NULL, 0, NULL);
-diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-index dc75c34..5e430fe 100644
---- a/include/linux/mfd/ti_am335x_tscadc.h
-+++ b/include/linux/mfd/ti_am335x_tscadc.h
-@@ -148,4 +148,11 @@ struct ti_tscadc_dev {
- 	struct adc_device *adc;
- };
- 
-+static inline struct ti_tscadc_dev *ti_tscadc_dev_get(struct platform_device *p)
-+{
-+	struct ti_tscadc_dev **tscadc_dev = p->dev.platform_data;
-+
-+	return *tscadc_dev;
-+}
-+
- #endif
--- 
-1.7.10.4
+>> +	regmap_field_init(rm_field, regmap, reg_field);
+>> +
+>> +	return rm_field;
+>> +
+>> +}
+>> +EXPORT_SYMBOL_GPL(devm_regmap_field_alloc);
+>> +/**
+>> + * regmap_field_alloc(): Allocate and initialise a register field
+> 
+> Needs a blank line between the two functions.
+> 
+>> +#include <linux/device.h>
+>> +#include <linux/slab.h>
+> 
+>> +static inline void regmap_field_free(struct regmap_field *field)
+>> +{
+>> +	kfree(field);
+>> +}
+> 
+>> +static inline void devm_regmap_field_free(struct device *dev,
+>> +	struct regmap_field *field)
+>> +{
+>> +	devm_kfree(dev, field);
+>> +}
+> 
+> Probably not worth inlining these, just put them in the code.
+> 
+> 
+> 
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
+> 
 
