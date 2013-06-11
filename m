@@ -1,91 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494Ab3FKKsI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 06:48:08 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:36291 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752404Ab3FKKsG (ORCPT
+	id S1754317Ab3FKKtj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 06:49:39 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40354 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752042Ab3FKKtf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 06:48:06 -0400
-Date: Tue, 11 Jun 2013 12:48:01 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: Arto Merilainen <amerilainen@nvidia.com>,
-        "airlied@linux.ie" <airlied@linux.ie>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Terje Bergstrom <tbergstrom@nvidia.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        xorg-devel@lists.x.org
-Subject: Re: [PATCH 2/6] gpu: host1x: Fix syncpoint wait return value
-Message-ID: <20130611104800.GA29395@mithrandir>
-References: <1368791388-31441-1-git-send-email-amerilainen@nvidia.com>
- <1368791388-31441-3-git-send-email-amerilainen@nvidia.com>
- <20130526101243.GB1652@mithrandir>
- <51A30372.6080907@nvidia.com>
- <20130528103927.GB11547@mithrandir>
- <86y5ay6hrn.fsf@miki.keithp.com>
+	Tue, 11 Jun 2013 06:49:35 -0400
+Date: Tue, 11 Jun 2013 11:48:41 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, linux@arm.linux.org.uk,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Olof Johansson <olof@lixom.net>, Rob Herring <rob.herring@calxeda.com>,
+        Rob Landley <rob@landley.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tony Prisk <linux@prisktech.co.nz>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Message-ID: <20130611104841.GX1403@sirena.org.uk>
+References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com>
+ <1370856118-6503-1-git-send-email-srinivas.kandagatla@st.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PNTmBPCT7hxwcZjr"
+	protocol="application/pgp-signature"; boundary="7WMexqIhC8AwFtpM"
 Content-Disposition: inline
-In-Reply-To: <86y5ay6hrn.fsf@miki.keithp.com>
+In-Reply-To: <1370856118-6503-1-git-send-email-srinivas.kandagatla@st.com>
+X-Cookie: Tomorrow, you can be anywhere.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 03/11] regmap: Add regmap_field APIs
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---PNTmBPCT7hxwcZjr
+--7WMexqIhC8AwFtpM
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, May 28, 2013 at 01:12:12PM -0600, Keith Packard wrote:
-> Thierry Reding <thierry.reding@gmail.com> writes:
->=20
->=20
-> > That doesn't sound right. Maybe drmIoctl() needs fixing instead. Looking
-> > at the history, drmIoctl() was introduced to automatically loop if a
-> > signal was received (commit 8b9ab108ec1f2ba2b503f713769c4946849b3cb2).
-> > However the ioctl(3p) manpage doesn't mention that ioctl() returns
-> > EAGAIN in case it is interrupted by a signal.
->=20
-> EAGAIN is being returned when the GPU is wedged to ask the application
-> to re-submit the request, which will presumably be held until the  GPU
-> is un-wedged.
+On Mon, Jun 10, 2013 at 10:21:58AM +0100, Srinivas KANDAGATLA wrote:
+> It is common to access regmap registers at bit level, using
+> regmap_update_bits or regmap_read functions, however the end user has to
+> take care of a mask or shifting. This becomes overhead when such use
+> cases are high. Having a common function to do this is much convenient
+> and less error prone.
 
-Isn't that a bit risky? What if something special needs to be done to
-unwedge the GPU other than re-submit the request, or if it just can't
-be reasonably unwedged. In that case drmIoctl() will keep looping
-indefinitely.
+So this looks basically good.  A couple of smallish nits below, if you
+could respin I'll apply this on a branch so it can be pulled in as
+dependency for the other things that use it.
 
-If the above is indeed the expected behaviour for drivers, then we need
-a different error code for the SYNCPT_WAIT ioctl. EAGAIN is the best fit
-and anything else doesn't quite match the use-case. A different option
-might be not to use drmIoctl() on Tegra.
+> +	regmap_field_init(rm_field, regmap, reg_field);
+> +
+> +	return rm_field;
+> +
+> +}
+> +EXPORT_SYMBOL_GPL(devm_regmap_field_alloc);
+> +/**
+> + * regmap_field_alloc(): Allocate and initialise a register field
 
-Thierry
+Needs a blank line between the two functions.
 
---PNTmBPCT7hxwcZjr
-Content-Type: application/pgp-signature
+> +#include <linux/device.h>
+> +#include <linux/slab.h>
+
+> +static inline void regmap_field_free(struct regmap_field *field)
+> +{
+> +	kfree(field);
+> +}
+
+> +static inline void devm_regmap_field_free(struct device *dev,
+> +	struct regmap_field *field)
+> +{
+> +	devm_kfree(dev, field);
+> +}
+
+Probably not worth inlining these, just put them in the code.
+
+--7WMexqIhC8AwFtpM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRtwBgAAoJEN0jrNd/PrOhivUP/A5yqr0FYcREdBaHC+eLGz7v
-Vlvq1uoeTm8VALGb2gJe1ZC1jyIwsif9yHYyw7YRlikXwN/dl7WXqaisYH1NqbaJ
-pnfwzLae3CuIM97PYm89HmqbnVNUAXfBwPZonE6+shqIX3dV0n200Qw2o2chb5/3
-xLmXUnI2qmlmJ8TpV10nIhhgozY6ZDGkGmS95gjXLIxZg6rCWJBEWpQ7zSHQO7zQ
-MmHB0ZFppVRLX4Ww3KXvzVHDZSicPU2f4bxrYo1qfK6Pg4+V7JUZHqghz3hqWglZ
-qekD4Zn0/7rdwj4jw9X07IVxgI/KAm0vFyX7UYvf/iWLggrdj7AAGxjwhOx7/U63
-f3uYTiO1fKLZ4dxYvuVuFVK7Jg+ET+BEpk4FAtrciOZiMUACqc4WqC/nEvqgnS7x
-+gaOgIxDVkUtjMdTb8VPNVwgDaTORblclglZQv/JOqbPtBXlPNhigw3iEfFqXayz
-Hq94l9N4UwpEl5G+E5Y4ctMOigB5c5T1Z4IfQorFIPBA4bSmzNNqXlfiDyA2OG23
-f5BbFiYa3Zu39FpTNQLr2xKwG2cOeZ2j56rWFQIz5/yPHm7N84zFqvToJQiA/9W/
-MC11hO7ZJhhY1oGeslTLM1yjCu0eP6/dXu8Q6FFkoQvBkCSTULt8Lmp81oo8/rpl
-TSBo6+mxYeUgg1boZwFa
-=ozms
+iQIcBAEBAgAGBQJRtwCGAAoJELSic+t+oim9juYQAJPLATgvMslyR8CbZBdkMYrr
+5JHA77lEL/wOXbk+rdvqP6W82d12p/3UGgKIOvINb2bvadCQXmkJr1wdpwXx3cHO
+cCqQ1aOt49hx7QS7i751s/f9k6kMQbdEYH8AjvG/CzlSZ8HM0bHPoIbDSpTWutPL
+scAzrnEHVKGGC2XPgNF6fjCDiIfg9KtaLf+vnCIL7Yddlj6uEtcv+j2LaZsqy9CM
+ZuITB3V21AJ7uKpQRFvU3jhp9lbsTfWAt0vYZqU8ysuoMmKhRbrEy4pFosV9aTAQ
+JEW28Wn8qqZPVO57GFCuEc6HPN2+Rjr2ap2CVeoHNK7Spobwv9Q+JaRjm340eU1E
+FVjshYADBVejTSz4zwwuU7T1dZaGxJ6P02NHF3Wi/cvWla7s2KOAf9tG6MZueufu
+kMneeHgJpzSNnHgJQyXHElGUDwJi9GFkz+yfnsnBs9tTxxAKs9GJtUp59K/Lv4JH
+g0vpUOyNAXD/wl/LrTgS7197KSaGM+xnQDh3LtNvFfqvVAp1+qLLAiAzblcDSmLc
+q3RRSAJ+mRZAv7MlpQyJP9fSykRZMjYU65eTewo/gwW7gS+/JVd+v+H/nT15Eotv
+bgY/pnRfEr+Sw1Wb3WOARQbnTAZM/ieua3Ira44nNJqsl12u/k2DE5XK6lVOquee
+aTYlrj01KDxafDg7vfka
+=BL7K
 -----END PGP SIGNATURE-----
 
---PNTmBPCT7hxwcZjr--
+--7WMexqIhC8AwFtpM--
