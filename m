@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757058Ab3FKUMy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:12:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41963 "EHLO
+	id S1757063Ab3FKUNc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:13:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41952 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756709Ab3FKUEC (ORCPT
+	with ESMTP id S1756695Ab3FKUEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:04:02 -0400
+	Tue, 11 Jun 2013 16:04:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>,
-        Michael Neuling <mikey@neuling.org>
-Subject: [ 59/79] powerpc: Fix build error in stable/3.9
-Date: Tue, 11 Jun 2013 13:03:25 -0700
-Message-Id: <20130611195323.855191722@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Damien Lespiau <damien.lespiau@intel.com>
+Subject: [ 57/79] drm/i915: Fix spurious -EIO/SIGBUS on wedged gpus
+Date: Tue, 11 Jun 2013 13:03:23 -0700
+Message-Id: <20130611195323.607655857@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -27,29 +28,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-Commit e71c42189 (powerpc/tm: Abort on emulation and alignment faults)
-introduced a powerpc build error in 3.9.5.
+commit 7abb690a0e095717420ba78dcab4309abbbec78a upstream.
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Michael Neuling <mikey@neuling.org>
+Chris Wilson noticed that since
+
+commit 1f83fee08d625f8d0130f9fe5ef7b17c2e022f3c [v3.9]
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Thu Nov 15 17:17:22 2012 +0100
+
+    drm/i915: clear up wedged transitions
+
+X can again get -EIO when it does not expect it. And even worse score
+a SIGBUS when accessing gtt mmaps. The established ABI is that we
+_only_ return an -EIO from execbuf - all other ioctls should just
+work. And since the reset code moves all bos out of gpu domains and
+clears out all the last_seqno/ring tracking there really shouldn't be
+any reason for non-execbuf code to ever touch the hw and see an -EIO.
+
+After some extensive discussions we've noticed that these spurios -EIO
+are caused by i915_gem_wait_for_error:
+
+http://www.mail-archive.com/intel-gfx@lists.freedesktop.org/msg20540.html
+
+That is easy to fix by returning 0 instead of -EIO, since grabbing the
+dev->struct_mutex does not yet mean that we actually want to touch the
+hw. And so there is no reason at all to fail with -EIO.
+
+But that's not the entire since, since often (at least it's easily
+googleable) dmesg indicates that the reset fails and we declare the
+gpu wedged. Then, quite a bit later X wakes up with the "Timed out
+waiting for the gpu reset to complete" DRM_ERROR message in
+wait_for_errror and brings down the desktop with an -EIO/SIGBUS.
+
+So clearly we're missing a wakeup somewhere, since the gpu reset just
+doesn't take 10 seconds to complete. And indeed we're do handle the
+terminally wedged state wrong.
+
+Fix this all up.
+
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Damien Lespiau <damien.lespiau@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/traps.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_gem.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
---- a/arch/powerpc/kernel/traps.c
-+++ b/arch/powerpc/kernel/traps.c
-@@ -1151,7 +1151,7 @@ void alignment_exception(struct pt_regs
- 		local_irq_enable();
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -91,14 +91,11 @@ i915_gem_wait_for_error(struct i915_gpu_
+ {
+ 	int ret;
  
- 	if (tm_abort_check(regs, TM_CAUSE_ALIGNMENT | TM_CAUSE_PERSISTENT))
--		goto bail;
-+		return;
+-#define EXIT_COND (!i915_reset_in_progress(error))
++#define EXIT_COND (!i915_reset_in_progress(error) || \
++		   i915_terminally_wedged(error))
+ 	if (EXIT_COND)
+ 		return 0;
  
- 	/* we don't implement logging of alignment exceptions */
- 	if (!(current->thread.align_ctl & PR_UNALIGN_SIGBUS))
+-	/* GPU is already declared terminally dead, give up. */
+-	if (i915_terminally_wedged(error))
+-		return -EIO;
+-
+ 	/*
+ 	 * Only wait 10 seconds for the gpu reset to complete to avoid hanging
+ 	 * userspace. If it takes that long something really bad is going on and
 
 
