@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765Ab3FKJwt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 05:52:49 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:51301 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab3FKJwq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 05:52:46 -0400
-Date: Tue, 11 Jun 2013 02:52:38 -0700
+	id S1753475Ab3FKJ5I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 05:57:08 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:58332 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751700Ab3FKJ5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 05:57:05 -0400
+Date: Tue, 11 Jun 2013 02:56:55 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
@@ -15,97 +14,27 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
         tglx@linutronix.de, peterz@infradead.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, torvalds@linux-foundation.org,
-        riel <riel@redhat.com>
+        fweisbec@gmail.com, sbw@mit.edu, torvalds@linux-foundation.org
 Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
-Message-ID: <20130611095238.GZ5146@linux.vnet.ibm.com>
+Message-ID: <20130611095655.GA5146@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
 References: <20130609193657.GA13392@linux.vnet.ibm.com>
- <1370912649.9844.166.camel@gandalf.local.home>
+ <1370911480.9844.160.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1370912649.9844.166.camel@gandalf.local.home>
+In-Reply-To: <1370911480.9844.160.camel@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061109-3620-0000-0000-0000030CAB16
+x-cbid: 13061109-5806-0000-0000-000021A5397E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 09:04:09PM -0400, Steven Rostedt wrote:
+On Mon, Jun 10, 2013 at 08:44:40PM -0400, Steven Rostedt wrote:
 > On Sun, 2013-06-09 at 12:36 -0700, Paul E. McKenney wrote:
-> > Breaking up locks is better than implementing high-contention locks, but
-> > if we must have high-contention locks, why not make them automatically
-> > switch between light-weight ticket locks at low contention and queued
-> > locks at high contention?
-> > 
-> > This commit therefore allows ticket locks to automatically switch between
-> > pure ticketlock and queued-lock operation as needed.  If too many CPUs
-> > are spinning on a given ticket lock, a queue structure will be allocated
-> > and the lock will switch to queued-lock operation.  When the lock becomes
-> > free, it will switch back into ticketlock operation.  The low-order bit
-> > of the head counter is used to indicate that the lock is in queued mode,
-> > which forces an unconditional mismatch between the head and tail counters.
-> > This approach means that the common-case code path under conditions of
-> > low contention is very nearly that of a plain ticket lock.
-> > 
-> > A fixed number of queueing structures is statically allocated in an
-> > array.  The ticket-lock address is used to hash into an initial element,
-> > but if that element is already in use, it moves to the next element.  If
-> > the entire array is already in use, continue to spin in ticket mode.
-> > 
-> > This has been only lightly tested in the kernel, though a userspace
-> > implementation has survived substantial testing.
 > 
-> I guess the point of this patch is to lower the cache ping pong effect
-> of spin locks. I believe Rik was doing something similar to this as
-> well.
-
-Yep, as was Michel Lespinasse, IIRC.
-
-> Now, when we switch from ticket to queue, we basically blow away the old
-> FIFO and all the tasks do a thundering herd to get on the queue. Even if
-> the task was next to get the lock, it could end up being stuck at the
-> back of the queue again and have to wait. When I put my real-time hat
-> on, this bothers me. Even though it's still a bound latency, as it only
-> gets put to the end of the queue once, it just doubled the length of the
-> worse case grabbing of a lock.
-
-Almost.
-
-The size of the switch-to-queue thundering herd is limited by the
-ticket gap that initiates the switch.  So what you are saying is that
-in an RT kernel, you might want to tune down the ticket gap.  Which
-reminds me -- I do need to make this tuning more explicit.
-
-							Thanx, Paul
-
-> -- Steve
-> 
-> 
-> 
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > 
-> > diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-> > index 33692ea..b4a91b0 100644
-> > --- a/arch/x86/include/asm/spinlock.h
-> > +++ b/arch/x86/include/asm/spinlock.h
-> > @@ -34,6 +34,8 @@
-> >  # define UNLOCK_LOCK_PREFIX
-> >  #endif
-> >  
-> > +#ifndef CONFIG_TICKET_LOCK_QUEUED
-> > +
-> >  /*
-> >   * Ticket locks are conceptually two parts, one indicating the current head of
-> >   * the queue, and the other indicating the current tail. The lock is acquired
-> > @@ -62,6 +64,25 @@ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
-> >  	barrier();		/* make sure nothing creeps before the lock is taken */
-> >  }
-> >  
 > > +#else /* #ifndef CONFIG_TICKET_LOCK_QUEUED */
 > > +
 > > +bool tkt_spin_pass(arch_spinlock_t *ap, struct __raw_tickets inc);
@@ -444,6 +373,42 @@ reminds me -- I do need to make this tuning more explicit.
 > > +
 > > +	/* Add our element to the tail of the queue. */
 > > +	oldtail = xchg(&tqhp->spin_tail, &tq.next);
+> 
+> Boy this is tricky code! I thought I found a race window here, but as I
+> went to write my email saying "Gotcha!" I found that it wasn't a race
+> after all. But as I went though the effort of writing this, I figured I
+> would send this out as documentation for others to see. Hmm, I wonder if
+> we can use this email to add more comments. Anyway, here's what I
+> thought was wrong ;-)
+
+If you didn't know any better, you might even think that I had done
+something like this before.  ;-)
+
+> OK, I originally thought there was a race window here. Let's say that an
+> NMI hit right here, and it happens to be a big one, where lots of things
+> can happen on other CPUs right now.
+> 
+> The scenario is that there's just one item on the queue, which is
+> waiting for the lock to be released, and is spinning below in the:
+> 
+> 	while (ACCESS_ONCE(tq.cpu) != -1)
+> 		cpu_relax();
+> 
+> And then the lock is released, where in tkt_q_do_wake() the following is
+> called:
+> 
+> 	ACCESS_ONCE(tqp->cpu) = -1;
+> 
+> Now the old queued task is released. But it's tq->next hasn't been set
+> yet, and is still NULL. It leaves by doing:
+> 
+> 	ACCESS_ONCE(tqhp->spin) = tq.next;
+> 	return true;
+> 
+> All before this task gets to set *oldtail to &tq. But, I then looked
+> below...
+> 
+> 
 > > +	ACCESS_ONCE(*oldtail) = &tq;
 > > +
 > > +	/* Spin until handoff. */
@@ -456,6 +421,17 @@ reminds me -- I do need to make this tuning more explicit.
 > > +	 * at the head of the list.
 > > +	 */
 > > +	if (tq.next == NULL) {
+> 
+> This checks for that scenario.
+
+Yep!
+
+>                                As if the old task were to come out
+> spinning, the problem would only be if it was the last one on the list,
+> and its tq.next was NULL. But if that was the case, then we set spin to
+> NULL and do the next trick, where I thought I gotcha again...
+> 
+> 
 > > +
 > > +		/* Mark the queue empty. */
 > > +		tqhp->spin = NULL;
@@ -464,6 +440,31 @@ reminds me -- I do need to make this tuning more explicit.
 > > +		if (cmpxchg(&tqhp->spin_tail,
 > > +			    &tq.next,
 > > +			    &tqhp->spin) == &tq.next)
+> 
+> Here, I was thinking, oh wait, what happens if this is called right
+> before the xchg() above. Then we would set spin_tail but not update the
+> old tq.next. But wait! look at what we assign spin_tail to. It's the
+> address of spin, which would be what oldtail would point to above, and
+> then above would set spin to the new tq!
+
+Yep again!
+
+> OK, I haven't found a issue here yet, but youss are beiing trickssy! We
+> don't like trickssy, and we must find precccciouss!!!
+> 
+> 
+> This code is starting to make me look like Gollum :-p
+
+Hmmm...  The time and effort to do this might almost have been worthwhile
+just to accomplish that!  ;-)
+
+But yes, this would need better comments, design documentation, or
+maybe both.
+
+							Thanx, Paul
+
+> -- Steve
+> 
 > > +			return true; /* Succeeded, queue is now empty. */
 > > +
 > > +		/* Failed, if needed, wait for the enqueue to complete. */
