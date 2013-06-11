@@ -1,576 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646Ab3FKIkw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 04:40:52 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47834 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753508Ab3FKIkq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 04:40:46 -0400
-From: Daniel Tang <dt.tangr@gmail.com>
-To: arm@kernel.org
-Cc: Daniel Tang <dt.tangr@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCHv2 2/2] arm: Add device trees for TI-Nspire hardware
-Date: Tue, 11 Jun 2013 18:40:18 +1000
-Message-Id: <1370940018-54330-2-git-send-email-dt.tangr@gmail.com>
-X-Mailer: git-send-email 1.8.1.3
-In-Reply-To: <1370940018-54330-1-git-send-email-dt.tangr@gmail.com>
-References: <1370940018-54330-1-git-send-email-dt.tangr@gmail.com>
+	id S1753894Ab3FKIlX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 04:41:23 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:52414 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752553Ab3FKIkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 04:40:40 -0400
+Message-ID: <51B6E282.9030400@ti.com>
+Date: Tue, 11 Jun 2013 14:10:34 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Ravi Babu <ravibabu@ti.com>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <balbi@ti.com>
+Subject: Re: [PATCH v2 2/7] usb: phy: dsps: adding usbphy driver for am33xx
+ platform
+References: <1370935072-21056-1-git-send-email-ravibabu@ti.com> <1370935072-21056-3-git-send-email-ravibabu@ti.com>
+In-Reply-To: <1370935072-21056-3-git-send-email-ravibabu@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device trees for describing the TI-Nspire hardware.
+Hi,
 
-Changes between v1 and v2:
-* Change "keymap" binding to the standard "linux,keymap" binding.
+On Tuesday 11 June 2013 12:47 PM, Ravi Babu wrote:
+> Adds usb-phy driver support for am33xx platform, the host/device
+> peripheral controller shall get this phy object to control the phy
+> operations.
+>
+> Signed-off-by: Ravi Babu <ravibabu@ti.com>
+> ---
+>   drivers/usb/phy/Kconfig        |    9 ++
+>   drivers/usb/phy/Makefile       |    1 +
+>   drivers/usb/phy/phy-dsps-usb.c |  236 ++++++++++++++++++++++++++++++++++++++++
+>   3 files changed, 246 insertions(+), 0 deletions(-)
+>   create mode 100644 drivers/usb/phy/phy-dsps-usb.c
+>
+> diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+> index 372db48..b55c265 100644
+> --- a/drivers/usb/phy/Kconfig
+> +++ b/drivers/usb/phy/Kconfig
+> @@ -85,6 +85,15 @@ config OMAP_USB3
+>   	  This driver interacts with the "OMAP Control USB Driver" to power
+>   	  on/off the PHY.
+>
+> +config DSPS_USB2PHY
+> +	tristate "DSPS USB2 PHY Driver"
+> +	depends on SOC_AM33XX
+> +	help
+> +	  Enable this to support the transceiver that is part of SOC. This
+> +	  phy supports all LS/FS/HS speed and also supports OTG functionality.
+> +	  The USB OTG controller communicates with this phy through stand UTMI
+> +	  interface.
+> +
+>   config SAMSUNG_USBPHY
+>   	tristate "Samsung USB PHY Driver"
+>   	help
+> diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
+> index 33863c0..0b16fb3 100644
+> --- a/drivers/usb/phy/Makefile
+> +++ b/drivers/usb/phy/Makefile
+> @@ -17,6 +17,7 @@ obj-$(CONFIG_NOP_USB_XCEIV)		+= phy-nop.o
+>   obj-$(CONFIG_OMAP_CONTROL_USB)		+= phy-omap-control.o
+>   obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
+>   obj-$(CONFIG_OMAP_USB3)			+= phy-omap-usb3.o
+> +obj-$(CONFIG_DSPS_USB2PHY)		+= phy-dsps-usb.o
+>   obj-$(CONFIG_SAMSUNG_USBPHY)		+= phy-samsung-usb.o
+>   obj-$(CONFIG_SAMSUNG_USB2PHY)		+= phy-samsung-usb2.o
+>   obj-$(CONFIG_SAMSUNG_USB3PHY)		+= phy-samsung-usb3.o
+> diff --git a/drivers/usb/phy/phy-dsps-usb.c b/drivers/usb/phy/phy-dsps-usb.c
+> new file mode 100644
+> index 0000000..aae97b3
+> --- /dev/null
+> +++ b/drivers/usb/phy/phy-dsps-usb.c
+> @@ -0,0 +1,236 @@
+> +/*
+> + * phy-dsps-usb.c - TI gs70 based usb phy driver used by usb controller
+> + *
+> + * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/slab.h>
+> +#include <linux/of.h>
+> +#include <linux/io.h>
+> +#include <linux/usb/omap_usb.h>
+> +#include <linux/usb/phy_companion.h>
+> +#include <linux/clk.h>
+> +#include <linux/err.h>
+> +#include <linux/pm_runtime.h>
+> +#include <linux/delay.h>
+> +#include <linux/usb/phy.h>
+> +
+> +struct dsps_phy {
+> +	struct usb_phy phy;
+> +	struct device *dev;
+> +	struct platform_device *pdev;
+> +	void __iomem *phy_ctrl;
+> +	void __iomem *phy_wkup;
+> +	u8	is_suspended:1;
+> +	int	id;
+> +};
+> +
+> +#define DSPS_USBPHY_CM_PWRDN		(1 << 0)
+> +#define DSPS_USBPHY_OTG_PWRDN		(1 << 1)
+> +#define DSPS_USBPHY_OTGVDET_EN		(1 << 19)
+> +#define DSPS_USBPHY_OTGSESSEND_EN	(1 << 20)
+> +#define DSPS_USB0_WKUP_CTRL_ENABLE	(1 << 0)
+> +#define DSPS_USB1_WKUP_CTRL_ENABLE	(1 << 8)
+> +#define phy_to_dspsphy(x)	container_of((x), struct dsps_phy, phy)
+> +
+> +static void dsps_usbphy_power(struct usb_phy *phy, bool is_on)
+> +{
+> +	struct dsps_phy *dsps_phy = phy_to_dspsphy(phy);
+> +	u32 val;
+> +
+> +	val = readl(dsps_phy->phy_ctrl);
+> +
+> +	if (is_on) {
+> +		val &= ~(DSPS_USBPHY_CM_PWRDN | DSPS_USBPHY_OTG_PWRDN);
+> +		val |= DSPS_USBPHY_OTGVDET_EN |
+> +			DSPS_USBPHY_OTGSESSEND_EN;
+> +	} else
+> +		val |= DSPS_USBPHY_CM_PWRDN | DSPS_USBPHY_OTG_PWRDN;
+> +
+> +	writel(val, dsps_phy->phy_ctrl);
+> +}
+> +
+> +static void dsps_usbphy_wakeup(struct usb_phy *phy, bool enable)
+> +{
+Where is this function called from?
+> +	struct dsps_phy *dsps_phy = phy_to_dspsphy(phy);
+> +	int id = dsps_phy->id;
+> +	u32 val, wkup_flag;
+> +
+> +	val = readl(dsps_phy->phy_wkup);
+> +	wkup_flag = id ? DSPS_USB1_WKUP_CTRL_ENABLE :
+> +			DSPS_USB0_WKUP_CTRL_ENABLE;
+> +
+> +	if (enable)
+> +		val |= wkup_flag;
+> +	else
+> +		val &= ~wkup_flag;
+> +
+> +	writel(val, dsps_phy->phy_wkup);
+> +}
+> +
+> +static int dsps_usbphy_suspend(struct usb_phy *x, int suspend)
+> +{
+> +	struct dsps_phy *dsps_phy = phy_to_dspsphy(x);
+> +
+> +	if (suspend) {
+> +		if (!pm_runtime_suspended(&dsps_phy->pdev->dev))
+> +			pm_runtime_put(&dsps_phy->pdev->dev);
+> +	} else if (!suspend)
+> +		pm_runtime_get(&dsps_phy->pdev->dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static int dsps_usbphy_init(struct usb_phy *phy)
+> +{
+> +	/* enable the phy */
+> +	dsps_usbphy_power(phy, 1);
+> +
+> +	return 0;
+> +}
+> +
+> +static void dsps_usbphy_shutdown(struct usb_phy *phy)
+> +{
+> +	/* disable the phy */
+> +	dsps_usbphy_power(phy, 0);
+> +}
+> +
+> +static int dsps_usbphy_probe(struct platform_device *pdev)
+> +{
+> +	struct device_node *np = pdev->dev.of_node;
+> +	struct dsps_phy	*phy;
+> +	struct usb_otg *otg;
+> +	struct resource *res;
+> +
+> +	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
+> +	if (!phy) {
+> +		dev_err(&pdev->dev, "unable to allocate memory for USB2 PHY\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	otg = devm_kzalloc(&pdev->dev, sizeof(*otg), GFP_KERNEL);
+> +	if (!otg) {
+> +		dev_err(&pdev->dev, "unable to allocate memory for USB OTG\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	phy->dev		= &pdev->dev;
+> +	phy->pdev		= pdev;
+> +
+> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "phy_ctrl");
+> +	phy->phy_ctrl = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(phy->phy_ctrl))
+> +		return PTR_ERR(phy->phy_ctrl);
+> +
+> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "phy_wkup");
+> +	phy->phy_wkup = ioremap(res->start, resource_size(res));
 
-Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
----
- Documentation/devicetree/bindings/arm/nspire.txt   |  14 ++
- .../devicetree/bindings/vendor-prefixes.txt        |   1 +
- arch/arm/boot/dts/Makefile                         |   3 +
- arch/arm/boot/dts/nspire-classic.dtsi              |  74 +++++++++
- arch/arm/boot/dts/nspire-clp.dts                   |  45 ++++++
- arch/arm/boot/dts/nspire-cx.dts                    | 112 +++++++++++++
- arch/arm/boot/dts/nspire-tp.dts                    |  44 ++++++
- arch/arm/boot/dts/nspire.dtsi                      | 175 +++++++++++++++++++++
- 8 files changed, 468 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/nspire.txt
- create mode 100644 arch/arm/boot/dts/nspire-classic.dtsi
- create mode 100644 arch/arm/boot/dts/nspire-clp.dts
- create mode 100644 arch/arm/boot/dts/nspire-cx.dts
- create mode 100644 arch/arm/boot/dts/nspire-tp.dts
- create mode 100644 arch/arm/boot/dts/nspire.dtsi
+devm_ioremap?
+> +	if (IS_ERR(phy->phy_wkup))
+> +		return PTR_ERR(phy->phy_wkup);
+> +
+> +	if (np)
+> +		of_property_read_u32(np, "id", &phy->id);
 
-diff --git a/Documentation/devicetree/bindings/arm/nspire.txt b/Documentation/devicetree/bindings/arm/nspire.txt
-new file mode 100644
-index 0000000..4d08518
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/nspire.txt
-@@ -0,0 +1,14 @@
-+TI-NSPIRE calculators
-+
-+Required properties:
-+- compatible: Compatible property value should contain "ti,nspire".
-+	CX models should have "ti,nspire-cx"
-+	Touchpad models should have "ti,nspire-tp"
-+	Clickpad models should have "ti,nspire-clp"
-+
-+Example:
-+
-+/ {
-+	model = "TI-NSPIRE CX";
-+	compatible = "ti,nspire-cx";
-+	...
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index 6931c43..b27b057 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -31,6 +31,7 @@ idt	Integrated Device Technologies, Inc.
- img	Imagination Technologies Ltd.
- intercontrol	Inter Control Group
- linux	Linux-specific binding
-+lsi	LSI Corp. (LSI Logic)
- marvell	Marvell Technology Group Ltd.
- maxim	Maxim Integrated Products
- mosaixtech	Mosaix Technologies, Inc.
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index f0895c5..6191b1d 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -135,6 +135,9 @@ dtb-$(CONFIG_ARCH_MXS) += imx23-evk.dtb \
- 	imx28-sps1.dtb \
- 	imx28-tx28.dtb
- dtb-$(CONFIG_ARCH_NOMADIK) += ste-nomadik-s8815.dtb
-+dtb-$(CONFIG_ARCH_NSPIRE) += nspire-cx.dtb \
-+	nspire-tp.dtb \
-+	nspire-clp.dtb
- dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
- 	omap3430-sdp.dtb \
- 	omap3-beagle.dtb \
-diff --git a/arch/arm/boot/dts/nspire-classic.dtsi b/arch/arm/boot/dts/nspire-classic.dtsi
-new file mode 100644
-index 0000000..9565199
---- /dev/null
-+++ b/arch/arm/boot/dts/nspire-classic.dtsi
-@@ -0,0 +1,74 @@
-+/*
-+ *  linux/arch/arm/boot/nspire-classic.dts
-+ *
-+ *  Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+/include/ "nspire.dtsi"
-+
-+&lcd {
-+	lcd-type = "classic";
-+};
-+
-+&fast_timer {
-+	/* compatible = "lsi,zevio-timer"; */
-+	reg = <0x90010000 0x1000>, <0x900A0010 0x8>;
-+};
-+
-+&uart {
-+	compatible = "ns16550";
-+	reg-shift = <2>;
-+	reg-io-width = <4>;
-+	clocks = <&apb_pclk>;
-+	no-loopback-test;
-+};
-+
-+&timer0 {
-+	/* compatible = "lsi,zevio-timer"; */
-+	reg = <0x900C0000 0x1000>, <0x900A0018 0x8>;
-+};
-+
-+&timer1 {
-+	compatible = "lsi,zevio-timer";
-+	reg = <0x900D0000 0x1000>, <0x900A0020 0x8>;
-+};
-+
-+&keypad {
-+	active-low;
-+
-+};
-+
-+&base_clk {
-+	compatible = "lsi,nspire-classic-clock";
-+};
-+
-+&ahb_clk {
-+	compatible = "lsi,nspire-classic-ahb-divider";
-+};
-+
-+/ {
-+	memory {
-+		device_type = "memory";
-+		reg = <0x10000000 0x2000000>; /* 32 MB */
-+	};
-+
-+	ahb {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+
-+		intc: interrupt-controller@DC000000 {
-+			compatible = "lsi,zevio-intc";
-+			interrupt-controller;
-+			reg = <0xDC000000 0x1000>;
-+			#interrupt-cells = <1>;
-+		};
-+	};
-+	chosen {
-+		bootargs = "debug earlyprintk console=tty0 console=ttyS0,115200n8 root=/dev/ram0";
-+	};
-+};
-diff --git a/arch/arm/boot/dts/nspire-clp.dts b/arch/arm/boot/dts/nspire-clp.dts
-new file mode 100644
-index 0000000..fa5a044
---- /dev/null
-+++ b/arch/arm/boot/dts/nspire-clp.dts
-@@ -0,0 +1,45 @@
-+/*
-+ *  linux/arch/arm/boot/nspire-clp.dts
-+ *
-+ *  Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+/dts-v1/;
-+
-+/include/ "nspire-classic.dtsi"
-+
-+&keypad {
-+	linux,keymap = <
-+	0x0000001c 	0x0001001c 	0x00020039
-+	0x0004002c 	0x00050034 	0x00060015
-+	0x0007000b 	0x0008002d 	0x01000033
-+	0x0101004e 	0x01020011 	0x01030004
-+	0x0104002f 	0x01050003 	0x01060016
-+	0x01070002 	0x01080014 	0x02000062
-+	0x0201000c 	0x0202001f 	0x02030007
-+	0x02040013 	0x02050006 	0x02060010
-+	0x02070005 	0x02080019 	0x03000027
-+	0x03010037 	0x03020018 	0x0303000a
-+	0x03040031 	0x03050009 	0x03060032
-+	0x03070008 	0x03080026 	0x04000028
-+	0x04010035 	0x04020025 	0x04040024
-+	0x04060017 	0x04080023 	0x05000028
-+	0x05020022 	0x0503001b 	0x05040021
-+	0x0505001a 	0x05060012 	0x0507006f
-+	0x05080020 	0x0509002a 	0x0601001c
-+	0x0602002e 	0x06030068 	0x06040030
-+	0x0605006d 	0x0606001e 	0x06070001
-+	0x0608002b 	0x0609000f 	0x07000067
-+	0x0702006a 	0x0704006c 	0x07060069
-+	0x0707000e 	0x0708001d 	0x070a000d
-+	>;
-+};
-+
-+/ {
-+	model = "TI-NSPIRE Clickpad";
-+	compatible = "ti,nspire-clp";
-+};
-diff --git a/arch/arm/boot/dts/nspire-cx.dts b/arch/arm/boot/dts/nspire-cx.dts
-new file mode 100644
-index 0000000..375b924
---- /dev/null
-+++ b/arch/arm/boot/dts/nspire-cx.dts
-@@ -0,0 +1,112 @@
-+/*
-+ *  linux/arch/arm/boot/nspire-cx.dts
-+ *
-+ *  Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+/dts-v1/;
-+
-+/include/ "nspire.dtsi"
-+
-+&lcd {
-+	lcd-type = "cx";
-+};
-+
-+&fast_timer {
-+	/* compatible = "arm,sp804", "arm,primecell"; */
-+};
-+
-+&uart {
-+	compatible = "arm,pl011", "arm,primecell";
-+
-+	clocks = <&uart_clk>, <&apb_pclk>;
-+	clock-names = "uart_clk", "apb_pclk";
-+};
-+
-+&timer0 {
-+	compatible = "arm,sp804", "arm,primecell";
-+};
-+
-+&timer1 {
-+	compatible = "arm,sp804", "arm,primecell";
-+};
-+
-+&base_clk {
-+	compatible = "lsi,nspire-cx-clock";
-+};
-+
-+&ahb_clk {
-+	compatible = "lsi,nspire-cx-ahb-divider";
-+};
-+
-+&keypad {
-+	linux,keymap = <
-+	0x0000001c 	0x0001001c 	0x00040039
-+	0x0005002c 	0x00060015 	0x0007000b
-+	0x0008000f 	0x0100002d 	0x01010011
-+	0x0102002f 	0x01030004 	0x01040016
-+	0x01050014 	0x0106001f 	0x01070002
-+	0x010a006a 	0x02000013 	0x02010010
-+	0x02020019 	0x02030007 	0x02040018
-+	0x02050031 	0x02060032 	0x02070005
-+	0x02080028 	0x0209006c 	0x03000026
-+	0x03010025 	0x03020024 	0x0303000a
-+	0x03040017 	0x03050023 	0x03060022
-+	0x03070008 	0x03080035 	0x03090069
-+	0x04000021 	0x04010012 	0x04020020
-+	0x0404002e 	0x04050030 	0x0406001e
-+	0x0407000d 	0x04080037 	0x04090067
-+	0x05010038 	0x0502000c 	0x0503001b
-+	0x05040034 	0x0505001a 	0x05060006
-+	0x05080027 	0x0509000e 	0x050a006f
-+	0x0600002b 	0x0602004e 	0x06030068
-+	0x06040003 	0x0605006d 	0x06060009
-+	0x06070001 	0x0609000f 	0x0708002a
-+	0x0709001d 	0x070a0033 	>;
-+};
-+
-+/ {
-+	model = "TI-NSPIRE CX";
-+	compatible = "ti,nspire-cx";
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x10000000 0x4000000>; /* 64 MB */
-+	};
-+
-+	uart_clk: uart_clk {
-+		#clock-cells = <0>;
-+		compatible = "fixed-clock";
-+		clock-frequency = <12000000>;
-+	};
-+
-+	ahb {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+
-+		intc: interrupt-controller@DC000000 {
-+			compatible = "arm,pl190-vic";
-+			interrupt-controller;
-+			reg = <0xDC000000 0x1000>;
-+			#interrupt-cells = <1>;
-+		};
-+
-+		apb@90000000 {
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+
-+			i2c@90050000 {
-+				compatible = "snps,designware-i2c";
-+				reg = <0x90050000 0x1000>;
-+				interrupts = <20>;
-+			};
-+		};
-+	};
-+	chosen {
-+		bootargs = "debug earlyprintk console=tty0 console=ttyAMA0,115200n8 root=/dev/ram0";
-+	};
-+};
-diff --git a/arch/arm/boot/dts/nspire-tp.dts b/arch/arm/boot/dts/nspire-tp.dts
-new file mode 100644
-index 0000000..621391c
---- /dev/null
-+++ b/arch/arm/boot/dts/nspire-tp.dts
-@@ -0,0 +1,44 @@
-+/*
-+ *  linux/arch/arm/boot/nspire-tp.dts
-+ *
-+ *  Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+/dts-v1/;
-+
-+/include/ "nspire-classic.dtsi"
-+
-+&keypad {
-+	linux,keymap = <
-+	0x0000001c 	0x0001001c 	0x00040039
-+	0x0005002c 	0x00060015 	0x0007000b
-+	0x0008000f 	0x0100002d 	0x01010011
-+	0x0102002f 	0x01030004 	0x01040016
-+	0x01050014 	0x0106001f 	0x01070002
-+	0x010a006a 	0x02000013 	0x02010010
-+	0x02020019 	0x02030007 	0x02040018
-+	0x02050031 	0x02060032 	0x02070005
-+	0x02080028 	0x0209006c 	0x03000026
-+	0x03010025 	0x03020024 	0x0303000a
-+	0x03040017 	0x03050023 	0x03060022
-+	0x03070008 	0x03080035 	0x03090069
-+	0x04000021 	0x04010012 	0x04020020
-+	0x0404002e 	0x04050030 	0x0406001e
-+	0x0407000d 	0x04080037 	0x04090067
-+	0x05010038 	0x0502000c 	0x0503001b
-+	0x05040034 	0x0505001a 	0x05060006
-+	0x05080027 	0x0509000e 	0x050a006f
-+	0x0600002b 	0x0602004e 	0x06030068
-+	0x06040003 	0x0605006d 	0x06060009
-+	0x06070001 	0x0609000f 	0x0708002a
-+	0x0709001d 	0x070a0033 	>;
-+};
-+
-+/ {
-+	model = "TI-NSPIRE Touchpad";
-+	compatible = "ti,nspire-tp";
-+};
-diff --git a/arch/arm/boot/dts/nspire.dtsi b/arch/arm/boot/dts/nspire.dtsi
-new file mode 100644
-index 0000000..a22ffe6
---- /dev/null
-+++ b/arch/arm/boot/dts/nspire.dtsi
-@@ -0,0 +1,175 @@
-+/*
-+ *  linux/arch/arm/boot/nspire.dtsi
-+ *
-+ *  Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+/include/ "skeleton.dtsi"
-+
-+/ {
-+	interrupt-parent = <&intc>;
-+
-+	cpus {
-+		cpu@0 {
-+			compatible = "arm,arm926ejs";
-+		};
-+	};
-+
-+	bootrom: bootrom@00000000 {
-+		reg = <0x00000000 0x80000>;
-+	};
-+
-+	sram: sram@A4000000 {
-+		device = "memory";
-+		reg = <0xA4000000 0x20000>;
-+	};
-+
-+	timer_clk: timer_clk {
-+		#clock-cells = <0>;
-+		compatible = "fixed-clock";
-+		clock-frequency = <32768>;
-+	};
-+
-+	base_clk: base_clk {
-+		#clock-cells = <0>;
-+		reg = <0x900B0024 0x4>;
-+	};
-+
-+	ahb_clk: ahb_clk {
-+		#clock-cells = <0>;
-+		reg = <0x900B0024 0x4>;
-+		clocks = <&base_clk>;
-+	};
-+
-+	apb_pclk: apb_pclk {
-+		#clock-cells = <0>;
-+		compatible = "fixed-factor-clock";
-+		clock-div = <2>;
-+		clock-mult = <1>;
-+		clocks = <&ahb_clk>;
-+	};
-+
-+	ahb {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+
-+		spi: spi@A9000000 {
-+			reg = <0xA9000000 0x1000>;
-+		};
-+
-+		usb0: usb@B0000000 {
-+			reg = <0xB0000000 0x1000>;
-+			interrupts = <8>;
-+		};
-+
-+		usb1: usb@B4000000 {
-+			reg = <0xB4000000 0x1000>;
-+			interrupts = <9>;
-+			status = "disabled";
-+		};
-+
-+		lcd: lcd@C0000000 {
-+			compatible = "arm,pl111", "arm,primecell";
-+			reg = <0xC0000000 0x1000>;
-+			interrupts = <21>;
-+
-+			clocks = <&apb_pclk>;
-+			clock-names = "apb_pclk";
-+		};
-+
-+		adc: adc@C4000000 {
-+			reg = <0xC4000000 0x1000>;
-+			interrupts = <11>;
-+		};
-+
-+		tdes: crypto@C8010000 {
-+			reg = <0xC8010000 0x1000>;
-+		};
-+
-+		sha256: crypto@CC000000 {
-+			reg = <0xCC000000 0x1000>;
-+		};
-+
-+		apb@90000000 {
-+			compatible = "simple-bus";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			clock-ranges;
-+			ranges;
-+
-+			gpio: gpio@90000000 {
-+				reg = <0x90000000 0x1000>;
-+				interrupts = <7>;
-+			};
-+
-+			fast_timer: timer@90010000 {
-+				reg = <0x90010000 0x1000>;
-+				interrupts = <17>;
-+			};
-+
-+			uart: serial@90020000 {
-+				reg = <0x90020000 0x1000>;
-+				interrupts = <1>;
-+			};
-+
-+			timer0: timer@900C0000 {
-+				reg = <0x900C0000 0x1000>;
-+
-+				clocks = <&timer_clk>;
-+			};
-+
-+			timer1: timer@900D0000 {
-+				reg = <0x900D0000 0x1000>;
-+				interrupts = <19>;
-+
-+				clocks = <&timer_clk>;
-+			};
-+
-+			watchdog: watchdog@90060000 {
-+				compatible = "arm,amba-primecell";
-+				reg = <0x90060000 0x1000>;
-+				interrupts = <3>;
-+			};
-+
-+			rtc: rtc@90090000 {
-+				reg = <0x90090000 0x1000>;
-+				interrupts = <4>;
-+			};
-+
-+			misc: misc@900A0000 {
-+				reg = <0x900A0000 0x1000>;
-+			};
-+
-+			pwr: pwr@900B0000 {
-+				reg = <0x900B0000 0x1000>;
-+				interrupts = <15>;
-+			};
-+
-+			keypad: input@900E0000 {
-+				compatible = "ti,nspire-keypad";
-+				reg = <0x900E0000 0x1000>;
-+				interrupts = <16>;
-+
-+				scan-interval = <1000>;
-+				row-delay = <200>;
-+
-+				clocks = <&apb_pclk>;
-+			};
-+
-+			contrast: contrast@900F0000 {
-+				reg = <0x900F0000 0x1000>;
-+			};
-+
-+			led: led@90110000 {
-+				reg = <0x90110000 0x1000>;
-+			};
-+		};
-+	};
-+};
--- 
-1.8.1.3
+Is this property documented somewhere?
+> +
+> +	phy->phy.dev		= phy->dev;
+> +	phy->phy.label		= "dsps-usbphy";
+> +	phy->phy.otg		= otg;
+> +	phy->phy.type		= USB_PHY_TYPE_USB2;
+> +	phy->phy.init		= dsps_usbphy_init;
+> +	phy->phy.shutdown	= dsps_usbphy_shutdown;
+> +	phy->phy.set_suspend	= dsps_usbphy_suspend;
+> +	otg->phy		= &phy->phy;
+> +
+> +	usb_add_phy_dev(&phy->phy);
+> +
+> +	platform_set_drvdata(pdev, phy);
+> +
+> +	pm_runtime_enable(phy->dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static int dsps_usbphy_remove(struct platform_device *pdev)
+> +{
+> +	struct dsps_phy	*phy = platform_get_drvdata(pdev);
+> +
+> +	dsps_usbphy_power(&phy->phy, 0);
+> +	iounmap(phy->phy_wkup);
+> +	usb_remove_phy(&phy->phy);
+> +
+> +	if (!pm_runtime_suspended(&pdev->dev))
+> +		pm_runtime_put(&pdev->dev);
+> +	pm_runtime_disable(&pdev->dev);
+> +
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_PM_RUNTIME
+> +
+> +static int dsps_usbphy_runtime_suspend(struct device *dev)
+> +{
+> +	struct dsps_phy	*dsps_phy = dev_get_drvdata(dev);
+> +
+> +	/* suspend usb-phy */
+> +	dsps_usbphy_power(&dsps_phy->phy, 0);
+> +	dsps_phy->is_suspended = 1;
 
+Are you using this "is_suspended" anywhere else?
+
+Thanks
+Kishon
