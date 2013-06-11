@@ -1,111 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab3FKR3O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 13:29:14 -0400
-Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:49742
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753666Ab3FKR3L convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 13:29:11 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
-Date: Tue, 11 Jun 2013 12:28:59 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [BUG] PCI related panic on powerpc based board with 3.10-rcX
-To: Michael Guntsche <michael.guntsche@it-loops.com>
-CC: Rojhalat Ibrahim <imr@rtschenk.de>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-In-Reply-To: <CALG0vJumuRobQtHdWAuWtbC3oS3_CMpDim=dtSNECCO25SgJUA@mail.gmail.com> (from
-	michael.guntsche@it-loops.com on Tue Jun 11 12:09:42 2013)
-X-Mailer: Balsa 2.4.12
-Message-ID: <1370971739.18413.27@snotra>
+	id S1755255Ab3FKRdK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 13:33:10 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:57451 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754660Ab3FKRdI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 13:33:08 -0400
+Date: Tue, 11 Jun 2013 10:30:47 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Lai Jiangshan <eag0628@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>, niv@us.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, Darren Hart <darren@dvhart.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Silas Boyd-Wickizer <sbw@mit.edu>
+Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
+Message-ID: <20130611173047.GO5146@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130609193657.GA13392@linux.vnet.ibm.com>
+ <CACvQF51K80e3CbTqqwb=WyTVUqndVKP_-fGNnpoh9Gfoyzv5ig@mail.gmail.com>
+ <CACvQF50+b4LS2Zgu2uJBpDc_NGUW942XtB7ymfQdmkQc1MwZ9Q@mail.gmail.com>
+ <20130611164807.GJ5146@linux.vnet.ibm.com>
+ <CA+55aFyteA526MZHpzYTo1XoMx772FrRoqc_keODx1TfxDx6Fw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+In-Reply-To: <CA+55aFyteA526MZHpzYTo1XoMx772FrRoqc_keODx1TfxDx6Fw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061117-7282-0000-0000-0000182C0F57
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2013 12:09:42 PM, Michael Guntsche wrote:
-> On Tue, Jun 11, 2013 at 7:00 PM, Scott Wood <scottwood@freescale.com>  
-> wrote:
-> > On 06/11/2013 02:24:28 AM, Rojhalat Ibrahim wrote:
-> >>
-> >> On Monday 10 June 2013 17:52:33 Scott Wood wrote:
-> >> > On 06/10/2013 12:07:43 PM, Michael Guntsche wrote:
-> >> > > Good evening,
-> >> > >
-> >> > > This patch does not fix the problem, during boot the kernel  
-> still
-> >> > > panics. I had a closer look at the commit and the following  
-> patch
-> >> > > fixes it for me....
-> >> > >
-> >> > > diff --git a/arch/powerpc/sysdev/fsl_pci.c
-> >> > > b/arch/powerpc/sysdev/fsl_pci.c
-> >> > > index 028ac1f..21b687f 100644
-> >> > > --- a/arch/powerpc/sysdev/fsl_pci.c
-> >> > > +++ b/arch/powerpc/sysdev/fsl_pci.c
-> >> > > @@ -814,7 +814,7 @@ int __init mpc83xx_add_bridge(struct  
-> device_node
-> >> > > *dev)
-> >> > >
-> >> > >                 if (ret)
-> >> > >
-> >> > >                         goto err0;
-> >> > >
-> >> > >         } else {
-> >> > >
-> >> > > -               fsl_setup_indirect_pci(hose, rsrc_cfg.start,
-> >> > > +               setup_indirect_pci(hose, rsrc_cfg.start,
-> >> > >
-> >> > >                                        rsrc_cfg.start + 4, 0);
-> >> > >
-> >> > >         }
-> >> >
-> >> > The only difference here is that you're not setting hose->ops to
-> >> > fsl_indirect_pci_ops.  Do you know why that is helping, and what
-> >> > hose->ops is set to instead?
-> >> >
-> >> > -Scott
-> >>
-> >> The difference is only the read function in hose->ops, which is  
-> set to
-> >> indirect_read_config instead of fsl_indirect_read_config.
-> >>
-> >> fsl_indirect_read_config calls fsl_pcie_check_link, which is where  
-> the
-> >> Oops
-> >> occurs.
+On Tue, Jun 11, 2013 at 10:17:52AM -0700, Linus Torvalds wrote:
+> On Tue, Jun 11, 2013 at 9:48 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
 > >
-> >
-> > Why is fsl_pcie_check_link being called for non-PCIe buses?
-> >
-> >
-> >> Mike, can you find out where exactly in fsl_pcie_check_link the  
-> bad access
-> >> happens? Enabling CONFIG_DEBUG_BUGVERBOSE might help.
-> >
-> >
-> > Why does it matter?  You shouldn't be calling that function at all.
-> >
-> > -Scott
+> > Another approach is to permanently associate queues with each lock,
+> > but that increases the size of the lock -- something that has raised
+> > concerns in the past.  But if adding 32 bytes to each ticketlock was OK,
+> > this simplifies things quite a bit.
 > 
-> For the record BUGVERBOSE is already set with this build so this is
-> the most detailed trace I get. And regarding Scott's remark, maybe I
-> was not clear enough in my first report. This is a PCI only board so I
-> also wondered about the call to fsl_pcie_check_link in the first
-> place.
+> Yeah, no. The spinlocks need to be small.  We have them in
+> size-conscious data structures like "struct dentry" and "struct page",
+> and they really must not be bigger than an "int" in the non-debug
+> case.
+> 
+> In fact, I've occasionally thought about combining a spinlock with a
+> refcounter if that could make things fit in 32 bits on smaller
+> machines, because we also have ops like "atomic_dec_and_lock()" that
+> could possibly be optimized if they fit in one word. That is probably
+> not worth it, but spinlocks do need to remain small.
 
-Yes, I figured it was non-PCIe because the code change that you said  
-helped was on the non-PCIe branch of the if/else.  Generally it's good  
-to explicitly mention the chip you're using, though.
+I was afraid of that.  On the other hand, I guess that this means that
+I sent out the correct patch of the two that I prepared.  ;-)
 
-fsl_setup_indirect_pci should be renamed to fsl_setup_indirect_pcie.   
-Your patch above should be applied, and fsl_setup_indirect_pcie should  
-be moved into the booke/86xx ifdef to avoid an unused function warning.
+							Thanx, Paul
 
--Scott
