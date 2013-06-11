@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757165Ab3FKUR0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:17:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41897 "EHLO
+	id S1756606Ab3FKUDr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:03:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41874 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756621Ab3FKUDu (ORCPT
+	with ESMTP id S1756197Ab3FKUDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:50 -0400
+	Tue, 11 Jun 2013 16:03:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>,
-        "Gorelik, Jacob (335F)" <jacob.gorelik@jpl.nasa.gov>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 43/79] powerpc/hw_breakpoints: Add DABRX cpu feature to fix 32-bit regression
-Date: Tue, 11 Jun 2013 13:03:09 -0700
-Message-Id: <20130611195321.560201431@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Tim Richardson <tim@tim-richardson.net>
+Subject: [ 23/79] USB: revert periodic scheduling bugfix
+Date: Tue, 11 Jun 2013 13:02:49 -0700
+Message-Id: <20130611195315.522812978@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -28,108 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 82a9f16adc12f51c3f8ea59a7c3c120241aff836 upstream.
+commit fdc03438f53a00294ed9939eb3a1f6db6f3d8963 upstream.
 
-When introducing support for DABRX in 4474ef0, we broke older 32-bit CPUs
-that don't have that register.
+This patch reverts commit 3e619d04159be54b3daa0b7036b0ce9e067f4b5d
+(USB: EHCI: fix bug in scheduling periodic split transfers).  The
+commit was valid -- it fixed a real bug -- but the periodic scheduler
+in ehci-hcd is in such bad shape (especially the part that handles
+split transactions) that fixing one bug is very likely to cause
+another to surface.  That's what happened in this case; the result was
+choppy and noisy playback on certain 24-bit audio devices.
 
-Some CPUs have a DABR but not DABRX.  Configuration are:
-- No 32bit CPUs have DABRX but some have DABR.
-- POWER4+ and below have the DABR but no DABRX.
-- 970 and POWER5 and above have DABR and DABRX.
-- POWER8 has DAWR, hence no DABRX.
+The only real fix will be to rewrite this entire section of code.  My
+next project...
 
-This introduces CPU_FTR_DABRX and sets it on appropriate CPUs.  We use
-the top 64 bits for CPU FTR bits since only 64 bit CPUs have this.
+This fixes https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1136110.
 
-Processors that don't have the DABRX will still work as they will fall
-back to software filtering these breakpoints via perf_exclude_event().
+Thanks to Tim Richardson for extra testing and feedback, and to Joseph
+Salisbury and Tyson Tan for tracking down the original source of the
+problem.
 
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Reported-by: "Gorelik, Jacob (335F)" <jacob.gorelik@jpl.nasa.gov>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+CC: Joseph Salisbury <joseph.salisbury@canonical.com>
+CC: Tim Richardson <tim@tim-richardson.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/cputable.h |   17 ++++++++++-------
- arch/powerpc/kernel/process.c       |    3 ++-
- 2 files changed, 12 insertions(+), 8 deletions(-)
+ drivers/usb/host/ehci-sched.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/include/asm/cputable.h
-+++ b/arch/powerpc/include/asm/cputable.h
-@@ -175,6 +175,7 @@ extern const char *powerpc_base_platform
- #define CPU_FTR_BCTAR			LONG_ASM_CONST(0x0100000000000000)
- #define	CPU_FTR_HAS_PPR			LONG_ASM_CONST(0x0200000000000000)
- #define CPU_FTR_DAWR			LONG_ASM_CONST(0x0400000000000000)
-+#define CPU_FTR_DABRX			LONG_ASM_CONST(0x0800000000000000)
- 
- #ifndef __ASSEMBLY__
- 
-@@ -391,19 +392,20 @@ extern const char *powerpc_base_platform
- 	    CPU_FTR_PPCAS_ARCH_V2 | CPU_FTR_CTRL | CPU_FTR_ARCH_201 | \
- 	    CPU_FTR_ALTIVEC_COMP | CPU_FTR_CAN_NAP | CPU_FTR_MMCRA | \
- 	    CPU_FTR_CP_USE_DCBTZ | CPU_FTR_STCX_CHECKS_ADDRESS | \
--	    CPU_FTR_HVMODE)
-+	    CPU_FTR_HVMODE | CPU_FTR_DABRX)
- #define CPU_FTRS_POWER5	(CPU_FTR_USE_TB | CPU_FTR_LWSYNC | \
- 	    CPU_FTR_PPCAS_ARCH_V2 | CPU_FTR_CTRL | \
- 	    CPU_FTR_MMCRA | CPU_FTR_SMT | \
- 	    CPU_FTR_COHERENT_ICACHE | CPU_FTR_PURR | \
--	    CPU_FTR_STCX_CHECKS_ADDRESS | CPU_FTR_POPCNTB)
-+	    CPU_FTR_STCX_CHECKS_ADDRESS | CPU_FTR_POPCNTB | CPU_FTR_DABRX)
- #define CPU_FTRS_POWER6 (CPU_FTR_USE_TB | CPU_FTR_LWSYNC | \
- 	    CPU_FTR_PPCAS_ARCH_V2 | CPU_FTR_CTRL | \
- 	    CPU_FTR_MMCRA | CPU_FTR_SMT | \
- 	    CPU_FTR_COHERENT_ICACHE | \
- 	    CPU_FTR_PURR | CPU_FTR_SPURR | CPU_FTR_REAL_LE | \
- 	    CPU_FTR_DSCR | CPU_FTR_UNALIGNED_LD_STD | \
--	    CPU_FTR_STCX_CHECKS_ADDRESS | CPU_FTR_POPCNTB | CPU_FTR_CFAR)
-+	    CPU_FTR_STCX_CHECKS_ADDRESS | CPU_FTR_POPCNTB | CPU_FTR_CFAR | \
-+	    CPU_FTR_DABRX)
- #define CPU_FTRS_POWER7 (CPU_FTR_USE_TB | CPU_FTR_LWSYNC | \
- 	    CPU_FTR_PPCAS_ARCH_V2 | CPU_FTR_CTRL | CPU_FTR_ARCH_206 |\
- 	    CPU_FTR_MMCRA | CPU_FTR_SMT | \
-@@ -412,7 +414,7 @@ extern const char *powerpc_base_platform
- 	    CPU_FTR_DSCR | CPU_FTR_SAO  | CPU_FTR_ASYM_SMT | \
- 	    CPU_FTR_STCX_CHECKS_ADDRESS | CPU_FTR_POPCNTB | CPU_FTR_POPCNTD | \
- 	    CPU_FTR_ICSWX | CPU_FTR_CFAR | CPU_FTR_HVMODE | \
--	    CPU_FTR_VMX_COPY | CPU_FTR_HAS_PPR)
-+	    CPU_FTR_VMX_COPY | CPU_FTR_HAS_PPR | CPU_FTR_DABRX)
- #define CPU_FTRS_POWER8 (CPU_FTR_USE_TB | CPU_FTR_LWSYNC | \
- 	    CPU_FTR_PPCAS_ARCH_V2 | CPU_FTR_CTRL | CPU_FTR_ARCH_206 |\
- 	    CPU_FTR_MMCRA | CPU_FTR_SMT | \
-@@ -427,14 +429,15 @@ extern const char *powerpc_base_platform
- 	    CPU_FTR_PPCAS_ARCH_V2 | CPU_FTR_CTRL | \
- 	    CPU_FTR_ALTIVEC_COMP | CPU_FTR_MMCRA | CPU_FTR_SMT | \
- 	    CPU_FTR_PAUSE_ZERO  | CPU_FTR_CELL_TB_BUG | CPU_FTR_CP_USE_DCBTZ | \
--	    CPU_FTR_UNALIGNED_LD_STD)
-+	    CPU_FTR_UNALIGNED_LD_STD | CPU_FTR_DABRX)
- #define CPU_FTRS_PA6T (CPU_FTR_USE_TB | CPU_FTR_LWSYNC | \
- 	    CPU_FTR_PPCAS_ARCH_V2 | CPU_FTR_ALTIVEC_COMP | \
--	    CPU_FTR_PURR | CPU_FTR_REAL_LE)
-+	    CPU_FTR_PURR | CPU_FTR_REAL_LE | CPU_FTR_DABRX)
- #define CPU_FTRS_COMPATIBLE	(CPU_FTR_USE_TB | CPU_FTR_PPCAS_ARCH_V2)
- 
- #define CPU_FTRS_A2 (CPU_FTR_USE_TB | CPU_FTR_SMT | CPU_FTR_DBELL | \
--		     CPU_FTR_NOEXECUTE | CPU_FTR_NODSISRALIGN | CPU_FTR_ICSWX)
-+		     CPU_FTR_NOEXECUTE | CPU_FTR_NODSISRALIGN | \
-+		     CPU_FTR_ICSWX | CPU_FTR_DABRX )
- 
- #ifdef __powerpc64__
- #ifdef CONFIG_PPC_BOOK3E
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -392,7 +392,8 @@ static inline int __set_dabr(unsigned lo
- static inline int __set_dabr(unsigned long dabr, unsigned long dabrx)
- {
- 	mtspr(SPRN_DABR, dabr);
--	mtspr(SPRN_DABRX, dabrx);
-+	if (cpu_has_feature(CPU_FTR_DABRX))
-+		mtspr(SPRN_DABRX, dabrx);
- 	return 0;
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -213,7 +213,7 @@ static inline unsigned char tt_start_ufr
  }
- #else
+ 
+ static const unsigned char
+-max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 125, 25 };
++max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 30, 0 };
+ 
+ /* carryover low/fullspeed bandwidth that crosses uframe boundries */
+ static inline void carryover_tt_bandwidth(unsigned short tt_usecs[8])
 
 
