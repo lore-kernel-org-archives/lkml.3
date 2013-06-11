@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab3FKNqO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 09:46:14 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:35338 "EHLO
+	id S1754753Ab3FKNqe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 09:46:34 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:35335 "EHLO
 	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754302Ab3FKNpo (ORCPT
+	with ESMTP id S1753765Ab3FKNpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Jun 2013 09:45:44 -0400
 From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
@@ -12,9 +12,9 @@ To: linux-sh@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org,
         Thierry Reding <thierry.reding@avionic-design.de>,
         Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH v3 5/5] leds: Remove leds-renesas-tpu driver
-Date: Tue, 11 Jun 2013 15:45:44 +0200
-Message-Id: <1370958344-19470-6-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+Subject: [PATCH v3 4/5] ARM: shmobile: sh73a0: Remove all GPIOs
+Date: Tue, 11 Jun 2013 15:45:43 +0200
+Message-Id: <1370958344-19470-5-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1370958344-19470-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 References: <1370958344-19470-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
@@ -22,419 +22,399 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver is superseded by the generic pwm-renesas-tpu driver used with
-leds-pwm.
+Function GPIOs are not used anymore, and all code use the GPIO numbers
+directly. Remove the GPIOs enumeration.
 
 Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Acked-by: Bryan Wu <cooloney@gmail.com>
 Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
 ---
- drivers/leds/Kconfig                           |  12 -
- drivers/leds/Makefile                          |   1 -
- drivers/leds/leds-renesas-tpu.c                | 337 -------------------------
- include/linux/platform_data/leds-renesas-tpu.h |  14 -
- 4 files changed, 364 deletions(-)
- delete mode 100644 drivers/leds/leds-renesas-tpu.c
- delete mode 100644 include/linux/platform_data/leds-renesas-tpu.h
+ arch/arm/mach-shmobile/include/mach/sh73a0.h | 373 +--------------------------
+ 1 file changed, 1 insertion(+), 372 deletions(-)
 
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index ef99229..12c56f8 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -429,18 +429,6 @@ config LEDS_ASIC3
- 	  cannot be used. This driver supports hardware blinking with an on+off
- 	  period from 62ms to 125s. Say Y to enable LEDs on the HP iPAQ hx4700.
+diff --git a/arch/arm/mach-shmobile/include/mach/sh73a0.h b/arch/arm/mach-shmobile/include/mach/sh73a0.h
+index eb7a432..680dc5f 100644
+--- a/arch/arm/mach-shmobile/include/mach/sh73a0.h
++++ b/arch/arm/mach-shmobile/include/mach/sh73a0.h
+@@ -1,378 +1,7 @@
+ #ifndef __ASM_SH73A0_H__
+ #define __ASM_SH73A0_H__
  
--config LEDS_RENESAS_TPU
--	bool "LED support for Renesas TPU"
--	depends on LEDS_CLASS=y && HAVE_CLK && GPIOLIB
--	help
--	  This option enables build of the LED TPU platform driver,
--	  suitable to drive any TPU channel on newer Renesas SoCs.
--	  The driver controls the GPIO pin connected to the LED via
--	  the GPIO framework and expects the LED to be connected to
--	  a pin that can be driven in both GPIO mode and using TPU
--	  pin function. The latter to support brightness control.
--	  Brightness control is supported but hardware blinking is not.
--
- config LEDS_TCA6507
- 	tristate "LED Support for TCA6507 I2C chip"
- 	depends on LEDS_CLASS && I2C
-diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-index ac28977..ae4b613 100644
---- a/drivers/leds/Makefile
-+++ b/drivers/leds/Makefile
-@@ -49,7 +49,6 @@ obj-$(CONFIG_LEDS_MC13783)		+= leds-mc13783.o
- obj-$(CONFIG_LEDS_NS2)			+= leds-ns2.o
- obj-$(CONFIG_LEDS_NETXBIG)		+= leds-netxbig.o
- obj-$(CONFIG_LEDS_ASIC3)		+= leds-asic3.o
--obj-$(CONFIG_LEDS_RENESAS_TPU)		+= leds-renesas-tpu.o
- obj-$(CONFIG_LEDS_MAX8997)		+= leds-max8997.o
- obj-$(CONFIG_LEDS_LM355x)		+= leds-lm355x.o
- obj-$(CONFIG_LEDS_BLINKM)		+= leds-blinkm.o
-diff --git a/drivers/leds/leds-renesas-tpu.c b/drivers/leds/leds-renesas-tpu.c
-deleted file mode 100644
-index 9483f1c..0000000
---- a/drivers/leds/leds-renesas-tpu.c
-+++ /dev/null
-@@ -1,337 +0,0 @@
--/*
-- * LED control using Renesas TPU
-- *
-- *  Copyright (C) 2011 Magnus Damm
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+-/* Pin Function Controller:
+- * GPIO_FN_xx - GPIO used to select pin function and MSEL switch
+- * GPIO_PORTxx - GPIO mapped to real I/O pin on CPU
 - */
+-enum {
+-	/* Hardware manual Table 25-1 (GPIO) */
+-	GPIO_PORT0, GPIO_PORT1, GPIO_PORT2, GPIO_PORT3, GPIO_PORT4,
+-	GPIO_PORT5, GPIO_PORT6, GPIO_PORT7, GPIO_PORT8, GPIO_PORT9,
 -
--#include <linux/module.h>
--#include <linux/init.h>
--#include <linux/platform_device.h>
--#include <linux/spinlock.h>
--#include <linux/printk.h>
--#include <linux/ioport.h>
--#include <linux/io.h>
--#include <linux/clk.h>
--#include <linux/leds.h>
--#include <linux/platform_data/leds-renesas-tpu.h>
--#include <linux/gpio.h>
--#include <linux/err.h>
--#include <linux/slab.h>
--#include <linux/pm_runtime.h>
--#include <linux/workqueue.h>
+-	GPIO_PORT10, GPIO_PORT11, GPIO_PORT12, GPIO_PORT13, GPIO_PORT14,
+-	GPIO_PORT15, GPIO_PORT16, GPIO_PORT17, GPIO_PORT18, GPIO_PORT19,
 -
--enum r_tpu_pin { R_TPU_PIN_UNUSED, R_TPU_PIN_GPIO, R_TPU_PIN_GPIO_FN };
--enum r_tpu_timer { R_TPU_TIMER_UNUSED, R_TPU_TIMER_ON };
+-	GPIO_PORT20, GPIO_PORT21, GPIO_PORT22, GPIO_PORT23, GPIO_PORT24,
+-	GPIO_PORT25, GPIO_PORT26, GPIO_PORT27, GPIO_PORT28, GPIO_PORT29,
 -
--struct r_tpu_priv {
--	struct led_classdev ldev;
--	void __iomem *mapbase;
--	struct clk *clk;
--	struct platform_device *pdev;
--	enum r_tpu_pin pin_state;
--	enum r_tpu_timer timer_state;
--	unsigned long min_rate;
--	unsigned int refresh_rate;
--	struct work_struct work;
--	enum led_brightness new_brightness;
+-	GPIO_PORT30, GPIO_PORT31, GPIO_PORT32, GPIO_PORT33, GPIO_PORT34,
+-	GPIO_PORT35, GPIO_PORT36, GPIO_PORT37, GPIO_PORT38, GPIO_PORT39,
+-
+-	GPIO_PORT40, GPIO_PORT41, GPIO_PORT42, GPIO_PORT43, GPIO_PORT44,
+-	GPIO_PORT45, GPIO_PORT46, GPIO_PORT47, GPIO_PORT48, GPIO_PORT49,
+-
+-	GPIO_PORT50, GPIO_PORT51, GPIO_PORT52, GPIO_PORT53, GPIO_PORT54,
+-	GPIO_PORT55, GPIO_PORT56, GPIO_PORT57, GPIO_PORT58, GPIO_PORT59,
+-
+-	GPIO_PORT60, GPIO_PORT61, GPIO_PORT62, GPIO_PORT63, GPIO_PORT64,
+-	GPIO_PORT65, GPIO_PORT66, GPIO_PORT67, GPIO_PORT68, GPIO_PORT69,
+-
+-	GPIO_PORT70, GPIO_PORT71, GPIO_PORT72, GPIO_PORT73, GPIO_PORT74,
+-	GPIO_PORT75, GPIO_PORT76, GPIO_PORT77, GPIO_PORT78, GPIO_PORT79,
+-
+-	GPIO_PORT80, GPIO_PORT81, GPIO_PORT82, GPIO_PORT83, GPIO_PORT84,
+-	GPIO_PORT85, GPIO_PORT86, GPIO_PORT87, GPIO_PORT88, GPIO_PORT89,
+-
+-	GPIO_PORT90, GPIO_PORT91, GPIO_PORT92, GPIO_PORT93, GPIO_PORT94,
+-	GPIO_PORT95, GPIO_PORT96, GPIO_PORT97, GPIO_PORT98, GPIO_PORT99,
+-
+-	GPIO_PORT100, GPIO_PORT101, GPIO_PORT102, GPIO_PORT103, GPIO_PORT104,
+-	GPIO_PORT105, GPIO_PORT106, GPIO_PORT107, GPIO_PORT108, GPIO_PORT109,
+-
+-	GPIO_PORT110, GPIO_PORT111, GPIO_PORT112, GPIO_PORT113, GPIO_PORT114,
+-	GPIO_PORT115, GPIO_PORT116, GPIO_PORT117, GPIO_PORT118,
+-
+-	GPIO_PORT128, GPIO_PORT129,
+-
+-	GPIO_PORT130, GPIO_PORT131, GPIO_PORT132, GPIO_PORT133, GPIO_PORT134,
+-	GPIO_PORT135, GPIO_PORT136, GPIO_PORT137, GPIO_PORT138, GPIO_PORT139,
+-
+-	GPIO_PORT140, GPIO_PORT141, GPIO_PORT142, GPIO_PORT143, GPIO_PORT144,
+-	GPIO_PORT145, GPIO_PORT146, GPIO_PORT147, GPIO_PORT148, GPIO_PORT149,
+-
+-	GPIO_PORT150, GPIO_PORT151, GPIO_PORT152, GPIO_PORT153, GPIO_PORT154,
+-	GPIO_PORT155, GPIO_PORT156, GPIO_PORT157, GPIO_PORT158, GPIO_PORT159,
+-
+-	GPIO_PORT160, GPIO_PORT161, GPIO_PORT162, GPIO_PORT163, GPIO_PORT164,
+-
+-	GPIO_PORT192, GPIO_PORT193, GPIO_PORT194,
+-	GPIO_PORT195, GPIO_PORT196, GPIO_PORT197, GPIO_PORT198, GPIO_PORT199,
+-
+-	GPIO_PORT200, GPIO_PORT201, GPIO_PORT202, GPIO_PORT203, GPIO_PORT204,
+-	GPIO_PORT205, GPIO_PORT206, GPIO_PORT207, GPIO_PORT208, GPIO_PORT209,
+-
+-	GPIO_PORT210, GPIO_PORT211, GPIO_PORT212, GPIO_PORT213, GPIO_PORT214,
+-	GPIO_PORT215, GPIO_PORT216, GPIO_PORT217, GPIO_PORT218, GPIO_PORT219,
+-
+-	GPIO_PORT220, GPIO_PORT221, GPIO_PORT222, GPIO_PORT223, GPIO_PORT224,
+-	GPIO_PORT225, GPIO_PORT226, GPIO_PORT227, GPIO_PORT228, GPIO_PORT229,
+-
+-	GPIO_PORT230, GPIO_PORT231, GPIO_PORT232, GPIO_PORT233, GPIO_PORT234,
+-	GPIO_PORT235, GPIO_PORT236, GPIO_PORT237, GPIO_PORT238, GPIO_PORT239,
+-
+-	GPIO_PORT240, GPIO_PORT241, GPIO_PORT242, GPIO_PORT243, GPIO_PORT244,
+-	GPIO_PORT245, GPIO_PORT246, GPIO_PORT247, GPIO_PORT248, GPIO_PORT249,
+-
+-	GPIO_PORT250, GPIO_PORT251, GPIO_PORT252, GPIO_PORT253, GPIO_PORT254,
+-	GPIO_PORT255, GPIO_PORT256, GPIO_PORT257, GPIO_PORT258, GPIO_PORT259,
+-
+-	GPIO_PORT260, GPIO_PORT261, GPIO_PORT262, GPIO_PORT263, GPIO_PORT264,
+-	GPIO_PORT265, GPIO_PORT266, GPIO_PORT267, GPIO_PORT268, GPIO_PORT269,
+-
+-	GPIO_PORT270, GPIO_PORT271, GPIO_PORT272, GPIO_PORT273, GPIO_PORT274,
+-	GPIO_PORT275, GPIO_PORT276, GPIO_PORT277, GPIO_PORT278, GPIO_PORT279,
+-
+-	GPIO_PORT280, GPIO_PORT281, GPIO_PORT282,
+-
+-	GPIO_PORT288, GPIO_PORT289,
+-
+-	GPIO_PORT290, GPIO_PORT291, GPIO_PORT292, GPIO_PORT293, GPIO_PORT294,
+-	GPIO_PORT295, GPIO_PORT296, GPIO_PORT297, GPIO_PORT298, GPIO_PORT299,
+-
+-	GPIO_PORT300, GPIO_PORT301, GPIO_PORT302, GPIO_PORT303, GPIO_PORT304,
+-	GPIO_PORT305, GPIO_PORT306, GPIO_PORT307, GPIO_PORT308, GPIO_PORT309,
+-
+-	/* Table 25-1 (Function 0-7) */
+-	GPIO_FN_GPI0 = 310,
+-	GPIO_FN_GPI1,
+-	GPIO_FN_GPI2,
+-	GPIO_FN_GPI3,
+-	GPIO_FN_GPI4,
+-	GPIO_FN_GPI5,
+-	GPIO_FN_GPI6,
+-	GPIO_FN_GPI7,
+-	GPIO_FN_GPO7, GPIO_FN_MFG0_OUT2,
+-	GPIO_FN_GPO6, GPIO_FN_MFG1_OUT2,
+-	GPIO_FN_GPO5,
+-	GPIO_FN_PORT16_VIO_CKOR,
+-	GPIO_FN_PORT19_VIO_CKO2,
+-	GPIO_FN_GPO0,
+-	GPIO_FN_GPO1,
+-	GPIO_FN_GPO2, GPIO_FN_STATUS0,
+-	GPIO_FN_GPO3, GPIO_FN_STATUS1,
+-	GPIO_FN_GPO4, GPIO_FN_STATUS2,
+-	GPIO_FN_VINT,
+-	GPIO_FN_TCKON,
+-	GPIO_FN_XDVFS1,
+-	GPIO_FN_MFG0_OUT1, GPIO_FN_PORT27_IROUT,
+-	GPIO_FN_XDVFS2,
+-	GPIO_FN_PORT28_TPU1TO1,
+-	GPIO_FN_SIM_RST, GPIO_FN_PORT29_TPU1TO1,
+-	GPIO_FN_SIM_CLK, GPIO_FN_PORT30_VIO_CKOR,
+-	GPIO_FN_SIM_D, GPIO_FN_PORT31_IROUT,
+-	GPIO_FN_XWUP,
+-	GPIO_FN_VACK,
+-	GPIO_FN_XTAL1L,
+-	GPIO_FN_PORT49_IROUT,
+-	GPIO_FN_BBIF2_TSYNC2, GPIO_FN_TPU2TO2,
+-
+-	GPIO_FN_BBIF2_TSCK2, GPIO_FN_TPU2TO3,
+-	GPIO_FN_BBIF2_TXD2,
+-	GPIO_FN_TPU3TO3,
+-	GPIO_FN_TPU3TO2,
+-	GPIO_FN_TPU0TO0,
+-	GPIO_FN_A0, GPIO_FN_BS_,
+-	GPIO_FN_A12, GPIO_FN_TPU4TO2,
+-	GPIO_FN_A13, GPIO_FN_TPU0TO1,
+-	GPIO_FN_A14,
+-	GPIO_FN_A15,
+-	GPIO_FN_A16, GPIO_FN_MSIOF0_SS1,
+-	GPIO_FN_A17, GPIO_FN_MSIOF0_TSYNC,
+-	GPIO_FN_A18, GPIO_FN_MSIOF0_TSCK,
+-	GPIO_FN_A19, GPIO_FN_MSIOF0_TXD,
+-	GPIO_FN_A20, GPIO_FN_MSIOF0_RSCK,
+-	GPIO_FN_A21, GPIO_FN_MSIOF0_RSYNC,
+-	GPIO_FN_A22, GPIO_FN_MSIOF0_MCK0,
+-	GPIO_FN_A23, GPIO_FN_MSIOF0_MCK1,
+-	GPIO_FN_A24, GPIO_FN_MSIOF0_RXD,
+-	GPIO_FN_A25, GPIO_FN_MSIOF0_SS2,
+-	GPIO_FN_A26,
+-	GPIO_FN_FCE1_,
+-	GPIO_FN_DACK0,
+-	GPIO_FN_FCE0_,
+-	GPIO_FN_WAIT_, GPIO_FN_DREQ0,
+-	GPIO_FN_FRB,
+-	GPIO_FN_CKO,
+-	GPIO_FN_NBRSTOUT_,
+-	GPIO_FN_NBRST_,
+-	GPIO_FN_BBIF2_TXD,
+-	GPIO_FN_BBIF2_RXD,
+-	GPIO_FN_BBIF2_SYNC,
+-	GPIO_FN_BBIF2_SCK,
+-	GPIO_FN_MFG3_IN2,
+-	GPIO_FN_MFG3_IN1,
+-	GPIO_FN_BBIF1_SS2, GPIO_FN_MFG3_OUT1,
+-	GPIO_FN_HSI_RX_DATA, GPIO_FN_BBIF1_RXD,
+-	GPIO_FN_HSI_TX_WAKE, GPIO_FN_BBIF1_TSCK,
+-	GPIO_FN_HSI_TX_DATA, GPIO_FN_BBIF1_TSYNC,
+-	GPIO_FN_HSI_TX_READY, GPIO_FN_BBIF1_TXD,
+-	GPIO_FN_HSI_RX_READY, GPIO_FN_BBIF1_RSCK,
+-	GPIO_FN_HSI_RX_WAKE, GPIO_FN_BBIF1_RSYNC,
+-	GPIO_FN_HSI_RX_FLAG, GPIO_FN_BBIF1_SS1, GPIO_FN_BBIF1_FLOW,
+-	GPIO_FN_HSI_TX_FLAG,
+-	GPIO_FN_VIO_VD, GPIO_FN_VIO2_VD,
+-
+-	GPIO_FN_VIO_HD,
+-	GPIO_FN_VIO2_HD,
+-	GPIO_FN_VIO_D0, GPIO_FN_PORT130_MSIOF2_RXD,
+-	GPIO_FN_VIO_D1, GPIO_FN_PORT131_MSIOF2_SS1,
+-	GPIO_FN_VIO_D2, GPIO_FN_PORT132_MSIOF2_SS2,
+-	GPIO_FN_VIO_D3, GPIO_FN_MSIOF2_TSYNC,
+-	GPIO_FN_VIO_D4, GPIO_FN_MSIOF2_TXD,
+-	GPIO_FN_VIO_D5, GPIO_FN_MSIOF2_TSCK,
+-	GPIO_FN_VIO_D6,
+-	GPIO_FN_VIO_D7,
+-	GPIO_FN_VIO_D8, GPIO_FN_VIO2_D0,
+-	GPIO_FN_VIO_D9, GPIO_FN_VIO2_D1,
+-	GPIO_FN_VIO_D10, GPIO_FN_TPU0TO2, GPIO_FN_VIO2_D2,
+-	GPIO_FN_VIO_D11, GPIO_FN_TPU0TO3, GPIO_FN_VIO2_D3,
+-	GPIO_FN_VIO_D12, GPIO_FN_VIO2_D4,
+-	GPIO_FN_VIO_D13,
+-	GPIO_FN_VIO2_D5,
+-	GPIO_FN_VIO_D14, GPIO_FN_VIO2_D6,
+-	GPIO_FN_VIO_D15, GPIO_FN_TPU1TO3,
+-	GPIO_FN_VIO2_D7,
+-	GPIO_FN_VIO_CLK,
+-	GPIO_FN_VIO2_CLK,
+-	GPIO_FN_VIO_FIELD, GPIO_FN_VIO2_FIELD,
+-	GPIO_FN_VIO_CKO,
+-	GPIO_FN_A27, GPIO_FN_MFG0_IN1,
+-	GPIO_FN_MFG0_IN2,
+-	GPIO_FN_TS_SPSYNC3, GPIO_FN_MSIOF2_RSCK,
+-	GPIO_FN_TS_SDAT3, GPIO_FN_MSIOF2_RSYNC,
+-	GPIO_FN_TPU1TO2, GPIO_FN_TS_SDEN3, GPIO_FN_PORT153_MSIOF2_SS1,
+-	GPIO_FN_MSIOF2_MCK0,
+-	GPIO_FN_MSIOF2_MCK1,
+-	GPIO_FN_PORT156_MSIOF2_SS2,
+-	GPIO_FN_PORT157_MSIOF2_RXD,
+-	GPIO_FN_DINT_, GPIO_FN_TS_SCK3,
+-	GPIO_FN_NMI,
+-	GPIO_FN_TPU3TO0,
+-	GPIO_FN_BBIF2_TSYNC1,
+-	GPIO_FN_BBIF2_TSCK1,
+-	GPIO_FN_BBIF2_TXD1,
+-	GPIO_FN_MFG2_OUT2,
+-	GPIO_FN_TPU2TO1,
+-	GPIO_FN_TPU4TO1, GPIO_FN_MFG4_OUT2,
+-	GPIO_FN_D16,
+-	GPIO_FN_D17,
+-	GPIO_FN_D18,
+-	GPIO_FN_D19,
+-	GPIO_FN_D20,
+-	GPIO_FN_D21,
+-	GPIO_FN_D22,
+-	GPIO_FN_PORT207_MSIOF0L_SS1, GPIO_FN_D23,
+-	GPIO_FN_PORT208_MSIOF0L_SS2, GPIO_FN_D24,
+-	GPIO_FN_D25,
+-	GPIO_FN_DREQ2, GPIO_FN_PORT210_MSIOF0L_SS1, GPIO_FN_D26,
+-	GPIO_FN_PORT211_MSIOF0L_SS2, GPIO_FN_D27,
+-	GPIO_FN_TS_SPSYNC1, GPIO_FN_MSIOF0L_MCK0, GPIO_FN_D28,
+-	GPIO_FN_TS_SDAT1, GPIO_FN_MSIOF0L_MCK1, GPIO_FN_D29,
+-	GPIO_FN_TS_SDEN1, GPIO_FN_MSIOF0L_RSCK, GPIO_FN_D30,
+-	GPIO_FN_TS_SCK1, GPIO_FN_MSIOF0L_RSYNC, GPIO_FN_D31,
+-	GPIO_FN_DACK2,
+-	GPIO_FN_MSIOF0L_TSYNC, GPIO_FN_VIO2_FIELD3,
+-	GPIO_FN_DACK3,
+-	GPIO_FN_PORT218_VIO_CKOR,
+-	GPIO_FN_DREQ3, GPIO_FN_MSIOF0L_TSCK, GPIO_FN_VIO2_CLK3, \
+-	GPIO_FN_DREQ1,
+-	GPIO_FN_PWEN, GPIO_FN_MSIOF0L_RXD, GPIO_FN_VIO2_HD3, \
+-	GPIO_FN_DACK1, GPIO_FN_OVCN,
+-	GPIO_FN_MSIOF0L_TXD, GPIO_FN_VIO2_VD3,
+-
+-	GPIO_FN_OVCN2,
+-	GPIO_FN_EXTLP, GPIO_FN_PORT226_VIO_CKO2,
+-	GPIO_FN_IDIN,
+-	GPIO_FN_MFG1_IN1,
+-	GPIO_FN_MSIOF1_TXD,
+-	GPIO_FN_MSIOF1_TSYNC,
+-	GPIO_FN_MSIOF1_TSCK,
+-	GPIO_FN_MSIOF1_RXD,
+-	GPIO_FN_MSIOF1_RSCK, GPIO_FN_VIO2_CLK2,
+-	GPIO_FN_MSIOF1_RSYNC, GPIO_FN_MFG1_IN2, GPIO_FN_VIO2_VD2, \
+-	GPIO_FN_MSIOF1_MCK0,
+-	GPIO_FN_MSIOF1_MCK1,
+-	GPIO_FN_MSIOF1_SS1, GPIO_FN_VIO2_FIELD2,
+-	GPIO_FN_MSIOF1_SS2, GPIO_FN_VIO2_HD2,
+-	GPIO_FN_PORT241_IROUT, GPIO_FN_MFG4_OUT1, \
+-	GPIO_FN_TPU4TO0,
+-	GPIO_FN_MFG4_IN2,
+-	GPIO_FN_PORT243_VIO_CKO2,
+-	GPIO_FN_MFG2_IN1,
+-	GPIO_FN_MSIOF2R_RXD,
+-	GPIO_FN_MFG2_IN2,
+-	GPIO_FN_MSIOF2R_TXD,
+-	GPIO_FN_MFG1_OUT1,
+-	GPIO_FN_TPU1TO0,
+-	GPIO_FN_MFG3_OUT2,
+-	GPIO_FN_TPU3TO1,
+-	GPIO_FN_MFG2_OUT1,
+-	GPIO_FN_TPU2TO0,
+-	GPIO_FN_MSIOF2R_TSCK,
+-	GPIO_FN_PORT249_IROUT, GPIO_FN_MFG4_IN1, \
+-	GPIO_FN_MSIOF2R_TSYNC,
+-	GPIO_FN_SDHICLK0,
+-	GPIO_FN_SDHICD0,
+-	GPIO_FN_SDHID0_0,
+-	GPIO_FN_SDHID0_1,
+-	GPIO_FN_SDHID0_2,
+-	GPIO_FN_SDHID0_3,
+-	GPIO_FN_SDHICMD0,
+-	GPIO_FN_SDHIWP0,
+-	GPIO_FN_SDHICLK1,
+-	GPIO_FN_SDHID1_0, GPIO_FN_TS_SPSYNC2,
+-	GPIO_FN_SDHID1_1, GPIO_FN_TS_SDAT2,
+-	GPIO_FN_SDHID1_2, GPIO_FN_TS_SDEN2,
+-	GPIO_FN_SDHID1_3, GPIO_FN_TS_SCK2,
+-	GPIO_FN_SDHICMD1,
+-	GPIO_FN_SDHICLK2,
+-	GPIO_FN_SDHID2_0, GPIO_FN_TS_SPSYNC4,
+-	GPIO_FN_SDHID2_1, GPIO_FN_TS_SDAT4,
+-	GPIO_FN_SDHID2_2, GPIO_FN_TS_SDEN4,
+-	GPIO_FN_SDHID2_3, GPIO_FN_TS_SCK4,
+-	GPIO_FN_SDHICMD2,
+-	GPIO_FN_MMCCLK0,
+-	GPIO_FN_MMCD0_0,
+-	GPIO_FN_MMCD0_1,
+-	GPIO_FN_MMCD0_2,
+-	GPIO_FN_MMCD0_3,
+-	GPIO_FN_MMCD0_4, GPIO_FN_TS_SPSYNC5,
+-	GPIO_FN_MMCD0_5, GPIO_FN_TS_SDAT5,
+-	GPIO_FN_MMCD0_6, GPIO_FN_TS_SDEN5,
+-	GPIO_FN_MMCD0_7, GPIO_FN_TS_SCK5,
+-	GPIO_FN_MMCCMD0,
+-	GPIO_FN_RESETOUTS_, GPIO_FN_EXTAL2OUT,
+-	GPIO_FN_MCP_WAIT__MCP_FRB,
+-	GPIO_FN_MCP_CKO, GPIO_FN_MMCCLK1,
+-	GPIO_FN_MCP_D15_MCP_NAF15,
+-	GPIO_FN_MCP_D14_MCP_NAF14,
+-	GPIO_FN_MCP_D13_MCP_NAF13,
+-	GPIO_FN_MCP_D12_MCP_NAF12,
+-	GPIO_FN_MCP_D11_MCP_NAF11,
+-	GPIO_FN_MCP_D10_MCP_NAF10,
+-	GPIO_FN_MCP_D9_MCP_NAF9,
+-	GPIO_FN_MCP_D8_MCP_NAF8, GPIO_FN_MMCCMD1,
+-	GPIO_FN_MCP_D7_MCP_NAF7, GPIO_FN_MMCD1_7,
+-
+-	GPIO_FN_MCP_D6_MCP_NAF6, GPIO_FN_MMCD1_6,
+-	GPIO_FN_MCP_D5_MCP_NAF5, GPIO_FN_MMCD1_5,
+-	GPIO_FN_MCP_D4_MCP_NAF4, GPIO_FN_MMCD1_4,
+-	GPIO_FN_MCP_D3_MCP_NAF3, GPIO_FN_MMCD1_3,
+-	GPIO_FN_MCP_D2_MCP_NAF2, GPIO_FN_MMCD1_2,
+-	GPIO_FN_MCP_D1_MCP_NAF1, GPIO_FN_MMCD1_1,
+-	GPIO_FN_MCP_D0_MCP_NAF0, GPIO_FN_MMCD1_0,
+-	GPIO_FN_MCP_NBRSTOUT_,
+-	GPIO_FN_MCP_WE0__MCP_FWE, GPIO_FN_MCP_RDWR_MCP_FWE,
+-
+-	/* MSEL2 special case */
+-	GPIO_FN_TSIF2_TS_XX1,
+-	GPIO_FN_TSIF2_TS_XX2,
+-	GPIO_FN_TSIF2_TS_XX3,
+-	GPIO_FN_TSIF2_TS_XX4,
+-	GPIO_FN_TSIF2_TS_XX5,
+-	GPIO_FN_TSIF1_TS_XX1,
+-	GPIO_FN_TSIF1_TS_XX2,
+-	GPIO_FN_TSIF1_TS_XX3,
+-	GPIO_FN_TSIF1_TS_XX4,
+-	GPIO_FN_TSIF1_TS_XX5,
+-	GPIO_FN_TSIF0_TS_XX1,
+-	GPIO_FN_TSIF0_TS_XX2,
+-	GPIO_FN_TSIF0_TS_XX3,
+-	GPIO_FN_TSIF0_TS_XX4,
+-	GPIO_FN_TSIF0_TS_XX5,
+-	GPIO_FN_MST1_TS_XX1,
+-	GPIO_FN_MST1_TS_XX2,
+-	GPIO_FN_MST1_TS_XX3,
+-	GPIO_FN_MST1_TS_XX4,
+-	GPIO_FN_MST1_TS_XX5,
+-	GPIO_FN_MST0_TS_XX1,
+-	GPIO_FN_MST0_TS_XX2,
+-	GPIO_FN_MST0_TS_XX3,
+-	GPIO_FN_MST0_TS_XX4,
+-	GPIO_FN_MST0_TS_XX5,
+-
+-	/* MSEL3 special cases */
+-	GPIO_FN_SDHI0_VCCQ_MC0_ON,
+-	GPIO_FN_SDHI0_VCCQ_MC0_OFF,
+-	GPIO_FN_DEBUG_MON_VIO,
+-	GPIO_FN_DEBUG_MON_LCDD,
+-	GPIO_FN_LCDC_LCDC0,
+-	GPIO_FN_LCDC_LCDC1,
+-
+-	/* MSEL4 special cases */
+-	GPIO_FN_IRQ9_MEM_INT,
+-	GPIO_FN_IRQ9_MCP_INT,
+-	GPIO_FN_A11,
+-	GPIO_FN_TPU4TO3,
+-	GPIO_FN_RESETA_N_PU_ON,
+-	GPIO_FN_RESETA_N_PU_OFF,
+-	GPIO_FN_EDBGREQ_PD,
+-	GPIO_FN_EDBGREQ_PU,
+-
+-	/* end of GPIO */
+-	GPIO_NR,
 -};
--
--static DEFINE_SPINLOCK(r_tpu_lock);
--
--#define TSTR -1 /* Timer start register (shared register) */
--#define TCR  0 /* Timer control register (+0x00) */
--#define TMDR 1 /* Timer mode register (+0x04) */
--#define TIOR 2 /* Timer I/O control register (+0x08) */
--#define TIER 3 /* Timer interrupt enable register (+0x0c) */
--#define TSR  4 /* Timer status register (+0x10) */
--#define TCNT 5 /* Timer counter (+0x14) */
--#define TGRA 6 /* Timer general register A (+0x18) */
--#define TGRB 7 /* Timer general register B (+0x1c) */
--#define TGRC 8 /* Timer general register C (+0x20) */
--#define TGRD 9 /* Timer general register D (+0x24) */
--
--static inline unsigned short r_tpu_read(struct r_tpu_priv *p, int reg_nr)
--{
--	struct led_renesas_tpu_config *cfg = p->pdev->dev.platform_data;
--	void __iomem *base = p->mapbase;
--	unsigned long offs = reg_nr << 2;
--
--	if (reg_nr == TSTR)
--		return ioread16(base - cfg->channel_offset);
--
--	return ioread16(base + offs);
--}
--
--static inline void r_tpu_write(struct r_tpu_priv *p, int reg_nr,
--			       unsigned short value)
--{
--	struct led_renesas_tpu_config *cfg = p->pdev->dev.platform_data;
--	void __iomem *base = p->mapbase;
--	unsigned long offs = reg_nr << 2;
--
--	if (reg_nr == TSTR) {
--		iowrite16(value, base - cfg->channel_offset);
--		return;
--	}
--
--	iowrite16(value, base + offs);
--}
--
--static void r_tpu_start_stop_ch(struct r_tpu_priv *p, int start)
--{
--	struct led_renesas_tpu_config *cfg = p->pdev->dev.platform_data;
--	unsigned long flags, value;
--
--	/* start stop register shared by multiple timer channels */
--	spin_lock_irqsave(&r_tpu_lock, flags);
--	value = r_tpu_read(p, TSTR);
--
--	if (start)
--		value |= 1 << cfg->timer_bit;
--	else
--		value &= ~(1 << cfg->timer_bit);
--
--	r_tpu_write(p, TSTR, value);
--	spin_unlock_irqrestore(&r_tpu_lock, flags);
--}
--
--static int r_tpu_enable(struct r_tpu_priv *p, enum led_brightness brightness)
--{
--	struct led_renesas_tpu_config *cfg = p->pdev->dev.platform_data;
--	int prescaler[] = { 1, 4, 16, 64 };
--	int k, ret;
--	unsigned long rate, tmp;
--
--	if (p->timer_state == R_TPU_TIMER_ON)
--		return 0;
--
--	/* wake up device and enable clock */
--	pm_runtime_get_sync(&p->pdev->dev);
--	ret = clk_enable(p->clk);
--	if (ret) {
--		dev_err(&p->pdev->dev, "cannot enable clock\n");
--		return ret;
--	}
--
--	/* make sure channel is disabled */
--	r_tpu_start_stop_ch(p, 0);
--
--	/* get clock rate after enabling it */
--	rate = clk_get_rate(p->clk);
--
--	/* pick the lowest acceptable rate */
--	for (k = ARRAY_SIZE(prescaler) - 1; k >= 0; k--)
--		if ((rate / prescaler[k]) >= p->min_rate)
--			break;
--
--	if (k < 0) {
--		dev_err(&p->pdev->dev, "clock rate mismatch\n");
--		goto err0;
--	}
--	dev_dbg(&p->pdev->dev, "rate = %lu, prescaler %u\n",
--		rate, prescaler[k]);
--
--	/* clear TCNT on TGRB match, count on rising edge, set prescaler */
--	r_tpu_write(p, TCR, 0x0040 | k);
--
--	/* output 0 until TGRA, output 1 until TGRB */
--	r_tpu_write(p, TIOR, 0x0002);
--
--	rate /= prescaler[k] * p->refresh_rate;
--	r_tpu_write(p, TGRB, rate);
--	dev_dbg(&p->pdev->dev, "TRGB = 0x%04lx\n", rate);
--
--	tmp = (cfg->max_brightness - brightness) * rate;
--	r_tpu_write(p, TGRA, tmp / cfg->max_brightness);
--	dev_dbg(&p->pdev->dev, "TRGA = 0x%04lx\n", tmp / cfg->max_brightness);
--
--	/* PWM mode */
--	r_tpu_write(p, TMDR, 0x0002);
--
--	/* enable channel */
--	r_tpu_start_stop_ch(p, 1);
--
--	p->timer_state = R_TPU_TIMER_ON;
--	return 0;
-- err0:
--	clk_disable(p->clk);
--	pm_runtime_put_sync(&p->pdev->dev);
--	return -ENOTSUPP;
--}
--
--static void r_tpu_disable(struct r_tpu_priv *p)
--{
--	if (p->timer_state == R_TPU_TIMER_UNUSED)
--		return;
--
--	/* disable channel */
--	r_tpu_start_stop_ch(p, 0);
--
--	/* stop clock and mark device as idle */
--	clk_disable(p->clk);
--	pm_runtime_put_sync(&p->pdev->dev);
--
--	p->timer_state = R_TPU_TIMER_UNUSED;
--}
--
--static void r_tpu_set_pin(struct r_tpu_priv *p, enum r_tpu_pin new_state,
--			  enum led_brightness brightness)
--{
--	struct led_renesas_tpu_config *cfg = p->pdev->dev.platform_data;
--
--	if (p->pin_state == new_state) {
--		if (p->pin_state == R_TPU_PIN_GPIO)
--			gpio_set_value(cfg->pin_gpio, brightness);
--		return;
--	}
--
--	if (p->pin_state == R_TPU_PIN_GPIO)
--		gpio_free(cfg->pin_gpio);
--
--	if (p->pin_state == R_TPU_PIN_GPIO_FN)
--		gpio_free(cfg->pin_gpio_fn);
--
--	if (new_state == R_TPU_PIN_GPIO)
--		gpio_request_one(cfg->pin_gpio, !!brightness ?
--				GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW,
--				cfg->name);
--
--	if (new_state == R_TPU_PIN_GPIO_FN)
--		gpio_request(cfg->pin_gpio_fn, cfg->name);
--
--	p->pin_state = new_state;
--}
--
--static void r_tpu_work(struct work_struct *work)
--{
--	struct r_tpu_priv *p = container_of(work, struct r_tpu_priv, work);
--	enum led_brightness brightness = p->new_brightness;
--
--	r_tpu_disable(p);
--
--	/* off and maximum are handled as GPIO pins, in between PWM */
--	if ((brightness == 0) || (brightness == p->ldev.max_brightness))
--		r_tpu_set_pin(p, R_TPU_PIN_GPIO, brightness);
--	else {
--		r_tpu_set_pin(p, R_TPU_PIN_GPIO_FN, 0);
--		r_tpu_enable(p, brightness);
--	}
--}
--
--static void r_tpu_set_brightness(struct led_classdev *ldev,
--				 enum led_brightness brightness)
--{
--	struct r_tpu_priv *p = container_of(ldev, struct r_tpu_priv, ldev);
--	p->new_brightness = brightness;
--	schedule_work(&p->work);
--}
--
--static int r_tpu_probe(struct platform_device *pdev)
--{
--	struct led_renesas_tpu_config *cfg = pdev->dev.platform_data;
--	struct r_tpu_priv *p;
--	struct resource *res;
--	int ret;
--
--	if (!cfg) {
--		dev_err(&pdev->dev, "missing platform data\n");
--		return -ENODEV;
--	}
--
--	p = devm_kzalloc(&pdev->dev, sizeof(*p), GFP_KERNEL);
--	if (p == NULL) {
--		dev_err(&pdev->dev, "failed to allocate driver data\n");
--		return -ENOMEM;
--	}
--
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&pdev->dev, "failed to get I/O memory\n");
--		return -ENXIO;
--	}
--
--	/* map memory, let mapbase point to our channel */
--	p->mapbase = devm_ioremap_nocache(&pdev->dev, res->start,
--					resource_size(res));
--	if (p->mapbase == NULL) {
--		dev_err(&pdev->dev, "failed to remap I/O memory\n");
--		return -ENXIO;
--	}
--
--	/* get hold of clock */
--	p->clk = devm_clk_get(&pdev->dev, NULL);
--	if (IS_ERR(p->clk)) {
--		dev_err(&pdev->dev, "cannot get clock\n");
--		return PTR_ERR(p->clk);
--	}
--
--	p->pdev = pdev;
--	p->pin_state = R_TPU_PIN_UNUSED;
--	p->timer_state = R_TPU_TIMER_UNUSED;
--	p->refresh_rate = cfg->refresh_rate ? cfg->refresh_rate : 100;
--	r_tpu_set_pin(p, R_TPU_PIN_GPIO, LED_OFF);
--	platform_set_drvdata(pdev, p);
--
--	INIT_WORK(&p->work, r_tpu_work);
--
--	p->ldev.name = cfg->name;
--	p->ldev.brightness = LED_OFF;
--	p->ldev.max_brightness = cfg->max_brightness;
--	p->ldev.brightness_set = r_tpu_set_brightness;
--	p->ldev.flags |= LED_CORE_SUSPENDRESUME;
--	ret = led_classdev_register(&pdev->dev, &p->ldev);
--	if (ret < 0)
--		goto err0;
--
--	/* max_brightness may be updated by the LED core code */
--	p->min_rate = p->ldev.max_brightness * p->refresh_rate;
--
--	pm_runtime_enable(&pdev->dev);
--	return 0;
--
-- err0:
--	r_tpu_set_pin(p, R_TPU_PIN_UNUSED, LED_OFF);
--	return ret;
--}
--
--static int r_tpu_remove(struct platform_device *pdev)
--{
--	struct r_tpu_priv *p = platform_get_drvdata(pdev);
--
--	r_tpu_set_brightness(&p->ldev, LED_OFF);
--	led_classdev_unregister(&p->ldev);
--	cancel_work_sync(&p->work);
--	r_tpu_disable(p);
--	r_tpu_set_pin(p, R_TPU_PIN_UNUSED, LED_OFF);
--
--	pm_runtime_disable(&pdev->dev);
--
--	return 0;
--}
--
--static struct platform_driver r_tpu_device_driver = {
--	.probe		= r_tpu_probe,
--	.remove		= r_tpu_remove,
--	.driver		= {
--		.name	= "leds-renesas-tpu",
--	}
--};
--
--module_platform_driver(r_tpu_device_driver);
--
--MODULE_AUTHOR("Magnus Damm");
--MODULE_DESCRIPTION("Renesas TPU LED Driver");
--MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/platform_data/leds-renesas-tpu.h b/include/linux/platform_data/leds-renesas-tpu.h
-deleted file mode 100644
-index 0553870..0000000
---- a/include/linux/platform_data/leds-renesas-tpu.h
-+++ /dev/null
-@@ -1,14 +0,0 @@
--#ifndef __LEDS_RENESAS_TPU_H__
--#define __LEDS_RENESAS_TPU_H__
--
--struct led_renesas_tpu_config {
--	char *name;
--	unsigned pin_gpio_fn;
--	unsigned pin_gpio;
--	unsigned int channel_offset;
--	unsigned int timer_bit;
--	unsigned int max_brightness;
--	unsigned int refresh_rate;
--};
--
--#endif /* __LEDS_RENESAS_TPU_H__ */
++#define GPIO_NR			310
+ 
+ /* DMA slave IDs */
+ enum {
 -- 
 1.8.1.5
 
