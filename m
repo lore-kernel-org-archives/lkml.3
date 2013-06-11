@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756431Ab3FKWzG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 18:55:06 -0400
-Received: from smtp1.gestion.ulpgc.es ([193.145.138.5]:49923 "EHLO
-	smtp1.ulpgc.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753888Ab3FKWzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 18:55:05 -0400
-X-Greylist: delayed 1666 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Jun 2013 18:55:04 EDT
-Message-ID: <20130611232708.87946gw77d0rkrok@correo.ulpgc.es>
-X-Priority: 3 (Normal)
-Date: Tue, 11 Jun 2013 23:27:08 +0100
-From: Kim <ery@yahoo.co.uk>
-Reply-to: kim@attorneykim.nazuka.net
-To: undisclosed-recipients:;
-Subject: PROTECTED PROJECT
+	id S1757335Ab3FKXDN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 19:03:13 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:51942 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755364Ab3FKXDL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 19:03:11 -0400
+From: =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, jslaby@suse.cz, olof@lixom.net,
+        =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>
+Subject: [PATCH] drivers/tty: Don't hangup shared ttys
+Date: Tue, 11 Jun 2013 16:03:07 -0700
+Message-Id: <1370991787-24141-1-git-send-email-marcheu@chromium.org>
+X-Mailer: git-send-email 1.8.3
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.4)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When quickly restarting X servers, we can run into a situation where
+one X server quits while another one starts on the same tty. For a
+while, two X servers share the tty, and when the old X server
+eventually quits, the tty layer hangs up the tty, which among other
+things stubs out the tty's ioctl functions. Later on, the new X
+server (which shares the tty functions) tries to call some ioctls
+on the tty and fails because they have been replaced with the hungup
+versions. This in turn causes the new X server to abort.
 
+This patch checks the tty->count to make sure we're the last
+consumer before hanging up a tty.
 
-Hello,
+Signed-off-by: Stéphane Marchesin <marcheu@chromium.org>
+---
+ drivers/tty/tty_io.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-The Project is about the exportation of 100,000 barrels of Light Crude
-Oil daily out from Iraq to Turkey through my client's company in Iraq
-at the rate of $92.00 a barrel. This amount to $9,200,000 daily. I ask
-for your support as a foreigner to handle this business project with my
-client and you are not expected to invest in Iraq
-
-If yes, let me know and we will discuss this project proper.
-
-Email:kim@attorneykim.nazuka.net
-
-Kim.
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 6464029..62a0f02 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -619,6 +619,9 @@ static void __tty_hangup(struct tty_struct *tty, int exit_session)
+ 	if (!tty)
+ 		return;
+ 
++	/* Don't hangup if there are other users */
++	if (tty->count > 1)
++		return;
+ 
+ 	spin_lock(&redirect_lock);
+ 	if (redirect && file_tty(redirect) == tty) {
+-- 
+1.8.3
 
