@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab3FKUWC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:22:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41816 "EHLO
+	id S1757269Ab3FKUWA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:22:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41820 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756519Ab3FKUDe (ORCPT
+	with ESMTP id S1756527Ab3FKUDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:34 -0400
+	Tue, 11 Jun 2013 16:03:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Huang Ying <ying.huang@intel.com>
-Subject: [ 08/79] xhci: Disable D3cold for buggy TI redrivers.
-Date: Tue, 11 Jun 2013 13:02:34 -0700
-Message-Id: <20130611195313.502826852@linuxfoundation.org>
+        Jani Nikula <jani.nikula@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [ 09/79] x86/PCI: Map PCI setup data with ioremap() so it can be in highmem
+Date: Tue, 11 Jun 2013 13:02:35 -0700
+Message-Id: <20130611195313.629553357@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -27,94 +31,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Matt Fleming <matt.fleming@intel.com>
 
-commit c3897aa5386faba77e5bbdf94902a1658d3a5b11 upstream.
+commit 65694c5aaddfedd9da082e4e150cafc6b3fc8a6a upstream.
 
-Some xHCI hosts contain a "redriver" from TI that silently drops port
-status connect changes if the port slips into Compliance Mode.  If the
-port slips into compliance mode while the host is in D0, there will not
-be a port status change event.  If the port slips into compliance mode
-while the host is in D3, the host will not send a PME.  This includes
-when the system is suspended (S3) or hibernated (S4).
+f9a37be0f0 ("x86: Use PCI setup data") added support for using PCI ROM
+images from setup_data.  This used phys_to_virt(), which is not valid for
+highmem addresses, and can cause a crash when booting a 32-bit kernel via
+the EFI boot stub.
 
-If this happens when the system is in S3/S4, there is nothing software
-can do.  Other port status change events that would normally cause the
-host to wake the system from S3/S4 may also be lost.  This includes
-remote wakeup, disconnects and connects on other ports, and overrcurrent
-events.  A decision was made to _NOT_ disable system suspend/hibernate
-on these systems, since users are unlikely to enable wakeup from S3/S4
-for the xHCI host.
+pcibios_add_device() assumes that the physical addresses stored in
+setup_data are accessible via the direct kernel mapping, and that calling
+phys_to_virt() is valid.  This isn't guaranteed to be true on x86 where the
+direct mapping range is much smaller than on x86-64.
 
-Software can deal with this issue when the system is in S0.  A work
-around was put in to poll the port status registers for Compliance Mode.
-The xHCI driver will continue to poll the registers while the host is
-runtime suspended.  Unfortunately, that means we can't allow the PCI
-device to go into D3cold, because power will be removed from the host,
-and the config space will read as all Fs.
+Calling phys_to_virt() on a highmem address results in the following:
 
-Disable D3cold in the xHCI PCI runtime suspend function.
+ BUG: unable to handle kernel paging request at 39a3c198
+ IP: [<c262be0f>] pcibios_add_device+0x2f/0x90
+ ...
+ Call Trace:
+  [<c2370c73>] pci_device_add+0xe3/0x130
+  [<c274640b>] pci_scan_single_device+0x8b/0xb0
+  [<c2370d08>] pci_scan_slot+0x48/0x100
+  [<c2371904>] pci_scan_child_bus+0x24/0xc0
+  [<c262a7b0>] pci_acpi_scan_root+0x2c0/0x490
+  [<c23b7203>] acpi_pci_root_add+0x312/0x42f
+  ...
 
-This patch should be backported to kernels as old as 3.2, that
-contain the commit 71c731a296f1b08a3724bd1b514b64f1bda87a23 "usb: host:
-xhci: Fix Compliance Mode on SN65LVPE502CP Hardware"
+The solution is to use ioremap() instead of phys_to_virt() to map the
+setup data into the kernel address space.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Huang Ying <ying.huang@intel.com>
+[bhelgaas: changelog]
+Tested-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Seth Forshee <seth.forshee@canonical.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c |    8 ++++++++
- drivers/usb/host/xhci.c     |    4 ++--
- drivers/usb/host/xhci.h     |    3 +++
- 3 files changed, 13 insertions(+), 2 deletions(-)
+ arch/x86/pci/common.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -221,6 +221,14 @@ static void xhci_pci_remove(struct pci_d
- static int xhci_pci_suspend(struct usb_hcd *hcd, bool do_wakeup)
- {
- 	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
-+	struct pci_dev		*pdev = to_pci_dev(hcd->self.controller);
-+
-+	/*
-+	 * Systems with the TI redriver that loses port status change events
-+	 * need to have the registers polled during D3, so avoid D3cold.
-+	 */
-+	if (xhci_compliance_mode_recovery_timer_quirk_check())
-+		pdev->no_d3cold = true;
+--- a/arch/x86/pci/common.c
++++ b/arch/x86/pci/common.c
+@@ -617,7 +617,9 @@ int pcibios_add_device(struct pci_dev *d
  
- 	return xhci_suspend(xhci);
- }
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -466,7 +466,7 @@ static void compliance_mode_recovery_tim
-  * Systems:
-  * Vendor: Hewlett-Packard -> System Models: Z420, Z620 and Z820
-  */
--static bool compliance_mode_recovery_timer_quirk_check(void)
-+bool xhci_compliance_mode_recovery_timer_quirk_check(void)
- {
- 	const char *dmi_product_name, *dmi_sys_vendor;
+ 	pa_data = boot_params.hdr.setup_data;
+ 	while (pa_data) {
+-		data = phys_to_virt(pa_data);
++		data = ioremap(pa_data, sizeof(*rom));
++		if (!data)
++			return -ENOMEM;
  
-@@ -517,7 +517,7 @@ int xhci_init(struct usb_hcd *hcd)
- 	xhci_dbg(xhci, "Finished xhci_init\n");
- 
- 	/* Initializing Compliance Mode Recovery Data If Needed */
--	if (compliance_mode_recovery_timer_quirk_check()) {
-+	if (xhci_compliance_mode_recovery_timer_quirk_check()) {
- 		xhci->quirks |= XHCI_COMP_MODE_QUIRK;
- 		compliance_mode_recovery_timer_init(xhci);
+ 		if (data->type == SETUP_PCI) {
+ 			rom = (struct pci_setup_rom *)data;
+@@ -634,6 +636,7 @@ int pcibios_add_device(struct pci_dev *d
+ 			}
+ 		}
+ 		pa_data = data->next;
++		iounmap(data);
  	}
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1853,4 +1853,7 @@ struct xhci_input_control_ctx *xhci_get_
- struct xhci_slot_ctx *xhci_get_slot_ctx(struct xhci_hcd *xhci, struct xhci_container_ctx *ctx);
- struct xhci_ep_ctx *xhci_get_ep_ctx(struct xhci_hcd *xhci, struct xhci_container_ctx *ctx, unsigned int ep_index);
- 
-+/* xHCI quirks */
-+bool xhci_compliance_mode_recovery_timer_quirk_check(void);
-+
- #endif /* __LINUX_XHCI_HCD_H */
+ 	return 0;
+ }
 
 
