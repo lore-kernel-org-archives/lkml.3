@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757128Ab3FKUOj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:14:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41929 "EHLO
+	id S1756667Ab3FKUD5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:03:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41914 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756197Ab3FKUD6 (ORCPT
+	with ESMTP id S1756197Ab3FKUDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:58 -0400
+	Tue, 11 Jun 2013 16:03:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>
-Subject: [ 38/79] ARM: Kirkwood: TS219: Fix crash by double PCIe instantiation
-Date: Tue, 11 Jun 2013 13:03:04 -0700
-Message-Id: <20130611195320.940236718@linuxfoundation.org>
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 32/79] ACPI / PM: Do not execute _PS0 for devices without _PSC during initialization
+Date: Tue, 11 Jun 2013 13:02:58 -0700
+Message-Id: <20130611195316.681939210@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -26,47 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Lunn <andrew@lunn.ch>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit e89b4058096569c999fa599370162022a5a2b3d2 upstream.
+commit 7cd8407d53ef5fb0280fcbe34f42311472f90feb upstream.
 
-When creating the DT based boards-ts219.c the none DT ts219-setup.c
-was used as a template. This includes a lateinit() call to initialize
-the PCIe bus. The code makes use of machine_is_ts219() which is never
-true on DT, so a FIXME was added and the code left as is. This was
-unproblematic until b73690c8f8b5d: "ARM: Kirkwood: Support basic
-hotplug for PCI-E" which changes the way the PCIe bus is
-initialized. The non-DT ts219-setup.c now crashes during boot.  The
-lateinit() call in the DT boards-ts219.c is being called,
-machine_is_ts219() is true and so the PCIe is initialized a second
-time.
+Commit b378549 (ACPI / PM: Do not power manage devices in unknown
+initial states) added code to force devices without _PSC, but having
+_PS0 defined in the ACPI namespace, into ACPI power state D0 by
+executing _PS0 for them.  That turned out to break Toshiba P870-303,
+however, so revert that code.
 
-This patch removes the useless, and now clearly dangerous, code from
-boards-ts219.c, making ts219-setup.c work again.
-
-Signed-off-by: Andrew Lunn <andrew@lunn.ch>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=58201
+Reported-and-tested-by: Jerome Cantenot <jerome.cantenot@gmail.com>
+Tracked-down-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-kirkwood/board-ts219.c |   10 ----------
- 1 file changed, 10 deletions(-)
+ drivers/acpi/device_pm.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/arch/arm/mach-kirkwood/board-ts219.c
-+++ b/arch/arm/mach-kirkwood/board-ts219.c
-@@ -41,13 +41,3 @@ void __init qnap_dt_ts219_init(void)
- 
- 	pm_power_off = qnap_tsx1x_power_off;
- }
--
--/* FIXME: Will not work with DT. Maybe use MPP40_GPIO? */
--static int __init ts219_pci_init(void)
--{
--	if (machine_is_ts219())
--		kirkwood_pcie_init(KW_PCIE0);
--
--	return 0;
--}
--subsys_initcall(ts219_pci_init);
+--- a/drivers/acpi/device_pm.c
++++ b/drivers/acpi/device_pm.c
+@@ -269,11 +269,13 @@ int acpi_bus_init_power(struct acpi_devi
+ 		if (result)
+ 			return result;
+ 	} else if (state == ACPI_STATE_UNKNOWN) {
+-		/* No power resources and missing _PSC? Try to force D0. */
++		/*
++		 * No power resources and missing _PSC?  Cross fingers and make
++		 * it D0 in hope that this is what the BIOS put the device into.
++		 * [We tried to force D0 here by executing _PS0, but that broke
++		 * Toshiba P870-303 in a nasty way.]
++		 */
+ 		state = ACPI_STATE_D0;
+-		result = acpi_dev_pm_explicit_set(device, state);
+-		if (result)
+-			return result;
+ 	}
+ 	device->power.state = state;
+ 	return 0;
 
 
