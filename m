@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab3FKQnS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 12:43:18 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60976 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755350Ab3FKQnM (ORCPT
+	id S1755454Ab3FKQnQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 12:43:16 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:46118 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754843Ab3FKQnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 12:43:12 -0400
+	Tue, 11 Jun 2013 12:43:13 -0400
 From: Robert Richter <rric@kernel.org>
 To: Borislav Petkov <bp@alien8.de>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
@@ -14,9 +14,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
         Robert Richter <robert.richter@linaro.org>,
         Robert Richter <rric@kernel.org>
-Subject: [PATCH v2 13/14] perf, persistent: Exposing persistent events using sysfs
-Date: Tue, 11 Jun 2013 18:42:39 +0200
-Message-Id: <1370968960-22527-14-git-send-email-rric@kernel.org>
+Subject: [PATCH v2 14/14] perf, persistent: Allow multiple users for an event
+Date: Tue, 11 Jun 2013 18:42:40 +0200
+Message-Id: <1370968960-22527-15-git-send-email-rric@kernel.org>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1370968960-22527-1-git-send-email-rric@kernel.org>
 References: <1370968960-22527-1-git-send-email-rric@kernel.org>
@@ -26,189 +26,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Robert Richter <robert.richter@linaro.org>
 
-Expose persistent events in the system to userland using sysfs. Perf
-tools are able to read existing pmu events from sysfs. Now we use a
-persistent pmu as an event container containing all registered
-persistent events of the system. This patch adds dynamically
-registration of persistent events to sysfs. E.g. something like this:
+Usually a fd close leads to the release of the event too. For
+persistent events this is different as the events should be
+permanently enabled in the system. Using reference counting to avoid
+releasing an event during a fd close. This also allows it to have
+multiple users (open file descriptors) for a single persistent event.
 
- /sys/bus/event_source/devices/persistent/events/mce_record:persistent,config=106
- /sys/bus/event_source/devices/persistent/format/persistent:attr5:23
+While at this, we don't need desc->fd any longer. The fd is attached
+to a task and reference counting keeps the event. Removing desc->fd.
 
-Perf tools need to support the attr<num> syntax that is added in a
-separate patch set. With it we are able to run perf tool commands to
-read persistent events, e.g.:
-
- # perf record -e persistent/mce_record/ sleep 10
- # perf top -e persistent/mce_record/
-
-[ Document attr<index> syntax in sysfs ABI ]
-Reported-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Robert Richter <robert.richter@linaro.org>
 Signed-off-by: Robert Richter <rric@kernel.org>
 ---
- .../testing/sysfs-bus-event_source-devices-format  | 43 ++++++++++++-----
- kernel/events/persistent.c                         | 55 +++++++++++++++++++++-
- 2 files changed, 86 insertions(+), 12 deletions(-)
+ kernel/events/persistent.c | 46 ++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 36 insertions(+), 10 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
-index 77f47ff..47b7353 100644
---- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
-+++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
-@@ -1,13 +1,14 @@
--Where:		/sys/bus/event_source/devices/<dev>/format
-+Where:		/sys/bus/event_source/devices/<pmu>/format/<name>
- Date:		January 2012
--Kernel Version: 3.3
-+Kernel Version:	3.3
-+		3.12	(added attr<index>:<bits>)
- Contact:	Jiri Olsa <jolsa@redhat.com>
--Description:
--		Attribute group to describe the magic bits that go into
--		perf_event_attr::config[012] for a particular pmu.
--		Each attribute of this group defines the 'hardware' bitmask
--		we want to export, so that userspace can deal with sane
--		name/value pairs.
-+
-+Description:	Define formats for bit ranges in perf_event_attr
-+
-+		Attribute group to describe the magic bits that go
-+		into struct perf_event_attr for a particular pmu. Bit
-+		range may be any bit mask of an u64 (bits 0 to 63).
- 
- 		Userspace must be prepared for the possibility that attributes
- 		define overlapping bit ranges. For example:
-@@ -15,6 +16,26 @@ Description:
- 			attr2 = 'config:0-7'
- 			attr3 = 'config:12-35'
- 
--		Example: 'config1:1,6-10,44'
--		Defines contents of attribute that occupies bits 1,6-10,44 of
--		perf_event_attr::config1.
-+		Syntax			Description
-+
-+		config[012]*:<bits>	Each attribute of this group
-+					defines the 'hardware' bitmask
-+					we want to export, so that
-+					userspace can deal with sane
-+					name/value pairs.
-+
-+		attr<index>:<bits>	Set any field of the event
-+					attribute. The index is a
-+					decimal number that specifies
-+					the u64 value to be set within
-+					struct perf_event_attr.
-+
-+		Examples:
-+
-+		'config1:1,6-10,44'	Defines contents of attribute
-+					that occupies bits 1,6-10,44
-+					of perf_event_attr::config1.
-+
-+		'attr5:23'		Define the persistent event
-+					flag (bit 23 of the attribute
-+					flags)
 diff --git a/kernel/events/persistent.c b/kernel/events/persistent.c
-index 96201c1..8be7c05 100644
+index 8be7c05..dd20b55 100644
 --- a/kernel/events/persistent.c
 +++ b/kernel/events/persistent.c
-@@ -17,8 +17,10 @@ struct pers_event_desc {
- struct pers_event {
- 	char				*name;
- 	struct perf_event_attr		attr;
-+	struct perf_pmu_events_attr	sysfs;
+@@ -11,7 +11,6 @@
+ struct pers_event_desc {
+ 	struct perf_event *event;
+ 	struct list_head plist;
+-	int fd;
  };
  
-+static struct pmu persistent_pmu;
- static DEFINE_PER_CPU(struct list_head, pers_events);
- static DEFINE_PER_CPU(struct mutex, pers_events_lock);
- 
-@@ -137,6 +139,8 @@ unwind:
- 	return PTR_ERR(event);
+ struct pers_event {
+@@ -88,6 +87,18 @@ out:
+ 	return event;
  }
  
-+static int pers_event_sysfs_register(struct pers_event *event);
-+
- int perf_add_persistent_event_by_id(char* name, int id)
- {
- 	struct pers_event	*event;
-@@ -150,6 +154,8 @@ int perf_add_persistent_event_by_id(char* name, int id)
- 	if (!event->name)
- 		goto fail;
- 
-+	event->sysfs.id		= id;
-+
- 	attr = &event->attr;
- 	attr->sample_period	= 1;
- 	attr->wakeup_events	= 1;
-@@ -163,6 +169,8 @@ int perf_add_persistent_event_by_id(char* name, int id)
- 	if (ret)
- 		goto fail;
- 
-+	pers_event_sysfs_register(event);
-+
- 	return 0;
- fail:
- 	kfree(event->name);
-@@ -207,12 +215,57 @@ static struct attribute_group persistent_format_group = {
- 	.attrs = persistent_format_attrs,
- };
- 
-+#define MAX_EVENTS 16
-+
-+static struct attribute *persistent_events_attr[MAX_EVENTS + 1] = { };
-+
-+static struct attribute_group persistent_events_group = {
-+	.name = "events",
-+	.attrs = persistent_events_attr,
-+};
-+
- static const struct attribute_group *persistent_attr_groups[] = {
- 	&persistent_format_group,
-+	NULL, /* placeholder: &persistent_events_group */
- 	NULL,
- };
-+#define EVENTS_GROUP	(persistent_attr_groups[1])
- 
--static struct pmu persistent_pmu;
-+static ssize_t pers_event_sysfs_show(struct device *dev,
-+				struct device_attribute *__attr, char *page)
++static void detach_persistent_event(struct pers_event_desc *desc)
 +{
-+	struct perf_pmu_events_attr *attr =
-+		container_of(__attr, struct perf_pmu_events_attr, attr);
-+	return sprintf(page, "persistent,config=%lld",
-+		(unsigned long long)attr->id);
++	list_del(&desc->plist);
++	kfree(desc);
 +}
 +
-+static int pers_event_sysfs_register(struct pers_event *event)
++static void release_persistent_event(struct perf_event *event)
 +{
-+	struct device_attribute *attr = &event->sysfs.attr;
-+	int idx;
++	perf_event_disable(event);
++	perf_event_release_kernel(event);
++}
 +
-+	*attr = (struct device_attribute)__ATTR(, 0444, pers_event_sysfs_show,
-+						NULL);
-+	attr->attr.name = event->name;
+ static void del_persistent_event(int cpu, struct perf_event_attr *attr)
+ {
+ 	struct pers_event_desc *desc;
+@@ -100,12 +111,14 @@ static void del_persistent_event(int cpu, struct perf_event_attr *attr)
+ 		goto out;
+ 	event = desc->event;
+ 
+-	list_del(&desc->plist);
+-
+-	perf_event_disable(event);
+-	perf_event_release_kernel(event);
+-	put_unused_fd(desc->fd);
+-	kfree(desc);
++	/*
++	 * We primarily want to remove desc from the list. If there
++	 * are no open files, the refcount is 0 and we need to release
++	 * the event too.
++	 */
++	detach_persistent_event(desc);
++	if (atomic_long_dec_and_test(&event->refcount))
++		release_persistent_event(event);
+ out:
+ 	mutex_unlock(&per_cpu(pers_events_lock, cpu));
+ }
+@@ -182,6 +195,7 @@ fail:
+ int perf_get_persistent_event_fd(unsigned cpu, struct perf_event_attr *attr)
+ {
+ 	struct pers_event_desc *desc;
++	struct perf_event *event;
+ 	int event_fd = -ENODEV;
+ 
+ 	if (cpu >= (unsigned)nr_cpu_ids)
+@@ -190,13 +204,25 @@ int perf_get_persistent_event_fd(unsigned cpu, struct perf_event_attr *attr)
+ 	mutex_lock(&per_cpu(pers_events_lock, cpu));
+ 
+ 	desc = get_persistent_event(cpu, attr);
+-	if (!desc)
 +
-+	/* add sysfs attr to events: */
-+	for (idx = 0; idx < MAX_EVENTS; idx++) {
-+		if (!cmpxchg(persistent_events_attr + idx, NULL, &attr->attr))
-+			break;
++	/* Increment refcount to keep event on put_event() */
++	if (!desc || !atomic_long_inc_not_zero(&desc->event->refcount))
+ 		goto out;
+ 
+ 	event_fd = anon_inode_getfd("[pers_event]", &perf_fops,
+ 				desc->event, O_RDONLY);
+-	if (event_fd >= 0)
+-		desc->fd = event_fd;
++
++	if (event_fd < 0) {
++		event = desc->event;
++		if (WARN_ON(atomic_long_dec_and_test(&event->refcount))) {
++			/*
++			 * May not happen since decrementing refcount is
++			 * protected by pers_events_lock.
++			 */
++			detach_persistent_event(desc);
++			release_persistent_event(event);
++		}
 +	}
-+
-+	if (idx >= MAX_EVENTS)
-+		return -ENOSPC;
-+	if (!idx)
-+		EVENTS_GROUP = &persistent_events_group;
-+	if (!persistent_pmu.dev)
-+		return 0;	/* sysfs not yet initialized */
-+	if (idx)
-+		return sysfs_update_group(&persistent_pmu.dev->kobj,
-+					EVENTS_GROUP);
-+	return sysfs_create_group(&persistent_pmu.dev->kobj, EVENTS_GROUP);
-+}
+ out:
+ 	mutex_unlock(&per_cpu(pers_events_lock, cpu));
  
- static int persistent_pmu_init(struct perf_event *event)
- {
 -- 
 1.8.1.1
 
