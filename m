@@ -1,86 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422Ab3FKKE3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 06:04:29 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:44841 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704Ab3FKKE2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 06:04:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAKL7Q7rxkXDx49CgSjoVJSbER7ou+-yXa-yZg4hT4ktG_4gvHw@mail.gmail.com>
-References: <1370845742-18919-1-git-send-email-yinghai@kernel.org>
-	<CA+QCeVRdOOuh4aVZsQhucBNETnDp5OhAZguigLTbyD9bOONO1A@mail.gmail.com>
-	<CAE9FiQXacn2abVKeBhTazgRBCS9EtiACs=fbB6_Y27ZpLOTq3w@mail.gmail.com>
-	<CAKL7Q7rxkXDx49CgSjoVJSbER7ou+-yXa-yZg4hT4ktG_4gvHw@mail.gmail.com>
-Date: Tue, 11 Jun 2013 12:04:26 +0200
-Message-ID: <CAKL7Q7qUwTGexhr+8d88qN94YSCfSeOS-oLMh=KQ2NiOZRLbLQ@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] x86, range: Do not add new blank slot with add_range_with_merge
-From: "Joshua C." <joshuacov@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Sergey Meirovich <rathamahata@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	id S1754517Ab3FKKHD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 06:07:03 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:45885 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752061Ab3FKKHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 06:07:00 -0400
+Date: Tue, 11 Jun 2013 03:06:52 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        =?utf-8?B?6LWW5rGf5bGx?= <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>, niv@us.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, Darren Hart <darren@dvhart.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
+Message-ID: <20130611100652.GB5146@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130609193657.GA13392@linux.vnet.ibm.com>
+ <1370911480.9844.160.camel@gandalf.local.home>
+ <CA+55aFxeLszgfTZeG7L6289DcaoKT+uhtf5nwB6r=2i9Sy4Mrg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxeLszgfTZeG7L6289DcaoKT+uhtf5nwB6r=2i9Sy4Mrg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061110-7182-0000-0000-00000741D533
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/6/11 Joshua C. <joshuacov@gmail.com>:
-> 2013/6/10 Yinghai Lu <yinghai@kernel.org>:
->> On Mon, Jun 10, 2013 at 3:55 AM, Sergey Meirovich <rathamahata@gmail.com> wrote:
->>
->>> patches 1,2(latest one) have not helped me on 3.9.5:
->>
->> So v1:
->> https://patchwork.kernel.org/patch/2694981/
->> https://patchwork.kernel.org/patch/2694971/
->>
->> and v2:
->> https://patchwork.kernel.org/patch/2695891/
->> https://patchwork.kernel.org/patch/2695881/
->>
->> Neither of two versions fix the problem on your setup?
->>
->> Can you post boot log with mtrr_cleanup_debug on 3.9.4?
->>
->> Thanks
->>
->> Yinghai
->
-> I got some warnings when trying to build v2 of the patches:
->
-> # make -s ARCH=x86_64 V=1 -j4 bzImage
-> kernel/range.c: In function 'add_range_with_merge':
-> kernel/range.c:51:3: error: implicit declaration of function 'memmove'
-> [-Werror=implicit-function-declaration]
-> kernel/range.c:51:3: warning: incompatible implicit declaration of
-> built-in function 'memmove' [enabled by default]
-> cc1: some warnings being treated as errors
-> scripts/Makefile.build:307: recipe for target 'kernel/range.o' failed
-> make[1]: *** [kernel/range.o] Error 1
-> Makefile:793: recipe for target 'kernel' failed
-> make: *** [kernel] Error 2
-> make: *** Waiting for unfinished jobs....
->
->
-> --
-> --joshua
+On Mon, Jun 10, 2013 at 05:51:14PM -0700, Linus Torvalds wrote:
+> On Mon, Jun 10, 2013 at 5:44 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >
+> > OK, I haven't found a issue here yet, but youss are beiing trickssy! We
+> > don't like trickssy, and we must find precccciouss!!!
 
-A trivial fix for the above warnings:
+Heh!  You should see what it looks like if you make slightly different
+design decisions.  For example, just you try switching back from queued
+to ticket mode while there are still CPUs spinning on the lock!  ;-)
 
---- linux-2.6.orig/kernel/range.c
-+++ linux-2.6/kernel/range.c
-@@ -4,6 +4,7 @@
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/sort.h>
-+#include <linux/string.h>
+> .. and I personally have my usual reservations. I absolutely hate
+> papering over scalability issues, and historically whenever people
+> have ever thought that we want complex spinlocks, the problem has
+> always been that the locking sucks.
+> 
+> So reinforced by previous events, I really feel that code that needs
+> this kind of spinlock is broken and needs to be fixed, rather than
+> actually introduce tricky spinlocks.
 
- #include <linux/range.h>
+If the only effect of this patch submission is to give people a bit more
+motivation to solve the underlying lock-contention problems, I am happy.
 
+> So in order to merge something like this, I want (a) numbers for real
+> loads and (b) explanations for why the spinlock users cannot be fixed.
+> 
+> Because "we might hit loads" is just not good enough. I would counter
+> with "hiding problems causes more of them".
 
+Agreed.  As I said in the first paragraph of the commit log:
 
---
---joshua
+	... if we must have high-contention locks, why not make them
+	automatically switch between light-weight ticket locks at low
+	contention and queued locks at high contention?
+
+The reason that I created this patch was that I was seeing people
+arguing for locks optimized for high contention, and the ones that I
+saw required the developer to predict which locks would encounter high
+levels of contention.  Changes in workloads would of course invalidate
+those predictions.
+
+But again, if the only effect of this patch submission is to give people
+a bit more motivation to solve the underlying lock-contention problems,
+I am happy.
+
+							Thanx, Paul
+
