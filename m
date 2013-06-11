@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756533Ab3FKV5O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 17:57:14 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:43334 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754941Ab3FKV5L (ORCPT
+	id S1756518Ab3FKWAo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 18:00:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43315 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657Ab3FKWAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 17:57:11 -0400
-Date: Tue, 11 Jun 2013 14:57:08 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] memcg: do not sleep on OOM waitqueue with full charge
- context
-In-Reply-To: <20130607000222.GT15576@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1306111454030.4803@chino.kir.corp.google.com>
-References: <1370488193-4747-1-git-send-email-hannes@cmpxchg.org> <1370488193-4747-2-git-send-email-hannes@cmpxchg.org> <alpine.DEB.2.02.1306052058340.25115@chino.kir.corp.google.com> <20130606053315.GB9406@cmpxchg.org> <20130606173355.GB27226@cmpxchg.org>
- <alpine.DEB.2.02.1306061308320.9493@chino.kir.corp.google.com> <20130606215425.GM15721@cmpxchg.org> <alpine.DEB.2.02.1306061507330.15503@chino.kir.corp.google.com> <20130607000222.GT15576@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 11 Jun 2013 18:00:43 -0400
+Date: Tue, 11 Jun 2013 15:00:41 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, riel@redhat.com, walken@google.com,
+        linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] ipc: don't allocate with GFP_KERNEL inside rcu read
+ lock
+Message-Id: <20130611150041.18036ca0597e100a1b4fb2a2@linux-foundation.org>
+In-Reply-To: <1370885029.1795.7.camel@buesod1.americas.hpqcorp.net>
+References: <1370880870-23833-1-git-send-email-sasha.levin@oracle.com>
+	<1370885029.1795.7.camel@buesod1.americas.hpqcorp.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Jun 2013, Johannes Weiner wrote:
+On Mon, 10 Jun 2013 10:23:49 -0700 Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
 
-> > Could you point me to those bug reports?  As far as I know, we have never 
-> > encountered them so it would be surprising to me that we're running with a 
-> > potential landmine and have seemingly never hit it.
+> On Mon, 2013-06-10 at 12:14 -0400, Sasha Levin wrote:
+> > ipc_addid() is protected by a rcu read lock, which means we can't allocate
+> > using GFP_KERNEL inside it.
+> > 
+> > Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> > ---
+> > 
+> > Another option would be to call idr_preload from outside the read lock,
+> > but that complicates the code much more than this fix. If that's the
+> > preferred method to fix it I can resend that solution instead.
+> > 
 > 
-> Sure thing: https://lkml.org/lkml/2012/11/21/497
+> This issue was reported last week by Fengguang
+> (http://www.spinics.net/lists/kernel/msg1545633.html#.UbYI9qqdmV8)
 > 
+> Your fix looks the simplest approach, but I'm not sure if doing the
+> atomic allocation would trigger some other problem, as a side effect.
+> Andrew?
 
-Ok, I think I read most of it, although the lkml.org interface makes it 
-easy to miss some.
+It will fix the issue.  But GFP_ATOMIC is much less reliable than
+GFP_KERNEL and such a switch should be viewed as a lame act of last
+resort.
 
-> During that thread Michal pinned down the problem to i_mutex being
-> held by the OOM invoking task, which the selected victim is trying to
-> acquire.
-> 
-> > > > > Reported-by: Reported-by: azurIt <azurit@pobox.sk>
+> A third option would be to simply revert the offending commit, leaving
+> the rcu locking as it originally was.
 
-Ok, so the key here is that azurIt was able to reliably reproduce this 
-issue and now it has been resurrected after seven months of silence since 
-that thread.  I also notice that azurIt isn't cc'd on this thread.  Do we 
-know if this is still a problem?
+That patch has other issues, as I described yesterday.  But there are
+ten follow-on patches to that one and I assume that dropping
+ipc-move-rcu-lock-out-of-ipc_addid.patch will create a mess.  It will
+also create a combination which hasn't been tested by anyone.
 
-We certainly haven't run into any memcg deadlocks like this.
-
-> > It certainly would, but it's not the point that memory.oom_delay_millisecs 
-> > was intended to address.  memory.oom_delay_millisecs would simply delay 
-> > calling mem_cgroup_out_of_memory() unless userspace can't free memory or 
-> > increase the memory limit in time.  Obviously that delay isn't going to 
-> > magically address any lock dependency issues.
-> 
-> The delayed fallback would certainly resolve the issue of the
-> userspace handler getting stuck, be it due to memory shortness or due
-> to locks.
-> 
-> However, it would not solve the part of the problem where the OOM
-> killing kernel task is holding locks that the victim requires to exit.
-> 
-
-Right.
-
-> We are definitely looking at multiple related issues, that's why I'm
-> trying to fix them step by step.
-> 
-
-I guess my question is why this would be addressed now when nobody has 
-reported it recently on any recent kernel and then not cc the person who 
-reported it?
-
-Can anybody, even with an instrumented kernel to make it more probable, 
-reproduce the issue this is addressing?
