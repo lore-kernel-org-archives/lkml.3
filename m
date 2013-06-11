@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840Ab3FKUEU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:04:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42044 "EHLO
+	id S1756927Ab3FKUGt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:06:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42060 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756710Ab3FKUER (ORCPT
+	with ESMTP id S1756837Ab3FKUET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:04:17 -0400
+	Tue, 11 Jun 2013 16:04:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
-Subject: [ 63/79] powerpc: Set default VGA device
-Date: Tue, 11 Jun 2013 13:03:29 -0700
-Message-Id: <20130611195324.355968703@linuxfoundation.org>
+        Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 67/79] radeon: use max_bus_speed to activate gen2 speeds
+Date: Tue, 11 Jun 2013 13:03:33 -0700
+Message-Id: <20130611195324.856071642@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -28,51 +27,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian King <brking@linux.vnet.ibm.com>
+From: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
 
-commit c2e1d84523ad2a19e5be08c1f01999cc9e82652e upstream.
+commit 7e0e41963740525af702bb23edede8ae9afc4ac0 upstream.
 
-Add a PCI quirk for VGA devices on Power to set the default VGA device.
-Ensures a default VGA is always set if a graphics adapter is present,
-even if firmware did not initialize it. If more than one graphics
-adapter is present, ensure the one initialized by firmware is set
-as the default VGA device. This ensures that X autoconfiguration
-will work.
+radeon currently uses a drm function to get the speed capabilities for
+the bus, drm_pcie_get_speed_cap_mask. However, this is a non-standard
+method of performing this detection and this patch changes it to use
+the max_bus_speed attribute.
 
-Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+From: Lucas Kannebley Tavares <lucaskt@linux.vnet.ibm.com>
 Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/pci-common.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/gpu/drm/radeon/evergreen.c |   10 +++-------
+ drivers/gpu/drm/radeon/r600.c      |    9 ++-------
+ drivers/gpu/drm/radeon/rv770.c     |    9 ++-------
+ 3 files changed, 7 insertions(+), 21 deletions(-)
 
---- a/arch/powerpc/kernel/pci-common.c
-+++ b/arch/powerpc/kernel/pci-common.c
-@@ -30,6 +30,7 @@
- #include <linux/irq.h>
- #include <linux/vmalloc.h>
- #include <linux/slab.h>
-+#include <linux/vgaarb.h>
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -3946,8 +3946,7 @@ void evergreen_fini(struct radeon_device
  
- #include <asm/processor.h>
- #include <asm/io.h>
-@@ -1725,3 +1726,15 @@ static void fixup_hide_host_resource_fsl
- }
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MOTOROLA, PCI_ANY_ID, fixup_hide_host_resource_fsl);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_FREESCALE, PCI_ANY_ID, fixup_hide_host_resource_fsl);
-+
-+static void fixup_vga(struct pci_dev *pdev)
-+{
-+	u16 cmd;
-+
-+	pci_read_config_word(pdev, PCI_COMMAND, &cmd);
-+	if ((cmd & (PCI_COMMAND_IO | PCI_COMMAND_MEMORY)) || !vga_default_device())
-+		vga_set_default_device(pdev);
-+
-+}
-+DECLARE_PCI_FIXUP_CLASS_FINAL(PCI_ANY_ID, PCI_ANY_ID,
-+			      PCI_CLASS_DISPLAY_VGA, 8, fixup_vga);
+ void evergreen_pcie_gen2_enable(struct radeon_device *rdev)
+ {
+-	u32 link_width_cntl, speed_cntl, mask;
+-	int ret;
++	u32 link_width_cntl, speed_cntl;
+ 
+ 	if (radeon_pcie_gen2 == 0)
+ 		return;
+@@ -3962,11 +3961,8 @@ void evergreen_pcie_gen2_enable(struct r
+ 	if (ASIC_IS_X2(rdev))
+ 		return;
+ 
+-	ret = drm_pcie_get_speed_cap_mask(rdev->ddev, &mask);
+-	if (ret != 0)
+-		return;
+-
+-	if (!(mask & DRM_PCIE_SPEED_50))
++	if ((rdev->pdev->bus->max_bus_speed != PCIE_SPEED_5_0GT) &&
++		(rdev->pdev->bus->max_bus_speed != PCIE_SPEED_8_0GT))
+ 		return;
+ 
+ 	speed_cntl = RREG32_PCIE_P(PCIE_LC_SPEED_CNTL);
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -4353,8 +4353,6 @@ static void r600_pcie_gen2_enable(struct
+ {
+ 	u32 link_width_cntl, lanes, speed_cntl, training_cntl, tmp;
+ 	u16 link_cntl2;
+-	u32 mask;
+-	int ret;
+ 
+ 	if (radeon_pcie_gen2 == 0)
+ 		return;
+@@ -4373,11 +4371,8 @@ static void r600_pcie_gen2_enable(struct
+ 	if (rdev->family <= CHIP_R600)
+ 		return;
+ 
+-	ret = drm_pcie_get_speed_cap_mask(rdev->ddev, &mask);
+-	if (ret != 0)
+-		return;
+-
+-	if (!(mask & DRM_PCIE_SPEED_50))
++	if ((rdev->pdev->bus->max_bus_speed != PCIE_SPEED_5_0GT) &&
++		(rdev->pdev->bus->max_bus_speed != PCIE_SPEED_8_0GT))
+ 		return;
+ 
+ 	speed_cntl = RREG32_PCIE_P(PCIE_LC_SPEED_CNTL);
+--- a/drivers/gpu/drm/radeon/rv770.c
++++ b/drivers/gpu/drm/radeon/rv770.c
+@@ -1240,8 +1240,6 @@ static void rv770_pcie_gen2_enable(struc
+ {
+ 	u32 link_width_cntl, lanes, speed_cntl, tmp;
+ 	u16 link_cntl2;
+-	u32 mask;
+-	int ret;
+ 
+ 	if (radeon_pcie_gen2 == 0)
+ 		return;
+@@ -1256,11 +1254,8 @@ static void rv770_pcie_gen2_enable(struc
+ 	if (ASIC_IS_X2(rdev))
+ 		return;
+ 
+-	ret = drm_pcie_get_speed_cap_mask(rdev->ddev, &mask);
+-	if (ret != 0)
+-		return;
+-
+-	if (!(mask & DRM_PCIE_SPEED_50))
++	if ((rdev->pdev->bus->max_bus_speed != PCIE_SPEED_5_0GT) &&
++		(rdev->pdev->bus->max_bus_speed != PCIE_SPEED_8_0GT))
+ 		return;
+ 
+ 	DRM_INFO("enabling PCIE gen 2 link speeds, disable with radeon.pcie_gen2=0\n");
 
 
