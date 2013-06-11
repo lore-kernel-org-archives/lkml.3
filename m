@@ -1,88 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638Ab3FKPXC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 11:23:02 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:56702 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752478Ab3FKPW6 (ORCPT
+	id S1754649Ab3FKPXW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 11:23:22 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:56442 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752857Ab3FKPXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 11:22:58 -0400
-From: Robert Richter <rric@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Robert Richter <robert.richter@linaro.org>,
-        Jiri Olsa <jolsa@redhat.com>, Robert Richter <rric@kernel.org>
-Subject: [PATCH] perf tools: Fix build errors with O and DESTDIR make vars set
-Date: Tue, 11 Jun 2013 17:22:38 +0200
-Message-Id: <1370964158-4135-1-git-send-email-rric@kernel.org>
-X-Mailer: git-send-email 1.8.1.1
+	Tue, 11 Jun 2013 11:23:21 -0400
+Date: Tue, 11 Jun 2013 15:23:19 +0000
+From: Christoph Lameter <cl@gentwo.org>
+To: Pekka Enberg <penberg@kernel.org>
+cc: Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] slab: prevent warnings when allocating with
+ __GFP_NOWARN
+In-Reply-To: <51B73F38.6040802@kernel.org>
+Message-ID: <0000013f33d58923-88767793-2187-476d-b500-dba3c22607aa-000000@email.amazonses.com>
+References: <1370891880-2644-1-git-send-email-sasha.levin@oracle.com> <CAOJsxLGDH2iwznRkP-iwiMZw7Ee3mirhjLvhShrWLHR0qguRxA@mail.gmail.com> <51B62F6B.8040308@oracle.com> <0000013f3075f90d-735942a8-b4b8-413f-a09e-57d1de0c4974-000000@email.amazonses.com>
+ <51B67553.6020205@oracle.com> <CAOJsxLH56xqCoDikYYaY_guqCX=S4rcVfDJQ4ki=r-PkNQW9ug@mail.gmail.com> <51B72323.8040207@oracle.com> <0000013f33cdc631-eadb07d1-ef08-4e2c-a218-1997eb86cde9-000000@email.amazonses.com> <51B73F38.6040802@kernel.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Richter <robert.richter@linaro.org>
+On Tue, 11 Jun 2013, Pekka Enberg wrote:
 
-Fixing build errors with O and DESTDIR make vars set:
+> So you're OK with going forward with Sasha's patch? It's needed
+> because __GFP_NOWARN was specifically added there to fix this
+> issue earlier.
 
- $ make prefix=/usr/local O=$builddir DESTDIR=$destdir -C tools/ perf
- ...
- make[1]: Entering directory `.../.source/perf/tools/perf'
-     CC .../.build/perf/perf/util/parse-events.o
- util/parse-events.c:14:32: fatal error: parse-events-bison.h: No such file or directory
- compilation terminated.
- make[1]: *** [.../.build/perf/perf/util/parse-events.o] Error 1
- ...
-
-and:
-
-     LINK /.../.build/perf/perf/perf
- gcc: error: /.../.build/perf/perf//.../.source/perf/tools/lib/lk/liblk.a: No such file or directory
-
-Cc: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Robert Richter <robert.richter@linaro.org>
-Signed-off-by: Robert Richter <rric@kernel.org>
----
- tools/perf/Makefile        | 5 ++---
- tools/perf/config/Makefile | 2 +-
- 2 files changed, 3 insertions(+), 4 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 203cb0e..641fccd 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -121,17 +121,16 @@ SCRIPT_SH += perf-archive.sh
- grep-libs = $(filter -l%,$(1))
- strip-libs = $(filter-out -l%,$(1))
- 
--LK_PATH=$(LK_DIR)
--
- ifneq ($(OUTPUT),)
-   TE_PATH=$(OUTPUT)
- ifneq ($(subdir),)
--  LK_PATH=$(OUTPUT)$(LK_DIR)
-+  LK_PATH=$(objtree)/lib/lk/
- else
-   LK_PATH=$(OUTPUT)
- endif
- else
-   TE_PATH=$(TRACE_EVENT_DIR)
-+  LK_PATH=$(LK_DIR)
- endif
- 
- LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index f139dcd..f446895 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -39,7 +39,7 @@ src-perf := $(srctree)/tools/perf
- endif
- 
- ifeq ($(obj-perf),)
--obj-perf := $(objtree)
-+obj-perf := $(OUTPUT)
- endif
- 
- ifneq ($(obj-perf),)
--- 
-1.8.1.1
+Why dont we fix the call site to use vmalloc instead for larger allocs?
 
