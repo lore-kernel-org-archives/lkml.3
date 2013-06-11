@@ -1,160 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020Ab3FKLcT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:32:19 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:38441 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754931Ab3FKLcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:32:15 -0400
-From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-To: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v3 6/7] arm: add debug uarts for rockchip rk29xx and rk3xxx series
-Date: Tue, 11 Jun 2013 13:32:07 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>
-References: <201306111328.52679.heiko@sntech.de>
-In-Reply-To: <201306111328.52679.heiko@sntech.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306111332.08104.heiko@sntech.de>
+	id S1755080Ab3FKLcy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:32:54 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33466 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849Ab3FKLbs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 07:31:48 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 09/22] iio/ti_am335x_adc: remove platform_data support
+Date: Tue, 11 Jun 2013 13:30:55 +0200
+Message-Id: <1370950268-7224-10-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
+References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Uarts on all recent Rockchip SoCs are Synopsis DesignWare 8250 types.
-Only their addresses vary very much.
+This patch removes access to platform data mfd_tscadc_board because the
+platform is DT only.
 
-This patch adds the necessary definitions to use any of the uart ports
-for early debug purposes.
-
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Acked-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- arch/arm/Kconfig.debug            |   34 +++++++++++++++++++++++++++++
- arch/arm/include/debug/rockchip.S |   42 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 76 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/include/debug/rockchip.S
+ drivers/iio/adc/ti_am335x_adc.c |   21 +++++++--------------
+ 1 file changed, 7 insertions(+), 14 deletions(-)
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 29f7623..2060cd5 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -360,6 +360,13 @@ choice
- 		  their output to the standard serial port on the RealView
- 		  PB1176 platform.
+diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+index b24402c..2868c0c 100644
+--- a/drivers/iio/adc/ti_am335x_adc.c
++++ b/drivers/iio/adc/ti_am335x_adc.c
+@@ -26,7 +26,6 @@
+ #include <linux/of_device.h>
  
-+	config DEBUG_ROCKCHIP_UART
-+		bool "Kernel low-level debugging messages via Rockchip UART"
-+		depends on ARCH_ROCKCHIP
-+		help
-+		  Say Y here if you want kernel low-level debugging support
-+		  on Rockchip based platforms.
-+
- 	config DEBUG_S3C_UART0
- 		depends on PLAT_SAMSUNG
- 		select DEBUG_EXYNOS_UART if ARCH_EXYNOS
-@@ -597,6 +604,32 @@ endchoice
+ #include <linux/mfd/ti_am335x_tscadc.h>
+-#include <linux/platform_data/ti_am335x_adc.h>
  
- choice
- 	prompt "Low-level debug console UART"
-+	depends on DEBUG_ROCKCHIP_UART
-+
-+	config DEBUG_RK29_UART0
-+		bool "RK29 UART0"
-+
-+	config DEBUG_RK29_UART1
-+		bool "RK29 UART1"
-+
-+	config DEBUG_RK29_UART2
-+		bool "RK29 UART2"
-+
-+	config DEBUG_RK3X_UART0
-+		bool "RK3X UART0"
-+
-+	config DEBUG_RK3X_UART1
-+		bool "RK3X UART1"
-+
-+	config DEBUG_RK3X_UART2
-+		bool "RK3X UART2"
-+
-+	config DEBUG_RK3X_UART3
-+		bool "RK3X UART3"
-+endchoice
-+
-+choice
-+	prompt "Low-level debug console UART"
- 	depends on DEBUG_LL && DEBUG_TEGRA_UART
+ struct tiadc_device {
+ 	struct ti_tscadc_dev *mfd_tscadc;
+@@ -153,14 +152,12 @@ static int tiadc_probe(struct platform_device *pdev)
+ {
+ 	struct iio_dev		*indio_dev;
+ 	struct tiadc_device	*adc_dev;
+-	struct ti_tscadc_dev	*tscadc_dev = ti_tscadc_dev_get(pdev);
+-	struct mfd_tscadc_board	*pdata = tscadc_dev->dev->platform_data;
+ 	struct device_node	*node = pdev->dev.of_node;
+ 	int			err;
+ 	u32			val32;
  
- 	config TEGRA_DEBUG_UART_AUTO_ODMDATA
-@@ -648,6 +681,7 @@ config DEBUG_LL_INCLUDE
- 	default "debug/picoxcell.S" if DEBUG_PICOXCELL_UART
- 	default "debug/pxa.S" if DEBUG_PXA_UART1 || DEBUG_MMP_UART2 || \
- 				 DEBUG_MMP_UART3
-+	default "debug/rockchip.S" if DEBUG_ROCKCHIP_UART
- 	default "debug/sirf.S" if DEBUG_SIRFPRIMA2_UART1 || DEBUG_SIRFMARCO_UART1
- 	default "debug/socfpga.S" if DEBUG_SOCFPGA_UART
- 	default "debug/sunxi.S" if DEBUG_SUNXI_UART0 || DEBUG_SUNXI_UART1
-diff --git a/arch/arm/include/debug/rockchip.S b/arch/arm/include/debug/rockchip.S
-new file mode 100644
-index 0000000..cfd883e
---- /dev/null
-+++ b/arch/arm/include/debug/rockchip.S
-@@ -0,0 +1,42 @@
-+/*
-+ * Early serial output macro for Rockchip SoCs
-+ *
-+ * Copyright (C) 2012 Maxime Ripard
-+ *
-+ * Maxime Ripard <maxime.ripard@free-electrons.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+*/
-+
-+#if defined(CONFIG_DEBUG_RK29_UART0)
-+#define ROCKCHIP_UART_DEBUG_PHYS_BASE 0x20060000
-+#define ROCKCHIP_UART_DEBUG_VIRT_BASE 0xfed60000
-+#elif defined(CONFIG_DEBUG_RK29_UART1)
-+#define ROCKCHIP_UART_DEBUG_PHYS_BASE 0x20064000
-+#define ROCKCHIP_UART_DEBUG_VIRT_BASE 0xfed64000
-+#elif defined(CONFIG_DEBUG_RK29_UART2)
-+#define ROCKCHIP_UART_DEBUG_PHYS_BASE 0x20068000
-+#define ROCKCHIP_UART_DEBUG_VIRT_BASE 0xfed68000
-+#elif defined(CONFIG_DEBUG_RK3X_UART0)
-+#define ROCKCHIP_UART_DEBUG_PHYS_BASE 0x10124000
-+#define ROCKCHIP_UART_DEBUG_VIRT_BASE 0xfeb24000
-+#elif defined(CONFIG_DEBUG_RK3X_UART1)
-+#define ROCKCHIP_UART_DEBUG_PHYS_BASE 0x10126000
-+#define ROCKCHIP_UART_DEBUG_VIRT_BASE 0xfeb26000
-+#elif defined(CONFIG_DEBUG_RK3X_UART2)
-+#define ROCKCHIP_UART_DEBUG_PHYS_BASE 0x20064000
-+#define ROCKCHIP_UART_DEBUG_VIRT_BASE 0xfed64000
-+#elif defined(CONFIG_DEBUG_RK3X_UART3)
-+#define ROCKCHIP_UART_DEBUG_PHYS_BASE 0x20068000
-+#define ROCKCHIP_UART_DEBUG_VIRT_BASE 0xfed68000
-+#endif
-+
-+	.macro	addruart, rp, rv, tmp
-+	ldr	\rp, =ROCKCHIP_UART_DEBUG_PHYS_BASE
-+	ldr	\rv, =ROCKCHIP_UART_DEBUG_VIRT_BASE
-+	.endm
-+
-+#define UART_SHIFT	2
-+#include <asm/hardware/debug-8250.S>
+-	if (!pdata && !node) {
+-		dev_err(&pdev->dev, "Could not find platform data\n");
++	if (!node) {
++		dev_err(&pdev->dev, "Could not find valid DT data.\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -174,15 +171,11 @@ static int tiadc_probe(struct platform_device *pdev)
+ 
+ 	adc_dev->mfd_tscadc = ti_tscadc_dev_get(pdev);
+ 
+-	if (pdata)
+-		adc_dev->channels = pdata->adc_init->adc_channels;
+-	else {
+-		err = of_property_read_u32(node,
+-				"ti,adc-channels", &val32);
+-		if (err < 0)
+-			goto err_free_device;
+-		adc_dev->channels = val32;
+-	}
++	err = of_property_read_u32(node,
++			"ti,adc-channels", &val32);
++	if (err < 0)
++		goto err_free_device;
++	adc_dev->channels = val32;
+ 
+ 	indio_dev->dev.parent = &pdev->dev;
+ 	indio_dev->name = dev_name(&pdev->dev);
 -- 
-1.7.2.3
+1.7.10.4
 
