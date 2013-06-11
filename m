@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756298Ab3FKUiR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:38:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41622 "EHLO
+	id S1757543Ab3FKUij (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:38:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41620 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756168Ab3FKUCz (ORCPT
+	with ESMTP id S1756038Ab3FKUCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:02:55 -0400
+	Tue, 11 Jun 2013 16:02:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 11/21] USB: mos7720: fix message timeouts
-Date: Tue, 11 Jun 2013 13:03:05 -0700
-Message-Id: <20130611195521.326559587@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung@kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: [ 21/21] ftrace: Move ftrace_filter_lseek out of CONFIG_DYNAMIC_FTRACE section
+Date: Tue, 11 Jun 2013 13:03:15 -0700
+Message-Id: <20130611195522.489019732@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195520.003233586@linuxfoundation.org>
 References: <20130611195520.003233586@linuxfoundation.org>
@@ -26,48 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
 
-commit 849513a7809175420d353625b6f651d961e99d49 upstream.
+From: Steven Rostedt <rostedt@goodmis.org>
 
-The control and bulk-message timeouts are specified in milliseconds and
-should not depend on HZ.
+commit 7f49ef69db6bbf756c0abca7e9b65b32e999eec8 upstream.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+As ftrace_filter_lseek is now used with ftrace_pid_fops, it needs to
+be moved out of the #ifdef CONFIG_DYNAMIC_FTRACE section as the
+ftrace_pid_fops is defined when DYNAMIC_FTRACE is not.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+[ lizf: adjust context ]
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/serial/mos7720.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ kernel/trace/ftrace.c |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
---- a/drivers/usb/serial/mos7720.c
-+++ b/drivers/usb/serial/mos7720.c
-@@ -44,7 +44,7 @@
- #define DRIVER_DESC "Moschip USB Serial Driver"
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -933,6 +933,19 @@ static __init void ftrace_profile_debugf
  
- /* default urb timeout */
--#define MOS_WDR_TIMEOUT	(HZ * 5)
-+#define MOS_WDR_TIMEOUT	5000
+ static struct pid * const ftrace_swapper_pid = &init_struct_pid;
  
- #define MOS_MAX_PORT	0x02
- #define MOS_WRITE	0x0E
-@@ -2124,7 +2124,7 @@ static int mos7720_startup(struct usb_se
++static loff_t
++ftrace_filter_lseek(struct file *file, loff_t offset, int whence)
++{
++	loff_t ret;
++
++	if (file->f_mode & FMODE_READ)
++		ret = seq_lseek(file, offset, whence);
++	else
++		file->f_pos = ret = 1;
++
++	return ret;
++}
++
+ #ifdef CONFIG_DYNAMIC_FTRACE
  
- 	/* setting configuration feature to one */
- 	usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
--			(__u8)0x03, 0x00, 0x01, 0x00, NULL, 0x00, 5*HZ);
-+			(__u8)0x03, 0x00, 0x01, 0x00, NULL, 0x00, 5000);
+ #ifndef CONFIG_FTRACE_MCOUNT_RECORD
+@@ -2299,19 +2312,6 @@ ftrace_notrace_open(struct inode *inode,
+ 				 inode, file);
+ }
  
- 	/* start the interrupt urb */
- 	ret_val = usb_submit_urb(serial->port[0]->interrupt_in_urb, GFP_KERNEL);
-@@ -2169,7 +2169,7 @@ static void mos7720_release(struct usb_s
- 		/* wait for synchronous usb calls to return */
- 		if (mos_parport->msg_pending)
- 			wait_for_completion_timeout(&mos_parport->syncmsg_compl,
--						    MOS_WDR_TIMEOUT);
-+					    msecs_to_jiffies(MOS_WDR_TIMEOUT));
- 
- 		parport_remove_port(mos_parport->pp);
- 		usb_set_serial_data(serial, NULL);
+-static loff_t
+-ftrace_filter_lseek(struct file *file, loff_t offset, int origin)
+-{
+-	loff_t ret;
+-
+-	if (file->f_mode & FMODE_READ)
+-		ret = seq_lseek(file, offset, origin);
+-	else
+-		file->f_pos = ret = 1;
+-
+-	return ret;
+-}
+-
+ static int ftrace_match(char *str, char *regex, int len, int type)
+ {
+ 	int matched = 0;
 
 
