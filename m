@@ -1,725 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab3FKRjF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 13:39:05 -0400
-Received: from mail1.bemta12.messagelabs.com ([216.82.251.9]:18861 "EHLO
-	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754083Ab3FKRjD (ORCPT
+	id S1755905Ab3FKRor (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 13:44:47 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:53619 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754869Ab3FKRoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 13:39:03 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-12.tower-127.messagelabs.com!1370972326!8645014!11
-X-Originating-IP: [216.166.12.72]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.6; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH v5] pwm: add sysfs interface
-Date: Tue, 11 Jun 2013 10:38:59 -0700
-User-Agent: KMail/1.9.9
-CC: <linux-pwm@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <thierry.reding@gmail.com>, <poeschel@lemonage.de>,
-        Ryan Mallon <rmallon@gmail.com>, <rob@landley.net>
+	Tue, 11 Jun 2013 13:44:46 -0400
+Date: Tue, 11 Jun 2013 10:43:40 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Waiman Long <waiman.long@hp.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, torvalds@linux-foundation.org
+Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
+Message-ID: <20130611174340.GP5146@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130609193657.GA13392@linux.vnet.ibm.com>
+ <51B748DA.2070306@hp.com>
+ <1370967632.9844.182.camel@gandalf.local.home>
+ <20130611164313.GH5146@linux.vnet.ibm.com>
+ <1370970833.9844.200.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-ID: <201306111039.00344.hartleys@visionengravers.com>
+In-Reply-To: <1370970833.9844.200.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061117-7606-0000-0000-00000C602748
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a simple sysfs interface to the generic PWM framework.
+On Tue, Jun 11, 2013 at 01:13:53PM -0400, Steven Rostedt wrote:
+> On Tue, 2013-06-11 at 09:43 -0700, Paul E. McKenney wrote:
+> 
+> > > > I am a bit concern about the size of the head queue table itself. RHEL6, 
+> > > > for example, had defined CONFIG_NR_CPUS to be 4096 which mean a table 
+> > > > size of 256. Maybe it is better to dynamically allocate the table at 
+> > > > init time depending on the actual number of CPUs in the system.
+> > > 
+> > > Yeah, it can be allocated dynamically at boot.
+> > 
+> > But let's first demonstrate the need.  Keep in mind that an early-boot
+> > deadlock would exercise this code.
+> 
+> I think an early-boot deadlock has more problems than this :-)
+> 
+> Now if we allocate this before other CPUs are enabled, there's no need
+> to worry about accessing it before they are used. They can only be used
+> on contention, and there would be no contention when we are only running
+> on one CPU.
+> 
+> >   Yes, it is just a check for NULL,
+> > but on the other hand I didn't get the impression that you thought that
+> > this code was too simple.  ;-)
+> 
+> I wouldn't change the code that uses it. It should never be hit, and if
+> it is triggered by an early boot deadlock, then I think this would
+> actually be a plus. An early boot deadlock would cause the system to
+> hang with no feedback whats so ever, causing the developer hours of
+> crying for mommy and pulling out their hair because the system just
+> stops doing anything except to show the developer a blinking cursor that
+> blinks "haha, haha, haha".
+> 
+> But if an early boot deadlock were to cause this code to be triggered
+> and do a NULL pointer dereference, then the system crashes. It would
+> most likely produce a backtrace that will give a lot more information to
+> the developer to see what is happening here. Sure, it may confuse them
+> at first, but then they can say: "why is this code triggering before we
+> have other CPUS? Oh, I have a deadlock here" and go fix the code in a
+> matter of minutes instead of hours.
+> 
+> Note, I don't even see this triggering with an early boot deadlock. The
+> only way that can happen is if the task tries to take a spinlock it
+> already owns, or an interrupt goes off and grabs a spinlock that the
+> task currently has but didn't disable interrupts. The ticket counter
+> would be just 2, which is far below the threshold that triggers the
+> queuing.
 
-  /sys/class/pwm/
-  `-- pwmchipN/           for each PWM chip
-      |-- export          (w/o) ask the kernel to export a PWM channel
-      |-- npwm            (r/o) number of PWM channels in this PWM chip
-      |-- pwmX/           for each exported PWM channel
-      |   |-- duty_cycle  (r/w) duty cycle (in nanoseconds)
-      |   |-- enable      (r/w) enable/disable PWM
-      |   |-- period      (r/w) period (in nanoseconds)
-      |   `-- polarity    (r/w) polarity of PWM (normal/inversed)
-      `-- unexport        (w/o) return a PWM channel to the kernel
+Fair point.  I suppose that the hapless kernel hacker could set
+the threshold really low for that case.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>
-Cc: Lars Poeschel <poeschel@lemonage.de>
-Cc: Ryan Mallon <rmallon@gmail.com>
-Cc: Rob Landley <rob@landley.net>
----
-v5: * rename the 'duty' attribute to 'duty_cycle'
-    * make the Kconfig option hidden and enabled when CONFIG_SYSFS
-      is enabled
-    * use sysfs_streq() in pwm_polarity_store()
-v4: * address a number of issues pointed out by Thierry Reding
-      - fix some typos and wording issues in the Documentation
-      - rename the new source file to sysfs.c
-      - rename some of the variables in sysfs.c to clarify them
-      - fix the period store so it does not change the duty cycle
-      - change the polarity attribute to use a string representation
-      - add a warning message is the pwmchip_sysfs_export() fails
-v3: * fix an issue with the export/unexport of the PWM chip
-v2: * add API documentation and update Documentation/pwm.txt
-    * fix some issues pointed out by Ryan Mallon
-    * add the pwm attributes to dev.groups so they are created
-      when the device is registered for the exported PWM
-v1: * Based on previous work by Lars Poecshel
+But we are talking about only 8192 bytes of memory here.  Is that really
+enough to worry about on current systems?
 
- Documentation/ABI/testing/sysfs-class-pwm |  79 +++++++
- Documentation/pwm.txt                     |  37 ++++
- drivers/pwm/Kconfig                       |   4 +
- drivers/pwm/Makefile                      |   1 +
- drivers/pwm/core.c                        |  25 ++-
- drivers/pwm/sysfs.c                       | 352 ++++++++++++++++++++++++++++++
- include/linux/pwm.h                       |  29 ++-
- 7 files changed, 524 insertions(+), 3 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-class-pwm
- create mode 100644 drivers/pwm/sysfs.c
-
-diff --git a/Documentation/ABI/testing/sysfs-class-pwm b/Documentation/ABI/testing/sysfs-class-pwm
-new file mode 100644
-index 0000000..c479d77
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-class-pwm
-@@ -0,0 +1,79 @@
-+What:		/sys/class/pwm/
-+Date:		May 2013
-+KernelVersion:	3.11
-+Contact:	H Hartley Sweeten <hsweeten@visionengravers.com>
-+Description:
-+		The pwm/ class sub-directory belongs to the Generic PWM
-+		Framework and provides a sysfs interface for using PWM
-+		channels.
-+
-+What:		/sys/class/pwm/pwmchipN/
-+Date:		May 2013
-+KernelVersion:	3.11
-+Contact:	H Hartley Sweeten <hsweeten@visionengravers.com>
-+Description:
-+		A /sys/class/pwm/pwmchipN directory is created for each
-+		probed PWM controller/chip where N is the base of the
-+		PWM chip.
-+
-+What:		/sys/class/pwm/pwmchipN/npwm
-+Date:		May 2013
-+KernelVersion:	3.11
-+Contact:	H Hartley Sweeten <hsweeten@visionengravers.com>
-+Description:
-+		The number of PWM channels supported by the PWM chip.
-+
-+What:		/sys/class/pwm/pwmchipN/export
-+Date:		May 2013
-+KernelVersion:	3.11
-+Contact:	H Hartley Sweeten <hsweeten@visionengravers.com>
-+Description:
-+		Exports a PWM channel from the PWM chip for sysfs control.
-+		Value is between 0 and /sys/class/pwm/pwmchipN/npwm - 1.
-+
-+What:		/sys/class/pwm/pwmchipN/unexport
-+Date:		May 2013
-+KernelVersion:	3.11
-+Contact:	H Hartley Sweeten <hsweeten@visionengravers.com>
-+Description:
-+		Unexports a PWM channel.
-+
-+What:		/sys/class/pwm/pwmchipN/pwmX
-+Date:		May 2013
-+KernelVersion:	3.11
-+Contact:	H Hartley Sweeten <hsweeten@visionengravers.com>
-+Description:
-+		A /sys/class/pwm/pwmchipN/pwmX directory is created for
-+		each exported PWM channel where X is the exported PWM
-+		channel number.
-+
-+What:		/sys/class/pwm/pwmchipN/pwmX/period
-+Date:		May 2013
-+KernelVersion:	3.11
-+Contact:	H Hartley Sweeten <hsweeten@visionengravers.com>
-+Description:
-+		Sets the PWM signal period in nanoseconds.
-+
-+What:		/sys/class/pwm/pwmchipN/pwmX/duty_cycle
-+Date:		May 2013
-+KernelVersion:	3.11
-+Contact:	H Hartley Sweeten <hsweeten@visionengravers.com>
-+Description:
-+		Sets the PWM signal duty cycle in nanoseconds.
-+
-+What:		/sys/class/pwm/pwmchipN/pwmX/polarity
-+Date:		May 2013
-+KernelVersion:	3.11
-+Contact:	H Hartley Sweeten <hsweeten@visionengravers.com>
-+Description:
-+		Sets the output polarity of the PWM signal to "normal" or
-+		"inversed".
-+
-+What:		/sys/class/pwm/pwmchipN/pwmX/enable
-+Date:		May 2013
-+KernelVersion:	3.11
-+Contact:	H Hartley Sweeten <hsweeten@visionengravers.com>
-+Description:
-+		Enable/disable the PWM signal.
-+		0 is disabled
-+		1 is enabled
-diff --git a/Documentation/pwm.txt b/Documentation/pwm.txt
-index 7d2b4c9..1039b68 100644
---- a/Documentation/pwm.txt
-+++ b/Documentation/pwm.txt
-@@ -45,6 +45,43 @@ int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns);
- 
- To start/stop toggling the PWM output use pwm_enable()/pwm_disable().
- 
-+Using PWMs with the sysfs interface
-+-----------------------------------
-+
-+If CONFIG_SYSFS is enabled in your kernel configuration a simple sysfs
-+interface is provided to use the PWMs from userspace. It is exposed at
-+/sys/class/pwm/. Each probed PWM controller/chip will be exported as
-+pwmchipN, where N is the base of the PWM chip. Inside the directory you
-+will find:
-+
-+npwm - The number of PWM channels this chip supports (read-only).
-+
-+export - Exports a PWM channel for use with sysfs (write-only).
-+
-+unexport - Unexports a PWM channel from sysfs (write-only).
-+
-+The PWM channels are numbered using a per-chip index from 0 to npwm-1.
-+
-+When a PWM channel is exported a pwmX directory will be created in the
-+pwmchipN directory it is associated with, where X is the number of the
-+channel that was exported. The following properties will then be available:
-+
-+period - The total period of the PWM signal (read/write).
-+	Value is in nanoseconds and is the sum of the active and inactive
-+	time of the PWM.
-+
-+duty_cycle - The active time of the PWM signal (read/write).
-+	Value is in nanoseconds and must be less than the period.
-+
-+polarity - Changes the polarity of the PWM signal (read/write).
-+	Writes to this property only work if the PWM chip supports changing
-+	the polarity. The polarity can only be changed if the PWM is not
-+	enabled. Value is the string "normal" or "inversed".
-+
-+enable - Enable/disable the PWM signal (read/write).
-+	0 - disabled
-+	1 - enabled
-+
- Implementing a PWM driver
- -------------------------
- 
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 115b644..43cd255 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -28,6 +28,10 @@ menuconfig PWM
- 
- if PWM
- 
-+config PWM_SYSFS
-+	bool
-+	default y if SYSFS
-+
- config PWM_AB8500
- 	tristate "AB8500 PWM support"
- 	depends on AB8500_CORE && ARCH_U8500
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index 94ba21e..a025439 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -1,4 +1,5 @@
- obj-$(CONFIG_PWM)		+= core.o
-+obj-$(CONFIG_PWM_SYSFS)		+= sysfs.o
- obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
- obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
- obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
-diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-index 32221cb..9e9f5b8 100644
---- a/drivers/pwm/core.c
-+++ b/drivers/pwm/core.c
-@@ -274,6 +274,8 @@ int pwmchip_add(struct pwm_chip *chip)
- 	if (IS_ENABLED(CONFIG_OF))
- 		of_pwmchip_add(chip);
- 
-+	pwmchip_sysfs_export(chip);
-+
- out:
- 	mutex_unlock(&pwm_lock);
- 	return ret;
-@@ -310,6 +312,8 @@ int pwmchip_remove(struct pwm_chip *chip)
- 
- 	free_pwms(chip);
- 
-+	pwmchip_sysfs_unexport(chip);
-+
- out:
- 	mutex_unlock(&pwm_lock);
- 	return ret;
-@@ -402,10 +406,19 @@ EXPORT_SYMBOL_GPL(pwm_free);
-  */
- int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
- {
-+	int err;
-+
- 	if (!pwm || duty_ns < 0 || period_ns <= 0 || duty_ns > period_ns)
- 		return -EINVAL;
- 
--	return pwm->chip->ops->config(pwm->chip, pwm, duty_ns, period_ns);
-+	err = pwm->chip->ops->config(pwm->chip, pwm, duty_ns, period_ns);
-+	if (err)
-+		return err;
-+
-+	pwm->duty_cycle = duty_ns;
-+	pwm->period = period_ns;
-+
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(pwm_config);
- 
-@@ -418,6 +431,8 @@ EXPORT_SYMBOL_GPL(pwm_config);
-  */
- int pwm_set_polarity(struct pwm_device *pwm, enum pwm_polarity polarity)
- {
-+	int err;
-+
- 	if (!pwm || !pwm->chip->ops)
- 		return -EINVAL;
- 
-@@ -427,7 +442,13 @@ int pwm_set_polarity(struct pwm_device *pwm, enum pwm_polarity polarity)
- 	if (test_bit(PWMF_ENABLED, &pwm->flags))
- 		return -EBUSY;
- 
--	return pwm->chip->ops->set_polarity(pwm->chip, pwm, polarity);
-+	err = pwm->chip->ops->set_polarity(pwm->chip, pwm, polarity);
-+	if (err)
-+		return err;
-+
-+	pwm->polarity = polarity;
-+
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(pwm_set_polarity);
- 
-diff --git a/drivers/pwm/sysfs.c b/drivers/pwm/sysfs.c
-new file mode 100644
-index 0000000..8ca5de3
---- /dev/null
-+++ b/drivers/pwm/sysfs.c
-@@ -0,0 +1,352 @@
-+/*
-+ * A simple sysfs interface for the generic PWM framework
-+ *
-+ * Copyright (C) 2013 H Hartley Sweeten <hsweeten@visionengravers.com>
-+ *
-+ * Based on previous work by Lars Poeschel <poeschel@lemonage.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2, or (at your option)
-+ * any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/mutex.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/kdev_t.h>
-+#include <linux/pwm.h>
-+
-+struct pwm_export {
-+	struct device child;
-+	struct pwm_device *pwm;
-+};
-+
-+static struct pwm_export *child_to_pwm_export(struct device *child)
-+{
-+	return container_of(child, struct pwm_export, child);
-+}
-+
-+static struct pwm_device *child_to_pwm_device(struct device *child)
-+{
-+	struct pwm_export *export = child_to_pwm_export(child);
-+
-+	return export->pwm;
-+}
-+
-+static ssize_t pwm_period_show(struct device *child,
-+			       struct device_attribute *attr,
-+			       char *buf)
-+{
-+	const struct pwm_device *pwm = child_to_pwm_device(child);
-+
-+	return sprintf(buf, "%u\n", pwm->period);
-+}
-+
-+static ssize_t pwm_period_store(struct device *child,
-+				struct device_attribute *attr,
-+				const char *buf, size_t size)
-+{
-+	struct pwm_device *pwm = child_to_pwm_device(child);
-+	unsigned int val;
-+	int ret;
-+
-+	ret = kstrtouint(buf, 0, &val);
-+	if (ret)
-+		return ret;
-+
-+	ret = pwm_config(pwm, pwm->duty_cycle, val);
-+
-+	return ret ? : size;
-+}
-+
-+static ssize_t pwm_duty_cycle_show(struct device *child,
-+				   struct device_attribute *attr,
-+				   char *buf)
-+{
-+	const struct pwm_device *pwm = child_to_pwm_device(child);
-+
-+	return sprintf(buf, "%u\n", pwm->duty_cycle);
-+}
-+
-+static ssize_t pwm_duty_cycle_store(struct device *child,
-+				    struct device_attribute *attr,
-+				    const char *buf, size_t size)
-+{
-+	struct pwm_device *pwm = child_to_pwm_device(child);
-+	unsigned int val;
-+	int ret;
-+
-+	ret = kstrtouint(buf, 0, &val);
-+	if (ret)
-+		return ret;
-+
-+	ret = pwm_config(pwm, val, pwm->period);
-+
-+	return ret ? : size;
-+}
-+
-+static ssize_t pwm_enable_show(struct device *child,
-+			       struct device_attribute *attr,
-+			       char *buf)
-+{
-+	const struct pwm_device *pwm = child_to_pwm_device(child);
-+	int enabled = test_bit(PWMF_ENABLED, &pwm->flags);
-+
-+	return sprintf(buf, "%d\n", enabled);
-+}
-+
-+static ssize_t pwm_enable_store(struct device *child,
-+				struct device_attribute *attr,
-+				const char *buf, size_t size)
-+{
-+	struct pwm_device *pwm = child_to_pwm_device(child);
-+	int val, ret;
-+
-+	ret = kstrtoint(buf, 0, &val);
-+	if (ret)
-+		return ret;
-+
-+	switch (val) {
-+	case 0:
-+		pwm_disable(pwm);
-+		break;
-+	case 1:
-+		ret = pwm_enable(pwm);
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
-+
-+	return ret ? : size;
-+}
-+
-+static ssize_t pwm_polarity_show(struct device *child,
-+				 struct device_attribute *attr,
-+				 char *buf)
-+{
-+	const struct pwm_device *pwm = child_to_pwm_device(child);
-+
-+	return sprintf(buf, "%s\n", pwm->polarity ? "inversed" : "normal");
-+}
-+
-+static ssize_t pwm_polarity_store(struct device *child,
-+				  struct device_attribute *attr,
-+				  const char *buf, size_t size)
-+{
-+	struct pwm_device *pwm = child_to_pwm_device(child);
-+	enum pwm_polarity polarity;
-+	int ret;
-+
-+	if (sysfs_streq(buf, "normal"))
-+		polarity = PWM_POLARITY_NORMAL;
-+	else if (sysfs_streq(buf, "inversed"))
-+		polarity = PWM_POLARITY_INVERSED;
-+	else
-+		return -EINVAL;
-+
-+	ret = pwm_set_polarity(pwm, polarity);
-+
-+	return ret ? : size;
-+}
-+
-+static DEVICE_ATTR(period, 0644, pwm_period_show, pwm_period_store);
-+static DEVICE_ATTR(duty_cycle, 0644, pwm_duty_cycle_show, pwm_duty_cycle_store);
-+static DEVICE_ATTR(enable, 0644, pwm_enable_show, pwm_enable_store);
-+static DEVICE_ATTR(polarity, 0644, pwm_polarity_show, pwm_polarity_store);
-+
-+static struct attribute *pwm_attrs[] = {
-+	&dev_attr_period.attr,
-+	&dev_attr_duty_cycle.attr,
-+	&dev_attr_enable.attr,
-+	&dev_attr_polarity.attr,
-+	NULL
-+};
-+
-+static const struct attribute_group pwm_attr_group = {
-+	.attrs		= pwm_attrs,
-+};
-+
-+static const struct attribute_group *pwm_attr_groups[] = {
-+	&pwm_attr_group,
-+	NULL,
-+};
-+
-+static void pwm_export_release(struct device *child)
-+{
-+	struct pwm_export *export = child_to_pwm_export(child);
-+
-+	kfree(export);
-+}
-+
-+static int pwm_export_child(struct device *parent, struct pwm_device *pwm)
-+{
-+	struct pwm_export *export;
-+	int ret;
-+
-+	if (test_and_set_bit(PWMF_EXPORTED, &pwm->flags))
-+		return -EBUSY;
-+
-+	export = kzalloc(sizeof(*export), GFP_KERNEL);
-+	if (!export) {
-+		clear_bit(PWMF_EXPORTED, &pwm->flags);
-+		return -ENOMEM;
-+	}
-+
-+	export->pwm = pwm;
-+
-+	export->child.release = pwm_export_release;
-+	export->child.parent = parent;
-+	export->child.devt = MKDEV(0, 0);
-+	export->child.groups = pwm_attr_groups;
-+	dev_set_name(&export->child, "pwm%u", pwm->hwpwm);
-+
-+	ret = device_register(&export->child);
-+	if (ret) {
-+		clear_bit(PWMF_EXPORTED, &pwm->flags);
-+		kfree(export);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int pwm_unexport_match(struct device *child, void *data)
-+{
-+	return child_to_pwm_device(child) == data;
-+}
-+
-+static int pwm_unexport_child(struct device *parent, struct pwm_device *pwm)
-+{
-+	struct device *child;
-+
-+	if (!test_and_clear_bit(PWMF_EXPORTED, &pwm->flags))
-+		return -ENODEV;
-+
-+	child = device_find_child(parent, pwm, pwm_unexport_match);
-+	if (!child)
-+		return -ENODEV;
-+
-+	/* for device_find_child() */
-+	put_device(child);
-+	device_unregister(child);
-+	pwm_put(pwm);
-+
-+	return 0;
-+}
-+
-+static ssize_t pwm_export_store(struct device *parent,
-+				struct device_attribute *attr,
-+				const char *buf, size_t len)
-+{
-+	struct pwm_chip *chip = dev_get_drvdata(parent);
-+	struct pwm_device *pwm;
-+	unsigned int hwpwm;
-+	int ret;
-+
-+	ret = kstrtouint(buf, 0, &hwpwm);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (hwpwm >= chip->npwm)
-+		return -ENODEV;
-+
-+	pwm = pwm_request_from_chip(chip, hwpwm, "sysfs");
-+	if (IS_ERR(pwm))
-+		return PTR_ERR(pwm);
-+
-+	ret = pwm_export_child(parent, pwm);
-+	if (ret < 0)
-+		pwm_put(pwm);
-+
-+	return ret ? : len;
-+}
-+
-+static ssize_t pwm_unexport_store(struct device *parent,
-+				  struct device_attribute *attr,
-+				  const char *buf, size_t len)
-+{
-+	struct pwm_chip *chip = dev_get_drvdata(parent);
-+	unsigned int hwpwm;
-+	int ret;
-+
-+	ret = kstrtouint(buf, 0, &hwpwm);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (hwpwm >= chip->npwm)
-+		return -ENODEV;
-+
-+	ret = pwm_unexport_child(parent, &chip->pwms[hwpwm]);
-+
-+	return ret ? : len;
-+}
-+
-+static ssize_t pwm_npwm_show(struct device *parent,
-+			     struct device_attribute *attr,
-+			     char *buf)
-+{
-+	const struct pwm_chip *chip = dev_get_drvdata(parent);
-+
-+	return sprintf(buf, "%u\n", chip->npwm);
-+}
-+
-+static struct device_attribute pwm_chip_attrs[] = {
-+	__ATTR(export, 0200, NULL, pwm_export_store),
-+	__ATTR(unexport, 0200, NULL, pwm_unexport_store),
-+	__ATTR(npwm, 0444, pwm_npwm_show, NULL),
-+	__ATTR_NULL,
-+};
-+
-+static struct class pwm_class = {
-+	.name		= "pwm",
-+	.owner		= THIS_MODULE,
-+	.dev_attrs	= pwm_chip_attrs,
-+};
-+
-+static int pwmchip_sysfs_match(struct device *parent, const void *data)
-+{
-+	return dev_get_drvdata(parent) == data;
-+}
-+
-+void pwmchip_sysfs_export(struct pwm_chip *chip)
-+{
-+	struct device *parent;
-+
-+	/*
-+	 * If device_create() fails the pwm_chip is still usable by
-+	 * the kernel its just not exported.
-+	 */
-+	parent = device_create(&pwm_class, chip->dev, MKDEV(0, 0), chip,
-+			       "pwmchip%d", chip->base);
-+	if (IS_ERR(parent)) {
-+		dev_warn(chip->dev,
-+			 "device_create failed for pwm_chip sysfs export\n");
-+	}
-+}
-+
-+void pwmchip_sysfs_unexport(struct pwm_chip *chip)
-+{
-+	struct device *parent;
-+
-+	parent = class_find_device(&pwm_class, NULL, chip,
-+				   pwmchip_sysfs_match);
-+	if (parent) {
-+		/* for class_find_device() */
-+		put_device(parent);
-+		device_unregister(parent);
-+	}
-+}
-+
-+static int __init pwm_sysfs_init(void)
-+{
-+	return class_register(&pwm_class);
-+}
-+subsys_initcall(pwm_sysfs_init);
-diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-index a4df204..f0feafd 100644
---- a/include/linux/pwm.h
-+++ b/include/linux/pwm.h
-@@ -76,6 +76,7 @@ enum pwm_polarity {
- enum {
- 	PWMF_REQUESTED = 1 << 0,
- 	PWMF_ENABLED = 1 << 1,
-+	PWMF_EXPORTED = 1 << 2,
- };
- 
- struct pwm_device {
-@@ -86,7 +87,9 @@ struct pwm_device {
- 	struct pwm_chip		*chip;
- 	void			*chip_data;
- 
--	unsigned int		period; /* in nanoseconds */
-+	unsigned int		period; 	/* in nanoseconds */
-+	unsigned int		duty_cycle;	/* in nanoseconds */
-+	enum pwm_polarity	polarity;
- };
- 
- static inline void pwm_set_period(struct pwm_device *pwm, unsigned int period)
-@@ -100,6 +103,17 @@ static inline unsigned int pwm_get_period(struct pwm_device *pwm)
- 	return pwm ? pwm->period : 0;
- }
- 
-+static inline void pwm_set_duty_cycle(struct pwm_device *pwm, unsigned int duty)
-+{
-+	if (pwm)
-+		pwm->duty_cycle = duty;
-+}
-+
-+static inline unsigned int pwm_get_duty_cycle(struct pwm_device *pwm)
-+{
-+	return pwm ? pwm->duty_cycle : 0;
-+}
-+
- /*
-  * pwm_set_polarity - configure the polarity of a PWM signal
-  */
-@@ -278,4 +292,17 @@ static inline void pwm_add_table(struct pwm_lookup *table, size_t num)
- }
- #endif
- 
-+#ifdef CONFIG_PWM_SYSFS
-+void pwmchip_sysfs_export(struct pwm_chip *chip);
-+void pwmchip_sysfs_unexport(struct pwm_chip *chip);
-+#else
-+static inline void pwmchip_sysfs_export(struct pwm_chip *chip)
-+{
-+}
-+
-+static inline void pwmchip_sysfs_unexport(struct pwm_chip *chip)
-+{
-+}
-+#endif /* CONFIG_PWM_SYSFS */
-+
- #endif /* __LINUX_PWM_H */
--- 
-1.8.1.4
+							Thanx, Paul
 
