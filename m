@@ -1,61 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab3FKQdR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 12:33:17 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46571 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752801Ab3FKQdP (ORCPT
+	id S1754726Ab3FKQeR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 12:34:17 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:58273 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168Ab3FKQeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 12:33:15 -0400
-Message-ID: <51B75148.5080701@wwwdotorg.org>
-Date: Tue, 11 Jun 2013 10:33:12 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 11 Jun 2013 12:34:16 -0400
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
-        Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, Hebbar Gururaja <gururaja.hebbar@ti.com>,
-        Mark Brown <broonie@kernel.org>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] drivers: pinctrl: add active state to core
-References: <1370938616-5952-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1370938616-5952-1-git-send-email-linus.walleij@stericsson.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <CAKL7Q7qUwTGexhr+8d88qN94YSCfSeOS-oLMh=KQ2NiOZRLbLQ@mail.gmail.com>
+References: <1370845742-18919-1-git-send-email-yinghai@kernel.org>
+	<CA+QCeVRdOOuh4aVZsQhucBNETnDp5OhAZguigLTbyD9bOONO1A@mail.gmail.com>
+	<CAE9FiQXacn2abVKeBhTazgRBCS9EtiACs=fbB6_Y27ZpLOTq3w@mail.gmail.com>
+	<CAKL7Q7rxkXDx49CgSjoVJSbER7ou+-yXa-yZg4hT4ktG_4gvHw@mail.gmail.com>
+	<CAKL7Q7qUwTGexhr+8d88qN94YSCfSeOS-oLMh=KQ2NiOZRLbLQ@mail.gmail.com>
+Date: Tue, 11 Jun 2013 09:34:16 -0700
+X-Google-Sender-Auth: WuCiiw2UTIhuD79GNZ0sVfJ-tV0
+Message-ID: <CAE9FiQWOvP+tTQ0Vakc9f-t61dv6Lo6dJm0+oH1On5k=6nvbXw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] x86, range: Do not add new blank slot with add_range_with_merge
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Joshua C." <joshuacov@gmail.com>
+Cc: Sergey Meirovich <rathamahata@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2013 02:16 AM, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> In addition to the recently introduced pinctrl core
-> control, the PM runtime pin control for the OMAP platforms
-> require a fourth state in addtition to the default, idle and
-> sleep states already handled by the core: an explicit "active"
-> state. Let's introduce this to the core in addition to the
-> other states already defined.
+On Tue, Jun 11, 2013 at 3:04 AM, Joshua C. <joshuacov@gmail.com> wrote:
+> 2013/6/11 Joshua C. <joshuacov@gmail.com>:
+>> 2013/6/10 Yinghai Lu <yinghai@kernel.org>:
+>>> On Mon, Jun 10, 2013 at 3:55 AM, Sergey Meirovich <rathamahata@gmail.com> wrote:
+>>>
+>>>> patches 1,2(latest one) have not helped me on 3.9.5:
+>>>
+>>> So v1:
+>>> https://patchwork.kernel.org/patch/2694981/
+>>> https://patchwork.kernel.org/patch/2694971/
+>>>
+>>> and v2:
+>>> https://patchwork.kernel.org/patch/2695891/
+>>> https://patchwork.kernel.org/patch/2695881/
+>>>
+>>> Neither of two versions fix the problem on your setup?
+>>>
+>>> Can you post boot log with mtrr_cleanup_debug on 3.9.4?
+>>>
+>>> Thanks
+>>>
+>>> Yinghai
+>>
+>> I got some warnings when trying to build v2 of the patches:
+>>
+>> # make -s ARCH=x86_64 V=1 -j4 bzImage
+>> kernel/range.c: In function 'add_range_with_merge':
+>> kernel/range.c:51:3: error: implicit declaration of function 'memmove'
+>> [-Werror=implicit-function-declaration]
+>> kernel/range.c:51:3: warning: incompatible implicit declaration of
+>> built-in function 'memmove' [enabled by default]
+>> cc1: some warnings being treated as errors
+>> scripts/Makefile.build:307: recipe for target 'kernel/range.o' failed
+>> make[1]: *** [kernel/range.o] Error 1
+>> Makefile:793: recipe for target 'kernel' failed
+>> make: *** [kernel] Error 2
+>> make: *** Waiting for unfinished jobs....
+>>
+>>
+>> --
+>> --joshua
 
-Surely "default" /is/ "active"? That's what it's meant so far.
+it does not report warning when I compile it with
 
-Since the pinctrl states are represented in DT, the DT bindings of all
-devices potentially get affected by changes like this. They'd need to be
-documented in a DT binding document, and the exact semantics of the
-different states clearly explained.
+gcc (SUSE Linux) 4.7.2 20130108 [gcc-4_7-branch revision 195012
 
-It may be better for struct device, struct platform_driver, or similar,
-to contain a list of the states that are required by the driver or its
-binding. That way, the list of states (or states beyond the basic
-default) is driver-/DT-binding- specific, and custom stuff like this for
-OMAP wouldn't require explicit code in drivers/base/pinctrl.c, but
-rather simply iterating over a custom list.
-
-Related to that, I'm not sure we should be deriving what we put into DT
-based on the runtime PM requirements of drivers; DT is supposed to be
-driven by HW definitions, although I suppose you could argue that the
-drivers implement what they do because they're implementing the HW
-requirements.
+>
+> A trivial fix for the above warnings:
+>
+> --- linux-2.6.orig/kernel/range.c
+> +++ linux-2.6/kernel/range.c
+> @@ -4,6 +4,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/init.h>
+>  #include <linux/sort.h>
+> +#include <linux/string.h>
+>
+>  #include <linux/range.h>
+>
