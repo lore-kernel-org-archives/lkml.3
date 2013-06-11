@@ -1,184 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab3FKJF2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 05:05:28 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:17137 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168Ab3FKJFW (ORCPT
+	id S1754139Ab3FKJFx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 05:05:53 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:34629 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250Ab3FKJFu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 05:05:22 -0400
-X-AuditID: cbfee61a-b7f3b6d000006edd-f4-51b6e851c386
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocky" <rjw@sisk.pl>
-Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH v2 3/3] cpufreq:exynos:Extend Exynos cpufreq driver to support
- boost framework
-Date: Tue, 11 Jun 2013 11:03:28 +0200
-Message-id: <1370941408-29304-4-git-send-email-l.majewski@samsung.com>
-X-Mailer: git-send-email 1.7.10
-In-reply-to: <1370941408-29304-1-git-send-email-l.majewski@samsung.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1370941408-29304-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrALMWRmVeSWpSXmKPExsVy+t9jQd3AF9sCDabt4LD483Y5q8XTph/s
-	FvM+y1p0nn3CbNG74CqbxZtH3BZvHm5mtLi8aw6bxefeI4wWtxtXsFn0L+xlsug48o3ZYuNX
-	DwdejzvX9rB5rJv2ltmjb8sqRo9Hi1sYPT5vkgtgjeKySUnNySxLLdK3S+DKePX1KlvBdaWK
-	DW1trA2M72S6GDk5JARMJLY3dDND2GISF+6tZ+ti5OIQEpjOKNH75C2U08UkcWDOcXaQKjYB
-	PYnPd58ygdgiAr4SPcsOMYEUMQu8ZZb4tvAvWEJYIEFixoYVjCA2i4CqxLzZB1hBbF4BN4nX
-	h1YxQqyTl3h6v48NxOYUcJd4/HoXmC0k0MQosfNLzgRG3gWMDKsYRVMLkguKk9JzDfWKE3OL
-	S/PS9ZLzczcxgsPxmdQOxpUNFocYBTgYlXh4Exi3BQqxJpYVV+YeYpTgYFYS4TXdDhTiTUms
-	rEotyo8vKs1JLT7EKM3BoiTOe6DVOlBIID2xJDU7NbUgtQgmy8TBKdXAuPXxUQ7r++F/tU3l
-	lFcmeQRoc91fUpfit+72UfPTG84WRF15ePJpy4Rty6U7TwlWyFjsiPW2W1t4vjD/iXP3+22M
-	JRGh/5fsyw9PD5x7WTvw5raLp3smlWr0JNo8NSySv+jizX9xP9skho9HzrRtWW3S/+8ERyir
-	pfsvtauXDl5/dCg8oNyFRYmlOCPRUIu5qDgRAM6rISRDAgAA
+	Tue, 11 Jun 2013 05:05:50 -0400
+Date: Tue, 11 Jun 2013 10:05:45 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jon Medhurst <tixy@linaro.org>, Achin Gupta <Achin.Gupta@arm.com>,
+        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Subject: Re: [RFC PATCH v3 0/2] drivers: mfd: Versatile Express SPC support
+Message-ID: <20130611090545.GC8164@e102568-lin.cambridge.arm.com>
+References: <1370512763-32200-1-git-send-email-lorenzo.pieralisi@arm.com>
+MIME-Version: 1.0
+In-Reply-To: <1370512763-32200-1-git-send-email-lorenzo.pieralisi@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 11 Jun 2013 09:05:45.0984 (UTC) FILETIME=[DBCE6000:01CE6682]
+X-MC-Unique: 113061110054801501
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The struct cpufreq_driver has been extended to embrace the information
-related to boost support.
+Hi Samuel,
 
-When "boost_mode" device tree attribute is defined for a platform, the
-low_level_boost pointer is filled with proper address. The
-.low_level_boost field filled to NULL, indicates that boost is not
-supported.
+if nobody has objections I think this set is ready to get merged. As
+Nico mentioned in:
 
-Operations of exynos_cpufreq_boost_trigger() function are protected with
-"local" mutex.
+http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/173541.html
 
-Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+since we would like to get it merged through the ARM SoC tree owing to
+dependencies between this code and ARM power management back-ends, your ack
+would be appreciated, if you think it is worth it of course.
 
----
-Changes for v2:
-- Removal of struct cpufreq_boost
-- Removal of the CONFIG_CPU_FREQ_BOOST flag
-- low_level_boost with valid address when boost is supported
----
- drivers/cpufreq/exynos-cpufreq.c |   49 ++++++++++++++++++++++++++++++++++++--
- 1 file changed, 47 insertions(+), 2 deletions(-)
+Thank you very much indeed,
+Lorenzo
 
-diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
-index 3197d88..8cf5636 100644
---- a/drivers/cpufreq/exynos-cpufreq.c
-+++ b/drivers/cpufreq/exynos-cpufreq.c
-@@ -33,6 +33,7 @@ static struct cpufreq_freqs freqs;
- static unsigned int locking_frequency;
- static bool frequency_locked;
- static DEFINE_MUTEX(cpufreq_lock);
-+static struct cpufreq_cpuinfo *cpufreq_cpu_info;
- 
- static int exynos_verify_speed(struct cpufreq_policy *policy)
- {
-@@ -154,6 +155,7 @@ out:
- 	return ret;
- }
- 
-+static struct cpufreq_driver exynos_driver;
- static int exynos_target(struct cpufreq_policy *policy,
- 			  unsigned int target_freq,
- 			  unsigned int relation)
-@@ -244,6 +246,9 @@ static struct notifier_block exynos_cpufreq_nb = {
- 
- static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
- {
-+	unsigned int max_freq;
-+	int ret;
-+
- 	policy->cur = policy->min = policy->max = exynos_getspeed(policy->cpu);
- 
- 	cpufreq_frequency_table_get_attr(exynos_info->freq_table, policy->cpu);
-@@ -253,7 +258,19 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 
- 	cpumask_setall(policy->cpus);
- 
--	return cpufreq_frequency_table_cpuinfo(policy, exynos_info->freq_table);
-+	ret = cpufreq_frequency_table_cpuinfo(policy, exynos_info->freq_table);
-+	if (ret)
-+		return ret;
-+
-+	if (exynos_driver.low_level_boost) {
-+		/* disable boost by default */
-+		max_freq = cpufreq_frequency_table_max(exynos_info->freq_table,
-+						       0);
-+		policy->cpuinfo.max_freq = policy->max = max_freq;
-+		cpufreq_cpu_info = &policy->cpuinfo;
-+	}
-+
-+	return 0;
- }
- 
- static int exynos_cpufreq_cpu_exit(struct cpufreq_policy *policy)
-@@ -264,9 +281,32 @@ static int exynos_cpufreq_cpu_exit(struct cpufreq_policy *policy)
- 
- static struct freq_attr *exynos_cpufreq_attr[] = {
- 	&cpufreq_freq_attr_scaling_available_freqs,
-+	&cpufreq_freq_attr_boost_available_freqs,
- 	NULL,
- };
- 
-+static int exynos_cpufreq_boost_trigger(int state)
-+{
-+	struct cpufreq_policy *policy = container_of(cpufreq_cpu_info,
-+						     struct cpufreq_policy,
-+						     cpuinfo);
-+	unsigned int max_freq;
-+
-+	mutex_lock(&cpufreq_lock);
-+	exynos_driver.boost_en = state;
-+
-+	/* Recalculate maximal frequency */
-+	max_freq = cpufreq_frequency_table_max(exynos_info->freq_table,
-+					       exynos_driver.boost_en);
-+
-+	if (policy->max != max_freq)
-+		policy->cpuinfo.max_freq = policy->max = max_freq;
-+
-+	mutex_unlock(&cpufreq_lock);
-+
-+	return 0;
-+}
-+
- static struct cpufreq_driver exynos_driver = {
- 	.flags		= CPUFREQ_STICKY,
- 	.verify		= exynos_verify_speed,
-@@ -275,7 +315,7 @@ static struct cpufreq_driver exynos_driver = {
- 	.init		= exynos_cpufreq_cpu_init,
- 	.exit		= exynos_cpufreq_cpu_exit,
- 	.name		= "exynos_cpufreq",
--	.attr		= exynos_cpufreq_attr,
-+	.attr	= exynos_cpufreq_attr,
- #ifdef CONFIG_PM
- 	.suspend	= exynos_cpufreq_suspend,
- 	.resume		= exynos_cpufreq_resume,
-@@ -359,6 +399,8 @@ static struct of_device_id exynos_cpufreq_of_match[] __initconst = {
- 
- static int __init exynos_cpufreq_probe(struct platform_device *pdev)
- {
-+	struct device_node *node = pdev->dev.of_node;
-+
- 	int ret = -EINVAL;
- 
- 	exynos_info = kzalloc(sizeof(struct exynos_dvfs_info), GFP_KERNEL);
-@@ -391,6 +433,9 @@ static int __init exynos_cpufreq_probe(struct platform_device *pdev)
- 	}
- 
- 	locking_frequency = exynos_getspeed(0);
-+	if (of_property_read_bool(node, "boost_mode"))
-+		exynos_driver.low_level_boost =
-+			&exynos_cpufreq_boost_trigger;
- 
- 	register_pm_notifier(&exynos_cpufreq_nb);
- 
--- 
-1.7.10.4
+On Thu, Jun 06, 2013 at 10:59:21AM +0100, Lorenzo Pieralisi wrote:
+> This patch is v3 of a previous posting:
+> 
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/173464.html
+> 
+> v3 changes:
+> 
+> - added __refdata to spc_check_loaded pointer
+> - removed some exported symbols
+> - added node pointer check in vexpress_spc_init()
+> 
+> v2 changes:
+> 
+> - Dropped timeout interface patch
+> - Converted interfaces to non-timeout ones, integrated and retested
+> - Removed mutex used at init
+> - Refactored code to work around init sections warning
+> - Fixed two minor bugs
+> 
+> This patch series introduces support for the Versatile Express Serial
+> Power Controller (SPC) present in ARM Versatile Express TC2 core tiles.
+> SPC driver is a fundamental component of TC2 power management and allows
+> to carry out C-state management and DVFS for A15 and A7 clusters.
+> 
+> First patch provides changes required by SPC to comply with the
+> Versatile Express config API, second patch is the SPC driver implementation.
+> 
+> Code extensively exercised through CPUidle and CPUfreq power states and
+> operating point transitions.
+> 
+> Lorenzo Pieralisi (1):
+>   drivers: mfd: vexpress: add Serial Power Controller (SPC) support
+> 
+> Pawel Moll (1):
+>   drivers: mfd: refactor the vexpress config bridge API
+> 
+>  Documentation/devicetree/bindings/mfd/vexpress-spc.txt |  35 +
+>  drivers/mfd/Kconfig                                    |   7 +
+>  drivers/mfd/Makefile                                   |   1 +
+>  drivers/mfd/vexpress-config.c                          |  61 +-
+>  drivers/mfd/vexpress-spc.c                             | 633 ++++++++++
+>  drivers/mfd/vexpress-sysreg.c                          |   2 +-
+>  include/linux/vexpress.h                               |  59 +-
+>  7 files changed, 770 insertions(+), 28 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/vexpress-spc.txt
+>  create mode 100644 drivers/mfd/vexpress-spc.c
+> 
+> -- 
+> 1.8.2.2
+> 
 
