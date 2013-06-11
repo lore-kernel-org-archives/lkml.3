@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab3FKRdQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 13:33:16 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:43819 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754660Ab3FKRdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 13:33:12 -0400
-Message-ID: <1370971991.22004.34.camel@joe-AO722>
-Subject: Re: [RFC] is it time to split up the MAINTAINERS file?
-From: Joe Perches <joe@perches.com>
-To: Rob Landley <rob@landley.net>
-Cc: linux-kernel@vger.kernel.org
-Date: Tue, 11 Jun 2013 10:33:11 -0700
-In-Reply-To: <1370970619.2776.97@driftwood>
-References: <1370970619.2776.97@driftwood>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755616Ab3FKRfz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 13:35:55 -0400
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:53032 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421Ab3FKRfy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 13:35:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130611170249.GA1091@linux.vnet.ibm.com>
+References: <20130609193657.GA13392@linux.vnet.ibm.com>
+	<20130611170249.GA1091@linux.vnet.ibm.com>
+Date: Tue, 11 Jun 2013 10:35:53 -0700
+X-Google-Sender-Auth: Mq0ci6vgsWKgBcASGFW2qfMzHKU
+Message-ID: <CA+55aFw5d7X0YrgbnQ3Z3iUPir6AvEF0KsAL2T2dQL4V+LnnXA@mail.gmail.com>
+Subject: Re: [PATCH RFC ticketlock] v2 Auto-queued ticketlock
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        =?UTF-8?B?6LWW5rGf5bGx?= <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>, niv@us.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, Darren Hart <darren@dvhart.com>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Silas Boyd-Wickizer <sbw@mit.edu>,
+        Michel Lespinasse <walken@google.com>,
+        Waiman Long <waiman.long@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-11 at 12:10 -0500, Rob Landley wrote:
-> On 06/11/2013 02:13:45 AM, Joe Perches wrote:
-> > On Mon, 2013-06-10 at 23:49 -0500, Rob Landley wrote:
-> > > You could either have the same entry in more than one MAINTAINERS  
-> > file
-> > > or keep it at a higher level. (This wouldn't eliminate the top level
-> > > MAINTAINERS, merely trim it down a bit.)
-> > >
-> > > Just throwing it out there. Seems like it might be a thing, someday
-> > > anyway...
-> > 
-> > Patches talk...
->
-> So you suggest sending a patch series to break out arch directories and  
-> go "here, a whole new task for you the architecture maintainer to take  
-> on!" and that's the _polite_ way to ask whether or not it's a good idea?
+Hmm. Something just struck me when reading this patch..
 
-I replied with suggestions, but I'm not about to
-bother with implementations.
+Our memory ordering semantics in our *current* locks are very very
+subtle. We have just a "barrier()" between the
 
-Throwing it out there without doing the work to
-implement it doesn't generally inspire others to do
-very much about it.
+    inc.head = ACCESS_ONCE(lock->tickets.head);
+    if (inc.head == inc.tail)
+        break; /* success */
 
-It's your itch, scratch away.
+and the inside of the locked region.
 
-> > or add an initial / for the absolutes
-> > 
-> > F:	*/			(everything at this directory and lower)
-> > F:	foo.c			(single file)
-> > F:	/Documentation/foo.txt	(absolute single file)
-> 
-> That one, obviously. (Optimize for the common case.)
+I think it's safe because of the new memory ordering semantics (loads
+are in-order, and stores only move *down*), but there's not even a
+comment about it.
 
-Not really as get_maintainers or another tool would
-have to snarf all these files together before searching
-once or every time it was run.
+So let's at least comment the current locks before making them even
+more complex and subtle..
 
-> > make could be taught to create an overall integrated
-> > MAINTAINERS, which would not be part of the files
-> > managed by git/cvs from these submaintainer files.
-> 
-> Why? (What's the point? Does it make finding who is in charge of $THING  
-> easier?)
-
-To make it easier for those that don't use git to find
-maintainers and lists to send bug reports and patches.
-
-> > Still, I think the "best" approach would be to enhance
-> > git to manage this additional information instead.
-> Oh please no.
-> > Something akin to:
-> > https://lkml.org/lkml/2007/8/14/256
-> 
-> I'm sorry I brought it up.
-
-<smile>  What makes it horrific?
-I think it'd be useful for more than lkml.
-
-
+              Linus
