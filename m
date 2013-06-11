@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332Ab3FKIvZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 04:51:25 -0400
-Received: from skyrme.org ([193.175.80.135]:60060 "EHLO skyrme.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751890Ab3FKIvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 04:51:24 -0400
-X-Greylist: delayed 2357 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Jun 2013 04:51:24 EDT
-Date: 11 Jun 2013 08:12:00 +0000
-Message-Id: <1370938320-6554-1-git-send-email-oskar@scara.com>
-From: "Oskar Schirmer" <oskar@scara.com>
-To: "Liam Girdwood" <lgirdwood@gmail.com>
-Cc: "Andrew Morton" <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        "Zeng Zhaoming" <zengzm.kernel@gmail.com>, alsa-devel@alsa-project.org,
-        "Takashi Iwai" <tiwai@suse.de>, "Jaroslav Kysela" <perex@perex.cz>,
-        "Fabio Estevam" <fabio.estevam@freescale.com>,
-        "Wolfram Sang" <w.sang@pengutronix.de>,
-        "Oskar Schirmer" <oskar@scara.com>
-Subject: [PATCH] sound/sgtl5000: fix codec register initial values and mask
-X-Mailer: git-send-email 1.6.0.3
+	id S1754387Ab3FKIxp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 04:53:45 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:37749 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753562Ab3FKIxo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 04:53:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <201306102216.23292.heiko@sntech.de>
+References: <201306102139.32444.heiko@sntech.de>
+	<201306102142.52644.heiko@sntech.de>
+	<201306102216.23292.heiko@sntech.de>
+Date: Tue, 11 Jun 2013 10:53:43 +0200
+Message-ID: <CACRpkdaLq_sDq1v=_K20fj7nJ42-PssBUv+t__DsnTcn3Py2uw@mail.gmail.com>
+Subject: Re: [PATCH 2/2 v3] pinctrl: add pinctrl driver for Rockchip SoCs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: Patrice Chotard <patrice.chotard.st@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to documentation bit 3:2 in register SSS_CTRL are
-reserved and zero, so initially setting the register to 0x0008
-does not make much sense. Instead, bit 4 should be marked set,
-as this is the power up default.
+On Mon, Jun 10, 2013 at 10:16 PM, Heiko Stübner <heiko@sntech.de> wrote:
 
-Further, mask computation in declarative part is obviously wrong:
-Fix FRAC DIVISOR to provide an 11 bit mask correctly.
+> This driver adds support the Cortex-A9 based SoCs from Rockchip,
+> so at least the RK2928, RK3066 (a and b) and RK3188.
+> Earlier Rockchip SoCs seem to use similar mechanics for gpio
+> handling so should be supportable with relative small changes.
+> Pull handling on the rk3188 is currently a stub, due to it being
+> a bit different to the earlier SoCs.
+>
+> Pinmuxing as well as gpio (and interrupt-) handling tested on
+> a rk3066a based machine.
+>
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> ---
+> changes since v2:
+> Found out how to handle the phandle in the regular rockchip,pins property
+> 5 minutes after sending the v2 ... damn :-) .
+> I'm terribly sorry for all the noise.
+>
+>
+> After Stephen Warren's clarification, again with <dt-bindings/...> include.
+> and of course adapted to the new expected dt node-structure
 
-Signed-off-by: Oskar Schirmer <oskar@scara.com>
----
- sound/soc/codecs/sgtl5000.c |    2 +-
- sound/soc/codecs/sgtl5000.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Thanks, this v3 version applied.
 
-diff --git a/sound/soc/codecs/sgtl5000.c b/sound/soc/codecs/sgtl5000.c
-index 92bbfec..ea47938 100644
---- a/sound/soc/codecs/sgtl5000.c
-+++ b/sound/soc/codecs/sgtl5000.c
-@@ -37,7 +37,7 @@
- static const u16 sgtl5000_regs[SGTL5000_MAX_REG_OFFSET] =  {
- 	[SGTL5000_CHIP_CLK_CTRL] = 0x0008,
- 	[SGTL5000_CHIP_I2S_CTRL] = 0x0010,
--	[SGTL5000_CHIP_SSS_CTRL] = 0x0008,
-+	[SGTL5000_CHIP_SSS_CTRL] = 0x0010,
- 	[SGTL5000_CHIP_DAC_VOL] = 0x3c3c,
- 	[SGTL5000_CHIP_PAD_STRENGTH] = 0x015f,
- 	[SGTL5000_CHIP_ANA_HP_CTRL] = 0x1818,
-diff --git a/sound/soc/codecs/sgtl5000.h b/sound/soc/codecs/sgtl5000.h
-index 8a9f435..d3a68bb 100644
---- a/sound/soc/codecs/sgtl5000.h
-+++ b/sound/soc/codecs/sgtl5000.h
-@@ -347,7 +347,7 @@
- #define SGTL5000_PLL_INT_DIV_MASK		0xf800
- #define SGTL5000_PLL_INT_DIV_SHIFT		11
- #define SGTL5000_PLL_INT_DIV_WIDTH		5
--#define SGTL5000_PLL_FRAC_DIV_MASK		0x0700
-+#define SGTL5000_PLL_FRAC_DIV_MASK		0x07ff
- #define SGTL5000_PLL_FRAC_DIV_SHIFT		0
- #define SGTL5000_PLL_FRAC_DIV_WIDTH		11
- 
--- 
-1.7.9.5
+And don't worry about the noise, it is normal in situations like these
+where we're seeing rapid development of core stuff and building
+consensus.
 
+Yours,
+Linus Walleij
