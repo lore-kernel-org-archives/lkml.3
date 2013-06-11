@@ -1,43 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752406Ab3FKIUS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 04:20:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35503 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751700Ab3FKIUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 04:20:16 -0400
-From: Oliver Neukum <oneukum@suse.de>
-To: "Morales, Alejandra" <alejandra.morales@tum.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Questions about Runtime Power Management
-Date: Tue, 11 Jun 2013 10:21:37 +0200
-Message-ID: <6962070.dqPY4e5mso@linux-5eaq.site>
-Organization: SUSE
-User-Agent: KMail/4.10.3 (Linux/3.7.10-1.11-desktop; KDE/4.10.4; x86_64; ; )
-In-Reply-To: <9E3F9C2076C45D4783F09B90D5BE77CE171D3B@BADWLRZ-SWMBX14.ads.mwn.de>
-References: <9E3F9C2076C45D4783F09B90D5BE77CE16B4E6@BADWLRZ-SWMBX13.ads.mwn.de> <8961845.QtBW1c5NsD@linux-5eaq.site> <9E3F9C2076C45D4783F09B90D5BE77CE171D3B@BADWLRZ-SWMBX14.ads.mwn.de>
+	id S1752704Ab3FKI2R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 04:28:17 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:61330 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525Ab3FKI2O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 04:28:14 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <51AF73E9.90506@wwwdotorg.org>
+References: <1370439873-30053-1-git-send-email-linus.walleij@stericsson.com>
+	<51AF73E9.90506@wwwdotorg.org>
+Date: Tue, 11 Jun 2013 10:28:13 +0200
+Message-ID: <CACRpkdY_s_RkErKLqVOWdE-A80CZOq7+VZSE8jcYSUbYkvsYYQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] drivers: pinctrl sleep and idle states in the core
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Hebbar Gururaja <gururaja.hebbar@ti.com>,
+        Mark Brown <broonie@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 June 2013 07:53:10 Morales, Alejandra wrote:
-> 2013/6/10 Oliver Neukum <oneukum@suse.de>
+On Wed, Jun 5, 2013 at 7:22 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-> > You need to furthermore realise that there are forms of runtime PM independent
-> > of the generic kernel based runtime PM (hdparm, USB LPM, ...)
-> 
-> 
-> Thanks Oliver, that was helpful. I will try now to do my testing using USB devices as it will likely be easier.
+>> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+>
+>> +int pinctrl_pm_select_default_state(struct device *dev)
+>
+>> +int pinctrl_pm_select_sleep_state(struct device *dev)
+>
+>> +int pinctrl_pm_select_idle_state(struct device *dev)
+>
+> The implementation of those 3 functions is basically identical. I'd be
+> inclined to move it to a helper function, and just pass (dev,
+> pins->xxx_state) to it.
 
-Note:
+Just to follow up on this now that I'm adding one more state.
 
-1. for most usb devices the default for runtime PM is off (powertop will help)
-2. all a device's interface drivers must support it (look at the kernel source for .supports_autosuspend = 1)
-3. If you want the HCD to go to D3 you need ACPI 5.0
+I tried to create a refactoring patch for this but couldn't come
+up with anything apropriate along the lines above. For example
+this function:
 
-	HTH
-		Oliver
+int pinctrl_pm_select_default_state(struct device *dev)
+{
+        struct dev_pin_info *pins = dev->pins;
+        int ret;
 
+        if (!pins)
+                return 0;
+        if (IS_ERR(pins->default_state))
+                return 0; /* No default state */
+        ret = pinctrl_select_state(pins->p, pins->default_state);
+        if (ret)
+                dev_err(dev, "failed to activate default pinctrl state\n");
+        return ret;
+}
+
+Would be refactored into something like this:
+
+static int pinctrl_pm_select_state(struct device *dev, struct pinctrl_state *s)
+{
+        struct dev_pin_info *pins = dev->pins;
+
+        if (IS_ERR(s))
+                return 0;
+        return pinctrl_select_state(pins->p, s);
+}
+
+int pinctrl_pm_select_default_state(struct device *dev)
+{
+        struct dev_pin_info *pins = dev->pins;
+        int ret;
+
+        if (!pins)
+                return 0;
+        if (IS_ERR(pins->default_state))
+                return 0; /* No default state */
+        ret = pinctrl_pm_select_state(dev, pins->default_state);
+        if (ret)
+                dev_err(dev, "failed to activate default pinctrl state\n");
+        return ret;
+}
+
+That is not any elegant, I can cut down the lines by removing
+debug messages but still we're dereferencing the pins twice and other
+ugliness like that. Also pinctrl_pm_select_state() becomes more and more
+a NULL wrapper around pinctrl_select_state() itself. If you have some other
+suggestion or a patch ... I just can't see any elegant refactoring here.
+
+Yours,
+Linus Walleij
