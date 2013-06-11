@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab3FKLlv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:41:51 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33634 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755489Ab3FKLls (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755492Ab3FKLls (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Jun 2013 07:41:48 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33623 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755458Ab3FKLlj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 07:41:39 -0400
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
 Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
@@ -14,11 +14,12 @@ Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
         linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 17/22] mfd & iio/ti_am335x_adc: rename device from tiadc to TI-am335x-adc
-Date: Tue, 11 Jun 2013 13:31:03 +0200
-Message-Id: <1370950268-7224-18-git-send-email-bigeasy@linutronix.de>
+        linux-input@vger.kernel.org, "Patil, Rachna" <rachna@ti.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: [PATCH 14/22] arm/am33xx: add TSC/ADC mfd device support
+Date: Tue, 11 Jun 2013 13:31:00 +0200
+Message-Id: <1370950268-7224-15-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
 References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
@@ -29,50 +30,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TI-adc reads a little better compared to tiadc. And if we add am335x to
-it then we have the same naming scheme as the tsc side.
+From: "Patil, Rachna" <rachna@ti.com>
 
-Acked-by: Jonathan Cameron <jic23@kernel.org>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Add support for core multifunctional device along
+with its clients touchscreen and ADC.
+
+[ panto@antoniou-consulting.com : make sure status is
+	set to 'disabled' in dtsi file. ]
+
+Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+Signed-off-by: Patil, Rachna <rachna@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+[bigeasy: add 'status = "okay"']
+Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 ---
- drivers/iio/adc/ti_am335x_adc.c |    3 +--
- drivers/mfd/ti_am335x_tscadc.c  |    2 +-
- 2 files changed, 2 insertions(+), 3 deletions(-)
+ arch/arm/boot/dts/am335x-evm.dts |   14 ++++++++++++++
+ arch/arm/boot/dts/am33xx.dtsi    |   18 ++++++++++++++++++
+ 2 files changed, 32 insertions(+)
 
-diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-index 9939810..4bec91e 100644
---- a/drivers/iio/adc/ti_am335x_adc.c
-+++ b/drivers/iio/adc/ti_am335x_adc.c
-@@ -292,7 +292,7 @@ MODULE_DEVICE_TABLE(of, ti_adc_dt_ids);
- 
- static struct platform_driver tiadc_driver = {
- 	.driver = {
--		.name   = "tiadc",
-+		.name   = "TI-am335x-adc",
- 		.owner	= THIS_MODULE,
- 		.pm	= TIADC_PM_OPS,
- 		.of_match_table = of_match_ptr(ti_adc_dt_ids),
-@@ -300,7 +300,6 @@ static struct platform_driver tiadc_driver = {
- 	.probe	= tiadc_probe,
- 	.remove	= tiadc_remove,
+diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
+index 0423298..26fea97 100644
+--- a/arch/arm/boot/dts/am335x-evm.dts
++++ b/arch/arm/boot/dts/am335x-evm.dts
+@@ -244,3 +244,17 @@
+ &cpsw_emac1 {
+ 	phy_id = <&davinci_mdio>, <1>;
  };
--
- module_platform_driver(tiadc_driver);
++
++&tscadc {
++	status = "okay";
++	tsc {
++		ti,wires = <4>;
++		ti,x-plate-resistance = <200>;
++		ti,coordiante-readouts = <5>;
++		ti,wire-config = <0x00 0x11 0x22 0x33>;
++	};
++
++	adc {
++		ti,adc-channels = <4>;
++	};
++};
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index 1460d9b..4ad7797 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -404,6 +404,24 @@
+ 			ti,hwmods = "wkup_m3";
+ 		};
  
- MODULE_DESCRIPTION("TI ADC controller driver");
-diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-index bf33134..d3f48d2 100644
---- a/drivers/mfd/ti_am335x_tscadc.c
-+++ b/drivers/mfd/ti_am335x_tscadc.c
-@@ -204,7 +204,7 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
- 	if (adc_channels > 0) {
- 		tscadc->adc_cell = tscadc->used_cells;
- 		cell = &tscadc->cells[tscadc->used_cells++];
--		cell->name = "tiadc";
-+		cell->name = "TI-am335x-adc";
- 		cell->of_compatible = "ti,am3359-adc";
- 		cell->platform_data = &tscadc;
- 		cell->pdata_size = sizeof(tscadc);
++		tscadc: tscadc@44e0d000 {
++			compatible = "ti,am3359-tscadc";
++			reg = <0x44e0d000 0x1000>;
++			interrupt-parent = <&intc>;
++			interrupts = <16>;
++			ti,hwmods = "adc_tsc";
++			status = "disabled";
++
++			tsc {
++				compatible = "ti,am3359-tsc";
++			};
++			am335x_adc: adc {
++				#io-channel-cells = <1>;
++				compatible = "ti,am3359-adc";
++			};
++
++		};
++
+ 		gpmc: gpmc@50000000 {
+ 			compatible = "ti,am3352-gpmc";
+ 			ti,hwmods = "gpmc";
 -- 
 1.7.10.4
 
