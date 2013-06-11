@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902Ab3FKLwA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:52:00 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:61336 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753918Ab3FKLv5 convert rfc822-to-8bit (ORCPT
+	id S1754982Ab3FKLwO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:52:14 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:48084 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754708Ab3FKLwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:51:57 -0400
+	Tue, 11 Jun 2013 07:52:11 -0400
+Date: Tue, 11 Jun 2013 12:52:06 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com
+Message-ID: <20130611115206.GA1403@sirena.org.uk>
+References: <1370621488-18130-1-git-send-email-lee.jones@linaro.org>
+ <1370621488-18130-10-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <201306111329.32749.heiko@sntech.de>
-References: <201306111328.52679.heiko@sntech.de>
-	<201306111329.32749.heiko@sntech.de>
-Date: Tue, 11 Jun 2013 14:51:56 +0300
-Message-ID: <CAHp75VcaNkPeUQ=OPY5F7Mqb_cM87xh8A8wUxdCgnRtfjoqoHw@mail.gmail.com>
-Subject: Re: [PATCH v3 1/7] clk: divider: add flag to limit possible dividers
- to even numbers
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KjcUHqqCp23GY06r"
+Content-Disposition: inline
+In-Reply-To: <1370621488-18130-10-git-send-email-lee.jones@linaro.org>
+X-Cookie: Tomorrow, you can be anywhere.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 09/10] regulator: ab8500-ext: Enable for Device Tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 2:29 PM, Heiko Stübner <heiko@sntech.de> wrote:
-> SoCs like the Rockchip Cortex-A9 ones contain divider some clocks
-> that use the regular mechanisms for storage but allow only even
-> dividers and 1 to be used.
->
-> Therefore add a flag that lets _is_valid_div limit the valid dividers
-> to these values. _get_maxdiv is also adapted to return even values
-> for the CLK_DIVIDER_ONE_BASED case.
 
-Just one nitpick below (I'm okay with current implementation, but you
-might find my proposal useful).
+--KjcUHqqCp23GY06r
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> --- a/drivers/clk/clk-divider.c
-> +++ b/drivers/clk/clk-divider.c
+On Fri, Jun 07, 2013 at 05:11:27PM +0100, Lee Jones wrote:
 
-> @@ -141,6 +149,8 @@ static bool _is_valid_div(struct clk_divider *divider, unsigned int div)
->                 return is_power_of_2(div);
->         if (divider->table)
->                 return _is_valid_table_div(divider->table, div);
-> +       if (divider->flags & CLK_DIVIDER_EVEN && div != 1 && (div % 2) != 0)
-> +               return false;
->         return true;
->  }
+> +static struct of_regulator_match ab8500_ext_regulator_match[] = {
+> +	{ .name = "ab8500_ext1", .driver_data = (void *) AB8500_EXT_SUPPLY1, },
+> +	{ .name = "ab8500_ext2", .driver_data = (void *) AB8500_EXT_SUPPLY2, },
+> +	{ .name = "ab8500_ext3", .driver_data = (void *) AB8500_EXT_SUPPLY3, },
+> +};
 
-What if rewrite like
+Should be a binding document update for these.
 
- if (divider->flags & CLK_DIVIDER_EVEN == 0)
- return true;
+--KjcUHqqCp23GY06r
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-return div < 2 || div % 2 == 0;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
+iQIcBAEBAgAGBQJRtw9jAAoJELSic+t+oim9vOMQAJXqr8zKrsCLjf8ij0Biegek
+DLb6unz22VgsMUEXgFBQnQ1cuBGwwmkYRFwrn8S8vy8Xo77aG1YaJmQe1auqA0sa
+pFYUAl+7ffyOtwVUeb2YfP8QcO5pDTzuqENbF+HE24kgUHXkYh/FHhBeepSQDa1M
+vZMJ+RHu9XxpaX2vk3exOGGrJvwZafUl/emNEl/h25MUf6pyxPDgeNQX598UIJ4G
+LSo8PQVIEYMJ2EGQn0J9aqVrnQJ+ptQuaQDRX4U2uZPVPcSfAk5Wf/HblMp36GYB
+8H4yaAGUa95gQqGWqCCl6Vydeb2UOxMB2GDtAF0Iq5CKFKz13QDh/vxt+OWaSiTW
+VrX0hYCLOYDSr8mCKyjWw4JD6yJ6O3KK9uooBVqItxICZ4lXfd8s2CcbFvkY5vzZ
+oIQnHRdBAA/74pS/wWXw1E7kirubRZqBeGXIEWQrqhjCPxzlNgQPza5NGA/l4gY2
+zzx2tz/OYl1BJnlt1AhjURUNZ9xTM/Tc9FA4ouK83J2b2yr6ERN9n3zY9qhTmDK5
+fP2liiSc/nvTzJ1Qrk4LAWDQnkTakT4oVNPhfOiW+DJ67v89+UL1cv+iOw/coSRE
+djFBI8l75ABkBYLhFz8NWa1rp9tP+P0N+jjNq11UN9ZHKsQgwhKrRTGbxG+ICcXy
+wl5Pd9Etc9/+/pyAJQv5
+=lHsW
+-----END PGP SIGNATURE-----
 
---
-With Best Regards,
-Andy Shevchenko
+--KjcUHqqCp23GY06r--
