@@ -1,65 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932071Ab3FKUPp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:15:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41921 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756401Ab3FKUD4 (ORCPT
+	id S1757182Ab3FKUPz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:15:55 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:45273 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756453Ab3FKUPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:56 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Riesen <raa.lkml@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 34/79] ALSA: hda/via - Disable broken dynamic power control
-Date: Tue, 11 Jun 2013 13:03:00 -0700
-Message-Id: <20130611195316.916102666@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.254.g5578ad7
-In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
-References: <20130611195312.352656079@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 11 Jun 2013 16:15:53 -0400
+Message-ID: <51B78594.5050903@windriver.com>
+Date: Tue, 11 Jun 2013 16:16:20 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Markos Chandras <markos.chandras@gmail.com>
+CC: Markos Chandras <markos.chandras@imgtec.com>,
+        <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: Re: [PATCH] drivers/net/ethernet/3com: Drop EISA dependency from
+ VORTEX
+References: <1370962642-12097-1-git-send-email-markos.chandras@imgtec.com> <51B75088.8050800@windriver.com> <CAG2jQ8hACp_iGEXR7rXKR3sydK4O=y0paeh1FFgH2UisxWVxVA@mail.gmail.com>
+In-Reply-To: <CAG2jQ8hACp_iGEXR7rXKR3sydK4O=y0paeh1FFgH2UisxWVxVA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+On 13-06-11 01:48 PM, Markos Chandras wrote:
+> On 11 June 2013 17:30, Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+>> On 13-06-11 10:57 AM, Markos Chandras wrote:
+>>> The Vortex driver depends on PCI with optional support for EISA.
+>>>
+>>> This fixes build problems when EISA is selected but not PCI.
+>>>
+>>> drivers/net/ethernet/3com/3c59x.c:1031:2: error: implicit declaration of
+>>> function 'pci_iomap' [-Werror=implicit-function-declaration]
+>>> drivers/net/ethernet/3com/3c59x.c:1044:3: error: implicit declaration of
+>>> function 'pci_iounmap' [-Werror=implicit-function-declaration]
+>>>
+>>> Cc: David S. Miller <davem@davemloft.net>
+>>> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+>>> Cc: netdev@vger.kernel.org
+>>> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+>>> ---
+>>>  drivers/net/ethernet/3com/Kconfig | 2 +-
+>>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/net/ethernet/3com/Kconfig b/drivers/net/ethernet/3com/Kconfig
+>>> index 1c71c76..5c67f44 100644
+>>> --- a/drivers/net/ethernet/3com/Kconfig
+>>> +++ b/drivers/net/ethernet/3com/Kconfig
+>>> @@ -66,7 +66,7 @@ config PCMCIA_3C589
+>>>
+>>>  config VORTEX
+>>>       tristate "3c590/3c900 series (592/595/597) \"Vortex/Boomerang\" support"
+>>> -     depends on (PCI || EISA) && HAS_IOPORT
+>>> +     depends on PCI && HAS_IOPORT
+>>
+>> How can this fix it?  The way I read your change is that you
+>> have now made it impossible to select for EISA=y and PCI=n,
+>> thus breaking EISA only configurations who would find their
+>> driver support gone when they run "make oldconfig".
+>>
+>> P.
+>> --
+>>
+>>>       select NET_CORE
+>>>       select MII
+>>>       ---help---
+>>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> Hi Paul,
+> 
+> The driver does not seem to build if you only have EISA=y and PCI=n.
+> Does this driver really support EISA only
 
-------------------
+Yes.  Not that anyone really probably cares anymore.  EISA is dead.
 
-From: Takashi Iwai <tiwai@suse.de>
+> configurations? Reading the code it seems to me that the PCI support
+> is mandatory for the driver to build and work.
 
-commit 087c2e3b4e062573dbbc8a50b9208992e3768dcf upstream.
+Oh really?  Having PCI disabled seems fine on today's net-next tree
+from what I see below:
 
-Since the transition to the generic parser, the actual routes used
-there don't match always with the assumed static paths in some
-set_widgets_power_state callbacks.  This results in the wrong power
-setup in the end.  As a temporary workaround, we need to disable the
-calls together with the non-functional dynamic power control enum.
+--------------
+paul@yow-lpgnfs-02:~/git/linux-head$ make -j20 > /dev/null
+WARNING: modpost: Found 1 section mismatch(es).
+To see full details build your kernel with:
+'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+Setup is 15052 bytes (padded to 15360 bytes).
+System is 1357 kB
+CRC 9090cb73
+paul@yow-lpgnfs-02:~/git/linux-head$ grep EISA .config
+CONFIG_EISA=y
+# CONFIG_EISA_VLB_PRIMING is not set
+CONFIG_EISA_VIRTUAL_ROOT=y
+CONFIG_EISA_NAMES=y
+paul@yow-lpgnfs-02:~/git/linux-head$ grep PCI .config
+# Bus options (PCI etc.)
+# CONFIG_PCI is not set
+CONFIG_PCI_LABEL=y
+CONFIG_GENERIC_PCI_IOMAP=y
+paul@yow-lpgnfs-02:~/git/linux-head$ git log --oneline -1
+45203a3 net_sched: add 64bit rate estimators
+paul@yow-lpgnfs-02:~/git/linux-head$ 
+----------------
 
-Reported-by: Alex Riesen <raa.lkml@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The .config is an allnoconfig, then turned on EISA, NETDEVICES, etc
+and 3C900 support.  As you can see, PCI is not enabled, but the
+GENERIC_PCI_IOMAP is (I didn't manually enable it, x86 selects it
+via GENERIC_IOMAP).  Were you building for some other non x86 arch,
+and simply didn't think it important to mention that?
 
----
- sound/pci/hda/patch_via.c |    5 +++++
- 1 file changed, 5 insertions(+)
+Paul.
+--
 
---- a/sound/pci/hda/patch_via.c
-+++ b/sound/pci/hda/patch_via.c
-@@ -231,9 +231,14 @@ static void vt1708_update_hp_work(struct
- 
- static void set_widgets_power_state(struct hda_codec *codec)
- {
-+#if 0 /* FIXME: the assumed connections don't match always with the
-+       * actual routes by the generic parser, so better to disable
-+       * the control for safety.
-+       */
- 	struct via_spec *spec = codec->spec;
- 	if (spec->set_widgets_power_state)
- 		spec->set_widgets_power_state(codec);
-+#endif
- }
- 
- static void update_power_state(struct hda_codec *codec, hda_nid_t nid,
-
-
+> 
+> --
+> Regards,
+> Markos Chandras
+> 
