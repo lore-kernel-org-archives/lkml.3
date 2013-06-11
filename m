@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756606Ab3FKUDr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:03:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41874 "EHLO
+	id S1757190Ab3FKURr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:17:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41880 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756197Ab3FKUDp (ORCPT
+	with ESMTP id S1756594Ab3FKUDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:45 -0400
+	Tue, 11 Jun 2013 16:03:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Tim Richardson <tim@tim-richardson.net>
-Subject: [ 23/79] USB: revert periodic scheduling bugfix
-Date: Tue, 11 Jun 2013 13:02:49 -0700
-Message-Id: <20130611195315.522812978@linuxfoundation.org>
+        Arnd Bergmann <arnd@arndb.de>,
+        Matthew Gretton-Dann <matthew.gretton-dann@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 40/79] ARM: 7743/1: compressed/head.S: work around new binutils warning
+Date: Tue, 11 Jun 2013 13:03:06 -0700
+Message-Id: <20130611195321.184017478@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -28,46 +28,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit fdc03438f53a00294ed9939eb3a1f6db6f3d8963 upstream.
+commit da94a829305f1c217cfdf6771cb1faca0917e3b9 upstream.
 
-This patch reverts commit 3e619d04159be54b3daa0b7036b0ce9e067f4b5d
-(USB: EHCI: fix bug in scheduling periodic split transfers).  The
-commit was valid -- it fixed a real bug -- but the periodic scheduler
-in ehci-hcd is in such bad shape (especially the part that handles
-split transactions) that fixing one bug is very likely to cause
-another to surface.  That's what happened in this case; the result was
-choppy and noisy playback on certain 24-bit audio devices.
+In August 2012, Matthew Gretton-Dann checked a change into binutils
+labelled "Error on obsolete & warn on deprecated registers", apparently as
+part of ARMv8 support. Apparently, this was supposed to emit the message
+"Warning: This coprocessor register access is deprecated in ARMv8" when
+using certain mcr/mrc instructions and building for ARMv8. Unfortunately,
+the message that is actually emitted appears to be '(null)', which is
+less helpful in comparison.
 
-The only real fix will be to rewrite this entire section of code.  My
-next project...
+Even more unfortunately, this is biting us on every single kernel
+build with a new gas, because arch/arm/boot/compressed/head.S and some
+other files in that directory are built with -march=all since kernel
+commit 80cec14a8 "[ARM] Add -march=all to assembly file build in
+arch/arm/boot/compressed" back in v2.6.28.
 
-This fixes https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1136110.
+This patch reverts Russell's nice solution and instead marks the head.S
+file to be built for armv7-a, which fortunately lets us build all
+instructions in that file without warnings even on the broken binutils.
 
-Thanks to Tim Richardson for extra testing and feedback, and to Joseph
-Salisbury and Tyson Tan for tracking down the original source of the
-problem.
+Without this patch, building anything results in:
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Joseph Salisbury <joseph.salisbury@canonical.com>
-CC: Tim Richardson <tim@tim-richardson.net>
+arch/arm/boot/compressed/head.S: Assembler messages:
+arch/arm/boot/compressed/head.S:565: Warning: (null)
+arch/arm/boot/compressed/head.S:676: Warning: (null)
+arch/arm/boot/compressed/head.S:698: Warning: (null)
+arch/arm/boot/compressed/head.S:722: Warning: (null)
+arch/arm/boot/compressed/head.S:726: Warning: (null)
+arch/arm/boot/compressed/head.S:957: Warning: (null)
+arch/arm/boot/compressed/head.S:996: Warning: (null)
+arch/arm/boot/compressed/head.S:997: Warning: (null)
+arch/arm/boot/compressed/head.S:1027: Warning: (null)
+arch/arm/boot/compressed/head.S:1035: Warning: (null)
+arch/arm/boot/compressed/head.S:1046: Warning: (null)
+arch/arm/boot/compressed/head.S:1060: Warning: (null)
+arch/arm/boot/compressed/head.S:1092: Warning: (null)
+arch/arm/boot/compressed/head.S:1094: Warning: (null)
+arch/arm/boot/compressed/head.S:1095: Warning: (null)
+arch/arm/boot/compressed/head.S:1102: Warning: (null)
+arch/arm/boot/compressed/head.S:1134: Warning: (null)
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Matthew Gretton-Dann <matthew.gretton-dann@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-sched.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/boot/compressed/Makefile      |    2 +-
+ arch/arm/boot/compressed/head-sa1100.S |    1 +
+ arch/arm/boot/compressed/head-shark.S  |    1 +
+ arch/arm/boot/compressed/head.S        |    1 +
+ 4 files changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -213,7 +213,7 @@ static inline unsigned char tt_start_ufr
- }
+--- a/arch/arm/boot/compressed/Makefile
++++ b/arch/arm/boot/compressed/Makefile
+@@ -121,7 +121,7 @@ KBUILD_CFLAGS = $(subst -pg, , $(ORIG_CF
+ endif
  
- static const unsigned char
--max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 125, 25 };
-+max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 30, 0 };
+ ccflags-y := -fpic -mno-single-pic-base -fno-builtin -I$(obj)
+-asflags-y := -Wa,-march=all -DZIMAGE
++asflags-y := -DZIMAGE
  
- /* carryover low/fullspeed bandwidth that crosses uframe boundries */
- static inline void carryover_tt_bandwidth(unsigned short tt_usecs[8])
+ # Supply kernel BSS size to the decompressor via a linker symbol.
+ KBSS_SZ = $(shell $(CROSS_COMPILE)size $(obj)/../../../../vmlinux | \
+--- a/arch/arm/boot/compressed/head-sa1100.S
++++ b/arch/arm/boot/compressed/head-sa1100.S
+@@ -11,6 +11,7 @@
+ #include <asm/mach-types.h>
+ 
+ 		.section        ".start", "ax"
++		.arch	armv4
+ 
+ __SA1100_start:
+ 
+--- a/arch/arm/boot/compressed/head-shark.S
++++ b/arch/arm/boot/compressed/head-shark.S
+@@ -18,6 +18,7 @@
+ 	
+ 		.section	".start", "ax"
+ 
++		.arch armv4
+ 		b	__beginning
+ 	
+ __ofw_data:	.long	0				@ the number of memory blocks
+--- a/arch/arm/boot/compressed/head.S
++++ b/arch/arm/boot/compressed/head.S
+@@ -11,6 +11,7 @@
+ #include <linux/linkage.h>
+ #include <asm/assembler.h>
+ 
++	.arch	armv7-a
+ /*
+  * Debugging stuff
+  *
 
 
