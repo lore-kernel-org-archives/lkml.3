@@ -1,102 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465Ab3FKGwp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 02:52:45 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:50454 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753125Ab3FKGwn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753178Ab3FKGwn (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Jun 2013 02:52:43 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: linux-efi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Zach Bobroff <zacharyb@ami.com>, <stable@vger.kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [PATCH] x86, efi: retry ExitBootServices() on failure
-Date: Tue, 11 Jun 2013 07:52:38 +0100
-Message-Id: <1370933558-10128-1-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.8.1.4
+Received: from mga02.intel.com ([134.134.136.20]:63651 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751441Ab3FKGwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 02:52:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,843,1363158000"; 
+   d="scan'208";a="351524345"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: linux-kernel@vger.kernel.org, Alex Thorlton <athorlton@sgi.com>,
+        Li Zefan <lizefan@huawei.com>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>, linux-doc@vger.kernel.org,
+        linux-mm@kvack.org
+In-Reply-To: <1370881521-177821-1-git-send-email-athorlton@sgi.com>
+References: <1370881521-177821-1-git-send-email-athorlton@sgi.com>
+Subject: RE: [PATCH] Make transparent hugepages cpuset aware
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130611065518.3DEBCE0090@blue.fi.intel.com>
+Date: Tue, 11 Jun 2013 09:55:18 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Bobroff <zacharyb@ami.com>
+Alex Thorlton wrote:
+> This patch adds the ability to control THPs on a per cpuset basis.  Please see
+> the additions to Documentation/cgroups/cpusets.txt for more information.
+> 
+> Signed-off-by: Alex Thorlton <athorlton@sgi.com>
+> Reviewed-by: Robin Holt <holt@sgi.com>
+> Cc: Li Zefan <lizefan@huawei.com>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-mm@kvack.org
+> ---
+>  Documentation/cgroups/cpusets.txt |  50 ++++++++++-
+>  include/linux/cpuset.h            |   5 ++
+>  include/linux/huge_mm.h           |  25 +++++-
+>  kernel/cpuset.c                   | 181 ++++++++++++++++++++++++++++++++++++++
+>  mm/huge_memory.c                  |   3 +
+>  5 files changed, 261 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/cgroups/cpusets.txt b/Documentation/cgroups/cpusets.txt
+> index 12e01d4..b7b2c83 100644
+> --- a/Documentation/cgroups/cpusets.txt
+> +++ b/Documentation/cgroups/cpusets.txt
+> @@ -22,12 +22,14 @@ CONTENTS:
+>    1.6 What is memory spread ?
+>    1.7 What is sched_load_balance ?
+>    1.8 What is sched_relax_domain_level ?
+> -  1.9 How do I use cpusets ?
+> +  1.9 What is thp_enabled ?
+> +  1.10 How do I use cpusets ?
+>  2. Usage Examples and Syntax
+>    2.1 Basic Usage
+>    2.2 Adding/removing cpus
+>    2.3 Setting flags
+>    2.4 Attaching processes
+> +  2.5 Setting thp_enabled flags
+>  3. Questions
+>  4. Contact
+>  
+> @@ -581,7 +583,34 @@ If your situation is:
+>  then increasing 'sched_relax_domain_level' would benefit you.
+>  
+>  
+> -1.9 How do I use cpusets ?
+> +1.9 What is thp_enabled ?
+> +-----------------------
+> +
+> +The thp_enabled file contained within each cpuset controls how transparent
+> +hugepages are handled within that cpuset.
+> +
+> +The root cpuset's thp_enabled flags mirror the flags set in
+> +/sys/kernel/mm/transparent_hugepage/enabled.  The flags in the root cpuset can
+> +only be modified by changing /sys/kernel/mm/transparent_hugepage/enabled. The
+> +thp_enabled file for the root cpuset is read only.  These flags cause the
+> +root cpuset to behave as one might expect:
+> +
+> +- When set to always, THPs are used whenever practical
+> +- When set to madvise, THPs are used only on chunks of memory that have the
+> +  MADV_HUGEPAGE flag set
+> +- When set to never, THPs are never allowed for tasks in this cpuset
+> +
+> +The behavior of thp_enabled for children of the root cpuset is where things
+> +become a bit more interesting.  The child cpusets accept the same flags as the
+> +root, but also have a default flag, which, when set, causes a cpuset to use the
+> +behavior of its parent.  When a child cpuset is created, its default flag is
+> +always initially set.
+> +
+> +Since the flags on child cpusets are allowed to differ from the flags on their
+> +parents, we are able to enable THPs for tasks in specific cpusets, and disable
+> +them in others.
 
-ExitBootServices is absolutely supposed to return a failure if any
-ExitBootServices event handler changes the memory map.  Basically the
-get_map loop should run again if ExitBootServices returns an error the
-first time.  I would say it would be fair that if ExitBootServices gives
-an error the second time then Linux would be fine in returning control
-back to BIOS.
+Should we have a way for parent cgroup can enforce child behaviour?
+Like a mask of allowed thp_enabled values children can choose.
 
-The second change is the following line:
+> @@ -177,6 +177,29 @@ static inline struct page *compound_trans_head(struct page *page)
+>  	return page;
+>  }
+>  
+> +#ifdef CONFIG_CPUSETS
+> +extern int cpuset_thp_always(struct task_struct *p);
+> +extern int cpuset_thp_madvise(struct task_struct *p);
+> +
+> +static inline int transparent_hugepage_enabled(struct vm_area_struct *vma)
+> +{
+> +	if (cpuset_thp_always(current))
+> +		return 1;
 
-again:
-        size += sizeof(*mem_map) * 2;
+Why do you ignore VM_NOHUGEPAGE?
+And !is_vma_temporary_stack(__vma) is still relevant.
 
-Originally you were incrementing it by the size of one memory map entry.
-The issue here is all related to the low_alloc routine you are using.
-In this routine you are making allocations to get the memory map itself.
-Doing this allocation or allocations can affect the memory map by more
-than one record.
+> +	else if (cpuset_thp_madvise(current) &&
+> +		 ((vma)->vm_flags & VM_HUGEPAGE) &&
+> +		 !((vma)->vm_flags & VM_NOHUGEPAGE) &&
+> +		 !is_vma_temporary_stack(vma))
+> +		return 1;
+> +	else
+> +		return 0;
+> +}
+> +#else
+> +static inline int transparent_hugepage_enabled(struct vm_area_struct *vma)
+> +{
+> +	return _transparent_hugepage_enabled(vma);
+> +}
+> +#endif
+> +
+>  extern int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  				unsigned long addr, pmd_t pmd, pmd_t *pmdp);
+>  
 
-[ mfleming - changelog, code style ]
-Signed-off-by: Zach Bobroff <zacharyb@ami.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- arch/x86/boot/compressed/eboot.c | 20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index 35ee62f..7c6e5d9 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -1037,18 +1037,20 @@ static efi_status_t exit_boot(struct boot_params *boot_params,
- 	efi_memory_desc_t *mem_map;
- 	efi_status_t status;
- 	__u32 desc_version;
-+	bool called_exit = false;
- 	u8 nr_entries;
- 	int i;
- 
- 	size = sizeof(*mem_map) * 32;
- 
- again:
--	size += sizeof(*mem_map);
-+	size += sizeof(*mem_map) * 2;
- 	_size = size;
- 	status = low_alloc(size, 1, (unsigned long *)&mem_map);
- 	if (status != EFI_SUCCESS)
- 		return status;
- 
-+get_map:
- 	status = efi_call_phys5(sys_table->boottime->get_memory_map, &size,
- 				mem_map, &key, &desc_size, &desc_version);
- 	if (status == EFI_BUFFER_TOO_SMALL) {
-@@ -1074,8 +1076,20 @@ again:
- 	/* Might as well exit boot services now */
- 	status = efi_call_phys2(sys_table->boottime->exit_boot_services,
- 				handle, key);
--	if (status != EFI_SUCCESS)
--		goto free_mem_map;
-+	if (status != EFI_SUCCESS) {
-+		/*
-+		 * ExitBootServices() will fail if any of the event
-+		 * handlers change the memory map. In which case, we
-+		 * must be prepared to retry, but only once so that
-+		 * we're guaranteed to exit on repeated failures instead
-+		 * of spinning forever.
-+		 */
-+		if (called_exit)
-+			goto free_mem_map;
-+
-+		called_exit = true;
-+		goto get_map;
-+	}
- 
- 	/* Historic? */
- 	boot_params->alt_mem_k = 32 * 1024;
 -- 
-1.8.1.4
-
+ Kirill A. Shutemov
