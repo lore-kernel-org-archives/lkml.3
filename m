@@ -1,48 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754271Ab3FJXzl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 19:55:41 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:46779 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753437Ab3FJXzj (ORCPT
+	id S1754318Ab3FKAAq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 20:00:46 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:54038 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753956Ab3FKAAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 19:55:39 -0400
+	Mon, 10 Jun 2013 20:00:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1306102125410.22970@ionos>
-References: <1370644273-10495-1-git-send-email-yinghai@kernel.org>
-	<1370644273-10495-11-git-send-email-yinghai@kernel.org>
-	<alpine.LFD.2.02.1306102125410.22970@ionos>
-Date: Mon, 10 Jun 2013 16:55:38 -0700
-X-Google-Sender-Auth: k4Z2WADZXA7GMHk0h7ERXaaNdG4
-Message-ID: <CAE9FiQXVPUVWpUU+c5p__-bbgOrVk9+K-EPnCrCBRe2Q0Hi_mg@mail.gmail.com>
-Subject: Re: [PATCH v3 10/27] genirq: Split __irq_reserve_irqs from irq_alloc_descs
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexander Gordeev <agordeev@redhat.com>
+In-Reply-To: <CAPDyKFq-h_FDNMc-3rvcknBkGhWd13KDLnHhwBrcX4Rfc0qWGQ@mail.gmail.com>
+References: <1370382160-7576-1-git-send-email-taysom@chromium.org>
+	<CAPDyKFq-h_FDNMc-3rvcknBkGhWd13KDLnHhwBrcX4Rfc0qWGQ@mail.gmail.com>
+Date: Mon, 10 Jun 2013 17:00:42 -0700
+Message-ID: <CAKwO_5G8RzruHgaZMXiuTUvuFn_2k=4ZpAL_Bdu00_nugL2aOw@mail.gmail.com>
+Subject: Re: [PATCH] drivers: mmc: reordered shutdown sequence in mmc_bld_remove_req
+From: Paul Taysom <taysom@google.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Paul Taysom <taysom@chromium.org>, Chris Ball <cjb@laptop.org>,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Konstantin Dorfman <kdorfman@codeaurora.org>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sonny@chromium.org, Olof Johansson <olofj@chromium.org>,
+        Jens Axboe <axboe@kernel.dk>, vpalatin@chromium.org,
+        tbroch@chromium.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 12:39 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Fri, 7 Jun 2013, Yinghai Lu wrote:
->>  /**
->> - * irq_alloc_descs - allocate and initialize a range of irq descriptors
->> - * @irq:     Allocate for specific irq number if irq >= 0
->> + * __irq_reserve_descs - reserve and initialize a range of irq descriptors
+On Mon, Jun 10, 2013 at 2:44 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> On 4 June 2013 23:42, Paul Taysom <taysom@chromium.org> wrote:
+>> We had a multi-partition SD-Card with two ext2 file systems. The partition
+>> table was getting overwritten by a race between the card removal and
+>> the unmount of the 2nd ext2 partition.
+>>
+>> What was observed:
+>> 1. Suspend/resume would call to remove the device. The clearing
+>>    of the device information is done asynchronously.
+>> 2. A request is made to unmount the file system (this is called
+>>    after the removal has started).
+>> 3. The remapping table was cleared by the asynchronous part of
+>>    the device removal.
+>> 4. A write request to the super block (block 0 of the partition)
+>>    was sent down and instead of being remapped to the partition
+>>    offset, it was remapped to block 0 of the device which is where
+>>    the partition table is located.
+>> 5. Write was queued and written resulting in the overwriting
+>>    of the partition table with the ext2 super block.
+>> 6. The mmc_queue is cleaned up.
 >
-> Did you even bother to run docbook ?
+> Hi Paul,
 >
-> No you didn't. Otherwise you'd have noticed that documentation for
-> __irq_reserve_descs is not the right thing for a function named
-> __irq_reserve_irqs.
+> An interesting bug you found here. My impression is that this is
+> something that should be addressed through the blk layer, somehow.
+>
+> Have you considered that this is not only a problem for SD cards, but
+> for other block device drivers as well. I believe it is common to call
+> del_gendisk before blk_cleanup_queue, which in principle is what you
+> want to change.
+>
+>>
+>> The mmc card device driver used to access SD cards, was calling del_gendisk
+>> before calling mmc_cleanup-queue. The comment in the mmc_blk_remove_req
+>> code indicated that it expected del_gendisk to block all further requests
+>> from being queued but it doesn't. The mmc driver uses the presences of the
+>> mmc_queue to determine if the request should be queued.
+>>
+>> The fix was to clean up the mmc_queue before the rest of the
+>> the delete partition code is called.
+>>
+>> This prevents the overwriting of the partition table.
+>>
+>> However, the umount gets an error trying to write the super block.
+>> The umount should be issued before the device is removed but that
+>> is not always possible. The umount is still needed to cleanup other
+>> data structures.
+>
+> So this clearly indicates to me that this is not the complete
+> solution, even if it solves the most serious problem for this bug.
+>
+> I think it would be good to get a blk device maintainer's input to
+> this discussion.
+>
+> Kind regards
+> Ulf Hansson
+>
+>>
+>> Addresses the problem described in http://crbug.com/240815
+>>
+>> Signed-off-by: Paul Taysom <taysom@chromium.org>
+>> ---
+>>  drivers/mmc/card/block.c | 14 ++++++++------
+>>  1 file changed, 8 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+>> index dd27b07..a79f113 100644
+>> --- a/drivers/mmc/card/block.c
+>> +++ b/drivers/mmc/card/block.c
+>> @@ -2158,6 +2158,14 @@ static void mmc_blk_remove_req(struct mmc_blk_data *md)
+>>         struct mmc_card *card;
+>>
+>>         if (md) {
+>> +               /*
+>> +                * Flush remaining requests and free queues. It
+>> +                * is freeing the queue that stops new requests
+>> +                * from being accepted.
+>> +                */
+>> +               mmc_cleanup_queue(&md->queue);
+>> +               if (md->flags & MMC_BLK_PACKED_CMD)
+>> +                       mmc_packed_clean(&md->queue);
+>>                 card = md->queue.card;
+>>                 if (md->disk->flags & GENHD_FL_UP) {
+>>                         device_remove_file(disk_to_dev(md->disk), &md->force_ro);
+>> @@ -2166,14 +2174,8 @@ static void mmc_blk_remove_req(struct mmc_blk_data *md)
+>>                                 device_remove_file(disk_to_dev(md->disk),
+>>                                         &md->power_ro_lock);
+>>
+>> -                       /* Stop new requests from getting into the queue */
+>>                         del_gendisk(md->disk);
+>>                 }
+>> -
+>> -               /* Then flush out any already in there */
+>> -               mmc_cleanup_queue(&md->queue);
+>> -               if (md->flags & MMC_BLK_PACKED_CMD)
+>> -                       mmc_packed_clean(&md->queue);
+>>                 mmc_blk_put(md);
+>>         }
+>>  }
+>> --
+>> 1.8.3
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
 
-sorry, will them consistent.
+Added the block maintainer, axboe@kernel.dk and others to CC list.
 
-Thanks
-
-Yinghai
+You are correct that this is probably not an isolated problem. I
+looked at a number of drivers and they did follow the same pattern but
+I have not yet looked at them deeply enough to see what they check
+before queuing a request. For example, if they check part->nr_sects ==
+0, they should work fine.
