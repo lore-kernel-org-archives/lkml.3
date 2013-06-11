@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757440Ab3FKUbD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:31:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41686 "EHLO
+	id S1757425Ab3FKUbB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:31:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41689 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756363Ab3FKUDO (ORCPT
+	with ESMTP id S1756287Ab3FKUDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:14 -0400
+	Tue, 11 Jun 2013 16:03:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>
-Subject: [ 24/32] hwmon: (adm1021) Strengthen chip detection for ADM1021, LM84 and MAX1617
-Date: Tue, 11 Jun 2013 13:03:23 -0700
-Message-Id: <20130611200128.890054981@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 09/32] USB: keyspan: fix bogus array index
+Date: Tue, 11 Jun 2013 13:03:08 -0700
+Message-Id: <20130611200127.250352805@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611200126.214442788@linuxfoundation.org>
 References: <20130611200126.214442788@linuxfoundation.org>
@@ -26,103 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 591bfcfc334a003ba31c0deff03b22e73349939b upstream.
+commit a07088098a650267b2eda689538133a324b9523f upstream.
 
-On a system with both MAX1617 and JC42 sensors, JC42 sensors can be misdetected
-as LM84. Strengthen detection sufficiently enough to avoid this misdetection.
-Also improve detection for ADM1021.
+The outcont_endpoints array was indexed using the port minor number
+(which can be greater than the array size) rather than the device port
+number.
 
-Modeled after chip detection code in sensors-detect command.
-
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Tested-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/adm1021.c |   58 +++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 50 insertions(+), 8 deletions(-)
+ drivers/usb/serial/keyspan.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hwmon/adm1021.c
-+++ b/drivers/hwmon/adm1021.c
-@@ -332,26 +332,68 @@ static int adm1021_detect(struct i2c_cli
- 	man_id = i2c_smbus_read_byte_data(client, ADM1021_REG_MAN_ID);
- 	dev_id = i2c_smbus_read_byte_data(client, ADM1021_REG_DEV_ID);
+--- a/drivers/usb/serial/keyspan.c
++++ b/drivers/usb/serial/keyspan.c
+@@ -1705,7 +1705,7 @@ static int keyspan_usa26_send_setup(stru
+ 	d_details = s_priv->device_details;
+ 	device_port = port->number - port->serial->minor;
  
-+	if (man_id < 0 || dev_id < 0)
-+		return -ENODEV;
-+
- 	if (man_id == 0x4d && dev_id == 0x01)
- 		type_name = "max1617a";
- 	else if (man_id == 0x41) {
- 		if ((dev_id & 0xF0) == 0x30)
- 			type_name = "adm1023";
--		else
-+		else if ((dev_id & 0xF0) == 0x00)
- 			type_name = "adm1021";
-+		else
-+			return -ENODEV;
- 	} else if (man_id == 0x49)
- 		type_name = "thmc10";
- 	else if (man_id == 0x23)
- 		type_name = "gl523sm";
- 	else if (man_id == 0x54)
- 		type_name = "mc1066";
--	/* LM84 Mfr ID in a different place, and it has more unused bits */
--	else if (conv_rate == 0x00
--		 && (config & 0x7F) == 0x00
--		 && (status & 0xAB) == 0x00)
--		type_name = "lm84";
--	else
--		type_name = "max1617";
-+	else {
-+		int lte, rte, lhi, rhi, llo, rlo;
-+
-+		/* extra checks for LM84 and MAX1617 to avoid misdetections */
-+
-+		llo = i2c_smbus_read_byte_data(client, ADM1021_REG_THYST_R(0));
-+		rlo = i2c_smbus_read_byte_data(client, ADM1021_REG_THYST_R(1));
-+
-+		/* fail if any of the additional register reads failed */
-+		if (llo < 0 || rlo < 0)
-+			return -ENODEV;
-+
-+		lte = i2c_smbus_read_byte_data(client, ADM1021_REG_TEMP(0));
-+		rte = i2c_smbus_read_byte_data(client, ADM1021_REG_TEMP(1));
-+		lhi = i2c_smbus_read_byte_data(client, ADM1021_REG_TOS_R(0));
-+		rhi = i2c_smbus_read_byte_data(client, ADM1021_REG_TOS_R(1));
-+
-+		/*
-+		 * Fail for negative temperatures and negative high limits.
-+		 * This check also catches read errors on the tested registers.
-+		 */
-+		if ((s8)lte < 0 || (s8)rte < 0 || (s8)lhi < 0 || (s8)rhi < 0)
-+			return -ENODEV;
-+
-+		/* fail if all registers hold the same value */
-+		if (lte == rte && lte == lhi && lte == rhi && lte == llo
-+		    && lte == rlo)
-+			return -ENODEV;
-+
-+		/*
-+		 * LM84 Mfr ID is in a different place,
-+		 * and it has more unused bits.
-+		 */
-+		if (conv_rate == 0x00
-+		    && (config & 0x7F) == 0x00
-+		    && (status & 0xAB) == 0x00) {
-+			type_name = "lm84";
-+		} else {
-+			/* fail if low limits are larger than high limits */
-+			if ((s8)llo > lhi || (s8)rlo > rhi)
-+				return -ENODEV;
-+			type_name = "max1617";
-+		}
-+	}
+-	outcont_urb = d_details->outcont_endpoints[port->number];
++	outcont_urb = d_details->outcont_endpoints[device_port];
+ 	this_urb = p_priv->outcont_urb;
  
- 	pr_debug("adm1021: Detected chip %s at adapter %d, address 0x%02x.\n",
- 		 type_name, i2c_adapter_id(adapter), client->addr);
+ 	dbg("%s - endpoint %d", __func__, usb_pipeendpoint(this_urb->pipe));
 
 
