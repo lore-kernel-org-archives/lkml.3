@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755131Ab3FKQEN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 12:04:13 -0400
-Received: from www.sr71.net ([198.145.64.142]:43589 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753424Ab3FKQEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 12:04:11 -0400
-Message-ID: <51B74A7A.1040707@sr71.net>
-Date: Tue, 11 Jun 2013 09:04:10 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1755186Ab3FKQE3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 12:04:29 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:50113 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755150Ab3FKQEZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 12:04:25 -0400
+Date: Tue, 11 Jun 2013 09:04:16 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Lee Jones <lee.jones@linaro.org>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: am335x: TSC & ADC reworking including DT pieces, take 4
+Message-ID: <20130611160415.GA379@core.coreip.homeip.net>
+References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
+ <20130611142358.GG29135@zurbaran>
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/8] thp, mm: avoid PageUnevictable on active/inactive
- lru lists
-References: <1370964919-16187-1-git-send-email-kirill.shutemov@linux.intel.com> <1370964919-16187-3-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1370964919-16187-3-git-send-email-kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130611142358.GG29135@zurbaran>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2013 08:35 AM, Kirill A. Shutemov wrote:
-> active/inactive lru lists can contain unevicable pages (i.e. ramfs pages
-> that have been placed on the LRU lists when first allocated), but these
-> pages must not have PageUnevictable set - otherwise shrink_[in]active_list
-> goes crazy:
+Hi Samuel,
 
-I think it's also important here to note if this is a bug that can be
-hit _currently_, or if this really is just a preparatory patch for
-transparent huge page cache.
+On Tue, Jun 11, 2013 at 04:23:58PM +0200, Samuel Ortiz wrote:
+> Hi Sebastian,
+> 
+> On Tue, Jun 11, 2013 at 01:30:46PM +0200, Sebastian Andrzej Siewior wrote:
+> > I believe the whole thing should go via the MFD tree. It touches also
+> > input & iio subsystem. I collected ACKs where I got some in the meantime.
+> Please fix your commit logs, and your subject lines. It should be e.g.
+> mfd: input: ti_am335x_adc: Blablabla
+> 
+> if it's mostly an mfd patch that also touches an input driver.
+> 
+> Then, this is a pretty big patchset, with iio, input and mfd all mixed
+> together and it is likely to create merge conflicts.
+> From what I can see from it, and please correct me if I'm
+> wrong, the iio and input changes depend on the mfd ones, and not the
+> other way around. If that's so, I'm going to ask you to reshuffle your
+> patch set and separate the MFD changes from the iio and input ones. I'll
+> take the MFD ones and will create an immutable branch for Jonathan and
+> Dmitry to pull from and apply the iio and input changes on top of it.
+> Merge conflicts should be mostly avoided that way.
 
->From what I can see, this is _needed_ preparatory work, but it can also
-stand on its own because it simplifies things.  It should go in sooner
-rather than later.
+I purposely left this driver alone as I expected it would be merged
+through MFD tree, so there should not be any merging issues on my side.
+
+Thanks.
+
+-- 
+Dmitry
