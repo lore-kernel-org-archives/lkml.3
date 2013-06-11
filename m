@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454Ab3FKUcg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:32:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41689 "EHLO
+	id S1757481Ab3FKUcz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:32:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41683 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756324Ab3FKUDL (ORCPT
+	with ESMTP id S1756319Ab3FKUDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:11 -0400
+	Tue, 11 Jun 2013 16:03:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ash Willis <ashwillis@programmer.net>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 20/32] ACPI / video: ignore BIOS initial backlight value for HP Pavilion g6
-Date: Tue, 11 Jun 2013 13:03:19 -0700
-Message-Id: <20130611200128.470576272@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 18/32] USB: mos7720: fix hardware flow control
+Date: Tue, 11 Jun 2013 13:03:17 -0700
+Message-Id: <20130611200128.261399039@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611200126.214442788@linuxfoundation.org>
 References: <20130611200126.214442788@linuxfoundation.org>
@@ -27,40 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ash Willis <ashwillis.kernel@gmail.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 780a6ec640a3fed671fc2c40e4dd30c03eca3ac3 upstream.
+commit a26f009a070e840fadacb91013b2391ba7ab6cc2 upstream.
 
-This patch addresses kernel bug 56661. BIOS reports an incorrect
-backlight value, causing the driver to switch off the backlight
-completely during startup. This patch ignores the incorrect value from
-BIOS.
+The register access to enable hardware flow control depends on the
+device port number and not the port minor number.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=56661
-Signed-off-by: Ash Willis <ashwillis@programmer.net>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/video.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/serial/mos7720.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -449,6 +449,14 @@ static struct dmi_system_id video_dmi_ta
- 	},
- 	{
- 	 .callback = video_ignore_initial_backlight,
-+	 .ident = "HP Pavilion g6 Notebook PC",
-+	 .matches = {
-+		 DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
-+		 DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion g6 Notebook PC"),
-+		},
-+	},
-+	{
-+	 .callback = video_ignore_initial_backlight,
- 	 .ident = "HP Pavilion m4",
- 	 .matches = {
- 		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
+--- a/drivers/usb/serial/mos7720.c
++++ b/drivers/usb/serial/mos7720.c
+@@ -1701,7 +1701,7 @@ static void change_port_settings(struct
+ 		mos7720_port->shadowMCR |= (UART_MCR_XONANY);
+ 		/* To set hardware flow control to the specified *
+ 		 * serial port, in SP1/2_CONTROL_REG             */
+-		if (port->number)
++		if (port_number)
+ 			write_mos_reg(serial, dummy, SP_CONTROL_REG, 0x01);
+ 		else
+ 			write_mos_reg(serial, dummy, SP_CONTROL_REG, 0x02);
 
 
