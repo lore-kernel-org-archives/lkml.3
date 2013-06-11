@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab3FKPd0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 11:33:26 -0400
-Received: from mga14.intel.com ([143.182.124.37]:16323 "EHLO mga14.intel.com"
+	id S1754908Ab3FKPeO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 11:34:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:27454 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754759Ab3FKPct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 11:32:49 -0400
+	id S1754725Ab3FKPcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 11:32:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,845,1363158000"; 
-   d="scan'208";a="315387184"
+   d="scan'208";a="327750859"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 8/8] thp: consolidate code between handle_mm_fault() and do_huge_pmd_anonymous_page()
-Date: Tue, 11 Jun 2013 18:35:19 +0300
-Message-Id: <1370964919-16187-9-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH 6/8] thp: move maybe_pmd_mkwrite() out of mk_huge_pmd()
+Date: Tue, 11 Jun 2013 18:35:17 +0300
+Message-Id: <1370964919-16187-7-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1370964919-16187-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1370964919-16187-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,150 +33,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-do_huge_pmd_anonymous_page() has copy-pasted piece of handle_mm_fault()
-to handle fallback path.
+It's confusing that mk_huge_pmd() has semantics different from mk_pte()
+or mk_pmd(). I spent some time on debugging issue cased by this
+inconsistency.
 
-Let's consolidate code back by introducing VM_FAULT_FALLBACK return
-code.
+Let's move maybe_pmd_mkwrite() out of mk_huge_pmd() and adjust
+prototype to match mk_pte().
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Acked-by: Hillf Danton <dhillf@gmail.com>
+Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
- include/linux/huge_mm.h |    3 ---
- include/linux/mm.h      |    3 ++-
- mm/huge_memory.c        |   31 +++++--------------------------
- mm/memory.c             |    9 ++++++---
- 4 files changed, 13 insertions(+), 33 deletions(-)
+ mm/huge_memory.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index cc276d2..1031229 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -95,9 +95,6 @@ extern int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 			  pmd_t *dst_pmd, pmd_t *src_pmd,
- 			  struct vm_area_struct *vma,
- 			  unsigned long addr, unsigned long end);
--extern int handle_pte_fault(struct mm_struct *mm,
--			    struct vm_area_struct *vma, unsigned long address,
--			    pte_t *pte, pmd_t *pmd, unsigned int flags);
- extern int split_huge_page_to_list(struct page *page, struct list_head *list);
- static inline int split_huge_page(struct page *page)
- {
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 98c9256..487988d 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -890,11 +890,12 @@ static inline int page_mapped(struct page *page)
- #define VM_FAULT_NOPAGE	0x0100	/* ->fault installed the pte, not return page */
- #define VM_FAULT_LOCKED	0x0200	/* ->fault locked the returned page */
- #define VM_FAULT_RETRY	0x0400	/* ->fault blocked, must retry */
-+#define VM_FAULT_FALLBACK 0x0800	/* huge page fault failed, fall back to small */
- 
- #define VM_FAULT_HWPOISON_LARGE_MASK 0xf000 /* encodes hpage index for large hwpoison */
- 
- #define VM_FAULT_ERROR	(VM_FAULT_OOM | VM_FAULT_SIGBUS | VM_FAULT_HWPOISON | \
--			 VM_FAULT_HWPOISON_LARGE)
-+			 VM_FAULT_FALLBACK | VM_FAULT_HWPOISON_LARGE)
- 
- /* Encode hstate index for a hwpoisoned large page */
- #define VM_FAULT_SET_HINDEX(x) ((x) << 12)
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 01a267c..7f4ae96 100644
+index 3622e0be..5cd63f0 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -788,10 +788,9 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- {
- 	struct page *page;
- 	unsigned long haddr = address & HPAGE_PMD_MASK;
--	pte_t *pte;
- 
- 	if (haddr < vma->vm_start || haddr + HPAGE_PMD_SIZE > vma->vm_end)
--		goto out;
-+		return VM_FAULT_FALLBACK;
- 	if (unlikely(anon_vma_prepare(vma)))
- 		return VM_FAULT_OOM;
- 	if (unlikely(khugepaged_enter(vma)))
-@@ -808,7 +807,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		if (unlikely(!zero_page)) {
- 			pte_free(mm, pgtable);
- 			count_vm_event(THP_FAULT_FALLBACK);
--			goto out;
-+			return VM_FAULT_FALLBACK;
- 		}
- 		spin_lock(&mm->page_table_lock);
- 		set = set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
-@@ -824,40 +823,20 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			vma, haddr, numa_node_id(), 0);
- 	if (unlikely(!page)) {
- 		count_vm_event(THP_FAULT_FALLBACK);
--		goto out;
-+		return VM_FAULT_FALLBACK;
- 	}
- 	count_vm_event(THP_FAULT_ALLOC);
- 	if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
- 		put_page(page);
--		goto out;
-+		return VM_FAULT_FALLBACK;
- 	}
- 	if (unlikely(__do_huge_pmd_anonymous_page(mm, vma, haddr, pmd, page))) {
- 		mem_cgroup_uncharge_page(page);
- 		put_page(page);
--		goto out;
-+		return VM_FAULT_FALLBACK;
- 	}
- 
- 	return 0;
--out:
--	/*
--	 * Use __pte_alloc instead of pte_alloc_map, because we can't
--	 * run pte_offset_map on the pmd, if an huge pmd could
--	 * materialize from under us from a different thread.
--	 */
--	if (unlikely(pmd_none(*pmd)) &&
--	    unlikely(__pte_alloc(mm, vma, pmd, address)))
--		return VM_FAULT_OOM;
--	/* if an huge pmd materialized from under us just retry later */
--	if (unlikely(pmd_trans_huge(*pmd)))
--		return 0;
--	/*
--	 * A regular pmd is established and it can't morph into a huge pmd
--	 * from under us anymore at this point because we hold the mmap_sem
--	 * read mode and khugepaged takes it in write mode. So now it's
--	 * safe to run pte_offset_map().
--	 */
--	pte = pte_offset_map(pmd, address);
--	return handle_pte_fault(mm, vma, address, pte, pmd, flags);
+@@ -695,11 +695,10 @@ pmd_t maybe_pmd_mkwrite(pmd_t pmd, struct vm_area_struct *vma)
+ 	return pmd;
  }
  
- int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
-diff --git a/mm/memory.c b/mm/memory.c
-index 27c4da8..e633b4c 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3702,7 +3702,7 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
-  * but allow concurrent faults), and pte mapped but not yet locked.
-  * We return with mmap_sem still held, but pte unmapped and unlocked.
-  */
--int handle_pte_fault(struct mm_struct *mm,
-+static int handle_pte_fault(struct mm_struct *mm,
- 		     struct vm_area_struct *vma, unsigned long address,
- 		     pte_t *pte, pmd_t *pmd, unsigned int flags)
+-static inline pmd_t mk_huge_pmd(struct page *page, struct vm_area_struct *vma)
++static inline pmd_t mk_huge_pmd(struct page *page, pgprot_t prot)
  {
-@@ -3789,9 +3789,12 @@ retry:
- 	if (!pmd)
- 		return VM_FAULT_OOM;
- 	if (pmd_none(*pmd) && transparent_hugepage_enabled(vma)) {
-+		int ret = VM_FAULT_FALLBACK;
- 		if (!vma->vm_ops)
--			return do_huge_pmd_anonymous_page(mm, vma, address,
--							  pmd, flags);
-+			ret = do_huge_pmd_anonymous_page(mm, vma, address,
-+					pmd, flags);
-+		if (!(ret & VM_FAULT_FALLBACK))
-+			return ret;
+ 	pmd_t entry;
+-	entry = mk_pmd(page, vma->vm_page_prot);
+-	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
++	entry = mk_pmd(page, prot);
+ 	entry = pmd_mkhuge(entry);
+ 	return entry;
+ }
+@@ -732,7 +731,8 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
+ 		pte_free(mm, pgtable);
  	} else {
- 		pmd_t orig_pmd = *pmd;
- 		int ret;
+ 		pmd_t entry;
+-		entry = mk_huge_pmd(page, vma);
++		entry = mk_huge_pmd(page, vma->vm_page_prot);
++		entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+ 		page_add_new_anon_rmap(page, vma, haddr);
+ 		pgtable_trans_huge_deposit(mm, pmd, pgtable);
+ 		set_pmd_at(mm, haddr, pmd, entry);
+@@ -1215,7 +1215,8 @@ alloc:
+ 		goto out_mn;
+ 	} else {
+ 		pmd_t entry;
+-		entry = mk_huge_pmd(new_page, vma);
++		entry = mk_huge_pmd(new_page, vma->vm_page_prot);
++		entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+ 		pmdp_clear_flush(vma, haddr, pmd);
+ 		page_add_new_anon_rmap(new_page, vma, haddr);
+ 		set_pmd_at(mm, haddr, pmd, entry);
+@@ -2361,7 +2362,8 @@ static void collapse_huge_page(struct mm_struct *mm,
+ 	__SetPageUptodate(new_page);
+ 	pgtable = pmd_pgtable(_pmd);
+ 
+-	_pmd = mk_huge_pmd(new_page, vma);
++	_pmd = mk_huge_pmd(new_page, vma->vm_page_prot);
++	_pmd = maybe_pmd_mkwrite(pmd_mkdirty(_pmd), vma);
+ 
+ 	/*
+ 	 * spin_lock() below is not the equivalent of smp_wmb(), so
 -- 
 1.7.10.4
 
