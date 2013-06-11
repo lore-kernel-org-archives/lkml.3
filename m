@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394Ab3FKNIK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 09:08:10 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:65195 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830Ab3FKNII (ORCPT
+	id S1754154Ab3FKNL5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 09:11:57 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:62362 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751830Ab3FKNLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 09:08:08 -0400
-Date: Tue, 11 Jun 2013 08:08:04 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: linux-acpi@vger.kernel.org, joeyli.kernel@gmail.com,
-        daniel.vetter@ffwll.ch, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        lenb@kernel.org, rjw@sisk.pl
-Subject: Re: [PATCH 0/3] Fix backlight issues on some Windows 8 systems
-Message-ID: <20130611130804.GF8943@thinkpad-t410>
-Mail-Followup-To: Matthew Garrett <matthew.garrett@nebula.com>,
-	linux-acpi@vger.kernel.org, joeyli.kernel@gmail.com,
-	daniel.vetter@ffwll.ch, intel-gfx@lists.freedesktop.org,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	lenb@kernel.org, rjw@sisk.pl
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
-MIME-Version: 1.0
+	Tue, 11 Jun 2013 09:11:55 -0400
+X-Nat-Received: from [202.181.97.72]:51481 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1370956313.9414
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: [PATCH 0/4] LSM/TOMOYO: Introduce per a task_struct variables.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Message-Id: <201306112211.GBH48909.SOFOFJHMtFQVLO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Tue, 11 Jun 2013 22:11:52 +0900
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 11062013 #10379665, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 09, 2013 at 07:01:36PM -0400, Matthew Garrett wrote:
-> Windows 8 introduced new policy for backlight control by pushing it out to
-> graphics drivers. This appears to have coincided with a range of vendors
-> adding Windows 8 checks to their backlight control code which trigger either
-> awkward behaviour (Lenovo) or complete brokenness (some Dells). The simplest
-> thing to do would be to just disable ACPI backlight control entirely if the
-> firmware indicates Windows 8 support, but it's entirely possible that
-> individual graphics drivers might still make use of the ACPI functionality in
-> preference to native control.
-> 
-> The first two patches in this series are picked from other patchesets aimed at
-> solving similar problems. The last simply unregisters ACPI backlight control
-> on Windows 8 systems when using an Intel GPU. Similar code could be added to
-> other drivers, but I'm reluctant to do so without further investigation as
-> to the behaviour of the vendor drivers under Windows.
+This patchset is for fixing two of TOMOYO's long-standing bugs which exists
+since Linux 2.6.30.
 
-I've received some feedback from user testing of these patches (don't
-have an affected machine myself) and the feedback is mostly good. One
-user reported it didn't work, but I that machine may have discrete
-graphics (waiting to hear back from the user).
+Bug 1:
 
-The main drawback I see with any approach like this one is that the
-backlight remains broken for users of proprietary graphics drivers.
+  TOMOYO has been unable to check binary loader's permission upon execve()
+  because TOMOYO uses different permission for the program passed to execve()
+  request and the binary loader requested by the program passed to the execve()
+  request, but TOMOYO was not able to distinguish them due to lack of ability
+  to pass the proposed credential argument. Some attempt to pass the proposed
+  credential was made but was not successful because it breaks DAC's behavior.
 
-Seth
+Bug 2:
+
+  TOMOYO has been unable to remember that the current thread was once granted
+  for managing policy, for there is no mechanism for cleanly allocating per a
+  task_struct variables. As a result, TOMOYO needlessly has to check permission
+  for updating policy whenever a line of policy was written. Also, if the
+  userspace once deleted a line that is needed for updating policy, the current
+  thread (which should be able to update policy) fails to write the rest of
+  lines.
+  Variables associated with copy on write credential do not help for fixing
+  this bug because TOMOYO may not be allowed to modify it when TOMOYO wants to
+  modify it.
+
+This patchset has four patches. Patch 1 and 2 are essentially revival of LSM
+hooks which existed until Linux 2.6.28.
+
+[PATCH 1/4] LSM: Add security_bprm_aborting_creds() hook.
+[PATCH 2/4] LSM: Revive security_task_alloc() hook.
+[PATCH 3/4] TOMOYO: Remember the proposed domain while in execve() request.
+[PATCH 4/4] TOMOYO: Allow caching policy manager's state until execve() request.
+
+ b/fs/exec.c                |    1
+ b/include/linux/security.h |   11 +++
+ b/kernel/fork.c            |    7 +
+ b/security/capability.c    |    5 +
+ b/security/security.c      |    5 +
+ b/security/tomoyo/common.c |   22 +++++-
+ b/security/tomoyo/common.h |   34 +++++++++
+ b/security/tomoyo/tomoyo.c |  163 +++++++++++++++++++++++++++++++++++++++++++--
+ include/linux/security.h   |   10 ++
+ security/capability.c      |    6 +
+ security/security.c        |    5 +
+ security/tomoyo/common.h   |    6 +
+ security/tomoyo/tomoyo.c   |   32 ++++++++
+ 13 files changed, 298 insertions(+), 9 deletions(-)
