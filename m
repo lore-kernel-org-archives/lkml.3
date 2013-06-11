@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab3FKAXI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 20:23:08 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:51978 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753386Ab3FKAXF (ORCPT
+	id S1754362Ab3FKAdR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 20:33:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2471 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753920Ab3FKAdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 20:23:05 -0400
-Date: Mon, 10 Jun 2013 17:22:59 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, torvalds@linux-foundation.org
-Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
-Message-ID: <20130611002258.GY5146@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130609193657.GA13392@linux.vnet.ibm.com>
- <1370905376.9844.137.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370905376.9844.137.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061100-2876-0000-0000-000009B5E991
+	Mon, 10 Jun 2013 20:33:16 -0400
+X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=fuUa0kr5qxIA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=bKaqOO5oqQsA:10 a=pGLkceISAAAA:8 a=WEHJoeCFY9tIKFYffDoA:9 a=QEXdDO2ut3YA:10 a=MSl-tDqOz04A:10 a=cryI6HB3DnSqMTZp:21 a=mZtDuAEPKxF_Hcaj:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1370910794.9844.150.camel@gandalf.local.home>
+Subject: Re: WARNING: at kernel/trace/ftrace.c:1605
+ __ftrace_hash_rec_update.part.37+0x20a/0x240()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Mon, 10 Jun 2013 20:33:14 -0400
+In-Reply-To: <20130610234806.GA7069@redhat.com>
+References: <20130610234806.GA7069@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 07:02:56PM -0400, Steven Rostedt wrote:
-> On Sun, 2013-06-09 at 12:36 -0700, Paul E. McKenney wrote:
+On Mon, 2013-06-10 at 19:48 -0400, Dave Jones wrote:
+> 3.10-rc5 + the two patches referenced in the RCU thread from earlier.
 > 
-> > +/*
-> > + * Return a pointer to the queue header associated with the specified lock,
-> > + * or return NULL if there is no queue for the lock or if the lock's queue
-> > + * is in transition.
-> > + */
-> > +static struct tkt_q_head *tkt_q_find_head(arch_spinlock_t *asp)
+> 	Dave
 > 
-> BTW, what does "asp" mean? arch_spinlock?
+> [ 2313.381283] WARNING: at kernel/trace/ftrace.c:1605 __ftrace_hash_rec_update.part.37+0x20a/0x240()
 
-"arch_spinlock pointer", but yes.  Or I suppose a millenia-late warning
-to Cleopatra.
+Grumble,
 
->                                            If so, can we just call it
-> "lock" and be consistent with all the other spinlock calls in the
-> kernel. Because, I keep thinking this has something to do with Microsoft
-> dynamic web pages.
+Somehow the list of functions that perf enabled got out of sync with
+what ftrace had. When perf disabled its list of functions from ftrace,
+perf thought it had a function enabled that wasn't and ftrace cried
+about that.
 
-Fair enough!
+What does 'trinity-child2' do? and is this reproducible? I'll go and
+investigate how perf integrates with ftrace to see if I can find how
+things got out of sync.
 
-							Thanx, Paul
+Thanks,
 
-> -- Steve
-> 
-> > +{
-> > +	int i;
-> > +	int start;
-> > +
-> > +	start = i = tkt_q_hash(asp);
-> > +	do
-> > +		if (tkt_q_heads[i].ref == asp)
-> > +			return &tkt_q_heads[i];
-> > +	while ((i = tkt_q_next_slot(i)) != start);
-> > +	return NULL;
-> > +}
-> > +
-> 
-> 
+-- Steve
+
+> [ 2313.386619] Modules linked in: fuse bnep rfcomm hidp can_bcm nfnetlink scsi_transport_iscsi can_raw nfc ipt_ULOG pppoe pppox ppp_generic slhc rose can af_rxrpc netrom phonet bluetooth rds af_802154 caif_socket caif ipx atm rfkill p8023 af_key p8022 ax25 llc2 irda decnet crc_ccitt appletalk psnap x25 llc nfsv3 nfs_acl nfs lockd sunrpc fscache coretemp hwmon kvm_intel snd_hda_codec_realtek kvm crc32c_intel ghash_clmulni_intel snd_hda_codec_hdmi microcode pcspkr snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm e1000e usb_debug ptp snd_page_alloc pps_core snd_timer snd soundcore xfs libcrc32c
+> [ 2313.411063] CPU: 1 PID: 19448 Comm: trinity-child2 Not tainted 3.10.0-rc5+ #7
+> [ 2313.424699]  ffffffff81a1739e ffff880234f23ab0 ffffffff816e395b ffff880234f23ae8
+> [ 2313.427336]  ffffffff8104a1b1 0000000000000000 0000000000000001 ffff8801b6c64000
+> [ 2313.429532]  0000000000000000 ffff8801b6c745a0 ffff880234f23af8 ffffffff8104a28a
+> [ 2313.431805] Call Trace:
+> [ 2313.433308]  [<ffffffff816e395b>] dump_stack+0x19/0x1b
+> [ 2313.435306]  [<ffffffff8104a1b1>] warn_slowpath_common+0x61/0x80
+> [ 2313.437254]  [<ffffffff8104a28a>] warn_slowpath_null+0x1a/0x20
+> [ 2313.439175]  [<ffffffff8110de3a>] __ftrace_hash_rec_update.part.37+0x20a/0x240
+> [ 2313.441392]  [<ffffffff8110fe48>] ftrace_shutdown+0xb8/0x170
+> [ 2313.443301]  [<ffffffff811102e0>] unregister_ftrace_function+0x30/0x50
+> [ 2313.445449]  [<ffffffff8112d9c7>] perf_ftrace_event_register+0x87/0x130
+> [ 2313.447466]  [<ffffffff8112d82c>] perf_trace_destroy+0x2c/0x50
+> [ 2313.449389]  [<ffffffff81135469>] tp_perf_event_destroy+0x9/0x10
+> [ 2313.451336]  [<ffffffff81136bec>] free_event+0x6c/0x190
+> [ 2313.453186]  [<ffffffff81136d74>] perf_event_release_kernel+0x64/0x90
+> [ 2313.455299]  [<ffffffff81138010>] put_event+0x120/0x1b0
+> [ 2313.457152]  [<ffffffff81137f20>] ? put_event+0x30/0x1b0
+> [ 2313.459020]  [<ffffffff811380b0>] perf_release+0x10/0x20
+> [ 2313.460886]  [<ffffffff811ae4a5>] __fput+0xf5/0x2d0
+> [ 2313.462705]  [<ffffffff811ae73e>] ____fput+0xe/0x10
+> [ 2313.464697]  [<ffffffff810745ec>] task_work_run+0xac/0xe0
+> [ 2313.466571]  [<ffffffff8104f3b3>] do_exit+0x2b3/0xcd0
+> [ 2313.468400]  [<ffffffff81063709>] ? get_signal_to_deliver+0x299/0x940
+> [ 2313.470402]  [<ffffffff810511bc>] do_group_exit+0x4c/0xc0
+> [ 2313.472279]  [<ffffffff81063751>] get_signal_to_deliver+0x2e1/0x940
+> [ 2313.474264]  [<ffffffff81002418>] do_signal+0x48/0x5a0
+> [ 2313.476266]  [<ffffffff8108cdad>] ? get_parent_ip+0xd/0x50
+> [ 2313.478153]  [<ffffffff810029e8>] do_notify_resume+0x78/0x90
+> [ 2313.480059]  [<ffffffff816f510a>] int_signal+0x12/0x17
+> [ 2313.514533] ---[ end trace 0677af9739c508fb ]---
+
 
