@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab3FKLmz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:42:55 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47424 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752218Ab3FKLmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:42:53 -0400
-Message-ID: <51B70D1B.1080208@ti.com>
-Date: Tue, 11 Jun 2013 17:12:19 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Philip Avinash <avinashphilip@ti.com>
-CC: <khilman@deeprootsystems.com>, <linux@arm.linux.org.uk>,
-        <grant.likely@secretlab.ca>, <linus.walleij@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/11] gpio: davinci: coding style correction
-References: <1369206634-6778-1-git-send-email-avinashphilip@ti.com> <1369206634-6778-3-git-send-email-avinashphilip@ti.com>
-In-Reply-To: <1369206634-6778-3-git-send-email-avinashphilip@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1755423Ab3FKLld (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:41:33 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33600 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754628Ab3FKLl2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 07:41:28 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 22/22] iio/ti_am335x_adc: check if we found the value
+Date: Tue, 11 Jun 2013 13:31:08 +0200
+Message-Id: <1370950268-7224-23-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
+References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/22/2013 12:40 PM, Philip Avinash wrote:
-> 1. Corrects coding and commenting styles
-> 2. Variables name change to meaningful name
-> 3. Remove unnecessary variable usage
-> 4. Add BINTEN macro definition
-> 
-> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+Usually we get all the values we wanted but it is possible, that te ADC
+unit is busy performing the conversation for the HW events. In that case
+-EBUSY is returned and the user may re-call the function.
 
-As Russell mentioned, the 80 char limit changes are churn. I looked at
-the variable name renaming and that's also churn with little benefit.
-The only changes that are probably worth doing are alphabetical ordering
-of include files, fixes for mult-line commenting style and usage of
-macro for register offset.
+Acked-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/iio/adc/ti_am335x_adc.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-As I started reviewing these patches, I also started fixing some of the
-comments I had and I have pushed the resulting work here:
+diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+index 8ffe52d..4427e8e 100644
+--- a/drivers/iio/adc/ti_am335x_adc.c
++++ b/drivers/iio/adc/ti_am335x_adc.c
+@@ -145,6 +145,7 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
+ 	int i;
+ 	unsigned int fifo1count, read;
+ 	u32 step = UINT_MAX;
++	bool found = false;
+ 
+ 	/*
+ 	 * When the sub-system is first enabled,
+@@ -169,11 +170,14 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
+ 	fifo1count = tiadc_readl(adc_dev, REG_FIFO1CNT);
+ 	for (i = 0; i < fifo1count; i++) {
+ 		read = tiadc_readl(adc_dev, REG_FIFO1);
+-		if (read >> 16 == step)
++		if (read >> 16 == step) {
+ 			*val = read & 0xfff;
++			found = true;
++		}
+ 	}
+ 	am335x_tsc_se_update(adc_dev->mfd_tscadc);
+-
++	if (found == false)
++		return -EBUSY;
+ 	return IIO_VAL_INT;
+ }
+ 
+-- 
+1.7.10.4
 
-https://git.kernel.org/cgit/linux/kernel/git/nsekhar/linux-davinci.git/log/?h=devel-gpio
-
-It is only compile tested, but I hope this will serve as good starting
-point for your next submission.
-
-Thanks,
-Sekhar
