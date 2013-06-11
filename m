@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757063Ab3FKUNc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:13:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41952 "EHLO
+	id S1756686Ab3FKUD7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:03:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41910 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756695Ab3FKUEB (ORCPT
+	with ESMTP id S1756643Ab3FKUDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:04:01 -0400
+	Tue, 11 Jun 2013 16:03:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Damien Lespiau <damien.lespiau@intel.com>
-Subject: [ 57/79] drm/i915: Fix spurious -EIO/SIGBUS on wedged gpus
-Date: Tue, 11 Jun 2013 13:03:23 -0700
-Message-Id: <20130611195323.607655857@linuxfoundation.org>
+        Jason Cassell <bluesloth600@gmail.com>, Aaron Lu <aaron.lu@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 31/79] ACPI / scan: do not match drivers against objects having scan handlers
+Date: Tue, 11 Jun 2013 13:02:57 -0700
+Message-Id: <20130611195316.549706243@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -28,74 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Aaron Lu <aaron.lu@intel.com>
 
-commit 7abb690a0e095717420ba78dcab4309abbbec78a upstream.
+commit 9f29ab11ddbfc12db54df5a66dab22b39ad94e8e upstream.
 
-Chris Wilson noticed that since
+With the introduction of ACPI scan handlers, an ACPI device object
+with an ACPI scan handler attached to it must not be bound to an ACPI
+driver any more.  Therefore it doesn't make sense to match those
+ACPI device objects against a newly registered ACPI driver in
+acpi_bus_match(), so make that function return 0 if the device
+object passed to it has an ACPI scan handler attached.
 
-commit 1f83fee08d625f8d0130f9fe5ef7b17c2e022f3c [v3.9]
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Thu Nov 15 17:17:22 2012 +0100
+This also addresses a regression related to a broken ACPI table in
+the BIOS, where it has defined a _ROM method under the PCI root
+bridge object.  This causes the video module to treat that object
+as a display controller device (since only display devices are
+supposed to have a _ROM method defined according to the ACPI spec).
+As a result, the ACPI video driver binds to the PCI root bridge
+object and overwrites the previously assigned driver_data field of
+it, causing subsequent calls to acpi_get_pci_dev() to fail.
 
-    drm/i915: clear up wedged transitions
-
-X can again get -EIO when it does not expect it. And even worse score
-a SIGBUS when accessing gtt mmaps. The established ABI is that we
-_only_ return an -EIO from execbuf - all other ioctls should just
-work. And since the reset code moves all bos out of gpu domains and
-clears out all the last_seqno/ring tracking there really shouldn't be
-any reason for non-execbuf code to ever touch the hw and see an -EIO.
-
-After some extensive discussions we've noticed that these spurios -EIO
-are caused by i915_gem_wait_for_error:
-
-http://www.mail-archive.com/intel-gfx@lists.freedesktop.org/msg20540.html
-
-That is easy to fix by returning 0 instead of -EIO, since grabbing the
-dev->struct_mutex does not yet mean that we actually want to touch the
-hw. And so there is no reason at all to fail with -EIO.
-
-But that's not the entire since, since often (at least it's easily
-googleable) dmesg indicates that the reset fails and we declare the
-gpu wedged. Then, quite a bit later X wakes up with the "Timed out
-waiting for the gpu reset to complete" DRM_ERROR message in
-wait_for_errror and brings down the desktop with an -EIO/SIGBUS.
-
-So clearly we're missing a wakeup somewhere, since the gpu reset just
-doesn't take 10 seconds to complete. And indeed we're do handle the
-terminally wedged state wrong.
-
-Fix this all up.
-
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Damien Lespiau <damien.lespiau@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[rjw: Subject and changelog]
+References: https://bugzilla.kernel.org/show_bug.cgi?id=58091
+Reported-by: Jason Cassell <bluesloth600@gmail.com>
+Reported-and-bisected-by: Dmitry S. Demin <dmitryy.demin@gmail.com>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ drivers/acpi/scan.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -91,14 +91,11 @@ i915_gem_wait_for_error(struct i915_gpu_
- {
- 	int ret;
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -553,6 +553,10 @@ static int acpi_bus_match(struct device
+ 	struct acpi_device *acpi_dev = to_acpi_device(dev);
+ 	struct acpi_driver *acpi_drv = to_acpi_driver(drv);
  
--#define EXIT_COND (!i915_reset_in_progress(error))
-+#define EXIT_COND (!i915_reset_in_progress(error) || \
-+		   i915_terminally_wedged(error))
- 	if (EXIT_COND)
- 		return 0;
- 
--	/* GPU is already declared terminally dead, give up. */
--	if (i915_terminally_wedged(error))
--		return -EIO;
--
- 	/*
- 	 * Only wait 10 seconds for the gpu reset to complete to avoid hanging
- 	 * userspace. If it takes that long something really bad is going on and
++	/* Skip ACPI device objects with scan handlers attached. */
++	if (acpi_dev->handler)
++		return 0;
++
+ 	return acpi_dev->flags.match_driver
+ 		&& !acpi_match_device_ids(acpi_dev, acpi_drv->ids);
+ }
 
 
