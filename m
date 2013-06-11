@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349Ab3FKRKZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 13:10:25 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:61379 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755350Ab3FKRKW convert rfc822-to-8bit (ORCPT
+	id S1755898Ab3FKRLF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 13:11:05 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:36271 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755878Ab3FKRK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 13:10:22 -0400
-Date: Tue, 11 Jun 2013 12:10:19 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [RFC] is it time to split up the MAINTAINERS file?
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <1370934825.22004.21.camel@joe-AO722> (from joe@perches.com on
-	Tue Jun 11 02:13:45 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1370970619.2776.97@driftwood>
+	Tue, 11 Jun 2013 13:10:57 -0400
+Date: Tue, 11 Jun 2013 18:10:51 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, "Patil, Rachna" <rachna@ti.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: Re: [PATCH 10/22] mfd/ti_am335x_tscadc: Add DT support
+Message-ID: <20130611171051.GA4320@laptop>
+References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
+ <1370950268-7224-11-git-send-email-bigeasy@linutronix.de>
+ <20130611142347.GF29135@zurbaran>
+ <51B73756.5010004@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51B73756.5010004@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2013 02:13:45 AM, Joe Perches wrote:
-> On Mon, 2013-06-10 at 23:49 -0500, Rob Landley wrote:
-> > You could either have the same entry in more than one MAINTAINERS  
-> file
-> > or keep it at a higher level. (This wouldn't eliminate the top level
-> > MAINTAINERS, merely trim it down a bit.)
-> >
-> > Just throwing it out there. Seems like it might be a thing, someday
-> > anyway...
+> >> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+> >> Signed-off-by: Patil, Rachna <rachna@ti.com>
+> >> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> >> [bigeasy: module alias, rename to ti,am3359-tscadc as it was tested on
+> >>           AM3359]
+> > I honestly can't tell if this is a change from the last version of your
+> > patchset or a description of this patch changes in general.
+> > This is cluttering your commit logs, please remove this as well.
 > 
-> Patches talk...
-
-So you suggest sending a patch series to break out arch directories and  
-go "here, a whole new task for you the architecture maintainer to take  
-on!" and that's the _polite_ way to ask whether or not it's a good idea?
-
-> or add an initial / for the absolutes
+> I took the original patch. Every change I made to it because people
+> asked to merge changes into the patch where the problem occurred I
+> added it here before my sign-off.
 > 
-> F:	*/			(everything at this directory and lower)
-> F:	foo.c			(single file)
-> F:	/Documentation/foo.txt	(absolute single file)
+> In the end I would like not to post a patch with "From: != me" and
+> don't make change which the original author did not do. Also dropping
+> their authorship isn't nice. What could we agree on?
 
-That one, obviously. (Optimize for the common case.)
+Generally speaking, if it is necessary to merge various author's
+patches into one, then you can the merger will tend to take authorship
+of the commit. Note that just because you are the author of the
+commit, it doesn't mean you authored the patch.
 
-> make could be taught to create an overall integrated
-> MAINTAINERS, which would not be part of the files
-> managed by git/cvs from these submaintainer files.
+I also use the rule of thumb that if you make significant changes to a
+patch, then you can also assume authorship too. I'll leave the 'how
+much is significant' to your own good judgement.
 
-Why? (What's the point? Does it make finding who is in charge of $THING  
-easier?)
+If you're just making a few fixups, then just add your SOB in the
+normal way. That should be enough reward for a mere few patch fixes.
 
-> Still, I think the "best" approach would be to enhance
-> git to manage this additional information instead.
+Adding little 'I-did-this' notes to the commit log should mostly be
+avoided IMO.
 
-Oh please no.
-
-> Something akin to:
-> https://lkml.org/lkml/2007/8/14/256
-
-I'm sorry I brought it up.
-
-> Maybe some standardization of "git notes" or
-> "git annotate" might work.
-
-The horror! The horror!
-
-> A script could be written to create something like the
-> existing MAINTAINERS file from that too.
-
-I won't mention it again.
-
-*shudder*
-
-Rob
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
