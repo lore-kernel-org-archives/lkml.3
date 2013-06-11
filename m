@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755076Ab3FKQCs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 12:02:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39923 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755046Ab3FKQCq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 12:02:46 -0400
-Date: Tue, 11 Jun 2013 09:03:22 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
-        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Hebbar Gururaja <gururaja.hebbar@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Mark Brown <broonie@kernel.org>
-Subject: Re: [PATCH] drivers: pinctrl: add active state to core
-Message-ID: <20130611160322.GB20352@kroah.com>
-References: <1370938616-5952-1-git-send-email-linus.walleij@stericsson.com>
+	id S1755131Ab3FKQEN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 12:04:13 -0400
+Received: from www.sr71.net ([198.145.64.142]:43589 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753424Ab3FKQEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 12:04:11 -0400
+Message-ID: <51B74A7A.1040707@sr71.net>
+Date: Tue, 11 Jun 2013 09:04:10 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370938616-5952-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/8] thp, mm: avoid PageUnevictable on active/inactive
+ lru lists
+References: <1370964919-16187-1-git-send-email-kirill.shutemov@linux.intel.com> <1370964919-16187-3-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <1370964919-16187-3-git-send-email-kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 10:16:56AM +0200, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> In addition to the recently introduced pinctrl core
-> control, the PM runtime pin control for the OMAP platforms
-> require a fourth state in addtition to the default, idle and
-> sleep states already handled by the core: an explicit "active"
-> state. Let's introduce this to the core in addition to the
-> other states already defined.
-> 
-> Cc: Hebbar Gururaja <gururaja.hebbar@ti.com>
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Cc: Stephen Warren <swarren@wwwdotorg.org>
-> Cc: Wolfram Sang <wsa@the-dreams.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Mark Brown <broonie@kernel.org>
-> Cc: Kevin Hilman <khilman@linaro.org>
-> Suggested-by: Tony Lindgren <tony@atomide.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> Greg: need your ACK on this to merge it through the pinctrl
-> tree.
-> ---
->  drivers/base/pinctrl.c                |  8 +++++++-
->  drivers/pinctrl/core.c                | 15 +++++++++++++++
+On 06/11/2013 08:35 AM, Kirill A. Shutemov wrote:
+> active/inactive lru lists can contain unevicable pages (i.e. ramfs pages
+> that have been placed on the LRU lists when first allocated), but these
+> pages must not have PageUnevictable set - otherwise shrink_[in]active_list
+> goes crazy:
 
-For anything that just touches drivers/base/pinctrl.c, you don't need my
-ack, that's your code, you can do whatever you want with it :)
+I think it's also important here to note if this is a bug that can be
+hit _currently_, or if this really is just a preparatory patch for
+transparent huge page cache.
 
-But here you go anyway:
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>From what I can see, this is _needed_ preparatory work, but it can also
+stand on its own because it simplifies things.  It should go in sooner
+rather than later.
