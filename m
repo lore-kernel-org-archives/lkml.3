@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588Ab3FKRB7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 13:01:59 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5630 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754199Ab3FKRB6 (ORCPT
+	id S1755635Ab3FKRIa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 13:08:30 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:61247 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754968Ab3FKRI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 13:01:58 -0400
-X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wskK765KtKEA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=GqmPQ3klG2UA:10 a=BwKYX66jYyDMaeh__qQA:9 a=QEXdDO2ut3YA:10 a=jJooYxnUmyLXkiAx:21 a=zFQGuUqExv4yfY1U:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1370970115.9844.189.camel@gandalf.local.home>
-Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Waiman Long <waiman.long@hp.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, torvalds@linux-foundation.org
-Date: Tue, 11 Jun 2013 13:01:55 -0400
-In-Reply-To: <20130611163607.GG5146@linux.vnet.ibm.com>
-References: <20130609193657.GA13392@linux.vnet.ibm.com>
-	 <51B748DA.2070306@hp.com> <20130611163607.GG5146@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Jun 2013 13:08:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAE9FiQWOvP+tTQ0Vakc9f-t61dv6Lo6dJm0+oH1On5k=6nvbXw@mail.gmail.com>
+References: <1370845742-18919-1-git-send-email-yinghai@kernel.org>
+	<CA+QCeVRdOOuh4aVZsQhucBNETnDp5OhAZguigLTbyD9bOONO1A@mail.gmail.com>
+	<CAE9FiQXacn2abVKeBhTazgRBCS9EtiACs=fbB6_Y27ZpLOTq3w@mail.gmail.com>
+	<CAKL7Q7rxkXDx49CgSjoVJSbER7ou+-yXa-yZg4hT4ktG_4gvHw@mail.gmail.com>
+	<CAKL7Q7qUwTGexhr+8d88qN94YSCfSeOS-oLMh=KQ2NiOZRLbLQ@mail.gmail.com>
+	<CAE9FiQWOvP+tTQ0Vakc9f-t61dv6Lo6dJm0+oH1On5k=6nvbXw@mail.gmail.com>
+Date: Tue, 11 Jun 2013 19:08:27 +0200
+Message-ID: <CAKL7Q7pbdVKFy=5Kq_KHnJ=rg0OjsUXFpTQrcdZXksR6qixszQ@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] x86, range: Do not add new blank slot with add_range_with_merge
+From: "Joshua C." <joshuacov@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Sergey Meirovich <rathamahata@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-11 at 09:36 -0700, Paul E. McKenney wrote:
+2013/6/11 Yinghai Lu <yinghai@kernel.org>:
+> On Tue, Jun 11, 2013 at 3:04 AM, Joshua C. <joshuacov@gmail.com> wrote:
+>> 2013/6/11 Joshua C. <joshuacov@gmail.com>:
+>>> 2013/6/10 Yinghai Lu <yinghai@kernel.org>:
+>>>> On Mon, Jun 10, 2013 at 3:55 AM, Sergey Meirovich <rathamahata@gmail.com> wrote:
+>>>>
+>>>>> patches 1,2(latest one) have not helped me on 3.9.5:
+>>>>
+>>>> So v1:
+>>>> https://patchwork.kernel.org/patch/2694981/
+>>>> https://patchwork.kernel.org/patch/2694971/
+>>>>
+>>>> and v2:
+>>>> https://patchwork.kernel.org/patch/2695891/
+>>>> https://patchwork.kernel.org/patch/2695881/
+>>>>
+>>>> Neither of two versions fix the problem on your setup?
+>>>>
+>>>> Can you post boot log with mtrr_cleanup_debug on 3.9.4?
+>>>>
+>>>> Thanks
+>>>>
+>>>> Yinghai
+>>>
+>>> I got some warnings when trying to build v2 of the patches:
+>>>
+>>> # make -s ARCH=x86_64 V=1 -j4 bzImage
+>>> kernel/range.c: In function 'add_range_with_merge':
+>>> kernel/range.c:51:3: error: implicit declaration of function 'memmove'
+>>> [-Werror=implicit-function-declaration]
+>>> kernel/range.c:51:3: warning: incompatible implicit declaration of
+>>> built-in function 'memmove' [enabled by default]
+>>> cc1: some warnings being treated as errors
+>>> scripts/Makefile.build:307: recipe for target 'kernel/range.o' failed
+>>> make[1]: *** [kernel/range.o] Error 1
+>>> Makefile:793: recipe for target 'kernel' failed
+>>> make: *** [kernel] Error 2
+>>> make: *** Waiting for unfinished jobs....
+>>>
+>>>
+>>> --
+>>> --joshua
+>
+> it does not report warning when I compile it with
+>
+> gcc (SUSE Linux) 4.7.2 20130108 [gcc-4_7-branch revision 195012
+>
+>>
+>> A trivial fix for the above warnings:
+>>
+>> --- linux-2.6.orig/kernel/range.c
+>> +++ linux-2.6/kernel/range.c
+>> @@ -4,6 +4,7 @@
+>>  #include <linux/kernel.h>
+>>  #include <linux/init.h>
+>>  #include <linux/sort.h>
+>> +#include <linux/string.h>
+>>
+>>  #include <linux/range.h>
+>>
 
-> > I am a bit concern about the size of the head queue table itself.
-> > RHEL6, for example, had defined CONFIG_NR_CPUS to be 4096 which mean
-> > a table size of 256. Maybe it is better to dynamically allocate the
-> > table at init time depending on the actual number of CPUs in the
-> > system.
-> 
-> But if your kernel is built for 4096 CPUs, the 32*256=8192 bytes of memory
-> is way down in the noise.  Systems that care about that small an amount
-> of memory probably have a small enough number of CPUs that they can just
-> turn off queueing at build time using CONFIG_TICKET_LOCK_QUEUED=n, right?
-
-If this turns out to work for large machines, that means that distros
-will enable it, and distros tend to up the NR_CPUS, which is defined at
-compile time and is set regardless of if you are running with 2 CPUs or
-a 1000 CPUs.
-
-For now it's fine to use NR_CPUS, but I always try to avoid it. Working
-in the ARM and POWER environment you are use to lots of kernels compiled
-specifically for the target. But in the x86 world, it is basically one
-kernel for all environments, where NR_CPUS does make a big difference.
-
--- Steve
+I use fedora17 with gcc version 4.7.3 (git checkout on 20130411). I
+have no idea where this came from...
 
 
+--
+--joshua
