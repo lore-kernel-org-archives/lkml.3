@@ -1,122 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756492Ab3FKV25 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 17:28:57 -0400
-Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:23551
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754154Ab3FKV2z convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 17:28:55 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zz98dIc89bh936eI1432Ic8kzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh906i1155h192ch)
-Date: Tue, 11 Jun 2013 14:28:41 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Dinh Nguyen <dinguyen@altera.com>
-CC: Michal Simek <michal.simek@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Shawn Guo <shawn.guo@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm: dt: zynq: Add support for the zc706 platform
-References: <1370884204-2297-1-git-send-email-soren.brinkmann@xilinx.com>
- <1370985888.7804.1.camel@linux-builds1>
+	id S1756027Ab3FKVbJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 17:31:09 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:46489 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752574Ab3FKVbI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 17:31:08 -0400
+Message-ID: <51B79718.1030402@gmail.com>
+Date: Tue, 11 Jun 2013 23:31:04 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <1370985888.7804.1.camel@linux-builds1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <785766f9-0d23-4a78-8638-fac05920049d@CO1EHSMHS013.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
+To: Francisco Jerez <currojerez@riseup.net>
+CC: Daniel Vetter <daniel@ffwll.ch>, linux-arm-kernel@lists.infradead.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm: encoder_slave: respect of_node on i2c encoder init
+References: <1370899422-1281-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130611072433.GP22870@phenom.ffwll.local> <51B6D91D.3000906@gmail.com> <8738soptt7.fsf@riseup.net>
+In-Reply-To: <8738soptt7.fsf@riseup.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 04:24:48PM -0500, Dinh Nguyen wrote:
-> Hi Soren,
-> 
-> On Mon, 2013-06-10 at 10:10 -0700, Soren Brinkmann wrote:
-> > Add a DT fragment for the zc706 Zynq platform. Also, adding a
-> > corresponding target to the Makefile and adding an appropriate
-> > compatibility string in the BSP.
-> > 
-> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> > ---
-> >  arch/arm/boot/dts/Makefile       |  3 ++-
-> >  arch/arm/boot/dts/zynq-zc706.dts | 31 +++++++++++++++++++++++++++++++
-> >  arch/arm/mach-zynq/common.c      |  1 +
-> >  3 files changed, 34 insertions(+), 1 deletion(-)
-> >  create mode 100644 arch/arm/boot/dts/zynq-zc706.dts
-> > 
-> > diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> > index b9f7121..2aecf7e 100644
-> > --- a/arch/arm/boot/dts/Makefile
-> > +++ b/arch/arm/boot/dts/Makefile
-> > @@ -206,7 +206,8 @@ dtb-$(CONFIG_ARCH_VT8500) += vt8500-bv07.dtb \
-> >  	wm8505-ref.dtb \
-> >  	wm8650-mid.dtb \
-> >  	wm8850-w70v2.dtb
-> > -dtb-$(CONFIG_ARCH_ZYNQ) += zynq-zc702.dtb
-> > +dtb-$(CONFIG_ARCH_ZYNQ) += zynq-zc702.dtb \
-> > +	zynq-zc706.dtb
-> >  
-> >  targets += dtbs
-> >  targets += $(dtb-y)
-> > diff --git a/arch/arm/boot/dts/zynq-zc706.dts b/arch/arm/boot/dts/zynq-zc706.dts
-> > new file mode 100644
-> > index 0000000..a8a1d7d
-> > --- /dev/null
-> > +++ b/arch/arm/boot/dts/zynq-zc706.dts
-> > @@ -0,0 +1,31 @@
-> > +/*
-> > + *  Copyright (C) 2011 Xilinx
-> > + *  Copyright (C) 2012 National Instruments Corp.
-> > + *  Copyright (C) 2013 Xilinx
-> > + *
-> > + * This software is licensed under the terms of the GNU General Public
-> > + * License version 2, as published by the Free Software Foundation, and
-> > + * may be copied, distributed, and modified under those terms.
-> > + *
-> > + * This program is distributed in the hope that it will be useful,
-> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> > + * GNU General Public License for more details.
-> > + */
-> > +/dts-v1/;
-> > +/include/ "zynq-7000.dtsi"
-> > +
-> > +/ {
-> > +	model = "Zynq ZC706 Development Board";
-> > +	compatible = "xlnx,zynq-zc706", "xlnx,zynq-7000";
-> > +
-> > +	memory {
-> > +		device_type = "memory";
-> > +		reg = <0x0 0x40000000>;
-> > +	};
-> > +
-> > +	chosen {
-> > +		bootargs = "console=ttyPS1,115200 earlyprintk";
-> > +	};
-> > +
-> > +};
-> > diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-> > index 5bfe703..221694b 100644
-> > --- a/arch/arm/mach-zynq/common.c
-> > +++ b/arch/arm/mach-zynq/common.c
-> > @@ -99,6 +99,7 @@ static void zynq_system_reset(char mode, const char *cmd)
-> >  
-> >  static const char * const zynq_dt_match[] = {
-> >  	"xlnx,zynq-zc702",
-> > +	"xlnx,zynq-zc706",
-> 
-> You really don't need to add zc706 here if it is already compatable with
-> zynq-7000.
-I actually thought about this and decided to add it, since there already
-was an entry for the zc702. What is the best methord for this cases?
-Rather remove the specific ones and migrate all to the zynq-7000
-compatibility string?
+On 06/11/2013 05:10 PM, Francisco Jerez wrote:
+> Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>  writes:
+>>> - I think we could also drop the call to ->set_config since presumably an
+>>>     of-enabled driver grabbed any required info already from the dt.
+>> [...]
+>>> I think this way we could still share encoder slaves across tons of
+>>> platforms, only the init sequence (and specifically how they get at their
+>
+> The "set_config" hook is just the way a DRM driver communicates those
+> board-specific differences in the init sequence to the slave encoder
+> driver.  I don't think it would make sense to remove it unless we make
+> sure it's being called elsewhere.
 
-	Sören
+Francisco,
 
+for the non-DT case all probe related stuff could be passed with 
+board_info.platform_data. For the DT case, the i2c device driver
+will parse properties into .platform_data. IMHO in the end,
+.set_config can be safely removed. But for now and especially because
+I only have a DT-only platform to test, leave it there and rework
+existing drivers and drm master encoders to pass it that way.
 
+>> IMHO, the whole i2c encoder stuff is just wrong. Not any i2c slave
+>> driver is even really using its probe(). Everything is packed somewhere
+>> because it just worked.. this is at least a start.
+>>
+> Why is that?  What do you mean by the probe hooks not being used?
+> ch7006 and sil164 rely on it being called on initialization.
+
+You are right, I remembered wrong.
+
+>> I suggest this to get merged to at least allow to have DT slaves,
+>> then start with improving tda998x as an example, then maybe rethink
+>> drm_slave_encoder completely, e.g.
+>>
+>> - generalize the concept to SPI attached encoders, "internal" encoders..
+>
+> drm_encoder_slave is bus-agnostic.  drm_i2c_encoder_init() is just a
+> helper function taking care of bus-specific details like the creation of
+> the underlying I2C device object, which cannot be made bus-agnostic for
+> obvious reasons.  You're welcome to implement SPI and internal
+> counterparts of drm_i2c_encoder_init().
+
+Hehe, true again. I like to help and improve it wherever possible. But
+to be honest, DRM is not an easy starter for blindly touch commonly
+shared functions. If I break Dove, there is little people complaining.
+If I also break x86 complaining quickly becomes ranting ;)
+
+>> - find a way to setup .encoder_type and .connector_type correctly
+>
+> I guess encoder_type could be initialized correctly from the slave
+> encoder_init() hook -- that hasn't been necessary until now because the
+> DRM driver making use of the slave encoder has been expected to have
+> some other means to find out encoder types [e.g. device-specific BIOS
+> tables].  OTOH, I don't think that setting connector types is the slave
+> encoder's business.
+
+Well, I do not completely agree here. Actually, the connector type
+cannot be set from any encoder in the chain in a consitent way. But
+at least the slave encoder is closer to it.
+
+For Dove (and many other SoCs) the lcd controller is just a dumb rgb
+scan-out controller. It makes no difference if you directly connect an
+LCD panel or have a HDMI encoder finally connected to an DVI plug.
+The LCD controller shouldn't really care because it always sees a dumb
+rgb receiver, the HDMI encoder at least can say it is either HDMI or
+DVI plug.
+
+For DT, I tend to have a video-card node comprising lcd controllers,
+video memory range, external encoder phandle. Maybe put the board-
+specific connector here, and then it is up the the master encoder
+(or video card "driver") to set the correct connector.
+
+Sebastian
