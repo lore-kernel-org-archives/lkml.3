@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757314Ab3FKU0L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:26:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41770 "EHLO
+	id S1757337Ab3FKU0c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:26:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41760 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756463Ab3FKUD0 (ORCPT
+	with ESMTP id S1756449Ab3FKUDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:26 -0400
+	Tue, 11 Jun 2013 16:03:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Huacai Chen <chenhc@lemote.com>, Binbin Zhou <zhoubb@lemote.com>,
-        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
-        Paul Menzel <paulepanter@users.sourceforge.net>,
-        Dave Airlie <airlied@gmail.com>
-Subject: [ 25/32] drm: fix a use-after-free when GPU acceleration disabled
-Date: Tue, 11 Jun 2013 13:03:24 -0700
-Message-Id: <20130611200129.002338465@linuxfoundation.org>
+        Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Li Zefan <lizefan@huawei.com>
+Subject: [ 31/32] tracing: Fix possible NULL pointer dereferences
+Date: Tue, 11 Jun 2013 13:03:30 -0700
+Message-Id: <20130611200130.282963163@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611200126.214442788@linuxfoundation.org>
 References: <20130611200126.214442788@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,79 +29,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huacai Chen <chenhc@lemote.com>
 
-commit b7ea85a4fed37835eec78a7be3039c8dc22b8178 upstream.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-When GPU acceleration is disabled, drm_vblank_cleanup() will free the
-vblank-related data, such as vblank_refcount, vblank_inmodeset, etc.
-But we found that drm_vblank_post_modeset() may be called after the
-cleanup, which use vblank_refcount and vblank_inmodeset. And this will
-cause a kernel panic.
+commit 6a76f8c0ab19f215af2a3442870eeb5f0e81998d upstream.
 
-Fix this by return immediately if dev->num_crtcs is zero. This is the
-same thing that drm_vblank_pre_modeset() does.
+Currently set_ftrace_pid and set_graph_function files use seq_lseek
+for their fops.  However seq_open() is called only for FMODE_READ in
+the fops->open() so that if an user tries to seek one of those file
+when she open it for writing, it sees NULL seq_file and then panic.
 
-Call trace of a drm_vblank_post_modeset() after drm_vblank_cleanup():
-[   62.628906] [<ffffffff804868d0>] drm_vblank_post_modeset+0x34/0xb4
-[   62.628906] [<ffffffff804c7008>] atombios_crtc_dpms+0xb4/0x174
-[   62.628906] [<ffffffff804c70e0>] atombios_crtc_commit+0x18/0x38
-[   62.628906] [<ffffffff8047f038>] drm_crtc_helper_set_mode+0x304/0x3cc
-[   62.628906] [<ffffffff8047f92c>] drm_crtc_helper_set_config+0x6d8/0x988
-[   62.628906] [<ffffffff8047dd40>] drm_fb_helper_set_par+0x94/0x104
-[   62.628906] [<ffffffff80439d14>] fbcon_init+0x424/0x57c
-[   62.628906] [<ffffffff8046a638>] visual_init+0xb8/0x118
-[   62.628906] [<ffffffff8046b9f8>] take_over_console+0x238/0x384
-[   62.628906] [<ffffffff80436df8>] fbcon_takeover+0x7c/0xdc
-[   62.628906] [<ffffffff8024fa20>] notifier_call_chain+0x44/0x94
-[   62.628906] [<ffffffff8024fcbc>] __blocking_notifier_call_chain+0x48/0x68
-[   62.628906] [<ffffffff8042d990>] register_framebuffer+0x228/0x260
-[   62.628906] [<ffffffff8047e010>] drm_fb_helper_single_fb_probe+0x260/0x314
-[   62.628906] [<ffffffff8047e2c4>] drm_fb_helper_initial_config+0x200/0x234
-[   62.628906] [<ffffffff804e5560>] radeon_fbdev_init+0xd4/0xf4
-[   62.628906] [<ffffffff804e0e08>] radeon_modeset_init+0x9bc/0xa18
-[   62.628906] [<ffffffff804bfc14>] radeon_driver_load_kms+0xdc/0x12c
-[   62.628906] [<ffffffff8048b548>] drm_get_pci_dev+0x148/0x238
-[   62.628906] [<ffffffff80423564>] local_pci_probe+0x5c/0xd0
-[   62.628906] [<ffffffff80241ac4>] work_for_cpu_fn+0x1c/0x30
-[   62.628906] [<ffffffff802427c8>] process_one_work+0x274/0x3bc
-[   62.628906] [<ffffffff80242934>] process_scheduled_works+0x24/0x44
-[   62.628906] [<ffffffff8024515c>] worker_thread+0x31c/0x3f4
-[   62.628906] [<ffffffff802497a8>] kthread+0x88/0x90
-[   62.628906] [<ffffffff80206794>] kernel_thread_helper+0x10/0x18
+It can be easily reproduced with following command:
 
-Signed-off-by: Huacai Chen <chenhc@lemote.com>
-Signed-off-by: Binbin Zhou <zhoubb@lemote.com>
-Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
-Acked-by: Paul Menzel <paulepanter@users.sourceforge.net>
-Signed-off-by: Dave Airlie <airlied@gmail.com>
+  $ cd /sys/kernel/debug/tracing
+  $ echo 1234 | sudo tee -a set_ftrace_pid
+
+In this example, GNU coreutils' tee opens the file with fopen(, "a")
+and then the fopen() internally calls lseek().
+
+Link:
+http://lkml.kernel.org/r/1365663302-2170-1-git-send-email-namhyung@kernel.org
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[ lizf: adjust context ]
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/drm_irq.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ include/linux/ftrace.h     |    2 +-
+ kernel/trace/ftrace.c      |   10 +++++-----
+ kernel/trace/trace_stack.c |    2 +-
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/gpu/drm/drm_irq.c
-+++ b/drivers/gpu/drm/drm_irq.c
-@@ -981,7 +981,7 @@ EXPORT_SYMBOL(drm_vblank_off);
-  */
- void drm_vblank_pre_modeset(struct drm_device *dev, int crtc)
- {
--	/* vblank is not initialized (IRQ not installed ?) */
-+	/* vblank is not initialized (IRQ not installed ?), or has been freed */
- 	if (!dev->num_crtcs)
- 		return;
- 	/*
-@@ -1003,6 +1003,10 @@ void drm_vblank_post_modeset(struct drm_
- {
- 	unsigned long irqflags;
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -299,7 +299,7 @@ ssize_t ftrace_filter_write(struct file
+ 			    size_t cnt, loff_t *ppos);
+ ssize_t ftrace_notrace_write(struct file *file, const char __user *ubuf,
+ 			     size_t cnt, loff_t *ppos);
+-loff_t ftrace_regex_lseek(struct file *file, loff_t offset, int origin);
++loff_t ftrace_filter_lseek(struct file *file, loff_t offset, int origin);
+ int ftrace_regex_release(struct inode *inode, struct file *file);
  
-+	/* vblank is not initialized (IRQ not installed ?), or has been freed */
-+	if (!dev->num_crtcs)
-+		return;
-+
- 	if (dev->vblank_inmodeset[crtc]) {
- 		spin_lock_irqsave(&dev->vbl_lock, irqflags);
- 		dev->vblank_disable_allowed = 1;
+ void __init
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -2626,7 +2626,7 @@ ftrace_notrace_open(struct inode *inode,
+ }
+ 
+ loff_t
+-ftrace_regex_lseek(struct file *file, loff_t offset, int origin)
++ftrace_filter_lseek(struct file *file, loff_t offset, int origin)
+ {
+ 	loff_t ret;
+ 
+@@ -3445,7 +3445,7 @@ static const struct file_operations ftra
+ 	.open = ftrace_filter_open,
+ 	.read = seq_read,
+ 	.write = ftrace_filter_write,
+-	.llseek = ftrace_regex_lseek,
++	.llseek = ftrace_filter_lseek,
+ 	.release = ftrace_regex_release,
+ };
+ 
+@@ -3453,7 +3453,7 @@ static const struct file_operations ftra
+ 	.open = ftrace_notrace_open,
+ 	.read = seq_read,
+ 	.write = ftrace_notrace_write,
+-	.llseek = ftrace_regex_lseek,
++	.llseek = ftrace_filter_lseek,
+ 	.release = ftrace_regex_release,
+ };
+ 
+@@ -3659,8 +3659,8 @@ static const struct file_operations ftra
+ 	.open		= ftrace_graph_open,
+ 	.read		= seq_read,
+ 	.write		= ftrace_graph_write,
++	.llseek		= ftrace_filter_lseek,
+ 	.release	= ftrace_graph_release,
+-	.llseek		= seq_lseek,
+ };
+ #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+ 
+@@ -4261,7 +4261,7 @@ static const struct file_operations ftra
+ 	.open		= ftrace_pid_open,
+ 	.write		= ftrace_pid_write,
+ 	.read		= seq_read,
+-	.llseek		= seq_lseek,
++	.llseek		= ftrace_filter_lseek,
+ 	.release	= ftrace_pid_release,
+ };
+ 
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -384,7 +384,7 @@ static const struct file_operations stac
+ 	.open = stack_trace_filter_open,
+ 	.read = seq_read,
+ 	.write = ftrace_filter_write,
+-	.llseek = ftrace_regex_lseek,
++	.llseek = ftrace_filter_lseek,
+ 	.release = ftrace_regex_release,
+ };
+ 
 
 
