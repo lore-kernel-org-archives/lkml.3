@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697Ab3FKPcp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 11:32:45 -0400
+	id S1754787Ab3FKPcu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 11:32:50 -0400
 Received: from mga11.intel.com ([192.55.52.93]:14887 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752170Ab3FKPcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 11:32:43 -0400
+	id S1754741Ab3FKPcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 11:32:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,845,1363158000"; 
-   d="scan'208";a="351527732"
+   d="scan'208";a="351527771"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 1/8] mm: drop actor argument of do_generic_file_read()
-Date: Tue, 11 Jun 2013 18:35:12 +0300
-Message-Id: <1370964919-16187-2-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH 7/8] thp: do_huge_pmd_anonymous_page() cleanup
+Date: Tue, 11 Jun 2013 18:35:18 +0300
+Message-Id: <1370964919-16187-8-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1370964919-16187-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1370964919-16187-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,62 +33,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-There's only one caller of do_generic_file_read() and the only actor is
-file_read_actor(). No reason to have a callback parameter.
+Minor cleanup: unindent most code of the fucntion by inverting one
+condition. It's preparation for the next patch.
+
+No functional changes.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
+Acked-by: Hillf Danton <dhillf@gmail.com>
 ---
- mm/filemap.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ mm/huge_memory.c |   83 +++++++++++++++++++++++++++---------------------------
+ 1 file changed, 41 insertions(+), 42 deletions(-)
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index e989fb1..61158ac 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1088,7 +1088,6 @@ static void shrink_readahead_size_eio(struct file *filp,
-  * @filp:	the file to read
-  * @ppos:	current file position
-  * @desc:	read_descriptor
-- * @actor:	read method
-  *
-  * This is a generic file read routine, and uses the
-  * mapping->a_ops->readpage() function for the actual low-level stuff.
-@@ -1097,7 +1096,7 @@ static void shrink_readahead_size_eio(struct file *filp,
-  * of the logic when it comes to error handling etc.
-  */
- static void do_generic_file_read(struct file *filp, loff_t *ppos,
--		read_descriptor_t *desc, read_actor_t actor)
-+		read_descriptor_t *desc)
- {
- 	struct address_space *mapping = filp->f_mapping;
- 	struct inode *inode = mapping->host;
-@@ -1198,13 +1197,14 @@ page_ok:
- 		 * Ok, we have the page, and it's up-to-date, so
- 		 * now we can copy it to user space...
- 		 *
--		 * The actor routine returns how many bytes were actually used..
-+		 * The file_read_actor routine returns how many bytes were
-+		 * actually used..
- 		 * NOTE! This may not be the same as how much of a user buffer
- 		 * we filled up (we may be padding etc), so we can only update
- 		 * "pos" here (the actor routine has to update the user buffer
- 		 * pointers and the remaining count).
- 		 */
--		ret = actor(desc, page, offset, nr);
-+		ret = file_read_actor(desc, page, offset, nr);
- 		offset += ret;
- 		index += offset >> PAGE_CACHE_SHIFT;
- 		offset &= ~PAGE_CACHE_MASK;
-@@ -1477,7 +1477,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 		if (desc.count == 0)
- 			continue;
- 		desc.error = 0;
--		do_generic_file_read(filp, ppos, &desc, file_read_actor);
-+		do_generic_file_read(filp, ppos, &desc);
- 		retval += desc.written;
- 		if (desc.error) {
- 			retval = retval ?: desc.error;
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 5cd63f0..01a267c 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -790,55 +790,54 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	unsigned long haddr = address & HPAGE_PMD_MASK;
+ 	pte_t *pte;
+ 
+-	if (haddr >= vma->vm_start && haddr + HPAGE_PMD_SIZE <= vma->vm_end) {
+-		if (unlikely(anon_vma_prepare(vma)))
+-			return VM_FAULT_OOM;
+-		if (unlikely(khugepaged_enter(vma)))
++	if (haddr < vma->vm_start || haddr + HPAGE_PMD_SIZE > vma->vm_end)
++		goto out;
++	if (unlikely(anon_vma_prepare(vma)))
++		return VM_FAULT_OOM;
++	if (unlikely(khugepaged_enter(vma)))
++		return VM_FAULT_OOM;
++	if (!(flags & FAULT_FLAG_WRITE) &&
++			transparent_hugepage_use_zero_page()) {
++		pgtable_t pgtable;
++		struct page *zero_page;
++		bool set;
++		pgtable = pte_alloc_one(mm, haddr);
++		if (unlikely(!pgtable))
+ 			return VM_FAULT_OOM;
+-		if (!(flags & FAULT_FLAG_WRITE) &&
+-				transparent_hugepage_use_zero_page()) {
+-			pgtable_t pgtable;
+-			struct page *zero_page;
+-			bool set;
+-			pgtable = pte_alloc_one(mm, haddr);
+-			if (unlikely(!pgtable))
+-				return VM_FAULT_OOM;
+-			zero_page = get_huge_zero_page();
+-			if (unlikely(!zero_page)) {
+-				pte_free(mm, pgtable);
+-				count_vm_event(THP_FAULT_FALLBACK);
+-				goto out;
+-			}
+-			spin_lock(&mm->page_table_lock);
+-			set = set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
+-					zero_page);
+-			spin_unlock(&mm->page_table_lock);
+-			if (!set) {
+-				pte_free(mm, pgtable);
+-				put_huge_zero_page();
+-			}
+-			return 0;
+-		}
+-		page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
+-					  vma, haddr, numa_node_id(), 0);
+-		if (unlikely(!page)) {
++		zero_page = get_huge_zero_page();
++		if (unlikely(!zero_page)) {
++			pte_free(mm, pgtable);
+ 			count_vm_event(THP_FAULT_FALLBACK);
+ 			goto out;
+ 		}
+-		count_vm_event(THP_FAULT_ALLOC);
+-		if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
+-			put_page(page);
+-			goto out;
+-		}
+-		if (unlikely(__do_huge_pmd_anonymous_page(mm, vma, haddr, pmd,
+-							  page))) {
+-			mem_cgroup_uncharge_page(page);
+-			put_page(page);
+-			goto out;
++		spin_lock(&mm->page_table_lock);
++		set = set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
++				zero_page);
++		spin_unlock(&mm->page_table_lock);
++		if (!set) {
++			pte_free(mm, pgtable);
++			put_huge_zero_page();
+ 		}
+-
+ 		return 0;
+ 	}
++	page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
++			vma, haddr, numa_node_id(), 0);
++	if (unlikely(!page)) {
++		count_vm_event(THP_FAULT_FALLBACK);
++		goto out;
++	}
++	count_vm_event(THP_FAULT_ALLOC);
++	if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
++		put_page(page);
++		goto out;
++	}
++	if (unlikely(__do_huge_pmd_anonymous_page(mm, vma, haddr, pmd, page))) {
++		mem_cgroup_uncharge_page(page);
++		put_page(page);
++		goto out;
++	}
++
++	return 0;
+ out:
+ 	/*
+ 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
 -- 
 1.7.10.4
 
