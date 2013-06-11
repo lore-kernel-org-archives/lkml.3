@@ -1,104 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757565Ab3FKXDc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 19:03:32 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:34067 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757423Ab3FKXDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 19:03:30 -0400
-Date: Tue, 11 Jun 2013 16:03:22 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: WARNING: at kernel/rcutorture.c:1243 rcu_torture_printk
-Message-ID: <20130611230322.GL5146@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130610074728.GA20886@localhost>
- <20130610145110.GL5146@linux.vnet.ibm.com>
- <20130611021455.GB8872@localhost>
+	id S1755917Ab3FKXOp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 19:14:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43777 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752140Ab3FKXOn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 19:14:43 -0400
+Date: Tue, 11 Jun 2013 16:15:18 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: =?iso-8859-1?Q?St=E9phane?= Marchesin <marcheu@chromium.org>
+Cc: linux-kernel@vger.kernel.org, jslaby@suse.cz, olof@lixom.net,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH] drivers/tty: Don't hangup shared ttys
+Message-ID: <20130611231518.GA28106@kroah.com>
+References: <1370991787-24141-1-git-send-email-marcheu@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20130611021455.GB8872@localhost>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1370991787-24141-1-git-send-email-marcheu@chromium.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061123-7182-0000-0000-00000745C30D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 10:14:55AM +0800, Fengguang Wu wrote:
-> Paul,
+On Tue, Jun 11, 2013 at 04:03:07PM -0700, Stéphane Marchesin wrote:
+> When quickly restarting X servers, we can run into a situation where
+> one X server quits while another one starts on the same tty. For a
+> while, two X servers share the tty, and when the old X server
+> eventually quits, the tty layer hangs up the tty, which among other
+> things stubs out the tty's ioctl functions. Later on, the new X
+> server (which shares the tty functions) tries to call some ioctls
+> on the tty and fails because they have been replaced with the hungup
+> versions. This in turn causes the new X server to abort.
 > 
-> On Mon, Jun 10, 2013 at 07:51:10AM -0700, Paul E. McKenney wrote:
-> > On Mon, Jun 10, 2013 at 03:47:28PM +0800, Fengguang Wu wrote:
-> > > Greetings,
-> > > 
-> > > I got the below dmesg and the first bad commit is
-> > > 
-> > > commit 911af505ef407c2511106c224dd640f882f0f590
-> > > Author: Paul E. McKenney <paul.mckenney@linaro.org>
-> > > Date:   Mon Feb 11 10:23:27 2013 -0800
-> > > 
-> > >     rcu: Provide compile-time control for no-CBs CPUs
-> > >     
-> > >     Currently, the only way to specify no-CBs CPUs is via the rcu_nocbs
-> > >     kernel command-line parameter.  This is inconvenient in some cases,
-> > >     particularly for randconfig testing, so this commit adds a new set of
-> > >     kernel configuration parameters.  CONFIG_RCU_NOCB_CPU_NONE (the default)
-> > >     retains the old behavior, CONFIG_RCU_NOCB_CPU_ZERO offloads callback
-> > >     processing from CPU 0 (along with any other CPUs specified by the
-> > >     rcu_nocbs boot-time parameter), and CONFIG_RCU_NOCB_CPU_ALL offloads
-> > >     callback processing from all CPUs.
-> > >     
-> > >     Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> > >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > 
-> > > However I guess it's a wrong bisect, the commit should be unmasking an
-> > > old bug because it merely provides more kconfig options.
-> > > 
-> > > This warning happened only once in 74 boots of the kernel.
-> > > 
-> > > I also attached the 2nd dmesg which shows boot hang for the same
-> > > kernel.
-> > > 
-> > > Note that there are also 2 kernel hangs in the 74 boots.  It should
-> > > not be an RCU problem, however for completeness, I also attach a dmesg
-> > > for your reference when considering this RCU warning.
-> > 
-> > Either way, that is a nasty warning!  You get this on recent kernels as
-> > well, I take it?
+> This patch checks the tty->count to make sure we're the last
+> consumer before hanging up a tty.
 > 
-> Yes, the warning is still in recent kernels, indicated from the last
-> lines of the bisect log.
+> Signed-off-by: Stéphane Marchesin <marcheu@chromium.org>
+> ---
+>  drivers/tty/tty_io.c | 3 +++
+>  1 file changed, 3 insertions(+)
 > 
-> 911af505ef407c2511106c224dd640f882f0f590 is bad and its parent
-> 34ed62461ae4970695974afb9a60ac3df0086830 is good:
-> > > git bisect  bad 911af505ef407c2511106c224dd640f882f0f590  #    65  2013-06-07 16:14:41  rcu: Provide compile-time control for no-CBs CPUs
-> > > git bisect good 34ed62461ae4970695974afb9a60ac3df0086830  #   900  2013-06-08 04:57:34  rcu: Remove restrictions on no-CBs CPUs
-> 
-> After bisect, the script tries to confirm that
-> 34ed62461ae4970695974afb9a60ac3df0086830 is really good by boot
-> testing it 2700 more times:
-> 
-> > > git bisect good 34ed62461ae4970695974afb9a60ac3df0086830  #  2700  2013-06-10 14:33:56  rcu: Remove restrictions on no-CBs CPUs
-> 
-> And continue to find out whether the linus/master and
-> linux-next/master are good/bad (here the results are both bad):
-> 
-> > > git bisect  bad f43e7a34255a387930bc2bb826ec17c052ce975e  # 14:34      0  Merge branch 'for-next'
-> > > git bisect  bad c04efed734409f5a44715b54a6ca1b54b0ccf215  # 14:41     11  Add linux-next specific files for 20130607
+> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+> index 6464029..62a0f02 100644
+> --- a/drivers/tty/tty_io.c
+> +++ b/drivers/tty/tty_io.c
+> @@ -619,6 +619,9 @@ static void __tty_hangup(struct tty_struct *tty, int exit_session)
+>  	if (!tty)
+>  		return;
+>  
+> +	/* Don't hangup if there are other users */
+> +	if (tty->count > 1)
+> +		return;
 
-Just to let you know that I am putting some time into this...
+What happens when you have a "real" tty that was hungup because it was
+disconnected physically from the system yet userspace had a tty open?
+You want those ttys to be hungup properly, right?  Doesn't this change
+break that?
 
-Well, I got a panic, but it turned out to be the kernel being unable to
-locate init.  Why your .config should have this effect, I have no idea --
-I don't see any Kconfig parameters that look to me like they should be
-specifying where init lives.  Any hints?
+thanks,
 
-Left to myself, my next step will be to try just the RCU-related Kconfig
-parameters.
-
-							Thanx, Paul
-
+greg k-h
