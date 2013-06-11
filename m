@@ -1,63 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab3FKHcn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 03:32:43 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:41763 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab3FKHcj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 03:32:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+8MBbK_nfOhZGsd5wU-hyiwh3pHS5c42eiBfxLpCjDgBKUqJg@mail.gmail.com>
-References: <51B30285.6020503@asianux.com>
-	<CA+8MBbK_nfOhZGsd5wU-hyiwh3pHS5c42eiBfxLpCjDgBKUqJg@mail.gmail.com>
-Date: Tue, 11 Jun 2013 09:32:39 +0200
-X-Google-Sender-Auth: eOQqjt4zvTvS8EUyCQ6xlO9WdNg
-Message-ID: <CAMuHMdWVx79L=ErRkNMide6xNqQt1RQr0psN8nqoADeV0h768A@mail.gmail.com>
-Subject: Re: [Suggestion] arch/*/include/asm/bitops.h: about __set_bit() API.
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Chen Gang <gang.chen@asianux.com>, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        alpha <linux-alpha@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        linux-am33-list@redhat.com, Linux-Arch <linux-arch@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753079Ab3FKHm7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 03:42:59 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:44003 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535Ab3FKHm5 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Tue, 11 Jun 2013 03:42:57 -0400
+Message-Id: <51B6F11D02000078000DCFD0@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Tue, 11 Jun 2013 08:42:53 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: <david.vrabel@citrix.com>, <roger.pau@citrix.com>,
+        "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>,
+        <stable@vger.kernel.org>
+Subject: Re: [PATCH] xen/blkback: Check for insane amounts of request
+ on the ring.
+References: <1370375826-7311-1-git-send-email-konrad.wilk@oracle.com>
+ <20130607201140.GA22115@phenom.dumpdata.com>
+ <51B6126302000078000DCC1C@nat28.tlf.novell.com>
+ <20130610164319.GB24467@phenom.dumpdata.com>
+In-Reply-To: <20130610164319.GB24467@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 12:26 AM, Tony Luck <tony.luck@gmail.com> wrote:
-> On Sat, Jun 8, 2013 at 3:08 AM, Chen Gang <gang.chen@asianux.com> wrote:
->> using 'unsigned int *', implicitly:
->>   ./ia64/include/asm/bitops.h:63:__set_bit (int nr, volatile void *addr)
->
-> There is some downside on ia64 to your suggestion.  If "addr" is properly
-> aligned for an "int", but misaligned for a long ... i.e. addr%8 == 4, then I'll
-> take an unaligned reference trap if I work with long* where the current code
-> working with int* does not.
->
-> Now perhaps all the callers do guarantee long* alignment?  But I don't know.
->
-> Apart from uniformity, there doesn't see to be any upside to changing this.
+>>> On 10.06.13 at 18:43, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> On Mon, Jun 10, 2013 at 04:52:35PM +0100, Jan Beulich wrote:
+>> >>> On 07.06.13 at 22:11, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+>> > On Tue, Jun 04, 2013 at 03:57:06PM -0400, Konrad Rzeszutek Wilk wrote:
+>> >> +	/* N.B. 'rp', not 'rc'. */
+>> >> +	if (RING_REQUEST_CONS_OVERFLOW(&blk_rings->common, rp)) {
+>> >> +		pr_warn(DRV_PFX "Frontend provided bogus ring requests (%d - %d = %d). 
+>> > Halting ring processing on dev=%04x\n",
+>> >> +			rp, rc, rp - rc, blkif->vbd.pdevice);
+>> > 
+>> > Hm, I seem to be able to get:
+>> > 
+>> > [  189.398095] xen-blkback:Frontend provided bogus ring requests (125 - 115 = 
+> 
+>> > 10). Halting ring processing on dev=800011
+>> > or:
+>> > [  478.558699] xen-blkback:Frontend provided bogus ring requests (95 - 94 = 
+>> > 1). Halting ring processing on dev=800011
+>> > 
+>> > Which is clearly wrong. Piggybacking on the rsp_prod_pvt does not seem to 
+>> > cut it.
+>> 
+>> We see that too, but not very frequently. One thing is that
+>> rsp_prod_pvt doesn't get printed along with rc and rp, thus
+>> making it not immediately obvious how this can be off in any way.
+>> 
+>> Among the instance there are cases where the printed
+>> difference is 32, which makes me wonder whether part of the
+>> problem is the >= in the macro (we may want > here).
+>> 
+>> And then we might have been living with some sort of issue in the
+>> past, because the existing use of the macro just causes the loop
+>> to be exited, with it getting re-entered subsequently (i.e. at worst
+>> causing performance issues).
+> 
+> My observation was that the rsp_prod_pvt was lagging behind b/c the 
+> READ requests weren't completed. In other words, the processing
+> of the ring was stalled b/c 'make_response' hadn't been called yet.
+> Which meant that rsp_prod was not updated to rsp_prod_pvt (backend
+> does not care about that value, only frontend does).
 
-The address pointers have been supposed to be "long *" for a very long time.
-Probably alpha (the second official Linux platform) did it
-differently, and never
-standardized to "long *".
+I don't buy this: rsp_prod is being updated by the backend just for
+the frontend's sake, so this value really doesn't need looking at (or
+else we'd become susceptible to the guest maliciously writing that
+field).
 
-Gr{oetje,eeting}s,
+rsp_prod_pvt, otoh, is never behind rsp_prod, and if the guest
+produces requests that don't have matching space for responses,
+the guest is doing something bogus (and perhaps malicious).
 
-                        Geert
+> Going back to the rc an rp check solves the immediate 'insane ring
+> check'. 
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Consequently, while this check is better than none at all, I think it
+is still too lax, and we really want to check against the produced
+responses. Just that other than for the rc check using >=, we'd
+need > for the rp one.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+But first of all let me see if I can get the original broken check to
+trigger wrongly here (so far only our stage testing caught these),
+and look at by how much rsp_prod_pvt really lags.
+
+Jan
+
