@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756313Ab3FKUDJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:03:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41670 "EHLO
+	id S1757505Ab3FKUeR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:34:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41680 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754658Ab3FKUDF (ORCPT
+	with ESMTP id S1756308Ab3FKUDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:05 -0400
+	Tue, 11 Jun 2013 16:03:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sergio Aguirre <sergio.a.aguirre.rodriguez@intel.com>,
-        David Cohen <david.a.cohen@intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 03/32] xhci-mem: init list heads at the beginning of init
-Date: Tue, 11 Jun 2013 13:03:02 -0700
-Message-Id: <20130611200126.577612856@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 07/32] ALSA: usb-audio - Fix invalid volume resolution on Logitech HD webcam c270
+Date: Tue, 11 Jun 2013 13:03:06 -0700
+Message-Id: <20130611200127.024269512@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611200126.214442788@linuxfoundation.org>
 References: <20130611200126.214442788@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,60 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergio Aguirre <sergio.a.aguirre.rodriguez@intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 331de00a64e5027365145bdf51da27b9ce15dfd5 upstream.
+commit 11e7064f35bb87da8f427d1aa4bbd8b7473a3993 upstream.
 
-It is possible that we fail on xhci_mem_init, just before doing
-the INIT_LIST_HEAD, and calling xhci_mem_cleanup.
+USB audio driver spews an error message when probing Logitech HD
+webcam c270:
+  ALSA mixer.c:1300 usb_audio: Warning! Unlikely big volume range (=6144), cval->res is probably wrong.
+  ALSA mixer.c:1304 usb_audio: [5] FU [Mic Capture Volume] ch = 1, val = 1536/7680/1
 
-Problem is that, the list_for_each_entry_safe macro, assumes
-list heads are initialized (not NULL), and dereferences their 'next'
-pointer, causing a kernel panic if this is not yet initialized.
+Obviously the device needs a fixed volume resolution (cval->res = 384)
+like other Logitech devices.
 
-Let's protect from that by moving inits to the beginning.
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=821735
 
-This patch should be backported to kernels as old as 3.2, that
-contain the commit 9574323c39d1f8359a04843075d89c9f32d8b7e6 "xHCI: test
-USB2 software LPM".
-
-Signed-off-by: Sergio Aguirre <sergio.a.aguirre.rodriguez@intel.com>
-Acked-by: David Cohen <david.a.cohen@intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-and-tested-by: Cristian Rodríguez <crrodriguez@opensuse.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-mem.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ sound/usb/mixer.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -2274,6 +2274,9 @@ int xhci_mem_init(struct xhci_hcd *xhci,
- 	u32 page_size, temp;
- 	int i;
- 
-+	INIT_LIST_HEAD(&xhci->lpm_failed_devs);
-+	INIT_LIST_HEAD(&xhci->cancel_cmd_list);
-+
- 	page_size = xhci_readl(xhci, &xhci->op_regs->page_size);
- 	xhci_dbg(xhci, "Supported page size register = 0x%x\n", page_size);
- 	for (i = 0; i < 16; i++) {
-@@ -2352,7 +2355,6 @@ int xhci_mem_init(struct xhci_hcd *xhci,
- 	xhci->cmd_ring = xhci_ring_alloc(xhci, 1, 1, TYPE_COMMAND, flags);
- 	if (!xhci->cmd_ring)
- 		goto fail;
--	INIT_LIST_HEAD(&xhci->cancel_cmd_list);
- 	xhci_dbg(xhci, "Allocated command ring at %p\n", xhci->cmd_ring);
- 	xhci_dbg(xhci, "First segment DMA is 0x%llx\n",
- 			(unsigned long long)xhci->cmd_ring->first_seg->dma);
-@@ -2453,8 +2455,6 @@ int xhci_mem_init(struct xhci_hcd *xhci,
- 	if (xhci_setup_port_arrays(xhci, flags))
- 		goto fail;
- 
--	INIT_LIST_HEAD(&xhci->lpm_failed_devs);
--
- 	/* Enable USB 3.0 device notifications for function remote wake, which
- 	 * is necessary for allowing USB 3.0 devices to do remote wakeup from
- 	 * U3 (device suspend).
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -822,6 +822,7 @@ static void volume_control_quirks(struct
+ 	case USB_ID(0x046d, 0x0808):
+ 	case USB_ID(0x046d, 0x0809):
+ 	case USB_ID(0x046d, 0x081d): /* HD Webcam c510 */
++	case USB_ID(0x046d, 0x0825): /* HD Webcam c270 */
+ 	case USB_ID(0x046d, 0x0991):
+ 	/* Most audio usb devices lie about volume resolution.
+ 	 * Most Logitech webcams have res = 384.
 
 
