@@ -1,104 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab3FKRqp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 13:46:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19170 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754507Ab3FKRqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 13:46:43 -0400
-Date: Tue, 11 Jun 2013 19:42:38 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-aio@kvack.org, akpm@linux-foundation.org,
-        Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 17/21] Percpu tag allocator
-Message-ID: <20130611174238.GA8139@redhat.com>
-References: <1368494338-7069-1-git-send-email-koverstreet@google.com> <1368494338-7069-18-git-send-email-koverstreet@google.com> <20130514134859.GA17587@redhat.com> <20130515092543.GE16164@moria.home.lan> <20130515154121.GA21932@redhat.com> <20130610232030.GA6151@google.com>
+	id S1755657Ab3FKRso (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 13:48:44 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:45303 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754587Ab3FKRsn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 13:48:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130610232030.GA6151@google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <51B75088.8050800@windriver.com>
+References: <1370962642-12097-1-git-send-email-markos.chandras@imgtec.com> <51B75088.8050800@windriver.com>
+From: Markos Chandras <markos.chandras@gmail.com>
+Date: Tue, 11 Jun 2013 18:48:01 +0100
+Message-ID: <CAG2jQ8hACp_iGEXR7rXKR3sydK4O=y0paeh1FFgH2UisxWVxVA@mail.gmail.com>
+Subject: Re: [PATCH] drivers/net/ethernet/3com: Drop EISA dependency from VORTEX
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Markos Chandras <markos.chandras@imgtec.com>, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10, Kent Overstreet wrote:
+On 11 June 2013 17:30, Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+> On 13-06-11 10:57 AM, Markos Chandras wrote:
+>> The Vortex driver depends on PCI with optional support for EISA.
+>>
+>> This fixes build problems when EISA is selected but not PCI.
+>>
+>> drivers/net/ethernet/3com/3c59x.c:1031:2: error: implicit declaration of
+>> function 'pci_iomap' [-Werror=implicit-function-declaration]
+>> drivers/net/ethernet/3com/3c59x.c:1044:3: error: implicit declaration of
+>> function 'pci_iounmap' [-Werror=implicit-function-declaration]
+>>
+>> Cc: David S. Miller <davem@davemloft.net>
+>> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+>> Cc: netdev@vger.kernel.org
+>> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+>> ---
+>>  drivers/net/ethernet/3com/Kconfig | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/net/ethernet/3com/Kconfig b/drivers/net/ethernet/3com/Kconfig
+>> index 1c71c76..5c67f44 100644
+>> --- a/drivers/net/ethernet/3com/Kconfig
+>> +++ b/drivers/net/ethernet/3com/Kconfig
+>> @@ -66,7 +66,7 @@ config PCMCIA_3C589
+>>
+>>  config VORTEX
+>>       tristate "3c590/3c900 series (592/595/597) \"Vortex/Boomerang\" support"
+>> -     depends on (PCI || EISA) && HAS_IOPORT
+>> +     depends on PCI && HAS_IOPORT
 >
-> On Wed, May 15, 2013 at 05:41:21PM +0200, Oleg Nesterov wrote:
-> >
-> > Do you really think that, say,
-> >
-> > 	unsigned tag_alloc(struct tag_pool *pool, bool wait)
-> > 	{
-> > 		struct tag_cpu_freelist *tags;
-> > 		unsigned ret = 0;
-> > 	retry:
-> > 		tags = get_cpu_ptr(pool->tag_cpu);
-> > 		local_irq_disable();
-> > 		if (!tags->nr_free && pool->nr_free) {
-> > 			spin_lock(&pool->wq.lock);
-> > 			if (pool->nr_free)
-> > 				move_tags(...);
-> > 			spin_unlock(&pool->wq.lock);
-> > 		}
-> >
-> > 		if (tags->nr_free)
-> > 			ret = tags->free[--tags->nr_free];
-> > 		local_irq_enable();
-> > 		put_cpu_var(pool->tag_cpu);
-> >
-> > 		if (ret || !wait)
-> > 			return ret;
-> >
-> > 		__wait_event(&pool->wq, pool->nr_free);
-> > 		goto retry;
-> > 	}
-> >
-> > will be much slower?
+> How can this fix it?  The way I read your change is that you
+> have now made it impossible to select for EISA=y and PCI=n,
+> thus breaking EISA only configurations who would find their
+> driver support gone when they run "make oldconfig".
 >
-> The overhead from doing nested irqsave/restore() sucks. I've had it bite
-> me hard with the recent aio work.
-
-Not sure I understand... Only __wait_event() does irqsave/restore and
-we are going to sleep anyway.
-
-> But screw it, it's not going to matter
-> that much here.
-
-Yes.
-
-And, imho, even if we need some optimizations here, it would be better
-to make a separate patch backed by the numbers or at least the detailed
-explanation.
-
-> > Question. tag_free() does move_tags+wakeup if nr_free = pool->watermark * 2.
-> > Perhaps it should should also take waitqueue_active() into account ?
-> > tag_alloc() can sleep more than necessary, it seems.
+> P.
+> --
 >
-> No.
->
-> By "sleeping more than necessary" you mean sleeping when there's tags
-> available on other percpu freelists.
+>>       select NET_CORE
+>>       select MII
+>>       ---help---
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Yes,
+Hi Paul,
 
-> That's just unavoidable if the thing's to be percpu - efficient use of
-> available tags requires global knowledge. Sleeping less would require
-> more global cacheline contention, and would defeat the purpose of this
-> code.
+The driver does not seem to build if you only have EISA=y and PCI=n.
+Does this driver really support EISA only
+configurations? Reading the code it seems to me that the PCI support
+is mandatory for the driver to build and work.
 
-Yes, yes, I understand, there is a tradeoff. Just it is still not clear
-to me what would be better "in practice"... So,
-
-> So when you're deciding how many tag structs to allocate, you just
-> double the number you'd allocate otherwise when you're using this code.
-
-I am not sure this is really needed.
-
-But OK, I see your point, thanks.
-
-Oleg.
-
+--
+Regards,
+Markos Chandras
