@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344Ab3FKU07 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:26:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41754 "EHLO
+	id S1756437Ab3FKUDW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:03:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41715 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756282Ab3FKUDY (ORCPT
+	with ESMTP id S1754658Ab3FKUDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:24 -0400
+	Tue, 11 Jun 2013 16:03:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-Subject: [ 30/32] drm/gma500: Increase max resolution for mode setting
-Date: Tue, 11 Jun 2013 13:03:29 -0700
-Message-Id: <20130611200129.562507375@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Tim Richardson <tim@tim-richardson.net>
+Subject: [ 15/32] USB: revert periodic scheduling bugfix
+Date: Tue, 11 Jun 2013 13:03:14 -0700
+Message-Id: <20130611200127.927399876@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611200126.214442788@linuxfoundation.org>
 References: <20130611200126.214442788@linuxfoundation.org>
@@ -26,35 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit cbbd379aa43890f36da934f5af619d2fb8ec3d87 upstream.
+commit fdc03438f53a00294ed9939eb3a1f6db6f3d8963 upstream.
 
-By having a higher max resolution we can now set up a virtual
-framebuffer that spans several monitors. 4096 should be ok since we're
-gen 3 or higher and should be enough for most dual head setups.
+This patch reverts commit 3e619d04159be54b3daa0b7036b0ce9e067f4b5d
+(USB: EHCI: fix bug in scheduling periodic split transfers).  The
+commit was valid -- it fixed a real bug -- but the periodic scheduler
+in ehci-hcd is in such bad shape (especially the part that handles
+split transactions) that fixing one bug is very likely to cause
+another to surface.  That's what happened in this case; the result was
+choppy and noisy playback on certain 24-bit audio devices.
 
-Bugzilla:
-https://bugs.launchpad.net/ubuntu/+source/xserver-xorg-video-modesetting/+bug/1169147
-Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+The only real fix will be to rewrite this entire section of code.  My
+next project...
+
+This fixes https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1136110.
+
+Thanks to Tim Richardson for extra testing and feedback, and to Joseph
+Salisbury and Tyson Tan for tracking down the original source of the
+problem.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+CC: Joseph Salisbury <joseph.salisbury@canonical.com>
+CC: Tim Richardson <tim@tim-richardson.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/gma500/framebuffer.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/host/ehci-sched.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/gma500/framebuffer.c
-+++ b/drivers/gpu/drm/gma500/framebuffer.c
-@@ -782,8 +782,8 @@ void psb_modeset_init(struct drm_device
- 	for (i = 0; i < dev_priv->num_pipe; i++)
- 		psb_intel_crtc_init(dev, i, mode_dev);
- 
--	dev->mode_config.max_width = 2048;
--	dev->mode_config.max_height = 2048;
-+	dev->mode_config.max_width = 4096;
-+	dev->mode_config.max_height = 4096;
- 
- 	psb_setup_outputs(dev);
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -236,7 +236,7 @@ static inline unsigned char tt_start_ufr
  }
+ 
+ static const unsigned char
+-max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 125, 25 };
++max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 30, 0 };
+ 
+ /* carryover low/fullspeed bandwidth that crosses uframe boundries */
+ static inline void carryover_tt_bandwidth(unsigned short tt_usecs[8])
 
 
