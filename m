@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880Ab3FKUIr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:08:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42024 "EHLO
+	id S1756779Ab3FKUEM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:04:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41981 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756717Ab3FKUEN (ORCPT
+	with ESMTP id S1756717Ab3FKUEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:04:13 -0400
+	Tue, 11 Jun 2013 16:04:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 75/79] USB: io_ti: fix chars_in_buffer overhead
-Date: Tue, 11 Jun 2013 13:03:41 -0700
-Message-Id: <20130611195325.880757823@linuxfoundation.org>
+        Paul Taysom <taysom@chromium.org>, Tyler Hicks <tyhicks@canonical.com>
+Subject: [ 50/79] ecryptfs: fixed msync to flush data
+Date: Tue, 11 Jun 2013 13:03:16 -0700
+Message-Id: <20130611195322.669669204@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -26,81 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Paul Taysom <taysom@chromium.org>
 
-commit b16634adce951a7371be931487034f7365971ed0 upstream.
+commit c15cddd900e867c5adfb3c79596479dc5975f743 upstream.
 
-Use the new generic usb-serial wait_until_sent implementation to wait
-for hardware buffers to drain.
+When msync is called on a memory mapped file, that
+data is not flushed to the disk.
 
-This removes the need to check the hardware buffers in chars_in_buffer
-and thus removes the overhead introduced by commit 263e1f9f ("USB:
-io_ti: query hardware-buffer status in chars_in_buffer") without
-breaking tty_wait_until_sent (used by, for example, tcdrain, tcsendbreak
-and close).
+In Linux, msync calls fsync for the file. For ecryptfs,
+fsync just calls the lower level file system's fsync.
+Changed the ecryptfs fsync code to call filemap_write_and_wait
+before calling the lower level fsync.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Addresses the problem described in http://crbug.com/239536
+
+Signed-off-by: Paul Taysom <taysom@chromium.org>
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/io_ti.c |   22 ++++++++++++++--------
- 1 file changed, 14 insertions(+), 8 deletions(-)
+ fs/ecryptfs/file.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@ -2033,8 +2033,6 @@ static int edge_chars_in_buffer(struct t
- 	struct edgeport_port *edge_port = usb_get_serial_port_data(port);
- 	int chars = 0;
- 	unsigned long flags;
--	int ret;
--
- 	if (edge_port == NULL)
- 		return 0;
- 
-@@ -2042,16 +2040,22 @@ static int edge_chars_in_buffer(struct t
- 	chars = kfifo_len(&edge_port->write_fifo);
- 	spin_unlock_irqrestore(&edge_port->ep_lock, flags);
- 
--	if (!chars) {
--		ret = tx_active(edge_port);
--		if (ret > 0)
--			chars = ret;
--	}
--
- 	dev_dbg(&port->dev, "%s - returns %d\n", __func__, chars);
- 	return chars;
+--- a/fs/ecryptfs/file.c
++++ b/fs/ecryptfs/file.c
+@@ -294,6 +294,7 @@ static int ecryptfs_release(struct inode
+ static int
+ ecryptfs_fsync(struct file *file, loff_t start, loff_t end, int datasync)
+ {
++	filemap_write_and_wait(file->f_mapping);
+ 	return vfs_fsync(ecryptfs_file_to_lower(file), datasync);
  }
  
-+static bool edge_tx_empty(struct usb_serial_port *port)
-+{
-+	struct edgeport_port *edge_port = usb_get_serial_port_data(port);
-+	int ret;
-+
-+	ret = tx_active(edge_port);
-+	if (ret > 0)
-+		return false;
-+
-+	return true;
-+}
-+
- static void edge_throttle(struct tty_struct *tty)
- {
- 	struct usb_serial_port *port = tty->driver_data;
-@@ -2622,6 +2626,7 @@ static struct usb_serial_driver edgeport
- 	.write			= edge_write,
- 	.write_room		= edge_write_room,
- 	.chars_in_buffer	= edge_chars_in_buffer,
-+	.tx_empty		= edge_tx_empty,
- 	.break_ctl		= edge_break,
- 	.read_int_callback	= edge_interrupt_callback,
- 	.read_bulk_callback	= edge_bulk_in_callback,
-@@ -2653,6 +2658,7 @@ static struct usb_serial_driver edgeport
- 	.write			= edge_write,
- 	.write_room		= edge_write_room,
- 	.chars_in_buffer	= edge_chars_in_buffer,
-+	.tx_empty		= edge_tx_empty,
- 	.break_ctl		= edge_break,
- 	.read_int_callback	= edge_interrupt_callback,
- 	.read_bulk_callback	= edge_bulk_in_callback,
 
 
