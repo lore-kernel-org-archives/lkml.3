@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087Ab3FKLG5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:06:57 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:33120 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300Ab3FKLG4 (ORCPT
+	id S1754205Ab3FKLHw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:07:52 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:38453 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752300Ab3FKLHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:06:56 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: mingo@redhat.com, peterz@infradead.org
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 3/3] sched: remove WARN_ON(!sd) from init_sched_groups_power()
-Date: Tue, 11 Jun 2013 16:32:45 +0530
-Message-Id: <2bbe633cd74b431c05253a8ce61fdfd5066a531b.1370948150.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1370948150.git.viresh.kumar@linaro.org>
-References: <cover.1370948150.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1370948150.git.viresh.kumar@linaro.org>
-References: <cover.1370948150.git.viresh.kumar@linaro.org>
+	Tue, 11 Jun 2013 07:07:51 -0400
+Date: Tue, 11 Jun 2013 12:07:46 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com,
+        Mike Turquette <mturquette@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH 18/33 v2] clk: ux500: Add a 2-cell Device Tree parser for
+ obtaining PRCC clocks
+Message-ID: <20130611110745.GA3330@laptop>
+References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
+ <1370521041-32318-19-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370521041-32318-19-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sd can't be NULL in init_sched_groups_power() and so checking it for NULL isn't
-useful. In case it is required, then also we need to rearrange the code a bit as
-we already accessed invalid pointer sd to get sg: sg = sd->groups.
+PRCC (peripheral and kernel) clocks are specified using a property tuple
+<&phandle base bit>, where 'base' is the peripheral (1, 2, 3, 5 or 6),
+and bit is read-in value into that peripheral stipulated by the hardware
+specification.
+    
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- kernel/sched/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 27842f5..c949f6d 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5387,7 +5387,7 @@ static void init_sched_groups_power(int cpu, struct sched_domain *sd)
- {
- 	struct sched_group *sg = sd->groups;
+diff --git a/drivers/clk/ux500/u8500_clk.c b/drivers/clk/ux500/u8500_clk.c
+index ef948ff..c2d9a1c 100644
+--- a/drivers/clk/ux500/u8500_clk.c
++++ b/drivers/clk/ux500/u8500_clk.c
+@@ -15,6 +15,28 @@
+ #include <linux/platform_data/clk-ux500.h>
+ #include "clk.h"
  
--	WARN_ON(!sd || !sg);
-+	WARN_ON(!sg);
- 
- 	do {
- 		sg->group_weight = cpumask_weight(sched_group_cpus(sg));
--- 
-1.7.12.rc2.18.g61b472e
-
++#define PRCC_SHOW(clk, base, bit) \
++	clk[(base * PRCC_PERIPHS_PER_CLUSTER) + bit]
++
++struct clk *ux500_twocell_get(struct of_phandle_args *clkspec, void *data)
++{
++	struct clk **clk_data = data;
++	unsigned int base, bit;
++
++	if (clkspec->args_count != 2)
++		return  ERR_PTR(-EINVAL);
++
++	base = clkspec->args[0];
++	bit = clkspec->args[1];
++
++	if (base != 1 && base != 2 && base != 3 && base != 5 && base != 6) {
++		pr_err("%s: invalid PRCC base %d\n", __func__, base);
++		return ERR_PTR(-EINVAL);
++	}
++
++	return PRCC_SHOW(clk_data, base, bit);
++}
++
+ const static struct of_device_id u8500_clk_of_match[] = {
+        { .compatible = "stericsson,u8500-clks", },
+        { },
