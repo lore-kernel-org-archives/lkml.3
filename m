@@ -1,104 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492Ab3FKLls (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:41:48 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33623 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755458Ab3FKLlj (ORCPT
+	id S1754781Ab3FKLmO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:42:14 -0400
+Received: from s3.sipsolutions.net ([144.76.43.152]:37317 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754717Ab3FKLmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:41:39 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, "Patil, Rachna" <rachna@ti.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Subject: [PATCH 14/22] arm/am33xx: add TSC/ADC mfd device support
-Date: Tue, 11 Jun 2013 13:31:00 +0200
-Message-Id: <1370950268-7224-15-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
-References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 11 Jun 2013 07:42:10 -0400
+Message-ID: <1370950926.8356.14.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH] mac80211: Fix bogus RCU warning from
+ ieee80211_get_tx_rates (Was: Re: rcu)
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Calvin Owens <jcalvinowens@gmail.com>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 11 Jun 2013 13:42:06 +0200
+In-Reply-To: <20130610042959.GA1902@gmail.com> (sfid-20130610_063023_078105_2ADDB0AE)
+References: <20130609225120.GA2789@gmail.com>
+	 <20130610042959.GA1902@gmail.com> (sfid-20130610_063023_078105_2ADDB0AE)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Patil, Rachna" <rachna@ti.com>
+On Sun, 2013-06-09 at 23:29 -0500, Calvin Owens wrote:
+> rate_control_fill_sta_table(), whose sole caller is ieee80211_get_tx_rates(),
+> is guaranteed by mac80211 not to be called concurrently with
+> rate_control_set_rates() [1], the sole function that touches the rate table
+> pointer/data in struct ieee80211_sta. The RCU dereference is therefore safe.
 
-Add support for core multifunctional device along
-with its clients touchscreen and ADC.
+No, this is wrong. ieee80211_get_tx_rates() can be called by drivers in
+any context and at any time, that was the whole point of using RCU here.
 
-[ panto@antoniou-consulting.com : make sure status is
-	set to 'disabled' in dtsi file. ]
+This needs to be fixed in ath9k, calling ieee80211_get_tx_rates() must
+be done under RCU protection.
 
-Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-Signed-off-by: Patil, Rachna <rachna@ti.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-[bigeasy: add 'status = "okay"']
-Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
----
- arch/arm/boot/dts/am335x-evm.dts |   14 ++++++++++++++
- arch/arm/boot/dts/am33xx.dtsi    |   18 ++++++++++++++++++
- 2 files changed, 32 insertions(+)
-
-diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
-index 0423298..26fea97 100644
---- a/arch/arm/boot/dts/am335x-evm.dts
-+++ b/arch/arm/boot/dts/am335x-evm.dts
-@@ -244,3 +244,17 @@
- &cpsw_emac1 {
- 	phy_id = <&davinci_mdio>, <1>;
- };
-+
-+&tscadc {
-+	status = "okay";
-+	tsc {
-+		ti,wires = <4>;
-+		ti,x-plate-resistance = <200>;
-+		ti,coordiante-readouts = <5>;
-+		ti,wire-config = <0x00 0x11 0x22 0x33>;
-+	};
-+
-+	adc {
-+		ti,adc-channels = <4>;
-+	};
-+};
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index 1460d9b..4ad7797 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -404,6 +404,24 @@
- 			ti,hwmods = "wkup_m3";
- 		};
- 
-+		tscadc: tscadc@44e0d000 {
-+			compatible = "ti,am3359-tscadc";
-+			reg = <0x44e0d000 0x1000>;
-+			interrupt-parent = <&intc>;
-+			interrupts = <16>;
-+			ti,hwmods = "adc_tsc";
-+			status = "disabled";
-+
-+			tsc {
-+				compatible = "ti,am3359-tsc";
-+			};
-+			am335x_adc: adc {
-+				#io-channel-cells = <1>;
-+				compatible = "ti,am3359-adc";
-+			};
-+
-+		};
-+
- 		gpmc: gpmc@50000000 {
- 			compatible = "ti,am3352-gpmc";
- 			ti,hwmods = "gpmc";
--- 
-1.7.10.4
+johannes
 
