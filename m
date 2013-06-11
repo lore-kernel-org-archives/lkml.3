@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757397Ab3FKU3g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:29:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41709 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756393Ab3FKUDS (ORCPT
+	id S1757417Ab3FKU3r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:29:47 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:41322 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756423Ab3FKU3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:18 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 13/32] USB: whiteheat: fix broken port configuration
-Date: Tue, 11 Jun 2013 13:03:12 -0700
-Message-Id: <20130611200127.691921994@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.254.g5578ad7
-In-Reply-To: <20130611200126.214442788@linuxfoundation.org>
-References: <20130611200126.214442788@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 11 Jun 2013 16:29:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <51B78594.5050903@windriver.com>
+References: <1370962642-12097-1-git-send-email-markos.chandras@imgtec.com>
+ <51B75088.8050800@windriver.com> <CAG2jQ8hACp_iGEXR7rXKR3sydK4O=y0paeh1FFgH2UisxWVxVA@mail.gmail.com>
+ <51B78594.5050903@windriver.com>
+From: Markos Chandras <markos.chandras@gmail.com>
+Date: Tue, 11 Jun 2013 21:29:03 +0100
+Message-ID: <CAG2jQ8jcZGW=9Tsb9c+YVEa0dPtgABJpYxWghdWp0-GGHYoQ2Q@mail.gmail.com>
+Subject: Re: [PATCH] drivers/net/ethernet/3com: Drop EISA dependency from VORTEX
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Markos Chandras <markos.chandras@imgtec.com>, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On 11 June 2013 21:16, Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+>>
+>> Hi Paul,
+>>
+>> The driver does not seem to build if you only have EISA=y and PCI=n.
+>> Does this driver really support EISA only
+>
+> Yes.  Not that anyone really probably cares anymore.  EISA is dead.
+>
+>> configurations? Reading the code it seems to me that the PCI support
+>> is mandatory for the driver to build and work.
+>
+> Oh really?  Having PCI disabled seems fine on today's net-next tree
+> from what I see below:
 
-------------------
+Hi Paul,
 
-From: Johan Hovold <jhovold@gmail.com>
+Ok I guess I was wrong then.
 
-commit 9eecf22d2b375b9064a20421c6c307b760b03d46 upstream.
-
-When configuring the port (e.g. set_termios) the port minor number
-rather than the port number was used in the request (and they only
-coincide for minor number 0).
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/serial/whiteheat.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/usb/serial/whiteheat.c
-+++ b/drivers/usb/serial/whiteheat.c
-@@ -1154,7 +1154,7 @@ static void firm_setup_port(struct tty_s
- 	struct whiteheat_port_settings port_settings;
- 	unsigned int cflag = tty->termios->c_cflag;
- 
--	port_settings.port = port->number + 1;
-+	port_settings.port = port->number - port->serial->minor + 1;
- 
- 	/* get the byte size */
- 	switch (cflag & CSIZE) {
-
-
+--
+Regards,
+Markos Chandras
