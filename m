@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab3FKHSZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 03:18:25 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47207 "EHLO bear.ext.ti.com"
+	id S1753579Ab3FKHSK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 03:18:10 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36582 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753625Ab3FKHSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 03:18:12 -0400
+	id S1751700Ab3FKHSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 03:18:06 -0400
 From: Ravi Babu <ravibabu@ti.com>
 To: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <balbi@ti.com>, Ravi Babu <ravibabu@ti.com>
-Subject: [PATCH v2 7/7] usb: musb: dsp: remove the usb-phy control acess from platform glue
-Date: Tue, 11 Jun 2013 12:47:52 +0530
-Message-ID: <1370935072-21056-8-git-send-email-ravibabu@ti.com>
+Subject: [PATCH v2 4/7] usb: musb: dsps: use usb-phy driver API for phy power on/off
+Date: Tue, 11 Jun 2013 12:47:49 +0530
+Message-ID: <1370935072-21056-5-git-send-email-ravibabu@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1370935072-21056-1-git-send-email-ravibabu@ti.com>
 References: <1370935072-21056-1-git-send-email-ravibabu@ti.com>
@@ -21,85 +21,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove usb-phy control access from platform glue, after moving
-usb-phy controls to saperate phy-dsps-usb driver.
+use usb-phy driver API for powering on/off phy and removed
+usage of the phy control access in platform glue driver.
 
 Signed-off-by: Ravi Babu <ravibabu@ti.com>
 ---
- drivers/usb/musb/musb_dsps.c |   51 ------------------------------------------
- 1 files changed, 0 insertions(+), 51 deletions(-)
+ drivers/usb/musb/musb_dsps.c |   22 +++++++++++++---------
+ 1 files changed, 13 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
-index 0d8581b..958c6b6 100644
+index 0ecedb3..0096aad 100644
 --- a/drivers/usb/musb/musb_dsps.c
 +++ b/drivers/usb/musb/musb_dsps.c
-@@ -123,49 +123,8 @@ struct dsps_glue {
- 	const struct dsps_musb_wrapper *wrp; /* wrapper register offsets */
- 	struct timer_list timer[2];	/* otg_workaround timer */
- 	unsigned long last_timer[2];    /* last timer data for each instance */
--	u32 __iomem *usb_ctrl[2];
- };
+@@ -36,6 +36,7 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/module.h>
++#include <linux/usb/phy.h>
+ #include <linux/platform_data/usb-omap.h>
+ #include <linux/sizes.h>
  
--#define	DSPS_AM33XX_CONTROL_MODULE_PHYS_0	0x44e10620
--#define	DSPS_AM33XX_CONTROL_MODULE_PHYS_1	0x44e10628
--
--static const resource_size_t dsps_control_module_phys[] = {
--	DSPS_AM33XX_CONTROL_MODULE_PHYS_0,
--	DSPS_AM33XX_CONTROL_MODULE_PHYS_1,
--};
--
--#define USBPHY_CM_PWRDN		(1 << 0)
--#define USBPHY_OTG_PWRDN	(1 << 1)
--#define USBPHY_OTGVDET_EN	(1 << 19)
--#define USBPHY_OTGSESSEND_EN	(1 << 20)
--
--/**
-- * musb_dsps_phy_control - phy on/off
-- * @glue: struct dsps_glue *
-- * @id: musb instance
-- * @on: flag for phy to be switched on or off
-- *
-- * This is to enable the PHY using usb_ctrl register in system control
-- * module space.
-- *
-- * XXX: This function will be removed once we have a seperate driver for
-- * control module
-- */
--static void musb_dsps_phy_control(struct dsps_glue *glue, u8 id, u8 on)
--{
--	u32 usbphycfg;
--
--	usbphycfg = readl(glue->usb_ctrl[id]);
--
--	if (on) {
--		usbphycfg &= ~(USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN);
--		usbphycfg |= USBPHY_OTGVDET_EN | USBPHY_OTGSESSEND_EN;
--	} else {
--		usbphycfg |= USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN;
--	}
--
--	writel(usbphycfg, glue->usb_ctrl[id]);
--}
- /**
-  * dsps_musb_enable - enable interrupts
-  */
-@@ -494,16 +453,6 @@ static int dsps_create_musb_pdev(struct dsps_glue *glue, u8 id)
- 	char res_name[11];
- 	int ret;
+@@ -432,7 +433,7 @@ static int dsps_musb_init(struct musb *musb)
+ 	dsps_writel(reg_base, wrp->control, (1 << wrp->reset));
  
--	resources[0].start = dsps_control_module_phys[id];
--	resources[0].end = resources[0].start + SZ_4 - 1;
--	resources[0].flags = IORESOURCE_MEM;
+ 	/* Start the on-chip PHY and its PLL. */
+-	musb_dsps_phy_control(glue, pdev->id, 1);
++	usb_phy_init(musb->xceiv);
+ 
+ 	musb->isr = dsps_interrupt;
+ 
+@@ -459,10 +460,7 @@ static int dsps_musb_exit(struct musb *musb)
+ 	del_timer_sync(&glue->timer[pdev->id]);
+ 
+ 	/* Shutdown the on-chip PHY and its PLL. */
+-	musb_dsps_phy_control(glue, pdev->id, 0);
 -
--	glue->usb_ctrl[id] = devm_ioremap_resource(&pdev->dev, resources);
--	if (IS_ERR(glue->usb_ctrl[id])) {
--		ret = PTR_ERR(glue->usb_ctrl[id]);
--		goto err0;
--	}
--
- 	/* first resource is for usbss, so start index from 1 */
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, id + 1);
- 	if (!res) {
+-	/* NOP driver needs change if supporting dual instance */
+-	usb_put_phy(musb->xceiv);
++	usb_phy_shutdown(musb->xceiv);
+ 
+ 	return 0;
+ }
+@@ -690,10 +688,13 @@ static int dsps_suspend(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev->parent);
+ 	struct dsps_glue *glue = platform_get_drvdata(pdev);
+ 	const struct dsps_musb_wrapper *wrp = glue->wrp;
++	struct musb *musb;
+ 	int i;
+ 
+-	for (i = 0; i < wrp->instances; i++)
+-		musb_dsps_phy_control(glue, i, 0);
++	for (i = 0; i < wrp->instances; i++) {
++		musb = dev_get_drvdata(&glue->musb[i]->dev);
++		usb_phy_set_suspend(musb->xceiv, 1);
++	}
+ 
+ 	return 0;
+ }
+@@ -703,10 +704,13 @@ static int dsps_resume(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev->parent);
+ 	struct dsps_glue *glue = platform_get_drvdata(pdev);
+ 	const struct dsps_musb_wrapper *wrp = glue->wrp;
++	struct musb *musb;
+ 	int i;
+ 
+-	for (i = 0; i < wrp->instances; i++)
+-		musb_dsps_phy_control(glue, i, 1);
++	for (i = 0; i < wrp->instances; i++) {
++		musb = dev_get_drvdata(&glue->musb[i]->dev);
++		usb_phy_set_suspend(musb->xceiv, 0);
++	}
+ 
+ 	return 0;
+ }
 -- 
 1.7.0.4
 
