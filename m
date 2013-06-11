@@ -1,228 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447Ab3FKFdu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 01:33:50 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42976 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751724Ab3FKFds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 01:33:48 -0400
-From: J Keerthy <j-keerthy@ti.com>
-To: <b-cousson@ti.com>, <devicetree-discuss@lists.ozlabs.org>
-CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <ldewangan@nvidia.com>, <grant.likely@secretlab.ca>,
-        <swarren@wwwdotorg.org>, <swarren@nvidia.com>, <sameo@linux.intel.com>,
-        <gg@slimlogic.co.uk>, <lee.jones@linaro.org>,
-        J Keerthy <j-keerthy@ti.com>
-Subject: [PATCH v3] ARM: dts: OMAP5: Add palmas MFD node and regulator nodes
-Date: Tue, 11 Jun 2013 11:00:51 +0530
-Message-ID: <1370928651-6278-1-git-send-email-j-keerthy@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752151Ab3FKFt4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 01:49:56 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:16244 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751079Ab3FKFty convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 01:49:54 -0400
+X-AuditID: cbfee68e-b7f276d000002279-70-51b6ba7f188c
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+Message-id: <1370929716.14857.8.camel@lcm>
+Subject: Re: [f2fs-dev] [PATCH 1/4] f2fs: reorganize the f2fs_setattr()
+ function.
+From: Changman Lee <cm224.lee@samsung.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: jaegeuk.kim@samsung.com, Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Date: Tue, 11 Jun 2013 14:48:36 +0900
+In-reply-to: <CAKYAXd-V9iF0o5nvFyFPgJX0waDLh4c_eNJ7V_o-tbbrtX1JLQ@mail.gmail.com>
+References: <1370694303-2738-1-git-send-email-linkinjeon@gmail.com>
+ <1370824712.22405.18.camel@lcm>
+ <CAKYAXd-V9iF0o5nvFyFPgJX0waDLh4c_eNJ7V_o-tbbrtX1JLQ@mail.gmail.com>
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsVy+t8zA936XdsCDf4csbG4vusvk8X1u7eY
+	LS4tcrfYs/cki8XlXXPYLH5Mr7f4ses8swO7x85Zd9k9di/4zOTRt2UVo8fnTXIBLFFcNimp
+	OZllqUX6dglcGe0LWpkLbplUnF1s2sB4WaOLkZNDQsBE4sHNL0wQtpjEhXvr2boYuTiEBJYx
+	Slz/O4MFpuja6h5WEFtIYBGjxOHVBiA2r4CgxI/J98BqmAXUJSbNW8QMYYtIXN31mhXC1pZY
+	tvA1M8TQ14wSHzZeZ4do1pJY8201kM3BISwQLNG6gBMkzAYUbj+9lgUkLCKgJjHhWSpIK7PA
+	RUaJ1R/nMYLUsAioStx80gO2lxOoddObRYwQt61hlPizIAviZiWJ3e2d7CDNEgKn2CVWT13B
+	BNEsIPFt8iGwBRICshKbDjBD1EtKHFxxg2UCo/gsJK/NQvLaLCSvzULy2gJGllWMoqkFyQXF
+	SelFRnrFibnFpXnpesn5uZsYIVHZt4Px5gHrQ4zJQOsnMkuJJucDozqvJN7Q2MzIwtTE1NjI
+	3NKMNGElcV61FutAIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYwBG/Y+XcdmvE9FeGMo66mY
+	dRuPduo8dP95+3zL6sKb0pvSZ/1Rj1jd/11Ntyjt7uLZLzcd2KDpohevNS3x6DHm/k3XeVc0
+	KOVab5ctK/rUK+23eYZKUIB455bqW7+/yp7mLLnPl5vrbezILckr/0hiEfeGPN2VClJLtBbe
+	WbT7zW71u1o/7ogpsRRnJBpqMRcVJwIAXQE2F+ACAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAd36XdsCDS4vNLe4vusvk8X1u7eY
+	LS4tcrfYs/cki8XlXXPYLH5Mr7f4ses8swO7x85Zd9k9di/4zOTRt2UVo8fnTXIBLFENjDYZ
+	qYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QAcoKZQl5pQC
+	hQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwnrGDNO7bvPVPDEuOLh3Q7GBsa76l2MnBwS
+	AiYS11b3sELYYhIX7q1nA7GFBBYxShxebQBi8woISvyYfI+li5GDg1lAXuLIpWyQMLOAusSk
+	eYuYuxi5gMpfM0p82HidHaJeS2LNt9XsIPXCAsESrQs4QcJsQOH202vBxogIqElMeJYK0sos
+	cJFRYvXHeYwgNSwCqhI3n/SwgNicQK2b3ixihDhnDaPEnwVZEGcqSexu72SfwCgwC8l1sxCu
+	m4XkugWMzKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgiP4mfQOxlUNFocYBTgYlXh4Exi3
+	BQqxJpYVV+YeYpTgYFYS4TXdDhTiTUmsrEotyo8vKs1JLT7EmAx07ERmKdHkfGByySuJNzQ2
+	MTOyNDKzMDIxNydNWEmc92CrdaCQQHpiSWp2ampBahHMFiYOTqkGRgfdf2f9c4LEvvdPKhY7
+	H6b50tO755KX2r1bot0z7HbMWnoyKOa/4rX76w+u2+K6NFFeT+bimkmX0t4YuV/JkOD5e+jf
+	lii/yz8f5U0vYAm9JbKMb8cOCSaGjMotMsbzb+72mdlVtq70iHR2WPv+Vz/bQsVWvLG+FZ8a
+	p3Iy4MfGg1qXLm6tcVNiKc5INNRiLipOBABW4NLjJAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds Palmas MFD node and the regulator nodes for OMAP5.
+On 화, 2013-06-11 at 07:57 +0900, Namjae Jeon wrote:
+> 2013/6/10, Changman Lee <cm224.lee@samsung.com>:
+> > Hello, Namjae
+> Hi. Changman.
+> >
+> > If using ACL, whenever i_mode is changed we should update acl_mode which
+> > is written to xattr block, too. And vice versa.
+> > Because update_inode() is called at any reason and anytime, so we should
+> > sync both the moment xattr is written.
+> > We don't hope that only i_mode is written to disk and xattr is not. So
+> > f2fs_setattr is dirty.
+> Yes, agreed this could be issue.
+> >
+> > And, below code has a bug. When error is occurred, inode->i_mode
+> > shouldn't be changed. Please, check one more time, Namjae.
+> And, below code has a bug. When error is occurred, inode->i_mode
+> shouldn't be changed. Please, check one more time, Namjae.
+> 
+> This was part of the default code, when ‘acl’ is not set for file’
+> Then, inode should be updated by these conditions (i.e., it covers the
+> ‘chmod’ and ‘setacl’ scenario).
+> When ACL is not present on the file and ‘chmod’ is done, then mode is
+> changed from this part, as f2fs_get_acl() will fail and cause the
+> below code to be executed:
+> 
+>     if (err || is_inode_flag_set(fi, FI_ACL_MODE)) {
+>              inode->i_mode = fi->i_acl_mode;
+>              clear_inode_flag(fi, FI_ACL_MODE);
+>       }
+> 
+> Now, in order to make it consistent and work on all scenario we need
+> to make further change like this in addition to the patch changes.
+> setattr_copy(inode, attr);
+>         if (attr->ia_valid & ATTR_MODE) {
+> +             set_acl_inode(fi, inode->i_mode);
+>               err = f2fs_acl_chmod(inode);
+>               if (err || is_inode_flag_set(fi, FI_ACL_MODE)) {
+> 
+> Let me know your opinion.
+> Thanks.
+> 
 
-The node definitions are based on: https://lkml.org/lkml/2013/6/6/25
+setattr_copy changes inode->i_mode, this is not our expectation.
+So I made redundant __setatt_copy that copy attr->mode to
+fi->i_acl_mode.
+When acl_mode is reflected in xattr, acl_mode is copied to
+inode->i_mode.
 
-Boot tested on omap5-uevm board.
+Agree?
 
-Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-Signed-off-by: J Keerthy <j-keerthy@ti.com>
----
- arch/arm/boot/dts/omap5-uevm.dts |  170 ++++++++++++++++++++++++++++++++++++++
- 1 files changed, 170 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+> > index deefd25..29cd449 100644
+> > --- a/fs/f2fs/file.c
+> > +++ b/fs/f2fs/file.c
+> > @@ -352,10 +352,8 @@ int f2fs_setattr(struct dentry *dentry, struct
+> > iattr *attr)
+> >
+> >         if (attr->ia_valid & ATTR_MODE) {
+> >                 err = f2fs_acl_chmod(inode);
+> > -               if (err || is_inode_flag_set(fi, FI_ACL_MODE)) {
+> > -                       inode->i_mode = fi->i_acl_mode;
+> > +               if (err || is_inode_flag_set(fi, FI_ACL_MODE))
+> >                         clear_inode_flag(fi, FI_ACL_MODE);
+> > -               }
+> >         }
+> >
+> > Thanks.
+> >
+> >
+> > On 토, 2013-06-08 at 21:25 +0900, Namjae Jeon wrote:
+> >> From: Namjae Jeon <namjae.jeon@samsung.com>
+> >>
+> >> Remove the redundant code from this function and make it aligned with
+> >> usages of latest generic vfs layer function e.g using the setattr_copy()
+> >> instead of using the f2fs specific function.
+> >>
+> >> Also correct the condition for updating the size of file via
+> >> truncate_setsize().
+> >>
+> >> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> >> Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
+> >> ---
+> >>  fs/f2fs/acl.c  |    5 +----
+> >>  fs/f2fs/file.c |   47 +++++------------------------------------------
+> >>  2 files changed, 6 insertions(+), 46 deletions(-)
+> >>
+> >> diff --git a/fs/f2fs/acl.c b/fs/f2fs/acl.c
+> >> index 44abc2f..2d13f44 100644
+> >> --- a/fs/f2fs/acl.c
+> >> +++ b/fs/f2fs/acl.c
+> >> @@ -17,9 +17,6 @@
+> >>  #include "xattr.h"
+> >>  #include "acl.h"
+> >>
+> >> -#define get_inode_mode(i)	((is_inode_flag_set(F2FS_I(i), FI_ACL_MODE)) ?
+> >> \
+> >> -					(F2FS_I(i)->i_acl_mode) : ((i)->i_mode))
+> >> -
+> >>  static inline size_t f2fs_acl_size(int count)
+> >>  {
+> >>  	if (count <= 4) {
+> >> @@ -299,7 +296,7 @@ int f2fs_acl_chmod(struct inode *inode)
+> >>  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+> >>  	struct posix_acl *acl;
+> >>  	int error;
+> >> -	umode_t mode = get_inode_mode(inode);
+> >> +	umode_t mode = inode->i_mode;
+> >>
+> >>  	if (!test_opt(sbi, POSIX_ACL))
+> >>  		return 0;
+> >> diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+> >> index deefd25..8dfc1da 100644
+> >> --- a/fs/f2fs/file.c
+> >> +++ b/fs/f2fs/file.c
+> >> @@ -300,63 +300,26 @@ static int f2fs_getattr(struct vfsmount *mnt,
+> >>  	return 0;
+> >>  }
+> >>
+> >> -#ifdef CONFIG_F2FS_FS_POSIX_ACL
+> >> -static void __setattr_copy(struct inode *inode, const struct iattr
+> >> *attr)
+> >> -{
+> >> -	struct f2fs_inode_info *fi = F2FS_I(inode);
+> >> -	unsigned int ia_valid = attr->ia_valid;
+> >> -
+> >> -	if (ia_valid & ATTR_UID)
+> >> -		inode->i_uid = attr->ia_uid;
+> >> -	if (ia_valid & ATTR_GID)
+> >> -		inode->i_gid = attr->ia_gid;
+> >> -	if (ia_valid & ATTR_ATIME)
+> >> -		inode->i_atime = timespec_trunc(attr->ia_atime,
+> >> -						inode->i_sb->s_time_gran);
+> >> -	if (ia_valid & ATTR_MTIME)
+> >> -		inode->i_mtime = timespec_trunc(attr->ia_mtime,
+> >> -						inode->i_sb->s_time_gran);
+> >> -	if (ia_valid & ATTR_CTIME)
+> >> -		inode->i_ctime = timespec_trunc(attr->ia_ctime,
+> >> -						inode->i_sb->s_time_gran);
+> >> -	if (ia_valid & ATTR_MODE) {
+> >> -		umode_t mode = attr->ia_mode;
+> >> -
+> >> -		if (!in_group_p(inode->i_gid) && !capable(CAP_FSETID))
+> >> -			mode &= ~S_ISGID;
+> >> -		set_acl_inode(fi, mode);
+> >> -	}
+> >> -}
+> >> -#else
+> >> -#define __setattr_copy setattr_copy
+> >> -#endif
+> >> -
+> >>  int f2fs_setattr(struct dentry *dentry, struct iattr *attr)
+> >>  {
+> >>  	struct inode *inode = dentry->d_inode;
+> >> -	struct f2fs_inode_info *fi = F2FS_I(inode);
+> >>  	int err;
+> >>
+> >>  	err = inode_change_ok(inode, attr);
+> >>  	if (err)
+> >>  		return err;
+> >>
+> >> -	if ((attr->ia_valid & ATTR_SIZE) &&
+> >> -			attr->ia_size != i_size_read(inode)) {
+> >> -		truncate_setsize(inode, attr->ia_size);
+> >> +	if ((attr->ia_valid & ATTR_SIZE)) {
+> >> +		if (attr->ia_size != i_size_read(inode))
+> >> +			truncate_setsize(inode, attr->ia_size);
+> >>  		f2fs_truncate(inode);
+> >>  		f2fs_balance_fs(F2FS_SB(inode->i_sb));
+> >>  	}
+> >>
+> >> -	__setattr_copy(inode, attr);
+> >> +	setattr_copy(inode, attr);
+> >>
+> >> -	if (attr->ia_valid & ATTR_MODE) {
+> >> +	if (attr->ia_valid & ATTR_MODE)
+> >>  		err = f2fs_acl_chmod(inode);
+> >> -		if (err || is_inode_flag_set(fi, FI_ACL_MODE)) {
+> >> -			inode->i_mode = fi->i_acl_mode;
+> >> -			clear_inode_flag(fi, FI_ACL_MODE);
+> >> -		}
+> >> -	}
+> >>
+> >>  	mark_inode_dirty(inode);
+> >>  	return err;
+> >
+> >
+> >
 
-diff --git a/arch/arm/boot/dts/omap5-uevm.dts b/arch/arm/boot/dts/omap5-uevm.dts
-index 927db1e..6fbe47c 100644
---- a/arch/arm/boot/dts/omap5-uevm.dts
-+++ b/arch/arm/boot/dts/omap5-uevm.dts
-@@ -8,6 +8,8 @@
- /dts-v1/;
- 
- #include "omap5.dtsi"
-+#include <dt-bindings/interrupt-controller/irq.h>
-+#include <dt-bindings/interrupt-controller/arm-gic.h>
- 
- / {
- 	model = "TI OMAP5 uEVM board";
-@@ -254,6 +256,174 @@
- 	pinctrl-0 = <&i2c1_pins>;
- 
- 	clock-frequency = <400000>;
-+
-+	palmas: palmas@48 {
-+		reg = <0x48>;
-+		interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>; /* IRQ_SYS_1N */
-+		interrupt-parent = <&gic>;
-+	};
-+};
-+
-+&palmas {
-+	compatible = "ti,palmas";
-+	interrupt-controller;
-+	#interrupt-cells = <2>;
-+
-+	palmas_pmic {
-+	compatible = "ti,palmas-pmic";
-+		interrupt-parent = <&palmas>;
-+		interrupts = <14 IRQ_TYPE_NONE>;
-+		interrupt-name = "short-irq";
-+
-+		ti,ldo6-vibrator;
-+
-+		regulators {
-+			smps123_reg: smps123 {
-+				regulator-name = "smps123";
-+				regulator-min-microvolt = < 600000>;
-+				regulator-max-microvolt = <1500000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			smps45_reg: smps45 {
-+				regulator-name = "smps45";
-+				regulator-min-microvolt = < 600000>;
-+				regulator-max-microvolt = <1310000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			smps6_reg: smps6 {
-+				regulator-name = "smps6";
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			smps7_reg: smps7 {
-+				regulator-name = "smps7";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			smps8_reg: smps8 {
-+				regulator-name = "smps8";
-+				regulator-min-microvolt = < 600000>;
-+				regulator-max-microvolt = <1310000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			smps9_reg: smps9 {
-+				regulator-name = "smps9";
-+				regulator-min-microvolt = <2100000>;
-+				regulator-max-microvolt = <2100000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+				ti,smps-range = <0x80>;
-+			};
-+
-+			smps10_reg: smps10 {
-+				regulator-name = "smps10";
-+				regulator-min-microvolt = <5000000>;
-+				regulator-max-microvolt = <5000000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			ldo1_reg: ldo1 {
-+				regulator-name = "ldo1";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			ldo2_reg: ldo2 {
-+				regulator-name = "ldo2";
-+				regulator-min-microvolt = <2900000>;
-+				regulator-max-microvolt = <2900000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			ldo3_reg: ldo3 {
-+				regulator-name = "ldo3";
-+				regulator-min-microvolt = <3000000>;
-+				regulator-max-microvolt = <3000000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			ldo4_reg: ldo4 {
-+				regulator-name = "ldo4";
-+				regulator-min-microvolt = <2200000>;
-+				regulator-max-microvolt = <2200000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			ldo5_reg: ldo5 {
-+				regulator-name = "ldo5";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			ldo6_reg: ldo6 {
-+				regulator-name = "ldo6";
-+				regulator-min-microvolt = <1500000>;
-+				regulator-max-microvolt = <1500000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			ldo7_reg: ldo7 {
-+				regulator-name = "ldo7";
-+				regulator-min-microvolt = <1500000>;
-+				regulator-max-microvolt = <1500000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			ldo8_reg: ldo8 {
-+				regulator-name = "ldo8";
-+				regulator-min-microvolt = <1500000>;
-+				regulator-max-microvolt = <1500000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			ldo9_reg: ldo9 {
-+				regulator-name = "ldo9";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <3300000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			ldoln_reg: ldoln {
-+				regulator-name = "ldoln";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			ldousb_reg: ldousb {
-+				regulator-name = "ldousb";
-+				regulator-min-microvolt = <3250000>;
-+				regulator-max-microvolt = <3250000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+		};
-+	};
- };
- 
- &i2c5 {
--- 
-1.7.5.4
 
