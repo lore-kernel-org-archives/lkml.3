@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab3FKLlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:41:39 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33616 "EHLO
+	id S1754710Ab3FKLlv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:41:51 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33634 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755442Ab3FKLlf (ORCPT
+	with ESMTP id S1755489Ab3FKLls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:41:35 -0400
+	Tue, 11 Jun 2013 07:41:48 -0400
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
 Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
@@ -16,9 +16,9 @@ Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
         linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
         linux-input@vger.kernel.org,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 11/22] mfd/ti_am335x_tscadc: remove platform_data support
-Date: Tue, 11 Jun 2013 13:30:57 +0200
-Message-Id: <1370950268-7224-12-git-send-email-bigeasy@linutronix.de>
+Subject: [PATCH 17/22] mfd & iio/ti_am335x_adc: rename device from tiadc to TI-am335x-adc
+Date: Tue, 11 Jun 2013 13:31:03 +0200
+Message-Id: <1370950268-7224-18-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
 References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
@@ -29,65 +29,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes access to platform data mfd_tscadc_board because the
-platform is DT only.
+TI-adc reads a little better compared to tiadc. And if we add am335x to
+it then we have the same naming scheme as the tsc side.
 
+Acked-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/mfd/ti_am335x_tscadc.c |   23 ++++++-----------------
- 1 file changed, 6 insertions(+), 17 deletions(-)
+ drivers/iio/adc/ti_am335x_adc.c |    3 +--
+ drivers/mfd/ti_am335x_tscadc.c  |    2 +-
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+index 9939810..4bec91e 100644
+--- a/drivers/iio/adc/ti_am335x_adc.c
++++ b/drivers/iio/adc/ti_am335x_adc.c
+@@ -292,7 +292,7 @@ MODULE_DEVICE_TABLE(of, ti_adc_dt_ids);
+ 
+ static struct platform_driver tiadc_driver = {
+ 	.driver = {
+-		.name   = "tiadc",
++		.name   = "TI-am335x-adc",
+ 		.owner	= THIS_MODULE,
+ 		.pm	= TIADC_PM_OPS,
+ 		.of_match_table = of_match_ptr(ti_adc_dt_ids),
+@@ -300,7 +300,6 @@ static struct platform_driver tiadc_driver = {
+ 	.probe	= tiadc_probe,
+ 	.remove	= tiadc_remove,
+ };
+-
+ module_platform_driver(tiadc_driver);
+ 
+ MODULE_DESCRIPTION("TI ADC controller driver");
 diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-index aae5e55..f9ad26f 100644
+index bf33134..d3f48d2 100644
 --- a/drivers/mfd/ti_am335x_tscadc.c
 +++ b/drivers/mfd/ti_am335x_tscadc.c
-@@ -25,8 +25,6 @@
- #include <linux/of_device.h>
- 
- #include <linux/mfd/ti_am335x_tscadc.h>
--#include <linux/input/ti_am335x_tsc.h>
--#include <linux/platform_data/ti_am335x_adc.h>
- 
- static unsigned int tscadc_readl(struct ti_tscadc_dev *tsadc, unsigned int reg)
- {
-@@ -80,31 +78,22 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
- 	struct ti_tscadc_dev	*tscadc;
- 	struct resource		*res;
- 	struct clk		*clk;
--	struct mfd_tscadc_board	*pdata = pdev->dev.platform_data;
- 	struct device_node	*node = pdev->dev.of_node;
- 	struct mfd_cell		*cell;
- 	int			err, ctrl;
- 	int			clk_value, clock_rate;
- 	int			tsc_wires = 0, adc_channels = 0, total_channels;
- 
--	if (!pdata && !pdev->dev.of_node) {
--		dev_err(&pdev->dev, "Could not find platform data\n");
-+	if (!pdev->dev.of_node) {
-+		dev_err(&pdev->dev, "Could not find valid DT data.\n");
- 		return -EINVAL;
- 	}
- 
--	if (pdev->dev.platform_data) {
--		if (pdata->tsc_init)
--			tsc_wires = pdata->tsc_init->wires;
-+	node = of_get_child_by_name(pdev->dev.of_node, "tsc");
-+	of_property_read_u32(node, "ti,wires", &tsc_wires);
- 
--		if (pdata->adc_init)
--			adc_channels = pdata->adc_init->adc_channels;
--	} else {
--		node = of_get_child_by_name(pdev->dev.of_node, "tsc");
--		of_property_read_u32(node, "ti,wires", &tsc_wires);
--
--		node = of_get_child_by_name(pdev->dev.of_node, "adc");
--		of_property_read_u32(node, "ti,adc-channels", &adc_channels);
--	}
-+	node = of_get_child_by_name(pdev->dev.of_node, "adc");
-+	of_property_read_u32(node, "ti,adc-channels", &adc_channels);
- 
- 	total_channels = tsc_wires + adc_channels;
- 
+@@ -204,7 +204,7 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
+ 	if (adc_channels > 0) {
+ 		tscadc->adc_cell = tscadc->used_cells;
+ 		cell = &tscadc->cells[tscadc->used_cells++];
+-		cell->name = "tiadc";
++		cell->name = "TI-am335x-adc";
+ 		cell->of_compatible = "ti,am3359-adc";
+ 		cell->platform_data = &tscadc;
+ 		cell->pdata_size = sizeof(tscadc);
 -- 
 1.7.10.4
 
