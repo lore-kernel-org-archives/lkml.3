@@ -1,101 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab3FKKjm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 06:39:42 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:8735 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754065Ab3FKKjk (ORCPT
+	id S1754620Ab3FKKl2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 06:41:28 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2124 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754568Ab3FKKl0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 06:39:40 -0400
-Message-ID: <51B6FE69.6060505@itdev.co.uk>
-Date: Tue, 11 Jun 2013 11:39:37 +0100
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 11 Jun 2013 06:41:26 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 11 Jun 2013 03:40:59 -0700
+From: Jay Agarwal <jagarwal@nvidia.com>
+To: "'Thierry Reding'" <thierry.reding@gmail.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "olof@lixom.net" <olof@lixom.net>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Juha Tukkinen <jtukkinen@nvidia.com>,
+        Krishna Thota <kthota@nvidia.com>
+Date: Tue, 11 Jun 2013 16:10:43 +0530
+Subject: RE: [PATCH V3 2/4] ARM: tegra: pcie: Add tegra3 support
+Thread-Topic: [PATCH V3 2/4] ARM: tegra: pcie: Add tegra3 support
+Thread-Index: Ac5mjL53g9Ui0MOBQVGHGwSqPjuxWAAAE55Q
+Message-ID: <C79B248886DD134989C8FF6B096A91AB91B616BEF3@BGMAIL01.nvidia.com>
+References: <1370372252-4332-1-git-send-email-jagarwal@nvidia.com>
+ <1370372252-4332-2-git-send-email-jagarwal@nvidia.com>
+ <51AE3D3B.6080102@wwwdotorg.org> <20130610195028.GB25859@mithrandir>
+ <C79B248886DD134989C8FF6B096A91AB91B616BEED@BGMAIL01.nvidia.com>
+ <20130611101610.GB932@manwe>
+In-Reply-To: <20130611101610.GB932@manwe>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
-Subject: Re: [PATCH 10/53] Input: atmel_mxt_ts - Add memory access interface
- via sysfs
-References: <20130606100346.GC1883@sirena.org.uk> <51B0651D.3090902@itdev.co.uk> <20130606105530.GT31367@sirena.org.uk> <51B06FE4.7040805@itdev.co.uk> <20130606131638.GX31367@sirena.org.uk> <51B0B52C.1090807@itdev.co.uk> <20130606164629.GG31367@sirena.org.uk> <51B1F859.1010504@itdev.co.uk> <20130607154134.GU31367@sirena.org.uk> <51B20630.7000304@itdev.co.uk> <20130607164700.GW31367@sirena.org.uk>
-In-Reply-To: <20130607164700.GW31367@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown wrote:
-> I don't think you're using the usual definition of "register map" here.
-> You seem to be switching between talking about this object model the
-> device has and device registers - perhaps the objects are also registers
-> sometimes?
-
-Yes, in Atmel Object Protocol "instances" of "objects" do each have an
-assigned register range (they do also correspond to modules of code in the
-firmware).
-
-This document is a better description of it than I can give:
-http://www.atmel.com/Images/Atmel-9626-AT42-QTouch-BSW-AT421085-Object-Protocol-Guide_Datasheet.pdf
-
-That's a rather old chip now, but the same system is used throughout
-maXTouch series chips, and also on some non-touch chips now.
-
-> You appear to be assuming a great deal of familiarity with the specifics
-> of this device here.  Where does all thi stuff about reinitialsing the
-> device come from?  What are these dependencies and what does all this
-> have to do with setting parameters?
-
-I think you're uncomfortable with the idea of giving full access by
-default. I'm not sure how I can convince you that that is OK by design, I
-can only assert it.
-
-Essentially, the device is designed (and tested) on the assumption that
-touch processing can be going on whilst various parameters are changed in a
-live fashion. If poking around in the register map caused it to lock up or
-behave oddly then that would be considered a firmware bug. In general it
-will fail gracefully - for example if you write a configuration that is
-invalid it will just stop and emit a CFGERR message.
-
-In my previous messages in this thread, I tried to answer some of the
-particular cases in which you might expect the driver to have to cope with
-the configuration changing "under it". It's difficult to be exhaustive
-without having to impart a huge amount of domain knowledge first.
-
-In the patch under discussion, the driver would have to trap writes to
-particular registers and take appropriate action, or provide a mechanism to
-be told that it needs to reinitialise itself. In practice (it's been widely
-tested outside of mainline) I haven't found a case where doing this has
-been essential, although there's nothing about this patch that stops us
-adding them.
-
-The absolute worst thing that I can think of is that you can try to beat
-the interrupt handler to reading the "message processor" registers, which
-would possibly leave touches stuck on screen. But even that operation is
-useful in debugging interrupt line issues.
-
->> OK. I think that the ABI offered to the application layer should also be
->> object protocol, implemented over a binary attribute, which is what the
->> patch under discussion does. Is the problem that I need to provide better
->> documentation of object protocol?
+> > I have mentioned it in description as -> "Corrected logic in read/write
+> config space to display right device number on bus 0"
+> >
+> > > Device 0:00.0 is usually the root complex, and device 0:01.0, 0:02.0
+> > > etc are the root ports. The change proposed above makes 0:00.0 the
+> > > first root port, therefore breaking what systems usually expect.
+> > >
+> > I was seeing root port 2 in cardhu being enumerated as pci_bus 0000:03,
+> which I thought should be pci_bus 0000:02, so made this change.
 > 
-> As Greg says you do need to document any new sysfs ABIs you're adding
-> anyway.  However if this is some stateful protocol you're implementing
-> then does it really map onto sysfs well, sysfs attributes are normally
-> more just data values?
+> Yes, that's done on purpose to mirror what a typical PCI tree looks like, as I
+> already explained. So unless this fixes a real bug I'll just drop it while
+> applying.
 
-Perhaps it is a little unusual. There was an older ioctl-based
-implementation, but I think that would be rejected for different reasons.
-
-> Won't the driver end up getting into a fight with the magic userspace
-> stuff if the driver has no idea what the magic userspace is doing?  How
-> would suspend and resume work?
-
-On suspend the driver puts chip into "deep sleep" where touch acquisition
-is halted and minimal power consumed. But it will still come out of its
-sleep state temporarily to service I2C comms if necessary (although one
-particular family requires that I2C retry for this case).
+Please apply V4 patch instead which does not contain this change along with taking care of other review comments.
