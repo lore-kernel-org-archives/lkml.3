@@ -1,97 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab3FKKOM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 06:14:12 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:53809 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752478Ab3FKKOK (ORCPT
+	id S1754583Ab3FKKOj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 06:14:39 -0400
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:61112 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753053Ab3FKKOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 06:14:10 -0400
-Date: Tue, 11 Jun 2013 03:14:01 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Josh Triplett <josh@joshtriplett.org>, niv@us.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        David Howells <dhowells@redhat.com>,
-        Eric Dumazet <edumazet@google.com>, Darren Hart <darren@dvhart.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
-Message-ID: <20130611101401.GC5146@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130609193657.GA13392@linux.vnet.ibm.com>
- <1370911480.9844.160.camel@gandalf.local.home>
- <CA+55aFxeLszgfTZeG7L6289DcaoKT+uhtf5nwB6r=2i9Sy4Mrg@mail.gmail.com>
- <51B6D76D.9090207@cn.fujitsu.com>
+	Tue, 11 Jun 2013 06:14:37 -0400
+Date: Tue, 11 Jun 2013 12:14:33 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-pwm@vger.kernel.org,
+        linux-doc@vger.kernel.org, poeschel@lemonage.de,
+        Ryan Mallon <rmallon@gmail.com>, rob@landley.net
+Subject: Re: [PATCH v4] pwm: add sysfs interface
+Message-ID: <20130611101432.GA932@manwe>
+References: <201306101612.07708.hartleys@visionengravers.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cWoXeonUoKmBZSoM"
 Content-Disposition: inline
-In-Reply-To: <51B6D76D.9090207@cn.fujitsu.com>
+In-Reply-To: <201306101612.07708.hartleys@visionengravers.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061110-4834-0000-0000-000007F213AC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 03:53:17PM +0800, Lai Jiangshan wrote:
-> On 06/11/2013 08:51 AM, Linus Torvalds wrote:
-> > On Mon, Jun 10, 2013 at 5:44 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >>
-> >> OK, I haven't found a issue here yet, but youss are beiing trickssy! We
-> >> don't like trickssy, and we must find precccciouss!!!
-> > 
-> > .. and I personally have my usual reservations. I absolutely hate
-> > papering over scalability issues, and historically whenever people
-> > have ever thought that we want complex spinlocks, the problem has
-> > always been that the locking sucks.
-> > 
-> > So reinforced by previous events, I really feel that code that needs
-> > this kind of spinlock is broken and needs to be fixed, rather than
-> > actually introduce tricky spinlocks.
-> > 
-> > So in order to merge something like this, I want (a) numbers for real
-> > loads and (b) explanations for why the spinlock users cannot be fixed.
-> > 
-> > Because "we might hit loads" is just not good enough. I would counter
-> > with "hiding problems causes more of them".
-> > 
-> 
-> Hi, all
-> 
-> Off-topic, although I am in this community for several years,
-> I am not exactly clear with this problem.
-> 
-> 1) In general case, which lock is the most competitive in the kernel? what it protects for?
-> 2) In which special case, which lock is the most competitive in the kernel? what it protects for?
-> 3) In general case, which list is the most hot list?
-> 4) In which special case, which list is the most hot list?
 
-Others would know better than I, but mmap_sem has been called out as a
-prime offender for some workloads.  There is of course some debate as
-to whether the fault lies mmap_sem or with the workloads.  There have
-been some efforts to solve this one on LKML, plus some in academia have
-worked on this as well:
+--cWoXeonUoKmBZSoM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-http://people.csail.mit.edu/nickolai/papers/clements-bonsai.pdf
-http://pdos.csail.mit.edu/papers/radixvm:eurosys13.pdf
+On Mon, Jun 10, 2013 at 04:12:07PM -0700, H Hartley Sweeten wrote:
+[...]
+> +What:		/sys/class/pwm/pwmchipN/pwmX/duty
+> +Date:		May 2013
+> +KernelVersion:	3.11
+> +Contact:	H Hartley Sweeten <hsweeten@visionengravers.com>
+> +Description:
+> +		Sets the PWM duty cycle in nanoseconds.
 
-And IIRC this was the subject of a session at a recent minisummit.
+Sorry, I should've been more specific before. I'd like this to be named
+duty_cycle. We now have the pwm_{set,get}_duty_cycle() accessors and I'd
+like to eventually use the spelled-out form consistently.
 
-There are a few locks within the RCU implementation that have popped
-up from time to time on very large systems, but I have dealt with those
-and have plans for each should it become a problem.  The plans probably
-won't survive first contact with a real workload, but having thought
-things through is very helpful.
+> +config PWM_SYSFS
+> +	bool "/sys/class/pwm/... (sysfs interface)"
+> +	depends on SYSFS
+> +	help
+> +	  Say Y here to provide a sysfs interface to control PWMs.
+> +
+> +	  For every instance of a PWM device there is a pwmchipN directory
+> +	  created in /sys/class/pwm. Use the export attribute to request
+> +	  a PWM to be accessible from userspace and the unexport attribute
+> +	  to return the PWM to the kernel. Each exported PWM will have a
+> +	  pwmX directory in the pwmchipN it is associated with.
 
-							Thanx, Paul
+I have a small quibble with this. Introducing options like this make it
+increasingly difficult to compile-test all the various combinations, so
+I'd like to see this converted to a form that will play well with the
+IS_ENABLED() macro. We already have the same issue with DEBUG_FS, only
+to a lesser degree because it doesn't have an additional PWM-specific
+Kconfig option.
 
+In order not to burden you with too much work, one option for now would
+be to unconditionally build the sysfs.c file and use something along
+these lines in pwmchip_sysfs_{,un}export():
+
+	if (!IS_ENABLED(CONFIG_PWM_SYSFS))
+		return;
+
+Which should allow the compiler to throw away all PWM_SYSFS-related
+code in that file, leaving an empty function. It's not the optimal
+solution, which would require the sysfs code to go into core.c and be
+conditionalized there, but it's good enough. I can always go and clean
+up that code later (maybe doing the same for DEBUG_FS while at it).
+
+The big advantage of this is that we get full compile coverage of the
+sysfs interface, whether it's enabled or not. Calling an empty function
+once when the chip is registered is an acceptable overhead.
+
+> diff --git a/drivers/pwm/sysfs.c b/drivers/pwm/sysfs.c
+[...]
+> +static ssize_t pwm_polarity_store(struct device *child,
+> +				  struct device_attribute *attr,
+> +				  const char *buf, size_t size)
+> +{
+> +	struct pwm_device *pwm = child_to_pwm_device(child);
+> +	enum pwm_polarity polarity;
+> +	int ret;
+> +
+> +	if (strncmp(buf, "normal", strlen("normal")) == 0) {
+> +		polarity = PWM_POLARITY_NORMAL;
+> +	} else if (strncmp(buf, "inversed", strlen("inversed")) == 0) {
+> +		polarity = PWM_POLARITY_INVERSED;
+
+I think you can use sysfs_streq() here. And no need for {} on single-
+line blocks.
+
+> +static int pwm_unexport_child(struct device *parent, struct pwm_device *pwm)
+> +{
+> +	struct device *child;
+> +
+> +	if (!test_and_clear_bit(PWMF_EXPORTED, &pwm->flags))
+> +		return -ENODEV;
+> +
+> +	child = device_find_child(parent, pwm, pwm_unexport_match);
+> +	if (!child)
+> +		return -ENODEV;
+> +
+> +	put_device(child);		/* for device_find_child() */
+
+Nit: can you put the comment on a line of its own above the code,
+please?
+
+> +void pwmchip_sysfs_unexport(struct pwm_chip *chip)
+> +{
+> +	struct device *parent;
+> +
+> +	parent = class_find_device(&pwm_class, NULL, chip,
+> +				   pwmchip_sysfs_match);
+> +	if (parent) {
+> +		put_device(parent);		/* for class_find_device() */
+
+Same here.
+
+Thierry
+
+--cWoXeonUoKmBZSoM
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRtviIAAoJEN0jrNd/PrOhW7EP/iqh2xHu51xxEyhKqxXFiOZK
+GZjYkxVx5BB2eKpXGzF+tkmFx8tp2IA1V7TkuVB2Gupy+3PqpCAPkBi7j/OCO1Fo
+x7IJRyDyLW32DCAqNJ/evTLb2x1LsxapMGTe0YVa7kZMrtciI+/NlbQl/gwWC0Ig
+A0wUSpBX7L+JfsFUVWe1ZR8pRpkksTHLrkEBxH/0hLuDFFFj5Q70jNFudeS257v7
+uQF33bG/S4RE1awMJkrBKQaRK+jkNtZslM8jFE3C9RPIyU2LzCRmmZVRVXFWpoHk
+W8yMnvwR5pRkcp29F4TcMs3libtYTISvbElV/Y+fS4jCy0rQho5dniLQqnote32O
+5MbcDTdZYBTkvZErG5hAg6cR+8A0jRx6jky6wYgpUroKbq6pKPA8Rymo5SIa2MMW
+zKgWp75IT0uHjSoJ4k3bXXGUm4r03eEr5YCuoMAT/HBh9EjrZZ/J+DjmY/GNMTW/
+pKWNJ6OgP2Nb2vb8hfEvAskm9Rcj0KK07cBjRGigVCrNm9TefP+tErUjbJRQZ4Mr
+2pkaA7UDmMvqfb1RiADFpwZsMFlQnD4RS9x6EUg7BZ3uDVSiD/T+ST7Os9T3tuSE
+qFFpuToFHiT0Jmf9DW8oqPBOHhljwyNedsiTTaPu6zY3S5cI24xaFAaW5ncu38bh
+UfeGHd4d/M6gBAl5yezA
+=hvn6
+-----END PGP SIGNATURE-----
+
+--cWoXeonUoKmBZSoM--
