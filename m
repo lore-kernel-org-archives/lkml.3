@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab3FKQnH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 12:43:07 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:45111 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755238Ab3FKQnE (ORCPT
+	id S1755420Ab3FKQpL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 12:45:11 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:58783 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755352Ab3FKQnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 12:43:04 -0400
+	Tue, 11 Jun 2013 12:43:07 -0400
 From: Robert Richter <rric@kernel.org>
 To: Borislav Petkov <bp@alien8.de>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
@@ -14,9 +14,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
         Robert Richter <robert.richter@linaro.org>,
         Robert Richter <rric@kernel.org>
-Subject: [PATCH v2 08/14] perf, persistent: Reworking perf_get_persistent_event_fd()
-Date: Tue, 11 Jun 2013 18:42:34 +0200
-Message-Id: <1370968960-22527-9-git-send-email-rric@kernel.org>
+Subject: [PATCH v2 10/14] perf, persistent: Avoid adding identical events
+Date: Tue, 11 Jun 2013 18:42:36 +0200
+Message-Id: <1370968960-22527-11-git-send-email-rric@kernel.org>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1370968960-22527-1-git-send-email-rric@kernel.org>
 References: <1370968960-22527-1-git-send-email-rric@kernel.org>
@@ -26,75 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Robert Richter <robert.richter@linaro.org>
 
-There is already a function anon_inode_getfd() that does already all
-the work. Reworking and simplifying code.
+Check if an event already exists before adding it.
 
 Signed-off-by: Robert Richter <robert.richter@linaro.org>
 Signed-off-by: Robert Richter <rric@kernel.org>
 ---
- kernel/events/persistent.c | 35 +++++++----------------------------
- 1 file changed, 7 insertions(+), 28 deletions(-)
+ kernel/events/persistent.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
 diff --git a/kernel/events/persistent.c b/kernel/events/persistent.c
-index 7d91871..16ed47c 100644
+index 586cea5..4fcd071 100644
 --- a/kernel/events/persistent.c
 +++ b/kernel/events/persistent.c
-@@ -87,33 +87,6 @@ static void del_persistent_event(int cpu, struct perf_event_attr *attr)
- 	kfree(desc);
- }
+@@ -40,6 +40,12 @@ add_persistent_event_on_cpu(unsigned int cpu, struct perf_event_attr *attr,
  
--static int __alloc_persistent_event_fd(struct pers_event_desc *desc)
--{
--	struct file *event_file = NULL;
--	int event_fd = -1;
--
--	event_fd = get_unused_fd();
--	if (event_fd < 0)
--		goto out;
--
--	event_file = anon_inode_getfile("[pers_event]", &perf_fops,
--					desc->event, O_RDONLY);
--	if (IS_ERR(event_file))
--		goto err_event_file;
--
--	desc->fd = event_fd;
--	fd_install(event_fd, event_file);
--
--	goto out;
--
--
-- err_event_file:
--	put_unused_fd(event_fd);
--
-- out:
--	return event_fd;
--}
--
- /*
-  * Create and enable the persistent version of the perf event described by
-  * @attr.
-@@ -165,6 +138,7 @@ int perf_add_persistent_event_by_id(int id)
- int perf_get_persistent_event_fd(unsigned cpu, struct perf_event_attr *attr)
- {
- 	struct pers_event_desc *desc;
-+	int event_fd;
+ 	mutex_lock(&per_cpu(pers_events_lock, cpu));
  
- 	if (cpu >= (unsigned)nr_cpu_ids)
- 		return -EINVAL;
-@@ -173,7 +147,12 @@ int perf_get_persistent_event_fd(unsigned cpu, struct perf_event_attr *attr)
- 	if (!desc)
- 		return -ENODEV;
- 
--	return __alloc_persistent_event_fd(desc);
-+	event_fd = anon_inode_getfd("[pers_event]", &perf_fops,
-+				desc->event, O_RDONLY);
-+	if (event_fd >= 0)
-+		desc->fd = event_fd;
++	desc = get_persistent_event(cpu, attr);
++	if (desc) {
++		event = ERR_PTR(-EEXIST);
++		goto out;
++	}
 +
-+	return event_fd;
- }
- 
- 
+ 	desc = kzalloc(sizeof(*desc), GFP_KERNEL);
+ 	if (!desc) {
+ 		event = ERR_PTR(-ENOMEM);
 -- 
 1.8.1.1
 
