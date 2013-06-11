@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876Ab3FKUEY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:04:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42048 "EHLO
+	id S1756891Ab3FKUEb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:04:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42088 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756819Ab3FKUER (ORCPT
+	with ESMTP id S1756871Ab3FKUEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:04:17 -0400
+	Tue, 11 Jun 2013 16:04:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
-Subject: [ 64/79] powerpc/pseries: Force 32 bit MSIs for devices that require it
-Date: Tue, 11 Jun 2013 13:03:30 -0700
-Message-Id: <20130611195324.480116556@linuxfoundation.org>
+        Zoran Markovic <zoran.markovic@linaro.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Feng Tang <feng.tang@intel.com>
+Subject: [ 78/79] timekeeping: Correct run-time detection of persistent_clock.
+Date: Tue, 11 Jun 2013 13:03:44 -0700
+Message-Id: <20130611195326.268819398@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -28,85 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian King <brking@linux.vnet.ibm.com>
+From: Zoran Markovic <zoran.markovic@linaro.org>
 
-commit e61133dda480062d221f09e4fc18f66763f8ecd0 upstream.
+commit 0d6bd9953f739dad96d9a0de65383e479ab4e10d upstream.
 
-The following patch implements a new PAPR change which allows
-the OS to force the use of 32 bit MSIs, regardless of what
-the PCI capabilities indicate. This is required for some
-devices that advertise support for 64 bit MSIs but don't
-actually support them.
+Since commit 31ade30692dc9680bfc95700d794818fa3f754ac, timekeeping_init()
+checks for presence of persistent clock by attempting to read a non-zero
+time value. This is an issue on platforms where persistent_clock (instead
+is implemented as a free-running counter (instead of an RTC) starting
+from zero on each boot and running during suspend. Examples are some ARM
+platforms (e.g. PandaBoard).
 
-Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+An attempt to read such a clock during timekeeping_init() may return zero
+value and falsely declare persistent clock as missing. Additionally, in
+the above case suspend times may be accounted twice (once from
+timekeeping_resume() and once from rtc_resume()), resulting in a gradual
+drift of system time.
+
+This patch does a run-time correction of the issue by doing the same check
+during timekeeping_suspend().
+
+A better long-term solution would have to return error when trying to read
+non-existing clock and zero when trying to read an uninitialized clock, but
+that would require changing all persistent_clock implementations.
+
+This patch addresses the immediate breakage, for now.
+
+Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Feng Tang <feng.tang@intel.com>
+[jstultz: Tweaked commit message and subject]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+[zoran.markovic@linaro.org: reworked patch to fit 3.9-stable.]
+Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/pci-bridge.h |    2 ++
- arch/powerpc/platforms/pseries/msi.c  |   21 ++++++++++++++++++---
- 2 files changed, 20 insertions(+), 3 deletions(-)
+ kernel/time/timekeeping.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/arch/powerpc/include/asm/pci-bridge.h
-+++ b/arch/powerpc/include/asm/pci-bridge.h
-@@ -154,6 +154,8 @@ struct pci_dn {
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -826,6 +826,14 @@ static int timekeeping_suspend(void)
  
- 	int	pci_ext_config_space;	/* for pci devices */
+ 	read_persistent_clock(&timekeeping_suspend_time);
  
-+	int	force_32bit_msi:1;
++	/*
++	 * On some systems the persistent_clock can not be detected at
++	 * timekeeping_init by its return value, so if we see a valid
++	 * value returned, update the persistent_clock_exists flag.
++	 */
++	if (timekeeping_suspend_time.tv_sec || timekeeping_suspend_time.tv_nsec)
++		persistent_clock_exist = true;
 +
- 	struct	pci_dev *pcidev;	/* back-pointer to the pci device */
- #ifdef CONFIG_EEH
- 	struct eeh_dev *edev;		/* eeh device */
---- a/arch/powerpc/platforms/pseries/msi.c
-+++ b/arch/powerpc/platforms/pseries/msi.c
-@@ -24,6 +24,7 @@ static int query_token, change_token;
- #define RTAS_RESET_FN		2
- #define RTAS_CHANGE_MSI_FN	3
- #define RTAS_CHANGE_MSIX_FN	4
-+#define RTAS_CHANGE_32MSI_FN	5
- 
- static struct pci_dn *get_pdn(struct pci_dev *pdev)
- {
-@@ -58,7 +59,8 @@ static int rtas_change_msi(struct pci_dn
- 
- 	seq_num = 1;
- 	do {
--		if (func == RTAS_CHANGE_MSI_FN || func == RTAS_CHANGE_MSIX_FN)
-+		if (func == RTAS_CHANGE_MSI_FN || func == RTAS_CHANGE_MSIX_FN ||
-+		    func == RTAS_CHANGE_32MSI_FN)
- 			rc = rtas_call(change_token, 6, 4, rtas_ret, addr,
- 					BUID_HI(buid), BUID_LO(buid),
- 					func, num_irqs, seq_num);
-@@ -426,9 +428,12 @@ static int rtas_setup_msi_irqs(struct pc
- 	 */
- again:
- 	if (type == PCI_CAP_ID_MSI) {
--		rc = rtas_change_msi(pdn, RTAS_CHANGE_MSI_FN, nvec);
-+		if (pdn->force_32bit_msi)
-+			rc = rtas_change_msi(pdn, RTAS_CHANGE_32MSI_FN, nvec);
-+		else
-+			rc = rtas_change_msi(pdn, RTAS_CHANGE_MSI_FN, nvec);
- 
--		if (rc < 0) {
-+		if (rc < 0 && !pdn->force_32bit_msi) {
- 			pr_debug("rtas_msi: trying the old firmware call.\n");
- 			rc = rtas_change_msi(pdn, RTAS_CHANGE_FN, nvec);
- 		}
-@@ -512,3 +517,13 @@ static int rtas_msi_init(void)
- 	return 0;
- }
- arch_initcall(rtas_msi_init);
-+
-+static void quirk_radeon(struct pci_dev *dev)
-+{
-+	struct pci_dn *pdn = get_pdn(dev);
-+
-+	if (pdn)
-+		pdn->force_32bit_msi = 1;
-+}
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, 0x68f2, quirk_radeon);
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, 0xaa68, quirk_radeon);
+ 	write_seqlock_irqsave(&tk->lock, flags);
+ 	timekeeping_forward_now(tk);
+ 	timekeeping_suspended = 1;
 
 
