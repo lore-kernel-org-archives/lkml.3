@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab3FKIAU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 04:00:20 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57488 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751525Ab3FKIAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 04:00:18 -0400
-X-IronPort-AV: E=Sophos;i="4.87,843,1363104000"; 
-   d="scan'208";a="7519043"
-Message-ID: <51B6D76D.9090207@cn.fujitsu.com>
-Date: Tue, 11 Jun 2013 15:53:17 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1753758Ab3FKIAh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 04:00:37 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:48745 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649Ab3FKIAf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 04:00:35 -0400
+Message-ID: <51B6D91D.3000906@gmail.com>
+Date: Tue, 11 Jun 2013 10:00:29 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Josh Triplett <josh@joshtriplett.org>, niv@us.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        David Howells <dhowells@redhat.com>,
-        Eric Dumazet <edumazet@google.com>, Darren Hart <darren@dvhart.com>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
-References: <20130609193657.GA13392@linux.vnet.ibm.com>	<1370911480.9844.160.camel@gandalf.local.home> <CA+55aFxeLszgfTZeG7L6289DcaoKT+uhtf5nwB6r=2i9Sy4Mrg@mail.gmail.com>
-In-Reply-To: <CA+55aFxeLszgfTZeG7L6289DcaoKT+uhtf5nwB6r=2i9Sy4Mrg@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/11 15:48:28,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/11 15:48:55,
-	Serialize complete at 2013/06/11 15:48:55
+To: Daniel Vetter <daniel@ffwll.ch>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] drm: encoder_slave: respect of_node on i2c encoder init
+References: <1370899422-1281-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130611072433.GP22870@phenom.ffwll.local>
+In-Reply-To: <20130611072433.GP22870@phenom.ffwll.local>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2013 08:51 AM, Linus Torvalds wrote:
-> On Mon, Jun 10, 2013 at 5:44 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+On 06/11/13 09:24, Daniel Vetter wrote:
+> On Mon, Jun 10, 2013 at 11:23:42PM +0200, Sebastian Hesselbarth wrote:
+>> Current DRM slave encoder API conflicts with auto-registration of i2c client
+>> when using DT probed clients. To allow DRM slave encoders passed by DT, this
+>> patch adds a check to drm_i2c_encoder_init for a non-NULL .of_node on
+>> i2c_board_info and calls an of_i2c helper to get the i2c client device
+>> instead of registering a new device.
 >>
->> OK, I haven't found a issue here yet, but youss are beiing trickssy! We
->> don't like trickssy, and we must find precccciouss!!!
-> 
-> .. and I personally have my usual reservations. I absolutely hate
-> papering over scalability issues, and historically whenever people
-> have ever thought that we want complex spinlocks, the problem has
-> always been that the locking sucks.
-> 
-> So reinforced by previous events, I really feel that code that needs
-> this kind of spinlock is broken and needs to be fixed, rather than
-> actually introduce tricky spinlocks.
-> 
-> So in order to merge something like this, I want (a) numbers for real
-> loads and (b) explanations for why the spinlock users cannot be fixed.
-> 
-> Because "we might hit loads" is just not good enough. I would counter
-> with "hiding problems causes more of them".
-> 
+>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>
+> Hm, I don't have much clue about how dt/of really works, but since of has
+> this nice probing/auto-instantiation thing I think we could simplify this
+> some more:
+> - Create a new drm_i2c_encoder_init_of which only takes a struct
+>    device_node *of_node argument instead of adap and info.
+> - I think we could also drop the call to ->set_config since presumably an
+>    of-enabled driver grabbed any required info already from the dt.
 
-Hi, all
+Daniel,
 
-Off-topic, although I am in this community for several years,
-I am not exactly clear with this problem.
+this patch is not about making DRM API DT aware but make it not _break_
+on DT aware platforms. I am way out of league to rework DRM slave
+encoder stuff for DT. This is the smallest non-intrusive modification
+I can think of to allow i2c encoders to be passed by DT.
 
-1) In general case, which lock is the most competitive in the kernel? what it protects for?
-2) In which special case, which lock is the most competitive in the kernel? what it protects for?
-3) In general case, which list is the most hot list?
-4) In which special case, which list is the most hot list?
+> I think this way we could still share encoder slaves across tons of
+> platforms, only the init sequence (and specifically how they get at their
 
-thanks,
-Lai
+IMHO, the whole i2c encoder stuff is just wrong. Not any i2c slave
+driver is even really using its probe(). Everything is packed somewhere
+because it just worked.. this is at least a start.
+
+I suggest this to get merged to at least allow to have DT slaves,
+then start with improving tda998x as an example, then maybe rethink
+drm_slave_encoder completely, e.g.
+
+- generalize the concept to SPI attached encoders, "internal" encoders..
+- find a way to setup .encoder_type and .connector_type correctly
+- have more common of_drm_blabla helpers
+
+> config data) would be different. That would also be extensible quite
+> easily (*cough* intel platforms could setup encoder slaves from
+> information out of the vbt *cough*).
+>
+> And ofc, a (totally broken) exemplary conversion patch for tilcdc would be
+> neat ;-)
+
+I don't have tilcdc to test so - no, I am not giving an example how to
+use of_parse_phandle and assign the returned pointer to board_info's
+.of_node. But it is no more than that, a single line of code.
+
+Sebastian
