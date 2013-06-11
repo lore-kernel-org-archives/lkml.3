@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747Ab3FKWRP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 18:17:15 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:33009 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756417Ab3FKWRN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 18:17:13 -0400
-Content-Type: text/plain; charset="utf-8"
+	id S1756801Ab3FKWRa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 18:17:30 -0400
+Received: from www.sr71.net ([198.145.64.142]:46965 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756481Ab3FKWR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 18:17:29 -0400
+Message-ID: <51B7A1F8.6080507@sr71.net>
+Date: Tue, 11 Jun 2013 15:17:28 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Stephen Warren <swarren@wwwdotorg.org>, Jay Agarwal <jagarwal@nvidia.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <51AE3B18.9010604@wwwdotorg.org>
-Cc: linux@arm.linux.org.uk, thierry.reding@avionic-design.de,
-        bhelgaas@google.com, ldewangan@nvidia.com, olof@lixom.net,
-        hdoyu@nvidia.com, pgaikwad@nvidia.com, pdeschrijver@nvidia.com,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        jtukkinen@nvidia.com, kthota@nvidia.com
-References: <1370372252-4332-1-git-send-email-jagarwal@nvidia.com>
- <51AE3B18.9010604@wwwdotorg.org>
-Message-ID: <20130611221709.8816.15602@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH V3 1/4] ARM: tegra30: clocks: Fix pciex clock registration
-Date: Tue, 11 Jun 2013 15:17:09 -0700
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Toshi Kani <toshi.kani@hp.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: cpu hotplug:  possible_cpus broken (again?) next-20130607
+References: <51B79BE5.80804@sr71.net> <1637965.BN0HgQKvFj@vostro.rjw.lan>
+In-Reply-To: <1637965.BN0HgQKvFj@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stephen Warren (2013-06-04 12:08:08)
-> On 06/04/2013 12:57 PM, Jay Agarwal wrote:
-> > Registering pciex as peripheral clock instead of fixed clock
-> > as tegra_perih_reset_assert(deassert) api of this clock api
-> > gives warning and ultimately does not succeed to assert(deassert).
-> > 
-> > Signed-off-by: Jay Agarwal <jagarwal@nvidia.com>
-> > ---
-> > Patch is based on remotes/gitorious_thierryreding_linux/tegra/next and should be applied on top of this.
+On 06/11/2013 03:05 PM, Rafael J. Wysocki wrote:
+> On Tuesday, June 11, 2013 02:51:33 PM Dave Hansen wrote:
+>> possible_cpus looks broken again.  I'm booting with:
+>>
+>>  maxcpus=10 possible_cpus=160
+>>
+>> But I only get 0-9 in sysfs:
+>>
+>>> # ls /sys/devices/system/cpu/
+>>> cpu0  cpu2  cpu4  cpu6  cpu8  cpufreq  kernel_max  offline  possible  probe    uevent
+>>> cpu1  cpu3  cpu5  cpu7  cpu9  cpuidle  modalias    online   present   release
 > 
-> For this change, Mike may as well apply it directly to the clock tree.
-> Thierry can then pick it up when he rebases his tegra/next tree.
-> 
-> That said, I don't think you should need any of the
-> TEGRA_CLK_DUPLICATE() entries; the PCIe driver should get its clocks
-> from device tree now, and hence the driver name in the clock
-> registration shouldn't be necessary. All of these TEGRA_CLK_DUPLICATE()
-> entries should be removed en mass sometime soon with luck. So, can you
-> simply leave the two TEGRA_CLK_DUPLICATE() entries untouched, rather
-> than changing them?
+> Can you please test the acpi-hotplug branch of the linux-pm.git tree?
 
-Ping on this patch.  I can take it through my tree, but is there going
-to be rework based on Stephen's comments?
+That branch seems to work happily.
 
-Regards,
-Mike
