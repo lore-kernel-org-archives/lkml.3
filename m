@@ -1,92 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab3FKLk4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:40:56 -0400
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:37035 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752151Ab3FKLky (ORCPT
+	id S1755053Ab3FKLlF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:41:05 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33546 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752151Ab3FKLk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:40:54 -0400
-Message-ID: <51B70BB1.6040703@st.com>
-Date: Tue, 11 Jun 2013 12:36:17 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, linux-doc@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, linux@arm.linux.org.uk,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Alexander Shiyan <shc_work@mail.ru>,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        linux-serial@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH v2 03/11] regmap: Add regmap_field APIs
-References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com> <1370856118-6503-1-git-send-email-srinivas.kandagatla@st.com> <20130611104841.GX1403@sirena.org.uk>
-In-Reply-To: <20130611104841.GX1403@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Jun 2013 07:40:59 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 15/22] input & mfd: ti_am335x_tsc remove remaining platform data pieces
+Date: Tue, 11 Jun 2013 13:31:01 +0200
+Message-Id: <1370950268-7224-16-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
+References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/13 11:48, Mark Brown wrote:
-> On Mon, Jun 10, 2013 at 10:21:58AM +0100, Srinivas KANDAGATLA wrote:
->> It is common to access regmap registers at bit level, using
->> regmap_update_bits or regmap_read functions, however the end user has to
->> take care of a mask or shifting. This becomes overhead when such use
->> cases are high. Having a common function to do this is much convenient
->> and less error prone.
-> 
-> So this looks basically good.  A couple of smallish nits below, if you
-> could respin I'll apply this on a branch so it can be pulled in as
-> dependency for the other things that use it.
-> 
-Thankyou for the comments,
-I will fix it and send a v3 patch.
+The two header files removed here are unused and have no users as this
+platform was never used with platform devices.
 
->> +	regmap_field_init(rm_field, regmap, reg_field);
->> +
->> +	return rm_field;
->> +
->> +}
->> +EXPORT_SYMBOL_GPL(devm_regmap_field_alloc);
->> +/**
->> + * regmap_field_alloc(): Allocate and initialise a register field
-> 
-> Needs a blank line between the two functions.
-> 
->> +#include <linux/device.h>
->> +#include <linux/slab.h>
-> 
->> +static inline void regmap_field_free(struct regmap_field *field)
->> +{
->> +	kfree(field);
->> +}
-> 
->> +static inline void devm_regmap_field_free(struct device *dev,
->> +	struct regmap_field *field)
->> +{
->> +	devm_kfree(dev, field);
->> +}
-> 
-> Probably not worth inlining these, just put them in the code.
-> 
-> 
-> 
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
-> 
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ include/linux/input/ti_am335x_tsc.h         |   35 ---------------------------
+ include/linux/mfd/ti_am335x_tscadc.h        |    5 ----
+ include/linux/platform_data/ti_am335x_adc.h |   14 -----------
+ 3 files changed, 54 deletions(-)
+ delete mode 100644 include/linux/input/ti_am335x_tsc.h
+ delete mode 100644 include/linux/platform_data/ti_am335x_adc.h
+
+diff --git a/include/linux/input/ti_am335x_tsc.h b/include/linux/input/ti_am335x_tsc.h
+deleted file mode 100644
+index 6a66b4d..0000000
+--- a/include/linux/input/ti_am335x_tsc.h
++++ /dev/null
+@@ -1,35 +0,0 @@
+-#ifndef __LINUX_TI_AM335X_TSC_H
+-#define __LINUX_TI_AM335X_TSC_H
+-
+-/**
+- * struct tsc_data	Touchscreen wire configuration
+- * @wires:		Wires refer to application modes
+- *			i.e. 4/5/8 wire touchscreen support
+- *			on the platform.
+- * @x_plate_resistance:	X plate resistance.
+- * @steps_to_configure:	The sequencer supports a total of
+- *			16 programmable steps.
+- *			A step configured to read a single
+- *			co-ordinate value, can be applied
+- *			more number of times for better results.
+- * @wire_config:	Different EVM's could have a different order
+- *			for connecting wires on touchscreen.
+- *			We need to provide an 8 bit number where in
+- *			the 1st four bits represent the analog lines
+- *			and the next 4 bits represent positive/
+- *			negative terminal on that input line.
+- *			Notations to represent the input lines and
+- *			terminals resoectively is as follows:
+- *			AIN0 = 0, AIN1 = 1 and so on till AIN7 = 7.
+- *			XP  = 0, XN = 1, YP = 2, YN = 3.
+- *
+- */
+-
+-struct tsc_data {
+-	int wires;
+-	int x_plate_resistance;
+-	int steps_to_configure;
+-	int wire_config[10];
+-};
+-
+-#endif
+diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
+index b6e7ac6..cd8686b 100644
+--- a/include/linux/mfd/ti_am335x_tscadc.h
++++ b/include/linux/mfd/ti_am335x_tscadc.h
+@@ -127,11 +127,6 @@
+ 
+ #define TSCADC_CELLS		2
+ 
+-struct mfd_tscadc_board {
+-	struct tsc_data *tsc_init;
+-	struct adc_data *adc_init;
+-};
+-
+ struct ti_tscadc_dev {
+ 	struct device *dev;
+ 	void __iomem *tscadc_base;
+diff --git a/include/linux/platform_data/ti_am335x_adc.h b/include/linux/platform_data/ti_am335x_adc.h
+deleted file mode 100644
+index e41d583..0000000
+--- a/include/linux/platform_data/ti_am335x_adc.h
++++ /dev/null
+@@ -1,14 +0,0 @@
+-#ifndef __LINUX_TI_AM335X_ADC_H
+-#define __LINUX_TI_AM335X_ADC_H
+-
+-/**
+- * struct adc_data	ADC Input information
+- * @adc_channels:	Number of analog inputs
+- *			available for ADC.
+- */
+-
+-struct adc_data {
+-	unsigned int adc_channels;
+-};
+-
+-#endif
+-- 
+1.7.10.4
 
