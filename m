@@ -1,303 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab3FKLvs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:51:48 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:54983 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab3FKLvp (ORCPT
+	id S1754902Ab3FKLwA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:52:00 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:61336 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753918Ab3FKLv5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:51:45 -0400
-Date: Tue, 11 Jun 2013 12:51:40 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com,
-        Mike Turquette <mturquette@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 20/33 v2] clk: ux500: Add Device Tree support for the PRCC
- Peripheral clock
-Message-ID: <20130611115140.GE3330@laptop>
-References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
- <1370521041-32318-21-git-send-email-lee.jones@linaro.org>
+	Tue, 11 Jun 2013 07:51:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370521041-32318-21-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201306111329.32749.heiko@sntech.de>
+References: <201306111328.52679.heiko@sntech.de>
+	<201306111329.32749.heiko@sntech.de>
+Date: Tue, 11 Jun 2013 14:51:56 +0300
+Message-ID: <CAHp75VcaNkPeUQ=OPY5F7Mqb_cM87xh8A8wUxdCgnRtfjoqoHw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/7] clk: divider: add flag to limit possible dividers
+ to even numbers
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables clocks to be specified from Device Tree via phandles
-to the "prcc-periph-clock" node.
+On Tue, Jun 11, 2013 at 2:29 PM, Heiko Stübner <heiko@sntech.de> wrote:
+> SoCs like the Rockchip Cortex-A9 ones contain divider some clocks
+> that use the regular mechanisms for storage but allow only even
+> dividers and 1 to be used.
+>
+> Therefore add a flag that lets _is_valid_div limit the valid dividers
+> to these values. _get_maxdiv is also adapted to return even values
+> for the CLK_DIVIDER_ONE_BASED case.
 
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Just one nitpick below (I'm okay with current implementation, but you
+might find my proposal useful).
 
-diff --git a/drivers/clk/ux500/u8500_clk.c b/drivers/clk/ux500/u8500_clk.c
-index c8ebd19..ff02a26 100644
---- a/drivers/clk/ux500/u8500_clk.c
-+++ b/drivers/clk/ux500/u8500_clk.c
-@@ -15,10 +15,16 @@
- #include <linux/platform_data/clk-ux500.h>
- #include "clk.h"
- 
-+#define PRCC_NUM_PERIPH_CLUSTERS 6
-+#define PRCC_PERIPHS_PER_CLUSTER 32
-+
- static struct clk *prcmu_clk[PRCMU_NUM_CLKS];
-+static struct clk *prcc_pclk[(PRCC_NUM_PERIPH_CLUSTERS + 1) * PRCC_PERIPHS_PER_CLUSTER];
- 
- #define PRCC_SHOW(clk, base, bit) \
- 	clk[(base * PRCC_PERIPHS_PER_CLUSTER) + bit]
-+#define PRCC_PCLK_STORE(clk, base, bit)	\
-+	prcc_pclk[(base * PRCC_PERIPHS_PER_CLUSTER) + bit] = clk
- 
- struct clk *ux500_twocell_get(struct of_phandle_args *clkspec, void *data)
- {
-@@ -288,143 +294,176 @@ void u8500_clk_init(u32 clkrst1_base, u32 clkrst2_base, u32 clkrst3_base,
- 	clk = clk_reg_prcc_pclk("p1_pclk0", "per1clk", clkrst1_base,
- 				BIT(0), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "uart0");
-+	PRCC_PCLK_STORE(clk, 1, 0);
- 
- 	clk = clk_reg_prcc_pclk("p1_pclk1", "per1clk", clkrst1_base,
- 				BIT(1), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "uart1");
-+	PRCC_PCLK_STORE(clk, 1, 1);
- 
- 	clk = clk_reg_prcc_pclk("p1_pclk2", "per1clk", clkrst1_base,
- 				BIT(2), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "nmk-i2c.1");
-+	PRCC_PCLK_STORE(clk, 1, 2);
- 
- 	clk = clk_reg_prcc_pclk("p1_pclk3", "per1clk", clkrst1_base,
- 				BIT(3), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "msp0");
- 	clk_register_clkdev(clk, "apb_pclk", "ux500-msp-i2s.0");
-+	PRCC_PCLK_STORE(clk, 1, 3);
- 
- 	clk = clk_reg_prcc_pclk("p1_pclk4", "per1clk", clkrst1_base,
- 				BIT(4), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "msp1");
- 	clk_register_clkdev(clk, "apb_pclk", "ux500-msp-i2s.1");
-+	PRCC_PCLK_STORE(clk, 1, 4);
- 
- 	clk = clk_reg_prcc_pclk("p1_pclk5", "per1clk", clkrst1_base,
- 				BIT(5), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "sdi0");
-+	PRCC_PCLK_STORE(clk, 1, 5);
- 
- 	clk = clk_reg_prcc_pclk("p1_pclk6", "per1clk", clkrst1_base,
- 				BIT(6), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "nmk-i2c.2");
-+	PRCC_PCLK_STORE(clk, 1, 6);
- 
- 	clk = clk_reg_prcc_pclk("p1_pclk7", "per1clk", clkrst1_base,
- 				BIT(7), 0);
- 	clk_register_clkdev(clk, NULL, "spi3");
-+	PRCC_PCLK_STORE(clk, 1, 7);
- 
- 	clk = clk_reg_prcc_pclk("p1_pclk8", "per1clk", clkrst1_base,
- 				BIT(8), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "slimbus0");
-+	PRCC_PCLK_STORE(clk, 1, 8);
- 
- 	clk = clk_reg_prcc_pclk("p1_pclk9", "per1clk", clkrst1_base,
- 				BIT(9), 0);
- 	clk_register_clkdev(clk, NULL, "gpio.0");
- 	clk_register_clkdev(clk, NULL, "gpio.1");
- 	clk_register_clkdev(clk, NULL, "gpioblock0");
-+	PRCC_PCLK_STORE(clk, 1, 9);
- 
- 	clk = clk_reg_prcc_pclk("p1_pclk10", "per1clk", clkrst1_base,
- 				BIT(10), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "nmk-i2c.4");
-+	PRCC_PCLK_STORE(clk, 1, 10);
- 
- 	clk = clk_reg_prcc_pclk("p1_pclk11", "per1clk", clkrst1_base,
- 				BIT(11), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "msp3");
- 	clk_register_clkdev(clk, "apb_pclk", "ux500-msp-i2s.3");
-+	PRCC_PCLK_STORE(clk, 1, 11);
- 
- 	clk = clk_reg_prcc_pclk("p2_pclk0", "per2clk", clkrst2_base,
- 				BIT(0), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "nmk-i2c.3");
-+	PRCC_PCLK_STORE(clk, 2, 0);
- 
- 	clk = clk_reg_prcc_pclk("p2_pclk1", "per2clk", clkrst2_base,
- 				BIT(1), 0);
- 	clk_register_clkdev(clk, NULL, "spi2");
-+	PRCC_PCLK_STORE(clk, 2, 1);
- 
- 	clk = clk_reg_prcc_pclk("p2_pclk2", "per2clk", clkrst2_base,
- 				BIT(2), 0);
- 	clk_register_clkdev(clk, NULL, "spi1");
-+	PRCC_PCLK_STORE(clk, 2, 2);
- 
- 	clk = clk_reg_prcc_pclk("p2_pclk3", "per2clk", clkrst2_base,
- 				BIT(3), 0);
- 	clk_register_clkdev(clk, NULL, "pwl");
-+	PRCC_PCLK_STORE(clk, 2, 3);
- 
- 	clk = clk_reg_prcc_pclk("p2_pclk4", "per2clk", clkrst2_base,
- 				BIT(4), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "sdi4");
-+	PRCC_PCLK_STORE(clk, 2, 4);
- 
- 	clk = clk_reg_prcc_pclk("p2_pclk5", "per2clk", clkrst2_base,
- 				BIT(5), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "msp2");
- 	clk_register_clkdev(clk, "apb_pclk", "ux500-msp-i2s.2");
-+	PRCC_PCLK_STORE(clk, 2, 5);
- 
- 	clk = clk_reg_prcc_pclk("p2_pclk6", "per2clk", clkrst2_base,
- 				BIT(6), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "sdi1");
-+	PRCC_PCLK_STORE(clk, 2, 6);
- 
- 	clk = clk_reg_prcc_pclk("p2_pclk7", "per2clk", clkrst2_base,
- 				BIT(7), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "sdi3");
-+	PRCC_PCLK_STORE(clk, 2, 7);
- 
- 	clk = clk_reg_prcc_pclk("p2_pclk8", "per2clk", clkrst2_base,
- 				BIT(8), 0);
- 	clk_register_clkdev(clk, NULL, "spi0");
-+	PRCC_PCLK_STORE(clk, 2, 8);
- 
- 	clk = clk_reg_prcc_pclk("p2_pclk9", "per2clk", clkrst2_base,
- 				BIT(9), 0);
- 	clk_register_clkdev(clk, "hsir_hclk", "ste_hsi.0");
-+	PRCC_PCLK_STORE(clk, 2, 9);
- 
- 	clk = clk_reg_prcc_pclk("p2_pclk10", "per2clk", clkrst2_base,
- 				BIT(10), 0);
- 	clk_register_clkdev(clk, "hsit_hclk", "ste_hsi.0");
-+	PRCC_PCLK_STORE(clk, 2, 10);
- 
- 	clk = clk_reg_prcc_pclk("p2_pclk11", "per2clk", clkrst2_base,
- 				BIT(11), 0);
- 	clk_register_clkdev(clk, NULL, "gpio.6");
- 	clk_register_clkdev(clk, NULL, "gpio.7");
- 	clk_register_clkdev(clk, NULL, "gpioblock1");
-+	PRCC_PCLK_STORE(clk, 2, 1);
- 
- 	clk = clk_reg_prcc_pclk("p2_pclk12", "per2clk", clkrst2_base,
- 				BIT(12), 0);
-+	PRCC_PCLK_STORE(clk, 2, 12);
- 
- 	clk = clk_reg_prcc_pclk("p3_pclk0", "per3clk", clkrst3_base,
- 				BIT(0), 0);
- 	clk_register_clkdev(clk, "fsmc", NULL);
- 	clk_register_clkdev(clk, NULL, "smsc911x");
-+	PRCC_PCLK_STORE(clk, 3, 0);
- 
- 	clk = clk_reg_prcc_pclk("p3_pclk1", "per3clk", clkrst3_base,
- 				BIT(1), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "ssp0");
-+	PRCC_PCLK_STORE(clk, 3, 1);
- 
- 	clk = clk_reg_prcc_pclk("p3_pclk2", "per3clk", clkrst3_base,
- 				BIT(2), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "ssp1");
-+	PRCC_PCLK_STORE(clk, 3, 2);
- 
- 	clk = clk_reg_prcc_pclk("p3_pclk3", "per3clk", clkrst3_base,
- 				BIT(3), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "nmk-i2c.0");
-+	PRCC_PCLK_STORE(clk, 3, 3);
- 
- 	clk = clk_reg_prcc_pclk("p3_pclk4", "per3clk", clkrst3_base,
- 				BIT(4), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "sdi2");
-+	PRCC_PCLK_STORE(clk, 3, 4);
- 
- 	clk = clk_reg_prcc_pclk("p3_pclk5", "per3clk", clkrst3_base,
- 				BIT(5), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "ske");
- 	clk_register_clkdev(clk, "apb_pclk", "nmk-ske-keypad");
-+	PRCC_PCLK_STORE(clk, 3, 5);
- 
- 	clk = clk_reg_prcc_pclk("p3_pclk6", "per3clk", clkrst3_base,
- 				BIT(6), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "uart2");
-+	PRCC_PCLK_STORE(clk, 3, 6);
- 
- 	clk = clk_reg_prcc_pclk("p3_pclk7", "per3clk", clkrst3_base,
- 				BIT(7), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "sdi5");
-+	PRCC_PCLK_STORE(clk, 3, 7);
- 
- 	clk = clk_reg_prcc_pclk("p3_pclk8", "per3clk", clkrst3_base,
- 				BIT(8), 0);
-@@ -433,48 +472,59 @@ void u8500_clk_init(u32 clkrst1_base, u32 clkrst2_base, u32 clkrst3_base,
- 	clk_register_clkdev(clk, NULL, "gpio.4");
- 	clk_register_clkdev(clk, NULL, "gpio.5");
- 	clk_register_clkdev(clk, NULL, "gpioblock2");
-+	PRCC_PCLK_STORE(clk, 3, 8);
- 
- 	clk = clk_reg_prcc_pclk("p5_pclk0", "per5clk", clkrst5_base,
- 				BIT(0), 0);
- 	clk_register_clkdev(clk, "usb", "musb-ux500.0");
-+	PRCC_PCLK_STORE(clk, 5, 0);
- 
- 	clk = clk_reg_prcc_pclk("p5_pclk1", "per5clk", clkrst5_base,
- 				BIT(1), 0);
- 	clk_register_clkdev(clk, NULL, "gpio.8");
- 	clk_register_clkdev(clk, NULL, "gpioblock3");
-+	PRCC_PCLK_STORE(clk, 5, 1);
- 
- 	clk = clk_reg_prcc_pclk("p6_pclk0", "per6clk", clkrst6_base,
- 				BIT(0), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "rng");
-+	PRCC_PCLK_STORE(clk, 6, 0);
- 
- 	clk = clk_reg_prcc_pclk("p6_pclk1", "per6clk", clkrst6_base,
- 				BIT(1), 0);
- 	clk_register_clkdev(clk, NULL, "cryp0");
- 	clk_register_clkdev(clk, NULL, "cryp1");
-+	PRCC_PCLK_STORE(clk, 6, 1);
- 
- 	clk = clk_reg_prcc_pclk("p6_pclk2", "per6clk", clkrst6_base,
- 				BIT(2), 0);
- 	clk_register_clkdev(clk, NULL, "hash0");
-+	PRCC_PCLK_STORE(clk, 6, 2);
- 
- 	clk = clk_reg_prcc_pclk("p6_pclk3", "per6clk", clkrst6_base,
- 				BIT(3), 0);
- 	clk_register_clkdev(clk, NULL, "pka");
-+	PRCC_PCLK_STORE(clk, 6, 3);
- 
- 	clk = clk_reg_prcc_pclk("p6_pclk4", "per6clk", clkrst6_base,
- 				BIT(4), 0);
- 	clk_register_clkdev(clk, NULL, "hash1");
-+	PRCC_PCLK_STORE(clk, 6, 4);
- 
- 	clk = clk_reg_prcc_pclk("p6_pclk5", "per6clk", clkrst6_base,
- 				BIT(5), 0);
- 	clk_register_clkdev(clk, NULL, "cfgreg");
-+	PRCC_PCLK_STORE(clk, 6, 5);
- 
- 	clk = clk_reg_prcc_pclk("p6_pclk6", "per6clk", clkrst6_base,
- 				BIT(6), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "mtu0");
-+	PRCC_PCLK_STORE(clk, 6, 6);
- 
- 	clk = clk_reg_prcc_pclk("p6_pclk7", "per6clk", clkrst6_base,
- 				BIT(7), 0);
- 	clk_register_clkdev(clk, "apb_pclk", "mtu1");
-+	PRCC_PCLK_STORE(clk, 6, 7);
- 
- 	/* PRCC K-clocks
- 	 *
-@@ -606,5 +656,7 @@ void u8500_clk_init(u32 clkrst1_base, u32 clkrst2_base, u32 clkrst3_base,
- 			clk_data.clk_num = ARRAY_SIZE(prcmu_clk);
- 			of_clk_add_provider(child, of_clk_src_onecell_get, &clk_data);
- 		}
-+		if (!of_node_cmp(child->name, "prcc-periph-clock"))
-+			of_clk_add_provider(child, ux500_twocell_get, prcc_pclk);
- 	}
- }
+> --- a/drivers/clk/clk-divider.c
+> +++ b/drivers/clk/clk-divider.c
+
+> @@ -141,6 +149,8 @@ static bool _is_valid_div(struct clk_divider *divider, unsigned int div)
+>                 return is_power_of_2(div);
+>         if (divider->table)
+>                 return _is_valid_table_div(divider->table, div);
+> +       if (divider->flags & CLK_DIVIDER_EVEN && div != 1 && (div % 2) != 0)
+> +               return false;
+>         return true;
+>  }
+
+What if rewrite like
+
+ if (divider->flags & CLK_DIVIDER_EVEN == 0)
+ return true;
+
+return div < 2 || div % 2 == 0;
+
+
+--
+With Best Regards,
+Andy Shevchenko
