@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956Ab3FKEkI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 00:40:08 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46540 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158Ab3FKEkH (ORCPT
+	id S1752061Ab3FKEpZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 00:45:25 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11879 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158Ab3FKEpX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 00:40:07 -0400
-Message-ID: <51B6A9F5.5020300@ti.com>
-Date: Tue, 11 Jun 2013 10:09:17 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "Philip, Avinash" <avinashphilip@ti.com>
-CC: "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+	Tue, 11 Jun 2013 00:45:23 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 10 Jun 2013 21:43:54 -0700
+From: Jay Agarwal <jagarwal@nvidia.com>
+To: "'Thierry Reding'" <thierry.reding@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "olof@lixom.net" <olof@lixom.net>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/11] Convert GPIO Davinci to platform driver
-References: <1369206634-6778-1-git-send-email-avinashphilip@ti.com> <51B1958C.3050704@ti.com> <518397C60809E147AF5323E0420B992E3EAD887C@DBDE04.ent.ti.com>
-In-Reply-To: <518397C60809E147AF5323E0420B992E3EAD887C@DBDE04.ent.ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Juha Tukkinen <jtukkinen@nvidia.com>,
+        Krishna Thota <kthota@nvidia.com>
+Date: Tue, 11 Jun 2013 10:13:38 +0530
+Subject: RE: [PATCH V3 2/4] ARM: tegra: pcie: Add tegra3 support
+Thread-Topic: [PATCH V3 2/4] ARM: tegra: pcie: Add tegra3 support
+Thread-Index: Ac5mE9G/hIAh6hM8TwGLvktSM/RqBwASbsvg
+Message-ID: <C79B248886DD134989C8FF6B096A91AB91B616BEED@BGMAIL01.nvidia.com>
+References: <1370372252-4332-1-git-send-email-jagarwal@nvidia.com>
+ <1370372252-4332-2-git-send-email-jagarwal@nvidia.com>
+ <51AE3D3B.6080102@wwwdotorg.org> <20130610195028.GB25859@mithrandir>
+In-Reply-To: <20130610195028.GB25859@mithrandir>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> * PGP Signed by an unknown key
+> 
+> On Tue, Jun 04, 2013 at 01:17:15PM -0600, Stephen Warren wrote:
+> > On 06/04/2013 12:57 PM, Jay Agarwal wrote:
+> [...]
+> > >  struct tegra_pcie_port {
+> > > @@ -384,7 +408,7 @@ static int tegra_pcie_read_conf(struct pci_bus
+> *bus, unsigned int devfn,
+> > >  		struct tegra_pcie_port *port;
+> > >
+> > >  		list_for_each_entry(port, &pcie->ports, list) {
+> > > -			if (port->index + 1 == slot) {
+> > > +			if (port->index == slot) {
+> >
+> > This and the equivalent change in tegra_pcie_write_conf() seem like a
+> > bug-fix unrelated to the addition of Tegra30 support. Hence, they
+> > should be a separate patch.
+> 
+> What exactly is this change supposed to fix? The description doesn't provide
+> any details about why this is required. Furthermore this was done on
+> purpose to model the Tegra PCIe controller according to what typical Linux
+> systems provide.
 
-On 6/10/2013 2:32 PM, Philip, Avinash wrote:
-> On Fri, Jun 07, 2013 at 13:40:52, Nori, Sekhar wrote:
->> Hi Avinash,
->>
->> On 5/22/2013 12:40 PM, Philip Avinash wrote:
->>> GPIO Davinci driver converted to platform driver to support DT booting.
->>> In this patch series
->>> - Cleaned gpio Davinci driver code with proper commenting style and appropriate
->>>   variable names.
->>> - Create platform driver for GPIO Davinci in da8xx and dm* platforms and removed
->>>   gpio related member updation in davinci_soc_info structure.
->>> - DT support added for da850 board and tested on da850 EVM.
->>> - Remove soc_info reference in the gpio davinci driver and start uses
->>>   gpiolib interface.
->>
->> Can you please document which platforms this series was tested on and how?
-> 
-> This series being tested on da850 EVM. Tested by setting VPIF_DOUT[12] as GPIO
-> pin [2] and reading GPIO status from GPIO[7,4]
-> 
-> GPIO[7,4] will reflect the status switch number 8 of the S7 dip switch in DA850 EVM.
-> 
-> Testing Procedure
-> 
-> Requirement GPIO SYSFS support [1]
-> 
-> #echo 116 > /sys/class/gpio/export
-> setting GPIO[7,4] as input GPIO
-> #echo "in" > /sys/class/gpio/gpio116/direction
-> #mount -t debugfs debugfs /sys/kernel/debug
-> Reading GPIO pin status
-> #cat /sys/kernel/debug/gpio
-> #echo 116 > /sys/class/gpio/unexport
-> 
-> 
-> 1. Enable GPIO SYSFS support through menconfig
-> --- GPIO Support
-> 	[ ]   Debug GPIO calls
->                [ ]   /sys/class/gpio/... (sysfs interface)
->  
-> 2. Patch for pinmux support for GPIO[7,4] is available at
-> https://github.com/avinashphilip/am335x_linux/commits/linux_davinci_v3.10_soc_gpio
+I have mentioned it in description as -> "Corrected logic in read/write config space to display right device number on bus 0"
 
-Can you check interrupt generation too since there are significant
-changes in that area? You can generate an interrupt using the MMC/SD
-card detect pin (inserting an MMC/SD card into the slot should generate
-an interrupt). You can also write a new value to any GPIO pin. That will
-also trigger an interrupt.
+> Device 0:00.0 is usually the root complex, and device 0:01.0, 0:02.0 etc are
+> the root ports. The change proposed above makes 0:00.0 the first root port,
+> therefore breaking what systems usually expect.
+> 
+I was seeing root port 2 in cardhu being enumerated as pci_bus 0000:03, which I thought should be pci_bus 0000:02, so made this change.
 
-It will be nice if you can test this series on DM365 as well (read/write
-as well as interrupt).
-
-Thanks,
-Sekhar
+> Thierry
+> 
+> * Unknown Key
+> * 0x7F3EB3A1
