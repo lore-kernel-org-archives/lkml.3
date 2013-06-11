@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757504Ab3FKWlW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 18:41:22 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:34532 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756291Ab3FKWlV (ORCPT
+	id S1757618Ab3FKWp3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 18:45:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43627 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756291Ab3FKWpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 18:41:21 -0400
-Message-ID: <1370990469.21540.5.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] ACPI: Remove unused flags in acpi_device_flags
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 11 Jun 2013 16:41:09 -0600
-In-Reply-To: <1929531.s4Kmz37sNk@vostro.rjw.lan>
-References: <1370382985-12163-1-git-send-email-toshi.kani@hp.com>
-	 <1929531.s4Kmz37sNk@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Tue, 11 Jun 2013 18:45:20 -0400
+Date: Tue, 11 Jun 2013 15:45:18 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Raphael S. Carvalho" <raphael.scarv@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] kernel/pid.c: Masking the flag out to get the
+ actual value.
+Message-Id: <20130611154518.fda9262961c21e96a57cbd5e@linux-foundation.org>
+In-Reply-To: <1370901398-8989-1-git-send-email-raphael.scarv@gmail.com>
+References: <1370901398-8989-1-git-send-email-raphael.scarv@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-12 at 00:24 +0200, Rafael J. Wysocki wrote:
-> On Tuesday, June 04, 2013 03:56:25 PM Toshi Kani wrote:
-> > suprise_removal_ok and performance_manageable in struct
-> > acpi_device_flags are not used by any code.  So, remove
-> > them.
-> > 
-> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> 
-> Queued up for 3.11.
+On Mon, 10 Jun 2013 18:56:38 -0300 "Raphael S. Carvalho" <raphael.scarv@gmail.com> wrote:
 
-Great.  Thanks!
--Toshi
+> This patch shouldn't be applied if those branches must only be taken when
+> the pid_allocation(PIDNS_HASH_ADDING) flag was turned off.
 
-> 
-> Thanks,
-> Rafael
-> 
-> 
-> > ---
-> >  include/acpi/acpi_bus.h |    4 +---
-> >  1 file changed, 1 insertion(+), 3 deletions(-)
-> > 
-> > diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-> > index 1a681ee..9efc52f 100644
-> > --- a/include/acpi/acpi_bus.h
-> > +++ b/include/acpi/acpi_bus.h
-> > @@ -156,12 +156,10 @@ struct acpi_device_flags {
-> >  	u32 dynamic_status:1;
-> >  	u32 removable:1;
-> >  	u32 ejectable:1;
-> > -	u32 suprise_removal_ok:1;
-> >  	u32 power_manageable:1;
-> > -	u32 performance_manageable:1;
-> >  	u32 eject_pending:1;
-> >  	u32 match_driver:1;
-> > -	u32 reserved:24;
-> > +	u32 reserved:26;
-> >  };
-> >  
-> >  /* File System */
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Well yes - hopefully this is the case.  Otherwise we're missing some
+rather important-looking wakeups.
 
 
+> Otherwise, we must turn the PIDNS_HASH_ADDING flag (1U << 31) off
+> before getting into the switch-cases.
+> 
+> ...
+>
+> --- a/kernel/pid.c
+> +++ b/kernel/pid.c
+> @@ -263,7 +263,10 @@ void free_pid(struct pid *pid)
+>  		struct upid *upid = pid->numbers + i;
+>  		struct pid_namespace *ns = upid->ns;
+>  		hlist_del_rcu(&upid->pid_chain);
+> -		switch(--ns->nr_hashed) {
+> +
+> +		/* We must turn the PIDNS_HASH_ADDING flag off to
+> +		   get the actual value of nr_hashed */
+> +		switch ((--ns->nr_hashed) & ~(PIDNS_HASH_ADDING)) {
+>  		case 1:
+>  			/* When all that is left in the pid namespace
+>  			 * is the reaper wake up the reaper.  The reaper
+
+Eric, can you please take a look?  Presumably and hopefully
+PIDNS_HASH_ADDING cannot be set here, but what guarantees this?
+
+Hopefully we can fix this one by adding the missing comment.
