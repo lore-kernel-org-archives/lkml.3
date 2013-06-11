@@ -1,40 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355Ab3FKJrB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 05:47:01 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37753 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754228Ab3FKJq7 (ORCPT
+	id S1754466Ab3FKJrR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 05:47:17 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:33304 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754401Ab3FKJrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 05:46:59 -0400
-Date: Tue, 11 Jun 2013 02:46:58 -0700 (PDT)
-Message-Id: <20130611.024658.1499256804576895449.davem@davemloft.net>
-To: mst@redhat.com
-Cc: netdev@vger.kernel.org, asias@redhat.com, tt.rantala@gmail.com,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net 2/2] vhost: fix ubuf_info cleanup
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1370521145-9723-3-git-send-email-mst@redhat.com>
-References: <1370521145-9723-1-git-send-email-mst@redhat.com>
-	<1370521145-9723-3-git-send-email-mst@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Jun 2013 05:47:15 -0400
+Date: Tue, 11 Jun 2013 09:47:13 +0000 (UTC)
+From: Paul Walmsley <pwalmsley@nvidia.com>
+To: Prashant Gaikwad <pgaikwad@nvidia.com>
+cc: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Aleksandr Frid <afrid@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 3/3] clk: tegra: T114: add DFLL DVCO reset control
+In-Reply-To: <51B6D239.5030905@nvidia.com>
+Message-ID: <alpine.DEB.2.02.1306110944130.22645@utopia.booyaka.com>
+References: <20130607121505.21868.72360.stgit@dusk.lan> <20130607121901.21868.65416.stgit@dusk.lan> <51B21105.1080301@wwwdotorg.org> <alpine.DEB.2.02.1306071703050.7753@utopia.booyaka.com> <51B6D239.5030905@nvidia.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Thu, 6 Jun 2013 15:20:46 +0300
+On Tue, 11 Jun 2013, Prashant Gaikwad wrote:
 
-> vhost_net_clear_ubuf_info didn't clear ubuf_info
-> after kfree, this could trigger double free.
-> Fix this and simplify this code to make it more robust: make sure
-> ubuf info is always freed through vhost_net_clear_ubuf_info.
-> 
-> Reported-by: Tommi Rantala <tt.rantala@gmail.com>
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> Why not implement these APIs in DFLL clock driver itself and pass RST address
+> register to driver?
 
-Applied.
+The DFLL DVCO reset registers are CAR registers, not DFLL registers.  
+Functions that operate on registers in one IP block shouldn't be located 
+in another IP block's driver.
+
+
+- Paul
