@@ -1,116 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571Ab3FKKQR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 06:16:17 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:36879 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752404Ab3FKKQP (ORCPT
+	id S1753888Ab3FKKUi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 06:20:38 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:46201 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751700Ab3FKKUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 06:16:15 -0400
-Date: Tue, 11 Jun 2013 12:16:11 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Jay Agarwal <jagarwal@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "olof@lixom.net" <olof@lixom.net>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Juha Tukkinen <jtukkinen@nvidia.com>,
-        Krishna Thota <kthota@nvidia.com>
-Subject: Re: [PATCH V3 2/4] ARM: tegra: pcie: Add tegra3 support
-Message-ID: <20130611101610.GB932@manwe>
-References: <1370372252-4332-1-git-send-email-jagarwal@nvidia.com>
- <1370372252-4332-2-git-send-email-jagarwal@nvidia.com>
- <51AE3D3B.6080102@wwwdotorg.org>
- <20130610195028.GB25859@mithrandir>
- <C79B248886DD134989C8FF6B096A91AB91B616BEED@BGMAIL01.nvidia.com>
+	Tue, 11 Jun 2013 06:20:36 -0400
+Date: Tue, 11 Jun 2013 13:20:25 +0300
+From: Johan Hedberg <johan.hedberg@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        kernel list <linux-kernel@vger.kernel.org>, marcel@holtmann.org,
+        gustavo@padovan.org, linux-bluetooth@vger.kernel.org
+Subject: Re: 3.10-rc: bluetooth disappeared on thinkpad x60 (regression)
+Message-ID: <20130611102025.GA5580@x220>
+Mail-Followup-To: Pavel Machek <pavel@ucw.cz>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	kernel list <linux-kernel@vger.kernel.org>, marcel@holtmann.org,
+	gustavo@padovan.org, linux-bluetooth@vger.kernel.org
+References: <20130610092907.GA5487@amd.pavel.ucw.cz>
+ <20130610100519.GA9816@x220.ger.corp.intel.com>
+ <20130610110423.GA8834@amd.pavel.ucw.cz>
+ <20130610115938.GA12892@x220.ger.corp.intel.com>
+ <20130610133834.GA4058@amd.pavel.ucw.cz>
+ <20130610160723.GA18282@x220.P-661HNU-F1>
+ <20130610193746.GA30801@amd.pavel.ucw.cz>
+ <20130611072245.GA12463@x220>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xXmbgvnjoT4axfJE"
+Content-Type: multipart/mixed; boundary="G4iJoqBmSsgzjUCe"
 Content-Disposition: inline
-In-Reply-To: <C79B248886DD134989C8FF6B096A91AB91B616BEED@BGMAIL01.nvidia.com>
+In-Reply-To: <20130611072245.GA12463@x220>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---xXmbgvnjoT4axfJE
+--G4iJoqBmSsgzjUCe
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jun 11, 2013 at 10:13:38AM +0530, Jay Agarwal wrote:
-> > * PGP Signed by an unknown key
-> >=20
-> > On Tue, Jun 04, 2013 at 01:17:15PM -0600, Stephen Warren wrote:
-> > > On 06/04/2013 12:57 PM, Jay Agarwal wrote:
-> > [...]
-> > > >  struct tegra_pcie_port {
-> > > > @@ -384,7 +408,7 @@ static int tegra_pcie_read_conf(struct pci_bus
-> > *bus, unsigned int devfn,
-> > > >  		struct tegra_pcie_port *port;
-> > > >
-> > > >  		list_for_each_entry(port, &pcie->ports, list) {
-> > > > -			if (port->index + 1 =3D=3D slot) {
-> > > > +			if (port->index =3D=3D slot) {
-> > >
-> > > This and the equivalent change in tegra_pcie_write_conf() seem like a
-> > > bug-fix unrelated to the addition of Tegra30 support. Hence, they
-> > > should be a separate patch.
-> >=20
-> > What exactly is this change supposed to fix? The description doesn't pr=
-ovide
-> > any details about why this is required. Furthermore this was done on
-> > purpose to model the Tegra PCIe controller according to what typical Li=
-nux
-> > systems provide.
->=20
-> I have mentioned it in description as -> "Corrected logic in read/write c=
-onfig space to display right device number on bus 0"
->=20
-> > Device 0:00.0 is usually the root complex, and device 0:01.0, 0:02.0 et=
-c are
-> > the root ports. The change proposed above makes 0:00.0 the first root p=
-ort,
-> > therefore breaking what systems usually expect.
-> >=20
-> I was seeing root port 2 in cardhu being enumerated as pci_bus 0000:03, w=
-hich I thought should be pci_bus 0000:02, so made this change.
+Hi Pavel,
 
-Yes, that's done on purpose to mirror what a typical PCI tree looks
-like, as I already explained. So unless this fixes a real bug I'll just
-drop it while applying.
+On Tue, Jun 11, 2013, Johan Hedberg wrote:
+> On Mon, Jun 10, 2013, Pavel Machek wrote:
+> > < HCI Command: Delete Stored Link Key (0x03|0x0012) plen 7
+> >     bdaddr 00:00:00:00:00:00 all 1
+> > > HCI Event: Command Complete (0x0e) plen 4
+> >     Delete Stored Link Key (0x03|0x0012) ncmd 1
+> >     status 0x11 deleted 0
+> >     Error: Unsupported Feature or Parameter Value
+> 
+> Here's the cause of your issue. It's not one of the recently added HCI
+> commands but one that's been around for quite some time. I just checked
+> and it's even there in kernel 3.9, so I'm surprised that you're saying
+> this is a regression since that version. Are you completely sure about
+> it?
 
-Thierry
+Could you try if the attached patch helps? It modifies the HCI request
+state tracking to allow flagging certain HCI commands as non-critical
+and just ignores their failures.
 
---xXmbgvnjoT4axfJE
-Content-Type: application/pgp-signature
+If the patch helps, could you still provide a HCI trace (both plain text
+and btsnoop format) of a successful "hciconfig hci0 up"? It might help
+create a simpler patch for this issue.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Johan
 
-iQIcBAEBAgAGBQJRtvjqAAoJEN0jrNd/PrOhgJ8P+QGmdhGRl0aBHM85DO7rCaVu
-oC/g/uBhZbTJ+QBEin7GWFTQ5phHyalwpw+VdrxWcVuHCQcmCF12w+l2c31+IzGo
-phgLru47RrAgx7ahHw+pyxq16COVypYprBSg2HKnDO7sQlimNFge4feqc98n4osj
-M6MvdNGBS+RtY+JSIOS+Q8myDG4qJR37ATpGTHBJh5Sja1bYmG3mJ6bmiNgqHzNv
-ikvIaOodgypsxs+IvDTgMskxlagTY1gXTJu316IaqwTrkKU2kMiiLgxgSiOAWcOc
-y4LwtWV3NNBn5mYQyiwShSSV3q2u/Y0lYK4plqjdW1RfGifkVCeFkM0xE2EuGFE/
-FfuUDov2f9JycA0COHwoz3nItz1NJ3eS4KCh/sQwqBdf1ie9x600qhDTj3RKCMZ+
-qBqD/hBbKkUkJ2Xs1VOhqmVwpD7rST6zYbyAvBhhzSv0eKdMHimOEkQrYQzWo3or
-ocm1iZd++nmsjKpRBJkkjahR/1gSUEjonI1n7rt3bXew3/BAX+BvU+x04vXT6c0W
-lHqwWJaHRlQfOK4zI3PhSb8nUfbmhSVFcHIyBFMO1IYUXPI+HeeVRZWGXbLK+6CO
-S3YTeREvI+krLemFXDF20Pckcd/hjFSk/V3jRtjxEo4QWCBLQFJ5PS/mi0fDqRGh
-YMb4BCXkmBX8V1Xbrj9n
-=8OXp
------END PGP SIGNATURE-----
+--G4iJoqBmSsgzjUCe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="del_link_keys.patch"
 
---xXmbgvnjoT4axfJE--
+diff --git a/include/net/bluetooth/bluetooth.h b/include/net/bluetooth/bluetooth.h
+index 10eb9b3..2ee2520 100644
+--- a/include/net/bluetooth/bluetooth.h
++++ b/include/net/bluetooth/bluetooth.h
+@@ -265,6 +265,7 @@ typedef void (*hci_req_complete_t)(struct hci_dev *hdev, u8 status);
+ 
+ struct hci_req_ctrl {
+ 	bool			start;
++	bool			ignore_status;
+ 	u8			event;
+ 	hci_req_complete_t	complete;
+ };
+diff --git a/include/net/bluetooth/hci_core.h b/include/net/bluetooth/hci_core.h
+index 7cb6d36..f1d7500 100644
+--- a/include/net/bluetooth/hci_core.h
++++ b/include/net/bluetooth/hci_core.h
+@@ -1084,7 +1084,7 @@ int hci_req_run(struct hci_request *req, hci_req_complete_t complete);
+ void hci_req_add(struct hci_request *req, u16 opcode, u32 plen,
+ 		 const void *param);
+ void hci_req_add_ev(struct hci_request *req, u16 opcode, u32 plen,
+-		    const void *param, u8 event);
++		    const void *param, u8 event, bool ignore_status);
+ void hci_req_cmd_complete(struct hci_dev *hdev, u16 opcode, u8 status);
+ 
+ struct sk_buff *__hci_cmd_sync(struct hci_dev *hdev, u16 opcode, u32 plen,
+diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
+index d817c93..c3d5056 100644
+--- a/net/bluetooth/hci_core.c
++++ b/net/bluetooth/hci_core.c
+@@ -145,7 +145,7 @@ struct sk_buff *__hci_cmd_sync_ev(struct hci_dev *hdev, u16 opcode, u32 plen,
+ 
+ 	hci_req_init(&req, hdev);
+ 
+-	hci_req_add_ev(&req, opcode, plen, param, event);
++	hci_req_add_ev(&req, opcode, plen, param, event, false);
+ 
+ 	hdev->req_status = HCI_REQ_PEND;
+ 
+@@ -367,7 +367,8 @@ static void bredr_setup(struct hci_request *req)
+ 
+ 	bacpy(&cp.bdaddr, BDADDR_ANY);
+ 	cp.delete_all = 0x01;
+-	hci_req_add(req, HCI_OP_DELETE_STORED_LINK_KEY, sizeof(cp), &cp);
++	hci_req_add_ev(req, HCI_OP_DELETE_STORED_LINK_KEY, sizeof(cp), &cp,
++		       0, true);
+ 
+ 	/* Read page scan parameters */
+ 	if (req->hdev->hci_ver > BLUETOOTH_VER_1_1) {
+@@ -2669,7 +2670,7 @@ int hci_send_cmd(struct hci_dev *hdev, __u16 opcode, __u32 plen,
+ 
+ /* Queue a command to an asynchronous HCI request */
+ void hci_req_add_ev(struct hci_request *req, u16 opcode, u32 plen,
+-		    const void *param, u8 event)
++		    const void *param, u8 event, bool ignore_status)
+ {
+ 	struct hci_dev *hdev = req->hdev;
+ 	struct sk_buff *skb;
+@@ -2694,6 +2695,7 @@ void hci_req_add_ev(struct hci_request *req, u16 opcode, u32 plen,
+ 		bt_cb(skb)->req.start = true;
+ 
+ 	bt_cb(skb)->req.event = event;
++	bt_cb(skb)->req.ignore_status = ignore_status;
+ 
+ 	skb_queue_tail(&req->cmd_q, skb);
+ }
+@@ -2701,7 +2703,7 @@ void hci_req_add_ev(struct hci_request *req, u16 opcode, u32 plen,
+ void hci_req_add(struct hci_request *req, u16 opcode, u32 plen,
+ 		 const void *param)
+ {
+-	hci_req_add_ev(req, opcode, plen, param, 0);
++	hci_req_add_ev(req, opcode, plen, param, 0, false);
+ }
+ 
+ /* Get data from the previously sent command */
+@@ -3425,6 +3427,10 @@ void hci_req_cmd_complete(struct hci_dev *hdev, u16 opcode, u8 status)
+ 		return;
+ 	}
+ 
++	/* Check for commands whose failures aren't critical */
++	if (bt_cb(hdev->sent_cmd)->req.ignore_status)
++		status = 0;
++
+ 	/* If the command succeeded and there's still more commands in
+ 	 * this request the request is not yet complete.
+ 	 */
+
+--G4iJoqBmSsgzjUCe--
