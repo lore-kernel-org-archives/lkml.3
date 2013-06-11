@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab3FKONl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 10:13:41 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34635 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489Ab3FKONj (ORCPT
+	id S1753331Ab3FKOO2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 10:14:28 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5879 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764Ab3FKOO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 10:13:39 -0400
-Date: Tue, 11 Jun 2013 16:13:31 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        John Stultz <john.stultz@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/6] irqchip: add support for Marvell Orion SoCs
-In-Reply-To: <51B72F5C.5020806@gmail.com>
-Message-ID: <alpine.LFD.2.02.1306111609110.22970@ionos>
-References: <1370536034-23956-1-git-send-email-sebastian.hesselbarth@gmail.com> <1370536034-23956-2-git-send-email-sebastian.hesselbarth@gmail.com> <alpine.LFD.2.02.1306111045520.22970@ionos> <alpine.LFD.2.02.1306111525180.22970@ionos> <51B7280B.7080604@gmail.com>
- <alpine.LFD.2.02.1306111539310.22970@ionos> <51B72F5C.5020806@gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 11 Jun 2013 10:14:27 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=tLUlnkoJZcZI9ocdGARlSQ==:17 a=c11ml42nfjYA:10 a=wom5GMh1gUkA:10 a=2Mvv2snrxhsA:10 a=Rj1_iGo3bfgA:10 a=kj9zAlcOel0A:10 a=hBqU3vQJAAAA:8 a=2fDNonidTOoA:10 a=20KFwNOVAAAA:8 a=omOdbC7AAAAA:8 a=fxJcL_dCAAAA:8 a=9lAIgKx7NB9tbeOb7DoA:9 a=CjuIK1q_8ugA:10 a=jEp0ucaQiEUA:10 a=2eKvNQJKnqYA:10 a=tLUlnkoJZcZI9ocdGARlSQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 70.114.148.7
+Date: Tue, 11 Jun 2013 09:15:37 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: Gao feng <gaofeng@cn.fujitsu.com>, "Serge E. Hallyn" <serge@hallyn.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com, ebiederm@xmission.com, davem@davemloft.net
+Subject: Re: [PATCH RFC 00/48] Add namespace support for audit
+Message-ID: <20130611141537.GA30294@austin.hallyn.com>
+References: <1367893269-9308-1-git-send-email-gaofeng@cn.fujitsu.com>
+ <519B3B4E.1070405@cn.fujitsu.com>
+ <20130606215255.GA28978@tp>
+ <20130606224710.GA30502@tp>
+ <51B531CC.2020604@cn.fujitsu.com>
+ <20130610212437.GA11940@austin.hallyn.com>
+ <51B6BCBE.7060608@cn.fujitsu.com>
+ <1370958597.29545.11.camel@localhost>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370958597.29545.11.camel@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Jun 2013, Sebastian Hesselbarth wrote:
-> On 06/11/13 15:45, Thomas Gleixner wrote:
-> > But what about the bit in of that first irq in the cause register? If
-> > it's set on entry you call generic_handle_irq() for that as well. So
-> > if it's set you need to mask it in stat. If not, then it wants a
-> > comment.
+Quoting Eric Paris (eparis@redhat.com):
+> On Tue, 2013-06-11 at 13:59 +0800, Gao feng wrote:
+> > On 06/11/2013 05:24 AM, Serge E. Hallyn wrote:
+> > > Quoting Gao feng (gaofeng@cn.fujitsu.com):
+> > >> On 06/07/2013 06:47 AM, Serge Hallyn wrote:
+> > >>> Quoting Serge Hallyn (serge.hallyn@ubuntu.com):
+> > >>>> Quoting Gao feng (gaofeng@cn.fujitsu.com):
+> > >>>>> On 05/07/2013 10:20 AM, Gao feng wrote:
 > 
-> I am not sure I can follow. orion_bridge_irq_init() maps the first
-> parent irq, i.e. hwirq 0 of orion_irq. The parent irq controller
-> clears that irq cause when all corresponding chained irqs are
-> cleared. The chained (bridge) irqs are cleared by
-> orion_bridge_irq_handler above.
+> > In my option, the audit rules(inode, tree_list, filter) , some of audit
+> > controller related resources(enabled,pid,portid...) and skb queue, audit
+> > netlink sockets,kauditd thread should be per-userns. The audit user message
+> > which generated by the user in container should be per-userns too.
+> > 
+> > Since netns is not implemented as a hierarchy, and the network related
+> > resources are not global. so network related audit message should be per-userns too.
+> > 
+> > The security related audit message should be send to init user namespace
+> > as we discussed before. Maybe tty related audit message should be send
+> > to init user namespace too, I have no idea now.
+> > 
+> > The next step, I will post a new patchset which only make the audit user
+> > message and the basic audit resource per userns. I think this patchset
+> > will easy to be reviewed and accepted, And will not influence the host.
+> > This patchset contains the below patches:
+> 
+> I think this would be easier for us do from a certification and
+> doumentation PoV if we had an audit namespace, not tied to the user
+> namespace.  creating a new audit namespace should require
+> CAP_AUDIT_CONTROL in the user namespace which created the current audit
+> namespace.
+> 
+> Does that make sense?  I don't mind messages staying completely inside
+> the current namespace, but that means we can't give unpriv users (even
+> if they have priv in their user namespace) a new audit namespace...
 
-That makes sense. I got confused by:
+I think that makes sense.
 
-        irq = irq_of_parse_and_map(np, 0);
+One of the goals for user namespace is to ensure that unprivileged users
+can play with their environment without the risk of setuid-root apps on
+the host being tricked by the new environment.  This makes tying the
+audit ns to the user ns trickier.
 
-but now I see that it's mapping irq 0 of the parent interrupt
-controller. I'll add a comment before merging it.
-
-Thanks,
-
-	tglx
-
-
-
- 
+-serge
