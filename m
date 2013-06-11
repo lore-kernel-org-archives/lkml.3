@@ -1,102 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704Ab3FKLJu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 07:09:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36848 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753579Ab3FKLJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 07:09:43 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org
-Cc: dhowells@redhat.com, sage@inktank.com, smfrench@gmail.com,
-        swhiteho@redhat.com, Trond.Myklebust@netapp.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-afs@lists.infradead.org, ceph-devel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        cluster-devel@redhat.com, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, piastryyy@gmail.com
-Subject: [PATCH v2 01/14] cifs: use posix_unblock_lock instead of locks_delete_block
-Date: Tue, 11 Jun 2013 07:08:55 -0400
-Message-Id: <1370948948-31784-2-git-send-email-jlayton@redhat.com>
-In-Reply-To: <1370948948-31784-1-git-send-email-jlayton@redhat.com>
-References: <1370948948-31784-1-git-send-email-jlayton@redhat.com>
+	id S1755067Ab3FKLNF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 07:13:05 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:46341 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755039Ab3FKLNA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 07:13:00 -0400
+Date: Tue, 11 Jun 2013 12:12:54 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH 19/33] clk: ux500: Add Device Tree support for the PRCMU
+ clock
+Message-ID: <20130611111254.GD3330@laptop>
+References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
+ <1370521041-32318-20-git-send-email-lee.jones@linaro.org>
+ <CAPDyKFozMRxcpeEfaqKQrZ1_xxr=UMLw2EybdKiRM2zWcppikw@mail.gmail.com>
+ <20130611111050.GC3330@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130611111050.GC3330@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 66189be74 (CIFS: Fix VFS lock usage for oplocked files) exported
-the locks_delete_block symbol. There's already an exported helper
-function that provides this capability however, so make cifs use that
-instead and turn locks_delete_block back into a static function.
+On Tue, 11 Jun 2013, Lee Jones wrote:
 
-Note that if fl->fl_next == NULL then this lock has already been through
-locks_delete_block(), so we should be OK to ignore an ENOENT error here
-and simply not retry the lock.
+> On Mon, 10 Jun 2013, Ulf Hansson wrote:
+> 
+> > On 6 June 2013 14:17, Lee Jones <lee.jones@linaro.org> wrote:
+> > > This patch enables clocks to be specified from Device Tree via phandles
+> > > to the "prcmu-clock" node.
+> > >
+> > > Cc: Mike Turquette <mturquette@linaro.org>
+> > > Cc: Ulf Hansson <ulf.hansson@linaro.org>
+> > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > > ---
+> > >  drivers/clk/ux500/u8500_clk.c |   50 +++++++++++++++++++++++++++++++++++++++--
+> > >  1 file changed, 48 insertions(+), 2 deletions(-)
+> > >
+> > > diff --git a/drivers/clk/ux500/u8500_clk.c b/drivers/clk/ux500/u8500_clk.c
+> > > index 3a7040b..4f5ad4c 100644
+> > > --- a/drivers/clk/ux500/u8500_clk.c
+> > > +++ b/drivers/clk/ux500/u8500_clk.c
+> > > @@ -15,6 +15,8 @@
+> > >  #include <linux/platform_data/clk-ux500.h>
+> > >  #include "clk.h"
+> > >
+> > > +static struct clk *prcmu_clk[PRCMU_NUM_CLKS];
+> > > +
+> > >  struct clk *ux500_twocell_get(struct of_phandle_args *clkspec, void *data)
+> > 
+> > Actually I thought ux500_twocell_get was going to be used in this
+> > patch, since the previous one was adding this helper function, but it
+> > isn't?
+> 
+> Yes it is:
 
-Cc: Pavel Shilovsky <piastryyy@gmail.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Acked-by: J. Bruce Fields <bfields@fieldses.org>
----
- fs/cifs/file.c     |    2 +-
- fs/locks.c         |    3 +--
- include/linux/fs.h |    5 -----
- 3 files changed, 2 insertions(+), 8 deletions(-)
+Whoops! No, it's using it in the next patch.
 
-diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-index 48b29d2..44a4f18 100644
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -999,7 +999,7 @@ try_again:
- 		rc = wait_event_interruptible(flock->fl_wait, !flock->fl_next);
- 		if (!rc)
- 			goto try_again;
--		locks_delete_block(flock);
-+		posix_unblock_lock(file, flock);
- 	}
- 	return rc;
- }
-diff --git a/fs/locks.c b/fs/locks.c
-index cb424a4..7a02064 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -496,13 +496,12 @@ static void __locks_delete_block(struct file_lock *waiter)
- 
- /*
-  */
--void locks_delete_block(struct file_lock *waiter)
-+static void locks_delete_block(struct file_lock *waiter)
- {
- 	lock_flocks();
- 	__locks_delete_block(waiter);
- 	unlock_flocks();
- }
--EXPORT_SYMBOL(locks_delete_block);
- 
- /* Insert waiter into blocker's block list.
-  * We use a circular list so that processes can be easily woken up in
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 43db02e..b9d7816 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1006,7 +1006,6 @@ extern int vfs_setlease(struct file *, long, struct file_lock **);
- extern int lease_modify(struct file_lock **, int);
- extern int lock_may_read(struct inode *, loff_t start, unsigned long count);
- extern int lock_may_write(struct inode *, loff_t start, unsigned long count);
--extern void locks_delete_block(struct file_lock *waiter);
- extern void lock_flocks(void);
- extern void unlock_flocks(void);
- #else /* !CONFIG_FILE_LOCKING */
-@@ -1151,10 +1150,6 @@ static inline int lock_may_write(struct inode *inode, loff_t start,
- 	return 1;
- }
- 
--static inline void locks_delete_block(struct file_lock *waiter)
--{
--}
--
- static inline void lock_flocks(void)
- {
- }
+There's no requirement for these things to be sequential. I thought it
+was better to put adding the clocks sequential, rather than have a
+random addition of a call-back function in the middle of them.
+
 -- 
-1.7.1
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
