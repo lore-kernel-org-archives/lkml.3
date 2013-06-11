@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413Ab3FKNpp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 09:45:45 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:35332 "EHLO
+	id S1754672Ab3FKNqO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 09:46:14 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:35338 "EHLO
 	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079Ab3FKNpl (ORCPT
+	with ESMTP id S1754302Ab3FKNpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 09:45:41 -0400
+	Tue, 11 Jun 2013 09:45:44 -0400
 From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 To: linux-sh@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org,
         Thierry Reding <thierry.reding@avionic-design.de>,
         Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH v3 1/5] pwm: Add Renesas TPU PWM driver
-Date: Tue, 11 Jun 2013 15:45:40 +0200
-Message-Id: <1370958344-19470-2-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+Subject: [PATCH v3 5/5] leds: Remove leds-renesas-tpu driver
+Date: Tue, 11 Jun 2013 15:45:44 +0200
+Message-Id: <1370958344-19470-6-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1370958344-19470-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 References: <1370958344-19470-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
@@ -22,572 +22,419 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Timer Pulse Unit (TPU) is a 4-channels 16-bit timer used to generate
-waveforms. This driver exposes PWM functions through the PWM API for
-other drivers to use.
-
-The code is loosely based on the leds-renesas-tpu driver by Magnus Damm
-and the TPU PWM driver shipped in the Armadillo EVA 800 kernel sources.
+The driver is superseded by the generic pwm-renesas-tpu driver used with
+leds-pwm.
 
 Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Tested-by: Simon Horman <horms@verge.net.au>
+Acked-by: Bryan Wu <cooloney@gmail.com>
+Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
 ---
- drivers/pwm/Kconfig                           |  10 +
- drivers/pwm/Makefile                          |   1 +
- drivers/pwm/pwm-renesas-tpu.c                 | 485 ++++++++++++++++++++++++++
- include/linux/platform_data/pwm-renesas-tpu.h |  17 +
- 4 files changed, 513 insertions(+)
- create mode 100644 drivers/pwm/pwm-renesas-tpu.c
- create mode 100644 include/linux/platform_data/pwm-renesas-tpu.h
+ drivers/leds/Kconfig                           |  12 -
+ drivers/leds/Makefile                          |   1 -
+ drivers/leds/leds-renesas-tpu.c                | 337 -------------------------
+ include/linux/platform_data/leds-renesas-tpu.h |  14 -
+ 4 files changed, 364 deletions(-)
+ delete mode 100644 drivers/leds/leds-renesas-tpu.c
+ delete mode 100644 include/linux/platform_data/leds-renesas-tpu.h
 
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 115b644..14a9122 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -115,6 +115,16 @@ config PWM_PXA
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-pxa.
+diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+index ef99229..12c56f8 100644
+--- a/drivers/leds/Kconfig
++++ b/drivers/leds/Kconfig
+@@ -429,18 +429,6 @@ config LEDS_ASIC3
+ 	  cannot be used. This driver supports hardware blinking with an on+off
+ 	  period from 62ms to 125s. Say Y to enable LEDs on the HP iPAQ hx4700.
  
-+config PWM_RENESAS_TPU
-+	tristate "Renesas TPU PWM support"
-+	depends on ARCH_SHMOBILE
-+	help
-+	  This driver exposes the Timer Pulse Unit (TPU) PWM controller found
-+	  in Renesas chips through the PWM API.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-renesas-tpu.
-+
- config PWM_SAMSUNG
- 	tristate "Samsung PWM support"
- 	depends on PLAT_SAMSUNG
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index 94ba21e..5aa815f 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -8,6 +8,7 @@ obj-$(CONFIG_PWM_LPC32XX)	+= pwm-lpc32xx.o
- obj-$(CONFIG_PWM_MXS)		+= pwm-mxs.o
- obj-$(CONFIG_PWM_PUV3)		+= pwm-puv3.o
- obj-$(CONFIG_PWM_PXA)		+= pwm-pxa.o
-+obj-$(CONFIG_PWM_RENESAS_TPU)	+= pwm-renesas-tpu.o
- obj-$(CONFIG_PWM_SAMSUNG)	+= pwm-samsung.o
- obj-$(CONFIG_PWM_SPEAR)		+= pwm-spear.o
- obj-$(CONFIG_PWM_TEGRA)		+= pwm-tegra.o
-diff --git a/drivers/pwm/pwm-renesas-tpu.c b/drivers/pwm/pwm-renesas-tpu.c
-new file mode 100644
-index 0000000..cd1844c
---- /dev/null
-+++ b/drivers/pwm/pwm-renesas-tpu.c
-@@ -0,0 +1,485 @@
-+/*
-+ * R-Mobile TPU PWM driver
-+ *
-+ * Copyright (C) 2012 Renesas Solutions Corp.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/init.h>
-+#include <linux/ioport.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
-+#include <linux/platform_data/pwm-renesas-tpu.h>
-+#include <linux/platform_device.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/pwm.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+
-+#define TPU_TSTR		0x00	/* Timer start register (shared) */
-+
-+#define TPU_TCRn		0x00	/* Timer control register */
-+#define TPU_TCR_CCLR_NONE	(0 << 5)
-+#define TPU_TCR_CCLR_TGRA	(1 << 5)
-+#define TPU_TCR_CCLR_TGRB	(2 << 5)
-+#define TPU_TCR_CCLR_TGRC	(5 << 5)
-+#define TPU_TCR_CCLR_TGRD	(6 << 5)
-+#define TPU_TCR_CKEG_RISING	(0 << 3)
-+#define TPU_TCR_CKEG_FALLING	(1 << 3)
-+#define TPU_TCR_CKEG_BOTH	(2 << 3)
-+#define TPU_TMDRn		0x04	/* Timer mode register */
-+#define TPU_TMDR_BFWT		(1 << 6)
-+#define TPU_TMDR_BFB		(1 << 5)
-+#define TPU_TMDR_BFA		(1 << 4)
-+#define TPU_TMDR_MD_NORMAL	(0 << 0)
-+#define TPU_TMDR_MD_PWM		(2 << 0)
-+#define TPU_TIORn		0x08	/* Timer I/O control register */
-+#define TPU_TIOR_IOA_0		(0 << 0)
-+#define TPU_TIOR_IOA_0_CLR	(1 << 0)
-+#define TPU_TIOR_IOA_0_SET	(2 << 0)
-+#define TPU_TIOR_IOA_0_TOGGLE	(3 << 0)
-+#define TPU_TIOR_IOA_1		(4 << 0)
-+#define TPU_TIOR_IOA_1_CLR	(5 << 0)
-+#define TPU_TIOR_IOA_1_SET	(6 << 0)
-+#define TPU_TIOR_IOA_1_TOGGLE	(7 << 0)
-+#define TPU_TIERn		0x0c	/* Timer interrupt enable register */
-+#define TPU_TSRn		0x10	/* Timer status register */
-+#define TPU_TCNTn		0x14	/* Timer counter */
-+#define TPU_TGRAn		0x18	/* Timer general register A */
-+#define TPU_TGRBn		0x1c	/* Timer general register B */
-+#define TPU_TGRCn		0x20	/* Timer general register C */
-+#define TPU_TGRDn		0x24	/* Timer general register D */
-+
-+#define TPU_CHANNEL_OFFSET	0x10
-+#define TPU_CHANNEL_SIZE	0x40
-+
-+enum tpu_pin_state {
-+	TPU_PIN_INACTIVE,		/* Pin is driven inactive */
-+	TPU_PIN_PWM,			/* Pin is driven by PWM */
-+	TPU_PIN_ACTIVE,			/* Pin is driven active */
-+};
-+
-+struct tpu_device;
-+
-+struct tpu_pwm_device {
-+	bool timer_on;			/* Whether the timer is running */
-+
-+	struct tpu_pwm_channel_data *pdata;
-+	struct tpu_device *tpu;
-+	unsigned int channel;		/* Channel number in the TPU */
-+
-+	enum pwm_polarity polarity;
-+	unsigned int prescaler;
-+	u16 period;
-+	u16 duty;
-+};
-+
-+struct tpu_device {
-+	struct platform_device *pdev;
-+	struct pwm_chip chip;
-+	spinlock_t lock;
-+
-+	void __iomem *base;
-+	struct clk *clk;
-+
-+	struct tpu_pwm_device pwms[TPU_CHANNEL_MAX];
-+};
-+
-+#define to_tpu_device(c)	container_of(c, struct tpu_device, chip)
-+
-+static void tpu_pwm_write(struct tpu_pwm_device *pwm, int reg_nr, u16 value)
-+{
-+	void __iomem *base = pwm->tpu->base + TPU_CHANNEL_OFFSET
-+			   + pwm->channel * TPU_CHANNEL_SIZE;
-+
-+	iowrite16(value, base + reg_nr);
-+}
-+
-+static void tpu_pwm_set_pin(struct tpu_pwm_device *pwm,
-+			    enum tpu_pin_state state)
-+{
-+	static const char * const states[] = { "inactive", "PWM", "active" };
-+
-+	dev_dbg(&pwm->tpu->pdev->dev, "%u: configuring pin as %s\n",
-+		pwm->channel, states[state]);
-+
-+	switch (state) {
-+	case TPU_PIN_INACTIVE:
-+		tpu_pwm_write(pwm, TPU_TIORn,
-+			      pwm->polarity == PWM_POLARITY_INVERSED ?
-+			      TPU_TIOR_IOA_1 : TPU_TIOR_IOA_0);
-+		break;
-+	case TPU_PIN_PWM:
-+		tpu_pwm_write(pwm, TPU_TIORn,
-+			      pwm->polarity == PWM_POLARITY_INVERSED ?
-+			      TPU_TIOR_IOA_0_SET : TPU_TIOR_IOA_1_CLR);
-+		break;
-+	case TPU_PIN_ACTIVE:
-+		tpu_pwm_write(pwm, TPU_TIORn,
-+			      pwm->polarity == PWM_POLARITY_INVERSED ?
-+			      TPU_TIOR_IOA_0 : TPU_TIOR_IOA_1);
-+		break;
-+	}
-+}
-+
-+static void tpu_pwm_start_stop(struct tpu_pwm_device *pwm, int start)
-+{
-+	unsigned long flags;
-+	u16 value;
-+
-+	spin_lock_irqsave(&pwm->tpu->lock, flags);
-+	value = ioread16(pwm->tpu->base + TPU_TSTR);
-+
-+	if (start)
-+		value |= 1 << pwm->channel;
-+	else
-+		value &= ~(1 << pwm->channel);
-+
-+	iowrite16(value, pwm->tpu->base + TPU_TSTR);
-+	spin_unlock_irqrestore(&pwm->tpu->lock, flags);
-+}
-+
-+static int tpu_pwm_timer_start(struct tpu_pwm_device *pwm)
-+{
-+	int ret;
-+
-+	if (!pwm->timer_on) {
-+		/* Wake up device and enable clock. */
-+		pm_runtime_get_sync(&pwm->tpu->pdev->dev);
-+		ret = clk_prepare_enable(pwm->tpu->clk);
-+		if (ret) {
-+			dev_err(&pwm->tpu->pdev->dev, "cannot enable clock\n");
-+			return ret;
-+		}
-+		pwm->timer_on = true;
-+	}
-+
-+	/*
-+	 * Make sure the channel is stopped, as we need to reconfigure it
-+	 * completely. First drive the pin to the inactive state to avoid
-+	 * glitches.
-+	 */
-+	tpu_pwm_set_pin(pwm, TPU_PIN_INACTIVE);
-+	tpu_pwm_start_stop(pwm, false);
-+
-+	/*
-+	 * - Clear TCNT on TGRB match
-+	 * - Count on rising edge
-+	 * - Set prescaler
-+	 * - Output 0 until TGRA, output 1 until TGRB (active low polarity)
-+	 * - Output 1 until TGRA, output 0 until TGRB (active high polarity
-+	 * - PWM mode
-+	 */
-+	tpu_pwm_write(pwm, TPU_TCRn, TPU_TCR_CCLR_TGRB | TPU_TCR_CKEG_RISING |
-+		      pwm->prescaler);
-+	tpu_pwm_write(pwm, TPU_TMDRn, TPU_TMDR_MD_PWM);
-+	tpu_pwm_set_pin(pwm, TPU_PIN_PWM);
-+	tpu_pwm_write(pwm, TPU_TGRAn, pwm->duty);
-+	tpu_pwm_write(pwm, TPU_TGRBn, pwm->period);
-+
-+	dev_dbg(&pwm->tpu->pdev->dev, "%u: TGRA 0x%04x TGRB 0x%04x\n",
-+		pwm->channel, pwm->duty, pwm->period);
-+
-+	/* Start the channel. */
-+	tpu_pwm_start_stop(pwm, true);
-+
-+	return 0;
-+}
-+
-+static void tpu_pwm_timer_stop(struct tpu_pwm_device *pwm)
-+{
-+	if (!pwm->timer_on)
-+		return;
-+
-+	/* Disable channel. */
-+	tpu_pwm_start_stop(pwm, false);
-+
-+	/* Stop clock and mark device as idle. */
-+	clk_disable_unprepare(pwm->tpu->clk);
-+	pm_runtime_put(&pwm->tpu->pdev->dev);
-+
-+	pwm->timer_on = false;
-+}
-+
-+/* -----------------------------------------------------------------------------
-+ * PWM API
-+ */
-+
-+static int tpu_pwm_request(struct pwm_chip *chip, struct pwm_device *_pwm)
-+{
-+	struct tpu_device *tpu = to_tpu_device(chip);
-+	struct tpu_pwm_device *pwm = &tpu->pwms[_pwm->hwpwm];
-+
-+	return pwm->pdata == NULL ? -EPROBE_DEFER : 0;
-+}
-+
-+static int tpu_pwm_config(struct pwm_chip *chip, struct pwm_device *_pwm,
-+			  int duty_ns, int period_ns)
-+{
-+	static const unsigned int prescalers[] = { 1, 4, 16, 64 };
-+	struct tpu_device *tpu = to_tpu_device(chip);
-+	struct tpu_pwm_device *pwm = &tpu->pwms[_pwm->hwpwm];
-+	unsigned int prescaler;
-+	bool duty_only = false;
-+	u32 clk_rate;
-+	u32 period;
-+	u32 duty;
-+	int ret;
-+
-+	/*
-+	 * Pick a prescaler to avoid overflowing the counter.
-+	 * TODO: Pick the highest acceptable prescaler.
-+	 */
-+	clk_rate = clk_get_rate(tpu->clk);
-+
-+	for (prescaler = 0; prescaler < ARRAY_SIZE(prescalers); ++prescaler) {
-+		period = clk_rate / prescalers[prescaler]
-+		       / (NSEC_PER_SEC / period_ns);
-+		if (period <= 0xffff)
-+			break;
-+	}
-+
-+	if (prescaler == ARRAY_SIZE(prescalers) || period == 0) {
-+		dev_err(&tpu->pdev->dev, "clock rate mismatch\n");
-+		return -ENOTSUPP;
-+	}
-+
-+	if (duty_ns) {
-+		duty = clk_rate / prescalers[prescaler]
-+		     / (NSEC_PER_SEC / duty_ns);
-+		if (duty > period)
-+			return -EINVAL;
-+	} else {
-+		duty = 0;
-+	}
-+
-+	dev_dbg(&tpu->pdev->dev,
-+		"rate %u, prescaler %u, period %u, duty %u\n",
-+		clk_rate, prescalers[prescaler], period, duty);
-+
-+	if (pwm->prescaler == prescaler && pwm->period == period)
-+		duty_only = true;
-+
-+	pwm->prescaler = prescaler;
-+	pwm->period = period;
-+	pwm->duty = duty;
-+
-+	/* If the channel is disabled we're done. */
-+	if (!test_bit(PWMF_ENABLED, &_pwm->flags))
-+		return 0;
-+
-+	if (duty_only && pwm->timer_on) {
-+		/*
-+		 * If only the duty cycle changed and the timer is already
-+		 * running, there's no need to reconfigure it completely, Just
-+		 * modify the duty cycle.
-+		 */
-+		tpu_pwm_write(pwm, TPU_TGRAn, pwm->duty);
-+		dev_dbg(&tpu->pdev->dev, "%u: TGRA 0x%04x\n", pwm->channel,
-+			pwm->duty);
-+	} else {
-+		/* Otherwise perform a full reconfiguration. */
-+		ret = tpu_pwm_timer_start(pwm);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	if (duty == 0 || duty == period) {
-+		/*
-+		 * To avoid running the timer when not strictly required, handle
-+		 * 0% and 100% duty cycles as fixed levels and stop the timer.
-+		 */
-+		tpu_pwm_set_pin(pwm, duty ? TPU_PIN_ACTIVE : TPU_PIN_INACTIVE);
-+		tpu_pwm_timer_stop(pwm);
-+	}
-+
-+	return 0;
-+}
-+
-+static int tpu_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *_pwm,
-+				enum pwm_polarity polarity)
-+{
-+	struct tpu_device *tpu = to_tpu_device(chip);
-+	struct tpu_pwm_device *pwm = &tpu->pwms[_pwm->hwpwm];
-+
-+	pwm->polarity = polarity;
-+
-+	return 0;
-+}
-+
-+static int tpu_pwm_enable(struct pwm_chip *chip, struct pwm_device *_pwm)
-+{
-+	struct tpu_device *tpu = to_tpu_device(chip);
-+	struct tpu_pwm_device *pwm = &tpu->pwms[_pwm->hwpwm];
-+	int ret;
-+
-+	ret = tpu_pwm_timer_start(pwm);
-+	if (ret < 0)
-+		return ret;
-+
-+	/*
-+	 * To avoid running the timer when not strictly required, handle 0% and
-+	 * 100% duty cycles as fixed levels and stop the timer.
-+	 */
-+	if (pwm->duty == 0 || pwm->duty == pwm->period) {
-+		tpu_pwm_set_pin(pwm, pwm->duty ?
-+				TPU_PIN_ACTIVE : TPU_PIN_INACTIVE);
-+		tpu_pwm_timer_stop(pwm);
-+	}
-+
-+	return 0;
-+}
-+
-+static void tpu_pwm_disable(struct pwm_chip *chip, struct pwm_device *_pwm)
-+{
-+	struct tpu_device *tpu = to_tpu_device(chip);
-+	struct tpu_pwm_device *pwm = &tpu->pwms[_pwm->hwpwm];
-+
-+	/* The timer must be running to modify the pin output configuration. */
-+	tpu_pwm_timer_start(pwm);
-+	tpu_pwm_set_pin(pwm, TPU_PIN_INACTIVE);
-+	tpu_pwm_timer_stop(pwm);
-+}
-+
-+static const struct pwm_ops tpu_pwm_ops = {
-+	.request = tpu_pwm_request,
-+	.config = tpu_pwm_config,
-+	.set_polarity = tpu_pwm_set_polarity,
-+	.enable = tpu_pwm_enable,
-+	.disable = tpu_pwm_disable,
-+	.owner = THIS_MODULE,
-+};
-+
-+/* -----------------------------------------------------------------------------
-+ * Probe and remove
-+ */
-+
-+static int tpu_probe(struct platform_device *pdev)
-+{
-+	struct tpu_pwm_platform_data *pdata = pdev->dev.platform_data;
-+	struct tpu_device *tpu;
-+	struct resource *res;
-+	unsigned int i;
-+	int ret;
-+
-+	if (!pdata) {
-+		dev_err(&pdev->dev, "missing platform data\n");
-+		return -ENXIO;
-+	}
-+
-+	tpu = devm_kzalloc(&pdev->dev, sizeof(*tpu), GFP_KERNEL);
-+	if (tpu == NULL) {
-+		dev_err(&pdev->dev, "failed to allocate driver data\n");
-+		return -ENOMEM;
-+	}
-+
-+	/* Map memory, get clock and pin control. */
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev, "failed to get I/O memory\n");
-+		return -ENXIO;
-+	}
-+
-+	tpu->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (tpu->base == NULL) {
-+		dev_err(&pdev->dev, "failed to remap I/O memory\n");
-+		return -ENXIO;
-+	}
-+
-+	tpu->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(tpu->clk)) {
-+		dev_err(&pdev->dev, "cannot get clock\n");
-+		return PTR_ERR(tpu->clk);
-+	}
-+
-+	/* Initialize and register the device. */
-+	platform_set_drvdata(pdev, tpu);
-+
-+	spin_lock_init(&tpu->lock);
-+	tpu->pdev = pdev;
-+
-+	for (i = 0; i < ARRAY_SIZE(tpu->pwms); ++i) {
-+		struct tpu_pwm_device *pwm = &tpu->pwms[i];
-+
-+		if (!pdata->channels[i].enabled)
-+			continue;
-+
-+		pwm->tpu = tpu;
-+		pwm->channel = i;
-+		pwm->pdata = &pdata->channels[i];
-+
-+		pwm->polarity = pwm->pdata->polarity;
-+		pwm->prescaler = 0;
-+		pwm->period = 0;
-+		pwm->duty = 0;
-+
-+		pwm->timer_on = false;
-+	}
-+
-+	tpu->chip.dev = &pdev->dev;
-+	tpu->chip.ops = &tpu_pwm_ops;
-+	tpu->chip.base = -1;
-+	tpu->chip.npwm = TPU_CHANNEL_MAX;
-+
-+	ret = pwmchip_add(&tpu->chip);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to register PWM chip\n");
-+		return ret;
-+	}
-+
-+	dev_info(&pdev->dev, "TPU PWM %d registered\n", tpu->pdev->id);
-+
-+	pm_runtime_enable(&pdev->dev);
-+
-+	return 0;
-+}
-+
-+static int tpu_remove(struct platform_device *pdev)
-+{
-+	struct tpu_device *tpu = platform_get_drvdata(pdev);
-+	unsigned int i;
-+	int ret;
-+
-+	ret = pwmchip_remove(&tpu->chip);
-+	if (ret)
-+		return ret;
-+
-+	for (i = 0; i < ARRAY_SIZE(tpu->pwms); ++i) {
-+		struct tpu_pwm_device *pwm = &tpu->pwms[i];
-+
-+		if (!pwm->tpu)
-+			continue;
-+
-+		tpu_pwm_timer_stop(pwm);
-+	}
-+
-+	pm_runtime_disable(&pdev->dev);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver tpu_driver = {
-+	.probe		= tpu_probe,
-+	.remove		= tpu_remove,
-+	.driver		= {
-+		.name	= "renesas_tpu_pwm",
-+		.owner	= THIS_MODULE,
-+	}
-+};
-+
-+module_platform_driver(tpu_driver);
-+
-+MODULE_AUTHOR("Laurent Pinchart <laurent.pinchart@ideasonboard.com>");
-+MODULE_DESCRIPTION("Renesas TPU PWM Driver");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/platform_data/pwm-renesas-tpu.h b/include/linux/platform_data/pwm-renesas-tpu.h
-new file mode 100644
-index 0000000..6f50240
---- /dev/null
-+++ b/include/linux/platform_data/pwm-renesas-tpu.h
-@@ -0,0 +1,17 @@
-+#ifndef __PWM_RENESAS_TPU_H__
-+#define __PWM_RENESAS_TPU_H__
-+
-+#include <linux/pwm.h>
-+
-+#define TPU_CHANNEL_MAX		4
-+
-+struct tpu_pwm_channel_data {
-+	bool enabled;
-+	enum pwm_polarity polarity;
-+};
-+
-+struct tpu_pwm_platform_data {
-+	struct tpu_pwm_channel_data channels[TPU_CHANNEL_MAX];
-+};
-+
-+#endif /* __PWM_RENESAS_TPU_H__ */
+-config LEDS_RENESAS_TPU
+-	bool "LED support for Renesas TPU"
+-	depends on LEDS_CLASS=y && HAVE_CLK && GPIOLIB
+-	help
+-	  This option enables build of the LED TPU platform driver,
+-	  suitable to drive any TPU channel on newer Renesas SoCs.
+-	  The driver controls the GPIO pin connected to the LED via
+-	  the GPIO framework and expects the LED to be connected to
+-	  a pin that can be driven in both GPIO mode and using TPU
+-	  pin function. The latter to support brightness control.
+-	  Brightness control is supported but hardware blinking is not.
+-
+ config LEDS_TCA6507
+ 	tristate "LED Support for TCA6507 I2C chip"
+ 	depends on LEDS_CLASS && I2C
+diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+index ac28977..ae4b613 100644
+--- a/drivers/leds/Makefile
++++ b/drivers/leds/Makefile
+@@ -49,7 +49,6 @@ obj-$(CONFIG_LEDS_MC13783)		+= leds-mc13783.o
+ obj-$(CONFIG_LEDS_NS2)			+= leds-ns2.o
+ obj-$(CONFIG_LEDS_NETXBIG)		+= leds-netxbig.o
+ obj-$(CONFIG_LEDS_ASIC3)		+= leds-asic3.o
+-obj-$(CONFIG_LEDS_RENESAS_TPU)		+= leds-renesas-tpu.o
+ obj-$(CONFIG_LEDS_MAX8997)		+= leds-max8997.o
+ obj-$(CONFIG_LEDS_LM355x)		+= leds-lm355x.o
+ obj-$(CONFIG_LEDS_BLINKM)		+= leds-blinkm.o
+diff --git a/drivers/leds/leds-renesas-tpu.c b/drivers/leds/leds-renesas-tpu.c
+deleted file mode 100644
+index 9483f1c..0000000
+--- a/drivers/leds/leds-renesas-tpu.c
++++ /dev/null
+@@ -1,337 +0,0 @@
+-/*
+- * LED control using Renesas TPU
+- *
+- *  Copyright (C) 2011 Magnus Damm
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/module.h>
+-#include <linux/init.h>
+-#include <linux/platform_device.h>
+-#include <linux/spinlock.h>
+-#include <linux/printk.h>
+-#include <linux/ioport.h>
+-#include <linux/io.h>
+-#include <linux/clk.h>
+-#include <linux/leds.h>
+-#include <linux/platform_data/leds-renesas-tpu.h>
+-#include <linux/gpio.h>
+-#include <linux/err.h>
+-#include <linux/slab.h>
+-#include <linux/pm_runtime.h>
+-#include <linux/workqueue.h>
+-
+-enum r_tpu_pin { R_TPU_PIN_UNUSED, R_TPU_PIN_GPIO, R_TPU_PIN_GPIO_FN };
+-enum r_tpu_timer { R_TPU_TIMER_UNUSED, R_TPU_TIMER_ON };
+-
+-struct r_tpu_priv {
+-	struct led_classdev ldev;
+-	void __iomem *mapbase;
+-	struct clk *clk;
+-	struct platform_device *pdev;
+-	enum r_tpu_pin pin_state;
+-	enum r_tpu_timer timer_state;
+-	unsigned long min_rate;
+-	unsigned int refresh_rate;
+-	struct work_struct work;
+-	enum led_brightness new_brightness;
+-};
+-
+-static DEFINE_SPINLOCK(r_tpu_lock);
+-
+-#define TSTR -1 /* Timer start register (shared register) */
+-#define TCR  0 /* Timer control register (+0x00) */
+-#define TMDR 1 /* Timer mode register (+0x04) */
+-#define TIOR 2 /* Timer I/O control register (+0x08) */
+-#define TIER 3 /* Timer interrupt enable register (+0x0c) */
+-#define TSR  4 /* Timer status register (+0x10) */
+-#define TCNT 5 /* Timer counter (+0x14) */
+-#define TGRA 6 /* Timer general register A (+0x18) */
+-#define TGRB 7 /* Timer general register B (+0x1c) */
+-#define TGRC 8 /* Timer general register C (+0x20) */
+-#define TGRD 9 /* Timer general register D (+0x24) */
+-
+-static inline unsigned short r_tpu_read(struct r_tpu_priv *p, int reg_nr)
+-{
+-	struct led_renesas_tpu_config *cfg = p->pdev->dev.platform_data;
+-	void __iomem *base = p->mapbase;
+-	unsigned long offs = reg_nr << 2;
+-
+-	if (reg_nr == TSTR)
+-		return ioread16(base - cfg->channel_offset);
+-
+-	return ioread16(base + offs);
+-}
+-
+-static inline void r_tpu_write(struct r_tpu_priv *p, int reg_nr,
+-			       unsigned short value)
+-{
+-	struct led_renesas_tpu_config *cfg = p->pdev->dev.platform_data;
+-	void __iomem *base = p->mapbase;
+-	unsigned long offs = reg_nr << 2;
+-
+-	if (reg_nr == TSTR) {
+-		iowrite16(value, base - cfg->channel_offset);
+-		return;
+-	}
+-
+-	iowrite16(value, base + offs);
+-}
+-
+-static void r_tpu_start_stop_ch(struct r_tpu_priv *p, int start)
+-{
+-	struct led_renesas_tpu_config *cfg = p->pdev->dev.platform_data;
+-	unsigned long flags, value;
+-
+-	/* start stop register shared by multiple timer channels */
+-	spin_lock_irqsave(&r_tpu_lock, flags);
+-	value = r_tpu_read(p, TSTR);
+-
+-	if (start)
+-		value |= 1 << cfg->timer_bit;
+-	else
+-		value &= ~(1 << cfg->timer_bit);
+-
+-	r_tpu_write(p, TSTR, value);
+-	spin_unlock_irqrestore(&r_tpu_lock, flags);
+-}
+-
+-static int r_tpu_enable(struct r_tpu_priv *p, enum led_brightness brightness)
+-{
+-	struct led_renesas_tpu_config *cfg = p->pdev->dev.platform_data;
+-	int prescaler[] = { 1, 4, 16, 64 };
+-	int k, ret;
+-	unsigned long rate, tmp;
+-
+-	if (p->timer_state == R_TPU_TIMER_ON)
+-		return 0;
+-
+-	/* wake up device and enable clock */
+-	pm_runtime_get_sync(&p->pdev->dev);
+-	ret = clk_enable(p->clk);
+-	if (ret) {
+-		dev_err(&p->pdev->dev, "cannot enable clock\n");
+-		return ret;
+-	}
+-
+-	/* make sure channel is disabled */
+-	r_tpu_start_stop_ch(p, 0);
+-
+-	/* get clock rate after enabling it */
+-	rate = clk_get_rate(p->clk);
+-
+-	/* pick the lowest acceptable rate */
+-	for (k = ARRAY_SIZE(prescaler) - 1; k >= 0; k--)
+-		if ((rate / prescaler[k]) >= p->min_rate)
+-			break;
+-
+-	if (k < 0) {
+-		dev_err(&p->pdev->dev, "clock rate mismatch\n");
+-		goto err0;
+-	}
+-	dev_dbg(&p->pdev->dev, "rate = %lu, prescaler %u\n",
+-		rate, prescaler[k]);
+-
+-	/* clear TCNT on TGRB match, count on rising edge, set prescaler */
+-	r_tpu_write(p, TCR, 0x0040 | k);
+-
+-	/* output 0 until TGRA, output 1 until TGRB */
+-	r_tpu_write(p, TIOR, 0x0002);
+-
+-	rate /= prescaler[k] * p->refresh_rate;
+-	r_tpu_write(p, TGRB, rate);
+-	dev_dbg(&p->pdev->dev, "TRGB = 0x%04lx\n", rate);
+-
+-	tmp = (cfg->max_brightness - brightness) * rate;
+-	r_tpu_write(p, TGRA, tmp / cfg->max_brightness);
+-	dev_dbg(&p->pdev->dev, "TRGA = 0x%04lx\n", tmp / cfg->max_brightness);
+-
+-	/* PWM mode */
+-	r_tpu_write(p, TMDR, 0x0002);
+-
+-	/* enable channel */
+-	r_tpu_start_stop_ch(p, 1);
+-
+-	p->timer_state = R_TPU_TIMER_ON;
+-	return 0;
+- err0:
+-	clk_disable(p->clk);
+-	pm_runtime_put_sync(&p->pdev->dev);
+-	return -ENOTSUPP;
+-}
+-
+-static void r_tpu_disable(struct r_tpu_priv *p)
+-{
+-	if (p->timer_state == R_TPU_TIMER_UNUSED)
+-		return;
+-
+-	/* disable channel */
+-	r_tpu_start_stop_ch(p, 0);
+-
+-	/* stop clock and mark device as idle */
+-	clk_disable(p->clk);
+-	pm_runtime_put_sync(&p->pdev->dev);
+-
+-	p->timer_state = R_TPU_TIMER_UNUSED;
+-}
+-
+-static void r_tpu_set_pin(struct r_tpu_priv *p, enum r_tpu_pin new_state,
+-			  enum led_brightness brightness)
+-{
+-	struct led_renesas_tpu_config *cfg = p->pdev->dev.platform_data;
+-
+-	if (p->pin_state == new_state) {
+-		if (p->pin_state == R_TPU_PIN_GPIO)
+-			gpio_set_value(cfg->pin_gpio, brightness);
+-		return;
+-	}
+-
+-	if (p->pin_state == R_TPU_PIN_GPIO)
+-		gpio_free(cfg->pin_gpio);
+-
+-	if (p->pin_state == R_TPU_PIN_GPIO_FN)
+-		gpio_free(cfg->pin_gpio_fn);
+-
+-	if (new_state == R_TPU_PIN_GPIO)
+-		gpio_request_one(cfg->pin_gpio, !!brightness ?
+-				GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW,
+-				cfg->name);
+-
+-	if (new_state == R_TPU_PIN_GPIO_FN)
+-		gpio_request(cfg->pin_gpio_fn, cfg->name);
+-
+-	p->pin_state = new_state;
+-}
+-
+-static void r_tpu_work(struct work_struct *work)
+-{
+-	struct r_tpu_priv *p = container_of(work, struct r_tpu_priv, work);
+-	enum led_brightness brightness = p->new_brightness;
+-
+-	r_tpu_disable(p);
+-
+-	/* off and maximum are handled as GPIO pins, in between PWM */
+-	if ((brightness == 0) || (brightness == p->ldev.max_brightness))
+-		r_tpu_set_pin(p, R_TPU_PIN_GPIO, brightness);
+-	else {
+-		r_tpu_set_pin(p, R_TPU_PIN_GPIO_FN, 0);
+-		r_tpu_enable(p, brightness);
+-	}
+-}
+-
+-static void r_tpu_set_brightness(struct led_classdev *ldev,
+-				 enum led_brightness brightness)
+-{
+-	struct r_tpu_priv *p = container_of(ldev, struct r_tpu_priv, ldev);
+-	p->new_brightness = brightness;
+-	schedule_work(&p->work);
+-}
+-
+-static int r_tpu_probe(struct platform_device *pdev)
+-{
+-	struct led_renesas_tpu_config *cfg = pdev->dev.platform_data;
+-	struct r_tpu_priv *p;
+-	struct resource *res;
+-	int ret;
+-
+-	if (!cfg) {
+-		dev_err(&pdev->dev, "missing platform data\n");
+-		return -ENODEV;
+-	}
+-
+-	p = devm_kzalloc(&pdev->dev, sizeof(*p), GFP_KERNEL);
+-	if (p == NULL) {
+-		dev_err(&pdev->dev, "failed to allocate driver data\n");
+-		return -ENOMEM;
+-	}
+-
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev, "failed to get I/O memory\n");
+-		return -ENXIO;
+-	}
+-
+-	/* map memory, let mapbase point to our channel */
+-	p->mapbase = devm_ioremap_nocache(&pdev->dev, res->start,
+-					resource_size(res));
+-	if (p->mapbase == NULL) {
+-		dev_err(&pdev->dev, "failed to remap I/O memory\n");
+-		return -ENXIO;
+-	}
+-
+-	/* get hold of clock */
+-	p->clk = devm_clk_get(&pdev->dev, NULL);
+-	if (IS_ERR(p->clk)) {
+-		dev_err(&pdev->dev, "cannot get clock\n");
+-		return PTR_ERR(p->clk);
+-	}
+-
+-	p->pdev = pdev;
+-	p->pin_state = R_TPU_PIN_UNUSED;
+-	p->timer_state = R_TPU_TIMER_UNUSED;
+-	p->refresh_rate = cfg->refresh_rate ? cfg->refresh_rate : 100;
+-	r_tpu_set_pin(p, R_TPU_PIN_GPIO, LED_OFF);
+-	platform_set_drvdata(pdev, p);
+-
+-	INIT_WORK(&p->work, r_tpu_work);
+-
+-	p->ldev.name = cfg->name;
+-	p->ldev.brightness = LED_OFF;
+-	p->ldev.max_brightness = cfg->max_brightness;
+-	p->ldev.brightness_set = r_tpu_set_brightness;
+-	p->ldev.flags |= LED_CORE_SUSPENDRESUME;
+-	ret = led_classdev_register(&pdev->dev, &p->ldev);
+-	if (ret < 0)
+-		goto err0;
+-
+-	/* max_brightness may be updated by the LED core code */
+-	p->min_rate = p->ldev.max_brightness * p->refresh_rate;
+-
+-	pm_runtime_enable(&pdev->dev);
+-	return 0;
+-
+- err0:
+-	r_tpu_set_pin(p, R_TPU_PIN_UNUSED, LED_OFF);
+-	return ret;
+-}
+-
+-static int r_tpu_remove(struct platform_device *pdev)
+-{
+-	struct r_tpu_priv *p = platform_get_drvdata(pdev);
+-
+-	r_tpu_set_brightness(&p->ldev, LED_OFF);
+-	led_classdev_unregister(&p->ldev);
+-	cancel_work_sync(&p->work);
+-	r_tpu_disable(p);
+-	r_tpu_set_pin(p, R_TPU_PIN_UNUSED, LED_OFF);
+-
+-	pm_runtime_disable(&pdev->dev);
+-
+-	return 0;
+-}
+-
+-static struct platform_driver r_tpu_device_driver = {
+-	.probe		= r_tpu_probe,
+-	.remove		= r_tpu_remove,
+-	.driver		= {
+-		.name	= "leds-renesas-tpu",
+-	}
+-};
+-
+-module_platform_driver(r_tpu_device_driver);
+-
+-MODULE_AUTHOR("Magnus Damm");
+-MODULE_DESCRIPTION("Renesas TPU LED Driver");
+-MODULE_LICENSE("GPL v2");
+diff --git a/include/linux/platform_data/leds-renesas-tpu.h b/include/linux/platform_data/leds-renesas-tpu.h
+deleted file mode 100644
+index 0553870..0000000
+--- a/include/linux/platform_data/leds-renesas-tpu.h
++++ /dev/null
+@@ -1,14 +0,0 @@
+-#ifndef __LEDS_RENESAS_TPU_H__
+-#define __LEDS_RENESAS_TPU_H__
+-
+-struct led_renesas_tpu_config {
+-	char *name;
+-	unsigned pin_gpio_fn;
+-	unsigned pin_gpio;
+-	unsigned int channel_offset;
+-	unsigned int timer_bit;
+-	unsigned int max_brightness;
+-	unsigned int refresh_rate;
+-};
+-
+-#endif /* __LEDS_RENESAS_TPU_H__ */
 -- 
 1.8.1.5
 
