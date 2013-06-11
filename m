@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab3FKPd2 (ORCPT <rfc822;w@1wt.eu>);
+	id S1754882Ab3FKPdd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 11:33:33 -0400
+Received: from zimbra.linbit.com ([212.69.161.123]:38342 "EHLO
+	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754751Ab3FKPd2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Jun 2013 11:33:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:2928 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754751Ab3FKPcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 11:32:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,845,1363158000"; 
-   d="scan'208";a="351755087"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 5/8] thp, mm: locking tail page is a bug
-Date: Tue, 11 Jun 2013 18:35:16 +0300
-Message-Id: <1370964919-16187-6-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1370964919-16187-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1370964919-16187-1-git-send-email-kirill.shutemov@linux.intel.com>
+Date: Tue, 11 Jun 2013 17:33:27 +0200
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Philipp Reisner <philipp.reisner@linbit.com>, drbd-user@lists.linbit.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [drbd?] Kernel panic - not syncing: Out of memory and no
+ killable processes...
+Message-ID: <20130611153326.GK20369@soda.linbit>
+Mail-Followup-To: Fengguang Wu <fengguang.wu@intel.com>,
+	Philipp Reisner <philipp.reisner@linbit.com>,
+	drbd-user@lists.linbit.com, linux-kernel@vger.kernel.org
+References: <20130607023154.GA13344@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130607023154.GA13344@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On Fri, Jun 07, 2013 at 10:31:54AM +0800, Fengguang Wu wrote:
+> Greetings,
+> 
+> My "kvm -m 256" reliably goes Out Of Memory after this commit.  It may
+> not be the only one that eats up the memory, however I wonder how much
+> memory consumption this commit added? Thanks!
+> 
 
-Locking head page means locking entire compound page.
-If we try to lock tail page, something went wrong.
+Out of curiosity, what exactly is it you are doing there?
+What project or appliance or behaviour or product or paper is the goal?
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
----
- mm/filemap.c |    2 ++
- 1 file changed, 2 insertions(+)
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index bb6ad8c..2bd1d24 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -639,6 +639,7 @@ void __lock_page(struct page *page)
- {
- 	DEFINE_WAIT_BIT(wait, &page->flags, PG_locked);
- 
-+	VM_BUG_ON(PageTail(page));
- 	__wait_on_bit_lock(page_waitqueue(page), &wait, sleep_on_page,
- 							TASK_UNINTERRUPTIBLE);
- }
-@@ -648,6 +649,7 @@ int __lock_page_killable(struct page *page)
- {
- 	DEFINE_WAIT_BIT(wait, &page->flags, PG_locked);
- 
-+	VM_BUG_ON(PageTail(page));
- 	return __wait_on_bit_lock(page_waitqueue(page), &wait,
- 					sleep_on_page_killable, TASK_KILLABLE);
- }
+We scale certain mempools and reserves with
+DRBD_MAX_BIO_SIZE/PAGE_SIZE * minor_count.
+
+DRBD_MAX_BIO_SIZE has been increased by this patch,
+resulting in more memory allocated to those reserved pools.
+
+Please just scale down the "minor_count" parameter.
+You can use the module parameter (e.g. modprobe drbd minor_count=8),
+or, compiled in, use the kernel command line parameter drbd.minor_count=8.
+
+Though "minor_count" at some point used to be the hard limit for the number of
+minor devices (allocation of an array of corresponding size), that has
+long since changed, and now it is really only used as scaling factor for
+these mempools.
+
+	Lars
+
+
 -- 
-1.7.10.4
-
+: Lars Ellenberg
+: LINBIT | Your Way to High Availability
+: DRBD/HA support and consulting http://www.linbit.com
+DRBD® and LINBIT® are registered trademarks of LINBIT, Austria.
