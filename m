@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757450Ab3FKUcL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:32:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41691 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756337Ab3FKUDM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756336Ab3FKUDM (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Jun 2013 16:03:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41672 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756106Ab3FKUDG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 16:03:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robert Knight <knight@princeton.edu>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 21/32] powerpc/eeh: Dont check RTAS token to get PE addr
-Date: Tue, 11 Jun 2013 13:03:20 -0700
-Message-Id: <20130611200128.572176180@linuxfoundation.org>
+        Sergey Dyasly <dserrg@gmail.com>, Vladimir Murzin <murzin.v@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 04/32] xhci: fix list access before init
+Date: Tue, 11 Jun 2013 13:03:03 -0700
+Message-Id: <20130611200126.679976778@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611200126.214442788@linuxfoundation.org>
 References: <20130611200126.214442788@linuxfoundation.org>
@@ -28,59 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
+From: Vladimir Murzin <murzin.v@gmail.com>
 
-commit b8b3de224f194005ad87ede6fd022fcc2bef3b1a upstream.
+commit 88696ae432ce7321540ac53d9caab3de9118b094 upstream.
 
-RTAS token "ibm,get-config-addr-info" or ibm,get-config-addr-info2"
-are used to retrieve the PE address according to PCI address, which
-made up of domain/bus/slot/function. If we don't have those 2 tokens,
-the domain/bus/slot/function would be used as the address for EEH
-RTAS operations. Some older f/w might not have those 2 tokens and
-that blocks the EEH functionality to be initialized. It was introduced
-by commit e2af155c ("powerpc/eeh: pseries platform EEH initialization").
+If for whatever reason we fall into fail path in xhci_mem_init()
+before bw table gets initialized we may access the uninitialized lists
+in xhci_mem_cleanup().
 
-The patch skips the check on those 2 tokens so we can bring up EEH
-functionality successfully. And domain/bus/slot/function will be
-used as address for EEH RTAS operations.
+Check for bw table before traversing lists in cleanup routine.
 
-Reported-by: Robert Knight <knight@princeton.edu>
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-Tested-by: Robert Knight <knight@princeton.edu>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+This patch should be backported to kernels as old as 3.2, that contain
+the commit 839c817ce67178ca3c7c7ad534c571bba1e69ebe "xhci: Store
+information about roothubs and TTs."
+
+Reported-by: Sergey Dyasly <dserrg@gmail.com>
+Tested-by: Sergey Dyasly <dserrg@gmail.com>
+Signed-off-by: Vladimir Murzin <murzin.v@gmail.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/pseries/eeh_pseries.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ drivers/usb/host/xhci-mem.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/powerpc/platforms/pseries/eeh_pseries.c
-+++ b/arch/powerpc/platforms/pseries/eeh_pseries.c
-@@ -83,7 +83,11 @@ static int pseries_eeh_init(void)
- 	ibm_configure_pe		= rtas_token("ibm,configure-pe");
- 	ibm_configure_bridge		= rtas_token ("ibm,configure-bridge");
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1845,6 +1845,9 @@ void xhci_mem_cleanup(struct xhci_hcd *x
+ 	}
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
  
--	/* necessary sanity check */
-+	/*
-+	 * Necessary sanity check. We needn't check "get-config-addr-info"
-+	 * and its variant since the old firmware probably support address
-+	 * of domain/bus/slot/function for EEH RTAS operations.
-+	 */
- 	if (ibm_set_eeh_option == RTAS_UNKNOWN_SERVICE) {
- 		pr_warning("%s: RTAS service <ibm,set-eeh-option> invalid\n",
- 			__func__);
-@@ -102,12 +106,6 @@ static int pseries_eeh_init(void)
- 		pr_warning("%s: RTAS service <ibm,slot-error-detail> invalid\n",
- 			__func__);
- 		return -EINVAL;
--	} else if (ibm_get_config_addr_info2 == RTAS_UNKNOWN_SERVICE &&
--		   ibm_get_config_addr_info == RTAS_UNKNOWN_SERVICE) {
--		pr_warning("%s: RTAS service <ibm,get-config-addr-info2> and "
--			"<ibm,get-config-addr-info> invalid\n",
--			__func__);
--		return -EINVAL;
- 	} else if (ibm_configure_pe == RTAS_UNKNOWN_SERVICE &&
- 		   ibm_configure_bridge == RTAS_UNKNOWN_SERVICE) {
- 		pr_warning("%s: RTAS service <ibm,configure-pe> and "
++	if (!xhci->rh_bw)
++		goto no_bw;
++
+ 	num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
+ 	for (i = 0; i < num_ports; i++) {
+ 		struct xhci_interval_bw_table *bwt = &xhci->rh_bw[i].bw_table;
+@@ -1863,6 +1866,7 @@ void xhci_mem_cleanup(struct xhci_hcd *x
+ 		}
+ 	}
+ 
++no_bw:
+ 	xhci->num_usb2_ports = 0;
+ 	xhci->num_usb3_ports = 0;
+ 	xhci->num_active_eps = 0;
 
 
