@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771Ab3FKQBq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 12:01:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4319 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751808Ab3FKQBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 12:01:44 -0400
-Subject: [PATCH 1/3] vfio: Don't overreact to DEL_DEVICE
-To: alex.williamson@redhat.com
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+	id S1754831Ab3FKQBu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 12:01:50 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39177 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808Ab3FKQBr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 12:01:47 -0400
+Message-ID: <51B749E7.6070808@wwwdotorg.org>
 Date: Tue, 11 Jun 2013 10:01:43 -0600
-Message-ID: <20130611160142.9995.29479.stgit@bling.home>
-In-Reply-To: <20130611155848.9995.41709.stgit@bling.home>
-References: <20130611155848.9995.41709.stgit@bling.home>
-User-Agent: StGit/0.16
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: J Keerthy <j-keerthy@ti.com>
+CC: b-cousson@ti.com, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldewangan@nvidia.com, grant.likely@secretlab.ca, swarren@nvidia.com,
+        sameo@linux.intel.com, gg@slimlogic.co.uk, lee.jones@linaro.org
+Subject: Re: [PATCH v3] ARM: dts: OMAP5: Add palmas MFD node and regulator
+ nodes
+References: <1370928651-6278-1-git-send-email-j-keerthy@ti.com>
+In-Reply-To: <1370928651-6278-1-git-send-email-j-keerthy@ti.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BUS_NOTIFY_DEL_DEVICE triggers IOMMU drivers to remove devices from
-their iommu group, but there's really nothing we can do about it at
-this point.  If the device is in use, then the vfio sub-driver will
-block the device_del from completing until it's released.  If the
-device is not in use or not owned by a vfio sub-driver, then we
-really don't care that it's being removed.
+On 06/10/2013 11:30 PM, J Keerthy wrote:
+> This patch adds Palmas MFD node and the regulator nodes for OMAP5.
+> 
+> The node definitions are based on: https://lkml.org/lkml/2013/6/6/25
+> 
+> Boot tested on omap5-uevm board.
 
-The current code can be triggered just by unloading an sr-iov driver
-(ex. igb) while the VFs are attached to vfio-pci because it makes an
-incorrect assumption about the ordering of driver remove callbacks
-vs the DEL_DEVICE notification.
+> diff --git a/arch/arm/boot/dts/omap5-uevm.dts b/arch/arm/boot/dts/omap5-uevm.dts
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
- drivers/vfio/vfio.c |   29 +++++++----------------------
- 1 file changed, 7 insertions(+), 22 deletions(-)
+> +	palmas: palmas@48 {
+> +		reg = <0x48>;
+> +		interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>; /* IRQ_SYS_1N */
+> +		interrupt-parent = <&gic>;
+> +	};
+> +};
+> +
+> +&palmas {
+> +	compatible = "ti,palmas";
+> +	interrupt-controller;
+> +	#interrupt-cells = <2>;
 
-diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
-index 6d78736..1bed313 100644
---- a/drivers/vfio/vfio.c
-+++ b/drivers/vfio/vfio.c
-@@ -492,27 +492,6 @@ static int vfio_group_nb_add_dev(struct vfio_group *group, struct device *dev)
- 	return 0;
- }
- 
--static int vfio_group_nb_del_dev(struct vfio_group *group, struct device *dev)
--{
--	struct vfio_device *device;
--
--	/*
--	 * Expect to fall out here.  If a device was in use, it would
--	 * have been bound to a vfio sub-driver, which would have blocked
--	 * in .remove at vfio_del_group_dev.  Sanity check that we no
--	 * longer track the device, so it's safe to remove.
--	 */
--	device = vfio_group_get_device(group, dev);
--	if (likely(!device))
--		return 0;
--
--	WARN("Device %s removed from live group %d!\n", dev_name(dev),
--	     iommu_group_id(group->iommu_group));
--
--	vfio_device_put(device);
--	return 0;
--}
--
- static int vfio_group_nb_verify(struct vfio_group *group, struct device *dev)
- {
- 	/* We don't care what happens when the group isn't in use */
-@@ -543,7 +522,13 @@ static int vfio_iommu_group_notifier(struct notifier_block *nb,
- 		vfio_group_nb_add_dev(group, dev);
- 		break;
- 	case IOMMU_GROUP_NOTIFY_DEL_DEVICE:
--		vfio_group_nb_del_dev(group, dev);
-+		/*
-+		 * Nothing to do here.  If the device is in use, then the
-+		 * vfio sub-driver should block the remove callback until
-+		 * it is unused.  If the device is unused or attached to a
-+		 * stub driver, then it should be released and we don't
-+		 * care that it will be going away.
-+		 */
- 		break;
- 	case IOMMU_GROUP_NOTIFY_BIND_DRIVER:
- 		pr_debug("%s: Device %s, group %d binding to driver\n",
-
+I don't really see the point of splitting the node into two parts if
+it's all going into a single file. It made sense if part of the node
+came from a common .dtsi file, but not so much when it doesn't.
