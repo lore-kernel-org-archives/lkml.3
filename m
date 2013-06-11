@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757527Ab3FKUgu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:36:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41647 "EHLO
+	id S1756303Ab3FKUhZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:37:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41632 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756228Ab3FKUDA (ORCPT
+	with ESMTP id S1756200Ab3FKUC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:00 -0400
+	Tue, 11 Jun 2013 16:02:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Egbert Eich <eich@suse.de>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 17/21] drm/i915/sdvo: Use &intel_sdvo->ddc instead of intel_sdvo->i2c for DDC.
-Date: Tue, 11 Jun 2013 13:03:11 -0700
-Message-Id: <20130611195522.018319688@linuxfoundation.org>
+        Ash Willis <ashwillis@programmer.net>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 14/21] ACPI / video: ignore BIOS initial backlight value for HP Pavilion g6
+Date: Tue, 11 Jun 2013 13:03:08 -0700
+Message-Id: <20130611195521.662569695@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195520.003233586@linuxfoundation.org>
 References: <20130611195520.003233586@linuxfoundation.org>
@@ -27,44 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Egbert Eich <eich@suse.de>
+From: Ash Willis <ashwillis.kernel@gmail.com>
 
-commit 53d3b4d7778daf15900867336c85d3f8dd70600c upstream.
+commit 780a6ec640a3fed671fc2c40e4dd30c03eca3ac3 upstream.
 
-In intel_sdvo_get_lvds_modes() the wrong i2c adapter record is used
-for DDC. Thus the code will always have to rely on a LVDS panel
-mode supplied by VBT.
-In most cases this succeeds, so this didn't get detected for quite
-a while.
+This patch addresses kernel bug 56661. BIOS reports an incorrect
+backlight value, causing the driver to switch off the backlight
+completely during startup. This patch ignores the incorrect value from
+BIOS.
 
-This regression seems to have been introduced in
-
-commit f899fc64cda8569d0529452aafc0da31c042df2e
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Tue Jul 20 15:44:45 2010 -0700
-
-    drm/i915: use GMBUS to manage i2c links
-
-Signed-off-by: Egbert Eich <eich@suse.de>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-[danvet: Add note about which commit likely introduced this issue.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=56661
+Signed-off-by: Ash Willis <ashwillis@programmer.net>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_sdvo.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/acpi/video.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -1609,7 +1609,7 @@ static void intel_sdvo_get_lvds_modes(st
- 	 * Assume that the preferred modes are
- 	 * arranged in priority order.
- 	 */
--	intel_ddc_get_modes(connector, intel_sdvo->i2c);
-+	intel_ddc_get_modes(connector, &intel_sdvo->ddc);
- 	if (list_empty(&connector->probed_modes) == false)
- 		goto end;
- 
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -450,6 +450,14 @@ static struct dmi_system_id video_dmi_ta
+ 	},
+ 	{
+ 	 .callback = video_ignore_initial_backlight,
++	 .ident = "HP Pavilion g6 Notebook PC",
++	 .matches = {
++		 DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
++		 DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion g6 Notebook PC"),
++		},
++	},
++	{
++	 .callback = video_ignore_initial_backlight,
+ 	 .ident = "HP Pavilion m4",
+ 	 .matches = {
+ 		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
 
 
