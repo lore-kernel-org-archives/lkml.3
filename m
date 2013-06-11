@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757395Ab3FKU2n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:28:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41719 "EHLO
+	id S1756407Ab3FKUDT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:03:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41705 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756417Ab3FKUDU (ORCPT
+	with ESMTP id S1754658Ab3FKUDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:20 -0400
+	Tue, 11 Jun 2013 16:03:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hovold <jhovold@gmail.com>
-Subject: [ 17/32] USB: mos7720: fix message timeouts
-Date: Tue, 11 Jun 2013 13:03:16 -0700
-Message-Id: <20130611200128.159264644@linuxfoundation.org>
+Subject: [ 11/32] USB: visor: fix initialisation of Treo/Kyocera devices
+Date: Tue, 11 Jun 2013 13:03:10 -0700
+Message-Id: <20130611200127.466615613@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611200126.214442788@linuxfoundation.org>
 References: <20130611200126.214442788@linuxfoundation.org>
@@ -28,46 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 849513a7809175420d353625b6f651d961e99d49 upstream.
+commit 420021a395ce38b7ab2cceb52dee4038be7d8fa3 upstream.
 
-The control and bulk-message timeouts are specified in milliseconds and
-should not depend on HZ.
+Fix regression introduced by commit 214916f2e ("USB: visor: reimplement
+using generic framework") which broke initialisation of Treo/Kyocera
+devices that re-mapped bulk-in endpoints.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/mos7720.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/usb/serial/visor.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/usb/serial/mos7720.c
-+++ b/drivers/usb/serial/mos7720.c
-@@ -44,7 +44,7 @@
- #define DRIVER_DESC "Moschip USB Serial Driver"
- 
- /* default urb timeout */
--#define MOS_WDR_TIMEOUT	(HZ * 5)
-+#define MOS_WDR_TIMEOUT	5000
- 
- #define MOS_MAX_PORT	0x02
- #define MOS_WRITE	0x0E
-@@ -2105,7 +2105,7 @@ static int mos7720_startup(struct usb_se
- 
- 	/* setting configuration feature to one */
- 	usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
--			(__u8)0x03, 0x00, 0x01, 0x00, NULL, 0x00, 5*HZ);
-+			(__u8)0x03, 0x00, 0x01, 0x00, NULL, 0x00, 5000);
- 
- 	/* start the interrupt urb */
- 	ret_val = usb_submit_urb(serial->port[0]->interrupt_in_urb, GFP_KERNEL);
-@@ -2150,7 +2150,7 @@ static void mos7720_release(struct usb_s
- 		/* wait for synchronous usb calls to return */
- 		if (mos_parport->msg_pending)
- 			wait_for_completion_timeout(&mos_parport->syncmsg_compl,
--						    MOS_WDR_TIMEOUT);
-+					    msecs_to_jiffies(MOS_WDR_TIMEOUT));
- 
- 		parport_remove_port(mos_parport->pp);
- 		usb_set_serial_data(serial, NULL);
+--- a/drivers/usb/serial/visor.c
++++ b/drivers/usb/serial/visor.c
+@@ -596,9 +596,17 @@ static int treo_attach(struct usb_serial
+ 	*/
+ #define COPY_PORT(dest, src)						\
+ 	do { \
++		int i;							\
++									\
++		for (i = 0; i < ARRAY_SIZE(src->read_urbs); ++i) {	\
++			dest->read_urbs[i] = src->read_urbs[i];		\
++			dest->read_urbs[i]->context = dest;		\
++			dest->bulk_in_buffers[i] = src->bulk_in_buffers[i]; \
++		}							\
+ 		dest->read_urb = src->read_urb;				\
+ 		dest->bulk_in_endpointAddress = src->bulk_in_endpointAddress;\
+ 		dest->bulk_in_buffer = src->bulk_in_buffer;		\
++		dest->bulk_in_size = src->bulk_in_size;			\
+ 		dest->interrupt_in_urb = src->interrupt_in_urb;		\
+ 		dest->interrupt_in_endpointAddress = \
+ 					src->interrupt_in_endpointAddress;\
 
 
