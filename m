@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756547Ab3FKVkO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 17:40:14 -0400
-Received: from mga01.intel.com ([192.55.52.88]:43573 "EHLO mga01.intel.com"
+	id S1756653Ab3FKVvN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 17:51:13 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:34438 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755918Ab3FKVkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 17:40:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,847,1363158000"; 
-   d="scan'208";a="351695216"
-From: "Keller, Jacob E" <jacob.e.keller@intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>,
-        Eliezer Tamir <eliezer.tamir@linux.intel.com>
-CC: David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        Willem de Bruijn <willemb@google.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: RE: [PATCH v10 net-next 5/6] ixgbe: add support for ndo_ll_poll
-Thread-Topic: [PATCH v10 net-next 5/6] ixgbe: add support for ndo_ll_poll
-Thread-Index: AQHOZbZahmUIX4XMxUu5CAKDe8BPCJkvgB8AgAGMyJA=
-Date: Tue, 11 Jun 2013 21:40:09 +0000
-Message-ID: <02874ECE860811409154E81DA85FBB58564F93E8@ORSMSX104.amr.corp.intel.com>
-References: <20130610083929.6955.87206.stgit@ladj378.jer.intel.com>
-	 <20130610084020.6955.48255.stgit@ladj378.jer.intel.com>
- <1370876366.3252.6.camel@edumazet-glaptop>
-In-Reply-To: <1370876366.3252.6.camel@edumazet-glaptop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S1755155Ab3FKVvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 17:51:12 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Julius Werner <jwerner@chromium.org>
+Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Todd Poynor <toddpoynor@google.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sameer Nanda <snanda@chromium.org>
+Subject: Re: [PATCH] PM / Sleep: Print last wakeup source on failed wakeup_count write
+Date: Wed, 12 Jun 2013 00:00:18 +0200
+Message-ID: <4844834.TBe7kS6ocA@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1369944137-30948-1-git-send-email-jwerner@chromium.org>
+References: <1369944137-30948-1-git-send-email-jwerner@chromium.org>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5BLeLNw016100
 
-> -----Original Message-----
-> From: netdev-owner@vger.kernel.org [mailto:netdev-
-> owner@vger.kernel.org] On Behalf Of Eric Dumazet
-> Sent: Monday, June 10, 2013 7:59 AM
-> To: Eliezer Tamir
-> Cc: David Miller; linux-kernel@vger.kernel.org; netdev@vger.kernel.org;
-> Brandeburg, Jesse; Skidmore, Donald C; e1000-
-> devel@lists.sourceforge.net; Willem de Bruijn; Ben Hutchings; Andi
-> Kleen; HPA; Eilon Greenstien; Or Gerlitz; Amir Vadai; Eliezer Tamir
-> Subject: Re: [PATCH v10 net-next 5/6] ixgbe: add support for ndo_ll_poll
+On Thursday, May 30, 2013 01:02:17 PM Julius Werner wrote:
+> Commit a938da06 introduced a useful little log message to tell
+> users/debuggers which wakeup source aborted a suspend. However, this
+> message is only printed if the abort happens during the in-kernel
+> suspend path (after writing /sys/power/state).
 > 
-> On Mon, 2013-06-10 at 11:40 +0300, Eliezer Tamir wrote:
-> > Add the ixgbe driver code implementing ndo_ll_poll.
-> > Adds ndo_ll_poll method and locking between it and the napi poll.
-> > When receiving a packet we use skb_mark_ll to record the napi it came
-> from.
-> > Add each napi to the napi_hash right after netif_napi_add().
-> >
-> > Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-> > Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-> > Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-> > ---
+> The full specification of the /sys/power/wakeup_count facility allows
+> user-space power managers to double-check if wakeups have already
+> happened before it actually tries to suspend (e.g. while it was running
+> user-space pre-suspend hooks), by writing the last known wakeup_count
+> value to /sys/power/wakeup_count. This patch changes the sysfs handler
+> for that node to also print said log message if that write fails, so
+> that we can figure out the offending wakeup source for both kinds of
+> suspend aborts.
 > 
-> Reviewed-by: Eric Dumazet <edumazet@google.com>
+> Signed-off-by: Julius Werner <jwerner@chromium.org>
+> ---
+>  drivers/base/power/wakeup.c | 2 ++
+>  1 file changed, 2 insertions(+)
 > 
-> 
-> --
+> diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
+> index 79715e7..b0b7886 100644
+> --- a/drivers/base/power/wakeup.c
+> +++ b/drivers/base/power/wakeup.c
+> @@ -772,6 +772,8 @@ bool pm_save_wakeup_count(unsigned int count)
+>  		events_check_enabled = true;
+>  	}
+>  	spin_unlock_irqrestore(&events_lock, flags);
+> +	if (!events_check_enabled)
+> +		print_active_wakeup_sources();
 
-Acked-by: Jacob Keller <jacob.e.keller@intel.com>
+This is going to be done in the autosleep case too, which I'm slightly
+concerned about.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+If you wanted to cover /sys/power/wakeup_count only, it would be better
+to put that into wakeup_count_store(), but perhaps you wanted to cover
+autosleep too?
+
+>  	return events_check_enabled;
+>  }
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
