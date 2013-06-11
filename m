@@ -1,66 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078Ab3FKXWw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 19:22:52 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59538 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754237Ab3FKXWu (ORCPT
+	id S1754577Ab3FKXhc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 19:37:32 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:49836 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752582Ab3FKXha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 19:22:50 -0400
-Date: Tue, 11 Jun 2013 17:53:20 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH, RFC] mm: Implement RLIMIT_RSS
-Message-ID: <20130611215319.GA29368@logfs.org>
-References: <20130611182921.GB25941@logfs.org>
- <20130611211601.GA29426@cmpxchg.org>
+	Tue, 11 Jun 2013 19:37:30 -0400
+Date: Tue, 11 Jun 2013 16:37:25 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: WARNING: at kernel/rcutorture.c:1243 rcu_torture_printk
+Message-ID: <20130611233725.GA30531@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130610074728.GA20886@localhost>
+ <20130610145110.GL5146@linux.vnet.ibm.com>
+ <20130611021455.GB8872@localhost>
+ <20130611230322.GL5146@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130611211601.GA29426@cmpxchg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130611230322.GL5146@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061123-4834-0000-0000-000007F80DE3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 June 2013 17:16:01 -0400, Johannes Weiner wrote:
-> On Tue, Jun 11, 2013 at 02:29:21PM -0400, Jörn Engel wrote:
-> > I've seen a couple of instances where people try to impose a vsize
-> > limit simply because there is no rss limit in Linux.  The vsize limit
-> > is a horrible approximation and even this patch seems to be an
-> > improvement.
+On Tue, Jun 11, 2013 at 04:03:22PM -0700, Paul E. McKenney wrote:
+> On Tue, Jun 11, 2013 at 10:14:55AM +0800, Fengguang Wu wrote:
+> > Paul,
 > > 
-> > Would there be strong opposition to actually supporting RLIMIT_RSS?
+> > On Mon, Jun 10, 2013 at 07:51:10AM -0700, Paul E. McKenney wrote:
+> > > On Mon, Jun 10, 2013 at 03:47:28PM +0800, Fengguang Wu wrote:
+> > > > Greetings,
+> > > > 
+> > > > I got the below dmesg and the first bad commit is
+> > > > 
+> > > > commit 911af505ef407c2511106c224dd640f882f0f590
+> > > > Author: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > > Date:   Mon Feb 11 10:23:27 2013 -0800
+> > > > 
+> > > >     rcu: Provide compile-time control for no-CBs CPUs
+> > > >     
+> > > >     Currently, the only way to specify no-CBs CPUs is via the rcu_nocbs
+> > > >     kernel command-line parameter.  This is inconvenient in some cases,
+> > > >     particularly for randconfig testing, so this commit adds a new set of
+> > > >     kernel configuration parameters.  CONFIG_RCU_NOCB_CPU_NONE (the default)
+> > > >     retains the old behavior, CONFIG_RCU_NOCB_CPU_ZERO offloads callback
+> > > >     processing from CPU 0 (along with any other CPUs specified by the
+> > > >     rcu_nocbs boot-time parameter), and CONFIG_RCU_NOCB_CPU_ALL offloads
+> > > >     callback processing from all CPUs.
+> > > >     
+> > > >     Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > 
+> > > > However I guess it's a wrong bisect, the commit should be unmasking an
+> > > > old bug because it merely provides more kconfig options.
+> > > > 
+> > > > This warning happened only once in 74 boots of the kernel.
+> > > > 
+> > > > I also attached the 2nd dmesg which shows boot hang for the same
+> > > > kernel.
+> > > > 
+> > > > Note that there are also 2 kernel hangs in the 74 boots.  It should
+> > > > not be an RCU problem, however for completeness, I also attach a dmesg
+> > > > for your reference when considering this RCU warning.
+> > > 
+> > > Either way, that is a nasty warning!  You get this on recent kernels as
+> > > well, I take it?
+> > 
+> > Yes, the warning is still in recent kernels, indicated from the last
+> > lines of the bisect log.
+> > 
+> > 911af505ef407c2511106c224dd640f882f0f590 is bad and its parent
+> > 34ed62461ae4970695974afb9a60ac3df0086830 is good:
+> > > > git bisect  bad 911af505ef407c2511106c224dd640f882f0f590  #    65  2013-06-07 16:14:41  rcu: Provide compile-time control for no-CBs CPUs
+> > > > git bisect good 34ed62461ae4970695974afb9a60ac3df0086830  #   900  2013-06-08 04:57:34  rcu: Remove restrictions on no-CBs CPUs
+> > 
+> > After bisect, the script tries to confirm that
+> > 34ed62461ae4970695974afb9a60ac3df0086830 is really good by boot
+> > testing it 2700 more times:
+> > 
+> > > > git bisect good 34ed62461ae4970695974afb9a60ac3df0086830  #  2700  2013-06-10 14:33:56  rcu: Remove restrictions on no-CBs CPUs
+> > 
+> > And continue to find out whether the linus/master and
+> > linux-next/master are good/bad (here the results are both bad):
+> > 
+> > > > git bisect  bad f43e7a34255a387930bc2bb826ec17c052ce975e  # 14:34      0  Merge branch 'for-next'
+> > > > git bisect  bad c04efed734409f5a44715b54a6ca1b54b0ccf215  # 14:41     11  Add linux-next specific files for 20130607
 > 
-> This is trivial to exploit by creating the mappings first and
-> populating them later, so while it may cover some use cases, it does
-> not have the protection against malicious programs aspect that all the
-> other rlimits have.
-
-Hm.  The use case I have is that an application wants to limit itself.
-It is effectively a special assert to catch memory leaks and the like.
-So malicious programs are not my immediate concern.
-
-Of course the moment Linux supports RLIMIT_RSS people will use it to
-limit malicious programs, no matter how many scary warning we put in.
-
-> The right place to enforce the limit is at the point of memory
-> allocation, which raises the question what to do when the limit is
-> exceeded in a page fault.  Reclaim from the process's memory?  Kill
-> it?
+> Just to let you know that I am putting some time into this...
 > 
-> I guess the answer to these questions is "memory cgroups", so that's
-> why there is no real motivation to implement RLIMIT_RSS separately...
+> Well, I got a panic, but it turned out to be the kernel being unable to
+> locate init.  Why your .config should have this effect, I have no idea --
+> I don't see any Kconfig parameters that look to me like they should be
+> specifying where init lives.  Any hints?
+> 
+> Left to myself, my next step will be to try just the RCU-related Kconfig
+> parameters.
 
-Lack of opposition would be enough for me.  But I guess we need a bit
-more for a mergeable patch than I did and I only did the existing
-patch because it seemed easy, not because it is important.  Will keep
-the patch in my junk code folder for now.
+Which gets rid of the "unable to locate init" panic.  One strange thing
+in your .config:
 
-Jörn
+CONFIG_HZ_PERIODIC=y
+# CONFIG_NO_HZ_IDLE is not set
+# CONFIG_NO_HZ_FULL is not set
+CONFIG_NO_HZ=y
 
---
-A surrounded army must be given a way out.
--- Sun Tzu
+Seems harmless, though.
+
+I will do repeated runs with this config fragment to see if I can reproduce
+your warning:
+
+	CONFIG_TREE_PREEMPT_RCU=y
+	CONFIG_PREEMPT_RCU=y
+	CONFIG_RCU_STALL_COMMON=y
+	CONFIG_RCU_USER_QS=n
+	CONFIG_RCU_FANOUT=64
+	CONFIG_RCU_FANOUT_LEAF=16
+	CONFIG_RCU_FANOUT_EXACT=n
+	CONFIG_RCU_BOOST=y
+	CONFIG_RCU_BOOST_PRIO=1
+	CONFIG_RCU_BOOST_DELAY=500
+	CONFIG_RCU_NOCB_CPU=y
+	CONFIG_RCU_NOCB_CPU_NONE=n
+	CONFIG_RCU_NOCB_CPU_ZERO=y
+	CONFIG_RCU_NOCB_CPU_ALL=n
+	CONFIG_DEBUG_OBJECTS_RCU_HEAD=n
+	CONFIG_SPARSE_RCU_POINTER=n
+	CONFIG_RCU_TORTURE_TEST=y
+	CONFIG_RCU_TORTURE_TEST_RUNNABLE=y
+	CONFIG_RCU_CPU_STALL_TIMEOUT=21
+	CONFIG_RCU_CPU_STALL_VERBOSE=y
+	CONFIG_RCU_CPU_STALL_INFO=y
+	CONFIG_RCU_TRACE=n
+	CONFIG_NR_CPUS=8
+	CONFIG_HZ_PERIODIC=y
+	CONFIG_NO_HZ_IDLE=n
+	CONFIG_NO_HZ_FULL=n
+	CONFIG_NO_HZ=y
+	CONFIG_PREEMPT_NONE=n
+	CONFIG_PREEMPT_VOLUNTARY=n
+	CONFIG_PREEMPT=y
+	CONFIG_PREEMPT_COUNT=y
+
+							Thanx, Paul
+
