@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757320Ab3FKU0b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:26:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41754 "EHLO
+	id S1757334Ab3FKU1C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:27:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41744 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756457Ab3FKUDZ (ORCPT
+	with ESMTP id S1756441Ab3FKUDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:03:25 -0400
+	Tue, 11 Jun 2013 16:03:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung@kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: [ 32/32] ftrace: Move ftrace_filter_lseek out of CONFIG_DYNAMIC_FTRACE section
-Date: Tue, 11 Jun 2013 13:03:31 -0700
-Message-Id: <20130611200130.405780996@linuxfoundation.org>
+        Jan Beulich <jbeulich@suse.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 28/32] xen-pciback: rate limit error messages from xen_pcibk_enable_msi{,x}()
+Date: Tue, 11 Jun 2013 13:03:27 -0700
+Message-Id: <20130611200129.359917239@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611200126.214442788@linuxfoundation.org>
 References: <20130611200126.214442788@linuxfoundation.org>
@@ -27,94 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Jan Beulich <jbeulich@suse.com>
 
-From: Steven Rostedt <rostedt@goodmis.org>
+commit 51ac8893a7a51b196501164e645583bf78138699 upstream.
 
-commit 7f49ef69db6bbf756c0abca7e9b65b32e999eec8 upstream.
+... as being guest triggerable (e.g. by invoking
+XEN_PCI_OP_enable_msi{,x} on a device not being MSI/MSI-X capable).
 
-As ftrace_filter_lseek is now used with ftrace_pid_fops, it needs to
-be moved out of the #ifdef CONFIG_DYNAMIC_FTRACE section as the
-ftrace_pid_fops is defined when DYNAMIC_FTRACE is not.
+This is CVE-2013-0231 / XSA-43.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-[ lizf: adjust context ]
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+Also make the two messages uniform in both their wording and severity.
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+[stable tree: Added two extra #include files]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/ftrace.h |    3 ++-
- kernel/trace/ftrace.c  |   28 ++++++++++++++--------------
- 2 files changed, 16 insertions(+), 15 deletions(-)
 
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -299,7 +299,6 @@ ssize_t ftrace_filter_write(struct file
- 			    size_t cnt, loff_t *ppos);
- ssize_t ftrace_notrace_write(struct file *file, const char __user *ubuf,
- 			     size_t cnt, loff_t *ppos);
--loff_t ftrace_filter_lseek(struct file *file, loff_t offset, int origin);
- int ftrace_regex_release(struct inode *inode, struct file *file);
+---
+ drivers/xen/xen-pciback/pciback_ops.c |   16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
+
+--- a/drivers/xen/xen-pciback/pciback_ops.c
++++ b/drivers/xen/xen-pciback/pciback_ops.c
+@@ -9,6 +9,8 @@
+ #include <xen/events.h>
+ #include <linux/sched.h>
+ #include "pciback.h"
++#include <linux/ratelimit.h>
++#include <linux/printk.h>
  
- void __init
-@@ -420,6 +419,8 @@ static inline int
- ftrace_regex_release(struct inode *inode, struct file *file) { return -ENODEV; }
- #endif /* CONFIG_DYNAMIC_FTRACE */
- 
-+loff_t ftrace_filter_lseek(struct file *file, loff_t offset, int whence);
-+
- /* totally disable ftrace - can not re-enable after this */
- void ftrace_kill(void);
- 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -999,6 +999,19 @@ static __init void ftrace_profile_debugf
- 
- static struct pid * const ftrace_swapper_pid = &init_struct_pid;
- 
-+loff_t
-+ftrace_filter_lseek(struct file *file, loff_t offset, int whence)
-+{
-+	loff_t ret;
-+
-+	if (file->f_mode & FMODE_READ)
-+		ret = seq_lseek(file, offset, whence);
-+	else
-+		file->f_pos = ret = 1;
-+
-+	return ret;
-+}
-+
- #ifdef CONFIG_DYNAMIC_FTRACE
- 
- #ifndef CONFIG_FTRACE_MCOUNT_RECORD
-@@ -2541,7 +2554,7 @@ static void ftrace_filter_reset(struct f
-  * routine, you can use ftrace_filter_write() for the write
-  * routine if @flag has FTRACE_ITER_FILTER set, or
-  * ftrace_notrace_write() if @flag has FTRACE_ITER_NOTRACE set.
-- * ftrace_regex_lseek() should be used as the lseek routine, and
-+ * ftrace_filter_lseek() should be used as the lseek routine, and
-  * release must call ftrace_regex_release().
-  */
- int
-@@ -2625,19 +2638,6 @@ ftrace_notrace_open(struct inode *inode,
- 				 inode, file);
- }
- 
--loff_t
--ftrace_filter_lseek(struct file *file, loff_t offset, int origin)
--{
--	loff_t ret;
--
--	if (file->f_mode & FMODE_READ)
--		ret = seq_lseek(file, offset, origin);
--	else
--		file->f_pos = ret = 1;
--
--	return ret;
--}
--
- static int ftrace_match(char *str, char *regex, int len, int type)
+ int verbose_request;
+ module_param(verbose_request, int, 0644);
+@@ -136,7 +138,6 @@ int xen_pcibk_enable_msi(struct xen_pcib
+ 			 struct pci_dev *dev, struct xen_pci_op *op)
  {
- 	int matched = 0;
+ 	struct xen_pcibk_dev_data *dev_data;
+-	int otherend = pdev->xdev->otherend_id;
+ 	int status;
+ 
+ 	if (unlikely(verbose_request))
+@@ -145,8 +146,9 @@ int xen_pcibk_enable_msi(struct xen_pcib
+ 	status = pci_enable_msi(dev);
+ 
+ 	if (status) {
+-		printk(KERN_ERR "error enable msi for guest %x status %x\n",
+-			otherend, status);
++		pr_warn_ratelimited(DRV_NAME ": %s: error enabling MSI for guest %u: err %d\n",
++				    pci_name(dev), pdev->xdev->otherend_id,
++				    status);
+ 		op->value = 0;
+ 		return XEN_PCI_ERR_op_failed;
+ 	}
+@@ -224,10 +226,10 @@ int xen_pcibk_enable_msix(struct xen_pci
+ 						pci_name(dev), i,
+ 						op->msix_entries[i].vector);
+ 		}
+-	} else {
+-		printk(KERN_WARNING DRV_NAME ": %s: failed to enable MSI-X: err %d!\n",
+-			pci_name(dev), result);
+-	}
++	} else
++		pr_warn_ratelimited(DRV_NAME ": %s: error enabling MSI-X for guest %u: err %d!\n",
++				    pci_name(dev), pdev->xdev->otherend_id,
++				    result);
+ 	kfree(entries);
+ 
+ 	op->value = result;
 
 
