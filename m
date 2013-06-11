@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756931Ab3FKUHG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 16:07:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42057 "EHLO
+	id S1756919Ab3FKUHk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 16:07:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42052 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756827Ab3FKUET (ORCPT
+	with ESMTP id S1756820Ab3FKUES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 16:04:19 -0400
+	Tue, 11 Jun 2013 16:04:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 66/79] powerpc/pseries: Perform proper max_bus_speed detection
-Date: Tue, 11 Jun 2013 13:03:32 -0700
-Message-Id: <20130611195324.738144481@linuxfoundation.org>
+        Brian King <brking@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+Subject: [ 65/79] powerpc/pseries: Make 32-bit MSI quirk work on systems lacking firmware support
+Date: Tue, 11 Jun 2013 13:03:31 -0700
+Message-Id: <20130611195324.600483375@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.254.g5578ad7
 In-Reply-To: <20130611195312.352656079@linuxfoundation.org>
 References: <20130611195312.352656079@linuxfoundation.org>
@@ -27,146 +28,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+From: Brian King <brking@linux.vnet.ibm.com>
 
-commit d82fb31abc46620b7c22758c75707069f2763646 upstream.
+commit f1dd153121dcb872ae6cba8d52bec97519eb7d97 upstream.
 
-On pseries machines the detection for max_bus_speed should be done
-through an OpenFirmware property. This patch adds a function to perform
-this detection and a hook to perform dynamic adding of the function only
-for pseries. This is done by overwriting the weak
-pcibios_root_bridge_prepare function which is called by
-pci_create_root_bus().
+Recent commit e61133dda480062d221f09e4fc18f66763f8ecd0 added support
+for a new firmware feature to force an adapter to use 32 bit MSIs.
+However, this firmware is not available for all systems. The hack below
+allows devices needing 32 bit MSIs to work on these systems as well.
+It is careful to only enable this on Gen2 slots, which should limit
+this to configurations where this hack is needed and tested to work.
 
-From: Lucas Kannebley Tavares <lucaskt@linux.vnet.ibm.com>
-Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+[Small change to factor out the hack into a separate function -- BenH]
+
+Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/machdep.h       |    3 +
- arch/powerpc/kernel/pci-common.c         |    8 ++++
- arch/powerpc/platforms/pseries/pci.c     |   53 +++++++++++++++++++++++++++++++
- arch/powerpc/platforms/pseries/pseries.h |    4 ++
- arch/powerpc/platforms/pseries/setup.c   |    2 +
- 5 files changed, 70 insertions(+)
+ arch/powerpc/platforms/pseries/msi.c |   40 ++++++++++++++++++++++++++++++++---
+ 1 file changed, 37 insertions(+), 3 deletions(-)
 
---- a/arch/powerpc/include/asm/machdep.h
-+++ b/arch/powerpc/include/asm/machdep.h
-@@ -29,6 +29,7 @@ struct rtc_time;
- struct file;
- struct pci_controller;
- struct kimage;
-+struct pci_host_bridge;
- 
- struct machdep_calls {
- 	char		*name;
-@@ -107,6 +108,8 @@ struct machdep_calls {
- 	void		(*pcibios_fixup)(void);
- 	int		(*pci_probe_mode)(struct pci_bus *);
- 	void		(*pci_irq_fixup)(struct pci_dev *dev);
-+	int		(*pcibios_root_bridge_prepare)(struct pci_host_bridge
-+				*bridge);
- 
- 	/* To setup PHBs when using automatic OF platform driver for PCI */
- 	int		(*pci_setup_phb)(struct pci_controller *host);
---- a/arch/powerpc/kernel/pci-common.c
-+++ b/arch/powerpc/kernel/pci-common.c
-@@ -845,6 +845,14 @@ int pci_proc_domain(struct pci_bus *bus)
- 	return 1;
+--- a/arch/powerpc/platforms/pseries/msi.c
++++ b/arch/powerpc/platforms/pseries/msi.c
+@@ -394,6 +394,23 @@ static int check_msix_entries(struct pci
+ 	return 0;
  }
  
-+int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge)
++static void rtas_hack_32bit_msi_gen2(struct pci_dev *pdev)
 +{
-+	if (ppc_md.pcibios_root_bridge_prepare)
-+		return ppc_md.pcibios_root_bridge_prepare(bridge);
++	u32 addr_hi, addr_lo;
 +
-+	return 0;
++	/*
++	 * We should only get in here for IODA1 configs. This is based on the
++	 * fact that we using RTAS for MSIs, we don't have the 32 bit MSI RTAS
++	 * support, and we are in a PCIe Gen2 slot.
++	 */
++	dev_info(&pdev->dev,
++		 "rtas_msi: No 32 bit MSI firmware support, forcing 32 bit MSI\n");
++	pci_read_config_dword(pdev, pdev->msi_cap + PCI_MSI_ADDRESS_HI, &addr_hi);
++	addr_lo = 0xffff0000 | ((addr_hi >> (48 - 32)) << 4);
++	pci_write_config_dword(pdev, pdev->msi_cap + PCI_MSI_ADDRESS_LO, addr_lo);
++	pci_write_config_dword(pdev, pdev->msi_cap + PCI_MSI_ADDRESS_HI, 0);
 +}
 +
- /* This header fixup will do the resource fixup for all devices as they are
-  * probed, but not for bridge ranges
-  */
---- a/arch/powerpc/platforms/pseries/pci.c
-+++ b/arch/powerpc/platforms/pseries/pci.c
-@@ -108,3 +108,56 @@ static void fixup_winbond_82c105(struct
- }
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_WINBOND, PCI_DEVICE_ID_WINBOND_82C105,
- 			 fixup_winbond_82c105);
-+
-+int pseries_root_bridge_prepare(struct pci_host_bridge *bridge)
-+{
-+	struct device_node *dn, *pdn;
-+	struct pci_bus *bus;
-+	const uint32_t *pcie_link_speed_stats;
-+
-+	bus = bridge->bus;
-+
-+	dn = pcibios_get_phb_of_node(bus);
-+	if (!dn)
-+		return 0;
-+
-+	for (pdn = dn; pdn != NULL; pdn = of_get_next_parent(pdn)) {
-+		pcie_link_speed_stats = (const uint32_t *) of_get_property(pdn,
-+			"ibm,pcie-link-speed-stats", NULL);
-+		if (pcie_link_speed_stats)
-+			break;
-+	}
-+
-+	of_node_put(pdn);
-+
-+	if (!pcie_link_speed_stats) {
-+		pr_err("no ibm,pcie-link-speed-stats property\n");
-+		return 0;
-+	}
-+
-+	switch (pcie_link_speed_stats[0]) {
-+	case 0x01:
-+		bus->max_bus_speed = PCIE_SPEED_2_5GT;
-+		break;
-+	case 0x02:
-+		bus->max_bus_speed = PCIE_SPEED_5_0GT;
-+		break;
-+	default:
-+		bus->max_bus_speed = PCI_SPEED_UNKNOWN;
-+		break;
-+	}
-+
-+	switch (pcie_link_speed_stats[1]) {
-+	case 0x01:
-+		bus->cur_bus_speed = PCIE_SPEED_2_5GT;
-+		break;
-+	case 0x02:
-+		bus->cur_bus_speed = PCIE_SPEED_5_0GT;
-+		break;
-+	default:
-+		bus->cur_bus_speed = PCI_SPEED_UNKNOWN;
-+		break;
-+	}
-+
-+	return 0;
-+}
---- a/arch/powerpc/platforms/pseries/pseries.h
-+++ b/arch/powerpc/platforms/pseries/pseries.h
-@@ -60,4 +60,8 @@ extern int dlpar_detach_node(struct devi
- /* Snooze Delay, pseries_idle */
- DECLARE_PER_CPU(long, smt_snooze_delay);
+ static int rtas_setup_msi_irqs(struct pci_dev *pdev, int nvec_in, int type)
+ {
+ 	struct pci_dn *pdn;
+@@ -401,6 +418,7 @@ static int rtas_setup_msi_irqs(struct pc
+ 	struct msi_desc *entry;
+ 	struct msi_msg msg;
+ 	int nvec = nvec_in;
++	int use_32bit_msi_hack = 0;
  
-+/* PCI root bridge prepare function override for pseries */
-+struct pci_host_bridge;
-+int pseries_root_bridge_prepare(struct pci_host_bridge *bridge);
+ 	pdn = get_pdn(pdev);
+ 	if (!pdn)
+@@ -428,15 +446,31 @@ static int rtas_setup_msi_irqs(struct pc
+ 	 */
+ again:
+ 	if (type == PCI_CAP_ID_MSI) {
+-		if (pdn->force_32bit_msi)
++		if (pdn->force_32bit_msi) {
+ 			rc = rtas_change_msi(pdn, RTAS_CHANGE_32MSI_FN, nvec);
+-		else
++			if (rc < 0) {
++				/*
++				 * We only want to run the 32 bit MSI hack below if
++				 * the max bus speed is Gen2 speed
++				 */
++				if (pdev->bus->max_bus_speed != PCIE_SPEED_5_0GT)
++					return rc;
 +
- #endif /* _PSERIES_PSERIES_H */
---- a/arch/powerpc/platforms/pseries/setup.c
-+++ b/arch/powerpc/platforms/pseries/setup.c
-@@ -466,6 +466,8 @@ static void __init pSeries_setup_arch(vo
- 	else
- 		ppc_md.enable_pmcs = power4_enable_pmcs;
++				use_32bit_msi_hack = 1;
++			}
++		} else
++			rc = -1;
++
++		if (rc < 0)
+ 			rc = rtas_change_msi(pdn, RTAS_CHANGE_MSI_FN, nvec);
  
-+	ppc_md.pcibios_root_bridge_prepare = pseries_root_bridge_prepare;
+-		if (rc < 0 && !pdn->force_32bit_msi) {
++		if (rc < 0) {
+ 			pr_debug("rtas_msi: trying the old firmware call.\n");
+ 			rc = rtas_change_msi(pdn, RTAS_CHANGE_FN, nvec);
+ 		}
 +
- 	if (firmware_has_feature(FW_FEATURE_SET_MODE)) {
- 		long rc;
- 		if ((rc = pSeries_enable_reloc_on_exc()) != H_SUCCESS) {
++		if (use_32bit_msi_hack && rc > 0)
++			rtas_hack_32bit_msi_gen2(pdev);
+ 	} else
+ 		rc = rtas_change_msi(pdn, RTAS_CHANGE_MSIX_FN, nvec);
+ 
 
 
