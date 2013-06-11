@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab3FKBmg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jun 2013 21:42:36 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:7476 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754345Ab3FKBmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jun 2013 21:42:35 -0400
-X-IronPort-AV: E=Sophos;i="4.87,841,1363104000"; 
-   d="scan'208";a="7517084"
-Message-ID: <51B67FE4.4060103@cn.fujitsu.com>
-Date: Tue, 11 Jun 2013 09:39:48 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1754552Ab3FKBvw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jun 2013 21:51:52 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49069 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753507Ab3FKBvv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jun 2013 21:51:51 -0400
+Date: Tue, 11 Jun 2013 02:51:49 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: Re: binfmt_misc broken
+Message-ID: <20130611015149.GB4165@ZenIV.linux.org.uk>
+References: <Pine.LNX.4.64.1306102137560.3200@boston.corp.fedex.com>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Linux-Scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND] scsi: Introduce a help function local_time_seconds()
- to simplify the getting time stamp operation
-References: <51B53293.7090100@cn.fujitsu.com> <1370886422.1936.27.camel@dabdike>
-In-Reply-To: <1370886422.1936.27.camel@dabdike>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/11 09:40:41,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/11 09:40:42,
-	Serialize complete at 2013/06/11 09:40:42
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-15
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1306102137560.3200@boston.corp.fedex.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2013 01:47 AM, James Bottomley wrote:
-
-> On Mon, 2013-06-10 at 09:57 +0800, Gu Zheng wrote:
->> diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
->> index 66216c1..f3377ca 100644
->> --- a/include/scsi/scsi.h
->> +++ b/include/scsi/scsi.h
->> @@ -574,4 +574,13 @@ static inline __u32 scsi_to_u32(__u8 *ptr)
->>         return (ptr[0]<<24) + (ptr[1]<<16) + (ptr[2]<<8) + ptr[3];
->>  }
->>  
->> +/*
->> + * Convert system time in UTC to local time seconds.
->> + */
->> +static inline u32 local_time_seconds(void)
->> +{
->> +       struct timeval utc;
->> +       do_gettimeofday(&utc);
->> +       return (u32)(utc.tv_sec - (sys_tz.tz_minuteswest * 60));
->> +}
->>  #endif /* _SCSI_SCSI_H */
-> 
-> This doesn't belong in SCSI.
-> 
-> It's not a common pattern, so just leave it open coded in the 3ware
-> drivers.  If there's a need for it to be a common pattern, John Stultz
-> will add it to the timer code, but at the moment, he doesn't seem to see
-> the need.
-
-Hi James,
-OK...Thanks for your reminder.
-As you mentioned in an old thread, what about using "jiffies to seconds" to replace
-the existed timestamps?
-
-Best regards,
-Gu
-
-
-
-> 
-> James
+On Mon, Jun 10, 2013 at 09:52:44PM +0800, Jeff Chua wrote:
 > 
 > 
+> According to Documentation/binfmt_misc.txt, the 'magic' and 'mask'
+> can be set by echoing it to /proc/sys/fs/binfmt_misc/register.
 > 
+> Here's the problem I can across while working on ARM.
+> 
+> # echo ':arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-arm-static:'
+> >/proc/sys/fs/binfmt_misc/register
+> 
+> # cat /proc/sys/fs/binfmt_misc/arm
+> wrong ...
+> magic 7f454c46010101
+> mask ffffffffffffff
+> 
+> right ...
+> magic 7f454c4601010100000000000000000002002800
+> mask ffffffffffffff00fffffffffffffffffeffffff
+> 
+> 
+> binfmt_misc is truncating e->size, so once ARM's magic is loaded,
+> 32-bit x86 can no longer run.
+> 
+> Here's a patch for it. It's looking for the delimiter ":" instead of
+> \0. Now 32-bit x86 can run concurrent while qemu-arm is handling
+> ARM's magic.
 
+Patch is complete BS and I really wonder what kernel have you observed that bug on -
+with mainline on amd64 your example yields
+root@kvm-amd64:~# cat /proc/sys/fs/binfmt_misc/arm 
+enabled
+interpreter /usr/bin/qemu-arm-static
+flags: 
+offset 0
+magic 7f454c4601010100000000000000000002002800
+mask ffffffffffffff00fffffffffffffffffeffffff
 
+A reproducer, please...  As for the memcmp() Linus has suggested - it's !Magic case, i.e.
+what we are comparing there is not the file contents, it's the extension.  IOW, strcmp()
+is the right thing to use there - pathnames do not contain NULs in the middle...
