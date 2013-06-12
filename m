@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932123Ab3FLROb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 13:14:31 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:15390 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757451Ab3FLRO3 (ORCPT
+	id S932075Ab3FLROq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 13:14:46 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44766 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932129Ab3FLROn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 13:14:29 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18MNv1nUGAC8x7FNDHbkhAR
-Date: Wed, 12 Jun 2013 10:14:24 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Afzal Mohammed <afzal@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
-Subject: Re: [PATCH v2 07/14] ARM: OMAP2+: AM43x: early init
-Message-ID: <20130612171424.GN8164@atomide.com>
-References: <cover.1369658705.git.afzal@ti.com>
- <82f3b2b672a45b971fd0bb34366a6af368015db0.1369658705.git.afzal@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <82f3b2b672a45b971fd0bb34366a6af368015db0.1369658705.git.afzal@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 12 Jun 2013 13:14:43 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 19/21] input: ti_am335x_tsc: return IRQ_NONE if there was no IRQ for us
+Date: Wed, 12 Jun 2013 18:58:20 +0200
+Message-Id: <1371056302-12714-20-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1371056302-12714-1-git-send-email-bigeasy@linutronix.de>
+References: <1371056302-12714-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Afzal Mohammed <afzal@ti.com> [130527 07:42]:
-> --- a/arch/arm/mach-omap2/io.c
-> +++ b/arch/arm/mach-omap2/io.c
-> @@ -586,6 +586,20 @@ void __init am33xx_init_early(void)
->  }
->  #endif
->  
-> +#ifdef CONFIG_SOC_AM43XX
-> +void __init am43xx_init_early(void)
-> +{
-> +	omap2_set_globals_tap(AM335X_CLASS,
-> +			      AM33XX_L4_WK_IO_ADDRESS(AM33XX_TAP_BASE));
-> +	omap2_set_globals_control(AM33XX_L4_WK_IO_ADDRESS(AM33XX_CTRL_BASE),
-> +				  NULL);
-> +	omap2_set_globals_prm(AM33XX_L4_WK_IO_ADDRESS(AM43XX_PRCM_BASE));
-> +	omap2_set_globals_cm(AM33XX_L4_WK_IO_ADDRESS(AM43XX_PRCM_BASE), NULL);
-> +	omap3xxx_check_revision();
-> +	am33xx_check_features();
-> +}
-> +#endif
-> +
->  #ifdef CONFIG_ARCH_OMAP4
->  void __init omap4430_init_early(void)
->  {
+The previous patch ("input/ti_am335x_tsc: ACK the HW_PEN irq in ISR")
+acked the interrupt so we don't freeze if we don't handle an enabled
+interrupt source. The interrupt core has a mechanism for this and to get
+it work one should only say that it handled an interrupt if it is
+actually the case.
 
-I've updated this to remove am33xx_check_features() that we don't
-seem to have in the mainline yet.
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/input/touchscreen/ti_am335x_tsc.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-Tony
+diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
+index 2ba7703..0e9f02a 100644
+--- a/drivers/input/touchscreen/ti_am335x_tsc.c
++++ b/drivers/input/touchscreen/ti_am335x_tsc.c
+@@ -314,10 +314,12 @@ static irqreturn_t titsc_irq(int irq, void *dev)
+ 		titsc_writel(ts_dev, REG_IRQCLR, IRQENB_HW_PEN);
+ 	}
+ 
+-	titsc_writel(ts_dev, REG_IRQSTATUS, irqclr);
+-
+-	am335x_tsc_se_update(ts_dev->mfd_tscadc);
+-	return IRQ_HANDLED;
++	if (irqclr) {
++		titsc_writel(ts_dev, REG_IRQSTATUS, irqclr);
++		am335x_tsc_se_update(ts_dev->mfd_tscadc);
++		return IRQ_HANDLED;
++	}
++	return IRQ_NONE;
+ }
+ 
+ static int titsc_parse_dt(struct platform_device *pdev,
+-- 
+1.7.10.4
+
