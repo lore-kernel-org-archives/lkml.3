@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757605Ab3FLRLa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 13:11:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44688 "EHLO
+	id S1757671Ab3FLRLw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 13:11:52 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44696 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755892Ab3FLRL2 (ORCPT
+	with ESMTP id S1757244Ab3FLRLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 13:11:28 -0400
+	Wed, 12 Jun 2013 13:11:51 -0400
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
@@ -14,12 +14,12 @@ Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
         linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org,
+        linux-input@vger.kernel.org, "Patil, Rachna" <rachna@ti.com>,
         Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 11/21] iio: ti_tscadc: provide datasheet_name and scan_type
-Date: Wed, 12 Jun 2013 18:58:12 +0200
-Message-Id: <1371056302-12714-12-git-send-email-bigeasy@linutronix.de>
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: [PATCH 13/21] arm: am33xx: add TSC/ADC mfd device support
+Date: Wed, 12 Jun 2013 18:58:14 +0200
+Message-Id: <1371056302-12714-14-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1371056302-12714-1-git-send-email-bigeasy@linutronix.de>
 References: <1371056302-12714-1-git-send-email-bigeasy@linutronix.de>
@@ -30,86 +30,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
+From: "Patil, Rachna" <rachna@ti.com>
 
-This patch provides the members "datasheet_name" and scan_type. This is
-the remaining part of the earlier patch where I (bigeasy) removed iio_map
-because it is now supplied by the device tree. It also static names as
-suggested by Jonathan.
+Add support for core multifunctional device along
+with its clients touchscreen and ADC.
 
-Acked-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+Signed-off-by: Patil, Rachna <rachna@ti.com>
 Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 ---
- drivers/iio/adc/ti_am335x_adc.c |   29 ++++++++++++++++++++++++-----
- 1 file changed, 24 insertions(+), 5 deletions(-)
+ arch/arm/boot/dts/am335x-evm.dts |   14 ++++++++++++++
+ arch/arm/boot/dts/am33xx.dtsi    |   18 ++++++++++++++++++
+ 2 files changed, 32 insertions(+)
 
-diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-index 2868c0c..9939810 100644
---- a/drivers/iio/adc/ti_am335x_adc.c
-+++ b/drivers/iio/adc/ti_am335x_adc.c
-@@ -24,6 +24,8 @@
- #include <linux/iio/iio.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
-+#include <linux/iio/machine.h>
-+#include <linux/iio/driver.h>
- 
- #include <linux/mfd/ti_am335x_tscadc.h>
- 
-@@ -84,29 +86,46 @@ static void tiadc_step_config(struct tiadc_device *adc_dev)
- 	am335x_tsc_se_set(adc_dev->mfd_tscadc, step_en);
- }
- 
-+static const char * const chan_name_ain[] = {
-+	"AIN0",
-+	"AIN1",
-+	"AIN2",
-+	"AIN3",
-+	"AIN4",
-+	"AIN5",
-+	"AIN6",
-+	"AIN7",
+diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
+index 0423298..26fea97 100644
+--- a/arch/arm/boot/dts/am335x-evm.dts
++++ b/arch/arm/boot/dts/am335x-evm.dts
+@@ -244,3 +244,17 @@
+ &cpsw_emac1 {
+ 	phy_id = <&davinci_mdio>, <1>;
+ };
++
++&tscadc {
++	status = "okay";
++	tsc {
++		ti,wires = <4>;
++		ti,x-plate-resistance = <200>;
++		ti,coordiante-readouts = <5>;
++		ti,wire-config = <0x00 0x11 0x22 0x33>;
++	};
++
++	adc {
++		ti,adc-channels = <4>;
++	};
 +};
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index 1460d9b..4ad7797 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -404,6 +404,24 @@
+ 			ti,hwmods = "wkup_m3";
+ 		};
+ 
++		tscadc: tscadc@44e0d000 {
++			compatible = "ti,am3359-tscadc";
++			reg = <0x44e0d000 0x1000>;
++			interrupt-parent = <&intc>;
++			interrupts = <16>;
++			ti,hwmods = "adc_tsc";
++			status = "disabled";
 +
- static int tiadc_channel_init(struct iio_dev *indio_dev, int channels)
- {
-+	struct tiadc_device *adc_dev = iio_priv(indio_dev);
- 	struct iio_chan_spec *chan_array;
-+	struct iio_chan_spec *chan;
- 	int i;
- 
- 	indio_dev->num_channels = channels;
--	chan_array = kcalloc(indio_dev->num_channels,
-+	chan_array = kcalloc(channels,
- 			sizeof(struct iio_chan_spec), GFP_KERNEL);
--
- 	if (chan_array == NULL)
- 		return -ENOMEM;
- 
--	for (i = 0; i < (indio_dev->num_channels); i++) {
--		struct iio_chan_spec *chan = chan_array + i;
-+	chan = chan_array;
-+	for (i = 0; i < channels; i++, chan++) {
++			tsc {
++				compatible = "ti,am3359-tsc";
++			};
++			am335x_adc: adc {
++				#io-channel-cells = <1>;
++				compatible = "ti,am3359-adc";
++			};
 +
- 		chan->type = IIO_VOLTAGE;
- 		chan->indexed = 1;
- 		chan->channel = i;
- 		chan->info_mask_separate = BIT(IIO_CHAN_INFO_RAW);
-+		chan->datasheet_name = chan_name_ain[i];
-+		chan->scan_type.sign = 'u';
-+		chan->scan_type.realbits = 12;
-+		chan->scan_type.storagebits = 32;
- 	}
- 
- 	indio_dev->channels = chan_array;
- 
--	return indio_dev->num_channels;
-+	return 0;
- }
- 
- static void tiadc_channels_remove(struct iio_dev *indio_dev)
++		};
++
+ 		gpmc: gpmc@50000000 {
+ 			compatible = "ti,am3352-gpmc";
+ 			ti,hwmods = "gpmc";
 -- 
 1.7.10.4
 
