@@ -1,90 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757656Ab3FLR3G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 13:29:06 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:42953 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757278Ab3FLR3D (ORCPT
+	id S1757754Ab3FLR3W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 13:29:22 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:61797 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757699Ab3FLR3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 13:29:03 -0400
+	Wed, 12 Jun 2013 13:29:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130612134504.GG2918@phenom.dumpdata.com>
-References: <20130610202456.GA17822@phenom.dumpdata.com> <1370898399-20968-1-git-send-email-konrad.wilk@oracle.com>
- <1370898399-20968-2-git-send-email-konrad.wilk@oracle.com>
- <51B743EA.5020800@eu.citrix.com> <51B74B77.1000806@oracle.com>
- <51B74DA9.7060509@eu.citrix.com> <20130612134504.GG2918@phenom.dumpdata.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 12 Jun 2013 11:28:41 -0600
-Message-ID: <CAErSpo7zw3MSNzdjRcZuy44uOGT_GZ8T4vaqgkd1fvWG4fadTA@mail.gmail.com>
-Subject: Re: [PATCH] xen/pci: Deal with toolstack missing an 'XenbusStateClosing'.
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: George Dunlap <george.dunlap@eu.citrix.com>,
-        xen-devel <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
+In-Reply-To: <20130612160816.GA13813@udknight>
+References: <20130612160816.GA13813@udknight>
+Date: Wed, 12 Jun 2013 10:29:17 -0700
+X-Google-Sender-Auth: RYcNZwugIeNr7SAfnYOWuu90hL4
+Message-ID: <CAE9FiQUTwwRUuFicCFvdZZ1_9ytkaexK939zKmYyM31BMaiuZw@mail.gmail.com>
+Subject: Re: [PATCH]memblock: Fix potential section mismatch problem
+From: Yinghai Lu <yinghai@kernel.org>
+To: Wang YanQing <udknight@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>, Sam Ravnborg <sam@ravnborg.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 7:45 AM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> On Tue, Jun 11, 2013 at 05:17:45PM +0100, George Dunlap wrote:
->> On 06/11/2013 05:08 PM, konrad wilk wrote:
->> >
->> >On 6/11/2013 11:36 AM, George Dunlap wrote:
->> >>On 06/10/2013 10:06 PM, Konrad Rzeszutek Wilk wrote:
->> >>>There are two tool-stack that can instruct the Xen PCI frontend
->> >>>and backend to change states: 'xm' (Python code with a daemon),
->> >>>and 'xl' (C library - does not keep state changes).
->> >>>
->> >>>With the 'xm', the path to disconnect a PCI device (xm pci-detach
->> >>><guest> <BDF>)is:
->> >>>
->> >>>4(Connected)->7(Reconfiguring*)-> 8(Reconfigured)->
->> >>>4(Connected)->5(Closing*).
->> >>>
->> >>>The * is for states that the tool-stack sets. For 'xl', it is similar:
->> >>>
->> >>>4(Connected)->7(Reconfiguring*)-> 8(Reconfigured)-> 4(Connected)
->> >>>
->> >>>Both of them also tear down the XenBus structure, so the backend
->> >>>state ends up going in the 3(Initialised) and calls
->> >>>pcifront_xenbus_remove.
->> >>
->> >>So I looked a little bit into this; there are actually two different
->> >>states that happen as part of this handshake.  In order to disonnect a
->> >>*device*, xl signals using the *bus* state, like this:
->> >>* Wait for the *bus* to be in state 4(Connected)
->> >>* Set the *device* state to 5(Closing)
->> >>* Set the *bus* state to 7(Reconfiguring)
->> >>* Wait for the *bus* state to return to 4(Connected)
->> >>
->> >>So are all of these states you see the *bus* state?  And why would you
->> >>disconnect the whole pci bus if you're only removing one device?
->> >
->> >Correct. The stats I enumerated are *bus* states. Not per-device states.
->> >I presume (and I hadn't checked xm) that Xend has some logic to only
->> >disconnect the bus if all of the PCI devices have been disconnected. In
->> >'xl' it does not do that.
->> >
->> >The testing I did was just with one PCI device.
->>
->> Ah, OK -- I see now.  The problem is that the code in the Linux side
->> didn't know about the whole "4->7->8->4" thing to unplug a device.
->> In all likelihood, if you had used xm with two devices (so that the
->> bus didn't get disconnected), then you would have run across the
->> same error.
->>
->> So at least part of the problem *is* a bug in Linux.
+On Wed, Jun 12, 2013 at 9:08 AM, Wang YanQing <udknight@gmail.com> wrote:
 >
-> Good! Bjorn, would you be OK Ack-ing the patch I sent (attached here
-> for reference) or putting it in your queue for Linus?
+> This patch convert __init to __init_memblock
+> for functions which make reference to memblock variable
+> with attribute __meminitdata.
+
+for which arch?
+
+for x86: __init_memblock is __init, so that is not problem.
+
+for other arches like powerpc and sparc etc, __init_memblock is " "
+
+so you need cc  powerpc, and sparc ...
+
 >
-> My plan would be to send it to Linus in the 3.11 merge window.
-
-Sure; this is your baby :)  Why don't you handle it via your tree,
-since it's more related to xen than any PCI core stuff.
-
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+> Signed-off-by: Wang YanQing <udknight@gmail.com>
+> ---
+>  mm/memblock.c | 24 ++++++++++++------------
+>  1 file changed, 12 insertions(+), 12 deletions(-)
+>
+> diff --git a/mm/memblock.c b/mm/memblock.c
+> index c5fad93..ee74c69 100644
+> --- a/mm/memblock.c
+> +++ b/mm/memblock.c
+> @@ -766,7 +766,7 @@ int __init_memblock memblock_set_node(phys_addr_t base, phys_addr_t size,
+>  }
+>  #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+>
+> -static phys_addr_t __init memblock_alloc_base_nid(phys_addr_t size,
+> +static phys_addr_t __init_memblock memblock_alloc_base_nid(phys_addr_t size,
+>                                         phys_addr_t align, phys_addr_t max_addr,
+>                                         int nid)
+>  {
+> @@ -785,17 +785,17 @@ static phys_addr_t __init memblock_alloc_base_nid(phys_addr_t size,
+>         return 0;
+>  }
+>
+> -phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int nid)
+> +phys_addr_t __init_memblock memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int nid)
+>  {
+>         return memblock_alloc_base_nid(size, align, MEMBLOCK_ALLOC_ACCESSIBLE, nid);
+>  }
+>
+> -phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
+> +phys_addr_t __init_memblock __memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
+>  {
+>         return memblock_alloc_base_nid(size, align, max_addr, MAX_NUMNODES);
+>  }
+>
+> -phys_addr_t __init memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
+> +phys_addr_t __init_memblock memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
+>  {
+>         phys_addr_t alloc;
+>
+> @@ -808,12 +808,12 @@ phys_addr_t __init memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys
+>         return alloc;
+>  }
+>
+> -phys_addr_t __init memblock_alloc(phys_addr_t size, phys_addr_t align)
+> +phys_addr_t __init_memblock memblock_alloc(phys_addr_t size, phys_addr_t align)
+>  {
+>         return memblock_alloc_base(size, align, MEMBLOCK_ALLOC_ACCESSIBLE);
+>  }
+>
+> -phys_addr_t __init memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align, int nid)
+> +phys_addr_t __init_memblock memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align, int nid)
+>  {
+>         phys_addr_t res = memblock_alloc_nid(size, align, nid);
+>
+> @@ -827,12 +827,12 @@ phys_addr_t __init memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align, i
+>   * Remaining API functions
+>   */
+>
+> -phys_addr_t __init memblock_phys_mem_size(void)
+> +phys_addr_t __init_memblock memblock_phys_mem_size(void)
+>  {
+>         return memblock.memory.total_size;
+>  }
+>
+> -phys_addr_t __init memblock_mem_size(unsigned long limit_pfn)
+> +phys_addr_t __init_memblock memblock_mem_size(unsigned long limit_pfn)
+>  {
+>         unsigned long pages = 0;
+>         struct memblock_region *r;
+> @@ -862,7 +862,7 @@ phys_addr_t __init_memblock memblock_end_of_DRAM(void)
+>         return (memblock.memory.regions[idx].base + memblock.memory.regions[idx].size);
+>  }
+>
+> -void __init memblock_enforce_memory_limit(phys_addr_t limit)
+> +void __init_memblock memblock_enforce_memory_limit(phys_addr_t limit)
+>  {
+>         unsigned long i;
+>         phys_addr_t max_addr = (phys_addr_t)ULLONG_MAX;
+> @@ -904,7 +904,7 @@ static int __init_memblock memblock_search(struct memblock_type *type, phys_addr
+>         return -1;
+>  }
+>
+> -int __init memblock_is_reserved(phys_addr_t addr)
+> +int __init_memblock memblock_is_reserved(phys_addr_t addr)
+>  {
+>         return memblock_search(&memblock.reserved, addr) != -1;
+>  }
+> @@ -1016,12 +1016,12 @@ void __init_memblock __memblock_dump_all(void)
+>         memblock_dump(&memblock.reserved, "reserved");
+>  }
+>
+> -void __init memblock_allow_resize(void)
+> +void __init_memblock memblock_allow_resize(void)
+>  {
+>         memblock_can_resize = 1;
+>  }
+>
+> -static int __init early_memblock(char *p)
+> +static int __init_memblock early_memblock(char *p)
+>  {
+>         if (p && strstr(p, "debug"))
+>                 memblock_debug = 1;
+> --
+> 1.7.12.4.dirty
