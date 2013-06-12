@@ -1,88 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab3FLOzx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 10:55:53 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:37250 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753106Ab3FLOzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 10:55:52 -0400
-Message-ID: <51B88BD0.805@imgtec.com>
-Date: Wed, 12 Jun 2013 15:55:12 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Patrice Chotard <patrice.chotard.st@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] pinctrl: add function to parse generic pinconfig
- properties from a dt node
-References: <201306102139.32444.heiko@sntech.de> <201306102140.29918.heiko@sntech.de>
-In-Reply-To: <201306102140.29918.heiko@sntech.de>
-X-Enigmail-Version: 1.5.1
+	id S1756429Ab3FLO4m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 10:56:42 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:18251 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753106Ab3FLO4k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 10:56:40 -0400
+Message-ID: <1371048996.1894.15.camel@bwh-desktop.uk.level5networks.com>
+Subject: Re: [PATCH 0/2] fix kernel crash with macvtap on top of LRO
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: David Miller <davem@davemloft.net>, <eric.dumazet@gmail.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <rusty@rustcorp.com.au>, <virtualization@lists.linux-foundation.org>
+Date: Wed, 12 Jun 2013 15:56:36 +0100
+In-Reply-To: <20130610070710.GA673@redhat.com>
+References: <1360193660.32217.39.camel@deadeye.wl.decadent.org.uk>
+	 <1360207111.28557.47.camel@edumazet-glaptop>
+	 <1360254046.3605.8.camel@bwh-desktop.uk.solarflarecom.com>
+	 <20130207.131420.1211188723341167971.davem@davemloft.net>
+	 <20130610070710.GA673@redhat.com>
+Organization: Solarflare
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_06_12_15_55_49
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19936.004
+X-TM-AS-Result: No--30.298100-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heiko,
-
-On 10/06/13 20:40, Heiko Stübner wrote:
-> pinconf_generic_parse_dt_config() takes a node as input and generates an
-> array of generic pinconfig values from the properties of this node.
+On Mon, 2013-06-10 at 10:07 +0300, Michael S. Tsirkin wrote:
+> On Thu, Feb 07, 2013 at 01:14:20PM -0500, David Miller wrote:
+> > From: Ben Hutchings <bhutchings@solarflare.com>
+> > Date: Thu, 7 Feb 2013 16:20:46 +0000
+> > 
+> > > If the consensus is still that we must preserve packets exactly (aside
+> > > from the usual modifications by IP routers) then LRO should be disabled
+> > > on all devices for which forwarding is enabled.
+> > 
+> > I believe this is still undoubtedly the consensus.
 > 
-> As I couldn't find a mechanism to count the number of properties of a node
-> the function uses internally an array to accept one of parameter and copies
-> the real present options to a smaller variable at its end.
+> With virtio we are getting packets from a linux host,
+> so we could thinkably preserve packets exactly
+> even with LRO. I am guessing other hardware could be
+> doing this as well.
 > 
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> I am not sure what information would need to be preserved -
+> could someone help clarify please?
 
-<snip>
+Some LRO implementations may not preserve:
 
-> @@ -139,3 +140,83 @@ void pinconf_generic_dump_config(struct pinctrl_dev *pctldev,
->  }
->  EXPORT_SYMBOL_GPL(pinconf_generic_dump_config);
->  #endif
-> +
-> +#ifdef CONFIG_OF
-> +struct pinconf_generic_dt_params {
-> +	const char * const property;
-> +	enum pin_config_param param;
-> +	u32 default_value;
-> +};
-> +
-> +static struct pinconf_generic_dt_params dt_params[] = {
-> +	{ "bias-disable", PIN_CONFIG_BIAS_DISABLE, 0 },
-> +	{ "bias-high-impedance", PIN_CONFIG_BIAS_HIGH_IMPEDANCE, 0 },
-> +	{ "bias-bus-hold", PIN_CONFIG_BIAS_BUS_HOLD, 0 },
-> +	{ "bias-pull-up", PIN_CONFIG_BIAS_PULL_UP, 0 },
-> +	{ "bias-pull-down", PIN_CONFIG_BIAS_PULL_DOWN, 0 },
-> +	{ "bias-pull-pin-default", PIN_CONFIG_BIAS_PULL_PIN_DEFAULT, 0 },
-> +	{ "drive-push-pull", PIN_CONFIG_DRIVE_PUSH_PULL, 0 },
-> +	{ "drive-open-drain", PIN_CONFIG_DRIVE_OPEN_DRAIN, 0 },
-> +	{ "drive-open-source", PIN_CONFIG_DRIVE_OPEN_SOURCE, 0 },
-> +	{ "drive-strength", PIN_CONFIG_DRIVE_STRENGTH, 0 },
-> +	{ "input-schmitt-enable", PIN_CONFIG_INPUT_SCHMITT_ENABLE, 1 },
-> +	{ "input-schmitt-disable", PIN_CONFIG_INPUT_SCHMITT_ENABLE, 0 },
-> +	{ "input-schmitt", PIN_CONFIG_INPUT_SCHMITT, 0 },
-> +	{ "input-debounce", PIN_CONFIG_INPUT_DEBOUNCE, 0 },
-> +	{ "power-source", PIN_CONFIG_POWER_SOURCE, 0 },
-> +	{ "slew-rate", PIN_CONFIG_SLEW_RATE, 0 },
-> +	{ "low-power-mode", PIN_CONFIG_LOW_POWER_MODE, 0 },
-> +	{ "output-low", PIN_CONFIG_OUTPUT, 0, },
-> +	{ "output-high", PIN_CONFIG_OUTPUT, 1, },
+- Packet boundaries
+  - TSO/GSO produces packets all the same size, except possibly for the
+    last one.  GRO therefore flushes a flow after merging a packet with
+    a different segment size.
+- IPv4 TTL, IPv6 hop-limit, TCP timestamp
+  - TSO/GSO will put the same values in all packets.  GRO flushes a flow
+    if they change.
+- IPv4 fragment ID
+  - TSO/GSO produces consecutive fragment IDs.  GRO flushes a flow
+    if it sees a non-consecutive fragment ID.
+- MAC header, IPv4 TOS, IPv6 traffic class
+  - Should be the same for all packets in a flow.  GRO actually checks
+    and flushes a flow if they change.
 
-shouldn't half of these default to 1 instead of 0? i.e. it's much nicer
-for the lone flag "bias-pull-up" to enable pull up rather than disable
-it (you even do this in the DT example in the bindings doc).
+Ben.
 
-Otherwise the patch looks good to me (though I haven't tried it yet).
-
-Cheers
-James
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
