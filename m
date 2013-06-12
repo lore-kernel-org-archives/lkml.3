@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932305Ab3FLXTU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 19:19:20 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:35480 "EHLO hydra.sisk.pl"
+	id S932289Ab3FLXTT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 19:19:19 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:35482 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758160Ab3FLXS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932206Ab3FLXS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Jun 2013 19:18:59 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, "Luck, Tony" <tony.luck@intel.com>,
         Toshi Kani <toshi.kani@hp.com>, Aaron Lu <aaron.lu@intel.com>
-Subject: [PATCH 1/5] ACPI / scan: Do not bind ACPI drivers to objects with scan handlers
-Date: Thu, 13 Jun 2013 01:23:48 +0200
-Message-ID: <2446620.VEz51x3fQo@vostro.rjw.lan>
+Subject: [PATCH 0/5] ACPI / scan: Make it possible to use the container hotplug with other scan handlers
+Date: Thu, 13 Jun 2013 01:23:01 +0200
+Message-ID: <1417592.vuSG0cUIGo@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1417592.vuSG0cUIGo@vostro.rjw.lan>
-References: <1417592.vuSG0cUIGo@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -23,105 +21,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hi All,
 
-ACPI drivers generally should not be bound to device objects having
-scan handlers attatched to them.
+It turns out that some BIOSes add container device IDs as _CIDs to device
+object that in principle may be matched against the other scan handlers (or
+ACPI drivers, but that's not a problem, because the container scan handler
+can co-exist with an ACPI driver).  That's why our recent fix for an issue
+related to the ACPI video driver had to be reverted right before -rc5.
 
-However, there is one exception which is the container scan handler.
-Namely, it turns out that some BIOSes (on ia64 HP rx2600 in
-particular) put container device IDs into the same objects along with
-some other more specific ones which makes those device objects match
-the container scan handler as well as some other scan handlers or
-ACPI drivers.  Fortunately, though, the container scan handler is
-only needed for hotplug to work and it doesn't actually do anything
-to the device objects in question, so it is really OK to have both
-the container scan handler and something else attached to the same
-device object at the same time.
+Although I submitted an alternative fix for that bug, I think the problem
+with the container scan handler possibly matching devices already having
+some other scan handlers attached needs addressing, because we may need to
+use the container hotplug profile for those devices.  The following patch
+series is supposed to address it.
 
-Following that, make acpi_device_probe() fail with -EINVAL if the
-device object being probed has an ACPI scan handler that is not the
-container scan handler attached to it.
+[1/5] ACPI / scan: Do not bind ACPI drivers to objects with scan handlers
+   (this version shouldn't break the Tony's IA64 HP box the previous one broke)
+[2/5] ACPI / scan: Separate hotplug profiles from scan handlers
+[3/5] ACPI / scan: Add hotplug profile pointer to struct acpi_device
+[4/5] ACPI / scan: Use container hotplug profile for matching device objects
+[5/5] ACPI / ia64 / sba_iommu: Use ACPI scan handler for discovery
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/container.c |    5 +++--
- drivers/acpi/internal.h  |   10 ++++++++++
- drivers/acpi/scan.c      |    4 ++++
- drivers/acpi/video.c     |    3 ---
- 4 files changed, 17 insertions(+), 5 deletions(-)
+Patches [1-4/5] were run on my Toshiba test box and didn't break it, but it
+really doesn't do any ACPI hotplug notifications.
 
-Index: linux-pm/drivers/acpi/container.c
-===================================================================
---- linux-pm.orig/drivers/acpi/container.c
-+++ linux-pm/drivers/acpi/container.c
-@@ -51,7 +51,7 @@ static int container_device_attach(struc
- 	return 1;
- }
- 
--static struct acpi_scan_handler container_handler = {
-+struct acpi_scan_handler container_scan_handler = {
- 	.ids = container_device_ids,
- 	.attach = container_device_attach,
- 	.hotplug = {
-@@ -62,5 +62,6 @@ static struct acpi_scan_handler containe
- 
- void __init acpi_container_init(void)
- {
--	acpi_scan_add_handler_with_hotplug(&container_handler, "container");
-+	acpi_scan_add_handler_with_hotplug(&container_scan_handler,
-+					   "container");
- }
-Index: linux-pm/drivers/acpi/internal.h
-===================================================================
---- linux-pm.orig/drivers/acpi/internal.h
-+++ linux-pm/drivers/acpi/internal.h
-@@ -37,8 +37,18 @@ void acpi_processor_init(void);
- void acpi_platform_init(void);
- int acpi_sysfs_init(void);
- #ifdef CONFIG_ACPI_CONTAINER
-+extern struct acpi_scan_handler container_scan_handler;
-+
-+static inline struct acpi_scan_handler *acpi_container_scan_handler(void)
-+{
-+	return &container_scan_handler;
-+}
- void acpi_container_init(void);
- #else
-+static inline struct acpi_scan_handler *acpi_container_scan_handler(void)
-+{
-+	return NULL;
-+}
- static inline void acpi_container_init(void) {}
- #endif
- #ifdef CONFIG_ACPI_HOTPLUG_MEMORY
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -939,6 +939,10 @@ static int acpi_device_probe(struct devi
- 	struct acpi_driver *acpi_drv = to_acpi_driver(dev->driver);
- 	int ret;
- 
-+	if (acpi_dev->handler
-+	    && acpi_dev->handler != acpi_container_scan_handler())
-+		return -EINVAL;
-+
- 	if (!acpi_drv->ops.add)
- 		return -ENOSYS;
- 
-Index: linux-pm/drivers/acpi/video.c
-===================================================================
---- linux-pm.orig/drivers/acpi/video.c
-+++ linux-pm/drivers/acpi/video.c
-@@ -1722,9 +1722,6 @@ static int acpi_video_bus_add(struct acp
- 	int error;
- 	acpi_status status;
- 
--	if (device->handler)
--		return -EINVAL;
--
- 	status = acpi_walk_namespace(ACPI_TYPE_DEVICE,
- 				device->parent->handle, 1,
- 				acpi_video_bus_match, NULL,
+Patch [5/5] is kind of additional, but it wouldn't work correctly without the
+previous ones (to be honest, I haven't tried to compile it yet, but here it
+goes for completness).
 
+The patches are against the linux-next branch of the linux-pm.git tree.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
