@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab3FLNH0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 09:07:26 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8047 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379Ab3FLNHZ (ORCPT
+	id S1753561Ab3FLNKR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 09:10:17 -0400
+Received: from mail.advaoptical.com ([91.217.199.15]:56223 "EHLO
+	mail.advaoptical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091Ab3FLNKQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 09:07:25 -0400
-X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=ycZEzXImLNUA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=3pk_6Pr9cc8A:10 a=VMOMtQ9TVZxcMBCPvnYA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1371042443.9844.255.camel@gandalf.local.home>
-Subject: Re: [PATCH] spin_unlock*_no_resched()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Kirill Tkhai <tkhai@yandex.ru>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, tglx@linutronix.de
-Date: Wed, 12 Jun 2013 09:07:23 -0400
-In-Reply-To: <20130612121532.GD3204@twins.programming.kicks-ass.net>
-References: <1022041371038807@web30d.yandex.ru>
-	 <20130612121532.GD3204@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	Wed, 12 Jun 2013 09:10:16 -0400
+X-Greylist: delayed 1281 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Jun 2013 09:10:15 EDT
+Message-ID: <51B8730F.2030606@advaoptical.com>
+Date: Wed, 12 Jun 2013 16:09:35 +0300
+From: Oded Gabbay <ogabbay@advaoptical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Timur Tabi <timur@tabi.org>
+CC: <benh@kernel.crashing.org>, <paulus@samba.org>, <leoli@freescale.com>,
+        <galak@kernel.crashing.org>, <B38951@freescale.com>,
+        <Dongsheng.Wang@freescale.com>, <bigeasy@linutronix.de>,
+        <stef.van.os@prodrive.nl>, <davem@davemloft.net>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>
+Subject: Re: [PATCH] MDIO: FSL_PQ_MDIO: Fix bug on incorrect offset of tbipa
+ register
+References: <1371041258-15298-1-git-send-email-ogabbay@advaoptical.com> <51B871CB.1090808@tabi.org>
+In-Reply-To: <51B871CB.1090808@tabi.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.179.55]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-06-12_03:2013-06-12,2013-06-12,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-12 at 14:15 +0200, Peter Zijlstra wrote:
+Oded Gabbay wrote:
+>> Note: This patch may break MDIO functionallity of some old 
+>> Freescale's SoC
+>> until Freescale will fix their device tree files. Basically, every 
+>> device tree
+>> which contains an mdio device that is compatible to "fsl,gianfar-tbi" 
+>> should be
+>> examined.
+>
+> On 06/12/2013 04:04 PM, Timur Tabi wrote:
+> I haven't had a chance to review the patch in detail, but I can tell 
+> you that breaking compatibility with older device trees is 
+> unacceptable.  You need to add some code, even if it's an ugly hack, 
+> to support those trees.
+>
+I generally agree with this statement except that without this patch, 
+almost ALL of Freescale's SoC that uses "fsl,gianfar-tbi" are broken, 
+including the older ones. At least this patch fixes some of the device 
+trees. Because I'm not working at Freescale, I have a very limited 
+access to a few SoC which I could test this patch on. I think it is 
+Freescale's responsibility to release a complementary patch to fix the 
+rest of the SoC device trees.
 
-> So I absolutely hate this API because people can (and invariably will)
-> abuse it; much like they did/do preempt_enable_no_resched().
-
-Me too.
-
-> 
-> IIRC Thomas even maps preempt_enable_no_resched() to preempt_enable() in
-> -rt to make sure we don't miss preemption points due to stupidity.
-> 
-> He converted the 'few' sane sites to use schedule_preempt_disabled(). In
-> that vein, does it make sense to introduce schedule_spin_locked()?
-> 
-
-I was thinking the exact same thing when I read this patch. This is a
-strict policy that we should enforce and not let individual developers
-implement. Yes, a schedule_spin_unlock() would work nicely. The API will
-enforce the two to be used together. Otherwise, I can envision seeing
-things like:
-
-	preempt_disable();
-	[...]
-
-	spin_lock(x);
-
-	spin_unlock_no_resched(x);
-
-	[...]
-
-	preempt_enable();
-
-And developers having no idea why the above is broken. Although, I would
-say the above is broken for other reasons, but I was just using that to
-show the craziness such an API would give to us.
-
--- Steve
-
-
-
+Oded
