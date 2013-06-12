@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab3FLIVX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 04:21:23 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:42559 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755819Ab3FLIVU (ORCPT
+	id S1756118Ab3FLIVi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 04:21:38 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:52354 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755423Ab3FLIVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 04:21:20 -0400
+	Wed, 12 Jun 2013 04:21:35 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
@@ -15,10 +15,10 @@ Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
         charles.garcia-tobin@arm.com, arvind.chauhan@arm.com, arnd@arndb.de,
         Viresh Kumar <viresh.kumar@linaro.org>,
-        Eric Miao <eric.y.miao@gmail.com>
-Subject: [PATCH 08/11] cpufreq: pxa: select CPU_FREQ_TABLE
-Date: Wed, 12 Jun 2013 13:45:15 +0530
-Message-Id: <84ae068c277e32cebbf3bf869e89798f88332106.1371022830.git.viresh.kumar@linaro.org>
+        Heiko Stuebner <heiko@sntech.de>
+Subject: [PATCH 09/11] cpufreq: S3C2416/S3C64XX: select CPU_FREQ_TABLE
+Date: Wed, 12 Jun 2013 13:45:16 +0530
+Message-Id: <2bac52af214503f7678288c8a1372915190621da.1371022830.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1371022830.git.viresh.kumar@linaro.org>
 References: <cover.1371022830.git.viresh.kumar@linaro.org>
@@ -31,39 +31,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 CPUFreq driver of this platform uses APIs from freq_table.c and so must select
 CPU_FREQ_TABLE.
 
-Cc: Eric Miao <eric.y.miao@gmail.com>
+Cc: Heiko Stuebner <heiko@sntech.de>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- arch/arm/mach-pxa/Kconfig | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/cpufreq/Kconfig.arm | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/arm/mach-pxa/Kconfig b/arch/arm/mach-pxa/Kconfig
-index 96100db..a842711 100644
---- a/arch/arm/mach-pxa/Kconfig
-+++ b/arch/arm/mach-pxa/Kconfig
-@@ -615,12 +615,14 @@ endmenu
- config PXA25x
- 	bool
- 	select CPU_XSCALE
-+	select CPU_FREQ_TABLE if CPU_FREQ
+diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+index dc26303..d52261b 100644
+--- a/drivers/cpufreq/Kconfig.arm
++++ b/drivers/cpufreq/Kconfig.arm
+@@ -101,6 +101,7 @@ config ARM_OMAP2PLUS_CPUFREQ
+ config ARM_S3C2416_CPUFREQ
+ 	bool "S3C2416 CPU Frequency scaling support"
+ 	depends on CPU_S3C2416
++	select CPU_FREQ_TABLE
  	help
- 	  Select code specific to PXA21x/25x/26x variants
- 
- config PXA27x
- 	bool
- 	select CPU_XSCALE
-+	select CPU_FREQ_TABLE if CPU_FREQ
+ 	  This adds the CPUFreq driver for the Samsung S3C2416 and
+ 	  S3C2450 SoC. The S3C2416 supports changing the rate of the
+@@ -123,6 +124,7 @@ config ARM_S3C2416_CPUFREQ_VCORESCALE
+ config ARM_S3C64XX_CPUFREQ
+ 	bool "Samsung S3C64XX"
+ 	depends on CPU_S3C6410
++	select CPU_FREQ_TABLE
+ 	default y
  	help
- 	  Select code specific to PXA27x variants
- 
-@@ -633,6 +635,7 @@ config CPU_PXA26x
- config PXA3xx
- 	bool
- 	select CPU_XSC3
-+	select CPU_FREQ_TABLE if CPU_FREQ
- 	help
- 	  Select code specific to PXA3xx variants
- 
+ 	  This adds the CPUFreq driver for Samsung S3C6410 SoC.
 -- 
 1.7.12.rc2.18.g61b472e
 
