@@ -1,97 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757707Ab3FLTru (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 15:47:50 -0400
-Received: from ja.ssi.bg ([178.16.129.10]:47003 "EHLO ja.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754764Ab3FLTrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 15:47:49 -0400
-X-Greylist: delayed 517 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Jun 2013 15:47:48 EDT
-Date: Wed, 12 Jun 2013 22:43:46 +0300 (EEST)
-From: Julian Anastasov <ja@ssi.bg>
-To: Alexander Frolkin <avf@eldamar.org.uk>
-cc: lvs-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipvs: sloppy TCP and SCTP
-In-Reply-To: <20130612104754.GA29327@eldamar.org.uk>
-Message-ID: <alpine.LFD.2.00.1306122229120.1773@ja.ssi.bg>
-References: <20130612104754.GA29327@eldamar.org.uk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756407Ab3FLT4A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 15:56:00 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:58280 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754246Ab3FLTz6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 15:55:58 -0400
+From: Julius Werner <jwerner@chromium.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Todd Poynor <toddpoynor@google.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sameer Nanda <snanda@chromium.org>,
+        Julius Werner <jwerner@chromium.org>
+Subject: [PATCH v2] PM / Sleep: Print last wakeup source on failed wakeup_count write
+Date: Wed, 12 Jun 2013 12:55:22 -0700
+Message-Id: <1371066922-23577-1-git-send-email-jwerner@chromium.org>
+X-Mailer: git-send-email 1.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit a938da06 introduced a useful little log message to tell
+users/debuggers which wakeup source aborted a suspend. However, this
+message is only printed if the abort happens during the in-kernel
+suspend path (after writing /sys/power/state).
 
-	Hello,
+The full specification of the /sys/power/wakeup_count facility allows
+user-space power managers to double-check if wakeups have already
+happened before it actually tries to suspend (e.g. while it was running
+user-space pre-suspend hooks), by writing the last known wakeup_count
+value to /sys/power/wakeup_count. This patch changes the sysfs handler
+for that node to also print said log message if that write fails, so
+that we can figure out the offending wakeup source for both kinds of
+suspend aborts.
 
-On Wed, 12 Jun 2013, Alexander Frolkin wrote:
+Signed-off-by: Julius Werner <jwerner@chromium.org>
+---
+ drivers/base/power/wakeup.c | 5 +++--
+ include/linux/suspend.h     | 1 +
+ kernel/power/main.c         | 2 ++
+ 3 files changed, 6 insertions(+), 2 deletions(-)
 
-> This adds support for sloppy TCP and SCTP mode to IPVS.
-> 
-> When enabled (sysctls net.ipv4.vs.sloppy_tcp and
-> net.ipv4.vs.sloppy_sctp), allows IPVS to create connection state on any
-> packet, not just a TCP SYN (or SCTP INIT).
-> 
-> This allows connections to fail over from one IPVS director to another
-> mid-flight.
-> 
-> Signed-off-by: Alexander Frolkin <avf@eldamar.org.uk>
+diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
+index 79715e7..90f83ca5 100644
+--- a/drivers/base/power/wakeup.c
++++ b/drivers/base/power/wakeup.c
+@@ -659,7 +659,7 @@ void pm_wakeup_event(struct device *dev, unsigned int msec)
+ }
+ EXPORT_SYMBOL_GPL(pm_wakeup_event);
+ 
+-static void print_active_wakeup_sources(void)
++void pm_print_active_wakeup_sources(void)
+ {
+ 	struct wakeup_source *ws;
+ 	int active = 0;
+@@ -683,6 +683,7 @@ static void print_active_wakeup_sources(void)
+ 			last_activity_ws->name);
+ 	rcu_read_unlock();
+ }
++EXPORT_SYMBOL_GPL(pm_print_active_wakeup_sources);
+ 
+ /**
+  * pm_wakeup_pending - Check if power transition in progress should be aborted.
+@@ -708,7 +709,7 @@ bool pm_wakeup_pending(void)
+ 	spin_unlock_irqrestore(&events_lock, flags);
+ 
+ 	if (ret)
+-		print_active_wakeup_sources();
++		pm_print_active_wakeup_sources();
+ 
+ 	return ret;
+ }
+diff --git a/include/linux/suspend.h b/include/linux/suspend.h
+index d4e3f16..f73cabf 100644
+--- a/include/linux/suspend.h
++++ b/include/linux/suspend.h
+@@ -363,6 +363,7 @@ extern bool pm_wakeup_pending(void);
+ extern bool pm_get_wakeup_count(unsigned int *count, bool block);
+ extern bool pm_save_wakeup_count(unsigned int count);
+ extern void pm_wakep_autosleep_enabled(bool set);
++extern void pm_print_active_wakeup_sources(void);
+ 
+ static inline void lock_system_sleep(void)
+ {
+diff --git a/kernel/power/main.c b/kernel/power/main.c
+index d77663b..0828070 100644
+--- a/kernel/power/main.c
++++ b/kernel/power/main.c
+@@ -424,6 +424,8 @@ static ssize_t wakeup_count_store(struct kobject *kobj,
+ 	if (sscanf(buf, "%u", &val) == 1) {
+ 		if (pm_save_wakeup_count(val))
+ 			error = n;
++		else
++			pm_print_active_wakeup_sources();
+ 	}
+ 
+  out:
+-- 
+1.7.12.4
 
-	extra empty line here
-
-> 
-> ---
-
-> diff --git a/net/netfilter/ipvs/ip_vs_proto_sctp.c b/net/netfilter/ipvs/ip_vs_proto_sctp.c
-> index 8646488..fd8f587 100644
-> --- a/net/netfilter/ipvs/ip_vs_proto_sctp.c
-> +++ b/net/netfilter/ipvs/ip_vs_proto_sctp.c
-
-> @@ -27,13 +28,14 @@ sctp_conn_schedule(int af, struct sk_buff *skb, struct ip_vs_proto_data *pd,
->  	if (sch == NULL)
->  		return 0;
->  	net = skb_net(skb);
-> +	ipvs = net_ipvs(net);
->  	rcu_read_lock();
-> -	if ((sch->type == SCTP_CID_INIT) &&
-> +	if ((sysctl_sloppy_sctp(ipvs) || (sch->type == SCTP_CID_INIT)) &&
-
-	Can you change the above line to:
-
-	if ((sch->type == SCTP_CID_INIT || sysctl_sloppy_sctp(ipvs)) &&
-
-	i.e.
-
-1. No () around sch->type == SCTP_CID_INIT
-
-2. Check for sch->type == SCTP_CID_INIT is usually true,
-so lets try it first
-
-> diff --git a/net/netfilter/ipvs/ip_vs_proto_tcp.c b/net/netfilter/ipvs/ip_vs_proto_tcp.c
-> index 50a1594..3fd23fa 100644
-> --- a/net/netfilter/ipvs/ip_vs_proto_tcp.c
-> +++ b/net/netfilter/ipvs/ip_vs_proto_tcp.c
-
-> @@ -46,14 +47,15 @@ tcp_conn_schedule(int af, struct sk_buff *skb, struct ip_vs_proto_data *pd,
->  		return 0;
->  	}
->  	net = skb_net(skb);
-> +	ipvs = net_ipvs(net);
->  	/* No !th->ack check to allow scheduling on SYN+ACK for Active FTP */
->  	rcu_read_lock();
-> -	if (th->syn &&
-> +	if ((sysctl_sloppy_tcp(ipvs) || th->syn) && !th->rst &&
-
-	Same here:
-
-	if ((th->syn || sysctl_sloppy_tcp(ipvs)) && !th->rst &&
-
-	Also, you can check the "IPVS" entry in the
-MAINTAINERS file for actual list of addresses to use (M and L)
-when submitting patches.
-
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
