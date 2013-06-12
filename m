@@ -1,115 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275Ab3FLXci (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 19:32:38 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:36069 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756961Ab3FLXch (ORCPT
+	id S932300Ab3FLXcq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 19:32:46 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54224 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932279Ab3FLXco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 19:32:37 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] ARM: msm: Move msm_timer to CLOCKSOURCE_OF_DECLARE
-Date: Wed, 12 Jun 2013 16:32:33 -0700
-Message-Id: <1371079953-28457-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.3.251.g1462b67
+	Wed, 12 Jun 2013 19:32:44 -0400
+Date: Thu, 13 Jun 2013 00:32:24 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, ????????? <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>, niv@us.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, Darren Hart <darren@dvhart.com>,
+        Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+        Silas Boyd-Wickizer <sbw@mit.edu>, Waiman Long <Waiman.Long@hp.com>
+Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
+Message-ID: <20130612233224.GH4165@ZenIV.linux.org.uk>
+References: <20130609193657.GA13392@linux.vnet.ibm.com>
+ <1370911480.9844.160.camel@gandalf.local.home>
+ <CA+55aFxeLszgfTZeG7L6289DcaoKT+uhtf5nwB6r=2i9Sy4Mrg@mail.gmail.com>
+ <1370973186.1744.9.camel@buesod1.americas.hpqcorp.net>
+ <1370974231.9844.212.camel@gandalf.local.home>
+ <1371059401.1746.33.camel@buesod1.americas.hpqcorp.net>
+ <CA+55aFygedE80F3SvE7VvqwXaCthbFh7sMCwVnZt6wzst8YLHA@mail.gmail.com>
+ <1371067399.1746.47.camel@buesod1.americas.hpqcorp.net>
+ <CA+55aFwDYvCR9SavTQt62kibvmv37M4+GxzjxU1ZqZVVB9Ce9w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwDYvCR9SavTQt62kibvmv37M4+GxzjxU1ZqZVVB9Ce9w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows us to remove the init_time callback in the DT machine
-descriptors, shrinking the code.
+On Wed, Jun 12, 2013 at 01:26:25PM -0700, Linus Torvalds wrote:
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/mach-msm/board-dt-8660.c |  1 -
- arch/arm/mach-msm/board-dt-8960.c |  1 -
- arch/arm/mach-msm/common.h        |  1 -
- arch/arm/mach-msm/timer.c         | 17 +++--------------
- 4 files changed, 3 insertions(+), 17 deletions(-)
+> For similar reasons, I think you need to still maintain the d_lock in
+> d_prune_aliases etc. That's a slow-path, so the fact that we add an
+> atomic sequence there doesn't much matter.
+> 
+> However, one optimization missing from your patch is obvious in the
+> profile. "dget_parent()" also needs to be optimized - you still have
+> that as 99% of the spin-lock case. I think we could do something like
+> 
+>    rcu_read_lock();
+>    parent = ACCESS_ONCE(dentry->d_parent);
+>    if (atomic_inc_nonzero(&parent->d_count))
+>       return parent;
+>    .. get d_lock and do it the slow way ...
+>    rcu_read_unlock();
+> 
+> to locklessly get the parent pointer. We know "parent" isn't going
+> away (dentries are rcu-free'd and we hold the rcu read lock), and I
+> think that we can optimistically take *any* parent dentry that
+> happened to be valid at one point. As long as the refcount didn't go
+> down to zero. Al?
 
-diff --git a/arch/arm/mach-msm/board-dt-8660.c b/arch/arm/mach-msm/board-dt-8660.c
-index 7dcfc53..4bd22ca 100644
---- a/arch/arm/mach-msm/board-dt-8660.c
-+++ b/arch/arm/mach-msm/board-dt-8660.c
-@@ -47,6 +47,5 @@ DT_MACHINE_START(MSM_DT, "Qualcomm MSM (Flattened Device Tree)")
- 	.init_irq = irqchip_init,
- 	.init_machine = msm8x60_dt_init,
- 	.init_late = msm8x60_init_late,
--	.init_time	= msm_dt_timer_init,
- 	.dt_compat = msm8x60_fluid_match,
- MACHINE_END
-diff --git a/arch/arm/mach-msm/board-dt-8960.c b/arch/arm/mach-msm/board-dt-8960.c
-index 7301936..9a2b525 100644
---- a/arch/arm/mach-msm/board-dt-8960.c
-+++ b/arch/arm/mach-msm/board-dt-8960.c
-@@ -32,7 +32,6 @@ DT_MACHINE_START(MSM8960_DT, "Qualcomm MSM (Flattened Device Tree)")
- 	.smp = smp_ops(msm_smp_ops),
- 	.map_io = msm_map_msm8960_io,
- 	.init_irq = irqchip_init,
--	.init_time	= msm_dt_timer_init,
- 	.init_machine = msm_dt_init,
- 	.dt_compat = msm8960_dt_match,
- MACHINE_END
-diff --git a/arch/arm/mach-msm/common.h b/arch/arm/mach-msm/common.h
-index ce8215a..e32429e 100644
---- a/arch/arm/mach-msm/common.h
-+++ b/arch/arm/mach-msm/common.h
-@@ -14,7 +14,6 @@
- 
- extern void msm7x01_timer_init(void);
- extern void msm7x30_timer_init(void);
--extern void msm_dt_timer_init(void);
- extern void qsd8x50_timer_init(void);
- 
- extern void msm_map_common_io(void);
-diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
-index 284313f..1167cf6 100644
---- a/arch/arm/mach-msm/timer.c
-+++ b/arch/arm/mach-msm/timer.c
-@@ -219,15 +219,8 @@ err:
- }
- 
- #ifdef CONFIG_OF
--static const struct of_device_id msm_timer_match[] __initconst = {
--	{ .compatible = "qcom,kpss-timer" },
--	{ .compatible = "qcom,scss-timer" },
--	{ },
--};
--
--void __init msm_dt_timer_init(void)
-+static void __init msm_dt_timer_init(struct device_node *np)
- {
--	struct device_node *np;
- 	u32 freq;
- 	int irq;
- 	struct resource res;
-@@ -235,12 +228,6 @@ void __init msm_dt_timer_init(void)
- 	void __iomem *base;
- 	void __iomem *cpu0_base;
- 
--	np = of_find_matching_node(NULL, msm_timer_match);
--	if (!np) {
--		pr_err("Can't find msm timer DT node\n");
--		return;
--	}
--
- 	base = of_iomap(np, 0);
- 	if (!base) {
- 		pr_err("Failed to map event base\n");
-@@ -283,6 +270,8 @@ void __init msm_dt_timer_init(void)
- 
- 	msm_timer_init(freq, 32, irq, !!percpu_offset);
- }
-+CLOCKSOURCE_OF_DECLARE(kpss_timer, "qcom,kpss-timer", msm_dt_timer_init);
-+CLOCKSOURCE_OF_DECLARE(scss_timer, "qcom,scss-timer", msm_dt_timer_init);
- #endif
- 
- static int __init msm_timer_map(phys_addr_t addr, u32 event, u32 source,
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+What will you do with __d_rcu_to_refcount()?  Any such scheme has to
+hold d_lock from zero->non-zero d_count changes, or atomic_dec_and_lock
+in dput() won't help at all.  As it is, both comlete_walk() and unlazy_walk()
+are grabbing ->d_lock on the dentry we'd reached, so they can call that
+sucker.  And that'll give you ->d_lock contention when a bunch of threads
+are hitting the same file; I don't see how atomics would avoid that
+one...
