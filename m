@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757978Ab3FLSbW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 14:31:22 -0400
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:19582
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756019Ab3FLSbU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 14:31:20 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
-Date: Wed, 12 Jun 2013 13:31:11 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [PATCH] MDIO: FSL_PQ_MDIO: Fix bug on incorrect offset of tbipa
- register
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Oded Gabbay <ogabbay@advaoptical.com>, <stef.van.os@prodrive.nl>,
-        <timur@tabi.org>, <Dongsheng.Wang@freescale.com>, <paulus@samba.org>,
-        <netdev@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
-        <B38951@freescale.com>
-References: <1371041258-15298-1-git-send-email-ogabbay@advaoptical.com>
-	<51B88EED.6090709@linutronix.de>
-In-Reply-To: <51B88EED.6090709@linutronix.de> (from bigeasy@linutronix.de on
-	Wed Jun 12 10:08:29 2013)
-X-Mailer: Balsa 2.4.12
-Message-ID: <1371061871.18413.44@snotra>
+	id S1757983Ab3FLSd4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 14:33:56 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:26130 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756019Ab3FLSdz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 14:33:55 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/pipmvqaTZbA5t6TbJAwZc
+Date: Wed, 12 Jun 2013 11:33:45 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hebbar Gururaja <gururaja.hebbar@ti.com>,
+        Mark Brown <broonie@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH] drivers: pinctrl: add active state to core
+Message-ID: <20130612183345.GU8164@atomide.com>
+References: <1370938616-5952-1-git-send-email-linus.walleij@stericsson.com>
+ <51B75148.5080701@wwwdotorg.org>
+ <CACRpkdYQSO0+9tQkS=df-kpL=XL+DpnY1ijp6_Zeg0MvmFujyw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+In-Reply-To: <CACRpkdYQSO0+9tQkS=df-kpL=XL+DpnY1ijp6_Zeg0MvmFujyw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2013 10:08:29 AM, Sebastian Andrzej Siewior wrote:
-> On 06/12/2013 02:47 PM, Oded Gabbay wrote:
-> > This patch fixes a bug in the fsl_pq_mdio.c module and in relevant  
-> device-tree
-> > files regarding the correct offset of the tbipa register in the  
-> eTSEC
-> > controller in some of Freescale's PQ3 and QorIQ SoC.
-> > The bug happens when the mdio in the device tree is configured to  
-> be compatible
-> > to "fsl,gianfar-tbi". Because the mdio device in the device tree  
-> points to
-> > addresses 25520, 26520 or 27520 (depends on the controller ID), the  
-> variable
-> > priv->map at function fsl_pq_mdio_probe, points to that address.  
-> However,
-> > later in the function there is a write to register tbipa that is  
-> actually
-> > located at 25030, 26030 or 27030. Because the correct address is  
-> not io mapped,
-> > the contents are written to a different register in the controller.
-> > The fix sets the address of the mdio device to start at 25000,  
-> 26000 or 27000
-> > and changes the mii_offset field to 0x520 in the relevant entry
-> > (fsl,gianfar-tbi) of the fsl_pq_mdio_match array.
+* Linus Walleij <linus.walleij@linaro.org> [130611 12:59]:
+> On Tue, Jun 11, 2013 at 6:33 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> > On 06/11/2013 02:16 AM, Linus Walleij wrote:
+> >> From: Linus Walleij <linus.walleij@linaro.org>
+> >>
+> >> In addition to the recently introduced pinctrl core
+> >> control, the PM runtime pin control for the OMAP platforms
+> >> require a fourth state in addtition to the default, idle and
+> >> sleep states already handled by the core: an explicit "active"
+> >> state. Let's introduce this to the core in addition to the
+> >> other states already defined.
 > >
-> > Note: This patch may break MDIO functionallity of some old  
-> Freescale's SoC
-> > until Freescale will fix their device tree files. Basically, every  
-> device tree
-> > which contains an mdio device that is compatible to  
-> "fsl,gianfar-tbi" should be
-> > examined.
+> > Surely "default" /is/ "active"? That's what it's meant so far.
 > 
-> Not as is.
-> Please add a check for the original address. If it has 0x520 at the  
-> end
-> print a warning and fix it up. Please add to the patch description
-> which register is modified instead if this patch is not applied.
-> Depending on how critical this it might has to go stable.
+> I thought so too, until Tony informed us that in the OMAP world
+> this state is not always the active one.
+> 
+> But I don't know the exact reasons for.
+> 
+> I guess that some "default" states on the OMAP may mean these
+> are configured as decoupled, inactive, until explicitly activated
+> or something like that.
 
-I'm not sure it's stable material if this is something that has never  
-worked...
+The main reason is that remuxing all the pins for a device for
+PM runtime suspend and resume is not necessary. Most pins are
+static and configured once during the consumer driver probe.
+And in most cases, remuxing only one pin for the rx line is
+needed. This is performance critical as it may need to be done
+constantly while entering and exiting idle, and remuxing all the
+pins is just a waste of cycles.
 
-The device tree binding will also need to be fixed to note the  
-difference in "reg" between "fsl,gianfar-mdio" and "fsl-gianfar-tbi" --  
-and should give an example of the latter.
+Regards,
 
--Scott
+Tony 
