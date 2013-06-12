@@ -1,58 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932151Ab3FLUty (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 16:49:54 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:64575 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758016Ab3FLUtu (ORCPT
+	id S932144Ab3FLUwI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 16:52:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41549 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757986Ab3FLUwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 16:49:50 -0400
-Date: Wed, 12 Jun 2013 13:49:47 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Hocko <mhocko@suse.cz>
-cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] memcg: do not sleep on OOM waitqueue with full charge
- context
-In-Reply-To: <20130612203705.GB17282@dhcp22.suse.cz>
-Message-ID: <alpine.DEB.2.02.1306121343500.24902@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1306052058340.25115@chino.kir.corp.google.com> <20130606053315.GB9406@cmpxchg.org> <20130606173355.GB27226@cmpxchg.org> <alpine.DEB.2.02.1306061308320.9493@chino.kir.corp.google.com> <20130606215425.GM15721@cmpxchg.org>
- <alpine.DEB.2.02.1306061507330.15503@chino.kir.corp.google.com> <20130607000222.GT15576@cmpxchg.org> <alpine.DEB.2.02.1306111454030.4803@chino.kir.corp.google.com> <20130612082817.GA6706@dhcp22.suse.cz> <alpine.DEB.2.02.1306121309500.23348@chino.kir.corp.google.com>
- <20130612203705.GB17282@dhcp22.suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 12 Jun 2013 16:52:05 -0400
+Date: Wed, 12 Jun 2013 13:48:14 -0700
+From: tip-bot for Sebastian Hesselbarth <tipbot@zytor.com>
+Message-ID: <tip-9dbd90f17e4f380593ec5194c2a4d5e52c5f72d1@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, jason@lakedaemon.net,
+        grant.likely@linaro.org, hpa@zytor.com, mingo@kernel.org,
+        gregory.clement@free-electrons.com, sebastian.hesselbarth@gmail.com,
+        rob.herring@calxeda.com, john.stultz@linaro.org,
+        thomas.petazzoni@free-electrons.com, linux@arm.linux.org.uk,
+        andrew@lunn.ch, tglx@linutronix.de, rob@landley.net
+Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@linaro.org,
+        jason@lakedaemon.net, linux-kernel@vger.kernel.org,
+        john.stultz@linaro.org, gregory.clement@free-electrons.com,
+        sebastian.hesselbarth@gmail.com, rob.herring@calxeda.com,
+        thomas.petazzoni@free-electrons.com, linux@arm.linux.org.uk,
+        andrew@lunn.ch, tglx@linutronix.de, rob@landley.net
+In-Reply-To: <1370536034-23956-2-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1370536034-23956-2-git-send-email-sebastian.hesselbarth@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] irqchip: Add support for Marvell Orion SoCs
+Git-Commit-ID: 9dbd90f17e4f380593ec5194c2a4d5e52c5f72d1
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 12 Jun 2013 13:48:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Jun 2013, Michal Hocko wrote:
+Commit-ID:  9dbd90f17e4f380593ec5194c2a4d5e52c5f72d1
+Gitweb:     http://git.kernel.org/tip/9dbd90f17e4f380593ec5194c2a4d5e52c5f72d1
+Author:     Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+AuthorDate: Thu, 6 Jun 2013 18:27:09 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 11 Jun 2013 16:18:50 +0200
 
-> The patch is a big improvement with a minimum code overhead. Blocking
-> any task which sits on top of an unpredictable amount of locks is just
-> broken. So regardless how many users are affected we should merge it and
-> backport to stable trees. The problem is there since ever. We seem to
-> be surprisingly lucky to not hit this more often.
-> 
+irqchip: Add support for Marvell Orion SoCs
 
-Right now it appears that that number of users is 0 and we're talking 
-about a problem that was reported in 3.2 that was released a year and a 
-half ago.  The rules of inclusion in stable also prohibit such a change 
-from being backported, specifically "It must fix a real bug that bothers 
-people (not a, "This could be a problem..." type thing)".
+This patch adds an irqchip driver for the main interrupt controller found
+on Marvell Orion SoCs (Kirkwood, Dove, Orion5x, Discovery Innovation).
+Corresponding device tree documentation is also added.
 
-We have deployed memcg on a very large number of machines and I can run a 
-query over all software watchdog timeouts that have occurred by 
-deadlocking on i_mutex during memcg oom.  It returns 0 results.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Acked-by: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-arm-kernel@lists.infradead.org
+Link: http://lkml.kernel.org/r/1370536034-23956-2-git-send-email-sebastian.hesselbarth@gmail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ .../interrupt-controller/marvell,orion-intc.txt    |  48 ++++++
+ drivers/irqchip/Kconfig                            |   5 +
+ drivers/irqchip/Makefile                           |   1 +
+ drivers/irqchip/irq-orion.c                        | 192 +++++++++++++++++++++
+ 4 files changed, 246 insertions(+)
 
-> I am not quite sure I understand your reservation about the patch to be
-> honest. Andrew still hasn't merged this one although 1/2 is in.
-
-Perhaps he is as unconvinced?  The patch adds 100 lines of code, including 
-fields to task_struct for memcg, for a problem that nobody can reproduce.  
-My question still stands: can anybody, even with an instrumented kernel to 
-make it more probable, reproduce the issue this is addressing?
+diff --git a/Documentation/devicetree/bindings/interrupt-controller/marvell,orion-intc.txt b/Documentation/devicetree/bindings/interrupt-controller/marvell,orion-intc.txt
+new file mode 100644
+index 0000000..2c11ac7
+--- /dev/null
++++ b/Documentation/devicetree/bindings/interrupt-controller/marvell,orion-intc.txt
+@@ -0,0 +1,48 @@
++Marvell Orion SoC interrupt controllers
++
++* Main interrupt controller
++
++Required properties:
++- compatible: shall be "marvell,orion-intc"
++- reg: base address(es) of interrupt registers starting with CAUSE register
++- interrupt-controller: identifies the node as an interrupt controller
++- #interrupt-cells: number of cells to encode an interrupt source, shall be 1
++
++The interrupt sources map to the corresponding bits in the interrupt
++registers, i.e.
++- 0 maps to bit 0 of first base address,
++- 1 maps to bit 1 of first base address,
++- 32 maps to bit 0 of second base address, and so on.
++
++Example:
++	intc: interrupt-controller {
++		compatible = "marvell,orion-intc";
++		interrupt-controller;
++		#interrupt-cells = <1>;
++		 /* Dove has 64 first level interrupts */
++		reg = <0x20200 0x10>, <0x20210 0x10>;
++	};
++
++* Bridge interrupt controller
++
++Required properties:
++- compatible: shall be "marvell,orion-bridge-intc"
++- reg: base address of bridge interrupt registers starting with CAUSE register
++- interrupts: bridge interrupt of the main interrupt controller
++- interrupt-controller: identifies the node as an interrupt controller
++- #interrupt-cells: number of cells to encode an interrupt source, shall be 1
++
++Optional properties:
++- marvell,#interrupts: number of interrupts provided by bridge interrupt
++      controller, defaults to 32 if not set
++
++Example:
++	bridge_intc: interrupt-controller {
++		compatible = "marvell,orion-bridge-intc";
++		interrupt-controller;
++		#interrupt-cells = <1>;
++		reg = <0x20110 0x8>;
++		interrupts = <0>;
++		/* Dove bridge provides 5 interrupts */
++		marvell,#interrupts = <5>;
++	};
+diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+index 4a33351..68c3107 100644
+--- a/drivers/irqchip/Kconfig
++++ b/drivers/irqchip/Kconfig
+@@ -25,6 +25,11 @@ config ARM_VIC_NR
+ 	  The maximum number of VICs available in the system, for
+ 	  power management.
+ 
++config ORION_IRQCHIP
++	bool
++	select IRQ_DOMAIN
++	select MULTI_IRQ_HANDLER
++
+ config RENESAS_INTC_IRQPIN
+ 	bool
+ 	select IRQ_DOMAIN
+diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+index cda4cb5..55df3bd 100644
+--- a/drivers/irqchip/Makefile
++++ b/drivers/irqchip/Makefile
+@@ -7,6 +7,7 @@ obj-$(CONFIG_ARCH_MXS)			+= irq-mxs.o
+ obj-$(CONFIG_ARCH_S3C24XX)		+= irq-s3c24xx.o
+ obj-$(CONFIG_METAG)			+= irq-metag-ext.o
+ obj-$(CONFIG_METAG_PERFCOUNTER_IRQS)	+= irq-metag.o
++obj-$(CONFIG_ORION_IRQCHIP)		+= irq-orion.o
+ obj-$(CONFIG_ARCH_SUNXI)		+= irq-sun4i.o
+ obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-shirq.o
+ obj-$(CONFIG_ARM_GIC)			+= irq-gic.o
+diff --git a/drivers/irqchip/irq-orion.c b/drivers/irqchip/irq-orion.c
+new file mode 100644
+index 0000000..e51d400
+--- /dev/null
++++ b/drivers/irqchip/irq-orion.c
+@@ -0,0 +1,192 @@
++/*
++ * Marvell Orion SoCs IRQ chip driver.
++ *
++ * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/io.h>
++#include <linux/irq.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <asm/exception.h>
++#include <asm/mach/irq.h>
++
++#include "irqchip.h"
++
++/*
++ * Orion SoC main interrupt controller
++ */
++#define ORION_IRQS_PER_CHIP		32
++
++#define ORION_IRQ_CAUSE			0x00
++#define ORION_IRQ_MASK			0x04
++#define ORION_IRQ_FIQ_MASK		0x08
++#define ORION_IRQ_ENDP_MASK		0x0c
++
++static struct irq_domain *orion_irq_domain;
++
++static asmlinkage void
++__exception_irq_entry orion_handle_irq(struct pt_regs *regs)
++{
++	struct irq_domain_chip_generic *dgc = orion_irq_domain->gc;
++	int n, base = 0;
++
++	for (n = 0; n < dgc->num_chips; n++, base += ORION_IRQS_PER_CHIP) {
++		struct irq_chip_generic *gc =
++			irq_get_domain_generic_chip(orion_irq_domain, base);
++		u32 stat = readl_relaxed(gc->reg_base + ORION_IRQ_CAUSE) &
++			gc->mask_cache;
++		while (stat) {
++			u32 hwirq = ffs(stat) - 1;
++			u32 irq = irq_find_mapping(orion_irq_domain,
++						   gc->irq_base + hwirq);
++			handle_IRQ(irq, regs);
++			stat &= ~(1 << hwirq);
++		}
++	}
++}
++
++static int __init orion_irq_init(struct device_node *np,
++				 struct device_node *parent)
++{
++	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
++	int n, ret, base, num_chips = 0;
++	struct resource r;
++
++	/* count number of irq chips by valid reg addresses */
++	while (of_address_to_resource(np, num_chips, &r) == 0)
++		num_chips++;
++
++	orion_irq_domain = irq_domain_add_linear(np,
++				num_chips * ORION_IRQS_PER_CHIP,
++				&irq_generic_chip_ops, NULL);
++	if (!orion_irq_domain)
++		panic("%s: unable to add irq domain\n", np->name);
++
++	ret = irq_alloc_domain_generic_chips(orion_irq_domain,
++				ORION_IRQS_PER_CHIP, 1, np->name,
++				handle_level_irq, clr, 0,
++				IRQ_GC_INIT_MASK_CACHE);
++	if (ret)
++		panic("%s: unable to alloc irq domain gc\n", np->name);
++
++	for (n = 0, base = 0; n < num_chips; n++, base += ORION_IRQS_PER_CHIP) {
++		struct irq_chip_generic *gc =
++			irq_get_domain_generic_chip(orion_irq_domain, base);
++
++		of_address_to_resource(np, n, &r);
++
++		if (!request_mem_region(r.start, resource_size(&r), np->name))
++			panic("%s: unable to request mem region %d",
++			      np->name, n);
++
++		gc->reg_base = ioremap(r.start, resource_size(&r));
++		if (!gc->reg_base)
++			panic("%s: unable to map resource %d", np->name, n);
++
++		gc->chip_types[0].regs.mask = ORION_IRQ_MASK;
++		gc->chip_types[0].chip.irq_mask = irq_gc_mask_clr_bit;
++		gc->chip_types[0].chip.irq_unmask = irq_gc_mask_set_bit;
++
++		/* mask all interrupts */
++		writel(0, gc->reg_base + ORION_IRQ_MASK);
++	}
++
++	set_handle_irq(orion_handle_irq);
++	return 0;
++}
++IRQCHIP_DECLARE(orion_intc, "marvell,orion-intc", orion_irq_init);
++
++/*
++ * Orion SoC bridge interrupt controller
++ */
++#define ORION_BRIDGE_IRQ_CAUSE	0x00
++#define ORION_BRIDGE_IRQ_MASK	0x04
++
++static void orion_bridge_irq_handler(unsigned int irq, struct irq_desc *desc)
++{
++	struct irq_domain *d = irq_get_handler_data(irq);
++	struct irq_chip_generic *gc = irq_get_domain_generic_chip(d, irq);
++	u32 stat = readl_relaxed(gc->reg_base + ORION_BRIDGE_IRQ_CAUSE) &
++		   gc->mask_cache;
++
++	while (stat) {
++		u32 hwirq = ffs(stat) - 1;
++
++		generic_handle_irq(irq_find_mapping(d, gc->irq_base + hwirq));
++		stat &= ~(1 << hwirq);
++	}
++}
++
++static int __init orion_bridge_irq_init(struct device_node *np,
++					struct device_node *parent)
++{
++	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
++	struct resource r;
++	struct irq_domain *domain;
++	struct irq_chip_generic *gc;
++	int ret, irq, nrirqs = 32;
++
++	/* get optional number of interrupts provided */
++	of_property_read_u32(np, "marvell,#interrupts", &nrirqs);
++
++	domain = irq_domain_add_linear(np, nrirqs,
++				       &irq_generic_chip_ops, NULL);
++	if (!domain) {
++		pr_err("%s: unable to add irq domain\n", np->name);
++		return -ENOMEM;
++	}
++
++	ret = irq_alloc_domain_generic_chips(domain, nrirqs, 1, np->name,
++			     handle_level_irq, clr, 0, IRQ_GC_INIT_MASK_CACHE);
++	if (ret) {
++		pr_err("%s: unable to alloc irq domain gc\n", np->name);
++		return ret;
++	}
++
++	ret = of_address_to_resource(np, 0, &r);
++	if (ret) {
++		pr_err("%s: unable to get resource\n", np->name);
++		return ret;
++	}
++
++	if (!request_mem_region(r.start, resource_size(&r), np->name)) {
++		pr_err("%s: unable to request mem region\n", np->name);
++		return -ENOMEM;
++	}
++
++	/* Map the parent interrupt for the chained handler */
++	irq = irq_of_parse_and_map(np, 0);
++	if (irq <= 0) {
++		pr_err("%s: unable to parse irq\n", np->name);
++		return -EINVAL;
++	}
++
++	gc = irq_get_domain_generic_chip(domain, 0);
++	gc->reg_base = ioremap(r.start, resource_size(&r));
++	if (!gc->reg_base) {
++		pr_err("%s: unable to map resource\n", np->name);
++		return -ENOMEM;
++	}
++
++	gc->chip_types[0].regs.ack = ORION_BRIDGE_IRQ_CAUSE;
++	gc->chip_types[0].regs.mask = ORION_BRIDGE_IRQ_MASK;
++	gc->chip_types[0].chip.irq_ack = irq_gc_ack_clr_bit;
++	gc->chip_types[0].chip.irq_mask = irq_gc_mask_clr_bit;
++	gc->chip_types[0].chip.irq_unmask = irq_gc_mask_set_bit;
++
++	/* mask all interrupts */
++	writel(0, gc->reg_base + ORION_BRIDGE_IRQ_MASK);
++
++	irq_set_handler_data(irq, domain);
++	irq_set_chained_handler(irq, orion_bridge_irq_handler);
++
++	return 0;
++}
++IRQCHIP_DECLARE(orion_bridge_intc,
++		"marvell,orion-bridge-intc", orion_bridge_irq_init);
