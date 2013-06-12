@@ -1,118 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758041Ab3FLVoi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 17:44:38 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:58849 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753659Ab3FLVog (ORCPT
+	id S1758097Ab3FLVpw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 17:45:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53472 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753646Ab3FLVpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 17:44:36 -0400
-Date: Wed, 12 Jun 2013 14:44:35 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCHv7 01/11] clockevents: Prefer CPU local devices over
- global devices
-Message-ID: <20130612214435.GE10823@codeaurora.org>
-References: <1370291642-13259-1-git-send-email-sboyd@codeaurora.org>
- <1370291642-13259-2-git-send-email-sboyd@codeaurora.org>
- <51B0A6E8.20909@linaro.org>
- <20130606180425.GQ599@codeaurora.org>
- <51B10D85.1060507@linaro.org>
- <20130606223848.GR599@codeaurora.org>
+	Wed, 12 Jun 2013 17:45:50 -0400
+Date: Wed, 12 Jun 2013 14:46:27 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pwm: Fill in missing .owner fields
+Message-ID: <20130612214627.GA486@kroah.com>
+References: <1371036553-32263-1-git-send-email-thierry.reding@gmail.com>
+ <CAK9yfHyUT7KUkY3g2WJ7XiisLL5mvJuenv=UEK_9OqwfF7s4Zg@mail.gmail.com>
+ <20130612195917.GA31835@mithrandir>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130606223848.GR599@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130612195917.GA31835@mithrandir>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06, Stephen Boyd wrote:
-> On 06/07, Daniel Lezcano wrote:
-> > On 06/06/2013 08:04 PM, Stephen Boyd wrote:
-> > > On 06/06, Daniel Lezcano wrote:
-> > >> On 06/03/2013 10:33 PM, Stephen Boyd wrote:
-> > >>> On an SMP system with only one global clockevent and a dummy
-> > >>> clockevent per CPU we run into problems. We want the dummy
-> > >>> clockevents to be registered as the per CPU tick devices, but
-> > >>> we can only achieve that if we register the dummy clockevents
-> > >>> before the global clockevent or if we artificially inflate the
-> > >>> rating of the dummy clockevents to be higher than the rating
-> > >>> of the global clockevent. Failure to do so leads to boot
-> > >>> hangs when the dummy timers are registered on all other CPUs
-> > >>> besides the CPU that accepted the global clockevent as its tick
-> > >>> device and there is no broadcast timer to poke the dummy
-> > >>> devices.
-> > >>>
-> > >>> If we're registering multiple clockevents and one clockevent is
-> > >>> global and the other is local to a particular CPU we should
-> > >>> choose to use the local clockevent regardless of the rating of
-> > >>> the device. This way, if the clockevent is a dummy it will take
-> > >>> the tick device duty as long as there isn't a higher rated tick
-> > >>> device and any global clockevent will be bumped out into
-> > >>> broadcast mode, fixing the problem described above.
-> > >>
-> > >> It is not clear the connection between the changelog, the patch and the
-> > >> comment. Could you clarify a bit ?
-> > >>
-> > > 
-> > > There is one tick device per-cpu and one broadcast device. The
-> > > broadcast device can only be a global clockevent, whereas the
-> > > per-cpu tick device can be a global clockevent or a per-cpu
-> > > clockevent. The code tries hard to keep per-cpu clockevents in
-> > > the tick device slots but it has an ordering/rating requirement
-> > > that doesn't work when there are only dummy per-cpu devices and
-> > > one global device.
-> > > 
-> > > Perhaps an example will help. Let's say you only have one global
-> > > clockevent such as the sp804, and you have SMP enabled. To
-> > > support SMP we have to register dummy clockevents on each CPU so
-> > > that the sp804 can go into broadcast mode. If we don't do this,
-> > > only the CPU that registered the sp804 will get interrupts while
-> > > the other CPUs will be left with no tick device and thus no
-> > > scheduling. To fix this we register dummy clockevents on all the
-> > > CPUs _before_ we register the sp804 to force the sp804 into the
-> > > broadcast slot. Or we give the dummy clockevents a higher rating
-> > > than the sp804 so that when we register them after the sp804 the
-> > > sp804 is bumped out to broadcast duty.
-> > > 
-> > > If the dummy devices are registered before the sp804 we can give
-> > > the dummies a low rating and the sp804 will still go into the
-> > > broadcast slot due to this code:
-> > > 
-> > > 	/*
-> > > 	 * If we have a cpu local device already, do not replace it
-> > > 	 * by a non cpu local device
-> > > 	 */
-> > > 	if (curdev && cpumask_equal(curdev->cpumask, cpumask_of(cpu)))
-> > > 		goto out_bc;
-> > > 
-> > > If we register the sp804 before the dummies we're also fine as
-> > > long as the rating of the dummy is more than the sp804.  Playing
-> > > games with the dummy rating is not very nice so this patch fixes
-> > > it by allowing the per-cpu device to replace the global device no
-> > > matter what the rating of the global device is.
-> > > 
-> > > This fixes the sp804 case when the dummy is rated lower than
-> > > sp804 and it removes any ordering requirement from the
-> > > registration of clockevents. It also completes the logic above
-> > > where we prefer cpu local devices over non cpu local devices.
+On Wed, Jun 12, 2013 at 09:59:18PM +0200, Thierry Reding wrote:
+> On Wed, Jun 12, 2013 at 05:05:18PM +0530, Sachin Kamat wrote:
+> > Hi Thierry,
 > > 
-> > Thanks for the detailed explanation.
+> > On 12 June 2013 16:59, Thierry Reding <thierry.reding@gmail.com> wrote:
+> > > Some drivers don't set the .owner fields of the struct device_driver or
+> > > struct pwm_ops, which causes the module usage count to become wrong.
 > > 
-> > Did Thomas reacted to this patch ?
 > > 
+> > Recently a patch [1] was added to solve this issue of missing .owner
+> > fileds in struct platform_driver.
 > 
-> So far there has been no response from Thomas.
+> Yes I saw that, but thought it might be good to initialize them anyway.
+> Especially since a couple of the drivers are I2C and I believe there's
+> no similar patch for those. It shouldn't be difficult to come up with
+> the corresponding patch, though.
 > 
+> I wonder if it'd make sense to remove all the explicit assignments of
+> .owner = THIS_MODULE in platform drivers once the patch you mentioned
+> has been merged. Cc'ing Greg to find out what he thinks about it.
 
-Will you ack this patch anyway? Or do we need Thomas to review
-this patch? It seems that this patch series has stalled again.
+Sure, they can be removed, but it's not really a big deal if they
+aren't.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+greg k-h
