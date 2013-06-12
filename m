@@ -1,128 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab3FLIY7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 04:24:59 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38991 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752512Ab3FLIY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 04:24:56 -0400
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "wim@iguana.be" <wim@iguana.be>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "Kristo, Tero" <t-kristo@ti.com>, Ian Lartey <ian@slimlogic.co.uk>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: RE: [PATCH v3] mfd: DT bindings for the palmas family MFD
-Thread-Topic: [PATCH v3] mfd: DT bindings for the palmas family MFD
-Thread-Index: AQHOYncuRwuUiYCq9keu21yMCEaQUZknvHwAgAABHgCABvaWkP//ggoAgAOP/5A=
-Date: Wed, 12 Jun 2013 08:24:26 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229EB107@DBDE04.ent.ti.com>
-References: <1370496441-24620-1-git-send-email-j-keerthy@ti.com>
- <20130606070210.GR3370@gmail.com> <20130606070610.GS3370@gmail.com>
- <DC88CAD03C0052499C1907B327FC63229EAB5B@DBDE04.ent.ti.com>
- <20130610095528.GH20297@gmail.com>
-In-Reply-To: <20130610095528.GH20297@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="utf-8"
+	id S1755287Ab3FLI0H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 04:26:07 -0400
+Received: from www.linutronix.de ([62.245.132.108]:42140 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab3FLI0F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 04:26:05 -0400
+Date: Wed, 12 Jun 2013 10:25:56 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+cc: David Miller <davem@davemloft.net>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] of: Fix locking vs. interrupts
+In-Reply-To: <1371015544.8250.182.camel@pasglop>
+Message-ID: <alpine.LFD.2.02.1306121023150.22970@ionos>
+References: <1371015544.8250.182.camel@pasglop>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5C8P8CV019140
 
-Hello Grant,
+On Wed, 12 Jun 2013, Benjamin Herrenschmidt wrote:
 
-> -----Original Message-----
-> From: Lee Jones [mailto:lee.jones@linaro.org]
-> Sent: Monday, June 10, 2013 3:25 PM
-> To: J, KEERTHY
-> Cc: grant.likely@secretlab.ca; linux-kernel@vger.kernel.org; linux-
-> doc@vger.kernel.org; devicetree-discuss@lists.ozlabs.org;
-> swarren@wwwdotorg.org; swarren@nvidia.com; rob.herring@calxeda.com;
-> rob@landley.net; sameo@linux.intel.com; wim@iguana.be;
-> lgirdwood@gmail.com; gg@slimlogic.co.uk; Kristo, Tero; Ian Lartey
-> Subject: Re: [PATCH v3] mfd: DT bindings for the palmas family MFD
+> The OF code uses irqsafe locks everywhere except in a handful of functions
+> for no obvious reasons. Since the conversion from the old rwlocks, this
+> now triggers lockdep warnings when used at interrupt time. At least one
+> driver (ibmvscsi) seems to be doing that from softirq context.
 > 
-> On Mon, 10 Jun 2013, J, KEERTHY wrote:
-> 
-> > Hello Grant/Lee Jones,
-> >
-> > > -----Original Message-----
-> > > From: Lee Jones [mailto:lee.jones@linaro.org]
-> > > Sent: Thursday, June 06, 2013 12:36 PM
-> > > To: J, KEERTHY
-> > > Cc: linux-kernel@vger.kernel.org; grant.likely@secretlab.ca; linux-
-> > > doc@vger.kernel.org; devicetree-discuss@lists.ozlabs.org;
-> > > swarren@wwwdotorg.org; swarren@nvidia.com; rob.herring@calxeda.com;
-> > > rob@landley.net; sameo@linux.intel.com; wim@iguana.be;
-> > > lgirdwood@gmail.com; gg@slimlogic.co.uk; Kristo, Tero; Ian Lartey
-> > > Subject: Re: [PATCH v3] mfd: DT bindings for the palmas family MFD
-> > >
-> > > On Thu, 06 Jun 2013, Lee Jones wrote:
-> > >
-> > > > On Thu, 06 Jun 2013, J Keerthy wrote:
-> > > >
-> > > > > Add the various binding files for the palmas family of chips.
-> > > > > There is a top level MFD binding then a seperate binding for
-> > > > > regulators
-> > > IP blocks on chips.
-> > > > >
-> > > > > Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-> > > > > Signed-off-by: J Keerthy <j-keerthy@ti.com>
-> > > > > Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
-> > > > > Reviewed-by: Stephen Warren <swarren@nvidia.com>
-> > > > > ---
-> > > > >  Documentation/devicetree/bindings/mfd/palmas.txt   |   49
-> > > +++++++++++++
-> > > > >  .../devicetree/bindings/regulator/palmas-pmic.txt  |   72
-> > > ++++++++++++++++++++
-> > > > >  2 files changed, 121 insertions(+), 0 deletions(-)  create
-> mode
-> > > > > 100644 Documentation/devicetree/bindings/mfd/palmas.txt
-> > > > >  create mode 100644
-> > > > > Documentation/devicetree/bindings/regulator/palmas-pmic.tx
-> > > >
-> > > > Applied, thanks.
-> > >
-> > > Ah wait. It appears Grant wants to take this.
-> > >
-> > > Unapplied, thanks. :)
-> > >
-> >
-> > Is it applied?
-> 
-> Not by me. I unapplied it when I saw that Grant took an earlier
-> revision.
-> 
-> I won't apply again unless Grant gives the nod. Failing that, I'm sure
-> he'll take it.
+> This converts the few non-irqsafe locks into irqsafe ones, making them
+> consistent with the rest of the code.
 
-There were outstanding comments for v2 of this patch.
-I think you applied v2 of this patch.
-Could you annul v2 and please apply v3 of the patch?
+Fun. https://lkml.org/lkml/2013/2/4/416 seems to have got lost 
+ 
+> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: <stable@vger.kernel.org> [v3.9+]
 
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+
+> ---
 > 
-> --
-> Lee Jones
-> Linaro ST-Ericsson Landing Team Lead
-> Linaro.org â”‚ Open source software for ARM SoCs Follow Linaro: Facebook
-> | Twitter | Blog
+> Note: It's silly to access the device-tree at interrupt time in most cases,
+> and we should probably fix ibmvscsi, but for the time being, let's fix the
 
-Kind Regards,
-Keerthy
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Right.
+
+> obvious bug. Thomas, this can probably still go into 3.10... If not, I've
+> CCed stable.
+
+Should go through Grant I think.
+
+Thanks,
+
+	tglx
