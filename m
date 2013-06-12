@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346Ab3FLOXy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 10:23:54 -0400
-Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:34041
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751438Ab3FLOXw (ORCPT
+	id S1756057Ab3FLO1i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 10:27:38 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:36370 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999Ab3FLO1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 10:23:52 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI148cI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1155h)
-X-WSS-ID: 0MOAANL-01-69B-02
-X-M-MSG: 
-Date: Wed, 12 Jun 2013 09:23:43 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: <rjw@sisk.pl>, <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
-        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <robin.randhawa@arm.com>,
-        <Steve.Bannister@arm.com>, <Liviu.Dudau@arm.com>,
-        <charles.garcia-tobin@arm.com>, <arvind.chauhan@arm.com>,
-        <arnd@arndb.de>
-Subject: Re: [PATCH 11/11] cpufreq: X86_AMD_FREQ_SENSITIVITY: select
- CPU_FREQ_TABLE
-Message-ID: <20130612142343.GA15934@jshin-Toonie>
-References: <cover.1371022830.git.viresh.kumar@linaro.org>
- <3f143e3112c038c805ea4e66ea91d12c5800acdf.1371022830.git.viresh.kumar@linaro.org>
+	Wed, 12 Jun 2013 10:27:37 -0400
+Date: Wed, 12 Jun 2013 10:27:21 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: George Dunlap <george.dunlap@eu.citrix.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] xen/pci: Deal with toolstack missing an
+ 'XenbusStateClosing'.
+Message-ID: <20130612142721.GD7974@phenom.dumpdata.com>
+References: <20130610202456.GA17822@phenom.dumpdata.com>
+ <1370898399-20968-1-git-send-email-konrad.wilk@oracle.com>
+ <1370898399-20968-2-git-send-email-konrad.wilk@oracle.com>
+ <51B743EA.5020800@eu.citrix.com>
+ <51B74B77.1000806@oracle.com>
+ <51B74DA9.7060509@eu.citrix.com>
+ <20130612134504.GG2918@phenom.dumpdata.com>
+ <51B87BDF.1080101@eu.citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <3f143e3112c038c805ea4e66ea91d12c5800acdf.1371022830.git.viresh.kumar@linaro.org>
+In-Reply-To: <51B87BDF.1080101@eu.citrix.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 01:45:18PM +0530, Viresh Kumar wrote:
-> This CPUFreq driver uses APIs from freq_table.c and so must select
-> CPU_FREQ_TABLE.
+On Wed, Jun 12, 2013 at 02:47:11PM +0100, George Dunlap wrote:
+> On 12/06/13 14:45, Konrad Rzeszutek Wilk wrote:
+> >On Tue, Jun 11, 2013 at 05:17:45PM +0100, George Dunlap wrote:
+> >>On 06/11/2013 05:08 PM, konrad wilk wrote:
+> >>>On 6/11/2013 11:36 AM, George Dunlap wrote:
+> >>>>On 06/10/2013 10:06 PM, Konrad Rzeszutek Wilk wrote:
+> >>>>>There are two tool-stack that can instruct the Xen PCI frontend
+> >>>>>and backend to change states: 'xm' (Python code with a daemon),
+> >>>>>and 'xl' (C library - does not keep state changes).
+> >>>>>
+> >>>>>With the 'xm', the path to disconnect a PCI device (xm pci-detach
+> >>>>><guest> <BDF>)is:
+> >>>>>
+> >>>>>4(Connected)->7(Reconfiguring*)-> 8(Reconfigured)->
+> >>>>>4(Connected)->5(Closing*).
+> >>>>>
+> >>>>>The * is for states that the tool-stack sets. For 'xl', it is similar:
+> >>>>>
+> >>>>>4(Connected)->7(Reconfiguring*)-> 8(Reconfigured)-> 4(Connected)
+> >>>>>
+> >>>>>Both of them also tear down the XenBus structure, so the backend
+> >>>>>state ends up going in the 3(Initialised) and calls
+> >>>>>pcifront_xenbus_remove.
+> >>>>So I looked a little bit into this; there are actually two different
+> >>>>states that happen as part of this handshake.  In order to disonnect a
+> >>>>*device*, xl signals using the *bus* state, like this:
+> >>>>* Wait for the *bus* to be in state 4(Connected)
+> >>>>* Set the *device* state to 5(Closing)
+> >>>>* Set the *bus* state to 7(Reconfiguring)
+> >>>>* Wait for the *bus* state to return to 4(Connected)
+> >>>>
+> >>>>So are all of these states you see the *bus* state?  And why would you
+> >>>>disconnect the whole pci bus if you're only removing one device?
+> >>>Correct. The stats I enumerated are *bus* states. Not per-device states.
+> >>>I presume (and I hadn't checked xm) that Xend has some logic to only
+> >>>disconnect the bus if all of the PCI devices have been disconnected. In
+> >>>'xl' it does not do that.
+> >>>
+> >>>The testing I did was just with one PCI device.
+> >>Ah, OK -- I see now.  The problem is that the code in the Linux side
+> >>didn't know about the whole "4->7->8->4" thing to unplug a device.
+> >>In all likelihood, if you had used xm with two devices (so that the
+> >>bus didn't get disconnected), then you would have run across the
+> >>same error.
+> >>
+> >>So at least part of the problem *is* a bug in Linux.
+> >Good! Bjorn, would you be OK Ack-ing the patch I sent (attached here
+> >for reference) or putting it in your queue for Linus?
+> >
+> >My plan would be to send it to Linus in the 3.11 merge window.
 > 
+> One nit -- "to work with the 'xl' toolstack" -- didn't we theorize
+> this would also be broken with xm if you had two devices passed
+> through?
 
-Ah, thanks for cathcing this!
+Yes. I will fix up the title to reflect that shortly (say Friday?)
 
-> Cc: Jacob Shin <jacob.shin@amd.com>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-
-Acked-by: Jacob Shin <jacob.shin@amd.com>
-
-> ---
->  drivers/cpufreq/Kconfig.x86 | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/cpufreq/Kconfig.x86 b/drivers/cpufreq/Kconfig.x86
-> index 6bd63d6..e2b6eab 100644
-> --- a/drivers/cpufreq/Kconfig.x86
-> +++ b/drivers/cpufreq/Kconfig.x86
-> @@ -132,6 +132,7 @@ config X86_POWERNOW_K8
->  config X86_AMD_FREQ_SENSITIVITY
->  	tristate "AMD frequency sensitivity feedback powersave bias"
->  	depends on CPU_FREQ_GOV_ONDEMAND && X86_ACPI_CPUFREQ && CPU_SUP_AMD
-> +	select CPU_FREQ_TABLE
->  	help
->  	  This adds AMD-specific powersave bias function to the ondemand
->  	  governor, which allows it to make more power-conscious frequency
-> -- 
-> 1.7.12.rc2.18.g61b472e
-> 
-> 
-
+Thanks for your sharp eyes.
