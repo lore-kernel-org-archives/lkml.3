@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553Ab3FLQyV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 12:54:21 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:42221 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754290Ab3FLQyU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 12:54:20 -0400
-Message-Id: <1371056055.24587.140661243104889.29DDEEB4@webmail.messagingengine.com>
-X-Sasl-Enc: sPiSdnlq0CtLz61oUbrkzvzpF5whkLa4KYrGkl4SuPuu 1371056055
-From: Simon Brown <lists@700c.org>
-To: linux-kernel@vger.kernel.org
+	id S1757169Ab3FLQzA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 12:55:00 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:41697 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755017Ab3FLQy7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 12:54:59 -0400
+Message-ID: <51B8A7E1.1020708@codeaurora.org>
+Date: Wed, 12 Jun 2013 09:54:57 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: MessagingEngine.com Webmail Interface - ajax-5ae8e04c
-Subject: Accessing more than 2GB of memory with a 32 bit kernel
-Date: Wed, 12 Jun 2013 17:54:15 +0100
+To: Mike Turquette <mturquette@linaro.org>
+CC: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Saravana Kannan <skannan@codeaurora.org>
+Subject: Re: [PATCH 12/12] ARM: msm: Migrate to common clock framework
+References: <1370373938-32417-1-git-send-email-sboyd@codeaurora.org> <1370373938-32417-13-git-send-email-sboyd@codeaurora.org> <20130611222832.8816.77120@quantum>
+In-Reply-To: <20130611222832.8816.77120@quantum>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 06/11/13 15:28, Mike Turquette wrote:
+> Quoting Stephen Boyd (2013-06-04 12:25:38)
+>> Move the existing clock code in mach-msm to the common clock
+>> framework. We lose our capability to set the rate of and enable a
+>> clock through debugfs. This is ok though because the debugfs
+>> features are mainly used for testing and development of new clock
+>> code.
+>>
+>> To maintain compatibility with the original MSM clock code we
+>> make a wrapper for clk_reset() that calls the struct msm_clk
+>> specific reset function. This is necessary for the usb and sdcc
+>> devices on MSM until a better suited API is made available.
+>>
+>> Cc: Saravana Kannan <skannan@codeaurora.org>
+>> Cc: Mike Turquette <mturquette@linaro.org>
+>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> I just went through this quickly and nothing popped out at me.  Nice
+> diffstat btw!  Do you have any plans to move this to drivers/clk/msm ?
+>
+> Acked-by: Mike Turquette <mturquette@linaro.org>
 
-For the sake of an old prototype peripheral I'm using a non PAE 32 bit
-x86 kernel and I'm having trouble accessing memory above 2 GB. The
-system has 4GB installed and all is well with a PAE kernel. 
+Thanks Mike.
 
-I'm obviously expecting to lose some memory due to memory mapped devices
-but I wasn't expecting to lose 2GB. Instead I'm suspecting a BIOS bug.
-The system reports:
-free -m
-             total       used       free     shared    buffers    
-             cached
-Mem:          2012        491       1521          0         40       
-277
+I plan to add mmio support under drivers/clk/msm. Moving this proc_comm
+based code to drivers/clk/msm is possible but it would need to depend on
+the 3 architectures that use it so that it isn't available or compiled
+on our DT based platforms. We can do that later I suppose.
 
-The mtrr table looked odd so I enabled sanitisation:
-[    0.000000] original variable MTRRs
-[    0.000000] reg 0, base: 2GB, range: 2GB, type UC
-[    0.000000] reg 1, base: 0GB, range: 4GB, type WB
-[    0.000000] reg 2, base: 4GB, range: 2GB, type WB
-[    0.000000] total RAM covered: 4096M
-[    0.000000] Found optimal setting for mtrr clean up
-[    0.000000]  gran_size: 64K  chunk_size: 64K         num_reg: 2     
-lose cover RAM: 0G
-[    0.000000] New variable MTRRs
-[    0.000000] reg 0, base: 0GB, range: 2GB, type WB
-[    0.000000] reg 1, base: 4GB, range: 2GB, type WB
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-I don't understand the gap in the new table.
-
-The motherboard is an Asus P5K with an Intel® P35 chipset. I'm using the
-ubuntu lucid kernel (2.6.32) but the problem is also present with the
-ubuntu precise kernel.
-I'm at the limit of my understanding, can anyone advise how to debug
-further?
-
-Thanks,
-
-Simon
