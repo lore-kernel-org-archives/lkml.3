@@ -1,86 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757728Ab3FLB36 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 21:29:58 -0400
-Received: from mail.lang.hm ([64.81.33.126]:50395 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757592Ab3FLB35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 21:29:57 -0400
-Date: Tue, 11 Jun 2013 17:27:23 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "alex.shi@intel.com" <alex.shi@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Mike Galbraith <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: power-efficient scheduling design
-In-Reply-To: <51B5FE02.7040607@linaro.org>
-Message-ID: <alpine.DEB.2.02.1306111722470.24968@nftneq.ynat.uz>
-References: <20130530134718.GB32728@e103034-lin> <51B221AF.9070906@linux.vnet.ibm.com> <20130608112801.GA8120@MacBook-Pro.local> <1834293.MlyIaiESPL@vostro.rjw.lan> <51B3F99A.4000101@linux.vnet.ibm.com> <51B5FE02.7040607@linaro.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1757770Ab3FLBaQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 21:30:16 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59206 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757753Ab3FLBaN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 21:30:13 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH] ARM: mmu: Add debug_ll_io_init() mappings to early mappings
+Date: Tue, 11 Jun 2013 18:30:07 -0700
+Message-Id: <1371000607-1787-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.3.251.g1462b67
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Jun 2013, Daniel Lezcano wrote:
+Failure to add the mapping created in debug_ll_io_init() can lead
+to the BUG_ON() triggering in lib/ioremap.c:27 if the static
+virtual address decided for the debug_ll mapping overlaps with
+another mapping that is created later. This happens because the
+generic ioremap code has no idea there is a mapping there and it
+tries to place a mapping in the same location and blows up when
+it sees that there is a pte already present.
 
-> Some SoC can have a cluster of cpus sharing some resources, eg cache, so
-> they must enter the same state at the same moment. Beside the
-> synchronization mechanisms, that adds a dependency with the next event.
-> For example, the u8500 board has a couple of cpus. In order to make them
-> to enter in retention, both must enter the same state, but not necessary
-> at the same moment. The first cpu will wait in WFI and the second one
-> will initiate the retention mode when entering to this state.
-> Unfortunately, some time could have passed while the second cpu entered
-> this state and the next event for the first cpu could be too close, thus
-> violating the criteria of the governor when it choose this state for the
-> second cpu.
->
-> Also the latencies could change with the frequencies, so there is a
-> dependency with cpufreq, the lesser the frequency is, the higher the
-> latency is. If the scheduler takes the decision to go to a specific
-> state assuming the exit latency is a given duration, if the frequency
-> decrease, this exit latency could increase also and lead the system to
-> be less responsive.
->
-> I don't know, how were made the latencies computation (eg. worst case,
-> taken with the lower frequency or not) but we have just one set of
-> values. That should happen with the current code.
->
-> Another point is the timer allowing to detect bad decision and go to a
-> deep idle state. With the cluster dependency described above, we may
-> wake up a particular cpu, which turns on the cluster and make the entire
-> cluster to wake up in order to enter a deeper state, which could fail
-> because of the other cpu may not fulfill the constraint at this moment.
+kernel BUG at lib/ioremap.c:27!
+Internal error: Oops - BUG: 0 [#1] PREEMPT SMP ARM
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.10.0-rc2-00042-g2af0c67-dirty #316
+task: ef088000 ti: ef082000 task.ti: ef082000
+PC is at ioremap_page_range+0x16c/0x198
+LR is at ioremap_page_range+0xf0/0x198
+pc : [<c04cb874>]    lr : [<c04cb7f8>]    psr: 20000113
+sp : ef083e78  ip : af140000  fp : ef083ebc
+r10: ef7fc100  r9 : ef7fc104  r8 : 000af174
+r7 : 00000647  r6 : beffffff  r5 : f004c000  r4 : f0040000
+r3 : af173417  r2 : 16440653  r1 : af173e07  r0 : ef7fc8fc
+Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+Control: 10c5787d  Table: 8020406a  DAC: 00000015
+Process swapper/0 (pid: 1, stack limit = 0xef082238)
+Stack: (0xef083e78 to 0xef084000)
+3e60:                                                       00040000 ef083eec
+3e80: bf134000 f004bfff c0207c00 f004c000 c02fc120 f000c000 c15e7800 00040000
+3ea0: ef083eec 00000647 c098ba9c c0953544 ef083edc ef083ec0 c021b82c c04cb714
+3ec0: c09cdc50 00000040 ef0f1e00 ef1003c0 ef083f14 ef083ee0 c09535bc c021b7bc
+3ee0: c0953544 c04d0c6c c094e2cc c1600be4 c07440c4 c09a6888 00000002 c0a15f00
+3f00: ef082000 00000000 ef083f54 ef083f18 c0208728 c0953550 00000002 c1600bfc
+3f20: c08e3fac c0839918 ef083f54 c1600b80 c09a6888 c0a15f00 0000008b c094e2cc
+3f40: c098ba9c c098bab8 ef083f94 ef083f58 c094ea0c c020865c 00000002 00000002
+3f60: c094e2cc 00000000 c025b674 00000000 c06ff860 00000000 00000000 00000000
+3f80: 00000000 00000000 ef083fac ef083f98 c06ff878 c094e910 00000000 00000000
+3fa0: 00000000 ef083fb0 c020efe8 c06ff86c 00000000 00000000 00000000 00000000
+3fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+3fe0: 00000000 00000000 00000000 00000000 00000013 00000000 00000000 c0595108
+[<c04cb874>] (ioremap_page_range+0x16c/0x198) from [<c021b82c>] (__alloc_remap_buffer.isra.18+0x7c/0xc4)
+[<c021b82c>] (__alloc_remap_buffer.isra.18+0x7c/0xc4) from [<c09535bc>] (atomic_pool_init+0x78/0x128)
+[<c09535bc>] (atomic_pool_init+0x78/0x128) from [<c0208728>] (do_one_initcall+0xd8/0x198)
+[<c0208728>] (do_one_initcall+0xd8/0x198) from [<c094ea0c>] (kernel_init_freeable+0x108/0x1d0)
+[<c094ea0c>] (kernel_init_freeable+0x108/0x1d0) from [<c06ff878>] (kernel_init+0x18/0xf4)
+[<c06ff878>] (kernel_init+0x18/0xf4) from [<c020efe8>] (ret_from_fork+0x14/0x20)
+Code: e50b0040 ebf54b2f e51b0040 eaffffee (e7f001f2)
 
-Nobody is saying that this sort of thing should be in the fastpath of the 
-scheduler.
+Fix it by telling generic layers about the static mapping. This also
+has the nice side effect of letting you see the mapping in procfs'
+vmallocinfo file.
 
-But if the scheduler has a table that tells it the possible states, and the cost 
-to get from the current state to each of these states (and to get back and/or 
-wake up to full power), then the scheduler can make the decision on what to do, 
-invoke a routine to make the change (and in the meantime, not be fighting the 
-change by trying to schedule processes on a core that's about to be powered 
-off), and then when the change happens, the scheduler will have a new version of 
-the table of possible states and costs
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/mm/mmu.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-This isn't in the fastpath, it's in the rebalancing logic.
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index e0d8565..04fe160 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -938,8 +938,12 @@ static void __init pci_reserve_io(void)
+ #ifdef CONFIG_DEBUG_LL
+ void __init debug_ll_io_init(void)
+ {
++	struct vm_struct *vm;
++	struct static_vm *svm;
+ 	struct map_desc map;
+ 
++	svm = early_alloc_aligned(sizeof(*svm), __alignof__(*svm));
++
+ 	debug_ll_addr(&map.pfn, &map.virtual);
+ 	if (!map.pfn || !map.virtual)
+ 		return;
+@@ -948,6 +952,15 @@ void __init debug_ll_io_init(void)
+ 	map.length = PAGE_SIZE;
+ 	map.type = MT_DEVICE;
+ 	create_mapping(&map);
++
++	vm = &svm->vm;
++	vm->addr = (void *)map.virtual;
++	vm->size = map.length;
++	vm->phys_addr = __pfn_to_phys(map.pfn);
++	vm->flags = VM_IOREMAP | VM_ARM_STATIC_MAPPING;
++	vm->flags |= VM_ARM_MTYPE(map.type);
++	vm->caller = debug_ll_io_init;
++	add_static_vm_early(svm);
+ }
+ #endif
+ 
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-David Lang
