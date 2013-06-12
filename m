@@ -1,102 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757744Ab3FLSHy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 14:07:54 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:62395 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754380Ab3FLSHx (ORCPT
+	id S1757900Ab3FLSNS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 14:13:18 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:39484 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab3FLSNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 14:07:53 -0400
+	Wed, 12 Jun 2013 14:13:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAD=FV=WvDFQhXMV7PiaMoDN41vcLC3nRL2B8_v=B6h1mCq0Saw@mail.gmail.com>
-References: <1369056507-32521-1-git-send-email-james.hogan@imgtec.com>
- <1369056507-32521-6-git-send-email-james.hogan@imgtec.com>
- <519AFBB6.90700@codeaurora.org> <CAD=FV=VFqTzqLc3+UOHD21NiTqtu84DzwYD1Qag-RxiD0qcFDA@mail.gmail.com>
- <20130612174500.26381.95767@quantum> <CAD=FV=WvDFQhXMV7PiaMoDN41vcLC3nRL2B8_v=B6h1mCq0Saw@mail.gmail.com>
-From: Mike Turquette <mturquette@linaro.org>
-Date: Wed, 12 Jun 2013 11:07:31 -0700
-Message-ID: <CAPtuhTijr4r2USdc+6h2305SUs=Lo1b-6qOov9pV8DnKRBttPA@mail.gmail.com>
-Subject: Re: [PATCH v4 5/5] clk: clk-mux: implement remuxing on set_rate
-To: Doug Anderson <dianders@chromium.org>
-Cc: Saravana Kannan <skannan@codeaurora.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20130611185846.GA23707@www.outflux.net>
+References: <20130611185846.GA23707@www.outflux.net>
+Date: Wed, 12 Jun 2013 11:13:16 -0700
+X-Google-Sender-Auth: nuxt_as5Rwhk3KxyxzmsLCciOTU
+Message-ID: <CAE9FiQXgO+yScU2cBazJtX2mFHRMv=wObrTjpFvW5ajFNjBvCA@mail.gmail.com>
+Subject: Re: [PATCH] x86, relocs: move ELF relocation handling to C
+From: Yinghai Lu <yinghai@kernel.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Pekka Enberg <penberg@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 10:55 AM, Doug Anderson <dianders@chromium.org> wrote:
-> Mike,
+On Tue, Jun 11, 2013 at 11:58 AM, Kees Cook <keescook@chromium.org> wrote:
+> Moves the relocation handling into C, after decompression. This requires
+> that the decompressed size is passed to the decompression routine as
+> well so that relocations can be found. Only kernels that need relocation
+> support will use the code.
 >
-> On Wed, Jun 12, 2013 at 10:45 AM, Mike Turquette <mturquette@linaro.org> wrote:
+> Based on work by Neill Clift and Michael Davidson.
 >
->>> * It seems like we can't make muxing decisions on the SoC level.
->>> * Your automatic muxing patches don't hurt me and could be useful for
->>> _some_ of the muxing options, just not the top PLL ones.
->>
->> For the time being you won't be affected by this until you start using
->> .determine_rate.  Even then we have the flag which disables this
->> behavior.
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  arch/x86/Kconfig                     |    4 +-
+>  arch/x86/Makefile                    |    8 ++--
+>  arch/x86/boot/compressed/head_32.S   |   31 ++------------
+>  arch/x86/boot/compressed/head_64.S   |    1 +
+>  arch/x86/boot/compressed/misc.c      |   77 +++++++++++++++++++++++++++++++++-
+>  arch/x86/include/asm/page_32_types.h |    2 +
+>  arch/x86/include/asm/page_64_types.h |    5 ---
+>  arch/x86/include/asm/page_types.h    |    6 +++
+>  8 files changed, 94 insertions(+), 40 deletions(-)
 >
-> Yup, exactly!  :)  So I have no objections to the auto remuxing, it
-> just doesn't solve all of my problems.
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 685692c..b4797b9 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -1695,13 +1695,13 @@ config RELOCATABLE
+>           it has been loaded at and the compile time physical address
+>           (CONFIG_PHYSICAL_START) is ignored.
 >
+> -# Relocation on x86-32 needs some additional build support
+> +# Relocation on x86 needs some additional build support
+>  config X86_NEED_RELOCS
+>         def_bool y
+>         depends on X86_32 && RELOCATABLE
 >
->>> ...but the only place that leaves me for my muxing needs is the device
->>> tree.  ...and as Mike pointed out on IRC the device tree should
->>> describe hardware, not policy.  Ick.
->>
->> This sounds like another vote for configtree ;-)
+>  config PHYSICAL_ALIGN
+> -       hex "Alignment value to which kernel should be aligned" if X86_32
+> +       hex "Alignment value to which kernel should be aligned"
+>         default "0x1000000"
+>         range 0x2000 0x1000000
+>         ---help---
+> diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+> index 5c47726..43f8cef 100644
+> --- a/arch/x86/Makefile
+> +++ b/arch/x86/Makefile
+> @@ -16,6 +16,10 @@ endif
+>  # e.g.: obj-y += foo_$(BITS).o
+>  export BITS
 >
-> Yes.  It sounds like for now we're just going to carry some patches to
-> setup our clocks, but a configtree seems like it would solve this type
-> of problem.
+> +ifdef CONFIG_X86_NEED_RELOCS
+> +        LDFLAGS_vmlinux := --emit-relocs
+> +endif
+> +
+>  ifeq ($(CONFIG_X86_32),y)
+>          BITS := 32
+>          UTS_MACHINE := i386
+> @@ -25,10 +29,6 @@ ifeq ($(CONFIG_X86_32),y)
+>          KBUILD_AFLAGS += $(biarch)
+>          KBUILD_CFLAGS += $(biarch)
 >
-> One question to raise: if we're going to need to come up with a
-> solution for defining parents for things like PLLs, does it decrease
-> the need for the auto-remuxing patches?  AKA: if we use some type of
-> mechanism like configtree to specify muxing, would that be enough?  I
-> don't know the answer, but just thought I'd raise the question...
+> -        ifdef CONFIG_RELOCATABLE
+> -                LDFLAGS_vmlinux := --emit-relocs
+> -        endif
+> -
+>          KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
+>
+>          # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
+> diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
+> index 1e3184f..5d6f689 100644
+> --- a/arch/x86/boot/compressed/head_32.S
+> +++ b/arch/x86/boot/compressed/head_32.S
+> @@ -181,8 +181,9 @@ relocated:
+>  /*
+>   * Do the decompression, and jump to the new kernel..
+>   */
+> -       leal    z_extract_offset_negative(%ebx), %ebp
+>                                 /* push arguments for decompress_kernel: */
+> +       pushl   $z_output_len   /* decompressed length */
+> +       leal    z_extract_offset_negative(%ebx), %ebp
+>         pushl   %ebp            /* output address */
+>         pushl   $z_input_len    /* input_len */
+>         leal    input_data(%ebx), %eax
+> @@ -191,33 +192,7 @@ relocated:
+>         pushl   %eax            /* heap area */
+>         pushl   %esi            /* real mode pointer */
+>         call    decompress_kernel
+> -       addl    $20, %esp
+> -
+> -#if CONFIG_RELOCATABLE
+> -/*
+> - * Find the address of the relocations.
+> - */
+> -       leal    z_output_len(%ebp), %edi
+> -
+> -/*
+> - * Calculate the delta between where vmlinux was compiled to run
+> - * and where it was actually loaded.
+> - */
+> -       movl    %ebp, %ebx
+> -       subl    $LOAD_PHYSICAL_ADDR, %ebx
+> -       jz      2f      /* Nothing to be done if loaded at compiled addr. */
+> -/*
+> - * Process relocations.
+> - */
+> -
+> -1:     subl    $4, %edi
+> -       movl    (%edi), %ecx
+> -       testl   %ecx, %ecx
+> -       jz      2f
+> -       addl    %ebx, -__PAGE_OFFSET(%ebx, %ecx)
+> -       jmp     1b
+> -2:
+> -#endif
+> +       addl    $24, %esp
+>
+>  /*
+>   * Jump to the decompressed kernel.
+> diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+> index 16f24e6..6632693 100644
+> --- a/arch/x86/boot/compressed/head_64.S
+> +++ b/arch/x86/boot/compressed/head_64.S
+> @@ -340,6 +340,7 @@ relocated:
+>         leaq    input_data(%rip), %rdx  /* input_data */
+>         movl    $z_input_len, %ecx      /* input_len */
+>         movq    %rbp, %r8               /* output target address */
+> +       movq    $z_output_len, %r9      /* decompressed length */
+>         call    decompress_kernel
+>         popq    %rsi
+>
+> diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+> index 7cb56c6..b756a04 100644
+> --- a/arch/x86/boot/compressed/misc.c
+> +++ b/arch/x86/boot/compressed/misc.c
+> @@ -267,6 +267,79 @@ static void error(char *x)
+>                 asm("hlt");
+>  }
+>
+> +#if CONFIG_X86_NEED_RELOCS
+> +static void handle_relocations(void *output, unsigned long output_len)
+> +{
+> +       int *reloc;
+> +       unsigned long delta, map, ptr;
+> +       unsigned long min_addr = (unsigned long)output;
+> +       unsigned long max_addr = min_addr + output_len;
+> +
+> +       /*
+> +        * Calculate the delta between where vmlinux was linked to load
+> +        * and where it was actually loaded.
+> +        */
+> +       delta = min_addr - LOAD_PHYSICAL_ADDR;
+> +       if (!delta) {
+> +               debug_putstr("No relocation needed... ");
+> +               return;
+> +       }
+> +       debug_putstr("Performing relocations... ");
+> +
+> +       /*
+> +        * The kernel contains a table of relocation addresses. Those
+> +        * addresses have the final load address of the kernel in virtual
+> +        * memory. We are currently working in the self map. So we need to
+> +        * create an adjustment for kernel memory addresses to the self map.
+> +        * This will involve subtracting out the base address of the kernel.
+> +        */
+> +       map = delta - __START_KERNEL_map;
+> +
+> +       /*
+> +        * Process relocations: 32 bit relocations first then 64 bit after.
+> +        * Two sets of binary relocations are added to the end of the kernel
+> +        * before compression. Each relocation table entry is the kernel
+> +        * address of the location which needs to be updated stored as a
+> +        * 32-bit value which is sign extended to 64 bits.
+> +        *
+> +        * Format is:
+> +        *
+> +        * kernel bits...
+> +        * 0 - zero terminator for 64 bit relocations
+> +        * 64 bit relocation repeated
+> +        * 0 - zero terminator for 32 bit relocations
+> +        * 32 bit relocation repeated
+> +        *
+> +        * So we work backwards from the end of the decompressed image.
+> +        */
+> +       for (reloc = output + output_len - sizeof(*reloc); *reloc; reloc--) {
+> +               int extended = *reloc;
+> +               extended += map;
+> +
+> +               ptr = (unsigned long)extended;
+> +               if (ptr < min_addr || ptr > max_addr)
+> +                       error("32-bit relocation outside of kernel!\n");
+> +
+> +               *(uint32_t *)ptr += delta;
+> +       }
+> +#ifdef CONFIG_X86_64
+> +       for (reloc--; *reloc; reloc--) {
+> +               long extended = *reloc;
+> +               extended += map;
+> +
+> +               ptr = (unsigned long)extended;
+> +               if (ptr < min_addr || ptr > max_addr)
+> +                       error("64-bit relocation outside of kernel!\n");
+> +
+> +               *(uint64_t *)ptr += delta;
+> +       }
+> +#endif
 
-It's a good question. I can think of some cases where auto-muxing
-would still be helpful. There are drivers out there that don't need to
-know the details of the clock tree hierarchy and automagic muxing will
-help remove those details from some of the drivers.
+it seems those lines for x86_64 are never used.
+as X86_NEED_RELOCS is not defined for x86_64
 
-However I think that boot-time configuration of muxes that don't
-switch (configtree), combined with custom mux clock code that
-implements recommendations from HW engineers and the data sheet will
-probably be more common than lots and lots of generic re-muxing. I
-think that implementing those recommendations on which parent to use
-is the problem Saravana was trying to solve with the priority list of
-parents
+>  config X86_NEED_RELOCS
+>         def_bool y
+>         depends on X86_32 && RELOCATABLE
 
-How to encode that information in DT is a bit of a problem.  I guess
-one approach could be to create a mux table in DT and instead of
-ordering items in that list based on bitfield index (which feel
-natural to most programmers), instead let the order imply priority.
-This is a tricky hack since we're *technically* only describing the
-hardware with the mux table, but the priority encoding is silently
-encoded.  E.g:
 
-        clock: clock@4a008100 {
-                #clock-cells = <0>;
-                compatible = "mux-clock";
-                clocks = <&clock_foo>, <&clock_bar>, <&clock_baz>;
-                reg = <0x4a008100 0x4>;
-                mask = <0x3>;
-                shift = <0>;
-                table = <&clock_baz 0x2>, <&clock_foo 0x0>, <&clock_bar 0x1>;
-        };
+> +}
+> +#else
+> +static inline void handle_relocations(void *output, unsigned long output_len)
+> +{ }
+> +#endif
 
-Thoughts?
+Can you make it clear that this patch only affect x86_32 in patch title?
 
-Regards,
-Mike
-
->
-> -Doug
+Yinghai
