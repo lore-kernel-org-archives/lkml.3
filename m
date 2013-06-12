@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab3FLI4L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 04:56:11 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:57651 "EHLO gloria.sntech.de"
+	id S1755795Ab3FLI44 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 04:56:56 -0400
+Received: from gate.crashing.org ([63.228.1.57]:34048 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753506Ab3FLI4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 04:56:09 -0400
-From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-To: John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH v2 0/4] dw_apb_timer: osc as sched_clock, clocks and clocksource_of support
-Date: Wed, 12 Jun 2013 10:55:52 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jamie Iles <jamie@jamieiles.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Baruch Siach <baruch@tkos.co.il>, Olof Johansson <olof@lixom.net>
-References: <201306041136.09566.heiko@sntech.de>
-In-Reply-To: <201306041136.09566.heiko@sntech.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201306121055.53685.heiko@sntech.de>
+	id S1754452Ab3FLI4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 04:56:54 -0400
+Message-ID: <1371027387.8250.199.camel@pasglop>
+Subject: Re: [PATCH] of: Fix locking vs. interrupts
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: David Miller <davem@davemloft.net>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 12 Jun 2013 18:56:27 +1000
+In-Reply-To: <alpine.LFD.2.02.1306121023150.22970@ionos>
+References: <1371015544.8250.182.camel@pasglop>
+	 <alpine.LFD.2.02.1306121023150.22970@ionos>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 4. Juni 2013, 11:36:09 schrieb Heiko Stübner:
-> This is split off of my Rockchip support series from yesterday. It's now
-> a patch more than before, as the third patch enables the timer to be used
-> thru clocksource_of_init and moves picoxcell and socfpga to it.
+On Wed, 2013-06-12 at 10:25 +0200, Thomas Gleixner wrote:
+> On Wed, 12 Jun 2013, Benjamin Herrenschmidt wrote:
 > 
-> changes since v1:
-> - hopefully improve the patch description of patch 1
->   after a suggestion by Linus Walleij
-> - move the selection of DW_APB_TIMER and CLKSRC_OF into DW_APB_TIMER_OF
->   after a suggestion by Baruch Siach
+> > The OF code uses irqsafe locks everywhere except in a handful of functions
+> > for no obvious reasons. Since the conversion from the old rwlocks, this
+> > now triggers lockdep warnings when used at interrupt time. At least one
+> > driver (ibmvscsi) seems to be doing that from softirq context.
+> > 
+> > This converts the few non-irqsafe locks into irqsafe ones, making them
+> > consistent with the rest of the code.
 > 
-> Heiko Stuebner (4):
->   clocksource: dw_apb_timer_of: enable the use the clocksource as sched
-> clock clocksource: dw_apb_timer_of: add clock-handling
->   clocksource: dw_apb_timer_of: select DW_APB_TIMER
->   clocksource: dw_apb_timer_of: use clocksource_of_init
+> Fun. https://lkml.org/lkml/2013/2/4/416 seems to have got lost 
+>  
+> > Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > CC: <stable@vger.kernel.org> [v3.9+]
 > 
->  Documentation/devicetree/bindings/rtc/dw-apb.txt |   19 +++++
->  arch/arm/mach-picoxcell/Kconfig                  |    1 -
->  arch/arm/mach-picoxcell/common.c                 |    2 -
->  arch/arm/mach-socfpga/Kconfig                    |    1 -
->  arch/arm/mach-socfpga/socfpga.c                  |    2 -
->  drivers/clocksource/Kconfig                      |    2 +
->  drivers/clocksource/dw_apb_timer_of.c            |   95
-> ++++++++++++++------- include/linux/dw_apb_timer.h                     |  
->  1 -
->  8 files changed, 84 insertions(+), 39 deletions(-)
+> Acked-by: Thomas Gleixner <tglx@linutronix.de>
+> 
+> > ---
+> > 
+> > Note: It's silly to access the device-tree at interrupt time in most cases,
+> > and we should probably fix ibmvscsi, but for the time being, let's fix the
+> 
+> Right.
+> 
+> > obvious bug. Thomas, this can probably still go into 3.10... If not, I've
+> > CCed stable.
+> 
+> Should go through Grant I think.
 
-with clocksource_of conversion of picoxcell and socfpga, this series stands on 
-its own. Is anybody going to pick it up?
+Right, thinko. Sent to you due to the bug being exposed by your
+conversion to spinlocks. Anyway, Grant got it now.
+
+Cheers,
+Ben.
 
 
-Thanks
-Heiko
+
