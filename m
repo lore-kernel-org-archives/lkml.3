@@ -1,129 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932139Ab3FLVMl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 17:12:41 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:46577 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755908Ab3FLVMj (ORCPT
+	id S1757998Ab3FLVOr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 17:14:47 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60267 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751890Ab3FLVOp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 17:12:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQWf-iqjQC=7w1gj3Lkqy229uFJxBya4bDDx14-+y-MU5w@mail.gmail.com>
-References: <1370845742-18919-1-git-send-email-yinghai@kernel.org>
-	<CA+QCeVRdOOuh4aVZsQhucBNETnDp5OhAZguigLTbyD9bOONO1A@mail.gmail.com>
-	<CAE9FiQXacn2abVKeBhTazgRBCS9EtiACs=fbB6_Y27ZpLOTq3w@mail.gmail.com>
-	<CAKL7Q7rxkXDx49CgSjoVJSbER7ou+-yXa-yZg4hT4ktG_4gvHw@mail.gmail.com>
-	<CAKL7Q7qUwTGexhr+8d88qN94YSCfSeOS-oLMh=KQ2NiOZRLbLQ@mail.gmail.com>
-	<CAE9FiQWOvP+tTQ0Vakc9f-t61dv6Lo6dJm0+oH1On5k=6nvbXw@mail.gmail.com>
-	<CAKL7Q7pbdVKFy=5Kq_KHnJ=rg0OjsUXFpTQrcdZXksR6qixszQ@mail.gmail.com>
-	<CAE9FiQWf-iqjQC=7w1gj3Lkqy229uFJxBya4bDDx14-+y-MU5w@mail.gmail.com>
-Date: Wed, 12 Jun 2013 23:12:38 +0200
-Message-ID: <CAKL7Q7opor8nk=yJQMr-Smn90AMo9bJD_s6PY1ewF3uiOd6HZA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] x86, range: Do not add new blank slot with add_range_with_merge
-From: "Joshua C." <joshuacov@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Sergey Meirovich <rathamahata@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 12 Jun 2013 17:14:45 -0400
+Date: Wed, 12 Jun 2013 14:14:43 -0700 (PDT)
+Message-Id: <20130612.141443.1482509052798358708.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/6/11 Yinghai Lu <yinghai@kernel.org>:
-> On Tue, Jun 11, 2013 at 10:08 AM, Joshua C. <joshuacov@gmail.com> wrote:
->> 2013/6/11 Yinghai Lu <yinghai@kernel.org>:
->>> On Tue, Jun 11, 2013 at 3:04 AM, Joshua C. <joshuacov@gmail.com> wrote:
->>>> 2013/6/11 Joshua C. <joshuacov@gmail.com>:
->>>>> 2013/6/10 Yinghai Lu <yinghai@kernel.org>:
->>>>>> On Mon, Jun 10, 2013 at 3:55 AM, Sergey Meirovich <rathamahata@gmail.com> wrote:
->>>>>>
->>>>>>> patches 1,2(latest one) have not helped me on 3.9.5:
->>>>>>
->>>>>> So v1:
->>>>>> https://patchwork.kernel.org/patch/2694981/
->>>>>> https://patchwork.kernel.org/patch/2694971/
->>>>>>
->>>>>> and v2:
->>>>>> https://patchwork.kernel.org/patch/2695891/
->>>>>> https://patchwork.kernel.org/patch/2695881/
->>>>>>
->>>>>> Neither of two versions fix the problem on your setup?
->>>>>>
->>>>>> Can you post boot log with mtrr_cleanup_debug on 3.9.4?
->>>>>>
->>>>>> Thanks
->>>>>>
->>>>>> Yinghai
->>>>>
->>>>> I got some warnings when trying to build v2 of the patches:
->>>>>
->>>>> # make -s ARCH=x86_64 V=1 -j4 bzImage
->>>>> kernel/range.c: In function 'add_range_with_merge':
->>>>> kernel/range.c:51:3: error: implicit declaration of function 'memmove'
->>>>> [-Werror=implicit-function-declaration]
->>>>> kernel/range.c:51:3: warning: incompatible implicit declaration of
->>>>> built-in function 'memmove' [enabled by default]
->>>>> cc1: some warnings being treated as errors
->>>>> scripts/Makefile.build:307: recipe for target 'kernel/range.o' failed
->>>>> make[1]: *** [kernel/range.o] Error 1
->>>>> Makefile:793: recipe for target 'kernel' failed
->>>>> make: *** [kernel] Error 2
->>>>> make: *** Waiting for unfinished jobs....
->>>>>
->>>>>
->>>>> --
->>>>> --joshua
->>>
->>> it does not report warning when I compile it with
->>>
->>> gcc (SUSE Linux) 4.7.2 20130108 [gcc-4_7-branch revision 195012
->>>
->>>>
->>>> A trivial fix for the above warnings:
->>>>
->>>> --- linux-2.6.orig/kernel/range.c
->>>> +++ linux-2.6/kernel/range.c
->>>> @@ -4,6 +4,7 @@
->>>>  #include <linux/kernel.h>
->>>>  #include <linux/init.h>
->>>>  #include <linux/sort.h>
->>>> +#include <linux/string.h>
->>>>
->>>>  #include <linux/range.h>
->>>>
->>
->> I use fedora17 with gcc version 4.7.3 (git checkout on 20130411). I
->> have no idea where this came from...
->
-> Ok. Your config should have CONFIG_DYNAMIC_DEBUG defined,
-> and my config does not have that defined.
->
-> we have linux/kernel.h
->                 linux/printk.h
->                 linux/dynamic_debug.h
->
-> dynamic_debug.h will include linux/string.h when CONFIG_DYNAMIC_DEBUG
-> is not defined.
->
-> Hi, Andrew,
->
-> How to fix this inconsistency caused by dynamic_debug.h
->
-> 1. let linux/kernel.h include string.h directly
-> 2. or let dynamic_debug include string.h always
-> 3. let printk.h include string.h.
-> ...
->
-> Yinghai
 
-You guys are better at kernel coding than I am, but can't we just
-directly add 'string.h' just like the small patch I posted? In the
-worst case the file will be included twice... Maybe this is not a good
-coding style but it solves the problem and doesn't cause any side
-effects. So why not do it the way I did?
+Small fixes in various spots, and the ath9k changes that should make
+your Pixel's wireless behave better:
 
---
---joshua
+1) Fix dump iterator in nfnl_acct_dump() and ctnl_timeout_dump() to
+   dump all objects properly, from Pablo Neira Ayuso.
+
+2) xt_TCPMSS must use the default MSS of 536 when no MSS TCP option is
+   present.  Fix from Phil Oester.
+
+3) qdisc_get_rtab() looks for an existing matching rate table and uses that
+   instead of creating a new one.  However, it's key matching is incomplete,
+   it fails to check to make sure the ->data[] array is identical too.  Fix
+   from Eric Dumazet.
+
+4) ip_vs_dest_entry isn't fully initialized before copying back to userspace,
+   fix from Dan Carpenter.
+
+5) Fix ubuf reference counting regression in vhost_net, from Jason Wang.
+
+6) When sock_diag dumps a socket filter back to userspace, we have to translate
+   it out of the kernel's internal representation first.  From Nicolas
+   Dichtel.
+
+7) davinci_mdio holds a spinlock while calling pm_runtime, which sleeps.  Fix
+   from Sebastian Siewior.
+
+8) Timeout check in sh_eth_check_reset is off by one, from Sergei Shtylyov.
+
+9) If sctp socket init fails, we can NULL deref during cleanup.  Fix from
+   Daniel Borkmann.
+
+10) netlink_mmap() does not propagate errors properly, from Patrick McHardy.
+
+11) Disable powersave and use minstrel by default in ath9k.  From
+    Sujith Manoharan.
+
+12) Fix a regression in that SOCK_ZEROCOPY is not set on tuntap sockets which
+    prevents vhost from being able to use zerocopy.  From Jason Wang.
+
+13) Fix race between port lookup and TX path in team driver, from Jiri Pirko.
+
+14) Missing length checks in bluetooth L2CAP packet parsing, from
+    Johan Hedberg.
+
+15) rtlwifi fails to connect to networking using any encryption method other
+    than WPA2.  Fix from Larry Finger.
+
+16) Fix iwlegacy build due to incorrect CONFIG_* ifdeffing for power
+    management stuff.  From Yijing Wang.
+
+Please pull, thanks a lot!
+
+The following changes since commit 1612e111e4e565422242727efb59499cce8738e4:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2013-06-06 18:09:05 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net master
+
+for you to fetch changes up to 090adb893137ff3c672a644413edc174b0a75706:
+
+  Merge branch 'wireless' (2013-06-12 13:35:24 -0700)
+
+----------------------------------------------------------------
+
+Bing Zhao (1):
+      Bluetooth: btmrvl: support Marvell Bluetooth device SD8897
+
+Bjørn Mork (1):
+      qmi_wwan/cdc_ether: let qmi_wwan handle the Huawei E1820
+
+Dan Carpenter (1):
+      ipvs: info leak in __ip_vs_get_dest_entries()
+
+Daniel Borkmann (1):
+      net: sctp: fix NULL pointer dereference in socket destruction
+
+David S. Miller (2):
+      Merge branch 'master' of git://git.kernel.org/.../pablo/nf
+      Merge branch 'wireless'
+
+Eliad Peller (1):
+      wl12xx/wl18xx: scan all 5ghz channels
+
+Eric Dumazet (1):
+      net_sched: qdisc_get_rtab() must check data[] array
+
+Felix Fietkau (1):
+      Revert "ath9k_hw: Update rx gain initval to improve rx sensitivity"
+
+Jason Wang (3):
+      vhost_net: clear msg.control for non-zerocopy case during tx
+      tuntap: fix a possible race between queue selection and changing queues
+      tuntap: set SOCK_ZEROCOPY flag during open
+
+Jiri Pirko (3):
+      team: check return value of team_get_port_by_index_rcu() for NULL
+      team: move add to port list before port enablement
+      team: fix checks in team_get_first_port_txable_rcu()
+
+Johan Hedberg (3):
+      Bluetooth: Fix checks for LE support on LE-only controllers
+      Bluetooth: Fix missing length checks for L2CAP signalling PDUs
+      Bluetooth: Fix mgmt handling of power on failures
+
+John W. Linville (1):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Kees Cook (1):
+      b43: stop format string leaking into error msgs
+
+Larry Finger (2):
+      rtlwifi: rtl8192cu: Fix problem in connecting to WEP or WPA(1) networks
+      rtlwifi: Fix a false leak indication for PCI devices
+
+Luciano Coelho (2):
+      wl12xx: fix minimum required firmware version for wl127x multirole
+      wl12xx: increase minimum singlerole firmware version required
+
+Mark A. Greer (1):
+      mwifiex: debugfs: Fix out of bounds array access
+
+Michael S. Tsirkin (2):
+      vhost: check owner before we overwrite ubuf_info
+      vhost: fix ubuf_info cleanup
+
+Nicolas Dichtel (1):
+      sock_diag: fix filter code sent to userspace
+
+Pablo Neira Ayuso (3):
+      netfilter: nfnetlink_acct: fix incomplete dumping of objects
+      netfilter: nfnetlink_cttimeout: fix incomplete dumping of objects
+      netfilter: nfnetlink_queue: fix missing HW protocol
+
+Patrick McHardy (1):
+      netlink: fix error propagation in netlink_mmap()
+
+Phil Oester (1):
+      netfilter: xt_TCPMSS: Fix violation of RFC879 in absence of MSS option
+
+Sebastian Siewior (1):
+      net/ti davinci_mdio: don't hold a spin lock while calling pm_runtime
+
+Sergei Shtylyov (1):
+      sh_eth: fix result of sh_eth_check_reset() on timeout
+
+Sujith Manoharan (2):
+      ath9k: Disable PowerSave by default
+      ath9k: Use minstrel rate control by default
+
+Yijing Wang (1):
+      net: wireless: iwlegacy: fix build error for il_pm_ops
+
+ drivers/bluetooth/Kconfig                            |   4 +--
+ drivers/bluetooth/btmrvl_sdio.c                      |  28 ++++++++++++++++
+ drivers/net/ethernet/renesas/sh_eth.c                |   4 +--
+ drivers/net/ethernet/ti/davinci_mdio.c               |   5 ++-
+ drivers/net/team/team.c                              |   2 +-
+ drivers/net/team/team_mode_random.c                  |   2 ++
+ drivers/net/team/team_mode_roundrobin.c              |   2 ++
+ drivers/net/tun.c                                    |   4 ++-
+ drivers/net/usb/cdc_ether.c                          |   6 ++++
+ drivers/net/usb/qmi_wwan.c                           |   1 +
+ drivers/net/wireless/ath/ath9k/Kconfig               |  10 ++++--
+ drivers/net/wireless/ath/ath9k/Makefile              |   2 +-
+ drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h |  10 +++---
+ drivers/net/wireless/ath/ath9k/init.c                |   7 +---
+ drivers/net/wireless/ath/ath9k/rc.h                  |   2 +-
+ drivers/net/wireless/b43/main.c                      |   2 +-
+ drivers/net/wireless/iwlegacy/common.h               |   6 ++--
+ drivers/net/wireless/mwifiex/debugfs.c               |  22 +++++++++---
+ drivers/net/wireless/rtlwifi/pci.c                   |   1 +
+ drivers/net/wireless/rtlwifi/rtl8192cu/hw.c          | 134 +++++++++++++++++++++++++++++++++++++++++++++++++++++++-------------------
+ drivers/net/wireless/rtlwifi/rtl8192cu/hw.h          |   4 ---
+ drivers/net/wireless/rtlwifi/rtl8192cu/mac.c         |  18 +++++++++-
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c          |   4 +--
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.h          |   3 ++
+ drivers/net/wireless/rtlwifi/usb.c                   |  13 ++++++++
+ drivers/net/wireless/rtlwifi/wifi.h                  |   4 +++
+ drivers/net/wireless/ti/wl12xx/scan.c                |   2 +-
+ drivers/net/wireless/ti/wl12xx/wl12xx.h              |   6 ++--
+ drivers/net/wireless/ti/wl18xx/scan.c                |   2 +-
+ drivers/vhost/net.c                                  |  29 ++++++++--------
+ drivers/vhost/vhost.c                                |   8 ++++-
+ drivers/vhost/vhost.h                                |   1 +
+ include/linux/filter.h                               |   1 +
+ include/linux/if_team.h                              |   4 +--
+ include/net/bluetooth/hci_core.h                     |   1 +
+ include/net/bluetooth/mgmt.h                         |   1 +
+ net/bluetooth/hci_core.c                             |   6 +++-
+ net/bluetooth/l2cap_core.c                           |  70 +++++++++++++++++++++++++++++----------
+ net/bluetooth/mgmt.c                                 |  23 ++++++++++++-
+ net/bluetooth/smp.c                                  |   4 +--
+ net/core/filter.c                                    |   2 +-
+ net/core/sock_diag.c                                 |   9 +++--
+ net/netfilter/ipvs/ip_vs_ctl.c                       |   1 +
+ net/netfilter/nfnetlink_acct.c                       |   7 ++--
+ net/netfilter/nfnetlink_cttimeout.c                  |   7 ++--
+ net/netfilter/nfnetlink_queue_core.c                 |   6 ++--
+ net/netfilter/xt_TCPMSS.c                            |   6 ++++
+ net/netlink/af_netlink.c                             |   2 +-
+ net/sched/sch_api.c                                  |  11 +++---
+ net/sctp/socket.c                                    |   6 ++++
+ 50 files changed, 378 insertions(+), 137 deletions(-)
