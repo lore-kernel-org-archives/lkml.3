@@ -1,82 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757141Ab3FLPsc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 11:48:32 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:39622 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab3FLPsa (ORCPT
+	id S1757222Ab3FLPt0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 11:49:26 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:42234 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756925Ab3FLPtY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 11:48:30 -0400
-Date: Wed, 12 Jun 2013 16:47:55 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Illia Smyrnov <illia.smyrnov@ti.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Daniel Mack <zonque@gmail.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
-        linux-omap@vger.kernel.org
-Message-ID: <20130612154755.GJ1403@sirena.org.uk>
-References: <1370970556-11713-1-git-send-email-illia.smyrnov@ti.com>
- <1370970556-11713-3-git-send-email-illia.smyrnov@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="K511Q2pAJ3dpTMb/"
-Content-Disposition: inline
-In-Reply-To: <1370970556-11713-3-git-send-email-illia.smyrnov@ti.com>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 2/2] spi: omap2-mcspi: Add FIFO buffer support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Wed, 12 Jun 2013 11:49:24 -0400
+X-AuditID: cbfec37b-b7f306d0000047de-f3-51b898835078
+From: Shuah Khan <shuah.kh@samsung.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/79] 3.9.6-stable review
+Thread-topic: [ 00/79] 3.9.6-stable review
+Thread-index: AQHOZu9tgHc9SW5lp0me396fcGKThA==
+Date: Wed, 12 Jun 2013 15:49:22 +0000
+Message-id: <B8EFE96D1287C24090BAD9D858E15E61568D7C@sisaex02sj>
+References: <20130611195312.352656079@linuxfoundation.org>
+Accept-Language: en-US
+Content-language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+X-Originating-IP: [105.144.21.63]
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 8BIT
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42I5/e+wr27zjB2BBhv7pCzmrF/DZtG8eD2b
+	xeVdc9gsvv50sFiw8RGjxaO+t+wObB47Z91l9zgx4zeLx/65a9g9Pm+SC2CJ4rJJSc3JLEst
+	0rdL4Mo49vMoU8Ey/opDqz8wNzCe5Oli5OSQEDCR2PjoMBuELSZx4d56IJuLQ0hgGaPE9Cc/
+	mCCcXiaJg02dzBDOfEaJW+cXsoK0sAmoS3x+vYMdxBYRMJboPzsLzGYWOMYk0dFZBmILC2hK
+	/OruZIGo0ZI4ufkpK4StJ7F4+k4mEJtFQFVi/5RFYL28AvYST269B4sLCVhJ/F+9D+w8RqDz
+	vp9awwQxX1yiufUmC8TZAhJL9pxnhrBFJV4+/gc0nwPIVpTYvtoKolxLYv3O41Ct2hJP3l1g
+	hVglKPFj8j2WCYxis5BMnYWkZRaSlllIWhYwsqxiFCstTi4oTkpPrTDSK07MLS7NS9dLzs/d
+	xAiJveodjHe/2hxiFOBgVOLhndC8I1CINbGsuDL3EKMEB7OSCK/DBKAQb0piZVVqUX58UWlO
+	avEhRiYOTqkGRuF9u4Srdouf+GttufXK19pXhR0rwhV4mQU+uzsn3stVe3v9yRK5t3zbFKdl
+	JAhNrVzUuiH11uHJ+0SVud4Hyl/ovDhPVVn/wI2uCU5lGyYm9MwuUuoSmrvQxrc/MktxyqHA
+	vwvfJM9e05l64ukrxoWsYtpKe0K6svXXaF1byBYtEMNyZKKarBJLcUaioRZzUXEiALDXOKOb	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/11/2013 04:02 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.9.6 release.
+> There are 79 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Thu Jun 13 19:50:17 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.9.6-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
---K511Q2pAJ3dpTMb/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Patches applied cleanly to 3.0.81, 3.4.48, and 3.9.5
 
-On Tue, Jun 11, 2013 at 08:09:15PM +0300, Illia Smyrnov wrote:
-> The MCSPI controller has a built-in FIFO buffer to unload the DMA or interrupt
-> handler and improve data throughput. This patch adds FIFO buffer support for SPI
-> transfers in DMA mode.
+Compiled and booted on the following systems:
 
-> The FIFO could be enabled for SPI module by setting up the "ti,spi-fifo-enabled"
-> configuration parameter in DT.
-> If FIFO enabled, the largest possible FIFO buffer size will be calculated and
-> setup for each SPI transfer. Even if the FIFO is enabled in DT, it won't be used
-> for the SPI transfers when: calculated FIFO buffer size is less then 2 bytes or
-> the FIFO buffer size isn't multiple of the SPI word length.
+Samsung Series 9 900X4C Intel Corei5:
+     (3.4.49-rc1, and 3.9.6-rc1)
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics:
+     (3.0.82-rc1, 3.4.49-rc1, and 3.9.6-rc1)
 
-Why is the default to disable the FIFO?
+dmesgs for all releases look good. No regressions compared to the previous
+dmesgs for each of these releases.
 
---K511Q2pAJ3dpTMb/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Reviewed patches.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Cross-compile testing:
+HP Compaq dc7700 SFF desktop: x86-64 Intel Core-i2:
+     (3.0.82-rc1, 3.4.48-rc1, and 3.9.6-rc1)
 
-iQIcBAEBAgAGBQJRuJgoAAoJELSic+t+oim9pRkP/2I71IggOYucK0rAHt0i0XUx
-kDLv2kkdn7D8LJCWLTvMvIwaUDtL7/Xz6BTDnK88YUmmbeBMNxhRksFPg2Mto6+u
-QK2qlQEwErIK7JPonWEq3Chr9iRaeCx1IHGFFE5RzYkI5RZtVrnHfQNtW8pfWj1Q
-xGj77W+2Nvm+C5XWTWwXjQEdQ3cgAu7Xeumolsv9Kari8CqbFAxNI3ly42wN3rR7
-8fjYpL4t2YtQBYveSy4DH9GppRyJf+ngAqv9Aqg6UoCgnEuxc0NEEJbuRwjqM6hM
-DtLxDWrAcElZxxCW4XV93G0pMcX3P2NCcUoTH75FW4Z7hHFKS4Zg86i7L0/++tg+
-YDLa1GKofUgWBcFUpHsz8/Pt0azdzkJpyPbuZuMSErxZaUHavXZ5wf13Uznqtiyg
-9oiXM8tyAUELJTHOWaVnlvYSTuQ424gD9PCjYEQIDUlnMwwSbagxemCLYskNcsxy
-zHv9SHWZn9B6itSNzFn9+21n/cjmFYWObUy4PoGlctvGOs5xWmkxE/KzB7UmbqQQ
-RWb6MdRvbQkAuBiKgfd5vwXpTYdoaeIq1buP40vRLXEvTQxpSYrITBhIL359J9o2
-6bxtxqAGDU6HURkL0pTIfSmYRUXHjhlUQIpslaVusqSJXXOAcKy1phJQr8r8DaQ6
-C6xtBg4SLHzz3SOfdgBJ
-=F1IR
------END PGP SIGNATURE-----
+Cross-compile tests results:
 
---K511Q2pAJ3dpTMb/--
+alpha: defconfig passed on all
+arm: defconfig passed on all
+arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.9.y
+c6x: not applicable to 3.0.y, defconfig passed on 3.4.y and 3.9.y
+mips: defconfig passed on all
+mipsel: defconfig passed on all
+powerpc: wii_defconfig passed on all
+sh: defconfig passed on all
+sparc: defconfig passed on all
+tile: tilegx_defconfig passed on all
+
+-- Shuah
+
+Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
+America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
