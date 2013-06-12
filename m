@@ -1,103 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755120Ab3FLH1Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 03:27:16 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:39033 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752280Ab3FLH1O (ORCPT
+	id S1755524Ab3FLH11 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 03:27:27 -0400
+Received: from s72.web-hosting.com ([198.187.29.21]:42295 "EHLO
+	s72.web-hosting.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755279Ab3FLH10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 03:27:14 -0400
-From: Xiaoguang Chen <chenxg@marvell.com>
-To: <viresh.kumar@linaro.org>, <rjw@sisk.pl>
-CC: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <njiang1@marvell.com>,
-        <zjwu@marvell.com>, <ylmao@marvell.com>, <chenxg.marvell@gmail.com>,
-        Xiaoguang Chen <chenxg@marvell.com>
-Subject: [PATCH v3] cpufreq: fix governor start/stop race condition
-Date: Wed, 12 Jun 2013 15:26:26 +0800
-Message-ID: <1371021986-20985-1-git-send-email-chenxg@marvell.com>
-X-Mailer: git-send-email 1.8.0
+	Wed, 12 Jun 2013 03:27:26 -0400
+From: Sujith Manoharan <sujith@msujith.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <20920.8752.339655.254147@gargle.gargle.HOWL>
+Date: Wed, 12 Jun 2013 12:54:32 +0530
+To: David Miller <davem@davemloft.net>
+Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2013-06-06
+In-Reply-To: <20130612.002103.916991474696226731.davem@davemloft.net>
+References: <20130606190929.GB18827@tuxdriver.com>
+	<20130611.222706.1492583255605214982.davem@davemloft.net>
+	<20130612.002103.916991474696226731.davem@davemloft.net>
+X-Mailer: VM 8.2.0b under 24.3.50.2 (x86_64-unknown-linux-gnu)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - server72.web-hosting.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - msujith.org
+X-Get-Message-Sender-Via: server72.web-hosting.com: authenticated_id: sujith@msujith.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpufreq governor stop and start should be kept in sequence.
-If not, there will be unexpected behavior, for example:
+David Miller wrote:
+> John, I also don't like the ATK9K Kconfig option name change added in
+> this pull request, this is exactly the kind of thing that drives
+> Linus insane.
+> 
+> Change the default, fine, but changing the name is unnecssary churn
+> and adds a new config prompt that people are going to respond to
+> incorrectly when they type "make oldconfig"
 
-we have 4 cpus and policy->cpu=cpu0, cpu1/2/3 are linked to cpu0.
-the normal sequence is as below:
+This was Linus' suggestion: https://patchwork.kernel.org/patch/2676971/
 
-1) Current governor is userspace, one application tries to set
-governor to ondemand. it will call __cpufreq_set_policy in which it
-will stop userspace governor and then start ondemand governor.
+The RH bugzilla appears to be down at the moment, but more background
+for the bug is here: https://bugzilla.redhat.com/show_bug.cgi?id=927191
 
-2) Current governor is userspace, now cpu0 hotplugs in cpu3, it will
-call cpufreq_add_policy_cpu. on which it first stops userspace
-governor, and then starts userspace governor.
-
-Now if the sequence of above two cases interleaves, it becames
-below sequence:
-
-1) application stops userspace governor
-2)                                      hotplug stops userspace governor
-3) application starts ondemand governor
-4)                                      hotplug starts a governor
-
-in step 4, hotplug is supposed to start userspace governor, but now
-the governor has been changed by application to ondemand, so hotplug
-starts ondemand governor again !!!!
-
-The solution is: do not allow stop one policy's governor multi-times
-Governor stop should only do once for one policy, after it is stopped,
-no other governor stop should be executed.
-
-Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
----
- drivers/cpufreq/cpufreq.c | 9 +++++++++
- include/linux/cpufreq.h   | 1 +
- 2 files changed, 10 insertions(+)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 2d53f47..b4a2c94 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1562,6 +1562,11 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
- 
- 	pr_debug("__cpufreq_governor for CPU %u, event %u\n",
- 						policy->cpu, event);
-+
-+	if ((!policy->governor_enabled && (event == CPUFREQ_GOV_STOP)) ||
-+	    (policy->governor_enabled && (event == CPUFREQ_GOV_START)))
-+		return 0;
-+
- 	ret = policy->governor->governor(policy, event);
- 
- 	if (!ret) {
-@@ -1569,6 +1574,10 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
- 			policy->governor->initialized++;
- 		else if (event == CPUFREQ_GOV_POLICY_EXIT)
- 			policy->governor->initialized--;
-+		else if (event == CPUFREQ_GOV_STOP)
-+			policy->governor_enabled = 0;
-+		else if (event == CPUFREQ_GOV_START)
-+			policy->governor_enabled = 1;
- 	}
- 
- 	/* we keep one module reference alive for
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 037d36a..c12db73 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -107,6 +107,7 @@ struct cpufreq_policy {
- 	unsigned int		policy; /* see above */
- 	struct cpufreq_governor	*governor; /* see below */
- 	void			*governor_data;
-+	int			governor_enabled; /* governor start/stop flag */
- 
- 	struct work_struct	update; /* if update_policy() needs to be
- 					 * called, but you're in IRQ context */
--- 
-1.8.0
-
+Sujith
