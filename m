@@ -1,253 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757934Ab3FLSSs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 14:18:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33121 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755944Ab3FLSSr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 14:18:47 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wskK765KtKEA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=GqmPQ3klG2UA:10 a=Vl59PXZ4wgL6OKObbYAA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1371061123.9844.269.camel@gandalf.local.home>
-Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        =?UTF-8?Q?=E8=B5=96=E6=B1=9F=E5=B1=B1?= <laijs@cn.fujitsu.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Josh Triplett <josh@joshtriplett.org>, niv@us.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        David Howells <dhowells@redhat.com>,
-        Eric Dumazet <edumazet@google.com>, Darren Hart <darren@dvhart.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        sbw@mit.edu
-Date: Wed, 12 Jun 2013 14:18:43 -0400
-In-Reply-To: <1371059401.1746.33.camel@buesod1.americas.hpqcorp.net>
-References: <20130609193657.GA13392@linux.vnet.ibm.com>
-	 <1370911480.9844.160.camel@gandalf.local.home>
-	 <CA+55aFxeLszgfTZeG7L6289DcaoKT+uhtf5nwB6r=2i9Sy4Mrg@mail.gmail.com>
-	 <1370973186.1744.9.camel@buesod1.americas.hpqcorp.net>
-	 <1370974231.9844.212.camel@gandalf.local.home>
-	 <1371059401.1746.33.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757963Ab3FLSSz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 14:18:55 -0400
+Received: from sauhun.de ([89.238.76.85]:33656 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757939Ab3FLSSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 14:18:51 -0400
+Date: Wed, 12 Jun 2013 20:20:47 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5] i2c: omap: correct usage of the interrupt enable
+ register
+Message-ID: <20130612182046.GC3018@katana>
+References: <1370245040-14753-1-git-send-email-oleksandr.dmytryshyn@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VywGB/WGlW4DM4P8"
+Content-Disposition: inline
+In-Reply-To: <1370245040-14753-1-git-send-email-oleksandr.dmytryshyn@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-12 at 10:50 -0700, Davidlohr Bueso wrote:
-> On Tue, 2013-06-11 at 14:10 -0400, Steven Rostedt wrote:
-> > Perhaps short work loads have a cold cache, and the impact on cache is
-> > not as drastic?
-> > 
-> > It would be interesting to see what perf reports on these runs.
-> 
-> After running the aim7 workloads on Paul's v3 patch (same 80 core, 8
-> socket box - HT off) the results are quite similar to the v1. One
-> difference is that the five_sec workload benefited with +15% throughput
-> after 500 users.
 
-Thanks,
+--VywGB/WGlW4DM4P8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> Taking a further look at each workload:
-> 
-> * five_sec: spends a large amount of time in the newish mcs style lock
-> at the spin on owner for the inode->i_mutex:
-> 
->   24.13%     315655            reaim  [kernel.kallsyms]            [k] mspin_lock                                         
->                       |
->                       --- mspin_lock
->                          |          
->                          |--99.76%-- __mutex_lock_killable_slowpath
->                          |          mutex_lock_killable
->                          |          vfs_readdir
->                          |          SyS_getdents
->                          |          system_call_fastpath
->                          |          __getdents64
-> 
-> With this patch:
->     23.56%     310531            reaim  [kernel.kallsyms]            [k] mspin_lock                                                   
->                       |
->                       --- mspin_lock
->                          |          
->                          |--99.78%-- __mutex_lock_killable_slowpath
->                          |          mutex_lock_killable
->                          |          vfs_readdir
->                          |          SyS_getdents
->                          |          system_call
->                          |          __getdents64
+On Mon, Jun 03, 2013 at 10:37:20AM +0300, Oleksandr Dmytryshyn wrote:
+> We've been lucky not to have any interrupts fire during the suspend
+> path, otherwise we would have unpredictable behaviour in the kernel.
+>=20
+> Based on the logic of the kernel code interrupts from i2c should be
+> prohibited during suspend. Kernel writes 0 to the I2C_IE register in
+> the omap_i2c_runtime_suspend() function. In the other side kernel
+> writes saved interrupt flags to the I2C_IE register in
+> omap_i2c_runtime_resume() function. I.e. interrupts should be disabled
+> during suspend.
+>=20
+> This works for chips with version1 registers scheme. Interrupts are
+> disabled during suspend. For chips with version2 scheme registers
+> writting 0 to the I2C_IE register does nothing (because now the
+> I2C_IRQENABLE_SET register is located at this address). This register
+> is used to enable interrupts. For disabling interrupts
+> I2C_IRQENABLE_CLR register should be used.
+>=20
+> Because the registers I2C_IRQENABLE_SET and I2C_IE have the same
+> addresses, the interrupt enabling procedure is unchanged.
+>=20
+> I've checked that interrupts in the i2c controller are still enabled
+> after writting 0 to the I2C_IRQENABLE_SET register. With this patch
+> interrupts are disabled in the omap_i2c_runtime_suspend() function.
+>=20
+> Patch is based on:
+> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+> tag: v3.10-rc2
+>=20
+> Verified on OMAP4430.
+>=20
+> Signed-off-by: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
 
-Note, the mspin_lock is not interesting, as its not affected by this
-patch.
-
->  
-> * custom: Got a -33% throughput regression with this patch with 10-100
-> users and -46% with 100 users and up. It spends most kernel space time
-> dealing trying to take the inode->i_mutex and the ext4 ->s_orphan_lock
-> (note that all runs are performed on ramdisks with ext4):
-> 
->    3.12%     137131            reaim  [kernel.kallsyms]            [k] mspin_lock                                         
->                       |
->                       --- mspin_lock
->                          |          
->                          |--82.98%-- __mutex_lock_killable_slowpath
->                          |          mutex_lock_killable
->                          |          vfs_readdir
->                          |          SyS_getdents
->                          |          system_call_fastpath
->                          |          __getdents64
->                          |          
->                          |--16.97%-- __mutex_lock_slowpath
->                          |          mutex_lock
->                          |          |          
->                          |          |--47.65%-- ext4_orphan_del
->                          |          |--45.01%-- ext4_orphan_add
-> 
-> With this patch:
->     2.14%     109982            reaim  [kernel.kallsyms]            [k] mspin_lock                                                   
-
-Less time in the mspin_lock as it's probably now in the real spin lock
-somewhere.
-
->                       |
->                       --- mspin_lock
->                          |          
->                          |--68.67%-- __mutex_lock_killable_slowpath
->                          |          mutex_lock_killable
->                          |          vfs_readdir
->                          |          SyS_getdents
->                          |          system_call
->                          |          __getdents64
->                          |          
->                          |--31.24%-- __mutex_lock_slowpath
->                          |          mutex_lock
->                          |          |          
->                          |          |--40.36%-- ext4_orphan_del
-> 
-> 
-> * short: is the big winner for this patch, +69% throughput improvement
-> with 100-2000 users. This makes a lot of sense since the workload spends
-> a ridiculous amount of time trying to acquire the d_lock:
-> 
->   84.86%    1569902            reaim  [kernel.kallsyms]            [k] _raw_spin_lock
->                       |
->                       --- _raw_spin_lock
->                          |
->                          |--49.96%-- dget_parent
->                          |          __fsnotify_parent
->                          |--49.71%-- dput
->                          |          |
->                          |          |--99.98%-- __fsnotify_parent
-> 
-> With this patch:
->    70.65%     467422           reaim  [kernel.kallsyms]     [k] tkt_q_do_spin
->                      |
->                      --- tkt_q_do_spin
->                         |
->                         |--100.00%-- tkt_spin_pass
->                         |          |
->                         |          |--100.00%-- _raw_spin_lock
->                         |          |          |
->                         |          |          |--50.07%-- dget_parent
->                         |          |          |          __fsnotify_parent
->                         |          |          |--49.93%-- dput
->                         |          |          |          __fsnotify_parent
-
-This looks to be where the patch helps. The run without the patch is
-hammering away at the cacheline of the d_lock, which I'm sure shares the
-cache of other items in the dentry, such as the d_count. With the patch,
-the spin is on a separate cacheline and doesn't affect the owner so
-much.
-
->  
-> 
-> * disk: This patch benefits when adding more concurrency. Got -57% with
-> 10-100 users, -25% with 100-1000 users and +8% with over 1000 users.
-> Spends a good amount of time dealing with the wait_queue lock. The perf
-> traces are with 80 users, where we see the worst numbers:
-> 
->   22.34%      20400            reaim  [kernel.kallsyms]        [k] _raw_spin_lock_irqsave                             
->                       |
->                       --- _raw_spin_lock_irqsave
->                          |          
->                          |--50.28%-- __wake_up
->                          |          |          
->                          |          |--99.10%-- __wake_up_bit
->                          |          |          wake_up_bit
->                          |          |          unlock_buffer
->                          |          
->                          |--33.73%-- prepare_to_wait_exclusive
->                          |          __wait_on_bit_lock
->                          |          out_of_line_wait_on_bit_lock
->                          |          __lock_buffer
->                          |          do_get_write_access
->                          |          jbd2_journal_get_write_access
->                          |          __ext4_journal_get_write_access
->                          |--14.76%-- finish_wait
->                          |          |          
->                          |          |--98.93%-- __wait_on_bit_lock
->                          |          |          out_of_line_wait_on_bit_lock
->                          |          |          __lock_buffer
->                          |          |          do_get_write_access
->                          |          |          jbd2_journal_get_write_access
->                          |          |          __ext4_journal_get_write_access
-> 
-> 
-> With this patch the the time spent in the mentioned spinlocks
-> considerably reduced:
->      8.09%       6237            reaim  [kernel.kallsyms]   [k] __read_lock_failed                                           
->                       |
->                       --- __read_lock_failed
->                           _raw_read_lock
->                          |          
->                          |--99.08%-- start_this_handle
->                          |          jbd2__journal_start
->                          |          __ext4_journal_start_sb
-> 
->     1.48%       1032            reaim  [kernel.kallsyms]   [k] _raw_spin_lock_irqsave                                       
->                       |
->                       --- _raw_spin_lock_irqsave
->                          |          
->                          |--50.77%-- prepare_to_wait
->                          |          |          
->                          |          |--72.61%-- jbd2_log_wait_commit
->                          |          |          jbd2_complete_transaction
->                          |--21.76%-- prepare_to_wait_exclusive
->                          |          __wait_on_bit_lock
->                          |          out_of_line_wait_on_bit_lock
->                          |          __lock_buffer
->                          |          do_get_write_access
->                          |          jbd2_journal_get_write_access
->                          |--11.46%-- __wake_up
->                          |          |          
->                          |          |--44.21%-- ftrace_define_fields_jbd2_run_stats
->                          |          |          __ext4_journal_stop
->                          |--10.39%-- finish_wait
->                          |          |          
->                          |          |--53.18%-- __wait_on_bit_lock
->                          |          |          out_of_line_wait_on_bit_lock
->                          |          |          __lock_buffer
->                          |          |          do_get_write_access
->                          |          |          jbd2_journal_get_write_access
->                          |          |          __ext4_journal_get_write_access
-
-Interesting that this trace doesn't show it going into patch code at
-all. I wonder if adding the slight overhead to the spin lock itself
-shifts things enough to get a benefit by avoiding contention?
-
--- Steve
+Kevin, I think you are fine with this patch now?
 
 
+--VywGB/WGlW4DM4P8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRuLv+AAoJEBQN5MwUoCm2agoP/0Xdkhgc0bekBGA8p/GLMg37
+5iCp2bk0l94wGbd4gG7PvpKGZDom9el2BFmmM9moE7K/58MDe0e/yqNSFBBjtwLT
+Xbgbzul2t/kdmizJ5AXZ/LEKRSlc2fZV3WhgOTw3NyMi0mUvVP3YqtbPT4zgsq9D
+c7jZ5ER05PxAFJyj6noMMR3DYHmBWbLYp17/E7cTvzVO2GnUTS2JuZbkgX7AT+tz
+OST3AvdK883un8j9JHmHiQDHJh6qfA8dwbkIs42K/t8pZHF8JRocLOY8L04RUJO3
+qfORi+dUcgYBLcgCpIxbuR4Y+EYcSwLJVPDtixQrOWMmb180PtlFc1909d6cKkqB
+hZBEwnXdHkx10OjkT+4ens6yvZAh6/8q0MdKbG8RRPAQNlFvyKsDKRho16lz07yb
+b8L+wlUqjDbzZ+pnrX+eXXba2whOn9vm0p17gAENL1hvl0HSQjCPaVrZMUEgMp6K
+9jdI2mCaCkkVcDJSVfJizWJpgVvIi0sOobaNyzThJsqJle4G24kS3cPajjsj3HkX
+i9cCwxhDKdIrY+o7E53ZqcO9v7ZlAe1TuMLfOi1cXBxQU1unOEtbxs0bAyvFUSzD
+g7VJU/k01Gv7Dye0Eajn9qrtY2o6PJEeRm1gbkYngDHy/ndQ14UiyoQgXUv4hJam
+bULgo8KlEVzHie4nRVco
+=+2iR
+-----END PGP SIGNATURE-----
+
+--VywGB/WGlW4DM4P8--
