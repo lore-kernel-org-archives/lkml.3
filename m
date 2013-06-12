@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab3FLGFq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 02:05:46 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:52685 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752763Ab3FLGFo (ORCPT
+	id S1755176Ab3FLGKV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 02:10:21 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:46525 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752763Ab3FLGKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 02:05:44 -0400
+	Wed, 12 Jun 2013 02:10:20 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130612080002.3f382ee1@amdc308.digital.local>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
-	<1370941408-29304-1-git-send-email-l.majewski@samsung.com>
-	<CAKohpo=VpMvxMb-r4Hgga1ZM9m9egyUH_Ee+S=q25RdT7DAE-Q@mail.gmail.com>
-	<20130612080002.3f382ee1@amdc308.digital.local>
-Date: Wed, 12 Jun 2013 11:35:44 +0530
-Message-ID: <CAKohpo=btXn-T8KVixzOJWYhkL5eatShHoq51h9b+ZvWdNXHgA@mail.gmail.com>
-Subject: Re: [PATCH v2 0/3] cpufreq:boost: CPU Boost mode support
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CA+55aFztTY8gGh=eLD65QuaUA8dpKxXqJbQimV+7PnbWqMDyzw@mail.gmail.com>
+References: <20130611210414.GN8211@linux.intel.com>
+	<CA+55aFztTY8gGh=eLD65QuaUA8dpKxXqJbQimV+7PnbWqMDyzw@mail.gmail.com>
+Date: Tue, 11 Jun 2013 23:10:18 -0700
+X-Google-Sender-Auth: g2YR-zZZQ4fjaKkFiwLhKPIiKsg
+Message-ID: <CA+55aFzzJfBjJXrF2ycRGbnSGyc6U_H4g5f59gAkAr40S4c3wA@mail.gmail.com>
+Subject: Re: [PULL REQUEST] NVMe driver fixes
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: linux-nvme@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 June 2013 11:30, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> As you pointed out in the other mail 1/3 has its own issues, but I
-> think that patches 2/3 and 3/3 are an integral part of the boost
-> support and bring better overall overview to the design.
-
-Yes they are. Undoubtedly.
-
->> Maybe you can just send v3 of 1/3. 2/3 and 3/3 can be sent when we
->> have finalized 2/3 and 3/3 's version.
+On Tue, Jun 11, 2013 at 8:09 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> I'd opt for sending the whole patchset (it shouldn't be so difficult to
-> adjust those patches), since it is easier for me to test.
+> It's after -rc5, and this pattern of "stuff comes in quite late in the
+> merge window, and then even later in the rc series" is getting really
+> tiresome.
 
-Okay.
+Gaah. I took it. I still don't like the timing here, but looking at
+the commits I can't see a reason for dropping it.
+
+               Linus
