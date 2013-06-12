@@ -1,54 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab3FLOqk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 10:46:40 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:52644 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752284Ab3FLOqj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 10:46:39 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 21/33 v2] clk: ux500: Add Device Tree support for the PRCC Kernel clock
-Date: Wed, 12 Jun 2013 16:46:30 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com,
-        Mike Turquette <mturquette@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org> <1370521041-32318-22-git-send-email-lee.jones@linaro.org> <20130611110923.GB3330@laptop>
-In-Reply-To: <20130611110923.GB3330@laptop>
+	id S1756210Ab3FLOso (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 10:48:44 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:15022 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752567Ab3FLOsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 10:48:42 -0400
+Date: Wed, 12 Jun 2013 16:47:45 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-i2c@vger.kernel.org,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>
+Subject: Re: [PATCH REBASE] i2c-designware: make SDA hold time configurable
+Message-ID: <20130612144743.GB8102@ab42.lan>
+References: <20130514110745.GA10906@intel.com>
+ <1368536642-7158-1-git-send-email-christian.ruppert@abilis.com>
+ <20130610152954.GE2987@katana>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306121646.30279.arnd@arndb.de>
-X-Provags-ID: V02:K0:hPYG4Dh74hdfvndboqkNdulKdb/saVI3B6+prFe50Tp
- 1BNok3k1P+LFiknxhLzfx3hwxCMASnRHtJ1RDHIdFnzXF8gIwY
- eF83JG8M0J310nRm7HNZ9foi3CSjq9E+DaRYdw/ggY0UD6zdIM
- Vvx2IIUITR2nAsxdlmk37ZA6q+XVKxzznexgB5Vic80tYPoP5x
- FUjyo9sSFB95gkM4M0jS3hq48gY1IsFc2+dz58mIrpP+psRkOW
- ww3TJ7h2wsLWG4Wa+ylyvrXeHwjLJb/zsy7hGxtpPTEs93lL6Y
- FlhVsBdK5aF4AI0AbNCz3ho8qxwbu87eEl2k1lqEecSU1K1jSv
- ctvdCLNOkX0qAzCsP7n4=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wRRV7LY7NUeQGEoC"
+Content-Disposition: inline
+In-Reply-To: <20130610152954.GE2987@katana>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 June 2013, Lee Jones wrote:
-> This patch enables clocks to be specified from Device Tree via phandles
-> to the "prcc-kernel-clock" node.
-> 
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Cc: Ulf Hansson <ulf.hansson@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
 
-I don't understand the design of the common clock subsystem here, but is it really
-necessary to hardcode all the clocks using clk_reg_prcc_kclk() here *and* register
-a clkdev *and* store the pointer in an array, when you can get all that information
-from the device tree?
+--wRRV7LY7NUeQGEoC
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Mike?
+On Mon, Jun 10, 2013 at 05:29:55PM +0200, Wolfram Sang wrote:
+> On Tue, May 14, 2013 at 03:04:02PM +0200, Christian Ruppert wrote:
+> > This patch makes the SDA hold time configurable through device tree.
+> >=20
+> > [rebased to i2c-current/i2c-next/mainline-3.10-rc1]
+> >=20
+> > Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+> > Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
+>=20
+> Hmm, I really have problems adding a generic property. I need to better
+> understand why this is needed? What is the usecase? Can't a safe value
+> be calculated depending on the bus-speed? Is there a public datasheet
+> available somewhere?
 
-	Arnd
+I checked with our PCB/Applications team and the data sheets for the
+peripherals in question (DVB demodulator front ends) are under NDA.
+Mika, you seem to be interested in this patch as well. Do you know of
+any publicly available data sheets for hardware requiring this
+adjustment?
+
+In the case of the Designware block, the parameter both changes SDA and
+START hold times, however, and you'll find lots of data sheets for
+hardware with START hold time requirements on the net, e.g.
+http://ww1.microchip.com/downloads/en/DeviceDoc/21805B.pdf
+
+The empirical solution in the function i2c_dw_scl_hcnt does not seem to
+work in all cases: Our lab guys confirmed that we have several PCB
+designs which do not work without adjusting the sda-hold-time parameter
+to an appropriate value. The value seems to be different for different
+PCBs.
+
+I suspect that this kind of configurability is not the same for all i2c
+bus master hardware. If you don't want to add a generic property, would
+you accept the patch with the property renamed to dwi2c,sda-hold-time?
+
+Greetings,
+  Christian
+
+
+--=20
+  Christian Ruppert              ,          <christian.ruppert@abilis.com>
+                                /|
+  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pr=E9-Fleuri
+                             _// | bilis Systems   CH-1228 Plan-les-Ouates
+
+--wRRV7LY7NUeQGEoC
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.14 (GNU/Linux)
+
+iEYEARECAAYFAlG4ig8ACgkQbI8SbDT4m4+xQACgudMzzFq2VpdSrGO40HHOo3kV
+HDgAmgP9Yvcdkp4fZng0JyHCgfBqCd/A
+=4bpo
+-----END PGP SIGNATURE-----
+
+--wRRV7LY7NUeQGEoC--
