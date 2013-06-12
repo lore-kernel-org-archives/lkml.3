@@ -1,56 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758163Ab3FLXCd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 19:02:33 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:64571 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756927Ab3FLXCb (ORCPT
+	id S932252Ab3FLXF0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 19:05:26 -0400
+Received: from forward18.mail.yandex.net ([95.108.253.143]:53347 "EHLO
+	forward18.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758133Ab3FLXFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 19:02:31 -0400
-Date: Wed, 12 Jun 2013 16:02:34 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Wed, 12 Jun 2013 19:05:25 -0400
+X-Greylist: delayed 381 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Jun 2013 19:05:25 EDT
+Authentication-Results: smtp19.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Message-ID: <1371078380.20762.29.camel@hp>
+Subject: Re: [PATCH] spin_unlock*_no_resched()
+From: Kirill Tkhai <tkhai@yandex.ru>
+Reply-To: tkhai@yandex.ru
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>
-Subject: Re: [PATCH v3 5/7] clk: add basic Rockchip rk3066a clock support
-Message-ID: <20130612230234.GB9016@quad.lixom.net>
-References: <201306111328.52679.heiko@sntech.de>
- <201306111331.31517.heiko@sntech.de>
- <20130611200610.8816.68285@quantum>
- <201306130045.41723.heiko@sntech.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201306130045.41723.heiko@sntech.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Ingo Molnar <mingo@redhat.com>, tglx@linutronix.de
+Date: Thu, 13 Jun 2013 03:06:20 +0400
+In-Reply-To: <1371042443.9844.255.camel@gandalf.local.home>
+References: <1022041371038807@web30d.yandex.ru>
+	 <20130612121532.GD3204@twins.programming.kicks-ass.net>
+	 <1371042443.9844.255.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 12:45:41AM +0200, Heiko Stübner wrote:
-> Part of me simply wants to wait for this - but rockchip stuff might be to late 
-> for 3.11 anyway, as we're near rc6.
+On Wed, 2013-06-12 at 09:07 -0400, Steven Rostedt wrote:
+> On Wed, 2013-06-12 at 14:15 +0200, Peter Zijlstra wrote:
+> 
+> > So I absolutely hate this API because people can (and invariably will)
+> > abuse it; much like they did/do preempt_enable_no_resched().
+> 
+> Me too.
+> 
+> > 
+> > IIRC Thomas even maps preempt_enable_no_resched() to preempt_enable() in
+> > -rt to make sure we don't miss preemption points due to stupidity.
+> > 
+> > He converted the 'few' sane sites to use schedule_preempt_disabled(). In
+> > that vein, does it make sense to introduce schedule_spin_locked()?
+> > 
+> 
+> I was thinking the exact same thing when I read this patch. This is a
+> strict policy that we should enforce and not let individual developers
+> implement. Yes, a schedule_spin_unlock() would work nicely. The API will
+> enforce the two to be used together.
 
-For a new platform like this, it's useful to get some of the drivers to land
-even if the main platform code isn't. Where things tend to get messy is when we
-have to add a lot of code late in the cycle that has a lot of external
-dependencies, since everybody then has to scramble about getting things sorted
-out.
+Steven thanks for your explanation and Peter's, now I looked to this
+from another side.
 
-It's not too late for 3.11 yet, and in particular it'd be nice to see things
-like clock and pinctrl stuff go in even if some other stuff misses the train.
+If we speak about combined primitive does it have to be a special
+variant of schedule_spin_unlock_* for every irq state? The simplest way
+is to do local_irq_enable() always before schedule() call, but I'm not
+sure that this is good for all platforms.
+
+For -rt everything of this is completely useless, because number of
+raw_spin_locks is small. Maybe changes for some another types of locks
+will applicable.
+
+Kirill
+
+> Otherwise, I can envision seeing
+> things like:
+> 
+> 	preempt_disable();
+> 	[...]
+> 
+> 	spin_lock(x);
+> 
+> 	spin_unlock_no_resched(x);
+> 
+> 	[...]
+> 
+> 	preempt_enable();
+> 
+> And developers having no idea why the above is broken. Although, I would
+> say the above is broken for other reasons, but I was just using that to
+> show the craziness such an API would give to us.
+> 
+> -- Steve
+> 
+> 
+> 
 
 
--Olof
+
