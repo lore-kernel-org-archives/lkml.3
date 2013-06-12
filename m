@@ -1,100 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758046Ab3FLVI3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 17:08:29 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:51064 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755695Ab3FLVI2 (ORCPT
+	id S932139Ab3FLVMl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 17:12:41 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:46577 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755908Ab3FLVMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 17:08:28 -0400
-Date: Wed, 12 Jun 2013 14:08:24 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <theo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH 2/2] percpu-refcount: implement percpu_tryget() along
- with percpu_ref_kill_and_confirm()
-Message-ID: <20130612210824.GG6151@google.com>
-References: <20130612204532.GB15092@htj.dyndns.org>
- <20130612204627.GC15092@htj.dyndns.org>
+	Wed, 12 Jun 2013 17:12:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130612204627.GC15092@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAE9FiQWf-iqjQC=7w1gj3Lkqy229uFJxBya4bDDx14-+y-MU5w@mail.gmail.com>
+References: <1370845742-18919-1-git-send-email-yinghai@kernel.org>
+	<CA+QCeVRdOOuh4aVZsQhucBNETnDp5OhAZguigLTbyD9bOONO1A@mail.gmail.com>
+	<CAE9FiQXacn2abVKeBhTazgRBCS9EtiACs=fbB6_Y27ZpLOTq3w@mail.gmail.com>
+	<CAKL7Q7rxkXDx49CgSjoVJSbER7ou+-yXa-yZg4hT4ktG_4gvHw@mail.gmail.com>
+	<CAKL7Q7qUwTGexhr+8d88qN94YSCfSeOS-oLMh=KQ2NiOZRLbLQ@mail.gmail.com>
+	<CAE9FiQWOvP+tTQ0Vakc9f-t61dv6Lo6dJm0+oH1On5k=6nvbXw@mail.gmail.com>
+	<CAKL7Q7pbdVKFy=5Kq_KHnJ=rg0OjsUXFpTQrcdZXksR6qixszQ@mail.gmail.com>
+	<CAE9FiQWf-iqjQC=7w1gj3Lkqy229uFJxBya4bDDx14-+y-MU5w@mail.gmail.com>
+Date: Wed, 12 Jun 2013 23:12:38 +0200
+Message-ID: <CAKL7Q7opor8nk=yJQMr-Smn90AMo9bJD_s6PY1ewF3uiOd6HZA@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] x86, range: Do not add new blank slot with add_range_with_merge
+From: "Joshua C." <joshuacov@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Sergey Meirovich <rathamahata@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 01:46:27PM -0700, Tejun Heo wrote:
-> From de3c0749e2c1960afcc433fc5da136b85c8bd896 Mon Sep 17 00:00:00 2001
-> From: Tejun Heo <tj@kernel.org>
-> Date: Wed, 12 Jun 2013 13:37:42 -0700
-> 
-> Implement percpu_tryget() which succeeds iff the refcount hasn't been
-> killed yet.  Because the refcnt is per-cpu, different CPUs may have
-> different perceptions on when the counter has been killed and tryget()
-> may continue to succeed for a while after percpu_ref_kill() returns.
+2013/6/11 Yinghai Lu <yinghai@kernel.org>:
+> On Tue, Jun 11, 2013 at 10:08 AM, Joshua C. <joshuacov@gmail.com> wrote:
+>> 2013/6/11 Yinghai Lu <yinghai@kernel.org>:
+>>> On Tue, Jun 11, 2013 at 3:04 AM, Joshua C. <joshuacov@gmail.com> wrote:
+>>>> 2013/6/11 Joshua C. <joshuacov@gmail.com>:
+>>>>> 2013/6/10 Yinghai Lu <yinghai@kernel.org>:
+>>>>>> On Mon, Jun 10, 2013 at 3:55 AM, Sergey Meirovich <rathamahata@gmail.com> wrote:
+>>>>>>
+>>>>>>> patches 1,2(latest one) have not helped me on 3.9.5:
+>>>>>>
+>>>>>> So v1:
+>>>>>> https://patchwork.kernel.org/patch/2694981/
+>>>>>> https://patchwork.kernel.org/patch/2694971/
+>>>>>>
+>>>>>> and v2:
+>>>>>> https://patchwork.kernel.org/patch/2695891/
+>>>>>> https://patchwork.kernel.org/patch/2695881/
+>>>>>>
+>>>>>> Neither of two versions fix the problem on your setup?
+>>>>>>
+>>>>>> Can you post boot log with mtrr_cleanup_debug on 3.9.4?
+>>>>>>
+>>>>>> Thanks
+>>>>>>
+>>>>>> Yinghai
+>>>>>
+>>>>> I got some warnings when trying to build v2 of the patches:
+>>>>>
+>>>>> # make -s ARCH=x86_64 V=1 -j4 bzImage
+>>>>> kernel/range.c: In function 'add_range_with_merge':
+>>>>> kernel/range.c:51:3: error: implicit declaration of function 'memmove'
+>>>>> [-Werror=implicit-function-declaration]
+>>>>> kernel/range.c:51:3: warning: incompatible implicit declaration of
+>>>>> built-in function 'memmove' [enabled by default]
+>>>>> cc1: some warnings being treated as errors
+>>>>> scripts/Makefile.build:307: recipe for target 'kernel/range.o' failed
+>>>>> make[1]: *** [kernel/range.o] Error 1
+>>>>> Makefile:793: recipe for target 'kernel' failed
+>>>>> make: *** [kernel] Error 2
+>>>>> make: *** Waiting for unfinished jobs....
+>>>>>
+>>>>>
+>>>>> --
+>>>>> --joshua
+>>>
+>>> it does not report warning when I compile it with
+>>>
+>>> gcc (SUSE Linux) 4.7.2 20130108 [gcc-4_7-branch revision 195012
+>>>
+>>>>
+>>>> A trivial fix for the above warnings:
+>>>>
+>>>> --- linux-2.6.orig/kernel/range.c
+>>>> +++ linux-2.6/kernel/range.c
+>>>> @@ -4,6 +4,7 @@
+>>>>  #include <linux/kernel.h>
+>>>>  #include <linux/init.h>
+>>>>  #include <linux/sort.h>
+>>>> +#include <linux/string.h>
+>>>>
+>>>>  #include <linux/range.h>
+>>>>
+>>
+>> I use fedora17 with gcc version 4.7.3 (git checkout on 20130411). I
+>> have no idea where this came from...
+>
+> Ok. Your config should have CONFIG_DYNAMIC_DEBUG defined,
+> and my config does not have that defined.
+>
+> we have linux/kernel.h
+>                 linux/printk.h
+>                 linux/dynamic_debug.h
+>
+> dynamic_debug.h will include linux/string.h when CONFIG_DYNAMIC_DEBUG
+> is not defined.
+>
+> Hi, Andrew,
+>
+> How to fix this inconsistency caused by dynamic_debug.h
+>
+> 1. let linux/kernel.h include string.h directly
+> 2. or let dynamic_debug include string.h always
+> 3. let printk.h include string.h.
+> ...
+>
+> Yinghai
 
-I don't feel very comfortable with saying percpu_ref_tryget() succeeds
-"iff the refcount hasn't been killed yet".  That's something I would say
-about e.g. atomic_inc_not_zero(), but percpu_ref_tryget() doesn't do
-that sort of synchronization which is what iff implies to me.
+You guys are better at kernel coding than I am, but can't we just
+directly add 'string.h' just like the small patch I posted? In the
+worst case the file will be included twice... Maybe this is not a good
+coding style but it solves the problem and doesn't cause any side
+effects. So why not do it the way I did?
 
-If the user does need some kind of strict ordering between
-percpu_ref_kill() and percpu_ref_tryget(), they'd have to insert some
-memory barriers - tryget() certainly doesn't have any.
-
-That said, I haven't seen near enough actual uses to know whether this
-would be an issue in practice, or what a better description would be. I
-mean, tryget() does always get you a valid ref...
-
-Maybe emphasize that tryget() succeeds iff this cpu hasn't seen
-percpu_ref_kill() done yet? I dunno.
-
-> For use cases where it's necessary to know when all CPUs start to see
-> the refcnt as dead, percpu_ref_kill_and_confirm() is added.  The new
-> function takes an extra argument @confirm_kill which is invoked when
-> the refcnt is guaranteed to be viewed as killed on all CPUs.
-> 
-> While this isn't the prettiest interface, it doesn't force synchronous
-> wait and is much safer than requiring the caller to do its own
-> call_rcu().
-
-Yeah, this seems... icky to me. I'm going to withhold judgement until I
-see how it's used, maybe there isn't any other way but I'd like to try
-and find something prettier.
-
->  /**
-> - * percpu_ref_kill - safely drop initial ref
-> + * percpu_ref_kill_and_confirm - drop the initial ref and schedule confirmation
->   * @ref: percpu_ref to kill
-> + * @confirm_kill: optional confirmation callback
->   *
-> - * Must be used to drop the initial ref on a percpu refcount; must be called
-> - * precisely once before shutdown.
-> + * Equivalent to percpu_ref_kill() but also schedules kill confirmation if
-> + * @confirm_kill is not NULL.  @confirm_kill, which may not block, will be
-> + * called after @ref is seen as dead from all CPUs - all further
-> + * invocations of percpu_ref_tryget() will fail.  See percpu_ref_tryget()
-> + * for more details.
->   *
-> - * Puts @ref in non percpu mode, then does a call_rcu() before gathering up the
-> - * percpu counters and dropping the initial ref.
-> + * It's guaranteed that there will be at least one full RCU grace period
-> + * between the invocation of this function and @confirm_kill and the caller
-> + * can piggy-back their RCU release on the callback.
->   */
-> -void percpu_ref_kill(struct percpu_ref *ref)
-> +void percpu_ref_kill_and_confirm(struct percpu_ref *ref,
-> +				 percpu_ref_func_t *confirm_kill)
-
-Passing release to percpu_ref_init() and confirm_kill to
-percpu_ref_kill() is inconsistent. Can we pass them both to
-percpu_ref_init()?
-
-Also, given that confirm_kill is an optional thing I don't see why
-you're renaming percpu_ref_kill() -> percpu_ref_kill_and_confirm(). Most
-users (certainly aio, I think the module code too) don't have any use
-for confirm kill, I don't want to rename it for an ugly optional thing.
+--
+--joshua
