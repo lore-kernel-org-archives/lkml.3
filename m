@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab3FLH4q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 03:56:46 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:65404 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752280Ab3FLH4o (ORCPT
+	id S1753700Ab3FLH6L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 03:58:11 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:35754 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121Ab3FLH6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 03:56:44 -0400
-Date: Wed, 12 Jun 2013 02:56:34 -0500
-From: Calvin Owens <jcalvinowens@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Felix Fietkau <nbd@openwrt.org>, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] mac80211: ath9k: Use RCU protection calling
- ieee80211_get_tx_rates
-Message-ID: <20130612075634.GA1649@gmail.com>
-References: <20130609225120.GA2789@gmail.com>
- <20130610042959.GA1902@gmail.com>
- <1370950926.8356.14.camel@jlt4.sipsolutions.net>
- <20130611171304.GA2189@gmail.com>
- <1370980523.8356.70.camel@jlt4.sipsolutions.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1370980523.8356.70.camel@jlt4.sipsolutions.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 12 Jun 2013 03:58:10 -0400
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Ola Lilja <ola.o.lilja@stericsson.com>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: [PATCH 0/3] DMA fixes for ux500 ASoC driver
+Date: Wed, 12 Jun 2013 09:57:56 +0200
+Message-Id: <1371023879-21884-1-git-send-email-fabio.baltieri@linaro.org>
+X-Mailer: git-send-email 1.8.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 06/11 at 21:55 +0200, Johannes Berg wrote:
-> Now the subject should no longer say "mac80211:" :)
-> 
-> However... given that ieee80211_get_tx_rates() actually *copies* the
-> rates into the parameter, I guess it should do the rcu_read_lock()
-> internally. I guess I wasn't paying attention previously. Felix?
+Hi Mark,
 
-I thought about that, but it seemed too simple, so I assumed I was
-missing something. ;)
+The DMA driver used on ux500 has been recently reworked to make it
+device-tree capable, but the rework required to drop some "features",
+such as opportunistic channel allocation and hardcoded addresses, that
+the ASoC driver was relying upon.
 
-I'll send a patch per above. That makes the header file update
-unnecessary too.
+This series fixes the audio driver to make it work with the current
+dma40 implementation, and works fine even when booting with device-tree.
 
-> johannes
+Would you consider merging these for asoc/topic/ux500?
+
+Thanks,
+Fabio
+
+
+Fabio Baltieri (3):
+  ASoC: ux500: Move DMA parameters into ux500_msp
+  ASoC: ux500: Set DMA address during device init
+  ASoC: ux500: Add DMA slave config prepare routine
+
+ sound/soc/ux500/ux500_msp_dai.c | 11 ++++-------
+ sound/soc/ux500/ux500_msp_dai.h |  2 --
+ sound/soc/ux500/ux500_msp_i2s.c | 13 +++++++++----
+ sound/soc/ux500/ux500_msp_i2s.h | 15 ++++++++-------
+ sound/soc/ux500/ux500_pcm.c     | 30 ++++++++++++++++++++++++++++++
+ 5 files changed, 51 insertions(+), 20 deletions(-)
+
+-- 
+1.8.2
+
