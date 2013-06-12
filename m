@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716Ab3FLEX4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 00:23:56 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:61929 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752968Ab3FLEXW (ORCPT
+	id S1754355Ab3FLEXw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 00:23:52 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:35233 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752822Ab3FLEXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 00:23:22 -0400
+	Wed, 12 Jun 2013 00:23:19 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Minchan Kim <minchan@kernel.org>,
@@ -26,9 +26,9 @@ Cc: Minchan Kim <minchan@kernel.org>,
         Michel Lespinasse <walken@google.com>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 5/8] vrange: Add new vrange(2) system call
-Date: Tue, 11 Jun 2013 21:22:48 -0700
-Message-Id: <1371010971-15647-6-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 3/8] vrange: Add vrange support to mm_structs
+Date: Tue, 11 Jun 2013 21:22:46 -0700
+Message-Id: <1371010971-15647-4-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371010971-15647-1-git-send-email-john.stultz@linaro.org>
 References: <1371010971-15647-1-git-send-email-john.stultz@linaro.org>
@@ -38,55 +38,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Minchan Kim <minchan@kernel.org>
 
-This patch adds new system call sys_vrange.
+Allows for vranges to be managed against mm_structs.
 
-NAME
-	vrange - Mark or unmark range of memory as volatile
-
-SYNOPSIS
-	int vrange(unsigned_long start, size_t length, int mode,
-			 int *purged);
-
-DESCRIPTION
-	Applications can use vrange(2) to advise the kernel how it should
-	handle paging I/O in this VM area.  The idea is to help the kernel
-	discard pages of vrange instead of reclaiming when memory pressure
-	happens. It means kernel doesn't discard any pages of vrange if
-	there is no memory pressure.
-
-	mode:
-	VRANGE_VOLATILE
-		hint to kernel so VM can discard in vrange pages when
-		memory pressure happens.
-	VRANGE_NONVOLATILE
-		hint to kernel so VM doesn't discard vrange pages
-		any more.
-
-	If user try to access purged memory without VRANGE_NOVOLATILE call,
-	he can encounter SIGBUS if the page was discarded by kernel.
-
-	purged: Pointer to an integer which will return 1 if
-	mode == VRANGE_NONVOLATILE and any page in the affected range
-	was purged. If purged returns zero during a mode ==
-	VRANGE_NONVOLATILE call, it means all of the pages in the range
-	are intact.
-
-RETURN VALUE
-	On success vrange returns the number of bytes marked or unmarked.
-	Similar to write(), it may return fewer bytes then specified
-	if it ran into a problem.
-
-	If an error is returned, no changes were made.
-
-ERRORS
-	EINVAL This error can occur for the following reasons:
-		* The value length is negative or not page size units.
-		* addr is not page-aligned
-		* mode not a valid value.
-
-	ENOMEM Not enough memory
-
-	EFAULT purged pointer is invalid
+Includes support for copying vrange trees on fork,
+as well as clearing them on exec.
 
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Android Kernel Team <kernel-team@android.com>
@@ -110,199 +65,143 @@ Cc: Michel Lespinasse <walken@google.com>
 Cc: Minchan Kim <minchan@kernel.org>
 Cc: linux-mm@kvack.org <linux-mm@kvack.org>
 Signed-off-by: Minchan Kim <minchan@kernel.org>
-[jstultz: Major rework of interface and commit message]
+[jstultz: Heavy refactoring.]
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- arch/x86/syscalls/syscall_64.tbl       |   1 +
- include/uapi/asm-generic/mman-common.h |   3 +
- mm/vrange.c                            | 147 +++++++++++++++++++++++++++++++++
- 3 files changed, 151 insertions(+)
+ include/linux/mm_types.h |  5 +++++
+ include/linux/vrange.h   |  7 ++++++-
+ kernel/fork.c            |  6 ++++++
+ mm/vrange.c              | 30 ++++++++++++++++++++++++++++++
+ 4 files changed, 47 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index 38ae65d..dc332bd 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -320,6 +320,7 @@
- 311	64	process_vm_writev	sys_process_vm_writev
- 312	common	kcmp			sys_kcmp
- 313	common	finit_module		sys_finit_module
-+314	common	vrange			sys_vrange
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index ace9a5f..2e02a6d 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -13,6 +13,8 @@
+ #include <linux/page-debug-flags.h>
+ #include <linux/uprobes.h>
+ #include <linux/page-flags-layout.h>
++#include <linux/mutex.h>
++#include <linux/vrange_types.h>
+ #include <asm/page.h>
+ #include <asm/mmu.h>
  
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/include/uapi/asm-generic/mman-common.h b/include/uapi/asm-generic/mman-common.h
-index 4164529..9be120b 100644
---- a/include/uapi/asm-generic/mman-common.h
-+++ b/include/uapi/asm-generic/mman-common.h
-@@ -66,4 +66,7 @@
- #define MAP_HUGE_SHIFT	26
- #define MAP_HUGE_MASK	0x3f
+@@ -351,6 +353,9 @@ struct mm_struct {
+ 						 */
  
-+#define VRANGE_VOLATILE		0	/* unpin pages so VM can discard them */
-+#define VRANGE_NONVOLATILE	1	/* pin pages so VM can't discard them */
-+
- #endif /* __ASM_GENERIC_MMAN_COMMON_H */
+ 
++#ifdef CONFIG_MMU
++	struct vrange_root vroot;
++#endif
+ 	unsigned long hiwater_rss;	/* High-watermark of RSS usage */
+ 	unsigned long hiwater_vm;	/* High-water virtual memory usage */
+ 
+diff --git a/include/linux/vrange.h b/include/linux/vrange.h
+index 2064cb0..13f4887 100644
+--- a/include/linux/vrange.h
++++ b/include/linux/vrange.h
+@@ -33,12 +33,17 @@ static inline int vrange_type(struct vrange *vrange)
+ 
+ void vrange_init(void);
+ extern void vrange_root_cleanup(struct vrange_root *vroot);
+-
++extern int vrange_fork(struct mm_struct *new,
++					struct mm_struct *old);
+ #else
+ 
+ static inline void vrange_init(void) {};
+ static inline void vrange_root_init(struct vrange_root *vroot, int type) {};
+ static inline void vrange_root_cleanup(struct vrange_root *vroot) {};
++static inline int vrange_fork(struct mm_struct *new, struct mm_struct *old)
++{
++	return 0;
++}
+ 
+ #endif
+ #endif /* _LINIUX_VRANGE_H */
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 987b28a..6d22625 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -71,6 +71,7 @@
+ #include <linux/signalfd.h>
+ #include <linux/uprobes.h>
+ #include <linux/aio.h>
++#include <linux/vrange.h>
+ 
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+@@ -379,6 +380,9 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
+ 	retval = khugepaged_fork(mm, oldmm);
+ 	if (retval)
+ 		goto out;
++	retval = vrange_fork(mm, oldmm);
++	if (retval)
++		goto out;
+ 
+ 	prev = NULL;
+ 	for (mpnt = oldmm->mmap; mpnt; mpnt = mpnt->vm_next) {
+@@ -542,6 +546,7 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
+ 	spin_lock_init(&mm->page_table_lock);
+ 	mm->free_area_cache = TASK_UNMAPPED_BASE;
+ 	mm->cached_hole_size = ~0UL;
++	vrange_root_init(&mm->vroot, VRANGE_MM);
+ 	mm_init_aio(mm);
+ 	mm_init_owner(mm, p);
+ 
+@@ -613,6 +618,7 @@ void mmput(struct mm_struct *mm)
+ 
+ 	if (atomic_dec_and_test(&mm->mm_users)) {
+ 		uprobe_clear_state(mm);
++		vrange_root_cleanup(&mm->vroot);
+ 		exit_aio(mm);
+ 		ksm_exit(mm);
+ 		khugepaged_exit(mm); /* must run before exit_mmap */
 diff --git a/mm/vrange.c b/mm/vrange.c
-index 5ca8853..f3c2465 100644
+index e3042e0..bbaa184 100644
 --- a/mm/vrange.c
 +++ b/mm/vrange.c
-@@ -5,6 +5,7 @@
+@@ -4,6 +4,7 @@
+ 
  #include <linux/vrange.h>
  #include <linux/slab.h>
- #include <linux/mman.h>
-+#include <linux/syscalls.h>
++#include <linux/mman.h>
  
  static struct kmem_cache *vrange_cachep;
  
-@@ -217,3 +218,149 @@ fail:
- 	vrange_root_cleanup(new);
- 	return -ENOMEM;
+@@ -179,3 +180,32 @@ void vrange_root_cleanup(struct vrange_root *vroot)
+ 	vrange_unlock(vroot);
  }
-+
-+static ssize_t do_vrange(struct mm_struct *mm, unsigned long start_idx,
-+				unsigned long end_idx, int mode, int *purged)
+ 
++int vrange_fork(struct mm_struct *new_mm, struct mm_struct *old_mm)
 +{
-+	struct vm_area_struct *vma;
-+	unsigned long orig_start = start_idx;
-+	ssize_t count = 0, ret = 0;
++	struct vrange_root *new, *old;
++	struct vrange *range, *new_range;
++	struct rb_node *next;
 +
-+	down_read(&mm->mmap_sem);
++	new = &new_mm->vroot;
++	old = &old_mm->vroot;
 +
-+	vma = find_vma(mm, start_idx);
-+	for (;;) {
-+		struct vrange_root *vroot;
-+		unsigned long tmp, vstart_idx, vend_idx;
++	vrange_lock(old);
++	next = rb_first(&old->v_rb);
++	while (next) {
++		range = vrange_entry(next);
++		next = rb_next(next);
 +
-+		if (!vma)
-+			goto out;
++		new_range = __vrange_alloc(GFP_KERNEL);
++		if (!new_range)
++			goto fail;
++		__vrange_set(new_range, range->node.start,
++					range->node.last, range->purged);
++		__vrange_add(new_range, new);
 +
-+		/* make sure start is at the front of the current vma*/
-+		if (start_idx < vma->vm_start) {
-+			start_idx = vma->vm_start;
-+			if (start_idx > end_idx)
-+				goto out;
-+		}
-+
-+		/* bound tmp to closer of vm_end & end */
-+		tmp = vma->vm_end - 1;
-+		if (end_idx < tmp)
-+			tmp = end_idx;
-+
-+		if (vma->vm_file && (vma->vm_flags & VM_SHARED)) {
-+			/* Convert to file relative offsets */
-+			vroot = &vma->vm_file->f_mapping->vroot;
-+			vstart_idx = vma->vm_pgoff + start_idx - vma->vm_start;
-+			vend_idx = vma->vm_pgoff + tmp - vma->vm_start;
-+		} else {
-+			vroot = &mm->vroot;
-+			vstart_idx = start_idx;
-+			vend_idx = tmp;
-+		}
-+
-+		/* mark or unmark */
-+		if (mode == VRANGE_VOLATILE)
-+			ret = vrange_add(vroot, vstart_idx, vend_idx);
-+		else if (mode == VRANGE_NONVOLATILE)
-+			ret = vrange_remove(vroot, vstart_idx, vend_idx,
-+						purged);
-+
-+		if (ret)
-+			goto out;
-+
-+		/* update count to distance covered so far*/
-+		count = tmp - orig_start;
-+
-+		/* move start up to the end of the vma*/
-+		start_idx = vma->vm_end;
-+		if (start_idx > end_idx)
-+			goto out;
-+		/* move to the next vma */
-+		vma = vma->vm_next;
 +	}
-+out:
-+	up_read(&mm->mmap_sem);
-+
-+	/* report bytes successfully marked, even if we're exiting on error */
-+	if (count)
-+		return count;
-+
-+	return ret;
-+}
-+
-+/*
-+ * The vrange(2) system call.
-+ *
-+ * Applications can use vrange() to advise the kernel how it should
-+ * handle paging I/O in this VM area.  The idea is to help the kernel
-+ * discard pages of vrange instead of swapping out when memory pressure
-+ * happens. The information provided is advisory only, and can be safely
-+ * disregarded by the kernel if system has enough free memory.
-+ *
-+ * mode values:
-+ *  VRANGE_VOLATILE - hint to kernel so VM can discard vrange pages when
-+ *		memory pressure happens.
-+ *  VRANGE_NONVOLATILE - Removes any volatile hints previous specified in that
-+ *		range.
-+ *
-+ * purged ptr:
-+ *  Returns 1 if any page in the range being marked nonvolatile has been purged.
-+ *
-+ * Return values:
-+ *  On success vrange returns the number of bytes marked or unmarked.
-+ *  Similar to write(), it may return fewer bytes then specified if
-+ *  it ran into a problem.
-+ *
-+ *  If an error is returned, no changes were made.
-+ *
-+ * Errors:
-+ *  -EINVAL - start  len < 0, start is not page-aligned, start is greater
-+ *		than TASK_SIZE or "mode" is not a valid value.
-+ *  -ENOMEM - Short of free memory in system for successful system call.
-+ *  -EFAULT - Purged pointer is invalid.
-+ *  -ENOSUP - Feature not yet supported.
-+ */
-+SYSCALL_DEFINE4(vrange, unsigned long, start,
-+		size_t, len, int, mode, int __user *, purged)
-+{
-+	unsigned long end;
-+	struct mm_struct *mm = current->mm;
-+	ssize_t ret = -EINVAL;
-+	int p = 0;
-+
-+	if (start & ~PAGE_MASK)
-+		goto out;
-+
-+	len &= PAGE_MASK;
-+	if (!len)
-+		goto out;
-+
-+	end = start + len;
-+	if (end < start)
-+		goto out;
-+
-+	if (start >= TASK_SIZE)
-+		goto out;
-+
-+	if (purged) {
-+		/* Test pointer is valid before making any changes */
-+		if (put_user(p, purged))
-+			return -EFAULT;
-+	}
-+
-+	ret = do_vrange(mm, start, end - 1, mode, &p);
-+
-+	if (purged) {
-+		if (put_user(p, purged)) {
-+			/*
-+			 * This would be bad, since we've modified volatilty
-+			 * and the change in purged state would be lost.
-+			 */
-+			BUG();
-+		}
-+	}
-+
-+out:
-+	return ret;
++	vrange_unlock(old);
++	return 0;
++fail:
++	vrange_root_cleanup(new);
++	return -ENOMEM;
 +}
 -- 
 1.8.1.2
