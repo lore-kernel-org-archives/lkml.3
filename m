@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab3FLG72 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 02:59:28 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:50068 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752443Ab3FLG70 (ORCPT
+	id S1754678Ab3FLHHS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 03:07:18 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:50866 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752762Ab3FLHHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 02:59:26 -0400
-Date: Wed, 12 Jun 2013 15:17:35 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jan kara <jack@suse.cz>
-Subject: Re: ext4 extent status tree LRU locking
-Message-ID: <20130612071735.GB29898@gmail.com>
-Mail-Followup-To: Dave Hansen <dave.hansen@intel.com>,
-	linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-	Theodore Ts'o <tytso@mit.edu>, Jan kara <jack@suse.cz>
-References: <51B7B128.60909@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51B7B128.60909@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 12 Jun 2013 03:07:15 -0400
+Date: Wed, 12 Jun 2013 00:07:11 -0700 (PDT)
+Message-Id: <20130612.000711.759531077550828193.davem@davemloft.net>
+To: johannes@sipsolutions.net
+Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2013-06-06
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1371018409.8601.2.camel@jlt4.sipsolutions.net>
+References: <20130606190929.GB18827@tuxdriver.com>
+	<20130611.222706.1492583255605214982.davem@davemloft.net>
+	<1371018409.8601.2.camel@jlt4.sipsolutions.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave
+From: Johannes Berg <johannes@sipsolutions.net>
+Date: Wed, 12 Jun 2013 08:26:49 +0200
 
-Thanks for reporting this.
-
-On Tue, Jun 11, 2013 at 04:22:16PM -0700, Dave Hansen wrote:
-> I've got a test case which I intended to use to stress the VM a bit.  It
-> fills memory up with page cache a couple of times.  It essentially runs
-> 30 or so cp's in parallel.
-
-Could you please share your test case with me? I am glad to look at it
-and think about how to improve LRU locking.
-
+> On Tue, 2013-06-11 at 22:27 -0700, David Miller wrote:
+>> From: "John W. Linville" <linville@tuxdriver.com>
+>> Date: Thu, 6 Jun 2013 15:09:30 -0400
+>> 
+>> > Johannes Berg (2):
+>> >       mac80211: constify ieee802_11_parse_elems() argument
+>> 
+>> Such cleanups are absolutely, positively, not appropriate at this
+>> time.
 > 
-> 98% of my CPU is system time, and 96% of _that_ is being spent on the
-> spinlock in ext4_es_lru_add().  I think the LRU list head and its lock
-> end up being *REALLY* hot cachelines and are *the* bottleneck on this
-> test.  Note that this is _before_ we go in to reclaim and actually start
-> calling in to the shrinker.  There is zero memory pressure in this test.
-> 
-> I'm not sure the benefits of having a proper in-order LRU during reclaim
-> outweigh such a drastic downside for the common case.
+> My other fix depends on this to not have a const warning. I can add a
+> cast to pretend the input isn't const at this point, but that seemed
+> like a bad idea as well.
 
-A proper in-order LRU can help us to reclaim some memory from extent
-status tree when we are under heavy memory pressure.  When shrinker
-tries to reclaim extents from these trees, some extents of files that
-are accessed infrequnetly will be reclaimed because we hope that
-frequently accessed files' extents can be kept in memory as much as
-possible.  That is why we need a proper in-order LRU list.
+I would combine the two changes into one commit, because then this
+necessity is clear and you can even explain this in the commit message
+so that there is no argument about the justification.
 
-Regards,
-                                                - Zheng
+Thanks.
+
