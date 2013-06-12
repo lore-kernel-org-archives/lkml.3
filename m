@@ -1,94 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073Ab3FLV7u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 17:59:50 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:45472 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755220Ab3FLV7t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 17:59:49 -0400
-Message-ID: <51B8EC10.6070304@linux.vnet.ibm.com>
-Date: Wed, 12 Jun 2013 14:45:52 -0700
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1758122Ab3FLWA3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 18:00:29 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:49805 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757332Ab3FLWA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 18:00:28 -0400
+Date: Wed, 12 Jun 2013 14:59:10 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH v2] x86, relocs: move ELF relocation handling to C
+Message-ID: <20130612215910.GA5210@www.outflux.net>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
-        Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH] mm/page_alloc: don't re-init pageset in zone_pcp_update()
-References: <1370988779-7586-1-git-send-email-cody@linux.vnet.ibm.com> <20130612142032.882a28b7911ed24ca19e282e@linux-foundation.org>
-In-Reply-To: <20130612142032.882a28b7911ed24ca19e282e@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-x-cbid: 13061221-3620-0000-0000-000003149903
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2013 02:20 PM, Andrew Morton wrote:
-> On Tue, 11 Jun 2013 15:12:59 -0700 Cody P Schafer <cody@linux.vnet.ibm.com> wrote:
->
->> Factor pageset_set_high_and_batch() (which contains all needed logic too
->> set a pageset's ->high and ->batch inrespective of system state) out of
->> zone_pageset_init(), which avoids us calling pageset_init(), and
->> unsafely blowing away a pageset at runtime (leaked pages and
->> potentially some funky allocations would be the result) when memory
->> hotplug is triggered.
->
-> This changelog is pretty screwed up :( It tells us what the patch does
-> but not why it does it.
->
+Moves the relocation handling into C, after decompression. This requires
+that the decompressed size is passed to the decompression routine as
+well so that relocations can be found. Only kernels that need relocation
+support will use the code (currently just x86_32), but this is laying
+the ground work for 64-bit support in support of KASLR.
 
-It says why it does it, though perhaps a bit hidden:
- >  avoids us calling pageset_init(), and unsafely blowing away a pageset
+Based on work by Neill Clift and Michael Davidson.
 
->> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
->> ---
->>
->> Unless memory hotplug is being triggered on boot, this should *not* be cause of Valdis
->> Kletnieks' reported bug in -next:
->>           "next-20130607 BUG: Bad page state in process systemd pfn:127643"
->
-> And this addendum appears to hint at the info we need.
-
-Note the *not*. I included this note only because I expected there would 
-be a question of whether Valdis's reported bug was caused by this. It 
-_isn't_. The bug this fix fixes is only triggered by memory_hotplug, and 
-Valdis's bug occurred on boot.
-
-> Please, send a new changelog?  That should include a description of the
-> user-visible effects of the bug which is being fixed,  a description of
-> why it occurs and a description of how it was fixed.It would also be
-> helpful if you can identify which kernel version(s) need the fix.
-
-It's just a -mm issue. It was introduced by my patchset starting with 
-"mm/page_alloc: factor out setting of pcp->high and pcp->batch", where 
-the actual place the bug snuck in was "mm/page_alloc: in 
-zone_pcp_update(), uze zone_pageset_init()".
-
->
-> Also, a Reported-by:Valdis would be appropriate.
->
-I'm fine with adding it (I did take a look at my page_alloc.c changes 
-because he reported that bug), but as mentioned before, this fixes a 
-different bug.
-
-Anyhow, a reorganized (and clearer) changelog with the same content follows:
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
-mm/page_alloc: don't re-init pageset in zone_pcp_update()
+v2:
+ - clarified commit message.
+---
+ arch/x86/Kconfig                     |    4 +-
+ arch/x86/Makefile                    |    8 ++--
+ arch/x86/boot/compressed/head_32.S   |   31 ++------------
+ arch/x86/boot/compressed/head_64.S   |    1 +
+ arch/x86/boot/compressed/misc.c      |   77 +++++++++++++++++++++++++++++++++-
+ arch/x86/include/asm/page_32_types.h |    2 +
+ arch/x86/include/asm/page_64_types.h |    5 ---
+ arch/x86/include/asm/page_types.h    |    6 +++
+ 8 files changed, 94 insertions(+), 40 deletions(-)
 
-When memory hotplug is triggered, we call pageset_init() on a 
-per-cpu-pageset which both contains pages and is in use, causing both 
-the leakage of those pages and (potentially) bad behaviour if a page is 
-allocated from the pageset while it is being cleared.
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 685692c..b4797b9 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1695,13 +1695,13 @@ config RELOCATABLE
+ 	  it has been loaded at and the compile time physical address
+ 	  (CONFIG_PHYSICAL_START) is ignored.
+ 
+-# Relocation on x86-32 needs some additional build support
++# Relocation on x86 needs some additional build support
+ config X86_NEED_RELOCS
+ 	def_bool y
+ 	depends on X86_32 && RELOCATABLE
+ 
+ config PHYSICAL_ALIGN
+-	hex "Alignment value to which kernel should be aligned" if X86_32
++	hex "Alignment value to which kernel should be aligned"
+ 	default "0x1000000"
+ 	range 0x2000 0x1000000
+ 	---help---
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 5c47726..43f8cef 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -16,6 +16,10 @@ endif
+ # e.g.: obj-y += foo_$(BITS).o
+ export BITS
+ 
++ifdef CONFIG_X86_NEED_RELOCS
++        LDFLAGS_vmlinux := --emit-relocs
++endif
++
+ ifeq ($(CONFIG_X86_32),y)
+         BITS := 32
+         UTS_MACHINE := i386
+@@ -25,10 +29,6 @@ ifeq ($(CONFIG_X86_32),y)
+         KBUILD_AFLAGS += $(biarch)
+         KBUILD_CFLAGS += $(biarch)
+ 
+-        ifdef CONFIG_RELOCATABLE
+-                LDFLAGS_vmlinux := --emit-relocs
+-        endif
+-
+         KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
+ 
+         # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
+diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
+index 1e3184f..5d6f689 100644
+--- a/arch/x86/boot/compressed/head_32.S
++++ b/arch/x86/boot/compressed/head_32.S
+@@ -181,8 +181,9 @@ relocated:
+ /*
+  * Do the decompression, and jump to the new kernel..
+  */
+-	leal	z_extract_offset_negative(%ebx), %ebp
+ 				/* push arguments for decompress_kernel: */
++	pushl	$z_output_len	/* decompressed length */
++	leal	z_extract_offset_negative(%ebx), %ebp
+ 	pushl	%ebp		/* output address */
+ 	pushl	$z_input_len	/* input_len */
+ 	leal	input_data(%ebx), %eax
+@@ -191,33 +192,7 @@ relocated:
+ 	pushl	%eax		/* heap area */
+ 	pushl	%esi		/* real mode pointer */
+ 	call	decompress_kernel
+-	addl	$20, %esp
+-
+-#if CONFIG_RELOCATABLE
+-/*
+- * Find the address of the relocations.
+- */
+-	leal	z_output_len(%ebp), %edi
+-
+-/*
+- * Calculate the delta between where vmlinux was compiled to run
+- * and where it was actually loaded.
+- */
+-	movl	%ebp, %ebx
+-	subl	$LOAD_PHYSICAL_ADDR, %ebx
+-	jz	2f	/* Nothing to be done if loaded at compiled addr. */
+-/*
+- * Process relocations.
+- */
+-
+-1:	subl	$4, %edi
+-	movl	(%edi), %ecx
+-	testl	%ecx, %ecx
+-	jz	2f
+-	addl	%ebx, -__PAGE_OFFSET(%ebx, %ecx)
+-	jmp	1b
+-2:
+-#endif
++	addl	$24, %esp
+ 
+ /*
+  * Jump to the decompressed kernel.
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index 16f24e6..6632693 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -340,6 +340,7 @@ relocated:
+ 	leaq	input_data(%rip), %rdx  /* input_data */
+ 	movl	$z_input_len, %ecx	/* input_len */
+ 	movq	%rbp, %r8		/* output target address */
++	movq	$z_output_len, %r9	/* decompressed length */
+ 	call	decompress_kernel
+ 	popq	%rsi
+ 
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 7cb56c6..b756a04 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -267,6 +267,79 @@ static void error(char *x)
+ 		asm("hlt");
+ }
+ 
++#if CONFIG_X86_NEED_RELOCS
++static void handle_relocations(void *output, unsigned long output_len)
++{
++	int *reloc;
++	unsigned long delta, map, ptr;
++	unsigned long min_addr = (unsigned long)output;
++	unsigned long max_addr = min_addr + output_len;
++
++	/*
++	 * Calculate the delta between where vmlinux was linked to load
++	 * and where it was actually loaded.
++	 */
++	delta = min_addr - LOAD_PHYSICAL_ADDR;
++	if (!delta) {
++		debug_putstr("No relocation needed... ");
++		return;
++	}
++	debug_putstr("Performing relocations... ");
++
++	/*
++	 * The kernel contains a table of relocation addresses. Those
++	 * addresses have the final load address of the kernel in virtual
++	 * memory. We are currently working in the self map. So we need to
++	 * create an adjustment for kernel memory addresses to the self map.
++	 * This will involve subtracting out the base address of the kernel.
++	 */
++	map = delta - __START_KERNEL_map;
++
++	/*
++	 * Process relocations: 32 bit relocations first then 64 bit after.
++	 * Two sets of binary relocations are added to the end of the kernel
++	 * before compression. Each relocation table entry is the kernel
++	 * address of the location which needs to be updated stored as a
++	 * 32-bit value which is sign extended to 64 bits.
++	 *
++	 * Format is:
++	 *
++	 * kernel bits...
++	 * 0 - zero terminator for 64 bit relocations
++	 * 64 bit relocation repeated
++	 * 0 - zero terminator for 32 bit relocations
++	 * 32 bit relocation repeated
++	 *
++	 * So we work backwards from the end of the decompressed image.
++	 */
++	for (reloc = output + output_len - sizeof(*reloc); *reloc; reloc--) {
++		int extended = *reloc;
++		extended += map;
++
++		ptr = (unsigned long)extended;
++		if (ptr < min_addr || ptr > max_addr)
++			error("32-bit relocation outside of kernel!\n");
++
++		*(uint32_t *)ptr += delta;
++	}
++#ifdef CONFIG_X86_64
++	for (reloc--; *reloc; reloc--) {
++		long extended = *reloc;
++		extended += map;
++
++		ptr = (unsigned long)extended;
++		if (ptr < min_addr || ptr > max_addr)
++			error("64-bit relocation outside of kernel!\n");
++
++		*(uint64_t *)ptr += delta;
++	}
++#endif
++}
++#else
++static inline void handle_relocations(void *output, unsigned long output_len)
++{ }
++#endif
++
+ static void parse_elf(void *output)
+ {
+ #ifdef CONFIG_X86_64
+@@ -321,7 +394,8 @@ static void parse_elf(void *output)
+ asmlinkage void decompress_kernel(void *rmode, memptr heap,
+ 				  unsigned char *input_data,
+ 				  unsigned long input_len,
+-				  unsigned char *output)
++				  unsigned char *output,
++				  unsigned long output_len)
+ {
+ 	real_mode = rmode;
+ 
+@@ -361,6 +435,7 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
+ 	debug_putstr("\nDecompressing Linux... ");
+ 	decompress(input_data, input_len, NULL, NULL, output, NULL, error);
+ 	parse_elf(output);
++	handle_relocations(output, output_len);
+ 	debug_putstr("done.\nBooting the kernel.\n");
+ 	return;
+ }
+diff --git a/arch/x86/include/asm/page_32_types.h b/arch/x86/include/asm/page_32_types.h
+index ef17af0..f48b17d 100644
+--- a/arch/x86/include/asm/page_32_types.h
++++ b/arch/x86/include/asm/page_32_types.h
+@@ -15,6 +15,8 @@
+  */
+ #define __PAGE_OFFSET		_AC(CONFIG_PAGE_OFFSET, UL)
+ 
++#define __START_KERNEL_map	__PAGE_OFFSET
++
+ #define THREAD_SIZE_ORDER	1
+ #define THREAD_SIZE		(PAGE_SIZE << THREAD_SIZE_ORDER)
+ 
+diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+index 6c896fb..43dcd80 100644
+--- a/arch/x86/include/asm/page_64_types.h
++++ b/arch/x86/include/asm/page_64_types.h
+@@ -32,11 +32,6 @@
+  */
+ #define __PAGE_OFFSET           _AC(0xffff880000000000, UL)
+ 
+-#define __PHYSICAL_START	((CONFIG_PHYSICAL_START +	 	\
+-				  (CONFIG_PHYSICAL_ALIGN - 1)) &	\
+-				 ~(CONFIG_PHYSICAL_ALIGN - 1))
+-
+-#define __START_KERNEL		(__START_KERNEL_map + __PHYSICAL_START)
+ #define __START_KERNEL_map	_AC(0xffffffff80000000, UL)
+ 
+ /* See Documentation/x86/x86_64/mm.txt for a description of the memory map. */
+diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
+index 54c9787..086c2fa 100644
+--- a/arch/x86/include/asm/page_types.h
++++ b/arch/x86/include/asm/page_types.h
+@@ -33,6 +33,12 @@
+ 	(((current->personality & READ_IMPLIES_EXEC) ? VM_EXEC : 0 ) | \
+ 	 VM_READ | VM_WRITE | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
+ 
++#define __PHYSICAL_START	((CONFIG_PHYSICAL_START +		\
++				  (CONFIG_PHYSICAL_ALIGN - 1)) &	\
++				 ~(CONFIG_PHYSICAL_ALIGN - 1))
++
++#define __START_KERNEL		(__START_KERNEL_map + __PHYSICAL_START)
++
+ #ifdef CONFIG_X86_64
+ #include <asm/page_64_types.h>
+ #else
+-- 
+1.7.9.5
 
-Avoid this by factoring pageset_set_high_and_batch() (which contains all 
-needed logic too set a pageset's ->high and ->batch inrespective of 
-system state), and using that instead of zone_pageset_init() in 
-zone_pcp_update().
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-
-
-
+-- 
+Kees Cook
+Chrome OS Security
