@@ -1,158 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757195Ab3FLTOz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 15:14:55 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:32771 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755220Ab3FLTOw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 15:14:52 -0400
-Message-ID: <51B8C8A8.9040900@suse.cz>
-Date: Wed, 12 Jun 2013 21:14:48 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	id S1757121Ab3FLTSs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 15:18:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33374 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752688Ab3FLTSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 15:18:47 -0400
+Date: Wed, 12 Jun 2013 21:14:25 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Subject: Re: [PATCH] Percpu tag allocator
+Message-ID: <20130612191425.GA7098@redhat.com>
+References: <1371009804-11596-1-git-send-email-koverstreet@google.com> <20130612170835.GA4682@redhat.com> <20130612175915.GB6151@google.com>
 MIME-Version: 1.0
-To: "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: Jiri Slaby <jirislaby@gmail.com>, Borislav Petkov <bp@alien8.de>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
-        "x86@kernel.org" <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
-Subject: Re: e1000e + suspend, 3.9-rc2
-References: <20130311191936.GD5000@pd.tnic> <513E355C.4000204@gmail.com> <20130311202537.GF5000@pd.tnic> <20130312171745.GE5370@pd.tnic> <51483B1A.9090704@suse.cz> <51483DAA.7060806@openvz.org> <5148589E.8030509@suse.cz> <804857E1F29AAC47BF68C404FC60A1844D9F3062@ORSMSX103.amr.corp.intel.com> <516C1CE5.1080803@suse.cz>
-In-Reply-To: <516C1CE5.1080803@suse.cz>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130612175915.GB6151@google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2013 05:29 PM, Jiri Slaby wrote:
-> On 03/29/2013 07:04 PM, Allan, Bruce W wrote:
->>> -----Original Message-----
->>> From: Jiri Slaby [mailto:jirislaby@gmail.com] On Behalf Of Jiri Slaby
->>> Sent: Tuesday, March 19, 2013 5:23 AM
->>> To: Konstantin Khlebnikov
->>> Cc: Borislav Petkov; Kirsher, Jeffrey T; Rafael J. Wysocki; Bjorn Helgaas;
->>> x86@kernel.org; lkml; e1000-devel@lists.sourceforge.net; Allan, Bruce W
->>> Subject: Re: e1000e + suspend, 3.9-rc2
->>>
->>>>>> Ok, I can still see the hardware error message when suspending:
->>>>>
->>>>> And with 3.8 plus these:
->>>>>      PCI/PM: Clear state_saved during suspend
->>>>>      e1000e: fix pci-device enable-counter balance
->>>>>      e1000e: fix runtime power management transitions
->>>>>      e1000e: fix accessing to suspended device
->>>>>
->>>>> I sometimes see this:
->>>>> pci_pm_suspend():e1000_suspend +0x0/0x10 [e1000e] returns -2
->>>>> dpm_run_callback(): pci_pm_suspend+0x0/0x140 returns -2
->>>>> PM: Device 0000:00:19.0 failed to suspend async: error -2
->>>>>
->>>>> Any ideas? Am I missing some patch still?
->>>>
->>>> Try this:
->>>> "PCI: Don't try to disable Bus Master on disconnected PCI devices"
->>>> https://patchwork.kernel.org/patch/2271641/
->>>>
->>>> But I'm not sure, probably it is unrelated because this code works only (?)
->>>> during shutdown/kexec sequences.
->>>
->>> I don't think it will help either. -2 here is -E1000_ERR_PHY from
->>> e1000e_write_phy_reg_mdic if I'm looking correctly. I.e. MDIC not ready
->>> or unlike MDIC_ERROR.
->>>
->>> I think this happened after I put the link down and tried to suspend.
->>>
->>> --
->>> js
->>> suse labs
->>
->> Sorry for not replying sooner, for some reason some of this thread was filtered
->> to my junk folder and I didn’t see it until now.
->>
->> Jiri, can you provide the output of 'lspci -s 00:19.0 -n -vv' and confirm the scenario
->> in which the problem occurs?  Is this easily reproduced?
-> 
-> Sorry about the late reply, I totally forgot about this. lspci output is
-> attached below. The scenario is not rigid as I'm not sure when exactly
-> this happens. It looks like I have to use power saving on that device.
-> And I don't need to use that device at all. Here is an excerpt from one
-> kernel boot modulo e1000e where the error occurred.
-> 
-> e1000e: Copyright(c) 1999 - 2012 Intel Corporation.
-> e1000e 0000:00:19.0: setting latency timer to 64
-> e1000e 0000:00:19.0: Interrupt Throttling Rate (ints/sec) set to dynamic
-> conservative mode
-> e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-> e1000e 0000:00:19.0 eth0: (PCI Express:2.5GT/s:Width x1) 3c:97:0e:35:3d:dd
-> e1000e 0000:00:19.0 eth0: Intel(R) PRO/1000 Network Connection
-> e1000e 0000:00:19.0 eth0: MAC: 10, PHY: 11, PBA No: 1000FF-0FF
-> e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-> e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-> e1000e 0000:00:19.0: setting latency timer to 64
-> e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-> e1000e 0000:00:19.0: setting latency timer to 64
-> e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-> e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-> e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-> e1000e 0000:00:19.0: setting latency timer to 64
-> e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> e1000e 0000:00:19.0: setting latency timer to 64
-> e1000e 0000:00:19.0: irq 43 for MSI/MSI-X
-> e1000e 0000:00:19.0: setting latency timer to 64
-> e1000e 0000:00:19.0: irq 45 for MSI/MSI-X
-> e1000e 0000:00:19.0: irq 45 for MSI/MSI-X
-> e1000e 0000:00:19.0: irq 45 for MSI/MSI-X
-> e1000e 0000:00:19.0: setting latency timer to 64
-> e1000e 0000:00:19.0: irq 45 for MSI/MSI-X
-> pci_pm_suspend(): e1000_suspend+0x0/0x10 [e1000e] returns -2
-> pci_pm_suspend(): e1000_suspend+0x0/0x10 [e1000e] returns -2
-> pci_pm_suspend(): e1000_suspend+0x0/0x10 [e1000e] returns -2
-> pci_pm_suspend(): e1000_suspend+0x0/0x10 [e1000e] returns -2
-> pci_pm_suspend(): e1000_suspend+0x0/0x10 [e1000e] returns -2
-> pci_pm_suspend(): e1000_suspend+0x0/0x10 [e1000e] returns -2
+On 06/12, Kent Overstreet wrote:
+>
+> So we'd need at least an atomic counter, but a bitmap isn't really any
+> more trouble and it lets us skip most of the percpu lists that are empty
 
-This still happens with 3.9.5 ...
+Yes, yes, I understand.
 
-I don't use wired net at all. This usually happens after I enable power
-saving.
+> - which should make a real difference in scalability to huge nr_cpus.
 
-> 00:19.0 Ethernet controller [0200]: Intel Corporation 82579LM Gigabit
-> Network Connection [8086:1502] (rev 04)
->         Subsystem: Lenovo Device [17aa:21f3]
->         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
-> ParErr- Stepping- SERR- FastB2B- DisINTx+
->         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
-> <TAbort- <MAbort- >SERR- <PERR- INTx-
->         Latency: 0
->         Interrupt: pin A routed to IRQ 46
->         Region 0: Memory at f2500000 (32-bit, non-prefetchable) [size=128K]
->         Region 1: Memory at f253b000 (32-bit, non-prefetchable) [size=4K]
->         Region 2: I/O ports at 5080 [size=32]
->         Capabilities: [c8] Power Management version 2
->                 Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA
-> PME(D0+,D1-,D2-,D3hot+,D3cold+)
->                 Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
->         Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
->                 Address: 00000000fee00398  Data: 0000
->         Capabilities: [e0] PCI Advanced Features
->                 AFCap: TP+ FLR+
->                 AFCtrl: FLR-
->                 AFStatus: TP-
->         Kernel driver in use: e1000e
-> 
-> 
-> thanks,
-> 
+But this is not obvious to me. I mean, I am not sure I understand why
+this all is "optimal". In particular, I do not really understand
+"while (cpus_have_tags-- * TAG_CPU_SIZE > pool->nr_tags / 2)" in
+steal_tags(), even if "the workload should not span more cpus than
+nr_tags / 128" is true. I guess this connects to "we guarantee that
+nr_tags / 2 can always be allocated" and we do not want to call
+steal_tags() too often/otherwise, but cpus_have_tags * TAG_CPU_SIZE
+can easily overestimate the number of free tags.
 
+But I didn't read the patch carefully, and it is not that I think I
+can suggest something better.
 
--- 
-js
-suse labs
+In short: please ignore ;)
+
+> > > +enum {
+> > > +	TAG_FAIL	= -1U,
+> > > +	TAG_MAX		= TAG_FAIL - 1,
+> > > +};
+> >
+> > This can probably go to .c, and it seems that TAG_MAX is not needed.
+> > tag_init() can check "nr_tags >= TAG_FAIL" instead.
+>
+> Users need TAG_FAIL to check for allocation failure.
+
+Ah, indeed, !__GFP_WAIT...
+
+Hmm. but why gfp_t? why not "bool atomic" ?
+
+Probably this is because you expect that most callers should have
+gfp anyway. Looks a bit strange but I won't argue.
+
+> > > +		if (nr_free) {
+> > > +			memcpy(tags->freelist,
+> > > +			       remote->freelist,
+> > > +			       sizeof(unsigned) * nr_free);
+> > > +			smp_mb();
+> > > +			remote->nr_free = 0;
+> > > +			tags->nr_free = nr_free;
+> > > +			return true;
+> > > +		} else {
+> > > +			remote->nr_free = 0;
+> > > +		}
+> >
+> > Both branches clear remote->nr_free.
+>
+> Yeah, but clearing it has to happen after the memcpy() and the smp_mb().
+
+Yes, yes, we need mb() between memcpy() and "remote = 0",
+
+> I couldn't find a way to combine them that I liked, but if you've got
+> any suggestions I'm all ears.
+
+Please ignore. Somehow I missed the fact we need to return or continue,
+so we need "else" or another check.
+
+Oleg.
+
