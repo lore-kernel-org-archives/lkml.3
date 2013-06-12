@@ -1,90 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758154Ab3FLW41 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 18:56:27 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:60590 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756837Ab3FLW40 (ORCPT
+	id S1758163Ab3FLXCd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 19:02:33 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:64571 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756927Ab3FLXCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 18:56:26 -0400
-Date: Wed, 12 Jun 2013 15:56:30 -0700
+	Wed, 12 Jun 2013 19:02:31 -0400
+Date: Wed, 12 Jun 2013 16:02:34 -0700
 From: Olof Johansson <olof@lixom.net>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] ARM: mach-moxart: add MOXA ART UART debug files
-Message-ID: <20130612225630.GC8146@quad.lixom.net>
-References: <1371040448-28742-1-git-send-email-jonas.jensen@gmail.com>
- <1371040448-28742-4-git-send-email-jonas.jensen@gmail.com>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>
+Subject: Re: [PATCH v3 5/7] clk: add basic Rockchip rk3066a clock support
+Message-ID: <20130612230234.GB9016@quad.lixom.net>
+References: <201306111328.52679.heiko@sntech.de>
+ <201306111331.31517.heiko@sntech.de>
+ <20130611200610.8816.68285@quantum>
+ <201306130045.41723.heiko@sntech.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1371040448-28742-4-git-send-email-jonas.jensen@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201306130045.41723.heiko@sntech.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jun 13, 2013 at 12:45:41AM +0200, Heiko Stübner wrote:
+> Part of me simply wants to wait for this - but rockchip stuff might be to late 
+> for 3.11 anyway, as we're near rc6.
 
-On Wed, Jun 12, 2013 at 02:34:08PM +0200, Jonas Jensen wrote:
-> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
-> ---
->  arch/arm/Kconfig.debug          |   10 ++++++++++
->  arch/arm/include/debug/moxart.S |   14 ++++++++++++++
->  2 files changed, 24 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm/include/debug/moxart.S
-> 
-> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-> index 1d41908..a0e4a32 100644
-> --- a/arch/arm/Kconfig.debug
-> +++ b/arch/arm/Kconfig.debug
-> @@ -422,6 +422,15 @@ choice
->  		  Say Y here if you want kernel low-level debugging support
->  		  on Allwinner A1X based platforms on the UART1.
->  
-> +    config DEBUG_MOXART_UART0
-> +        bool "Kernel low-level debugging messages via MOXART UART0"
-> +        depends on ARCH_MOXART
-> +        help
-> +          Say Y here if you want kernel low-level debugging support
-> +          on MOXART based platforms on the UART0.
-> +          select this to make sure "putc" in arch/arm/boot/compressed/debug.S
-> +          uses arch/arm/include/debug/moxart.S:s "addruart" macro
+For a new platform like this, it's useful to get some of the drivers to land
+even if the main platform code isn't. Where things tend to get messy is when we
+have to add a lot of code late in the cycle that has a lot of external
+dependencies, since everybody then has to scramble about getting things sorted
+out.
 
-Looks like the last two lines above are leftovers? It's not super-helpful for
-someone trying to figure out if they want this option or not; the first two
-lines covers that quite nicely.
+It's not too late for 3.11 yet, and in particular it'd be nice to see things
+like clock and pinctrl stuff go in even if some other stuff misses the train.
 
-> +
->  	config DEBUG_TEGRA_UART
->  		depends on ARCH_TEGRA
->  		bool "Use Tegra UART for low-level debug"
-> @@ -642,6 +651,7 @@ config DEBUG_LL_INCLUDE
->  	default "debug/sirf.S" if DEBUG_SIRFPRIMA2_UART1 || DEBUG_SIRFMARCO_UART1
->  	default "debug/socfpga.S" if DEBUG_SOCFPGA_UART
->  	default "debug/sunxi.S" if DEBUG_SUNXI_UART0 || DEBUG_SUNXI_UART1
-> +	default "debug/moxart.S" if DEBUG_MOXART_UART0
->  	default "debug/tegra.S" if DEBUG_TEGRA_UART
->  	default "debug/ux500.S" if DEBUG_UX500_UART
->  	default "debug/vexpress.S" if DEBUG_VEXPRESS_UART0_DETECT || \
-> diff --git a/arch/arm/include/debug/moxart.S b/arch/arm/include/debug/moxart.S
-> new file mode 100644
-> index 0000000..01e2aee
-> --- /dev/null
-> +++ b/arch/arm/include/debug/moxart.S
-> @@ -0,0 +1,14 @@
-> +/* Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License as published by the
-> + * Free Software Foundation; either version 2 of the License,
-> + * or (at your option) any later version. */
-> +
-> +#define MOXART_UART_DEBUG_PHYS_BASE		0x98200000
-> +
-> +.macro	addruart, rp, rv, tmp
-> +	ldr	\rp, =MOXART_UART_DEBUG_PHYS_BASE	@ physical
-
-You need to set rv here too.
 
 -Olof
