@@ -1,74 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757720Ab3FLBXH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 21:23:07 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51715 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757609Ab3FLBXF (ORCPT
+	id S1757694Ab3FLB2G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 21:28:06 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:8989 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754580Ab3FLB2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 21:23:05 -0400
-Date: Wed, 12 Jun 2013 02:23:04 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Nix <nix@esperi.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: NFS/lazy-umount/path-lookup-related panics at shutdown (at kill
- of processes on lazy-umounted filesystems) with 3.9.2 and 3.9.5
-Message-ID: <20130612012304.GF4165@ZenIV.linux.org.uk>
-References: <871u89vp46.fsf@spindle.srvr.nix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <871u89vp46.fsf@spindle.srvr.nix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 11 Jun 2013 21:28:02 -0400
+X-AuditID: cbfee68f-b7f436d000000f81-05-51b7cea0836d
+Message-id: <51B7CEA0.2060903@samsung.com>
+Date: Wed, 12 Jun 2013 10:28:00 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: myungjoo.ham@samsung.com, balbi@ti.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, grant.likely@linaro.org,
+        rob.herring@calxeda.com, rob@landley.net, gregkh@linuxfoundation.org,
+        benoit.cousson@linaro.org, anish198519851985@gmail.com,
+        pmeerw@pmeerw.net
+Subject: Re: [PATCH 1/5] extcon: Add an API to get extcon device from dt node
+References: <1370276020-17446-1-git-send-email-kishon@ti.com>
+ <1370276020-17446-2-git-send-email-kishon@ti.com>
+In-reply-to: <1370276020-17446-2-git-send-email-kishon@ti.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHIsWRmVeSWpSXmKPExsWyRsSkUHfBue2BBt8Pi1hcvtHFbHHwfr3F
+	zE832SwOzH7IanHgzw5Gi+bF69ksLjztYbNY2LaExeLyrjlsFrOX9LNYLFrWymxxu3EFm8Xv
+	XcfYLQ6vOMBkse7ldBYHfo8Fn6+we+ycdZfd49Xqmawed67tYfPYP3cNu8f5GQsZPc43H2H0
+	6NuyitHj+I3tTB6fN8kFcEVx2aSk5mSWpRbp2yVwZTye85Kp4KhMxddjXSwNjKvFuxg5OSQE
+	TCQW3j/HAmGLSVy4t56ti5GLQ0hgKaPEqemdLDBFPdtnsEIkFjFKbH9ynhnCecEo8fvYfSaQ
+	Kl4BLYnFL1YCtXNwsAioShzdXAwSZgMK739xgw3EFhUIk1g5/QoLRLmgxI/J98BsEaCa0zt/
+	gM1kFvjMJPG1eQ0jyBxhAV+JJXPB5ggJFEoc3dnBCmJzCthJ7FvQB2YzC+hI7G+dxgZhy0ts
+	XvMWbI6EwFoOiQuHZ7GDJFgEBCS+TT7EAjJTQkBWYtMBZojHJCUOrrjBMoFRbBaSk2YhGTsL
+	ydgFjMyrGEVTC5ILipPSi4z1ihNzi0vz0vWS83M3MQLj/vS/Z/07GO8esD7EmAy0ciKzlGhy
+	PjBt5JXEGxqbGVmYmpgaG5lbmpEmrCTOq9ZiHSgkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qB
+	0ersWl9N3scnD+9+vUvl7TxPMxNu9ydBN8PPHn5lNaemNCHpa8uZMK32L4mvROd2T7yscuH1
+	3Zk/es6Hqm1+zb6Tr63G+fdPjtXSE+y9zBOezbW+XbvIyc3N0Xup3s7I6ax8V9/Ldkp/0LNy
+	z+zqkBeN+u192kximtHB9IPtlzVTCp+wPq/zUmIpzkg01GIuKk4EAGRVPckRAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNKsWRmVeSWpSXmKPExsVy+t9jAd0F57YHGvzt4ra4fKOL2eLg/XqL
+	mZ9uslkcmP2Q1eLAnx2MFs2L17NZXHjaw2axsG0Ji8XlXXPYLGYv6WexWLSsldniduMKNovf
+	u46xWxxecYDJYt3L6SwO/B4LPl9h99g56y67x6vVM1k97lzbw+axf+4ado/zMxYyepxvPsLo
+	0bdlFaPH8RvbmTw+b5IL4IpqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LI
+	S8xNtVVy8QnQdcvMAfpDSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5jx
+	eM5LpoKjMhVfj3WxNDCuFu9i5OSQEDCR6Nk+gxXCFpO4cG89WxcjF4eQwCJGie1PzjNDOC8Y
+	JX4fu88EUsUroCWx+MVKoCoODhYBVYmjm4tBwmxA4f0vbrCB2KICYRIrp19hgSgXlPgx+R6Y
+	LQJUc3rnD7CZzAKfmSS+Nq9hBJkjLOArsWQu2BwhgUKJozs7wA7iFLCT2LegD8xmFtCR2N86
+	jQ3ClpfYvOYt8wRGgVlIVsxCUjYLSdkCRuZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMFJ
+	5ZnUDsaVDRaHGAU4GJV4eA+YbQ8UYk0sK67MPcQowcGsJMKrmwsU4k1JrKxKLcqPLyrNSS0+
+	xJgMDICJzFKiyfnAhJdXEm9obGJmZGlkbmhhZGxOmrCSOO+BVutAIYH0xJLU7NTUgtQimC1M
+	HJxSDYy+3PlnCxQe5Kuv/iTZy9Sz5b7JDbNXf3lunermzfW9stLq+m2++Qvmvcn/8rwj87kB
+	X13HBU8dqelG6/QFTHfVv6++dFftwWtbZu7Da3dHHpthespsw4n9xxJ2tc10nNLyUX/P4ROC
+	3ofveDFME6kKme2/drv2Ws2by1dkrxayWxxf/Oqz1sXrSizFGYmGWsxFxYkACxvBUm4DAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 10, 2013 at 06:42:49PM +0100, Nix wrote:
-> Yes, my shutdown scripts are panicking the kernel again! They're not
-> causing filesystem corruption this time, but it's still fs-related.
-> 
-> Here's the 3.9.5 panic, seen on an x86-32 NFS client using NFSv3: NFSv4
-> was compiled in but not used. This happened when processes whose
-> current directory was on one of those NFS-mounted filesystems were being
-> killed, after it had been lazy-umounted (so by this point its cwd was in
-> a disconnected mount point).
-> 
-> [  251.246800] BUG: unable to handle kernel NULL pointer dereference at 00000004
-> [  251.256556] IP: [<c01739f6>] path_init+0xc7/0x27f
-> [  251.256556] *pde = 00000000
-> [  251.256556] Oops: 0000 [#1]
-> [  251.256556] Pid: 748, comm: su Not tainted 3.9.5+ #1
-> [  251.256556] EIP: 0060:[<c01739f6>] EFLAGS: 00010246 CPU: 0
-> [  251.256556] EIP is at path_init+0xc7/0x27f
+Hi Kishon,
 
-Apparently that's set_root_rcu() with current->fs being NULL.  Which comes from
-AF_UNIX connect done by some twisted call chain in context of hell knows what.
+On 06/04/2013 01:13 AM, Kishon Vijay Abraham I wrote:
+> Added an API of_extcon_get_extcon_dev() to be used by drivers to get
+> extcon device in the case of dt boot (this can be used instead of
+> extcon_get_extcon_dev()).
+>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
+>  drivers/extcon/extcon-class.c |   40 ++++++++++++++++++++++++++++++++++++++++
+>  include/linux/extcon.h        |    8 ++++++++
+>  2 files changed, 48 insertions(+)
 
-> [  251.256556]  [<c02ef8da>] ? unix_stream_connect+0xe1/0x2f7
-> [  251.256556]  [<c026a14d>] ? kernel_connect+0x10/0x14
-> [  251.256556]  [<c031ecb1>] ? xs_local_connect+0x108/0x181
-> [  251.256556]  [<c031c83b>] ? xprt_connect+0xcd/0xd1
-> [  251.256556]  [<c031fd1b>] ? __rpc_execute+0x5b/0x156
-> [  251.256556]  [<c0128ac2>] ? wake_up_bit+0xb/0x19
-> [  251.256556]  [<c031b83d>] ? rpc_run_task+0x55/0x5a
-> [  251.256556]  [<c031b8bc>] ? rpc_call_sync+0x7a/0x8d
-> [  251.256556]  [<c0325127>] ? rpcb_register_call+0x11/0x20
-> [  251.256556]  [<c032548a>] ? rpcb_v4_register+0x87/0xf6
-> [  251.256556]  [<c0321187>] ? svc_unregister.isra.22+0x46/0x87
-> [  251.256556]  [<c03211d0>] ? svc_rpcb_cleanup+0x8/0x10
-> [  251.256556]  [<c03213df>] ? svc_shutdown_net+0x18/0x1b
-> [  251.256556]  [<c01cb1f3>] ? lockd_down+0x22/0x97
-> [  251.256556]  [<c01c89df>] ? nlmclnt_done+0xc/0x14
-> [  251.256556]  [<c01b9064>] ? nfs_free_server+0x7f/0xdb
-> [  251.256556]  [<c016e776>] ? deactivate_locked_super+0x16/0x3e
-> [  251.256556]  [<c0187e17>] ? free_fs_struct+0x13/0x20
-> [  251.256556]  [<c011a009>] ? do_exit+0x224/0x64f
-> [  251.256556]  [<c016d51f>] ? vfs_write+0x82/0x108
-> [  251.256556]  [<c011a492>] ? do_group_exit+0x3a/0x65
-> [  251.256556]  [<c011a4ce>] ? sys_exit_group+0x11/0x11
-> [  251.256556]  [<c0332b3d>] ? syscall_call+0x7/0xb
+I don't prefer that add of helper API in extcon core. I want to add
+new of helper file as drivers/extcon/of-extcon.c.
+So, I add drivers/extcon/of-extcon.c and include/linux/extcon/of-extcon.h
+based on your this patch. I will send modified patch at once.
 
-Why is it done in essentially random process context, anyway?  There's such thing
-as chroot, after all, which would screw that sucker as hard as NULL ->fs, but in
-a less visible way...
+> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
+> index 60adc04..265d549 100644
+> --- a/drivers/extcon/extcon-class.c
+> +++ b/drivers/extcon/extcon-class.c
+> @@ -31,6 +31,7 @@
+>  #include <linux/extcon.h>
+>  #include <linux/slab.h>
+>  #include <linux/sysfs.h>
+> +#include <linux/of_platform.h>
+>  
+>  /*
+>   * extcon_cable_name suggests the standard cable names for commonly used
+> @@ -392,6 +393,45 @@ int extcon_set_cable_state(struct extcon_dev *edev,
+>  }
+>  EXPORT_SYMBOL_GPL(extcon_set_cable_state);
+>  
+> +struct extcon_dev *of_extcon_get_extcon_dev(struct device *dev, int index)
+> +{
+> +	struct class_dev_iter iter;
+> +	struct device *extcon_dev;
+> +	struct device_node *node;
+> +	struct platform_device *extcon_parent_dev;
+> +
+> +	if (!dev->of_node) {
+> +		dev_dbg(dev, "device does not have a device node entry\n");
+> +		return ERR_PTR(-EINVAL);
+> +	}
+> +
+> +	node = of_parse_phandle(dev->of_node, "extcon", index);
+> +	if (!node) {
+> +		dev_dbg(dev, "failed to get phandle in %s node\n",
+> +			dev->of_node->full_name);
+> +		return ERR_PTR(-ENODEV);
+> +	}
+> +
+> +	extcon_parent_dev = of_find_device_by_node(node);
+> +	if (!extcon_parent_dev) {
+> +		dev_dbg(dev, "unable to find device by node\n");
+> +		return ERR_PTR(-EPROBE_DEFER);
+> +	}
+> +
+> +	class_dev_iter_init(&iter, extcon_class, NULL, NULL);
+> +	while ((extcon_dev = class_dev_iter_next(&iter))) {
+> +		if (extcon_dev->parent != &extcon_parent_dev->dev)
+> +			continue;
+> +
+> +		class_dev_iter_exit(&iter);
+> +		return dev_get_drvdata(extcon_dev);
+> +	}
+> +
+> +	class_dev_iter_exit(&iter);
+
+Use extcon_get_extcon_dev() instead of using class_dev_iter_init/exit()
+
+> +	return ERR_PTR(-ENODEV);
+> +}
+> +EXPORT_SYMBOL_GPL(of_extcon_get_extcon_dev);
+> +
+>  /**
+>   * extcon_get_extcon_dev() - Get the extcon device instance from the name
+>   * @extcon_name:	The extcon name provided with extcon_dev_register()
+> diff --git a/include/linux/extcon.h b/include/linux/extcon.h
+> index fcb51c8..3858bb9 100644
+> --- a/include/linux/extcon.h
+> +++ b/include/linux/extcon.h
+> @@ -182,6 +182,8 @@ struct extcon_specific_cable_nb {
+>   */
+>  extern int extcon_dev_register(struct extcon_dev *edev, struct device *dev);
+>  extern void extcon_dev_unregister(struct extcon_dev *edev);
+> +extern struct extcon_dev *of_extcon_get_extcon_dev(struct device *dev,
+> +	int index);
+>  extern struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name);
+>  
+>  /*
+> @@ -292,6 +294,12 @@ static inline int extcon_set_cable_state(struct extcon_dev *edev,
+>  	return 0;
+>  }
+>  
+> +static inline struct extcon_dev *of_extcon_get_extcon_dev(struct device *dev,
+> +	int index)
+> +{
+> +	return NULL;
+> +}
+> +
+>  static inline struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name)
+>  {
+>  	return NULL;
+
+Thanks,
+Chanwoo Choi
+
+
+
+
+
+
