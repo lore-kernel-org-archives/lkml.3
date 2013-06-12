@@ -1,208 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731Ab3FLOg5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 10:36:57 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:36452 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862Ab3FLOgz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 10:36:55 -0400
-From: Gabriel Fernandez <gabriel.fernandez.st@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
-        Olivier Clergeaud <olivier.clergeaud@st.com>,
-        Gabriel Fernandez <gabriel.fernandez@st.com>
-Subject: [PATCH 2/2] ARM: u8540: DT: Set pinctrl mapping to i2c0,1,2,4 & 5
-Date: Wed, 12 Jun 2013 16:35:35 +0200
-Message-Id: <1371047735-14851-2-git-send-email-gabriel.fernandez.st@gmail.com>
-X-Mailer: git-send-email 1.8.1.1
-In-Reply-To: <1371047735-14851-1-git-send-email-gabriel.fernandez.st@gmail.com>
-References: <1371047735-14851-1-git-send-email-gabriel.fernandez.st@gmail.com>
+	id S1756869Ab3FLOha (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 10:37:30 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:43020 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754606Ab3FLOh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 10:37:27 -0400
+Message-ID: <51B8878B.5090705@imgtec.com>
+Date: Wed, 12 Jun 2013 15:36:59 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        Linus Walleij <linus.walleij@linaro.org>, <linux-sh@vger.kernel.org>
+Subject: Re: [RFC] pinctrl: generic: Add DT bindings
+References: <1370988237-30593-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+In-Reply-To: <1370988237-30593-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_06_12_15_37_24
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gabriel Fernandez <gabriel.fernandez@st.com>
+On 11/06/13 23:03, Laurent Pinchart wrote:
+> Document DT properties for the generic pinctrl parameters and add a
+> parser function.
+> 
+> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+> ---
+>  .../bindings/pinctrl/pinctrl-bindings.txt          | 29 +++++++
+>  drivers/pinctrl/pinconf-generic.c                  | 94 ++++++++++++++++++++++
+>  drivers/pinctrl/pinconf.h                          | 17 ++++
+>  3 files changed, 140 insertions(+)
+> 
+> I've successfully tested this patch (or more accurately only the pull-up and
+> pull-down properties) with the Renesas sh-pfc pinctrl device driver. I will
+> resent the sh-pfc DT bindings patch series rebased on the generic pinconf
+> bindings.
+> 
+> Not all generic pinconf properties are currently implemented, but I don't
+> think that should be a showstopper. We can add them later as needed.
+> 
+> The code is based on both the sh-pfc pinconf DT parser and James Hogan's
+> tz1090 DT parser ("[PATCH v2 6/9] pinctrl-tz1090: add TZ1090 pinctrl driver").
 
-This patch configures pin map in device tree of i2c0,
-1,2,4 & 5 for ccu8540 board.
+Thanks for this patch. I haven't tested it (yet), but have a few
+comments below.
 
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
----
- arch/arm/boot/dts/ccu8540-pinctrl.dtsi | 115 +++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/ccu8540.dts          |  34 ++++++++++
- 2 files changed, 149 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+> index c95ea82..e499ff0 100644
+> --- a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+> +++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+> @@ -126,3 +126,32 @@ device; they may be grandchildren, for example. Whether this is legal, and
+>  whether there is any interaction between the child and intermediate parent
+>  nodes, is again defined entirely by the binding for the individual pin
+>  controller device.
+> +
+> +== Generic pinconf parameters ==
+> +
+> +Pin configuration parameters are expressed by DT properties in the pin
+> +controller device state nodes and child nodes. For devices that use the generic
+> +pinconf parameters the following properties are defined.
+> +
+> +- tristate: A boolean, put the pin into high impedance state when set.
+> +
+> +- pull-up: An integer representing the pull-up strength. 0 disables the pull-up,
+> +  non-zero values enable it.
+> +
+> +- pull-down: An integer representing the pull-down strength. 0 disables the
+> +  pull-down, non-zero values enables it.
+> +
+> +- schmitt: An integer, enable or disable Schmitt trigger mode for the pins.
+> +  Valid values are
+> +    0: Schmitt trigger disabled (no hysteresis)
+> +    1: Schmitt trigger enabled
 
-diff --git a/arch/arm/boot/dts/ccu8540-pinctrl.dtsi b/arch/arm/boot/dts/ccu8540-pinctrl.dtsi
-index 644b189..e079996 100644
---- a/arch/arm/boot/dts/ccu8540-pinctrl.dtsi
-+++ b/arch/arm/boot/dts/ccu8540-pinctrl.dtsi
-@@ -76,6 +76,121 @@
- 					};
- 				};
- 			};
-+
-+			i2c0 {
-+				i2c0_default_mux: i2c_mux {
-+					default_mux {
-+						ste,function = "i2c0";
-+						ste,pins = "i2c0_a_1";
-+					};
-+				};
-+
-+				i2c0_default_mode: i2c_default {
-+					default_cfg1 {
-+						ste,pins = "GPIO147", "GPIO148";
-+						ste,config = <&in_pu>;
-+					};
-+				};
-+
-+				i2c0_sleep_mode: i2c_sleep {
-+					sleep_cfg1 {
-+						ste,pins = "GPIO147", "GPIO148";
-+						ste,config = <&slpm_in_pu>;
-+					};
-+				};
-+			};
-+
-+			i2c1 {
-+				i2c1_default_mux: i2c_mux {
-+					default_mux {
-+						ste,function = "i2c1";
-+						ste,pins = "i2c1_b_2";
-+					};
-+				};
-+
-+				i2c1_default_mode: i2c_default {
-+					default_cfg1 {
-+						ste,pins = "GPIO16", "GPIO17";
-+						ste,config = <&in_pu>;
-+					};
-+				};
-+
-+				i2c1_sleep_mode: i2c_sleep {
-+					sleep_cfg1 {
-+						ste,pins = "GPIO16", "GPIO17";
-+						ste,config = <&slpm_in_pu>;
-+					};
-+				};
-+			};
-+
-+			i2c2 {
-+				i2c2_default_mux: i2c_mux {
-+					default_mux {
-+						ste,function = "i2c2";
-+						ste,pins = "i2c2_b_2";
-+					};
-+				};
-+
-+				i2c2_default_mode: i2c_default {
-+					default_cfg1 {
-+						ste,pins = "GPIO10", "GPIO11";
-+						ste,config = <&in_pu>;
-+					};
-+				};
-+
-+				i2c2_sleep_mode: i2c_sleep {
-+					sleep_cfg1 {
-+						ste,pins = "GPIO11", "GPIO11";
-+						ste,config = <&slpm_in_pu>;
-+					};
-+				};
-+			};
-+
-+			i2c4 {
-+				i2c4_default_mux: i2c_mux {
-+					default_mux {
-+						ste,function = "i2c4";
-+						ste,pins = "i2c4_b_2";
-+					};
-+				};
-+
-+				i2c4_default_mode: i2c_default {
-+					default_cfg1 {
-+						ste,pins = "GPIO122", "GPIO123";
-+						ste,config = <&in_pu>;
-+					};
-+				};
-+
-+				i2c4_sleep_mode: i2c_sleep {
-+					sleep_cfg1 {
-+						ste,pins = "GPIO122", "GPIO123";
-+						ste,config = <&slpm_in_pu>;
-+					};
-+				};
-+			};
-+
-+			i2c5 {
-+				i2c5_default_mux: i2c_mux {
-+					default_mux {
-+						ste,function = "i2c5";
-+						ste,pins = "i2c5_c_2";
-+					};
-+				};
-+
-+				i2c5_default_mode: i2c_default {
-+					default_cfg1 {
-+						ste,pins = "GPIO118", "GPIO119";
-+						ste,config = <&in_pu>;
-+					};
-+				};
-+
-+				i2c5_sleep_mode: i2c_sleep {
-+					sleep_cfg1 {
-+						ste,pins = "GPIO118", "GPIO119";
-+						ste,config = <&slpm_in_pu>;
-+					};
-+				};
-+			};
- 		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/ccu8540.dts b/arch/arm/boot/dts/ccu8540.dts
-index 3065fe4..7df65f0 100644
---- a/arch/arm/boot/dts/ccu8540.dts
-+++ b/arch/arm/boot/dts/ccu8540.dts
-@@ -48,5 +48,39 @@
- 			pinctrl-1 = <&uart2_sleep_mode>;
- 			status = "okay";
- 		};
-+
-+		i2c0: i2c@80004000 {
-+			pinctrl-names = "default","sleep";
-+			pinctrl-0 = <&i2c0_default_mux>, <&i2c0_default_mode>;
-+			pinctrl-1 = <&i2c0_sleep_mode>;
-+		};
-+
-+		i2c1: i2c@80122000 {
-+			pinctrl-names = "default","sleep";
-+			pinctrl-0 = <&i2c1_default_mux>, <&i2c1_default_mode>;
-+			pinctrl-1 = <&i2c1_sleep_mode>;
-+		};
-+
-+		i2c2: i2c@80128000 {
-+			pinctrl-names = "default","sleep";
-+			pinctrl-0 = <&i2c2_default_mux>, <&i2c2_default_mode>;
-+			pinctrl-1 = <&i2c2_sleep_mode>;
-+		};
-+
-+		i2c3: i2c@80110000 {
-+			status = "disabled";
-+		};
-+
-+		i2c4: i2c@8012a000 {
-+			pinctrl-names = "default","sleep";
-+			pinctrl-0 = <&i2c4_default_mux>, <&i2c4_default_mode>;
-+			pinctrl-1 = <&i2c4_sleep_mode>;
-+		};
-+
-+		i2c5: i2c@80001000 {
-+			pinctrl-names = "default","sleep";
-+			pinctrl-0 = <&i2c5_default_mux>, <&i2c5_default_mode>;
-+			pinctrl-1 = <&i2c5_sleep_mode>;
-+		};
- 	};
- };
--- 
-1.8.1.1
+this is set as a flag, so I think it should be described like tristate,
+"A boolean, ... when set."? Same for pull-up and pull-down (see comment
+below).
+
+<snip>
+
+> +	{ "pull-up",		PIN_CONFIG_BIAS_PULL_UP,		false },
+> +	{ "pull-down",		PIN_CONFIG_BIAS_PULL_DOWN,		false },
+
+pinconf-generic.h says "If the argument is != 0 pull-up is enabled, if
+it is 0, pull-up is disabled", so I think these should be flags unless
+it's changed there first.
+
+Any chance of adding the new "bus-hold" entry too
+(PIN_CONFIG_BIAS_BUS_HOLD, and flag=true I suppose)? see
+aa69352252a7a952e6e77734cb87135143a377d2 in LinuxW's pinctrl for-next
+branch.
+
+<snip>
+
+> +EXPORT_SYMBOL_GPL(pinconf_generic_parse_params);
+> diff --git a/drivers/pinctrl/pinconf.h b/drivers/pinctrl/pinconf.h
+> index 92c7267..eb8550b 100644
+> --- a/drivers/pinctrl/pinconf.h
+> +++ b/drivers/pinctrl/pinconf.h
+> @@ -90,6 +90,23 @@ static inline void pinconf_init_device_debugfs(struct dentry *devroot,
+>   * pin config.
+>   */
+>  
+> +#if defined(CONFIG_GENERIC_PINCONF)
+> +
+> +int pinconf_generic_parse_params(struct device *dev, struct device_node *np,
+> +				 unsigned long **cfgs);
+> +
+> +#else
+> +
+> +static inline int pinconf_generic_parse_params(struct device *dev,
+> +					       struct device_node *np,
+> +					       unsigned long **cfgs)
+> +{
+> +	*cfgs = NULL;
+> +	return 0;
+> +}
+
+Should this ever be necessary? Sounds like if the driver wanted to use
+this it should already have selected GENERIC_PINCONF anyway.
+
+Cheers
+James
 
