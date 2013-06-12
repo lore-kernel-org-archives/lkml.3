@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757591Ab3FLRA0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 13:00:26 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44574 "EHLO
+	id S1757413Ab3FLQ6k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 12:58:40 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44531 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757429Ab3FLQ6l (ORCPT
+	with ESMTP id S1754808Ab3FLQ6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 12:58:41 -0400
+	Wed, 12 Jun 2013 12:58:36 -0400
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
@@ -15,14 +15,16 @@ Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
         Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
         linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
         linux-input@vger.kernel.org, "Patil, Rachna" <rachna@ti.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 07/21] iio: ti_am335x_adc: Add DT support
-Date: Wed, 12 Jun 2013 18:58:08 +0200
-Message-Id: <1371056302-12714-8-git-send-email-bigeasy@linutronix.de>
+Subject: =?UTF-8?q?=5BPATCH=2002/21=5D=20input=3A=20ti=5Fam33x=5Ftsc=3A=20Step=20enable=20bits=20made=20configurable?=
+Date: Wed, 12 Jun 2013 18:58:03 +0200
+Message-Id: <1371056302-12714-3-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1371056302-12714-1-git-send-email-bigeasy@linutronix.de>
 References: <1371056302-12714-1-git-send-email-bigeasy@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -32,98 +34,217 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Patil, Rachna" <rachna@ti.com>
 
-Add DT support for client ADC driver.
+Current code has hard coded value written to
+step enable bits. Now the bits are updated based
+on how many steps are needed to be configured got
+from platform data.
 
-Acked-by: Jonathan Cameron <jic23@kernel.org>
+The user needs to take care not to exceed
+the count more than 16. While using ADC and TSC
+one should take care to set this parameter correctly.
+
+Sebastian added the common lock and moved the code, that manipulates the
+steps, from into the mfd module.
+
 Signed-off-by: Patil, Rachna <rachna@ti.com>
-Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/iio/adc/ti_am335x_adc.c |   29 ++++++++++++++++++++++++-----
- drivers/mfd/ti_am335x_tscadc.c  |    1 +
- 2 files changed, 25 insertions(+), 5 deletions(-)
+ drivers/iio/adc/ti_am335x_adc.c           |   20 ++++++++++++++++++--
+ drivers/input/touchscreen/ti_am335x_tsc.c |   12 ++++++++++--
+ drivers/mfd/ti_am335x_tscadc.c            |   29 ++++++++++++++++++++++++++++-
+ include/linux/mfd/ti_am335x_tscadc.h      |    8 ++++++--
+ 4 files changed, 62 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-index 543b9c4..b24402c 100644
+index 9db352e..543b9c4 100644
 --- a/drivers/iio/adc/ti_am335x_adc.c
 +++ b/drivers/iio/adc/ti_am335x_adc.c
-@@ -22,6 +22,8 @@
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/iio/iio.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
+@@ -42,10 +42,20 @@ static void tiadc_writel(struct tiadc_device *adc, unsigned int reg,
+ 	writel(val, adc->mfd_tscadc->tscadc_base + reg);
+ }
  
- #include <linux/mfd/ti_am335x_tscadc.h>
- #include <linux/platform_data/ti_am335x_adc.h>
-@@ -152,11 +154,12 @@ static int tiadc_probe(struct platform_device *pdev)
- 	struct iio_dev		*indio_dev;
- 	struct tiadc_device	*adc_dev;
- 	struct ti_tscadc_dev	*tscadc_dev = ti_tscadc_dev_get(pdev);
--	struct mfd_tscadc_board	*pdata;
-+	struct mfd_tscadc_board	*pdata = tscadc_dev->dev->platform_data;
-+	struct device_node	*node = pdev->dev.of_node;
- 	int			err;
-+	u32			val32;
- 
--	pdata = tscadc_dev->dev->platform_data;
--	if (!pdata || !pdata->adc_init) {
-+	if (!pdata && !node) {
- 		dev_err(&pdev->dev, "Could not find platform data\n");
- 		return -EINVAL;
- 	}
-@@ -169,8 +172,17 @@ static int tiadc_probe(struct platform_device *pdev)
- 	}
- 	adc_dev = iio_priv(indio_dev);
- 
--	adc_dev->mfd_tscadc = tscadc_dev;
--	adc_dev->channels = pdata->adc_init->adc_channels;
-+	adc_dev->mfd_tscadc = ti_tscadc_dev_get(pdev);
++static u32 get_adc_step_mask(struct tiadc_device *adc_dev)
++{
++	u32 step_en;
 +
-+	if (pdata)
-+		adc_dev->channels = pdata->adc_init->adc_channels;
-+	else {
-+		err = of_property_read_u32(node,
-+				"ti,adc-channels", &val32);
-+		if (err < 0)
-+			goto err_free_device;
-+		adc_dev->channels = val32;
-+	}
- 
- 	indio_dev->dev.parent = &pdev->dev;
- 	indio_dev->name = dev_name(&pdev->dev);
-@@ -260,11 +272,18 @@ static const struct dev_pm_ops tiadc_pm_ops = {
- #define TIADC_PM_OPS NULL
- #endif
- 
-+static const struct of_device_id ti_adc_dt_ids[] = {
-+	{ .compatible = "ti,am3359-adc", },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, ti_adc_dt_ids);
++	step_en = ((1 << adc_dev->channels) - 1);
++	step_en <<= TOTAL_STEPS - adc_dev->channels + 1;
++	return step_en;
++}
 +
- static struct platform_driver tiadc_driver = {
- 	.driver = {
- 		.name   = "tiadc",
- 		.owner	= THIS_MODULE,
- 		.pm	= TIADC_PM_OPS,
-+		.of_match_table = of_match_ptr(ti_adc_dt_ids),
- 	},
- 	.probe	= tiadc_probe,
- 	.remove	= tiadc_remove,
+ static void tiadc_step_config(struct tiadc_device *adc_dev)
+ {
+ 	unsigned int stepconfig;
+ 	int i, channels = 0, steps;
++	u32 step_en;
+ 
+ 	/*
+ 	 * There are 16 configurable steps and 8 analog input
+@@ -69,7 +79,8 @@ static void tiadc_step_config(struct tiadc_device *adc_dev)
+ 				STEPCONFIG_OPENDLY);
+ 		channels++;
+ 	}
+-	tiadc_writel(adc_dev, REG_SE, STPENB_STEPENB);
++	step_en = get_adc_step_mask(adc_dev);
++	am335x_tsc_se_set(adc_dev->mfd_tscadc, step_en);
+ }
+ 
+ static int tiadc_channel_init(struct iio_dev *indio_dev, int channels)
+@@ -127,7 +138,7 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
+ 		if (i == chan->channel)
+ 			*val = readx1 & 0xfff;
+ 	}
+-	tiadc_writel(adc_dev, REG_SE, STPENB_STEPENB);
++	am335x_tsc_se_update(adc_dev->mfd_tscadc);
+ 
+ 	return IIO_VAL_INT;
+ }
+@@ -191,10 +202,15 @@ static int tiadc_probe(struct platform_device *pdev)
+ static int tiadc_remove(struct platform_device *pdev)
+ {
+ 	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
++	struct tiadc_device *adc_dev = iio_priv(indio_dev);
++	u32 step_en;
+ 
+ 	iio_device_unregister(indio_dev);
+ 	tiadc_channels_remove(indio_dev);
+ 
++	step_en = get_adc_step_mask(adc_dev);
++	am335x_tsc_se_clr(adc_dev->mfd_tscadc, step_en);
++
+ 	iio_device_free(indio_dev);
+ 
+ 	return 0;
+diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
+index 16077d3..23d6a4d 100644
+--- a/drivers/input/touchscreen/ti_am335x_tsc.c
++++ b/drivers/input/touchscreen/ti_am335x_tsc.c
+@@ -57,6 +57,7 @@ static void titsc_writel(struct titsc *tsc, unsigned int reg,
+ static void titsc_step_config(struct titsc *ts_dev)
+ {
+ 	unsigned int	config;
++	unsigned int	stepenable = 0;
+ 	int i, total_steps;
+ 
+ 	/* Configure the Step registers */
+@@ -128,7 +129,9 @@ static void titsc_step_config(struct titsc *ts_dev)
+ 	titsc_writel(ts_dev, REG_STEPDELAY(total_steps + 2),
+ 			STEPCONFIG_OPENDLY);
+ 
+-	titsc_writel(ts_dev, REG_SE, STPENB_STEPENB_TC);
++	/* The steps1 … end and bit 0 for TS_Charge */
++	stepenable = (1 << (total_steps + 2)) - 1;
++	am335x_tsc_se_set(ts_dev->mfd_tscadc, stepenable);
+ }
+ 
+ static void titsc_read_coordinates(struct titsc *ts_dev,
+@@ -250,7 +253,7 @@ static irqreturn_t titsc_irq(int irq, void *dev)
+ 
+ 	titsc_writel(ts_dev, REG_IRQSTATUS, irqclr);
+ 
+-	titsc_writel(ts_dev, REG_SE, STPENB_STEPENB_TC);
++	am335x_tsc_se_update(ts_dev->mfd_tscadc);
+ 	return IRQ_HANDLED;
+ }
+ 
+@@ -334,6 +337,11 @@ static int titsc_remove(struct platform_device *pdev)
+ 
+ 	free_irq(ts_dev->irq, ts_dev);
+ 
++	/* total steps followed by the enable mask */
++	steps = 2 * ts_dev->steps_to_configure + 2;
++	steps = (1 << steps) - 1;
++	am335x_tsc_se_clr(ts_dev->mfd_tscadc, steps);
++
+ 	input_unregister_device(ts_dev->input);
+ 
+ 	platform_set_drvdata(pdev, NULL);
 diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-index f509766..1d6c740 100644
+index 772ea2a..90ccfc0 100644
 --- a/drivers/mfd/ti_am335x_tscadc.c
 +++ b/drivers/mfd/ti_am335x_tscadc.c
-@@ -210,6 +210,7 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
- 	/* ADC Cell */
- 	cell = &tscadc->cells[ADC_CELL];
- 	cell->name = "tiadc";
-+	cell->of_compatible = "ti,am3359-adc";
- 	cell->platform_data = &tscadc;
- 	cell->pdata_size = sizeof(tscadc);
+@@ -48,6 +48,32 @@ static const struct regmap_config tscadc_regmap_config = {
+ 	.val_bits = 32,
+ };
  
++void am335x_tsc_se_update(struct ti_tscadc_dev *tsadc)
++{
++	tscadc_writel(tsadc, REG_SE, tsadc->reg_se_cache);
++}
++EXPORT_SYMBOL_GPL(am335x_tsc_se_update);
++
++void am335x_tsc_se_set(struct ti_tscadc_dev *tsadc, u32 val)
++{
++	spin_lock(&tsadc->reg_lock);
++	tsadc->reg_se_cache |= val;
++	spin_unlock(&tsadc->reg_lock);
++
++	am335x_tsc_se_update(tsadc);
++}
++EXPORT_SYMBOL_GPL(am335x_tsc_se_set);
++
++void am335x_tsc_se_clr(struct ti_tscadc_dev *tsadc, u32 val)
++{
++	spin_lock(&tsadc->reg_lock);
++	tsadc->reg_se_cache &= ~val;
++	spin_unlock(&tsadc->reg_lock);
++
++	am335x_tsc_se_update(tsadc);
++}
++EXPORT_SYMBOL_GPL(am335x_tsc_se_clr);
++
+ static void tscadc_idle_config(struct ti_tscadc_dev *config)
+ {
+ 	unsigned int idleconfig;
+@@ -129,6 +155,7 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
+ 		goto ret;
+ 	}
+ 
++	spin_lock_init(&tscadc->reg_lock);
+ 	pm_runtime_enable(&pdev->dev);
+ 	pm_runtime_get_sync(&pdev->dev);
+ 
+@@ -239,7 +266,7 @@ static int tscadc_resume(struct device *dev)
+ 			CNTRLREG_STEPID | CNTRLREG_4WIRE;
+ 	tscadc_writel(tscadc_dev, REG_CTRL, ctrl);
+ 	tscadc_idle_config(tscadc_dev);
+-	tscadc_writel(tscadc_dev, REG_SE, STPENB_STEPENB);
++	am335x_tsc_se_update(tscadc_dev);
+ 	restore = tscadc_readl(tscadc_dev, REG_CTRL);
+ 	tscadc_writel(tscadc_dev, REG_CTRL,
+ 			(restore | CNTRLREG_TSCSSENB));
+diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
+index 8114e4e..4258627 100644
+--- a/include/linux/mfd/ti_am335x_tscadc.h
++++ b/include/linux/mfd/ti_am335x_tscadc.h
+@@ -46,8 +46,6 @@
+ /* Step Enable */
+ #define STEPENB_MASK		(0x1FFFF << 0)
+ #define STEPENB(val)		((val) << 0)
+-#define STPENB_STEPENB		STEPENB(0x1FFFF)
+-#define STPENB_STEPENB_TC	STEPENB(0x1FFF)
+ 
+ /* IRQ enable */
+ #define IRQENB_HW_PEN		BIT(0)
+@@ -141,6 +139,8 @@ struct ti_tscadc_dev {
+ 	void __iomem *tscadc_base;
+ 	int irq;
+ 	struct mfd_cell cells[TSCADC_CELLS];
++	u32 reg_se_cache;
++	spinlock_t reg_lock;
+ 
+ 	/* tsc device */
+ 	struct titsc *tsc;
+@@ -156,4 +156,8 @@ static inline struct ti_tscadc_dev *ti_tscadc_dev_get(struct platform_device *p)
+ 	return *tscadc_dev;
+ }
+ 
++void am335x_tsc_se_update(struct ti_tscadc_dev *tsadc);
++void am335x_tsc_se_set(struct ti_tscadc_dev *tsadc, u32 val);
++void am335x_tsc_se_clr(struct ti_tscadc_dev *tsadc, u32 val);
++
+ #endif
 -- 
 1.7.10.4
 
