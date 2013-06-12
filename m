@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756789Ab3FLOpU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 10:45:20 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:44197 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752284Ab3FLOpS (ORCPT
+	id S1754711Ab3FLOqk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 10:46:40 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:52644 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752284Ab3FLOqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 10:45:18 -0400
-Date: Wed, 12 Jun 2013 10:30:57 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Johannes Berg <johannes.berg@intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
-        Luciano Coelho <coelho@ti.com>, Kalle Valo <kvalo@qca.qualcomm.com>
-Subject: Re: pull request: wireless 2013-06-06
-Message-ID: <20130612143057.GA11589@tuxdriver.com>
-References: <20130606190929.GB18827@tuxdriver.com>
- <20130611.222706.1492583255605214982.davem@davemloft.net>
+	Wed, 12 Jun 2013 10:46:39 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 21/33 v2] clk: ux500: Add Device Tree support for the PRCC Kernel clock
+Date: Wed, 12 Jun 2013 16:46:30 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com,
+        Mike Turquette <mturquette@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org> <1370521041-32318-22-git-send-email-lee.jones@linaro.org> <20130611110923.GB3330@laptop>
+In-Reply-To: <20130611110923.GB3330@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130611.222706.1492583255605214982.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201306121646.30279.arnd@arndb.de>
+X-Provags-ID: V02:K0:hPYG4Dh74hdfvndboqkNdulKdb/saVI3B6+prFe50Tp
+ 1BNok3k1P+LFiknxhLzfx3hwxCMASnRHtJ1RDHIdFnzXF8gIwY
+ eF83JG8M0J310nRm7HNZ9foi3CSjq9E+DaRYdw/ggY0UD6zdIM
+ Vvx2IIUITR2nAsxdlmk37ZA6q+XVKxzznexgB5Vic80tYPoP5x
+ FUjyo9sSFB95gkM4M0jS3hq48gY1IsFc2+dz58mIrpP+psRkOW
+ ww3TJ7h2wsLWG4Wa+ylyvrXeHwjLJb/zsy7hGxtpPTEs93lL6Y
+ FlhVsBdK5aF4AI0AbNCz3ho8qxwbu87eEl2k1lqEecSU1K1jSv
+ ctvdCLNOkX0qAzCsP7n4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 10:27:06PM -0700, David Miller wrote:
-> From: "John W. Linville" <linville@tuxdriver.com>
-> Date: Thu, 6 Jun 2013 15:09:30 -0400
+On Tuesday 11 June 2013, Lee Jones wrote:
+> This patch enables clocks to be specified from Device Tree via phandles
+> to the "prcc-kernel-clock" node.
 > 
-> > Johannes Berg (2):
-> >       mac80211: constify ieee802_11_parse_elems() argument
+> Cc: Mike Turquette <mturquette@linaro.org>
+> Cc: Ulf Hansson <ulf.hansson@linaro.org>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > 
-> Such cleanups are absolutely, positively, not appropriate at this
-> time.
-> 
-> Sorry.
-> 
-> I still can't pull this.
 
-OK, a respin is coming.
+I don't understand the design of the common clock subsystem here, but is it really
+necessary to hardcode all the clocks using clk_reg_prcc_kclk() here *and* register
+a clkdev *and* store the pointer in an array, when you can get all that information
+from the device tree?
 
-Note to my feeder trees, another rebase is coming...
+Mike?
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+	Arnd
