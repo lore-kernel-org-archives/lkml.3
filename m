@@ -1,112 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab3FLMId (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 08:08:33 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:52729 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747Ab3FLMIc (ORCPT
+	id S1755857Ab3FLMIt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 08:08:49 -0400
+Received: from 14.mo1.mail-out.ovh.net ([178.32.97.215]:34227 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755580Ab3FLMIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 08:08:32 -0400
-From: Nix <nix@esperi.org.uk>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, NFS list <linux-nfs@vger.kernel.org>
-Subject: Re: NFS/lazy-umount/path-lookup-related panics at shutdown (at kill of processes on lazy-umounted filesystems) with 3.9.2 and 3.9.5
-References: <871u89vp46.fsf@spindle.srvr.nix>
-	<20130612012304.GF4165@ZenIV.linux.org.uk>
-Emacs: it's not slow --- it's stately.
-Date: Wed, 12 Jun 2013 13:08:26 +0100
-In-Reply-To: <20130612012304.GF4165@ZenIV.linux.org.uk> (Al Viro's message of
-	"Wed, 12 Jun 2013 02:23:04 +0100")
-Message-ID: <87k3lzpm4l.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Wed, 12 Jun 2013 08:08:48 -0400
+Message-ID: <51B864CB.8000100@overkiz.com>
+Date: Wed, 12 Jun 2013 14:08:43 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-URT-Metrics: spindle 1060; Body=3 Fuz1=3 Fuz2=3
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Dan Williams <djbw@fb.com>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: Re: [RFC PATCH 27/50] at_hdmac: prepare clk before calling enable
+References: <1370615115-16979-1-git-send-email-b.brezillon@overkiz.com> <1370622358-19575-1-git-send-email-b.brezillon@overkiz.com> <20130612090520.GN4107@intel.com>
+In-Reply-To: <20130612090520.GN4107@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 7230247728176593043
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrhedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrhedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 Jun 2013, Al Viro told this:
+On 12/06/2013 11:05, Vinod Koul wrote:
+> On Fri, Jun 07, 2013 at 06:25:57PM +0200, Boris BREZILLON wrote:
+>> Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
+>> avoid common clk framework warnings.
+>>
+>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+>> ---
+>>   drivers/dma/at_hdmac.c |   12 ++++++------
+>>   1 file changed, 6 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+>> index e923cda..4772036 100644
+>> --- a/drivers/dma/at_hdmac.c
+>> +++ b/drivers/dma/at_hdmac.c
+>> @@ -1374,7 +1374,7 @@ static int __init at_dma_probe(struct platform_device *pdev)
+>>   		err = PTR_ERR(atdma->clk);
+>>   		goto err_clk;
+>>   	}
+>> -	clk_enable(atdma->clk);
+>> +	clk_prepare_enable(atdma->clk);
+> Can you add checks for return value in the driver as well
+Sure. I'll add it in the next version.
+>>   
+>>   	/* force dma off, just in case */
+>>   	at_dma_off(atdma);
+>> @@ -1475,7 +1475,7 @@ err_pool_create:
+>>   	platform_set_drvdata(pdev, NULL);
+>>   	free_irq(platform_get_irq(pdev, 0), atdma);
+>>   err_irq:
+>> -	clk_disable(atdma->clk);
+>> +	clk_disable_unprepare(atdma->clk);
+>>   	clk_put(atdma->clk);
+>>   err_clk:
+>>   	iounmap(atdma->regs);
+>> @@ -1512,7 +1512,7 @@ static int at_dma_remove(struct platform_device *pdev)
+>>   		list_del(&chan->device_node);
+>>   	}
+>>   
+>> -	clk_disable(atdma->clk);
+>> +	clk_disable_unprepare(atdma->clk);
+>>   	clk_put(atdma->clk);
+>>   
+>>   	iounmap(atdma->regs);
+>> @@ -1531,7 +1531,7 @@ static void at_dma_shutdown(struct platform_device *pdev)
+>>   	struct at_dma	*atdma = platform_get_drvdata(pdev);
+>>   
+>>   	at_dma_off(platform_get_drvdata(pdev));
+>> -	clk_disable(atdma->clk);
+>> +	clk_disable_unprepare(atdma->clk);
+>>   }
+>>   
+>>   static int at_dma_prepare(struct device *dev)
+>> @@ -1588,7 +1588,7 @@ static int at_dma_suspend_noirq(struct device *dev)
+>>   
+>>   	/* disable DMA controller */
+>>   	at_dma_off(atdma);
+>> -	clk_disable(atdma->clk);
+>> +	clk_disable_unprepare(atdma->clk);
+>>   	return 0;
+>>   }
+>>   
+>> @@ -1618,7 +1618,7 @@ static int at_dma_resume_noirq(struct device *dev)
+>>   	struct dma_chan *chan, *_chan;
+>>   
+>>   	/* bring back DMA controller */
+>> -	clk_enable(atdma->clk);
+>> +	clk_prepare_enable(atdma->clk);
+>>   	dma_writel(atdma, EN, AT_DMA_ENABLE);
+>>   
+>>   	/* clear any pending interrupt */
+> --
+> ~Vinod
 
-> On Mon, Jun 10, 2013 at 06:42:49PM +0100, Nix wrote:
->> Yes, my shutdown scripts are panicking the kernel again! They're not
->> causing filesystem corruption this time, but it's still fs-related.
->> 
->> Here's the 3.9.5 panic, seen on an x86-32 NFS client using NFSv3: NFSv4
->> was compiled in but not used. This happened when processes whose
->> current directory was on one of those NFS-mounted filesystems were being
->> killed, after it had been lazy-umounted (so by this point its cwd was in
->> a disconnected mount point).
->> 
->> [  251.246800] BUG: unable to handle kernel NULL pointer dereference at 00000004
->> [  251.256556] IP: [<c01739f6>] path_init+0xc7/0x27f
->> [  251.256556] *pde = 00000000
->> [  251.256556] Oops: 0000 [#1]
->> [  251.256556] Pid: 748, comm: su Not tainted 3.9.5+ #1
->> [  251.256556] EIP: 0060:[<c01739f6>] EFLAGS: 00010246 CPU: 0
->> [  251.256556] EIP is at path_init+0xc7/0x27f
->
-> Apparently that's set_root_rcu() with current->fs being NULL.  Which comes from
-> AF_UNIX connect done by some twisted call chain in context of hell knows what.
-
-It's all NFS's fault!
-
->> [  251.256556]  [<c02ef8da>] ? unix_stream_connect+0xe1/0x2f7
->> [  251.256556]  [<c026a14d>] ? kernel_connect+0x10/0x14
->> [  251.256556]  [<c031ecb1>] ? xs_local_connect+0x108/0x181
->> [  251.256556]  [<c031c83b>] ? xprt_connect+0xcd/0xd1
-
-At this point, we have a sibcall to call_connect() I think. The RPC task
-of discourse happens to be local, and as the relevant comment says
-
-		 * We want the AF_LOCAL connect to be resolved in the
-		 * filesystem namespace of the process making the rpc
-		 * call.  Thus we connect synchronously.
-
-Probably this should be doing this only if said namespace isn't
-disconnected and going away...
-
->> [  251.256556]  [<c031fd1b>] ? __rpc_execute+0x5b/0x156
->> [  251.256556]  [<c0128ac2>] ? wake_up_bit+0xb/0x19
->> [  251.256556]  [<c031b83d>] ? rpc_run_task+0x55/0x5a
->> [  251.256556]  [<c031b8bc>] ? rpc_call_sync+0x7a/0x8d
->> [  251.256556]  [<c0325127>] ? rpcb_register_call+0x11/0x20
->> [  251.256556]  [<c032548a>] ? rpcb_v4_register+0x87/0xf6
-
-This is happening because of this code in net/sunrpc/svc.c (and, indeed,
-I am running rpcbind, like everyone should be these days):
-
-/*
- * If user space is running rpcbind, it should take the v4 UNSET
- * and clear everything for this [program, version].  If user space
- * is running portmap, it will reject the v4 UNSET, but won't have
- * any "inet6" entries anyway.  So a PMAP_UNSET should be sufficient
- * in this case to clear all existing entries for [program, version].
- */
-static void __svc_unregister(struct net *net, const u32 program, const u32 version,
-			     const char *progname)
-{
-	int error;
-
-	error = rpcb_v4_register(net, program, version, NULL, "");
-
-	/*
-	 * User space didn't support rpcbind v4, so retry this
-	 * request with the legacy rpcbind v2 protocol.
-	 */
-	if (error == -EPROTONOSUPPORT)
-		error = rpcb_register(net, program, version, 0, 0);
-
-
-Ah yes, because what unregister should do is *register* something.
-That's clear as mud :)
-
-> Why is it done in essentially random process context, anyway?  There's such thing
-> as chroot, after all, which would screw that sucker as hard as NULL ->fs, but in
-> a less visible way...
-
-I don't think it is a random process context. It's all intentionally
-done in the context of the process which is the last to close that
-filesystem, as part of the process of tearing it down -- but it looks
-like the NFS svcrpc connection code isn't expecting to be called in that
-situation.
