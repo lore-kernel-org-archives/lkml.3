@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443Ab3FLMzI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 08:55:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54957 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751402Ab3FLMzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 08:55:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,852,1363158000"; 
-   d="scan'208";a="348687644"
-Message-ID: <51B86FA3.1030306@linux.intel.com>
-Date: Wed, 12 Jun 2013 15:54:59 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
-        Alex Rosenbaum <alexr@mellanox.com>,
-        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH v2 net-next 3/3] net: add socket option for low latency
- polling
-References: <20130612111942.19288.12131.stgit@ladj378.jer.intel.com>  <20130612112016.19288.86849.stgit@ladj378.jer.intel.com> <1371041065.3252.59.camel@edumazet-glaptop>
-In-Reply-To: <1371041065.3252.59.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754924Ab3FLM4O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 08:56:14 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:63058 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753814Ab3FLM4L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 08:56:11 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 21/21] clk: ux500: Supply provider look-up functionality to support Device Tree
+To: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+In-Reply-To: <CACRpkdaNMR=6JT+pi+9aqOJXW3gK9Yb4hztx3rOiY3c+f3UTRA@mail.gmail.com>
+References: <1370266965-7901-1-git-send-email-lee.jones@linaro.org> <1370266965-7901-22-git-send-email-lee.jones@linaro.org> <CACRpkdaNMR=6JT+pi+9aqOJXW3gK9Yb4hztx3rOiY3c+f3UTRA@mail.gmail.com>
+Date: Wed, 12 Jun 2013 13:56:07 +0100
+Message-Id: <20130612125607.5C13E3E0A56@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2013 15:44, Eric Dumazet wrote:
-> On Wed, 2013-06-12 at 14:20 +0300, Eliezer Tamir wrote:
->> adds a socket option for low latency polling.
->> This allows overriding the global sysctl value with a per-socket one.
->>
->> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
->> ---
->
-> It seems EXPORT_SYMBOL_GPL(sysctl_net_ll_poll) can now be removed ?
+On Tue, 4 Jun 2013 12:57:06 +0200, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Mon, Jun 3, 2013 at 3:42 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > In this patch we're populating a clk_data array, one clock per element to
+> > act as a clk look-up using indexes supplied from Device Tree.
+> >
+> > Cc: Mike Turquette <mturquette@linaro.org>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> This needs to be patch 1/21 because otherwise the rest of the
+> stuff is non-bisectable right? It's being broken the first time
+> you remove auxdata and not fixed until this patch.
+> 
+> The whole thing is very different from other DT clock things
+> I've seen, usually you add a compatible node for each
+> clock type, and a node for each physical gate. But there
+> may be several ways to skin this cat...
 
-I think we would need it for poll.
+The design choice made here is perfectly fine by me. There has never
+been a requirement to expose every clock as a separate node, and for
+SoCs with complex clock control blocks I can certainly appreciate not
+wanting to expose how the internal clocks interact out to the device
+tree, especially if only the leaf clocks ever get reverenced by device
+drivers. As long as there is a driver there that understands the binding
+and hands out the correct clock when asked, then this design is great.
 
-Poll needs a way that is not dependent on any individual socket to know
-how long to busy-wait, since we have to know it before we poll any
-individual socket.
-
-The patch I have right now for poll is not ready (and not fully tested).
-But I can post it as an RFC if you want.
-
--Eliezer
+g.
