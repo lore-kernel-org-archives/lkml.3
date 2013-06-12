@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634Ab3FLEX1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 00:23:27 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:38779 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434Ab3FLEXP (ORCPT
+	id S1754609Ab3FLEXy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 00:23:54 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:52920 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752910Ab3FLEXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 00:23:15 -0400
+	Wed, 12 Jun 2013 00:23:21 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Minchan Kim <minchan@kernel.org>,
+Cc: John Stultz <john.stultz@linaro.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Android Kernel Team <kernel-team@android.com>,
         Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
@@ -24,11 +24,11 @@ Cc: Minchan Kim <minchan@kernel.org>,
         Dhaval Giani <dgiani@mozilla.com>, Jan Kara <jack@suse.cz>,
         KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
         Michel Lespinasse <walken@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 1/8] vrange: Add basic data structure and functions
-Date: Tue, 11 Jun 2013 21:22:44 -0700
-Message-Id: <1371010971-15647-2-git-send-email-john.stultz@linaro.org>
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: [PATCH 4/8] vrange: Clear volatility on new mmaps
+Date: Tue, 11 Jun 2013 21:22:47 -0700
+Message-Id: <1371010971-15647-5-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1371010971-15647-1-git-send-email-john.stultz@linaro.org>
 References: <1371010971-15647-1-git-send-email-john.stultz@linaro.org>
@@ -36,32 +36,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Minchan Kim <minchan@kernel.org>
+At lsf-mm, the issue was brought up that there is a precedence with
+interfaces like mlock, such that new mappings in a pre-existing range
+do no inherit the mlock state.
 
-This patch adds vrange data structure(interval tree) and
-related functions.
+This is mostly because mlock only modifies the existing vmas, and so
+any new mmaps create new vmas, which won't be mlocked.
 
-The vrange uses generic interval tree as main data structure
-because it handles address range so generic interval tree
-fits well for the purpose.
+Since volatility is not stored in the vma (for good cause, specfically
+as we'd have to have manage file volatility differently from anonymous
+and we're likely to manage volatility on small chunks of memory, which
+would cause lots of vma splitting and churn), this patch clears volatilty
+on new mappings, to ensure that we don't inherit volatility if memory in
+an existing volatile range is unmapped and then re-mapped with something
+else.
 
-The add_vrange/remove_vrange are core functions for system call
-will be introduced next patch.
+Thus, this patch forces any volatility to be cleared on mmap.
 
-1. add_vrange inserts new address range into interval tree.
-   If new address range crosses over existing volatile range,
-   existing volatile range will be expanded to cover new range.
-   Then, if existing volatile range has purged state, new range
-   will have a purged state.
-   It's not good and we need more fine-grained purged state handling
-   in a vrange(TODO)
-
-   If new address range is inside existing range, we ignore it
-
-2. remove_vrange removes address range
-   Then, return a purged state of the address ranges.
-
-This patch copied some part from John Stultz's work but different semantic.
+XXX: We expect this patch to be not well loved by mm folks, and are open
+to alternative methods here. Its more of a place holder to address
+the issue from lsf-mm and hopefully will spur some further discussion.
 
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Android Kernel Team <kernel-team@android.com>
@@ -84,330 +78,68 @@ Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
 Cc: Michel Lespinasse <walken@google.com>
 Cc: Minchan Kim <minchan@kernel.org>
 Cc: linux-mm@kvack.org <linux-mm@kvack.org>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
-[jstultz: Heavy rework and cleanups to make this infrastructure more
-easily reused for both file and anonymous pages]
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- include/linux/vrange.h       |  44 +++++++++++
- include/linux/vrange_types.h |  19 +++++
- init/main.c                  |   2 +
- lib/Makefile                 |   2 +-
- mm/Makefile                  |   2 +-
- mm/vrange.c                  | 181 +++++++++++++++++++++++++++++++++++++++++++
- 6 files changed, 248 insertions(+), 2 deletions(-)
- create mode 100644 include/linux/vrange.h
- create mode 100644 include/linux/vrange_types.h
- create mode 100644 mm/vrange.c
+ include/linux/vrange.h | 2 ++
+ mm/mmap.c              | 5 +++++
+ mm/vrange.c            | 8 ++++++++
+ 3 files changed, 15 insertions(+)
 
 diff --git a/include/linux/vrange.h b/include/linux/vrange.h
-new file mode 100644
-index 0000000..2064cb0
---- /dev/null
+index 13f4887..a97ac25 100644
+--- a/include/linux/vrange.h
 +++ b/include/linux/vrange.h
-@@ -0,0 +1,44 @@
-+#ifndef _LINUX_VRANGE_H
-+#define _LINUX_VRANGE_H
-+
-+#include <linux/vrange_types.h>
-+#include <linux/mm.h>
-+
-+#define vrange_entry(ptr) \
-+	container_of(ptr, struct vrange, node.rb)
-+
-+#ifdef CONFIG_MMU
-+
-+static inline void vrange_root_init(struct vrange_root *vroot, int type)
-+{
-+	vroot->type = type;
-+	vroot->v_rb = RB_ROOT;
-+	mutex_init(&vroot->v_lock);
-+}
-+
-+static inline void vrange_lock(struct vrange_root *vroot)
-+{
-+	mutex_lock(&vroot->v_lock);
-+}
-+
-+static inline void vrange_unlock(struct vrange_root *vroot)
-+{
-+	mutex_unlock(&vroot->v_lock);
-+}
-+
-+static inline int vrange_type(struct vrange *vrange)
-+{
-+	return vrange->owner->type;
-+}
-+
-+void vrange_init(void);
-+extern void vrange_root_cleanup(struct vrange_root *vroot);
-+
-+#else
-+
-+static inline void vrange_init(void) {};
-+static inline void vrange_root_init(struct vrange_root *vroot, int type) {};
-+static inline void vrange_root_cleanup(struct vrange_root *vroot) {};
-+
-+#endif
-+#endif /* _LINIUX_VRANGE_H */
-diff --git a/include/linux/vrange_types.h b/include/linux/vrange_types.h
-new file mode 100644
-index 0000000..7f44c01
---- /dev/null
-+++ b/include/linux/vrange_types.h
-@@ -0,0 +1,19 @@
-+#ifndef _LINUX_VRANGE_TYPES_H
-+#define _LINUX_VRANGE_TYPES_H
-+
-+#include <linux/mutex.h>
-+#include <linux/interval_tree.h>
-+
-+struct vrange_root {
-+	struct rb_root v_rb;		/* vrange rb tree */
-+	struct mutex v_lock;		/* Protect v_rb */
-+	enum {VRANGE_MM, VRANGE_FILE} type; /* range root type */
-+};
-+
-+struct vrange {
-+	struct interval_tree_node node;
-+	struct vrange_root *owner;
-+	int purged;
-+};
-+#endif
-+
-diff --git a/init/main.c b/init/main.c
-index 9484f4b..9cf08ba 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -74,6 +74,7 @@
- #include <linux/ptrace.h>
- #include <linux/blkdev.h>
- #include <linux/elevator.h>
+@@ -32,6 +32,8 @@ static inline int vrange_type(struct vrange *vrange)
+ }
+ 
+ void vrange_init(void);
++extern int vrange_clear(struct vrange_root *vroot,
++				unsigned long start, unsigned long end);
+ extern void vrange_root_cleanup(struct vrange_root *vroot);
+ extern int vrange_fork(struct mm_struct *new,
+ 					struct mm_struct *old);
+diff --git a/mm/mmap.c b/mm/mmap.c
+index f681e18..80d3676 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -36,6 +36,7 @@
+ #include <linux/sched/sysctl.h>
+ #include <linux/notifier.h>
+ #include <linux/memory.h>
 +#include <linux/vrange.h>
  
- #include <asm/io.h>
- #include <asm/bugs.h>
-@@ -601,6 +602,7 @@ asmlinkage void __init start_kernel(void)
- 	calibrate_delay();
- 	pidmap_init();
- 	anon_vma_init();
-+	vrange_init();
- #ifdef CONFIG_X86
- 	if (efi_enabled(EFI_RUNTIME_SERVICES))
- 		efi_enter_virtual_mode();
-diff --git a/lib/Makefile b/lib/Makefile
-index c55a037..ccd15ff 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -13,7 +13,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
- 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
- 	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
--	 earlycpio.o
-+	 earlycpio.o interval_tree.o
- 
- obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
- lib-$(CONFIG_MMU) += ioremap.o
-diff --git a/mm/Makefile b/mm/Makefile
-index 72c5acb..b67fcf5 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -5,7 +5,7 @@
- mmu-y			:= nommu.o
- mmu-$(CONFIG_MMU)	:= fremap.o highmem.o madvise.o memory.o mincore.o \
- 			   mlock.o mmap.o mprotect.o mremap.o msync.o rmap.o \
--			   vmalloc.o pagewalk.o pgtable-generic.o
-+			   vmalloc.o pagewalk.o pgtable-generic.o vrange.o
- 
- ifdef CONFIG_CROSS_MEMORY_ATTACH
- mmu-$(CONFIG_MMU)	+= process_vm_access.o
+ #include <asm/uaccess.h>
+ #include <asm/cacheflush.h>
+@@ -1500,6 +1501,10 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
+ 	/* Clear old maps */
+ 	error = -ENOMEM;
+ munmap_back:
++
++	/* zap any volatile ranges */
++	vrange_clear(&mm->vroot, addr, addr + len);
++
+ 	if (find_vma_links(mm, addr, addr + len, &prev, &rb_link, &rb_parent)) {
+ 		if (do_munmap(mm, addr, len))
+ 			return -ENOMEM;
 diff --git a/mm/vrange.c b/mm/vrange.c
-new file mode 100644
-index 0000000..e3042e0
---- /dev/null
+index bbaa184..5ca8853 100644
+--- a/mm/vrange.c
 +++ b/mm/vrange.c
-@@ -0,0 +1,181 @@
-+/*
-+ * mm/vrange.c
-+ */
-+
-+#include <linux/vrange.h>
-+#include <linux/slab.h>
-+
-+static struct kmem_cache *vrange_cachep;
-+
-+void __init vrange_init(void)
+@@ -164,6 +164,14 @@ static int vrange_remove(struct vrange_root *vroot,
+ 	return 0;
+ }
+ 
++int vrange_clear(struct vrange_root *vroot,
++					unsigned long start, unsigned long end)
 +{
-+	vrange_cachep = KMEM_CACHE(vrange, SLAB_PANIC);
++	int purged;
++
++	return vrange_remove(vroot, start, end-1, &purged);
 +}
 +
-+static struct vrange *__vrange_alloc(gfp_t flags)
-+{
-+	struct vrange *vrange = kmem_cache_alloc(vrange_cachep, flags);
-+	if (!vrange)
-+		return vrange;
-+	vrange->owner = NULL;
-+	return vrange;
-+}
-+
-+static void __vrange_free(struct vrange *range)
-+{
-+	WARN_ON(range->owner);
-+	kmem_cache_free(vrange_cachep, range);
-+}
-+
-+static void __vrange_add(struct vrange *range, struct vrange_root *vroot)
-+{
-+	range->owner = vroot;
-+	interval_tree_insert(&range->node, &vroot->v_rb);
-+}
-+
-+static void __vrange_remove(struct vrange *range)
-+{
-+	interval_tree_remove(&range->node, &range->owner->v_rb);
-+	range->owner = NULL;
-+}
-+
-+static inline void __vrange_set(struct vrange *range,
-+		unsigned long start_idx, unsigned long end_idx,
-+		bool purged)
-+{
-+	range->node.start = start_idx;
-+	range->node.last = end_idx;
-+	range->purged = purged;
-+}
-+
-+static inline void __vrange_resize(struct vrange *range,
-+		unsigned long start_idx, unsigned long end_idx)
-+{
-+	struct vrange_root *vroot = range->owner;
-+	bool purged = range->purged;
-+
-+	__vrange_remove(range);
-+	__vrange_set(range, start_idx, end_idx, purged);
-+	__vrange_add(range, vroot);
-+}
-+
-+static int vrange_add(struct vrange_root *vroot,
-+			unsigned long start_idx, unsigned long end_idx)
-+{
-+	struct vrange *new_range, *range;
-+	struct interval_tree_node *node, *next;
-+	int purged = 0;
-+
-+	new_range = __vrange_alloc(GFP_KERNEL);
-+	if (!new_range)
-+		return -ENOMEM;
-+
-+	vrange_lock(vroot);
-+
-+	node = interval_tree_iter_first(&vroot->v_rb, start_idx, end_idx);
-+	while (node) {
-+		next = interval_tree_iter_next(node, start_idx, end_idx);
-+		range = container_of(node, struct vrange, node);
-+		/* old range covers new range fully */
-+		if (node->start <= start_idx && node->last >= end_idx) {
-+			__vrange_free(new_range);
-+			goto out;
-+		}
-+
-+		start_idx = min_t(unsigned long, start_idx, node->start);
-+		end_idx = max_t(unsigned long, end_idx, node->last);
-+		purged |= range->purged;
-+
-+		__vrange_remove(range);
-+		__vrange_free(range);
-+
-+		node = next;
-+	}
-+
-+	__vrange_set(new_range, start_idx, end_idx, purged);
-+	__vrange_add(new_range, vroot);
-+out:
-+	vrange_unlock(vroot);
-+	return 0;
-+}
-+
-+static int vrange_remove(struct vrange_root *vroot,
-+				unsigned long start_idx, unsigned long end_idx,
-+				int *purged)
-+{
-+	struct vrange *new_range, *range;
-+	struct interval_tree_node *node, *next;
-+	bool used_new = false;
-+
-+	if (!purged)
-+		return -EINVAL;
-+
-+	*purged = 0;
-+
-+	new_range = __vrange_alloc(GFP_KERNEL);
-+	if (!new_range)
-+		return -ENOMEM;
-+
-+	vrange_lock(vroot);
-+
-+	node = interval_tree_iter_first(&vroot->v_rb, start_idx, end_idx);
-+	while (node) {
-+		next = interval_tree_iter_next(node, start_idx, end_idx);
-+		range = container_of(node, struct vrange, node);
-+
-+		*purged |= range->purged;
-+
-+		if (start_idx <= node->start && end_idx >= node->last) {
-+			/* argumented range covers the range fully */
-+			__vrange_remove(range);
-+			__vrange_free(range);
-+		} else if (node->start >= start_idx) {
-+			/*
-+			 * Argumented range covers over the left of the
-+			 * range
-+			 */
-+			__vrange_resize(range, end_idx + 1, node->last);
-+		} else if (node->last <= end_idx) {
-+			/*
-+			 * Argumented range covers over the right of the
-+			 * range
-+			 */
-+			__vrange_resize(range, node->start, start_idx - 1);
-+		} else {
-+			/*
-+			 * Argumented range is middle of the range
-+			 */
-+			used_new = true;
-+			__vrange_resize(range, node->start, start_idx - 1);
-+			__vrange_set(new_range, end_idx + 1, node->last,
-+					range->purged);
-+			__vrange_add(new_range, vroot);
-+			break;
-+		}
-+
-+		node = next;
-+	}
-+	vrange_unlock(vroot);
-+
-+	if (!used_new)
-+		__vrange_free(new_range);
-+
-+	return 0;
-+}
-+
-+void vrange_root_cleanup(struct vrange_root *vroot)
-+{
-+	struct vrange *range;
-+	struct rb_node *next;
-+
-+	vrange_lock(vroot);
-+	next = rb_first(&vroot->v_rb);
-+	while (next) {
-+		range = vrange_entry(next);
-+		next = rb_next(next);
-+		__vrange_remove(range);
-+		__vrange_free(range);
-+	}
-+	vrange_unlock(vroot);
-+}
-+
+ void vrange_root_cleanup(struct vrange_root *vroot)
+ {
+ 	struct vrange *range;
 -- 
 1.8.1.2
 
