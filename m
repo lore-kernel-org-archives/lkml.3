@@ -1,250 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756500Ab3FLLY3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 07:24:29 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:43234 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919Ab3FLLY0 (ORCPT
+	id S1756430Ab3FLL3T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 07:29:19 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:36135 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab3FLL3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 07:24:26 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH V3 1/2] tps6507x-ts: Add DT support
-To: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-input@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com
-Cc: dmitry.torokhov@gmail.com, rob.herring@calxeda.com, rob@landley.net,
-        manishv.b@ti.com
-In-Reply-To: <1369126458-24872-2-git-send-email-manishv.b@ti.com>
-References: <1369126458-24872-1-git-send-email-manishv.b@ti.com> <1369126458-24872-2-git-send-email-manishv.b@ti.com>
-Date: Wed, 12 Jun 2013 12:24:21 +0100
-Message-Id: <20130612112421.AF2F93E0A56@localhost>
+	Wed, 12 Jun 2013 07:29:17 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: linux-pwm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] pwm: Fill in missing .owner fields
+Date: Wed, 12 Jun 2013 13:29:13 +0200
+Message-Id: <1371036553-32263-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 1.8.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 May 2013 14:24:17 +0530, "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com> wrote:
-> Add device tree based support for TI's tps6507x touchscreen.
-> 
-> Tested on da850-evm.
-> 
-> Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
-> ---
-> Changes since V2:
->  - Removed unnecessary code.
->  - Updated Documentation to provide proper names of
->    devicetree properties.
-> 
-> Changes since V1:
->  - Updated documentation to specify tps6507x as multifunctional
->    device.
->  - return proper error value in absence of platform and DT
->    data for touchscreen.
->  - Updated commit message.
-> 
-> :100755 100755 8fffa3c... 65ee2cd... M	Documentation/devicetree/bindings/mfd/tps6507x.txt
-> :100644 100644 65e0f9a... 89232ee... M	drivers/input/touchscreen/tps6507x-ts.c
->  Documentation/devicetree/bindings/mfd/tps6507x.txt |   28 ++++++-
+Some drivers don't set the .owner fields of the struct device_driver or
+struct pwm_ops, which causes the module usage count to become wrong.
 
-Binding looks fine to me.
+Signed-off-by: Thierry Reding <thierry.reding@gmail.com>
+---
+ drivers/pwm/pwm-atmel-tcb.c | 1 +
+ drivers/pwm/pwm-bfin.c      | 1 +
+ drivers/pwm/pwm-imx.c       | 1 +
+ drivers/pwm/pwm-lpc32xx.c   | 1 +
+ drivers/pwm/pwm-mxs.c       | 1 +
+ drivers/pwm/pwm-pca9685.c   | 1 +
+ drivers/pwm/pwm-puv3.c      | 1 +
+ drivers/pwm/pwm-spear.c     | 1 +
+ drivers/pwm/pwm-tegra.c     | 1 +
+ 9 files changed, 9 insertions(+)
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
-
-g.
-
->  drivers/input/touchscreen/tps6507x-ts.c            |   98 ++++++++++++++------
->  2 files changed, 95 insertions(+), 31 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/mfd/tps6507x.txt b/Documentation/devicetree/bindings/mfd/tps6507x.txt
-> index 8fffa3c..65ee2cd 100755
-> --- a/Documentation/devicetree/bindings/mfd/tps6507x.txt
-> +++ b/Documentation/devicetree/bindings/mfd/tps6507x.txt
-> @@ -1,4 +1,8 @@
-> -TPS6507x Power Management Integrated Circuit
-> +TPS6507x Multifunctional Device.
-> +
-> +Features provided by TPS6507x:
-> +        1.Power Management Integrated Circuit.
-> +        2.Touch-Screen.
->  
->  Required properties:
->  - compatible: "ti,tps6507x"
-> @@ -23,6 +27,12 @@ Required properties:
->         vindcdc1_2-supply: VDCDC1 and VDCDC2 input.
->         vindcdc3-supply  : VDCDC3 input.
->         vldo1_2-supply   : VLDO1 and VLDO2 input.
-> +- tsc: This node specifies touch screen data.
-> +	ti,poll-period : Time at which touch input is getting sampled in ms.
-> +	ti,min-pressure: Minimum pressure value to trigger touch.
-> +	ti,vref	       : voltage reference for ADC.
-> +		      0: Reference voltage for ADC is disabled.
-> +		      1: Reference voltage for ADC is enabled.
->  
->  Regulator Optional properties:
->  - defdcdc_default: It's property of DCDC2 and DCDC3 regulators.
-> @@ -30,6 +40,14 @@ Regulator Optional properties:
->  			1: If defdcdc pin of DCDC2/DCDC3 is driven HIGH.
->    If this property is not defined, it defaults to 0 (not enabled).
->  
-> +Touchscreen Optional properties:
-> +- ti,vendor : Touchscreen vendor id to populate
-> +	      in sysclass interface.
-> +- ti,product: Touchscreen product id to populate
-> +	      in sysclass interface.
-> +- ti,version: Touchscreen version id to populate
-> +	      in sysclass interface.
-> +
->  Example:
->  
->  	pmu: tps6507x@48 {
-> @@ -88,4 +106,12 @@ Example:
->  			};
->  		};
->  
-> +		tsc {
-> +			ti,poll-period = <30>;
-> +			ti,min-pressure = <0x30>;
-> +			ti,vref = <0>;
-> +			ti,vendor = <0>;
-> +			ti,product = <65070>;
-> +			ti,version = <0x100>;
-> +		};
->  	};
-> diff --git a/drivers/input/touchscreen/tps6507x-ts.c b/drivers/input/touchscreen/tps6507x-ts.c
-> index 65e0f9a..89232ee 100644
-> --- a/drivers/input/touchscreen/tps6507x-ts.c
-> +++ b/drivers/input/touchscreen/tps6507x-ts.c
-> @@ -21,6 +21,8 @@
->  #include <linux/mfd/tps6507x.h>
->  #include <linux/input/tps6507x-ts.h>
->  #include <linux/delay.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
->  
->  #define TSC_DEFAULT_POLL_PERIOD 30 /* ms */
->  #define TPS_DEFAULT_MIN_PRESSURE 0x30
-> @@ -231,36 +233,76 @@ done:
->  	ret = tps6507x_adc_standby(tsc);
->  }
->  
-> +static int tsc_init_data(struct tps6507x_dev *tps6507x_dev,
-> +		struct input_dev *input_dev)
-> +{
-> +	struct device_node *node = tps6507x_dev->dev->of_node;
-> +	struct tps6507x_board *tps_board =
-> +		(struct tps6507x_board *)tps6507x_dev->dev->platform_data;
-> +	struct touchscreen_init_data *init_data = NULL;
-> +	int err;
-> +
-> +	if (node)
-> +		node = of_find_node_by_name(node, "tsc");
-> +	if (tps_board)
-> +		init_data = tps_board->tps6507x_ts_init_data;
-> +
-> +	if (node == NULL || init_data == NULL) {
-> +		err = -EINVAL;
-> +		goto error_ret;
-> +	} else if (init_data) {
-> +		tps6507x_dev->ts->poll_period = init_data->poll_period;
-> +		tps6507x_dev->ts->min_pressure = init_data->min_pressure;
-> +		tps6507x_dev->ts->vref = init_data->vref;
-> +		input_dev->id.vendor = init_data->vendor;
-> +		input_dev->id.product = init_data->product;
-> +		input_dev->id.version = init_data->version;
-> +	} else if (node) {
-> +		err = of_property_read_u32(node, "ti,poll-period",
-> +					(u32 *)&tps6507x_dev->ts->poll_period);
-> +		if (err < 0)
-> +			goto error_ret;
-> +
-> +		err = of_property_read_u16(node, "ti,min-pressure",
-> +					&tps6507x_dev->ts->min_pressure);
-> +		if (err < 0)
-> +			goto error_ret;
-> +
-> +		err = of_property_read_u32(node, "ti,vref",
-> +					&tps6507x_dev->ts->vref);
-> +		if (err < 0)
-> +			goto error_ret;
-> +
-> +		err = of_property_read_u16(node, "ti,vendor",
-> +					&input_dev->id.vendor);
-> +		if (err < 0)
-> +			goto error_ret;
-> +
-> +		err = of_property_read_u16(node, "ti,product",
-> +					&input_dev->id.product);
-> +		if (err < 0)
-> +			goto error_ret;
-> +
-> +		err = of_property_read_u16(node, "ti,version",
-> +					&input_dev->id.version);
-> +		if (err < 0)
-> +			goto error_ret;
-> +	}
-> +
-> +	return 0;
-> +
-> +error_ret:
-> +	return err;
-> +}
-> +
->  static int tps6507x_ts_probe(struct platform_device *pdev)
->  {
->  	int error;
->  	struct tps6507x_ts *tsc;
->  	struct tps6507x_dev *tps6507x_dev = dev_get_drvdata(pdev->dev.parent);
-> -	struct touchscreen_init_data *init_data;
->  	struct input_dev *input_dev;
-> -	struct tps6507x_board *tps_board;
->  	int schd;
->  
-> -	/**
-> -	 * tps_board points to pmic related constants
-> -	 * coming from the board-evm file.
-> -	 */
-> -
-> -	tps_board = (struct tps6507x_board *)tps6507x_dev->dev->platform_data;
-> -
-> -	if (!tps_board) {
-> -		dev_err(tps6507x_dev->dev,
-> -			"Could not find tps6507x platform data\n");
-> -		return -EIO;
-> -	}
-> -
-> -	/**
-> -	 * init_data points to array of regulator_init structures
-> -	 * coming from the board-evm file.
-> -	 */
-> -
-> -	init_data = tps_board->tps6507x_ts_init_data;
-> -
->  	tsc = devm_kzalloc(&pdev->dev, sizeof(struct tps6507x_ts), GFP_KERNEL);
->  	if (!tsc) {
->  		dev_err(tps6507x_dev->dev, "failed to allocate driver data\n");
-> @@ -301,14 +343,10 @@ static int tps6507x_ts_probe(struct platform_device *pdev)
->  
->  	INIT_DELAYED_WORK(&tsc->work, tps6507x_ts_handler);
->  
-> -	if (init_data) {
-> -		tsc->poll_period = init_data->poll_period;
-> -		tsc->vref = init_data->vref;
-> -		tsc->min_pressure = init_data->min_pressure;
-> -		input_dev->id.vendor = init_data->vendor;
-> -		input_dev->id.product = init_data->product;
-> -		input_dev->id.version = init_data->version;
-> -	} else {
-> +	error = tsc_init_data(tps6507x_dev, input_dev);
-> +
-> +	if (error) {
-> +		dev_warn(&pdev->dev, "Use default platform data\n");
->  		tsc->poll_period = TSC_DEFAULT_POLL_PERIOD;
->  		tsc->min_pressure = TPS_DEFAULT_MIN_PRESSURE;
->  	}
-> -- 
-> 1.7.4.1
-> 
-
+diff --git a/drivers/pwm/pwm-atmel-tcb.c b/drivers/pwm/pwm-atmel-tcb.c
+index 09be626..ba6ce01 100644
+--- a/drivers/pwm/pwm-atmel-tcb.c
++++ b/drivers/pwm/pwm-atmel-tcb.c
+@@ -434,6 +434,7 @@ MODULE_DEVICE_TABLE(of, atmel_tcb_pwm_dt_ids);
+ static struct platform_driver atmel_tcb_pwm_driver = {
+ 	.driver = {
+ 		.name = "atmel-tcb-pwm",
++		.owner = THIS_MODULE,
+ 		.of_match_table = atmel_tcb_pwm_dt_ids,
+ 	},
+ 	.probe = atmel_tcb_pwm_probe,
+diff --git a/drivers/pwm/pwm-bfin.c b/drivers/pwm/pwm-bfin.c
+index 7631ef1..9985d83 100644
+--- a/drivers/pwm/pwm-bfin.c
++++ b/drivers/pwm/pwm-bfin.c
+@@ -149,6 +149,7 @@ static int bfin_pwm_remove(struct platform_device *pdev)
+ static struct platform_driver bfin_pwm_driver = {
+ 	.driver = {
+ 		.name = "bfin-pwm",
++		.owner = THIS_MODULE,
+ 	},
+ 	.probe = bfin_pwm_probe,
+ 	.remove = bfin_pwm_remove,
+diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
+index c938bae..2b7c4f8 100644
+--- a/drivers/pwm/pwm-imx.c
++++ b/drivers/pwm/pwm-imx.c
+@@ -295,6 +295,7 @@ static int imx_pwm_remove(struct platform_device *pdev)
+ static struct platform_driver imx_pwm_driver = {
+ 	.driver		= {
+ 		.name	= "imx-pwm",
++		.owner = THIS_MODULE,
+ 		.of_match_table = of_match_ptr(imx_pwm_dt_ids),
+ 	},
+ 	.probe		= imx_pwm_probe,
+diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
+index 8272883..efb6c7b 100644
+--- a/drivers/pwm/pwm-lpc32xx.c
++++ b/drivers/pwm/pwm-lpc32xx.c
+@@ -171,6 +171,7 @@ MODULE_DEVICE_TABLE(of, lpc32xx_pwm_dt_ids);
+ static struct platform_driver lpc32xx_pwm_driver = {
+ 	.driver = {
+ 		.name = "lpc32xx-pwm",
++		.owner = THIS_MODULE,
+ 		.of_match_table = of_match_ptr(lpc32xx_pwm_dt_ids),
+ 	},
+ 	.probe = lpc32xx_pwm_probe,
+diff --git a/drivers/pwm/pwm-mxs.c b/drivers/pwm/pwm-mxs.c
+index 6489a4b..2c77b81 100644
+--- a/drivers/pwm/pwm-mxs.c
++++ b/drivers/pwm/pwm-mxs.c
+@@ -182,6 +182,7 @@ MODULE_DEVICE_TABLE(of, mxs_pwm_dt_ids);
+ static struct platform_driver mxs_pwm_driver = {
+ 	.driver = {
+ 		.name = "mxs-pwm",
++		.owner = THIS_MODULE,
+ 		.of_match_table = of_match_ptr(mxs_pwm_dt_ids),
+ 	},
+ 	.probe = mxs_pwm_probe,
+diff --git a/drivers/pwm/pwm-pca9685.c b/drivers/pwm/pwm-pca9685.c
+index 2afc904..c9f9e65 100644
+--- a/drivers/pwm/pwm-pca9685.c
++++ b/drivers/pwm/pwm-pca9685.c
+@@ -199,6 +199,7 @@ static const struct pwm_ops pca9685_pwm_ops = {
+ 	.config = pca9685_pwm_config,
+ 	.request = pca9685_pwm_request,
+ 	.free = pca9685_pwm_free,
++	.owner = THIS_MODULE,
+ };
+ 
+ static struct regmap_config pca9685_regmap_i2c_config = {
+diff --git a/drivers/pwm/pwm-puv3.c b/drivers/pwm/pwm-puv3.c
+index ed6007b..a9a2808 100644
+--- a/drivers/pwm/pwm-puv3.c
++++ b/drivers/pwm/pwm-puv3.c
+@@ -146,6 +146,7 @@ static int pwm_remove(struct platform_device *pdev)
+ static struct platform_driver puv3_pwm_driver = {
+ 	.driver = {
+ 		.name = "PKUnity-v3-PWM",
++		.owner = THIS_MODULE,
+ 	},
+ 	.probe = pwm_probe,
+ 	.remove = pwm_remove,
+diff --git a/drivers/pwm/pwm-spear.c b/drivers/pwm/pwm-spear.c
+index 6d99e2c..a54d214 100644
+--- a/drivers/pwm/pwm-spear.c
++++ b/drivers/pwm/pwm-spear.c
+@@ -259,6 +259,7 @@ MODULE_DEVICE_TABLE(of, spear_pwm_of_match);
+ static struct platform_driver spear_pwm_driver = {
+ 	.driver = {
+ 		.name = "spear-pwm",
++		.owner = THIS_MODULE,
+ 		.of_match_table = spear_pwm_of_match,
+ 	},
+ 	.probe = spear_pwm_probe,
+diff --git a/drivers/pwm/pwm-tegra.c b/drivers/pwm/pwm-tegra.c
+index a540293..74298c5 100644
+--- a/drivers/pwm/pwm-tegra.c
++++ b/drivers/pwm/pwm-tegra.c
+@@ -239,6 +239,7 @@ MODULE_DEVICE_TABLE(of, tegra_pwm_of_match);
+ static struct platform_driver tegra_pwm_driver = {
+ 	.driver = {
+ 		.name = "tegra-pwm",
++		.owner = THIS_MODULE,
+ 		.of_match_table = tegra_pwm_of_match,
+ 	},
+ 	.probe = tegra_pwm_probe,
 -- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+1.8.2
+
