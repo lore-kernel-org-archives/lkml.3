@@ -1,111 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755696Ab3FLMG4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 08:06:56 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:42882 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923Ab3FLMGy (ORCPT
+	id S1755952Ab3FLMHN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 08:07:13 -0400
+Received: from smtp-out-004.synserver.de ([212.40.185.4]:1082 "EHLO
+	smtp-out-004.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755829Ab3FLMHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 08:06:54 -0400
-Message-ID: <51B86456.3060606@gmail.com>
-Date: Wed, 12 Jun 2013 20:06:46 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Wed, 12 Jun 2013 08:07:10 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 2470
+Message-ID: <51B8646E.5040907@metafoo.de>
+Date: Wed, 12 Jun 2013 14:07:10 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm: Remove zone_type argument of build_zonelists_node
-Content-Type: text/plain; charset=UTF-8
+To: Vinod Koul <vinod.koul@intel.com>
+CC: linux-mips@linux-mips.org, alsa-devel@alsa-project.org,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>,
+        Maarten ter Huurne <maarten@treewalker.org>
+Subject: Re: [alsa-devel] [PATCH v2 3/6] dma: Add a jz4740 dmaengine driver
+References: <1369931105-28065-1-git-send-email-lars@metafoo.de> <1369931105-28065-4-git-send-email-lars@metafoo.de> <20130530171225.GA3767@intel.com> <51A79E8F.4070209@metafoo.de> <51B60D0A.7040307@metafoo.de> <20130612053810.GF4107@intel.com>
+In-Reply-To: <20130612053810.GF4107@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+On 06/12/2013 07:38 AM, Vinod Koul wrote:
+> On Mon, Jun 10, 2013 at 07:29:46PM +0200, Lars-Peter Clausen wrote:
+>> On 05/30/2013 08:46 PM, Lars-Peter Clausen wrote:
+>>>>> +static int jz4740_dma_alloc_chan_resources(struct dma_chan *c)
+>>>>> +{
+>>>>> +	struct jz4740_dmaengine_chan *chan = to_jz4740_dma_chan(c);
+>>>>> +
+>>>>> +	chan->jz_chan = jz4740_dma_request(chan, NULL);
+>>>>> +	if (!chan->jz_chan)
+>>>>> +		return -EBUSY;
+>>>>> +
+>>>>> +	jz4740_dma_set_complete_cb(chan->jz_chan, jz4740_dma_complete_cb);
+>>>>> +
+>>>>> +	return 0;
+>>>> Sorry, I didnt reply on this one. The API expects you to allocate a pool of
+>>>> descriptors. These descriptors are to be used in .device_prep_xxx calls later.
+>>>
+>>> The size of the descriptor is not fixed, so they can not be pre-allocated. And
+>>> this is nothing new either, most of the more recently added dmaengine drivers
+>>> allocate their descriptors on demand.
+>>
+>> Vinod, are you ok with this explanation?
+> Sorry, I was travelling...
+> 
+> Can you explain more of a bit when you say size is not fixed.
 
-The callers of build_zonelists_node always pass MAX_NR_ZONES -1
-as the zone_type argument, so we can directly use the value
-in build_zonelists_node and remove zone_type argument.
+This is the function that allocates the descriptor:
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- mm/page_alloc.c |   21 ++++++++-------------
- 1 files changed, 8 insertions(+), 13 deletions(-)
+static struct jz4740_dma_desc *jz4740_dma_alloc_desc(unsigned int num_sgs)
+{
+	return kzalloc(sizeof(struct jz4740_dma_desc) +
+		sizeof(struct jz4740_dma_sg) * num_sgs, GFP_ATOMIC);
+}
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 378a15b..4c09dea 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3148,12 +3148,10 @@ static void zoneref_set_zone(struct zone *zone, struct zoneref *zoneref)
-  * Add all populated zones of a node to the zonelist.
-  */
- static int build_zonelists_node(pg_data_t *pgdat, struct zonelist *zonelist,
--				int nr_zones, enum zone_type zone_type)
-+				int nr_zones)
- {
- 	struct zone *zone;
--
--	BUG_ON(zone_type >= MAX_NR_ZONES);
--	zone_type++;
-+	enum zone_type zone_type = MAX_NR_ZONES;
- 
- 	do {
- 		zone_type--;
-@@ -3163,8 +3161,8 @@ static int build_zonelists_node(pg_data_t *pgdat, struct zonelist *zonelist,
- 				&zonelist->_zonerefs[nr_zones++]);
- 			check_highest_zone(zone_type);
- 		}
--
- 	} while (zone_type);
-+
- 	return nr_zones;
- }
- 
-@@ -3351,8 +3349,7 @@ static void build_zonelists_in_node_order(pg_data_t *pgdat, int node)
- 	zonelist = &pgdat->node_zonelists[0];
- 	for (j = 0; zonelist->_zonerefs[j].zone != NULL; j++)
- 		;
--	j = build_zonelists_node(NODE_DATA(node), zonelist, j,
--							MAX_NR_ZONES - 1);
-+	j = build_zonelists_node(NODE_DATA(node), zonelist, j);
- 	zonelist->_zonerefs[j].zone = NULL;
- 	zonelist->_zonerefs[j].zone_idx = 0;
- }
-@@ -3366,7 +3363,7 @@ static void build_thisnode_zonelists(pg_data_t *pgdat)
- 	struct zonelist *zonelist;
- 
- 	zonelist = &pgdat->node_zonelists[1];
--	j = build_zonelists_node(pgdat, zonelist, 0, MAX_NR_ZONES - 1);
-+	j = build_zonelists_node(pgdat, zonelist, 0);
- 	zonelist->_zonerefs[j].zone = NULL;
- 	zonelist->_zonerefs[j].zone_idx = 0;
- }
-@@ -3574,7 +3571,7 @@ static void build_zonelists(pg_data_t *pgdat)
- 	local_node = pgdat->node_id;
- 
- 	zonelist = &pgdat->node_zonelists[0];
--	j = build_zonelists_node(pgdat, zonelist, 0, MAX_NR_ZONES - 1);
-+	j = build_zonelists_node(pgdat, zonelist, 0);
- 
- 	/*
- 	 * Now we build the zonelist so that it contains the zones
-@@ -3587,14 +3584,12 @@ static void build_zonelists(pg_data_t *pgdat)
- 	for (node = local_node + 1; node < MAX_NUMNODES; node++) {
- 		if (!node_online(node))
- 			continue;
--		j = build_zonelists_node(NODE_DATA(node), zonelist, j,
--							MAX_NR_ZONES - 1);
-+		j = build_zonelists_node(NODE_DATA(node), zonelist, j);
- 	}
- 	for (node = 0; node < local_node; node++) {
- 		if (!node_online(node))
- 			continue;
--		j = build_zonelists_node(NODE_DATA(node), zonelist, j,
--							MAX_NR_ZONES - 1);
-+		j = build_zonelists_node(NODE_DATA(node), zonelist, j);
- 	}
- 
- 	zonelist->_zonerefs[j].zone = NULL;
--- 
-1.7.1
+So the size depends on the entries in the sg list.
+
+
+> Why would it be
+> issue if we allocate descriptors at the alloc_chan. The idea is that you 
+> preallocated pool at alloc_chan and since the .device_prep_xxx calls can be
+> called from atomic context as well, you dont need to do this later. You can use use
+> these descriptors at that time. The idea is keep rotating the descriptors from
+> free poll to used one
+
+Yes, I know all that. And it makes sense to use a pool in certain
+situations, e.g. if the hardware only supports a limited set of physical
+descriptors. But in this case the descriptors are completely virtual.
+Forcing the driver to use a pool would make it more complex, use more memory
+and also a bit slower (although probably not noticeable).
+
+- Lars
