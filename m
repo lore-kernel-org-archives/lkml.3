@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154Ab3FLUsd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 16:48:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41476 "EHLO
+	id S1758036Ab3FLUs6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 16:48:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41494 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932086Ab3FLUsa (ORCPT
+	with ESMTP id S1756585Ab3FLUs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 16:48:30 -0400
-Date: Wed, 12 Jun 2013 13:47:05 -0700
-From: tip-bot for Michael Wang <tipbot@zytor.com>
-Message-ID: <tip-e8747f10ba3f7638b1c1fcab9c66a01733213d45@git.kernel.org>
+	Wed, 12 Jun 2013 16:48:56 -0400
+Date: Wed, 12 Jun 2013 13:48:02 -0700
+From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
+Message-ID: <tip-60e019eb37a8d989031ad47ae9810453536f3127@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        alex.shi@intel.com, fenghua.yu@intel.com, wangyun@linux.vnet.ibm.com,
-        tglx@linutronix.de, hpa@linux.intel.com
+        tglx@linutronix.de, hpa@linux.intel.com, bp@suse.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        alex.shi@intel.com, fenghua.yu@intel.com, wangyun@linux.vnet.ibm.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <51AD8902.60603@linux.vnet.ibm.com>
-References: <51AD8902.60603@linux.vnet.ibm.com>
+        tglx@linutronix.de, bp@suse.de, hpa@linux.intel.com
+In-Reply-To: <1365436666-9837-2-git-send-email-bp@alien8.de>
+References: <1367244262-29511-2-git-send-email-bp@alien8.de>
+	<1365436666-9837-2-git-send-email-bp@alien8.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86, cleanups:
-  Remove extra tab in __flush_tlb_one()
-Git-Commit-ID: e8747f10ba3f7638b1c1fcab9c66a01733213d45
+Subject: [tip:x86/fpu] x86: Get rid of ->hard_math and all the FPU asm fu
+Git-Commit-ID: 60e019eb37a8d989031ad47ae9810453536f3127
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,41 +28,399 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 12 Jun 2013 13:47:11 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 12 Jun 2013 13:48:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e8747f10ba3f7638b1c1fcab9c66a01733213d45
-Gitweb:     http://git.kernel.org/tip/e8747f10ba3f7638b1c1fcab9c66a01733213d45
-Author:     Michael Wang <wangyun@linux.vnet.ibm.com>
-AuthorDate: Tue, 4 Jun 2013 14:28:18 +0800
+Commit-ID:  60e019eb37a8d989031ad47ae9810453536f3127
+Gitweb:     http://git.kernel.org/tip/60e019eb37a8d989031ad47ae9810453536f3127
+Author:     H. Peter Anvin <hpa@zytor.com>
+AuthorDate: Mon, 29 Apr 2013 16:04:20 +0200
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 4 Jun 2013 11:51:26 -0700
+CommitDate: Thu, 6 Jun 2013 14:32:04 -0700
 
-x86, cleanups: Remove extra tab in __flush_tlb_one()
+x86: Get rid of ->hard_math and all the FPU asm fu
 
-Remove the extra tab in __flush_tlb_one().
+Reimplement FPU detection code in C and drop old, not-so-recommended
+detection method in asm. Move all the relevant stuff into i387.c where
+it conceptually belongs. Finally drop cpuinfo_x86.hard_math.
 
-CC: Alex Shi <alex.shi@intel.com>
-CC: Fenghua Yu <fenghua.yu@intel.com>
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/51AD8902.60603@linux.vnet.ibm.com
+[ hpa: huge thanks to Borislav for taking my original concept patch
+  and productizing it ]
+
+[ Boris, note to self: do not use static_cpu_has before alternatives! ]
+
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Link: http://lkml.kernel.org/r/1367244262-29511-2-git-send-email-bp@alien8.de
+Link: http://lkml.kernel.org/r/1365436666-9837-2-git-send-email-bp@alien8.de
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/tlbflush.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/include/asm/fpu-internal.h |  2 --
+ arch/x86/include/asm/processor.h    |  3 +-
+ arch/x86/kernel/asm-offsets_32.c    |  1 -
+ arch/x86/kernel/cpu/bugs.c          | 21 ++-----------
+ arch/x86/kernel/cpu/common.c        |  3 +-
+ arch/x86/kernel/cpu/cyrix.c         |  2 +-
+ arch/x86/kernel/cpu/proc.c          |  4 +--
+ arch/x86/kernel/head_32.S           | 21 -------------
+ arch/x86/kernel/i387.c              | 59 ++++++++++++++++++++++++++++++-------
+ arch/x86/kernel/xsave.c             |  5 ++--
+ arch/x86/lguest/boot.c              |  2 +-
+ arch/x86/xen/enlighten.c            |  2 +-
+ 12 files changed, 60 insertions(+), 65 deletions(-)
 
-diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
-index 50a7fc0..cf51200 100644
---- a/arch/x86/include/asm/tlbflush.h
-+++ b/arch/x86/include/asm/tlbflush.h
-@@ -62,7 +62,7 @@ static inline void __flush_tlb_all(void)
+diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
+index e25cc33..fb808d7 100644
+--- a/arch/x86/include/asm/fpu-internal.h
++++ b/arch/x86/include/asm/fpu-internal.h
+@@ -62,10 +62,8 @@ extern user_regset_set_fn fpregs_set, xfpregs_set, fpregs_soft_set,
+ #define xstateregs_active	fpregs_active
  
- static inline void __flush_tlb_one(unsigned long addr)
+ #ifdef CONFIG_MATH_EMULATION
+-# define HAVE_HWFP		(boot_cpu_data.hard_math)
+ extern void finit_soft_fpu(struct i387_soft_struct *soft);
+ #else
+-# define HAVE_HWFP		1
+ static inline void finit_soft_fpu(struct i387_soft_struct *soft) {}
+ #endif
+ 
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 22224b3..578f8b1 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -89,9 +89,9 @@ struct cpuinfo_x86 {
+ 	char			wp_works_ok;	/* It doesn't on 386's */
+ 
+ 	/* Problems on some 486Dx4's and old 386's: */
+-	char			hard_math;
+ 	char			rfu;
+ 	char			pad0;
++	char			pad1;
+ #else
+ 	/* Number of 4K pages in DTLB/ITLB combined(in pages): */
+ 	int			x86_tlbsize;
+@@ -164,6 +164,7 @@ extern const struct seq_operations cpuinfo_op;
+ #define cache_line_size()	(boot_cpu_data.x86_cache_alignment)
+ 
+ extern void cpu_detect(struct cpuinfo_x86 *c);
++extern void __cpuinit fpu_detect(struct cpuinfo_x86 *c);
+ 
+ extern void early_cpu_init(void);
+ extern void identify_boot_cpu(void);
+diff --git a/arch/x86/kernel/asm-offsets_32.c b/arch/x86/kernel/asm-offsets_32.c
+index 0ef4bba..d67c4be 100644
+--- a/arch/x86/kernel/asm-offsets_32.c
++++ b/arch/x86/kernel/asm-offsets_32.c
+@@ -28,7 +28,6 @@ void foo(void)
+ 	OFFSET(CPUINFO_x86_vendor, cpuinfo_x86, x86_vendor);
+ 	OFFSET(CPUINFO_x86_model, cpuinfo_x86, x86_model);
+ 	OFFSET(CPUINFO_x86_mask, cpuinfo_x86, x86_mask);
+-	OFFSET(CPUINFO_hard_math, cpuinfo_x86, hard_math);
+ 	OFFSET(CPUINFO_cpuid_level, cpuinfo_x86, cpuid_level);
+ 	OFFSET(CPUINFO_x86_capability, cpuinfo_x86, x86_capability);
+ 	OFFSET(CPUINFO_x86_vendor_id, cpuinfo_x86, x86_vendor_id);
+diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
+index 4112be9..0344534 100644
+--- a/arch/x86/kernel/cpu/bugs.c
++++ b/arch/x86/kernel/cpu/bugs.c
+@@ -17,15 +17,6 @@
+ #include <asm/paravirt.h>
+ #include <asm/alternative.h>
+ 
+-static int __init no_387(char *s)
+-{
+-	boot_cpu_data.hard_math = 0;
+-	write_cr0(X86_CR0_TS | X86_CR0_EM | X86_CR0_MP | read_cr0());
+-	return 1;
+-}
+-
+-__setup("no387", no_387);
+-
+ static double __initdata x = 4195835.0;
+ static double __initdata y = 3145727.0;
+ 
+@@ -44,15 +35,6 @@ static void __init check_fpu(void)
  {
--		__flush_tlb_single(addr);
-+	__flush_tlb_single(addr);
- }
+ 	s32 fdiv_bug;
  
- #define TLB_FLUSH_ALL	-1UL
+-	if (!boot_cpu_data.hard_math) {
+-#ifndef CONFIG_MATH_EMULATION
+-		pr_emerg("No coprocessor found and no math emulation present\n");
+-		pr_emerg("Giving up\n");
+-		for (;;) ;
+-#endif
+-		return;
+-	}
+-
+ 	kernel_fpu_begin();
+ 
+ 	/*
+@@ -107,5 +89,6 @@ void __init check_bugs(void)
+ 	 * kernel_fpu_begin/end() in check_fpu() relies on the patched
+ 	 * alternative instructions.
+ 	 */
+-	check_fpu();
++	if (cpu_has_fpu)
++		check_fpu();
+ }
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 22018f7..d4dd993 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -711,10 +711,9 @@ static void __init early_identify_cpu(struct cpuinfo_x86 *c)
+ 		return;
+ 
+ 	cpu_detect(c);
+-
+ 	get_cpu_vendor(c);
+-
+ 	get_cpu_cap(c);
++	fpu_detect(c);
+ 
+ 	if (this_cpu->c_early_init)
+ 		this_cpu->c_early_init(c);
+diff --git a/arch/x86/kernel/cpu/cyrix.c b/arch/x86/kernel/cpu/cyrix.c
+index d048d5c..7582f47 100644
+--- a/arch/x86/kernel/cpu/cyrix.c
++++ b/arch/x86/kernel/cpu/cyrix.c
+@@ -333,7 +333,7 @@ static void __cpuinit init_cyrix(struct cpuinfo_x86 *c)
+ 		switch (dir0_lsn) {
+ 		case 0xd:  /* either a 486SLC or DLC w/o DEVID */
+ 			dir0_msn = 0;
+-			p = Cx486_name[(c->hard_math) ? 1 : 0];
++			p = Cx486_name[(cpu_has_fpu ? 1 : 0)];
+ 			break;
+ 
+ 		case 0xe:  /* a 486S A step */
+diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
+index 37a198b..aee6317 100644
+--- a/arch/x86/kernel/cpu/proc.c
++++ b/arch/x86/kernel/cpu/proc.c
+@@ -37,8 +37,8 @@ static void show_cpuinfo_misc(struct seq_file *m, struct cpuinfo_x86 *c)
+ 		   static_cpu_has_bug(X86_BUG_FDIV) ? "yes" : "no",
+ 		   static_cpu_has_bug(X86_BUG_F00F) ? "yes" : "no",
+ 		   static_cpu_has_bug(X86_BUG_COMA) ? "yes" : "no",
+-		   c->hard_math ? "yes" : "no",
+-		   c->hard_math ? "yes" : "no",
++		   static_cpu_has(X86_FEATURE_FPU) ? "yes" : "no",
++		   static_cpu_has(X86_FEATURE_FPU) ? "yes" : "no",
+ 		   c->cpuid_level,
+ 		   c->wp_works_ok ? "yes" : "no");
+ }
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+index 73afd11..e65ddc6 100644
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -444,7 +444,6 @@ is486:
+ 	orl %ecx,%eax
+ 	movl %eax,%cr0
+ 
+-	call check_x87
+ 	lgdt early_gdt_descr
+ 	lidt idt_descr
+ 	ljmp $(__KERNEL_CS),$1f
+@@ -467,26 +466,6 @@ is486:
+ 	pushl $0		# fake return address for unwinder
+ 	jmp *(initial_code)
+ 
+-/*
+- * We depend on ET to be correct. This checks for 287/387.
+- */
+-check_x87:
+-	movb $0,X86_HARD_MATH
+-	clts
+-	fninit
+-	fstsw %ax
+-	cmpb $0,%al
+-	je 1f
+-	movl %cr0,%eax		/* no coprocessor: have to set bits */
+-	xorl $4,%eax		/* set EM */
+-	movl %eax,%cr0
+-	ret
+-	ALIGN
+-1:	movb $1,X86_HARD_MATH
+-	.byte 0xDB,0xE4		/* fsetpm for 287, ignored by 387 */
+-	ret
+-
+-	
+ #include "verify_cpu.S"
+ 
+ /*
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index cb33909..b627746 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -131,7 +131,7 @@ static void __cpuinit init_thread_xstate(void)
+ 	 * xsave_init().
+ 	 */
+ 
+-	if (!HAVE_HWFP) {
++	if (!cpu_has_fpu) {
+ 		/*
+ 		 * Disable xsave as we do not support it if i387
+ 		 * emulation is enabled.
+@@ -158,6 +158,14 @@ void __cpuinit fpu_init(void)
+ 	unsigned long cr0;
+ 	unsigned long cr4_mask = 0;
+ 
++#ifndef CONFIG_MATH_EMULATION
++	if (!cpu_has_fpu) {
++		pr_emerg("No FPU found and no math emulation present\n");
++		pr_emerg("Giving up\n");
++		for (;;)
++			asm volatile("hlt");
++	}
++#endif
+ 	if (cpu_has_fxsr)
+ 		cr4_mask |= X86_CR4_OSFXSR;
+ 	if (cpu_has_xmm)
+@@ -167,7 +175,7 @@ void __cpuinit fpu_init(void)
+ 
+ 	cr0 = read_cr0();
+ 	cr0 &= ~(X86_CR0_TS|X86_CR0_EM); /* clear TS and EM */
+-	if (!HAVE_HWFP)
++	if (!cpu_has_fpu)
+ 		cr0 |= X86_CR0_EM;
+ 	write_cr0(cr0);
+ 
+@@ -185,7 +193,7 @@ void __cpuinit fpu_init(void)
+ 
+ void fpu_finit(struct fpu *fpu)
+ {
+-	if (!HAVE_HWFP) {
++	if (!cpu_has_fpu) {
+ 		finit_soft_fpu(&fpu->state->soft);
+ 		return;
+ 	}
+@@ -214,7 +222,7 @@ int init_fpu(struct task_struct *tsk)
+ 	int ret;
+ 
+ 	if (tsk_used_math(tsk)) {
+-		if (HAVE_HWFP && tsk == current)
++		if (cpu_has_fpu && tsk == current)
+ 			unlazy_fpu(tsk);
+ 		tsk->thread.fpu.last_cpu = ~0;
+ 		return 0;
+@@ -511,14 +519,13 @@ int fpregs_get(struct task_struct *target, const struct user_regset *regset,
+ 	if (ret)
+ 		return ret;
+ 
+-	if (!HAVE_HWFP)
++	if (!static_cpu_has(X86_FEATURE_FPU))
+ 		return fpregs_soft_get(target, regset, pos, count, kbuf, ubuf);
+ 
+-	if (!cpu_has_fxsr) {
++	if (!cpu_has_fxsr)
+ 		return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+ 					   &target->thread.fpu.state->fsave, 0,
+ 					   -1);
+-	}
+ 
+ 	sanitize_i387_state(target);
+ 
+@@ -545,13 +552,13 @@ int fpregs_set(struct task_struct *target, const struct user_regset *regset,
+ 
+ 	sanitize_i387_state(target);
+ 
+-	if (!HAVE_HWFP)
++	if (!static_cpu_has(X86_FEATURE_FPU))
+ 		return fpregs_soft_set(target, regset, pos, count, kbuf, ubuf);
+ 
+-	if (!cpu_has_fxsr) {
++	if (!cpu_has_fxsr)
+ 		return user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+-					  &target->thread.fpu.state->fsave, 0, -1);
+-	}
++					  &target->thread.fpu.state->fsave, 0,
++					  -1);
+ 
+ 	if (pos > 0 || count < sizeof(env))
+ 		convert_from_fxsr(&env, target);
+@@ -592,3 +599,33 @@ int dump_fpu(struct pt_regs *regs, struct user_i387_struct *fpu)
+ EXPORT_SYMBOL(dump_fpu);
+ 
+ #endif	/* CONFIG_X86_32 || CONFIG_IA32_EMULATION */
++
++static int __init no_387(char *s)
++{
++	setup_clear_cpu_cap(X86_FEATURE_FPU);
++	return 1;
++}
++
++__setup("no387", no_387);
++
++void __cpuinit fpu_detect(struct cpuinfo_x86 *c)
++{
++	unsigned long cr0;
++	u16 fsw, fcw;
++
++	fsw = fcw = 0xffff;
++
++	cr0 = read_cr0();
++	cr0 &= ~(X86_CR0_TS | X86_CR0_EM);
++	write_cr0(cr0);
++
++	asm volatile("fninit ; fnstsw %0 ; fnstcw %1"
++		     : "+m" (fsw), "+m" (fcw));
++
++	if (fsw == 0 && (fcw & 0x103f) == 0x003f)
++		set_cpu_cap(c, X86_FEATURE_FPU);
++	else
++		clear_cpu_cap(c, X86_FEATURE_FPU);
++
++	/* The final cr0 value is set in fpu_init() */
++}
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index ada87a3..d6c28ac 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -243,7 +243,7 @@ int save_xstate_sig(void __user *buf, void __user *buf_fx, int size)
+ 	if (!access_ok(VERIFY_WRITE, buf, size))
+ 		return -EACCES;
+ 
+-	if (!HAVE_HWFP)
++	if (!static_cpu_has(X86_FEATURE_FPU))
+ 		return fpregs_soft_get(current, NULL, 0,
+ 			sizeof(struct user_i387_ia32_struct), NULL,
+ 			(struct _fpstate_ia32 __user *) buf) ? -1 : 1;
+@@ -350,11 +350,10 @@ int __restore_xstate_sig(void __user *buf, void __user *buf_fx, int size)
+ 	if (!used_math() && init_fpu(tsk))
+ 		return -1;
+ 
+-	if (!HAVE_HWFP) {
++	if (!static_cpu_has(X86_FEATURE_FPU))
+ 		return fpregs_soft_set(current, NULL,
+ 				       0, sizeof(struct user_i387_ia32_struct),
+ 				       NULL, buf) != 0;
+-	}
+ 
+ 	if (use_xsave()) {
+ 		struct _fpx_sw_bytes fx_sw_user;
+diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
+index 7114c63..d482bca 100644
+--- a/arch/x86/lguest/boot.c
++++ b/arch/x86/lguest/boot.c
+@@ -1410,7 +1410,7 @@ __init void lguest_init(void)
+ 	new_cpu_data.x86_capability[0] = cpuid_edx(1);
+ 
+ 	/* Math is always hard! */
+-	new_cpu_data.hard_math = 1;
++	set_cpu_cap(&new_cpu_data, X86_FEATURE_FPU);
+ 
+ 	/* We don't have features.  We have puppies!  Puppies! */
+ #ifdef CONFIG_X86_MCE
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index a492be2..2fa02bc 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1557,7 +1557,7 @@ asmlinkage void __init xen_start_kernel(void)
+ #ifdef CONFIG_X86_32
+ 	/* set up basic CPUID stuff */
+ 	cpu_detect(&new_cpu_data);
+-	new_cpu_data.hard_math = 1;
++	set_cpu_cap(&new_cpu_data, X86_FEATURE_FPU);
+ 	new_cpu_data.wp_works_ok = 1;
+ 	new_cpu_data.x86_capability[0] = cpuid_edx(1);
+ #endif
