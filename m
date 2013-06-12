@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755781Ab3FLHPE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 03:15:04 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:48495 "EHLO mail.gnudd.com"
+	id S1755798Ab3FLHPZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 03:15:25 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:48503 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755434Ab3FLHO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 03:14:57 -0400
-Date: Wed, 12 Jun 2013 09:14:09 +0200
+	id S1755504Ab3FLHPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 03:15:22 -0400
+Date: Wed, 12 Jun 2013 09:14:32 +0200
 From: Alessandro Rubini <rubini@gnudd.com>
 To: linux-kernel@vger.kernel.org
 Cc: Juan David Gonzalez Cobas <juan.david.gonzalez.cobas@cern.ch>,
@@ -14,8 +14,8 @@ Cc: Juan David Gonzalez Cobas <juan.david.gonzalez.cobas@cern.ch>,
         Samuel Iglesias Gonsalvez <siglesias@igalia.com>,
         gregkh@linuxfoundation.org, Rob Landley <rob@landley.net>,
         linux-doc@vger.kernel.org
-Subject: [PATCH 5/8] FMC: add a software carrier driver
-Message-ID: <6abb560f385a1dae57359ecb0dd98336d0e770bf.1371018406.git.rubini@gnudd.com>
+Subject: [PATCH 7/8] FMC: add a driver to write mezzanine EEPROM
+Message-ID: <e3fa64a7b0cd06803387b12bbe3e2a8ca8b88192.1371018406.git.rubini@gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,464 +26,372 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fake carrier is designed to help FMC users understand how a
-carrier driver works, and to experiment the behaviour with EEPROM
-reprogramming (with a mezzanine driver commited later). This carrier
-can register up to 4 (fake) mezzanines.
-
-We have real carriers (both on PCI-E and VME), but they are bigger
-things and are not part of this submission.
+This driver allows to reprogram the EEPROM in a mezzanine, to store
+its own identifiers during manufacturing or to save other useful data.
 
 Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
 Acked-by: Juan David Gonzalez Cobas <dcobas@cern.ch>
 Acked-by: Emilio G. Cota <cota@braap.org>
 Acked-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 ---
- Documentation/fmc/00-INDEX        |    3 +
- Documentation/fmc/fmc-fakedev.txt |   36 ++++
- drivers/fmc/Kconfig               |   11 ++
- drivers/fmc/Makefile              |    2 +
- drivers/fmc/fmc-fakedev.c         |  349 +++++++++++++++++++++++++++++++++++++
- 5 files changed, 401 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/fmc/fmc-fakedev.txt
- create mode 100644 drivers/fmc/fmc-fakedev.c
+ Documentation/fmc/00-INDEX             |    3 +
+ Documentation/fmc/fmc-write-eeprom.txt |  125 ++++++++++++++++++++++
+ drivers/fmc/Kconfig                    |    8 ++
+ drivers/fmc/Makefile                   |    1 +
+ drivers/fmc/fmc-write-eeprom.c         |  176 ++++++++++++++++++++++++++++++++
+ 5 files changed, 313 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/fmc/fmc-write-eeprom.txt
+ create mode 100644 drivers/fmc/fmc-write-eeprom.c
 
 diff --git a/Documentation/fmc/00-INDEX b/Documentation/fmc/00-INDEX
-index 71304b7..34df5cf 100644
+index c22d687..177c3e4 100644
 --- a/Documentation/fmc/00-INDEX
 +++ b/Documentation/fmc/00-INDEX
-@@ -24,3 +24,6 @@ mezzanine.txt
+@@ -30,3 +30,6 @@ fmc-fakedev.txt
  
- identifiers.txt
- 	- how identification and matching works
+ fmc-trivial.txt
+ 	- about drivers/fmc/fmc-trivial.ko
 +
-+fmc-fakedev.txt
-+	- about drivers/fmc/fmc-fakedev.ko
-diff --git a/Documentation/fmc/fmc-fakedev.txt b/Documentation/fmc/fmc-fakedev.txt
++fmc-write-eeprom.txt
++        - about drivers/fmc/fmc-write-eeprom.ko
+diff --git a/Documentation/fmc/fmc-write-eeprom.txt b/Documentation/fmc/fmc-write-eeprom.txt
 new file mode 100644
-index 0000000..e85b74a
+index 0000000..44a3bc6
 --- /dev/null
-+++ b/Documentation/fmc/fmc-fakedev.txt
-@@ -0,0 +1,36 @@
-+fmc-fakedev
-+===========
++++ b/Documentation/fmc/fmc-write-eeprom.txt
+@@ -0,0 +1,125 @@
++fmc-write-eeprom
++================
 +
-+This package includes a software-only device, called fmc-fakedev, which
-+is able to register up to 4 mezzanines (by default it registers one).
-+Unlike the SPEC driver, which creates an FMC device for each PCI cards
-+it manages, this module creates a single instance of its set of
-+mezzanines.
++This module is designed to load a binary file from /lib/firmware and to
++write it to the internal EEPROM of the mezzanine card. This driver uses
++the `busid' generic parameter.
 +
-+It is meant as the simplest possible example of how a driver should be
-+written, and it includes a fake EEPROM image (built using the tools
-+described in *note FMC Identification::),, which by default is
-+replicated for each fake mezzanine.
++Overwriting the EEPROM is not something you should do daily, and it is
++expected to only happen during manufacturing. For this reason, the
++module makes it unlikely for the random user to change a working EEPROM.
 +
-+You can also use this device to verify the match algorithms, by asking
-+it to test your own EEPROM image. You can provide the image by means of
-+the eeprom= module parameter: the new EEPROM image is loaded, as usual,
-+by means of the firmware loader.  This example shows the defaults and a
-+custom EEPROM image:
++The module takes the following measures:
++
++   * It accepts a `file=' argument (within /lib/firmware) and if no
++     such argument is received, it doesn't write anything to EEPROM
++     (i.e. there is no default file name).
++
++   * If the file name ends with `.bin' it is written verbatim starting
++     at offset 0.
++
++   * If the file name ends with `.tlv' it is interpreted as
++     type-length-value (i.e., it allows writev(2)-like operation).
++
++   * If the file name doesn't match any of the patterns above, it is
++     ignored and no write is performed.
++
++   * Only cards listed with `busid=' are written to. If no busid is
++     specified, no programming is done (and the probe function of the
++     driver will fail).
++
++
++Each TLV tuple is formatted in this way: the header is 5 bytes,
++followed by data. The first byte is `w' for write, the next two bytes
++represent the address, in little-endian byte order, and the next two
++represent the data length, in little-endian order. The length does not
++include the header (it is the actual number of bytes to be written).
++
++This is a real example: that writes 5 bytes at position 0x110:
++
++        spusa.root# od -t x1 -Ax /lib/firmware/try.tlv
++        000000 77 10 01 05 00 30 31 32 33 34
++        00000a
++        spusa.root# insmod /tmp/fmc-write-eeprom.ko busid=0x0200 file=try.tlv
++        [19983.391498] spec 0000:03:00.0: write 5 bytes at 0x0110
++        [19983.414615] spec 0000:03:00.0: write_eeprom: success
++
++Please note that you'll most likely want to use SDBFS to build your
++EEPROM image, at least if your mezzanines are being used in the White
++Rabbit environment. For this reason the TLV format is not expected to
++be used much and is not expected to be developed further.
++
++If you want to try reflashing fake EEPROM devices, you can use the
++fmc-fakedev.ko module (see *note fmc-fakedev::).  Whenever you change
++the image starting at offset 0, it will deregister and register again
++after two seconds.  Please note, however, that if fmc-write-eeprom is
++still loaded, the system will associate it to the new device, which
++will be reprogrammed and thus will be unloaded after two seconds.  The
++following example removes the module after it reflashed fakedev the
++first time.
 +
 +     spusa.root# insmod fmc-fakedev.ko
-+     [   99.971247]  fake-fmc-carrier: mezzanine 0
-+     [   99.975393]       Manufacturer: fake-vendor
-+     [   99.979624]       Product name: fake-design-for-testing
-+     spusa.root# rmmod fmc-fakedev
-+     spusa.root# insmod fmc-fakedev.ko eeprom=fdelay-eeprom.bin
-+     [  121.447464]  fake-fmc-carrier: Mezzanine 0: eeprom "fdelay-eeprom.bin"
-+     [  121.462725]  fake-fmc-carrier: mezzanine 0
-+     [  121.466858]       Manufacturer: CERN
-+     [  121.470477]       Product name: FmcDelay1ns4cha
-+     spusa.root# rmmod fmc-fakedev
++        [   72.984733]  fake-fmc: Manufacturer: fake-vendor
++        [   72.989434]  fake-fmc: Product name: fake-design-for-testing
++        spusa.root# insmod fmc-write-eeprom.ko busid=0 file=fdelay-eeprom.bin; \
++            rmmod fmc-write-eeprom
++        [  130.874098]  fake-fmc: Matching a generic driver (no ID)
++        [  130.887845]  fake-fmc: programming 6155 bytes
++        [  130.894567]  fake-fmc: write_eeprom: success
++        [  132.895794]  fake-fmc: Manufacturer: CERN
++        [  132.899872]  fake-fmc: Product name: FmcDelay1ns4cha
 +
-+After loading the device, you can use the write_ee method do modify its
-+own internal fake EEPROM: whenever the image is overwritten starting at
-+offset 0, the module will unregister and register again the FMC device.
-+This is shown in fmc-write-eeprom.txt
++
++Writing to the EEPROM
++=====================
++
++Once you have created a binary file for your EEPROM, you can write it
++to the storage medium using the fmc-write-eeprom (See *note
++fmc-write-eeprom::, while relying on a carrier driver.  The procedure
++here shown here uses the SPEC driver
++(`http://www.ohwr.org/projects/spec-sw').
++
++The example assumes no driver is already loaded (actually, I unloaded
++them by hand as everything loads automatically at boot time after you
++installed the modules), and shows kernel messages together with
++commands. Here the prompt is spusa.root# and two SPEC cards are plugged
++in the system.
++
++     spusa.root# insmod fmc.ko
++     spusa.root# insmod spec.ko
++     [13972.382818] spec 0000:02:00.0:  probe for device 0002:0000
++     [13972.392773] spec 0000:02:00.0: got file "fmc/spec-init.bin", 1484404 (0x16a674) bytes
++     [13972.591388] spec 0000:02:00.0: FPGA programming successful
++     [13972.883011] spec 0000:02:00.0: EEPROM has no FRU information
++     [13972.888719] spec 0000:02:00.0: No device_id filled, using index
++     [13972.894676] spec 0000:02:00.0: No mezzanine_name found
++     [13972.899863] /home/rubini/wip/spec-sw/kernel/spec-gpio.c - spec_gpio_init
++     [13972.906578] spec 0000:04:00.0:  probe for device 0004:0000
++     [13972.916509] spec 0000:04:00.0: got file "fmc/spec-init.bin", 1484404 (0x16a674) bytes
++     [13973.115096] spec 0000:04:00.0: FPGA programming successful
++     [13973.401798] spec 0000:04:00.0: EEPROM has no FRU information
++     [13973.407474] spec 0000:04:00.0: No device_id filled, using index
++     [13973.413417] spec 0000:04:00.0: No mezzanine_name found
++     [13973.418600] /home/rubini/wip/spec-sw/kernel/spec-gpio.c - spec_gpio_init
++     spusa.root# ls /sys/bus/fmc/devices
++     fmc-0000  fmc-0001
++     spusa.root# insmod fmc-write-eeprom.ko busid=0x0200 file=fdelay-eeprom.bin
++     [14103.966259] spec 0000:02:00.0: Matching an generic driver (no ID)
++     [14103.975519] spec 0000:02:00.0: programming 6155 bytes
++     [14126.373762] spec 0000:02:00.0: write_eeprom: success
++     [14126.378770] spec 0000:04:00.0: Matching an generic driver (no ID)
++     [14126.384903] spec 0000:04:00.0: fmc_write_eeprom: no filename given: not programming
++     [14126.392600] fmc_write_eeprom: probe of fmc-0001 failed with error -2
++
++Reading back the EEPROM
++=======================
++
++In order to read back the binary content of the EEPROM of your
++mezzanine device, the bus creates a read-only sysfs file called eeprom
++for each mezzanine it knows about:
++
++   spusa.root# cd /sys/bus/fmc/devices; ls -l */eeprom
++   -r--r--r-- 1 root root 8192 Apr  9 16:53 FmcDelay1ns4cha-f001/eeprom
++   -r--r--r-- 1 root root 8192 Apr  9 17:19 fake-design-for-testing-f002/eeprom
++   -r--r--r-- 1 root root 8192 Apr  9 17:19 fake-design-for-testing-f003/eeprom
++   -r--r--r-- 1 root root 8192 Apr  9 17:19 fmc-f004/eeprom
 diff --git a/drivers/fmc/Kconfig b/drivers/fmc/Kconfig
-index e287902..505e96b 100644
+index 7eacef9..2bb1953 100644
 --- a/drivers/fmc/Kconfig
 +++ b/drivers/fmc/Kconfig
-@@ -15,3 +15,14 @@ menuconfig FMC
- 	  The framework was born outside of the kernel and at this time
- 	  the off-tree code base is more complete.  Code and documentation
- 	  is at git://ohwr.org/fmc-projects/fmc-bus.git .
-+
-+if FMC
-+
-+config FMC_FAKEDEV
-+	tristate "FMC fake device (software testing)"
+@@ -32,4 +32,12 @@ config FMC_TRIVIAL
+ 	  The driver also handles interrupts (we used it with a real carrier
+ 	  before the mezzanines were produced)
+ 
++config FMC_WRITE_EEPROM
++	tristate "FMC mezzanine driver to write I2C EEPROM"
 +	help
-+	  This is a fake carrier, bringing a default EEPROM content
-+	  that can be rewritten at run time and usef for matching
-+	  mezzanines.
++	  This driver matches every mezzanine device and can write the
++	  internal EEPROM of the PCB, using the firmware loader to get
++	  its binary and the function carrier->reprogram to actually do it.
++	  It is useful when the mezzanines are produced.
 +
-+endif # FMC
+ endif # FMC
 diff --git a/drivers/fmc/Makefile b/drivers/fmc/Makefile
-index df98939..9832b79 100644
+index 52624e6..13701fa 100644
 --- a/drivers/fmc/Makefile
 +++ b/drivers/fmc/Makefile
-@@ -6,3 +6,5 @@ fmc-y += fmc-match.o
- fmc-y += fmc-sdb.o
- fmc-y += fru-parse.o
- fmc-y += fmc-dump.o
-+
-+obj-$(CONFIG_FMC_FAKEDEV) += fmc-fakedev.o
-diff --git a/drivers/fmc/fmc-fakedev.c b/drivers/fmc/fmc-fakedev.c
+@@ -9,3 +9,4 @@ fmc-y += fmc-dump.o
+ 
+ obj-$(CONFIG_FMC_FAKEDEV) += fmc-fakedev.o
+ obj-$(CONFIG_FMC_TRIVIAL) += fmc-trivial.o
++obj-$(CONFIG_FMC_WRITE_EEPROM) += fmc-write-eeprom.o
+diff --git a/drivers/fmc/fmc-write-eeprom.c b/drivers/fmc/fmc-write-eeprom.c
 new file mode 100644
-index 0000000..a06e0e7
+index 0000000..2cc680d
 --- /dev/null
-+++ b/drivers/fmc/fmc-fakedev.c
-@@ -0,0 +1,349 @@
++++ b/drivers/fmc/fmc-write-eeprom.c
+@@ -0,0 +1,176 @@
 +/*
 + * Copyright (C) 2012 CERN (www.cern.ch)
 + * Author: Alessandro Rubini <rubini@gnudd.com>
 + *
-+ * Released to the public domain, as example to be reused
++ * Released according to the GNU GPL, version 2 or any later version.
++ *
++ * This work is part of the White Rabbit project, a research effort led
++ * by CERN, the European Institute for Nuclear Research.
 + */
 +#include <linux/module.h>
-+#include <linux/init.h>
 +#include <linux/string.h>
-+#include <linux/device.h>
-+#include <linux/slab.h>
 +#include <linux/firmware.h>
-+#include <linux/workqueue.h>
-+#include <linux/err.h>
++#include <linux/init.h>
 +#include <linux/fmc.h>
-+
-+#define FF_EEPROM_SIZE		8192	/* The standard eeprom size */
-+#define FF_MAX_MEZZANINES	4	/* Fakes a multi-mezzanine carrier */
-+
-+/* The user can pass up to 4 names of eeprom images to load */
-+static char *ff_eeprom[FF_MAX_MEZZANINES];
-+static int ff_nr_eeprom;
-+module_param_array_named(eeprom, ff_eeprom, charp, &ff_nr_eeprom, 0444);
-+
-+/* The user can ask for a multi-mezzanine carrier, with the default eeprom */
-+static int ff_nr_dev = 1;
-+module_param_named(ndev, ff_nr_dev, int, 0444);
-+
-+
-+/* Lazily, don't support the "standard" module parameters */
++#include <asm/unaligned.h>
 +
 +/*
-+ * Eeprom built from these commands:
-+
-+	../fru-generator -v fake-vendor -n fake-design-for-testing \
-+		-s 01234 -p none > IPMI-FRU
-+
-+	gensdbfs . ../fake-eeprom.bin
-+*/
-+static char ff_eeimg[FF_MAX_MEZZANINES][FF_EEPROM_SIZE] = {
-+	{
-+	0x01, 0x00, 0x00, 0x01, 0x00, 0x0c, 0x00, 0xf2, 0x01, 0x0b, 0x00, 0xb2,
-+	0x86, 0x87, 0xcb, 0x66, 0x61, 0x6b, 0x65, 0x2d, 0x76, 0x65, 0x6e, 0x64,
-+	0x6f, 0x72, 0xd7, 0x66, 0x61, 0x6b, 0x65, 0x2d, 0x64, 0x65, 0x73, 0x69,
-+	0x67, 0x6e, 0x2d, 0x66, 0x6f, 0x72, 0x2d, 0x74, 0x65, 0x73, 0x74, 0x69,
-+	0x6e, 0x67, 0xc5, 0x30, 0x31, 0x32, 0x33, 0x34, 0xc4, 0x6e, 0x6f, 0x6e,
-+	0x65, 0xda, 0x32, 0x30, 0x31, 0x32, 0x2d, 0x31, 0x31, 0x2d, 0x31, 0x39,
-+	0x20, 0x32, 0x32, 0x3a, 0x34, 0x32, 0x3a, 0x33, 0x30, 0x2e, 0x30, 0x37,
-+	0x34, 0x30, 0x35, 0x35, 0xc1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x87,
-+	0x02, 0x02, 0x0d, 0xf7, 0xf8, 0x02, 0xb0, 0x04, 0x74, 0x04, 0xec, 0x04,
-+	0x00, 0x00, 0x00, 0x00, 0xe8, 0x03, 0x02, 0x02, 0x0d, 0x5c, 0x93, 0x01,
-+	0x4a, 0x01, 0x39, 0x01, 0x5a, 0x01, 0x00, 0x00, 0x00, 0x00, 0xb8, 0x0b,
-+	0x02, 0x02, 0x0d, 0x63, 0x8c, 0x00, 0xfa, 0x00, 0xed, 0x00, 0x06, 0x01,
-+	0x00, 0x00, 0x00, 0x00, 0xa0, 0x0f, 0x01, 0x02, 0x0d, 0xfb, 0xf5, 0x05,
-+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-+	0x01, 0x02, 0x0d, 0xfc, 0xf4, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x0d, 0xfd, 0xf3, 0x03,
-+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-+	0xfa, 0x82, 0x0b, 0xea, 0x8f, 0xa2, 0x12, 0x00, 0x00, 0x1e, 0x44, 0x00,
-+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-+	0x00, 0x00, 0x00, 0x00, 0x53, 0x44, 0x42, 0x2d, 0x00, 0x03, 0x01, 0x01,
-+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
-+	0x00, 0x00, 0x01, 0xc4, 0x46, 0x69, 0x6c, 0x65, 0x44, 0x61, 0x74, 0x61,
-+	0x2e, 0x20, 0x20, 0x20, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
-+	0x2e, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
-+	0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00,
-+	0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xc0,
-+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xc4, 0x46, 0x69, 0x6c, 0x65,
-+	0x44, 0x61, 0x74, 0x61, 0x6e, 0x61, 0x6d, 0x65, 0x00, 0x00, 0x00, 0x01,
-+	0x00, 0x00, 0x00, 0x00, 0x6e, 0x61, 0x6d, 0x65, 0x20, 0x20, 0x20, 0x20,
-+	0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x01,
-+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00,
-+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xdf,
-+	0x46, 0x69, 0x6c, 0x65, 0x44, 0x61, 0x74, 0x61, 0x49, 0x50, 0x4d, 0x49,
-+	0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x49, 0x50, 0x4d, 0x49,
-+	0x2d, 0x46, 0x52, 0x55, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
-+	0x20, 0x20, 0x20, 0x01, 0x66, 0x61, 0x6b, 0x65, 0x0a,
-+	},
-+};
-+
-+struct ff_dev {
-+	struct fmc_device *fmc[FF_MAX_MEZZANINES];
-+	struct device dev;
-+};
-+
-+static struct ff_dev *ff_current_dev; /* We have 1 carrier, 1 slot */
-+
-+static int ff_reprogram(struct fmc_device *fmc, struct fmc_driver *drv,
-+			  char *gw)
-+{
-+	const struct firmware *fw;
-+	int ret;
-+
-+	if (!gw) {
-+		/* program golden: success */
-+		fmc->flags &= ~FMC_DEVICE_HAS_CUSTOM;
-+		fmc->flags |= FMC_DEVICE_HAS_GOLDEN;
-+		return 0;
-+	}
-+
-+	dev_info(&fmc->dev, "reprogramming with %s\n", gw);
-+	ret = request_firmware(&fw, gw, &fmc->dev);
-+	if (ret < 0) {
-+		dev_warn(&fmc->dev, "request firmware \"%s\": error %i\n",
-+			 gw, ret);
-+		goto out;
-+	}
-+	fmc->flags &= ~FMC_DEVICE_HAS_GOLDEN;
-+	fmc->flags |= FMC_DEVICE_HAS_CUSTOM;
-+
-+out:
-+	release_firmware(fw);
-+	return ret;
-+}
-+
-+static int ff_irq_request(struct fmc_device *fmc, irq_handler_t handler,
-+			    char *name, int flags)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
-+/* FIXME: should also have some fake FMC GPIO mapping */
-+
-+
-+/*
-+ * This work function is called when we changed the eeprom. It removes the
-+ * current fmc device and registers a new one, with different identifiers.
++ * This module uses the firmware loader to program the whole or part
++ * of the FMC eeprom. The meat is in the _run functions.  However, no
++ * default file name is provided, to avoid accidental mishaps. Also,
++ * you must pass the busid argument
 + */
-+static struct ff_dev *ff_dev_create(void); /* defined later */
++static struct fmc_driver fwe_drv;
 +
-+static void ff_work_fn(struct work_struct *work)
++FMC_PARAM_BUSID(fwe_drv);
++
++/* The "file=" is like the generic "gateware=" used elsewhere */
++static char *fwe_file[FMC_MAX_CARDS];
++static int fwe_file_n;
++module_param_array_named(file, fwe_file, charp, &fwe_file_n, 444);
++
++static int fwe_run_tlv(struct fmc_device *fmc, const struct firmware *fw,
++	int write)
 +{
-+	struct ff_dev *ff = ff_current_dev;
++	const uint8_t *p = fw->data;
++	int len = fw->size;
++	uint16_t thislen, thisaddr;
++	int err;
++
++	/* format is: 'w' addr16 len16 data... */
++	while (len > 5) {
++		thisaddr = get_unaligned_le16(p+1);
++		thislen = get_unaligned_le16(p+3);
++		if (p[0] != 'w' || thislen + 5 > len) {
++			dev_err(&fmc->dev, "invalid tlv at offset %ti\n",
++				p - fw->data);
++			return -EINVAL;
++		}
++		err = 0;
++		if (write) {
++			dev_info(&fmc->dev, "write %i bytes at 0x%04x\n",
++				 thislen, thisaddr);
++			err = fmc->op->write_ee(fmc, thisaddr, p + 5, thislen);
++		}
++		if (err < 0) {
++			dev_err(&fmc->dev, "write failure @0x%04x\n",
++				thisaddr);
++			return err;
++		}
++		p += 5 + thislen;
++		len -= 5 + thislen;
++	}
++	if (write)
++		dev_info(&fmc->dev, "write_eeprom: success\n");
++	return 0;
++}
++
++static int fwe_run_bin(struct fmc_device *fmc, const struct firmware *fw)
++{
 +	int ret;
 +
-+	fmc_device_unregister_n(ff->fmc, ff_nr_dev);
-+	device_unregister(&ff->dev);
-+	ff_current_dev = NULL;
-+
-+	ff = ff_dev_create();
-+	if (IS_ERR(ff)) {
-+		pr_warning("%s: can't re-create FMC devices\n", __func__);
-+		return;
-+	}
-+	ret = fmc_device_register_n(ff->fmc, ff_nr_dev);
++	dev_info(&fmc->dev, "programming %zi bytes\n", fw->size);
++	ret = fmc->op->write_ee(fmc, 0, (void *)fw->data, fw->size);
 +	if (ret < 0) {
-+		dev_warn(&ff->dev, "can't re-register FMC devices\n");
-+		device_unregister(&ff->dev);
-+		return;
++		dev_info(&fmc->dev, "write_eeprom: error %i\n", ret);
++		return ret;
 +	}
-+
-+	ff_current_dev = ff;
++	dev_info(&fmc->dev, "write_eeprom: success\n");
++	return 0;
 +}
 +
-+static DECLARE_DELAYED_WORK(ff_work, ff_work_fn);
-+
-+
-+/* low-level i2c */
-+static int ff_eeprom_read(struct fmc_device *fmc, uint32_t offset,
-+		void *buf, size_t size)
++static int fwe_run(struct fmc_device *fmc, const struct firmware *fw, char *s)
 +{
-+	if (offset > FF_EEPROM_SIZE)
-+		return -EINVAL;
-+	if (offset + size > FF_EEPROM_SIZE)
-+		size = FF_EEPROM_SIZE - offset;
-+	memcpy(buf, fmc->eeprom + offset, size);
-+	return size;
++	char *last4 = s + strlen(s) - 4;
++	int err;
++
++	if (!strcmp(last4, ".bin"))
++		return fwe_run_bin(fmc, fw);
++	if (!strcmp(last4, ".tlv")) {
++		err = fwe_run_tlv(fmc, fw, 0);
++		if (!err)
++			err = fwe_run_tlv(fmc, fw, 1);
++		return err;
++	}
++	dev_err(&fmc->dev, "invalid file name \"%s\"\n", s);
++	return -EINVAL;
 +}
 +
-+static int ff_eeprom_write(struct fmc_device *fmc, uint32_t offset,
-+		    const void *buf, size_t size)
++/*
++ * Programming is done at probe time. Morever, only those listed with
++ * busid= are programmed.
++ * card is probed for, only one is programmed. Unfortunately, it's
++ * difficult to know in advance when probing the first card if others
++ * are there.
++ */
++int fwe_probe(struct fmc_device *fmc)
 +{
-+	if (offset > FF_EEPROM_SIZE)
-+		return -EINVAL;
-+	if (offset + size > FF_EEPROM_SIZE)
-+		size = FF_EEPROM_SIZE - offset;
-+	dev_info(&fmc->dev, "write_eeprom: offset %i, size %zi\n",
-+		 (int)offset, size);
-+	memcpy(fmc->eeprom + offset, buf, size);
-+	schedule_delayed_work(&ff_work, HZ * 2); /* remove, replug, in 2s */
-+	return size;
++	int err, index = 0;
++	const struct firmware *fw;
++	struct device *dev = &fmc->dev;
++	char *s;
++
++	if (!fwe_drv.busid_n) {
++		dev_err(dev, "%s: no busid passed, refusing all cards\n",
++			KBUILD_MODNAME);
++		return -ENODEV;
++	}
++	if (fmc->op->validate)
++		index = fmc->op->validate(fmc, &fwe_drv);
++	if (index < 0) {
++		pr_err("%s: refusing device \"%s\"\n", KBUILD_MODNAME,
++		       dev_name(dev));
++		return -ENODEV;
++	}
++	if (index >= fwe_file_n) {
++		pr_err("%s: no filename for device index %i\n",
++			KBUILD_MODNAME, index);
++		return -ENODEV;
++	}
++	s = fwe_file[index];
++	if (!s) {
++		pr_err("%s: no filename for \"%s\" not programming\n",
++		       KBUILD_MODNAME, dev_name(dev));
++		return -ENOENT;
++	}
++	err = request_firmware(&fw, s, dev);
++	if (err < 0) {
++		dev_err(&fmc->dev, "request firmware \"%s\": error %i\n",
++			s, err);
++		return err;
++	}
++	fwe_run(fmc, fw, s);
++	release_firmware(fw);
++	return 0;
 +}
 +
-+/* i2c operations for fmc */
-+static int ff_read_ee(struct fmc_device *fmc, int pos, void *data, int len)
-+{
-+	if (!(fmc->flags & FMC_DEVICE_HAS_GOLDEN))
-+		return -EOPNOTSUPP;
-+	return ff_eeprom_read(fmc, pos, data, len);
-+}
-+
-+static int ff_write_ee(struct fmc_device *fmc, int pos,
-+			 const void *data, int len)
-+{
-+	if (!(fmc->flags & FMC_DEVICE_HAS_GOLDEN))
-+		return -EOPNOTSUPP;
-+	return ff_eeprom_write(fmc, pos, data, len);
-+}
-+
-+/* readl and writel do not do anything. Don't waste RAM with "base" */
-+static uint32_t ff_readl(struct fmc_device *fmc, int offset)
++int fwe_remove(struct fmc_device *fmc)
 +{
 +	return 0;
 +}
 +
-+static void ff_writel(struct fmc_device *fmc, uint32_t value, int offset)
-+{
-+	return;
-+}
-+
-+/* validate is useful so fmc-write-eeprom will not reprogram every 2 seconds */
-+static int ff_validate(struct fmc_device *fmc, struct fmc_driver *drv)
-+{
-+	int i;
-+
-+	if (!drv->busid_n)
-+		return 0; /* everyhing is valid */
-+	for (i = 0; i < drv->busid_n; i++)
-+		if (drv->busid_val[i] == fmc->device_id)
-+			return i;
-+	return -ENOENT;
-+}
-+
-+
-+
-+static struct fmc_operations ff_fmc_operations = {
-+	.readl =		ff_readl,
-+	.writel =		ff_writel,
-+	.reprogram =		ff_reprogram,
-+	.irq_request =		ff_irq_request,
-+	.read_ee =		ff_read_ee,
-+	.write_ee =		ff_write_ee,
-+	.validate =		ff_validate,
-+};
-+
-+/* This device is kmalloced: release it */
-+static void ff_dev_release(struct device *dev)
-+{
-+	struct ff_dev *ff = container_of(dev, struct ff_dev, dev);
-+	kfree(ff);
-+}
-+
-+static struct fmc_device ff_template_fmc = {
++static struct fmc_driver fwe_drv = {
 +	.version = FMC_VERSION,
-+	.owner = THIS_MODULE,
-+	.carrier_name = "fake-fmc-carrier",
-+	.device_id = 0xf001, /* fool */
-+	.eeprom_len = sizeof(ff_eeimg[0]),
-+	.memlen = 0x1000, /* 4k, to show something */
-+	.op = &ff_fmc_operations,
-+	.hwdev = NULL, /* filled at creation time */
-+	.flags = FMC_DEVICE_HAS_GOLDEN,
++	.driver.name = KBUILD_MODNAME,
++	.probe = fwe_probe,
++	.remove = fwe_remove,
++	/* no table, as the current match just matches everything */
 +};
 +
-+static struct ff_dev *ff_dev_create(void)
++static int fwe_init(void)
 +{
-+	struct ff_dev *ff;
-+	struct fmc_device *fmc;
-+	int i, ret;
++	int ret;
 +
-+	ff = kzalloc(sizeof(*ff), GFP_KERNEL);
-+	if (!ff)
-+		return ERR_PTR(-ENOMEM);
-+	dev_set_name(&ff->dev, "fake-fmc-carrier");
-+	ff->dev.release = ff_dev_release;
-+
-+	ret = device_register(&ff->dev);
-+	if (ret < 0) {
-+		put_device(&ff->dev);
-+		return ERR_PTR(ret);
-+	}
-+
-+	/* Create fmc structures that refer to this new "hw" device */
-+	for (i = 0; i < ff_nr_dev; i++) {
-+		fmc = kmemdup(&ff_template_fmc, sizeof(ff_template_fmc),
-+			      GFP_KERNEL);
-+		fmc->hwdev = &ff->dev;
-+		fmc->carrier_data = ff;
-+		fmc->nr_slots = ff_nr_dev;
-+		/* the following fields are different for each slot */
-+		fmc->eeprom = ff_eeimg[i];
-+		fmc->eeprom_addr = 0x50 + 2 * i;
-+		fmc->slot_id = i;
-+		ff->fmc[i] = fmc;
-+		/* increment the identifier, each must be different */
-+		ff_template_fmc.device_id++;
-+	}
-+	return ff;
-+}
-+
-+/* init and exit */
-+static int ff_init(void)
-+{
-+	struct ff_dev *ff;
-+	const struct firmware *fw;
-+	int i, len, ret = 0;
-+
-+	/* Replicate the default eeprom for the max number of mezzanines */
-+	for (i = 1; i < FF_MAX_MEZZANINES; i++)
-+		memcpy(ff_eeimg[i], ff_eeimg[0], sizeof(ff_eeimg[0]));
-+
-+	if (ff_nr_eeprom > ff_nr_dev)
-+		ff_nr_dev = ff_nr_eeprom;
-+
-+	ff = ff_dev_create();
-+	if (IS_ERR(ff))
-+		return PTR_ERR(ff);
-+
-+	/* If the user passed "eeprom=" as a parameter, fetch them */
-+	for (i = 0; i < ff_nr_eeprom; i++) {
-+		if (!strlen(ff_eeprom[i]))
-+			continue;
-+		ret = request_firmware(&fw, ff_eeprom[i], &ff->dev);
-+		if (ret < 0) {
-+			dev_err(&ff->dev, "Mezzanine %i: can't load \"%s\" "
-+				"(error %i)\n", i, ff_eeprom[i], -ret);
-+		} else {
-+			len = min_t(size_t, fw->size, (size_t)FF_EEPROM_SIZE);
-+			memcpy(ff_eeimg[i], fw->data, len);
-+			release_firmware(fw);
-+			dev_info(&ff->dev, "Mezzanine %i: eeprom \"%s\"\n", i,
-+				ff_eeprom[i]);
-+		}
-+	}
-+
-+	ret = fmc_device_register_n(ff->fmc, ff_nr_dev);
-+	if (ret) {
-+		device_unregister(&ff->dev);
-+		return ret;
-+	}
-+	ff_current_dev = ff;
++	ret = fmc_driver_register(&fwe_drv);
 +	return ret;
 +}
 +
-+static void ff_exit(void)
++static void fwe_exit(void)
 +{
-+	if (ff_current_dev) {
-+		fmc_device_unregister_n(ff_current_dev->fmc, ff_nr_dev);
-+		device_unregister(&ff_current_dev->dev);
-+	}
-+	cancel_delayed_work_sync(&ff_work);
++	fmc_driver_unregister(&fwe_drv);
 +}
 +
-+module_init(ff_init);
-+module_exit(ff_exit);
++module_init(fwe_init);
++module_exit(fwe_exit);
 +
-+MODULE_LICENSE("GPL and additional rights");
++MODULE_LICENSE("GPL");
 -- 
 1.7.7.2
