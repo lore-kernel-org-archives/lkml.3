@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab3FLHop (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 03:44:45 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43880 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755454Ab3FLHon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 03:44:43 -0400
-Message-ID: <51B826BF.7050009@ti.com>
-Date: Wed, 12 Jun 2013 13:13:59 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "Philip, Avinash" <avinashphilip@ti.com>
-CC: "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/11] gpio: davinci: Modify to platform driver
-References: <1369206634-6778-1-git-send-email-avinashphilip@ti.com> <1369206634-6778-4-git-send-email-avinashphilip@ti.com> <51B71056.9010103@ti.com> <518397C60809E147AF5323E0420B992E3EAD9D75@DBDE04.ent.ti.com>
-In-Reply-To: <518397C60809E147AF5323E0420B992E3EAD9D75@DBDE04.ent.ti.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1756169Ab3FLHpg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 03:45:36 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:51220 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755933Ab3FLHpe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 03:45:34 -0400
+Date: Wed, 12 Jun 2013 00:45:33 -0700 (PDT)
+Message-Id: <20130612.004533.1565702065831087835.davem@davemloft.net>
+To: mst@redhat.com
+Cc: jasowang@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [net PATCH] tuntap: set SOCK_ZEROCOPY flag during open
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130611131750.GD9279@redhat.com>
+References: <1370672261-30076-1-git-send-email-jasowang@redhat.com>
+	<20130611131750.GD9279@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/11/2013 6:25 PM, Philip, Avinash wrote:
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Tue, 11 Jun 2013 16:17:50 +0300
 
-> On Tue, Jun 11, 2013 at 17:26:06, Nori, Sekhar wrote:
-
->> On 5/22/2013 12:40 PM, Philip Avinash wrote:
-
->>> @@ -179,13 +204,10 @@ static int __init davinci_gpio_setup(void)
->>>  		gpiochip_add(&ctlrs[i].chip);
->>>  	}
->>>  
->>> -	soc_info->gpio_ctlrs = ctlrs;
+> On Sat, Jun 08, 2013 at 02:17:41PM +0800, Jason Wang wrote:
+>>Cc: smtp.corp.redhat.com@redhat.com, davem@davemloft.net,
+>>	netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 >>
->>> -	soc_info->gpio_ctlrs_num = DIV_ROUND_UP(ngpio, 32);
->>
->> You drop setting gpio_ctlrs_num here and don't introduce it anywhere
->> else in the patchset so in effect you render the inline gpio get/set API
->> useless. Looks like this initialization should be moved to platform code?
+>> Commit 54f968d6efdbf7dec36faa44fc11f01b0e4d1990
+>> (tuntap: move socket to tun_file) forgets to set SOCK_ZEROCOPY flag, which will
+>> prevent vhost_net from doing zercopy w/ tap. This patch fixes this by setting
+>> it during file open.
+>> 
+>> Cc: Michael S. Tsirkin <mst@redhat.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
 > 
-> With [PATCH 08/11] ARM: davinci: start using gpiolib support gpio get/set API
-> Has no more dependency on soc_info->gpio_ctlrs_num.
+> One of the addresses in the Cc list (smtp.corp.redhat.com@redhat.com)
+> is clearly a mistake, which probably explains why it didn't
+> get into patchwork.
+> 
+> I have bounced it to correct addresses, hope this
+> helps instead of making even more of a mess of it.
+> 
+> For 3.10 and -stable:
+> 
+> Acked-by: Michael S. Tsirkin <mst@redhat.com>
 
-With this series, you have removed support for inline gpio get/set API.
-I see that the inline functions are still available for use on
-tnetv107x. I wonder why it is important to keep these for tnetv107x when
-not necessary for other DaVinci devices?
-
-When you are removing this feature, please note it prominently in your
-cover letter and patch description. Also, please provide some data on
-how the latency now compares to that of inline access earlier. This is
-important especially for the read. For the writes, gpio clock will
-mostly determine how soon the value changes on the pin.
-
-I am okay with removing the inline access feature. It helps simplify
-code and most arm machines don't use them. I would just like to see some
-data for justification as this can be seen as feature regression. Also,
-if we are removing it, its better to also remove it completely and get
-the LOC savings instead of just stopping its usage.
-
-Thanks,
-Sekhar
+Applied and queued up for -stable, thanks.
