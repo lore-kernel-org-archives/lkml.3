@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757810Ab3FLBtE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 21:49:04 -0400
-Received: from mga09.intel.com ([134.134.136.24]:17493 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757783Ab3FLBtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 21:49:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,848,1363158000"; 
-   d="scan'208";a="352011467"
-Message-ID: <51B7D38A.7050204@linux.intel.com>
-Date: Tue, 11 Jun 2013 18:48:58 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1757790Ab3FLByX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 21:54:23 -0400
+Received: from out04.mta.xmission.com ([166.70.13.234]:56427 "EHLO
+	out04.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755225Ab3FLByV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 21:54:21 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Raphael S. Carvalho" <raphael.scarv@gmail.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-kernel@vger.kernel.org
+References: <1370901398-8989-1-git-send-email-raphael.scarv@gmail.com>
+	<20130611154518.fda9262961c21e96a57cbd5e@linux-foundation.org>
+	<8761xkt9fh.fsf@xmission.com>
+	<20130611182831.8d6d25be.akpm@linux-foundation.org>
+Date: Tue, 11 Jun 2013 18:53:50 -0700
+In-Reply-To: <20130611182831.8d6d25be.akpm@linux-foundation.org> (Andrew
+	Morton's message of "Tue, 11 Jun 2013 18:28:31 -0700")
+Message-ID: <87k3m0rt5d.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: David Lang <david@lang.hm>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "alex.shi@intel.com" <alex.shi@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Mike Galbraith <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: power-efficient scheduling design
-References: <20130530134718.GB32728@e103034-lin> <51B221AF.9070906@linux.vnet.ibm.com> <20130608112801.GA8120@MacBook-Pro.local> <1834293.MlyIaiESPL@vostro.rjw.lan> <51B3F99A.4000101@linux.vnet.ibm.com> <51B5FE02.7040607@linaro.org> <alpine.DEB.2.02.1306111722470.24968@nftneq.ynat.uz>
-In-Reply-To: <alpine.DEB.2.02.1306111722470.24968@nftneq.ynat.uz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19KgOSfjIy1u5U8DUrOS2DV6UIYe+PU1Y4=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Andrew Morton <akpm@linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 1/1] kernel/pid.c: Masking the flag out to get the actual value.
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/11/2013 5:27 PM, David Lang wrote:
->
-> Nobody is saying that this sort of thing should be in the fastpath of the scheduler.
->
-> But if the scheduler has a table that tells it the possible states, and the cost to get from the current state to each of these states (and to get back and/or wake up to
-> full power), then the scheduler can make the decision on what to do, invoke a routine to make the change (and in the meantime, not be fighting the change by trying to
-> schedule processes on a core that's about to be powered off), and then when the change happens, the scheduler will have a new version of the table of possible states and costs
->
-> This isn't in the fastpath, it's in the rebalancing logic.
+Andrew Morton <akpm@linux-foundation.org> writes:
 
-the reality is much more complex unfortunately.
-C and P states hang together tightly, and even C state on
-one core impacts other cores' performance, just like P state selection
-on one core impacts other cores.
+> On Tue, 11 Jun 2013 18:16:50 -0700 ebiederm@xmission.com (Eric W. Biederman) wrote:
+>
+>> 
+>> > Hopefully we can fix this one by adding the missing comment.
+>> 
+>> Perhaps we can fix this one by having people who care read the code and 
+>> think about what it means?
+>
+> As is obvious from this thread, that approach isn't working.
+>
+>>  Seriously if we are adding pids/processes in
+>> the pid namespace why would to clean up the pid namespace?
+>
+> A good way to communicate the design would be to describe the semantics
+> of PIDNS_HASH_ADDING, at its definition site.
+>
+> [idly wonders what the heck pid_namespace.level and pid.level do,
+> sigh]
 
-(at least for x86, we should really stop talking as if the OS picks the "frequency",
-that's just not the case anymore)
+Explaining the semantics a bit more seems reasonable.
+
+Something like:
+
+unsigned int level;  /* How deeply nested is this pid namespace */
+
+#define PIDNS_HASH_ADDING (1U << 31)  /* Process are still entering the pid namespace */
+
+Sorry I don't have the focus to make that into a proper patch.
+
+
+Eric
 
