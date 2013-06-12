@@ -1,233 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716Ab3FLMey (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 08:34:54 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:37027 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756251Ab3FLMev (ORCPT
+	id S1752813Ab3FLMht (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 08:37:49 -0400
+Received: from 9.mo3.mail-out.ovh.net ([87.98.184.141]:35446 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751402Ab3FLMhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 08:34:51 -0400
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        Jonas Jensen <jonas.jensen@gmail.com>
-Subject: [PATCH 2/3] ARM: mach-moxart: add MOXA ART device tree files
-Date: Wed, 12 Jun 2013 14:34:07 +0200
-Message-Id: <1371040448-28742-3-git-send-email-jonas.jensen@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1371040448-28742-1-git-send-email-jonas.jensen@gmail.com>
-References: <1371040448-28742-1-git-send-email-jonas.jensen@gmail.com>
+	Wed, 12 Jun 2013 08:37:47 -0400
+Date: Wed, 12 Jun 2013 14:08:21 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Jingoo Han <jg1.han@samsung.com>,
+        "'Shuah Khan'" <shuah.kh@samsung.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com, rpurdie@rpsys.net,
+        FlorianSchandinat@gmx.de, tomi.valkeinen@ti.com,
+        rafael.j.wysocki@intel.com
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [PATCH] backlight: add CONFIG_PM_SLEEP to suspend/resume
+ functions
+Message-ID: <20130612120821.GD305@game.jcrosoft.org>
+References: <000201ce631f$d4ad0d50$7e0727f0$@samsung.com>
+ <1944274.r5ID26zhWd@wuerfel>
+ <20130610163134.1c4124abba64c5f7099cb4ff@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130610163134.1c4124abba64c5f7099cb4ff@linux-foundation.org>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 7323978894262971380
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrhedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrhedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 16:31 Mon 10 Jun     , Andrew Morton wrote:
+> On Fri, 07 Jun 2013 12:02:31 +0200 Arnd Bergmann <arnd@arndb.de> wrote:
+> 
+> > On Friday 07 June 2013 10:39:20 Jingoo Han wrote:
+> > > Add CONFIG_PM_SLEEP to suspend/resume functions to fix the following
+> > > build warning when CONFIG_PM_SLEEP is not selected. This is because
+> > > sleep PM callbacks defined by SIMPLE_DEV_PM_OPS are only used when
+> > > the CONFIG_PM_SLEEP is enabled.
+> > > 
+> > > drivers/video/backlight/backlight.c:211:12: warning: 'backlight_suspend' defined but not used [-Wunused-function]
+> > > drivers/video/backlight/backlight.c:225:12: warning: 'backlight_resume' defined but not used [-Wunused-function]
+> > > 
+> > > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> > > ---
+> > >  drivers/video/backlight/backlight.c |    2 ++
+> > >  1 file changed, 2 insertions(+)
+> > 
+> > Your patch looks ok, but I find it extremely annoying to have new warnings
+> > like this one come up every single day in linux-next. It really shouldn't
+> > be this hard to use a macro called SIMPLE_DEV_PM_OPS() correctly.
+> > 
+> > Below is an implementation of SIMPLE_DEV_PM_OPS and UNIVERSAL_DEV_PM_OPS
+> > that avoids this issue by introducing an unused reference to the suspend
+> > and resume functions. gcc is smart enough to leave out that unused code
+> > by itself, and it would actually improve compile-time coverage to have
+> > something like this, besides being harder to misuse.
+> > 
+> > This would be a better approach if we didn't already have all the "#ifdef
+> > CONFIG_PM_SLEEP" in place that hide the functions now. Unfortunately we
+> > already have over 300 uses of SIMPLE_DEV_PM_OPS/UNIVERSAL_DEV_PM_OPS
+> > in the kernel today, so removing all the #ifdef atomically without
+> > creating more build errors is rather hard to do.
+> > 
+> > Maybe someone has an idea how to extend my approach so it works with
+> > and without the #ifdef, to let us transition to a situation that no
+> > longer needs them.
+> 
+> You could create new macros, and add a checkpatch rule to remind people
+> to not use the old ones.  Then people can migrate over from the old
+> macros at a leisurely pace.
+> 
+> The problem will be in thinking up decent names for the new macros.
 
-Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
----
- arch/arm/boot/dts/Makefile            |    1 +
- arch/arm/boot/dts/moxart-uc7112lx.dts |   89 +++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/moxart.dtsi         |   84 +++++++++++++++++++++++++++++++
- 3 files changed, 174 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/boot/dts/moxart-uc7112lx.dts
- create mode 100644 arch/arm/boot/dts/moxart.dtsi
+Agreed
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 0d1e98b..059e6d3 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -217,6 +217,7 @@ dtb-$(CONFIG_ARCH_VT8500) += vt8500-bv07.dtb \
- 	wm8750-apc8750.dtb \
- 	wm8850-w70v2.dtb
- dtb-$(CONFIG_ARCH_ZYNQ) += zynq-zc702.dtb
-+dtb-$(CONFIG_ARCH_MOXART) += moxart-uc7112lx.dtb
- 
- targets += dtbs
- targets += $(dtb-y)
-diff --git a/arch/arm/boot/dts/moxart-uc7112lx.dts b/arch/arm/boot/dts/moxart-uc7112lx.dts
-new file mode 100644
-index 0000000..c2bb7dc
---- /dev/null
-+++ b/arch/arm/boot/dts/moxart-uc7112lx.dts
-@@ -0,0 +1,89 @@
-+/* moxart-uc7112lx.dts - Device Tree file for MOXA UC-7112-LX
-+ *
-+ * Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
-+ *
-+ * Licensed under GPLv2 or later. */
-+
-+/dts-v1/;
-+/include/ "moxart.dtsi"
-+
-+/ {
-+	model = "MOXA UC-7112-LX";
-+	compatible = "moxa,moxart-uc-7112-lx";
-+
-+	memory {
-+		reg = <0x00000000 0x02000000>;
-+	};
-+
-+	flash@80000000,0 {
-+		/* JS28F128 J3D75 A9087684 - Numonyx Embedded Flash Memory (J3 v. D) */
-+		compatible = "numonyx,js28f128", "cfi-flash";
-+		reg = <0x80000000 0x01000000>;
-+		bank-width = <2>;
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		partition@0 {
-+			label = "bootloader";
-+			reg = <0x00000000 0x00040000>;
-+		};
-+		partition@40000 {
-+			label = "linux kernel";
-+			reg = <0x00040000 0x001C0000>;
-+		};
-+		partition@200000 {
-+			label = "root filesystem";
-+			reg = <0x00200000 0x00800000>;
-+		};
-+		partition@a00000 {
-+			label = "user filesystem";
-+			reg = <0x00a00000 0x00600000>;
-+		};
-+	};
-+
-+	mmc@98e00000 {
-+		compatible = "moxa,moxart-mmc";
-+		reg =	<0x98e00000 0x00001000>;
-+		interrupts = <5 0>;
-+		clock-names = "sys_clk";
-+		clocks = <&sys_clk>;
-+	};
-+
-+	mxser@98200040 {
-+		compatible = "moxa,moxart-mxser";
-+		reg =	<0x98200040 0x00000080>,	/* UART "3" base */
-+				<0x982000e4 0x00000080>,	/* UART mode base */
-+				<0x982000c0 0x00000020>;	/* UART interrupt vector */
-+		interrupts = <31 1>;
-+	};
-+
-+	mac0: mac@90900000 {
-+		compatible = "moxa,moxart-mac0";
-+		reg =   <0x90900000 0x1000>,
-+				<0x80000050 0x5>;			/* MAC address stored on flash */
-+		interrupts = <25 0>;
-+	};
-+
-+	mac1: mac@92000000 {
-+		compatible = "moxa,moxart-mac1";
-+		reg =   <0x92000000 0x1000>,
-+				<0x80000056 0x5>;			/* MAC address stored on flash */
-+		interrupts = <27 0>;
-+	};
-+
-+	uart0: uart@98200000 {
-+		compatible = "ns16550a";
-+		reg = <0x98200000 0x20>;
-+		interrupts = <31 0>;
-+		reg-shift = <2>;
-+		reg-io-width = <4>;
-+		clock-frequency = <14745600>;
-+		status = "okay";
-+	};
-+
-+	chosen {
-+		/* uncomment to use on board flash root
-+		bootargs = "console=ttyS0,115200n8 root=/dev/mtdblock2 rootfstype=jffs2 rw";
-+		*/
-+		bootargs = "console=ttyS0,115200n8 root=/dev/mmcblk0p1 rw rootwait";
-+	};
-+};
-diff --git a/arch/arm/boot/dts/moxart.dtsi b/arch/arm/boot/dts/moxart.dtsi
-new file mode 100644
-index 0000000..debedb7
---- /dev/null
-+++ b/arch/arm/boot/dts/moxart.dtsi
-@@ -0,0 +1,84 @@
-+/* moxart.dtsi - Device Tree Include file for MOXA ART family SoC
-+ *
-+ * Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
-+ *
-+ * Licensed under GPLv2 or later. */
-+
-+/include/ "skeleton.dtsi"
-+
-+/ {
-+	interrupt-parent = <&intc>;
-+
-+	cpus {
-+		cpu@0 {
-+			compatible = "faraday,fa526";
-+		};
-+	};
-+
-+	clocks {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		osc: oscillator {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <24000000>;
-+		};
-+	};
-+
-+	soc {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		reg = <0x90000000 0x10000000>;
-+		ranges;
-+
-+		intc: interrupt-controller@98800000 {
-+			compatible = "moxa,moxart-interrupt-controller";
-+			reg = <0x98800000 0x38>;
-+			interrupt-controller;
-+			#interrupt-cells = <2>;
-+			interrupt-mask = <0x00080000>;		/* single register vector, interrupts 0-31, 1s signify edge */
-+		};
-+
-+		timer: timer@98400000 {
-+			compatible = "moxa,moxart-timer";
-+			reg = <0x98400000 0x10>;
-+			interrupts = <19 1>;
-+		};
-+
-+		gpio: gpio@98700000 {
-+			compatible = "moxa,moxart-gpio";
-+			reg =	<0x98700000 0x1000>,
-+					<0x98100100 0x4>;			/*	Power Management Unit
-+													enable/disable pin 0-31 (32bit register) */
-+		};
-+
-+		rtc: rtc {
-+			compatible = "moxa,moxart-rtc";
-+		};
-+
-+		dma: dma@90500000 {
-+			compatible = "moxa,moxart-dma";
-+			reg = <0x90500000 0x1000>;
-+			interrupts = <24 0>;
-+		};
-+
-+		watchdog: watchdog@98500000 {
-+			compatible = "moxa,moxart-watchdog";
-+			reg = <0x98500000 0x1000>;
-+		};
-+
-+		pmu: pmu@98100000 {						/* Power Management Unit */
-+			compatible = "moxa,moxart-pmu";
-+			reg = <0x98100000 0x34>;			/* offset mul @ 0x30, val @ 0x0c (2 * 32 bit registers) */
-+			clocks {
-+				sys_clk: sys_clk {
-+					#clock-cells = <0>;
-+					compatible = "moxa,moxart-sysclk";
-+					clock-output-names = "sys_clk";
-+				};
-+			};
-+		};
-+	};
-+};
--- 
-1.7.2.5
-
+Best Regards,
+J.
