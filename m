@@ -1,140 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932227Ab3FLVHK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 17:07:10 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:37826 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756667Ab3FLVHI (ORCPT
+	id S1758046Ab3FLVI3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 17:08:29 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:51064 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755695Ab3FLVI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 17:07:08 -0400
-Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
-From: Raymond Jennings <shentino@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        =?UTF-8?Q?=E8=B5=96=E6=B1=9F=E5=B1=B1?= <laijs@cn.fujitsu.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Josh Triplett <josh@joshtriplett.org>, niv@us.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        David Howells <dhowells@redhat.com>,
-        Eric Dumazet <edumazet@google.com>, Darren Hart <darren@dvhart.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Silas Boyd-Wickizer <sbw@mit.edu>, Waiman Long <Waiman.Long@hp.com>
-In-Reply-To: <CA+55aFwDYvCR9SavTQt62kibvmv37M4+GxzjxU1ZqZVVB9Ce9w@mail.gmail.com>
-References: <20130609193657.GA13392@linux.vnet.ibm.com>
-	 <1370911480.9844.160.camel@gandalf.local.home>
-	 <CA+55aFxeLszgfTZeG7L6289DcaoKT+uhtf5nwB6r=2i9Sy4Mrg@mail.gmail.com>
-	 <1370973186.1744.9.camel@buesod1.americas.hpqcorp.net>
-	 <1370974231.9844.212.camel@gandalf.local.home>
-	 <1371059401.1746.33.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFygedE80F3SvE7VvqwXaCthbFh7sMCwVnZt6wzst8YLHA@mail.gmail.com>
-	 <1371067399.1746.47.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFwDYvCR9SavTQt62kibvmv37M4+GxzjxU1ZqZVVB9Ce9w@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Wed, 12 Jun 2013 14:06:55 -0700
-Message-ID: <1371071216.18752.1.camel@warfang.spyronet>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Jun 2013 17:08:28 -0400
+Date: Wed, 12 Jun 2013 14:08:24 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <theo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH 2/2] percpu-refcount: implement percpu_tryget() along
+ with percpu_ref_kill_and_confirm()
+Message-ID: <20130612210824.GG6151@google.com>
+References: <20130612204532.GB15092@htj.dyndns.org>
+ <20130612204627.GC15092@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130612204627.GC15092@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-12 at 13:26 -0700, Linus Torvalds wrote:
-> On Wed, Jun 12, 2013 at 1:03 PM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
-> >
-> > According to him:
-> >
-> > "the short workload calls security functions like getpwnam(),
-> > getpwuid(), getgrgid() a couple of times. These functions open
-> > the /etc/passwd or /etc/group files, read their content and close the
-> > files.
+On Wed, Jun 12, 2013 at 01:46:27PM -0700, Tejun Heo wrote:
+> From de3c0749e2c1960afcc433fc5da136b85c8bd896 Mon Sep 17 00:00:00 2001
+> From: Tejun Heo <tj@kernel.org>
+> Date: Wed, 12 Jun 2013 13:37:42 -0700
 > 
-> Ahh, ok. So yeah, it's multiple threads all hitting the same file
+> Implement percpu_tryget() which succeeds iff the refcount hasn't been
+> killed yet.  Because the refcnt is per-cpu, different CPUs may have
+> different perceptions on when the counter has been killed and tryget()
+> may continue to succeed for a while after percpu_ref_kill() returns.
 
-If that's the case and it's a bunch of reads, shouldn't they act
-concurrently anyway?
+I don't feel very comfortable with saying percpu_ref_tryget() succeeds
+"iff the refcount hasn't been killed yet".  That's something I would say
+about e.g. atomic_inc_not_zero(), but percpu_ref_tryget() doesn't do
+that sort of synchronization which is what iff implies to me.
 
-I mean it's not like dentries are being changed or added or removed in
-this case.
+If the user does need some kind of strict ordering between
+percpu_ref_kill() and percpu_ref_tryget(), they'd have to insert some
+memory barriers - tryget() certainly doesn't have any.
 
-> I guess that /etc/passwd case is historically interesting, but I'm not
-> sure we really want to care too deeply..
-> 
-> > I did a quick attempt at this (patch attached).
-> 
-> Yeah, that's wrong, although it probably approximates the dget() case
-> (but incorrectly).
-> 
-> One of the points behind using an atomic d_count is that then dput() should do
-> 
->    if (!atomic_dec_and_lock(&dentry->d_count, &dentry->d_count))
->       return;
-> 
-> at the very top of the function. It can avoid taking the lock entirely
-> if the count doesn't go down to zero, which would be a common case if
-> you have lots of users opening the same file. While still protecting
-> d_count from ever going to zero while the lock is held.
-> 
-> Your
-> 
-> +       if (atomic_read(&dentry->d_count) > 1) {
-> +               atomic_dec(&dentry->d_count);
-> +               return;
-> +       }
-> +       spin_lock(&dentry->d_lock);
-> 
-> pattern is fundamentally racy, but it's what "atomic_dec_and_lock()"
-> should do race-free.
-> 
-> For similar reasons, I think you need to still maintain the d_lock in
-> d_prune_aliases etc. That's a slow-path, so the fact that we add an
-> atomic sequence there doesn't much matter.
-> 
-> However, one optimization missing from your patch is obvious in the
-> profile. "dget_parent()" also needs to be optimized - you still have
-> that as 99% of the spin-lock case. I think we could do something like
-> 
->    rcu_read_lock();
->    parent = ACCESS_ONCE(dentry->d_parent);
->    if (atomic_inc_nonzero(&parent->d_count))
->       return parent;
->    .. get d_lock and do it the slow way ...
->    rcu_read_unlock();
-> 
-> to locklessly get the parent pointer. We know "parent" isn't going
-> away (dentries are rcu-free'd and we hold the rcu read lock), and I
-> think that we can optimistically take *any* parent dentry that
-> happened to be valid at one point. As long as the refcount didn't go
-> down to zero. Al?
-> 
-> With dput and dget_parent() both being lockless for the common case,
-> you might get rid of the d_lock contention entirely for that load. I
-> dunno. And I should really think more about that dget_parent() thing a
-> bit more, but I cannot imagine how it could not be right (because even
-> with the current d_lock model, the lock is gotten *within*
-> dget_parent(), so the caller can never know if it gets a new or an old
-> parent, so there is no higher-level serialization going on - and we
-> might as well return *either* the new or the old as such).
-> 
-> I really want Al to double-check me if we decide to try going down
-> this hole. But the above two fixes to your patch should at least
-> approximate the d_lock changes, even if I'd have to look more closely
-> at the other details of your patch..
-> 
->                 Linus
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+That said, I haven't seen near enough actual uses to know whether this
+would be an issue in practice, or what a better description would be. I
+mean, tryget() does always get you a valid ref...
 
+Maybe emphasize that tryget() succeeds iff this cpu hasn't seen
+percpu_ref_kill() done yet? I dunno.
 
+> For use cases where it's necessary to know when all CPUs start to see
+> the refcnt as dead, percpu_ref_kill_and_confirm() is added.  The new
+> function takes an extra argument @confirm_kill which is invoked when
+> the refcnt is guaranteed to be viewed as killed on all CPUs.
+> 
+> While this isn't the prettiest interface, it doesn't force synchronous
+> wait and is much safer than requiring the caller to do its own
+> call_rcu().
+
+Yeah, this seems... icky to me. I'm going to withhold judgement until I
+see how it's used, maybe there isn't any other way but I'd like to try
+and find something prettier.
+
+>  /**
+> - * percpu_ref_kill - safely drop initial ref
+> + * percpu_ref_kill_and_confirm - drop the initial ref and schedule confirmation
+>   * @ref: percpu_ref to kill
+> + * @confirm_kill: optional confirmation callback
+>   *
+> - * Must be used to drop the initial ref on a percpu refcount; must be called
+> - * precisely once before shutdown.
+> + * Equivalent to percpu_ref_kill() but also schedules kill confirmation if
+> + * @confirm_kill is not NULL.  @confirm_kill, which may not block, will be
+> + * called after @ref is seen as dead from all CPUs - all further
+> + * invocations of percpu_ref_tryget() will fail.  See percpu_ref_tryget()
+> + * for more details.
+>   *
+> - * Puts @ref in non percpu mode, then does a call_rcu() before gathering up the
+> - * percpu counters and dropping the initial ref.
+> + * It's guaranteed that there will be at least one full RCU grace period
+> + * between the invocation of this function and @confirm_kill and the caller
+> + * can piggy-back their RCU release on the callback.
+>   */
+> -void percpu_ref_kill(struct percpu_ref *ref)
+> +void percpu_ref_kill_and_confirm(struct percpu_ref *ref,
+> +				 percpu_ref_func_t *confirm_kill)
+
+Passing release to percpu_ref_init() and confirm_kill to
+percpu_ref_kill() is inconsistent. Can we pass them both to
+percpu_ref_init()?
+
+Also, given that confirm_kill is an optional thing I don't see why
+you're renaming percpu_ref_kill() -> percpu_ref_kill_and_confirm(). Most
+users (certainly aio, I think the module code too) don't have any use
+for confirm kill, I don't want to rename it for an ugly optional thing.
