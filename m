@@ -1,83 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755952Ab3FLMHN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 08:07:13 -0400
-Received: from smtp-out-004.synserver.de ([212.40.185.4]:1082 "EHLO
-	smtp-out-004.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755829Ab3FLMHK (ORCPT
+	id S1755361Ab3FLMId (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 08:08:33 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:52729 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab3FLMIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 08:07:10 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 2470
-Message-ID: <51B8646E.5040907@metafoo.de>
-Date: Wed, 12 Jun 2013 14:07:10 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Wed, 12 Jun 2013 08:08:32 -0400
+From: Nix <nix@esperi.org.uk>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, NFS list <linux-nfs@vger.kernel.org>
+Subject: Re: NFS/lazy-umount/path-lookup-related panics at shutdown (at kill of processes on lazy-umounted filesystems) with 3.9.2 and 3.9.5
+References: <871u89vp46.fsf@spindle.srvr.nix>
+	<20130612012304.GF4165@ZenIV.linux.org.uk>
+Emacs: it's not slow --- it's stately.
+Date: Wed, 12 Jun 2013 13:08:26 +0100
+In-Reply-To: <20130612012304.GF4165@ZenIV.linux.org.uk> (Al Viro's message of
+	"Wed, 12 Jun 2013 02:23:04 +0100")
+Message-ID: <87k3lzpm4l.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: linux-mips@linux-mips.org, alsa-devel@alsa-project.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>,
-        Maarten ter Huurne <maarten@treewalker.org>
-Subject: Re: [alsa-devel] [PATCH v2 3/6] dma: Add a jz4740 dmaengine driver
-References: <1369931105-28065-1-git-send-email-lars@metafoo.de> <1369931105-28065-4-git-send-email-lars@metafoo.de> <20130530171225.GA3767@intel.com> <51A79E8F.4070209@metafoo.de> <51B60D0A.7040307@metafoo.de> <20130612053810.GF4107@intel.com>
-In-Reply-To: <20130612053810.GF4107@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-DCC-URT-Metrics: spindle 1060; Body=3 Fuz1=3 Fuz2=3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2013 07:38 AM, Vinod Koul wrote:
-> On Mon, Jun 10, 2013 at 07:29:46PM +0200, Lars-Peter Clausen wrote:
->> On 05/30/2013 08:46 PM, Lars-Peter Clausen wrote:
->>>>> +static int jz4740_dma_alloc_chan_resources(struct dma_chan *c)
->>>>> +{
->>>>> +	struct jz4740_dmaengine_chan *chan = to_jz4740_dma_chan(c);
->>>>> +
->>>>> +	chan->jz_chan = jz4740_dma_request(chan, NULL);
->>>>> +	if (!chan->jz_chan)
->>>>> +		return -EBUSY;
->>>>> +
->>>>> +	jz4740_dma_set_complete_cb(chan->jz_chan, jz4740_dma_complete_cb);
->>>>> +
->>>>> +	return 0;
->>>> Sorry, I didnt reply on this one. The API expects you to allocate a pool of
->>>> descriptors. These descriptors are to be used in .device_prep_xxx calls later.
->>>
->>> The size of the descriptor is not fixed, so they can not be pre-allocated. And
->>> this is nothing new either, most of the more recently added dmaengine drivers
->>> allocate their descriptors on demand.
->>
->> Vinod, are you ok with this explanation?
-> Sorry, I was travelling...
-> 
-> Can you explain more of a bit when you say size is not fixed.
+On 12 Jun 2013, Al Viro told this:
 
-This is the function that allocates the descriptor:
+> On Mon, Jun 10, 2013 at 06:42:49PM +0100, Nix wrote:
+>> Yes, my shutdown scripts are panicking the kernel again! They're not
+>> causing filesystem corruption this time, but it's still fs-related.
+>> 
+>> Here's the 3.9.5 panic, seen on an x86-32 NFS client using NFSv3: NFSv4
+>> was compiled in but not used. This happened when processes whose
+>> current directory was on one of those NFS-mounted filesystems were being
+>> killed, after it had been lazy-umounted (so by this point its cwd was in
+>> a disconnected mount point).
+>> 
+>> [  251.246800] BUG: unable to handle kernel NULL pointer dereference at 00000004
+>> [  251.256556] IP: [<c01739f6>] path_init+0xc7/0x27f
+>> [  251.256556] *pde = 00000000
+>> [  251.256556] Oops: 0000 [#1]
+>> [  251.256556] Pid: 748, comm: su Not tainted 3.9.5+ #1
+>> [  251.256556] EIP: 0060:[<c01739f6>] EFLAGS: 00010246 CPU: 0
+>> [  251.256556] EIP is at path_init+0xc7/0x27f
+>
+> Apparently that's set_root_rcu() with current->fs being NULL.  Which comes from
+> AF_UNIX connect done by some twisted call chain in context of hell knows what.
 
-static struct jz4740_dma_desc *jz4740_dma_alloc_desc(unsigned int num_sgs)
+It's all NFS's fault!
+
+>> [  251.256556]  [<c02ef8da>] ? unix_stream_connect+0xe1/0x2f7
+>> [  251.256556]  [<c026a14d>] ? kernel_connect+0x10/0x14
+>> [  251.256556]  [<c031ecb1>] ? xs_local_connect+0x108/0x181
+>> [  251.256556]  [<c031c83b>] ? xprt_connect+0xcd/0xd1
+
+At this point, we have a sibcall to call_connect() I think. The RPC task
+of discourse happens to be local, and as the relevant comment says
+
+		 * We want the AF_LOCAL connect to be resolved in the
+		 * filesystem namespace of the process making the rpc
+		 * call.  Thus we connect synchronously.
+
+Probably this should be doing this only if said namespace isn't
+disconnected and going away...
+
+>> [  251.256556]  [<c031fd1b>] ? __rpc_execute+0x5b/0x156
+>> [  251.256556]  [<c0128ac2>] ? wake_up_bit+0xb/0x19
+>> [  251.256556]  [<c031b83d>] ? rpc_run_task+0x55/0x5a
+>> [  251.256556]  [<c031b8bc>] ? rpc_call_sync+0x7a/0x8d
+>> [  251.256556]  [<c0325127>] ? rpcb_register_call+0x11/0x20
+>> [  251.256556]  [<c032548a>] ? rpcb_v4_register+0x87/0xf6
+
+This is happening because of this code in net/sunrpc/svc.c (and, indeed,
+I am running rpcbind, like everyone should be these days):
+
+/*
+ * If user space is running rpcbind, it should take the v4 UNSET
+ * and clear everything for this [program, version].  If user space
+ * is running portmap, it will reject the v4 UNSET, but won't have
+ * any "inet6" entries anyway.  So a PMAP_UNSET should be sufficient
+ * in this case to clear all existing entries for [program, version].
+ */
+static void __svc_unregister(struct net *net, const u32 program, const u32 version,
+			     const char *progname)
 {
-	return kzalloc(sizeof(struct jz4740_dma_desc) +
-		sizeof(struct jz4740_dma_sg) * num_sgs, GFP_ATOMIC);
-}
+	int error;
 
-So the size depends on the entries in the sg list.
+	error = rpcb_v4_register(net, program, version, NULL, "");
+
+	/*
+	 * User space didn't support rpcbind v4, so retry this
+	 * request with the legacy rpcbind v2 protocol.
+	 */
+	if (error == -EPROTONOSUPPORT)
+		error = rpcb_register(net, program, version, 0, 0);
 
 
-> Why would it be
-> issue if we allocate descriptors at the alloc_chan. The idea is that you 
-> preallocated pool at alloc_chan and since the .device_prep_xxx calls can be
-> called from atomic context as well, you dont need to do this later. You can use use
-> these descriptors at that time. The idea is keep rotating the descriptors from
-> free poll to used one
+Ah yes, because what unregister should do is *register* something.
+That's clear as mud :)
 
-Yes, I know all that. And it makes sense to use a pool in certain
-situations, e.g. if the hardware only supports a limited set of physical
-descriptors. But in this case the descriptors are completely virtual.
-Forcing the driver to use a pool would make it more complex, use more memory
-and also a bit slower (although probably not noticeable).
+> Why is it done in essentially random process context, anyway?  There's such thing
+> as chroot, after all, which would screw that sucker as hard as NULL ->fs, but in
+> a less visible way...
 
-- Lars
+I don't think it is a random process context. It's all intentionally
+done in the context of the process which is the last to close that
+filesystem, as part of the process of tearing it down -- but it looks
+like the NFS svcrpc connection code isn't expecting to be called in that
+situation.
