@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757983Ab3FLSd4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 14:33:56 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:26130 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756019Ab3FLSdz (ORCPT
+	id S1757991Ab3FLSfS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 14:35:18 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:40580 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757967Ab3FLSfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 14:33:55 -0400
+	Wed, 12 Jun 2013 14:35:16 -0400
 X-Mail-Handler: Dyn Standard SMTP by Dyn
 X-Originating-IP: 50.131.214.131
 X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/pipmvqaTZbA5t6TbJAwZc
-Date: Wed, 12 Jun 2013 11:33:45 -0700
+X-MHO-User: U2FsdGVkX18YFfJspTCLhKxa2l8RnSO7
+Date: Wed, 12 Jun 2013 11:35:09 -0700
 From: Tony Lindgren <tony@atomide.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
         Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@linaro.org>,
         Hebbar Gururaja <gururaja.hebbar@ti.com>,
-        Mark Brown <broonie@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Mark Brown <broonie@kernel.org>
 Subject: Re: [PATCH] drivers: pinctrl: add active state to core
-Message-ID: <20130612183345.GU8164@atomide.com>
+Message-ID: <20130612183509.GV8164@atomide.com>
 References: <1370938616-5952-1-git-send-email-linus.walleij@stericsson.com>
- <51B75148.5080701@wwwdotorg.org>
- <CACRpkdYQSO0+9tQkS=df-kpL=XL+DpnY1ijp6_Zeg0MvmFujyw@mail.gmail.com>
+ <20130611160322.GB20352@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkdYQSO0+9tQkS=df-kpL=XL+DpnY1ijp6_Zeg0MvmFujyw@mail.gmail.com>
+In-Reply-To: <20130611160322.GB20352@kroah.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Walleij <linus.walleij@linaro.org> [130611 12:59]:
-> On Tue, Jun 11, 2013 at 6:33 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> > On 06/11/2013 02:16 AM, Linus Walleij wrote:
-> >> From: Linus Walleij <linus.walleij@linaro.org>
-> >>
-> >> In addition to the recently introduced pinctrl core
-> >> control, the PM runtime pin control for the OMAP platforms
-> >> require a fourth state in addtition to the default, idle and
-> >> sleep states already handled by the core: an explicit "active"
-> >> state. Let's introduce this to the core in addition to the
-> >> other states already defined.
-> >
-> > Surely "default" /is/ "active"? That's what it's meant so far.
+* Greg Kroah-Hartman <gregkh@linuxfoundation.org> [130611 09:08]:
+> On Tue, Jun 11, 2013 at 10:16:56AM +0200, Linus Walleij wrote:
+> > From: Linus Walleij <linus.walleij@linaro.org>
+> > 
+> > In addition to the recently introduced pinctrl core
+> > control, the PM runtime pin control for the OMAP platforms
+> > require a fourth state in addtition to the default, idle and
+> > sleep states already handled by the core: an explicit "active"
+> > state. Let's introduce this to the core in addition to the
+> > other states already defined.
+> > 
+> > Cc: Hebbar Gururaja <gururaja.hebbar@ti.com>
+> > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> > Cc: Stephen Warren <swarren@wwwdotorg.org>
+> > Cc: Wolfram Sang <wsa@the-dreams.de>
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > Cc: Mark Brown <broonie@kernel.org>
+> > Cc: Kevin Hilman <khilman@linaro.org>
+> > Suggested-by: Tony Lindgren <tony@atomide.com>
+> > Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> > ---
+> > Greg: need your ACK on this to merge it through the pinctrl
+> > tree.
+> > ---
+> >  drivers/base/pinctrl.c                |  8 +++++++-
+> >  drivers/pinctrl/core.c                | 15 +++++++++++++++
 > 
-> I thought so too, until Tony informed us that in the OMAP world
-> this state is not always the active one.
+> For anything that just touches drivers/base/pinctrl.c, you don't need my
+> ack, that's your code, you can do whatever you want with it :)
 > 
-> But I don't know the exact reasons for.
-> 
-> I guess that some "default" states on the OMAP may mean these
-> are configured as decoupled, inactive, until explicitly activated
-> or something like that.
+> But here you go anyway:
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-The main reason is that remuxing all the pins for a device for
-PM runtime suspend and resume is not necessary. Most pins are
-static and configured once during the consumer driver probe.
-And in most cases, remuxing only one pin for the rx line is
-needed. This is performance critical as it may need to be done
-constantly while entering and exiting idle, and remuxing all the
-pins is just a waste of cycles.
-
-Regards,
-
-Tony 
+Acked-by: Tony Lindgren <tony@atomide.com>
