@@ -1,145 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756556Ab3FLJZA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 05:25:00 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47958 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756408Ab3FLJYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 05:24:24 -0400
-From: George Cherian <george.cherian@ti.com>
-To: <linux-usb@vger.kernel.org>
-CC: <balbi@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        George Cherian <george.cherian@ti.com>
-Subject: [PATCH v2 2/3] usb: dwc3: omap: Intialize the register offset values for OMAP5 and AM437x
-Date: Wed, 12 Jun 2013 14:53:46 +0530
-Message-ID: <1371029027-9100-3-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1371029027-9100-1-git-send-email-george.cherian@ti.com>
-References: <1371029027-9100-1-git-send-email-george.cherian@ti.com>
+	id S1756476Ab3FLJZt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 05:25:49 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:53264 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756379Ab3FLJZq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 05:25:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130612110915.64cfdb1d@amdc308.digital.local>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+	<1370941408-29304-1-git-send-email-l.majewski@samsung.com>
+	<1370941408-29304-2-git-send-email-l.majewski@samsung.com>
+	<CAKohpomD1ru3_nqQkUq8EmMjJzR7hrtRNAY=UNPWCDHuVxZfBA@mail.gmail.com>
+	<20130612093938.1cf73c9a@amdc308.digital.local>
+	<CAKohpo=Q6ry9NJU7w3suQ3kB4LQT-CEoy8vcR9W0zL2rSa3hkg@mail.gmail.com>
+	<20130612110915.64cfdb1d@amdc308.digital.local>
+Date: Wed, 12 Jun 2013 14:55:45 +0530
+Message-ID: <CAKohpongMVUybmUUh1t+iHYV+=AHA7X=5Cdb66k_o6poiY-2+g@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] cpufreq:boost: CPU frequency boost code
+ unification for software and hardware solutions
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch Initializes the register offset values depending
-on the X_MAJOR of USBOTGSS_REVISION register. Also adds register
-offset defines and new debug register defines.
+On 12 June 2013 14:39, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> On Wed, 12 Jun 2013 13:39:18 +0530, Viresh Kumar wrote:
+>> On 12 June 2013 13:09, Lukasz Majewski <l.majewski@samsung.com> wrote:
 
-X_MAJOR is 2 for both OMAP5 and AM437x. But both have different glue register
-layout. Differentiate AM437x using dt compatible.
-Register offsets are cached in dwc3_omap struct for reg reads and writes.
+>> You don't have to add an extra "---" line. Just write your changelog
+>> after "---" added by git and give a blank line between your last
+>> changelog line and below ones (probably just to make it more
+>> readable and not a must, but i am not sure).
+>
+> I got your point. If you prefer, I will stick to it. No problem.
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
- drivers/usb/dwc3/dwc3-omap.c | 57 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 57 insertions(+)
+Its not how I prefer it, but how everybody does it :)
 
-diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-index a354b4c..f204d18 100644
---- a/drivers/usb/dwc3/dwc3-omap.c
-+++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -61,21 +61,38 @@
- #define USBOTGSS_REVISION			0x0000
- #define USBOTGSS_SYSCONFIG			0x0010
- #define USBOTGSS_IRQ_EOI			0x0020
-+#define USBOTGSS_EOI_OFFSET			0x0008
- #define USBOTGSS_IRQSTATUS_RAW_0		0x0024
- #define USBOTGSS_IRQSTATUS_0			0x0028
- #define USBOTGSS_IRQENABLE_SET_0		0x002c
- #define USBOTGSS_IRQENABLE_CLR_0		0x0030
-+#define USBOTGSS_IRQ0_OFFSET			0x0004
- #define USBOTGSS_IRQSTATUS_RAW_1		0x0034
- #define USBOTGSS_IRQSTATUS_1			0x0038
- #define USBOTGSS_IRQENABLE_SET_1		0x003c
- #define USBOTGSS_IRQENABLE_CLR_1		0x0040
-+#define USBOTGSS_IRQSTATUS_EOI_MISC		0x0030
-+#define USBOTGSS_IRQSTATUS_RAW_MISC		0x0034
-+#define USBOTGSS_IRQSTATUS_MISC			0x0038
-+#define USBOTGSS_IRQENABLE_SET_MISC		0x003c
-+#define USBOTGSS_IRQENABLE_CLR_MISC		0x0040
-+#define USBOTGSS_IRQMISC_OFFSET			0x03fc
- #define USBOTGSS_UTMI_OTG_CTRL			0x0080
- #define USBOTGSS_UTMI_OTG_STATUS		0x0084
-+#define USBOTGSS_UTMI_OTG_OFFSET		0x0480
-+#define USBOTGSS_TXFIFO_DEPTH			0x0508
-+#define USBOTGSS_RXFIFO_DEPTH			0x050c
- #define USBOTGSS_MMRAM_OFFSET			0x0100
- #define USBOTGSS_FLADJ				0x0104
- #define USBOTGSS_DEBUG_CFG			0x0108
- #define USBOTGSS_DEBUG_DATA			0x010c
-+#define USBOTGSS_DEV_EBC_EN			0x0110
-+#define USBOTGSS_DEBUG_OFFSET			0x0600
- 
-+/* REVISION REGISTER */
-+#define USBOTGSS_REVISION_XMAJOR(reg)		((reg >> 8) & 0x7)
-+#define USBOTGSS_REVISION_XMAJOR1		1
-+#define USBOTGSS_REVISION_XMAJOR2		2
- /* SYSCONFIG REGISTER */
- #define USBOTGSS_SYSCONFIG_DMADISABLE		(1 << 16)
- 
-@@ -300,6 +317,7 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 	int			irq;
- 
- 	int			utmi_mode = 0;
-+	int			x_major;
- 
- 	u32			reg;
- 
-@@ -356,6 +374,42 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
-+	reg = dwc3_omap_readl(omap->base, USBOTGSS_REVISION);
-+	omap->revision = reg;
-+	x_major = USBOTGSS_REVISION_XMAJOR(reg);
-+
-+	/* Differentiate between OMAP5,AM437x and others*/
-+	switch (x_major) {
-+	case USBOTGSS_REVISION_XMAJOR1:
-+	case USBOTGSS_REVISION_XMAJOR2:
-+		omap->irq_eoi_offset = 0;
-+		omap->irq0_offset = 0;
-+		omap->irqmisc_offset = 0;
-+		omap->utmi_otg_offset = 0;
-+		omap->debug_offset = 0;
-+		break;
-+	default:
-+		/* Default to the latest revision */
-+		omap->irq_eoi_offset = USBOTGSS_EOI_OFFSET;
-+		omap->irq0_offset = USBOTGSS_IRQ0_OFFSET;
-+		omap->irqmisc_offset = USBOTGSS_IRQMISC_OFFSET;
-+		omap->utmi_otg_offset = USBOTGSS_UTMI_OTG_OFFSET;
-+		omap->debug_offset = USBOTGSS_DEBUG_OFFSET;
-+		break;
-+	}
-+
-+	/* For OMAP5(ES2.0) and AM437x x_major is 2 even though there are
-+	 * changes in wrapper registers, Using dt compatible for aegis
-+	 */
-+
-+	if (of_device_is_compatible(node, "ti,am437x-dwc3")) {
-+		omap->irq_eoi_offset = USBOTGSS_EOI_OFFSET;
-+		omap->irq0_offset = USBOTGSS_IRQ0_OFFSET;
-+		omap->irqmisc_offset = USBOTGSS_IRQMISC_OFFSET;
-+		omap->utmi_otg_offset = USBOTGSS_UTMI_OTG_OFFSET;
-+		omap->debug_offset = USBOTGSS_DEBUG_OFFSET;
-+	}
-+
- 	reg = dwc3_omap_readl(omap->base, USBOTGSS_UTMI_OTG_STATUS);
- 
- 	of_property_read_u32(node, "utmi-mode", &utmi_mode);
-@@ -412,6 +466,9 @@ static const struct of_device_id of_dwc3_match[] = {
- 	{
- 		.compatible =	"ti,dwc3"
- 	},
-+	{
-+		.compatible =	"ti,am437x-dwc3"
-+	},
- 	{ },
- };
- MODULE_DEVICE_TABLE(of, of_dwc3_match);
--- 
-1.8.1.4
+> As a side note:
+>
+> In the other open source project (u-boot) we use the pattern which I've
+> used previously. It has one big advantage - I can edit change log at
+> git gui (just below sign-of-by). It is simply more convenient for
+> me :-). Those changes between "---" are simply skipped by git am
+> afterwards.
 
+Yes, I am still asking you to follow the same steps:
+
+git send-email --annotate ***patches***
+
+and then write whatever you don't want to be logged by git am after
+the "---" already present in the patch.
+
+>> >> >  drivers/cpufreq/cpufreq.c    |   69
+>> >> > ++++++++++++++++++++++++++++++++++++++++++
+>> >> > drivers/cpufreq/freq_table.c |   57
+>> >> > ++++++++++++++++++++++++++++++++-- include/linux/cpufreq.h      |
+>> >> > 12 ++++++++ 3 files changed, 136 insertions(+), 2 deletions(-)
+>>
+>> > I think that we shall give users some flexibility and don't assume
+>> > that low_level_boost is only used for one solution/vendor.
+>> >
+>> > It is also needed with software controlled boost. Please refer to
+>> > patch 3/3.
+>>
+>> You didn't get me. I am not asking to keep it only for Intel. But keep
+>> this variable as is (s/low_level_boost/set_boost_freq), and make it
+>> optional. So, few drivers can implement it but not everybody is
+>> required to.
+>
+> The low_level_boost (set_boost_freq)[*] is optional. However it seems to
+> me, that the burden of changing available set of frequencies (when
+> boost is enabled) must be put to cpufreq driver anyway.
+
+Driver shouldn't play with boost freqs at runtime. This has to be handled
+by cpufreq core. The only thing cpufreq driver must be doing in
+low_level_boost or set_boost_freq (as what I suggested it to be), is
+to set the boost frequency requested by core. And so this routine would
+only be defined by drivers that have a special way of setting boost
+frequencies. For others ->target() routine should be able to set all
+freqs, boost or non boost.
+
+> Without this function [*] defined, we cannot enable frequency boosting.
+
+why?
+
+>> So, Add another variable: boost_supported, which will tell cpufreq
+>> core that boost is supported by governor or not.
+>                                   ^^^^^^^shouldn't it be cpufreq driver?
+
+Yeah, sorry :(
+
+> Ok, boost_supported seems needed. In my opinion it shall be defined at
+> cpufreq_driver structure (since it provides boosting infrastructure
+> anyway).
+
+that's what I asked.
+
+>> And a global variable in cpufreq.c boost_enabled to track status of
+>> what user has requested.
+>
+> I think, that boost_enable shall be also defined at cpufreq driver (as
+> proposed in the patch).
+
+Not really. Driver should only care about if it supports boost or not.
+If it is enabled/disabled by sysfs or not should be kept inside core
+in a global variable.
+
+Moreover, if we have 5-6 cpufreq drivers compiled in (for multi-arch
+compiled kernels), we will save memory wasted by this variable if
+it is present in cpufreq_driver.
+
+> Moreover, boost_enable flag is already defined at
+> acpi-cpufreq.c (as static). We will have two flags for the same
+> purpose.
+
+No, we don't have to. Just expose another API from cpufreq core
+to get status of boost.
+
+> So we want as follows:
+> show_boost = 1 ---> show only frequencies tagged as CPUFREQ_BOOST_FREQ
+> show_boost = 0 ---> show only "normal" (non boost) frequencies
+
+Yes.
+
+>> You are just talking about showing boost freqs in sysfs. I am talking
+>> about the frequencies that governors will select when boost is
+>> disabled from sysfs. Because we don't skip boost frequencies in
+>> target() routines, we will set them as and when governor requests
+>> them.
+>
+> I think, that it is the main issue here and it shall be cleared out:
+>
+> Frequencies marked as: CPUFREQ_BOOST_FREQ are added permanently to the
+> freq_table.
+> That is the distinction to the original overclocking patch posted with
+>> LAB, where freq_boost structure was modified and boost frequencies were
+> either valid or invalid.
+
+Yes.
+
+> Then we can in SW control boost in two ways:
+> 1. change policy->max value (to the maximal boost frequency) - as it is
+> done now (v3) at Exynos. This is the simple solution (patch 3/3)
+
+Drivers aren't supposed to set policy->max. It should be taken care
+of by core or freq_table.c file.
+
+> 2. Modify all freq_table helper functions to be aware of boost and
+> skip boost frequencies when boost_enable = 0. (as it was done at v2).
+> This requires code modification at freq_table.c and reevaluation of
+> policy.
+
+Yes, the core must be aware of it and must take the right decision
+here. So, we need to take care of boost freq in freq_table.c
