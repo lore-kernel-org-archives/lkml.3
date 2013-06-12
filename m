@@ -1,116 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757189Ab3FLRHB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 13:07:01 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:48408 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755021Ab3FLRG7 (ORCPT
+	id S1757394Ab3FLRHj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 13:07:39 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:54712 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754494Ab3FLRHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 13:06:59 -0400
-Date: Wed, 12 Jun 2013 18:04:47 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: David Lang <david@lang.hm>, Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Ingo Molnar <mingo@kernel.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "alex.shi@intel.com" <alex.shi@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Mike Galbraith <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: power-efficient scheduling design
-Message-ID: <20130612170447.GF31646@arm.com>
-References: <20130530134718.GB32728@e103034-lin>
- <51B221AF.9070906@linux.vnet.ibm.com>
- <20130608112801.GA8120@MacBook-Pro.local>
- <1834293.MlyIaiESPL@vostro.rjw.lan>
- <51B3F99A.4000101@linux.vnet.ibm.com>
- <51B5FE02.7040607@linaro.org>
- <alpine.DEB.2.02.1306111722470.24968@nftneq.ynat.uz>
- <51B7D38A.7050204@linux.intel.com>
- <20130612102019.GA6976@arm.com>
- <51B892C4.6090800@linux.intel.com>
+	Wed, 12 Jun 2013 13:07:37 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX182hptguOQRThVwRFw1EfhU
+Date: Wed, 12 Jun 2013 10:07:34 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: grant.likely@linaro.org, linux-pm@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Fabio Stevam <festevam@gmail.com>
+Subject: Re: [PATCHv3 2/6] arm: introduce config HAS_BANDGAP
+Message-ID: <20130612170733.GK8164@atomide.com>
+References: <1370637968-23299-1-git-send-email-eduardo.valentin@ti.com>
+ <1370637968-23299-3-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51B892C4.6090800@linux.intel.com>
+In-Reply-To: <1370637968-23299-3-git-send-email-eduardo.valentin@ti.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 04:24:52PM +0100, Arjan van de Ven wrote:
-> >>> This isn't in the fastpath, it's in the rebalancing logic.
-> >>
-> >> the reality is much more complex unfortunately.
-> >> C and P states hang together tightly, and even C state on one core
-> >> impacts other cores' performance, just like P state selection on one
-> >> core impacts other cores.
-> >>
-> >> (at least for x86, we should really stop talking as if the OS picks
-> >> the "frequency", that's just not the case anymore)
-> >
-> > I agree, the reality is very complex. But we should go back and analyse
-> > what problem we are trying to solve, what each framework is trying to
-> > address.
-> >
-> > When viewed separately from the scheduler, cpufreq and cpuidle governors
-> > do the right thing. But they both base their action on the CPU load
-> > (balance) decided by the scheduler and it's the latter that we are
-> > trying to adjust (and we are still debating what the right approach is).
-> >
-> > Since such information seems too complex to be moved into the scheduler,
-> > why don't we get cpufreq in charge of restricting the load balancing to
-> > certain CPUs? It already tracks the load/idle time to (gradually) change
-> > the P state. Depending on the governor/policy, it could decide that (for
+* Eduardo Valentin <eduardo.valentin@ti.com> [130607 13:53]:
+> Bandgap is a device used to measure temperature on
+> electronic equipments. It is widely used in digital
+> integrated circuits. It is based on the dependency
+> between silicon voltage and temperature.
 > 
-> (btw in case you missed it, for Intel HW we no longer use cpufreq anymore)
+> This patch introduce HAS_BANDGAP config entry.
+> This config is a boolean value so that arch
+> code can flag if they feature a bandgap device.
+> 
+> This config entry follows the same idea behind
+> ARCH_HAS_CPUFREQ.
 
-Do you mean the intel_pstate.c code? It indeed doesn't use much of
-cpufreq, just setpolicy and it's on its own afterwards. Separating this
-from the framework probably has real benefits for the Intel processors
-but it would make a unified scheduler/cpufreq/cpuidle solution harder
-(just a remark, I don't say it's good or bad, there are many
-opinions against the unified solution; ARM could do the same for
-configurations like big.LITTLE).
+I suggest you add this to Russell's patch system:
 
-But such driver could still interact with the scheduler to control it's
-load balancing. At a quick look (I'm not familiar with this driver), it
-tracks the per-CPU load and increases or decreases the P-state (similar
-to a cpufreq governor). It could as well track the total load and
-(depending on hardware configuration), get some CPUs in lower
-performance P-state (or even C-state) and tell the scheduler to avoid
-them.
-
-One way to control load-balancing ratio is via something like
-arch_scale_freq_power(). We could tweak the scheduler further so that
-something like cpu_power==0 means do not schedule anything there.
-
-So my proposal is to move the load-balancing hints (load ratio, avoiding
-CPUs etc.) outside the scheduler into drivers like intel_pstate.c or
-cpufreq governors. We then focus on getting the best performance out of
-the scheduler (like quicker migration) but it would not be concerned
-with the power consumption.
-
-> I do agree the scheduler needs to get integrated a bit better, in that it
-> has some better knowledge, and to be honest, we likely need to switch from
-> giving tasks credit for "time consumed" to giving them credit for something like
-> "cycles consumed" or "instructions executed" or a mix thereof.
-> So that a task that runs on a slower CPU (for either policy choice reasons or
-> due to hardware capabilities), it gets charged less than when it runs fast.
-
-I agree, this would be useful in optimising the scheduler so that it
-makes the right task placement/migration decisions (but as I said above,
-make the power aspect transparent to the scheduler).
-
--- 
-Catalin
+Acked-by: Tony Lindgren <tony@atomide.com>
+ 
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-omap@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: Fabio Stevam <festevam@gmail.com>
+> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> ---
+>  arch/arm/Kconfig            | 3 +++
+>  arch/arm/mach-omap2/Kconfig | 1 +
+>  2 files changed, 4 insertions(+)
+> 
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index d423d58..bcbdec9 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -174,6 +174,9 @@ config ARCH_HAS_CPUFREQ
+>  	  and that the relevant menu configurations are displayed for
+>  	  it.
+>  
+> +config ARCH_HAS_BANDGAP
+> +	bool
+> +
+>  config GENERIC_HWEIGHT
+>  	bool
+>  	default y
+> diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+> index f49cd51..8620ab5 100644
+> --- a/arch/arm/mach-omap2/Kconfig
+> +++ b/arch/arm/mach-omap2/Kconfig
+> @@ -4,6 +4,7 @@ config ARCH_OMAP
+>  config ARCH_OMAP2PLUS
+>  	bool "TI OMAP2/3/4/5 SoCs with device tree support" if (ARCH_MULTI_V6 || ARCH_MULTI_V7)
+>  	select ARCH_HAS_CPUFREQ
+> +	select ARCH_HAS_BANDGAP
+>  	select ARCH_HAS_HOLES_MEMORYMODEL
+>  	select ARCH_OMAP
+>  	select ARCH_REQUIRE_GPIOLIB
+> -- 
+> 1.8.2.1.342.gfa7285d
+> 
