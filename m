@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757073Ab3FLULA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 16:11:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55187 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751157Ab3FLUK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 16:10:59 -0400
-Date: Wed, 12 Jun 2013 16:10:47 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org
-Cc: axboe@kernel.dk
-Subject: Re: WARNING: at drivers/scsi/scsi_lib.c:1196 scsi_setup_fs_cmnd
- during RAID5 startup.
-Message-ID: <20130612201047.GF15200@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-scsi@vger.kernel.org, axboe@kernel.dk
-References: <20130612194346.GD15200@redhat.com>
+	id S1757892Ab3FLUMP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 16:12:15 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:45340 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708Ab3FLUMN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 16:12:13 -0400
+Date: Wed, 12 Jun 2013 13:12:09 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Michal Hocko <mhocko@suse.cz>
+cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] memcg: do not sleep on OOM waitqueue with full charge
+ context
+In-Reply-To: <20130612082817.GA6706@dhcp22.suse.cz>
+Message-ID: <alpine.DEB.2.02.1306121309500.23348@chino.kir.corp.google.com>
+References: <1370488193-4747-1-git-send-email-hannes@cmpxchg.org> <1370488193-4747-2-git-send-email-hannes@cmpxchg.org> <alpine.DEB.2.02.1306052058340.25115@chino.kir.corp.google.com> <20130606053315.GB9406@cmpxchg.org> <20130606173355.GB27226@cmpxchg.org>
+ <alpine.DEB.2.02.1306061308320.9493@chino.kir.corp.google.com> <20130606215425.GM15721@cmpxchg.org> <alpine.DEB.2.02.1306061507330.15503@chino.kir.corp.google.com> <20130607000222.GT15576@cmpxchg.org> <alpine.DEB.2.02.1306111454030.4803@chino.kir.corp.google.com>
+ <20130612082817.GA6706@dhcp22.suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130612194346.GD15200@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 03:43:46PM -0400, Dave Jones wrote:
- > 3.10 seems to have a problem with dirty RAID5 sets.
- > 
- > I've got a machine that panics on boot during RAID5 activation.
- > After switching the BUG_ON to a WARN_ON, I was able to get this over serial console..
- > 
- > md/raid:md0: not clean -- starting background reconstruction
- > md/raid:md0: device sdd1 operational as raid disk 2
- > md/raid:md0: device sdc1 operational as raid disk 1
- > md/raid:md0: device sdb1 operational as raid disk 0
- > md/raid:md0: allocated 3300kB
- > md/raid:md0: raid level 5 active with 3 out of 3 devices, algorithm 2
- > md0: detected capacity change from 0 to 499847790592
- > md: resync of RAID array md0
- > md: minimum _guaranteed_  speed: 1000 KB/sec/disk.
- > md: using maximum available idle IO bandwidth (but not more than 200000 KB/sec) for resync.
- > md: using 128k window, over a total of 244066304k.
- > md: resuming resync of md0 from checkpoint.
- > WARNING: at drivers/scsi/scsi_lib.c:1196 scsi_setup_fs_cmnd+0xa3/0xb0()
+On Wed, 12 Jun 2013, Michal Hocko wrote:
 
-https://lkml.org/lkml/2013/5/19/75
+> > > > > > > Reported-by: Reported-by: azurIt <azurit@pobox.sk>
+> > 
+> > Ok, so the key here is that azurIt was able to reliably reproduce this 
+> > issue and now it has been resurrected after seven months of silence since 
+> > that thread.  I also notice that azurIt isn't cc'd on this thread.  Do we 
+> > know if this is still a problem?
+> 
+> I have backported the patch for his 3.2 and waiting for his feedback.
+> 
 
-I think my favorite part of this month old thread is..
-
-"in that case we could have waited for a long time"
-
-Jens?
-
-	Dave
-
+Ok, thanks.  I thought this was only going seven months back when it was 
+reported, I missed that the issue this patch is trying to address goes 
+back a 1 1/2 years to 3.2 and nobody else has reported it.  I think his 
+feedback would be the key, specifically if he can upgrade to a later 
+kernel first.
