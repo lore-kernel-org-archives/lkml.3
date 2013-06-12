@@ -1,321 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab3FLFJy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 01:09:54 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:45313 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752266Ab3FLFJw (ORCPT
+	id S1754195Ab3FLFL1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 01:11:27 -0400
+Received: from smtp104.biz.mail.gq1.yahoo.com ([98.137.12.179]:48705 "HELO
+	smtp104.biz.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751341Ab3FLFLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 01:09:52 -0400
+	Wed, 12 Jun 2013 01:11:24 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: NnQ0n4UVM1lHleBe4XGzsSYO59hcdhs7.rjP_42Rz7d0BIm
+ sEGtEHxZjL70jOetSBjTcF2n0RKvcWwMEEDEgpotajG6jylRaxENj.2ZA.T4
+ IUX4O1N8FGxuYhXBDXp9JTD1zvnX.5RxqIB2FZBV5HZRpuWnlQluMhP6myE7
+ JY1E2_19hSpmgMKKRTx5NvmkjKW2fuHTZf_qDFGahBbmD4A113g9uRqkOZP1
+ tHdFGroOI9h_uUf1fqqInbOA62wqYXYOWbROrFGUEDLeugw5bbVVzLUGHta3
+ BqZ81YJg72y.ND49mveFRO3zd4IOA7DQTt6h_EoTeCf3neRbhJz5kMdITW0K
+ S2FMFH8ofLhZjxtKfzUfjvx6SfHltFtMEOdj0Gygit2aG99hsTOuiNPKL6M3
+ ckLAHOWRF7VCGg67SFc5qmzdPq83Ud2lXokCv8XRKos7csvamRDeudeIpNco
+ RXC8GeNbJKOQyZOuBo.N5bbh1MJia8GOdIqxnByVnqq69ugoTYkpiM2a.7ov
+ 5npJK
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-Rocket-Received: from [192.168.10.13] (casey@82.204.39.68 with plain)
+        by smtp104.biz.mail.gq1.yahoo.com with SMTP; 11 Jun 2013 22:11:23 -0700 PDT
+Message-ID: <51B802EF.2080403@schaufler-ca.com>
+Date: Tue, 11 Jun 2013 22:11:11 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1370941408-29304-2-git-send-email-l.majewski@samsung.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
-	<1370941408-29304-1-git-send-email-l.majewski@samsung.com>
-	<1370941408-29304-2-git-send-email-l.majewski@samsung.com>
-Date: Wed, 12 Jun 2013 10:39:51 +0530
-Message-ID: <CAKohpomD1ru3_nqQkUq8EmMjJzR7hrtRNAY=UNPWCDHuVxZfBA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] cpufreq:boost: CPU frequency boost code
- unification for software and hardware solutions
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
+To: Tomasz Stanislawski <t.stanislaws@samsung.com>
+CC: linux-security-module@vger.kernel.org, m.szyprowski@samsung.com,
+        kyungmin.park@samsung.com, r.krypa@samsung.com,
+        linux-kernel@vger.kernel.org, Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [RFCv2] security: smack: add a hash table to quicken smk_find_entry()
+References: <1370955313-3605-1-git-send-email-t.stanislaws@samsung.com> <1370955313-3605-2-git-send-email-t.stanislaws@samsung.com>
+In-Reply-To: <1370955313-3605-2-git-send-email-t.stanislaws@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Change subject to: "cpufreq: Add boost frequency support in core"
-
-On 11 June 2013 14:33, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> This commit adds support for software based frequency boosting.
-
-No. It adds support for both software and hardware boosting. So just
-write: This commit adds boost frequency support in cpufreq core (Hardware
-& Software).
-
-> Some SoC (like Exynos4 - e.g. 4x12) allow setting frequency above
-> its normal condition limits. Such a change shall be only done for a short
-
-s/condition/operation
-s/change/mode
-s/done/used
-
-> time.
+On 6/11/2013 5:55 AM, Tomasz Stanislawski wrote:
+> This patch adds a hash table to quicken searching of a smack label by its name.
 >
-> Overclocking (boost) support is essentially provided by platform
-> dependent cpufreq driver.
+> Basically, the patch improves performance of SMACK initialization.  Parsing of
+> rules involves translation from a string to a smack_known (aka label) entity
+> which is done in smk_find_entry().
+
+There is one place where this is done, and that is in smk_import_entry().
+
+There is another place where labels are looked up, and that is in
+smack_from_secattr(). Can you apply this enhancement there, too?
+
 >
-> This commit unifies support for SW and HW (Intel) over clocking solutions
-> in the core cpufreq driver. Previously the "boost" sysfs attribute was
-> defined at acpi driver code.
-> By default boost is disabled. One global attribute is available at:
-> /sys/devices/system/cpu/cpufreq/boost.
-
-Enter a blank line here.
-
-> It only shows up when cpufreq driver supports overclocking.
-> Under the hood frequencies dedicated for boosting are marked with a
-> special flag (CPUFREQ_BOOST_FREQ) at driver's frequency table.
-> It is the user's concern to enable/disable overclocking with proper call to
-> sysfs.
-
-Good.
-
-> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+> The current implementation of the function iterates over a global list of
+> smack_known resulting in O(N) complexity for smk_find_entry().  The total
+> complexity of SMACK initialization becomes O(rules * labels).  Therefore it
+> scales quadratically with a complexity of a system.
 >
+> Applying the patch reduced the complexity of smk_find_entry() to O(1) as long
+> as number of label is in hundreds. If the number of labels is increased please
+> update SMACK_HASH_SLOTS constant defined in security/smack/smack.h. Introducing
+> the configuration of this constant with Kconfig or cmdline might be a good
+> idea.
+>
+> The size of the hash table was adjusted experimentally.  The rule set used by
+> TIZEN contains circa 17K rules for 500 labels.  The table above contains
+> results of SMACK initialization using 'time smackctl apply' bash command.
+> The 'Ref' is a kernel without this patch applied. The consecutive values
+> refers to value of SMACK_HASH_SLOTS.  Every measurement was repeated three
+> times to reduce noise.
+>
+>      |  Ref  |   1   |   2   |   4   |   8   |   16  |   32  |   64  |  128  |  256  |  512
+> --------------------------------------------------------------------------------------------
+> Run1 | 1.156 | 1.096 | 0.883 | 0.764 | 0.692 | 0.667 | 0.649 | 0.633 | 0.634 | 0.629 | 0.620
+> Run2 | 1.156 | 1.111 | 0.885 | 0.764 | 0.694 | 0.661 | 0.649 | 0.651 | 0.634 | 0.638 | 0.623
+> Run3 | 1.160 | 1.107 | 0.886 | 0.764 | 0.694 | 0.671 | 0.661 | 0.638 | 0.631 | 0.624 | 0.638
+> AVG  | 1.157 | 1.105 | 0.885 | 0.764 | 0.693 | 0.666 | 0.653 | 0.641 | 0.633 | 0.630 | 0.627
+
+                 4%      20%     14%     9%      4%      2%      2%      1%      <1%
+
+
+You get 4% by going to the hlist. The improvement is trivial after 16 slots.
+If you have 500 labels and 128 slots that's an average of 4 labels per slot.
+That's an awfully big hash table for so few labels and so little performance
+gain over what you get with 16 slots. Plus, 500 labels is a huge number of
+labels. Most Smack systems should be using far fewer than that. 
+
+>
+> Surprisingly, a single hlist is slightly faster than a double-linked list.
+> The speed-up saturates near 64 slots.  Therefore I chose value 128 to provide
+> some margin if more labels were used.
+> It looks that IO becomes a new bottleneck.
+>
+> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
 > ---
-> Changes for v2:
-> - Removal of cpufreq_boost structure and move its fields to cpufreq_driver
->   structure
-> - Flag to indicate if global boost attribute is already defined
-> - Extent the pr_{err|debbug} functions to show current function names
-> ---
-
-You don't have to manually add "---" here. Just keep a blank line instead.
-
->  drivers/cpufreq/cpufreq.c    |   69 ++++++++++++++++++++++++++++++++++++++++++
->  drivers/cpufreq/freq_table.c |   57 ++++++++++++++++++++++++++++++++--
->  include/linux/cpufreq.h      |   12 ++++++++
->  3 files changed, 136 insertions(+), 2 deletions(-)
+>  security/smack/smack.h        |    5 +++++
+>  security/smack/smack_access.c |   30 +++++++++++++++++++++++++++---
+>  security/smack/smack_lsm.c    |   12 ++++++------
+>  3 files changed, 38 insertions(+), 9 deletions(-)
 >
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 1b8a48e..98ba5f1 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -40,6 +40,7 @@
->   * also protects the cpufreq_cpu_data array.
+> diff --git a/security/smack/smack.h b/security/smack/smack.h
+> index 339614c..b1d9441 100644
+> --- a/security/smack/smack.h
+> +++ b/security/smack/smack.h
+> @@ -53,6 +53,7 @@
 >   */
->  static struct cpufreq_driver *cpufreq_driver;
-> +static bool cpufreq_boost_sysfs_defined;
->  static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data);
->  #ifdef CONFIG_HOTPLUG_CPU
->  /* This one keeps track of the previously set governor of a removed CPU */
-> @@ -315,6 +316,33 @@ EXPORT_SYMBOL_GPL(cpufreq_notify_transition);
->  /*********************************************************************
->   *                          SYSFS INTERFACE                          *
->   *********************************************************************/
-> +ssize_t show_boost_status(struct kobject *kobj,
-> +                                struct attribute *attr, char *buf)
-> +{
-> +       return sprintf(buf, "%d\n", cpufreq_driver->boost_en);
+>  struct smack_known {
+>  	struct list_head		list;
+> +	struct hlist_node		smk_hashed;
+>  	char				*smk_known;
+>  	u32				smk_secid;
+>  	struct netlbl_lsm_secattr	smk_netlabel;	/* on wire labels */
+> @@ -222,6 +223,7 @@ char *smk_parse_smack(const char *string, int len);
+>  int smk_netlbl_mls(int, char *, struct netlbl_lsm_secattr *, int);
+>  char *smk_import(const char *, int);
+>  struct smack_known *smk_import_entry(const char *, int);
+> +void smk_insert_entry(struct smack_known *skp);
+>  struct smack_known *smk_find_entry(const char *);
+>  u32 smack_to_secid(const char *);
+>  
+> @@ -247,6 +249,9 @@ extern struct list_head smk_netlbladdr_list;
+>  
+>  extern struct security_operations smack_ops;
+>  
+> +#define SMACK_HASH_SLOTS 128
 
-This isn't correct. It shows if cpufreq driver supports boost or
-not and it should show if boost is enabled from sysfs when
-cpufreq driver supports boost.
+As outlined above, make this 16.
 
-> +}
+> +extern struct hlist_head smack_known_hash[SMACK_HASH_SLOTS];
 > +
-> +static ssize_t store_boost_status(struct kobject *kobj, struct attribute *attr,
-> +                                 const char *buf, size_t count)
-> +{
-> +       int ret, enable;
-> +
-> +       ret = sscanf(buf, "%d", &enable);
-> +       if (ret != 1 || enable < 0 || enable > 1)
-> +               return -EINVAL;
-> +
-> +       if (cpufreq_boost_trigger_state(enable)) {
-> +               pr_err("%s: Cannot %sable boost!\n", __func__,
-> +                      enable ? "en" : "dis");
-
-%sable doesn't look very much readable. Use complete strings:
-"enable" and "disable".
-
-> +               return -EINVAL;
-> +       }
-> +
-> +       return count;
-> +}
-> +
-> +static struct global_attr global_boost = __ATTR(boost, 0644,
-> +                                               show_boost_status,
-> +                                               store_boost_status);
-
-User define_one_global_rw.
-
->  static struct cpufreq_governor *__find_governor(const char *str_governor)
->  {
-> @@ -754,6 +782,17 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
-
-Why not do this in cpufreq_register_driver()?
-
->                         goto err_out_kobj_put;
->                 drv_attr++;
->         }
-> +       if (cpufreq_driver->low_level_boost && !cpufreq_boost_sysfs_defined) {
-
-I thought low_level_boost() is a function which will only be supported
-for drivers
-using hardware boost feature, like intel. And so we must have used boost_en
-here.
-
-> +               ret = sysfs_create_file(cpufreq_global_kobject,
-> +                                       &(global_boost.attr));
-
-cpufreq_sysfs_create_file(), check 2361be23666232dbb4851a527f466c4cbf5340fc
-for details.
-
-> +               if (ret) {
-> +                       pr_err("%s: cannot register global boost sysfs file\n",
-> +                               __func__);
-> +                       goto err_out_kobj_put;
-> +               }
-> +               cpufreq_boost_sysfs_defined = 1;
-> +       }
-> +
->         if (cpufreq_driver->get) {
->                 ret = sysfs_create_file(&policy->kobj, &cpuinfo_cur_freq.attr);
->                 if (ret)
-> @@ -1853,6 +1892,30 @@ static struct notifier_block __refdata cpufreq_cpu_notifier = {
->  };
->
->  /*********************************************************************
-> + *               BOOST                                              *
-> + *********************************************************************/
-> +int cpufreq_boost_trigger_state(int state)
-> +{
-> +       int ret = 0;
-> +
-> +       if (!cpufreq_driver->low_level_boost)
-> +               return -ENODEV;
-
-I am certainly not aligned with your design. What's the
-use of this field? And please update documentation too for these
-new entries in cpufreq_driver structure.
-
-> +       if (cpufreq_driver->boost_en != state) {
-
-So, you are using boost_en to see if boost is enabled from sysfs?
-Then you have put it at wrong place.
-
-I thought there would be three variables:
-- cpufreq_driver->boost_supported: boost is enabled for driver
-- cpufreq_driver->low_level_boost(): to set desired boost state
-(Only for hardware boosting)
-- boost_enabled: global variable in cpufreq.c file, used only if
-cpufreq_driver->boost_supported is true.
-
-
-> diff --git a/drivers/cpufreq/freq_table.c b/drivers/cpufreq/freq_table.c
-> index d7a7966..4e4f692 100644
-> --- a/drivers/cpufreq/freq_table.c
-> +++ b/drivers/cpufreq/freq_table.c
-> @@ -20,6 +20,27 @@
->   *                     FREQUENCY TABLE HELPERS                       *
->   *********************************************************************/
->
-> +unsigned int
-> +cpufreq_frequency_table_max(struct cpufreq_frequency_table *freq_table,
-> +                           int boost)
-> +{
-> +       int i = 0, boost_freq_max = 0, freq_max = 0;
-> +
-> +       for (; freq_table[i].frequency != CPUFREQ_TABLE_END; i++) {
-> +               if (freq_table[i].index == CPUFREQ_BOOST_FREQ) {
-> +                       if (freq_table[i].frequency > boost_freq_max)
-> +                               boost_freq_max = freq_table[i].frequency;
-
-Do above only when boost==true and below when boost==false.
-
-> +               } else {
-> +                       if (freq_table[i].frequency > freq_max)
-> +                               freq_max = freq_table[i].frequency;
-> +               }
-> +       }
-> +
-> +       return boost ? boost_freq_max : freq_max;
-> +
-> +}
-> +EXPORT_SYMBOL_GPL(cpufreq_frequency_table_max);
-> +
->  int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
->                                     struct cpufreq_frequency_table *table)
->  {
-> @@ -171,7 +192,8 @@ static DEFINE_PER_CPU(struct cpufreq_frequency_table *, cpufreq_show_table);
->  /**
->   * show_available_freqs - show available frequencies for the specified CPU
->   */
-> -static ssize_t show_available_freqs(struct cpufreq_policy *policy, char *buf)
-> +static ssize_t show_available_freqs(struct cpufreq_policy *policy, char *buf,
-> +                                   int show_boost)
->  {
->         unsigned int i = 0;
->         unsigned int cpu = policy->cpu;
-> @@ -186,22 +208,53 @@ static ssize_t show_available_freqs(struct cpufreq_policy *policy, char *buf)
->         for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
->                 if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
->                         continue;
-> +               if (show_boost)
-> +                       if (table[i].index != CPUFREQ_BOOST_FREQ)
-> +                               continue;
-> +
-
-Looks wrong. You will show boost freqs when show_boost is false.
-
->                 count += sprintf(&buf[count], "%d ", table[i].frequency);
->         }
->         count += sprintf(&buf[count], "\n");
->
->         return count;
-> +}
->
-> +/**
-> + * show_available_normal_freqs - show normal boost frequencies for
-> + * the specified CPU
-> + */
-> +static ssize_t show_available_normal_freqs(struct cpufreq_policy *policy,
-> +                                          char *buf)
-> +{
-> +       return show_available_freqs(policy, buf, 0);
->  }
->
->  struct freq_attr cpufreq_freq_attr_scaling_available_freqs = {
->         .attr = { .name = "scaling_available_frequencies",
->                   .mode = 0444,
->                 },
-> -       .show = show_available_freqs,
-> +       .show = show_available_normal_freqs,
->  };
->  EXPORT_SYMBOL_GPL(cpufreq_freq_attr_scaling_available_freqs);
->
-> +/**
-> + * show_available_boost_freqs - show available boost frequencies for
-> + * the specified CPU
-> + */
-> +static ssize_t show_available_boost_freqs(struct cpufreq_policy *policy,
-> +                                         char *buf)
-> +{
-> +       return show_available_freqs(policy, buf, 1);
-> +}
-> +
-> +struct freq_attr cpufreq_freq_attr_boost_available_freqs = {
-> +       .attr = { .name = "scaling_boost_frequencies",
-> +                 .mode = 0444,
-> +               },
-> +       .show = show_available_boost_freqs,
-> +};
-> +EXPORT_SYMBOL_GPL(cpufreq_freq_attr_boost_available_freqs);
-> +
-
-Code redundancy can be reduced by creating a macro for declaring
-**_availabe_freqs, its attributes and export symbol.
-
 >  /*
->   * if you use these, you must assure that the frequency table is valid
->   * all the time between get_attr and put_attr!
+>   * Is the directory transmuting?
+>   */
+> diff --git a/security/smack/smack_access.c b/security/smack/smack_access.c
+> index 6a0377f..b598c32 100644
+> --- a/security/smack/smack_access.c
+> +++ b/security/smack/smack_access.c
+> @@ -325,6 +325,25 @@ void smack_log(char *subject_label, char *object_label, int request,
+>  
+>  DEFINE_MUTEX(smack_known_lock);
+>  
+> +struct hlist_head smack_known_hash[SMACK_HASH_SLOTS];
+> +
+> +/**
+> + * smk_insert_entry - insert a smack label into a hash map,
+> + *
+> + * this function must be called under smack_known_lock
+> + */
+> +void smk_insert_entry(struct smack_known *skp)
+> +{
+> +	unsigned int hash;
+> +	struct hlist_head *head;
+> +
+> +	hash = full_name_hash(skp->smk_known, strlen(skp->smk_known));
+> +	head = &smack_known_hash[hash & (SMACK_HASH_SLOTS - 1)];
+> +
+> +	hlist_add_head_rcu(&skp->smk_hashed, head);
+> +	list_add_rcu(&skp->list, &smack_known_list);
+> +}
+> +
+>  /**
+>   * smk_find_entry - find a label on the list, return the list entry
+>   * @string: a text string that might be a Smack label
+> @@ -334,12 +353,17 @@ DEFINE_MUTEX(smack_known_lock);
+>   */
+>  struct smack_known *smk_find_entry(const char *string)
+>  {
+> +	unsigned int hash;
+> +	struct hlist_head *head;
+> +	struct hlist_node *cursor;
+>  	struct smack_known *skp;
+>  
+> -	list_for_each_entry_rcu(skp, &smack_known_list, list) {
+> +	hash = full_name_hash(string, strlen(string));
+> +	head = &smack_known_hash[hash & (SMACK_HASH_SLOTS - 1)];
+> +
+> +	hlist_for_each_entry_rcu(skp, cursor, head, smk_hashed)
+>  		if (strcmp(skp->smk_known, string) == 0)
+>  			return skp;
+> -	}
+>  
+>  	return NULL;
+>  }
+> @@ -475,7 +499,7 @@ struct smack_known *smk_import_entry(const char *string, int len)
+>  		 * Make sure that the entry is actually
+>  		 * filled before putting it on the list.
+>  		 */
+> -		list_add_rcu(&skp->list, &smack_known_list);
+> +		smk_insert_entry(skp);
+>  		goto unlockout;
+>  	}
+>  	/*
+> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+> index 6a08330..6cabca6 100644
+> --- a/security/smack/smack_lsm.c
+> +++ b/security/smack/smack_lsm.c
+> @@ -3868,12 +3868,12 @@ static __init void init_smack_known_list(void)
+>  	/*
+>  	 * Create the known labels list
+>  	 */
+> -	list_add(&smack_known_huh.list, &smack_known_list);
+> -	list_add(&smack_known_hat.list, &smack_known_list);
+> -	list_add(&smack_known_star.list, &smack_known_list);
+> -	list_add(&smack_known_floor.list, &smack_known_list);
+> -	list_add(&smack_known_invalid.list, &smack_known_list);
+> -	list_add(&smack_known_web.list, &smack_known_list);
+> +	smk_insert_entry(&smack_known_huh);
+> +	smk_insert_entry(&smack_known_hat);
+> +	smk_insert_entry(&smack_known_star);
+> +	smk_insert_entry(&smack_known_floor);
+> +	smk_insert_entry(&smack_known_invalid);
+> +	smk_insert_entry(&smack_known_web);
+>  }
+>  
+>  /**
 
-With this patch alone, we would be using boost frequencies even in
-normal cases where we haven't enabled boost.
