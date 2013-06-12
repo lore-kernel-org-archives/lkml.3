@@ -1,57 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab3FLTbv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 15:31:51 -0400
-Received: from [213.199.154.188] ([213.199.154.188]:6110 "EHLO
-	db8outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751411Ab3FLTbt (ORCPT
+	id S1754840Ab3FLTec (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 15:34:32 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48856 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab3FLTeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 15:31:49 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275dhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1155h)
-X-WSS-ID: 0MOAOWA-02-RVU-02
-X-M-MSG: 
-Date: Wed, 12 Jun 2013 14:31:19 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Borislav Petkov <bp@alien8.de>,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 0/2] x86/microcode/amd: early loading fixes
-Message-ID: <20130612193119.GB15934@jshin-Toonie>
-References: <1370658140-5299-1-git-send-email-jacob.shin@amd.com>
+	Wed, 12 Jun 2013 15:34:31 -0400
+Date: Wed, 12 Jun 2013 21:33:58 +0200
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Michal Simek <michal.simek@xilinx.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Dinh Nguyen <dinguyen@altera.com>, Olof Johansson <olof@lixom.net>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH v2 3/3] arm: dt: zynq: Add support for the zed platform
+Message-ID: <20130612193358.GA21585@pengutronix.de>
+References: <1371055268-32337-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1371055268-32337-4-git-send-email-soren.brinkmann@xilinx.com>
+ <20130612182345.GA1656@pengutronix.de>
+ <2433e1d1-7d2e-4b23-a76e-2085e3aef1a6@DB9EHSMHS010.ehs.local>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1370658140-5299-1-git-send-email-jacob.shin@amd.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <2433e1d1-7d2e-4b23-a76e-2085e3aef1a6@DB9EHSMHS010.ehs.local>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 21:27:59 up 354 days, 10:39, 74 users,  load average: 0,59, 0,56,
+ 0,58
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 07, 2013 at 09:22:18PM -0500, Jacob Shin wrote:
-> This patchset addreses two problems with early loading on AMD.
-> 
-> First, feedback from Yinghai that find_ucode_in_initrd() should be
-> marked __init:
->   https://lkml.org/lkml/2013/6/4/695
-> 
-> And second, feedback from Henrique that Intel early loading supports
-> multiple microcode firmware concatenated together, whereas the current
-> AMD implementation lacks this support:
->   https://lkml.org/lkml/2013/5/31/4
-> 
-> V3:
-> * style fix -- reduce multiple if statements into a single one
+On Wed, Jun 12, 2013 at 11:26:34AM -0700, Sören Brinkmann wrote:
+> On Wed, Jun 12, 2013 at 08:23:45PM +0200, Steffen Trumtrar wrote:
+> > On Wed, Jun 12, 2013 at 09:41:08AM -0700, Soren Brinkmann wrote:
+> > > Add a DT fragment for the Zed Zynq platform and a corresponding
+> > > target to the Makefile
+> > > 
+> > > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > > ---
+> > > I used the 'xlnx,...' compat strings since it seems this is what is
+> > > used in the Xilinx and Digilent vendor trees.
+> > > 
+> > > +/include/ "zynq-7000.dtsi"
+> > > +
+> > > +/ {
+> > > +	model = "Zynq Zed Development Board";
+> > > +	compatible = "xlnx,zynq-zed", "xlnx,zynq-7000";
+> > > +
+> > > +	memory {
+> > > +		device_type = "memory";
+> > > +		reg = <0 0x20000000>;
+> > > +	};
+> > > +
+> > > +	chosen {
+> > > +		bootargs = "console=ttyPS1,115200 earlyprintk";
+> > > +	};
+> > > +
+> > > +};
+> > 
+> > Hi!
+> > 
+> > This looks a little bit to basic. No?! Not even an UART?
+> The UART is imported from the common zynq-7000.dtsi.
 
-Hi hpa or Yinghai, just wondering if you had the chance to look at this
-V3 yet.
+Hm, you are actually right, although I think that you shouldn't be.
+It is possible to NOT use the UARTs, isn't it? So, default on for both UARTs is wrong.
 
-Thank you,
+> 
+> > The compatible should include digilent or avnet. Digilent only sells to academic
+> > customers, Avnet doesn't.
+> I don't care at all. So, who makes the decision which one is the correct
+> one? Actually we could even drop the zed specific one completely and go
+> with 'xlnx,zynq-7000' only.
 
+I'm okay with that.
+
+Regards,
+Steffen
+
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
