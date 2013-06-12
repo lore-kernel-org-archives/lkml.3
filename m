@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755704Ab3FLPAR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 11:00:17 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43897 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab3FLPAP (ORCPT
+	id S1756125Ab3FLPGq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 11:06:46 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58808 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751483Ab3FLPGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 11:00:15 -0400
-Message-ID: <51B88CF1.4060708@linutronix.de>
-Date: Wed, 12 Jun 2013 17:00:01 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Wed, 12 Jun 2013 11:06:45 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Subject: Re: [PATCH] dma-mapping: Add BUG_ON for uninitialized dma_ops
+Date: Wed, 12 Jun 2013 17:06:39 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michal Simek <monstr@monstr.eu>,
+        "Linux-Arch" <linux-arch@vger.kernel.org>
+References: <f35c5051a207b0a117f2fff27365d0ea892d1610.1370263476.git.michal.simek@xilinx.com> <51B703D7.8050804@samsung.com> <1370958858.2286.5.camel@dabdike>
+In-Reply-To: <1370958858.2286.5.camel@dabdike>
 MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>, Lee Jones <lee.jones@linaro.org>,
-        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: am335x: TSC & ADC reworking including DT pieces, take 4
-References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de> <20130611142358.GG29135@zurbaran> <20130611160415.GA379@core.coreip.homeip.net> <20130611161506.GK29135@zurbaran> <1565f2fb-7f16-4910-8fa2-cd5700e8986d@email.android.com> <20130611175519.GL29135@zurbaran> <51B877C7.8080001@linutronix.de> <20130612135042.GO29135@zurbaran> <51B87F58.9070000@linutronix.de> <20130612144133.GP29135@zurbaran>
-In-Reply-To: <20130612144133.GP29135@zurbaran>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Message-Id: <201306121706.39368.arnd@arndb.de>
+X-Provags-ID: V02:K0:6hRKbKYtF84mfpmsQWufNnXbSZBZUMP3LW97NRAo/LK
+ CfoUI4lWWBEdNd2uQx0Z7FV3Z7Bd3dd2wcLLyBxJE2ThIWPtFt
+ gwX57f+mtWoSlGZIejLa5G6Px6W2wxDpY6kQZffO0v7uuPLmYi
+ RBMkO9kjVWPqSZ12PUAX8eRhn7zh7+IrLaTuWwiNRuoziSscT1
+ g3C+m3U2ZiCDzbEV1YpdP/QvPw50PeDH+S1yQOYjsJ2R4RHI80
+ DM+WYWY2wXVFGNGjR6fJLUZE9DRv9i1ri07evzdKWlMCoR2FdU
+ NqDRmxxRRockCkkPh10hxpv5oeatJ9xpfHZIEHgBF3KyI0PgeC
+ dn0s5nC6niW4z3J3TCN0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2013 04:41 PM, Samuel Ortiz wrote:
->> This forces me redo a few things and most likely adding it to the
->> iio and input driver to be consistent here.
-> I'm not asking for that. The current MFD code uses regmap fine without
-> the iio and input using it, I don't see why you would have to add regmap
-> support there.
-
-Right. Since no reg-cache is used then this should be fine then.
-
->> Could you please give a reason why using the regmap here is a good
->> thing? I mentioned a few why it is not and why is better to leave it
->> out.
-> Yes, and I'm not convinced obviously. regmap prevents you from open
-> coding your MMIO access, and this is the right approach.
-
-I am not convinced that adding another layer of indirection for doing
-the same thing is a good approach. Pointer chasing _is_ expensive.
-_None_ of the regmap features are used here.
-I would understand if I would re-implement register caching or a
-wrapper across multiple buses but nothing of this is the case.
-The current code even ignores the return value.
-
-So, are we going to convert all drivers to use regmap now?
-
-> Cheers,
-> Samuel.
+On Tuesday 11 June 2013, James Bottomley wrote:
+> Really, no, it's not a good idea at all.  It invites tons of patches
+> littering the code with BUG_ONs where we might possibly get a NULL
+> dereference.  All it does is add extra instructions to a code path for
+> no actual benefit.
 > 
+> If you can answer the question: what more information does the BUG_ON
+> give you than the NULL deref Oops would not? then it might be
+> reasonable.
 
-Sebastian
+The question is if a user can trigger the NULL dereference intentionally,
+in which case they might get the kernel to jump into a  user-provided
+buffer.
+
+	Arnd
