@@ -1,123 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758087Ab3FLVXQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 17:23:16 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:33456 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755695Ab3FLVXO (ORCPT
+	id S1758080Ab3FLV1G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 17:27:06 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:39187 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751890Ab3FLV1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 17:23:14 -0400
-Date: Wed, 12 Jun 2013 23:23:10 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 07/12] PCI: tegra: Move PCIe driver to drivers/pci/host
-Message-ID: <20130612212308.GA27681@manwe>
-References: <1365000318-28256-1-git-send-email-thierry.reding@avionic-design.de>
- <1365000318-28256-8-git-send-email-thierry.reding@avionic-design.de>
- <516C46BC.2040707@wwwdotorg.org>
- <20130612122959.GA32444@manwe>
- <51B89D26.9070605@wwwdotorg.org>
+	Wed, 12 Jun 2013 17:27:05 -0400
+From: Nix <nix@esperi.org.uk>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, NFS list <linux-nfs@vger.kernel.org>
+Subject: Re: NFS/lazy-umount/path-lookup-related panics at shutdown (at kill of processes on lazy-umounted filesystems) with 3.9.2 and 3.9.5
+References: <871u89vp46.fsf@spindle.srvr.nix>
+	<20130612012304.GF4165@ZenIV.linux.org.uk>
+	<87k3lzpm4l.fsf@spindle.srvr.nix>
+	<20130612155419.GG4165@ZenIV.linux.org.uk>
+Emacs: don't cry -- it won't help.
+Date: Wed, 12 Jun 2013 22:27:01 +0100
+In-Reply-To: <20130612155419.GG4165@ZenIV.linux.org.uk> (Al Viro's message of
+	"Wed, 12 Jun 2013 16:54:19 +0100")
+Message-ID: <877ghzow9m.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="k+w/mQv8wyuph6w0"
-Content-Disposition: inline
-In-Reply-To: <51B89D26.9070605@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-DCC-INFN-TO-Metrics: spindle 1233; Body=3 Fuz1=3 Fuz2=3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12 Jun 2013, Al Viro outgrape:
 
---k+w/mQv8wyuph6w0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Wed, Jun 12, 2013 at 01:08:26PM +0100, Nix wrote:
+>
+>> At this point, we have a sibcall to call_connect() I think. The RPC task
+>> of discourse happens to be local, and as the relevant comment says
+>> 
+>> 		 * We want the AF_LOCAL connect to be resolved in the
+>> 		 * filesystem namespace of the process making the rpc
+>> 		 * call.  Thus we connect synchronously.
+>> 
+>> Probably this should be doing this only if said namespace isn't
+>> disconnected and going away...
+>
+> Namespace, shnamespace...  In this case the namespace is alive and well,
+> it's just that the process is getting killed and it's already past the
+> point where it has discarded all references to root/cwd.
 
-On Wed, Jun 12, 2013 at 10:09:10AM -0600, Stephen Warren wrote:
-> On 06/12/2013 06:30 AM, Thierry Reding wrote:
-> > On Mon, Apr 15, 2013 at 12:28:12PM -0600, Stephen Warren wrote:
-> >> On 04/03/2013 08:45 AM, Thierry Reding wrote:
-> >>> Move the PCIe driver from arch/arm/mach-tegra into the
-> >>> drivers/pci/host directory. The motivation is to collect
-> >>> various host controller drivers in the same location in order
-> >>> to facilitate refactoring.
-> >>>=20
-> >>> The Tegra PCIe driver has been largely rewritten, both in order
-> >>> to turn it into a proper platform driver and to add MSI (based
-> >>> on code by Krishna Kishore <kthota@nvidia.com>) as well as
-> >>> device tree support.
-> ...
-> >>> +static irqreturn_t tegra_pcie_msi_irq(int irq, void *data)
-> >> ...
-> >>> +	return IRQ_HANDLED;
-> >>=20
-> >> Shouldn't this function return IRQ_NONE if no MSI status bits
-> >> were found set?
-> >=20
-> > The IRQ isn't marked IRQF_SHARED, so I don't think this is needed.
->=20
-> Isn't it still useful to detect unexpected/stuck interrupts?
+Yeah.
 
-Yes, you're right. I can't think of a nicer way to do it, though, so
-I'll go with a processed IRQ counter or a flag.
+>> > Why is it done in essentially random process context, anyway?  There's such thing
+>> > as chroot, after all, which would screw that sucker as hard as NULL ->fs, but in
+>> > a less visible way...
+>> 
+>> I don't think it is a random process context. It's all intentionally
+>> done in the context of the process which is the last to close that
+>> filesystem, as part of the process of tearing it down -- but it looks
+>> like the NFS svcrpc connection code isn't expecting to be called in that
+>> situation.
+>
+> _What_?  Suppose we have something mounted on /jail/net/foo/bar; will the
+> effect of process chrooted into /jail doing umount /net/foo/bar be different
+> from that of process outside of the jail doing umount /jail/net/foo/bar?
 
-> >>> +static int tegra_pcie_probe(struct platform_device *pdev)
-> >> ...
-> >>> +	pcibios_min_mem =3D 0;
-> >>=20
-> >> What does that mean/do? I wonder if that should be set to
-> >> 0x80000000 by the Tegra30 patches?
-> >=20
-> > ARM defines PCIBIOS_MIN_MEM to that variable. That macro in turn is
-> > only used by pci_bus_alloc_resource() AFAICT, which uses it to
-> > override the start of a resource when allocating if res->start =3D=3D
-> > 0. As such it designates a lower-bound of valid PCI memory
-> > addresses, so 0 on Tegra20 and 0x80000000 on Tegra30 don't seem
-> > like good values. Maybe we need to set them to the lowest of the
-> > prefetchable and non-prefetchable memory areas as defined in the
-> > DT?
-> >=20
-> > It doesn't currently seem to matter at all, though, since we never
-> > pass in a range that's 0, so the start address of resources can
-> > never be 0 and therefore PCIBIOS_MIN_MEM is never used.
->=20
-> Hmmm. I guess ignore it then. If the value won't ever be used, 0 is as
-> good a value as any?
+Correction: that comment suggests that it was intentionally done. I
+didn't write the comment and I make no judgement on whether it makes
+sense or not (it looks like it would *normally* make sense, but I guess
+nobody thought of the case of a connection being done as part of
+disconnection after the cwd is gone).
 
-Alright, I'll do that then.
+I'm just the guy getting bitten by the resulting oops :)
 
-Thierry
-
---k+w/mQv8wyuph6w0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRuOa8AAoJEN0jrNd/PrOh+bkP/jn3lGBiGbjNi027XeevREsp
-DkwcxH4QnBbAUP+pGCm319oquZuLiptR865uEx60r02QC2N+HpWBVtd/zcjfGs+x
-drQZ4SrEO53ZqSuWHxu1hZvWE2U1cmr6FfchKOD6KXhaURr8g4rlMQClu7fuGsgL
-22TD9m40R/0LasWk54/oYuFH+H1A/06dTiHYABgQGCK2YpXK/iyo4gAWqPgmuufU
-4VdTZLnmi50lGQqjOrMG4rdwI0FbKqut0c2eejXm5PgPEkUfG/OkryvIjmfR7IKw
-EKBolfOC1g6Uk0kRKSF4bOGhrHKN7sPyZRVzaMisAXpddlhb/ehsprrfM+J9BDfk
-sluOcOJsrCXinuSudHsTHlKbc5hP+cjkgOKqI1mmkGIKl34BBSvycThoi+kVj8rw
-LK3MyWK3xo3nG9Jinmdc3UaWLnZ+gCSbOOh1mSNtx9kx+u3ALAENJS0XwN71njoK
-BZB6JuM/jBn4nQ7+avMMB1D3BFx4KPy4vQvs0Usd1v+eqNjMkSOvXzCCMso8Idv3
-mheOhkI1PFhhZvHSfZ2SkG+pClA84vBqd+CJ5nXMfz4z5EYslV6//BgoWCKyXklN
-4cOI+1Ef05egOfYAAcNy4MvOmtedtuQih1I7NnqttTwYcxSePh4P/gXBrlEtBLcj
-mpF1VcqVjw32JldQNaCt
-=lrtv
------END PGP SIGNATURE-----
-
---k+w/mQv8wyuph6w0--
+-- 
+NULL && (void)
