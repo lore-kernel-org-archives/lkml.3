@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab3FLLgz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 07:36:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32441 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750878Ab3FLLgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 07:36:54 -0400
-Message-ID: <51B85E26.8000303@redhat.com>
-Date: Wed, 12 Jun 2013 07:40:22 -0400
-From: Brian Foster <bfoster@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1756504Ab3FLLiB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 07:38:01 -0400
+Received: from mail-db8lp0188.outbound.messaging.microsoft.com ([213.199.154.188]:51464
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756319Ab3FLLh7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 07:37:59 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Wed, 12 Jun 2013 19:38:18 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: <rjw@sisk.pl>, <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
+        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <robin.randhawa@arm.com>,
+        <Steve.Bannister@arm.com>, <Liviu.Dudau@arm.com>,
+        <charles.garcia-tobin@arm.com>, <arvind.chauhan@arm.com>,
+        <arnd@arndb.de>
+Subject: Re: [PATCH 06/11] cpufreq: imx: select CPU_FREQ_TABLE
+Message-ID: <20130612113817.GC13274@S2101-09.ap.freescale.net>
+References: <cover.1371022830.git.viresh.kumar@linaro.org>
+ <7568bf22f9e40425bb0fe86cd6f44c4dc2d0c7c5.1371022830.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-To: Maxim Patlasov <MPatlasov@parallels.com>
-CC: miklos@szeredi.hu, fuse-devel@lists.sourceforge.net, avati@redhat.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH] fuse: hold i_mutex in fuse_file_fallocate()
-References: <20130611105714.24455.38409.stgit@maximpc.sw.ru>
-In-Reply-To: <20130611105714.24455.38409.stgit@maximpc.sw.ru>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <7568bf22f9e40425bb0fe86cd6f44c4dc2d0c7c5.1371022830.git.viresh.kumar@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2013 06:59 AM, Maxim Patlasov wrote:
-> Changing size of a file on server and local update (fuse_write_update_size)
-> should be always protected by inode->i_mutex. Otherwise a race like this is
-> possible:
+On Wed, Jun 12, 2013 at 01:45:13PM +0530, Viresh Kumar wrote:
+> CPUFreq driver of this platform uses APIs from freq_table.c and so must select
+> CPU_FREQ_TABLE.
 > 
-> 1. Process 'A' calls fallocate(2) to extend file (~FALLOC_FL_KEEP_SIZE).
-> fuse_file_fallocate() sends FUSE_FALLOCATE request to the server.
-> 2. Process 'B' performs ordinary buffered write(2) with a length big enough
-> to extend the file beyond "offset + length" of fallocate call.
-> 3. Process 'A' resumes execution of fuse_file_fallocate() and calls
-> fuse_write_update_size(inode, offset + length). But 'offset + length' was
-> obsoleted by write from previous step.
-> 
+> Cc: Shawn Guo <shawn.guo@linaro.org>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Hi Maxim,
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
-Doesn't fuse_write_update_size() already handle this particular case by
-only ever extending the size?
-
-Brian
-
-> Signed-off-by: Maxim V. Patlasov <MPatlasov@parallels.com>
 > ---
->  fs/fuse/file.c |   10 ++++++----
->  1 files changed, 6 insertions(+), 4 deletions(-)
+>  drivers/cpufreq/Kconfig.arm | 1 +
+>  1 file changed, 1 insertion(+)
 > 
-> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-> index e570081..8dfbf7d 100644
-> --- a/fs/fuse/file.c
-> +++ b/fs/fuse/file.c
-> @@ -2470,14 +2470,16 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
->  		.mode = mode
->  	};
->  	int err;
-> +	bool lock_inode = !(mode & FALLOC_FL_KEEP_SIZE) ||
-> +			   (mode & FALLOC_FL_PUNCH_HOLE);
+> diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+> index 891dd1c..dc26303 100644
+> --- a/drivers/cpufreq/Kconfig.arm
+> +++ b/drivers/cpufreq/Kconfig.arm
+> @@ -72,6 +72,7 @@ config ARM_IMX6Q_CPUFREQ
+>  	tristate "Freescale i.MX6Q cpufreq support"
+>  	depends on SOC_IMX6Q
+>  	depends on REGULATOR_ANATOP
+> +	select CPU_FREQ_TABLE
+>  	help
+>  	  This adds cpufreq driver support for Freescale i.MX6Q SOC.
 >  
->  	if (fc->no_fallocate)
->  		return -EOPNOTSUPP;
->  
-> -	if (mode & FALLOC_FL_PUNCH_HOLE) {
-> +	if (lock_inode)
->  		mutex_lock(&inode->i_mutex);
-> +	if (mode & FALLOC_FL_PUNCH_HOLE)
->  		fuse_set_nowrite(inode);
-> -	}
->  
->  	req = fuse_get_req_nopages(fc);
->  	if (IS_ERR(req)) {
-> @@ -2511,10 +2513,10 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
->  	fuse_invalidate_attr(inode);
->  
->  out:
-> -	if (mode & FALLOC_FL_PUNCH_HOLE) {
-> +	if (mode & FALLOC_FL_PUNCH_HOLE)
->  		fuse_release_nowrite(inode);
-> +	if (lock_inode)
->  		mutex_unlock(&inode->i_mutex);
-> -	}
->  
->  	return err;
->  }
+> -- 
+> 1.7.12.rc2.18.g61b472e
 > 
 
