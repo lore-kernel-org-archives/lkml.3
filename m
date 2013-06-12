@@ -1,97 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751706Ab3FLJfE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 05:35:04 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:45251 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876Ab3FLJfB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 05:35:01 -0400
-Message-ID: <51B840C0.7070608@gmail.com>
-Date: Wed, 12 Jun 2013 11:34:56 +0200
-From: Juri Lelli <juri.lelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752157Ab3FLJl4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 05:41:56 -0400
+Received: from mga03.intel.com ([143.182.124.21]:33009 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750876Ab3FLJlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 05:41:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,851,1363158000"; 
+   d="scan'208";a="315781162"
+Date: Wed, 12 Jun 2013 14:32:02 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        spear-devel <spear-devel@list.st.com>, Arnd Bergmann <arnd@arndb.de>,
+        Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH v2 2/4] dma: move dw_dmac driver to an own directory
+Message-ID: <20130612090202.GM4107@intel.com>
+References: <20130612050829.GB4107@intel.com>
+ <CAHp75Ver2xo2f9crQZkAmJcTF=5cZZa3NgvufPqQW3+uTXffJA@mail.gmail.com>
+ <20130612073806.GG4107@intel.com>
+ <CAHp75VfsSDdLa_uPULbhVGproxnD5mofYm62O75y4xRbPBJ7pQ@mail.gmail.com>
+ <20130612075225.GI4107@intel.com>
+ <CAHp75Vc=hO_FF0WMvhPm6MMRuCb+=MhOEOCSYb_TaCRf-xQ=sg@mail.gmail.com>
+ <20130612081202.GK4107@intel.com>
+ <CAKohpok8jyUF33hatMJzLwokHM2Ou=N8rHQ4oQ5xQ2AiSSN__w@mail.gmail.com>
+ <20130612081917.GL4107@intel.com>
+ <CAHp75VdKsMgdZcA72-eJZWV1cyc+Xkskrpr0i_QBMOZtV6tpeg@mail.gmail.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
-        Chase Douglas <chase.douglas@canonical.com>
-Subject: Re: [PATCH 3/3] ftrace: fix stddev calculation
-References: <1370941728-15456-1-git-send-email-juri.lelli@gmail.com>  <1370941728-15456-4-git-send-email-juri.lelli@gmail.com> <1371006559.9844.250.camel@gandalf.local.home>
-In-Reply-To: <1371006559.9844.250.camel@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHp75VdKsMgdZcA72-eJZWV1cyc+Xkskrpr0i_QBMOZtV6tpeg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2013 05:09 AM, Steven Rostedt wrote:
-> On Tue, 2013-06-11 at 11:08 +0200, Juri Lelli wrote:
->> When FUNCTION_GRAPH_TRACER is enabled, ftrace can profile kernel functions
->> and print basic statistics about them. Unfortunately, running stddev
->> calculation is wrong. This patch corrects it implementing Welford’s method:
->>
->>          s^2 = 1 / (n * (n-1)) * (n * \Sum (x_i)^2 - (\Sum x_i)^2) .
->
-> Looking at this further, we only need this fix. We don't need the other
-> two patches, as that's just verifying the algorithm, and not something
-> we need to do for run time tests. The run time tests is to test
-> functionality, not calculations that can be done out of the kernel.
->
-> Can you resubmit with just this change. And add the above line as a
-> comment below.
->
+On Wed, Jun 12, 2013 at 12:07:24PM +0300, Andy Shevchenko wrote:
+> On Wed, Jun 12, 2013 at 11:19 AM, Vinod Koul <vinod.koul@intel.com> wrote:
+> > On Wed, Jun 12, 2013 at 02:23:39PM +0530, Viresh Kumar wrote:
+> >> On 12 June 2013 13:42, Vinod Koul <vinod.koul@intel.com> wrote:
+> >>
+> >> > Never mind, am applying your patches and below fix, let me if you guys are okay
+Also, please ensure you _run_ checkpatch. There were few trvial errors in this.
+I have fixed them up before applying
 
-Sure! No problem.
+> >> This information was useful to understand this config option and must
+> >> be kept in some way.
+> > Well now the config option is not selected by users, so they dont need to know.
+> > It was useful in knowing what to select earlier
+> >
+> > For documenting, we can add this in commit log or better in driver code where
+> > you use this
+> 
+> The driver is better place if you decide to move it (drivers/dma/dw/regs.h).
+Okay here it is:
 
->>
->> Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
->> Cc: Steven Rostedt <rostedt@goodmis.org>
->> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->> Cc: Ingo Molnar <mingo@redhat.com>
->> ---
->>   kernel/trace/ftrace.c |    8 ++++++--
->>   1 file changed, 6 insertions(+), 2 deletions(-)
->>
->> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
->> index 6caaa0e..073a328 100644
->> --- a/kernel/trace/ftrace.c
->> +++ b/kernel/trace/ftrace.c
->> @@ -593,13 +593,17 @@ void function_stat_calc(struct ftrace_profile *rec,
->>   	if (rec->counter <= 1)
->>   		*stddev = 0;
->>   	else {
->> -		*stddev = rec->time_squared - rec->counter * (*avg) * (*avg);
->> +		/*
->> +		 * Apply Welford's method.
->
-> Welford's method is not well known. Please add:
->
-> 		* s^2 = 1 / (n * (n-1)) * (n * \Sum (x_i)^2 - (\Sum x_i)^2)
->
 
-Ok.
+diff --git a/drivers/dma/dw/Kconfig b/drivers/dma/dw/Kconfig
+index db2b41f..7be1cf8 100644
+--- a/drivers/dma/dw/Kconfig
++++ b/drivers/dma/dw/Kconfig
+@@ -10,6 +10,7 @@ config DW_DMAC_CORE
+ config DW_DMAC
+ 	tristate "Synopsys DesignWare AHB DMA platform driver"
+ 	select DW_DMAC_CORE
++	select DW_DMAC_BIG_ENDIAN_IO if ARCH=AVR32
+ 	default y if CPU_AT32AP7000
+ 	help
+ 	  Support the Synopsys DesignWare AHB DMA controller. This
+@@ -25,12 +26,4 @@ config DW_DMAC_PCI
+ 	  Intel Medfield has integrated this GPDMA controller.
+ 
+ config DW_DMAC_BIG_ENDIAN_IO
+-	bool "Use big endian I/O register access"
+-	default y if AVR32
+-	depends on DW_DMAC_CORE
+-	help
+-	  Say yes here to use big endian I/O access when reading and writing
+-	  to the DMA controller registers. This is needed on some platforms,
+-	  like the Atmel AVR32 architecture.
+-
+-	  If unsure, use the default setting.
++	bool
+diff --git a/drivers/dma/dw/regs.h b/drivers/dma/dw/regs.h
+index 07c5a6e..deb4274 100644
+--- a/drivers/dma/dw/regs.h
++++ b/drivers/dma/dw/regs.h
+@@ -101,6 +101,12 @@ struct dw_dma_regs {
+ 	u32	DW_PARAMS;
+ };
+ 
++/*
++ * Big endian I/O access when reading and writing to the DMA controller
++ * registers.  This is needed on some platforms, like the Atmel AVR32
++ * architecture.
++ */
++
+ #ifdef CONFIG_DW_DMAC_BIG_ENDIAN_IO
+ #define dma_readl_native ioread32be
+ #define dma_writel_native iowrite32be
 
-BTW, it is in general more interesting to look at distributions before
-doing averages and std devs (one can miss multimodal distributions, etc.).
-Is there any lightweight way to get single duration values of functions?
-I mean, apart from parsing function graph trace off-line.
-
-Thanks,
-
-- Juri
-
->> +		 */
->> +		*stddev = rec->counter * rec->time_squared -
->> +			  rec->time * rec->time;
->>
->>   		/*
->>   		 * Divide only 1000 for ns^2 -> us^2 conversion.
->>   		 * trace_print_graph_duration will divide 1000 again.
->>   		 */
->> -		do_div(*stddev, (rec->counter - 1) * 1000);
->> +		do_div(*stddev, rec->counter * (rec->counter - 1) * 1000);
->>   	}
->>   }
->>
->
->
+--
+~Vinod
