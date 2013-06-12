@@ -1,101 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab3FLN4h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 09:56:37 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:34868 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753181Ab3FLN4f (ORCPT
+	id S1755791Ab3FLOCQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 10:02:16 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43602 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753954Ab3FLOCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 09:56:35 -0400
-Message-ID: <51B87E0D.8040009@cogentembedded.com>
-Date: Wed, 12 Jun 2013 17:56:29 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Wed, 12 Jun 2013 10:02:14 -0400
+Message-ID: <51B87F58.9070000@linutronix.de>
+Date: Wed, 12 Jun 2013 16:02:00 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Roopa Prabhu <roprabhu@cisco.com>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Subject: Re: [PATCH net] macvlan: don't touch promisc without passthrough
-References: <1371035949-29471-1-git-send-email-mst@redhat.com>
-In-Reply-To: <1371035949-29471-1-git-send-email-mst@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: Jonathan Cameron <jic23@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>, Lee Jones <lee.jones@linaro.org>,
+        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-iio@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: am335x: TSC & ADC reworking including DT pieces, take 4
+References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de> <20130611142358.GG29135@zurbaran> <20130611160415.GA379@core.coreip.homeip.net> <20130611161506.GK29135@zurbaran> <1565f2fb-7f16-4910-8fa2-cd5700e8986d@email.android.com> <20130611175519.GL29135@zurbaran> <51B877C7.8080001@linutronix.de> <20130612135042.GO29135@zurbaran>
+In-Reply-To: <20130612135042.GO29135@zurbaran>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 06/12/2013 03:50 PM, Samuel Ortiz wrote:
+> Hi Sebastian,
 
-On 12-06-2013 15:34, Michael S. Tsirkin wrote:
+Hi Samuel,
 
-> commit df8ef8f3aaa6692970a436204c4429210addb23a in linux 3.5 added a way
+>> By keep the regmap code you mean I am allowed to remove the regmap
+>> usage in mfd (keep patch #1) or do you insist on adding its usage in
+>> iio and input?
+> I insist on keeping it on the MFD driver, i.e. _not_ keeping patch #1.
 
-    Please also specify that commit's summary line in parens.
+This forces me redo a few things and most likely adding it to the
+iio and input driver to be consistent here.
 
-> to control NOPROMISC macvlan flag through netlink.
+Could you please give a reason why using the regmap here is a good
+thing? I mentioned a few why it is not and why is better to leave it
+out.
 
-> However, with a non passthrough device we don't set promisc on open or
-> clear it on stop, even if NOPROMISC is off.  As a result:
+> Cheers,
+> Samuel.
 
-> If userspace clears NOPROMISC on open, then does not clear it on a
-> netlink command, promisc counter is not decremented on stop and there
-> will be no way to clear it once macvlan is detached.
-
-> If userspace does not clear NOPROMISC on open, then sets NOPROMISC on a
-> netlink command, promisc counter will be decremented from 0 and overflow
-> to fffffffff with no way to clear promisc afterwards.
-
-> To fix, simply ignore NOPROMISC flag in a netlink command for
-> non-passthrough devices, same as we do at open/stop.
-
-> While at it - since we touch this code anyway - check
-> dev_set_promiscuity return code and pass it to users (though an error
-> here is unlikely).
-
-> Cc: "David S. Miller" <davem@davemloft.net>
-> CC: Roopa Prabhu <roprabhu@cisco.com>
-> Cc: John Fastabend <john.r.fastabend@intel.com>
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
-
-> Please review, and consider for 3.10 and -stable.
-
->   drivers/net/macvlan.c | 19 ++++++++++++-------
->   1 file changed, 12 insertions(+), 7 deletions(-)
-
-> diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-> index 1c502bb..8812402 100644
-> --- a/drivers/net/macvlan.c
-> +++ b/drivers/net/macvlan.c
-> @@ -853,18 +853,23 @@ static int macvlan_changelink(struct net_device *dev,
->   		struct nlattr *tb[], struct nlattr *data[])
->   {
->   	struct macvlan_dev *vlan = netdev_priv(dev);
-> -	if (data && data[IFLA_MACVLAN_MODE])
-> -		vlan->mode = nla_get_u32(data[IFLA_MACVLAN_MODE]);
-> +
->   	if (data && data[IFLA_MACVLAN_FLAGS]) {
->   		__u16 flags = nla_get_u16(data[IFLA_MACVLAN_FLAGS]);
->   		bool promisc = (flags ^ vlan->flags) & MACVLAN_FLAG_NOPROMISC;
-> -
-> -		if (promisc && (flags & MACVLAN_FLAG_NOPROMISC))
-> -			dev_set_promiscuity(vlan->lowerdev, -1);
-> -		else if (promisc && !(flags & MACVLAN_FLAG_NOPROMISC))
-> -			dev_set_promiscuity(vlan->lowerdev, 1);
-> +		if (vlan->port->passthru && promisc) {
-> +			int err;
-
-    Emoty line, like you did abobe, wouldn't hurt here, after declaration.
-
-> +			if (flags & MACVLAN_FLAG_NOPROMISC)
-> +				err = dev_set_promiscuity(vlan->lowerdev, -1);
-> +			else
-> +				err = dev_set_promiscuity(vlan->lowerdev, 1);
-> +			if (err < 0)
-> +				return err;
-> +		}
-
-WBR, Sergei
-
+Sebastian
