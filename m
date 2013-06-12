@@ -1,83 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757681Ab3FLBQT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 21:16:19 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:52815 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754235Ab3FLBQS convert rfc822-to-8bit (ORCPT
+	id S1757669Ab3FLBRS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 21:17:18 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:44856 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754235Ab3FLBRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 21:16:18 -0400
-X-AuditID: cbfee68d-b7f096d0000043fc-2d-51b7cbe0efc8
-From: Seungwon Jeon <tgih.jun@samsung.com>
-To: "=?UTF-8?Q?'Heiko_St=C3=BCbner'?=" <heiko@sntech.de>,
-        linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, "'Mike Turquette'" <mturquette@linaro.org>,
-        "'Jaehoon Chung'" <jh80.chung@samsung.com>,
-        "'Chris Ball'" <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        "'Grant Likely'" <grant.likely@linaro.org>,
-        "'Rob Herring'" <rob.herring@calxeda.com>,
-        "'Linus Walleij'" <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Arnd Bergmann'" <arnd@arndb.de>, "'Olof Johansson'" <olof@lixom.net>,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        "'Andy Shevchenko'" <andy.shevchenko@gmail.com>
-References: <201306111328.52679.heiko@sntech.de>
- <201306111330.28759.heiko@sntech.de>
-In-reply-to: <201306111330.28759.heiko@sntech.de>
-Subject: RE: [PATCH v3 3/7] mmc: dw_mmc-pltfm: move probe and remove below dt
- match table
-Date: Wed, 12 Jun 2013 10:16:15 +0900
-Message-id: <000901ce670a$6f96a2c0$4ec3e840$%jun@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac5mly9NIa8kgW8ARzasDJ60btVztwAB8vcw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKKsWRmVeSWpSXmKPExsVy+t8zI90Hp7cHGmy8rWDxcsJhRou/k46x
-	W2x/vZHN4sDsh6wWB/7sYLT4/+g1q8WNX22sFlP+LGey2PT4GqvF5V1z2CyO/O9ntLh9mdfi
-	6YSLbBanrn9mszi84gCTxdMHTUwOAh4tzT1sHr9/TWL0WPD5CrvHk00XGT12zrrL7nHoylpG
-	jzvX9rB5bF5S73F+xkJGjysnmlg9+rasYvTYfm0es8fnTXIBvFFcNimpOZllqUX6dglcGQ+v
-	rWcueMJU0XG8soFxAVMXIyeHhICJxILr51kgbDGJC/fWs3UxcnEICSxjlNi35j0zTNG79W9Y
-	IBKLGCUWLLgOVfWHUWLn57VsIFVsAloSf9+8AesQEYiT+D9vPjtIEbPADhaJK1t+sIIkhATC
-	JSYtfcwIYnMKGEpc+bIWzBYWiJaY+XsamM0ioCrx7OlcsHpeAVuJs8f2skHYghI/Jt8Du5VZ
-	QF1i0rxFzBC2tsSTdxeA6jmATlWXePRXF+IGI4lJ+ydAlYtI7HvxjhHkHgmBJxwSN2e2s0Hs
-	EpD4NvkQC0SvrMSmA1AfS0ocXHGDZQKjxCwkm2ch2TwLyeZZSFYsYGRZxSiaWpBcUJyUXmSo
-	V5yYW1yal66XnJ+7iRGSZHp3MN4+YH2IMRlo/URmKdHkfGCSyiuJNzQ2M7IwNTE1NjK3NCNN
-	WEmcV63FOlBIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDY9yzjRoyDFs3v7h4dOFhRp37NdlT
-	tGs+7Zkc4RamKVdnm7hatv6IcvoF+U31HWE7yjaZtfVwrZBOOTMxZ4n6XO54v0/tezbG+rA9
-	dk95YX6moJ6TZ9OBlapCzkKtNmJPSo67V6r9OqKtnt99N4fnhN1vt+M6T2rma5z6EXu357/4
-	xusLA7NuKrEUZyQaajEXFScCABKRYnxIAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEJsWRmVeSWpSXmKPExsVy+t9jAd0Hp7cHGtw/Im3xcsJhRou/k46x
-	W2x/vZHN4sDsh6wWB/7sYLT4/+g1q8WNX22sFlP+LGey2PT4GqvF5V1z2CyO/O9ntLh9mdfi
-	6YSLbBanrn9mszi84gCTxdMHTUwOAh4tzT1sHr9/TWL0WPD5CrvHk00XGT12zrrL7nHoylpG
-	jzvX9rB5bF5S73F+xkJGjysnmlg9+rasYvTYfm0es8fnTXIBvFENjDYZqYkpqUUKqXnJ+SmZ
-	eem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QK8pKZQl5pQChQISi4uV9O0wTQgN
-	cdO1gGmM0PUNCYLrMTJAAwnrGDMeXlvPXPCEqaLjeGUD4wKmLkZODgkBE4l369+wQNhiEhfu
-	rWfrYuTiEBJYxCixYMF1KOcPo8TOz2vZQKrYBLQk/r55wwxiiwjESfyfN58dpIhZYAeLxJUt
-	P1hBEkIC4RKTlj5mBLE5BQwlrnxZC2YLC0RLzPw9DcxmEVCVePZ0Llg9r4CtxNlje9kgbEGJ
-	H5PvgZ3ELKAuMWneImYIW1viybsLQPUcQKeqSzz6qwtxg5HEpP0ToMpFJPa9eMc4gVFoFpJJ
-	s5BMmoVk0iwkLQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBKewZ1I7GFc2WBxiFOBg
-	VOLhPWC2PVCINbGsuDL3EKMEB7OSCK9uLlCINyWxsiq1KD++qDQntfgQYzLQoxOZpUST84Hp
-	Na8k3tDYxMzI0sjMwsjE3Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGE8nH/htJ8J5
-	R7308/qI/P9nv4tv2W0rtq+s0/zDs75nG8xOdfz51+wVtaK/19XEzMVHmlmAmeFp3ZasbWsj
-	5dmeL1XMrrkoX712i8neN5pKq4/Krmqr9lvGIcVoksGvKnD605EDLS0GlzQFneT3rdrn42K/
-	gc2T6yvLq/gH4oKTTs3q2ht5S4mlOCPRUIu5qDgRAIlH2lClAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 11 Jun 2013 21:17:16 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Raphael S. Carvalho" <raphael.scarv@gmail.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-kernel@vger.kernel.org
+References: <1370901398-8989-1-git-send-email-raphael.scarv@gmail.com>
+	<20130611154518.fda9262961c21e96a57cbd5e@linux-foundation.org>
+Date: Tue, 11 Jun 2013 18:16:50 -0700
+In-Reply-To: <20130611154518.fda9262961c21e96a57cbd5e@linux-foundation.org>
+	(Andrew Morton's message of "Tue, 11 Jun 2013 15:45:18 -0700")
+Message-ID: <8761xkt9fh.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX195bEgPjJS3FgQtc8fB2YE+RSN7/hgwWd8=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Andrew Morton <akpm@linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 1/1] kernel/pid.c: Masking the flag out to get the actual value.
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/13 2013 8:30 PM Heiko Stübner wrote:
-> In a subsquent patch probe will need to do some handling of data from
-> the dt match table. So to prevent the need for forward declarations,
-> move probe and remove below the match table.
-> 
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Andrew Morton <akpm@linux-foundation.org> writes:
 
-Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
+> On Mon, 10 Jun 2013 18:56:38 -0300 "Raphael S. Carvalho" <raphael.scarv@gmail.com> wrote:
+>
+>> This patch shouldn't be applied if those branches must only be taken when
+>> the pid_allocation(PIDNS_HASH_ADDING) flag was turned off.
 
+That is correct.  We should not encounter the last pid in the pid
+namespace while still allowing processes to be created in the pid
+namespace.
+
+So the patch I am seeing quoted below is unnecessary.
+
+> Well yes - hopefully this is the case.  Otherwise we're missing some
+> rather important-looking wakeups.
+>
+>
+>> Otherwise, we must turn the PIDNS_HASH_ADDING flag (1U << 31) off
+>> before getting into the switch-cases.
+>> 
+>> ...
+>>
+>> --- a/kernel/pid.c
+>> +++ b/kernel/pid.c
+>> @@ -263,7 +263,10 @@ void free_pid(struct pid *pid)
+>>  		struct upid *upid = pid->numbers + i;
+>>  		struct pid_namespace *ns = upid->ns;
+>>  		hlist_del_rcu(&upid->pid_chain);
+>> -		switch(--ns->nr_hashed) {
+>> +
+>> +		/* We must turn the PIDNS_HASH_ADDING flag off to
+>> +		   get the actual value of nr_hashed */
+>> +		switch ((--ns->nr_hashed) & ~(PIDNS_HASH_ADDING)) {
+>>  		case 1:
+>>  			/* When all that is left in the pid namespace
+>>  			 * is the reaper wake up the reaper.  The reaper
+>
+> Eric, can you please take a look?  Presumably and hopefully
+> PIDNS_HASH_ADDING cannot be set here, but what guarantees this?
+
+The init process has not exited, and called zap_pid_ns_processes.
+
+In fact there is a case where nr_hashed can be 0 | PIDNS_HASH_ADDING
+where we absolutely don't want to do these things.   Of course there
+are no pids allocated in that case to free so we can't possible get 
+to the switch in free pid either.
+
+> Hopefully we can fix this one by adding the missing comment.
+
+Perhaps we can fix this one by having people who care read the code and 
+think about what it means?  Seriously if we are adding pids/processes in
+the pid namespace why would to clean up the pid namespace?
+
+Eric
 
