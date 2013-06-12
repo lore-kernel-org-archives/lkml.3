@@ -1,296 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755905Ab3FLMaH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 08:30:07 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:58951 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752420Ab3FLMaE (ORCPT
+	id S1756365Ab3FLMbG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 08:31:06 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:44706 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752420Ab3FLMbD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 08:30:04 -0400
-Date: Wed, 12 Jun 2013 14:30:00 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 07/12] PCI: tegra: Move PCIe driver to drivers/pci/host
-Message-ID: <20130612122959.GA32444@manwe>
-References: <1365000318-28256-1-git-send-email-thierry.reding@avionic-design.de>
- <1365000318-28256-8-git-send-email-thierry.reding@avionic-design.de>
- <516C46BC.2040707@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bp/iNruPH9dso1Pn"
-Content-Disposition: inline
-In-Reply-To: <516C46BC.2040707@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 12 Jun 2013 08:31:03 -0400
+X-AuditID: cbfee61a-b7f3b6d000006edd-f1-51b86a0539a6
+Date: Wed, 12 Jun 2013 14:30:15 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH v2 1/3] cpufreq:boost: CPU frequency boost code unification
+ for software and hardware solutions
+Message-id: <20130612143015.0c86c761@amdc308.digital.local>
+In-reply-to: <CAKohpongMVUybmUUh1t+iHYV+=AHA7X=5Cdb66k_o6poiY-2+g@mail.gmail.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1370941408-29304-1-git-send-email-l.majewski@samsung.com>
+ <1370941408-29304-2-git-send-email-l.majewski@samsung.com>
+ <CAKohpomD1ru3_nqQkUq8EmMjJzR7hrtRNAY=UNPWCDHuVxZfBA@mail.gmail.com>
+ <20130612093938.1cf73c9a@amdc308.digital.local>
+ <CAKohpo=Q6ry9NJU7w3suQ3kB4LQT-CEoy8vcR9W0zL2rSa3hkg@mail.gmail.com>
+ <20130612110915.64cfdb1d@amdc308.digital.local>
+ <CAKohpongMVUybmUUh1t+iHYV+=AHA7X=5Cdb66k_o6poiY-2+g@mail.gmail.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsVy+t9jAV3WrB2BBjPXc1n8ebuc1eJp0w92
+	i3mfZS06zz5htuhdcJXN4s0jbovLu+awWXzuPcJocbtxBZtF/8JeJouOI9+YLTZ+9XDg8bhz
+	bQ+bx7ppb5k9+rasYvR4tLiF0ePzJrkA1igum5TUnMyy1CJ9uwSujDMLzrAXHDeqWNYwn7WB
+	sVG9i5GTQ0LARKL75VtGCFtM4sK99WxdjFwcQgKLGCW29LUwQTjtTBJbF21nA6liEVCVuPDt
+	PlgHm4CexOe7T4GKODhEBLQkXt5MBalnFnjGLPH4yxpWkBphgVKJJzNfsoPYvALWEh3fToD1
+	cgoES7zqP8oCseAHs8SjCW/AFvALSEq0//vBDHGSncS5TxugmgUlfky+xwJiMwMt27ytiRXC
+	lpfYvOYt8wRGwVlIymYhKZuFpGwBI/MqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOBoeSa1
+	g3Flg8UhRgEORiUe3gNm2wOFWBPLiitzDzFKcDArifAmxu8IFOJNSaysSi3Kjy8qzUktPsQo
+	zcGiJM57oNU6UEggPbEkNTs1tSC1CCbLxMEp1cDoeuLY+wOTlu5t3i66jv3Q1e5lurKctsvb
+	F59mXJT99KzJ1b74H7mTb+mfv235eK3K03zB1Tm+r/bKSIuo3F/w2b3YO1PId/49a9mm0sO/
+	Dorlpa3yE0qz5HlrmldffXpF5O3ZmfufHJk/c4l4ilDphGn555Szl34U+R5U+kXQJPmU1mv2
+	c3d4lFiKMxINtZiLihMBzvQYS5ICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 12 Jun 2013 14:55:45 +0530, Viresh Kumar wrote:
+> On 12 June 2013 14:39, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> > On Wed, 12 Jun 2013 13:39:18 +0530, Viresh Kumar wrote:
+> >> On 12 June 2013 13:09, Lukasz Majewski <l.majewski@samsung.com>
+> >> wrote:
+> 
+> >> You don't have to add an extra "---" line. Just write your
+> >> changelog after "---" added by git and give a blank line between
+> >> your last changelog line and below ones (probably just to make it
+> >> more readable and not a must, but i am not sure).
+> >
+> > I got your point. If you prefer, I will stick to it. No problem.
+> 
+> Its not how I prefer it, but how everybody does it :)
 
---bp/iNruPH9dso1Pn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ok, :-)
 
-On Mon, Apr 15, 2013 at 12:28:12PM -0600, Stephen Warren wrote:
-> On 04/03/2013 08:45 AM, Thierry Reding wrote:
-> > Move the PCIe driver from arch/arm/mach-tegra into the drivers/pci/host
-> > directory. The motivation is to collect various host controller drivers
-> > in the same location in order to facilitate refactoring.
-> >=20
-> > The Tegra PCIe driver has been largely rewritten, both in order to turn
-> > it into a proper platform driver and to add MSI (based on code by
-> > Krishna Kishore <kthota@nvidia.com>) as well as device tree support.
->=20
-> > diff --git a/drivers/pci/host/pci-tegra.c b/drivers/pci/host/pci-tegra.c
->=20
-> > +struct tegra_msi {
-> > +	DECLARE_BITMAP(used, INT_PCI_MSI_NR);
-> > +	struct irq_domain *domain;
-> > +	struct msi_chip chip;
->=20
-> Nit: You could move that to be the first field in the struct, then
-> to_tegra_msi() would end up being a no-op, which might save a byte or two.
+> 
+> > As a side note:
+> >
+> > In the other open source project (u-boot) we use the pattern which
+> > I've used previously. It has one big advantage - I can edit change
+> > log at git gui (just below sign-of-by). It is simply more
+> > convenient for me :-). Those changes between "---" are simply
+> > skipped by git am afterwards.
+> 
+> Yes, I am still asking you to follow the same steps:
+> 
+> git send-email --annotate ***patches***
+> 
+> and then write whatever you don't want to be logged by git am after
+> the "---" already present in the patch.
 
-Done.
+Ok,
 
-> > +static int tegra_pcie_write_conf(struct pci_bus *bus, unsigned int dev=
-fn,
-> > +				 int where, int size, u32 value)
-> ...
-> > +	if (bus->number =3D=3D 0) {
-> > +		unsigned int slot =3D PCI_SLOT(devfn);
-> > +		struct tegra_pcie_port *port;
-> > +
-> > +		list_for_each_entry(port, &pcie->ports, list) {
-> > +			if (port->index + 1 =3D=3D slot) {
-> > +				addr =3D port->base + (where & ~3);
-> > +				break;
-> > +			}
-> > +		}
-> > +	} else {
-> > +		addr =3D tegra_pcie_bus_map(pcie, bus->number);
-> > +		if (!addr) {
-> > +			dev_err(pcie->dev,
-> > +				"failed to map cfg. space for bus %u\n",
-> > +				bus->number);
-> > +			return PCIBIOS_DEVICE_NOT_FOUND;
-> > +		}
-> > +
-> > +		addr +=3D tegra_pcie_conf_offset(devfn, where);
-> > +	}
->=20
-> It seems like that chunk of code could be shared between
-> tegra_pcie_read_conf() and tegra_pcie_write_conf().
->=20
-> Also, tegra_pcie_read_conf() checks again for addr =3D=3D NULL and returns
-> if so. read and write should be consistent.
+> 
+> >> >> >  drivers/cpufreq/cpufreq.c    |   69
+> >> >> > ++++++++++++++++++++++++++++++++++++++++++
+> >> >> > drivers/cpufreq/freq_table.c |   57
+> >> >> > ++++++++++++++++++++++++++++++++--
+> >> >> > include/linux/cpufreq.h      | 12 ++++++++ 3 files changed,
+> >> >> > 136 insertions(+), 2 deletions(-)
+> >>
+> >> > I think that we shall give users some flexibility and don't
+> >> > assume that low_level_boost is only used for one solution/vendor.
+> >> >
+> >> > It is also needed with software controlled boost. Please refer to
+> >> > patch 3/3.
+> >>
+> >> You didn't get me. I am not asking to keep it only for Intel. But
+> >> keep this variable as is (s/low_level_boost/set_boost_freq), and
+> >> make it optional. So, few drivers can implement it but not
+> >> everybody is required to.
+> >
+> > The low_level_boost (set_boost_freq)[*] is optional. However it
+> > seems to me, that the burden of changing available set of
+> > frequencies (when boost is enabled) must be put to cpufreq driver
+> > anyway.
+> 
+> Driver shouldn't play with boost freqs at runtime. This has to be
+> handled by cpufreq core. The only thing cpufreq driver must be doing
+> in low_level_boost or set_boost_freq (as what I suggested it to be),
 
-Done.
+So you want the set_boost_freq to not be used with software based
+boosting. Ok.
 
-> > +static void tegra_pcie_port_free(struct tegra_pcie_port *port)
-> > +{
-> > +	struct tegra_pcie *pcie =3D port->pcie;
-> > +
-> > +	devm_iounmap(pcie->dev, port->base);
-> > +	devm_release_mem_region(pcie->dev, port->regs.start,
-> > +				resource_size(&port->regs));
-> > +	list_del(&port->list);
-> > +	devm_kfree(pcie->dev, port);
-> > +}
->=20
-> Do ports get allocated and freed separately from the host controller,
-> such that it's actually worth manually calling the
-> devm_iounmap/release/free functions?
+> is to set the boost frequency requested by core. And so this routine
+> would only be defined by drivers that have a special way of setting
+> boost frequencies. For others ->target() routine should be able to
+> set all freqs, boost or non boost.
+> 
+> > Without this function [*] defined, we cannot enable frequency
+> > boosting.
+> 
+> why?
 
-Yes, they can be freed separately. When a link is down and hence no
-device is connected to the port, tegra_pcie_enable() will disable and
-free that port.
+Hmm, please read my further comment.
 
-That's in fact the only place where this is called because we don't
-actually support removing the controller. I don't know of any ARM
-architecture support to do that (i.e. there is no counterpart to
-pci_common_init()).
+> 
+> >> So, Add another variable: boost_supported, which will tell cpufreq
+> >> core that boost is supported by governor or not.
+> >                                   ^^^^^^^shouldn't it be cpufreq
+> > driver?
+> 
+> Yeah, sorry :(
 
-> > +static int tegra_pcie_enable_controller(struct tegra_pcie *pcie)
-> ...
-> > +	/* disable all exceptions */
-> > +	afi_writel(pcie, 0, AFI_FPCI_ERROR_MASKS);
->=20
-> Is that a good idea?
+Ok.
 
-I have no idea what that register means. It's one of the undocumented
-registers. Note that I also didn't change this, it's been there since
-the beginning.
+> 
+> > Ok, boost_supported seems needed. In my opinion it shall be defined
+> > at cpufreq_driver structure (since it provides boosting
+> > infrastructure anyway).
+> 
+> that's what I asked.
 
-It's probably worth finding out about the register's meaning and about
-how to catch these exceptions at runtime, though. I'm adding Jay on Cc
-maybe he can research internally.
+Ok :-) .
 
-> > +static int tegra_pcie_get_resources(struct tegra_pcie *pcie)
->=20
-> > +	err =3D devm_request_irq(&pdev->dev, pcie->irq, tegra_pcie_isr,
-> > +			       IRQF_SHARED, "PCIE", pcie);
->=20
-> devm_request_irq and IRQF_SHARED sounds like a bad combination; what if
-> the IRQ goes off after this driver's remove() is called, but before the
-> driver core devm cleanup runs?
+> 
+> >> And a global variable in cpufreq.c boost_enabled to track status of
+> >> what user has requested.
+> >
+> > I think, that boost_enable shall be also defined at cpufreq driver
+> > (as proposed in the patch).
+> 
+> Not really. Driver should only care about if it supports boost or not.
+> If it is enabled/disabled by sysfs or not should be kept inside core
+> in a global variable.
 
-You're right. Changed to request_irq() in tegra_pcie_get_resources() and
-added free_irq() to tegra_pcie_put_resources().
+Ok,
 
-> > +static irqreturn_t tegra_pcie_msi_irq(int irq, void *data)
-> ...
-> > +	return IRQ_HANDLED;
->=20
-> Shouldn't this function return IRQ_NONE if no MSI status bits were found
-> set?
+> 
+> Moreover, if we have 5-6 cpufreq drivers compiled in (for multi-arch
+> compiled kernels), we will save memory wasted by this variable if
+> it is present in cpufreq_driver.
 
-The IRQ isn't marked IRQF_SHARED, so I don't think this is needed.
+Ok. I didn't thought about this use case. Agree.
 
-> > +static int tegra_pcie_enable_msi(struct tegra_pcie *pcie)
->=20
-> > +	/* setup AFI/FPCI range */
-> > +	msi->pages =3D __get_free_pages(GFP_KERNEL, 3);
->=20
-> If tegra_msi_setup_irq() hard-codes the MSI address as msi->pages, then
-> I expect you can get away with a single page here. Of course, perhaps
-> tegra_msi_setup_irq() is supposed to give a different address to every
-> MSI client? Even so, 256 clients * 4 bytes is still less than 1 page.
+> 
+> > Moreover, boost_enable flag is already defined at
+> > acpi-cpufreq.c (as static). We will have two flags for the same
+> > purpose.
+> 
+> No, we don't have to. Just expose another API from cpufreq core
+> to get status of boost.
 
-Yes, I'll try setting the order to 0 and see if that still works. I
-don't have a setup with more than one MSI client so test results may not
-be very reliable, though.
+Ok.
 
-> > +static u32 tegra_pcie_get_xbar_config(struct tegra_pcie *pcie, u32 lan=
-es)
-> > +{
-> > +	struct device_node *np =3D pcie->dev->of_node;
-> > +
-> > +	switch (lanes) {
-> > +	case 0x00000004:
-> > +		dev_info(pcie->dev, "single-mode configuration\n");
-> > +		return AFI_PCIE_CONFIG_SM2TMS0_XBAR_CONFIG_SINGLE;
-> > +
-> > +	case 0x00000202:
-> > +		dev_info(pcie->dev, "dual-mode configuration\n");
-> > +		return AFI_PCIE_CONFIG_SM2TMS0_XBAR_CONFIG_DUAL;
-> > +	}
-> > +
-> > +	return 0;
->=20
-> Shouldn't that return an error, and dev_err() about it? If not, then I
-> think using one of the #defines for the default would make the result a
-> lot more obvious.
+> 
+> > So we want as follows:
+> > show_boost = 1 ---> show only frequencies tagged as
+> > CPUFREQ_BOOST_FREQ show_boost = 0 ---> show only "normal" (non
+> > boost) frequencies
+> 
+> Yes.
 
-I've changed tegra_pcie_get_xbar_config() to return -EINVAL if an
-invalid combination of lanes is encountered and 0 otherwise, passing
-back the corresponding define in an output parameter. I think it's
-reasonable to fail if an invalid combination is provided instead of
-assuming that some default will work.
+Ok,
 
-> > +static int tegra_pcie_parse_dt(struct tegra_pcie *pcie)
->=20
-> > +	pcie->xbar_config =3D tegra_pcie_get_xbar_config(pcie, lanes);
-> > +	if (!pcie->xbar_config) {
-> > +		dev_err(pcie->dev, "invalid lane configuration\n");
-> > +		return -EINVAL;
-> > +	}
->=20
-> Oh, but AFI_PCIE_CONFIG_SM2TMS0_XBAR_CONFIG_SINGLE=3D=3D0, which is valid=
-=2E..
+> 
+> >> You are just talking about showing boost freqs in sysfs. I am
+> >> talking about the frequencies that governors will select when
+> >> boost is disabled from sysfs. Because we don't skip boost
+> >> frequencies in target() routines, we will set them as and when
+> >> governor requests them.
+> >
+> > I think, that it is the main issue here and it shall be cleared out:
+> >
+> > Frequencies marked as: CPUFREQ_BOOST_FREQ are added permanently to
+> > the freq_table.
+> > That is the distinction to the original overclocking patch posted
+> > with
+> >> LAB, where freq_boost structure was modified and boost frequencies
+> >> were
+> > either valid or invalid.
+> 
+> Yes.
+> 
+> > Then we can in SW control boost in two ways:
+> > 1. change policy->max value (to the maximal boost frequency) - as
+> > it is done now (v3) at Exynos. This is the simple solution (patch
+> > 3/3)
+> 
+> Drivers aren't supposed to set policy->max. It should be taken care
+> of by core or freq_table.c file.
 
-Fixed by the above change.
+This seems the right thing, but it would require some functions defined
+at freq_table.c to be extended to accept bool "boost" parameter (which
+would not consider freqs tagged as CPUFREQ_BOOST_FREQ).
+Then each per cpu policy, shall be read and its max freq shall be
+updated when someone enables boost from sysfs (at
+cpufreq_boost_trigger_state).
 
-> > +static bool tegra_pcie_port_check_link(struct tegra_pcie_port *port)
-> ...
-> > +			if (value & 0x20000000)
-> > +				return true;
->=20
-> Can we use a #define for 0x20000000?
+This is my idea to manage boost mode from core code. Am I right?
 
-Yes, we could use something like RP_LINK_CONTROL_STATUS_DL_LINK_ACTIVE
-=66rom the TRM, though it's rather long...
 
-> > +static int tegra_pcie_enable(struct tegra_pcie *pcie)
-> > +{
-> > +	struct tegra_pcie_port *port, *tmp;
-> > +	struct hw_pci hw;
-> > +
-> > +	list_for_each_entry_safe(port, tmp, &pcie->ports, list) {
-> > +		dev_info(pcie->dev, "probing port %u, using %u lanes\n",
-> > +			 port->index, port->lanes);
-> > +
-> > +		tegra_pcie_port_enable(port);
-> > +
-> > +		if (tegra_pcie_port_check_link(port))
-> > +			continue;
-> > +
-> > +		dev_info(pcie->dev, "link %u down, ignoring\n", port->index);
-> > +
-> > +		tegra_pcie_port_disable(port);
-> > +		tegra_pcie_port_free(port);
-> > +	}
->=20
-> Why is that needed; when would a port get enabled if it was already
-> enabled, and if it was already enabled, wouldn't you want this function
-> to be a no-op rather than destroying everything and starting again?
 
-I'm not sure I understand what you're saying. The intent of this
-function is to enable a port, check that there's a link and disable the
-port otherwise. That way we don't keep ports around where nothing is
-connected.
+> 
+> > 2. Modify all freq_table helper functions to be aware of boost and
+> > skip boost frequencies when boost_enable = 0. (as it was done at
+> > v2). This requires code modification at freq_table.c and
+> > reevaluation of policy.
+> 
+> Yes, the core must be aware of it and must take the right decision
+> here. So, we need to take care of boost freq in freq_table.c
 
-> > +static int tegra_pcie_probe(struct platform_device *pdev)
-> ...
-> > +	pcibios_min_mem =3D 0;
->=20
-> What does that mean/do? I wonder if that should be set to 0x80000000 by
-> the Tegra30 patches?
+Ok. Then we agreed :-).
 
-ARM defines PCIBIOS_MIN_MEM to that variable. That macro in turn is only
-used by pci_bus_alloc_resource() AFAICT, which uses it to override the
-start of a resource when allocating if res->start =3D=3D 0. As such it
-designates a lower-bound of valid PCI memory addresses, so 0 on Tegra20
-and 0x80000000 on Tegra30 don't seem like good values. Maybe we need to
-set them to the lowest of the prefetchable and non-prefetchable memory
-areas as defined in the DT?
+-- 
+Best regards,
 
-It doesn't currently seem to matter at all, though, since we never pass
-in a range that's 0, so the start address of resources can never be 0
-and therefore PCIBIOS_MIN_MEM is never used.
+Lukasz Majewski
 
-Thierry
-
---bp/iNruPH9dso1Pn
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRuGnHAAoJEN0jrNd/PrOhZ2wP+wbfTMwHj/mzIsEJIqwVu7/k
-wFUPRPld364uIEmYSTJ9cjyriEBhK/gR1dinm9jCLD70JEwpkfULAArx6k2IJfKJ
-MvUnyXD5ArSXX7W712Q8rc4+X6j/Oen36WBKmw/ZtBQ0BPSMTVgEs2vMsaMCoyOL
-K8s352nsJrVX2WKfNs52ZJlZqHc5zl/DWH5Gf4JPIPqrXLftR5c+BqqJF6/5gB2s
-T3kvvJzgpKhPIATkYaes9BdBDW48s30kZ/Yj8c9BVPV5ocYaBv0JWDNTYH+t2XYD
-p91p60uk3piaCtDM+gQlkTDCrq54hUugj+C+HSyHb/jDT2nl/PYTUQo5P1Nj3VLz
-gXVUmcXWFQvHO4ZpSa5bLkl+HPC3sFcN3GpG/bZlrumSm/794BgPC6Mo4lCkn0Tg
-BJqixhbyIfpGSfzTDPWurZLQbj1oWqK3VqjFq0SODdjaanLwQvMGQwiOaep37aks
-6RXBLP60CLS53Vi2rsxIfWJG2zZhGVPxwcao9ZwD3PNOSwq0WvTZzne2EpABaLTa
-VSylIqAXFc4qjLBWjzQvXZFQJvP09wh6RitiLx1mWX1GVs8zX1fu4Z3lMV9jadzT
-mhqCrDxlYnn+qjo4NfT1dZ1U/67a2WGQHSaC30nQABv8jtRusKucQE+ndyPO+DOE
-gAK6HB/goOgi/nD/RehW
-=jWNR
------END PGP SIGNATURE-----
-
---bp/iNruPH9dso1Pn--
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
