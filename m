@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab3FLQ6Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 12:58:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50635 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754808Ab3FLQ6X (ORCPT
+	id S1757598Ab3FLQ6s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 12:58:48 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44587 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755017Ab3FLQ6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 12:58:23 -0400
-Date: Wed, 12 Jun 2013 09:58:58 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [ 00/79] 3.9.6-stable review
-Message-ID: <20130612165858.GA17365@kroah.com>
-References: <20130611195312.352656079@linuxfoundation.org>
- <B8EFE96D1287C24090BAD9D858E15E61568D7C@sisaex02sj>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <B8EFE96D1287C24090BAD9D858E15E61568D7C@sisaex02sj>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 12 Jun 2013 12:58:43 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 08/21] iio: ti_am335x_adc: remove platform_data support
+Date: Wed, 12 Jun 2013 18:58:09 +0200
+Message-Id: <1371056302-12714-9-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1371056302-12714-1-git-send-email-bigeasy@linutronix.de>
+References: <1371056302-12714-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 03:49:22PM +0000, Shuah Khan wrote:
-> On 06/11/2013 04:02 PM, Greg Kroah-Hartman wrote:
-> > This is the start of the stable review cycle for the 3.9.6 release.
-> > There are 79 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> >
-> > Responses should be made by Thu Jun 13 19:50:17 UTC 2013.
-> > Anything received after that time might be too late.
-> >
-> > The whole patch series can be found in one patch at:
-> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.9.6-rc1.gz
-> > and the diffstat can be found below.
-> >
-> > thanks,
-> >
-> > greg k-h
-> >
-> 
-> Patches applied cleanly to 3.0.81, 3.4.48, and 3.9.5
-> 
-> Compiled and booted on the following systems:
-> 
-> Samsung Series 9 900X4C Intel Corei5:
->      (3.4.49-rc1, and 3.9.6-rc1)
-> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics:
->      (3.0.82-rc1, 3.4.49-rc1, and 3.9.6-rc1)
-> 
-> dmesgs for all releases look good. No regressions compared to the previous
-> dmesgs for each of these releases.
+This patch removes access to platform data mfd_tscadc_board because the
+platform is DT only.
 
-Wonderful, thanks for testing and letting me know.
+Acked-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/iio/adc/ti_am335x_adc.c |   21 +++++++--------------
+ 1 file changed, 7 insertions(+), 14 deletions(-)
 
-greg k-h
+diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+index b24402c..2868c0c 100644
+--- a/drivers/iio/adc/ti_am335x_adc.c
++++ b/drivers/iio/adc/ti_am335x_adc.c
+@@ -26,7 +26,6 @@
+ #include <linux/of_device.h>
+ 
+ #include <linux/mfd/ti_am335x_tscadc.h>
+-#include <linux/platform_data/ti_am335x_adc.h>
+ 
+ struct tiadc_device {
+ 	struct ti_tscadc_dev *mfd_tscadc;
+@@ -153,14 +152,12 @@ static int tiadc_probe(struct platform_device *pdev)
+ {
+ 	struct iio_dev		*indio_dev;
+ 	struct tiadc_device	*adc_dev;
+-	struct ti_tscadc_dev	*tscadc_dev = ti_tscadc_dev_get(pdev);
+-	struct mfd_tscadc_board	*pdata = tscadc_dev->dev->platform_data;
+ 	struct device_node	*node = pdev->dev.of_node;
+ 	int			err;
+ 	u32			val32;
+ 
+-	if (!pdata && !node) {
+-		dev_err(&pdev->dev, "Could not find platform data\n");
++	if (!node) {
++		dev_err(&pdev->dev, "Could not find valid DT data.\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -174,15 +171,11 @@ static int tiadc_probe(struct platform_device *pdev)
+ 
+ 	adc_dev->mfd_tscadc = ti_tscadc_dev_get(pdev);
+ 
+-	if (pdata)
+-		adc_dev->channels = pdata->adc_init->adc_channels;
+-	else {
+-		err = of_property_read_u32(node,
+-				"ti,adc-channels", &val32);
+-		if (err < 0)
+-			goto err_free_device;
+-		adc_dev->channels = val32;
+-	}
++	err = of_property_read_u32(node,
++			"ti,adc-channels", &val32);
++	if (err < 0)
++		goto err_free_device;
++	adc_dev->channels = val32;
+ 
+ 	indio_dev->dev.parent = &pdev->dev;
+ 	indio_dev->name = dev_name(&pdev->dev);
+-- 
+1.7.10.4
+
