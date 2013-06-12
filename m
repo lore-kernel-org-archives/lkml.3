@@ -1,239 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab3FLLW7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 07:22:59 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:56363 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343Ab3FLLW5 (ORCPT
+	id S1756654Ab3FLLXb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 07:23:31 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:41560 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754078Ab3FLLX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 07:22:57 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pci@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Andrew Murray'" <andrew.murray@arm.com>,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
-        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
-        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>
-Subject: Re: [PATCH V4 1/3] pci: Add PCIe driver for Samsung Exynos
-Date: Wed, 12 Jun 2013 13:23:03 +0200
-Message-ID: <2061566.hRLrhtBK6z@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <003601ce6756$444e8cd0$cceba670$@samsung.com>
-References: <003601ce6756$444e8cd0$cceba670$@samsung.com>
+	Wed, 12 Jun 2013 07:23:29 -0400
+Date: Wed, 12 Jun 2013 13:23:26 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        kernel list <linux-kernel@vger.kernel.org>, marcel@holtmann.org,
+        gustavo@padovan.org, linux-bluetooth@vger.kernel.org
+Subject: Re: 3.10-rc: bluetooth disappeared on thinkpad x60 (regression)
+Message-ID: <20130612112326.GA4237@amd.pavel.ucw.cz>
+References: <20130610092907.GA5487@amd.pavel.ucw.cz>
+ <20130610100519.GA9816@x220.ger.corp.intel.com>
+ <20130610110423.GA8834@amd.pavel.ucw.cz>
+ <20130610115938.GA12892@x220.ger.corp.intel.com>
+ <20130610133834.GA4058@amd.pavel.ucw.cz>
+ <20130610160723.GA18282@x220.P-661HNU-F1>
+ <20130610193746.GA30801@amd.pavel.ucw.cz>
+ <20130611072245.GA12463@x220>
+ <20130611102025.GA5580@x220>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:bIWPO618vQ66CCS0Jovns2xHYMm3LrImcHYBwSnJ5RZ
- Gl8AAUKgijyYG9m27p0jwfqRmNo4H7xYIeyDVrUqUVgls3skyu
- 08iYee4Zv5CHzKavGGpMHSTxq83ZSv1Chj1Iq10RXlvxSKMcss
- 0BRB5magpSmJ+3+6m3UOhrJeyfv7bpip+4qDxmxbYvAdsXzqM1
- ZBNVOOohcoXWW4iR5DvevB8Ytc0T7r4NQA8uXmDmq/r6yWORgB
- Dv4JY0/G0sQdjNlIPn4UYGA48JKy5ABLrDaeg99z61CKsii9bd
- EmYyI+4wKdXFbEss+thmvAbATAJKAhUqR3W6DGe3/HeBaOBaEZ
- 1Zw313ozu4WDZHm2MSfE=
+Content-Type: multipart/mixed; boundary="UlVJffcvxoiEqYs2"
+Content-Disposition: inline
+In-Reply-To: <20130611102025.GA5580@x220>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 12 June 2013 19:19:05 Jingoo Han wrote:
 
-> +
-> +struct pcie_port {
-> +	struct device		*dev;
-> +	u8			controller;
-> +	u8			root_bus_nr;
-> +	void __iomem		*dbi_base;
-> +	void __iomem		*elbi_base;
-> +	void __iomem		*phy_base;
-> +	void __iomem		*purple_base;
-> +	phys_addr_t		cfg0_base;
-> +	void __iomem		*va_cfg0_base;
-> +	phys_addr_t		cfg1_base;
-> +	void __iomem		*va_cfg1_base;
-> +	phys_addr_t		io_base;
-> +	phys_addr_t		mem_base;
-> +	spinlock_t		conf_lock;
-> +	struct resource		cfg;
-> +	struct resource		io;
-> +	struct resource		mem;
-> +	struct pcie_port_info	config;
-> +	struct clk		*clk;
-> +	struct clk		*bus_clk;
-> +	int			irq;
-> +	int			reset_gpio;
-> +};
+--UlVJffcvxoiEqYs2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This looks much better now.
+On Tue 2013-06-11 13:20:25, Johan Hedberg wrote:
+> Hi Pavel,
+> 
+> On Tue, Jun 11, 2013, Johan Hedberg wrote:
+> > On Mon, Jun 10, 2013, Pavel Machek wrote:
+> > > < HCI Command: Delete Stored Link Key (0x03|0x0012) plen 7
+> > >     bdaddr 00:00:00:00:00:00 all 1
+> > > > HCI Event: Command Complete (0x0e) plen 4
+> > >     Delete Stored Link Key (0x03|0x0012) ncmd 1
+> > >     status 0x11 deleted 0
+> > >     Error: Unsupported Feature or Parameter Value
+> > 
+> > Here's the cause of your issue. It's not one of the recently added HCI
+> > commands but one that's been around for quite some time. I just checked
+> > and it's even there in kernel 3.9, so I'm surprised that you're saying
+> > this is a regression since that version. Are you completely sure about
+> > it?
+> 
+> Could you try if the attached patch helps? It modifies the HCI request
+> state tracking to allow flagging certain HCI commands as non-critical
+> and just ignores their failures.
 
-> +
-> +/* synopsis specific PCIE configuration registers*/
-> +#define PCIE_PORT_LINK_CONTROL		0x710
-> +#define PORT_LINK_MODE_MASK		(0x3f << 16)
-> +#define PORT_LINK_MODE_4_LANES		(0x7 << 16)
+Yes, it helps.
 
-Do you mean this is a "Synopsys" designware part? In that case it
-should really not be called "exynos-pcie" but "designware-pcie"
-and you should make sure that the driver makes no assumptions about
-the platform. A lot of other platforms also use designware
-parts and should be able to reuse this driver.
+> If the patch helps, could you still provide a HCI trace (both plain text
+> and btsnoop format) of a successful "hciconfig hci0 up"? It might help
+> create a simpler patch for this issue.
 
-> +static void exynos_pcie_prog_viewport_cfg0(struct pcie_port *pp, u32 busdev)
-> +{
-> +	u32 val;
-> +	void __iomem *dbi_base = pp->dbi_base;
-> +
-> +	/* Program viewport 0 : OUTBOUND : CFG0 */
-> +	val = PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX0;
-> +	writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
-> +	writel_rc(pp, (u32)pp->cfg0_base, dbi_base + PCIE_ATU_LOWER_BASE);
-> +	writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_BASE);
-> +	writel_rc(pp, (u32)pp->cfg0_base + pp->config.cfg0_size - 1,
-> +			dbi_base + PCIE_ATU_LIMIT);
-> +	writel_rc(pp, busdev, dbi_base + PCIE_ATU_LOWER_TARGET);
-> +	writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_TARGET);
-> +	writel_rc(pp, PCIE_ATU_TYPE_CFG0, dbi_base + PCIE_ATU_CR1);
-> +	val = PCIE_ATU_ENABLE;
-> +	writel_rc(pp, val, dbi_base + PCIE_ATU_CR2);
-> +}
+Thanks,
+								Pavel
 
-I think you should not assume that the physical base address is a 32
-bit value. The hardware clearly supports "lower" and "upper" halves
-for the address window, so when resource_size_t is 64 bit, you should
-set the upper half accordingly. Since the hardware is always 64 bit,
-you can use a "u64" type rather than resource_size_t to simplify the
-code here.
+Here you go (binary dump attached):
 
-> +static void exynos_pcie_prog_viewport_mem_outbound(struct pcie_port *pp)
-> +{
-> +	u32 val;
-> +	void __iomem *dbi_base = pp->dbi_base;
-> +
-> +	/* Program viewport 0 : OUTBOUND : MEM */
-> +	val = PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX0;
-> +	writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
-> +	writel_rc(pp, PCIE_ATU_TYPE_MEM, dbi_base + PCIE_ATU_CR1);
-> +	val = PCIE_ATU_ENABLE;
-> +	writel_rc(pp, val, dbi_base + PCIE_ATU_CR2);
-> +	writel_rc(pp, (u32)pp->mem_base, dbi_base + PCIE_ATU_LOWER_BASE);
-> +	writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_BASE);
-> +	writel_rc(pp, (u32)(pp->mem_base + pp->config.mem_size - 1),
-> +			dbi_base + PCIE_ATU_LIMIT);
-> +	writel_rc(pp, (u32)pp->mem_base, dbi_base + PCIE_ATU_LOWER_TARGET);
-> +	writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_TARGET);
-> +}
+root@amd:~# hcidump hci0 -X -V
+HCI sniffer - Bluetooth packet analyzer ver 1.42
+device: hci0 snap_len: 1028 filter: 0xffffffff
+< HCI Command: Reset (0x03|0x0003) plen 0
+> HCI Event: Command Complete (0x0e) plen 4
+    Reset (0x03|0x0003) ncmd 1
+    status 0x00
+< HCI Command: Read Local Supported Features (0x04|0x0003) plen 0
+> HCI Event: Command Complete (0x0e) plen 12
+    Read Local Supported Features (0x04|0x0003) ncmd 1
+    status 0x00
+    Features: 0xff 0xff 0x8d 0xfe 0x9b 0xf9 0x00 0x80
+< HCI Command: Read Local Version Information (0x04|0x0001) plen 0
+> HCI Event: Command Complete (0x0e) plen 12
+    Read Local Version Information (0x04|0x0001) ncmd 1
+    status 0x00
+    HCI Version: 2.0 (0x3) HCI Revision: 0x206c
+    LMP Version: 2.0 (0x3) LMP Subversion: 0x4132
+    Manufacturer: Broadcom Corporation (15)
+< HCI Command: Read BD ADDR (0x04|0x0009) plen 0
+> HCI Event: Command Complete (0x0e) plen 10
+    Read BD ADDR (0x04|0x0009) ncmd 1
+    status 0x00 bdaddr 00:16:CE:EC:4D:C2
+< HCI Command: Read Buffer Size (0x04|0x0005) plen 0
+> HCI Event: Command Complete (0x0e) plen 11
+    Read Buffer Size (0x04|0x0005) ncmd 1
+    status 0x00
+    ACL MTU 1017:8 SCO MTU 64:0
+< HCI Command: Read Class of Device (0x03|0x0023) plen 0
+> HCI Event: Command Complete (0x0e) plen 7
+    Read Class of Device (0x03|0x0023) ncmd 1
+    status 0x00 class 0x000000
+< HCI Command: Read Local Name (0x03|0x0014) plen 0
+> HCI Event: Command Complete (0x0e) plen 252
+    Read Local Name (0x03|0x0014) ncmd 1
+    status 0x00 name 'amd-0'
+< HCI Command: Read Voice Setting (0x03|0x0025) plen 0
+> HCI Event: Command Complete (0x0e) plen 6
+    Read Voice Setting (0x03|0x0025) ncmd 1
+    status 0x00 voice setting 0x0060
+< HCI Command: Set Event Filter (0x03|0x0005) plen 1
+    type 0 condition 0
+    Clear all filters
+> HCI Event: Command Complete (0x0e) plen 4
+    Set Event Filter (0x03|0x0005) ncmd 1
+    status 0x00
+< HCI Command: Write Connection Accept Timeout (0x03|0x0016) plen 2
+    timeout 32000
+> HCI Event: Command Complete (0x0e) plen 4
+    Write Connection Accept Timeout (0x03|0x0016) ncmd 1
+    status 0x00
+< HCI Command: Delete Stored Link Key (0x03|0x0012) plen 7
+    bdaddr 00:00:00:00:00:00 all 1
+> HCI Event: Command Complete (0x0e) plen 4
+    Delete Stored Link Key (0x03|0x0012) ncmd 1
+    status 0x11 deleted 0
+    Error: Unsupported Feature or Parameter Value
+< HCI Command: Read Page Scan Activity (0x03|0x001b) plen 0
+> HCI Event: Command Complete (0x0e) plen 8
+    Read Page Scan Activity (0x03|0x001b) ncmd 1
+    status 0x00 interval 2048 window 18
+< HCI Command: Read Page Scan Type (0x03|0x0046) plen 0
+> HCI Event: Command Complete (0x0e) plen 5
+    Read Page Scan Type (0x03|0x0046) ncmd 1
+    0000: 00 01                                             ..
+< HCI Command: Set Event Mask (0x03|0x0001) plen 8
+    Mask: 0xfffffbff07180000
+> HCI Event: Command Complete (0x0e) plen 4
+    Set Event Mask (0x03|0x0001) ncmd 1
+    status 0x00
+< HCI Command: Read Local Supported Commands (0x04|0x0002) plen 0
+> HCI Event: Command Complete (0x0e) plen 68
+    Read Local Supported Commands (0x04|0x0002) ncmd 1
+    status 0x00
+    Commands: ffffffffffff1ffffffffffff30fffff3f
+< HCI Command: Write Inquiry Mode (0x03|0x0045) plen 1
+    mode 1
+> HCI Event: Command Complete (0x0e) plen 4
+    Write Inquiry Mode (0x03|0x0045) ncmd 1
+    status 0x00
+< HCI Command: Read Local Extended Features (0x04|0x0004) plen 1
+    page 1
+> HCI Event: Command Complete (0x0e) plen 14
+    Read Local Extended Features (0x04|0x0004) ncmd 1
+    status 0x00 page 1 max 0
+    Features: 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+< HCI Command: Write Default Link Policy Settings (0x02|0x000f) plen 2
+    policy 0x0f
+    Link policy: RSWITCH HOLD SNIFF PARK 
+> HCI Event: Command Complete (0x0e) plen 4
+    Write Default Link Policy Settings (0x02|0x000f) ncmd 1
+    status 0x00
+< HCI Command: Write Page Timeout (0x03|0x0018) plen 2
+    timeout 8192
+> HCI Event: Command Complete (0x0e) plen 4
+    Write Page Timeout (0x03|0x0018) ncmd 1
+    status 0x00
+< HCI Command: Write Default Link Policy Settings (0x02|l Name
+(0x03|0x0014) plen 0
+> HCI Event: Command Complete (0x0e) plen 2
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
 
-You probably should not assume that there is a 1:1 mapping between 
-bus addresses and host physical addresses, but rather read both
-values from the DT individually. With the ranges defined as
+--UlVJffcvxoiEqYs2
+Content-Type: application/octet-stream
+Content-Disposition: attachment; filename=delme
+Content-Transfer-Encoding: base64
 
-       0x82000000 0 0x40210000 0x40210000 0 0x10000000>; /* non-prefetchable memory */
+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
+DvwBFAwAYW1kLTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAABAAAAAIAAAAA
+AOG8pktvkW8BDggAAAAACQAAAAkAAAADAAAAAADhvKZLb5i7BA4GAQ4IAA8AAAAADAAAAAwA
+AAACAAAAAADhvKZLb5kvAQEMCP//////HwAAAAAABwAAAAcAAAADAAAAAADhvKZLb6CLBA4E
+AQEMAAAAAAUAAAAFAAAAAgAAAAAA4bymS2+hAAFFDAEBAAAABwAAAAcAAAADAAAAAADhvKZL
+b6hsBA4EAUUMAAAAAPwAAAD8AAAAAgAAAAAA4bymS2+qGgETDPhhbWQtMAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAcAAAAHAAAAAwAAAAAA4bymS2+4CwQOBAETDAAAAAAFAAAA
+BQAAAAIAAAAAAOG8pktvuK8BGgwBAgAAAAcAAAAHAAAAAwAAAAAA4bymS2/D0gQOBAEaDAAA
+AAAHAAAABwAAAAIAAAAAAOG8pktvxHYBJAwDDAFKAAAABwAAAAcAAAADAAAAAADhvKZLb8el
+BA4EASQMAAAAAAQAAAAEAAAAAgAAAAAA4bymS2/IMAEUDAAAAAD/AAAA/wAAAAMAAAAAAOG8
+pktwRJQEDvwBFAwAYW1kLTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAABAAA
+AAIAAAAAAOG8pktwRSIBGQwAAAAACAAAAAgAAAADAAAAAADhvKZLcExuBA4FARkMAAI=
 
-the second and third cell should go into
-PCIE_ATU_UPPER_TARGET/PCIE_ATU_LOWER_TARGET, while the translated address
-(from the third cell) should go into PCIE_ATU_LOWER_BASE/PCIE_ATU_UPPER_BASE
-
-The PCIE_ATU_LIMIT seems to correctly get translated from the last
-cell.
-
-> +static void exynos_pcie_prog_viewport_io_outbound(struct pcie_port *pp)
-> +{
-> +	u32 val;
-> +	void __iomem *dbi_base = pp->dbi_base;
-> +
-> +	/* Program viewport 1 : OUTBOUND : IO */
-> +	val = PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX1;
-> +	writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
-> +	writel_rc(pp, PCIE_ATU_TYPE_IO, dbi_base + PCIE_ATU_CR1);
-> +	val = PCIE_ATU_ENABLE;
-> +	writel_rc(pp, val, dbi_base + PCIE_ATU_CR2);
-> +	writel_rc(pp, (u32)pp->io_base, dbi_base + PCIE_ATU_LOWER_BASE);
-> +	writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_BASE);
-> +	writel_rc(pp, (u32)(pp->io_base + pp->config.io_size - 1),
-> +			dbi_base + PCIE_ATU_LIMIT);
-> +	writel_rc(pp, (u32)pp->io_base, dbi_base + PCIE_ATU_LOWER_TARGET);
-> +	writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_TARGET);
-> +}
-
-You don't actually map the I/O space anywhere into virtual memory.
-I think you need to call pci_ioremap_io with the pp->io_base at
-boot time.
-
-I think you mixed up the PCIE_ATU_LOWER_TARGET, it should really be 0,
-since all I/O port numbers have to be smaller than IO_SPACE_LIMIT.
-
-The first argument to pci_ioremap_io needs to be unique for each
-domain and you need to use it to calculate the io_offset you
-set in pci_sys_data->io_offset.
-
-> +static void exynos_pcie_prog_viewport_mem_inbound(struct pcie_port *pp)
-> +{
-> +	u32 val;
-> +	void __iomem *dbi_base = pp->dbi_base;
-> +	struct pcie_port_info *config = &pp->config;
-> +
-> +	/* Program viewport 0 : INBOUND : MEMORY */
-> +	val = PCIE_ATU_REGION_INBOUND | PCIE_ATU_REGION_INDEX0;
-> +	writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
-> +	writel_rc(pp, PCIE_ATU_TYPE_MEM, dbi_base + PCIE_ATU_CR1);
-> +	val = PCIE_ATU_ENABLE | PCIE_ATU_BAR_MODE_ENABLE;
-> +	writel_rc(pp, val, dbi_base + PCIE_ATU_CR2);
-> +	writel_rc(pp, 0, dbi_base + PCIE_ATU_LOWER_BASE);
-> +	writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_BASE);
-> +	writel_rc(pp, config->in_mem_size - 1, dbi_base + PCIE_ATU_LIMIT);
-> +	writel_rc(pp, 0, dbi_base + PCIE_ATU_LOWER_TARGET);
-> +	writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_TARGET);
-> +}
-
-You hardcode the in_mem_size to 256 MB. Does that mean you only allow
-PCI bus master DMA on the first part of RAM? Shouldn't it get
-computed from the actual location and size of RAM?
-
-> +static void exynos_pcie_prog_viewport_io_inbound(struct pcie_port *pp)
-> +{
-> +	u32 val;
-> +	void __iomem *dbi_base = pp->dbi_base;
-> +	struct pcie_port_info *config = &pp->config;
-> +
-> +	/* Program viewport 1 : INBOUND : IO */
-> +	val = PCIE_ATU_REGION_INBOUND | PCIE_ATU_REGION_INDEX1;
-> +	writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
-> +	writel_rc(pp, PCIE_ATU_TYPE_IO, dbi_base + PCIE_ATU_CR1);
-> +	val = PCIE_ATU_ENABLE | PCIE_ATU_BAR_MODE_ENABLE;
-> +	writel_rc(pp, val, dbi_base + PCIE_ATU_CR2);
-> +	writel_rc(pp, 0, dbi_base + PCIE_ATU_LOWER_BASE);
-> +	writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_BASE);
-> +	writel_rc(pp, config->in_mem_size - 1, dbi_base + PCIE_ATU_LIMIT);
-> +	writel_rc(pp, 0, dbi_base + PCIE_ATU_LOWER_TARGET);
-> +	writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_TARGET);
-> +}
-
-I don't understand what in inbound I/O access actually means. What
-does this do, is it for PCI target emulation?
-
-> +
-> +static int exynos_pcie_setup(int nr, struct pci_sys_data *sys)
-> +{
-> +	struct pcie_port *pp;
-> +
-> +	pp = sys_to_pcie(sys);
-> +
-> +	if (!pp)
-> +		return 0;
-> +
-> +	pci_add_resource_offset(&sys->resources, &pp->io, sys->io_offset);
-> +	pci_add_resource_offset(&sys->resources, &pp->mem, sys->mem_offset);
-> +
-> +	return 1;
-> +}
-
-You don't actually set up io_offset and mem_offset, right?
-
-	Arnd
+--UlVJffcvxoiEqYs2--
