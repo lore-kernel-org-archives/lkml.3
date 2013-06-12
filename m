@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758080Ab3FLV1G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 17:27:06 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:39187 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab3FLV1F (ORCPT
+	id S1758111Ab3FLV1L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 17:27:11 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:56585 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758083Ab3FLV1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 17:27:05 -0400
-From: Nix <nix@esperi.org.uk>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, NFS list <linux-nfs@vger.kernel.org>
-Subject: Re: NFS/lazy-umount/path-lookup-related panics at shutdown (at kill of processes on lazy-umounted filesystems) with 3.9.2 and 3.9.5
-References: <871u89vp46.fsf@spindle.srvr.nix>
-	<20130612012304.GF4165@ZenIV.linux.org.uk>
-	<87k3lzpm4l.fsf@spindle.srvr.nix>
-	<20130612155419.GG4165@ZenIV.linux.org.uk>
-Emacs: don't cry -- it won't help.
-Date: Wed, 12 Jun 2013 22:27:01 +0100
-In-Reply-To: <20130612155419.GG4165@ZenIV.linux.org.uk> (Al Viro's message of
-	"Wed, 12 Jun 2013 16:54:19 +0100")
-Message-ID: <877ghzow9m.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Wed, 12 Jun 2013 17:27:07 -0400
+Date: Wed, 12 Jun 2013 14:27:05 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Michal Hocko <mhocko@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch] mm, memcg: add oom killer delay
+In-Reply-To: <20130612202348.GA17282@dhcp22.suse.cz>
+Message-ID: <alpine.DEB.2.02.1306121408490.24902@chino.kir.corp.google.com>
+References: <20130601102058.GA19474@dhcp22.suse.cz> <alpine.DEB.2.02.1306031102480.7956@chino.kir.corp.google.com> <20130603193147.GC23659@dhcp22.suse.cz> <alpine.DEB.2.02.1306031411380.22083@chino.kir.corp.google.com> <20130604095514.GC31242@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1306042329320.20610@chino.kir.corp.google.com> <20130605093937.GK15997@dhcp22.suse.cz> <alpine.DEB.2.02.1306051657001.29626@chino.kir.corp.google.com> <20130610142321.GE5138@dhcp22.suse.cz> <alpine.DEB.2.02.1306111321360.32688@chino.kir.corp.google.com>
+ <20130612202348.GA17282@dhcp22.suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-INFN-TO-Metrics: spindle 1233; Body=3 Fuz1=3 Fuz2=3
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 Jun 2013, Al Viro outgrape:
+On Wed, 12 Jun 2013, Michal Hocko wrote:
 
-> On Wed, Jun 12, 2013 at 01:08:26PM +0100, Nix wrote:
->
->> At this point, we have a sibcall to call_connect() I think. The RPC task
->> of discourse happens to be local, and as the relevant comment says
->> 
->> 		 * We want the AF_LOCAL connect to be resolved in the
->> 		 * filesystem namespace of the process making the rpc
->> 		 * call.  Thus we connect synchronously.
->> 
->> Probably this should be doing this only if said namespace isn't
->> disconnected and going away...
->
-> Namespace, shnamespace...  In this case the namespace is alive and well,
-> it's just that the process is getting killed and it's already past the
-> point where it has discarded all references to root/cwd.
+> But the objective is to handle oom deadlocks gracefully and you cannot
+> possibly miss those as they are, well, _deadlocks_.
 
-Yeah.
+That's not at all the objective, the changelog quite explicitly states 
+this is a deadlock as the result of userspace having disabled the oom 
+killer so that its userspace oom handler can resolve the condition and it 
+being unresponsive or unable to perform its job.
 
->> > Why is it done in essentially random process context, anyway?  There's such thing
->> > as chroot, after all, which would screw that sucker as hard as NULL ->fs, but in
->> > a less visible way...
->> 
->> I don't think it is a random process context. It's all intentionally
->> done in the context of the process which is the last to close that
->> filesystem, as part of the process of tearing it down -- but it looks
->> like the NFS svcrpc connection code isn't expecting to be called in that
->> situation.
->
-> _What_?  Suppose we have something mounted on /jail/net/foo/bar; will the
-> effect of process chrooted into /jail doing umount /net/foo/bar be different
-> from that of process outside of the jail doing umount /jail/net/foo/bar?
+When you allow users to create their own memcgs, which we do and is 
+possible by chowning the user's root to be owned by it, and implement 
+their own userspace oom notifier, you must then rely on their 
+implementation to work 100% of the time, otherwise all those gigabytes of 
+memory go unfreed forever.  What you're insisting on is that this 
+userspace is perfect and there is never any memory allocated (otherwise it 
+may oom its own user root memcg where the notifier is hosted) and it is 
+always responsive and able to handle the situation.  This is not reality.
 
-Correction: that comment suggests that it was intentionally done. I
-didn't write the comment and I make no judgement on whether it makes
-sense or not (it looks like it would *normally* make sense, but I guess
-nobody thought of the case of a connection being done as part of
-disconnection after the cwd is gone).
+This is why the kernel has its own oom killer and doesn't wait for a user 
+to go to kill something.  There's no option to disable the kernel oom 
+killer.  It's because we don't want to leave the system in a state where 
+no progress can be made.  The same intention is for memcgs to not be left 
+in a state where no progress can be made even if userspace has the best 
+intentions.
 
-I'm just the guy getting bitten by the resulting oops :)
+Your solution of a global entity to prevent these situations doesn't work 
+for the same reason we can't implement the kernel oom killer in userspace.  
+It's the exact same reason.  We also want to push patches that allow 
+global oom conditions to trigger an eventfd notification on the root memcg 
+with the exact same semantics of a memcg oom: allow it time to respond but 
+step in and kill something if it fails to respond.  Memcg happens to be 
+the perfect place to implement such a userspace policy and we want to have 
+a priority-based killing mechanism that is hierarchical and different from 
+oom_score_adj.
 
--- 
-NULL && (void)
+For that to work properly, it cannot possibly allocate memory even on page 
+fault so it must be mlocked in memory and have enough buffers to store the 
+priorities of top-level memcgs.  Asking a global watchdog to sit there 
+mlocked in memory to store thousands of memcgs, their priorities, their 
+last oom, their timeouts, etc, is a non-starter.
+
+I don't buy your argument that we're pushing any interface to an extreme.  
+Users having the ability to manipulate their own memcgs and subcontainers 
+isn't extreme, it's explicitly allowed by cgroups!  What we're asking for 
+is that level of control for memcg is sane and that if userspace is 
+unresponsive that we don't lose gigabytes of memory forever.  And since 
+we've supported this type of functionality even before memcg was created 
+for cpusets and have used and supported it for six years, I have no 
+problem supporting such a thing upstream.
+
+I do understand that we're the largest user of memcg and use it unlike you 
+or others on this thread do, but that doesn't mean our usecase is any less 
+important or that we should aim for the most robust behavior possible.
