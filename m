@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757917Ab3FLUaI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 16:30:08 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53023 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756176Ab3FLUaG (ORCPT
+	id S932118Ab3FLUej (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 16:34:39 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:52988 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757639Ab3FLUei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 16:30:06 -0400
-Date: Wed, 12 Jun 2013 13:30:02 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: axboe@kernel.dk, tytso@mit.edu, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: Immutable biovecs, dio rewrite
-Message-ID: <20130612203002.GD6151@google.com>
-References: <1370744348-15407-1-git-send-email-koverstreet@google.com>
- <20130611052012.GJ29376@dastard>
+	Wed, 12 Jun 2013 16:34:38 -0400
+X-Originating-IP: 108.223.40.66
+Date: Wed, 12 Jun 2013 13:34:37 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+Subject: Re: [ 00/79] 3.9.6-stable review
+Message-ID: <20130612203437.GA16588@roeck-us.net>
+References: <20130611195312.352656079@linuxfoundation.org>
+ <20130612202915.GA27379@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130611052012.GJ29376@dastard>
+In-Reply-To: <20130612202915.GA27379@roeck-us.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 03:20:12PM +1000, Dave Chinner wrote:
-> Please test with XFS and CONFIG_XFS_DEBUG=y - xfstests will stress
-> the dio subsystem a lot more when it is run on XFS. Indeed, xfstests
-> generic/013 assert fails almost immediately with:
+On Wed, Jun 12, 2013 at 01:29:15PM -0700, Guenter Roeck wrote:
+> On Tue, Jun 11, 2013 at 01:02:26PM -0700, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.9.6 release.
+> > There are 79 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> > 
+> > Responses should be made by Thu Jun 13 19:50:17 UTC 2013.
+> > Anything received after that time might be too late.
+> > 
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.9.6-rc1.gz
+> > and the diffstat can be found below.
+> > 
+> powerpc defconfig and as well as various other powerpc builds fail with:
+> 
+> arch/powerpc/platforms/pseries/msi.c: In function 'rtas_hack_32bit_msi_gen2':
+> arch/powerpc/platforms/pseries/msi.c:408:34: error: 'struct pci_dev' has no member named 'msi_cap'
+> arch/powerpc/platforms/pseries/msi.c:410:35: error: 'struct pci_dev' has no member named 'msi_cap'
+> arch/powerpc/platforms/pseries/msi.c:411:35: error: 'struct pci_dev' has no member named 'msi_cap'
+> 
+> Introduced by commit 7b58b0edaa2 (powerpc/pseries: Make 32-bit MSI quirk work
+> on systems lacking firmware support).
+> 
+s/7b58b0edaa2/f1dd153121/
 
-Thanks - I haven't used xfstests much before. This one turned out to be
-an easy fix, but once I turned on CONFIG_XFS_DEBUG I hit something else
-I hadn't seen before:
+7b58b0edaa2 is from my git branch and won't help much.
 
-[ 1343.482366] XFS (sdb2): Corruption detected. Unmount and run xfs_repair
-[ 1343.482425] XFS (sdb2): bad inode magic/vsn daddr 64 #8 (magic=5858)
-[ 1343.482482] XFS: Assertion failed: 0, file: /home/kent/linux/fs/xfs/xfs_inode.c, line: 417
-[ 1343.482558] ------------[ cut here ]------------
-[ 1343.482611] kernel BUG at /home/kent/linux/fs/xfs/xfs_message.c:108!
-
-This one looks weirder - any thoughts on what might cause _that_?
-
-(Don't spend any time on it, I haven't tried to debug it besides glancing at
-the relevant xfs code - just curious if you have any pointers)
+Guenter
