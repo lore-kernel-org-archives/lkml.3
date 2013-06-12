@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756347Ab3FLT7Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 15:59:25 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:63890 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753202Ab3FLT7W (ORCPT
+	id S1754246Ab3FLUCK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 16:02:10 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:46655 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237Ab3FLUCI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 15:59:22 -0400
-Date: Wed, 12 Jun 2013 21:59:18 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] pwm: Fill in missing .owner fields
-Message-ID: <20130612195917.GA31835@mithrandir>
-References: <1371036553-32263-1-git-send-email-thierry.reding@gmail.com>
- <CAK9yfHyUT7KUkY3g2WJ7XiisLL5mvJuenv=UEK_9OqwfF7s4Zg@mail.gmail.com>
+	Wed, 12 Jun 2013 16:02:08 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uAKRQypu60I7Lcqm"
-Content-Disposition: inline
-In-Reply-To: <CAK9yfHyUT7KUkY3g2WJ7XiisLL5mvJuenv=UEK_9OqwfF7s4Zg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130612194346.GD15200@redhat.com>
+References: <20130612194346.GD15200@redhat.com>
+Date: Wed, 12 Jun 2013 16:02:07 -0400
+X-Google-Sender-Auth: 5JdRA711fvkX3xwhnBQECx_qeyw
+Message-ID: <CAKb7UvitVuujjvkGrkh4PYg7e6_9+G9yrx1t6rHoWpYEY-+_gw@mail.gmail.com>
+Subject: Re: WARNING: at drivers/scsi/scsi_lib.c:1196 scsi_setup_fs_cmnd
+ during RAID5 startup.
+From: Ilia Mirkin <imirkin@alum.mit.edu>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 12, 2013 at 3:43 PM, Dave Jones <davej@redhat.com> wrote:
+> 3.10 seems to have a problem with dirty RAID5 sets.
+>
+> I've got a machine that panics on boot during RAID5 activation.
+> After switching the BUG_ON to a WARN_ON, I was able to get this over serial console..
+>
+> md/raid:md0: not clean -- starting background reconstruction
+> md/raid:md0: device sdd1 operational as raid disk 2
+> md/raid:md0: device sdc1 operational as raid disk 1
+> md/raid:md0: device sdb1 operational as raid disk 0
+> md/raid:md0: allocated 3300kB
+> md/raid:md0: raid level 5 active with 3 out of 3 devices, algorithm 2
+> md0: detected capacity change from 0 to 499847790592
+> md: resync of RAID array md0
+> md: minimum _guaranteed_  speed: 1000 KB/sec/disk.
+> md: using maximum available idle IO bandwidth (but not more than 200000 KB/sec) for resync.
+> md: using 128k window, over a total of 244066304k.
+> md: resuming resync of md0 from checkpoint.
+> WARNING: at drivers/scsi/scsi_lib.c:1196 scsi_setup_fs_cmnd+0xa3/0xb0()
+> Modules linked in: raid456 async_raid6_recov async_memcpy async_pq async_xor async_tx kvm_amd xor kvm snd_hda_codec_realtek raid6_pq snd_hda_intel snd_hda_codec btusb microcode snd_pcm bluetooth edac_core pcspkr serio_raw snd_page_alloc snd_timer snd soundcore rfkill r8169 mii sr_mod cdrom pata_atiixp radeon backlight drm_kms_helper ttm
+> CPU: 1 PID: 160 Comm: kworker/1:1H Not tainted 3.10.0-rc5+ #2
+> Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
+> Workqueue: kblockd blk_delay_work
+>  ffffffff81a4499d ffff8801225f5bb8 ffffffff816aeb63 ffff8801225f5bf0
+>  ffffffff810432b0 ffff880123039148 ffff8801233e8b00 ffff8801225f5fd8
+>  ffff880123039148 ffff880123071290 ffff8801225f5c00 ffffffff8104339a
+> Call Trace:
+>  [<ffffffff816aeb63>] dump_stack+0x19/0x1b
+>  [<ffffffff810432b0>] warn_slowpath_common+0x70/0xa0
+>  [<ffffffff8104339a>] warn_slowpath_null+0x1a/0x20
+>  [<ffffffff8145d7f3>] scsi_setup_fs_cmnd+0xa3/0xb0
+>  [<ffffffff8146bb80>] sd_prep_fn+0x330/0xf60
+>  [<ffffffff813059cc>] blk_peek_request+0x13c/0x320
+>  [<ffffffff8145db12>] scsi_request_fn+0x52/0x540
+>  [<ffffffff81301ae9>] ? blk_delay_work+0x19/0x40
+>  [<ffffffff813018f2>] __blk_run_queue+0x32/0x40
+>  [<ffffffff81301af5>] blk_delay_work+0x25/0x40
+>  [<ffffffff810690f1>] process_one_work+0x211/0x6f0
+>  [<ffffffff81069085>] ? process_one_work+0x1a5/0x6f0
+>  [<ffffffff810696ec>] worker_thread+0x11c/0x390
+>  [<ffffffff810695d0>] ? process_one_work+0x6f0/0x6f0
+>  [<ffffffff81071c8d>] kthread+0xed/0x100
+>  [<ffffffff81071ba0>] ? insert_kthread_work+0x80/0x80
+>  [<ffffffff816bee5c>] ret_from_fork+0x7c/0xb0
+>  [<ffffffff81071ba0>] ? insert_kthread_work+0x80/0x80
+> ---[ end trace 22d5bd5ee9fceb9e ]---
+>
+>
+> 3.9 boots fine, and puts it into recovery mode..
+>
+> $ cat /proc/mdstat
+> Personalities : [raid6] [raid5] [raid4]
+> md0 : active raid5 sdd1[2] sdb1[0] sdc1[1]
+>       488132608 blocks super 1.2 level 5, 512k chunk, algorithm 2 [3/3] [UUU]
+>       [>....................]  resync =  0.7% (1762712/244066304) finish=73.3min speed=55084K/sec
+>
+> unused devices: <none>
+>
 
---uAKRQypu60I7Lcqm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I had the same problem... I think you're looking for this patch:
+https://lkml.org/lkml/2013/5/19/75
 
-On Wed, Jun 12, 2013 at 05:05:18PM +0530, Sachin Kamat wrote:
-> Hi Thierry,
->=20
-> On 12 June 2013 16:59, Thierry Reding <thierry.reding@gmail.com> wrote:
-> > Some drivers don't set the .owner fields of the struct device_driver or
-> > struct pwm_ops, which causes the module usage count to become wrong.
->=20
->=20
-> Recently a patch [1] was added to solve this issue of missing .owner
-> fileds in struct platform_driver.
-
-Yes I saw that, but thought it might be good to initialize them anyway.
-Especially since a couple of the drivers are I2C and I believe there's
-no similar patch for those. It shouldn't be difficult to come up with
-the corresponding patch, though.
-
-I wonder if it'd make sense to remove all the explicit assignments of
-=2Eowner =3D THIS_MODULE in platform drivers once the patch you mentioned
-has been merged. Cc'ing Greg to find out what he thinks about it.
-
-> Probably something similar could be done for struct pwm_ops too?
-
-Possibly. The issue isn't quite as bad in the PWM subsystem since I'm
-now aware of the problem and will look for it specifically in the
-future. It's a different matter for struct device_driver since that's
-used all over the place.
-
-Thierry
-
-> [1] https://patchwork.kernel.org/patch/2612961/
->=20
-> --=20
-> With warm regards,
-> Sachin
-
---uAKRQypu60I7Lcqm
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRuNMVAAoJEN0jrNd/PrOhHKIP/Ar6oOexcWa7CP95Gm3c2n0T
-hA3cw5vNcvOE++lWIir4G/5M4VCFMTvd/b//lYWdyccWiQZmXFj8Pwq1VmpTnFvA
-1b4fJJtDckycENXGikMQJOMw6t67u7a+qdZ5Njxi1RuWoCKO2S/mjReOwaZ6SsEn
-Esn7iIMlmlEWUPLDODSLnkGNEUg3Sw/TmJqSahw8/tbnPjI+Ujz2F8KJyZDrzJhu
-4i1wdRhd3f28JLziHhvg6kbormh3n5Kznf0ksCc91H9r+GtxahMozd9qnIF2aeCu
-9nBV1mJitEQV+2HSzadHrkugWALruWYE/Q/OSxKh297dpySU4jgTU50JaO6N7jsx
-7WG4xdWENMw1TsHZIvc/He1QKWyIFlZFpnnfW36Mh87FYF9ABpycXohc4n3n2cWx
-XGX10qM2eI/9A8AGNg8PYg9S5Ic1sWO+ALum6HxFxQZ9PXj8vbq8GSDnnGqGJ+4a
-wpru/75iwsg3ONkNTn6OF+HMtkUEpZBqaDTCUo2nHKC3z7yeLzS+3u6+IPMyXGtq
-l2XzOuD5jG4E6ZVJW7Y5MKBXJ5dUMBUyEQPBIUIB2X8ghhFRKdcpO9ucIFlX3FXT
-wvlCwVZWXCIyvbis5Hb1x812XIo1TuXmf9lIiOglvAgDX8YfpqOUPiGdq8A87qgD
-58l2fruNMs869NZnpDg2
-=aOYT
------END PGP SIGNATURE-----
-
---uAKRQypu60I7Lcqm--
+  -ilia
