@@ -1,147 +1,387 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634Ab3FLMsj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 08:48:39 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:55665 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402Ab3FLMsh (ORCPT
+	id S1756767Ab3FLMs4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 08:48:56 -0400
+Received: from mail.advaoptical.com ([91.217.199.15]:53620 "EHLO
+	mail.advaoptical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756671Ab3FLMsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 08:48:37 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [RFC] pinctrl: generic: Add DT bindings
-To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-kernel@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        James Hogan <james.hogan@imgtec.com>, linux-sh@vger.kernel.org
-In-Reply-To: <1370988237-30593-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-References: <1370988237-30593-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-Date: Wed, 12 Jun 2013 13:48:33 +0100
-Message-Id: <20130612124833.A3ADB3E0A56@localhost>
+	Wed, 12 Jun 2013 08:48:54 -0400
+From: Oded Gabbay <ogabbay@advaoptical.com>
+To: <benh@kernel.crashing.org>, <paulus@samba.org>, <leoli@freescale.com>,
+        <galak@kernel.crashing.org>, <B38951@freescale.com>,
+        <Dongsheng.Wang@freescale.com>, <bigeasy@linutronix.de>,
+        <stef.van.os@prodrive.nl>, <timur@tabi.org>, <davem@davemloft.net>,
+        <ogabbay@advaoptical.com>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>
+Subject: [PATCH] MDIO: FSL_PQ_MDIO: Fix bug on incorrect offset of tbipa register
+Date: Wed, 12 Jun 2013 15:47:38 +0300
+Message-ID: <1371041258-15298-1-git-send-email-ogabbay@advaoptical.com>
+X-Mailer: git-send-email 1.8.3.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [192.168.179.55]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-06-12_03:2013-06-12,2013-06-12,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Jun 2013 00:03:57 +0200, Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com> wrote:
-> Document DT properties for the generic pinctrl parameters and add a
-> parser function.
-> 
-> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-> ---
->  .../bindings/pinctrl/pinctrl-bindings.txt          | 29 +++++++
->  drivers/pinctrl/pinconf-generic.c                  | 94 ++++++++++++++++++++++
->  drivers/pinctrl/pinconf.h                          | 17 ++++
->  3 files changed, 140 insertions(+)
-> 
-> I've successfully tested this patch (or more accurately only the pull-up and
-> pull-down properties) with the Renesas sh-pfc pinctrl device driver. I will
-> resent the sh-pfc DT bindings patch series rebased on the generic pinconf
-> bindings.
-> 
-> Not all generic pinconf properties are currently implemented, but I don't
-> think that should be a showstopper. We can add them later as needed.
-> 
-> The code is based on both the sh-pfc pinconf DT parser and James Hogan's
-> tz1090 DT parser ("[PATCH v2 6/9] pinctrl-tz1090: add TZ1090 pinctrl driver").
-> 
-> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-> index c95ea82..e499ff0 100644
-> --- a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-> +++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-> @@ -126,3 +126,32 @@ device; they may be grandchildren, for example. Whether this is legal, and
->  whether there is any interaction between the child and intermediate parent
->  nodes, is again defined entirely by the binding for the individual pin
->  controller device.
-> +
-> +== Generic pinconf parameters ==
-> +
-> +Pin configuration parameters are expressed by DT properties in the pin
-> +controller device state nodes and child nodes. For devices that use the generic
-> +pinconf parameters the following properties are defined.
-> +
-> +- tristate: A boolean, put the pin into high impedance state when set.
-> +
-> +- pull-up: An integer representing the pull-up strength. 0 disables the pull-up,
-> +  non-zero values enable it.
-> +
-> +- pull-down: An integer representing the pull-down strength. 0 disables the
-> +  pull-down, non-zero values enables it.
-> +
-> +- schmitt: An integer, enable or disable Schmitt trigger mode for the pins.
-> +  Valid values are
-> +    0: Schmitt trigger disabled (no hysteresis)
-> +    1: Schmitt trigger enabled
-> +
-> +- slew-rate: An integer controlling the pin slew rate. Values are device-
-> +  dependent.
-> +
-> +- drive-strength: An integer representing the drive strength of pins in mA.
-> +  Valid values are device-dependent.
-> +
-> +The pinctrl device DT bindings documentation must list the properties that
-> +apply to the device, and define the valid range for all device-dependent
-> +values.
+This patch fixes a bug in the fsl_pq_mdio.c module and in relevant device-tree
+files regarding the correct offset of the tbipa register in the eTSEC
+controller in some of Freescale's PQ3 and QorIQ SoC.
+The bug happens when the mdio in the device tree is configured to be compatible
+to "fsl,gianfar-tbi". Because the mdio device in the device tree points to
+addresses 25520, 26520 or 27520 (depends on the controller ID), the variable
+priv->map at function fsl_pq_mdio_probe, points to that address. However,
+later in the function there is a write to register tbipa that is actually
+located at 25030, 26030 or 27030. Because the correct address is not io mapped,
+the contents are written to a different register in the controller.
+The fix sets the address of the mdio device to start at 25000, 26000 or 27000
+and changes the mii_offset field to 0x520 in the relevant entry
+(fsl,gianfar-tbi) of the fsl_pq_mdio_match array.
 
-I don't see any problem with the above properties, but I would like to
-see an example. How verbose will a pinctrl node using the generic
-properties tend to be?
+Note: This patch may break MDIO functionallity of some old Freescale's SoC
+until Freescale will fix their device tree files. Basically, every device tree
+which contains an mdio device that is compatible to "fsl,gianfar-tbi" should be
+examined.
 
-> diff --git a/drivers/pinctrl/pinconf-generic.c b/drivers/pinctrl/pinconf-generic.c
-> index 2ad5a8d..bd0e41d 100644
-> --- a/drivers/pinctrl/pinconf-generic.c
-> +++ b/drivers/pinctrl/pinconf-generic.c
-> @@ -15,6 +15,7 @@
->  #include <linux/module.h>
->  #include <linux/init.h>
->  #include <linux/device.h>
-> +#include <linux/of.h>
->  #include <linux/slab.h>
->  #include <linux/debugfs.h>
->  #include <linux/seq_file.h>
-> @@ -135,3 +136,96 @@ void pinconf_generic_dump_config(struct pinctrl_dev *pctldev,
->  }
->  EXPORT_SYMBOL_GPL(pinconf_generic_dump_config);
->  #endif
-> +
-> +struct pinconf_generic_param {
-> +	const char *property;
-> +	enum pin_config_param param;
-> +	bool flag;
-> +};
-> +
-> +static const struct pinconf_generic_param pinconf_generic_params[] = {
-> +	{ "tristate",		PIN_CONFIG_BIAS_HIGH_IMPEDANCE,		true },
-> +	{ "pull-up",		PIN_CONFIG_BIAS_PULL_UP,		false },
-> +	{ "pull-down",		PIN_CONFIG_BIAS_PULL_DOWN,		false },
-> +	{ "schmitt",		PIN_CONFIG_INPUT_SCHMITT_ENABLE,	true },
-> +	{ "slew-rate",		PIN_CONFIG_SLEW_RATE,			false },
-> +	{ "drive-strength",	PIN_CONFIG_DRIVE_STRENGTH,		false },
-> +};
-> +
-> +static int pinconf_generic_add_config(unsigned long **configs,
-> +				      unsigned int *num_configs,
-> +				      unsigned long config)
-> +{
-> +	unsigned int count = *num_configs + 1;
-> +	unsigned long *cfgs;
-> +
-> +	cfgs = krealloc(*configs, sizeof(*cfgs) * count, GFP_KERNEL);
-> +	if (cfgs == NULL)
-> +		return -ENOMEM;
-> +
-> +	cfgs[count - 1] = config;
-> +
-> +	*configs = cfgs;
-> +	*num_configs = count;
-> +
-> +	return 0;
-> +}
+Signed-off-by: Oded Gabbay <ogabbay@advaoptical.com>
+---
+ arch/powerpc/boot/dts/fsl/pq3-etsec1-1.dtsi    | 4 ++--
+ arch/powerpc/boot/dts/fsl/pq3-etsec1-2.dtsi    | 4 ++--
+ arch/powerpc/boot/dts/fsl/pq3-etsec1-3.dtsi    | 4 ++--
+ arch/powerpc/boot/dts/ge_imp3a.dts             | 4 ++--
+ arch/powerpc/boot/dts/mpc8536ds.dtsi           | 4 ++--
+ arch/powerpc/boot/dts/mpc8544ds.dtsi           | 2 +-
+ arch/powerpc/boot/dts/mpc8548cds.dtsi          | 6 +++---
+ arch/powerpc/boot/dts/mpc8568mds.dts           | 2 +-
+ arch/powerpc/boot/dts/mpc8572ds.dtsi           | 6 +++---
+ arch/powerpc/boot/dts/mpc8572ds_camp_core0.dts | 4 ++--
+ arch/powerpc/boot/dts/mpc8572ds_camp_core1.dts | 2 +-
+ arch/powerpc/boot/dts/p2020ds.dtsi             | 4 ++--
+ arch/powerpc/boot/dts/p2020rdb-pc.dtsi         | 4 ++--
+ arch/powerpc/boot/dts/p2020rdb.dts             | 4 ++--
+ arch/powerpc/boot/dts/ppa8548.dts              | 6 +++---
+ drivers/net/ethernet/freescale/fsl_pq_mdio.c   | 2 +-
+ 16 files changed, 31 insertions(+), 31 deletions(-)
 
-Hmmm. We really need a better method of parsing multiple properties.
-I've been toying around with a few ideas, but haven't been able to draft
-something I'm happy with yeat.
-
-Regardless, the code in this patch looks fine to me.
-
-g.
+diff --git a/arch/powerpc/boot/dts/fsl/pq3-etsec1-1.dtsi b/arch/powerpc/boot/dts/fsl/pq3-etsec1-1.dtsi
+index 96693b4..d38bf63 100644
+--- a/arch/powerpc/boot/dts/fsl/pq3-etsec1-1.dtsi
++++ b/arch/powerpc/boot/dts/fsl/pq3-etsec1-1.dtsi
+@@ -46,9 +46,9 @@ ethernet@25000 {
+ 	interrupts = <35 2 0 0 36 2 0 0 40 2 0 0>;
+ };
+ 
+-mdio@25520 {
++mdio@25000 {
+ 	#address-cells = <1>;
+ 	#size-cells = <0>;
+ 	compatible = "fsl,gianfar-tbi";
+-	reg = <0x25520 0x20>;
++	reg = <0x25000 0x1000>;
+ };
+diff --git a/arch/powerpc/boot/dts/fsl/pq3-etsec1-2.dtsi b/arch/powerpc/boot/dts/fsl/pq3-etsec1-2.dtsi
+index 6b3fab1..6290b49 100644
+--- a/arch/powerpc/boot/dts/fsl/pq3-etsec1-2.dtsi
++++ b/arch/powerpc/boot/dts/fsl/pq3-etsec1-2.dtsi
+@@ -46,9 +46,9 @@ ethernet@26000 {
+ 	interrupts = <31 2 0 0 32 2 0 0 33 2 0 0>;
+ };
+ 
+-mdio@26520 {
++mdio@26000 {
+ 	#address-cells = <1>;
+ 	#size-cells = <0>;
+ 	compatible = "fsl,gianfar-tbi";
+-	reg = <0x26520 0x20>;
++	reg = <0x26000 0x1000>;
+ };
+diff --git a/arch/powerpc/boot/dts/fsl/pq3-etsec1-3.dtsi b/arch/powerpc/boot/dts/fsl/pq3-etsec1-3.dtsi
+index 0da592d..5296811 100644
+--- a/arch/powerpc/boot/dts/fsl/pq3-etsec1-3.dtsi
++++ b/arch/powerpc/boot/dts/fsl/pq3-etsec1-3.dtsi
+@@ -46,9 +46,9 @@ ethernet@27000 {
+ 	interrupts = <37 2 0 0 38 2 0 0 39 2 0 0>;
+ };
+ 
+-mdio@27520 {
++mdio@27000 {
+ 	#address-cells = <1>;
+ 	#size-cells = <0>;
+ 	compatible = "fsl,gianfar-tbi";
+-	reg = <0x27520 0x20>;
++	reg = <0x27000 0x1000>;
+ };
+diff --git a/arch/powerpc/boot/dts/ge_imp3a.dts b/arch/powerpc/boot/dts/ge_imp3a.dts
+index fefae41..49d9b4e 100644
+--- a/arch/powerpc/boot/dts/ge_imp3a.dts
++++ b/arch/powerpc/boot/dts/ge_imp3a.dts
+@@ -174,14 +174,14 @@
+ 			};
+ 		};
+ 
+-		mdio@25520 {
++		mdio@25000 {
+ 			tbi1: tbi-phy@11 {
+ 				reg = <0x11>;
+ 				device_type = "tbi-phy";
+ 			};
+ 		};
+ 
+-		mdio@26520 {
++		mdio@26000 {
+ 			status = "disabled";
+ 		};
+ 
+diff --git a/arch/powerpc/boot/dts/mpc8536ds.dtsi b/arch/powerpc/boot/dts/mpc8536ds.dtsi
+index 7c3dde8..c4df5a1 100644
+--- a/arch/powerpc/boot/dts/mpc8536ds.dtsi
++++ b/arch/powerpc/boot/dts/mpc8536ds.dtsi
+@@ -227,11 +227,11 @@
+ 		phy-connection-type = "rgmii-id";
+ 	};
+ 
+-	mdio@26520 {
++	mdio@26000 {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 		compatible = "fsl,gianfar-tbi";
+-		reg = <0x26520 0x20>;
++		reg = <0x26000 0x1000>;
+ 
+ 		tbi1: tbi-phy@11 {
+ 			reg = <0x11>;
+diff --git a/arch/powerpc/boot/dts/mpc8544ds.dtsi b/arch/powerpc/boot/dts/mpc8544ds.dtsi
+index b219d03..ba051b2 100644
+--- a/arch/powerpc/boot/dts/mpc8544ds.dtsi
++++ b/arch/powerpc/boot/dts/mpc8544ds.dtsi
+@@ -111,7 +111,7 @@
+ 		phy-connection-type = "rgmii-id";
+ 	};
+ 
+-	mdio@26520 {
++	mdio@26000 {
+ 		tbi1: tbi-phy@11 {
+ 			reg = <0x11>;
+ 			device_type = "tbi-phy";
+diff --git a/arch/powerpc/boot/dts/mpc8548cds.dtsi b/arch/powerpc/boot/dts/mpc8548cds.dtsi
+index c61f525..85da565 100644
+--- a/arch/powerpc/boot/dts/mpc8548cds.dtsi
++++ b/arch/powerpc/boot/dts/mpc8548cds.dtsi
+@@ -137,7 +137,7 @@
+ 		phy-handle = <&phy1>;
+ 	};
+ 
+-	mdio@25520 {
++	mdio@25000 {
+ 		tbi1: tbi-phy@11 {
+ 			reg = <0x11>;
+ 			device_type = "tbi-phy";
+@@ -149,7 +149,7 @@
+ 		phy-handle = <&phy2>;
+ 	};
+ 
+-	mdio@26520 {
++	mdio@26000 {
+ 		tbi2: tbi-phy@11 {
+ 			reg = <0x11>;
+ 			device_type = "tbi-phy";
+@@ -161,7 +161,7 @@
+ 		phy-handle = <&phy3>;
+ 	};
+ 
+-	mdio@27520 {
++	mdio@27000 {
+ 		tbi3: tbi-phy@11 {
+ 			reg = <0x11>;
+ 			device_type = "tbi-phy";
+diff --git a/arch/powerpc/boot/dts/mpc8568mds.dts b/arch/powerpc/boot/dts/mpc8568mds.dts
+index 09598bb..30cd8b8 100644
+--- a/arch/powerpc/boot/dts/mpc8568mds.dts
++++ b/arch/powerpc/boot/dts/mpc8568mds.dts
+@@ -120,7 +120,7 @@
+ 			sleep = <&pmc 0x00000040>;
+ 		};
+ 
+-		mdio@25520 {
++		mdio@25000 {
+ 			tbi1: tbi-phy@11 {
+ 				reg = <0x11>;
+ 				device_type = "tbi-phy";
+diff --git a/arch/powerpc/boot/dts/mpc8572ds.dtsi b/arch/powerpc/boot/dts/mpc8572ds.dtsi
+index 357490b..c82a800 100644
+--- a/arch/powerpc/boot/dts/mpc8572ds.dtsi
++++ b/arch/powerpc/boot/dts/mpc8572ds.dtsi
+@@ -208,7 +208,7 @@
+ 
+ 	};
+ 
+-	mdio@25520 {
++	mdio@25000 {
+ 		tbi1: tbi-phy@11 {
+ 			reg = <0x11>;
+ 			device_type = "tbi-phy";
+@@ -221,7 +221,7 @@
+ 		phy-connection-type = "rgmii-id";
+ 
+ 	};
+-	mdio@26520 {
++	mdio@26000 {
+ 		tbi2: tbi-phy@11 {
+ 			reg = <0x11>;
+ 			device_type = "tbi-phy";
+@@ -234,7 +234,7 @@
+ 		phy-connection-type = "rgmii-id";
+ 	};
+ 
+-	mdio@27520 {
++	mdio@27000 {
+ 		tbi3: tbi-phy@11 {
+ 			reg = <0x11>;
+ 			device_type = "tbi-phy";
+diff --git a/arch/powerpc/boot/dts/mpc8572ds_camp_core0.dts b/arch/powerpc/boot/dts/mpc8572ds_camp_core0.dts
+index ef9ef56..5dae410 100644
+--- a/arch/powerpc/boot/dts/mpc8572ds_camp_core0.dts
++++ b/arch/powerpc/boot/dts/mpc8572ds_camp_core0.dts
+@@ -47,13 +47,13 @@
+ 		ethernet@26000 {
+ 			status = "disabled";
+ 		};
+-		mdio@26520 {
++		mdio@26000 {
+ 			status = "disabled";
+ 		};
+ 		ethernet@27000 {
+ 			status = "disabled";
+ 		};
+-		mdio@27520 {
++		mdio@27000 {
+ 			status = "disabled";
+ 		};
+ 		pic@40000 {
+diff --git a/arch/powerpc/boot/dts/mpc8572ds_camp_core1.dts b/arch/powerpc/boot/dts/mpc8572ds_camp_core1.dts
+index 24564ee..706e782 100644
+--- a/arch/powerpc/boot/dts/mpc8572ds_camp_core1.dts
++++ b/arch/powerpc/boot/dts/mpc8572ds_camp_core1.dts
+@@ -73,7 +73,7 @@
+ 		ethernet@25000 {
+ 			status = "disabled";
+ 		};
+-		mdio@25520 {
++		mdio@25000 {
+ 			status = "disabled";
+ 		};
+ 		crypto@30000 {
+diff --git a/arch/powerpc/boot/dts/p2020ds.dtsi b/arch/powerpc/boot/dts/p2020ds.dtsi
+index e699cf9..1e9001c 100644
+--- a/arch/powerpc/boot/dts/p2020ds.dtsi
++++ b/arch/powerpc/boot/dts/p2020ds.dtsi
+@@ -167,14 +167,14 @@
+ 
+ 	};
+ 
+-	mdio@25520 {
++	mdio@25000 {
+ 		tbi1: tbi-phy@11 {
+ 			reg = <0x11>;
+ 			device_type = "tbi-phy";
+ 		};
+ 	};
+ 
+-	mdio@26520 {
++	mdio@26000 {
+ 		tbi2: tbi-phy@11 {
+ 			reg = <0x11>;
+ 			device_type = "tbi-phy";
+diff --git a/arch/powerpc/boot/dts/p2020rdb-pc.dtsi b/arch/powerpc/boot/dts/p2020rdb-pc.dtsi
+index c21d1c7..994cb4c 100644
+--- a/arch/powerpc/boot/dts/p2020rdb-pc.dtsi
++++ b/arch/powerpc/boot/dts/p2020rdb-pc.dtsi
+@@ -203,14 +203,14 @@
+ 			};
+ 	};
+ 
+-	mdio@25520 {
++	mdio@25000 {
+ 		tbi0: tbi-phy@11 {
+ 			reg = <0x11>;
+ 			device_type = "tbi-phy";
+ 		};
+ 	};
+ 
+-	mdio@26520 {
++	mdio@26000 {
+ 		status = "disabled";
+ 	};
+ 
+diff --git a/arch/powerpc/boot/dts/p2020rdb.dts b/arch/powerpc/boot/dts/p2020rdb.dts
+index 4d52bce..b6f50e1 100644
+--- a/arch/powerpc/boot/dts/p2020rdb.dts
++++ b/arch/powerpc/boot/dts/p2020rdb.dts
+@@ -215,14 +215,14 @@
+ 			};
+ 		};
+ 
+-		mdio@25520 {
++		mdio@25000 {
+ 			tbi0: tbi-phy@11 {
+ 				reg = <0x11>;
+ 				device_type = "tbi-phy";
+ 			};
+ 		};
+ 
+-		mdio@26520 {
++		mdio@26000 {
+ 			status = "disabled";
+ 		};
+ 
+diff --git a/arch/powerpc/boot/dts/ppa8548.dts b/arch/powerpc/boot/dts/ppa8548.dts
+index f97ecee..2117927 100644
+--- a/arch/powerpc/boot/dts/ppa8548.dts
++++ b/arch/powerpc/boot/dts/ppa8548.dts
+@@ -128,7 +128,7 @@
+ 		phy-handle = <&phy0>;
+ 	};
+ 
+-	mdio@25520 {
++	mdio@25000 {
+ 		tbi1: tbi-phy@11 {
+ 			reg = <0x11>;
+ 			device_type = "tbi-phy";
+@@ -140,7 +140,7 @@
+ 		phy-handle = <&phy1>;
+ 	};
+ 
+-	mdio@26520 {
++	mdio@26000 {
+ 		tbi2: tbi-phy@11 {
+ 			reg = <0x11>;
+ 			device_type = "tbi-phy";
+@@ -151,7 +151,7 @@
+ 		status = "disabled";
+ 	};
+ 
+-	mdio@27520 {
++	mdio@27000 {
+ 		tbi3: tbi-phy@11 {
+ 			reg = <0x11>;
+ 			device_type = "tbi-phy";
+diff --git a/drivers/net/ethernet/freescale/fsl_pq_mdio.c b/drivers/net/ethernet/freescale/fsl_pq_mdio.c
+index c93a056..4228c4e 100644
+--- a/drivers/net/ethernet/freescale/fsl_pq_mdio.c
++++ b/drivers/net/ethernet/freescale/fsl_pq_mdio.c
+@@ -288,7 +288,7 @@ static struct of_device_id fsl_pq_mdio_match[] = {
+ 	{
+ 		.compatible = "fsl,gianfar-tbi",
+ 		.data = &(struct fsl_pq_mdio_data) {
+-			.mii_offset = 0,
++			.mii_offset = 0x520,
+ 			.get_tbipa = get_gfar_tbipa,
+ 		},
+ 	},
+-- 
+1.8.3.1
 
