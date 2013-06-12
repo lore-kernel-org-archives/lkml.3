@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211Ab3FLVFR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 17:05:17 -0400
-Received: from mail-ye0-f174.google.com ([209.85.213.174]:57193 "EHLO
-	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757932Ab3FLVDp (ORCPT
+	id S932234Ab3FLVFp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 17:05:45 -0400
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:49959 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758074Ab3FLVDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 17:03:45 -0400
+	Wed, 12 Jun 2013 17:03:41 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         koverstreet@google.com, linux-kernel@vger.kernel.org,
         cl@linux-foundation.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/11] cgroup: drop unnecessary RCU dancing from __put_css_set()
-Date: Wed, 12 Jun 2013 14:03:12 -0700
-Message-Id: <1371070996-20613-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 05/11] cgroup: clean up css_[try]get() and css_put()
+Date: Wed, 12 Jun 2013 14:03:10 -0700
+Message-Id: <1371070996-20613-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1371070996-20613-1-git-send-email-tj@kernel.org>
 References: <1371070996-20613-1-git-send-email-tj@kernel.org>
@@ -22,77 +22,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__put_css_set() does RCU read access on @cgrp across dropping
-@cgrp->count so that it can continue accessing @cgrp even if the count
-reached zero and destruction of the cgroup commenced.  Given that both
-sides - __css_put() and cgroup_destroy_locked() - are cold paths, this
-is unnecessary.  Just making cgroup_destroy_locked() grab css_set_lock
-while checking @cgrp->count is enough.
+* __css_get() isn't used by anyone.  Fold it into css_get().
 
-Remove the RCU read locking from __put_css_set() and make
-cgroup_destroy_locked() read-lock css_set_lock when checking
-@cgrp->count.  This will also allow removing @cgrp->count.
+* Add proper function comments to all css reference functions.
+
+This patch is purely cosmetic.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/cgroup.c | 20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+ include/linux/cgroup.h | 48 ++++++++++++++++++++++++------------------------
+ 1 file changed, 24 insertions(+), 24 deletions(-)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 0343df5..efe500b 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -407,19 +407,13 @@ static void __put_css_set(struct css_set *cset, int taskexit)
- 		list_del_init(&link->cset_link);
- 		list_del_init(&link->cgrp_link);
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 0e32855..7b16882 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -94,33 +94,31 @@ enum {
+ 	CSS_ONLINE	= (1 << 1), /* between ->css_online() and ->css_offline() */
+ };
  
--		/*
--		 * We may not be holding cgroup_mutex, and if cgrp->count is
--		 * dropped to 0 the cgroup can be destroyed at any time, hence
--		 * rcu_read_lock is used to keep it alive.
--		 */
--		rcu_read_lock();
-+		/* @cgrp can't go away while we're holding css_set_lock */
- 		if (atomic_dec_and_test(&cgrp->count) &&
- 		    notify_on_release(cgrp)) {
- 			if (taskexit)
- 				set_bit(CGRP_RELEASABLE, &cgrp->flags);
- 			check_for_release(cgrp);
- 		}
--		rcu_read_unlock();
- 
- 		kfree(link);
- 	}
-@@ -4373,11 +4367,19 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
- 	struct cgroup *parent = cgrp->parent;
- 	struct cgroup_event *event, *tmp;
- 	struct cgroup_subsys *ss;
-+	bool empty;
- 
- 	lockdep_assert_held(&d->d_inode->i_mutex);
- 	lockdep_assert_held(&cgroup_mutex);
- 
--	if (atomic_read(&cgrp->count) || !list_empty(&cgrp->children))
-+	/*
-+	 * css_set_lock prevents @cgrp from being removed while
-+	 * __put_css_set() is in progress.
-+	 */
-+	read_lock(&css_set_lock);
-+	empty = !atomic_read(&cgrp->count) && list_empty(&cgrp->children);
-+	read_unlock(&css_set_lock);
-+	if (!empty)
- 		return -EBUSY;
- 
- 	/*
-@@ -5054,8 +5056,6 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
- 
- static void check_for_release(struct cgroup *cgrp)
+-/* Caller must verify that the css is not for root cgroup */
+-static inline void __css_get(struct cgroup_subsys_state *css, int count)
+-{
+-	atomic_add(count, &css->refcnt);
+-}
+-
+-/*
+- * Call css_get() to hold a reference on the css; it can be used
+- * for a reference obtained via:
+- * - an existing ref-counted reference to the css
+- * - task->cgroups for a locked task
++/**
++ * css_get - obtain a reference on the specified css
++ * @css: taget css
++ *
++ * The caller must already have a reference.
+  */
+-
+ static inline void css_get(struct cgroup_subsys_state *css)
  {
--	/* All of these checks rely on RCU to keep the cgroup
--	 * structure alive */
- 	if (cgroup_is_releasable(cgrp) &&
- 	    !atomic_read(&cgrp->count) && list_empty(&cgrp->children)) {
- 		/*
+ 	/* We don't need to reference count the root state */
+ 	if (!(css->flags & CSS_ROOT))
+-		__css_get(css, 1);
++		atomic_inc(&css->refcnt);
+ }
+ 
+-/*
+- * Call css_tryget() to take a reference on a css if your existing
+- * (known-valid) reference isn't already ref-counted. Returns false if
+- * the css has been destroyed.
+- */
+-
+ extern bool __css_tryget(struct cgroup_subsys_state *css);
++
++/**
++ * css_tryget - try to obtain a reference on the specified css
++ * @css: target css
++ *
++ * Obtain a reference on @css if it's alive.  The caller naturally needs to
++ * ensure that @css is accessible but doesn't have to be holding a
++ * reference on it - IOW, RCU protected access is good enough for this
++ * function.  Returns %true if a reference count was successfully obtained;
++ * %false otherwise.
++ */
+ static inline bool css_tryget(struct cgroup_subsys_state *css)
+ {
+ 	if (css->flags & CSS_ROOT)
+@@ -128,12 +126,14 @@ static inline bool css_tryget(struct cgroup_subsys_state *css)
+ 	return __css_tryget(css);
+ }
+ 
+-/*
+- * css_put() should be called to release a reference taken by
+- * css_get() or css_tryget()
+- */
+-
+ extern void __css_put(struct cgroup_subsys_state *css);
++
++/**
++ * css_put - put a css reference
++ * @css: target css
++ *
++ * Put a reference obtained via css_get() and css_tryget().
++ */
+ static inline void css_put(struct cgroup_subsys_state *css)
+ {
+ 	if (!(css->flags & CSS_ROOT))
 -- 
 1.8.2.1
 
