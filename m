@@ -1,64 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab3FLLt4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 07:49:56 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:15475 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750878Ab3FLLtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 07:49:55 -0400
-Message-ID: <51B8605A.60402@imgtec.com>
-Date: Wed, 12 Jun 2013 12:49:46 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1754881Ab3FLL6Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 07:58:25 -0400
+Received: from 17.mo3.mail-out.ovh.net ([87.98.178.58]:37483 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751379Ab3FLL6X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 07:58:23 -0400
+Date: Wed, 12 Jun 2013 13:53:41 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: manjunath.goudar@linaro.org
+Cc: linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org, stern@rowland.harvard.edu, arnd@linaro.org,
+        gregkh@linuxfoundation.org, Greg KH <greg@kroah.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [PATCH 05/10] USB: EHCI: make ehci-atmel a separate driver
+Message-ID: <20130612115341.GP23653@game.jcrosoft.org>
+References: <yes>
+ <1360258447-27247-1-git-send-email-yes>
+ <5113e60e.c84e420a.08c3.ffffbeda@mx.google.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Mischa Jonker <Mischa.Jonker@synopsys.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf: add const qualifier to perf_pmu_register's 'name'
- arg
-References: <1370339148-5566-1-git-send-email-mjonker@synopsys.com> <20130604095801.GM8923@twins.programming.kicks-ass.net> <51ADBB1D.9060805@synopsys.com> <20130604110314.GN8923@twins.programming.kicks-ass.net> <51ADCAD1.8090900@synopsys.com> <20130604111816.GP8923@twins.programming.kicks-ass.net>
-In-Reply-To: <20130604111816.GP8923@twins.programming.kicks-ass.net>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_06_12_12_49_48
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5113e60e.c84e420a.08c3.ffffbeda@mx.google.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 7076280915546516274
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrhedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrhedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/13 12:18, Peter Zijlstra wrote:
-> On Tue, Jun 04, 2013 at 04:39:05PM +0530, Vineet Gupta wrote:
->> On 06/04/2013 04:33 PM, Peter Zijlstra wrote:
->>> Simlar 'complaint' for the ARC stuff really, only marketing speak :-) 
->>
->> You mean lack of prefix in this case (as opposed to MetaG).
+On 23:04 Thu 07 Feb     , manjunath.goudar@linaro.org wrote:
+> From: Manjunath Goudar <manjunath.goudar@linaro.org>
 > 
-> Nah, lack of proper (!markting speak) introduction to the arch ;-)
+> Separate the Atmel host controller driver from ehci-hcd host code
+> into its own driver module.
 > 
-> Is there something like the Intel SDM for these archs,
+> Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
+> Cc: Alan Stern <stern@rowland.harvard.edu>
+> Cc: Greg KH <greg@kroah.com>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Andrew Victor <linux@maxim.org.za>
+> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+> Cc: linux-usb@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-For metag, see the patchset intro for a brief (hopefully !marketing)
-intro and links to documentation. Meta is the marketing name, metag is
-generally used in code which reduces ambiguity with the word meta - tbh
-I'm not certain whether metag is short for metagence or means something
-else, but it's been that way for years now.
-
-http://lwn.net/Articles/534906/
-
-> if so, do we want
-> to make it easier to find them for people?
-
-Where would you suggest?
-
-Some other arches link to the linux-$ARCH project homepages in Kconfig
-help text which makes sense as that can then link to various
-documentation and be more easily kept up to date. Not all arches have a
-big project around them like that though.
-
-Cheers
-James
-
+Best Regards,
+J.
+> ---
+>  drivers/usb/host/Kconfig      |    7 ++++
+>  drivers/usb/host/Makefile     |    1 +
+>  drivers/usb/host/ehci-atmel.c |   78 ++++++++++++++++++++++-------------------
+>  drivers/usb/host/ehci-hcd.c   |    6 +---
+>  4 files changed, 51 insertions(+), 41 deletions(-)
+> 
+> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+> index 3689b7b..5a13f9d 100644
+> --- a/drivers/usb/host/Kconfig
+> +++ b/drivers/usb/host/Kconfig
+> @@ -176,6 +176,13 @@ config USB_EHCI_HCD_ORION
+>          ---help---
+>            Enables support for the on-chip EHCI controller on
+>            Morvell Orion chips.
+> +config USB_EHCI_HCD_AT91
+> +        tristate  "Support for Atmel on-chip EHCI USB controller"
+> +        depends on USB_EHCI_HCD && ARCH_AT91
+> +        default y
+> +        ---help---
+> +          Enables support for the on-chip EHCI controller on
+> +          Atmel chips.
+>  
+>  config USB_EHCI_MSM
+>  	bool "Support for MSM on-chip EHCI USB controller"
+> diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+> index 23b07dd..96b4839 100644
+> --- a/drivers/usb/host/Makefile
+> +++ b/drivers/usb/host/Makefile
+> @@ -31,6 +31,7 @@ obj-$(CONFIG_USB_EHCI_HCD_OMAP) += ehci-omap.o
+>  obj-$(CONFIG_USB_EHCI_HCD_SPEAR)+= ehci-spear.o
+>  obj-$(CONFIG_USB_EHCI_HCD_ORION)+= ehci-orion.o
+>  obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
+> +obj-$(CONFIG_USB_EHCI_HCD_AT91) += ehci-atmel.o
+>  obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
+>  obj-$(CONFIG_USB_ISP1362_HCD)	+= isp1362-hcd.o
+>  obj-$(CONFIG_USB_OHCI_HCD)	+= ohci-hcd.o
+> diff --git a/drivers/usb/host/ehci-atmel.c b/drivers/usb/host/ehci-atmel.c
+> index 27639487..2f06711 100644
+> --- a/drivers/usb/host/ehci-atmel.c
+> +++ b/drivers/usb/host/ehci-atmel.c
+> @@ -15,6 +15,19 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/of.h>
+>  #include <linux/of_platform.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/usb.h>
+> +#include <linux/usb/hcd.h>
+> +#include <linux/io.h>
+> +#include <linux/dma-mapping.h>
+> +
+> +#include "ehci.h"
+> +
+> +#define DRIVER_DESC "EHCI atmel driver"
+> +
+> +static const char hcd_name[] = "ehci-atmel";
+> +static struct hc_driver __read_mostly ehci_atmel_hc_driver;
+>  
+>  /* interface and function clocks */
+>  static struct clk *iclk, *fclk;
+> @@ -60,41 +73,6 @@ static int ehci_atmel_setup(struct usb_hcd *hcd)
+>  	return ehci_setup(hcd);
+>  }
+>  
+> -static const struct hc_driver ehci_atmel_hc_driver = {
+> -	.description		= hcd_name,
+> -	.product_desc		= "Atmel EHCI UHP HS",
+> -	.hcd_priv_size		= sizeof(struct ehci_hcd),
+> -
+> -	/* generic hardware linkage */
+> -	.irq			= ehci_irq,
+> -	.flags			= HCD_MEMORY | HCD_USB2,
+> -
+> -	/* basic lifecycle operations */
+> -	.reset			= ehci_atmel_setup,
+> -	.start			= ehci_run,
+> -	.stop			= ehci_stop,
+> -	.shutdown		= ehci_shutdown,
+> -
+> -	/* managing i/o requests and associated device resources */
+> -	.urb_enqueue		= ehci_urb_enqueue,
+> -	.urb_dequeue		= ehci_urb_dequeue,
+> -	.endpoint_disable	= ehci_endpoint_disable,
+> -	.endpoint_reset		= ehci_endpoint_reset,
+> -
+> -	/* scheduling support */
+> -	.get_frame_number	= ehci_get_frame,
+> -
+> -	/* root hub support */
+> -	.hub_status_data	= ehci_hub_status_data,
+> -	.hub_control		= ehci_hub_control,
+> -	.bus_suspend		= ehci_bus_suspend,
+> -	.bus_resume		= ehci_bus_resume,
+> -	.relinquish_port	= ehci_relinquish_port,
+> -	.port_handed_over	= ehci_port_handed_over,
+> -
+> -	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
+> -};
+> -
+>  static u64 at91_ehci_dma_mask = DMA_BIT_MASK(32);
+>  
+>  static int ehci_atmel_drv_probe(struct platform_device *pdev)
+> @@ -210,7 +188,35 @@ static struct platform_driver ehci_atmel_driver = {
+>  	.remove		= ehci_atmel_drv_remove,
+>  	.shutdown	= usb_hcd_platform_shutdown,
+>  	.driver		= {
+> -		.name	= "atmel-ehci",
+> +		.name	= hcd_name,
+>  		.of_match_table	= of_match_ptr(atmel_ehci_dt_ids),
+>  	},
+>  };
+> +
+> +static const struct ehci_driver_overrides atmel_overrides __initdata = {
+> +	.reset = ehci_atmel_setup,
+> +};
+> +
+> +static int __init ehci_atmel_init(void)
+> +{
+> +	if (usb_disabled())
+> +		return -ENODEV;
+> +
+> +	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
+> +	ehci_init_driver(&ehci_atmel_hc_driver, &atmel_overrides);
+> +	return platform_driver_register(&ehci_atmel_driver);
+> +}
+> +module_init(ehci_atmel_init);
+> +
+> +static void __exit ehci_atmel_cleanup(void)
+> +{
+> +	platform_driver_unregister(&ehci_atmel_driver);
+> +}
+> +module_exit(ehci_atmel_cleanup);
+> +
+> +MODULE_DESCRIPTION(DRIVER_DESC);
+> +
+> +MODULE_ALIAS("platform:ehci-atmel");
+> +MODULE_AUTHOR("Nicolas Ferre");
+> +MODULE_LICENSE("GPL");
+> +
+> diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+> index 5a19a57..628ed139 100644
+> --- a/drivers/usb/host/ehci-hcd.c
+> +++ b/drivers/usb/host/ehci-hcd.c
+> @@ -1272,11 +1272,6 @@ MODULE_LICENSE ("GPL");
+>  #define	PLATFORM_DRIVER		ehci_hcd_w90x900_driver
+>  #endif
+>  
+> -#ifdef CONFIG_ARCH_AT91
+> -#include "ehci-atmel.c"
+> -#define	PLATFORM_DRIVER		ehci_atmel_driver
+> -#endif
+> -
+>  #ifdef CONFIG_USB_OCTEON_EHCI
+>  #include "ehci-octeon.c"
+>  #define PLATFORM_DRIVER		ehci_octeon_driver
+> @@ -1334,6 +1329,7 @@ MODULE_LICENSE ("GPL");
+>  	!defined(PLATFORM_DRIVER) && \
+>  	!IS_ENABLED(CONFIG_USB_EHCI_HCD_OMAP) && \
+>  	!IS_ENABLED(CONFIG_PLAT_SPEAR) && \
+> +	!IS_ENABLED(CONFIG_ARCH_AT91) && \
+>  	!defined(PS3_SYSTEM_BUS_DRIVER) && \
+>  	!defined(OF_PLATFORM_DRIVER) && \
+>  	!defined(XILINX_OF_PLATFORM_DRIVER)
+> -- 
+> 1.7.9.5
+> 
