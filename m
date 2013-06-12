@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756759Ab3FLMe4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 08:34:56 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:42729 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756708Ab3FLMey (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756716Ab3FLMey (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 12 Jun 2013 08:34:54 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:37027 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756251Ab3FLMev (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 08:34:51 -0400
 From: Jonas Jensen <jonas.jensen@gmail.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
         Jonas Jensen <jonas.jensen@gmail.com>
-Subject: [PATCH 3/3] ARM: mach-moxart: add MOXA ART UART debug files
-Date: Wed, 12 Jun 2013 14:34:08 +0200
-Message-Id: <1371040448-28742-4-git-send-email-jonas.jensen@gmail.com>
+Subject: [PATCH 2/3] ARM: mach-moxart: add MOXA ART device tree files
+Date: Wed, 12 Jun 2013 14:34:07 +0200
+Message-Id: <1371040448-28742-3-git-send-email-jonas.jensen@gmail.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1371040448-28742-1-git-send-email-jonas.jensen@gmail.com>
 References: <1371040448-28742-1-git-send-email-jonas.jensen@gmail.com>
@@ -24,59 +24,210 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
 ---
- arch/arm/Kconfig.debug          |   10 ++++++++++
- arch/arm/include/debug/moxart.S |   14 ++++++++++++++
- 2 files changed, 24 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/include/debug/moxart.S
+ arch/arm/boot/dts/Makefile            |    1 +
+ arch/arm/boot/dts/moxart-uc7112lx.dts |   89 +++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/moxart.dtsi         |   84 +++++++++++++++++++++++++++++++
+ 3 files changed, 174 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/boot/dts/moxart-uc7112lx.dts
+ create mode 100644 arch/arm/boot/dts/moxart.dtsi
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 1d41908..a0e4a32 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -422,6 +422,15 @@ choice
- 		  Say Y here if you want kernel low-level debugging support
- 		  on Allwinner A1X based platforms on the UART1.
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 0d1e98b..059e6d3 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -217,6 +217,7 @@ dtb-$(CONFIG_ARCH_VT8500) += vt8500-bv07.dtb \
+ 	wm8750-apc8750.dtb \
+ 	wm8850-w70v2.dtb
+ dtb-$(CONFIG_ARCH_ZYNQ) += zynq-zc702.dtb
++dtb-$(CONFIG_ARCH_MOXART) += moxart-uc7112lx.dtb
  
-+    config DEBUG_MOXART_UART0
-+        bool "Kernel low-level debugging messages via MOXART UART0"
-+        depends on ARCH_MOXART
-+        help
-+          Say Y here if you want kernel low-level debugging support
-+          on MOXART based platforms on the UART0.
-+          select this to make sure "putc" in arch/arm/boot/compressed/debug.S
-+          uses arch/arm/include/debug/moxart.S:s "addruart" macro
-+
- 	config DEBUG_TEGRA_UART
- 		depends on ARCH_TEGRA
- 		bool "Use Tegra UART for low-level debug"
-@@ -642,6 +651,7 @@ config DEBUG_LL_INCLUDE
- 	default "debug/sirf.S" if DEBUG_SIRFPRIMA2_UART1 || DEBUG_SIRFMARCO_UART1
- 	default "debug/socfpga.S" if DEBUG_SOCFPGA_UART
- 	default "debug/sunxi.S" if DEBUG_SUNXI_UART0 || DEBUG_SUNXI_UART1
-+	default "debug/moxart.S" if DEBUG_MOXART_UART0
- 	default "debug/tegra.S" if DEBUG_TEGRA_UART
- 	default "debug/ux500.S" if DEBUG_UX500_UART
- 	default "debug/vexpress.S" if DEBUG_VEXPRESS_UART0_DETECT || \
-diff --git a/arch/arm/include/debug/moxart.S b/arch/arm/include/debug/moxart.S
+ targets += dtbs
+ targets += $(dtb-y)
+diff --git a/arch/arm/boot/dts/moxart-uc7112lx.dts b/arch/arm/boot/dts/moxart-uc7112lx.dts
 new file mode 100644
-index 0000000..01e2aee
+index 0000000..c2bb7dc
 --- /dev/null
-+++ b/arch/arm/include/debug/moxart.S
-@@ -0,0 +1,14 @@
-+/* Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2 of the License,
-+ * or (at your option) any later version. */
++++ b/arch/arm/boot/dts/moxart-uc7112lx.dts
+@@ -0,0 +1,89 @@
++/* moxart-uc7112lx.dts - Device Tree file for MOXA UC-7112-LX
++ *
++ * Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
++ *
++ * Licensed under GPLv2 or later. */
 +
-+#define MOXART_UART_DEBUG_PHYS_BASE		0x98200000
++/dts-v1/;
++/include/ "moxart.dtsi"
 +
-+.macro	addruart, rp, rv, tmp
-+	ldr	\rp, =MOXART_UART_DEBUG_PHYS_BASE	@ physical
-+.endm
++/ {
++	model = "MOXA UC-7112-LX";
++	compatible = "moxa,moxart-uc-7112-lx";
 +
-+#define UART_SHIFT	2
-+#include <asm/hardware/debug-8250.S>
++	memory {
++		reg = <0x00000000 0x02000000>;
++	};
++
++	flash@80000000,0 {
++		/* JS28F128 J3D75 A9087684 - Numonyx Embedded Flash Memory (J3 v. D) */
++		compatible = "numonyx,js28f128", "cfi-flash";
++		reg = <0x80000000 0x01000000>;
++		bank-width = <2>;
++		#address-cells = <1>;
++		#size-cells = <1>;
++		partition@0 {
++			label = "bootloader";
++			reg = <0x00000000 0x00040000>;
++		};
++		partition@40000 {
++			label = "linux kernel";
++			reg = <0x00040000 0x001C0000>;
++		};
++		partition@200000 {
++			label = "root filesystem";
++			reg = <0x00200000 0x00800000>;
++		};
++		partition@a00000 {
++			label = "user filesystem";
++			reg = <0x00a00000 0x00600000>;
++		};
++	};
++
++	mmc@98e00000 {
++		compatible = "moxa,moxart-mmc";
++		reg =	<0x98e00000 0x00001000>;
++		interrupts = <5 0>;
++		clock-names = "sys_clk";
++		clocks = <&sys_clk>;
++	};
++
++	mxser@98200040 {
++		compatible = "moxa,moxart-mxser";
++		reg =	<0x98200040 0x00000080>,	/* UART "3" base */
++				<0x982000e4 0x00000080>,	/* UART mode base */
++				<0x982000c0 0x00000020>;	/* UART interrupt vector */
++		interrupts = <31 1>;
++	};
++
++	mac0: mac@90900000 {
++		compatible = "moxa,moxart-mac0";
++		reg =   <0x90900000 0x1000>,
++				<0x80000050 0x5>;			/* MAC address stored on flash */
++		interrupts = <25 0>;
++	};
++
++	mac1: mac@92000000 {
++		compatible = "moxa,moxart-mac1";
++		reg =   <0x92000000 0x1000>,
++				<0x80000056 0x5>;			/* MAC address stored on flash */
++		interrupts = <27 0>;
++	};
++
++	uart0: uart@98200000 {
++		compatible = "ns16550a";
++		reg = <0x98200000 0x20>;
++		interrupts = <31 0>;
++		reg-shift = <2>;
++		reg-io-width = <4>;
++		clock-frequency = <14745600>;
++		status = "okay";
++	};
++
++	chosen {
++		/* uncomment to use on board flash root
++		bootargs = "console=ttyS0,115200n8 root=/dev/mtdblock2 rootfstype=jffs2 rw";
++		*/
++		bootargs = "console=ttyS0,115200n8 root=/dev/mmcblk0p1 rw rootwait";
++	};
++};
+diff --git a/arch/arm/boot/dts/moxart.dtsi b/arch/arm/boot/dts/moxart.dtsi
+new file mode 100644
+index 0000000..debedb7
+--- /dev/null
++++ b/arch/arm/boot/dts/moxart.dtsi
+@@ -0,0 +1,84 @@
++/* moxart.dtsi - Device Tree Include file for MOXA ART family SoC
++ *
++ * Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
++ *
++ * Licensed under GPLv2 or later. */
++
++/include/ "skeleton.dtsi"
++
++/ {
++	interrupt-parent = <&intc>;
++
++	cpus {
++		cpu@0 {
++			compatible = "faraday,fa526";
++		};
++	};
++
++	clocks {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		osc: oscillator {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <24000000>;
++		};
++	};
++
++	soc {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		reg = <0x90000000 0x10000000>;
++		ranges;
++
++		intc: interrupt-controller@98800000 {
++			compatible = "moxa,moxart-interrupt-controller";
++			reg = <0x98800000 0x38>;
++			interrupt-controller;
++			#interrupt-cells = <2>;
++			interrupt-mask = <0x00080000>;		/* single register vector, interrupts 0-31, 1s signify edge */
++		};
++
++		timer: timer@98400000 {
++			compatible = "moxa,moxart-timer";
++			reg = <0x98400000 0x10>;
++			interrupts = <19 1>;
++		};
++
++		gpio: gpio@98700000 {
++			compatible = "moxa,moxart-gpio";
++			reg =	<0x98700000 0x1000>,
++					<0x98100100 0x4>;			/*	Power Management Unit
++													enable/disable pin 0-31 (32bit register) */
++		};
++
++		rtc: rtc {
++			compatible = "moxa,moxart-rtc";
++		};
++
++		dma: dma@90500000 {
++			compatible = "moxa,moxart-dma";
++			reg = <0x90500000 0x1000>;
++			interrupts = <24 0>;
++		};
++
++		watchdog: watchdog@98500000 {
++			compatible = "moxa,moxart-watchdog";
++			reg = <0x98500000 0x1000>;
++		};
++
++		pmu: pmu@98100000 {						/* Power Management Unit */
++			compatible = "moxa,moxart-pmu";
++			reg = <0x98100000 0x34>;			/* offset mul @ 0x30, val @ 0x0c (2 * 32 bit registers) */
++			clocks {
++				sys_clk: sys_clk {
++					#clock-cells = <0>;
++					compatible = "moxa,moxart-sysclk";
++					clock-output-names = "sys_clk";
++				};
++			};
++		};
++	};
++};
 -- 
 1.7.2.5
 
