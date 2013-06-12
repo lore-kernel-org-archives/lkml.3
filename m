@@ -1,147 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756430Ab3FLL3T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 07:29:19 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:36135 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab3FLL3R (ORCPT
+	id S1754878Ab3FLLaf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 07:30:35 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:56551 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171Ab3FLLae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 07:29:17 -0400
+	Wed, 12 Jun 2013 07:30:34 -0400
+Date: Wed, 12 Jun 2013 13:30:30 +0200
 From: Thierry Reding <thierry.reding@gmail.com>
-To: linux-pwm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] pwm: Fill in missing .owner fields
-Date: Wed, 12 Jun 2013 13:29:13 +0200
-Message-Id: <1371036553-32263-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 1.8.2
+To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        kernel@pengutronix.de
+Subject: Re: [PATCH v3] pwm: add pca9685 driver
+Message-ID: <20130612113029.GC1940@manwe>
+References: <1369900212-14368-1-git-send-email-s.trumtrar@pengutronix.de>
+ <20130606080300.GG21522@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GID0FwUMdk1T2AWN"
+Content-Disposition: inline
+In-Reply-To: <20130606080300.GG21522@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some drivers don't set the .owner fields of the struct device_driver or
-struct pwm_ops, which causes the module usage count to become wrong.
 
-Signed-off-by: Thierry Reding <thierry.reding@gmail.com>
----
- drivers/pwm/pwm-atmel-tcb.c | 1 +
- drivers/pwm/pwm-bfin.c      | 1 +
- drivers/pwm/pwm-imx.c       | 1 +
- drivers/pwm/pwm-lpc32xx.c   | 1 +
- drivers/pwm/pwm-mxs.c       | 1 +
- drivers/pwm/pwm-pca9685.c   | 1 +
- drivers/pwm/pwm-puv3.c      | 1 +
- drivers/pwm/pwm-spear.c     | 1 +
- drivers/pwm/pwm-tegra.c     | 1 +
- 9 files changed, 9 insertions(+)
+--GID0FwUMdk1T2AWN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/pwm/pwm-atmel-tcb.c b/drivers/pwm/pwm-atmel-tcb.c
-index 09be626..ba6ce01 100644
---- a/drivers/pwm/pwm-atmel-tcb.c
-+++ b/drivers/pwm/pwm-atmel-tcb.c
-@@ -434,6 +434,7 @@ MODULE_DEVICE_TABLE(of, atmel_tcb_pwm_dt_ids);
- static struct platform_driver atmel_tcb_pwm_driver = {
- 	.driver = {
- 		.name = "atmel-tcb-pwm",
-+		.owner = THIS_MODULE,
- 		.of_match_table = atmel_tcb_pwm_dt_ids,
- 	},
- 	.probe = atmel_tcb_pwm_probe,
-diff --git a/drivers/pwm/pwm-bfin.c b/drivers/pwm/pwm-bfin.c
-index 7631ef1..9985d83 100644
---- a/drivers/pwm/pwm-bfin.c
-+++ b/drivers/pwm/pwm-bfin.c
-@@ -149,6 +149,7 @@ static int bfin_pwm_remove(struct platform_device *pdev)
- static struct platform_driver bfin_pwm_driver = {
- 	.driver = {
- 		.name = "bfin-pwm",
-+		.owner = THIS_MODULE,
- 	},
- 	.probe = bfin_pwm_probe,
- 	.remove = bfin_pwm_remove,
-diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
-index c938bae..2b7c4f8 100644
---- a/drivers/pwm/pwm-imx.c
-+++ b/drivers/pwm/pwm-imx.c
-@@ -295,6 +295,7 @@ static int imx_pwm_remove(struct platform_device *pdev)
- static struct platform_driver imx_pwm_driver = {
- 	.driver		= {
- 		.name	= "imx-pwm",
-+		.owner = THIS_MODULE,
- 		.of_match_table = of_match_ptr(imx_pwm_dt_ids),
- 	},
- 	.probe		= imx_pwm_probe,
-diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
-index 8272883..efb6c7b 100644
---- a/drivers/pwm/pwm-lpc32xx.c
-+++ b/drivers/pwm/pwm-lpc32xx.c
-@@ -171,6 +171,7 @@ MODULE_DEVICE_TABLE(of, lpc32xx_pwm_dt_ids);
- static struct platform_driver lpc32xx_pwm_driver = {
- 	.driver = {
- 		.name = "lpc32xx-pwm",
-+		.owner = THIS_MODULE,
- 		.of_match_table = of_match_ptr(lpc32xx_pwm_dt_ids),
- 	},
- 	.probe = lpc32xx_pwm_probe,
-diff --git a/drivers/pwm/pwm-mxs.c b/drivers/pwm/pwm-mxs.c
-index 6489a4b..2c77b81 100644
---- a/drivers/pwm/pwm-mxs.c
-+++ b/drivers/pwm/pwm-mxs.c
-@@ -182,6 +182,7 @@ MODULE_DEVICE_TABLE(of, mxs_pwm_dt_ids);
- static struct platform_driver mxs_pwm_driver = {
- 	.driver = {
- 		.name = "mxs-pwm",
-+		.owner = THIS_MODULE,
- 		.of_match_table = of_match_ptr(mxs_pwm_dt_ids),
- 	},
- 	.probe = mxs_pwm_probe,
-diff --git a/drivers/pwm/pwm-pca9685.c b/drivers/pwm/pwm-pca9685.c
-index 2afc904..c9f9e65 100644
---- a/drivers/pwm/pwm-pca9685.c
-+++ b/drivers/pwm/pwm-pca9685.c
-@@ -199,6 +199,7 @@ static const struct pwm_ops pca9685_pwm_ops = {
- 	.config = pca9685_pwm_config,
- 	.request = pca9685_pwm_request,
- 	.free = pca9685_pwm_free,
-+	.owner = THIS_MODULE,
- };
- 
- static struct regmap_config pca9685_regmap_i2c_config = {
-diff --git a/drivers/pwm/pwm-puv3.c b/drivers/pwm/pwm-puv3.c
-index ed6007b..a9a2808 100644
---- a/drivers/pwm/pwm-puv3.c
-+++ b/drivers/pwm/pwm-puv3.c
-@@ -146,6 +146,7 @@ static int pwm_remove(struct platform_device *pdev)
- static struct platform_driver puv3_pwm_driver = {
- 	.driver = {
- 		.name = "PKUnity-v3-PWM",
-+		.owner = THIS_MODULE,
- 	},
- 	.probe = pwm_probe,
- 	.remove = pwm_remove,
-diff --git a/drivers/pwm/pwm-spear.c b/drivers/pwm/pwm-spear.c
-index 6d99e2c..a54d214 100644
---- a/drivers/pwm/pwm-spear.c
-+++ b/drivers/pwm/pwm-spear.c
-@@ -259,6 +259,7 @@ MODULE_DEVICE_TABLE(of, spear_pwm_of_match);
- static struct platform_driver spear_pwm_driver = {
- 	.driver = {
- 		.name = "spear-pwm",
-+		.owner = THIS_MODULE,
- 		.of_match_table = spear_pwm_of_match,
- 	},
- 	.probe = spear_pwm_probe,
-diff --git a/drivers/pwm/pwm-tegra.c b/drivers/pwm/pwm-tegra.c
-index a540293..74298c5 100644
---- a/drivers/pwm/pwm-tegra.c
-+++ b/drivers/pwm/pwm-tegra.c
-@@ -239,6 +239,7 @@ MODULE_DEVICE_TABLE(of, tegra_pwm_of_match);
- static struct platform_driver tegra_pwm_driver = {
- 	.driver = {
- 		.name = "tegra-pwm",
-+		.owner = THIS_MODULE,
- 		.of_match_table = tegra_pwm_of_match,
- 	},
- 	.probe = tegra_pwm_probe,
--- 
-1.8.2
+On Thu, Jun 06, 2013 at 10:03:00AM +0200, Steffen Trumtrar wrote:
+> On Thu, May 30, 2013 at 09:50:12AM +0200, Steffen Trumtrar wrote:
+> > Add pwm driver for the NXP pca9685 16 channel pwm-led controller.
+> >=20
+> > The driver is really barebones at this stage. E.g. the OE' pin and
+> > therefore the corresponding registers are not supported.
+> > The driver was tested on a HW where this pin is tied to GND.
+> >=20
+> > Signed-off-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+> > ---
+> > Changes since v2:
+> > 	- s/pwm-pca9685-led/pwm-pca9685/g
+> > 	- replace DT properties with booleans
+> > 	- whitespace/blank line cleanup
+> > 	- add "depends on REGMAP_I2C" in Kconfig
+> > 	- rework code readability
+> > 	- add pwm_ops.free function
+> > 	- set SLEEP bit on request/free/remove
+> >=20
+> > Changes since v1:
+> > 	- fix typo in documentation example
+> >=20
+> >  .../devicetree/bindings/pwm/nxp,pca9685-pwm.txt    |  27 ++
+> >  drivers/pwm/Kconfig                                |   9 +
+> >  drivers/pwm/Makefile                               |   1 +
+> >  drivers/pwm/pwm-pca9685.c                          | 291 +++++++++++++=
+++++++++
+> >  4 files changed, 328 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/pwm/nxp,pca9685-p=
+wm.txt
+> >  create mode 100644 drivers/pwm/pwm-pca9685.c
+> >=20
+>=20
+> Ping ?!
 
+Applied with some small fixups, thanks.
+
+Thierry
+
+--GID0FwUMdk1T2AWN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRuFvVAAoJEN0jrNd/PrOhyYoP/0Lk5JcEetVEhP5iNDqJAw4x
+ueKtcVRcrThE5U6mDm1Azi6VNKVcJy2Bwms2GTrdX8sCg3kuGEer8Xr3z5yiD1zH
+vkkOBwOY5h/yke158PFsWEstugLnGazP3y9hz+ljHd5rtxiQHMGiU/wSKHFYTbk3
+4hd6beDnAPYuucn5DEeNzZP0rehIp9mO7GWRVpZPZ6hFeDR1C3Cunwpyur3hNMc/
+ejebJGWrZ0yNawm2Tdu1lvkDRO2Ka3JHat8G03x+7l817G5aZP3/6d/7DmBgQB6N
+W0hRW6lR5eHqvD7CTCXWNwFmVCBcO6hTuldKVIE+MWbkY0m6QezpsKJacZBYmKi5
+ctSRgkUg3xYshV0Tp++q8XV8hPdw2KwJzCv7gDIs0sVsKpTnc+LytyvEd16yvYaY
+f050dwrUh77VLWnhSdqBakwlb3bSQG357/sErtO0rlE6bq8cu3m2FXE7P24zcCa5
+SEL8i7fReXWUSv8HWHyq7uk3t8eWQuZUtnX4hF3DXF9+sn4H585N5zBS/+ZPk4ij
+dts1JZh1qHGWRj98S5dkQZaMbiw8eQXIeZcJGNuV0v/+urPPCKDYlPdYTx0MqtPO
+/JvtCjTi6l1+Gw6gh/RbeQCzkX6N5Av5qxPG1BXFkH7yU6zfS2Syq4/mG0cNqrd6
+BPToQjg5+AD7ikzM0ZRm
+=vlOx
+-----END PGP SIGNATURE-----
+
+--GID0FwUMdk1T2AWN--
