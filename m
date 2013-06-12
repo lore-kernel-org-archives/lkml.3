@@ -1,116 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757770Ab3FLBaQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 21:30:16 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59206 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757753Ab3FLBaN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 21:30:13 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] ARM: mmu: Add debug_ll_io_init() mappings to early mappings
-Date: Tue, 11 Jun 2013 18:30:07 -0700
-Message-Id: <1371000607-1787-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.3.251.g1462b67
+	id S1757762Ab3FLBcP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 21:32:15 -0400
+Received: from web100019.mail.kks.yahoo.co.jp ([114.111.98.193]:47030 "HELO
+	web100019.mail.kks.yahoo.co.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757608Ab3FLBcO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jun 2013 21:32:14 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=yj20110701; d=yahoo.co.jp;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=eEuY7WtOGcrTr9ypFDhMiPbKovRwsKk1ZuIlTxsLm9V5wuar5Y5QOg26LRjbE2cCbUJ6hXfSAO+Boaaw1DOC+a7JcorInSA9I6lJ0VTsbVN5xHqG8ag1MX1hHIbMxcdHzP8zOnpEmqGngCoGq2whQnCPzWg5RzRQ0MvV04j9z3E=;
+Message-ID: <749753.81252.qm@web100019.mail.kks.yahoo.co.jp>
+X-YMail-OSG: 1qc8Vn8VM1nxDmi44VramGhzLloy9yPiMMHwwgsGZA.kqoIkbXHSCwEcki3mAQGaHKflRQZgpG7EZUkEe4dgNejovKFUs551Wqw5lthzLwl3KDc5tPqCvDf5lgwEGB_09OOAi0Ehdh82rTMXp4nxKhql5tElWNJhz8XjUxPPsteyMT5Tf99zmiL3n0grxV9rxPkMiAXtO_gp9rqhYF2Vf8ornYf_hpILY4dAgx33c6IfkfNGYnM4KYUvdO7WAGN7usvCnlunvVX9Oe5bErWPQ.MSqUNvRH_wRRFWs.e.F_HJajaVRmsfu7ONgxfJAmiEmIyYzNy6xTfwCyXA12Ml_6gBgmBrwRbU8zzUxKImmsfMZFY8kkrCGg--
+X-Mailer: YahooMailClassic/6.0.18 YahooMailWebService/0.8.111_45
+Date: Wed, 12 Jun 2013 10:25:32 +0900 (JST)
+From: Norman Diamond <n0diamond@yahoo.co.jp>
+Reply-To: n0diamond@yahoo.co.jp
+Subject: USB 3.0 failure and possible regression in kernel 3.8.0
+To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Failure to add the mapping created in debug_ll_io_init() can lead
-to the BUG_ON() triggering in lib/ioremap.c:27 if the static
-virtual address decided for the debug_ll mapping overlaps with
-another mapping that is created later. This happens because the
-generic ioremap code has no idea there is a mapping there and it
-tries to place a mapping in the same location and blows up when
-it sees that there is a pte already present.
+Kernels somewhere around 2.6.35 could handle USB 3.0 at random sometimes,
+but kernel 3.8.0 fails consistently.  I know I should try to bisect this,
+but I don't have time and the randomness of the older kernel doesn't help.
 
-kernel BUG at lib/ioremap.c:27!
-Internal error: Oops - BUG: 0 [#1] PREEMPT SMP ARM
-Modules linked in:
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.10.0-rc2-00042-g2af0c67-dirty #316
-task: ef088000 ti: ef082000 task.ti: ef082000
-PC is at ioremap_page_range+0x16c/0x198
-LR is at ioremap_page_range+0xf0/0x198
-pc : [<c04cb874>]    lr : [<c04cb7f8>]    psr: 20000113
-sp : ef083e78  ip : af140000  fp : ef083ebc
-r10: ef7fc100  r9 : ef7fc104  r8 : 000af174
-r7 : 00000647  r6 : beffffff  r5 : f004c000  r4 : f0040000
-r3 : af173417  r2 : 16440653  r1 : af173e07  r0 : ef7fc8fc
-Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 10c5787d  Table: 8020406a  DAC: 00000015
-Process swapper/0 (pid: 1, stack limit = 0xef082238)
-Stack: (0xef083e78 to 0xef084000)
-3e60:                                                       00040000 ef083eec
-3e80: bf134000 f004bfff c0207c00 f004c000 c02fc120 f000c000 c15e7800 00040000
-3ea0: ef083eec 00000647 c098ba9c c0953544 ef083edc ef083ec0 c021b82c c04cb714
-3ec0: c09cdc50 00000040 ef0f1e00 ef1003c0 ef083f14 ef083ee0 c09535bc c021b7bc
-3ee0: c0953544 c04d0c6c c094e2cc c1600be4 c07440c4 c09a6888 00000002 c0a15f00
-3f00: ef082000 00000000 ef083f54 ef083f18 c0208728 c0953550 00000002 c1600bfc
-3f20: c08e3fac c0839918 ef083f54 c1600b80 c09a6888 c0a15f00 0000008b c094e2cc
-3f40: c098ba9c c098bab8 ef083f94 ef083f58 c094ea0c c020865c 00000002 00000002
-3f60: c094e2cc 00000000 c025b674 00000000 c06ff860 00000000 00000000 00000000
-3f80: 00000000 00000000 ef083fac ef083f98 c06ff878 c094e910 00000000 00000000
-3fa0: 00000000 ef083fb0 c020efe8 c06ff86c 00000000 00000000 00000000 00000000
-3fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-3fe0: 00000000 00000000 00000000 00000000 00000013 00000000 00000000 c0595108
-[<c04cb874>] (ioremap_page_range+0x16c/0x198) from [<c021b82c>] (__alloc_remap_buffer.isra.18+0x7c/0xc4)
-[<c021b82c>] (__alloc_remap_buffer.isra.18+0x7c/0xc4) from [<c09535bc>] (atomic_pool_init+0x78/0x128)
-[<c09535bc>] (atomic_pool_init+0x78/0x128) from [<c0208728>] (do_one_initcall+0xd8/0x198)
-[<c0208728>] (do_one_initcall+0xd8/0x198) from [<c094ea0c>] (kernel_init_freeable+0x108/0x1d0)
-[<c094ea0c>] (kernel_init_freeable+0x108/0x1d0) from [<c06ff878>] (kernel_init+0x18/0xf4)
-[<c06ff878>] (kernel_init+0x18/0xf4) from [<c020efe8>] (ret_from_fork+0x14/0x20)
-Code: e50b0040 ebf54b2f e51b0040 eaffffee (e7f001f2)
+lspci:
+0d:00.0 USB controller [0c03]: NEC Corporation uPD720200 USB 3.0 Host Controller
+ [1033:0194] (rev 04)
+         Kernel driver in use: xhci_hcd
 
-Fix it by telling generic layers about the static mapping. This also
-has the nice side effect of letting you see the mapping in procfs'
-vmallocinfo file.
+lsusb:
+Bus 007 Device 002: ID 152d:0539 JMicron Technology Corp. / JMicron USA Technology Corp.
 
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/mm/mmu.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
-
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index e0d8565..04fe160 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -938,8 +938,12 @@ static void __init pci_reserve_io(void)
- #ifdef CONFIG_DEBUG_LL
- void __init debug_ll_io_init(void)
- {
-+	struct vm_struct *vm;
-+	struct static_vm *svm;
- 	struct map_desc map;
- 
-+	svm = early_alloc_aligned(sizeof(*svm), __alignof__(*svm));
-+
- 	debug_ll_addr(&map.pfn, &map.virtual);
- 	if (!map.pfn || !map.virtual)
- 		return;
-@@ -948,6 +952,15 @@ void __init debug_ll_io_init(void)
- 	map.length = PAGE_SIZE;
- 	map.type = MT_DEVICE;
- 	create_mapping(&map);
-+
-+	vm = &svm->vm;
-+	vm->addr = (void *)map.virtual;
-+	vm->size = map.length;
-+	vm->phys_addr = __pfn_to_phys(map.pfn);
-+	vm->flags = VM_IOREMAP | VM_ARM_STATIC_MAPPING;
-+	vm->flags |= VM_ARM_MTYPE(map.type);
-+	vm->caller = debug_ll_io_init;
-+	add_static_vm_early(svm);
- }
- #endif
- 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+dmesg:
+[  458.857081] usb 6-1: new high-speed USB device number 2 using xhci_hcd
+[  463.857085] xhci_hcd 0000:0d:00.0: Timeout while waiting for address device command
+[  464.728073] xhci_hcd 0000:0d:00.0: Stopped the command ring failed, maybe the host is dead
+[  464.728073] xhci_hcd 0000:0d:00.0: Host not halted after 16000 microseconds.
+[  464.728073] xhci_hcd 0000:0d:00.0: Abort command ring failed
+[  479.976010] [sched_delayed] sched: RT throttling activated
+[  479.987230] xhci_hcd 0000:0d:00.0: HC died; cleaning up
