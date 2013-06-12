@@ -1,196 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab3FLIi6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 04:38:58 -0400
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:36208 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752570Ab3FLIiw (ORCPT
+	id S1755346Ab3FLIik (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 04:38:40 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10653 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752443Ab3FLIih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 04:38:52 -0400
-Message-ID: <51B83326.4080201@mellanox.com>
-Date: Wed, 12 Jun 2013 11:36:54 +0300
-From: Amir Vadai <amirv@mellanox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Wed, 12 Jun 2013 04:38:37 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 12 Jun 2013 01:37:30 -0700
+Message-ID: <51B8345F.601@nvidia.com>
+Date: Wed, 12 Jun 2013 14:12:07 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-CC: David Miller <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        <e1000-devel@lists.sourceforge.net>,
-        Willem de Bruijn <willemb@google.com>,
-        Eric Dumazet <erdnetdev@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>,
-        Alex Rosenbaum <Alexr@mellanox.com>,
-        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>
-Subject: Re: [PATCH] sockperf: add SO_LL socketop support
-References: <20130611142415.17879.75569.stgit@ladj378.jer.intel.com> <51B73395.7070706@linux.intel.com>
-In-Reply-To: <51B73395.7070706@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Mark Brown <broonie@kernel.org>
+CC: Kishon Vijay Abraham I <kishon@ti.com>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "balbi@ti.com" <balbi@ti.com>
+Subject: Re: [RFC PATCH] regulator: palmas: enable all modes for SMPS10
+References: <20130601184511.GC16790@sirena.org.uk> <51AA456E.3030307@nvidia.com> <20130601210511.GT16790@sirena.org.uk> <51ADAE78.4050900@ti.com> <20130604093816.GY31367@sirena.org.uk> <51ADB6BF.6020205@ti.com> <20130604100511.GA31367@sirena.org.uk> <51B5A14E.6000500@ti.com> <20130610100330.GO31367@sirena.org.uk> <51B5B268.8090908@ti.com> <20130610124924.GU31367@sirena.org.uk>
+In-Reply-To: <20130610124924.GU31367@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.222.66.109]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2013 17:26, Eliezer Tamir wrote:
-> Add lls socket option support to sockperf.
-> Right now we always get the option before set to show the option is
-> working properly. We should probably remove that in an official release.
-> use --lls (value in usecs) to override global setting.
-> ---
-> 
->  src/Defs.h       |    3 +++
->  src/SockPerf.cpp |   54
-> +++++++++++++++++++++++++++++++++++++++++++++++++++++-
->  2 files changed, 56 insertions(+), 1 deletions(-)
-> 
-> diff --git a/src/Defs.h b/src/Defs.h
-> index e38e3a4..87b45a0 100644
-> --- a/src/Defs.h
-> +++ b/src/Defs.h
-> @@ -161,6 +161,7 @@ enum {
->      OPT_OUTPUT_PRECISION,           //35
->      OPT_CLIENTPORT,                 //36
->      OPT_CLIENTIP,                   //37
-> +    OPT_LLS,            //38
->  };
-> 
->  #define MODULE_NAME            "sockperf"
-> @@ -527,6 +528,8 @@ struct user_params_t {
->  //    bool stream_mode; - use b_stream instead
->      int mthread_server;
->      struct timeval* select_timeout;
-> +    unsigned long lls_usecs;
-> +    bool lls_is_set;
->      int sock_buff_size;
->      int threads_num;
->      char threads_affinity[MAX_ARGV_SIZE];
-> diff --git a/src/SockPerf.cpp b/src/SockPerf.cpp
-> index 41daf95..d76320f 100644
-> --- a/src/SockPerf.cpp
-> +++ b/src/SockPerf.cpp
-> @@ -207,6 +207,10 @@ static const AOPT_DESC  common_opt_desc[] =
->          "Limit the lifetime of the message (default 2)."
->      },
->      {
-> +        OPT_LLS, AOPT_ARG, aopt_set_literal( 0 ), aopt_set_string(
-> "lls" ),
-> +        "Turn on LLS via socket option (value = us to poll)."
-> +    },
-> +    {
->          OPT_BUFFER_SIZE, AOPT_ARG, aopt_set_literal( 0 ),
-> aopt_set_string( "buffer-size" ),
->          "Set total socket receive/send buffer <size> in bytes (system
-> defined by default)."
->      },
-> @@ -292,7 +296,7 @@ static int proc_mode_help( int id, int argc, const
-> char **argv )
->      int   i = 0;
-> 
->      printf(MODULE_NAME " is a tool for testing network latency and
-> throughput.\n");
-> -    printf("version %s\n", STR(VERSION));
-> +    printf("version %s-lls\n", STR(VERSION));
->      printf("\n");
->      printf("Usage: " MODULE_NAME " <subcommand> [options] [args]\n");
->      printf("Type: \'" MODULE_NAME " <subcommand> --help\' for help on a
-> specific subcommand.\n");
-> @@ -1789,6 +1793,26 @@ static int parse_common_opt( const AOPT_OBJECT
-> *common_obj )
->              s_user_params.is_nonblocked_send = true;
->          }
-> 
-> +        if ( !rc && aopt_check(common_obj, OPT_LLS) ) {
-> +            const char* optarg = aopt_value(common_obj, OPT_LLS);
-> +            if (optarg) {
-> +                errno = 0;
-> +                int value = strtoul(optarg, NULL, 0);
-> +                if (errno != 0 || value < 0) {
-> +                    log_msg("'-%d' Invalid LLS value: %s", OPT_LLS,
-> optarg);
-> +                    rc = SOCKPERF_ERR_BAD_ARGUMENT;
-> +                }
-> +                else {
-> +                    s_user_params.lls_usecs = value;
-> +                    s_user_params.lls_is_set = true;
-> +                }
-> +            }
-> +            else {
-> +                log_msg("'-%d' Invalid value", OPT_LLS);
-> +                rc = SOCKPERF_ERR_BAD_ARGUMENT;
-> +            }
-> +        }
-> +
->          if ( !rc && aopt_check(common_obj, OPT_RECV_LOOPING) ) {
-> 
->              const char* optarg = aopt_value(common_obj, OPT_RECV_LOOPING);
-> @@ -2296,6 +2320,29 @@ int sock_set_reuseaddr(int fd)
->      return rc;
->  }
-> 
-> +#ifndef SO_LL
-> +#define SO_LL 46
-> +#endif
-> +int sock_set_lls(int fd)
-> +{
-> +    int rc = SOCKPERF_ERR_NONE;
-> +    unsigned long lls;
-> +    int size = sizeof(lls);
-> +
-> +    if(getsockopt(fd, SOL_SOCKET, SO_LL, &lls, (socklen_t *)&size) < 0){
-> +        log_err("getsockopt(SO_LL) failed");
-> +        return SOCKPERF_ERR_SOCKET;
-> +    } else
-> +        log_msg("socket option SO_LL default was %lu, changing to %lu",
-> lls, s_user_params.lls_usecs);
-> +
-> +    if (setsockopt(fd, SOL_SOCKET, SO_LL, &(s_user_params.lls_usecs),
-> sizeof(s_user_params.lls_usecs)) < 0) {
-> +        log_err("setsockopt(SO_LL) failed");
-> +        rc = SOCKPERF_ERR_SOCKET;
-> +    }
-> +    return rc;
-> +}
-> +
-> +
->  int sock_set_snd_rcv_bufs(int fd)
->  {
->      /*
-> @@ -2460,6 +2507,11 @@ int prepare_socket(int fd, struct fds_data *p_data)
->      }
-> 
->      if (!rc &&
-> +            (s_user_params.lls_is_set == true))
-> +    {
-> +        rc = sock_set_lls(fd);
-> +    }
-> +    if (!rc &&
->              (s_user_params.sock_buff_size > 0))
->      {
->          rc = sock_set_snd_rcv_bufs(fd);
-> 
-> 
-> 
-> 
-> 
+On Monday 10 June 2013 06:19 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Mon, Jun 10, 2013 at 04:33:04PM +0530, Kishon Vijay Abraham I wrote:
+>> IIUC, normal enable should be when output is driven through OUT2.
+> I'm sorry but you're really not making much sense at all here.  You say
+> there are two different outputs here...
+>
+> Please think about what the hardware is doing and try to map it onto the
+> APIs in a coherent fashion - pasting in large sections of dataseet isn't
+> usually helpful, the goal is to map it onto abstractions.
+>
 
-Eliezer Hi,
+I think ff we really want to abstract this stuff then we should have the 
+two different regulator SMPS10-OUT1 and SMPS-OUT2 as there is physically 
+two pins in the device for output and controlled different way.
 
-Added sockperf maintainers to CC list.
-
-To upload changes to sockperf code, please open a ticket on the sockperf
-google code and then submit the patch
-(https://code.google.com/p/sockperf/issues/).
-
-You will need to wrap it in " #ifndef w-i-n-d-o-w-s" but sockperf
-maintainers can help you do that on the sockperf pages.
-
-You should look at the recently added TOS which is very similar
-(https://code.google.com/p/sockperf/issues/detail?id=44).
-
-Amir
