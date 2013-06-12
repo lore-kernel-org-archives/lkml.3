@@ -1,81 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932153Ab3FLUxK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 16:53:10 -0400
-Received: from e24smtp01.br.ibm.com ([32.104.18.85]:35780 "EHLO
-	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757951Ab3FLUxJ (ORCPT
+	id S932171Ab3FLUzH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 16:55:07 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:52995 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756646Ab3FLUzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 16:53:09 -0400
-Message-ID: <51B8DFAD.30103@linux.vnet.ibm.com>
-Date: Wed, 12 Jun 2013 17:53:01 -0300
-From: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 12 Jun 2013 16:55:04 -0400
+Date: Wed, 12 Jun 2013 13:55:00 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <theo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH percpu/for-3.11] percpu-refcount: consistently use plain
+ (non-sched) RCU
+Message-ID: <20130612205500.GE6151@google.com>
+References: <20130612204031.GA15092@htj.dyndns.org>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [ 00/79] 3.9.6-stable review
-References: <20130611195312.352656079@linuxfoundation.org> <20130612202915.GA27379@roeck-us.net> <20130612203437.GA16588@roeck-us.net>
-In-Reply-To: <20130612203437.GA16588@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061220-1524-0000-0000-00000668E863
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130612204031.GA15092@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2013 05:34 PM, Guenter Roeck wrote:
-> On Wed, Jun 12, 2013 at 01:29:15PM -0700, Guenter Roeck wrote:
->> On Tue, Jun 11, 2013 at 01:02:26PM -0700, Greg Kroah-Hartman wrote:
->>> This is the start of the stable review cycle for the 3.9.6 release.
->>> There are 79 patches in this series, all will be posted as a response
->>> to this one.  If anyone has any issues with these being applied, please
->>> let me know.
->>>
->>> Responses should be made by Thu Jun 13 19:50:17 UTC 2013.
->>> Anything received after that time might be too late.
->>>
->>> The whole patch series can be found in one patch at:
->>> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.9.6-rc1.gz
->>> and the diffstat can be found below.
->>>
->> powerpc defconfig and as well as various other powerpc builds fail with:
->>
->> arch/powerpc/platforms/pseries/msi.c: In function 'rtas_hack_32bit_msi_gen2':
->> arch/powerpc/platforms/pseries/msi.c:408:34: error: 'struct pci_dev' has no member named 'msi_cap'
->> arch/powerpc/platforms/pseries/msi.c:410:35: error: 'struct pci_dev' has no member named 'msi_cap'
->> arch/powerpc/platforms/pseries/msi.c:411:35: error: 'struct pci_dev' has no member named 'msi_cap'
->>
->> Introduced by commit 7b58b0edaa2 (powerpc/pseries: Make 32-bit MSI quirk work
->> on systems lacking firmware support).
->>
-> s/7b58b0edaa2/f1dd153121/
->
-> 7b58b0edaa2 is from my git branch and won't help much.
->
-> Guenter
->
+On Wed, Jun 12, 2013 at 01:40:32PM -0700, Tejun Heo wrote:
+> From e96262150a513ce3d54ff221d4ace8aeec96e0bf Mon Sep 17 00:00:00 2001
+> From: Tejun Heo <tj@kernel.org>
+> Date: Wed, 12 Jun 2013 13:37:42 -0700
+> 
+> percpu_ref_get/put() are using preempt_disable/enable() while
+> percpu_ref_kill() is using plain call_rcu() instead of
+> call_rcu_sched().  This is buggy as grace periods of the two may not
+> match.  Fix it by using plain RCU in percpu_ref_get/put().
+> 
+> (I suggested using sched RCU in the first place but there's no actual
+>  benefit in doing so unless we're gonna introduce different variants
+>  of get/put to be called while preemption is alredy disabled, which we
+>  definitely shouldn't.)
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Rusty Russell <rusty@rustcorp.com.au>
 
-Guenter,
-
-The original patch that introduced these changes (commit f1dd153121 - 
-powerpc/pseries: Make 32-bit MSI quirk work on systems lacking firmware 
-support) depends on commit e375b561 (PCI: Cache MSI/MSI-X capability 
-offsets in struct pci_dev), however, the patch I sent to the stable 
-mailing-list were backported to be applied over 3.9.y. I have already 
-sent an email to Greg to let him know that the original patch breaks the 
-ppc build and the backported version should be picked up instead.
-
-
-Thanks,
-
--- 
-Kleber Sacilotto de Souza
-IBM Linux Technology Center
-
+Acked-by: Kent Overstreet <koverstreet@google.com>
