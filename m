@@ -1,37 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755649Ab3FLInt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 04:43:49 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:41388 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274Ab3FLInr (ORCPT
+	id S1755845Ab3FLIoq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 04:44:46 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:57621 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753598Ab3FLIon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 04:43:47 -0400
+	Wed, 12 Jun 2013 04:44:43 -0400
 MIME-Version: 1.0
-Date: Wed, 12 Jun 2013 14:13:46 +0530
-Message-ID: <CAJ8eaTyKCvdR9MZ8aLgVU5TLtVVL_1M0gQET0C_GYbbkG=Wy6Q@mail.gmail.com>
-Subject: Thumb Issue in ARM
-From: naveen yadav <yad.naveen@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAFgnuDcs7AC7ZmF0xjCYsfj8R_X_cvhNR4V+bduPNhjHR3KQpQ@mail.gmail.com>
+References: <1371021986-20985-1-git-send-email-chenxg@marvell.com>
+	<CAKohpok2AEe3bL=mPAoxbenEBaWU=WjkRckbvcnzjnUwFZgnuA@mail.gmail.com>
+	<CAFgnuDcs7AC7ZmF0xjCYsfj8R_X_cvhNR4V+bduPNhjHR3KQpQ@mail.gmail.com>
+Date: Wed, 12 Jun 2013 14:14:43 +0530
+Message-ID: <CAKohpomigrHOQ-FhuDZTTL3oBQjTDS1w9tK0PwbS6x=Op8=yTg@mail.gmail.com>
+Subject: Re: [PATCH v3] cpufreq: fix governor start/stop race condition
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Xiaoguang Chen <chenxg.marvell@gmail.com>
+Cc: Xiaoguang Chen <chenxg@marvell.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        njiang1@marvell.com, zjwu@marvell.com, ylmao@marvell.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear all,
+On 12 June 2013 14:13, Xiaoguang Chen <chenxg.marvell@gmail.com> wrote:
+> I thought about return one error code before. but I checked the code
+> and found that
+> most of the governor stop/start operations don't check the return
+> value. I can add error code
+> here, I think the checking of return value is also needed. May be
+> another patch can do this.
 
-
-We are facing one issue in user space, if we enable thumb mode and in kernel
-whether we enable or disable thumb mode or code run in both scenario.
-we could not understand the reason.
-
-Our core is ARM cortex A15,
-Kernel 3.8.13
-
-One more issue if we disable THUMB in kernel we got undefined instruction in
-
-
-11dffd:    ee7  7a00      vmov.f32        s15,#112    ;0x70
-
-Thanks
+Yeah.
