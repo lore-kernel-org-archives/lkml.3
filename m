@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab3FLP2L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 11:28:11 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40666 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720Ab3FLP2J (ORCPT
+	id S1754677Ab3FLPdg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 11:33:36 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60798 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462Ab3FLPde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 11:28:09 -0400
-Date: Wed, 12 Jun 2013 16:28:04 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>, Arnd Bergmann <arnd@arndb.de>,
-        Alexander Shiyan <shc_work@mail.ru>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Message-ID: <20130612152804.GH1403@sirena.org.uk>
-References: <1370953095-32044-1-git-send-email-srinivas.kandagatla@st.com>
+	Wed, 12 Jun 2013 11:33:34 -0400
+Message-ID: <51B894C9.4070308@ti.com>
+Date: Wed, 12 Jun 2013 18:33:29 +0300
+From: Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LYDt+Tnt2WQ/hIRe"
-Content-Disposition: inline
-In-Reply-To: <1370953095-32044-1-git-send-email-srinivas.kandagatla@st.com>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3] regmap: Add regmap_field APIs
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Tony Lindgren <tony@atomide.com>
+CC: Kevin Hilman <khilman@linaro.org>, <j-keerthy@ti.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] PM / AVS: SmartReflex/class3: Fix order of initialization
+ of SR class and SR driver
+References: <1370339913-16135-1-git-send-email-andrii.tseglytskyi@ti.com> <1370339913-16135-3-git-send-email-andrii.tseglytskyi@ti.com> <87fvwpdfab.fsf@linaro.org> <20130612133231.GQ8164@atomide.com>
+In-Reply-To: <20130612133231.GQ8164@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/12/2013 04:32 PM, Tony Lindgren wrote:
+> * Kevin Hilman <khilman@linaro.org> [130610 10:58]:
+>> Andrii Tseglytskyi <andrii.tseglytskyi@ti.com> writes:
+>>
+>>> SmartReflex consists of three entities: SR device, SR class and
+>>> SR driver. SmartReflex driver depends on SmartReflex class, but
+>>> order of their initialization is not clear. They both use
+>>> late_initcall(), and order depends on Makefile calls.
+>>> Patch moves initialization of SR class to device_initcall(),
+>>> and removes redundant call of sr_late_init().
+>>>
+>>> This provides predictable order of SmartReflex initcalls:
+>>> 1. device_initcall() -> SmartReflex class init
+>>> 2. late_initcall() -> SmartReflex driver init
+>>>
+>>> Signed-off-by: Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
+>> Tony will have to decide on whether he's OK with the initcall changes.
+>>
+>> I can queue this with the rest of the AVS changes with Tony's ack.
+> I'd rather not make anything earlier, relying on the Makefile is just
+> fine here. These pieces are always compiled in too. The reason why
+> we should only minimal things initialized earlier than module_init
+> is that this way we have a proper console initialized and see real
+> error messages without having to have DEBUG_LL + earlyprintk enabled.
+>
+> If anything else is needed, you have have just one late_initcall
+> that checks the return values of the various SR related init functions
+> to make sure all the dependencies are met.
+>
+> Regards,
+>
+> Tony
+>   
+>
+Hi Tony,
 
---LYDt+Tnt2WQ/hIRe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thank you for your comment - it sounds reasonable.
+Patch can be dropped from this patch series.
 
-On Tue, Jun 11, 2013 at 01:18:15PM +0100, Srinivas KANDAGATLA wrote:
-> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->=20
-> It is common to access regmap registers at bit level, using
-> regmap_update_bits or regmap_read functions, however the end user has to
-> take care of a mask or shifting. This becomes overhead when such use
-> cases are high. Having a common function to do this is much convenient
-> and less error prone.
+Regards,
+Andrii
 
-Applied, thanks.
 
---LYDt+Tnt2WQ/hIRe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRuJOAAAoJELSic+t+oim9HkEP/ii5gPATRzKjHkHkQinxPR+g
-3Gw086Yrhdd/ZtscF7bWPTXQXux3dyXwJIsGvDvUUnXcsfxtEDApBir+3q4IFtRI
-AJtPO6Sqx+61FqCmRZuluBMwbt46WlMKNVBhwP5M8E/pe8ykT2XfqPgxzbJW1g+I
-uZYlYQIF3UwjBw1CF1hYMyKnMlGbPpHJQhxrlpNRUcHdcdzw5qZE6h9apbcZasO8
-y2/LhnzAKutOVgsnKXbIOhntRKpC/28CXlmYHZapGyKH+sV8Mw3Cd5ByWhRq9k0O
-/DC0OKbElppL6GMnxG6c3G9zWWFcxSxoX67CDuWh5aZrwiy3aw9TNoacHnS1kIxG
-lYJCQitajan5TXwintGZyYO4luKUWJTSU9lLME5+qMlnSkUv1Psv1MI6T56Vx5Oc
-jmB3J4a/PIa7hfzE2QVp/t9CR+HijyFZ0yI9SnDB4llpKC6IUjDcbAdrVpnh2J5A
-Yy+eMy95zn/I+mkcGwd+anIytv+OOnvMzl7U+NctAlPPjSu7F7khKFnKlwMBsRSG
-GbYafW8ZTBPuJFQKLTLnqQGuWjYTKpyIPIwOclMGJrdwBD0f3x0FyJLIv+M6XPry
-ybywe/1qmJ4B1cKaNQqx8Ok0QtxOXsxIXNEjTGy2nMt1xW6wXzfHqfrTuXfg+7g0
-LyUVdGvpSRDdG/n9tmqF
-=/JXQ
------END PGP SIGNATURE-----
-
---LYDt+Tnt2WQ/hIRe--
