@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab3FLPe6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 11:34:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23919 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751462Ab3FLPe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 11:34:57 -0400
-Date: Wed, 12 Jun 2013 11:34:07 -0400
-From: Dave Jones <davej@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: paulmck@linux.vnet.ibm.com, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: rcu_preempt running flat out on idle desktop.
-Message-ID: <20130612153407.GA21842@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	paulmck@linux.vnet.ibm.com,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Ingo Molnar <mingo@kernel.org>
-References: <20130508203042.GA18895@redhat.com>
- <CAFTL4hwB3XZG+C9pQ0JD4h=n_ObNH6mCBRfLW3JaxohwwRDWRA@mail.gmail.com>
- <20130509211026.GA22723@redhat.com>
- <20130514012105.GB12749@somewhere>
- <20130606153136.GA12823@redhat.com>
- <20130606154311.GA5688@somewhere>
+	id S1756713Ab3FLPgR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 11:36:17 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40462 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213Ab3FLPgP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 11:36:15 -0400
+Message-ID: <51B8956B.8020704@wwwdotorg.org>
+Date: Wed, 12 Jun 2013 09:36:11 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130606154311.GA5688@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jay Agarwal <jagarwal@nvidia.com>, mturquette@linaro.org
+CC: linux@arm.linux.org.uk, thierry.reding@avionic-design.de,
+        bhelgaas@google.com, ldewangan@nvidia.com, olof@lixom.net,
+        hdoyu@nvidia.com, pgaikwad@nvidia.com, pdeschrijver@nvidia.com,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        jtukkinen@nvidia.com, kthota@nvidia.com
+Subject: Re: [PATCH V4 1/4] ARM: tegra30: clocks: Fix pciex clock registration
+References: <1371021223-6709-1-git-send-email-jagarwal@nvidia.com>
+In-Reply-To: <1371021223-6709-1-git-send-email-jagarwal@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 06, 2013 at 05:43:13PM +0200, Frederic Weisbecker wrote:
+On 06/12/2013 01:13 AM, Jay Agarwal wrote:
+> Registering pciex as peripheral clock instead of fixed clock
+> as tegra_perih_reset_assert(deassert) api of this clock api
+> gives warning and ultimately does not succeed to assert(deassert)
+> 
+> Signed-off-by: Jay Agarwal <jagarwal@nvidia.com>
+> ---
+> Patch is based on remotes/gitorious_thierryreding_linux/tegra/next and should be applied on top of this.
 
- > > Every process 200% or 0%.
- > 
- > I see, would you mind testing this branch?
- > 
- > git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
- > 	timers/urgent
- > 
- > It might help, I specially think about 45eacc692771bd2b1ea3d384e6345cab3da10861
- > ("vtime: Use consistent clocks among nohz accounting") which fixes an issue
- > with cputime accounting that resulted in similar symptoms.
+In this case, it would make more sense to apply this to the clock tree,
+since it's a standalone bug-fix.
 
-So that patch has been in 'urgent' for a month. Can someone move it
-to really-urgent or whatever is necessary to get it into Linus' tree ?
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
-	DAve
