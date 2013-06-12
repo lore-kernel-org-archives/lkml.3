@@ -1,105 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab3FLGxj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 02:53:39 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41127 "EHLO arroyo.ext.ti.com"
+	id S1755418Ab3FLGzd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 02:55:33 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56300 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753048Ab3FLGxg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 02:53:36 -0400
-From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>
-Subject: RE: [PATCH V3 1/2] tps6507x-ts: Add DT support
-Thread-Topic: [PATCH V3 1/2] tps6507x-ts: Add DT support
-Thread-Index: AQHOVgCI6JgestwZ/U6JUkoOswg7D5kuDq4AgADE+JCAAAPGgIAC5R6g
-Date: Wed, 12 Jun 2013 06:53:21 +0000
-Message-ID: <A4887BF146CD57468F700B415D2F47015A1315@DBDE04.ent.ti.com>
-References: <1369126458-24872-1-git-send-email-manishv.b@ti.com>
- <1369126458-24872-2-git-send-email-manishv.b@ti.com>
- <20130610060442.GA30158@core.coreip.homeip.net>
- <A4887BF146CD57468F700B415D2F47015A0DFD@DBDE04.ent.ti.com>
- <20130610180311.GA4649@core.coreip.homeip.net>
-In-Reply-To: <20130610180311.GA4649@core.coreip.homeip.net>
-Accept-Language: en-IN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755094Ab3FLGzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 02:55:31 -0400
+Message-ID: <51B81B50.10508@ti.com>
+Date: Wed, 12 Jun 2013 12:25:12 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
+To: Chanwoo Choi <cw00.choi@samsung.com>
+CC: <myungjoo.ham@samsung.com>, <balbi@ti.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <grant.likely@linaro.org>,
+        <rob.herring@calxeda.com>, <rob@landley.net>,
+        <gregkh@linuxfoundation.org>, <benoit.cousson@linaro.org>,
+        <anish198519851985@gmail.com>, <pmeerw@pmeerw.net>
+Subject: Re: [PATCH] extcon: Add an API to get extcon device from dt node
+References: <1370276020-17446-2-git-send-email-kishon@ti.com> <1371001149-16906-1-git-send-email-cw00.choi@samsung.com>
+In-Reply-To: <1371001149-16906-1-git-send-email-cw00.choi@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+Hi Chanwoo Choi,
 
-On Mon, Jun 10, 2013 at 23:33:11, Dmitry Torokhov wrote:
-> Manish,
-> 
-> On Mon, Jun 10, 2013 at 10:23:16AM +0000, Vishwanathrao Badarkhe, Manish wrote:
-> > Hi Dmitry,
-> > 
-> > On Mon, Jun 10, 2013 at 11:34:42, Dmitry Torokhov wrote:
-> > > Hi Manish,
-> > > 
-> > > On Tue, May 21, 2013 at 02:24:17PM +0530, Vishwanathrao Badarkhe, Manish wrote:
-> > > 
-> > > > +	struct touchscreen_init_data *init_data = NULL;
-> > > > +	int err;
-> > > > +
-> > > > +	if (node)
-> > > > +		node = of_find_node_by_name(node, "tsc");
-> > > 
-> > > Why do you have to locate OF node manually instead of already having it attached to the device stucture?
-> > 
-> > As TPS6507x is mfd device containing two nodes, regulator and touchscreen.
-> > It is necessary to use "of_find_node_by_name" to find child "tsc" node 
-> > of TPS6507x MFD device.
-> 
-> I understand that TPS6507x is a MFD device, However, I still do not understand why you do not attach OF data to the child platform device representing touch screen when you create it.
+On Wednesday 12 June 2013 07:09 AM, Chanwoo Choi wrote:
+> From: Kishon Vijay Abraham I <kishon@ti.com>
+>
+> Added an API of_extcon_get_extcon_dev() to be used by drivers to get
+> extcon device in the case of dt boot (this can be used instead of
+> extcon_get_extcon_dev()).
+>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+> ---
+>   drivers/extcon/Makefile          |  3 +++
+>   drivers/extcon/of-extcon.c       | 56 ++++++++++++++++++++++++++++++++++++++++
+>   include/linux/extcon/of-extcon.h | 30 +++++++++++++++++++++
+>   3 files changed, 89 insertions(+)
+>   create mode 100644 drivers/extcon/of-extcon.c
+>   create mode 100644 include/linux/extcon/of-extcon.h
+>
+> diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
+> index 540e2c3..39cdf95 100644
+> --- a/drivers/extcon/Makefile
+> +++ b/drivers/extcon/Makefile
+> @@ -2,9 +2,12 @@
+>   # Makefile for external connector class (extcon) devices
+>   #
+>
+> +obj-$(CONFIG_OF)		+= of-extcon.o
+> +
+>   obj-$(CONFIG_EXTCON)		+= extcon-class.o
+>   obj-$(CONFIG_EXTCON_GPIO)	+= extcon-gpio.o
+>   obj-$(CONFIG_EXTCON_ADC_JACK)	+= extcon-adc-jack.o
+> +
+>   obj-$(CONFIG_EXTCON_MAX77693)	+= extcon-max77693.o
+>   obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
+>   obj-$(CONFIG_EXTCON_ARIZONA)	+= extcon-arizona.o
+> diff --git a/drivers/extcon/of-extcon.c b/drivers/extcon/of-extcon.c
+> new file mode 100644
+> index 0000000..29f82b4
+> --- /dev/null
+> +++ b/drivers/extcon/of-extcon.c
+> @@ -0,0 +1,56 @@
+> +/*
+> + * OF helpers for External connector (extcon) framework
+> + *
+> + * Copyright (C) 2013 Texas Instruments, Inc.
+> + * Kishon Vijay Abraham I <kishon@ti.com>
+> + *
+> + * Copyright (C) 2013 Samsung Electronics
+> + * Chanwoo Choi <cw00.choi@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/extcon.h>
+> +#include <linux/of.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/extcon/of-extcon.h>
+> +
+> +struct extcon_dev *of_extcon_get_extcon_dev(struct device *dev, int index)
+> +{
+> +	struct device_node *node;
+> +	struct extcon_dev *edev;
+> +	struct platform_device *extcon_parent_dev;
+> +
+> +	if (!dev->of_node) {
+> +		dev_dbg(dev, "device does not have a device node entry\n");
+> +		return ERR_PTR(-EINVAL);
+> +	}
+> +
+> +	node = of_parse_phandle(dev->of_node, "extcon", index);
+> +	if (!node) {
+> +		dev_dbg(dev, "failed to get phandle in %s node\n",
+> +			dev->of_node->full_name);
+> +		return ERR_PTR(-ENODEV);
+> +	}
+> +
+> +	extcon_parent_dev = of_find_device_by_node(node);
+> +	if (!extcon_parent_dev) {
+> +		dev_dbg(dev, "unable to find device by node\n");
+> +		return ERR_PTR(-EPROBE_DEFER);
+> +	}
+> +
+> +	edev = extcon_get_extcon_dev(dev_name(&extcon_parent_dev->dev));
 
-I gone through most of MFD devices in mainline kernel where "of_find_node_by_name" 
-function is used in order to populate child node properties. 
-See below example of max8925 MFD device. 
+In order to get this working, I needed a small fix in extcon_dev_register
 
-Max8025 MFD device has following modules
-1. Touch screen
-2. Charger
-3. Backlight
-4. regulator
+-       dev_set_name(edev->dev, edev->name ? edev->name : dev_name(dev));
++       edev->name = edev->name ? edev->name : dev_name(dev);
++       dev_set_name(edev->dev, edev->name);
 
-In DT case, device node for max8925 MFD device is in "arch/arm/boot/dts/mmp2-brownstone.dts" 
-file having child nodes as regulator, backlight and charger.
-Respective drivers (regulator, backlight and charger) of max8925 MFD device used 
-"of_find_node_by_name" function in order to populate child node properties.
+Also using extcon_get_extcon_dev here requires the extcon driver not to 
+set edev.name since we use *dev_name* here. Hence I recommend using my 
+initial class iterative approach. Anyway its your call. Let me know if 
+have to float a new version of the patch (either the iterative approach 
+or having the fix I mentioned in extcon_dev_register).
 
-Here, also same case for TPS6507x MFD device
-
-TPS6507x MFD device has two childs:
-1. regulator
-2. touch screen.
-
-Regulator driver for TPS6507x is already in mainline and using function 
-"of_find_node_by_name" to populate device tree properties for regulators.
-On similar lines I used "of_find_node_by_name" to populate device
-tree properties for touch screen.
-
-Still, I agreed that it is possible to attach OF data to child platform device
-but it requires changes in MFD driver of TPS6507x.
-
-Please let me know your opinion about this.
-
-
-Thanks, 
-Manish
+Thanks
+Kishon
