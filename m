@@ -1,119 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758180Ab3FLXb4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 19:31:56 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:35219 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758117Ab3FLXby (ORCPT
+	id S932275Ab3FLXci (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 19:32:38 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:36069 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756961Ab3FLXch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 19:31:54 -0400
-Date: Wed, 12 Jun 2013 16:31:51 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Tejun Heo <theo@redhat.com>, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH 2/2] percpu-refcount: implement percpu_tryget() along
- with percpu_ref_kill_and_confirm()
-Message-ID: <20130612233151.GA32700@mtj.dyndns.org>
-References: <20130612204532.GB15092@htj.dyndns.org>
- <20130612204627.GC15092@htj.dyndns.org>
- <20130612210824.GG6151@google.com>
- <20130612211747.GA2866@htj.dyndns.org>
- <20130612214630.GH6151@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130612214630.GH6151@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 12 Jun 2013 19:32:37 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] ARM: msm: Move msm_timer to CLOCKSOURCE_OF_DECLARE
+Date: Wed, 12 Jun 2013 16:32:33 -0700
+Message-Id: <1371079953-28457-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.3.251.g1462b67
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+This allows us to remove the init_time callback in the DT machine
+descriptors, shrinking the code.
 
-On Wed, Jun 12, 2013 at 02:46:30PM -0700, Kent Overstreet wrote:
-> I'm reading through the cgroup patch/code now - this refcounting is
-> _hairy_ so I could certainly believe the way you've done it is the
-> sanest way that'll work.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/mach-msm/board-dt-8660.c |  1 -
+ arch/arm/mach-msm/board-dt-8960.c |  1 -
+ arch/arm/mach-msm/common.h        |  1 -
+ arch/arm/mach-msm/timer.c         | 17 +++--------------
+ 4 files changed, 3 insertions(+), 17 deletions(-)
 
-There are several different entities involved in the refcnting.  It's
-hairy.
-
-> But it does feel like some of the ordering/ownership is backwards here,
-> and that's where the need for confirm_kill is coming from - also, the
-> fact that css_tryget() is used more than css_get() is... suspicious.
-> 
-> Basically, you're wanting the lifetime of the subsystems to be
-> controlled by the lifetime of the cgroup. If that's the case, then
-> nothing should be taking refs on them (i'm not sure if that's actually
-> the case) and they shouldn't be taking refs on the cgroup - the cgroup
-> should kill them directly when its ref goes to 0.
-
-The cgroup initiates destruction but controllers are free to hold on
-to their part of cgroup (each css) which in turn should pin the cgroup
-itself.  Each css proxies cgroup for each controller.  The reference
-counting becomes nested but it doesn't change the overall mechanism.
-
-> Of course, if they can't just be killed and they really do need
-> independent lifetimes,  then that's a problem - though embedding two
-> refcounts in the cgroup might solve that (one for the subsystems, one
-> for everything else).
-
-The original intention of the nested refcnting probably is allowing
-draining css's separately so that subsystems can be added and removed
-from an existing hierarchy.  That never worked out, so it could be
-that we can collapse all the css refcnts into cgroup refcnt, which BTW
-is currently using the dentry reference count.  I'm fairly certain
-that we can collapse it but that's a separate issue we can deal with
-later.
-
-Being collapsed or not doesn't really change the necessity for kill
-confirming tho.  More on the subject below.
-
-> Uhm, cgroup_offline_fn() seems weird. First it's telling the subsystems
-> to go away - but all we know is that tryget() is failing, there could
-> still be outstanding refs. What am I missing? offline_css() doesn't
-> appear to wait for any refs to hit 0.
-
-offline_css() tells the controllers that the cgroup is being removed
-and they should release whatever resources which could be pinning the
-css and stop creating such new references, so that whatever in flight
-finishes the reference could hit zero.
-
-Some controllers depend on tryget reliably failing for not creating
-lasting references, so that's where the requirement for guaranteeing
-tryget failure comes in.  Note that it has nothing to do with whether
-the refcnts are collapsed into one or not.  It's still the same deal.
-You need to confirm that the one refcnt is visible as killed on all
-CPUs before starting offlining.
-
-> Then it says it's putting base refs... but base refs should be put with
-> percpu_ref_kill(), so what refs are those really?
-
-Ah, that's me forgetting that the base refs are already put and slab
-poisoning missing it probably because the css object tends to still be
-in RCU purgatory when the last extra put happens.  Will fix.
-
-> Then there's a list_del_rcu() - but that should probably happen _before_
-> the call_rcu that percpu_ref_kill() does (in the absense of the bizzare
-> cgroup stuff you need the list_del_rcu() or whatever to happen first, so
-> that you know no new gets() can happen, then then after the call_rcu()
-> it's safe to drop the base ref... if you drop it before the rcu barrier
-> you can have a get happen after the ref already hit 0.)
-
-No, there are two separate stages of RCU'ing going on here.  One to
-disable tryget for ->css_offline.  The other to actually free the css
-as css is expected to be RCU-read accessible during and after
-->css_offline().  The percpu ref is adding an extra RCU stage.
-
-> So maybe those lists just aren't used by anything that would take a ref?
-> Or is there a barrier or something somewhere else that makes it safe?
-
-The two RCU grace periods are just protecting different things and
-they can't be combined.
-
-Thanks.
-
+diff --git a/arch/arm/mach-msm/board-dt-8660.c b/arch/arm/mach-msm/board-dt-8660.c
+index 7dcfc53..4bd22ca 100644
+--- a/arch/arm/mach-msm/board-dt-8660.c
++++ b/arch/arm/mach-msm/board-dt-8660.c
+@@ -47,6 +47,5 @@ DT_MACHINE_START(MSM_DT, "Qualcomm MSM (Flattened Device Tree)")
+ 	.init_irq = irqchip_init,
+ 	.init_machine = msm8x60_dt_init,
+ 	.init_late = msm8x60_init_late,
+-	.init_time	= msm_dt_timer_init,
+ 	.dt_compat = msm8x60_fluid_match,
+ MACHINE_END
+diff --git a/arch/arm/mach-msm/board-dt-8960.c b/arch/arm/mach-msm/board-dt-8960.c
+index 7301936..9a2b525 100644
+--- a/arch/arm/mach-msm/board-dt-8960.c
++++ b/arch/arm/mach-msm/board-dt-8960.c
+@@ -32,7 +32,6 @@ DT_MACHINE_START(MSM8960_DT, "Qualcomm MSM (Flattened Device Tree)")
+ 	.smp = smp_ops(msm_smp_ops),
+ 	.map_io = msm_map_msm8960_io,
+ 	.init_irq = irqchip_init,
+-	.init_time	= msm_dt_timer_init,
+ 	.init_machine = msm_dt_init,
+ 	.dt_compat = msm8960_dt_match,
+ MACHINE_END
+diff --git a/arch/arm/mach-msm/common.h b/arch/arm/mach-msm/common.h
+index ce8215a..e32429e 100644
+--- a/arch/arm/mach-msm/common.h
++++ b/arch/arm/mach-msm/common.h
+@@ -14,7 +14,6 @@
+ 
+ extern void msm7x01_timer_init(void);
+ extern void msm7x30_timer_init(void);
+-extern void msm_dt_timer_init(void);
+ extern void qsd8x50_timer_init(void);
+ 
+ extern void msm_map_common_io(void);
+diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
+index 284313f..1167cf6 100644
+--- a/arch/arm/mach-msm/timer.c
++++ b/arch/arm/mach-msm/timer.c
+@@ -219,15 +219,8 @@ err:
+ }
+ 
+ #ifdef CONFIG_OF
+-static const struct of_device_id msm_timer_match[] __initconst = {
+-	{ .compatible = "qcom,kpss-timer" },
+-	{ .compatible = "qcom,scss-timer" },
+-	{ },
+-};
+-
+-void __init msm_dt_timer_init(void)
++static void __init msm_dt_timer_init(struct device_node *np)
+ {
+-	struct device_node *np;
+ 	u32 freq;
+ 	int irq;
+ 	struct resource res;
+@@ -235,12 +228,6 @@ void __init msm_dt_timer_init(void)
+ 	void __iomem *base;
+ 	void __iomem *cpu0_base;
+ 
+-	np = of_find_matching_node(NULL, msm_timer_match);
+-	if (!np) {
+-		pr_err("Can't find msm timer DT node\n");
+-		return;
+-	}
+-
+ 	base = of_iomap(np, 0);
+ 	if (!base) {
+ 		pr_err("Failed to map event base\n");
+@@ -283,6 +270,8 @@ void __init msm_dt_timer_init(void)
+ 
+ 	msm_timer_init(freq, 32, irq, !!percpu_offset);
+ }
++CLOCKSOURCE_OF_DECLARE(kpss_timer, "qcom,kpss-timer", msm_dt_timer_init);
++CLOCKSOURCE_OF_DECLARE(scss_timer, "qcom,scss-timer", msm_dt_timer_init);
+ #endif
+ 
+ static int __init msm_timer_map(phys_addr_t addr, u32 event, u32 source,
 -- 
-tejun
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
