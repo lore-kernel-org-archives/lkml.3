@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034Ab3FLJFU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 05:05:20 -0400
-Received: from mout.gmx.net ([212.227.15.18]:54963 "EHLO mout.gmx.net"
+	id S1756215Ab3FLJGY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 05:06:24 -0400
+Received: from mout.gmx.net ([212.227.17.22]:60768 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753803Ab3FLJFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 05:05:17 -0400
+	id S1755558Ab3FLJGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 05:06:19 -0400
 From: Dave Wiltshire <david.wiltshire@gmx.com>
 To: davem@davemloft.net
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, nsujir@broadcom.com,
@@ -17,66 +17,105 @@ Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, nsujir@broadcom.com,
         linux-wireless@vger.kernel.org, viro@zeniv.linux.org.uk,
         eparis@redhat.com, edumazet@google.com, dev@openvswitch.org,
         jhs@mojatatu.com, Dave Wiltshire <david.wiltshire@gmx.com>
-Subject: [PATCH 0/3] skbuff: pskb_expand_head changes
-Date: Wed, 12 Jun 2013 19:05:31 +1000
-Message-Id: <1371027934-1955-1-git-send-email-david.wiltshire@gmx.com>
+Subject: [PATCH 1/3] skbuff: Update truesize in pskb_expand_head
+Date: Wed, 12 Jun 2013 19:05:32 +1000
+Message-Id: <1371027934-1955-2-git-send-email-david.wiltshire@gmx.com>
 X-Mailer: git-send-email 1.7.10.4
-X-Provags-ID: V03:K0:DfZKCPjZTSeoEdKGi6aPljTlYoKMYiTqSxgI3zsu879c442DRzU
- eg6pADhvUUWnJJqny6lSRW2L4m19NqCHECKa5TWcWtugQwZxTHjCB/tDI1rDSHALCULDgRG
- wCoq9UMMuwUImULnSgZ/BWsJl5XxUDdwqgW87bQE9CrDLYnOyRQj+YgtHdLa02vImSgTSlo
- HCSVu0ixgOfwrWFH3bwsQ==
+In-Reply-To: <1371027934-1955-1-git-send-email-david.wiltshire@gmx.com>
+References: <1371027934-1955-1-git-send-email-david.wiltshire@gmx.com>
+X-Provags-ID: V03:K0:gdv7Kv7NWeEqbhq2km0+ehpKk/Yg724tM3dLlkZzQXggKB2EybL
+ /v6f89/eutLrkMZ3rRmnif0HGxxWPYJ8Zqh4IpZBL1EyALDXUTr4J5gDYxCr2Q8iQRXUSUU
+ Z4uR8dU21EHs47lhxU3Ajl5YOytswtbm8ZWcgskPdbENKModJTQMCJn9WqhszHDES8mBKhQ
+ ZrWxf5z+zaYvPtrvgLVrA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset applies against David Miller's net-next tree.
+Some call sites to pskb_expand_head subsequently update the skb truesize
+and others don't (even with non-zero arguments). This is likely a memory
+audit leak. Fixed this up by moving the memory accounting to the
+skbuff.c file and removing it from the calling sites.
 
-This is my first patch, so please let me know if I've done something
-wrong or could do something better (e.g. splitting the patch in a
-different way).
+Signed-off-by: Dave Wiltshire <david.wiltshire@gmx.com>
+---
+ drivers/net/wireless/mwl8k.c |    1 -
+ kernel/audit.c               |    2 --
+ net/core/skbuff.c            |    1 +
+ net/netlink/af_netlink.c     |    3 +--
+ net/wireless/util.c          |    2 --
+ 5 files changed, 2 insertions(+), 7 deletions(-)
 
-I think there is a problem with memory accounting in pskb_expand_head.
-Some call sites update truesize while others don't. This means that the
-skbuff can change in size without truesize being updated. This seems
-incorrect to me. So I changed it. Perhaps I don't understand something,
-but I thought it best to generate the change and then ask. So is this
-correct?
-
-The other patches are from looking at all the call sites to
-pskb_expand_head and since I was doing that I cleaned some of them up.
-
-Dave Wiltshire (3):
-  skbuff: Update truesize in pskb_expand_head
-  skbuff: skb_cow_head not used in some drivers.
-  skbuff: Added new helper function skb_cow_clone_head.
-
- drivers/net/ethernet/atheros/atl1c/atl1c_main.c   |    8 ++------
- drivers/net/ethernet/atheros/atl1e/atl1e_main.c   |    8 ++------
- drivers/net/ethernet/atheros/atlx/atl1.c          |    8 ++------
- drivers/net/ethernet/broadcom/tg3.c               |    3 +--
- drivers/net/ethernet/brocade/bna/bnad.c           |   11 +++--------
- drivers/net/ethernet/intel/e1000/e1000_main.c     |    8 ++------
- drivers/net/ethernet/intel/e1000e/netdev.c        |    8 ++------
- drivers/net/ethernet/intel/igb/igb_main.c         |    7 ++-----
- drivers/net/ethernet/intel/igbvf/netdev.c         |   11 +++--------
- drivers/net/ethernet/intel/ixgb/ixgb_main.c       |    8 ++------
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c     |   10 +++-------
- drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |    7 ++-----
- drivers/net/ethernet/jme.c                        |    3 +--
- drivers/net/ethernet/qlogic/qlge/qlge_main.c      |    8 ++------
- drivers/net/wimax/i2400m/netdev.c                 |    3 +--
- drivers/net/wireless/mwl8k.c                      |    1 -
- include/linux/skbuff.h                            |   14 +++++++++++++
- kernel/audit.c                                    |    2 --
- net/core/dev.c                                    |    8 ++------
- net/core/skbuff.c                                 |    1 +
- net/netlink/af_netlink.c                          |    3 +--
- net/openvswitch/actions.c                         |   22 +++++++--------------
- net/sched/act_csum.c                              |    8 ++------
- net/sched/act_nat.c                               |   18 +++++------------
- net/wireless/util.c                               |    2 --
- 25 files changed, 62 insertions(+), 128 deletions(-)
-
+diff --git a/drivers/net/wireless/mwl8k.c b/drivers/net/wireless/mwl8k.c
+index 6820fce..802c8d7 100644
+--- a/drivers/net/wireless/mwl8k.c
++++ b/drivers/net/wireless/mwl8k.c
+@@ -845,7 +845,6 @@ mwl8k_add_dma_header(struct mwl8k_priv *priv, struct sk_buff *skb,
+ 					"Failed to reallocate TX buffer\n");
+ 			return;
+ 		}
+-		skb->truesize += REDUCED_TX_HEADROOM;
+ 	}
+ 
+ 	reqd_hdrlen = sizeof(*tr) + head_pad;
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 21c7fa6..e05b57b 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1157,7 +1157,6 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
+ static inline int audit_expand(struct audit_buffer *ab, int extra)
+ {
+ 	struct sk_buff *skb = ab->skb;
+-	int oldtail = skb_tailroom(skb);
+ 	int ret = pskb_expand_head(skb, 0, extra, ab->gfp_mask);
+ 	int newtail = skb_tailroom(skb);
+ 
+@@ -1166,7 +1165,6 @@ static inline int audit_expand(struct audit_buffer *ab, int extra)
+ 		return 0;
+ 	}
+ 
+-	skb->truesize += newtail - oldtail;
+ 	return newtail;
+ }
+ 
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index edf3757..125bb7e 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -1061,6 +1061,7 @@ int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail,
+ 	if (!data)
+ 		goto nodata;
+ 	size = SKB_WITH_OVERHEAD(ksize(data));
++	skb->truesize += size - skb_end_offset(skb);
+ 
+ 	/* Copy only real data... and, alas, header. This should be
+ 	 * optimized for the cases when header is void.
+diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
+index 9b6b115..77fd986 100644
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -1565,8 +1565,7 @@ static struct sk_buff *netlink_trim(struct sk_buff *skb, gfp_t allocation)
+ 		skb = nskb;
+ 	}
+ 
+-	if (!pskb_expand_head(skb, 0, -delta, allocation))
+-		skb->truesize -= delta;
++	pskb_expand_head(skb, 0, -delta, allocation);
+ 
+ 	return skb;
+ }
+diff --git a/net/wireless/util.c b/net/wireless/util.c
+index f5ad4d9..5710aa2 100644
+--- a/net/wireless/util.c
++++ b/net/wireless/util.c
+@@ -533,8 +533,6 @@ int ieee80211_data_from_8023(struct sk_buff *skb, const u8 *addr,
+ 
+ 		if (pskb_expand_head(skb, head_need, 0, GFP_ATOMIC))
+ 			return -ENOMEM;
+-
+-		skb->truesize += head_need;
+ 	}
+ 
+ 	if (encaps_data) {
 -- 
 1.7.10.4
 
