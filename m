@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932229Ab3FLVEg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 17:04:36 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:46637 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758111Ab3FLVDu (ORCPT
+	id S932211Ab3FLVFR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 17:05:17 -0400
+Received: from mail-ye0-f174.google.com ([209.85.213.174]:57193 "EHLO
+	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757932Ab3FLVDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 17:03:50 -0400
+	Wed, 12 Jun 2013 17:03:45 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         koverstreet@google.com, linux-kernel@vger.kernel.org,
         cl@linux-foundation.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 09/11] cgroup: reorder the operations in cgroup_destroy_locked()
-Date: Wed, 12 Jun 2013 14:03:14 -0700
-Message-Id: <1371070996-20613-10-git-send-email-tj@kernel.org>
+Subject: [PATCH 07/11] cgroup: drop unnecessary RCU dancing from __put_css_set()
+Date: Wed, 12 Jun 2013 14:03:12 -0700
+Message-Id: <1371070996-20613-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1371070996-20613-1-git-send-email-tj@kernel.org>
 References: <1371070996-20613-1-git-send-email-tj@kernel.org>
@@ -22,120 +22,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch reorders the operations in cgroup_destroy_locked() such
-that the userland visible parts happen before css offlining and
-removal from the ->sibling list.  This will be used to make css use
-percpu refcnt.
+__put_css_set() does RCU read access on @cgrp across dropping
+@cgrp->count so that it can continue accessing @cgrp even if the count
+reached zero and destruction of the cgroup commenced.  Given that both
+sides - __css_put() and cgroup_destroy_locked() - are cold paths, this
+is unnecessary.  Just making cgroup_destroy_locked() grab css_set_lock
+while checking @cgrp->count is enough.
 
-While at it, split out CGRP_DEAD related comment from the refcnt
-deactivation one and correct / clarify how different guarantees are
-met.
-
-While this patch changes the specific order of operations, it
-shouldn't cause any noticeable behavior difference.
+Remove the RCU read locking from __put_css_set() and make
+cgroup_destroy_locked() read-lock css_set_lock when checking
+@cgrp->count.  This will also allow removing @cgrp->count.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/cgroup.c | 61 +++++++++++++++++++++++++++++++++------------------------
- 1 file changed, 35 insertions(+), 26 deletions(-)
+ kernel/cgroup.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index aefda90..a43bc9d 100644
+index 0343df5..efe500b 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -4382,13 +4382,8 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
+@@ -407,19 +407,13 @@ static void __put_css_set(struct css_set *cset, int taskexit)
+ 		list_del_init(&link->cset_link);
+ 		list_del_init(&link->cgrp_link);
+ 
+-		/*
+-		 * We may not be holding cgroup_mutex, and if cgrp->count is
+-		 * dropped to 0 the cgroup can be destroyed at any time, hence
+-		 * rcu_read_lock is used to keep it alive.
+-		 */
+-		rcu_read_lock();
++		/* @cgrp can't go away while we're holding css_set_lock */
+ 		if (atomic_dec_and_test(&cgrp->count) &&
+ 		    notify_on_release(cgrp)) {
+ 			if (taskexit)
+ 				set_bit(CGRP_RELEASABLE, &cgrp->flags);
+ 			check_for_release(cgrp);
+ 		}
+-		rcu_read_unlock();
+ 
+ 		kfree(link);
+ 	}
+@@ -4373,11 +4367,19 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
+ 	struct cgroup *parent = cgrp->parent;
+ 	struct cgroup_event *event, *tmp;
+ 	struct cgroup_subsys *ss;
++	bool empty;
+ 
+ 	lockdep_assert_held(&d->d_inode->i_mutex);
+ 	lockdep_assert_held(&cgroup_mutex);
+ 
+-	if (atomic_read(&cgrp->count) || !list_empty(&cgrp->children))
++	/*
++	 * css_set_lock prevents @cgrp from being removed while
++	 * __put_css_set() is in progress.
++	 */
++	read_lock(&css_set_lock);
++	empty = !atomic_read(&cgrp->count) && list_empty(&cgrp->children);
++	read_unlock(&css_set_lock);
++	if (!empty)
+ 		return -EBUSY;
  
  	/*
- 	 * Block new css_tryget() by deactivating refcnt and mark @cgrp
--	 * removed.  This makes future css_tryget() and child creation
--	 * attempts fail thus maintaining the removal conditions verified
--	 * above.
--	 *
--	 * Note that CGRP_DEAD assertion is depended upon by
--	 * cgroup_next_sibling() to resume iteration after dropping RCU
--	 * read lock.  See cgroup_next_sibling() for details.
-+	 * removed.  This makes future css_tryget() attempts fail which we
-+	 * guarantee to ->css_offline() callbacks.
- 	 */
- 	for_each_subsys(cgrp->root, ss) {
- 		struct cgroup_subsys_state *css = cgrp->subsys[ss->subsys_id];
-@@ -4396,8 +4391,41 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
- 		WARN_ON(atomic_read(&css->refcnt) < 0);
- 		atomic_add(CSS_DEACT_BIAS, &css->refcnt);
- 	}
-+
-+	/*
-+	 * Mark @cgrp dead.  This prevents further task migration and child
-+	 * creation by disabling cgroup_lock_live_group().  Note that
-+	 * CGRP_DEAD assertion is depended upon by cgroup_next_sibling() to
-+	 * resume iteration after dropping RCU read lock.  See
-+	 * cgroup_next_sibling() for details.
-+	 */
- 	set_bit(CGRP_DEAD, &cgrp->flags);
+@@ -5054,8 +5056,6 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
  
-+	/* CGRP_DEAD is set, remove from ->release_list for the last time */
-+	raw_spin_lock(&release_list_lock);
-+	if (!list_empty(&cgrp->release_list))
-+		list_del_init(&cgrp->release_list);
-+	raw_spin_unlock(&release_list_lock);
-+
-+	/*
-+	 * Remove @cgrp directory.  The removal puts the base ref but we
-+	 * aren't quite done with @cgrp yet, so hold onto it.
-+	 */
-+	dget(d);
-+	cgroup_d_remove_dir(d);
-+
-+	/*
-+	 * Unregister events and notify userspace.
-+	 * Notify userspace about cgroup removing only after rmdir of cgroup
-+	 * directory to avoid race between userspace and kernelspace.
-+	 */
-+	spin_lock(&cgrp->event_list_lock);
-+	list_for_each_entry_safe(event, tmp, &cgrp->event_list, list) {
-+		list_del_init(&event->list);
-+		schedule_work(&event->remove);
-+	}
-+	spin_unlock(&cgrp->event_list_lock);
-+
- 	/* tell subsystems to initate destruction */
- 	for_each_subsys(cgrp->root, ss)
- 		offline_css(ss, cgrp);
-@@ -4412,34 +4440,15 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
- 	for_each_subsys(cgrp->root, ss)
- 		css_put(cgrp->subsys[ss->subsys_id]);
- 
--	raw_spin_lock(&release_list_lock);
--	if (!list_empty(&cgrp->release_list))
--		list_del_init(&cgrp->release_list);
--	raw_spin_unlock(&release_list_lock);
--
- 	/* delete this cgroup from parent->children */
- 	list_del_rcu(&cgrp->sibling);
- 	list_del_init(&cgrp->allcg_node);
- 
--	dget(d);
--	cgroup_d_remove_dir(d);
- 	dput(d);
- 
- 	set_bit(CGRP_RELEASABLE, &parent->flags);
- 	check_for_release(parent);
- 
--	/*
--	 * Unregister events and notify userspace.
--	 * Notify userspace about cgroup removing only after rmdir of cgroup
--	 * directory to avoid race between userspace and kernelspace.
--	 */
--	spin_lock(&cgrp->event_list_lock);
--	list_for_each_entry_safe(event, tmp, &cgrp->event_list, list) {
--		list_del_init(&event->list);
--		schedule_work(&event->remove);
--	}
--	spin_unlock(&cgrp->event_list_lock);
--
- 	return 0;
- }
- 
+ static void check_for_release(struct cgroup *cgrp)
+ {
+-	/* All of these checks rely on RCU to keep the cgroup
+-	 * structure alive */
+ 	if (cgroup_is_releasable(cgrp) &&
+ 	    !atomic_read(&cgrp->count) && list_empty(&cgrp->children)) {
+ 		/*
 -- 
 1.8.2.1
 
