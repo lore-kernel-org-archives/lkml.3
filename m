@@ -1,54 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab3FLUtF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 16:49:05 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:57399 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756585Ab3FLUtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 16:49:00 -0400
-Date: Wed, 12 Jun 2013 16:48:54 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Jan kara <jack@suse.cz>, gnehzuil.liu@gmail.com
-Subject: Re: ext4 extent status tree LRU locking
-Message-ID: <20130612204854.GA12456@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Dave Hansen <dave.hansen@intel.com>, linux-ext4@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>, Jan kara <jack@suse.cz>,
-	gnehzuil.liu@gmail.com
-References: <51B7B128.60909@intel.com>
- <20130612071735.GB29898@gmail.com>
- <51B88F1A.5000909@intel.com>
+	id S1758049Ab3FLUtV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 16:49:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41497 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756585Ab3FLUtS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 16:49:18 -0400
+Date: Wed, 12 Jun 2013 13:48:23 -0700
+From: tip-bot for Ivo Sieben <tipbot@zytor.com>
+Message-ID: <tip-ee23871389d51e07380d23887333622fbe7d3dd9@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        rostedt@goodmis.org, bigeasy@linutronix.de, tglx@linutronix.de,
+        meltedpianoman@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, tglx@linutronix.de, bigeasy@linutronix.de,
+        meltedpianoman@gmail.com
+In-Reply-To: <1370254322-17240-1-git-send-email-meltedpianoman@gmail.com>
+References: <1370254322-17240-1-git-send-email-meltedpianoman@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] genirq: Set irq thread to RT priority on creation
+Git-Commit-ID: ee23871389d51e07380d23887333622fbe7d3dd9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <51B88F1A.5000909@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 12 Jun 2013 13:48:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 08:09:14AM -0700, Dave Hansen wrote:
-> You could make per-cpu LRUs, and batch movement on and off the global
-> LRU once the local ones get to be a certain size.  Or, you could keep
-> them cpu-local *until* the shrinker is called, when the shrinker could
-> go drain all the percpu ones.
-> 
-> Or, you could tag each extent in memory with its last-used time.  You
-> write an algorithm to go and walk the tree and attempt to _generally_
-> free the oldest objects out of a limited window.
+Commit-ID:  ee23871389d51e07380d23887333622fbe7d3dd9
+Gitweb:     http://git.kernel.org/tip/ee23871389d51e07380d23887333622fbe7d3dd9
+Author:     Ivo Sieben <meltedpianoman@gmail.com>
+AuthorDate: Mon, 3 Jun 2013 12:12:02 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 11 Jun 2013 16:18:50 +0200
 
-Another approach might be to tag each inode with the last time an
-ext4_map_blocks() was called on the inode, and keep an unsorted list
-of inodes which has one or more entries in the extent cache.
+genirq: Set irq thread to RT priority on creation
 
-When we decide to discard entries from the extent cache, we should
-drop all of the entries for the inode --- and then when we read in
-part of the extent tree leaf block, we should create entries in the
-extent cache for all of the extents found in the extent leaf block.
+When a threaded irq handler is installed the irq thread is initially
+created on normal scheduling priority. Only after the irq thread is
+woken up it sets its priority to RT_FIFO MAX_USER_RT_PRIO/2 itself.
 
-       	     	     	    	    	     - Ted
+This means that interrupts that occur directly after the irq handler
+is installed will be handled on a normal scheduling priority instead
+of the realtime priority that one would expect.
+
+Fix this by setting the RT priority on creation of the irq_thread.
+
+Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
+Cc: Sebastian Andrzej Siewior  <bigeasy@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1370254322-17240-1-git-send-email-meltedpianoman@gmail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/irq/manage.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index fa17855..e16caa8 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -840,9 +840,6 @@ static void irq_thread_dtor(struct callback_head *unused)
+ static int irq_thread(void *data)
+ {
+ 	struct callback_head on_exit_work;
+-	static const struct sched_param param = {
+-		.sched_priority = MAX_USER_RT_PRIO/2,
+-	};
+ 	struct irqaction *action = data;
+ 	struct irq_desc *desc = irq_to_desc(action->irq);
+ 	irqreturn_t (*handler_fn)(struct irq_desc *desc,
+@@ -854,8 +851,6 @@ static int irq_thread(void *data)
+ 	else
+ 		handler_fn = irq_thread_fn;
+ 
+-	sched_setscheduler(current, SCHED_FIFO, &param);
+-
+ 	init_task_work(&on_exit_work, irq_thread_dtor);
+ 	task_work_add(current, &on_exit_work, false);
+ 
+@@ -950,6 +945,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 	 */
+ 	if (new->thread_fn && !nested) {
+ 		struct task_struct *t;
++		static const struct sched_param param = {
++			.sched_priority = MAX_USER_RT_PRIO/2,
++		};
+ 
+ 		t = kthread_create(irq_thread, new, "irq/%d-%s", irq,
+ 				   new->name);
+@@ -957,6 +955,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 			ret = PTR_ERR(t);
+ 			goto out_mput;
+ 		}
++
++		sched_setscheduler(t, SCHED_FIFO, &param);
++
+ 		/*
+ 		 * We keep the reference to the task struct even if
+ 		 * the thread dies to avoid that the interrupt code
