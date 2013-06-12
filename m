@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757394Ab3FLRHj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 13:07:39 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:54712 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754494Ab3FLRHh (ORCPT
+	id S1757429Ab3FLRLH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 13:11:07 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44673 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755584Ab3FLRLF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 13:07:37 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX182hptguOQRThVwRFw1EfhU
-Date: Wed, 12 Jun 2013 10:07:34 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: grant.likely@linaro.org, linux-pm@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Fabio Stevam <festevam@gmail.com>
-Subject: Re: [PATCHv3 2/6] arm: introduce config HAS_BANDGAP
-Message-ID: <20130612170733.GK8164@atomide.com>
-References: <1370637968-23299-1-git-send-email-eduardo.valentin@ti.com>
- <1370637968-23299-3-git-send-email-eduardo.valentin@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370637968-23299-3-git-send-email-eduardo.valentin@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 12 Jun 2013 13:11:05 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 21/21] iio: ti_am335x_adc: check if we found the value
+Date: Wed, 12 Jun 2013 18:58:22 +0200
+Message-Id: <1371056302-12714-22-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1371056302-12714-1-git-send-email-bigeasy@linutronix.de>
+References: <1371056302-12714-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Eduardo Valentin <eduardo.valentin@ti.com> [130607 13:53]:
-> Bandgap is a device used to measure temperature on
-> electronic equipments. It is widely used in digital
-> integrated circuits. It is based on the dependency
-> between silicon voltage and temperature.
-> 
-> This patch introduce HAS_BANDGAP config entry.
-> This config is a boolean value so that arch
-> code can flag if they feature a bandgap device.
-> 
-> This config entry follows the same idea behind
-> ARCH_HAS_CPUFREQ.
+Usually we get all the values we wanted but it is possible, that te ADC
+unit is busy performing the conversation for the HW events. In that case
+-EBUSY is returned and the user may re-call the function.
 
-I suggest you add this to Russell's patch system:
+Acked-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/iio/adc/ti_am335x_adc.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+index 8ffe52d..4427e8e 100644
+--- a/drivers/iio/adc/ti_am335x_adc.c
++++ b/drivers/iio/adc/ti_am335x_adc.c
+@@ -145,6 +145,7 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
+ 	int i;
+ 	unsigned int fifo1count, read;
+ 	u32 step = UINT_MAX;
++	bool found = false;
  
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-omap@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: Fabio Stevam <festevam@gmail.com>
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-> ---
->  arch/arm/Kconfig            | 3 +++
->  arch/arm/mach-omap2/Kconfig | 1 +
->  2 files changed, 4 insertions(+)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index d423d58..bcbdec9 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -174,6 +174,9 @@ config ARCH_HAS_CPUFREQ
->  	  and that the relevant menu configurations are displayed for
->  	  it.
->  
-> +config ARCH_HAS_BANDGAP
-> +	bool
-> +
->  config GENERIC_HWEIGHT
->  	bool
->  	default y
-> diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-> index f49cd51..8620ab5 100644
-> --- a/arch/arm/mach-omap2/Kconfig
-> +++ b/arch/arm/mach-omap2/Kconfig
-> @@ -4,6 +4,7 @@ config ARCH_OMAP
->  config ARCH_OMAP2PLUS
->  	bool "TI OMAP2/3/4/5 SoCs with device tree support" if (ARCH_MULTI_V6 || ARCH_MULTI_V7)
->  	select ARCH_HAS_CPUFREQ
-> +	select ARCH_HAS_BANDGAP
->  	select ARCH_HAS_HOLES_MEMORYMODEL
->  	select ARCH_OMAP
->  	select ARCH_REQUIRE_GPIOLIB
-> -- 
-> 1.8.2.1.342.gfa7285d
-> 
+ 	/*
+ 	 * When the sub-system is first enabled,
+@@ -169,11 +170,14 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
+ 	fifo1count = tiadc_readl(adc_dev, REG_FIFO1CNT);
+ 	for (i = 0; i < fifo1count; i++) {
+ 		read = tiadc_readl(adc_dev, REG_FIFO1);
+-		if (read >> 16 == step)
++		if (read >> 16 == step) {
+ 			*val = read & 0xfff;
++			found = true;
++		}
+ 	}
+ 	am335x_tsc_se_update(adc_dev->mfd_tscadc);
+-
++	if (found == false)
++		return -EBUSY;
+ 	return IIO_VAL_INT;
+ }
+ 
+-- 
+1.7.10.4
+
