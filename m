@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab3FLIOr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 04:14:47 -0400
-Received: from mail-db9lp0250.outbound.messaging.microsoft.com ([213.199.154.250]:45383
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752512Ab3FLIOp (ORCPT
+	id S1754918Ab3FLIQl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 04:16:41 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:49424 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752398Ab3FLIQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 04:14:45 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-X-WSS-ID: 0MO9TKC-01-DJ9-02
-X-M-MSG: 
-Message-ID: <51B82DEC.8060209@amd.com>
-Date: Wed, 12 Jun 2013 03:14:36 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: <suravee.suthikulpanit@amd.com>
-CC: <linux-kernel@vger.kernel.org>, <a.p.zijlstra@chello.nl>,
-        <mingo@redhat.com>, <iommu@lists.linux-foundation.org>,
-        <joro@8bytes.org>
-Subject: Re: [PATCH 0/2 V5] perf/x86/amd: IOMMU Performance Counter Support
-References: <1370466709-3212-1-git-send-email-suravee.suthikulpanit@amd.com>
-In-Reply-To: <1370466709-3212-1-git-send-email-suravee.suthikulpanit@amd.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Wed, 12 Jun 2013 04:16:37 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com, arnd@arndb.de,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 00/11] CPUFreq Kconfig fixes
+Date: Wed, 12 Jun 2013 13:45:07 +0530
+Message-Id: <cover.1371022830.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter/Joerg
+Hi Rafael,
 
-Please let me know if you have any questions/concerns about regarding 
-this patch set.
+Recently Arnd sent few fixes where drivers were using APIs from freq_table.c but
+haven't selected CPU_FREQ_TABLE. Based on that, I just crossed checked all the
+places where it should be selected and where it shouldn't be. These are fixes
+around that.
 
-Thank you,
+I have applied these in my cpufreq-kconfig-fixes branch. Will send you a pull
+request separately once I get some Acks (will wait for few days).
 
-Suravee
+Viresh Kumar (11):
+  cpufreq: blackfin: enable driver for CONFIG_BFIN_CPU_FREQ
+  cpufreq: cris: select CPU_FREQ_TABLE
+  cpufreq: davinci: select CPU_FREQ_TABLE
+  cpufreq: exynos: select CPU_FREQ_TABLE
+  cpufreq: highbank: remove select CPU_FREQ_TABLE
+  cpufreq: imx: select CPU_FREQ_TABLE
+  cpufreq: powerpc: CBE_RAS: select CPU_FREQ_TABLE
+  cpufreq: pxa: select CPU_FREQ_TABLE
+  cpufreq: S3C2416/S3C64XX: select CPU_FREQ_TABLE
+  cpufreq: tegra: select CPU_FREQ_TABLE for ARCH_TEGRA
+  cpufreq: X86_AMD_FREQ_SENSITIVITY: select CPU_FREQ_TABLE
 
+ arch/arm/mach-davinci/Kconfig   | 1 +
+ arch/arm/mach-pxa/Kconfig       | 3 +++
+ arch/arm/mach-tegra/Kconfig     | 4 +---
+ arch/cris/Kconfig               | 2 ++
+ drivers/cpufreq/Kconfig.arm     | 6 +++++-
+ drivers/cpufreq/Kconfig.powerpc | 1 +
+ drivers/cpufreq/Kconfig.x86     | 1 +
+ drivers/cpufreq/Makefile        | 2 +-
+ 8 files changed, 15 insertions(+), 5 deletions(-)
 
-On 6/5/2013 4:11 PM, suravee.suthikulpanit@amd.com wrote:
-> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
->
-> NOTE: Please see individual patch for changes list.
->
-> These patches implement the AMD IOMMU Performance Counter functionality
-> via custom perf PMU and implement static counting for various IOMMU
-> translations.
->
->      1) Extend the AMD IOMMU initialization to include performance
->         counter enablement.
->
->      2) The perf AMD IOMMU PMU to manage performance counters, which
->         interface with the AMD IOMMU core driver.
->
-> Steven L Kinney (1):
->    perf/x86/amd: Adding IOMMU PC resource management
->
-> Suravee Suthikulpanit (1):
->    perf/x86/amd: AMD IOMMU PC PERF uncore PMU implementation
->
->   arch/x86/kernel/cpu/Makefile               |    4 +
->   arch/x86/kernel/cpu/perf_event_amd_iommu.c |  504 ++++++++++++++++++++++++++++
->   arch/x86/kernel/cpu/perf_event_amd_iommu.h |   40 +++
->   drivers/iommu/amd_iommu_init.c             |  140 +++++++-
->   drivers/iommu/amd_iommu_proto.h            |    7 +
->   drivers/iommu/amd_iommu_types.h            |   15 +-
->   6 files changed, 698 insertions(+), 12 deletions(-)
->   create mode 100644 arch/x86/kernel/cpu/perf_event_amd_iommu.c
->   create mode 100644 arch/x86/kernel/cpu/perf_event_amd_iommu.h
->
-
+-- 
+1.7.12.rc2.18.g61b472e
 
