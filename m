@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757415Ab3FLA03 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 20:26:29 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:47570 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754683Ab3FLA01 convert rfc822-to-8bit (ORCPT
+	id S1757480Ab3FLA2W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 20:28:22 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:50189 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755316Ab3FLA2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 20:26:27 -0400
-Content-Type: text/plain; charset="utf-8"
+	Tue, 11 Jun 2013 20:28:20 -0400
+Message-ID: <51B7C09D.9020402@candelatech.com>
+Date: Tue, 11 Jun 2013 17:28:13 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1370439442-30852-1-git-send-email-pdeschrijver@nvidia.com>
-Cc: <linux-arm-kernel@lists.infradead.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-References: <1370439442-30852-1-git-send-email-pdeschrijver@nvidia.com>
-Message-ID: <20130612002623.8816.29653@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH] clk: tegra: pllp_out2 divider is int only
-Date: Tue, 11 Jun 2013 17:26:23 -0700
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: kmemleak reports in kernel 3.9.5+
+References: <51B61982.2050903@candelatech.com> <CAHkRjk5SDCbqr0Br24YQuHr=j7DmnpYk9CShrz1qiuYff7+qAw@mail.gmail.com> <51B78009.2060808@candelatech.com>
+In-Reply-To: <51B78009.2060808@candelatech.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Peter De Schrijver (2013-06-05 06:37:17)
-> The pllp_out2 should be integer only, the fractional bit should always be 0.
-> 
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+On 06/11/2013 12:52 PM, Ben Greear wrote:
+> On 06/10/2013 03:32 PM, Catalin Marinas wrote:
+>> On 10 June 2013 19:22, Ben Greear <greearb@candelatech.com> wrote:
+>>> We had a system go OOM while doing lots of wireless
+>>> stations.  (System had 8GB of RAM, so I suspect a leak).
+>>>
+>>> I enabled kmemleak in a 3.9.5 (plus some local patches) and
+>>> I see the entries below.  Any idea if these are real or not?
 
-Taken into clk-next.
+Most of this went away when I disabled SLUB debugging and other
+kernel hacking options.  The wifi cfg80211_inform_bss_frame
+remains, however.  I'll go dig some more on that tomorrow...didn't
+see anything obvious at first glance.
+
+But, perhaps there could be some improvements to
+kmemleak to make it deal better with the various kernel
+debugging features?
 
 Thanks,
-Mike
+Ben
 
-> ---
->  drivers/clk/tegra/clk-tegra114.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
-> index eb27764..5e029fe 100644
-> --- a/drivers/clk/tegra/clk-tegra114.c
-> +++ b/drivers/clk/tegra/clk-tegra114.c
-> @@ -1203,8 +1203,8 @@ static void __init tegra114_pll_init(void __iomem *clk_base,
->         /* PLLP_OUT2 */
->         clk = tegra_clk_register_divider("pll_p_out2_div", "pll_p",
->                                 clk_base + PLLP_OUTA, 0, TEGRA_DIVIDER_FIXED |
-> -                               TEGRA_DIVIDER_ROUND_UP, 24, 8, 1,
-> -                               &pll_div_lock);
-> +                               TEGRA_DIVIDER_ROUND_UP | TEGRA_DIVIDER_INT, 24,
-> +                               8, 1, &pll_div_lock);
->         clk = tegra_clk_register_pll_out("pll_p_out2", "pll_p_out2_div",
->                                 clk_base + PLLP_OUTA, 17, 16,
->                                 CLK_IGNORE_UNUSED | CLK_SET_RATE_PARENT, 0,
-> -- 
-> 1.7.7.rc0.72.g4b5ea.dirty
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
+
