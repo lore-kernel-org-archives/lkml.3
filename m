@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756448Ab3FLM5x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 08:57:53 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:16210 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab3FLM5v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 08:57:51 -0400
-X-AuditID: cbfec7f5-b7f376d000001ec6-2c-51b8704daf10
-From: Phil Carmody <phil.carmody@partner.samsung.com>
-To: "'Joe Perches'" <joe@perches.com>
-Cc: apw@canonical.com, linux-kernel@vger.kernel.org
-References: <1369825370-31901-1-git-send-email-phil.carmody@partner.samsung.com>
- <1369826652.22004.106.camel@joe-AO722>
-In-reply-to: <1369826652.22004.106.camel@joe-AO722>
-Subject: RE: [PATCH] checkpatch: forgive use of mixed case variables measuring
- units
-Date: Wed, 12 Jun 2013 15:59:21 +0300
-Message-id: <003601ce676c$a92360c0$fb6a2240$%carmody@partner.samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac5cXw4wRHFRbmgKQjurpcfoPS6CrgLDE9TA
-Content-language: en-gb
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t/xa7q+BTsCDRY+5bX4sFbDYvb9xywW
-	l3fNYXNg9pjV0Mvm8WXVNWaPz5vkApijuGxSUnMyy1KL9O0SuDKm7NrIVLCGp6L/2Dq2BsY9
-	nF2MnBwSAiYSa5dPYoawxSQu3FvP1sXIxSEksJRR4s/TbnaQhJDAP0aJxsZwEJtNwFRiyopv
-	TCC2iICyxIJFn1lAbGYBY4l3Uw8zQ9RXS7xeux6shhMovvDBDjBbWCBM4uXUv4wgNouAqsSl
-	JwdZQWxeAU+JKUseM0HYghI/Jt+DmqklsX7ncSYIW15i85q3QPM5gA5Vl3j0VxfiBCOJLVDn
-	MAuISzyc0cs0gVFoFpJJs5BMmoVk0iwkLQsYWVYxiqaWJhcUJ6XnGukVJ+YWl+al6yXn525i
-	hAT71x2MS49ZHWIU4GBU4uE9YLY9UIg1say4MvcQowQHs5IIb2L8jkAh3pTEyqrUovz4otKc
-	1OJDjEwcnFINjAvVZr3tkDw9a0KwuOS/E8xsL+b4TJR12XQ1bKvzmRfzVRc7Vwi8VL+gW3fy
-	hHDDpdtsewtvKX+Jzt/0nmma1PW+nTc61j/8euW35tet5UJSO6OrN/VUlsfy/MhTr203aKm5
-	8Thi0Z+7a/vrTP67ut/xiehPeHLPLXEX+wsDNaO6F2sEuL/YsCmxFGckGmoxFxUnAgDkZOQK
-	VAIAAA==
+	id S1756647Ab3FLM7I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 08:59:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53722 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754374Ab3FLM7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 08:59:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,852,1363158000"; 
+   d="scan'208";a="348689045"
+Message-ID: <51B87091.4050205@linux.intel.com>
+Date: Wed, 12 Jun 2013 15:58:57 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Alex Rosenbaum <alexr@mellanox.com>,
+        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH v2 net-next 3/3] net: add socket option for low latency
+ polling
+References: <20130612111942.19288.12131.stgit@ladj378.jer.intel.com>  <20130612112016.19288.86849.stgit@ladj378.jer.intel.com> <1371041065.3252.59.camel@edumazet-glaptop> <51B86FA3.1030306@linux.intel.com>
+In-Reply-To: <51B86FA3.1030306@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches wrote:
-> On Wed, 2013-05-29 at 14:02 +0300, Phil Carmody wrote:
-> > I don't think anyone really has an issue with things like max_mV.
-> > And whilst nS et al. may not be SI standard, at least it's clear
-> > what they represent.
-> []
-> > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> []
-> > @@ -2940,6 +2940,7 @@ sub process {
-> >  			if ($var !~ /$Constant/ &&
-> >  			    $var =~ /[A-Z]\w*[a-z]|[a-z]\w*[A-Z]/ &&
-> >  			    $var !~
-/"^(?:Clear|Set|TestClear|TestSet|)Page[A-Z]/ &&
-> > +			    $var !~ /^[a-z_]*_[numk][VAS]$/ &&
-> >  			    !defined $camelcase{$var}) {
-> >  				$camelcase{$var} = 1;
-> >  				WARN("CAMELCASE",
-> 
-> Hi Phil.
-> 
-> CamelCase was downgraded to a --strict only (CHK)
-> test in -next recently.  commit f0e8102413
-> ("checkpatch: change CamelCase test and make it --strict")
-> 
-> I'm hesitant to add a longish whitelist inside
-> checkpatch itself, but if it's added, it should
-> probably be an array.
+On 12/06/2013 15:54, Eliezer Tamir wrote:
+> On 12/06/2013 15:44, Eric Dumazet wrote:
+>> On Wed, 2013-06-12 at 14:20 +0300, Eliezer Tamir wrote:
+>>> adds a socket option for low latency polling.
+>>> This allows overriding the global sysctl value with a per-socket one.
+>>>
+>>> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+>>> ---
+>>
+>> It seems EXPORT_SYMBOL_GPL(sysctl_net_ll_poll) can now be removed ?
+>
+> I think we would need it for poll.
+>
+> Poll needs a way that is not dependent on any individual socket to know
+> how long to busy-wait, since we have to know it before we poll any
+> individual socket.
 
-Thanks for the response, Joe, sorry I didn't reply earlier.
+Or maybe, since the time constants seem to be different, we should have
+two separate sysctl values, one for read and another for poll?
 
-I agree that a creeping list of exceptions where CamelCase
-is to be overlooked would be bad, but I would argue that 
-perhaps my exceptions aren't actual CamelCase - they're
-(pretending to be) SI units, and just happen to match the
-CamelCase regexp. I did a grep for my regexp, and everything
-I noticed in a quick scan did look like a justifiable 
-variable name.
-
-Of course, it's not a biggie either way, and of course it's
-your call, but I do feel my patch has enough merit to be
-worth defending.
-
-Cheers,
-Phil
-
-
-
+(and then the one for read does not need to be exported to modules.)
