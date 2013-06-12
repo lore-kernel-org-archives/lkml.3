@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756796Ab3FLPeE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 11:34:04 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:57648 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747Ab3FLPeB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 11:34:01 -0400
-Date: Wed, 12 Jun 2013 17:33:42 +0200
-From: Emil Goode <emilgoode@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: omar.ramirez@copitl.com, gregkh@linuxfoundation.org,
-        justinmattock@gmail.com, andriy.shevchenko@linux.intel.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] staging: tidspbridge: Fix potential NULL pointer
- dereference
-Message-ID: <20130612153342.GA13788@debian>
-References: <1371047595-11702-1-git-send-email-emilgoode@gmail.com>
- <20130612150817.GA12624@mwanda>
+	id S1754628Ab3FLPe6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 11:34:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23919 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751462Ab3FLPe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 11:34:57 -0400
+Date: Wed, 12 Jun 2013 11:34:07 -0400
+From: Dave Jones <davej@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: paulmck@linux.vnet.ibm.com, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: rcu_preempt running flat out on idle desktop.
+Message-ID: <20130612153407.GA21842@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	paulmck@linux.vnet.ibm.com,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Ingo Molnar <mingo@kernel.org>
+References: <20130508203042.GA18895@redhat.com>
+ <CAFTL4hwB3XZG+C9pQ0JD4h=n_ObNH6mCBRfLW3JaxohwwRDWRA@mail.gmail.com>
+ <20130509211026.GA22723@redhat.com>
+ <20130514012105.GB12749@somewhere>
+ <20130606153136.GA12823@redhat.com>
+ <20130606154311.GA5688@somewhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130612150817.GA12624@mwanda>
+In-Reply-To: <20130606154311.GA5688@somewhere>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you Dan! That's right, It's of course not NULL after freed.
-Yes the code looks strange here, I'm not sure what was intended.
+On Thu, Jun 06, 2013 at 05:43:13PM +0200, Frederic Weisbecker wrote:
 
-Best regards,
+ > > Every process 200% or 0%.
+ > 
+ > I see, would you mind testing this branch?
+ > 
+ > git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
+ > 	timers/urgent
+ > 
+ > It might help, I specially think about 45eacc692771bd2b1ea3d384e6345cab3da10861
+ > ("vtime: Use consistent clocks among nohz accounting") which fixes an issue
+ > with cputime accounting that resulted in similar symptoms.
 
-Emil
+So that patch has been in 'urgent' for a month. Can someone move it
+to really-urgent or whatever is necessary to get it into Linus' tree ?
 
-On Wed, Jun 12, 2013 at 08:08:17AM -0700, Dan Carpenter wrote:
-> 1) This patch doesn't do anything.  "dcd_key" points to freed memory
-> but it's not a NULL pointer.
-> 2) The original pointer doesn't dereference "dcd_key" it just takes
-> the address of one of the elements.  I don't know the context and
-> can't say for sure that it's a wrong thing to do.
-> 
-> The code does look very suspect.  Why is it checking permisions
-> after we already removed the element and freed it?
-> 
-> But it's not a dereferencing freed memory bug.
-> 
-> regards,
-> dan carpenter
-> 
+	DAve
