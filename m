@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab3FLJNP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 05:13:15 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:40771 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab3FLJNN (ORCPT
+	id S1755640Ab3FLJOg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 05:14:36 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:37469 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370Ab3FLJOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 05:13:13 -0400
-Date: Wed, 12 Jun 2013 11:13:03 +0200
+	Wed, 12 Jun 2013 05:14:35 -0400
+Date: Wed, 12 Jun 2013 11:14:22 +0200
 From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-To: HATAYAMA Daisuke <d.hatayama@gmail.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH v5 3/5] vmcore: Introduce remap_oldmem_pfn_range()
-Message-ID: <20130612111303.3323f24f@holzheu>
-In-Reply-To: <CABOkKT05VR3V9rEz1LWnEJSEvkevhBFfQVVX5_DS0Z4rBG9EyA@mail.gmail.com>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, kexec@lists.infradead.org,
+        Jan Willeke <willeke@de.ibm.com>, linux-kernel@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [PATCH v5 5/5] s390/vmcore: Use vmcore for zfcpdump
+Message-ID: <20130612111422.2a1d6889@holzheu>
+In-Reply-To: <51B7B728.9000803@jp.fujitsu.com>
 References: <1370624161-2298-1-git-send-email-holzheu@linux.vnet.ibm.com>
-	<1370624161-2298-4-git-send-email-holzheu@linux.vnet.ibm.com>
-	<CABOkKT0yk6tytN=aTSdpECQWw_30m5qrZYH-W1msovkeiSeZCA@mail.gmail.com>
-	<20130610173739.4d88d4ec@holzheu>
-	<CABOkKT05VR3V9rEz1LWnEJSEvkevhBFfQVVX5_DS0Z4rBG9EyA@mail.gmail.com>
+	<1370624161-2298-6-git-send-email-holzheu@linux.vnet.ibm.com>
+	<51B7B728.9000803@jp.fujitsu.com>
 Organization: IBM
 X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
 Mime-Version: 1.0
@@ -29,132 +27,29 @@ Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13061209-0542-0000-0000-0000058428C4
+x-cbid: 13061209-0342-0000-0000-0000054AD240
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Jun 2013 21:42:15 +0900
-HATAYAMA Daisuke <d.hatayama@gmail.com> wrote:
+On Wed, 12 Jun 2013 08:47:52 +0900
+HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
 
-> 2013/6/11 Michael Holzheu <holzheu@linux.vnet.ibm.com>:
-> > On Mon, 10 Jun 2013 22:40:24 +0900
-> > HATAYAMA Daisuke <d.hatayama@gmail.com> wrote:
-> >
-> >> 2013/6/8 Michael Holzheu <holzheu@linux.vnet.ibm.com>:
-> >> <cut>
-> >> > @@ -225,6 +251,56 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
-> >> >         return acc;
-> >> >  }
-> >> >
-> >> > +static ssize_t read_vmcore(struct file *file, char __user *buffer,
-> >> > +                          size_t buflen, loff_t *fpos)
-> >> > +{
-> >> > +       return __read_vmcore(buffer, buflen, fpos, 1);
-> >> > +}
-> >> > +
-> >> > +/*
-> >> > + * The vmcore fault handler uses the page cache and fills data using the
-> >> > + * standard __vmcore_read() function.
-> >> > + */
-> >> > +static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-> >> > +{
-> >> > +       struct address_space *mapping = vma->vm_private_data;
-> >> > +       pgoff_t index = vmf->pgoff;
-> >> > +       struct page *page;
-> >> > +       loff_t src;
-> >> > +       char *buf;
-> >> > +       int rc;
-> >> > +
-> >> > +find_page:
-> >> > +       page = find_lock_page(mapping, index);
-> >> > +       if (page) {
-> >> > +               unlock_page(page);
-> >> > +               rc = VM_FAULT_MINOR;
-> >> > +       } else {
-> >> > +               page = page_cache_alloc_cold(mapping);
-> >> > +               if (!page)
-> >> > +                       return VM_FAULT_OOM;
-> >> > +               rc = add_to_page_cache_lru(page, mapping, index, GFP_KERNEL);
-> >> > +               if (rc) {
-> >> > +                       page_cache_release(page);
-> >> > +                       if (rc == -EEXIST)
-> >> > +                               goto find_page;
-> >> > +                       /* Probably ENOMEM for radix tree node */
-> >> > +                       return VM_FAULT_OOM;
-> >> > +               }
-> >> > +               buf = (void *) (page_to_pfn(page) << PAGE_SHIFT);
-> >> > +               src = index << PAGE_CACHE_SHIFT;
-> >> > +               __read_vmcore(buf, PAGE_SIZE, &src, 0);
-> >> > +               unlock_page(page);
-> >> > +               rc = VM_FAULT_MAJOR;
-> >> > +       }
-> >> > +       vmf->page = page;
-> >> > +       return rc;
-> >> > +}
-> >>
-> >> How about reusing find_or_create_page()?
-> >
-> > The function would then look like the following:
-> >
-> > static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-> > {
-> >         struct address_space *mapping = vma->vm_private_data;
-> >         pgoff_t index = vmf->pgoff;
-> >         struct page *page;
-> >         loff_t src;
-> >         char *buf;
-> >
-> >         page = find_or_create_page(mapping, index, GFP_KERNEL);
-> >         if (!page)
-> >                 return VM_FAULT_OOM;
-> >         src = index << PAGE_CACHE_SHIFT;
-> >         buf = (void *) (page_to_pfn(page) << PAGE_SHIFT);
-> >         __read_vmcore(buf, PAGE_SIZE, &src, 0);
-> >         unlock_page(page);
-> >         vmf->page = page;
-> >         return 0;
-> > }
-> >
-> > I agree that this makes the function simpler but we have to copy
-> > the page also if it has already been filled, correct?
-> >
+> (2013/06/08 1:56), Michael Holzheu wrote:
+[snip]
+> > +static int remap_oldmem_pfn_range_zfcpdump(struct vm_area_struct *vma,
+> > +					   unsigned long from,
+> > +					   unsigned long pfn,
+> > +					   unsigned long size, pgprot_t prot)
+> > +{
+> > +	unsigned long size_hsa;
+> > +
+> > +	if (pfn < ZFCPDUMP_HSA_SIZE >> PAGE_SHIFT) {
+> > +		size_hsa = min(size, OLDMEM_SIZE - (pfn << PAGE_SHIFT));
 > 
-> You can use for the purpose PG_uptodate flag.
+> ZFCPDUMP_HSA_SIZE?
 
-Thanks for that hint! So together with your other comment regarding
-error checking for __read_vmcore() the function would look like the
-following:
+Correct!
 
-static int mmap_vmcore_fault(struct vm_area_struct *vma, struct'vm_fault *vmf)
-{
-        struct address_space *mapping = vma->vm_private_data;
-        pgoff_t index = vmf->pgoff;
-        struct page *page;
-        loff_t src;
-        char *buf;
-
-        page = find_or_create_page(mapping, index, GFP_KERNEL);
-        if (!page)
-                return VM_FAULT_OOM;
-        if (!PageUptodate(page)) {
-                src = index << PAGE_CACHE_SHIFT;
-                buf = (void *) (page_to_pfn(page) << PAGE_SHIFT);
-                if (__read_vmcore(buf, PAGE_SIZE, &src, 0) < 0) {
-                        unlock_page(page);
-                        return VM_FAULT_SIGBUS;
-                }
-                SetPageUptodate(page);
-        }
-        unlock_page(page);
-        vmf->page = page;
-        return 0;
-}
-
-Perhaps one open issue remains:
-
-Can we remove the page from the page cache if __read_vmcore() fails?
-
-Thanks!
 Michael
 
