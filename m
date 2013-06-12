@@ -1,150 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757646Ab3FLRpH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 13:45:07 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:57855 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754892Ab3FLRpF convert rfc822-to-8bit (ORCPT
+	id S1757710Ab3FLRq2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 13:46:28 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3017 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754906Ab3FLRq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 13:45:05 -0400
-Content-Type: text/plain; charset="utf-8"
+	Wed, 12 Jun 2013 13:46:26 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 12 Jun 2013 10:46:26 -0700
+Message-ID: <51B8B3EF.40209@nvidia.com>
+Date: Wed, 12 Jun 2013 13:46:23 -0400
+From: Rhyland Klein <rklein@nvidia.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Doug Anderson <dianders@chromium.org>,
-        Saravana Kannan <skannan@codeaurora.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <CAD=FV=VFqTzqLc3+UOHD21NiTqtu84DzwYD1Qag-RxiD0qcFDA@mail.gmail.com>
-Cc: James Hogan <james.hogan@imgtec.com>,
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Anton Vorontsov <cbou@mail.ru>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1369056507-32521-1-git-send-email-james.hogan@imgtec.com>
- <1369056507-32521-6-git-send-email-james.hogan@imgtec.com>
- <519AFBB6.90700@codeaurora.org>
- <CAD=FV=VFqTzqLc3+UOHD21NiTqtu84DzwYD1Qag-RxiD0qcFDA@mail.gmail.com>
-Message-ID: <20130612174500.26381.95767@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH v4 5/5] clk: clk-mux: implement remuxing on set_rate
-Date: Wed, 12 Jun 2013 10:45:00 -0700
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 4/4] arm: tegra: Add power-supplies link between battery
+ and charger
+References: <1370899602-22123-1-git-send-email-rklein@nvidia.com> <1370899602-22123-5-git-send-email-rklein@nvidia.com> <51B8B389.8010105@wwwdotorg.org>
+In-Reply-To: <51B8B389.8010105@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Doug Anderson (2013-06-11 18:01:01)
-> Hi,
+On 6/12/2013 1:44 PM, Stephen Warren wrote:
+> On 06/10/2013 03:26 PM, Rhyland Klein wrote:
+>> The power supply core now supports detecting linkages between batteries
+>> and chargers through the use of the power-supplies property. Adding
+>> this to the battery, the core will use the phandle list to find
+>> the associated charger and pair them up. This facilitates notifications
+>> from the charger to the battery when ac power is dissconnected
+>> or connected for instance.
 > 
-> Mike pointed me at this series since I'm running into parenting
-> problems at the moment as well...
+> Rhyland, if I apply this patch without patches 1-3 being in the same
+> branch, will it cause any bugs? If so, I guess 1-3 should go through the
+> drivers/power maintainer for 3.11, and I should defer this patch to 3.12?
 > 
-> On Mon, May 20, 2013 at 9:44 PM, Saravana Kannan <skannan@codeaurora.org> wrote:
-> > While writing a similar code for our internal tree, I quickly came to the
-> > realization that, "all parents are equal, but some are more equal than
-> > others". The simplest example is a clock tree like this:
-> >
-> > Source -> Divider -> Mux
-> > Source -> Mux
-> >
-> > A rate of Y can be achieved for Mux by either running Source at Y and
-> > picking that input or running Source at Y * 2 and Divider set to div-2 and
-> > picking the Divider input.
-> >
-> > The solution seems to be a priority list of parents. I'm sure there would be
-> > other reason (jitter, clock quality, etc) for a mux to pick one parent vs.
-> > another when both of them can provide the required rate.
-> >
-> > I think this loop should loop over parents based on their priority order.
-> > So, parents should become a struct of { clk, index } and have the parents
-> > listed in the order of priority. Well, at least in that long run that would
-> > be better to avoid messing up parent/index values. But for now, you could
-> > just have a priority array of index or parents.
-> >
-> > It might not fit 100% of the cases where two parents can provide the same
-> > rate, but it should fit most use cases.
-> 
-> I'm slightly worried about similar problems, but I don't have a really
-> great solution.
-> 
-> In my case I'm working on exynos5 hardware which has a bunch of PLLs
-> and a crazy number of muxing options.  Many of the muxing options are
-> not really meant to be used but seem to have been added to the SoC as
-> a "backup plan" of some sort.  :-/  Most of the PLLs are intended to
-> be used for one purpose and one purpose only though muxing options
-> allow them to be used all over the place.
-> 
-> For instance if I look at my current bootup of exynos5250-snow, I see:
-> 
-> fout_apll/clk_rate:1700000000
-> fout_bpll/clk_rate:800000000
-> fout_cpll/clk_rate:333000000
-> fout_epll/clk_rate:45158401
-> fout_gpll/clk_rate:533000000
-> fout_mpll/clk_rate:1600000000
-> 
-> * APLL is intended to be the parent of the 2 ARM cores and changes due
-> to cpu load
-> * EPLL is intended to be the parent for audio and changes dpending on
-> audio playback rates.
-> * GPLL is intended to be the parent of the GPU and changes due to gpu load
-> * VPLL is intended to be the parent for video related things and could
-> change depending on the LCD.
-> * MPLL doesn't change a lot and is intended to be the parent for most things.
-> * In some systems BPLL can be used for memory or GPU
-> 
-> My main concern here is the CCF will end up deciding at some point
-> that it should reparent some clock onto a PLL that is going to change
-> a whole lot.  Maybe the user will plug in an SD card that requests a
-> frequency of 52MHz and at the moment we'll be running EPLL at 104 MHz
-> so it will be a perfect match!  ...but then the user wants to play
-> audio at a different rate.  The audio code assumes that it can mess
-> with its clock and we've got code setup to call CLK_SET_RATE_PARENT
-> all the way up to EPLL.  That will really mess with the SD card.
-> Really we'd rather just have the SD card clock always parented on the
-> stable MPLL and it's OK if 52MHz gets rounded down to 50MHz.
-> 
-> Of course, on another board maybe they don't have an audio codec and
-> aren't using epll for audio and have realized that EPLL would be a
-> perfect way to get their SD card to run 4% faster.  It ought to work.
-> 
-> 
-> I guess to summarize the above:
-> 
-> * It seems like much of the muxing on exynos5250 is just too
-> complicated to leave it to an simple automated algorithm.
 
-I'd wager this will be true at the PLL-level for most complex SoCs.
-Having a general re-muxing algorithm makes a lot more sense for simpler
-cases like a fast 100MHz parent and a slow 32KHz parent, and the
-requested rate makes it painfully obvious which one to pick.  This is
-less true for PLLs that can provide a very wide range of frequencies and
-have lots of children.
+No, this alone shouldn't cause a problem. Patches 2 & 3 enable the
+support for using the power-supplies property in the charger and battery
+drivers. Without them, this property will just be ignored for now.
 
-This is analogous to lots of the other basic clock types where we try to
-have common code that benefits a wide range of users, but if you need
-something custom then you implement a new clock type/driver.  If you
-have a limited set of combinations that you want to support out of many
-possible combinations (e.g. your "backup muxing options") then it might
-be better for you to skip the remuxing algorithm and instead call
-clk_set_parent explicitly from your clock driver, perhaps in your
-clock's .set_rate and/or .set_parent callbacks.
+--rhyland
 
-> * It seems like we can't make muxing decisions on the SoC level.
-> * Your automatic muxing patches don't hurt me and could be useful for
-> _some_ of the muxing options, just not the top PLL ones.
-
-For the time being you won't be affected by this until you start using
-.determine_rate.  Even then we have the flag which disables this
-behavior.
-
-> 
-> ...but the only place that leaves me for my muxing needs is the device
-> tree.  ...and as Mike pointed out on IRC the device tree should
-> describe hardware, not policy.  Ick.
-
-This sounds like another vote for configtree ;-)
-
-Regards,
-Mike
-
-> 
-> -Doug
+-- 
+nvpublic
