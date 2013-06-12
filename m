@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757449Ab3FLTnR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 15:43:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49238 "EHLO mx1.redhat.com"
+	id S1757769Ab3FLTnw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 15:43:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3111 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753747Ab3FLTnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 15:43:16 -0400
-Date: Wed, 12 Jun 2013 22:00:33 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: David Miller <davem@davemloft.net>, eric.dumazet@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 0/2] fix kernel crash with macvtap on top of LRO
-Message-ID: <20130612190033.GB3462@redhat.com>
-References: <1360193660.32217.39.camel@deadeye.wl.decadent.org.uk>
- <1360207111.28557.47.camel@edumazet-glaptop>
- <1360254046.3605.8.camel@bwh-desktop.uk.solarflarecom.com>
- <20130207.131420.1211188723341167971.davem@davemloft.net>
- <20130610070710.GA673@redhat.com>
- <1371048996.1894.15.camel@bwh-desktop.uk.level5networks.com>
+	id S1756370Ab3FLTnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 15:43:51 -0400
+Date: Wed, 12 Jun 2013 15:43:46 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: linux-scsi@vger.kernel.org
+Subject: WARNING: at drivers/scsi/scsi_lib.c:1196 scsi_setup_fs_cmnd during
+ RAID5 startup.
+Message-ID: <20130612194346.GD15200@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-scsi@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1371048996.1894.15.camel@bwh-desktop.uk.level5networks.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 03:56:36PM +0100, Ben Hutchings wrote:
-> On Mon, 2013-06-10 at 10:07 +0300, Michael S. Tsirkin wrote:
-> > On Thu, Feb 07, 2013 at 01:14:20PM -0500, David Miller wrote:
-> > > From: Ben Hutchings <bhutchings@solarflare.com>
-> > > Date: Thu, 7 Feb 2013 16:20:46 +0000
-> > > 
-> > > > If the consensus is still that we must preserve packets exactly (aside
-> > > > from the usual modifications by IP routers) then LRO should be disabled
-> > > > on all devices for which forwarding is enabled.
-> > > 
-> > > I believe this is still undoubtedly the consensus.
-> > 
-> > With virtio we are getting packets from a linux host,
-> > so we could thinkably preserve packets exactly
-> > even with LRO. I am guessing other hardware could be
-> > doing this as well.
-> > 
-> > I am not sure what information would need to be preserved -
-> > could someone help clarify please?
-> 
-> Some LRO implementations may not preserve:
-> 
-> - Packet boundaries
->   - TSO/GSO produces packets all the same size, except possibly for the
->     last one.  GRO therefore flushes a flow after merging a packet with
->     a different segment size.
-> - IPv4 TTL, IPv6 hop-limit, TCP timestamp
->   - TSO/GSO will put the same values in all packets.  GRO flushes a flow
->     if they change.
-> - IPv4 fragment ID
->   - TSO/GSO produces consecutive fragment IDs.  GRO flushes a flow
->     if it sees a non-consecutive fragment ID.
-> - MAC header, IPv4 TOS, IPv6 traffic class
->   - Should be the same for all packets in a flow.  GRO actually checks
->     and flushes a flow if they change.
-> 
-> Ben.
+3.10 seems to have a problem with dirty RAID5 sets.
 
-Thanks!
+I've got a machine that panics on boot during RAID5 activation.
+After switching the BUG_ON to a WARN_ON, I was able to get this over serial console..
 
-Okay so since LRO in virtio is actually running on top
-of GRO/TSO in linux, looks like the only things worth preserving
-that we don't preserve at the moment are the packet
-boundaries, for which it's enough to report
-the first segment size to guest - we have the total length,
-from that we can calculate the last segment size.
+md/raid:md0: not clean -- starting background reconstruction
+md/raid:md0: device sdd1 operational as raid disk 2
+md/raid:md0: device sdc1 operational as raid disk 1
+md/raid:md0: device sdb1 operational as raid disk 0
+md/raid:md0: allocated 3300kB
+md/raid:md0: raid level 5 active with 3 out of 3 devices, algorithm 2
+md0: detected capacity change from 0 to 499847790592
+md: resync of RAID array md0
+md: minimum _guaranteed_  speed: 1000 KB/sec/disk.
+md: using maximum available idle IO bandwidth (but not more than 200000 KB/sec) for resync.
+md: using 128k window, over a total of 244066304k.
+md: resuming resync of md0 from checkpoint.
+WARNING: at drivers/scsi/scsi_lib.c:1196 scsi_setup_fs_cmnd+0xa3/0xb0()
+Modules linked in: raid456 async_raid6_recov async_memcpy async_pq async_xor async_tx kvm_amd xor kvm snd_hda_codec_realtek raid6_pq snd_hda_intel snd_hda_codec btusb microcode snd_pcm bluetooth edac_core pcspkr serio_raw snd_page_alloc snd_timer snd soundcore rfkill r8169 mii sr_mod cdrom pata_atiixp radeon backlight drm_kms_helper ttm
+CPU: 1 PID: 160 Comm: kworker/1:1H Not tainted 3.10.0-rc5+ #2
+Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
+Workqueue: kblockd blk_delay_work
+ ffffffff81a4499d ffff8801225f5bb8 ffffffff816aeb63 ffff8801225f5bf0
+ ffffffff810432b0 ffff880123039148 ffff8801233e8b00 ffff8801225f5fd8
+ ffff880123039148 ffff880123071290 ffff8801225f5c00 ffffffff8104339a
+Call Trace:
+ [<ffffffff816aeb63>] dump_stack+0x19/0x1b
+ [<ffffffff810432b0>] warn_slowpath_common+0x70/0xa0
+ [<ffffffff8104339a>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff8145d7f3>] scsi_setup_fs_cmnd+0xa3/0xb0
+ [<ffffffff8146bb80>] sd_prep_fn+0x330/0xf60
+ [<ffffffff813059cc>] blk_peek_request+0x13c/0x320
+ [<ffffffff8145db12>] scsi_request_fn+0x52/0x540
+ [<ffffffff81301ae9>] ? blk_delay_work+0x19/0x40
+ [<ffffffff813018f2>] __blk_run_queue+0x32/0x40
+ [<ffffffff81301af5>] blk_delay_work+0x25/0x40
+ [<ffffffff810690f1>] process_one_work+0x211/0x6f0
+ [<ffffffff81069085>] ? process_one_work+0x1a5/0x6f0
+ [<ffffffff810696ec>] worker_thread+0x11c/0x390
+ [<ffffffff810695d0>] ? process_one_work+0x6f0/0x6f0
+ [<ffffffff81071c8d>] kthread+0xed/0x100
+ [<ffffffff81071ba0>] ? insert_kthread_work+0x80/0x80
+ [<ffffffff816bee5c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff81071ba0>] ? insert_kthread_work+0x80/0x80
+---[ end trace 22d5bd5ee9fceb9e ]---
 
-> -- 
-> Ben Hutchings, Staff Engineer, Solarflare
-> Not speaking for my employer; that's the marketing department's job.
-> They asked us to note that Solarflare product names are trademarked.
+
+3.9 boots fine, and puts it into recovery mode..
+
+$ cat /proc/mdstat 
+Personalities : [raid6] [raid5] [raid4] 
+md0 : active raid5 sdd1[2] sdb1[0] sdc1[1]
+      488132608 blocks super 1.2 level 5, 512k chunk, algorithm 2 [3/3] [UUU]
+      [>....................]  resync =  0.7% (1762712/244066304) finish=73.3min speed=55084K/sec
+      
+unused devices: <none>
+
+
