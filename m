@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757769Ab3FLTnw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 15:43:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3111 "EHLO mx1.redhat.com"
+	id S1757911Ab3FLTqc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 15:46:32 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4346 "EHLO mms3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756370Ab3FLTnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 15:43:51 -0400
-Date: Wed, 12 Jun 2013 15:43:46 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: linux-scsi@vger.kernel.org
-Subject: WARNING: at drivers/scsi/scsi_lib.c:1196 scsi_setup_fs_cmnd during
- RAID5 startup.
-Message-ID: <20130612194346.GD15200@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-scsi@vger.kernel.org
+	id S1755695Ab3FLTqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 15:46:31 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Message-ID: <51B8D009.3010300@broadcom.com>
+Date: Wed, 12 Jun 2013 21:46:17 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510
+ Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Steven Rostedt" <rostedt@goodmis.org>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Tom Zanussi" <tom.zanussi@intel.com>,
+        "Masami Hiramatsu" <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: event filtering with trace-cmd
+References: <51B849BA.6000802@broadcom.com>
+ <1371054120.9844.259.camel@gandalf.local.home>
+ <1371057385.9844.261.camel@gandalf.local.home>
+In-Reply-To: <1371057385.9844.261.camel@gandalf.local.home>
+X-WSS-ID: 7DA612642L832270621-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10 seems to have a problem with dirty RAID5 sets.
+On 06/12/2013 07:16 PM, Steven Rostedt wrote:
+> On Wed, 2013-06-12 at 12:22 -0400, Steven Rostedt wrote:
+>
+>>> # sudo trace-cmd record -e brcmfmac:brcmf_dbg -f 'level & 0x40000'
+>>> disable all
+>>> enable brcmfmac:brcmf_dbg
+>>> path = /sys/kernel/debug/tracing/events/brcmfmac/brcmf_dbg/enable
+>>> (level & 0x40000)
+>>> ^
+>>> parse_error: Invalid operator
+>>>
+>>
+>> The record -f command passes the filter into the kernel
+>> file /sys/kerne/debug/tracing/events/brcmfmac/brcmf_dbg/filter, and the
+>> error is actually coming from the kernel itself. Looking at the code, we
+>> do not currently accept binary operations. Although, it shouldn't be too
+>> hard to add. I may go and implement it for 3.11.
+>>
+>
+> Here, can you apply this patch and see if it does what you expect?
 
-I've got a machine that panics on boot during RAID5 activation.
-After switching the BUG_ON to a WARN_ON, I was able to get this over serial console..
+Not right now, but you can bet I will first thing tomorrow :-)
 
-md/raid:md0: not clean -- starting background reconstruction
-md/raid:md0: device sdd1 operational as raid disk 2
-md/raid:md0: device sdc1 operational as raid disk 1
-md/raid:md0: device sdb1 operational as raid disk 0
-md/raid:md0: allocated 3300kB
-md/raid:md0: raid level 5 active with 3 out of 3 devices, algorithm 2
-md0: detected capacity change from 0 to 499847790592
-md: resync of RAID array md0
-md: minimum _guaranteed_  speed: 1000 KB/sec/disk.
-md: using maximum available idle IO bandwidth (but not more than 200000 KB/sec) for resync.
-md: using 128k window, over a total of 244066304k.
-md: resuming resync of md0 from checkpoint.
-WARNING: at drivers/scsi/scsi_lib.c:1196 scsi_setup_fs_cmnd+0xa3/0xb0()
-Modules linked in: raid456 async_raid6_recov async_memcpy async_pq async_xor async_tx kvm_amd xor kvm snd_hda_codec_realtek raid6_pq snd_hda_intel snd_hda_codec btusb microcode snd_pcm bluetooth edac_core pcspkr serio_raw snd_page_alloc snd_timer snd soundcore rfkill r8169 mii sr_mod cdrom pata_atiixp radeon backlight drm_kms_helper ttm
-CPU: 1 PID: 160 Comm: kworker/1:1H Not tainted 3.10.0-rc5+ #2
-Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
-Workqueue: kblockd blk_delay_work
- ffffffff81a4499d ffff8801225f5bb8 ffffffff816aeb63 ffff8801225f5bf0
- ffffffff810432b0 ffff880123039148 ffff8801233e8b00 ffff8801225f5fd8
- ffff880123039148 ffff880123071290 ffff8801225f5c00 ffffffff8104339a
-Call Trace:
- [<ffffffff816aeb63>] dump_stack+0x19/0x1b
- [<ffffffff810432b0>] warn_slowpath_common+0x70/0xa0
- [<ffffffff8104339a>] warn_slowpath_null+0x1a/0x20
- [<ffffffff8145d7f3>] scsi_setup_fs_cmnd+0xa3/0xb0
- [<ffffffff8146bb80>] sd_prep_fn+0x330/0xf60
- [<ffffffff813059cc>] blk_peek_request+0x13c/0x320
- [<ffffffff8145db12>] scsi_request_fn+0x52/0x540
- [<ffffffff81301ae9>] ? blk_delay_work+0x19/0x40
- [<ffffffff813018f2>] __blk_run_queue+0x32/0x40
- [<ffffffff81301af5>] blk_delay_work+0x25/0x40
- [<ffffffff810690f1>] process_one_work+0x211/0x6f0
- [<ffffffff81069085>] ? process_one_work+0x1a5/0x6f0
- [<ffffffff810696ec>] worker_thread+0x11c/0x390
- [<ffffffff810695d0>] ? process_one_work+0x6f0/0x6f0
- [<ffffffff81071c8d>] kthread+0xed/0x100
- [<ffffffff81071ba0>] ? insert_kthread_work+0x80/0x80
- [<ffffffff816bee5c>] ret_from_fork+0x7c/0xb0
- [<ffffffff81071ba0>] ? insert_kthread_work+0x80/0x80
----[ end trace 22d5bd5ee9fceb9e ]---
+Thanks,
+Arend
 
-
-3.9 boots fine, and puts it into recovery mode..
-
-$ cat /proc/mdstat 
-Personalities : [raid6] [raid5] [raid4] 
-md0 : active raid5 sdd1[2] sdb1[0] sdc1[1]
-      488132608 blocks super 1.2 level 5, 512k chunk, algorithm 2 [3/3] [UUU]
-      [>....................]  resync =  0.7% (1762712/244066304) finish=73.3min speed=55084K/sec
-      
-unused devices: <none>
+> Thanks,
+>
+> -- Steve
+>
+> diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+> index e1b653f..111eddf 100644
+> --- a/kernel/trace/trace_events_filter.c
+> +++ b/kernel/trace/trace_events_filter.c
 
 
