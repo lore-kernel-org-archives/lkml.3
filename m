@@ -1,105 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757376Ab3FLRF3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 13:05:29 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:53641 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755388Ab3FLRFZ (ORCPT
+	id S1757340Ab3FLRGD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 13:06:03 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:45432 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755021Ab3FLRGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 13:05:25 -0400
+	Wed, 12 Jun 2013 13:06:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQWjQXwiTWju6cBc_o25jy_wmZ1u+Pifh1wdnxtV=i5ENw@mail.gmail.com>
-References: <CAErSpo6v0mj9=Q13d=G4hho0mb9XTcsmefzke9fROYmZ7oBWxQ@mail.gmail.com>
- <CAE9FiQU7cDzJdHxmqhJNgc9UCsRLgvCFQpv8+fLxD79pLEUC5A@mail.gmail.com>
- <CAErSpo4ncW8rkcpDiccORZedj30m7jRmpXK+amfDGn_wjwt7EA@mail.gmail.com>
- <CAE9FiQVqKag2TGah7x_1MAJ+c0UWgywgM_jKUoOnh+rq3bwBhg@mail.gmail.com>
- <CAE9FiQVMgdj5edbR4qZny29fV9-bW_We_G4Wpn_yruDLQZiQiQ@mail.gmail.com>
- <20130329032200.GA11990@google.com> <CAE9FiQVu5QyxaKsYzzQoroQD=TvsziHzDOtoeg=FvhZ8HyN5yw@mail.gmail.com>
- <CAErSpo7ChfRiEn0eR1rf-mVheUS9Yf8f+j4n78PJcGYh+yMVgA@mail.gmail.com>
- <CAE9FiQXkDg7Y336S=DXoms44=5HLaiUx=sWviupz1fJmaDUEzQ@mail.gmail.com>
- <CAE9FiQU5c=ztzbskNnYFFKF9V5zO+jnRcMBCivLxA1F3fSfX5w@mail.gmail.com>
- <20130401235256.GA31966@google.com> <CAE9FiQV8cPh-s6=EQu_cZTtn86+NwZE5KuGMhf43aOhzkL=hwA@mail.gmail.com>
- <CAErSpo7Jni1ZSf_W=vB3kqsucPpoepa2Q5g=77a6D3FaPwe9LA@mail.gmail.com> <CAE9FiQWjQXwiTWju6cBc_o25jy_wmZ1u+Pifh1wdnxtV=i5ENw@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 12 Jun 2013 11:05:04 -0600
-Message-ID: <CAErSpo7=a-wX6BLbm_O1nUMMrQHOgtSm3xZHKuRqaz8rnKSbRA@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Remove not needed check in disable aspm link
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jiang Liu <jiang.liu@huawei.com>,
-        Roman Yepishev <roman.yepishev@gmail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAN_LGv0-gGMhJr8U8=sc-93e_MKVpy9TxG1MRAugtBVJP+CTrg@mail.gmail.com>
+References: <1370951543-15841-1-git-send-email-jiang.liu@huawei.com>
+	<CAN_LGv1hrLnYkPHycyyd35ZipWWznXM_0cdj8Rnh1WxiTZL=4A@mail.gmail.com>
+	<51B7170E.2060608@gmail.com>
+	<CAN_LGv26adLa5RBhwhCfvALFx78j4HdvzVH1PaAuhvWXSeqyMw@mail.gmail.com>
+	<51B73BAB.3030406@gmail.com>
+	<CAN_LGv3iwgp_8dkt1ouCD-FFGau3h7L25ORUW2J-rz30_4ZYTA@mail.gmail.com>
+	<51B7E1C7.9030004@gmail.com>
+	<CAN_LGv0-gGMhJr8U8=sc-93e_MKVpy9TxG1MRAugtBVJP+CTrg@mail.gmail.com>
+Date: Wed, 12 Jun 2013 23:05:59 +0600
+Message-ID: <CAN_LGv3YnBUBA2OCWmZNEBJNtP4ziQH44h0LWbnio0cj=Xm_fQ@mail.gmail.com>
+Subject: Re: [PATCH] ACPIPHP: fix device destroying order issue in handling
+ dock notification
+From: "Alexander E. Patrakov" <patrakov@gmail.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-pci@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 12:20 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Tue, Apr 2, 2013 at 1:10 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Mon, Apr 1, 2013 at 6:03 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->>>> commit 96e5d01cd536458435ef0678d9fa3dc542afb41f
->>>> Author: Bjorn Helgaas <bhelgaas@google.com>
->>>> Date:   Mon Apr 1 15:47:39 2013 -0600
->>>>
->>>>     Revert "PCI/ACPI: Request _OSC control before scanning PCI root bus"
->>>>
->>>>     This reverts commit 8c33f51df406e1a1f7fa4e9b244845b7ebd61fa6.
->>>>
->>>>     Conflicts:
->>>>         drivers/acpi/pci_root.c
->>>>
->>>>     Reference: https://bugzilla.kernel.org/show_bug.cgi?id=55211
->>>>     Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->>>
->>> Acked-by: Yinghai Lu <yinghai@kernel.org>
->>>
->>> stable need this reverting too.
+2013/6/12 Alexander E. Patrakov <patrakov@gmail.com>:
+> 2013/6/12 Jiang Liu <liuj97@gmail.com>:
+>> On Wed 12 Jun 2013 12:51:59 AM CST, Alexander E. Patrakov wrote:
+>>> In the initially-docked case, it exhibits the following problem: when
+>>> I press the undock button, only one PCI device disappears, and the
+>>> "docked" LED does not turn off. Additionally, there is a hung task.
+>> Hi Alexander,
+>>      In the initially-docked case, the failure is caused by an issue in
+>> the intel sound card driver. Seems something is wrong with reference
+>> count management and it never returns to zero on driver detach.
+>> Could you please help to disable the Intel sound card driver and try
+>> again?
 >>
->> I updated the changelog and added this to my for-linus branch, headed for v3.9.
+>> I'm not familiar with Intel HDA driver,  so please help to fire another
+>> bug for it.
 >
-> We may need to revert this reverting for 3.10.
->
-> Today noticed that acpiphp jump in before pciehp on one setup.
->
-> current code from acpi_pci_root_add we have
->   1. pci_acpi_scan_root
->          ==> pci devices enumeration and bus scanning.
->              ==> pci_alloc_child_bus
->                  ==> pcibios_add_bus
->                      ==> acpi_pci_add_bus
->                          ==> acpiphp_enumerate_slots
->                              ==> ...==> register_slot
->                                   ==> device_is_managed_by_native_pciehp
->                                         ==> check osc_set with
-> OSC_PCI_EXPRESS_NATIVE_HP_CONTROL
->    2. _OSC set request
->
-> so we always have acpiphp hotplug slot registered at first.
->
-> so either we need to
-> A. revert reverting about _OSC
-> B. move pcibios_add_bus down to pci_bus_add_devices()
->     as acpiphp and apci pci slot driver are some kind of drivers for pci_bus
-> C. A+B
+> Thanks for pointing the finger to snd-hda-intel. With that driver
+> blacklisted, the lspci output matches the expectations even after
+> undocking the initially-docked laptop. Redocking re-adds the devices,
+> too.
 
-It doesn't surprise me at all that there are problems in the _OSC code
-and the acpiphp/pciehp interaction.  That whole area is a complete
-disaster.  It'd really be nice if somebody stepped up and reworked it
-so it makes sense.
+> As for snd-hda-intel bug, I will file it later today and let you know.
 
-But this report is useless to me.  I don't have time to work out what
-the problem is and how it affects users and come up with a fix.
+Actually, I debugged it further and want some input from you before
+filing. Here is the new information: the incomplete undocking and hung
+task does not appear if I test from a virtual console, not from an
+XFCE session. The obvious difference is that in the XFCE session some
+processes (the mixer applet and pulseaudio) keep the mixer device
+always open.
 
-My advice is to simplify the path first, and worry about fixing the
-bug afterwards.  We've already done several iterations of fiddling
-with things, and I think all we're doing is playing "whack-a-mole" and
-pushing the bugs around from one place to another.
+I am not qualified enough to say what should happen if the user
+presses the undock button while a program has a to-be-undocked device
+open. Or, for that matter and for an analogy, if the user unplugs a
+USB sound card while it is playing.
 
-Bjorn
+And in my case, this is going to be an issue not only because of the
+snd-hda-intel driver. Xorg would sometimes keep the DRM node of the
+Radeon card (that is in the dock station) open in addition to the
+onboard Intel card.
+
+--
+Alexander E. Patrakov
