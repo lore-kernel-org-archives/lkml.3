@@ -1,146 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab3FLE6R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 00:58:17 -0400
-Received: from svr129.fastwebhost.com ([67.227.167.43]:44347 "EHLO
-	svr129.fastwebhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752234Ab3FLE6O (ORCPT
+	id S1754240Ab3FLFJy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 01:09:54 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:45313 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266Ab3FLFJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 00:58:14 -0400
-From: Amit Kale <amitkale@geeksofpune.in>
-Organization: GEEks of Pune
-To: OS Engineering <osengineering@stec-inc.com>
-Subject: Re: Performance Comparison among EnhanceIO, bcache and dm-cache.
-Date: Wed, 12 Jun 2013 10:28:03 +0530
-User-Agent: KMail/1.13.6 (Linux/2.6.38-16-generic; KDE/4.6.5; i686; ; )
-Cc: "koverstreet@google.com" <koverstreet@google.com>,
-        "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>,
-        "thornber@redhat.com" <thornber@redhat.com>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Padmini Balasubramaniyan <padminib@stec-inc.com>,
-        Amit Phansalkar <aphansalkar@stec-inc.com>
-References: <D399C715A2AD7F4F891A75871FC3117507866B@MYMBX3.stec-inc.ad>
-In-Reply-To: <D399C715A2AD7F4F891A75871FC3117507866B@MYMBX3.stec-inc.ad>
+	Wed, 12 Jun 2013 01:09:52 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201306121028.03278.amitkale@geeksofpune.in>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - svr129.fastwebhost.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - geeksofpune.in
-X-Get-Message-Sender-Via: svr129.fastwebhost.com: authenticated_id: amitkale@geeksofpune.in
+In-Reply-To: <1370941408-29304-2-git-send-email-l.majewski@samsung.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+	<1370941408-29304-1-git-send-email-l.majewski@samsung.com>
+	<1370941408-29304-2-git-send-email-l.majewski@samsung.com>
+Date: Wed, 12 Jun 2013 10:39:51 +0530
+Message-ID: <CAKohpomD1ru3_nqQkUq8EmMjJzR7hrtRNAY=UNPWCDHuVxZfBA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] cpufreq:boost: CPU frequency boost code
+ unification for software and hardware solutions
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 Jun 2013, OS Engineering wrote:
-> Hi Jens,
-> 
-> In continuation with our previous communication, we have carried out
-> performance comparison among EnhanceIO, bcache and dm-cache.
-> 
-> We found that EnhanceIO provides better throughput on zipf workload (with
-> theta=1.2) in comparison to bcache and dm-cache for write through caches.
-> However, for write back caches, we found that dm-cache had best throughput
-> followed by EnhanceIO and then bcache. Dm-cache commits on-disk metadata
-> every time a REQ_SYNC or REQ_FUA bio is written. If no such requests are
-> made then it commits metadata once every second. If power is lost, it may
-> lose some recent writes. However, EnhanceIO and bcache do not acknowledge
-> IO completion until both IO and metadata hits the SSD. Hence, EnhanceIO
-> and bcache provide higher data integrity at a cost of performance.
+Hi,
 
-So it won't be fair to compare them with dm-cache in write-back mode since 
-guarantees are different. I am sure if similar (SYNC/FUA enforcement for 
-persistence) guarantees are implemented in bcache/EnhanceIO, they'll offer a 
-much better performance. 
+Change subject to: "cpufreq: Add boost frequency support in core"
 
-> 
-> The fio config and setup information follows:
-> HDD              : 100GB
-> SSD              :  20GB
-> Mode             : write through / write back
-> Cache block_size : 4KB for bcache, EnhanceIO and 256KB for dm-cache
-> 
-> The other options have been left to their default values.
-> 
-> Note:
-> 1) In case of dm-cache, we used 2 partitions of same SSD with 1GB partition
-> as metadata and 20GB partition as caching device. This has been done so as
-> to ensure a fair comparison as EnhanceIO and bcache do not have a separate
-> metadata device.
-> 
-> 2) In order to ensure proper cache warm up, We have turned off sequential
-> bypass in bcache. This does not impact our performance results as they are
-> taken for random workload.
-> 
-> For each test, we first performed a warm up run using the following fio
-> options: fio --direct=1 --size=90% --filesize=20G --blocksize=4k
-> --ioengine=libaio --rw=rw --rwmixread=100 --rwmixwrite=0 --iodepth=8 ...
-> 
-> Then, we performed our actual run with the following fio options:
-> fio --direct=1 --size=100% --filesize=20G --blocksize=4k --ioengine=libaio
-> --rw=randrw --rwmixread=90 --rwmixwrite=10 --iodepth=8 --numjobs=4
-> --random_distribution=zipf:1.2 ...
+On 11 June 2013 14:33, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> This commit adds support for software based frequency boosting.
 
-Did you experiment a little with varying iodepth and numjobs? Is this the best 
-combination you found out? The numbers below appear low considering a 90% hit 
-ratio for EnhanceIO. SSD baseline performance shown below appears low. However 
-it should not affect this comparison. All caching solutions are being subjected 
-to the same ratio of HDD/SSD performance.
+No. It adds support for both software and hardware boosting. So just
+write: This commit adds boost frequency support in cpufreq core (Hardware
+& Software).
 
-> 
-> ============================= Write Through ===============================
-> Type      Read Latency(ms)   Write Latency(ms)    Read(MB/s)    Write(MB/s)
-> ===========================================================================
-> EnhanceIO      1.58              16.53               32.91       3.65
-> bcache         0.58              31.05               27.17       3.02
-> dm-cache       0.24              27.45               31.05       3.44
+> Some SoC (like Exynos4 - e.g. 4x12) allow setting frequency above
+> its normal condition limits. Such a change shall be only done for a short
 
-EnhanceIO shows much higher read latency here. Is that because of READFILLs ? 
-Write latency, read-write throughputs are good.
+s/condition/operation
+s/change/mode
+s/done/used
 
-> 
-> ============================= Write Back ==================================
-> Type      Read Latency(ms)    Write Latency(ms)    Read(MB/s)   Write(MB/s)
-> ===========================================================================
-> EnhanceIO      0.34               4.98               138.72      15.40
-> bcache         0.95               1.76               106.82      11.85
-> dm-cache       0.58               0.55               193.76      21.52
+> time.
+>
+> Overclocking (boost) support is essentially provided by platform
+> dependent cpufreq driver.
+>
+> This commit unifies support for SW and HW (Intel) over clocking solutions
+> in the core cpufreq driver. Previously the "boost" sysfs attribute was
+> defined at acpi driver code.
+> By default boost is disabled. One global attribute is available at:
+> /sys/devices/system/cpu/cpufreq/boost.
 
-Here EnhanceIO's read latency is better compared the other two. Write latency 
-is larger than the other two. 
+Enter a blank line here.
 
--Amit
+> It only shows up when cpufreq driver supports overclocking.
+> Under the hood frequencies dedicated for boosting are marked with a
+> special flag (CPUFREQ_BOOST_FREQ) at driver's frequency table.
+> It is the user's concern to enable/disable overclocking with proper call to
+> sysfs.
 
-> 
-> ============================ Base Line ====================================
-> Type      Read Latency(ms)    Write Latency(ms)    Read(MB/s)   Write(MB/s)
-> ===========================================================================
-> HDD            6.22              27.23                13.51       1.49
-> SSD            0.47               0.42               235.87      26.21
-> 
-> We have written scripts that aid in cache creation, deletion and
-> performance run for all these caching solutions. These scripts can be
-> found at:
-> https://github.com/stec-inc/EnhanceIO/tree/master/performance_test
-> 
-> Thanks and Regards,
-> sTec Team
-> 
-> PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
-> 
-> This electronic transmission, and any documents attached hereto, may
-> contain confidential, proprietary and/or legally privileged information.
-> The information is intended only for use by the recipient named above. If
-> you received this electronic message in error, please notify the sender
-> and delete the electronic message. Any disclosure, copying, distribution,
-> or use of the contents of information received in error is strictly
-> prohibited, and violators will be pursued legally. --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Good.
+
+> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+>
+> ---
+> Changes for v2:
+> - Removal of cpufreq_boost structure and move its fields to cpufreq_driver
+>   structure
+> - Flag to indicate if global boost attribute is already defined
+> - Extent the pr_{err|debbug} functions to show current function names
+> ---
+
+You don't have to manually add "---" here. Just keep a blank line instead.
+
+>  drivers/cpufreq/cpufreq.c    |   69 ++++++++++++++++++++++++++++++++++++++++++
+>  drivers/cpufreq/freq_table.c |   57 ++++++++++++++++++++++++++++++++--
+>  include/linux/cpufreq.h      |   12 ++++++++
+>  3 files changed, 136 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 1b8a48e..98ba5f1 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -40,6 +40,7 @@
+>   * also protects the cpufreq_cpu_data array.
+>   */
+>  static struct cpufreq_driver *cpufreq_driver;
+> +static bool cpufreq_boost_sysfs_defined;
+>  static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data);
+>  #ifdef CONFIG_HOTPLUG_CPU
+>  /* This one keeps track of the previously set governor of a removed CPU */
+> @@ -315,6 +316,33 @@ EXPORT_SYMBOL_GPL(cpufreq_notify_transition);
+>  /*********************************************************************
+>   *                          SYSFS INTERFACE                          *
+>   *********************************************************************/
+> +ssize_t show_boost_status(struct kobject *kobj,
+> +                                struct attribute *attr, char *buf)
+> +{
+> +       return sprintf(buf, "%d\n", cpufreq_driver->boost_en);
+
+This isn't correct. It shows if cpufreq driver supports boost or
+not and it should show if boost is enabled from sysfs when
+cpufreq driver supports boost.
+
+> +}
+> +
+> +static ssize_t store_boost_status(struct kobject *kobj, struct attribute *attr,
+> +                                 const char *buf, size_t count)
+> +{
+> +       int ret, enable;
+> +
+> +       ret = sscanf(buf, "%d", &enable);
+> +       if (ret != 1 || enable < 0 || enable > 1)
+> +               return -EINVAL;
+> +
+> +       if (cpufreq_boost_trigger_state(enable)) {
+> +               pr_err("%s: Cannot %sable boost!\n", __func__,
+> +                      enable ? "en" : "dis");
+
+%sable doesn't look very much readable. Use complete strings:
+"enable" and "disable".
+
+> +               return -EINVAL;
+> +       }
+> +
+> +       return count;
+> +}
+> +
+> +static struct global_attr global_boost = __ATTR(boost, 0644,
+> +                                               show_boost_status,
+> +                                               store_boost_status);
+
+User define_one_global_rw.
+
+>  static struct cpufreq_governor *__find_governor(const char *str_governor)
+>  {
+> @@ -754,6 +782,17 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
+
+Why not do this in cpufreq_register_driver()?
+
+>                         goto err_out_kobj_put;
+>                 drv_attr++;
+>         }
+> +       if (cpufreq_driver->low_level_boost && !cpufreq_boost_sysfs_defined) {
+
+I thought low_level_boost() is a function which will only be supported
+for drivers
+using hardware boost feature, like intel. And so we must have used boost_en
+here.
+
+> +               ret = sysfs_create_file(cpufreq_global_kobject,
+> +                                       &(global_boost.attr));
+
+cpufreq_sysfs_create_file(), check 2361be23666232dbb4851a527f466c4cbf5340fc
+for details.
+
+> +               if (ret) {
+> +                       pr_err("%s: cannot register global boost sysfs file\n",
+> +                               __func__);
+> +                       goto err_out_kobj_put;
+> +               }
+> +               cpufreq_boost_sysfs_defined = 1;
+> +       }
+> +
+>         if (cpufreq_driver->get) {
+>                 ret = sysfs_create_file(&policy->kobj, &cpuinfo_cur_freq.attr);
+>                 if (ret)
+> @@ -1853,6 +1892,30 @@ static struct notifier_block __refdata cpufreq_cpu_notifier = {
+>  };
+>
+>  /*********************************************************************
+> + *               BOOST                                              *
+> + *********************************************************************/
+> +int cpufreq_boost_trigger_state(int state)
+> +{
+> +       int ret = 0;
+> +
+> +       if (!cpufreq_driver->low_level_boost)
+> +               return -ENODEV;
+
+I am certainly not aligned with your design. What's the
+use of this field? And please update documentation too for these
+new entries in cpufreq_driver structure.
+
+> +       if (cpufreq_driver->boost_en != state) {
+
+So, you are using boost_en to see if boost is enabled from sysfs?
+Then you have put it at wrong place.
+
+I thought there would be three variables:
+- cpufreq_driver->boost_supported: boost is enabled for driver
+- cpufreq_driver->low_level_boost(): to set desired boost state
+(Only for hardware boosting)
+- boost_enabled: global variable in cpufreq.c file, used only if
+cpufreq_driver->boost_supported is true.
+
+
+> diff --git a/drivers/cpufreq/freq_table.c b/drivers/cpufreq/freq_table.c
+> index d7a7966..4e4f692 100644
+> --- a/drivers/cpufreq/freq_table.c
+> +++ b/drivers/cpufreq/freq_table.c
+> @@ -20,6 +20,27 @@
+>   *                     FREQUENCY TABLE HELPERS                       *
+>   *********************************************************************/
+>
+> +unsigned int
+> +cpufreq_frequency_table_max(struct cpufreq_frequency_table *freq_table,
+> +                           int boost)
+> +{
+> +       int i = 0, boost_freq_max = 0, freq_max = 0;
+> +
+> +       for (; freq_table[i].frequency != CPUFREQ_TABLE_END; i++) {
+> +               if (freq_table[i].index == CPUFREQ_BOOST_FREQ) {
+> +                       if (freq_table[i].frequency > boost_freq_max)
+> +                               boost_freq_max = freq_table[i].frequency;
+
+Do above only when boost==true and below when boost==false.
+
+> +               } else {
+> +                       if (freq_table[i].frequency > freq_max)
+> +                               freq_max = freq_table[i].frequency;
+> +               }
+> +       }
+> +
+> +       return boost ? boost_freq_max : freq_max;
+> +
+> +}
+> +EXPORT_SYMBOL_GPL(cpufreq_frequency_table_max);
+> +
+>  int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
+>                                     struct cpufreq_frequency_table *table)
+>  {
+> @@ -171,7 +192,8 @@ static DEFINE_PER_CPU(struct cpufreq_frequency_table *, cpufreq_show_table);
+>  /**
+>   * show_available_freqs - show available frequencies for the specified CPU
+>   */
+> -static ssize_t show_available_freqs(struct cpufreq_policy *policy, char *buf)
+> +static ssize_t show_available_freqs(struct cpufreq_policy *policy, char *buf,
+> +                                   int show_boost)
+>  {
+>         unsigned int i = 0;
+>         unsigned int cpu = policy->cpu;
+> @@ -186,22 +208,53 @@ static ssize_t show_available_freqs(struct cpufreq_policy *policy, char *buf)
+>         for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
+>                 if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+>                         continue;
+> +               if (show_boost)
+> +                       if (table[i].index != CPUFREQ_BOOST_FREQ)
+> +                               continue;
+> +
+
+Looks wrong. You will show boost freqs when show_boost is false.
+
+>                 count += sprintf(&buf[count], "%d ", table[i].frequency);
+>         }
+>         count += sprintf(&buf[count], "\n");
+>
+>         return count;
+> +}
+>
+> +/**
+> + * show_available_normal_freqs - show normal boost frequencies for
+> + * the specified CPU
+> + */
+> +static ssize_t show_available_normal_freqs(struct cpufreq_policy *policy,
+> +                                          char *buf)
+> +{
+> +       return show_available_freqs(policy, buf, 0);
+>  }
+>
+>  struct freq_attr cpufreq_freq_attr_scaling_available_freqs = {
+>         .attr = { .name = "scaling_available_frequencies",
+>                   .mode = 0444,
+>                 },
+> -       .show = show_available_freqs,
+> +       .show = show_available_normal_freqs,
+>  };
+>  EXPORT_SYMBOL_GPL(cpufreq_freq_attr_scaling_available_freqs);
+>
+> +/**
+> + * show_available_boost_freqs - show available boost frequencies for
+> + * the specified CPU
+> + */
+> +static ssize_t show_available_boost_freqs(struct cpufreq_policy *policy,
+> +                                         char *buf)
+> +{
+> +       return show_available_freqs(policy, buf, 1);
+> +}
+> +
+> +struct freq_attr cpufreq_freq_attr_boost_available_freqs = {
+> +       .attr = { .name = "scaling_boost_frequencies",
+> +                 .mode = 0444,
+> +               },
+> +       .show = show_available_boost_freqs,
+> +};
+> +EXPORT_SYMBOL_GPL(cpufreq_freq_attr_boost_available_freqs);
+> +
+
+Code redundancy can be reduced by creating a macro for declaring
+**_availabe_freqs, its attributes and export symbol.
+
+>  /*
+>   * if you use these, you must assure that the frequency table is valid
+>   * all the time between get_attr and put_attr!
+
+With this patch alone, we would be using boost frequencies even in
+normal cases where we haven't enabled boost.
