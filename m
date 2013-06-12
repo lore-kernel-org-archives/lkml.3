@@ -1,133 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757945Ab3FLUkj (ORCPT <rfc822;w@1wt.eu>);
+	id S932131Ab3FLUkw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 16:40:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60255 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756176Ab3FLUkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Jun 2013 16:40:39 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:19613 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756173Ab3FLUki (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 16:40:38 -0400
-Message-ID: <1371069633.1746.52.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Steven Rostedt <rostedt@goodmis.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        =?UTF-8?Q?=E8=B5=96=E6=B1=9F=E5=B1=B1?= <laijs@cn.fujitsu.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Josh Triplett <josh@joshtriplett.org>, niv@us.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        David Howells <dhowells@redhat.com>,
-        Eric Dumazet <edumazet@google.com>, Darren Hart <darren@dvhart.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Silas Boyd-Wickizer <sbw@mit.edu>, Waiman Long <Waiman.Long@hp.com>
-Date: Wed, 12 Jun 2013 13:40:33 -0700
-In-Reply-To: <CA+55aFwDYvCR9SavTQt62kibvmv37M4+GxzjxU1ZqZVVB9Ce9w@mail.gmail.com>
-References: <20130609193657.GA13392@linux.vnet.ibm.com>
-	 <1370911480.9844.160.camel@gandalf.local.home>
-	 <CA+55aFxeLszgfTZeG7L6289DcaoKT+uhtf5nwB6r=2i9Sy4Mrg@mail.gmail.com>
-	 <1370973186.1744.9.camel@buesod1.americas.hpqcorp.net>
-	 <1370974231.9844.212.camel@gandalf.local.home>
-	 <1371059401.1746.33.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFygedE80F3SvE7VvqwXaCthbFh7sMCwVnZt6wzst8YLHA@mail.gmail.com>
-	 <1371067399.1746.47.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFwDYvCR9SavTQt62kibvmv37M4+GxzjxU1ZqZVVB9Ce9w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Date: Wed, 12 Jun 2013 13:40:32 -0700
+From: Tejun Heo <theo@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: [PATCH percpu/for-3.11] percpu-refcount: consistently use plain
+ (non-sched) RCU
+Message-ID: <20130612204031.GA15092@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-12 at 13:26 -0700, Linus Torvalds wrote:
-> On Wed, Jun 12, 2013 at 1:03 PM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
-> >
-> > According to him:
-> >
-> > "the short workload calls security functions like getpwnam(),
-> > getpwuid(), getgrgid() a couple of times. These functions open
-> > the /etc/passwd or /etc/group files, read their content and close the
-> > files.
-> 
-> Ahh, ok. So yeah, it's multiple threads all hitting the same file.
-> 
-> I guess that /etc/passwd case is historically interesting, but I'm not
-> sure we really want to care too deeply..
-> 
-> > I did a quick attempt at this (patch attached).
-> 
-> Yeah, that's wrong, although it probably approximates the dget() case
-> (but incorrectly).
+>From e96262150a513ce3d54ff221d4ace8aeec96e0bf Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Wed, 12 Jun 2013 13:37:42 -0700
 
-Indeed, it was only a proof of concept.
+percpu_ref_get/put() are using preempt_disable/enable() while
+percpu_ref_kill() is using plain call_rcu() instead of
+call_rcu_sched().  This is buggy as grace periods of the two may not
+match.  Fix it by using plain RCU in percpu_ref_get/put().
 
-> One of the points behind using an atomic d_count is that then dput() should do
-> 
->    if (!atomic_dec_and_lock(&dentry->d_count, &dentry->d_count))
->       return;
+(I suggested using sched RCU in the first place but there's no actual
+ benefit in doing so unless we're gonna introduce different variants
+ of get/put to be called while preemption is alredy disabled, which we
+ definitely shouldn't.)
 
-noted.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Rusty Russell <rusty@rustcorp.com.au>
+---
+ include/linux/percpu-refcount.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-> at the very top of the function. It can avoid taking the lock entirely
-> if the count doesn't go down to zero, which would be a common case if
-> you have lots of users opening the same file. While still protecting
-> d_count from ever going to zero while the lock is held.
-> 
-> Your
-> 
-> +       if (atomic_read(&dentry->d_count) > 1) {
-> +               atomic_dec(&dentry->d_count);
-> +               return;
-> +       }
-> +       spin_lock(&dentry->d_lock);
-> 
-> pattern is fundamentally racy, but it's what "atomic_dec_and_lock()"
-> should do race-free.
-> For similar reasons, I think you need to still maintain the d_lock in
-> d_prune_aliases etc. That's a slow-path, so the fact that we add an
-> atomic sequence there doesn't much matter.
-> 
-> However, one optimization missing from your patch is obvious in the
-> profile. "dget_parent()" also needs to be optimized - you still have
-> that as 99% of the spin-lock case. I think we could do something like
-> 
->    rcu_read_lock();
->    parent = ACCESS_ONCE(dentry->d_parent);
->    if (atomic_inc_nonzero(&parent->d_count))
->       return parent;
->    .. get d_lock and do it the slow way ...
->    rcu_read_unlock();
-> 
-> to locklessly get the parent pointer. We know "parent" isn't going
-> away (dentries are rcu-free'd and we hold the rcu read lock), and I
-> think that we can optimistically take *any* parent dentry that
-> happened to be valid at one point. As long as the refcount didn't go
-> down to zero. Al?
-> 
-> With dput and dget_parent() both being lockless for the common case,
-> you might get rid of the d_lock contention entirely for that load. I
-> dunno. And I should really think more about that dget_parent() thing a
-> bit more, but I cannot imagine how it could not be right (because even
-> with the current d_lock model, the lock is gotten *within*
-> dget_parent(), so the caller can never know if it gets a new or an old
-> parent, so there is no higher-level serialization going on - and we
-> might as well return *either* the new or the old as such).
-> 
-> I really want Al to double-check me if we decide to try going down
-> this hole. But the above two fixes to your patch should at least
-> approximate the d_lock changes, even if I'd have to look more closely
-> at the other details of your patch..
-
-Ok, I'll try to rerun and send a more conscious patch. Thanks for the
-tips.
-
-Davidlohr
-
+diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
+index 24b31ef..abe1411 100644
+--- a/include/linux/percpu-refcount.h
++++ b/include/linux/percpu-refcount.h
+@@ -85,7 +85,7 @@ static inline void percpu_ref_get(struct percpu_ref *ref)
+ {
+ 	unsigned __percpu *pcpu_count;
+ 
+-	preempt_disable();
++	rcu_read_lock();
+ 
+ 	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
+ 
+@@ -94,7 +94,7 @@ static inline void percpu_ref_get(struct percpu_ref *ref)
+ 	else
+ 		atomic_inc(&ref->count);
+ 
+-	preempt_enable();
++	rcu_read_unlock();
+ }
+ 
+ /**
+@@ -107,7 +107,7 @@ static inline void percpu_ref_put(struct percpu_ref *ref)
+ {
+ 	unsigned __percpu *pcpu_count;
+ 
+-	preempt_disable();
++	rcu_read_lock();
+ 
+ 	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
+ 
+@@ -116,7 +116,7 @@ static inline void percpu_ref_put(struct percpu_ref *ref)
+ 	else if (unlikely(atomic_dec_and_test(&ref->count)))
+ 		ref->release(ref);
+ 
+-	preempt_enable();
++	rcu_read_unlock();
+ }
+ 
+ #endif
+-- 
+1.8.2.1
 
