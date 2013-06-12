@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab3FLPvn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 11:51:43 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40908 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754081Ab3FLPvm (ORCPT
+	id S1756896Ab3FLPyW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 11:54:22 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52857 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754796Ab3FLPyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 11:51:42 -0400
-Message-ID: <51B8990A.8030506@wwwdotorg.org>
-Date: Wed, 12 Jun 2013 09:51:38 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 12 Jun 2013 11:54:20 -0400
+Date: Wed, 12 Jun 2013 16:54:19 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Nix <nix@esperi.org.uk>
+Cc: linux-kernel@vger.kernel.org, NFS list <linux-nfs@vger.kernel.org>
+Subject: Re: NFS/lazy-umount/path-lookup-related panics at shutdown (at kill
+ of processes on lazy-umounted filesystems) with 3.9.2 and 3.9.5
+Message-ID: <20130612155419.GG4165@ZenIV.linux.org.uk>
+References: <871u89vp46.fsf@spindle.srvr.nix>
+ <20130612012304.GF4165@ZenIV.linux.org.uk>
+ <87k3lzpm4l.fsf@spindle.srvr.nix>
 MIME-Version: 1.0
-To: J Keerthy <j-keerthy@ti.com>
-CC: b-cousson@ti.com, devicetree-discuss@lists.ozlabs.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldewangan@nvidia.com, grant.likely@secretlab.ca, swarren@nvidia.com,
-        sameo@linux.intel.com, gg@slimlogic.co.uk, lee.jones@linaro.org
-Subject: Re: [PATCH v4] ARM: dts: OMAP5: Add palmas MFD node and regulator
- nodes
-References: <1371025140-25376-1-git-send-email-j-keerthy@ti.com>
-In-Reply-To: <1371025140-25376-1-git-send-email-j-keerthy@ti.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87k3lzpm4l.fsf@spindle.srvr.nix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2013 02:19 AM, J Keerthy wrote:
-> This patch adds Palmas MFD node and the regulator nodes for OMAP5.
+On Wed, Jun 12, 2013 at 01:08:26PM +0100, Nix wrote:
+
+> At this point, we have a sibcall to call_connect() I think. The RPC task
+> of discourse happens to be local, and as the relevant comment says
 > 
-> The node definitions are based on: https://lkml.org/lkml/2013/6/6/25
+> 		 * We want the AF_LOCAL connect to be resolved in the
+> 		 * filesystem namespace of the process making the rpc
+> 		 * call.  Thus we connect synchronously.
 > 
-> Boot tested on omap5-uevm board.
+> Probably this should be doing this only if said namespace isn't
+> disconnected and going away...
 
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
+Namespace, shnamespace...  In this case the namespace is alive and well,
+it's just that the process is getting killed and it's already past the
+point where it has discarded all references to root/cwd.
 
-> diff --git a/arch/arm/boot/dts/omap5-uevm.dts b/arch/arm/boot/dts/omap5-uevm.dts
+> > Why is it done in essentially random process context, anyway?  There's such thing
+> > as chroot, after all, which would screw that sucker as hard as NULL ->fs, but in
+> > a less visible way...
+> 
+> I don't think it is a random process context. It's all intentionally
+> done in the context of the process which is the last to close that
+> filesystem, as part of the process of tearing it down -- but it looks
+> like the NFS svcrpc connection code isn't expecting to be called in that
+> situation.
 
-> +	palmas: palmas@48 {
-> +		reg = <0x48>;
-> +		interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>; /* IRQ_SYS_1N */
-> +		interrupt-parent = <&gic>;
-> +		compatible = "ti,palmas";
-
-... although personally I prefer the compatible property to be right at
-the top of each node, since it's what implies the schema for the rest of
-the node. That's a tiny nit though; feel free to ignore it if the OMAP
-files don't follow that convention.
+_What_?  Suppose we have something mounted on /jail/net/foo/bar; will the
+effect of process chrooted into /jail doing umount /net/foo/bar be different
+from that of process outside of the jail doing umount /jail/net/foo/bar?
