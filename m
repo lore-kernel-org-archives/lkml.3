@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757849Ab3FLDGj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 23:06:39 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:44361 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754771Ab3FLDGi convert rfc822-to-8bit (ORCPT
+	id S1757866Ab3FLDJH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 23:09:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45226 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755418Ab3FLDJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 23:06:38 -0400
-Content-Type: text/plain; charset="utf-8"
+	Tue, 11 Jun 2013 23:09:05 -0400
+Date: Tue, 11 Jun 2013 20:09:41 -0700
+From: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>, linux-kernel@vger.kernel.org,
+        thierry.reding@gmail.com, patches@linaro.org, netdev@vger.kernel.org,
+        linux-can@vger.kernel.org, Wolfgang Grandegger <wg@grandegger.com>
+Subject: Re: [PATCH 09/15] net: can: Convert to use devm_ioremap_resource
+Message-ID: <20130612030941.GA10250@kroah.com>
+References: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
+ <1370864113-17895-10-git-send-email-tushar.behera@linaro.org>
+ <51B5D007.8050005@pengutronix.de>
+ <51B69663.5080304@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1370507298-9230-1-git-send-email-tushar.behera@linaro.org>
-Cc: kgene.kim@samsung.com, patches@linaro.org
-References: <1370507298-9230-1-git-send-email-tushar.behera@linaro.org>
-Message-ID: <20130612030633.8816.19714@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH] clk: exynos5250: Add CLK_IGNORE_UNUSED flag for pmu clock
-Date: Tue, 11 Jun 2013 20:06:33 -0700
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51B69663.5080304@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Tushar Behera (2013-06-06 01:28:18)
-> Currently 'pmu' clock is not handled by any of the drivers.
-> Also before the introduction of CCF, this clock was not defined,
-> hence was left enabled always.
+On Tue, Jun 11, 2013 at 08:45:47AM +0530, Tushar Behera wrote:
+> +CC: 'Greg Kroah-Hartman' <gregkh@linuxfoundation.org>
 > 
-> When this clock is disabled, software reset register becomes
-> inaccessible and system reboot doesn't work.
+> On 06/10/2013 06:39 PM, Marc Kleine-Budde wrote:
+> > On 06/10/2013 01:35 PM, Tushar Behera wrote:
+> >> Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
+> >> introduced devm_ioremap_resource() and deprecated the use of
+> >> devm_request_and_ioremap().
+> > 
+> > Acked-by: Marc Kleine-Budde <mkl@pengutronix.de>
+> > 
+> > Are the patches going over the individual subsystem maintainers?
+> > 
+> > Marc
+> > 
 > 
-> Upon restoring the default behaviour, system reboot starts working.
-> 
-> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> I am not sure. Looping in Greg for clarity.
 
-Taken into clk-fixes.
+I'm taking the ones for my subsystem(s), the last one should probably go
+in after 3.11-rc1 is released, in order to ensure no remaining in-tree
+users of the function are still around.
 
-Thanks,
-Mike
+thanks,
 
-> ---
->  drivers/clk/samsung/clk-exynos5250.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/clk/samsung/clk-exynos5250.c b/drivers/clk/samsung/clk-exynos5250.c
-> index 5c97e75..3853da9 100644
-> --- a/drivers/clk/samsung/clk-exynos5250.c
-> +++ b/drivers/clk/samsung/clk-exynos5250.c
-> @@ -378,7 +378,7 @@ struct samsung_gate_clock exynos5250_gate_clks[] __initdata = {
->         GATE(hsi2c3, "hsi2c3", "aclk66", GATE_IP_PERIC, 31, 0, 0),
->         GATE(chipid, "chipid", "aclk66", GATE_IP_PERIS, 0, 0, 0),
->         GATE(sysreg, "sysreg", "aclk66", GATE_IP_PERIS, 1, 0, 0),
-> -       GATE(pmu, "pmu", "aclk66", GATE_IP_PERIS, 2, 0, 0),
-> +       GATE(pmu, "pmu", "aclk66", GATE_IP_PERIS, 2, CLK_IGNORE_UNUSED, 0),
->         GATE(tzpc0, "tzpc0", "aclk66", GATE_IP_PERIS, 6, 0, 0),
->         GATE(tzpc1, "tzpc1", "aclk66", GATE_IP_PERIS, 7, 0, 0),
->         GATE(tzpc2, "tzpc2", "aclk66", GATE_IP_PERIS, 8, 0, 0),
-> -- 
-> 1.7.9.5
+greg k-h
