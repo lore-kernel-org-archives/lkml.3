@@ -1,115 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab3FLOec (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 10:34:32 -0400
-Received: from bosmailout20.eigbox.net ([66.96.189.20]:35529 "EHLO
-	bosmailout20.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752209Ab3FLOea (ORCPT
+	id S1755455Ab3FLOgy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 10:36:54 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:61788 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862Ab3FLOgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 10:34:30 -0400
-X-Greylist: delayed 2483 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Jun 2013 10:34:30 EDT
-X-Authority-Analysis: v=2.0 cv=dt1Z+ic4 c=1 sm=1
- a=ABCSjpCQT5ywf69d+S7t6w==:17 a=bc2JKO6qiGsA:10 a=FB6NmUnAAagA:10
- a=gi2lbADIU9YA:10 a=hqD55VkP2l0A:10 a=IkcTkHD0fZMA:10 a=jYxPdhFhAAAA:8
- a=bw0tOsC81AkA:10 a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=QyXUC8HyAAAA:8
- a=98j6GjRfuKdj89mTrOsA:9 a=QEXdDO2ut3YA:10 a=dGJ0OcVc7YAA:10
- a=UH8/iCWBfdUmbm4Ft4Vi3Q==:117
-X-EN-OrigOutIP: 10.20.18.13
-X-EN-IMPSID: nRt41l0060GvDVm01Rt4N1
-Message-ID: <51B87D07.6050701@htibosch.net>
-Date: Wed, 12 Jun 2013 21:52:07 +0800
-From: Hein Tibosch <hein@htibosch.net>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-CC: Vinod Koul <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        spear-devel <spear-devel@list.st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH v2 2/4] dma: move dw_dmac driver to an own directory
-References: <1370435206-13474-1-git-send-email-andriy.shevchenko@linux.intel.com>  <1370435206-13474-3-git-send-email-andriy.shevchenko@linux.intel.com>  <20130612050829.GB4107@intel.com>  <CAHp75Ver2xo2f9crQZkAmJcTF=5cZZa3NgvufPqQW3+uTXffJA@mail.gmail.com>  <20130612073806.GG4107@intel.com>  <CAHp75VfsSDdLa_uPULbhVGproxnD5mofYm62O75y4xRbPBJ7pQ@mail.gmail.com>  <20130612075225.GI4107@intel.com>  <CAHp75Vc=hO_FF0WMvhPm6MMRuCb+=MhOEOCSYb_TaCRf-xQ=sg@mail.gmail.com>  <20130612081202.GK4107@intel.com> <1371027632.29283.332.camel@smile>
-In-Reply-To: <1371027632.29283.332.camel@smile>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
-X-EN-AuthUser: hein@htibosch.net
-X-EN-OrigIP: 114.79.56.93
-X-EN-OrigHost: unknown
+	Wed, 12 Jun 2013 10:36:53 -0400
+From: Gabriel Fernandez <gabriel.fernandez.st@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Olivier Clergeaud <olivier.clergeaud@st.com>,
+        Gabriel Fernandez <gabriel.fernandez@st.com>
+Subject: [PATCH 1/2] ARM: u8540: Add Pinctrl Device Tree settings for uart0, uart2
+Date: Wed, 12 Jun 2013 16:35:34 +0200
+Message-Id: <1371047735-14851-1-git-send-email-gabriel.fernandez.st@gmail.com>
+X-Mailer: git-send-email 1.8.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/12/2013 5:00 PM, Andy Shevchenko wrote:
-> [+ Hein]
->
-> On Wed, 2013-06-12 at 13:42 +0530, Vinod Koul wrote: 
->> On Wed, Jun 12, 2013 at 11:38:37AM +0300, Andy Shevchenko wrote:
->>> On Wed, Jun 12, 2013 at 10:52 AM, Vinod Koul <vinod.koul@intel.com> wrote:
->>>> On Wed, Jun 12, 2013 at 11:27:51AM +0300, Andy Shevchenko wrote:
->>>>> On Wed, Jun 12, 2013 at 10:39 AM, Vinod Koul <vinod.koul@intel.com> wrote:
->>>>>
->>>>> []
->>>>>
->>>>>> Something like
->>>>>> config DW_DMAC_BIG_ENDIAN_IO
->>>>>>         tristate
->>>>>>
->>>>>> config DW_DMAC
->>>>>>         select DW_DMAC_BIG_ENDIAN_IO
->>>>>>
->>>>>> I belive DW_DMAC is for AVR support and the PCI ones is different right.
->>>>>> The point is that these things should be selected by the required symbols based
->>>>>> on what ARCH we are on and not be prompted for user to configure via menuconfig
->>>>> DW_DMAC is a generic platform driver which supports AVR32, ARM and
->>>>> Intel (ACPI case) platforms.
->>>>>
->>>>> We may do that option invisible to user
->>>> Yup
->>>>> and then use
->>>>>
->>>>> config DW_DMAC
->>>>>          select DW_DMAC_BIG_ENDIAN_IO if ARCH=AVR32
->>>> Thats would be the right way
->>> Do you prefer to have this as separate patch or integrated in the split?
->>> In my humble opinion I better to do separate patch.
->> Never mind, am applying your patches and below fix, let me if you guys are okay
->
-> As far as I know we have at least one developer (Hein Tibosch) with such
-> board. Let him share his opinion.
->
->> diff --git a/drivers/dma/dw/Kconfig b/drivers/dma/dw/Kconfig
->> index db2b41f..7be1cf8 100644
->> --- a/drivers/dma/dw/Kconfig
->> +++ b/drivers/dma/dw/Kconfig
->> @@ -10,6 +10,7 @@ config DW_DMAC_CORE
->>  config DW_DMAC
->>  	tristate "Synopsys DesignWare AHB DMA platform driver"
->>  	select DW_DMAC_CORE
->> +	select DW_DMAC_BIG_ENDIAN_IO if ARCH=AVR32
-Yes sure! Avr32 users won't have any other choice as to select this option.
+From: Gabriel Fernandez <gabriel.fernandez@st.com>
 
-Hein
+This patch adds pinctrl device tree settings for uart0 and uart2
+for ccu8540 board.
 
->>  	default y if CPU_AT32AP7000
->>  	help
->>  	  Support the Synopsys DesignWare AHB DMA controller. This
->> @@ -25,12 +26,4 @@ config DW_DMAC_PCI
->>  	  Intel Medfield has integrated this GPDMA controller.
->>  
->>  config DW_DMAC_BIG_ENDIAN_IO
->> -	bool "Use big endian I/O register access"
->> -	default y if AVR32
->> -	depends on DW_DMAC_CORE
->> -	help
->> -	  Say yes here to use big endian I/O access when reading and writing
->> -	  to the DMA controller registers. This is needed on some platforms,
->> -	  like the Atmel AVR32 architecture.
->> -
->> -	  If unsure, use the default setting.
->> +	bool
->> -
->>
->> --
->> ~Vinod
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
+---
+ arch/arm/boot/dts/ccu8540-pinctrl.dtsi     | 81 +++++++++++++++++++++++++
+ arch/arm/boot/dts/ccu8540.dts              | 11 ++++
+ arch/arm/boot/dts/ste-nomadik-pinctrl.dtsi | 95 ++++++++++++++++++++++++++++++
+ include/dt-bindings/pinctrl/nomadik.h      | 36 +++++++++++
+ 4 files changed, 223 insertions(+)
+ create mode 100644 arch/arm/boot/dts/ccu8540-pinctrl.dtsi
+ create mode 100644 arch/arm/boot/dts/ste-nomadik-pinctrl.dtsi
+ create mode 100644 include/dt-bindings/pinctrl/nomadik.h
+
+diff --git a/arch/arm/boot/dts/ccu8540-pinctrl.dtsi b/arch/arm/boot/dts/ccu8540-pinctrl.dtsi
+new file mode 100644
+index 0000000..644b189
+--- /dev/null
++++ b/arch/arm/boot/dts/ccu8540-pinctrl.dtsi
+@@ -0,0 +1,81 @@
++/*
++ * Copyright 2012 ST-Ericsson
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++#include "ste-nomadik-pinctrl.dtsi"
++
++/ {
++	soc {
++		pinctrl {
++			uart0 {
++				uart0_default_mux: uart0_mux {
++					default_mux {
++						ste,function = "u0";
++						ste,pins = "u0_a_1";
++					};
++				};
++
++				uart0_default_mode: uart0_default {
++					default_cfg1 {
++						ste,pins = "GPIO0", "GPIO2";
++						ste,config = <&in_pu>;
++					};
++
++					default_cfg2 {
++						ste,pins = "GPIO1", "GPIO3";
++						ste,config = <&out_hi>;
++					};
++				};
++
++				uart0_sleep_mode: uart0_sleep {
++					sleep_cfg1 {
++						ste,pins = "GPIO0", "GPIO2";
++						ste,config = <&slpm_in_pu>;
++					};
++
++					sleep_cfg2 {
++						ste,pins = "GPIO1", "GPIO3";
++						ste,config = <&slpm_out_hi>;
++					};
++				};
++			};
++
++			uart2 {
++				uart2_default_mode: uart2_default {
++					default_mux {
++						ste,function = "u2";
++						ste,pins = "u2txrx_a_1";
++					};
++
++					default_cfg1 {
++						ste,pins = "GPIO120";
++						ste,config = <&in_pu>;
++					};
++
++					default_cfg2 {
++						ste,pins = "GPIO121";
++						ste,config = <&out_hi>;
++					};
++				};
++
++				uart2_sleep_mode: uart2_sleep {
++					sleep_cfg1 {
++						ste,pins = "GPIO120";
++						ste,config = <&slpm_in_pu>;
++					};
++
++					sleep_cfg2 {
++						ste,pins = "GPIO121";
++						ste,config = <&slpm_out_hi>;
++					};
++				};
++			};
++		};
++	};
++};
+diff --git a/arch/arm/boot/dts/ccu8540.dts b/arch/arm/boot/dts/ccu8540.dts
+index 48ff034..3065fe4 100644
+--- a/arch/arm/boot/dts/ccu8540.dts
++++ b/arch/arm/boot/dts/ccu8540.dts
+@@ -11,6 +11,7 @@
+ 
+ /dts-v1/;
+ #include "dbx5x0.dtsi"
++#include "ccu8540-pinctrl.dtsi"
+ 
+ / {
+ 	model = "ST-Ericsson U8540 platform with Device Tree";
+@@ -21,12 +22,19 @@
+ 	};
+ 
+ 	soc {
++		pinctrl {
++			compatible = "stericsson,db8540-pinctrl";
++		};
++
+ 		prcmu@80157000 {
+ 			reg = <0x80157000 0x2000>, <0x801b0000 0x8000>, <0x801b8000 0x3000>;
+ 			reg-names = "prcmu", "prcmu-tcpm", "prcmu-tcdm";
+ 		};
+ 
+ 		uart@80120000 {
++			pinctrl-names = "default", "sleep";
++			pinctrl-0 = <&uart0_default_mux>, <&uart0_default_mode>;
++			pinctrl-1 = <&uart0_sleep_mode>;
+ 			status = "okay";
+ 		};
+ 
+@@ -35,6 +43,9 @@
+ 		};
+ 
+ 		uart@80007000 {
++			pinctrl-names = "default", "sleep";
++			pinctrl-0 = <&uart2_default_mode>;
++			pinctrl-1 = <&uart2_sleep_mode>;
+ 			status = "okay";
+ 		};
+ 	};
+diff --git a/arch/arm/boot/dts/ste-nomadik-pinctrl.dtsi b/arch/arm/boot/dts/ste-nomadik-pinctrl.dtsi
+new file mode 100644
+index 0000000..efddee9
+--- /dev/null
++++ b/arch/arm/boot/dts/ste-nomadik-pinctrl.dtsi
+@@ -0,0 +1,95 @@
++/*
++ * Copyright 2012 ST-Ericsson
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++#include <dt-bindings/pinctrl/nomadik.h>
++
++/ {
++	in_nopull: in_nopull {
++		ste,input = <INPUT_NOPULL>;
++	};
++
++	in_pu: input_pull_up {
++		ste,input = <INPUT_PULLUP>;
++	};
++
++	in_pd: input_pull_down {
++		ste,input = <INPUT_PULLDOWN>;
++	};
++
++	out_hi: output_high {
++		ste,output = <OUTPUT_HIGH>;
++	};
++
++	out_lo: output_low {
++		ste,output = <OUTPUT_LOW>;
++	};
++
++	gpio_out_lo: gpio_output_low {
++		ste,gpio = <GPIOMODE_ENABLED>;
++		ste,output = <OUTPUT_LOW>;
++	};
++
++	slpm_in_pu: slpm_in_pu {
++		ste,sleep = <SLPM_ENABLED>;
++		ste,sleep-input = <SLPM_INPUT_PULLUP>;
++		ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
++	};
++
++	slpm_in_wkup_pdis: slpm_in_wkup_pdis {
++		ste,sleep = <SLPM_ENABLED>;
++		ste,sleep-input = <SLPM_DIR_INPUT>;
++		ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
++		ste,sleep-pull-disable = <SLPM_PDIS_DISABLED>;
++	};
++
++	slpm_out_lo: slpm_out_lo {
++		ste,sleep = <SLPM_ENABLED>;
++		ste,sleep-output = <SLPM_OUTPUT_LOW>;
++		ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
++	};
++
++	slpm_out_hi: slpm_out_hi {
++		ste,sleep = <SLPM_ENABLED>;
++		ste,sleep-output = <SLPM_OUTPUT_HIGH>;
++		ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
++	};
++
++	slpm_out_hi_wkup_pdis: slpm_out_hi_wkup_pdis {
++		ste,sleep = <SLPM_ENABLED>;
++		ste,sleep-output = <SLPM_OUTPUT_HIGH>;
++		ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
++		ste,sleep-pull-disable = <SLPM_PDIS_DISABLED>;
++	};
++
++	slpm_out_wkup_pdis: slpm_out_wkup_pdis {
++		ste,sleep = <SLPM_ENABLED>;
++		ste,sleep-output = <SLPM_DIR_OUTPUT>;
++		ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
++		ste,sleep-pull-disable = <SLPM_PDIS_DISABLED>;
++	};
++
++	in_wkup_pdis: in_wkup_pdis {
++		ste,sleep-input = <SLPM_DIR_INPUT>;
++		ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
++		ste,sleep-pull-disable = <SLPM_PDIS_DISABLED>;
++	};
++
++	out_hi_wkup_pdis: out_hi_wkup_pdis {
++		ste,sleep-output = <SLPM_OUTPUT_HIGH>;
++		ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
++		ste,sleep-pull-disable = <SLPM_PDIS_DISABLED>;
++	};
++
++	out_wkup_pdis: out_wkup_pdis {
++		ste,sleep-output = <SLPM_DIR_OUTPUT>;
++		ste,sleep-wakeup = <SLPM_WAKEUP_ENABLE>;
++		ste,sleep-pull-disable = <SLPM_PDIS_DISABLED>;
++	};
++};
+diff --git a/include/dt-bindings/pinctrl/nomadik.h b/include/dt-bindings/pinctrl/nomadik.h
+new file mode 100644
+index 0000000..638fb32
+--- /dev/null
++++ b/include/dt-bindings/pinctrl/nomadik.h
+@@ -0,0 +1,36 @@
++/*
++ * nomadik.h
++ *
++ * Copyright (C) ST-Ericsson SA 2013
++ * Author: Gabriel Fernandez <gabriel.fernandez@st.com> for ST-Ericsson.
++ * License terms:  GNU General Public License (GPL), version 2
++ */
++
++#define INPUT_NOPULL		0
++#define INPUT_PULLUP		1
++#define INPUT_PULLDOWN		2
++
++#define OUTPUT_LOW		0
++#define OUTPUT_HIGH		1
++#define DIR_OUTPUT		2
++
++#define SLPM_DISABLED		0
++#define SLPM_ENABLED		1
++
++#define SLPM_INPUT_NOPULL	0
++#define SLPM_INPUT_PULLUP	1
++#define SLPM_INPUT_PULLDOWN	2
++#define SLPM_DIR_INPUT		3
++
++#define SLPM_OUTPUT_LOW		0
++#define SLPM_OUTPUT_HIGH	1
++#define SLPM_DIR_OUTPUT		2
++
++#define SLPM_WAKEUP_DISABLE	0
++#define SLPM_WAKEUP_ENABLE	1
++
++#define GPIOMODE_DISABLED	0
++#define GPIOMODE_ENABLED	1
++
++#define SLPM_PDIS_DISABLED	0
++#define SLPM_PDIS_ENABLED	1
+-- 
+1.8.1.1
 
