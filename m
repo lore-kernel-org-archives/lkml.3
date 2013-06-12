@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757435Ab3FLAc2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jun 2013 20:32:28 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:40493 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444Ab3FLAcZ (ORCPT
+	id S1756337Ab3FLAj5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jun 2013 20:39:57 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:52038 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753700Ab3FLAj4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jun 2013 20:32:25 -0400
+	Tue, 11 Jun 2013 20:39:56 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <20130528092038.GC32068@gmail.com>
-References: <519AA53F.1020107@zytor.com> <20130520231203.GA21682@kroah.com> <20130528092038.GC32068@gmail.com>
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Tue, 11 Jun 2013 20:31:55 -0400
-X-Google-Sender-Auth: zezpemUyoyYlvDEwf72nRZ2eh4k
-Message-ID: <CAP=VYLo047g+U3GJhkObJtNPubFNpHuGUJAF7oOh_7dPtSFd9A@mail.gmail.com>
-Subject: Re: Get rid of cpuinit?
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Greg KH <greg@kroah.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+To: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1370440301-3562-1-git-send-email-pdeschrijver@nvidia.com>
+Cc: <linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <1370440301-3562-1-git-send-email-pdeschrijver@nvidia.com>
+Message-ID: <20130612003951.8816.41684@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH 0/2] PLL m,n,p init from SoC files
+Date: Tue, 11 Jun 2013 17:39:51 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 28, 2013 at 5:20 AM, Ingo Molnar <mingo@kernel.org> wote:
->
-> * Greg KH <greg@kroah.com> wrote:
->
->> On Mon, May 20, 2013 at 03:35:43PM -0700, H. Peter Anvin wrote:
->> > We have gotten rid of devinit markup.  A recent patch of Linus' makes me
->> > wonder if we similarly should get rid of cpuinit markup?
->> >
->> > Just as with devices, the CPU hotplug machinery has been leveraged to
->> > support a number of pieces of functionality such as suspend, which means
->> > that on anything but the most embedded systems this functionality is
->> > likely needed anyway.
->> >
->> > On x86-64, for an "allyesconfig" build, the total amount of space in all
->> > the .cpu* sections combined is 100K.
->>
->> No objection from me on removing it, it just causes problems from what I
->> can tell.
->
-> Indeed, there's a steady trickle of mis-annotated cpuinit sections, and no
-> real tooling to make the annotations automatic or so in most of the cases.
-> Manual simply does not seem to work in this case.
+Quoting Peter De Schrijver (2013-06-05 06:51:24)
+> The m,n,p fields don't have the same bit offset and width across all PLLs.
+> This patchset allows SoC specific files to indicate the offset and width.
+> It also provides the data for Tegra114.
+> 
 
-Is anyone actively working on weeding this out?  If not, it is probably
-one of those tree-wide kind of changes that I can volunteer to tackle...
+Taken into clk-next.
 
-Paul.
---
+Thanks,
+Mike
 
->
-> Thanks,
->
->         Ingo
-> --
+> Peter De Schrijver (2):
+>   clk: tegra: allow PLL m,n,p init from SoC files
+>   clk: tegra: PLL m,n,p init for Tegra114
+> 
+>  drivers/clk/tegra/clk-pll.c      |   60 ++++++++++++++++-------------
+>  drivers/clk/tegra/clk-tegra114.c |   77 ++++++++++++++++++++++++++++++++++++++
+>  drivers/clk/tegra/clk.h          |   32 ++++++++++------
+>  3 files changed, 130 insertions(+), 39 deletions(-)
+> 
+> -- 
+> 1.7.7.rc0.72.g4b5ea.dirty
