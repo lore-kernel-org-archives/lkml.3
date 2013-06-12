@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab3FLIc3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 04:32:29 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36360 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752280Ab3FLIc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 04:32:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,850,1363158000"; 
-   d="scan'208";a="352146723"
-Date: Wed, 12 Jun 2013 13:22:25 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        spear-devel <spear-devel@list.st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH v2 2/4] dma: move dw_dmac driver to an own directory
-Message-ID: <20130612075225.GI4107@intel.com>
-References: <1370435206-13474-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <1370435206-13474-3-git-send-email-andriy.shevchenko@linux.intel.com>
- <20130612050829.GB4107@intel.com>
- <CAHp75Ver2xo2f9crQZkAmJcTF=5cZZa3NgvufPqQW3+uTXffJA@mail.gmail.com>
- <20130612073806.GG4107@intel.com>
- <CAHp75VfsSDdLa_uPULbhVGproxnD5mofYm62O75y4xRbPBJ7pQ@mail.gmail.com>
+	id S1755592Ab3FLIc4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 04:32:56 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:43234 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753803Ab3FLIcw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 04:32:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHp75VfsSDdLa_uPULbhVGproxnD5mofYm62O75y4xRbPBJ7pQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1371021986-20985-1-git-send-email-chenxg@marvell.com>
+References: <1371021986-20985-1-git-send-email-chenxg@marvell.com>
+Date: Wed, 12 Jun 2013 14:02:51 +0530
+Message-ID: <CAKohpok2AEe3bL=mPAoxbenEBaWU=WjkRckbvcnzjnUwFZgnuA@mail.gmail.com>
+Subject: Re: [PATCH v3] cpufreq: fix governor start/stop race condition
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Xiaoguang Chen <chenxg@marvell.com>
+Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, njiang1@marvell.com, zjwu@marvell.com,
+        ylmao@marvell.com, chenxg.marvell@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 11:27:51AM +0300, Andy Shevchenko wrote:
-> On Wed, Jun 12, 2013 at 10:39 AM, Vinod Koul <vinod.koul@intel.com> wrote:
-> > On Wed, Jun 12, 2013 at 10:43:29AM +0300, Andy Shevchenko wrote:
-> >> On Wed, Jun 12, 2013 at 8:08 AM, Vinod Koul <vinod.koul@intel.com> wrote:
-> >> > On Wed, Jun 05, 2013 at 03:26:44PM +0300, Andy Shevchenko wrote:
-> 
-> []
-> 
-> > Something like
-> > config DW_DMAC_BIG_ENDIAN_IO
-> >         tristate
-> >
-> > config DW_DMAC
-> >         select DW_DMAC_BIG_ENDIAN_IO
-> >
-> > I belive DW_DMAC is for AVR support and the PCI ones is different right.
-> > The point is that these things should be selected by the required symbols based
-> > on what ARCH we are on and not be prompted for user to configure via menuconfig
-> 
-> DW_DMAC is a generic platform driver which supports AVR32, ARM and
-> Intel (ACPI case) platforms.
-> 
-> We may do that option invisible to user
-Yup
-> 
-> and then use
-> 
-> config DW_DMAC
->          select DW_DMAC_BIG_ENDIAN_IO if ARCH=AVR32
-Thats would be the right way
-> 
-> I don't know if we will have any platform in future which has such
-> difference in endianess between CPU and DMA IP block.
-you never know what h/w designers would think!
+On 12 June 2013 12:56, Xiaoguang Chen <chenxg@marvell.com> wrote:
+> cpufreq governor stop and start should be kept in sequence.
+> If not, there will be unexpected behavior, for example:
+>
+> we have 4 cpus and policy->cpu=cpu0, cpu1/2/3 are linked to cpu0.
+> the normal sequence is as below:
+>
+> 1) Current governor is userspace, one application tries to set
+> governor to ondemand. it will call __cpufreq_set_policy in which it
+> will stop userspace governor and then start ondemand governor.
+>
+> 2) Current governor is userspace, now cpu0 hotplugs in cpu3, it will
+> call cpufreq_add_policy_cpu. on which it first stops userspace
+> governor, and then starts userspace governor.
+>
+> Now if the sequence of above two cases interleaves, it becames
+> below sequence:
+>
+> 1) application stops userspace governor
+> 2)                                      hotplug stops userspace governor
+> 3) application starts ondemand governor
+> 4)                                      hotplug starts a governor
+>
+> in step 4, hotplug is supposed to start userspace governor, but now
+> the governor has been changed by application to ondemand, so hotplug
+> starts ondemand governor again !!!!
+>
+> The solution is: do not allow stop one policy's governor multi-times
+> Governor stop should only do once for one policy, after it is stopped,
+> no other governor stop should be executed.
+>
+> Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
+> ---
+>  drivers/cpufreq/cpufreq.c | 9 +++++++++
+>  include/linux/cpufreq.h   | 1 +
+>  2 files changed, 10 insertions(+)
+>
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 2d53f47..b4a2c94 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1562,6 +1562,11 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+>
+>         pr_debug("__cpufreq_governor for CPU %u, event %u\n",
+>                                                 policy->cpu, event);
+> +
+> +       if ((!policy->governor_enabled && (event == CPUFREQ_GOV_STOP)) ||
+> +           (policy->governor_enabled && (event == CPUFREQ_GOV_START)))
+> +               return 0;
 
---
-~Vinod
+Few things:
+- because __cpufreq_governor() isn't protected by locks, both calls for
+stopping governor can reach to this point and race can still happen. So,
+both may stop governor.
+- Returning zero doesn't seems to be the right thing, as this may cause
+STOP called by one user and START called by another. For example,
+STOP happened due to governor change. STOP called for hotplug and
+0 is returned. START called by hotplug as STOP was successful. :)
+
+Maybe -EBUSY would make more sense here.
