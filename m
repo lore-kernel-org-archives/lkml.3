@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755841Ab3FLHPi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 03:15:38 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:48508 "EHLO mail.gnudd.com"
+	id S1755896Ab3FLHPp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 03:15:45 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:48511 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755264Ab3FLHPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 03:15:33 -0400
-Date: Wed, 12 Jun 2013 09:14:43 +0200
+	id S1755859Ab3FLHPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 03:15:43 -0400
+Date: Wed, 12 Jun 2013 09:14:20 +0200
 From: Alessandro Rubini <rubini@gnudd.com>
 To: linux-kernel@vger.kernel.org
 Cc: Juan David Gonzalez Cobas <juan.david.gonzalez.cobas@cern.ch>,
@@ -14,8 +14,8 @@ Cc: Juan David Gonzalez Cobas <juan.david.gonzalez.cobas@cern.ch>,
         Samuel Iglesias Gonsalvez <siglesias@igalia.com>,
         gregkh@linuxfoundation.org, Rob Landley <rob@landley.net>,
         linux-doc@vger.kernel.org
-Subject: [PATCH 8/8] FMC: add a char-device mezzanine driver
-Message-ID: <d54d82397552e4e91cefef031e8300e87ec8a9b5.1371018406.git.rubini@gnudd.com>
+Subject: [PATCH 6/8] FMC: add a software mezzanine driver
+Message-ID: <7be26b13f841e433176a5d77ca9de1dd964b153a.1371018406.git.rubini@gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,334 +26,188 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver exports the memory area associated with the mezzanine card
-as a misc device, so users can access registers.
+This simple do-nothing mezzanine driver shows how to write a mezzanine
+driver, that can also handle interrupts reported by the carrier.
 
 Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
 Acked-by: Juan David Gonzalez Cobas <dcobas@cern.ch>
 Acked-by: Emilio G. Cota <cota@braap.org>
 Acked-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 ---
- Documentation/fmc/00-INDEX        |    5 +-
- Documentation/fmc/fmc-chardev.txt |   64 ++++++++++++
- drivers/fmc/Kconfig               |    8 ++
+ Documentation/fmc/00-INDEX        |    3 +
+ Documentation/fmc/fmc-trivial.txt |   17 ++++++
+ drivers/fmc/Kconfig               |    7 +++
  drivers/fmc/Makefile              |    1 +
- drivers/fmc/fmc-chardev.c         |  197 +++++++++++++++++++++++++++++++++++++
- 5 files changed, 274 insertions(+), 1 deletions(-)
- create mode 100644 Documentation/fmc/fmc-chardev.txt
- create mode 100644 drivers/fmc/fmc-chardev.c
+ drivers/fmc/fmc-trivial.c         |  101 +++++++++++++++++++++++++++++++++++++
+ 5 files changed, 129 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/fmc/fmc-trivial.txt
+ create mode 100644 drivers/fmc/fmc-trivial.c
 
 diff --git a/Documentation/fmc/00-INDEX b/Documentation/fmc/00-INDEX
-index 177c3e4..431c695 100644
+index 34df5cf..c22d687 100644
 --- a/Documentation/fmc/00-INDEX
 +++ b/Documentation/fmc/00-INDEX
-@@ -32,4 +32,7 @@ fmc-trivial.txt
- 	- about drivers/fmc/fmc-trivial.ko
+@@ -27,3 +27,6 @@ identifiers.txt
  
- fmc-write-eeprom.txt
--        - about drivers/fmc/fmc-write-eeprom.ko
-+	- about drivers/fmc/fmc-write-eeprom.ko
+ fmc-fakedev.txt
+ 	- about drivers/fmc/fmc-fakedev.ko
 +
-+fmc-chardev.txt
-+	- about drivers/fmc/fmc-chardev.ko
-diff --git a/Documentation/fmc/fmc-chardev.txt b/Documentation/fmc/fmc-chardev.txt
++fmc-trivial.txt
++	- about drivers/fmc/fmc-trivial.ko
+diff --git a/Documentation/fmc/fmc-trivial.txt b/Documentation/fmc/fmc-trivial.txt
 new file mode 100644
-index 0000000..d9ccb27
+index 0000000..d1910bc
 --- /dev/null
-+++ b/Documentation/fmc/fmc-chardev.txt
-@@ -0,0 +1,64 @@
-+fmc-chardev
++++ b/Documentation/fmc/fmc-trivial.txt
+@@ -0,0 +1,17 @@
++fmc-trivial
 +===========
 +
-+This is a simple generic driver, that allows user access by means of a
-+character device (actually, one for each mezzanine it takes hold of).
++The simple module fmc-trivial is just a simple client that registers an
++interrupt handler. I used it to verify the basic mechanism of the FMC
++bus and how interrupts worked.
 +
-+The char device is created as a misc device. Its name in /dev (as
-+created by udev) is the same name as the underlying FMC device. Thus,
-+the name can be a silly fmc-0000 look-alike if the device has no
-+identifiers nor bus_id, a more specific fmc-0400 if the device has a
-+bus-specific address but no associated name, or something like
-+fdelay-0400 if the FMC core can rely on both a mezzanine name and a bus
-+address.
++The module implements the generic FMC parameters, so it can program a
++different gateware file in each card. The whole list of parameters it
++accepts are:
 +
-+Currently the driver only supports read and write: you can lseek to the
-+desired address and read or write a register.
++`busid='
++`gateware='
++     Generic parameters. See mezzanine.txt
 +
-+The driver assumes all registers are 32-bit in size, and only accepts a
-+single read or write per system call. However, as a result of Unix read
-+and write semantics, users can simply fread or fwrite bigger areas in
-+order to dump or store bigger memory areas.
 +
-+There is currently no support for mmap, user-space interrupt management
-+and DMA buffers. They may be added in later versions, if the need
-+arises.
-+
-+The example below shows raw access to a SPEC card programmed with its
-+golden FPGA file, that features an SDB structure at offset 256 - i.e.
-+64 words.  The mezzanine's EEPROM in this case is not programmed, so the
-+default name is fmc-<bus><devfn>, and there are two cards in the system:
-+
-+  spusa.root# insmod fmc-chardev.ko
-+  [ 1073.339332] spec 0000:02:00.0: Driver has no ID: matches all
-+  [ 1073.345051] spec 0000:02:00.0: Created misc device "fmc-0200"
-+  [ 1073.350821] spec 0000:04:00.0: Driver has no ID: matches all
-+  [ 1073.356525] spec 0000:04:00.0: Created misc device "fmc-0400"
-+  spusa.root# ls -l /dev/fmc*
-+  crw------- 1 root root 10, 58 Nov 20 19:23 /dev/fmc-0200
-+  crw------- 1 root root 10, 57 Nov 20 19:23 /dev/fmc-0400
-+  spusa.root# dd bs=4 skip=64 count=1 if=/dev/fmc-0200 2> /dev/null | od -t x1z
-+  0000000 2d 42 44 53                                      >-BDS<
-+  0000004
-+
-+The simple program tools/fmc-mem in this package can access an FMC char
-+device and read or write a word or a whole area.  Actually, the program
-+is not specific to FMC at all, it just uses lseek, read and write.
-+
-+Its first argument is the device name, the second the offset, the third
-+(if any) the value to write and the optional last argument that must
-+begin with "+" is the number of bytes to read or write.  In case of
-+repeated reading data is written to stdout; repeated writes read from
-+stdin and the value argument is ignored.
-+
-+The following examples show reading the SDB magic number and the first
-+SDB record from a SPEC device programmed with its golden image:
-+
-+     spusa.root# ./fmc-mem /dev/fmc-0200 100
-+     5344422d
-+     spusa.root# ./fmc-mem /dev/fmc-0200 100 +40 | od -Ax -t x1z
-+     000000 2d 42 44 53 00 01 02 00 00 00 00 00 00 00 00 00  >-BDS............<
-+     000010 00 00 00 00 ff 01 00 00 00 00 00 00 51 06 00 00  >............Q...<
-+     000020 c9 42 a5 e6 02 00 00 00 11 05 12 20 2d 34 42 57  >.B......... -4BW<
-+     000030 73 6f 72 43 72 61 62 73 49 53 47 2d 00 20 20 20  >sorCrabsISG-.   <
-+     000040
++This driver is worth reading, in my opinion.
 diff --git a/drivers/fmc/Kconfig b/drivers/fmc/Kconfig
-index 2bb1953..c01cf45 100644
+index 505e96b..7eacef9 100644
 --- a/drivers/fmc/Kconfig
 +++ b/drivers/fmc/Kconfig
-@@ -40,4 +40,12 @@ config FMC_WRITE_EEPROM
- 	  its binary and the function carrier->reprogram to actually do it.
- 	  It is useful when the mezzanines are produced.
+@@ -25,4 +25,11 @@ config FMC_FAKEDEV
+ 	  that can be rewritten at run time and usef for matching
+ 	  mezzanines.
  
-+config FMC_CHARDEV
-+	tristate "FMC mezzanine driver that registers a char device"
++config FMC_TRIVIAL
++	tristate "FMC trivial mezzanine driver (software testing)"
 +	help
-+	  This driver matches every mezzanine device and allows user
-+	  space to read and write registers using a char device. It
-+	  can be used to write user-space drivers, or just get
-+	  aquainted with a mezzanine before writing its specific driver.
++	  This is a fake mezzanine driver, to show how FMC works and test it.
++	  The driver also handles interrupts (we used it with a real carrier
++	  before the mezzanines were produced)
 +
  endif # FMC
 diff --git a/drivers/fmc/Makefile b/drivers/fmc/Makefile
-index 13701fa..b945291 100644
+index 9832b79..52624e6 100644
 --- a/drivers/fmc/Makefile
 +++ b/drivers/fmc/Makefile
-@@ -10,3 +10,4 @@ fmc-y += fmc-dump.o
+@@ -8,3 +8,4 @@ fmc-y += fru-parse.o
+ fmc-y += fmc-dump.o
+ 
  obj-$(CONFIG_FMC_FAKEDEV) += fmc-fakedev.o
- obj-$(CONFIG_FMC_TRIVIAL) += fmc-trivial.o
- obj-$(CONFIG_FMC_WRITE_EEPROM) += fmc-write-eeprom.o
-+obj-$(CONFIG_FMC_CHARDEV) += fmc-chardev.o
-diff --git a/drivers/fmc/fmc-chardev.c b/drivers/fmc/fmc-chardev.c
++obj-$(CONFIG_FMC_TRIVIAL) += fmc-trivial.o
+diff --git a/drivers/fmc/fmc-trivial.c b/drivers/fmc/fmc-trivial.c
 new file mode 100644
-index 0000000..b071039
+index 0000000..d91b28c
 --- /dev/null
-+++ b/drivers/fmc/fmc-chardev.c
-@@ -0,0 +1,197 @@
++++ b/drivers/fmc/fmc-trivial.c
+@@ -0,0 +1,101 @@
 +/*
 + * Copyright (C) 2012 CERN (www.cern.ch)
 + * Author: Alessandro Rubini <rubini@gnudd.com>
 + *
-+ * Released according to the GNU GPL, version 2 or any later version.
-+ *
-+ * This work is part of the White Rabbit project, a research effort led
-+ * by CERN, the European Institute for Nuclear Research.
++ * Released to the public domain, as example to be reused
 + */
++
++/* A trivial fmc driver that can load a gateware file and reports interrupts */
 +#include <linux/module.h>
 +#include <linux/init.h>
-+#include <linux/list.h>
-+#include <linux/slab.h>
-+#include <linux/fs.h>
-+#include <linux/miscdevice.h>
-+#include <linux/spinlock.h>
++#include <linux/interrupt.h>
++#include <linux/gpio.h>
 +#include <linux/fmc.h>
-+#include <linux/uaccess.h>
 +
-+static LIST_HEAD(fc_devices);
-+static DEFINE_SPINLOCK(fc_lock);
++static struct fmc_driver t_drv; /* initialized later */
 +
-+struct fc_instance {
-+	struct list_head list;
-+	struct fmc_device *fmc;
-+	struct miscdevice misc;
++static irqreturn_t t_handler(int irq, void *dev_id)
++{
++	struct fmc_device *fmc = dev_id;
++
++	fmc->op->irq_ack(fmc);
++	dev_info(&fmc->dev, "received irq %i\n", irq);
++	return IRQ_HANDLED;
++}
++
++static struct fmc_gpio t_gpio[] = {
++	{
++		.gpio = FMC_GPIO_IRQ(0),
++		.mode = GPIOF_DIR_IN,
++		.irqmode = IRQF_TRIGGER_RISING,
++	}, {
++		.gpio = FMC_GPIO_IRQ(1),
++		.mode = GPIOF_DIR_IN,
++		.irqmode = IRQF_TRIGGER_RISING,
++	}
 +};
 +
-+/* at open time, we must identify our device */
-+static int fc_open(struct inode *ino, struct file *f)
-+{
-+	struct fmc_device *fmc;
-+	struct fc_instance *fc;
-+	int minor = iminor(ino);
-+
-+	list_for_each_entry(fc, &fc_devices, list)
-+		if (fc->misc.minor == minor)
-+			break;
-+	if (fc->misc.minor != minor)
-+		return -ENODEV;
-+	fmc = fc->fmc;
-+	if (try_module_get(fmc->owner) == 0)
-+		return -ENODEV;
-+
-+	f->private_data = fmc;
-+	return 0;
-+}
-+
-+static int fc_release(struct inode *ino, struct file *f)
-+{
-+	struct fmc_device *fmc = f->private_data;
-+	module_put(fmc->owner);
-+	return 0;
-+}
-+
-+/* read and write are simple after the default llseek has been used */
-+static ssize_t fc_read(struct file *f, char __user *buf, size_t count,
-+		       loff_t *offp)
-+{
-+	struct fmc_device *fmc = f->private_data;
-+	unsigned long addr;
-+	uint32_t val;
-+
-+	if (count < sizeof(val))
-+		return -EINVAL;
-+	count = sizeof(val);
-+
-+	addr = *offp;
-+	if (addr > fmc->memlen)
-+		return -ESPIPE; /* Illegal seek */
-+	val = fmc_readl(fmc, addr);
-+	if (copy_to_user(buf, &val, count))
-+		return -EFAULT;
-+	*offp += count;
-+	return count;
-+}
-+
-+static ssize_t fc_write(struct file *f, const char __user *buf, size_t count,
-+			loff_t *offp)
-+{
-+	struct fmc_device *fmc = f->private_data;
-+	unsigned long addr;
-+	uint32_t val;
-+
-+	if (count < sizeof(val))
-+		return -EINVAL;
-+	count = sizeof(val);
-+
-+	addr = *offp;
-+	if (addr > fmc->memlen)
-+		return -ESPIPE; /* Illegal seek */
-+	if (copy_from_user(&val, buf, count))
-+		return -EFAULT;
-+	fmc_writel(fmc, val, addr);
-+	*offp += count;
-+	return count;
-+}
-+
-+static const struct file_operations fc_fops = {
-+	.owner = THIS_MODULE,
-+	.open = fc_open,
-+	.release = fc_release,
-+	.llseek = generic_file_llseek,
-+	.read = fc_read,
-+	.write = fc_write,
-+};
-+
-+
-+/* Device part .. */
-+static int fc_probe(struct fmc_device *fmc);
-+static int fc_remove(struct fmc_device *fmc);
-+
-+static struct fmc_driver fc_drv = {
-+	.version = FMC_VERSION,
-+	.driver.name = KBUILD_MODNAME,
-+	.probe = fc_probe,
-+	.remove = fc_remove,
-+	/* no table: we want to match everything */
-+};
-+
-+/* We accept the generic busid parameter */
-+FMC_PARAM_BUSID(fc_drv);
-+
-+/* probe and remove must allocate and release a misc device */
-+static int fc_probe(struct fmc_device *fmc)
++static int t_probe(struct fmc_device *fmc)
 +{
 +	int ret;
 +	int index = 0;
 +
-+	struct fc_instance *fc;
-+
 +	if (fmc->op->validate)
-+		index = fmc->op->validate(fmc, &fc_drv);
++		index = fmc->op->validate(fmc, &t_drv);
 +	if (index < 0)
 +		return -EINVAL; /* not our device: invalid */
 +
-+	/* Create a char device: we want to create it anew */
-+	fc = kzalloc(sizeof(*fc), GFP_KERNEL);
-+	fc->fmc = fmc;
-+	fc->misc.minor = MISC_DYNAMIC_MINOR;
-+	fc->misc.fops = &fc_fops;
-+	fc->misc.name = kstrdup(dev_name(&fmc->dev), GFP_KERNEL);
++	ret = fmc->op->irq_request(fmc, t_handler, "fmc-trivial", IRQF_SHARED);
++	if (ret < 0)
++		return ret;
++	/* ignore error code of call below, we really don't care */
++	fmc->op->gpio_config(fmc, t_gpio, ARRAY_SIZE(t_gpio));
 +
-+	spin_lock(&fc_lock);
-+	ret = misc_register(&fc->misc);
-+	if (ret < 0) {
-+		kfree(fc->misc.name);
-+		kfree(fc);
-+	} else {
-+		list_add(&fc->list, &fc_devices);
-+	}
-+	spin_unlock(&fc_lock);
-+	dev_info(&fc->fmc->dev, "Created misc device \"%s\"\n",
-+		 fc->misc.name);
++	/* Reprogram, if asked to. ESRCH == no filename specified */
++	ret = -ESRCH;
++	if (fmc->op->reprogram)
++		ret = fmc->op->reprogram(fmc, &t_drv, "");
++	if (ret == -ESRCH)
++		ret = 0;
++	if (ret < 0)
++		fmc->op->irq_free(fmc);
++
++	/* FIXME: reprogram LM32 too */
 +	return ret;
 +}
 +
-+static int fc_remove(struct fmc_device *fmc)
++static int t_remove(struct fmc_device *fmc)
 +{
-+	struct fc_instance *fc;
-+
-+	list_for_each_entry(fc, &fc_devices, list)
-+		if (fc->fmc == fmc)
-+			break;
-+	if (fc->fmc != fmc) {
-+		dev_err(&fmc->dev, "remove called but not found\n");
-+		return -ENODEV;
-+	}
-+
-+	spin_lock(&fc_lock);
-+	list_del(&fc->list);
-+	misc_deregister(&fc->misc);
-+	kfree(fc->misc.name);
-+	kfree(fc);
-+	spin_unlock(&fc_lock);
-+
++	fmc->op->irq_free(fmc);
 +	return 0;
 +}
 +
++static struct fmc_driver t_drv = {
++	.version = FMC_VERSION,
++	.driver.name = KBUILD_MODNAME,
++	.probe = t_probe,
++	.remove = t_remove,
++	/* no table, as the current match just matches everything */
++};
 +
-+static int fc_init(void)
++ /* We accept the generic parameters */
++FMC_PARAM_BUSID(t_drv);
++FMC_PARAM_GATEWARE(t_drv);
++
++static int t_init(void)
 +{
 +	int ret;
 +
-+	ret = fmc_driver_register(&fc_drv);
++	ret = fmc_driver_register(&t_drv);
 +	return ret;
 +}
 +
-+static void fc_exit(void)
++static void t_exit(void)
 +{
-+	fmc_driver_unregister(&fc_drv);
++	fmc_driver_unregister(&t_drv);
 +}
 +
-+module_init(fc_init);
-+module_exit(fc_exit);
++module_init(t_init);
++module_exit(t_exit);
 +
-+MODULE_LICENSE("GPL");
++MODULE_LICENSE("GPL and additional rights"); /* public domain */
 -- 
 1.7.7.2
