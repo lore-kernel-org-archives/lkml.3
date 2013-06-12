@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757169Ab3FLQzA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 12:55:00 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:41697 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755017Ab3FLQy7 (ORCPT
+	id S1757266Ab3FLQ6Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 12:58:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50635 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754808Ab3FLQ6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 12:54:59 -0400
-Message-ID: <51B8A7E1.1020708@codeaurora.org>
-Date: Wed, 12 Jun 2013 09:54:57 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Wed, 12 Jun 2013 12:58:23 -0400
+Date: Wed, 12 Jun 2013 09:58:58 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/79] 3.9.6-stable review
+Message-ID: <20130612165858.GA17365@kroah.com>
+References: <20130611195312.352656079@linuxfoundation.org>
+ <B8EFE96D1287C24090BAD9D858E15E61568D7C@sisaex02sj>
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Saravana Kannan <skannan@codeaurora.org>
-Subject: Re: [PATCH 12/12] ARM: msm: Migrate to common clock framework
-References: <1370373938-32417-1-git-send-email-sboyd@codeaurora.org> <1370373938-32417-13-git-send-email-sboyd@codeaurora.org> <20130611222832.8816.77120@quantum>
-In-Reply-To: <20130611222832.8816.77120@quantum>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <B8EFE96D1287C24090BAD9D858E15E61568D7C@sisaex02sj>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/13 15:28, Mike Turquette wrote:
-> Quoting Stephen Boyd (2013-06-04 12:25:38)
->> Move the existing clock code in mach-msm to the common clock
->> framework. We lose our capability to set the rate of and enable a
->> clock through debugfs. This is ok though because the debugfs
->> features are mainly used for testing and development of new clock
->> code.
->>
->> To maintain compatibility with the original MSM clock code we
->> make a wrapper for clk_reset() that calls the struct msm_clk
->> specific reset function. This is necessary for the usb and sdcc
->> devices on MSM until a better suited API is made available.
->>
->> Cc: Saravana Kannan <skannan@codeaurora.org>
->> Cc: Mike Turquette <mturquette@linaro.org>
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> I just went through this quickly and nothing popped out at me.  Nice
-> diffstat btw!  Do you have any plans to move this to drivers/clk/msm ?
->
-> Acked-by: Mike Turquette <mturquette@linaro.org>
+On Wed, Jun 12, 2013 at 03:49:22PM +0000, Shuah Khan wrote:
+> On 06/11/2013 04:02 PM, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.9.6 release.
+> > There are 79 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >
+> > Responses should be made by Thu Jun 13 19:50:17 UTC 2013.
+> > Anything received after that time might be too late.
+> >
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.9.6-rc1.gz
+> > and the diffstat can be found below.
+> >
+> > thanks,
+> >
+> > greg k-h
+> >
+> 
+> Patches applied cleanly to 3.0.81, 3.4.48, and 3.9.5
+> 
+> Compiled and booted on the following systems:
+> 
+> Samsung Series 9 900X4C Intel Corei5:
+>      (3.4.49-rc1, and 3.9.6-rc1)
+> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics:
+>      (3.0.82-rc1, 3.4.49-rc1, and 3.9.6-rc1)
+> 
+> dmesgs for all releases look good. No regressions compared to the previous
+> dmesgs for each of these releases.
 
-Thanks Mike.
+Wonderful, thanks for testing and letting me know.
 
-I plan to add mmio support under drivers/clk/msm. Moving this proc_comm
-based code to drivers/clk/msm is possible but it would need to depend on
-the 3 architectures that use it so that it isn't available or compiled
-on our DT based platforms. We can do that later I suppose.
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+greg k-h
