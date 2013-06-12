@@ -1,223 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758017Ab3FLVuu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 17:50:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:59925 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755220Ab3FLVus (ORCPT
+	id S1758006Ab3FLVy7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 17:54:59 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:35352 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755220Ab3FLVy5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 17:50:48 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Thomas Gleixner <tglx@linutronix.de>, kernel@pengutronix.de
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Date: Wed, 12 Jun 2013 23:50:35 +0200
-Message-Id: <1371073835-10639-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.8.3
+	Wed, 12 Jun 2013 17:54:57 -0400
 MIME-Version: 1.0
+In-Reply-To: <20130612172132.GG27284@hpx.cz>
+References: <20130612172132.GG27284@hpx.cz>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 12 Jun 2013 15:54:36 -0600
+Message-ID: <CAErSpo5XvTHFf+ZO0GAxKm0xk+fo9Hm_G6Ebz1UmMkLUi8CPyw@mail.gmail.com>
+Subject: Re: pcie aspm link setup, grandparent instead of parent?
+To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Joe Lawrence <Joe.Lawrence@stratus.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-Subject: [PATCH v4] irqchip: Add support for ARMv7-M's NVIC
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on metis.ext.pengutronix.de)
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This interrupt controller is found on Cortex-M3 and Cortex-M4 machines.
+[+cc linux-pci, Myron, Joe]
 
-Support for this controller appeared in Catalin's Cortex tree based on
-2.6.33 but was nearly completely rewritten.
-
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
-
-Notes:
-    Changes since v3, sent with
-    Message-Id: <1366214540-31166-1-git-send-email-u.kleine-koenig@pengutronix.de>:
-    
-     - use generic chip
-     - rename nvic_do_IRQ to nvic_handle_irq
-    
-    This depends on the stuff currently in tip/irq/for-arm
-
- arch/arm/kernel/entry-v7m.S |   2 +-
- drivers/irqchip/Kconfig     |   5 ++
- drivers/irqchip/Makefile    |   1 +
- drivers/irqchip/irq-nvic.c  | 116 ++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 123 insertions(+), 1 deletion(-)
- create mode 100644 drivers/irqchip/irq-nvic.c
-
-diff --git a/arch/arm/kernel/entry-v7m.S b/arch/arm/kernel/entry-v7m.S
-index e00621f..52b2643 100644
---- a/arch/arm/kernel/entry-v7m.S
-+++ b/arch/arm/kernel/entry-v7m.S
-@@ -49,7 +49,7 @@ __irq_entry:
- 	mov	r1, sp
- 	stmdb	sp!, {lr}
- 	@ routine called with r0 = irq number, r1 = struct pt_regs *
--	bl	nvic_do_IRQ
-+	bl	nvic_handle_irq
- 
- 	pop	{lr}
- 	@
-diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-index 4a33351..8317a7e 100644
---- a/drivers/irqchip/Kconfig
-+++ b/drivers/irqchip/Kconfig
-@@ -10,6 +10,11 @@ config ARM_GIC
- config GIC_NON_BANKED
- 	bool
- 
-+config ARM_NVIC
-+	bool
-+	select IRQ_DOMAIN
-+	select GENERIC_IRQ_CHIP
-+
- config ARM_VIC
- 	bool
- 	select IRQ_DOMAIN
-diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-index cda4cb5..4bb277c 100644
---- a/drivers/irqchip/Makefile
-+++ b/drivers/irqchip/Makefile
-@@ -10,6 +10,7 @@ obj-$(CONFIG_METAG_PERFCOUNTER_IRQS)	+= irq-metag.o
- obj-$(CONFIG_ARCH_SUNXI)		+= irq-sun4i.o
- obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-shirq.o
- obj-$(CONFIG_ARM_GIC)			+= irq-gic.o
-+obj-$(CONFIG_ARM_NVIC)			+= irq-nvic.o
- obj-$(CONFIG_ARM_VIC)			+= irq-vic.o
- obj-$(CONFIG_SIRF_IRQ)			+= irq-sirfsoc.o
- obj-$(CONFIG_RENESAS_INTC_IRQPIN)	+= irq-renesas-intc-irqpin.o
-diff --git a/drivers/irqchip/irq-nvic.c b/drivers/irqchip/irq-nvic.c
-new file mode 100644
-index 0000000..2f1d305
---- /dev/null
-+++ b/drivers/irqchip/irq-nvic.c
-@@ -0,0 +1,116 @@
-+/*
-+ * drivers/irq/irq-nvic.c
-+ *
-+ * Copyright (C) 2008 ARM Limited, All Rights Reserved.
-+ * Copyright (C) 2013 Pengutronix
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Support for the Nested Vectored Interrupt Controller found on the
-+ * ARMv7-M CPUs (Cortex-M3/M4)
-+ */
-+#define pr_fmt(fmt)	KBUILD_MODNAME ": " fmt
-+
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/irq.h>
-+#include <linux/irqdomain.h>
-+
-+#include <asm/v7m.h>
-+#include <asm/exception.h>
-+
-+#include "irqchip.h"
-+
-+#define NVIC_ISER			0x000
-+#define NVIC_ICER			0x080
-+#define NVIC_IPR			0x300
-+
-+#define NVIC_MAX_BANKS		16
-+/*
-+ * Each bank handles 32 irqs. Only the 16th (= last) bank handles only
-+ * 16 irqs.
-+ */
-+#define NVIC_MAX_IRQ		((NVIC_MAX_BANKS - 1) * 32 + 16)
-+
-+static struct irq_domain *nvic_irq_domain;
-+
-+asmlinkage void __exception_irq_entry
-+nvic_handle_irq(irq_hw_number_t hwirq, struct pt_regs *regs)
-+{
-+	unsigned int irq = irq_linear_revmap(nvic_irq_domain, hwirq);
-+
-+	handle_IRQ(irq, regs);
-+}
-+
-+static void nvic_eoi(struct irq_data *d)
-+{
-+	/*
-+	 * This is a no-op as end of interrupt is signaled by the exception
-+	 * return sequence.
-+	 */
-+}
-+
-+static int __init nvic_of_init(struct device_node *node,
-+			       struct device_node *parent)
-+{
-+	void __iomem *nvic_base;
-+	unsigned int irqs, i, ret;
-+	unsigned numbanks = (readl_relaxed(V7M_SCS_ICTR) &
-+			     V7M_SCS_ICTR_INTLINESNUM_MASK) + 1;
-+	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
-+
-+	nvic_base = of_iomap(node, 0);
-+	if (!nvic_base) {
-+		pr_warn("unable to map nvic registers\n");
-+		return -ENOMEM;
-+	}
-+
-+	irqs = numbanks * 32;
-+	if (irqs > NVIC_MAX_IRQ)
-+		irqs = NVIC_MAX_IRQ;
-+
-+	nvic_irq_domain =
-+		irq_domain_add_linear(node, irqs, &irq_generic_chip_ops, NULL);
-+	if (!nvic_irq_domain) {
-+		pr_warn("Failed to allocate irq domain\n");
-+		return -ENOMEM;
-+	}
-+
-+	ret = irq_alloc_domain_generic_chips(nvic_irq_domain, 32, numbanks,
-+					     "nvic_irq", handle_fasteoi_irq,
-+					     clr, 0, IRQ_GC_INIT_MASK_CACHE);
-+	if (ret) {
-+		pr_warn("Failed to allocate irq chips\n");
-+		irq_domain_remove(nvic_irq_domain);
-+		return ret;
-+	}
-+
-+	for (i = 0; i < numbanks; ++i) {
-+		struct irq_chip_generic *gc =
-+			irq_get_domain_generic_chip(nvic_irq_domain, 32 * i);
-+		gc->reg_base = nvic_base + 4 * i;
-+		gc->chip_types[0].regs.enable = NVIC_ISER;
-+		gc->chip_types[0].regs.disable = NVIC_ICER;
-+		gc->chip_types[0].chip.irq_mask = irq_gc_mask_disable_reg;
-+		gc->chip_types[0].chip.irq_unmask = irq_gc_unmask_enable_reg;
-+		gc->chip_types[0].chip.irq_eoi = nvic_eoi;
-+	}
-+
-+	/* Disable all interrupts */
-+	for (i = 0; i < irqs; i += 32)
-+		writel_relaxed(~0, nvic_base + NVIC_ICER + i * 4 / 32);
-+
-+	/* Set priority on all interrupts */
-+	for (i = 0; i < irqs; i += 4)
-+		writel_relaxed(0, nvic_base + NVIC_IPR + i);
-+
-+	return 0;
-+}
-+IRQCHIP_DECLARE(armv7m_nvic, "arm,armv7m-nvic", nvic_of_init);
--- 
-1.8.3
-
+On Wed, Jun 12, 2013 at 11:21 AM, Radim Krčmář <rkrcmar@redhat.com> wrote:
+> Hello,
+>
+> as a consequence of hitting a NULL dereference bug[1] while downstream
+> aspm is setting up link_state, I started to wonder why is the code
+> skipping its parent bus in favour of grandparent's link_state.[2]
+>
+> Is this right? (I have no device to test on ...)
+>
+> Thanks.
+>
+> ---
+> 1: https://bugzilla.redhat.com/show_bug.cgi?id=972381
+>    The bug is hit because "pdev->bus->parent" has NULL "->parent" and thus
+>    NULL "->self".
+> 2: "pdev = bus->self", so "pdev->bus->parent == bus->parent->parent"
+>
+>
+> diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
+> index 403a443..d58e282 100644
+> --- a/drivers/pci/pcie/aspm.c
+> +++ b/drivers/pci/pcie/aspm.c
+> @@ -527,7 +527,7 @@ static struct pcie_link_state *alloc_pcie_link_state(struct pci_dev *pdev)
+>         link->pdev = pdev;
+>         if (pci_pcie_type(pdev) == PCI_EXP_TYPE_DOWNSTREAM) {
+>                 struct pcie_link_state *parent;
+> -               parent = pdev->bus->parent->self->link_state;
+> +               parent = pdev->bus->self->link_state;
+>                 if (!parent) {
+>                         kfree(link);
+>                         return NULL;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
