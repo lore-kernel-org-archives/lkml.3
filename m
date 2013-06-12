@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab3FLIWS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 04:22:18 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:33729 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754369Ab3FLIWO (ORCPT
+	id S1755037Ab3FLIYQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 04:24:16 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:53376 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011Ab3FLIYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 04:22:14 -0400
+	Wed, 12 Jun 2013 04:24:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130612073806.GG4107@intel.com>
+References: <1370435206-13474-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1370435206-13474-3-git-send-email-andriy.shevchenko@linux.intel.com>
+	<20130612050829.GB4107@intel.com>
+	<CAHp75Ver2xo2f9crQZkAmJcTF=5cZZa3NgvufPqQW3+uTXffJA@mail.gmail.com>
+	<20130612073806.GG4107@intel.com>
+Date: Wed, 12 Jun 2013 13:54:13 +0530
+Message-ID: <CAKohpon6hzQfkiEzfi_b7AT3KxyE88iLMGJY30etLj3VZV4cPQ@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] dma: move dw_dmac driver to an own directory
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com, arnd@arndb.de,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH 11/11] cpufreq: X86_AMD_FREQ_SENSITIVITY: select CPU_FREQ_TABLE
-Date: Wed, 12 Jun 2013 13:45:18 +0530
-Message-Id: <3f143e3112c038c805ea4e66ea91d12c5800acdf.1371022830.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1371022830.git.viresh.kumar@linaro.org>
-References: <cover.1371022830.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1371022830.git.viresh.kumar@linaro.org>
-References: <cover.1371022830.git.viresh.kumar@linaro.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        spear-devel <spear-devel@list.st.com>, Arnd Bergmann <arnd@arndb.de>,
+        Felipe Balbi <balbi@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This CPUFreq driver uses APIs from freq_table.c and so must select
-CPU_FREQ_TABLE.
+On 12 June 2013 13:08, Vinod Koul <vinod.koul@intel.com> wrote:
 
-Cc: Jacob Shin <jacob.shin@amd.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/Kconfig.x86 | 1 +
- 1 file changed, 1 insertion(+)
+> Something like
+> config DW_DMAC_BIG_ENDIAN_IO
+>         tristate
+>
+> config DW_DMAC
+>         select DW_DMAC_BIG_ENDIAN_IO
+>
+> I belive DW_DMAC is for AVR support and the PCI ones is different right.
 
-diff --git a/drivers/cpufreq/Kconfig.x86 b/drivers/cpufreq/Kconfig.x86
-index 6bd63d6..e2b6eab 100644
---- a/drivers/cpufreq/Kconfig.x86
-+++ b/drivers/cpufreq/Kconfig.x86
-@@ -132,6 +132,7 @@ config X86_POWERNOW_K8
- config X86_AMD_FREQ_SENSITIVITY
- 	tristate "AMD frequency sensitivity feedback powersave bias"
- 	depends on CPU_FREQ_GOV_ONDEMAND && X86_ACPI_CPUFREQ && CPU_SUP_AMD
-+	select CPU_FREQ_TABLE
- 	help
- 	  This adds AMD-specific powersave bias function to the ondemand
- 	  governor, which allows it to make more power-conscious frequency
--- 
-1.7.12.rc2.18.g61b472e
-
+No. DW_DMAC is for ARM as well.
