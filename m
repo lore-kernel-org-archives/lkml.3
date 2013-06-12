@@ -1,100 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757671Ab3FLRLw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 13:11:52 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44696 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757244Ab3FLRLv (ORCPT
+	id S1757723Ab3FLRMI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 13:12:08 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:40077 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757685Ab3FLRMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 13:11:51 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, "Patil, Rachna" <rachna@ti.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Subject: [PATCH 13/21] arm: am33xx: add TSC/ADC mfd device support
-Date: Wed, 12 Jun 2013 18:58:14 +0200
-Message-Id: <1371056302-12714-14-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1371056302-12714-1-git-send-email-bigeasy@linutronix.de>
-References: <1371056302-12714-1-git-send-email-bigeasy@linutronix.de>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 12 Jun 2013 13:12:05 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+IlA/g/42dMVvHrCYRHPcQ
+Date: Wed, 12 Jun 2013 10:12:00 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Afzal Mohammed <afzal@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v2 02/14] ARM: OMAP2+: AM43x: Kconfig
+Message-ID: <20130612171200.GL8164@atomide.com>
+References: <cover.1369658705.git.afzal@ti.com>
+ <7642e0c701680ea94a8cc84059ff19e500813bf1.1369658705.git.afzal@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7642e0c701680ea94a8cc84059ff19e500813bf1.1369658705.git.afzal@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Patil, Rachna" <rachna@ti.com>
+* Afzal Mohammed <afzal@ti.com> [130527 07:41]:
+> --- a/arch/arm/mach-omap2/Kconfig
+> +++ b/arch/arm/mach-omap2/Kconfig
+> @@ -149,6 +149,16 @@ config SOC_AM33XX
+>  	select MULTI_IRQ_HANDLER
+>  	select COMMON_CLK
+>  
+> +config SOC_AM43XX
+> +	bool "TI AM43x"
+> +	depends on ARCH_OMAP2PLUS
+> +	default y
+> +	select CPU_V7
+> +	select MULTI_IRQ_HANDLER
+> +	select ARM_GIC
+> +	select COMMON_CLK
+> +	select MACH_OMAP_GENERIC
+> +
+>  config OMAP_PACKAGE_ZAF
+>         bool
 
-Add support for core multifunctional device along
-with its clients touchscreen and ADC.
+I've updated this patch to remove the "default y" and
+"depends on ARCH_OMAP2PLUS" entries for the usual reasons
+and applied the first ten patches into omap-for-v3.11/soc.
 
-Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-Signed-off-by: Patil, Rachna <rachna@ti.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
----
- arch/arm/boot/dts/am335x-evm.dts |   14 ++++++++++++++
- arch/arm/boot/dts/am33xx.dtsi    |   18 ++++++++++++++++++
- 2 files changed, 32 insertions(+)
+Regards,
 
-diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
-index 0423298..26fea97 100644
---- a/arch/arm/boot/dts/am335x-evm.dts
-+++ b/arch/arm/boot/dts/am335x-evm.dts
-@@ -244,3 +244,17 @@
- &cpsw_emac1 {
- 	phy_id = <&davinci_mdio>, <1>;
- };
-+
-+&tscadc {
-+	status = "okay";
-+	tsc {
-+		ti,wires = <4>;
-+		ti,x-plate-resistance = <200>;
-+		ti,coordiante-readouts = <5>;
-+		ti,wire-config = <0x00 0x11 0x22 0x33>;
-+	};
-+
-+	adc {
-+		ti,adc-channels = <4>;
-+	};
-+};
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index 1460d9b..4ad7797 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -404,6 +404,24 @@
- 			ti,hwmods = "wkup_m3";
- 		};
- 
-+		tscadc: tscadc@44e0d000 {
-+			compatible = "ti,am3359-tscadc";
-+			reg = <0x44e0d000 0x1000>;
-+			interrupt-parent = <&intc>;
-+			interrupts = <16>;
-+			ti,hwmods = "adc_tsc";
-+			status = "disabled";
-+
-+			tsc {
-+				compatible = "ti,am3359-tsc";
-+			};
-+			am335x_adc: adc {
-+				#io-channel-cells = <1>;
-+				compatible = "ti,am3359-adc";
-+			};
-+
-+		};
-+
- 		gpmc: gpmc@50000000 {
- 			compatible = "ti,am3352-gpmc";
- 			ti,hwmods = "gpmc";
--- 
-1.7.10.4
-
+Tony
