@@ -1,65 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780Ab3FLHnb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 03:43:31 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:61741 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824Ab3FLHn3 (ORCPT
+	id S1755968Ab3FLHnr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 03:43:47 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:35336 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755886Ab3FLHnp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 03:43:29 -0400
+	Wed, 12 Jun 2013 03:43:45 -0400
+X-AuditID: 85900ec0-d24c6b900000151e-5b-51b826ae9ae4
+Subject: [PATCH V3 0/1] kvm: Output TSC offset
+To: Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
+        Gleb Natapov <gleb@redhat.com>
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: David Sharp <dhsharp@google.com>, yrl.pp-manager.tt@hitachi.com,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 12 Jun 2013 16:43:41 +0900
+Message-ID: <20130612074341.25553.56877.stgit@yunodevel>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <20130612050829.GB4107@intel.com>
-References: <1370435206-13474-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1370435206-13474-3-git-send-email-andriy.shevchenko@linux.intel.com>
-	<20130612050829.GB4107@intel.com>
-Date: Wed, 12 Jun 2013 10:43:29 +0300
-Message-ID: <CAHp75Ver2xo2f9crQZkAmJcTF=5cZZa3NgvufPqQW3+uTXffJA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] dma: move dw_dmac driver to an own directory
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        spear-devel <spear-devel@list.st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Felipe Balbi <balbi@ti.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 8:08 AM, Vinod Koul <vinod.koul@intel.com> wrote:
-> On Wed, Jun 05, 2013 at 03:26:44PM +0300, Andy Shevchenko wrote:
->> The dw_dmac driver is going to be split into multiple files. To make this more
->> convenient move it to an own directory.
->>
->> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
->> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
->> Acked-by: Arnd Bergmann <arnd@arndb.de>
->> ---
->> +config DW_DMAC
->> +     tristate "Synopsys DesignWare AHB DMA support"
->> +     depends on GENERIC_HARDIRQS
->> +     select DMA_ENGINE
->> +     default y if CPU_AT32AP7000
->> +     help
->> +       Support the Synopsys DesignWare AHB DMA controller. This
->> +       can be integrated in chips such as the Atmel AT32ap7000.
->> +
->> +config DW_DMAC_BIG_ENDIAN_IO
->> +     bool "Use big endian I/O register access"
->> +     default y if AVR32
->> +     depends on DW_DMAC
->> +     help
->> +       Say yes here to use big endian I/O access when reading and writing
->> +       to the DMA controller registers. This is needed on some platforms,
->> +       like the Atmel AVR32 architecture.
-> I know this is derived but should it be selected if AVR32 is defined, this stuff
-> should be user configurable..
+Hi All,
 
-I'm not sure I get what you meant. User can choose that option via
-make menuconfig or editing plain .config file.
-Or you meant this should be run-time configurable?
+I'd like to propose a patch which adds a tracepoint at write_tsc_offset for
+tracing guests TSC offset changes. It is required for sorting the trace data of
+a guest and the host in chronological order.
 
---
-With Best Regards,
-Andy Shevchenko
+In a virtualization environment, it is difficult to analyze performance
+problems, such as a delay of I/O request on a guest. This is because multiple
+guests operate on the host. One of approaches for solving such kind of problems
+is to sort trace data of guests and the host in chronological order.
+
+Raw TSC can be chosen as a timestamp of ftrace. I think TSC is useful for
+merging trace data in chronological order by two reasons. One of the reasons is 
+that guests can directly read raw TSC from the CPU using rdtsc operation. This
+means that raw TSC value is not software clock like sched_clock, so we don't
+need to consider about how the timestamp is calculated. The other is that TSC
+of recent x86 CPUs is constantly incremented. This means that we don't need to
+worry about pace of the timestamp. Therefore, choosing TSC as a timestamp for
+tracing is reasonable to integrate trace data of guests and a host.
+
+Here, we need to consider about just one matter for using TSC on guests. TSC
+value on a guest is always the host TSC plus the guest's "TSC offset". In other
+words, to merge trace data using TSC as timestamp in chronological order, we
+need to consider TSC offset of the guest.
+
+However, only the host kernel can read the TSC offset from VMCS and TSC offset
+is not output in anywhere now. In other words, tools in userland cannot get
+the TSC offset value, so we cannot merge trace data of guest and the host in
+chronological order. Therefore, I think the TSC offset should be exported for
+userland tools.
+
+In this patch, TSC offset is exported by the tracepoint kvm_write_tsc_offset
+on the host. TSC offset events will be very rare event because guests may
+seldom execute write_tsc. So if we enable this event for a normal buffer of
+ftrace, the events will be overwritten by other events. For a recent linux
+kernel, a multiple buffer function is available. So, I recommend to enable
+this event for a sub buffer of ftrace.
+
+<Example>
+We assume that wakeup-latency for a command is big on a guest. Normally
+we will use ftrace's wakeup-latency tracer or event tracer on the guest, but we
+may not be able to solve this problem. This is because guests often exit to
+the host for several reasons. In the next, we will use TSC as ftrace's timestamp
+and record the trace data on the guest and the host. Then, we get following
+data:
+
+ /* guest data */
+            comm-3826  [000] d...49836825726903: sched_wakeup: [detail]
+            comm-3826  [000] d...49836832225344: sched_switch: [detail]
+ /* host data */
+        qemu-kvm-2687  [003] d...50550079203669: kvm_exit: [detail]
+        qemu-kvm-2687  [003] d...50550079206816: kvm_entry: [detail]
+        qemu-kvm-2687  [003] d...50550079240656: kvm_exit: [detail]
+        qemu-kvm-2687  [003] d...50550079243467: kvm_entry: [detail]
+        qemu-kvm-2687  [003] d...50550079256103: kvm_exit: [detail]
+        qemu-kvm-2687  [003] d...50550079268391: kvm_entry: [detail]
+        qemu-kvm-2687  [003] d...50550079280829: kvm_exit: [detail]
+        qemu-kvm-2687  [003] d...50550079286028: kvm_entry: [detail]
+
+Since TSC offset is not considered, these data cannot be merged. If this trace
+data is shown like as follows, we will be able to understand the reason:
+
+        qemu-kvm-2687  [003] d...50550079203669: kvm_exit: [detail]
+        qemu-kvm-2687  [003] d...50550079206816: kvm_entry: [detail]
+            comm-3826  [000] d.h.49836825726903: sched_wakeup: [detail] <=
+        qemu-kvm-2687  [003] d...50550079240656: kvm_exit: [detail]
+        qemu-kvm-2687  [003] d...50550079243467: kvm_entry: [detail]
+        qemu-kvm-2687  [003] d...50550079256103: kvm_exit: [detail]
+        qemu-kvm-2687  [003] d...50550079268391: kvm_entry: [detail]
+            comm-3826  [000] d...49836832225344: sched_switch: [detail] <=
+        qemu-kvm-2687  [003] d...50550079280829: kvm_exit: [detail]
+        qemu-kvm-2687  [003] d...50550079286028: kvm_entry: [detail]
+
+In this case, we can understand wakeup-latency was big due to exit to host
+twice. Getting this data sorted in chronological order is our goal.
+
+To merge the data like previous pattern, we apply this patch. Then, we can
+get TSC offset of the guest as follows:
+
+# cat /sys/kernel/debug/tracing/instances/tsc_offset/trace
+.. d...4300151845072: kvm_write_tsc_offset: vcpu=0 prev=0 next=18446739773557710924
+                                                        ^      ^^^^^^^^^^^^^^^^^^^^
+
+We use this TSC offset value to a merge script and obtain the following data:
+
+$ ./trace-merge.pl -g guest_data -h host_data -t 18446739773557710924
+
+h        qemu-kvm-2687  [003] d...50550079203669: kvm_exit: [detail]
+h        qemu-kvm-2687  [003] d...50550079206816: kvm_entry: [detail]
+g            comm-3826  [000] d.h.50550079226331: sched_wakeup: [detail] <=
+h        qemu-kvm-2687  [003] d...50550079240656: kvm_exit: [detail]
+h        qemu-kvm-2687  [003] d...50550079243467: kvm_entry: [detail]
+h        qemu-kvm-2687  [003] d...50550079256103: kvm_exit: [detail]
+h        qemu-kvm-2687  [003] d...50550079268391: kvm_entry: [detail]
+g            comm-3826  [000] d...50550079279266: sched_switch: [detail] <=
+h        qemu-kvm-2687  [003] d...50550079280829: kvm_exit: [detail]
+h        qemu-kvm-2687  [003] d...50550079286028: kvm_entry: [detail]
+|
+\----guest/host
+
+In this summary, I suggest the patch which TSC offset for each guest can be
+output on the host.
+
+As one example, I will send a merge tool. This tool assumes the guest doesn't
+execute write_tsc.
+
+Changes in V2:
+- Use tracepoint for outputting TSC offset value instead of printk() [1/1]
+
+Changes in V3:
+- Add tracepoint in svm.c [1/1]
+- Record vcpu_id [1/1]
+- Change "previous=" to "prev=" in output result [1/1]
+
+Thanks!
+
+---
+
+Yoshihiro YUNOMAE (1):
+      kvm: Add a tracepoint write_tsc_offset
+
+
+ arch/x86/kvm/svm.c   |   10 +++++++++-
+ arch/x86/kvm/trace.h |   21 +++++++++++++++++++++
+ arch/x86/kvm/vmx.c   |    7 ++++++-
+ arch/x86/kvm/x86.c   |    1 +
+ 4 files changed, 37 insertions(+), 2 deletions(-)
+
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
