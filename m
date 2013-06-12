@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149Ab3FLLf4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 07:35:56 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63748 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878Ab3FLLfy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 07:35:54 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        spear-devel <spear-devel@list.st.com>, Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH v2 2/4] dma: move dw_dmac driver to an own directory
-Date: Wed, 12 Jun 2013 13:36:08 +0200
-Message-ID: <3071989.BUSYQuLaN0@wuerfel>
-User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <20130612090202.GM4107@intel.com>
-References: <20130612050829.GB4107@intel.com> <CAHp75VdKsMgdZcA72-eJZWV1cyc+Xkskrpr0i_QBMOZtV6tpeg@mail.gmail.com> <20130612090202.GM4107@intel.com>
+	id S1756218Ab3FLLgz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 07:36:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32441 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750878Ab3FLLgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 07:36:54 -0400
+Message-ID: <51B85E26.8000303@redhat.com>
+Date: Wed, 12 Jun 2013 07:40:22 -0400
+From: Brian Foster <bfoster@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:/ShcwxVJoxoktIHwru5o5N51FJpX0hxdrbSuaTZ/pRg
- J/kp93DtX4zaeqo/C63QEewyO/b0+pkzn/IGBBq4dur+S3bvNb
- rDR0RUiIrkwTHLrv+4ojO83PeY+iFsUVjNO1VBBxGfrmjaPtVI
- nikYcqr4MIpdeMteJKswPFvOoGP237b7CmzaVM6mbB1t/ZrgHR
- H8uB0/Q6QOrkvc/TJ5Iz8aHWFYXWrnKSd2yjHT069NTi+JHGKM
- 4fdvvpJYaUtZlDP1NAxbCQZIbZOwoUVNfiaH8Pw5U/lik4+l3A
- fD2+Qs5HBuzBKwvRA5ba0O3skK9EkBkZxXA8Idul+xUBB2NLJv
- mOPNmC3+vHCoodbWFy0k=
+To: Maxim Patlasov <MPatlasov@parallels.com>
+CC: miklos@szeredi.hu, fuse-devel@lists.sourceforge.net, avati@redhat.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH] fuse: hold i_mutex in fuse_file_fallocate()
+References: <20130611105714.24455.38409.stgit@maximpc.sw.ru>
+In-Reply-To: <20130611105714.24455.38409.stgit@maximpc.sw.ru>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 12 June 2013 14:32:02 Vinod Koul wrote:
->  config DW_DMAC
->         tristate "Synopsys DesignWare AHB DMA platform driver"
->         select DW_DMAC_CORE
-> +       select DW_DMAC_BIG_ENDIAN_IO if ARCH=AVR32
->         default y if CPU_AT32AP7000
->         help
->           Support the Synopsys DesignWare AHB DMA controller. This
+On 06/11/2013 06:59 AM, Maxim Patlasov wrote:
+> Changing size of a file on server and local update (fuse_write_update_size)
+> should be always protected by inode->i_mutex. Otherwise a race like this is
+> possible:
+> 
+> 1. Process 'A' calls fallocate(2) to extend file (~FALLOC_FL_KEEP_SIZE).
+> fuse_file_fallocate() sends FUSE_FALLOCATE request to the server.
+> 2. Process 'B' performs ordinary buffered write(2) with a length big enough
+> to extend the file beyond "offset + length" of fallocate call.
+> 3. Process 'A' resumes execution of fuse_file_fallocate() and calls
+> fuse_write_update_size(inode, offset + length). But 'offset + length' was
+> obsoleted by write from previous step.
+> 
 
-I assume you have not actually tested this on AVR32?
+Hi Maxim,
 
-The Kconfig statement above compares the values of CONFIG_ARCH and
-CONFIG_AVR32, so it would turn on big-endian mode when both
-are disabled (as is normally the case anywhere).
+Doesn't fuse_write_update_size() already handle this particular case by
+only ever extending the size?
 
-I think what you meant to write is 
+Brian
 
-	select DW_DMAC_BIG_ENDIAN_IO if AVR32
+> Signed-off-by: Maxim V. Patlasov <MPatlasov@parallels.com>
+> ---
+>  fs/fuse/file.c |   10 ++++++----
+>  1 files changed, 6 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+> index e570081..8dfbf7d 100644
+> --- a/fs/fuse/file.c
+> +++ b/fs/fuse/file.c
+> @@ -2470,14 +2470,16 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
+>  		.mode = mode
+>  	};
+>  	int err;
+> +	bool lock_inode = !(mode & FALLOC_FL_KEEP_SIZE) ||
+> +			   (mode & FALLOC_FL_PUNCH_HOLE);
+>  
+>  	if (fc->no_fallocate)
+>  		return -EOPNOTSUPP;
+>  
+> -	if (mode & FALLOC_FL_PUNCH_HOLE) {
+> +	if (lock_inode)
+>  		mutex_lock(&inode->i_mutex);
+> +	if (mode & FALLOC_FL_PUNCH_HOLE)
+>  		fuse_set_nowrite(inode);
+> -	}
+>  
+>  	req = fuse_get_req_nopages(fc);
+>  	if (IS_ERR(req)) {
+> @@ -2511,10 +2513,10 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
+>  	fuse_invalidate_attr(inode);
+>  
+>  out:
+> -	if (mode & FALLOC_FL_PUNCH_HOLE) {
+> +	if (mode & FALLOC_FL_PUNCH_HOLE)
+>  		fuse_release_nowrite(inode);
+> +	if (lock_inode)
+>  		mutex_unlock(&inode->i_mutex);
+> -	}
+>  
+>  	return err;
+>  }
+> 
 
-
-On Wednesday 12 June 2013 13:22:25 Vinod Koul wrote:
-
-> > I don't know if we will have any platform in future which has such
-> > difference in endianess between CPU and DMA IP block.
-> you never know what h/w designers would think!
-
-IIRC AVR32 endianess is screwed up in multiple ways and the kernel
-actually does some extra byte swapping depending on the platform.
-It's possible that the device is actually doing the regular
-little-endian I/O there and this is just a workaround from
-the other swaps. It's certainly best to leave the current logic
-in place, as your patch does.
-
-	Arnd
