@@ -1,102 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756287Ab3FLJyf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 05:54:35 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:54180 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755513Ab3FLJyd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 05:54:33 -0400
+	id S1755164Ab3FLKAm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 06:00:42 -0400
+Received: from sauhun.de ([89.238.76.85]:43436 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751454Ab3FLKAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 06:00:40 -0400
+Date: Wed, 12 Jun 2013 12:02:33 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Libo Chen <libo.chen@huawei.com>
+Cc: guz.fnst@cn.fujitsu.com, sonic.zhang@analog.com, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lizefan@huawei.com
+Subject: Re: [PATCH RFC v3 2/3] i2c: pxa: convert to devm_* API
+Message-ID: <20130612100232.GB3008@katana>
+References: <1369310408-10348-1-git-send-email-libo.chen@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <51B7D38A.7050204@linux.intel.com>
-References: <20130530134718.GB32728@e103034-lin>
-	<51B221AF.9070906@linux.vnet.ibm.com>
-	<20130608112801.GA8120@MacBook-Pro.local>
-	<1834293.MlyIaiESPL@vostro.rjw.lan>
-	<51B3F99A.4000101@linux.vnet.ibm.com>
-	<51B5FE02.7040607@linaro.org>
-	<alpine.DEB.2.02.1306111722470.24968@nftneq.ynat.uz>
-	<51B7D38A.7050204@linux.intel.com>
-Date: Wed, 12 Jun 2013 15:18:39 +0530
-Message-ID: <CAP245DUbGe5yp4-XoTg-imkAFNQzQrrX_UV3RRqr1dq_2GSPhg@mail.gmail.com>
-Subject: Re: power-efficient scheduling design
-From: Amit Kucheria <amit.kucheria@linaro.org>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: David Lang <david@lang.hm>, "len.brown@intel.com" <len.brown@intel.com>,
-        "alex.shi@intel.com" <alex.shi@intel.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "pjt@google.com" <pjt@google.com>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="K8nIJk4ghYZn606h"
+Content-Disposition: inline
+In-Reply-To: <1369310408-10348-1-git-send-email-libo.chen@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 7:18 AM, Arjan van de Ven <arjan@linux.intel.com> wrote:
-> On 6/11/2013 5:27 PM, David Lang wrote:
->>
->>
->> Nobody is saying that this sort of thing should be in the fastpath of the
->> scheduler.
->>
->> But if the scheduler has a table that tells it the possible states, and
->> the cost to get from the current state to each of these states (and to get
->> back and/or wake up to
->> full power), then the scheduler can make the decision on what to do,
->> invoke a routine to make the change (and in the meantime, not be fighting
->> the change by trying to
->> schedule processes on a core that's about to be powered off), and then
->> when the change happens, the scheduler will have a new version of the table
->> of possible states and costs
->>
->> This isn't in the fastpath, it's in the rebalancing logic.
->
->
-> the reality is much more complex unfortunately.
-> C and P states hang together tightly, and even C state on
-> one core impacts other cores' performance, just like P state selection
-> on one core impacts other cores.
->
-> (at least for x86, we should really stop talking as if the OS picks the
-> "frequency",
-> that's just not the case anymore)
 
-This is true of ARM platforms too. As Daniel pointed out in an earlier
-email, the operating point (frequency, voltage) has a bearing on the
-c-state latency too.
+--K8nIJk4ghYZn606h
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-An additional complexity is thermal constraints. E.g. On a quad-core
-Cortex-A15 processor capable of say 1.5GHz, you won't be able to run
-all 4 cores at that speed for very long w/o exceeding the thermal
-envelope. These overdrive frequencies (turbo in x86-speak) impact the
-rest of the system by either constraining the frequency of other cores
-or requiring aggresive thermal management.
+On Thu, May 23, 2013 at 08:00:08PM +0800, Libo Chen wrote:
+> when i2c malloc faild, we should not try to call release_mem_region.
+> aovid this, convert them to devm_* API.
+>=20
+> Signed-off-by: Libo Chen <libo.chen@huawei.com>
 
-Do we really want to track these details in the scheduler or just let
-the scheduler provide notifications to the existing subsystems
-(cpufreq, cpuidle, thermal, etc.) with some sort of feedback going
-back to the scheduler to influence future decisions?
+First, you did it right. This patch should not be combined with 1/3. It
+is not a trivial cleanup, so I prefer to keep them seperated.
 
-Feeback to the scheduler could be something like the following (pardon
-the names):
+BTW did you test these patches on real hardware?
 
-1. ISOLATE_CORE: Don't schedule anything on this core - cpuidle might
-use this to synchronise cores for a cluster shutdown, thermal
-framework could use this as idle injection to reduce temperature
-2. CAP_CAPACITY: Don't expect cpufreq to raise the frequency on this
-core - cpufreq might use this to cap overall energy since overdrive
-operating points are very expensive, thermal might use this to slow
-down rate of increase of die temperature
+> @@ -1198,19 +1187,6 @@ static int i2c_pxa_probe(struct platform_device *d=
+ev)
+>  #endif
+>  	return 0;
+> =20
+> -eadapt:
+> -	if (!i2c->use_pio)
+> -		free_irq(irq, i2c);
+> -ereqirq:
+> -	clk_disable(i2c->clk);
+> -	iounmap(i2c->reg_base);
+> -eremap:
+> -	clk_put(i2c->clk);
+> -eclk:
+> -	kfree(i2c);
+> -emalloc:
+> -	release_mem_region(res->start, resource_size(res));
+> -	return ret;
+>  }
+> =20
+>  static int i2c_pxa_remove(struct platform_device *dev)
+> @@ -1218,15 +1194,6 @@ static int i2c_pxa_remove(struct platform_device *=
+dev)
+>  	struct pxa_i2c *i2c =3D platform_get_drvdata(dev);
+> =20
+>  	i2c_del_adapter(&i2c->adap);
+> -	if (!i2c->use_pio)
+> -		free_irq(i2c->irq, i2c);
+> -
+> -	clk_disable(i2c->clk);
+> -	clk_put(i2c->clk);
+> -
+> -	iounmap(i2c->reg_base);
+> -	release_mem_region(i2c->iobase, i2c->iosize);
+> -	kfree(i2c);
 
-Regards,
-Amit
+You remove too much. Who disables the clock now?
+
+
+--K8nIJk4ghYZn606h
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRuEc4AAoJEBQN5MwUoCm2mGkP/iItUVeJjl4zftnUr9O5u0Jk
+6f0d5H41XJKgpJJYhdHiaYMCVL2rgvBtzkG4jARI+5tJS3m+mY+j2aTWvCbVM720
+hoSq4tNNWJnwpCNy9M6Pk6CZYOuXvRr3B0amWqyqeLHeYTejNihhSr5EDUAzRgpm
+E0II/9+wsHkWWG5enopNPOERiTEwtntgMxNgtIiFZDGQg7Lj+d2oxHCU2xKTsz6Q
+q0x8quIUshDscpZKfU8pjv+5iElNjgWcHUFAyTBXClE5VPKDIqjfyGztjiaGaYMI
+oSCxVjsxAiRUAExC2GZaipUtrF20iEJl0avMKiCIGVcWcwtTb4FEFCiNy6OO9ORn
+uRDS7cvKWAXmseOU/cQKvjXAzuv9PIFHYq+ltjp8nHPuFfGpywy3QKxp4ojaO9Di
+0yRunCX4TzFB1+OuErInXzcs9yWYbs84gg3qCmEKGw/NUSnUEgECZyAbrFymnwc1
+aUNIOHIASNlZYLR9nBWbPCAOOu0inOlbJJe6KuXNV0XkLq4r81yx3FskIdmOqIgW
+GedIXhTNQA9F6INouK4trgW6iuWMyCOw+n0R6W+tF6pQJJag6kq+3RQfc/qF7HHZ
+9c+XWkn7OmyBf4YlZtZrZJXfoHImUyCcADLpfdhcDECglfMJc6fCkDAxZ/i6jjic
+Cz75FWT5b5ZJmBqIbfFT
+=LaEb
+-----END PGP SIGNATURE-----
+
+--K8nIJk4ghYZn606h--
