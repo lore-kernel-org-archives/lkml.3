@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab3FLG17 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 02:27:59 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:54935 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752763Ab3FLG16 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 02:27:58 -0400
+	id S1755315Ab3FLGjT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 02:39:19 -0400
+Received: from mga09.intel.com ([134.134.136.24]:31445 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754178Ab3FLGjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 02:39:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,850,1363158000"; 
+   d="scan'208";a="352098819"
+Message-ID: <51B81790.5040806@linux.intel.com>
+Date: Wed, 12 Jun 2013 09:39:12 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <20130611185846.GA23707@www.outflux.net>
-References: <20130611185846.GA23707@www.outflux.net>
-Date: Wed, 12 Jun 2013 09:27:57 +0300
-X-Google-Sender-Auth: 7qVBsMwdmjuj9tHe5ABl5nM3jkQ
-Message-ID: <CAOJsxLHW6JE81hBWM2UEWbCLQtyhRok0YWtF=CRPBjTbfYagXw@mail.gmail.com>
-Subject: Re: [PATCH] x86, relocs: move ELF relocation handling to C
-From: Pekka Enberg <penberg@kernel.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86 maintainers <x86@kernel.org>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <erdnetdev@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        HPA <hpa@zytor.com>, Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH net-next 2/2] net:add socket option for low latency polling
+References: <20130611142415.17879.75569.stgit@ladj378.jer.intel.com>  <20130611142438.17879.6389.stgit@ladj378.jer.intel.com> <1370982272.1954.8.camel@bwh-desktop.uk.level5networks.com>
+In-Reply-To: <1370982272.1954.8.camel@bwh-desktop.uk.level5networks.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kees,
-
-On Tue, Jun 11, 2013 at 9:58 PM, Kees Cook <keescook@chromium.org> wrote:
-> Moves the relocation handling into C, after decompression. This requires
-> that the decompressed size is passed to the decompression routine as
-> well so that relocations can be found. Only kernels that need relocation
-> support will use the code.
+On 11/06/2013 23:24, Ben Hutchings wrote:
+> On Tue, 2013-06-11 at 17:24 +0300, Eliezer Tamir wrote:
+>> adds a socket option for low latency polling.
+>> This allows overriding the global sysctl value with a per-socket one.
+> [...]
+>> --- a/net/core/sock.c
+>> +++ b/net/core/sock.c
+>> @@ -913,6 +913,23 @@ set_rcvbuf:
+>>   		sock_valbool_flag(sk, SOCK_SELECT_ERR_QUEUE, valbool);
+>>   		break;
+>>
+>> +#ifdef CONFIG_NET_LL_RX_POLL
+>> +	case SO_LL:
+>> +		if (!capable(CAP_NET_ADMIN))
+>> +			ret = -EACCES;
+> [...]
 >
-> Based on work by Neill Clift and Michael Davidson.
->
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Failed capability checks normally result in EPERM whereas EACCES usually
+> results from a file permission/ACL/label check.
 
-How does the kernel benefit from this? Are there problems with the current
-assembly code? Are you planning to improve the relocation code?
+OK
 
-                        Pekka
+> Perhaps unprivileged users should be allowed to set a value as long as
+> it's less than or equal to the global value?
+
+I thought of allowing to disable even if you are not privileged, but 
+this sounds better.
+
+Thanks!
