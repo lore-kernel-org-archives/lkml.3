@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246Ab3FLG1A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 02:27:00 -0400
-Received: from s3.sipsolutions.net ([144.76.43.152]:40699 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754660Ab3FLG07 (ORCPT
+	id S1755224Ab3FLG17 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 02:27:59 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:54935 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752763Ab3FLG16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 02:26:59 -0400
-Message-ID: <1371018409.8601.2.camel@jlt4.sipsolutions.net>
-Subject: Re: pull request: wireless 2013-06-06
-From: Johannes Berg <johannes@sipsolutions.net>
-To: David Miller <davem@davemloft.net>
-Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 12 Jun 2013 08:26:49 +0200
-In-Reply-To: <20130611.222706.1492583255605214982.davem@davemloft.net> (sfid-20130612_072751_104839_5F29BCA5)
-References: <20130606190929.GB18827@tuxdriver.com>
-	 <20130611.222706.1492583255605214982.davem@davemloft.net>
-	 (sfid-20130612_072751_104839_5F29BCA5)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Jun 2013 02:27:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130611185846.GA23707@www.outflux.net>
+References: <20130611185846.GA23707@www.outflux.net>
+Date: Wed, 12 Jun 2013 09:27:57 +0300
+X-Google-Sender-Auth: 7qVBsMwdmjuj9tHe5ABl5nM3jkQ
+Message-ID: <CAOJsxLHW6JE81hBWM2UEWbCLQtyhRok0YWtF=CRPBjTbfYagXw@mail.gmail.com>
+Subject: Re: [PATCH] x86, relocs: move ELF relocation handling to C
+From: Pekka Enberg <penberg@kernel.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86 maintainers <x86@kernel.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-11 at 22:27 -0700, David Miller wrote:
-> From: "John W. Linville" <linville@tuxdriver.com>
-> Date: Thu, 6 Jun 2013 15:09:30 -0400
-> 
-> > Johannes Berg (2):
-> >       mac80211: constify ieee802_11_parse_elems() argument
-> 
-> Such cleanups are absolutely, positively, not appropriate at this
-> time.
+Hello Kees,
 
-My other fix depends on this to not have a const warning. I can add a
-cast to pretend the input isn't const at this point, but that seemed
-like a bad idea as well.
+On Tue, Jun 11, 2013 at 9:58 PM, Kees Cook <keescook@chromium.org> wrote:
+> Moves the relocation handling into C, after decompression. This requires
+> that the decompressed size is passed to the decompression routine as
+> well so that relocations can be found. Only kernels that need relocation
+> support will use the code.
+>
+> Based on work by Neill Clift and Michael Davidson.
+>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-johannes
+How does the kernel benefit from this? Are there problems with the current
+assembly code? Are you planning to improve the relocation code?
 
-
+                        Pekka
