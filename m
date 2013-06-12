@@ -1,358 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932189Ab3FLWbH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 18:31:07 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:33249 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756370Ab3FLWaM (ORCPT
+	id S932186Ab3FLWmc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 18:42:32 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:33322 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756916Ab3FLWma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 18:30:12 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCHv2 1/3] ARM: msm: Move debug-macro.S to include/debug
-Date: Wed, 12 Jun 2013 15:30:06 -0700
-Message-Id: <1371076208-30921-2-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.3.251.g1462b67
-In-Reply-To: <1371076208-30921-1-git-send-email-sboyd@codeaurora.org>
-References: <1371076208-30921-1-git-send-email-sboyd@codeaurora.org>
+	Wed, 12 Jun 2013 18:42:30 -0400
+Date: Wed, 12 Jun 2013 15:42:35 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] ARM: mach-moxart: add MOXA ART SoC files
+Message-ID: <20130612224235.GA8146@quad.lixom.net>
+References: <1371040448-28742-1-git-send-email-jonas.jensen@gmail.com>
+ <1371040448-28742-2-git-send-email-jonas.jensen@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1371040448-28742-2-git-send-email-jonas.jensen@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One more step to allowing MSM to participate in the
-multi-platform defconfig.
+Hi,
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/Kconfig.debug                             |  9 +++-
- .../mach/debug-macro.S => include/debug/msm.S}     | 32 ++++++++++-
- arch/arm/mach-msm/include/mach/msm_iomap-8960.h    |  5 --
- arch/arm/mach-msm/include/mach/msm_iomap-8x60.h    |  5 --
- arch/arm/mach-msm/include/mach/msm_iomap.h         | 12 -----
- arch/arm/mach-msm/include/mach/uncompress.h        | 63 ----------------------
- arch/arm/mach-msm/io.c                             | 40 +++++++-------
- 7 files changed, 58 insertions(+), 108 deletions(-)
- rename arch/arm/{mach-msm/include/mach/debug-macro.S => include/debug/msm.S} (61%)
- delete mode 100644 arch/arm/mach-msm/include/mach/uncompress.h
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 1d41908..b6c2875 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -632,6 +632,11 @@ config DEBUG_LL_INCLUDE
- 				 DEBUG_IMX51_UART || \
- 				 DEBUG_IMX53_UART ||\
- 				 DEBUG_IMX6Q_UART
-+	default "debug/msm.S" if DEBUG_MSM_UART1 || \
-+				 DEBUG_MSM_UART2 || \
-+				 DEBUG_MSM_UART3 || \
-+				 DEBUG_MSM8660_UART || \
-+				 DEBUG_MSM8960_UART
- 	default "debug/mvebu.S" if DEBUG_MVEBU_UART
- 	default "debug/mxs.S" if DEBUG_IMX23_UART || DEBUG_IMX28_UART
- 	default "debug/nomadik.S" if DEBUG_NOMADIK_UART
-@@ -652,13 +657,13 @@ config DEBUG_LL_INCLUDE
- 
- config DEBUG_UNCOMPRESS
- 	bool
--	default y if ARCH_MULTIPLATFORM && DEBUG_LL && \
-+	default y if (ARCH_MULTIPLATFORM || ARCH_MSM) && DEBUG_LL && \
- 		     !DEBUG_OMAP2PLUS_UART && \
- 		     !DEBUG_TEGRA_UART
- 
- config UNCOMPRESS_INCLUDE
- 	string
--	default "debug/uncompress.h" if ARCH_MULTIPLATFORM
-+	default "debug/uncompress.h" if ARCH_MULTIPLATFORM || ARCH_MSM
- 	default "mach/uncompress.h"
- 
- config EARLY_PRINTK
-diff --git a/arch/arm/mach-msm/include/mach/debug-macro.S b/arch/arm/include/debug/msm.S
-similarity index 61%
-rename from arch/arm/mach-msm/include/mach/debug-macro.S
-rename to arch/arm/include/debug/msm.S
-index 0e05f88..9166e1b 100644
---- a/arch/arm/mach-msm/include/mach/debug-macro.S
-+++ b/arch/arm/include/debug/msm.S
-@@ -15,8 +15,36 @@
-  *
-  */
- 
--#include <mach/hardware.h>
--#include <mach/msm_iomap.h>
-+#if defined(CONFIG_ARCH_MSM7X00A) || defined(CONFIG_ARCH_QSD8X50)
-+#define MSM_UART1_PHYS        0xA9A00000
-+#define MSM_UART2_PHYS        0xA9B00000
-+#define MSM_UART3_PHYS        0xA9C00000
-+#elif defined(CONFIG_ARCH_MSM7X30)
-+#define MSM_UART1_PHYS        0xACA00000
-+#define MSM_UART2_PHYS        0xACB00000
-+#define MSM_UART3_PHYS        0xACC00000
-+#endif
-+
-+#if defined(CONFIG_DEBUG_MSM_UART1)
-+#define MSM_DEBUG_UART_BASE	0xE1000000
-+#define MSM_DEBUG_UART_PHYS	MSM_UART1_PHYS
-+#elif defined(CONFIG_DEBUG_MSM_UART2)
-+#define MSM_DEBUG_UART_BASE	0xE1000000
-+#define MSM_DEBUG_UART_PHYS	MSM_UART2_PHYS
-+#elif defined(CONFIG_DEBUG_MSM_UART3)
-+#define MSM_DEBUG_UART_BASE	0xE1000000
-+#define MSM_DEBUG_UART_PHYS	MSM_UART3_PHYS
-+#endif
-+
-+#ifdef CONFIG_DEBUG_MSM8660_UART
-+#define MSM_DEBUG_UART_BASE	0xF0040000
-+#define MSM_DEBUG_UART_PHYS	0x19C40000
-+#endif
-+
-+#ifdef CONFIG_DEBUG_MSM8960_UART
-+#define MSM_DEBUG_UART_BASE	0xF0040000
-+#define MSM_DEBUG_UART_PHYS	0x16440000
-+#endif
- 
- 	.macro	addruart, rp, rv, tmp
- #ifdef MSM_DEBUG_UART_PHYS
-diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8960.h b/arch/arm/mach-msm/include/mach/msm_iomap-8960.h
-index 7bca8d7..396958b 100644
---- a/arch/arm/mach-msm/include/mach/msm_iomap-8960.h
-+++ b/arch/arm/mach-msm/include/mach/msm_iomap-8960.h
-@@ -38,9 +38,4 @@
- #define MSM8960_TMR0_PHYS	0x0208A000
- #define MSM8960_TMR0_SIZE	SZ_4K
- 
--#ifdef CONFIG_DEBUG_MSM8960_UART
--#define MSM_DEBUG_UART_BASE	0xF0040000
--#define MSM_DEBUG_UART_PHYS	0x16440000
--#endif
--
- #endif
-diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-index 4f57b43..dede6aa 100644
---- a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-+++ b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-@@ -41,9 +41,4 @@
- #define MSM8X60_TMR0_PHYS	0x02040000
- #define MSM8X60_TMR0_SIZE	SZ_4K
- 
--#ifdef CONFIG_DEBUG_MSM8660_UART
--#define MSM_DEBUG_UART_BASE	0xF0040000
--#define MSM_DEBUG_UART_PHYS	0x19C40000
--#endif
--
- #endif
-diff --git a/arch/arm/mach-msm/include/mach/msm_iomap.h b/arch/arm/mach-msm/include/mach/msm_iomap.h
-index c56e81f..0b36c42 100644
---- a/arch/arm/mach-msm/include/mach/msm_iomap.h
-+++ b/arch/arm/mach-msm/include/mach/msm_iomap.h
-@@ -48,18 +48,6 @@
- #include "msm_iomap-8x60.h"
- #include "msm_iomap-8960.h"
- 
--#define MSM_DEBUG_UART_SIZE	SZ_4K
--#if defined(CONFIG_DEBUG_MSM_UART1)
--#define MSM_DEBUG_UART_BASE	0xE1000000
--#define MSM_DEBUG_UART_PHYS	MSM_UART1_PHYS
--#elif defined(CONFIG_DEBUG_MSM_UART2)
--#define MSM_DEBUG_UART_BASE	0xE1000000
--#define MSM_DEBUG_UART_PHYS	MSM_UART2_PHYS
--#elif defined(CONFIG_DEBUG_MSM_UART3)
--#define MSM_DEBUG_UART_BASE	0xE1000000
--#define MSM_DEBUG_UART_PHYS	MSM_UART3_PHYS
--#endif
--
- /* Virtual addresses shared across all MSM targets. */
- #define MSM_CSR_BASE		IOMEM(0xE0001000)
- #define MSM_TMR_BASE		IOMEM(0xF0200000)
-diff --git a/arch/arm/mach-msm/include/mach/uncompress.h b/arch/arm/mach-msm/include/mach/uncompress.h
-deleted file mode 100644
-index 9432487..0000000
---- a/arch/arm/mach-msm/include/mach/uncompress.h
-+++ /dev/null
-@@ -1,63 +0,0 @@
--/*
-- * Copyright (C) 2007 Google, Inc.
-- * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- */
--
--#ifndef __ASM_ARCH_MSM_UNCOMPRESS_H
--#define __ASM_ARCH_MSM_UNCOMPRESS_H
--
--#include <asm/barrier.h>
--#include <asm/processor.h>
--#include <mach/msm_iomap.h>
--
--#define UART_CSR      (*(volatile uint32_t *)(MSM_DEBUG_UART_PHYS + 0x08))
--#define UART_TF       (*(volatile uint32_t *)(MSM_DEBUG_UART_PHYS + 0x0c))
--
--#define UART_DM_SR    (*((volatile uint32_t *)(MSM_DEBUG_UART_PHYS + 0x08)))
--#define UART_DM_CR    (*((volatile uint32_t *)(MSM_DEBUG_UART_PHYS + 0x10)))
--#define UART_DM_ISR   (*((volatile uint32_t *)(MSM_DEBUG_UART_PHYS + 0x14)))
--#define UART_DM_NCHAR (*((volatile uint32_t *)(MSM_DEBUG_UART_PHYS + 0x40)))
--#define UART_DM_TF    (*((volatile uint32_t *)(MSM_DEBUG_UART_PHYS + 0x70)))
--
--static void putc(int c)
--{
--#if defined(MSM_DEBUG_UART_PHYS)
--#ifdef CONFIG_MSM_HAS_DEBUG_UART_HS
--	/*
--	 * Wait for TX_READY to be set; but skip it if we have a
--	 * TX underrun.
--	 */
--	if (!(UART_DM_SR & 0x08))
--		while (!(UART_DM_ISR & 0x80))
--			cpu_relax();
--
--	UART_DM_CR = 0x300;
--	UART_DM_NCHAR = 0x1;
--	UART_DM_TF = c;
--#else
--	while (!(UART_CSR & 0x04))
--		cpu_relax();
--	UART_TF = c;
--#endif
--#endif
--}
--
--static inline void flush(void)
--{
--}
--
--static inline void arch_decomp_setup(void)
--{
--}
--
--#endif
-diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
-index efa113e..8a6bb65 100644
---- a/arch/arm/mach-msm/io.c
-+++ b/arch/arm/mach-msm/io.c
-@@ -52,26 +52,38 @@ static struct map_desc msm_io_desc[] __initdata = {
- 	MSM_CHIP_DEVICE_TYPE(GPIO1, MSM7X00, MT_DEVICE_NONSHARED),
- 	MSM_CHIP_DEVICE_TYPE(GPIO2, MSM7X00, MT_DEVICE_NONSHARED),
- 	MSM_DEVICE_TYPE(CLK_CTL, MT_DEVICE_NONSHARED),
--#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
--	defined(CONFIG_DEBUG_MSM_UART3)
--	MSM_DEVICE_TYPE(DEBUG_UART, MT_DEVICE_NONSHARED),
--#endif
- 	{
- 		.virtual =  (unsigned long) MSM_SHARED_RAM_BASE,
- 		.pfn = __phys_to_pfn(MSM_SHARED_RAM_PHYS),
- 		.length =   MSM_SHARED_RAM_SIZE,
- 		.type =     MT_DEVICE,
- 	},
-+#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
-+		defined(CONFIG_DEBUG_MSM_UART3)
-+	{
-+		/* virtual and pfn filled in by debug_ll_addr() */
-+		.length = SZ_4K,
-+		.type = MT_DEVICE_NONSHARED,
-+	}
-+#endif
- };
- 
- void __init msm_map_common_io(void)
- {
-+	size_t size = ARRAY_SIZE(msm_io_desc);
-+
- 	/* Make sure the peripheral register window is closed, since
- 	 * we will use PTE flags (TEX[1]=1,B=0,C=1) to determine which
- 	 * pages are peripheral interface or not.
- 	 */
- 	asm("mcr p15, 0, %0, c15, c2, 4" : : "r" (0));
--	iotable_init(msm_io_desc, ARRAY_SIZE(msm_io_desc));
-+#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
-+		defined(CONFIG_DEBUG_MSM_UART3)
-+	debug_ll_addr(&msm_io_desc[size - 1].pfn,
-+		      &msm_io_desc[size - 1].virtual);
-+	msm_io_desc[size - 1].pfn = __phys_to_pfn(msm_io_desc[size - 1].pfn);
-+#endif
-+	iotable_init(msm_io_desc, size);
- }
- #endif
- 
-@@ -87,10 +99,6 @@ static struct map_desc qsd8x50_io_desc[] __initdata = {
- 	MSM_DEVICE(SCPLL),
- 	MSM_DEVICE(AD5),
- 	MSM_DEVICE(MDC),
--#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
--	defined(CONFIG_DEBUG_MSM_UART3)
--	MSM_DEVICE(DEBUG_UART),
--#endif
- 	{
- 		.virtual =  (unsigned long) MSM_SHARED_RAM_BASE,
- 		.pfn = __phys_to_pfn(MSM_SHARED_RAM_PHYS),
-@@ -101,6 +109,7 @@ static struct map_desc qsd8x50_io_desc[] __initdata = {
- 
- void __init msm_map_qsd8x50_io(void)
- {
-+	debug_ll_io_init();
- 	iotable_init(qsd8x50_io_desc, ARRAY_SIZE(qsd8x50_io_desc));
- }
- #endif /* CONFIG_ARCH_QSD8X50 */
-@@ -109,13 +118,11 @@ void __init msm_map_qsd8x50_io(void)
- static struct map_desc msm8x60_io_desc[] __initdata = {
- 	MSM_CHIP_DEVICE(TMR, MSM8X60),
- 	MSM_CHIP_DEVICE(TMR0, MSM8X60),
--#ifdef CONFIG_DEBUG_MSM8660_UART
--	MSM_DEVICE(DEBUG_UART),
--#endif
- };
- 
- void __init msm_map_msm8x60_io(void)
- {
-+	debug_ll_io_init();
- 	iotable_init(msm8x60_io_desc, ARRAY_SIZE(msm8x60_io_desc));
- }
- #endif /* CONFIG_ARCH_MSM8X60 */
-@@ -124,13 +131,11 @@ void __init msm_map_msm8x60_io(void)
- static struct map_desc msm8960_io_desc[] __initdata = {
- 	MSM_CHIP_DEVICE(TMR, MSM8960),
- 	MSM_CHIP_DEVICE(TMR0, MSM8960),
--#ifdef CONFIG_DEBUG_MSM8960_UART
--	MSM_DEVICE(DEBUG_UART),
--#endif
- };
- 
- void __init msm_map_msm8960_io(void)
- {
-+	debug_ll_io_init();
- 	iotable_init(msm8960_io_desc, ARRAY_SIZE(msm8960_io_desc));
- }
- #endif /* CONFIG_ARCH_MSM8960 */
-@@ -150,10 +155,6 @@ static struct map_desc msm7x30_io_desc[] __initdata = {
- 	MSM_DEVICE(SAW),
- 	MSM_DEVICE(GCC),
- 	MSM_DEVICE(TCSR),
--#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
--	defined(CONFIG_DEBUG_MSM_UART3)
--	MSM_DEVICE(DEBUG_UART),
--#endif
- 	{
- 		.virtual =  (unsigned long) MSM_SHARED_RAM_BASE,
- 		.pfn = __phys_to_pfn(MSM_SHARED_RAM_PHYS),
-@@ -164,6 +165,7 @@ static struct map_desc msm7x30_io_desc[] __initdata = {
- 
- void __init msm_map_msm7x30_io(void)
- {
-+	debug_ll_io_init();
- 	iotable_init(msm7x30_io_desc, ARRAY_SIZE(msm7x30_io_desc));
- }
- #endif /* CONFIG_ARCH_MSM7X30 */
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+This looks pretty good. I have mostly a bunch of nits below.
 
+Please feel free to cc arm@kernel.org (which goes to us arm-soc maintainers) on
+future postings.
+
+On Wed, Jun 12, 2013 at 02:34:06PM +0200, Jonas Jensen wrote:
+> 
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+
+You should provide a commit message, ideally with a short introduction of the
+platform.
+
+> ---
+>  arch/arm/Kconfig                           |    2 +
+>  arch/arm/Makefile                          |    1 +
+>  arch/arm/configs/moxart_uc7112lx_defconfig |  112 ++++++++++++++++++++++++++++
+>  arch/arm/mach-moxart/Kconfig               |   28 +++++++
+>  arch/arm/mach-moxart/Makefile              |   10 +++
+>  arch/arm/mach-moxart/idle.c                |   21 +++++
+>  arch/arm/mach-moxart/moxart.c              |   23 ++++++
+>  7 files changed, 197 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/arm/configs/moxart_uc7112lx_defconfig
+>  create mode 100644 arch/arm/mach-moxart/Kconfig
+>  create mode 100644 arch/arm/mach-moxart/Makefile
+>  create mode 100644 arch/arm/mach-moxart/idle.c
+>  create mode 100644 arch/arm/mach-moxart/moxart.c
+> 
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index 0435a6a..b004ae0 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -937,6 +937,8 @@ source "arch/arm/mach-footbridge/Kconfig"
+>  
+>  source "arch/arm/mach-gemini/Kconfig"
+>  
+> +source "arch/arm/mach-moxart/Kconfig"
+> +
+>  source "arch/arm/mach-highbank/Kconfig"
+>  
+>  source "arch/arm/mach-integrator/Kconfig"
+> diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+> index 3380c4f..eb8f48e 100644
+> --- a/arch/arm/Makefile
+> +++ b/arch/arm/Makefile
+> @@ -148,6 +148,7 @@ machine-$(CONFIG_ARCH_DOVE)		+= dove
+>  machine-$(CONFIG_ARCH_EBSA110)		+= ebsa110
+>  machine-$(CONFIG_ARCH_EP93XX)		+= ep93xx
+>  machine-$(CONFIG_ARCH_GEMINI)		+= gemini
+> +machine-$(CONFIG_ARCH_MOXART)		+= moxart
+>  machine-$(CONFIG_ARCH_HIGHBANK)		+= highbank
+>  machine-$(CONFIG_ARCH_INTEGRATOR)	+= integrator
+>  machine-$(CONFIG_ARCH_IOP13XX)		+= iop13xx
+> diff --git a/arch/arm/configs/moxart_uc7112lx_defconfig b/arch/arm/configs/moxart_uc7112lx_defconfig
+> new file mode 100644
+> index 0000000..8d8f3a4
+> --- /dev/null
+> +++ b/arch/arm/configs/moxart_uc7112lx_defconfig
+
+It'd be nice to keep the defconfig generic, and make sure to enable all boards
+in it -- we're generally OK with adding one defconfig per platform upstream but
+not more.
+
+> diff --git a/arch/arm/mach-moxart/Kconfig b/arch/arm/mach-moxart/Kconfig
+> new file mode 100644
+> index 0000000..633ce74
+> --- /dev/null
+> +++ b/arch/arm/mach-moxart/Kconfig
+> @@ -0,0 +1,28 @@
+> +config ARCH_MOXART
+> +	bool "MOXA ART SoC" if (ARCH_MULTI_V4)
+
+No parens needed
+
+> +	select CPU_FA526
+> +	select ARM_DMA_MEM_BUFFERABLE
+> +	select USE_OF
+> +	select CLKSRC_OF
+> +	select HAVE_CLK
+> +	select COMMON_CLK
+> +	select GENERIC_IRQ_CHIP
+> +	select ARCH_REQUIRE_GPIOLIB
+> +	help
+> +	  Say Y here if you want to run your kernel on hardware with a MOXA ART SoC.
+> +	  This is a Faraday FA526 ARMv4 32-bit 192 MHz processor with MMU and 16KB/8KB D/I-cache (UC-7112-LX)
+> +	  This perticular SoC is used on models UC-7101, UC-7112/UC-7110, IA240/IA241, IA3341.
+
+This should probably be line-wrapped so it doesn't get too wide when looking at
+the help text.
+
+> +
+> +if ARCH_MOXART
+> +
+> +menu "MOXA ART SoC Implementation"
+> +
+> +config MACH_UC7112LX
+> +	bool "MOXA UC-7112-LX"
+> +	depends on ARCH_MOXART
+
+Since the menu is already wrapped with if ARCH_MOXART, you don't need
+it here.
+
+> +	help
+> +	  Say Y here if you intend to run this kernel on a MOXA UC-7112-LX embedded computer.
+
+Same here w.r.t wrapping
+
+> +
+> +endmenu
+> +
+> +endif
+> diff --git a/arch/arm/mach-moxart/Makefile b/arch/arm/mach-moxart/Makefile
+> new file mode 100644
+> index 0000000..56d8984
+> --- /dev/null
+> +++ b/arch/arm/mach-moxart/Makefile
+> @@ -0,0 +1,10 @@
+> +#
+> +# Makefile for the linux kernel.
+> +#
+
+Stale comment, can just remove it.
+
+> +
+> +# Object file lists.
+> +
+> +obj-y          := idle.o
+> +
+> +obj-$(CONFIG_MACH_UC7112LX)	+= moxart.o
+> +
+> diff --git a/arch/arm/mach-moxart/idle.c b/arch/arm/mach-moxart/idle.c
+> new file mode 100644
+> index 0000000..73ed844
+> --- /dev/null
+> +++ b/arch/arm/mach-moxart/idle.c
+> @@ -0,0 +1,21 @@
+> +/* Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License as published by the
+> + * Free Software Foundation; either version 2 of the License,
+> + * or (at your option) any later version. */
+
+These are sort of non-standard format. While I can't tell you what copyright
+text to use (within reason), please format it similarly to how others do,
+please.
+
+> +#include <linux/init.h>
+> +#include <asm/system.h>
+> +#include <asm/proc-fns.h>
+
+arm_pm_idle is defined in <asm/system_misc.h>, so it's a good idea to include
+that directly.
+
+> +
+> +static void moxart_idle(void)
+> +{
+> +}
+> +
+> +static int __init moxart_idle_init(void)
+> +{
+> +	arm_pm_idle = moxart_idle;
+> +	return 0;
+> +}
+> +
+> +arch_initcall(moxart_idle_init);
+
+If you multiplatform enable this, then you need to have a check in
+moxart_idle_init() to make sure you're running on a moxart soc. Otherwise this
+will still be called and override the arm_pm_idle setting on other platforms as
+well.
+
+> diff --git a/arch/arm/mach-moxart/moxart.c b/arch/arm/mach-moxart/moxart.c
+> new file mode 100644
+> index 0000000..ab70386
+> --- /dev/null
+> +++ b/arch/arm/mach-moxart/moxart.c
+> @@ -0,0 +1,23 @@
+> +/* Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License as published by the
+> + * Free Software Foundation; either version 2 of the License,
+> + * or (at your option) any later version. */
+
+Same here w.r.t. copyright formatting.
+
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/io.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/clk-provider.h>
+
+I'm guessing some of these will be needed later when you add more code, so it
+might not make sense to remove them just for that, but they sure aren't all
+needed now. :)
+
+> +
+> +#include <asm/mach/arch.h>
+> +
+> +static const char * const moxart_dt_compat[] = {
+> +	"moxa,moxart-uc-7112-lx",
+> +	NULL,
+> +};
+> +
+> +DT_MACHINE_START(MOXART, "MOXA UC-7112-LX")
+> +	.dt_compat		= moxart_dt_compat,
+> +MACHINE_END
+> +
+> -- 
+> 1.7.2.5
+> 
