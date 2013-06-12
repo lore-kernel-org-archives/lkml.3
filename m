@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab3FLPTX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 11:19:23 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:63081 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab3FLPTV (ORCPT
+	id S1754787Ab3FLPXu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 11:23:50 -0400
+Received: from www.xora.org.uk ([80.68.91.202]:37292 "EHLO
+	xora.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720Ab3FLPXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 11:19:21 -0400
-Date: Wed, 12 Jun 2013 17:19:17 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Borislav Petkov <bp@alien8.de>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Mats Liljegren <liljegren.mats2@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Full dynticks selftests 0.0.1
-Message-ID: <20130612151915.GD5332@somewhere>
+	Wed, 12 Jun 2013 11:23:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Wed, 12 Jun 2013 16:23:47 +0100
+From: gg@slimlogic.co.uk
+To: Mark Brown <broonie@kernel.org>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, lgirdwood@gmail.com,
+        sameo@linux.intel.com, linux-kernel@vger.kernel.org, balbi@ti.com
+Subject: Re: [RFC PATCH] regulator: palmas: enable all modes for SMPS10
+In-Reply-To: <20130612145126.GG1403@sirena.org.uk>
+References: <20130604093816.GY31367@sirena.org.uk> <51ADB6BF.6020205@ti.com>
+ <20130604100511.GA31367@sirena.org.uk> <51B5A14E.6000500@ti.com>
+ <20130610100330.GO31367@sirena.org.uk> <51B5B268.8090908@ti.com>
+ <20130610124924.GU31367@sirena.org.uk> <51B8345F.601@nvidia.com>
+ <20130612141409.GE1403@sirena.org.uk>
+ <bcb26ab704763c7ae7ef815b8fa0f652@slimlogic.co.uk>
+ <20130612145126.GG1403@sirena.org.uk>
+Message-ID: <feb8849eb7c84a17fd53da28df0f82e7@slimlogic.co.uk>
+User-Agent: Roundcube Webmail/0.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 2013-06-12 15:51, Mark Brown wrote:
+> On Wed, Jun 12, 2013 at 03:31:09PM +0100, gg@slimlogic.co.uk wrote:
+>> On 2013-06-12 15:14, Mark Brown wrote:
+> 
+>> >Yes, that seems like the most obvious thing here as far as I can tell
+>> >from the frankly fragmented and obscure information but given all the
+>> >confusion that seems to exist among the people working on the driver
+>> >it's really not clear if there's something else going on.
+> 
+>> What about the case where they are inputs? For bus power?
+> 
+> So the current flow can change direction here?
 
-I've been using a homemade test for full dynticks all that time and I regret I haven't shared
-it much sooner. I've been asked for such a tool many times and getting full dynticks working
-correctly is often not a piece of cake.
+Just rechecked the data sheet and it looks like that use-case has 
+actually been
+removed from more recent data sheets.
 
-Here it is, a very basic test that runs a userspace loop for ten seconds and dumps a trace
-of the tick, scheduler, workqueue, and other kind of kernel noise.
+So ignore me, yes now it can be modelled by two regulators!
 
-You can fetch from:
+Graeme
 
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/dynticks-testing.git
-	master
-
-I hope it helps! Feel free to send any kind of improvements if you wish.
-
-Thanks!
