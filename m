@@ -1,37 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab3FLFQk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 01:16:40 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:38027 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822Ab3FLFQj (ORCPT
+	id S1754788Ab3FLFQz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 01:16:55 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:40405 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754679Ab3FLFQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 01:16:39 -0400
+	Wed, 12 Jun 2013 01:16:53 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAJ8eaTxyODK+VFwK2csbxSs7LzAe2EqMXemxFRYF+A26rTmNwg@mail.gmail.com>
-References: <CAJ8eaTxyODK+VFwK2csbxSs7LzAe2EqMXemxFRYF+A26rTmNwg@mail.gmail.com>
-Date: Wed, 12 Jun 2013 10:46:39 +0530
-Message-ID: <CAJ8eaTwcLJPQ_HD_XirQnO5C_0kZmmp6rxCZSYOBwCqD4-sYaA@mail.gmail.com>
-Subject: Fwd:
-From: naveen yadav <yad.naveen@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1371001149-16906-1-git-send-email-cw00.choi@samsung.com>
+References: <1370276020-17446-2-git-send-email-kishon@ti.com>
+	<1371001149-16906-1-git-send-email-cw00.choi@samsung.com>
+Date: Wed, 12 Jun 2013 10:46:51 +0530
+Message-ID: <CAK7N6voG_Fnt2yZ6xohNVSc_-ij0fP1f+DVuFu30JinScas7Ww@mail.gmail.com>
+Subject: Re: [PATCH] extcon: Add an API to get extcon device from dt node
+From: anish singh <anish198519851985@gmail.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: kishon@ti.com, MyungJoo Ham <myungjoo.ham@samsung.com>, balbi@ti.com,
+        devicetree-discuss@lists.ozlabs.org,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-kernel-mail <linux-kernel@vger.kernel.org>,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        grant.likely@linaro.org, rob.herring@calxeda.com, rob@landley.net,
+        Greg KH <gregkh@linuxfoundation.org>, benoit.cousson@linaro.org,
+        pmeerw@pmeerw.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear all,
-
-
-We are facing one issue in user space, if we enable thumb mode and in kernel
-whether we enable or disable thumb mode or code run in both scenario.
-we could not understand the reason.
-
-Our core is ARM cortex A15,
-Kernel 3.8.13
-
-One more issue if we disable THUMB in kernel we got undefined instruction in
-
-
-11dffd:    ee7  7a00      vmov.f32        s15,#112    ;0x70
+On Wed, Jun 12, 2013 at 7:09 AM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+> From: Kishon Vijay Abraham I <kishon@ti.com>
+>
+> Added an API of_extcon_get_extcon_dev() to be used by drivers to get
+> extcon device in the case of dt boot (this can be used instead of
+> extcon_get_extcon_dev()).
+>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+> ---
+>  drivers/extcon/Makefile          |  3 +++
+>  drivers/extcon/of-extcon.c       | 56 ++++++++++++++++++++++++++++++++++++++++
+>  include/linux/extcon/of-extcon.h | 30 +++++++++++++++++++++
+>  3 files changed, 89 insertions(+)
+>  create mode 100644 drivers/extcon/of-extcon.c
+>  create mode 100644 include/linux/extcon/of-extcon.h
+>
+> diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
+> index 540e2c3..39cdf95 100644
+> --- a/drivers/extcon/Makefile
+> +++ b/drivers/extcon/Makefile
+> @@ -2,9 +2,12 @@
+>  # Makefile for external connector class (extcon) devices
+>  #
+>
+> +obj-$(CONFIG_OF)               += of-extcon.o
+> +
+>  obj-$(CONFIG_EXTCON)           += extcon-class.o
+>  obj-$(CONFIG_EXTCON_GPIO)      += extcon-gpio.o
+>  obj-$(CONFIG_EXTCON_ADC_JACK)  += extcon-adc-jack.o
+> +
+>  obj-$(CONFIG_EXTCON_MAX77693)  += extcon-max77693.o
+>  obj-$(CONFIG_EXTCON_MAX8997)   += extcon-max8997.o
+>  obj-$(CONFIG_EXTCON_ARIZONA)   += extcon-arizona.o
+> diff --git a/drivers/extcon/of-extcon.c b/drivers/extcon/of-extcon.c
+> new file mode 100644
+> index 0000000..29f82b4
+> --- /dev/null
+> +++ b/drivers/extcon/of-extcon.c
+> @@ -0,0 +1,56 @@
+> +/*
+> + * OF helpers for External connector (extcon) framework
+> + *
+> + * Copyright (C) 2013 Texas Instruments, Inc.
+> + * Kishon Vijay Abraham I <kishon@ti.com>
+> + *
+> + * Copyright (C) 2013 Samsung Electronics
+> + * Chanwoo Choi <cw00.choi@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/extcon.h>
+> +#include <linux/of.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/extcon/of-extcon.h>
+> +
+> +struct extcon_dev *of_extcon_get_extcon_dev(struct device *dev, int index)
+Can this be simpler name? of_extcon_get_dev or something like that?
+> +{
+> +       struct device_node *node;
+> +       struct extcon_dev *edev;
+> +       struct platform_device *extcon_parent_dev;
+> +
+> +       if (!dev->of_node) {
+> +               dev_dbg(dev, "device does not have a device node entry\n");
+> +               return ERR_PTR(-EINVAL);
+> +       }
+> +
+> +       node = of_parse_phandle(dev->of_node, "extcon", index);
+> +       if (!node) {
+> +               dev_dbg(dev, "failed to get phandle in %s node\n",
+> +                       dev->of_node->full_name);
+> +               return ERR_PTR(-ENODEV);
+> +       }
+> +
+> +       extcon_parent_dev = of_find_device_by_node(node);
+> +       if (!extcon_parent_dev) {
+> +               dev_dbg(dev, "unable to find device by node\n");
+> +               return ERR_PTR(-EPROBE_DEFER);
+> +       }
+> +
+> +       edev = extcon_get_extcon_dev(dev_name(&extcon_parent_dev->dev));
+> +       if (!edev) {
+> +               dev_dbg(dev, "unable to get extcon device : %s\n",
+> +                               dev_name(&extcon_parent_dev->dev));
+> +               return ERR_PTR(-ENODEV);
+> +       }
+> +
+> +       return edev;
+> +}
+> +EXPORT_SYMBOL_GPL(of_extcon_get_extcon_dev);
+> diff --git a/include/linux/extcon/of-extcon.h b/include/linux/extcon/of-extcon.h
+> new file mode 100644
+> index 0000000..77d01ba
+> --- /dev/null
+> +++ b/include/linux/extcon/of-extcon.h
+> @@ -0,0 +1,30 @@
+> +/*
+> + * OF helpers for External connector (extcon) framework
+> + *
+> + * Copyright (C) 2013 Texas Instruments, Inc.
+> + * Kishon Vijay Abraham I <kishon@ti.com>
+> + *
+> + * Copyright (C) 2013 Samsung Electronics
+> + * Chanwoo Choi <cw00.choi@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + */
+> +
+> +#ifndef __LINUX_OF_EXTCON_H
+> +#define __LINUX_OF_EXTCON_H
+> +
+> +#if defined(CONFIG_OF)
+> +extern struct extcon_dev
+> +       *of_extcon_get_extcon_dev(struct device *dev, int index);
+> +#else
+> +static inline struct extcon_dev
+> +       *of_extcon_get_extcon_dev(struct device *dev, int index);
+> +{
+> +       return NULL;
+> +}
+> +#endif /* CONFIG_OF */
+> +
+> +#endif /* __LINUX_OF_EXTCON_H */
+> --
+> 1.8.0
+>
