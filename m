@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab3FLUkw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 16:40:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60255 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756176Ab3FLUkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 16:40:39 -0400
-Date: Wed, 12 Jun 2013 13:40:32 -0700
-From: Tejun Heo <theo@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: [PATCH percpu/for-3.11] percpu-refcount: consistently use plain
- (non-sched) RCU
-Message-ID: <20130612204031.GA15092@htj.dyndns.org>
+	id S1757975Ab3FLUmU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 16:42:20 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:34678 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756176Ab3FLUmT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 16:42:19 -0400
+Date: Wed, 12 Jun 2013 15:42:15 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: Slow swap-in with SSD
+To: Martin Steigerwald <ms@teamix.de>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+In-Reply-To: <201306111634.36327.ms@teamix.de> (from ms@teamix.de on Tue Jun
+	11 09:34:36 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1371069735.2776.100@driftwood>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From e96262150a513ce3d54ff221d4ace8aeec96e0bf Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Wed, 12 Jun 2013 13:37:42 -0700
+On 06/11/2013 09:34:36 AM, Martin Steigerwald wrote:
+> Hi!
+> 
+> Using Linux 3.10-rc5 on an ThinkPad T520 with Intel Sandybridge  
+> i5-2620M,
+> 8 GiB RAM and Intel SSD 320. Currently I have Zcache enabled to test  
+> the
+> effects of it but I observed similar figures on kernels without  
+> Zcache.
+> 
+> If I let the kernel swap out for example with
+> 
+> stress -m 1 --vm-keep --vm-bytes 5G
+> 
+> or so, then swapping out is pretty fast, I have seen values around
+> 100-200 MiB/s
+> 
+> But on issuing a swapoff command to swap stuff in again, the swap in  
+> is
+> abysmally slow, just a few MiB/s (see below).
+> 
+> I wonder why is that so? The SSD is basically idling around on  
+> swap-in.
 
-percpu_ref_get/put() are using preempt_disable/enable() while
-percpu_ref_kill() is using plain call_rcu() instead of
-call_rcu_sched().  This is buggy as grace periods of the two may not
-match.  Fix it by using plain RCU in percpu_ref_get/put().
+Transaction granularity. Swapping out can queue up large batches of  
+pages because you can queue up more outgoing pages while the others are  
+still writing. Swapping _in_ you don't know what you need next until  
+you resume the process, so you fault in 4k, schedule DMA, resume the  
+process when it completes, fault on the next page, schedule more DMA,  
+rinse repeat. Programs don't really execute linearly, so you wind up  
+with round trip latency to and from device each time.
 
-(I suggested using sched RCU in the first place but there's no actual
- benefit in doing so unless we're gonna introduce different variants
- of get/put to be called while preemption is alredy disabled, which we
- definitely shouldn't.)
+The problem with doing readahead on swapin is that programs jump around  
+randomly calling a function here and a function there, so you dunno  
+which other pages it'll need until it requests them. (Speculatively  
+faulting in pages when the system is starved of memory usually just  
+makes the memory shortage worse. This code only runs when there's a  
+shortage of physical pages.)
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Rusty Russell <rusty@rustcorp.com.au>
----
- include/linux/percpu-refcount.h | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Having an ssd just exacerbates the problem, because with the device  
+itself sped up the round trip latency from all the tiny transactions  
+comes to dominate.
 
-diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
-index 24b31ef..abe1411 100644
---- a/include/linux/percpu-refcount.h
-+++ b/include/linux/percpu-refcount.h
-@@ -85,7 +85,7 @@ static inline void percpu_ref_get(struct percpu_ref *ref)
- {
- 	unsigned __percpu *pcpu_count;
- 
--	preempt_disable();
-+	rcu_read_lock();
- 
- 	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
- 
-@@ -94,7 +94,7 @@ static inline void percpu_ref_get(struct percpu_ref *ref)
- 	else
- 		atomic_inc(&ref->count);
- 
--	preempt_enable();
-+	rcu_read_unlock();
- }
- 
- /**
-@@ -107,7 +107,7 @@ static inline void percpu_ref_put(struct percpu_ref *ref)
- {
- 	unsigned __percpu *pcpu_count;
- 
--	preempt_disable();
-+	rcu_read_lock();
- 
- 	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
- 
-@@ -116,7 +116,7 @@ static inline void percpu_ref_put(struct percpu_ref *ref)
- 	else if (unlikely(atomic_dec_and_test(&ref->count)))
- 		ref->release(ref);
- 
--	preempt_enable();
-+	rcu_read_unlock();
- }
- 
- #endif
--- 
-1.8.2.1
-
+Rob
