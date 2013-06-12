@@ -1,131 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757842Ab3FLRND (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 13:13:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47648 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757679Ab3FLRM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 13:12:59 -0400
-Date: Wed, 12 Jun 2013 19:08:35 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: Re: [PATCH] Percpu tag allocator
-Message-ID: <20130612170835.GA4682@redhat.com>
-References: <1371009804-11596-1-git-send-email-koverstreet@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371009804-11596-1-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757876Ab3FLRNP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 13:13:15 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44737 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757453Ab3FLRNL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 13:13:11 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 16/21] mfd: iio: ti_am335x_adc: rename device from tiadc to TI-am335x-adc
+Date: Wed, 12 Jun 2013 18:58:17 +0200
+Message-Id: <1371056302-12714-17-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1371056302-12714-1-git-send-email-bigeasy@linutronix.de>
+References: <1371056302-12714-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11, Kent Overstreet wrote:
->
-> + * This is done by keeping track of which cpus have tags on their percpu
-> + * freelists in a bitmap, and then on allocation failure if too many cpus have
-> + * tags on their freelists - i.e. if cpus_have_tags * TAG_CPU_SIZE (64) >
-> + * nr_tags / 2 - then we steal one remote cpu's freelist (effectively picked at
-> + * random).
+TI-adc reads a little better compared to tiadc. And if we add am335x to
+it then we have the same naming scheme as the tsc side.
 
-Interesting... I'll try to read the patch later.
+Acked-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/iio/adc/ti_am335x_adc.c |    3 +--
+ drivers/mfd/ti_am335x_tscadc.c  |    2 +-
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-I have to admit, I do not really understand what this bitmap can actually
-buy after a quick glance. It is only a hint afaics, and obviously it is
-not accurate. alloc_local_tag() never clears the bit, tag_free()->set_bit()
-is racy, etc. I guess this is fine, just this doesn't look clear.
-
-But the code looks correct, just a couple of minor nits, feel freee to
-ignore.
-
-> +enum {
-> +	TAG_FAIL	= -1U,
-> +	TAG_MAX		= TAG_FAIL - 1,
-> +};
-
-This can probably go to .c, and it seems that TAG_MAX is not needed.
-tag_init() can check "nr_tags >= TAG_FAIL" instead.
-
-> +static bool steal_tags(struct percpu_tag_pool *pool,
-> +		       struct percpu_tag_cpu_freelist *tags)
-> +{
-> +	unsigned i, nr_free, cpus_have_tags = 0, cpu = pool->cpu_last_stolen;
-> +	struct percpu_tag_cpu_freelist *remote;
-> +
-> +	for (i = 0; i < DIV_ROUND_UP(nr_cpu_ids, BITS_PER_LONG); i++)
-> +		cpus_have_tags += hweight_long(pool->cpus_have_tags[i]);
-
-bitmap_weight(pool->cpus_have_tags, pool->nr_tags).
-
-> +
-> +	while (cpus_have_tags-- * TAG_CPU_SIZE > pool->nr_tags / 2) {
-> +		cpu = find_next_bit(pool->cpus_have_tags, nr_cpu_ids, cpu);
-> +
-> +		if (cpu == nr_cpu_ids)
-> +			cpu = find_first_bit(pool->cpus_have_tags, nr_cpu_ids);
-> +
-> +		if (cpu == nr_cpu_ids)
-> +			BUG();
-> +
-> +		pool->cpu_last_stolen = cpu;
-> +		remote = per_cpu_ptr(pool->tag_cpu, cpu);
-> +
-> +		if (remote == tags)
-> +			continue;
-> +
-> +		clear_bit(cpu, pool->cpus_have_tags);
-> +
-> +		nr_free = xchg(&remote->nr_free, TAG_CPU_STEALING);
-> +
-> +		if (nr_free) {
-> +			memcpy(tags->freelist,
-> +			       remote->freelist,
-> +			       sizeof(unsigned) * nr_free);
-> +			smp_mb();
-> +			remote->nr_free = 0;
-> +			tags->nr_free = nr_free;
-> +			return true;
-> +		} else {
-> +			remote->nr_free = 0;
-> +		}
-
-Both branches clear remote->nr_free.
-
-> +int percpu_tag_pool_init(struct percpu_tag_pool *pool, unsigned long nr_tags)
-> +{
-> +	unsigned i, order;
-> +
-> +	memset(pool, 0, sizeof(*pool));
-> +
-> +	spin_lock_init(&pool->lock);
-> +	init_waitqueue_head(&pool->wait);
-> +	pool->nr_tags = nr_tags;
-> +
-> +	/* Guard against overflow */
-> +	if (nr_tags > TAG_MAX) {
-> +		pr_err("tags.c: nr_tags too large\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	order = get_order(nr_tags * sizeof(unsigned));
-> +	pool->freelist = (void *) __get_free_pages(GFP_KERNEL, order);
-> +	if (!pool->freelist)
-> +		goto err;
-> +
-> +	for (i = 0; i < nr_tags; i++)
-> +		pool->freelist[i] = i;
-> +
-> +	pool->nr_free = nr_tags;
-> +
-> +	pool->cpus_have_tags = kzalloc(DIV_ROUND_UP(nr_cpu_ids, BITS_PER_LONG) *
-                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-BITS_TO_LONGS(nr_cpu_ids)
-
-Oleg.
+diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+index 9939810..4bec91e 100644
+--- a/drivers/iio/adc/ti_am335x_adc.c
++++ b/drivers/iio/adc/ti_am335x_adc.c
+@@ -292,7 +292,7 @@ MODULE_DEVICE_TABLE(of, ti_adc_dt_ids);
+ 
+ static struct platform_driver tiadc_driver = {
+ 	.driver = {
+-		.name   = "tiadc",
++		.name   = "TI-am335x-adc",
+ 		.owner	= THIS_MODULE,
+ 		.pm	= TIADC_PM_OPS,
+ 		.of_match_table = of_match_ptr(ti_adc_dt_ids),
+@@ -300,7 +300,6 @@ static struct platform_driver tiadc_driver = {
+ 	.probe	= tiadc_probe,
+ 	.remove	= tiadc_remove,
+ };
+-
+ module_platform_driver(tiadc_driver);
+ 
+ MODULE_DESCRIPTION("TI ADC controller driver");
+diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
+index 5fb8b1d..2532339 100644
+--- a/drivers/mfd/ti_am335x_tscadc.c
++++ b/drivers/mfd/ti_am335x_tscadc.c
+@@ -223,7 +223,7 @@ static	int ti_tscadc_probe(struct platform_device *pdev)
+ 	if (adc_channels > 0) {
+ 		tscadc->adc_cell = tscadc->used_cells;
+ 		cell = &tscadc->cells[tscadc->used_cells++];
+-		cell->name = "tiadc";
++		cell->name = "TI-am335x-adc";
+ 		cell->of_compatible = "ti,am3359-adc";
+ 		cell->platform_data = &tscadc;
+ 		cell->pdata_size = sizeof(tscadc);
+-- 
+1.7.10.4
 
