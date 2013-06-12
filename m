@@ -1,339 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756022Ab3FLLGz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 07:06:55 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:54537 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753106Ab3FLLGy (ORCPT
+	id S1756534Ab3FLLHq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 07:07:46 -0400
+Received: from mx0.eldamar.org.uk ([78.47.157.133]:55737 "EHLO
+	mx0.eldamar.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754398Ab3FLLHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 07:06:54 -0400
+	Wed, 12 Jun 2013 07:07:44 -0400
+X-Greylist: delayed 1185 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Jun 2013 07:07:44 EDT
+Date: Wed, 12 Jun 2013 11:47:54 +0100
+From: Alexander Frolkin <avf@eldamar.org.uk>
+To: lvs-devel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] ipvs: sloppy TCP and SCTP
+Message-ID: <20130612104754.GA29327@eldamar.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1371002288.9844.246.camel@gandalf.local.home>
-References: <20130609193657.GA13392@linux.vnet.ibm.com>
-	<51B748DA.2070306@hp.com>
-	<20130611163607.GG5146@linux.vnet.ibm.com>
-	<51B76F77.6020004@hp.com>
-	<20130611194927.GX5146@linux.vnet.ibm.com>
-	<CACvQF51s+xsP9XX2V7ASEe+T3qH1n9Gzatf5k9Fzr=ehma8baQ@mail.gmail.com>
-	<1371002288.9844.246.camel@gandalf.local.home>
-Date: Wed, 12 Jun 2013 19:06:53 +0800
-Message-ID: <CACvQF50DvfOGosHgiN+D5GTUAJHjX+9xoxdrdGgzbh2ZbsdK=Q@mail.gmail.com>
-Subject: Re: [PATCH RFC ticketlock] Auto-queued ticketlock
-From: Lai Jiangshan <eag0628@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: paulmck@linux.vnet.ibm.com, Waiman Long <waiman.long@hp.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, torvalds@linux-foundation.org,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-GPG-Key-Fingerprint: 7820 960F C361 C9CE 401F  D07D 993A 2951 D970 4FA4
+X-Operating-System: Linux 3.2.0-41-generic
+X-Editor: Vi
+X-Uptime: 15:14:10 up 30 days, 38 min,  9 users,  load average: 0.15, 0.18,
+ 0.22
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 9:58 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Wed, 2013-06-12 at 09:19 +0800, Lai Jiangshan wrote:
->
->> > +
->> > +/*
->> > + * Hand the lock off to the first CPU on the queue.
->> > + */
->> > +void tkt_q_do_wake(arch_spinlock_t *lock)
->> > +{
->> > +       struct tkt_q_head *tqhp;
->> > +       struct tkt_q *tqp;
->> > +
->> > +       /* If the queue is still being set up, wait for it. */
->> > +       while ((tqhp = tkt_q_find_head(lock)) == NULL)
->> > +               cpu_relax();
->> > +
->> > +       for (;;) {
->> > +
->> > +               /* Find the first queue element. */
->> > +               tqp = ACCESS_ONCE(tqhp->spin);
->> > +               if (tqp != NULL)
->> > +                       break;  /* Element exists, hand off lock. */
->> > +               if (tkt_q_try_unqueue(lock, tqhp))
->> > +                       return; /* No element, successfully removed queue. */
->> > +               cpu_relax();
->> > +       }
->> > +       if (ACCESS_ONCE(tqhp->head_tkt) != -1)
->> > +               ACCESS_ONCE(tqhp->head_tkt) = -1;
->> > +       smp_mb(); /* Order pointer fetch and assignment against handoff. */
->> > +       ACCESS_ONCE(tqp->cpu) = -1;
->> > +}
->> > +EXPORT_SYMBOL(tkt_q_do_wake);
->> > +
->> > +/*
->> > + * Given a lock that already has a queue associated with it, spin on
->> > + * that queue.  Return false if there was no queue (which means we do not
->> > + * hold the lock) and true otherwise (meaning we -do- hold the lock).
->> > + */
->> > +bool tkt_q_do_spin(arch_spinlock_t *lock, struct __raw_tickets inc)
->> > +{
->> > +       struct tkt_q **oldtail;
->> > +       struct tkt_q tq;
->> > +       struct tkt_q_head *tqhp;
->> > +
->> > +       /*
->> > +        * Ensure that accesses to queue header happen after sensing
->> > +        * the lock's have-queue bit.
->> > +        */
->> > +       smp_mb();  /* See above block comment. */
->> > +
->> > +       /* If there no longer is a queue, leave. */
->> > +       tqhp = tkt_q_find_head(lock);
->> > +       if (tqhp == NULL)
->> > +               return false;
->> > +
->> > +       /* Initialize our queue element. */
->> > +       tq.cpu = raw_smp_processor_id();
->> > +       tq.tail = inc.tail;
->> > +       tq.next = NULL;
->>
->> I guess a mb() is needed here for between read tqhp->ref and read
->> tqhp->head_tkt.
->> you can move the above mb() to here.
->
-> Do we?
->
-> The only way to get into here is if you either set up the queue
-> yourself, or you saw the LSB set in head.
->
-> If you were the one to set it up yourself, then there's nothing to worry
-> about because you are also the one that set head_tkt.
->
-> If you didn't set up the queue, then someone else set the LSB in head,
-> which is done with a cmpxchg() which is also a full mb. This would make
-> head_tkt visible as well because it's set before cmpxchg is called.
->
-> Thus, to come into this function you must have seen head & 1 set, and
-> the smp_mb() above will also make head_tkt visible.
->
-> The only thing I can see now is that it might not find tqhp because ref
-> may not be set yet. If that's the case, then it will fall out back to
-> the main loop. But if it finds ref, then I don't see how it can't see
-> head_tkt up to date as well.
->
-> Maybe I'm missing something.
+This adds support for sloppy TCP and SCTP mode to IPVS.
 
-No, you are right.
+When enabled (sysctls net.ipv4.vs.sloppy_tcp and
+net.ipv4.vs.sloppy_sctp), allows IPVS to create connection state on any
+packet, not just a TCP SYN (or SCTP INIT).
 
-When I lay on the bed in the night, I was thinking about the V1,
-I wrongly considered the V2 has the same problem without deeper
-thought in this morning.
+This allows connections to fail over from one IPVS director to another
+mid-flight.
 
-V2 has not such problem. sorry for the noisy.
+Signed-off-by: Alexander Frolkin <avf@eldamar.org.uk>
 
-Thanks,
-Lai
+---
 
->
-> -- Steve
->
->
->>
->> > +
->> > +       /* Check to see if we already hold the lock. */
->> > +       if (ACCESS_ONCE(tqhp->head_tkt) == inc.tail) {
->> > +               /* The last holder left before queue formed, we hold lock. */
->> > +               tqhp->head_tkt = -1;
->> > +               return true;
->> > +       }
->> > +
->> > +       /*
->> > +        * Add our element to the tail of the queue.  Note that if the
->> > +        * queue is empty, the ->spin_tail pointer will reference
->> > +        * the queue's head pointer, namely ->spin.
->> > +        */
->> > +       oldtail = xchg(&tqhp->spin_tail, &tq.next);
->> > +       ACCESS_ONCE(*oldtail) = &tq;
->> > +
->> > +       /* Spin until handoff. */
->> > +       while (ACCESS_ONCE(tq.cpu) != -1)
->> > +               cpu_relax();
->> > +
->> > +       /*
->> > +        * Remove our element from the queue.  If the queue is now empty,
->> > +        * update carefully so that the next acquisition will enqueue itself
->> > +        * at the head of the list.  Of course, the next enqueue operation
->> > +        * might be happening concurrently, and this code needs to handle all
->> > +        * of the possible combinations, keeping in mind that the enqueue
->> > +        * operation happens in two stages: (1) update the tail pointer and
->> > +        * (2) update the predecessor's ->next pointer.  With this in mind,
->> > +        * the following code needs to deal with three scenarios:
->> > +        *
->> > +        * 1.   tq is the last entry.  In this case, we use cmpxchg to
->> > +        *      point the list tail back to the list head (->spin).  If
->> > +        *      the cmpxchg fails, that indicates that we are instead
->> > +        *      in scenario 2 below.  If the cmpxchg succeeds, the next
->> > +        *      enqueue operation's tail-pointer exchange will enqueue
->> > +        *      the next element at the queue head, because the ->spin_tail
->> > +        *      pointer now references the queue head.
->> > +        *
->> > +        * 2.   tq is the last entry, and the next entry has updated the
->> > +        *      tail pointer but has not yet updated tq.next.  In this
->> > +        *      case, tq.next is NULL, the cmpxchg will fail, and the
->> > +        *      code will wait for the enqueue to complete before completing
->> > +        *      removal of tq from the list.
->> > +        *
->> > +        * 3.   tq is not the last pointer.  In this case, tq.next is non-NULL,
->> > +        *      so the following code simply removes tq from the list.
->> > +        */
->> > +       if (tq.next == NULL) {
->> > +
->> > +               /* Mark the queue empty. */
->> > +               tqhp->spin = NULL;
->> > +
->> > +               /* Try to point the tail back at the head. */
->> > +               if (cmpxchg(&tqhp->spin_tail,
->> > +                           &tq.next,
->> > +                           &tqhp->spin) == &tq.next)
->> > +                       return true; /* Succeeded, queue is now empty. */
->> > +
->> > +               /* Failed, if needed, wait for the enqueue to complete. */
->> > +               while (tq.next == NULL)
->> > +                       cpu_relax();
->> > +
->> > +               /* The following code will repair the head. */
->> > +       }
->> > +       smp_mb(); /* Force ordering between handoff and critical section. */
->> > +
->> > +       /*
->> > +        * Advance list-head pointer.  This same task will be the next to
->> > +        * access this when releasing the lock, so no need for a memory
->> > +        * barrier after the following assignment.
->> > +        */
->> > +       ACCESS_ONCE(tqhp->spin) = tq.next;
->> > +       return true;
->> > +}
->> > +
->> > +/*
->> > + * Given a lock that does not have a queue, attempt to associate the
->> > + * i-th queue with it, returning true if successful (meaning we hold
->> > + * the lock) or false otherwise (meaning we do -not- hold the lock).
->> > + * Note that the caller has already filled in ->ref with 0x1, so we
->> > + * own the queue.
->> > + */
->> > +static bool
->> > +tkt_q_init_contend(int i, arch_spinlock_t *lock, struct __raw_tickets inc)
->> > +{
->> > +       arch_spinlock_t asold;
->> > +       arch_spinlock_t asnew;
->> > +       struct tkt_q_head *tqhp;
->> > +
->> > +       /* Initialize the i-th queue header. */
->> > +       tqhp = &tkt_q_heads[i];
->> > +       tqhp->spin = NULL;
->> > +       tqhp->spin_tail = &tqhp->spin;
->> > +
->> > +       /* Each pass through this loop attempts to mark the lock as queued. */
->> > +       do {
->> > +               asold.head_tail = ACCESS_ONCE(lock->head_tail);
->> > +               asnew = asold;
->> > +               if (asnew.tickets.head & 0x1) {
->> > +
->> > +                       /* Someone beat us to it, back out. */
->> > +                       smp_mb();
->> > +                       ACCESS_ONCE(tqhp->ref) = NULL;
->> > +
->> > +                       /* Spin on the queue element they set up. */
->> > +                       return tkt_q_do_spin(lock, inc);
->> > +               }
->> > +
->> > +               /*
->> > +                * Record the head counter in case one of the spinning
->> > +                * CPUs already holds the lock but doesn't realize it yet.
->> > +                */
->> > +               tqhp->head_tkt = asold.tickets.head;
->> > +
->> > +               /* The low-order bit in the head counter says "queued". */
->> > +               asnew.tickets.head |= 0x1;
->> > +       } while (cmpxchg(&lock->head_tail,
->> > +                asold.head_tail,
->> > +                asnew.head_tail) != asold.head_tail);
->> > +
->> > +       /* Point the queue at the lock and go spin on it. */
->> > +       ACCESS_ONCE(tqhp->ref) = lock;
->> > +       return tkt_q_do_spin(lock, inc);
->> > +}
->> > +
->> > +/*
->> > + * Start handling a period of high contention by finding a queue to associate
->> > + * with this lock.  Returns true if successful (in which case we hold the
->> > + * lock) and false otherwise (in which case we do -not- hold the lock).
->> > + */
->> > +bool tkt_q_start_contend(arch_spinlock_t *lock, struct __raw_tickets inc)
->> > +{
->> > +       int i;
->> > +       int start;
->> > +
->> > +       /* Hash the lock address to find a starting point. */
->> > +       start = i = tkt_q_hash(lock);
->> > +
->> > +       /*
->> > +        * Each pass through the following loop attempts to associate
->> > +        * the lock with the corresponding queue.
->> > +        */
->> > +       do {
->> > +               /*
->> > +                * Use 0x1 to mark the queue in use, but also avoiding
->> > +                * any spinners trying to use it before we get it all
->> > +                * initialized.
->> > +                */
->> > +               if (tkt_q_heads[i].ref)
->> > +                       continue;
->> > +               if (cmpxchg(&tkt_q_heads[i].ref,
->> > +                           NULL,
->> > +                           (arch_spinlock_t *)0x1) == NULL) {
->> > +
->> > +                       /* Succeeded, now go initialize it. */
->> > +                       return tkt_q_init_contend(i, lock, inc);
->> > +               }
->> > +
->> > +               /* If someone beat us to it, go spin on their queue. */
->> > +               if (ACCESS_ONCE(lock->tickets.head) & 0x1)
->> > +                       return tkt_q_do_spin(lock, inc);
->> > +       } while ((i = tkt_q_next_slot(i)) != start);
->> > +
->> > +       /* All the queues are in use, revert to spinning on the ticket lock. */
->> > +       return false;
->> > +}
->> > +
->> > +bool tkt_spin_pass(arch_spinlock_t *ap, struct __raw_tickets inc)
->> > +{
->> > +       if (unlikely(inc.head & 0x1)) {
->> > +
->> > +               /* This lock has a queue, so go spin on the queue. */
->> > +               if (tkt_q_do_spin(ap, inc))
->> > +                       return true;
->> > +
->> > +               /* Get here if the queue is in transition: Retry next time. */
->> > +
->> > +       } else if (inc.tail - TKT_Q_SWITCH == inc.head) {
->> > +
->> > +               /*
->> > +                * This lock has lots of spinners, but no queue.
->> > +                * Go create a queue to spin on.
->> > +                */
->> > +               if (tkt_q_start_contend(ap, inc))
->> > +                       return true;
->> > +
->> > +               /* Get here if the queue is in transition: Retry next time. */
->> > +       }
->> > +
->> > +       /* Either no need for a queue or the queue is in transition.  Spin. */
->> > +       return false;
->> > +}
->> > +EXPORT_SYMBOL(tkt_spin_pass);
->> >
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> > the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> > Please read the FAQ at  http://www.tux.org/lkml/
->
->
+The patch is against the latest ipvs-next tree.
+
+diff --git a/include/net/ip_vs.h b/include/net/ip_vs.h
+index 4405886..22bea5d 100644
+--- a/include/net/ip_vs.h
++++ b/include/net/ip_vs.h
+@@ -1002,6 +1002,8 @@ struct netns_ipvs {
+ 	int			sysctl_sync_sock_size;
+ 	int			sysctl_cache_bypass;
+ 	int			sysctl_expire_nodest_conn;
++	int			sysctl_sloppy_tcp;
++	int			sysctl_sloppy_sctp;
+ 	int			sysctl_expire_quiescent_template;
+ 	int			sysctl_sync_threshold[2];
+ 	unsigned int		sysctl_sync_refresh_period;
+@@ -1044,6 +1046,8 @@ struct netns_ipvs {
+ #define DEFAULT_SYNC_THRESHOLD	3
+ #define DEFAULT_SYNC_PERIOD	50
+ #define DEFAULT_SYNC_VER	1
++#define DEFAULT_SLOPPY_TCP	0
++#define DEFAULT_SLOPPY_SCTP	0
+ #define DEFAULT_SYNC_REFRESH_PERIOD	(0U * HZ)
+ #define DEFAULT_SYNC_RETRIES		0
+ #define IPVS_SYNC_WAKEUP_RATE	8
+@@ -1080,6 +1084,16 @@ static inline int sysctl_sync_ver(struct netns_ipvs *ipvs)
+ 	return ipvs->sysctl_sync_ver;
+ }
+ 
++static inline int sysctl_sloppy_tcp(struct netns_ipvs *ipvs)
++{
++	return ipvs->sysctl_sloppy_tcp;
++}
++
++static inline int sysctl_sloppy_sctp(struct netns_ipvs *ipvs)
++{
++	return ipvs->sysctl_sloppy_sctp;
++}
++
+ static inline int sysctl_sync_ports(struct netns_ipvs *ipvs)
+ {
+ 	return ACCESS_ONCE(ipvs->sysctl_sync_ports);
+@@ -1133,6 +1147,16 @@ static inline int sysctl_sync_ver(struct netns_ipvs *ipvs)
+ 	return DEFAULT_SYNC_VER;
+ }
+ 
++static inline int sysctl_sloppy_tcp(struct netns_ipvs *ipvs)
++{
++	return DEFAULT_SLOPPY_TCP;
++}
++
++static inline int sysctl_sloppy_sctp(struct netns_ipvs *ipvs)
++{
++	return DEFAULT_SLOPPY_SCTP;
++}
++
+ static inline int sysctl_sync_ports(struct netns_ipvs *ipvs)
+ {
+ 	return 1;
+diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
+index 7014649..04f8cbc 100644
+--- a/net/netfilter/ipvs/ip_vs_ctl.c
++++ b/net/netfilter/ipvs/ip_vs_ctl.c
+@@ -1739,6 +1739,18 @@ static struct ctl_table vs_vars[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ 	{
++		.procname	= "sloppy_tcp",
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{
++		.procname	= "sloppy_sctp",
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{
+ 		.procname	= "expire_quiescent_template",
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+@@ -3722,6 +3734,8 @@ static int __net_init ip_vs_control_net_init_sysctl(struct net *net)
+ 	tbl[idx++].data = &ipvs->sysctl_sync_sock_size;
+ 	tbl[idx++].data = &ipvs->sysctl_cache_bypass;
+ 	tbl[idx++].data = &ipvs->sysctl_expire_nodest_conn;
++	tbl[idx++].data = &ipvs->sysctl_sloppy_tcp;
++	tbl[idx++].data = &ipvs->sysctl_sloppy_sctp;
+ 	tbl[idx++].data = &ipvs->sysctl_expire_quiescent_template;
+ 	ipvs->sysctl_sync_threshold[0] = DEFAULT_SYNC_THRESHOLD;
+ 	ipvs->sysctl_sync_threshold[1] = DEFAULT_SYNC_PERIOD;
+diff --git a/net/netfilter/ipvs/ip_vs_proto_sctp.c b/net/netfilter/ipvs/ip_vs_proto_sctp.c
+index 8646488..fd8f587 100644
+--- a/net/netfilter/ipvs/ip_vs_proto_sctp.c
++++ b/net/netfilter/ipvs/ip_vs_proto_sctp.c
+@@ -15,6 +15,7 @@ sctp_conn_schedule(int af, struct sk_buff *skb, struct ip_vs_proto_data *pd,
+ {
+ 	struct net *net;
+ 	struct ip_vs_service *svc;
++	struct netns_ipvs *ipvs;
+ 	sctp_chunkhdr_t _schunkh, *sch;
+ 	sctp_sctphdr_t *sh, _sctph;
+ 
+@@ -27,13 +28,14 @@ sctp_conn_schedule(int af, struct sk_buff *skb, struct ip_vs_proto_data *pd,
+ 	if (sch == NULL)
+ 		return 0;
+ 	net = skb_net(skb);
++	ipvs = net_ipvs(net);
+ 	rcu_read_lock();
+-	if ((sch->type == SCTP_CID_INIT) &&
++	if ((sysctl_sloppy_sctp(ipvs) || (sch->type == SCTP_CID_INIT)) &&
+ 	    (svc = ip_vs_service_find(net, af, skb->mark, iph->protocol,
+ 				      &iph->daddr, sh->dest))) {
+ 		int ignored;
+ 
+-		if (ip_vs_todrop(net_ipvs(net))) {
++		if (ip_vs_todrop(ipvs)) {
+ 			/*
+ 			 * It seems that we are very loaded.
+ 			 * We have to drop this packet :(
+@@ -232,21 +234,21 @@ static struct ipvs_sctp_nextstate
+ 	 * STATE : IP_VS_SCTP_S_NONE
+ 	 */
+ 	/*next state *//*event */
+-	{{IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_DATA_CLI */ },
++	{{IP_VS_SCTP_S_ESTABLISHED /* IP_VS_SCTP_EVE_DATA_CLI */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_DATA_SER */ },
+ 	 {IP_VS_SCTP_S_INIT_CLI /* IP_VS_SCTP_EVE_INIT_CLI */ },
+ 	 {IP_VS_SCTP_S_INIT_SER /* IP_VS_SCTP_EVE_INIT_SER */ },
+-	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_INIT_ACK_CLI */ },
++	 {IP_VS_SCTP_S_INIT_ACK_CLI /* IP_VS_SCTP_EVE_INIT_ACK_CLI */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_INIT_ACK_SER */ },
+-	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_COOKIE_ECHO_CLI */ },
++	 {IP_VS_SCTP_S_ECHO_CLI /* IP_VS_SCTP_EVE_COOKIE_ECHO_CLI */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_COOKIE_ECHO_SER */ },
+-	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_COOKIE_ACK_CLI */ },
++	 {IP_VS_SCTP_S_ESTABLISHED /* IP_VS_SCTP_EVE_COOKIE_ACK_CLI */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_COOKIE_ACK_SER */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_ABORT_CLI */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_ABORT_SER */ },
+-	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_CLI */ },
++	 {IP_VS_SCTP_S_SHUT_CLI /* IP_VS_SCTP_EVE_SHUT_CLI */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_SER */ },
+-	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_ACK_CLI */ },
++	 {IP_VS_SCTP_S_SHUT_ACK_CLI /* IP_VS_SCTP_EVE_SHUT_ACK_CLI */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_ACK_SER */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_COM_CLI */ },
+ 	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_COM_SER */ },
+diff --git a/net/netfilter/ipvs/ip_vs_proto_tcp.c b/net/netfilter/ipvs/ip_vs_proto_tcp.c
+index 50a1594..3fd23fa 100644
+--- a/net/netfilter/ipvs/ip_vs_proto_tcp.c
++++ b/net/netfilter/ipvs/ip_vs_proto_tcp.c
+@@ -39,6 +39,7 @@ tcp_conn_schedule(int af, struct sk_buff *skb, struct ip_vs_proto_data *pd,
+ 	struct net *net;
+ 	struct ip_vs_service *svc;
+ 	struct tcphdr _tcph, *th;
++	struct netns_ipvs *ipvs;
+ 
+ 	th = skb_header_pointer(skb, iph->len, sizeof(_tcph), &_tcph);
+ 	if (th == NULL) {
+@@ -46,14 +47,15 @@ tcp_conn_schedule(int af, struct sk_buff *skb, struct ip_vs_proto_data *pd,
+ 		return 0;
+ 	}
+ 	net = skb_net(skb);
++	ipvs = net_ipvs(net);
+ 	/* No !th->ack check to allow scheduling on SYN+ACK for Active FTP */
+ 	rcu_read_lock();
+-	if (th->syn &&
++	if ((sysctl_sloppy_tcp(ipvs) || th->syn) && !th->rst &&
+ 	    (svc = ip_vs_service_find(net, af, skb->mark, iph->protocol,
+ 				      &iph->daddr, th->dest))) {
+ 		int ignored;
+ 
+-		if (ip_vs_todrop(net_ipvs(net))) {
++		if (ip_vs_todrop(ipvs)) {
+ 			/*
+ 			 * It seems that we are very loaded.
+ 			 * We have to drop this packet :(
+@@ -401,7 +403,7 @@ static struct tcp_states_t tcp_states [] = {
+ /*        sNO, sES, sSS, sSR, sFW, sTW, sCL, sCW, sLA, sLI, sSA	*/
+ /*syn*/ {{sSR, sES, sES, sSR, sSR, sSR, sSR, sSR, sSR, sSR, sSR }},
+ /*fin*/ {{sCL, sCW, sSS, sTW, sTW, sTW, sCL, sCW, sLA, sLI, sTW }},
+-/*ack*/ {{sCL, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
++/*ack*/ {{sES, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
+ /*rst*/ {{sCL, sCL, sCL, sSR, sCL, sCL, sCL, sCL, sLA, sLI, sSR }},
+ 
+ /*	OUTPUT */
+@@ -415,7 +417,7 @@ static struct tcp_states_t tcp_states [] = {
+ /*        sNO, sES, sSS, sSR, sFW, sTW, sCL, sCW, sLA, sLI, sSA	*/
+ /*syn*/ {{sSR, sES, sES, sSR, sSR, sSR, sSR, sSR, sSR, sSR, sSR }},
+ /*fin*/ {{sCL, sFW, sSS, sTW, sFW, sTW, sCL, sCW, sLA, sLI, sTW }},
+-/*ack*/ {{sCL, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
++/*ack*/ {{sES, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
+ /*rst*/ {{sCL, sCL, sCL, sSR, sCL, sCL, sCL, sCL, sLA, sLI, sCL }},
+ };
+ 
+@@ -424,7 +426,7 @@ static struct tcp_states_t tcp_states_dos [] = {
+ /*        sNO, sES, sSS, sSR, sFW, sTW, sCL, sCW, sLA, sLI, sSA	*/
+ /*syn*/ {{sSR, sES, sES, sSR, sSR, sSR, sSR, sSR, sSR, sSR, sSA }},
+ /*fin*/ {{sCL, sCW, sSS, sTW, sTW, sTW, sCL, sCW, sLA, sLI, sSA }},
+-/*ack*/ {{sCL, sES, sSS, sSR, sFW, sTW, sCL, sCW, sCL, sLI, sSA }},
++/*ack*/ {{sES, sES, sSS, sSR, sFW, sTW, sCL, sCW, sCL, sLI, sSA }},
+ /*rst*/ {{sCL, sCL, sCL, sSR, sCL, sCL, sCL, sCL, sLA, sLI, sCL }},
+ 
+ /*	OUTPUT */
+@@ -438,7 +440,7 @@ static struct tcp_states_t tcp_states_dos [] = {
+ /*        sNO, sES, sSS, sSR, sFW, sTW, sCL, sCW, sLA, sLI, sSA	*/
+ /*syn*/ {{sSA, sES, sES, sSR, sSA, sSA, sSA, sSA, sSA, sSA, sSA }},
+ /*fin*/ {{sCL, sFW, sSS, sTW, sFW, sTW, sCL, sCW, sLA, sLI, sTW }},
+-/*ack*/ {{sCL, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
++/*ack*/ {{sES, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
+ /*rst*/ {{sCL, sCL, sCL, sSR, sCL, sCL, sCL, sCL, sLA, sLI, sCL }},
+ };
+ 
