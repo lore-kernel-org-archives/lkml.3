@@ -1,224 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab3FLM2l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 08:28:41 -0400
-Received: from oh-mserv2.uoregon.edu ([128.223.142.145]:37689 "EHLO
-	smtp.uoregon.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753067Ab3FLM2k (ORCPT
+	id S1755905Ab3FLMaH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 08:30:07 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:58951 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752420Ab3FLMaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 08:28:40 -0400
-X-Greylist: delayed 6382 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Jun 2013 08:28:39 EDT
-Message-Id: <201306121226.r5CCB5si008968@smtp.uoregon.edu>
-Content-Type: multipart/mixed; boundary="===============0421735902=="
+	Wed, 12 Jun 2013 08:30:04 -0400
+Date: Wed, 12 Jun 2013 14:30:00 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v3 07/12] PCI: tegra: Move PCIe driver to drivers/pci/host
+Message-ID: <20130612122959.GA32444@manwe>
+References: <1365000318-28256-1-git-send-email-thierry.reding@avionic-design.de>
+ <1365000318-28256-8-git-send-email-thierry.reding@avionic-design.de>
+ <516C46BC.2040707@wwwdotorg.org>
 MIME-Version: 1.0
-Subject: Read the attached From Tjoa Thain
-To: Recipients <casey@uoregon.edu>
-From: casey@uoregon.edu
-Date: Wed, 12 Jun 2013 13:24:20 +0100
-Reply-To: ttjoa@hotmail.com
-X-Antivirus: avast! (VPS 130610-1, 10/06/2013), Outbound message
-X-Antivirus-Status: Clean
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=12 suspectscore=68
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=-40
- reason=mlx scancount=1 engine=7.0.1-1211240000 definitions=main-1306120070
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-06-12_03:2013-06-12,2013-06-12,1970-01-01 signatures=0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bp/iNruPH9dso1Pn"
+Content-Disposition: inline
+In-Reply-To: <516C46BC.2040707@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You will not see this in a MIME-aware mail reader.
---===============0421735902==
-Content-Type: text/plain; charset="iso-8859-1"
-MIME-Version: 1.0
+
+--bp/iNruPH9dso1Pn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
-Content-Description: Mail message body
 
+On Mon, Apr 15, 2013 at 12:28:12PM -0600, Stephen Warren wrote:
+> On 04/03/2013 08:45 AM, Thierry Reding wrote:
+> > Move the PCIe driver from arch/arm/mach-tegra into the drivers/pci/host
+> > directory. The motivation is to collect various host controller drivers
+> > in the same location in order to facilitate refactoring.
+> >=20
+> > The Tegra PCIe driver has been largely rewritten, both in order to turn
+> > it into a proper platform driver and to add MSI (based on code by
+> > Krishna Kishore <kthota@nvidia.com>) as well as device tree support.
+>=20
+> > diff --git a/drivers/pci/host/pci-tegra.c b/drivers/pci/host/pci-tegra.c
+>=20
+> > +struct tegra_msi {
+> > +	DECLARE_BITMAP(used, INT_PCI_MSI_NR);
+> > +	struct irq_domain *domain;
+> > +	struct msi_chip chip;
+>=20
+> Nit: You could move that to be the first field in the struct, then
+> to_tegra_msi() would end up being a no-op, which might save a byte or two.
 
---===============0421735902==
-Content-Type: application/octet-stream
-MIME-Version: 1.0
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="interesting business proposal.docx"
+Done.
 
-UEsDBBQABgAIAAAAIQDd/JU3ZgEAACAFAAATAAgCW0NvbnRlbnRfVHlwZXNdLnhtbCCiBAIooAAC
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC0
-VMtuwjAQvFfqP0S+Vomhh6qqCBz6OLZIpR9g7A1Y9Uv28vr7bgJEVQtBKuUSKVnvzOzsxIPR2pps
-CTFp70rWL3osAye90m5Wso/JS37PsoTCKWG8g5JtILHR8PpqMNkESBl1u1SyOWJ44DzJOViRCh/A
-UaXy0Qqk1zjjQchPMQN+2+vdcekdgsMcaww2HDxBJRYGs+c1fd4qiWASyx63B2uukokQjJYCSSlf
-OvWDJd8xFNTZnElzHdINyWD8IENdOU6w63sja6JWkI1FxFdhSQZf+ai48nJhaYaiG+aATl9VWkLb
-X6OF6CWkRJ5bU7QVK7Tb6z+qI+HGQPp/FVvcLnrSOY4+JE57OZsf6s0rUDlZESCihnZ1x0cHRLLs
-EsPvkLvGb1KAlHfgzbN/tgcNzEnKin6JiZgaOJvvV/Ja6JMiVjB9v5j738C7hLT5kz7+wYz9dVF3
-H0gdb+634RcAAAD//wMAUEsDBBQABgAIAAAAIQAekRq38wAAAE4CAAALAAgCX3JlbHMvLnJlbHMg
-ogQCKKAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAjJLbSgNBDIbvBd9hyH032woi0tneSKF3IusDhJnsAXcOzKTavr2jILpQ217m9OfLT9ab
-g5vUO6c8Bq9hWdWg2JtgR99reG23iwdQWchbmoJnDUfOsGlub9YvPJGUoTyMMaui4rOGQSQ+ImYz
-sKNchci+VLqQHEkJU4+RzBv1jKu6vsf0VwOamabaWQ1pZ+9AtcdYNl/WDl03Gn4KZu/Yy4kVyAdh
-b9kuYipsScZyjWop9SwabDDPJZ2RYqwKNuBpotX1RP9fi46FLAmhCYnP83x1nANaXg902aJ5x687
-HyFZLBZ9e/tDg7MvaD4BAAD//wMAUEsDBBQABgAIAAAAIQDWZLNR+gAAADEDAAAcAAgBd29yZC9f
-cmVscy9kb2N1bWVudC54bWwucmVscyCiBAEooAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-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
-AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACcUk1P4zAQva+0/yHKvXXaFbBCU6NV0YoDLJUa
-4DxyJomFY1u2+ei/3zGhIYgbOc28mTy/92y4eB1M8Uwhamc35WpZlQVZ5Rptu015V/9d/C6LmNA2
-aJylTXmgWF7Inz9gF5ynkDTFgils3JR9Sv5ciKh6GjAueWx50rowYOI2dMK1rVZ06dTTQDaJdVWd
-CnpNZBtqFn4iLEfG8+f0XdLGqawv3tcHz4Il1DR4g4nkvyzHgJgAqF1CU+uBZMXw1MAOO4pyBWIs
-4MGFJspfvDRWsO0xoEqcnVydnYKY9fDHe6MVJk5V3mgVXHRtKm7f/Bf5fxDzFeBM9qSegk6HLGPe
-wrW2o5CxYGEBu4C+f1c3dbBXaGjLxmWLJhKIDwC2bvBoD/KKXgyltNihesSs4zjI5zzGO1+7yxzU
-O8NncOb5Qad+71GxtHV1Mnc/m8CeM6KG7Rz5PgC44rsJJh/KydmOmuPO10HO8358pHK1Xlb8vQV4
-xPiSptcj/wMAAP//AwBQSwMEFAAGAAgAAAAhAFs/7xhLAQAAfQIAABEACAFkb2NQcm9wcy9jb3Jl
-LnhtbCCiBAEooAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-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
---===============0421735902==--
+> > +static int tegra_pcie_write_conf(struct pci_bus *bus, unsigned int dev=
+fn,
+> > +				 int where, int size, u32 value)
+> ...
+> > +	if (bus->number =3D=3D 0) {
+> > +		unsigned int slot =3D PCI_SLOT(devfn);
+> > +		struct tegra_pcie_port *port;
+> > +
+> > +		list_for_each_entry(port, &pcie->ports, list) {
+> > +			if (port->index + 1 =3D=3D slot) {
+> > +				addr =3D port->base + (where & ~3);
+> > +				break;
+> > +			}
+> > +		}
+> > +	} else {
+> > +		addr =3D tegra_pcie_bus_map(pcie, bus->number);
+> > +		if (!addr) {
+> > +			dev_err(pcie->dev,
+> > +				"failed to map cfg. space for bus %u\n",
+> > +				bus->number);
+> > +			return PCIBIOS_DEVICE_NOT_FOUND;
+> > +		}
+> > +
+> > +		addr +=3D tegra_pcie_conf_offset(devfn, where);
+> > +	}
+>=20
+> It seems like that chunk of code could be shared between
+> tegra_pcie_read_conf() and tegra_pcie_write_conf().
+>=20
+> Also, tegra_pcie_read_conf() checks again for addr =3D=3D NULL and returns
+> if so. read and write should be consistent.
+
+Done.
+
+> > +static void tegra_pcie_port_free(struct tegra_pcie_port *port)
+> > +{
+> > +	struct tegra_pcie *pcie =3D port->pcie;
+> > +
+> > +	devm_iounmap(pcie->dev, port->base);
+> > +	devm_release_mem_region(pcie->dev, port->regs.start,
+> > +				resource_size(&port->regs));
+> > +	list_del(&port->list);
+> > +	devm_kfree(pcie->dev, port);
+> > +}
+>=20
+> Do ports get allocated and freed separately from the host controller,
+> such that it's actually worth manually calling the
+> devm_iounmap/release/free functions?
+
+Yes, they can be freed separately. When a link is down and hence no
+device is connected to the port, tegra_pcie_enable() will disable and
+free that port.
+
+That's in fact the only place where this is called because we don't
+actually support removing the controller. I don't know of any ARM
+architecture support to do that (i.e. there is no counterpart to
+pci_common_init()).
+
+> > +static int tegra_pcie_enable_controller(struct tegra_pcie *pcie)
+> ...
+> > +	/* disable all exceptions */
+> > +	afi_writel(pcie, 0, AFI_FPCI_ERROR_MASKS);
+>=20
+> Is that a good idea?
+
+I have no idea what that register means. It's one of the undocumented
+registers. Note that I also didn't change this, it's been there since
+the beginning.
+
+It's probably worth finding out about the register's meaning and about
+how to catch these exceptions at runtime, though. I'm adding Jay on Cc
+maybe he can research internally.
+
+> > +static int tegra_pcie_get_resources(struct tegra_pcie *pcie)
+>=20
+> > +	err =3D devm_request_irq(&pdev->dev, pcie->irq, tegra_pcie_isr,
+> > +			       IRQF_SHARED, "PCIE", pcie);
+>=20
+> devm_request_irq and IRQF_SHARED sounds like a bad combination; what if
+> the IRQ goes off after this driver's remove() is called, but before the
+> driver core devm cleanup runs?
+
+You're right. Changed to request_irq() in tegra_pcie_get_resources() and
+added free_irq() to tegra_pcie_put_resources().
+
+> > +static irqreturn_t tegra_pcie_msi_irq(int irq, void *data)
+> ...
+> > +	return IRQ_HANDLED;
+>=20
+> Shouldn't this function return IRQ_NONE if no MSI status bits were found
+> set?
+
+The IRQ isn't marked IRQF_SHARED, so I don't think this is needed.
+
+> > +static int tegra_pcie_enable_msi(struct tegra_pcie *pcie)
+>=20
+> > +	/* setup AFI/FPCI range */
+> > +	msi->pages =3D __get_free_pages(GFP_KERNEL, 3);
+>=20
+> If tegra_msi_setup_irq() hard-codes the MSI address as msi->pages, then
+> I expect you can get away with a single page here. Of course, perhaps
+> tegra_msi_setup_irq() is supposed to give a different address to every
+> MSI client? Even so, 256 clients * 4 bytes is still less than 1 page.
+
+Yes, I'll try setting the order to 0 and see if that still works. I
+don't have a setup with more than one MSI client so test results may not
+be very reliable, though.
+
+> > +static u32 tegra_pcie_get_xbar_config(struct tegra_pcie *pcie, u32 lan=
+es)
+> > +{
+> > +	struct device_node *np =3D pcie->dev->of_node;
+> > +
+> > +	switch (lanes) {
+> > +	case 0x00000004:
+> > +		dev_info(pcie->dev, "single-mode configuration\n");
+> > +		return AFI_PCIE_CONFIG_SM2TMS0_XBAR_CONFIG_SINGLE;
+> > +
+> > +	case 0x00000202:
+> > +		dev_info(pcie->dev, "dual-mode configuration\n");
+> > +		return AFI_PCIE_CONFIG_SM2TMS0_XBAR_CONFIG_DUAL;
+> > +	}
+> > +
+> > +	return 0;
+>=20
+> Shouldn't that return an error, and dev_err() about it? If not, then I
+> think using one of the #defines for the default would make the result a
+> lot more obvious.
+
+I've changed tegra_pcie_get_xbar_config() to return -EINVAL if an
+invalid combination of lanes is encountered and 0 otherwise, passing
+back the corresponding define in an output parameter. I think it's
+reasonable to fail if an invalid combination is provided instead of
+assuming that some default will work.
+
+> > +static int tegra_pcie_parse_dt(struct tegra_pcie *pcie)
+>=20
+> > +	pcie->xbar_config =3D tegra_pcie_get_xbar_config(pcie, lanes);
+> > +	if (!pcie->xbar_config) {
+> > +		dev_err(pcie->dev, "invalid lane configuration\n");
+> > +		return -EINVAL;
+> > +	}
+>=20
+> Oh, but AFI_PCIE_CONFIG_SM2TMS0_XBAR_CONFIG_SINGLE=3D=3D0, which is valid=
+=2E..
+
+Fixed by the above change.
+
+> > +static bool tegra_pcie_port_check_link(struct tegra_pcie_port *port)
+> ...
+> > +			if (value & 0x20000000)
+> > +				return true;
+>=20
+> Can we use a #define for 0x20000000?
+
+Yes, we could use something like RP_LINK_CONTROL_STATUS_DL_LINK_ACTIVE
+=66rom the TRM, though it's rather long...
+
+> > +static int tegra_pcie_enable(struct tegra_pcie *pcie)
+> > +{
+> > +	struct tegra_pcie_port *port, *tmp;
+> > +	struct hw_pci hw;
+> > +
+> > +	list_for_each_entry_safe(port, tmp, &pcie->ports, list) {
+> > +		dev_info(pcie->dev, "probing port %u, using %u lanes\n",
+> > +			 port->index, port->lanes);
+> > +
+> > +		tegra_pcie_port_enable(port);
+> > +
+> > +		if (tegra_pcie_port_check_link(port))
+> > +			continue;
+> > +
+> > +		dev_info(pcie->dev, "link %u down, ignoring\n", port->index);
+> > +
+> > +		tegra_pcie_port_disable(port);
+> > +		tegra_pcie_port_free(port);
+> > +	}
+>=20
+> Why is that needed; when would a port get enabled if it was already
+> enabled, and if it was already enabled, wouldn't you want this function
+> to be a no-op rather than destroying everything and starting again?
+
+I'm not sure I understand what you're saying. The intent of this
+function is to enable a port, check that there's a link and disable the
+port otherwise. That way we don't keep ports around where nothing is
+connected.
+
+> > +static int tegra_pcie_probe(struct platform_device *pdev)
+> ...
+> > +	pcibios_min_mem =3D 0;
+>=20
+> What does that mean/do? I wonder if that should be set to 0x80000000 by
+> the Tegra30 patches?
+
+ARM defines PCIBIOS_MIN_MEM to that variable. That macro in turn is only
+used by pci_bus_alloc_resource() AFAICT, which uses it to override the
+start of a resource when allocating if res->start =3D=3D 0. As such it
+designates a lower-bound of valid PCI memory addresses, so 0 on Tegra20
+and 0x80000000 on Tegra30 don't seem like good values. Maybe we need to
+set them to the lowest of the prefetchable and non-prefetchable memory
+areas as defined in the DT?
+
+It doesn't currently seem to matter at all, though, since we never pass
+in a range that's 0, so the start address of resources can never be 0
+and therefore PCIBIOS_MIN_MEM is never used.
+
+Thierry
+
+--bp/iNruPH9dso1Pn
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRuGnHAAoJEN0jrNd/PrOhZ2wP+wbfTMwHj/mzIsEJIqwVu7/k
+wFUPRPld364uIEmYSTJ9cjyriEBhK/gR1dinm9jCLD70JEwpkfULAArx6k2IJfKJ
+MvUnyXD5ArSXX7W712Q8rc4+X6j/Oen36WBKmw/ZtBQ0BPSMTVgEs2vMsaMCoyOL
+K8s352nsJrVX2WKfNs52ZJlZqHc5zl/DWH5Gf4JPIPqrXLftR5c+BqqJF6/5gB2s
+T3kvvJzgpKhPIATkYaes9BdBDW48s30kZ/Yj8c9BVPV5ocYaBv0JWDNTYH+t2XYD
+p91p60uk3piaCtDM+gQlkTDCrq54hUugj+C+HSyHb/jDT2nl/PYTUQo5P1Nj3VLz
+gXVUmcXWFQvHO4ZpSa5bLkl+HPC3sFcN3GpG/bZlrumSm/794BgPC6Mo4lCkn0Tg
+BJqixhbyIfpGSfzTDPWurZLQbj1oWqK3VqjFq0SODdjaanLwQvMGQwiOaep37aks
+6RXBLP60CLS53Vi2rsxIfWJG2zZhGVPxwcao9ZwD3PNOSwq0WvTZzne2EpABaLTa
+VSylIqAXFc4qjLBWjzQvXZFQJvP09wh6RitiLx1mWX1GVs8zX1fu4Z3lMV9jadzT
+mhqCrDxlYnn+qjo4NfT1dZ1U/67a2WGQHSaC30nQABv8jtRusKucQE+ndyPO+DOE
+gAK6HB/goOgi/nD/RehW
+=jWNR
+-----END PGP SIGNATURE-----
+
+--bp/iNruPH9dso1Pn--
