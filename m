@@ -1,92 +1,360 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab3FLMht (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 08:37:49 -0400
-Received: from 9.mo3.mail-out.ovh.net ([87.98.184.141]:35446 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751402Ab3FLMhr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 08:37:47 -0400
-Date: Wed, 12 Jun 2013 14:08:21 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Jingoo Han <jg1.han@samsung.com>,
-        "'Shuah Khan'" <shuah.kh@samsung.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com, rpurdie@rpsys.net,
-        FlorianSchandinat@gmx.de, tomi.valkeinen@ti.com,
-        rafael.j.wysocki@intel.com
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [PATCH] backlight: add CONFIG_PM_SLEEP to suspend/resume
- functions
-Message-ID: <20130612120821.GD305@game.jcrosoft.org>
-References: <000201ce631f$d4ad0d50$7e0727f0$@samsung.com>
- <1944274.r5ID26zhWd@wuerfel>
- <20130610163134.1c4124abba64c5f7099cb4ff@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130610163134.1c4124abba64c5f7099cb4ff@linux-foundation.org>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 7323978894262971380
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrhedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrhedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S1754875Ab3FLMjZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 08:39:25 -0400
+Received: from mout.gmx.net ([212.227.17.20]:61396 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752039Ab3FLMjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 08:39:24 -0400
+From: Dave Wiltshire <david.wiltshire@gmx.com>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, nsujir@broadcom.com,
+        mchan@broadcom.com, rmody@brocade.com, jcliburn@gmail.com,
+        chris.snook@gmail.com, jeffrey.t.kirsher@intel.com,
+        bruce.w.allan@intel.com, alexander.h.duyck@intel.com,
+        cooldavid@cooldavid.org, linux-driver@qlogic.com,
+        linux-wimax@intel.com, wimax@linuxwimax.org,
+        linux-wireless@vger.kernel.org, viro@zeniv.linux.org.uk,
+        eparis@redhat.com, edumazet@google.com, dev@openvswitch.org,
+        jhs@mojatatu.com, Dave Wiltshire <david.wiltshire@gmx.com>
+Subject: [PATCH 2/3] skbuff: skb_cow_head not used in some drivers.
+Date: Wed, 12 Jun 2013 22:40:10 +1000
+Message-Id: <1371040811-8319-1-git-send-email-david.wiltshire@gmx.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1371030906-2396-1-git-send-email-david.wiltshire@gmx.com>
+References: <1371030906-2396-1-git-send-email-david.wiltshire@gmx.com>
+X-Provags-ID: V03:K0:ZRHjLtczWLFuTiCZoLfjrlQ3sQnyVSAZkiICCDT8SwMpEJG/aw8
+ 2unSOe+ygFvuAXxMK4R1ArKwMWa0/ajGC74RHjp/eKWpL7M2rKtKq7X4j0iTx9+v1MBGoZ2
+ qzNQlVuGfjzX/iWpC/5OOYWMYOcnEWOqSTT+lKyEpDppDxvXfMVu0yhigkvvWAM/d0Dt6RA
+ 9dBYVrGhFcLF2lxqLvlEQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16:31 Mon 10 Jun     , Andrew Morton wrote:
-> On Fri, 07 Jun 2013 12:02:31 +0200 Arnd Bergmann <arnd@arndb.de> wrote:
-> 
-> > On Friday 07 June 2013 10:39:20 Jingoo Han wrote:
-> > > Add CONFIG_PM_SLEEP to suspend/resume functions to fix the following
-> > > build warning when CONFIG_PM_SLEEP is not selected. This is because
-> > > sleep PM callbacks defined by SIMPLE_DEV_PM_OPS are only used when
-> > > the CONFIG_PM_SLEEP is enabled.
-> > > 
-> > > drivers/video/backlight/backlight.c:211:12: warning: 'backlight_suspend' defined but not used [-Wunused-function]
-> > > drivers/video/backlight/backlight.c:225:12: warning: 'backlight_resume' defined but not used [-Wunused-function]
-> > > 
-> > > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> > > ---
-> > >  drivers/video/backlight/backlight.c |    2 ++
-> > >  1 file changed, 2 insertions(+)
-> > 
-> > Your patch looks ok, but I find it extremely annoying to have new warnings
-> > like this one come up every single day in linux-next. It really shouldn't
-> > be this hard to use a macro called SIMPLE_DEV_PM_OPS() correctly.
-> > 
-> > Below is an implementation of SIMPLE_DEV_PM_OPS and UNIVERSAL_DEV_PM_OPS
-> > that avoids this issue by introducing an unused reference to the suspend
-> > and resume functions. gcc is smart enough to leave out that unused code
-> > by itself, and it would actually improve compile-time coverage to have
-> > something like this, besides being harder to misuse.
-> > 
-> > This would be a better approach if we didn't already have all the "#ifdef
-> > CONFIG_PM_SLEEP" in place that hide the functions now. Unfortunately we
-> > already have over 300 uses of SIMPLE_DEV_PM_OPS/UNIVERSAL_DEV_PM_OPS
-> > in the kernel today, so removing all the #ifdef atomically without
-> > creating more build errors is rather hard to do.
-> > 
-> > Maybe someone has an idea how to extend my approach so it works with
-> > and without the #ifdef, to let us transition to a situation that no
-> > longer needs them.
-> 
-> You could create new macros, and add a checkpatch rule to remind people
-> to not use the old ones.  Then people can migrate over from the old
-> macros at a leisurely pace.
-> 
-> The problem will be in thinking up decent names for the new macros.
+There is a helper function skb_cow_head which checks if a skb needs to
+be expanded. This was unused in some drivers. Fixing that leads to
+cleaner code in the drivers.
 
-Agreed
+Signed-off-by: Dave Wiltshire <david.wiltshire@gmx.com>
+---
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c   |    8 ++------
+ drivers/net/ethernet/atheros/atl1e/atl1e_main.c   |    8 ++------
+ drivers/net/ethernet/atheros/atlx/atl1.c          |    8 ++------
+ drivers/net/ethernet/broadcom/tg3.c               |    3 +--
+ drivers/net/ethernet/brocade/bna/bnad.c           |   11 +++--------
+ drivers/net/ethernet/intel/e1000/e1000_main.c     |    8 ++------
+ drivers/net/ethernet/intel/e1000e/netdev.c        |    8 ++------
+ drivers/net/ethernet/intel/igb/igb_main.c         |    7 ++-----
+ drivers/net/ethernet/intel/igbvf/netdev.c         |   11 +++--------
+ drivers/net/ethernet/intel/ixgb/ixgb_main.c       |    8 ++------
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c     |   10 +++-------
+ drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |    7 ++-----
+ drivers/net/ethernet/jme.c                        |    3 +--
+ drivers/net/ethernet/qlogic/qlge/qlge_main.c      |    8 ++------
+ drivers/net/wimax/i2400m/netdev.c                 |    3 +--
+ 15 files changed, 30 insertions(+), 81 deletions(-)
 
-Best Regards,
-J.
+diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+index 786a874..8c69cda 100644
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+@@ -1931,14 +1931,10 @@ static int atl1c_tso_csum(struct atl1c_adapter *adapter,
+ 	u8 hdr_len;
+ 	u32 real_len;
+ 	unsigned short offload_type;
+-	int err;
+ 
+ 	if (skb_is_gso(skb)) {
+-		if (skb_header_cloned(skb)) {
+-			err = pskb_expand_head(skb, 0, 0, GFP_ATOMIC);
+-			if (unlikely(err))
+-				return -1;
+-		}
++		if (unlikely(skb_cow_head(skb, 0)))
++			return -1;
+ 		offload_type = skb_shinfo(skb)->gso_type;
+ 
+ 		if (offload_type & SKB_GSO_TCPV4) {
+diff --git a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
+index 895f537..ff10d03 100644
+--- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
++++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
+@@ -1599,14 +1599,10 @@ static int atl1e_tso_csum(struct atl1e_adapter *adapter,
+ 	u8 hdr_len;
+ 	u32 real_len;
+ 	unsigned short offload_type;
+-	int err;
+ 
+ 	if (skb_is_gso(skb)) {
+-		if (skb_header_cloned(skb)) {
+-			err = pskb_expand_head(skb, 0, 0, GFP_ATOMIC);
+-			if (unlikely(err))
+-				return -1;
+-		}
++		if (unlikely(skb_cow_head(skb, 0)))
++			return -1;
+ 		offload_type = skb_shinfo(skb)->gso_type;
+ 
+ 		if (offload_type & SKB_GSO_TCPV4) {
+diff --git a/drivers/net/ethernet/atheros/atlx/atl1.c b/drivers/net/ethernet/atheros/atlx/atl1.c
+index 538211d..da7169c 100644
+--- a/drivers/net/ethernet/atheros/atlx/atl1.c
++++ b/drivers/net/ethernet/atheros/atlx/atl1.c
+@@ -2115,14 +2115,10 @@ static int atl1_tso(struct atl1_adapter *adapter, struct sk_buff *skb,
+ {
+ 	u8 hdr_len, ip_off;
+ 	u32 real_len;
+-	int err;
+ 
+ 	if (skb_shinfo(skb)->gso_size) {
+-		if (skb_header_cloned(skb)) {
+-			err = pskb_expand_head(skb, 0, 0, GFP_ATOMIC);
+-			if (unlikely(err))
+-				return -1;
+-		}
++		if (unlikely(skb_cow_head(skb, 0)))
++			return -1;
+ 
+ 		if (skb->protocol == htons(ETH_P_IP)) {
+ 			struct iphdr *iph = ip_hdr(skb);
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index 28a645f..6daf8f9 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -7803,8 +7803,7 @@ static netdev_tx_t tg3_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		struct iphdr *iph;
+ 		u32 tcp_opt_len, hdr_len;
+ 
+-		if (skb_header_cloned(skb) &&
+-		    pskb_expand_head(skb, 0, 0, GFP_ATOMIC))
++		if (skb_cow_head(skb, 0))
+ 			goto drop;
+ 
+ 		iph = ip_hdr(skb);
+diff --git a/drivers/net/ethernet/brocade/bna/bnad.c b/drivers/net/ethernet/brocade/bna/bnad.c
+index b78e69e..ba5325a 100644
+--- a/drivers/net/ethernet/brocade/bna/bnad.c
++++ b/drivers/net/ethernet/brocade/bna/bnad.c
+@@ -2303,14 +2303,9 @@ bnad_mbox_irq_sync(struct bnad *bnad)
+ static int
+ bnad_tso_prepare(struct bnad *bnad, struct sk_buff *skb)
+ {
+-	int err;
+-
+-	if (skb_header_cloned(skb)) {
+-		err = pskb_expand_head(skb, 0, 0, GFP_ATOMIC);
+-		if (err) {
+-			BNAD_UPDATE_CTR(bnad, tso_err);
+-			return err;
+-		}
++	if (skb_cow_head(skb, 0)) {
++		BNAD_UPDATE_CTR(bnad, tso_err);
++		return -ENOMEM;
+ 	}
+ 
+ 	/*
+diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
+index 59ad007..828d850 100644
+--- a/drivers/net/ethernet/intel/e1000/e1000_main.c
++++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
+@@ -2704,14 +2704,10 @@ static int e1000_tso(struct e1000_adapter *adapter,
+ 	u32 cmd_length = 0;
+ 	u16 ipcse = 0, tucse, mss;
+ 	u8 ipcss, ipcso, tucss, tucso, hdr_len;
+-	int err;
+ 
+ 	if (skb_is_gso(skb)) {
+-		if (skb_header_cloned(skb)) {
+-			err = pskb_expand_head(skb, 0, 0, GFP_ATOMIC);
+-			if (err)
+-				return err;
+-		}
++		if (skb_cow_head(skb, 0))
++			return -ENOMEM;
+ 
+ 		hdr_len = skb_transport_offset(skb) + tcp_hdrlen(skb);
+ 		mss = skb_shinfo(skb)->gso_size;
+diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
+index 77f81cb..da3de16 100644
+--- a/drivers/net/ethernet/intel/e1000e/netdev.c
++++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+@@ -5070,12 +5070,8 @@ static int e1000_tso(struct e1000_ring *tx_ring, struct sk_buff *skb)
+ 	if (!skb_is_gso(skb))
+ 		return 0;
+ 
+-	if (skb_header_cloned(skb)) {
+-		int err = pskb_expand_head(skb, 0, 0, GFP_ATOMIC);
+-
+-		if (err)
+-			return err;
+-	}
++	if (skb_cow_head(skb, 0))
++		return -ENOMEM;
+ 
+ 	hdr_len = skb_transport_offset(skb) + tcp_hdrlen(skb);
+ 	mss = skb_shinfo(skb)->gso_size;
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index 6a0c1b6..917cacb 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -4292,11 +4292,8 @@ static int igb_tso(struct igb_ring *tx_ring,
+ 	if (!skb_is_gso(skb))
+ 		return 0;
+ 
+-	if (skb_header_cloned(skb)) {
+-		int err = pskb_expand_head(skb, 0, 0, GFP_ATOMIC);
+-		if (err)
+-			return err;
+-	}
++	if (skb_cow_head(skb, 0))
++		return -ENOMEM;
+ 
+ 	/* ADV DTYP TUCMD MKRLOC/ISCSIHEDLEN */
+ 	type_tucmd = E1000_ADVTXD_TUCMD_L4T_TCP;
+diff --git a/drivers/net/ethernet/intel/igbvf/netdev.c b/drivers/net/ethernet/intel/igbvf/netdev.c
+index 93eb7ee..5be1dc2 100644
+--- a/drivers/net/ethernet/intel/igbvf/netdev.c
++++ b/drivers/net/ethernet/intel/igbvf/netdev.c
+@@ -1911,19 +1911,14 @@ static int igbvf_tso(struct igbvf_adapter *adapter,
+ {
+ 	struct e1000_adv_tx_context_desc *context_desc;
+ 	unsigned int i;
+-	int err;
+ 	struct igbvf_buffer *buffer_info;
+ 	u32 info = 0, tu_cmd = 0;
+ 	u32 mss_l4len_idx, l4len;
+ 	*hdr_len = 0;
+ 
+-	if (skb_header_cloned(skb)) {
+-		err = pskb_expand_head(skb, 0, 0, GFP_ATOMIC);
+-		if (err) {
+-			dev_err(&adapter->pdev->dev,
+-			        "igbvf_tso returning an error\n");
+-			return err;
+-		}
++	if (skb_cow_head(skb, 0)) {
++		dev_err(&adapter->pdev->dev, "igbvf_tso returning an error\n");
++		return -ENOMEM;
+ 	}
+ 
+ 	l4len = tcp_hdrlen(skb);
+diff --git a/drivers/net/ethernet/intel/ixgb/ixgb_main.c b/drivers/net/ethernet/intel/ixgb/ixgb_main.c
+index fce3e92..59e768e 100644
+--- a/drivers/net/ethernet/intel/ixgb/ixgb_main.c
++++ b/drivers/net/ethernet/intel/ixgb/ixgb_main.c
+@@ -1226,17 +1226,13 @@ ixgb_tso(struct ixgb_adapter *adapter, struct sk_buff *skb)
+ 	unsigned int i;
+ 	u8 ipcss, ipcso, tucss, tucso, hdr_len;
+ 	u16 ipcse, tucse, mss;
+-	int err;
+ 
+ 	if (likely(skb_is_gso(skb))) {
+ 		struct ixgb_buffer *buffer_info;
+ 		struct iphdr *iph;
+ 
+-		if (skb_header_cloned(skb)) {
+-			err = pskb_expand_head(skb, 0, 0, GFP_ATOMIC);
+-			if (err)
+-				return err;
+-		}
++		if (skb_cow_head(skb, 0))
++			return -ENOMEM;
+ 
+ 		hdr_len = skb_transport_offset(skb) + tcp_hdrlen(skb);
+ 		mss = skb_shinfo(skb)->gso_size;
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index 047ebaa..57a0c00 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -6060,11 +6060,8 @@ static int ixgbe_tso(struct ixgbe_ring *tx_ring,
+ 	if (!skb_is_gso(skb))
+ 		return 0;
+ 
+-	if (skb_header_cloned(skb)) {
+-		int err = pskb_expand_head(skb, 0, 0, GFP_ATOMIC);
+-		if (err)
+-			return err;
+-	}
++	if (skb_cow_head(skb, 0))
++		return -ENOMEM;
+ 
+ 	/* ADV DTYP TUCMD MKRLOC/ISCSIHEDLEN */
+ 	type_tucmd = IXGBE_ADVTXD_TUCMD_L4T_TCP;
+@@ -6609,8 +6606,7 @@ netdev_tx_t ixgbe_xmit_frame_ring(struct sk_buff *skb,
+ 					IXGBE_TX_FLAGS_VLAN_PRIO_SHIFT;
+ 		if (tx_flags & IXGBE_TX_FLAGS_SW_VLAN) {
+ 			struct vlan_ethhdr *vhdr;
+-			if (skb_header_cloned(skb) &&
+-			    pskb_expand_head(skb, 0, 0, GFP_ATOMIC))
++			if (skb_cow_head(skb, 0))
+ 				goto out_drop;
+ 			vhdr = (struct vlan_ethhdr *)skb->data;
+ 			vhdr->h_vlan_TCI = htons(tx_flags >>
+diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+index 1f5166a..088402e 100644
+--- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
++++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+@@ -2726,11 +2726,8 @@ static int ixgbevf_tso(struct ixgbevf_ring *tx_ring,
+ 	if (!skb_is_gso(skb))
+ 		return 0;
+ 
+-	if (skb_header_cloned(skb)) {
+-		int err = pskb_expand_head(skb, 0, 0, GFP_ATOMIC);
+-		if (err)
+-			return err;
+-	}
++	if (skb_cow_head(skb, 0))
++		return -ENOMEM;
+ 
+ 	/* ADV DTYP TUCMD MKRLOC/ISCSIHEDLEN */
+ 	type_tucmd = IXGBE_ADVTXD_TUCMD_L4T_TCP;
+diff --git a/drivers/net/ethernet/jme.c b/drivers/net/ethernet/jme.c
+index 7fbe6ab..7493db2 100644
+--- a/drivers/net/ethernet/jme.c
++++ b/drivers/net/ethernet/jme.c
+@@ -2057,8 +2057,7 @@ static int
+ jme_expand_header(struct jme_adapter *jme, struct sk_buff *skb)
+ {
+ 	if (unlikely(skb_shinfo(skb)->gso_size &&
+-			skb_header_cloned(skb) &&
+-			pskb_expand_head(skb, 0, 0, GFP_ATOMIC))) {
++		     skb_cow_head(skb, 0))) {
+ 		dev_kfree_skb(skb);
+ 		return -1;
+ 	}
+diff --git a/drivers/net/ethernet/qlogic/qlge/qlge_main.c b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
+index 2553cf4..ab7e177 100644
+--- a/drivers/net/ethernet/qlogic/qlge/qlge_main.c
++++ b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
+@@ -2496,12 +2496,8 @@ static int ql_tso(struct sk_buff *skb, struct ob_mac_tso_iocb_req *mac_iocb_ptr)
+ {
+ 
+ 	if (skb_is_gso(skb)) {
+-		int err;
+-		if (skb_header_cloned(skb)) {
+-			err = pskb_expand_head(skb, 0, 0, GFP_ATOMIC);
+-			if (err)
+-				return err;
+-		}
++		if (skb_cow_head(skb, 0))
++			return -ENOMEM;
+ 
+ 		mac_iocb_ptr->opcode = OPCODE_OB_MAC_TSO_IOCB;
+ 		mac_iocb_ptr->flags3 |= OB_MAC_TSO_IOCB_IC;
+diff --git a/drivers/net/wimax/i2400m/netdev.c b/drivers/net/wimax/i2400m/netdev.c
+index 4889613..a9970f1 100644
+--- a/drivers/net/wimax/i2400m/netdev.c
++++ b/drivers/net/wimax/i2400m/netdev.c
+@@ -374,8 +374,7 @@ netdev_tx_t i2400m_hard_start_xmit(struct sk_buff *skb,
+ 
+ 	d_fnstart(3, dev, "(skb %p net_dev %p)\n", skb, net_dev);
+ 
+-	if (skb_header_cloned(skb) && 
+-	    pskb_expand_head(skb, 0, 0, GFP_ATOMIC))
++	if (skb_cow_head(skb, 0))
+ 		goto drop;
+ 
+ 	if (i2400m->state == I2400M_SS_IDLE)
+-- 
+1.7.10.4
+
