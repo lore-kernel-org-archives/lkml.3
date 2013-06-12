@@ -1,84 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317Ab3FLHWf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 03:22:35 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57808 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752280Ab3FLHWd convert rfc822-to-8bit (ORCPT
+	id S1755120Ab3FLH1Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 03:27:16 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:39033 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752280Ab3FLH1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 03:22:33 -0400
-From: "B, Ravi" <ravibabu@ti.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>
-Subject: RE: [PATCH v2 2/7] usb: phy: dsps: adding usbphy driver for am33xx
- platform
-Thread-Topic: [PATCH v2 2/7] usb: phy: dsps: adding usbphy driver for am33xx
- platform
-Thread-Index: AQHOZnPPYPfsaLwAwUyNU6t2EvLj+Jkvq6kAgACXOACAABPRAIABS15QgAAMDLA=
-Date: Wed, 12 Jun 2013 07:22:28 +0000
-Message-ID: <6C6B28D4DC342643927BEAFCE8707BF63EB040E1@DBDE04.ent.ti.com>
-References: <1370935072-21056-1-git-send-email-ravibabu@ti.com>
- <1370935072-21056-3-git-send-email-ravibabu@ti.com>
- <51B6E282.9030400@ti.com>
- <6C6B28D4DC342643927BEAFCE8707BF63EB02C13@DBDE04.ent.ti.com>
- <51B771FC.1000203@cogentembedded.com>
- <6C6B28D4DC342643927BEAFCE8707BF63EB040A8@DBDE04.ent.ti.com>
-In-Reply-To: <6C6B28D4DC342643927BEAFCE8707BF63EB040A8@DBDE04.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 12 Jun 2013 03:27:14 -0400
+From: Xiaoguang Chen <chenxg@marvell.com>
+To: <viresh.kumar@linaro.org>, <rjw@sisk.pl>
+CC: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <njiang1@marvell.com>,
+        <zjwu@marvell.com>, <ylmao@marvell.com>, <chenxg.marvell@gmail.com>,
+        Xiaoguang Chen <chenxg@marvell.com>
+Subject: [PATCH v3] cpufreq: fix governor start/stop race condition
+Date: Wed, 12 Jun 2013 15:26:26 +0800
+Message-ID: <1371021986-20985-1-git-send-email-chenxg@marvell.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Typo.. corrected
-"The /proc/iomem does not show this common register"
+cpufreq governor stop and start should be kept in sequence.
+If not, there will be unexpected behavior, for example:
 
------Original Message-----
-From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-owner@vger.kernel.org] On Behalf Of B, Ravi
-Sent: Wednesday, June 12, 2013 12:51 PM
-To: Sergei Shtylyov
-Cc: ABRAHAM, KISHON VIJAY; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Balbi, Felipe
-Subject: RE: [PATCH v2 2/7] usb: phy: dsps: adding usbphy driver for am33xx platform
+we have 4 cpus and policy->cpu=cpu0, cpu1/2/3 are linked to cpu0.
+the normal sequence is as below:
 
->>>> +
->>>> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "phy_wkup");
->>>> +	phy->phy_wkup = ioremap(res->start, resource_size(res));
+1) Current governor is userspace, one application tries to set
+governor to ondemand. it will call __cpufreq_set_policy in which it
+will stop userspace governor and then start ondemand governor.
 
->>> devm_ioremap?
+2) Current governor is userspace, now cpu0 hotplugs in cpu3, it will
+call cpufreq_add_policy_cpu. on which it first stops userspace
+governor, and then starts userspace governor.
 
->> The phy_wakeup register is common across two instances of phy, devm_ioremap_resource() will fail to map for twice for same register space.
+Now if the sequence of above two cases interleaves, it becames
+below sequence:
 
->   I've already told you the register can't be shared between devices like this.
->  BTW, you haven't replied to my request concerning your /proc/iomem contents... 
+1) application stops userspace governor
+2)                                      hotplug stops userspace governor
+3) application starts ondemand governor
+4)                                      hotplug starts a governor
 
-I have missed that specific mail. The /proc/iomem does not show this common register. As you suggest to create a third device for this shared register? I agree it can be done. 
-Initially I thought this should be part of control module, but do we have control module frame work for every SoC(am335x)?
-Every SoC has many such shared register to handle control/status logic for Soc specific IP(s)? 
-If we create separate device node for each such registers, this will end up in adding more files to kernel. 
+in step 4, hotplug is supposed to start userspace governor, but now
+the governor has been changed by application to ondemand, so hotplug
+starts ondemand governor again !!!!
 
-We should create single control module node for each SoC,
+The solution is: do not allow stop one policy's governor multi-times
+Governor stop should only do once for one policy, after it is stopped,
+no other governor stop should be executed.
 
-	cm: control_module@44e10000 {
-                        compatible = "ti,dsps-usbphy";
-                        reg = 0x44e10648 0x4
-		     
-                               0x44e10XXX 0x4
-		    ....>
-                        reg-names = "phy_wkup", "mmc_control", <xxxreg_ctrl>, <xxxreg_status>;
-                        id = <0>;
-                };
-Have common control module APIs to control these registers, can be used by other driver modules. 
+Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
+---
+ drivers/cpufreq/cpufreq.c | 9 +++++++++
+ include/linux/cpufreq.h   | 1 +
+ 2 files changed, 10 insertions(+)
 
---
-Ravi B
---
-To unsubscribe from this list: send the line "unsubscribe linux-usb" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 2d53f47..b4a2c94 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1562,6 +1562,11 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+ 
+ 	pr_debug("__cpufreq_governor for CPU %u, event %u\n",
+ 						policy->cpu, event);
++
++	if ((!policy->governor_enabled && (event == CPUFREQ_GOV_STOP)) ||
++	    (policy->governor_enabled && (event == CPUFREQ_GOV_START)))
++		return 0;
++
+ 	ret = policy->governor->governor(policy, event);
+ 
+ 	if (!ret) {
+@@ -1569,6 +1574,10 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+ 			policy->governor->initialized++;
+ 		else if (event == CPUFREQ_GOV_POLICY_EXIT)
+ 			policy->governor->initialized--;
++		else if (event == CPUFREQ_GOV_STOP)
++			policy->governor_enabled = 0;
++		else if (event == CPUFREQ_GOV_START)
++			policy->governor_enabled = 1;
+ 	}
+ 
+ 	/* we keep one module reference alive for
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 037d36a..c12db73 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -107,6 +107,7 @@ struct cpufreq_policy {
+ 	unsigned int		policy; /* see above */
+ 	struct cpufreq_governor	*governor; /* see below */
+ 	void			*governor_data;
++	int			governor_enabled; /* governor start/stop flag */
+ 
+ 	struct work_struct	update; /* if update_policy() needs to be
+ 					 * called, but you're in IRQ context */
+-- 
+1.8.0
+
