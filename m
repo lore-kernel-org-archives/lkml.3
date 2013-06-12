@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758108Ab3FLVDq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 17:03:46 -0400
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:39090 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758040Ab3FLVDn (ORCPT
+	id S1758092Ab3FLVDm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 17:03:42 -0400
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:61444 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758040Ab3FLVDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 17:03:43 -0400
+	Wed, 12 Jun 2013 17:03:39 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         koverstreet@google.com, linux-kernel@vger.kernel.org,
         cl@linux-foundation.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 06/11] cgroup: rename CGRP_REMOVED to CGRP_DEAD
-Date: Wed, 12 Jun 2013 14:03:11 -0700
-Message-Id: <1371070996-20613-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 04/11] cgroup: use kzalloc() and list_del_init()
+Date: Wed, 12 Jun 2013 14:03:09 -0700
+Message-Id: <1371070996-20613-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1371070996-20613-1-git-send-email-tj@kernel.org>
 References: <1371070996-20613-1-git-send-email-tj@kernel.org>
@@ -22,152 +22,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We will add another flag indicating that the cgroup is in the process
-of being killed.  REMOVING / REMOVED is more difficult to distinguish
-and cgroup_is_removing()/cgroup_is_removed() are a bit awkward.  Also,
-later percpu_ref usage will involve "kill"ing the refcnt.
+There's no point in using kmalloc() and list_del() instead of the
+clearing variants for trivial stuff.  We can live dangerously
+elsewhere.  Use kzalloc() and list_del_init() instead and drop 0
+inits.
 
- s/CGRP_REMOVED/CGRP_DEAD/
- s/cgroup_is_removed()/cgroup_is_dead()
+While at it, do trivial code reorganization in cgroup_file_open().
 
-This patch is purely cosmetic.
+This patch doesn't introduce any functional changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- include/linux/cgroup.h |  2 +-
- kernel/cgroup.c        | 30 ++++++++++++++----------------
- 2 files changed, 15 insertions(+), 17 deletions(-)
+ kernel/cgroup.c | 28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 7b16882..75a6733 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -143,7 +143,7 @@ static inline void css_put(struct cgroup_subsys_state *css)
- /* bits in struct cgroup flags field */
- enum {
- 	/* Control Group is dead */
--	CGRP_REMOVED,
-+	CGRP_DEAD,
- 	/*
- 	 * Control Group has previously had a child cgroup or a task,
- 	 * but no longer (only if CGRP_NOTIFY_ON_RELEASE is set)
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 585f0a5..0343df5 100644
+index 0b5cd0e..585f0a5 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -226,9 +226,9 @@ static int css_refcnt(struct cgroup_subsys_state *css)
- }
+@@ -404,8 +404,8 @@ static void __put_css_set(struct css_set *cset, int taskexit)
+ 	list_for_each_entry_safe(link, tmp_link, &cset->cgrp_links, cgrp_link) {
+ 		struct cgroup *cgrp = link->cgrp;
  
- /* convenient tests for these bits */
--static inline bool cgroup_is_removed(const struct cgroup *cgrp)
-+static inline bool cgroup_is_dead(const struct cgroup *cgrp)
- {
--	return test_bit(CGRP_REMOVED, &cgrp->flags);
-+	return test_bit(CGRP_DEAD, &cgrp->flags);
- }
+-		list_del(&link->cset_link);
+-		list_del(&link->cgrp_link);
++		list_del_init(&link->cset_link);
++		list_del_init(&link->cgrp_link);
  
- /**
-@@ -300,7 +300,7 @@ static inline struct cftype *__d_cft(struct dentry *dentry)
- static bool cgroup_lock_live_group(struct cgroup *cgrp)
- {
- 	mutex_lock(&cgroup_mutex);
--	if (cgroup_is_removed(cgrp)) {
-+	if (cgroup_is_dead(cgrp)) {
- 		mutex_unlock(&cgroup_mutex);
- 		return false;
+ 		/*
+ 		 * We may not be holding cgroup_mutex, and if cgrp->count is
+@@ -576,7 +576,7 @@ static void free_cgrp_cset_links(struct list_head *links_to_free)
+ 	struct cgrp_cset_link *link, *tmp_link;
+ 
+ 	list_for_each_entry_safe(link, tmp_link, links_to_free, cset_link) {
+-		list_del(&link->cset_link);
++		list_del_init(&link->cset_link);
+ 		kfree(link);
  	}
-@@ -892,7 +892,7 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
- 	if (S_ISDIR(inode->i_mode)) {
- 		struct cgroup *cgrp = dentry->d_fsdata;
+ }
+@@ -597,7 +597,7 @@ static int allocate_cgrp_cset_links(int count, struct list_head *tmp_links)
+ 	INIT_LIST_HEAD(tmp_links);
  
--		BUG_ON(!(cgroup_is_removed(cgrp)));
-+		BUG_ON(!(cgroup_is_dead(cgrp)));
- 		call_rcu(&cgrp->rcu_head, cgroup_free_rcu);
- 	} else {
- 		struct cfent *cfe = __d_cfe(dentry);
-@@ -2366,7 +2366,7 @@ static ssize_t cgroup_file_write(struct file *file, const char __user *buf,
- 	struct cftype *cft = __d_cft(file->f_dentry);
- 	struct cgroup *cgrp = __d_cgrp(file->f_dentry->d_parent);
+ 	for (i = 0; i < count; i++) {
+-		link = kmalloc(sizeof(*link), GFP_KERNEL);
++		link = kzalloc(sizeof(*link), GFP_KERNEL);
+ 		if (!link) {
+ 			free_cgrp_cset_links(tmp_links);
+ 			return -ENOMEM;
+@@ -658,7 +658,7 @@ static struct css_set *find_css_set(struct css_set *old_cset,
+ 	if (cset)
+ 		return cset;
  
--	if (cgroup_is_removed(cgrp))
-+	if (cgroup_is_dead(cgrp))
- 		return -ENODEV;
- 	if (cft->write)
- 		return cft->write(cgrp, cft, file, buf, nbytes, ppos);
-@@ -2411,7 +2411,7 @@ static ssize_t cgroup_file_read(struct file *file, char __user *buf,
- 	struct cftype *cft = __d_cft(file->f_dentry);
- 	struct cgroup *cgrp = __d_cgrp(file->f_dentry->d_parent);
+-	cset = kmalloc(sizeof(*cset), GFP_KERNEL);
++	cset = kzalloc(sizeof(*cset), GFP_KERNEL);
+ 	if (!cset)
+ 		return NULL;
  
--	if (cgroup_is_removed(cgrp))
-+	if (cgroup_is_dead(cgrp))
- 		return -ENODEV;
+@@ -1754,14 +1754,14 @@ static void cgroup_kill_sb(struct super_block *sb) {
+ 	write_lock(&css_set_lock);
  
- 	if (cft->read)
-@@ -2834,7 +2834,7 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
- 
- 		mutex_lock(&inode->i_mutex);
- 		mutex_lock(&cgroup_mutex);
--		if (!cgroup_is_removed(cgrp))
-+		if (!cgroup_is_dead(cgrp))
- 			cgroup_addrm_files(cgrp, ss, cfts, is_add);
- 		mutex_unlock(&cgroup_mutex);
- 		mutex_unlock(&inode->i_mutex);
-@@ -3002,14 +3002,14 @@ struct cgroup *cgroup_next_sibling(struct cgroup *pos)
- 	/*
- 	 * @pos could already have been removed.  Once a cgroup is removed,
- 	 * its ->sibling.next is no longer updated when its next sibling
--	 * changes.  As CGRP_REMOVED is set on removal which is fully
-+	 * changes.  As CGRP_DEAD is set on removal which is fully
- 	 * serialized, if we see it unasserted, it's guaranteed that the
- 	 * next sibling hasn't finished its grace period even if it's
- 	 * already removed, and thus safe to dereference from this RCU
- 	 * critical section.  If ->sibling.next is inaccessible,
--	 * cgroup_is_removed() is guaranteed to be visible as %true here.
-+	 * cgroup_is_dead() is guaranteed to be visible as %true here.
- 	 */
--	if (likely(!cgroup_is_removed(pos))) {
-+	if (likely(!cgroup_is_dead(pos))) {
- 		next = list_entry_rcu(pos->sibling.next, struct cgroup, sibling);
- 		if (&next->sibling != &pos->parent->children)
- 			return next;
-@@ -4386,7 +4386,7 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
- 	 * attempts fail thus maintaining the removal conditions verified
- 	 * above.
- 	 *
--	 * Note that CGRP_REMVOED clearing is depended upon by
-+	 * Note that CGRP_DEAD assertion is depended upon by
- 	 * cgroup_next_sibling() to resume iteration after dropping RCU
- 	 * read lock.  See cgroup_next_sibling() for details.
- 	 */
-@@ -4396,7 +4396,7 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
- 		WARN_ON(atomic_read(&css->refcnt) < 0);
- 		atomic_add(CSS_DEACT_BIAS, &css->refcnt);
+ 	list_for_each_entry_safe(link, tmp_link, &cgrp->cset_links, cset_link) {
+-		list_del(&link->cset_link);
+-		list_del(&link->cgrp_link);
++		list_del_init(&link->cset_link);
++		list_del_init(&link->cgrp_link);
+ 		kfree(link);
  	}
--	set_bit(CGRP_REMOVED, &cgrp->flags);
-+	set_bit(CGRP_DEAD, &cgrp->flags);
+ 	write_unlock(&css_set_lock);
  
- 	/* tell subsystems to initate destruction */
- 	for_each_subsys(cgrp->root, ss)
-@@ -5066,7 +5066,7 @@ static void check_for_release(struct cgroup *cgrp)
- 		int need_schedule_work = 0;
+ 	if (!list_empty(&root->root_list)) {
+-		list_del(&root->root_list);
++		list_del_init(&root->root_list);
+ 		root_count--;
+ 	}
  
- 		raw_spin_lock(&release_list_lock);
--		if (!cgroup_is_removed(cgrp) &&
-+		if (!cgroup_is_dead(cgrp) &&
- 		    list_empty(&cgrp->release_list)) {
- 			list_add(&cgrp->release_list, &release_list);
- 			need_schedule_work = 1;
-@@ -5212,9 +5212,7 @@ __setup("cgroup_disable=", cgroup_disable);
-  * Functons for CSS ID.
-  */
+@@ -2478,10 +2478,12 @@ static int cgroup_file_open(struct inode *inode, struct file *file)
+ 	cft = __d_cft(file->f_dentry);
  
--/*
-- *To get ID other than 0, this should be called when !cgroup_is_removed().
-- */
-+/* to get ID other than 0, this should be called when !cgroup_is_dead() */
- unsigned short css_id(struct cgroup_subsys_state *css)
- {
- 	struct css_id *cssid;
+ 	if (cft->read_map || cft->read_seq_string) {
+-		struct cgroup_seqfile_state *state =
+-			kzalloc(sizeof(*state), GFP_USER);
++		struct cgroup_seqfile_state *state;
++
++		state = kzalloc(sizeof(*state), GFP_USER);
+ 		if (!state)
+ 			return -ENOMEM;
++
+ 		state->cft = cft;
+ 		state->cgroup = __d_cgrp(file->f_dentry->d_parent);
+ 		file->f_op = &cgroup_seqfile_operations;
+@@ -3514,7 +3516,7 @@ static struct cgroup_pidlist *cgroup_pidlist_find(struct cgroup *cgrp,
+ 		}
+ 	}
+ 	/* entry not found; create a new one */
+-	l = kmalloc(sizeof(struct cgroup_pidlist), GFP_KERNEL);
++	l = kzalloc(sizeof(struct cgroup_pidlist), GFP_KERNEL);
+ 	if (!l) {
+ 		mutex_unlock(&cgrp->pidlist_mutex);
+ 		return l;
+@@ -3523,8 +3525,6 @@ static struct cgroup_pidlist *cgroup_pidlist_find(struct cgroup *cgrp,
+ 	down_write(&l->mutex);
+ 	l->key.type = type;
+ 	l->key.ns = get_pid_ns(ns);
+-	l->use_count = 0; /* don't increment here */
+-	l->list = NULL;
+ 	l->owner = cgrp;
+ 	list_add(&l->links, &cgrp->pidlists);
+ 	mutex_unlock(&cgrp->pidlist_mutex);
+@@ -3738,7 +3738,7 @@ static void cgroup_release_pid_array(struct cgroup_pidlist *l)
+ 	BUG_ON(!l->use_count);
+ 	if (!--l->use_count) {
+ 		/* we're the last user if refcount is 0; remove and free */
+-		list_del(&l->links);
++		list_del_init(&l->links);
+ 		mutex_unlock(&l->owner->pidlist_mutex);
+ 		pidlist_free(l->list);
+ 		put_pid_ns(l->key.ns);
 -- 
 1.8.2.1
 
