@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab3FLRjG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 13:39:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50786 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755392Ab3FLRjE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 13:39:04 -0400
-Date: Wed, 12 Jun 2013 10:39:40 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Tushar Behera <tushar.behera@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        thierry.reding@gmail.com, patches@linaro.org,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Rob Landley <rob@landley.net>
-Subject: Re: [PATCH 15/15] lib: devres: Remove deprecated
- devm_request_and_ioremap
-Message-ID: <20130612173940.GB20850@kroah.com>
-References: <1370864113-17895-1-git-send-email-tushar.behera@linaro.org>
- <1370864113-17895-16-git-send-email-tushar.behera@linaro.org>
- <CAHp75Ve31DA5WVWH7Ha0s+Voe8v77Q_8nOXhg1fKODb0zJxg5w@mail.gmail.com>
+	id S1755727Ab3FLRlS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 13:41:18 -0400
+Received: from smtp5.ono.com ([62.42.230.183]:38261 "EHLO resmaa12.ono.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752711Ab3FLRlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 13:41:17 -0400
+X-Greylist: delayed 359 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Jun 2013 13:41:16 EDT
+Message-ID: <51B8B153.40100@ono.com>
+Date: Wed, 12 Jun 2013 19:35:15 +0200
+From: =?UTF-8?B?SkEgTWFnYWxsw7Nu?= <jamagallon@ono.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:22.0) Gecko/20100101 Thunderbird/22.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHp75Ve31DA5WVWH7Ha0s+Voe8v77Q_8nOXhg1fKODb0zJxg5w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Accessing more than 2GB of memory with a 32 bit kernel
+References: <1371056055.24587.140661243104889.29DDEEB4@webmail.messagingengine.com>
+In-Reply-To: <1371056055.24587.140661243104889.29DDEEB4@webmail.messagingengine.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 03:43:59PM +0300, Andy Shevchenko wrote:
-> On Mon, Jun 10, 2013 at 2:35 PM, Tushar Behera <tushar.behera@linaro.org> wrote:
-> > Now that all the users of devm_request_and_ioremap have been converted
-> > to use devm_ioremap_resource, remove the definition.
-> 
-> This is a function which was exported to the drivers including
-> third-party drivers.
+On 06/12/2013 06:54 PM, Simon Brown wrote:
+> Hello,
+>
+> For the sake of an old prototype peripheral I'm using a non PAE 32 bit
+> x86 kernel and I'm having trouble accessing memory above 2 GB. The
+> system has 4GB installed and all is well with a PAE kernel.
+>
 
-That doesn't matter, we've cleaned up all in-kernel users of it, so we
-can safely delete it.
+I have also 3 or 4 32-bit boxes running with more than 2Gb, I will try to
+give you some ideas...
 
-> I suggest to mark it as __deprecated and wait couple of release cycles.
+> I'm obviously expecting to lose some memory due to memory mapped devices
+> but I wasn't expecting to lose 2GB. Instead I'm suspecting a BIOS bug.
+> The system reports:
+> free -m
+>               total       used       free     shared    buffers
+>               cached
+> Mem:          2012        491       1521          0         40
+> 277
+>
+> The mtrr table looked odd so I enabled sanitisation:
+> [    0.000000] original variable MTRRs
+> [    0.000000] reg 0, base: 2GB, range: 2GB, type UC
+> [    0.000000] reg 1, base: 0GB, range: 4GB, type WB
+> [    0.000000] reg 2, base: 4GB, range: 2GB, type WB
+> [    0.000000] total RAM covered: 4096M
+> [    0.000000] Found optimal setting for mtrr clean up
+> [    0.000000]  gran_size: 64K  chunk_size: 64K         num_reg: 2
+> lose cover RAM: 0G
+> [    0.000000] New variable MTRRs
+> [    0.000000] reg 0, base: 0GB, range: 2GB, type WB
+> [    0.000000] reg 1, base: 4GB, range: 2GB, type WB
+>
+> I don't understand the gap in the new table.
+>
 
-No, that's not going to help anyone, just delete it and move on.
+MTRR is set initially like:
+- 4GB at address 0x, from which the last 2GB are unusable = 2GB cacheable
+- 2GB more starting at address 4GB, normally cacheable
 
-thanks,
+After the cleanup, the 4-2 part is cleaned and left as just 2:
+- 2GB at 0
+- a hole from 2GB to 4GB
+- 2GB at 4Gb
 
-greg k-h
+It looks like your mobo BIOS maps the second GB pair up from address 4GB,
+so you can not use them without PAE. If you find an option
+in your BIOS to force it to map them under 4GB, the a normal kernel
+with CONFIG_HIGHMEM4G=y will see it.
+Look in BIOS for something like 'endable/disable continous/discrete mtrr'
+or 'harware memory hole' or something like that.
+
+> The motherboard is an Asus P5K with an Intel® P35 chipset. I'm using the
+> ubuntu lucid kernel (2.6.32) but the problem is also present with the
+> ubuntu precise kernel.
+> I'm at the limit of my understanding, can anyone advise how to debug
+> further?
+>
+-- 
+J.A. Magallon <jamagallon()ono!com>        \               Winter is coming...
