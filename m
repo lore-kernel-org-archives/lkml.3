@@ -1,66 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102Ab3FLVda (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 17:33:30 -0400
-Received: from smtp6.ono.com ([62.42.230.189]:36184 "EHLO resmaa14.ono.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755220Ab3FLVd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 17:33:29 -0400
-Message-ID: <51B8E926.3030504@ono.com>
-Date: Wed, 12 Jun 2013 23:33:26 +0200
-From: =?UTF-8?B?SkEgTWFnYWxsw7Nu?= <jamagallon@ono.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:22.0) Gecko/20100101 Thunderbird/22.0
+	id S1758041Ab3FLVoi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 17:44:38 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:58849 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753659Ab3FLVog (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 17:44:36 -0400
+Date: Wed, 12 Jun 2013 14:44:35 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCHv7 01/11] clockevents: Prefer CPU local devices over
+ global devices
+Message-ID: <20130612214435.GE10823@codeaurora.org>
+References: <1370291642-13259-1-git-send-email-sboyd@codeaurora.org>
+ <1370291642-13259-2-git-send-email-sboyd@codeaurora.org>
+ <51B0A6E8.20909@linaro.org>
+ <20130606180425.GQ599@codeaurora.org>
+ <51B10D85.1060507@linaro.org>
+ <20130606223848.GR599@codeaurora.org>
 MIME-Version: 1.0
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Accessing more than 2GB of memory with a 32 bit kernel
-References: <1371056055.24587.140661243104889.29DDEEB4@webmail.messagingengine.com> <51B8D59B.1040801@redhat.com>
-In-Reply-To: <51B8D59B.1040801@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130606223848.GR599@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2013 10:10 PM, Rik van Riel wrote:
-> On 06/12/2013 12:54 PM, Simon Brown wrote:
->> Hello,
->>
->> For the sake of an old prototype peripheral I'm using a non PAE 32 bit
->> x86 kernel and I'm having trouble accessing memory above 2 GB. The
->> system has 4GB installed and all is well with a PAE kernel.
->>
->> I'm obviously expecting to lose some memory due to memory mapped devices
->> but I wasn't expecting to lose 2GB. Instead I'm suspecting a BIOS bug.
->> The system reports:
->> free -m
->>               total       used       free     shared    buffers
->>               cached
->> Mem:          2012        491       1521          0         40
->> 277
->>
->> The mtrr table looked odd so I enabled sanitisation:
->> [    0.000000] original variable MTRRs
->> [    0.000000] reg 0, base: 2GB, range: 2GB, type UC
->> [    0.000000] reg 1, base: 0GB, range: 4GB, type WB
->> [    0.000000] reg 2, base: 4GB, range: 2GB, type WB
->> [    0.000000] total RAM covered: 4096M
->> [    0.000000] Found optimal setting for mtrr clean up
->> [    0.000000]  gran_size: 64K  chunk_size: 64K         num_reg: 2
->> lose cover RAM: 0G
->> [    0.000000] New variable MTRRs
->> [    0.000000] reg 0, base: 0GB, range: 2GB, type WB
->> [    0.000000] reg 1, base: 4GB, range: 2GB, type WB
->>
->> I don't understand the gap in the new table.
->
-> Check the e820 table. Chances are the BIOS is reserving 2GB to
-> map various devices (especially video cards) below the 4GB limit.
->
->
+On 06/06, Stephen Boyd wrote:
+> On 06/07, Daniel Lezcano wrote:
+> > On 06/06/2013 08:04 PM, Stephen Boyd wrote:
+> > > On 06/06, Daniel Lezcano wrote:
+> > >> On 06/03/2013 10:33 PM, Stephen Boyd wrote:
+> > >>> On an SMP system with only one global clockevent and a dummy
+> > >>> clockevent per CPU we run into problems. We want the dummy
+> > >>> clockevents to be registered as the per CPU tick devices, but
+> > >>> we can only achieve that if we register the dummy clockevents
+> > >>> before the global clockevent or if we artificially inflate the
+> > >>> rating of the dummy clockevents to be higher than the rating
+> > >>> of the global clockevent. Failure to do so leads to boot
+> > >>> hangs when the dummy timers are registered on all other CPUs
+> > >>> besides the CPU that accepted the global clockevent as its tick
+> > >>> device and there is no broadcast timer to poke the dummy
+> > >>> devices.
+> > >>>
+> > >>> If we're registering multiple clockevents and one clockevent is
+> > >>> global and the other is local to a particular CPU we should
+> > >>> choose to use the local clockevent regardless of the rating of
+> > >>> the device. This way, if the clockevent is a dummy it will take
+> > >>> the tick device duty as long as there isn't a higher rated tick
+> > >>> device and any global clockevent will be bumped out into
+> > >>> broadcast mode, fixing the problem described above.
+> > >>
+> > >> It is not clear the connection between the changelog, the patch and the
+> > >> comment. Could you clarify a bit ?
+> > >>
+> > > 
+> > > There is one tick device per-cpu and one broadcast device. The
+> > > broadcast device can only be a global clockevent, whereas the
+> > > per-cpu tick device can be a global clockevent or a per-cpu
+> > > clockevent. The code tries hard to keep per-cpu clockevents in
+> > > the tick device slots but it has an ordering/rating requirement
+> > > that doesn't work when there are only dummy per-cpu devices and
+> > > one global device.
+> > > 
+> > > Perhaps an example will help. Let's say you only have one global
+> > > clockevent such as the sp804, and you have SMP enabled. To
+> > > support SMP we have to register dummy clockevents on each CPU so
+> > > that the sp804 can go into broadcast mode. If we don't do this,
+> > > only the CPU that registered the sp804 will get interrupts while
+> > > the other CPUs will be left with no tick device and thus no
+> > > scheduling. To fix this we register dummy clockevents on all the
+> > > CPUs _before_ we register the sp804 to force the sp804 into the
+> > > broadcast slot. Or we give the dummy clockevents a higher rating
+> > > than the sp804 so that when we register them after the sp804 the
+> > > sp804 is bumped out to broadcast duty.
+> > > 
+> > > If the dummy devices are registered before the sp804 we can give
+> > > the dummies a low rating and the sp804 will still go into the
+> > > broadcast slot due to this code:
+> > > 
+> > > 	/*
+> > > 	 * If we have a cpu local device already, do not replace it
+> > > 	 * by a non cpu local device
+> > > 	 */
+> > > 	if (curdev && cpumask_equal(curdev->cpumask, cpumask_of(cpu)))
+> > > 		goto out_bc;
+> > > 
+> > > If we register the sp804 before the dummies we're also fine as
+> > > long as the rating of the dummy is more than the sp804.  Playing
+> > > games with the dummy rating is not very nice so this patch fixes
+> > > it by allowing the per-cpu device to replace the global device no
+> > > matter what the rating of the global device is.
+> > > 
+> > > This fixes the sp804 case when the dummy is rated lower than
+> > > sp804 and it removes any ordering requirement from the
+> > > registration of clockevents. It also completes the logic above
+> > > where we prefer cpu local devices over non cpu local devices.
+> > 
+> > Thanks for the detailed explanation.
+> > 
+> > Did Thomas reacted to this patch ?
+> > 
+> 
+> So far there has been no response from Thomas.
+> 
 
-Acording to manual, that mobo has an option to "Memory remap feature"
-in BIOS that looks like that...
+Will you ack this patch anyway? Or do we need Thomas to review
+this patch? It seems that this patch series has stalled again.
 
 -- 
-J.A. Magallon <jamagallon()ono!com>        \               Winter is coming...
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
