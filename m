@@ -1,82 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757421Ab3FLQlq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 12:41:46 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55376 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757351Ab3FLQlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 12:41:44 -0400
-Date: Wed, 12 Jun 2013 19:40:26 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Philip Avinash <avinashphilip@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>
-Subject: Re: [PATCH 2/4] ARM: dts: AM33XX: Add PWMSS device tree nodes
-Message-ID: <20130612164026.GC22120@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1370526759-31163-1-git-send-email-bigeasy@linutronix.de>
- <1370526759-31163-3-git-send-email-bigeasy@linutronix.de>
- <51B89D78.6010906@linutronix.de>
+	id S1757383Ab3FLQln (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 12:41:43 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:60708 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757351Ab3FLQll (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 12:41:41 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <michal.simek@xilinx.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Dinh Nguyen <dinguyen@altera.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH v2 3/3] arm: dt: zynq: Add support for the zed platform
+Date: Wed, 12 Jun 2013 09:41:08 -0700
+Message-Id: <1371055268-32337-4-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.8.3
+In-Reply-To: <1371055268-32337-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <1371055268-32337-1-git-send-email-soren.brinkmann@xilinx.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XWOWbaMNXpFDWE00"
-Content-Disposition: inline
-In-Reply-To: <51B89D78.6010906@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---XWOWbaMNXpFDWE00
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Add a DT fragment for the Zed Zynq platform and a corresponding
+target to the Makefile
 
-Hi,
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+I used the 'xlnx,...' compat strings since it seems this is what is
+used in the Xilinx and Digilent vendor trees.
 
-On Wed, Jun 12, 2013 at 06:10:32PM +0200, Sebastian Andrzej Siewior wrote:
-> On 06/06/2013 03:52 PM, Sebastian Andrzej Siewior wrote:
-> > From: Philip Avinash <avinashphilip@ti.com>
-> >=20
-> > Add PWMSS device tree nodes in relation with ECAP & EHRPWM DT nodes to
-> > AM33XX SoC family. Also populates device tree nodes for ECAP & EHRPWM by
-> > adding necessary properties like pwm-cells, base reg & set disabled as
-> > status.
-> >=20
-> > Signed-off-by: Philip Avinash <avinashphilip@ti.com>
-> > Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
-> > Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
->=20
-> Can someone please grab #2 till #4? Paul took just #1 as far as I can
-> tell.
+	Sören
 
-DTS should be Benoit Cousson
+ arch/arm/boot/dts/Makefile     |  3 ++-
+ arch/arm/boot/dts/zynq-zed.dts | 31 +++++++++++++++++++++++++++++++
+ 2 files changed, 33 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/boot/dts/zynq-zed.dts
 
---=20
-balbi
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 2aecf7e..d34af4c 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -207,7 +207,8 @@ dtb-$(CONFIG_ARCH_VT8500) += vt8500-bv07.dtb \
+ 	wm8650-mid.dtb \
+ 	wm8850-w70v2.dtb
+ dtb-$(CONFIG_ARCH_ZYNQ) += zynq-zc702.dtb \
+-	zynq-zc706.dtb
++	zynq-zc706.dtb \
++	zynq-zed.dtb
+ 
+ targets += dtbs
+ targets += $(dtb-y)
+diff --git a/arch/arm/boot/dts/zynq-zed.dts b/arch/arm/boot/dts/zynq-zed.dts
+new file mode 100644
+index 0000000..72bb348
+--- /dev/null
++++ b/arch/arm/boot/dts/zynq-zed.dts
+@@ -0,0 +1,31 @@
++/*
++ *  Copyright (C) 2011 Xilinx
++ *  Copyright (C) 2012 National Instruments Corp.
++ *  Copyright (C) 2013 Xilinx
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++/dts-v1/;
++/include/ "zynq-7000.dtsi"
++
++/ {
++	model = "Zynq Zed Development Board";
++	compatible = "xlnx,zynq-zed", "xlnx,zynq-7000";
++
++	memory {
++		device_type = "memory";
++		reg = <0 0x20000000>;
++	};
++
++	chosen {
++		bootargs = "console=ttyPS1,115200 earlyprintk";
++	};
++
++};
+-- 
+1.8.3
 
---XWOWbaMNXpFDWE00
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRuKR6AAoJEIaOsuA1yqRErY8QAIMQqji3CDR/ycenwR8GW2M4
-rf8BMZtrzU9JKsrpaC8vN/nDFQuqn+OxYQP472Cfk29MznWU8VGMwCE+lin7nXbh
-yISrCAPZ2EmbFRruH+oB3HMCsH+zkcW14vu1mUBfB6I3B8RI2/U6H4ca8q1wvFSm
-hw3R5q8vUmPaRdUzJbE4OqI8LZYAkhyzK1ic7OKwBb89MdAggm8o49yYn9ZIGJVj
-7MZnZiGU5obCZinyZP+rSdZ2dmeGI0UuLAS21M0IYO1yum/QxPotdT+e4Mko8j8U
-MWgNL+MhdwRArZxsgVwN29jRv9looitMUj4I9RSs+RgI9W18BbPf04QMBAmCvb47
-ZVrPmCDJI7keaCK/ZORUhOLcgPuEUjfjJskCLBKNiDOA3hYGVEKw30WrWzpSOdxw
-6vkIyKXS2Pi7kp0DRiPw75Q6bC6NWseIHZQy/TnNcKtfsWvjUtRInmvI0QYaYl0E
-pKp+htJNG8/nCzSV6HlzAl/0YcBU2hzv3W5o3PMIypHLqzFnxWXt9fBVQc5ZZq5i
-50UiKkExrB3aoZRib8tpq82K6+aRC4vu4iwOIF+TeR9X1gLnijV61AZA2GyqIVn4
-T+X29uwNTJePJ/mwv7OBBkM03Mi5U1bOMIW1oDugJteToxikWKtUk37Lm5MUtN8N
-outPOF9LfFIB3M4QElyj
-=weH5
------END PGP SIGNATURE-----
-
---XWOWbaMNXpFDWE00--
