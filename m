@@ -1,96 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab3FMGml (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 02:42:41 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55168 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435Ab3FMGmk (ORCPT
+	id S932544Ab3FMGpl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 02:45:41 -0400
+Received: from mail.advaoptical.com ([91.217.199.15]:35950 "EHLO
+	mail.advaoptical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752863Ab3FMGpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 02:42:40 -0400
-Date: Thu, 13 Jun 2013 07:42:35 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Dave Chiluk <chiluk@canonical.com>
-Cc: Petr Vandrovec <petr@vandrovec.name>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] ncpfs: fix rmdir returns Device or resource busy
-Message-ID: <20130613064235.GK4165@ZenIV.linux.org.uk>
-References: <1369781410-24473-1-git-send-email-chiluk@canonical.com>
- <51A918B8.20303@canonical.com>
- <CA+i2_De5HHw2H9SvZ=W+QAOcy0M7jFac88OK6aeYdJVCGL6b+A@mail.gmail.com>
- <51AF9D77.2000901@canonical.com>
- <CA+i2_DfEhn_CPRBmyy4scG7UEL5bGsjodcq00Nyx4JZjnuSBGQ@mail.gmail.com>
- <51B205A1.4040405@canonical.com>
- <20130607161452.GI13110@ZenIV.linux.org.uk>
- <20130613020122.GA20274@ZenIV.linux.org.uk>
+	Thu, 13 Jun 2013 02:45:36 -0400
+Message-ID: <51B96A68.40102@advaoptical.com>
+Date: Thu, 13 Jun 2013 09:44:56 +0300
+From: Oded Gabbay <ogabbay@advaoptical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130613020122.GA20274@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Scott Wood <scottwood@freescale.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: <stef.van.os@prodrive.nl>, <timur@tabi.org>,
+        <Dongsheng.Wang@freescale.com>, <paulus@samba.org>,
+        <netdev@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
+        <B38951@freescale.com>
+Subject: Re: [PATCH] MDIO: FSL_PQ_MDIO: Fix bug on incorrect offset of tbipa
+ register
+References: <1371041258-15298-1-git-send-email-ogabbay@advaoptical.com> <51B88EED.6090709@linutronix.de> <1371061871.18413.44@snotra>
+In-Reply-To: <1371061871.18413.44@snotra>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.179.55]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-06-13_03:2013-06-12,2013-06-13,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 03:01:22AM +0100, Al Viro wrote:
-> On Fri, Jun 07, 2013 at 05:14:52PM +0100, Al Viro wrote:
-> > On Fri, Jun 07, 2013 at 11:09:05AM -0500, Dave Chiluk wrote:
-> > > Can't you just use the patch from my original e-mail?  Anyhow I attached
-> > > it an already signed-off patch.
-> > > 
-> > > Al Viro Can you integrate it now?
-> > 
-> > Applied...  FWIW, patch directly in mail body is more convenient to deal with.
-> 
-> Actually, looking at that stuff...  Why are we bothering with -EBUSY for
-> removal of busy directories on ncpfs, anyway?  It's not just rmdir(), it's
-> overwriting rename() as well.  IS_DEADDIR checks in fs/namei.c and fs/readdir.c
-> mean that the only method of ncpfs directories that might get called after
-> successful removal is ->setattr() and it would be trivial to add the check
-> in ncp_notify_change() that would make it fail for dead directories without
-> bothering the server at all...
-> 
-> Related question: what happens if you open / unlink / fchmod on ncpfs?
+On 06/12/2013 09:31 PM, Scott Wood wrote:
+> On 06/12/2013 10:08:29 AM, Sebastian Andrzej Siewior wrote:
+>> On 06/12/2013 02:47 PM, Oded Gabbay wrote:
+>> > This patch fixes a bug in the fsl_pq_mdio.c module and in relevant 
+>> device-tree
+>> > files regarding the correct offset of the tbipa register in the eTSEC
+>> > controller in some of Freescale's PQ3 and QorIQ SoC.
+>> > The bug happens when the mdio in the device tree is configured to 
+>> be compatible
+>> > to "fsl,gianfar-tbi". Because the mdio device in the device tree 
+>> points to
+>> > addresses 25520, 26520 or 27520 (depends on the controller ID), the 
+>> variable
+>> > priv->map at function fsl_pq_mdio_probe, points to that address. 
+>> However,
+>> > later in the function there is a write to register tbipa that is 
+>> actually
+>> > located at 25030, 26030 or 27030. Because the correct address is 
+>> not io mapped,
+>> > the contents are written to a different register in the controller.
+>> > The fix sets the address of the mdio device to start at 25000, 
+>> 26000 or 27000
+>> > and changes the mii_offset field to 0x520 in the relevant entry
+>> > (fsl,gianfar-tbi) of the fsl_pq_mdio_match array.
+>> >
+>> > Note: This patch may break MDIO functionallity of some old 
+>> Freescale's SoC
+>> > until Freescale will fix their device tree files. Basically, every 
+>> device tree
+>> > which contains an mdio device that is compatible to 
+>> "fsl,gianfar-tbi" should be
+>> > examined.
+>>
+>> Not as is.
+>> Please add a check for the original address. If it has 0x520 at the end
+>> print a warning and fix it up. Please add to the patch description
+>> which register is modified instead if this patch is not applied.
+>> Depending on how critical this it might has to go stable.
+>
+> I'm not sure it's stable material if this is something that has never 
+> worked...
+>
+> The device tree binding will also need to be fixed to note the 
+> difference in "reg" between "fsl,gianfar-mdio" and "fsl-gianfar-tbi" 
+> -- and should give an example of the latter.
+>
+> -Scott
+I read the 2 comments and I'm not sure what should be the best way to 
+move ahead.
+I would like to describe what is the impact of not accepting this patch:
+When you connect any eTSEC, except the first one, using SGMII, you must 
+configure the TBIPA register because
+the MII management configuration uses the TBIPA address as part of the 
+SGMII initialization sequence,
+as described in the P2020 Reference manual.
+So, if that register is not initialized, the sequence is broken the and 
+eTSEC is not functioning (can not send/receive
+packets).
+I still think the best way to fix it is what I did:
+1. Point the priv->map to the start of the whole registers range of the 
+eTSEC
+2. Set mii_offset to 0x520 in the "gianfar-tbi" entry of the 
+"fsl_pq_mdio_match" array.
+3. Fix all the usages of the "gianfar-tbi" in the device tree files - 
+change the starting address and reg range
 
-Speaking of crap used only by ncpfs: I think we can use ->d_iput() to get rid
-of d_validate() for good.  The only remaining user is ncpfs; what happens there
-is that we use the page cache of directory to cache the references to dentries
-made by readdir.  We could do the following trick:
-	* have ->d_fsdata for these dentries a pointer into the cache page where
-the reference back to dentry is stored
-	* ->freepage() for those pages consisting of
-		grab global spinlock
-		go through all dentries still pointed to by pointers in that
-page, zeroing ->d_fsdata
-		drop the spinlock
-	* ->d_iput() for those dentries consisting of
-		grab the same spinlock
-		if ->d_fsdata is non-zero, store NULL at the address pointed
-to by it
-		drop the spinlock
-	* ncp_dget_fpos() would
-		grab that spinlock
-		check if the reference to dentry in the position we are
-interested in is non-NULL
-			grab ->d_lock
-			if DCACHE_DENTRY_KILLED is not set
-				bump ->d_count
-				drop ->d_lock
-				drop the spinlock
-				return dentry
-			// dentry is doomed
-			clear the reference
-			drop ->d_lock
-		drop the spinlock
-		return NULL
-	* ncp_fill_cache() would insert the sucker into cache and set
-->d_fsdata under the same spinlock.
+I think this is the best way because it is stated in "fsl_pq_mdio_probe" 
+function that:
+     /*
+      * Some device tree nodes represent only the MII registers, and
+      * others represent the MAC and MII registers.  The 'mii_offset' field
+      * contains the offset of the MII registers inside the mapped register
+      * space.
+      */
+and that's why we have priv->map and priv->regs. So my fix goes 
+according to the current design of the driver.
 
-IOW, instead of wanking with untrusted pointers to dentries, we simply make
-sure we clean the pointer when dentry is going away and clean the reference
-from dentry to the location of that pointer when the page is going away.
-
-Objections?  I can do a patch along those lines, but I've nothing to test it
-on.  Had that been cifs, I could at least use samba to test the fucker, but
-I've no idea how to do that with ncpfs and I'm not too fond of checking how
-much bitrot has mars_nwe suffered...
+-Oded
