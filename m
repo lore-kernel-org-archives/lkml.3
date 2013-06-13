@@ -1,51 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759304Ab3FMWBA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 18:01:00 -0400
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:57935 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755049Ab3FMWA7 (ORCPT
+	id S1759326Ab3FMWCG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 18:02:06 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:36991 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756798Ab3FMWCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 18:00:59 -0400
+	Thu, 13 Jun 2013 18:02:05 -0400
+Message-ID: <51BA4158.906@wwwdotorg.org>
+Date: Thu, 13 Jun 2013 16:02:00 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <cover.1369177867.git.luto@amacapital.net>
-References: <cover.1369177867.git.luto@amacapital.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 13 Jun 2013 15:00:37 -0700
-Message-ID: <CALCETrW5NVQYaU1Et=wkEeUx2HcQ5kDcgW2WDJ6TAk=LYNp2oQ@mail.gmail.com>
-Subject: Re: [PATCH 0/5] x86: oops on uaccess faults outside of user addresses
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, trinity@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Hebbar Gururaja <gururaja.hebbar@ti.com>,
+        Mark Brown <broonie@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: Re: [PATCH 1/3] drivers: pinctrl sleep and idle states in the core
+References: <1370439873-30053-1-git-send-email-linus.walleij@stericsson.com> <51AF73E9.90506@wwwdotorg.org> <CACRpkdY_s_RkErKLqVOWdE-A80CZOq7+VZSE8jcYSUbYkvsYYQ@mail.gmail.com>
+In-Reply-To: <CACRpkdY_s_RkErKLqVOWdE-A80CZOq7+VZSE8jcYSUbYkvsYYQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 2:07 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> Currently, __get_user can't trigger an OOPS -- any exception will be
-> caught and return -EFAULT.  This means that, if an access_ok check is
-> missing somewhere, then an attacker can freely use it to probe for valid
-> kernel mappings.
->
-> This series annotates all of the exception fixups as "catch anything" or
-> "catch valid uaccess faults", and skips the fixup (and hence oopses) if
-> an instruction of the latter type faults for any reason other than a
-> page fault to a user address.
->
-> I know of only one bug of this type; it's fixed in patch 5.
->
-> Perhaps surprisingly, this seems to survive Trinity fairly well.
->
-> Andy Lutomirski (5):
->   x86: Split "utter crap" pnpbios fixup out of fixup_exception
->   x86: Clean up extable entry format (and free up a bit)
->   x86: Annotate _ASM_EXTABLE users to distinguish uaccess from
->     everything else
->   x86: Don't fixup uaccess faults to kernel or non-canonical addresses
->   net: Block MSG_CMSG_COMPAT in send(m)msg and recv(m)msg
+On 06/11/2013 02:28 AM, Linus Walleij wrote:
+> On Wed, Jun 5, 2013 at 7:22 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> 
+>>> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+>>
+>>> +int pinctrl_pm_select_default_state(struct device *dev)
+>>
+>>> +int pinctrl_pm_select_sleep_state(struct device *dev)
+>>
+>>> +int pinctrl_pm_select_idle_state(struct device *dev)
+>>
+>> The implementation of those 3 functions is basically identical. I'd be
+>> inclined to move it to a helper function, and just pass (dev,
+>> pins->xxx_state) to it.
+> 
+> Just to follow up on this now that I'm adding one more state.
+> 
+> I tried to create a refactoring patch for this but couldn't come
+> up with anything apropriate along the lines above. For example
+> this function:
+...
 
-Patch 5 is (for better or for worse) in -linus now.  What's the status
-of the other four?  (They're certainly not 3.10 material.)
+Don't you just want something very roughly like:
 
---Andy
+int pinctrl_pm_select_xxx_state(struct device *dev,
+		unsigned long offset, char *name)
+{
+	struct dev_pin_info *pins = dev->pins;
+	struct pinctrl_state **s = (void *)(((char *)pins) + offset)
+	int ret;
+
+	if (!pins)
+		return 0;
+	if (IS_ERR(*s))
+		return 0; /* No default state */
+	ret = pinctrl_select_state(pins->p, *s);
+	if (ret)
+		dev_err(dev, "failed to activate %s pinctrl state\n",
+			name);
+	return ret;
+}
+
+int pinctrl_pm_select_default_state(struct device *dev)
+{
+    return pinctrl_pm_select_xxx_state(dev,
+		offsetof(struct dev_pin_info, default_state),
+		"default");
+}
+
