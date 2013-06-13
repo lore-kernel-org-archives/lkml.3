@@ -1,122 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758560Ab3FMVIo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 17:08:44 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:47625 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756348Ab3FMVIm (ORCPT
+	id S1758928Ab3FMVMS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 17:12:18 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:35692 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757669Ab3FMVMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 17:08:42 -0400
-Date: Thu, 13 Jun 2013 14:08:53 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Gabriel de Perthuis <g2p.code@gmail.com>
-Cc: linux-bcache@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bcache: Set the logical block size to a sensible value
-Message-ID: <20130613210853.GB8650@moria.home.lan>
-References: <51BA2A9E.2070905@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51BA2A9E.2070905@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 13 Jun 2013 17:12:17 -0400
+X-Greylist: delayed 390 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Jun 2013 17:12:17 EDT
+From: Dominik Paulus <dominik.paulus@fau.de>
+To: devel@linuxdriverproject.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-kernel@i4.cs.fau.de,
+        David Binderman <dcb314@hotmail.com>,
+        Devendra Naga <devendra.aaru@gmail.com>, Priit Laes <plaes@plaes.org>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Tobias Polzer <tobias.polzer@fau.de>,
+        Dominik Paulus <dominik.paulus@fau.de>
+Subject: [PATCH] Fix obvious logic error in staging/csr
+Date: Thu, 13 Jun 2013 23:00:35 +0200
+Message-Id: <1371157235-4697-1-git-send-email-dominik.paulus@fau.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 10:25:02PM +0200, Gabriel de Perthuis wrote:
-> Preserve the backing device's logical size, use 512 byte
-> sectors when there is no backing device.
-> 
-> The logical block size has no impact on performance, but
-> it alters the meaning of on-disk structures like partition
-> tables.  Preserve the backing device's sector size to keep
-> bcache transparent, and use 512 byte sectors like everyone
-> else when no backing device is present.
+From: Tobias Polzer <tobias.polzer@fau.de>
 
-To recap the IRC discussion for the list - we can't take this patch
-currently.
+In uf_process_ma_packet_req() (staging/csr/unifi_pdu_processing.c), the
+test for
+(staInfo->timSet != CSR_WIFI_TIM_RESET) || (staInfo->timSet !=
+CSR_WIFI_TIM_RESETTING)
+obviously makes no sense and causes GCC to emit a warning if
+-Wlogical-op is enabled.
+As suggested in the referenced bug report, || was replaced by &&.
 
-For those less familiar with these bits, the logical block size (per the
-sysfs docs) is the smallest IO size the device is capable of doing -
-physical_block_size can be bigger, for devices that do rmw internally.
+References: https://bugzilla.kernel.org/show_bug.cgi?id=46571
+Reported-By: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Tobias Polzer <tobias.polzer@fau.de>
+Signed-off-by: Dominik Paulus <dominik.paulus@fau.de>
+---
+ drivers/staging/csr/unifi_pdu_processing.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Anyways, the problem is we currently can't expose a bcache device
-(cached volume or flash only volume) with a smaller block size than the
-cache device. This is fixable - and I'll probably have to do it
-eventually for other reasons - but it'll take some new not quite trivial
-code.
+diff --git a/drivers/staging/csr/unifi_pdu_processing.c b/drivers/staging/csr/unifi_pdu_processing.c
+index f9b421b..8634193 100644
+--- a/drivers/staging/csr/unifi_pdu_processing.c
++++ b/drivers/staging/csr/unifi_pdu_processing.c
+@@ -2704,7 +2704,7 @@ static void uf_handle_uspframes_delivery(unifi_priv_t * priv, CsrWifiRouterCtrlS
+      */
+     is_all_ac_deliver_enabled_and_moredata(staInfo, &allDeliveryEnabled, &dataAvailable);
+     if ((allDeliveryEnabled && !dataAvailable)) {
+-        if ((staInfo->timSet != CSR_WIFI_TIM_RESET) || (staInfo->timSet != CSR_WIFI_TIM_RESETTING)) {
++        if ((staInfo->timSet != CSR_WIFI_TIM_RESET) && (staInfo->timSet != CSR_WIFI_TIM_RESETTING)) {
+             staInfo->updateTimReqQueued = (u8) CSR_WIFI_TIM_RESET;
+             unifi_trace(priv, UDBG4, " --uf_handle_uspframes_delivery, UAPSD timset\n");
+             if (!staInfo->timRequestPendingFlag) {
+-- 
+1.7.10.4
 
-And there are SSDs (some of the niche pcie stuff) that don't support <
-4k IOs, so we do have to make sure we expose the right blocksize. And
-since a bcache device can be brought up in passthrough mode and have a
-cache attached at runtime - this is why we get the blocksize from the
-backing device's superblock, instead of just using the logical block
-size of the backing device.
-
-> 
-> Signed-off-by: Gabriel de Perthuis <g2p.code@gmail.com>
-> ---
->  drivers/md/bcache/super.c | 9 +++++----
->  1 file changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index 1e3bc4c..94fad70 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -745,11 +745,12 @@ static void bcache_device_free(struct bcache_device *d)
->  		bioset_free(d->bio_split);
->  
->  	closure_debug_destroy(&d->cl);
->  }
->  
-> -static int bcache_device_init(struct bcache_device *d, unsigned block_size)
-> +static int bcache_device_init(struct bcache_device *d, unsigned block_size,
-> +			      unsigned logical_size)
->  {
->  	struct request_queue *q;
->  
->  	if (!(d->bio_split = bioset_create(4, offsetof(struct bbio, bio))) ||
->  	    !(d->unaligned_bvec = mempool_create_kmalloc_pool(1,
-> @@ -774,11 +775,11 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size)
->  	q->limits.max_sectors		= UINT_MAX;
->  	q->limits.max_segment_size	= UINT_MAX;
->  	q->limits.max_segments		= BIO_MAX_PAGES;
->  	q->limits.max_discard_sectors	= UINT_MAX;
->  	q->limits.io_min		= block_size;
-> -	q->limits.logical_block_size	= block_size;
-> +	q->limits.logical_block_size	= logical_size;
->  	q->limits.physical_block_size	= block_size;
->  	set_bit(QUEUE_FLAG_NONROT,	&d->disk->queue->queue_flags);
->  	set_bit(QUEUE_FLAG_DISCARD,	&d->disk->queue->queue_flags);
->  
->  	return 0;
-> @@ -1064,11 +1065,11 @@ static int cached_dev_init(struct cached_dev *dc, unsigned block_size)
->  	for (io = dc->io; io < dc->io + RECENT_IO; io++) {
->  		list_add(&io->lru, &dc->io_lru);
->  		hlist_add_head(&io->hash, dc->io_hash + RECENT_IO);
->  	}
->  
-> -	ret = bcache_device_init(&dc->disk, block_size);
-> +	ret = bcache_device_init(&dc->disk, block_size, q->limits.logical_block_size);
->  	if (ret)
->  		return ret;
->  
->  	set_capacity(dc->disk.disk,
->  		     dc->bdev->bd_part->nr_sects - dc->sb.data_offset);
-> @@ -1163,11 +1164,11 @@ static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
->  	closure_init(&d->cl, NULL);
->  	set_closure_fn(&d->cl, flash_dev_flush, system_wq);
->  
->  	kobject_init(&d->kobj, &bch_flash_dev_ktype);
->  
-> -	if (bcache_device_init(d, block_bytes(c)))
-> +	if (bcache_device_init(d, block_bytes(c), 512))
->  		goto err;
->  
->  	bcache_device_attach(d, c, u - c->uuids);
->  	set_capacity(d->disk, u->sectors);
->  	bch_flash_dev_request_init(d);
-> -- 
-> 1.8.3.222.g430da9e
-> 
