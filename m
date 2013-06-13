@@ -1,96 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757879Ab3FMTXn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 15:23:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37301 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754860Ab3FMTXl (ORCPT
+	id S1758962Ab3FMTXs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 15:23:48 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41084 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758355Ab3FMTXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 15:23:41 -0400
-Date: Thu, 13 Jun 2013 12:23:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Jeff Layton <jlayton@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Subject: Re: [PATCH] Percpu tag allocator
-Message-Id: <20130613122339.239a721d097a64435817a780@linux-foundation.org>
-In-Reply-To: <20130613191507.GB13970@mtj.dyndns.org>
-References: <1371009804-11596-1-git-send-email-koverstreet@google.com>
-	<20130612163854.91da28042ab7a943b69a5970@linux-foundation.org>
-	<20130613020536.GA10979@localhost>
-	<20130612200311.7f9d938a.akpm@linux-foundation.org>
-	<20130613185318.GB12075@mtj.dyndns.org>
-	<20130613120439.fe56d178a1143089136fdacc@linux-foundation.org>
-	<20130613191507.GB13970@mtj.dyndns.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 13 Jun 2013 15:23:45 -0400
+Message-ID: <51BA1C3D.1010608@wwwdotorg.org>
+Date: Thu, 13 Jun 2013 13:23:41 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Alexandre Courbot <acourbot@nvidia.com>
+CC: Joseph Lo <josephl@nvidia.com>, Karan Jhavar <kjhavar@nvidia.com>,
+        Varun Wadekar <vwadekar@nvidia.com>,
+        Chris Johnson <CJohnson@nvidia.com>,
+        Matthew Longnecker <MLongnecker@nvidia.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Dave Martin <Dave.Martin@arm.com>,
+        Jassi Brar <jassisinghbrar@gmail.com>, gnurou@gmail.com,
+        devicetree-discuss@lists.ozlabs.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/3] ARM: tegra: set CPU reset handler with firmware
+ op
+References: <1371114745-24710-1-git-send-email-acourbot@nvidia.com> <1371114745-24710-4-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1371114745-24710-4-git-send-email-acourbot@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jun 2013 12:15:07 -0700 Tejun Heo <tj@kernel.org> wrote:
-
-> Hello, Andrew.
+On 06/13/2013 03:12 AM, Alexandre Courbot wrote:
+> Use a firmware operation to set the CPU reset handler and only resort to
+> doing it ourselves if there is none defined.
 > 
-> On Thu, Jun 13, 2013 at 12:04:39PM -0700, Andrew Morton wrote:
-> > > The thing is that id[r|a] guarantee that the lowest available slot is
-> > > allocated
-> > 
-> > That isn't the case for ida_get_new_above() - the caller gets to
-> > control the starting index.
-> 
-> Hmmm?  get_new_above() is the same, it must allocate the first
-> available ID above the given low bound - used to exclude unused or
-> reserved IDs.
+> This supports the booting of secondary CPUs on devices using a TrustZone
+> secure monitor.
 
-Right.  So using different starting IDs for different CPUs can be used
-to improve scalability.
+> diff --git a/arch/arm/mach-tegra/reset.c b/arch/arm/mach-tegra/reset.c
 
-> > The worst outcome here is that idr.c remains unimproved and we merge a
-> > new allocator which does basically the same thing.
-> 
-> The lowest number guarantee makes them different.  Maybe tag
-> allocation can be layered on top as a caching layer, I don't know, but
-> at any rate we need at least two different operation modes.
+> +	err = call_firmware_op(set_cpu_boot_addr, 0, reset_address);
+> +	switch (err) {
+> +	case -ENOSYS:
+> +		tegra_cpu_reset_handler_set(reset_address);
+> +		/* pass-through */
 
-Why?  Tag allocation doesn't care about the values - just that they be
-unique.
-
-> > The best outcome is that idr.c gets improved and we don't have to merge
-> > duplicative code.
-> >
-> > So please, let's put aside the shiny new thing for now and work out how
-> > we can use the existing tag allocator for these applications.  If we
-> > make a genuine effort to do this and decide that it's fundamentally
-> > hopeless then this is the time to start looking at new implementations.
-> > 
-> > (I can think of at least two ways of making ida_get_new_above() an
-> > order of magnitude faster for this application and I'm sure you guys
-> > can as well.)
-> 
-> Oh, I'm sure the current id[r|a] can be improved upon a lot but I'm
-> very skeptical one can reach the level of scalability necessary for,
-> say, pci-e attached extremely high-iops devices while still keeping
-> the lowest number allocation, which can't be achieved without strong
-> synchronization on each alloc/free.
-> 
-> Maybe we can layer things so that we have percpu layer on top of
-> id[r|a] and, say, mapping id to point is still done by idr, or the
-> percpu tag allocator uses ida for tag chunk allocations, but it's
-> still gonna be something extra on top.
-
-It's not obvious that explicit per-cpu is needed.  Get an ID from
-ida_get_new_above(), multiply it by 16 and store that in device-local
-storage, along with a 16-bit bitmap.  Blam, 30 lines of code and the
-ida_get_new_above() cost is reduced 16x and it's off the map.
-
-Or perhaps you can think of something smarter, but first you have to
-start thinking of solutions rather than trying to find problems :(
+Rather than detecting -ENOSYS and falling back to the custom
+tegra_cpu_reset_handler_set(), does it make sense to plug in
+tegra_cpu_reset_handler_set as the firmware op when there is no secure
+firmware detected? That way, this code wouldn't need the special case;
+that would be isolated to firmware.c.
