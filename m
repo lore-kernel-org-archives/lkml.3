@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758766Ab3FMXTx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 19:19:53 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:40042 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754414Ab3FMXTv (ORCPT
+	id S1758858Ab3FMXXZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 19:23:25 -0400
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:51980 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754414Ab3FMXXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 19:19:51 -0400
-From: Grant Likely <grant.likely@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>, Ralf Baechle <ralf@linux-mips.org>,
-        linux-mips@linux-mips.org
-Subject: [PATCH] irqdomain: Remove temporary MIPS workaround code
-Date: Fri, 14 Jun 2013 00:19:43 +0100
-Message-Id: <1371165583-21907-1-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
+	Thu, 13 Jun 2013 19:23:24 -0400
+Date: Thu, 13 Jun 2013 16:23:17 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Jeff Layton <jlayton@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Subject: Re: [PATCH] Percpu tag allocator
+Message-ID: <20130613232317.GI13970@mtj.dyndns.org>
+References: <20130612200311.7f9d938a.akpm@linux-foundation.org>
+ <20130613185318.GB12075@mtj.dyndns.org>
+ <20130613120439.fe56d178a1143089136fdacc@linux-foundation.org>
+ <20130613191507.GB13970@mtj.dyndns.org>
+ <20130613122339.239a721d097a64435817a780@linux-foundation.org>
+ <20130613193514.GD13970@mtj.dyndns.org>
+ <20130613151040.8e11da022519fff7d5e8ea77@linux-foundation.org>
+ <20130613223028.GG13970@mtj.dyndns.org>
+ <20130613153551.39ffdf595d989be10c773d23@linux-foundation.org>
+ <20130613231342.GH13970@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130613231342.GH13970@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MIPS interrupt controllers are all registering their own irq_domains
-now. Drop the MIPS specific code because it is no longer needed.
+On Thu, Jun 13, 2013 at 04:13:42PM -0700, Tejun Heo wrote:
+> On Thu, Jun 13, 2013 at 03:35:51PM -0700, Andrew Morton wrote:
+> > Well that's news.  My awe at the dreadfulness of Kent's changelog
+> > continues to grow.  Please identify these duplicated allocators
+> > (function names will suffice).  That way, others can actually review
+> > this code :(
+> 
+> Oh yeah, Kent could and should have sold it much better.  :)
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org
----
+BTW, here are three that I know of off the top of my head.
 
-Ralf, this should be okay to pull out now. I'll be submitting it for
-v3.11 unless someone yells. Even if so, all the irqdomain infrastructure
-is in place to make it trivial to add an irqdomain where missing.
+* block/blk-tag.c - this is pretty big and does resizing and stuff.
 
-g.
+* drivers/ata/libata-core.c::ata_qc_new()
 
- kernel/irq/irqdomain.c | 12 ------------
- 1 file changed, 12 deletions(-)
+* drivers/block/nvme-core.c::alloc_cmdid()
 
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 13f2654..e0c3366 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -475,18 +475,6 @@ unsigned int irq_create_of_mapping(struct device_node *controller,
- 
- 	domain = controller ? irq_find_host(controller) : irq_default_domain;
- 	if (!domain) {
--#ifdef CONFIG_MIPS
--		/*
--		 * Workaround to avoid breaking interrupt controller drivers
--		 * that don't yet register an irq_domain.  This is temporary
--		 * code. ~~~gcl, Feb 24, 2012
--		 *
--		 * Scheduled for removal in Linux v3.6.  That should be enough
--		 * time.
--		 */
--		if (intsize > 0)
--			return intspec[0];
--#endif
- 		pr_warn("no irq domain found for %s !\n",
- 			of_node_full_name(controller));
- 		return 0;
+Thanks.
+
 -- 
-1.8.1.2
-
+tejun
