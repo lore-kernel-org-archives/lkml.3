@@ -1,84 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759326Ab3FMWCG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 18:02:06 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:36991 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756798Ab3FMWCF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 18:02:05 -0400
-Message-ID: <51BA4158.906@wwwdotorg.org>
-Date: Thu, 13 Jun 2013 16:02:00 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1759337Ab3FMWD4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 18:03:56 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:36608 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756798Ab3FMWDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 18:03:55 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>, Aaron Lu <aaron.lu@intel.com>
+Subject: Re: [PATCH 0/5] ACPI / scan: Make it possible to use the container hotplug with other scan handlers
+Date: Fri, 14 Jun 2013 00:13:06 +0200
+Message-ID: <1461809.TyKCjmiDDv@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1371158939.21540.39.camel@misato.fc.hp.com>
+References: <1417592.vuSG0cUIGo@vostro.rjw.lan> <1371158939.21540.39.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Linus Walleij <linus.walleij@stericsson.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Hebbar Gururaja <gururaja.hebbar@ti.com>,
-        Mark Brown <broonie@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: Re: [PATCH 1/3] drivers: pinctrl sleep and idle states in the core
-References: <1370439873-30053-1-git-send-email-linus.walleij@stericsson.com> <51AF73E9.90506@wwwdotorg.org> <CACRpkdY_s_RkErKLqVOWdE-A80CZOq7+VZSE8jcYSUbYkvsYYQ@mail.gmail.com>
-In-Reply-To: <CACRpkdY_s_RkErKLqVOWdE-A80CZOq7+VZSE8jcYSUbYkvsYYQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2013 02:28 AM, Linus Walleij wrote:
-> On Wed, Jun 5, 2013 at 7:22 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+On Thursday, June 13, 2013 03:28:59 PM Toshi Kani wrote:
+> On Thu, 2013-06-13 at 01:23 +0200, Rafael J. Wysocki wrote:
+> > Hi All,
+> > 
+> > It turns out that some BIOSes add container device IDs as _CIDs to device
+> > object that in principle may be matched against the other scan handlers (or
+> > ACPI drivers, but that's not a problem, because the container scan handler
+> > can co-exist with an ACPI driver).  That's why our recent fix for an issue
+> > related to the ACPI video driver had to be reverted right before -rc5.
 > 
->>> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
->>
->>> +int pinctrl_pm_select_default_state(struct device *dev)
->>
->>> +int pinctrl_pm_select_sleep_state(struct device *dev)
->>
->>> +int pinctrl_pm_select_idle_state(struct device *dev)
->>
->> The implementation of those 3 functions is basically identical. I'd be
->> inclined to move it to a helper function, and just pass (dev,
->> pins->xxx_state) to it.
+> I am familiar with this firmware, although I no longer have access to
+> the systems.  An SBA device object has _HID with an HP-specific PNPID
+> and _CID with a generic container PNPID.  The _HID allows an OS with the
+> HP SBA driver (which recognizes the _HID) to enable the SBA's I/O TLB
+> functionality, while the _CID allows an OS without the HP SBA driver to
+> boot-up by treating this SBA as a container.  The _CID is needed because
+> some OS skips scanning underneath when it finds an unrecognized object.
+
+How cute.
+
+> > Although I submitted an alternative fix for that bug, I think the problem
+> > with the container scan handler possibly matching devices already having
+> > some other scan handlers attached needs addressing, because we may need to
+> > use the container hotplug profile for those devices.  The following patch
+> > series is supposed to address it.
 > 
-> Just to follow up on this now that I'm adding one more state.
+> When the HP SBA driver is bound to the SBA object, this driver needs to
+> handle a hotplug request when it is supported.  This is because the I/O
+> TLB functionality requires its hot-delete operation as well.  The
+> container scan handler can be used only when this driver is bound to the
+> SBA object as a container and therefore its I/O TLB functionality is not
+> used. 
+
+Ah, so in fact those device IDs are kind of mutually exclusive?  That is,
+we only should use the _CID if we don't use the _HID, right?
+
+We have a bug there, then, but it probably is bening enough for 3.10 to be left
+as is.
+
+> > [1/5] ACPI / scan: Do not bind ACPI drivers to objects with scan handlers
+> >    (this version shouldn't break the Tony's IA64 HP box the previous one broke)
+> > [2/5] ACPI / scan: Separate hotplug profiles from scan handlers
+> > [3/5] ACPI / scan: Add hotplug profile pointer to struct acpi_device
+> > [4/5] ACPI / scan: Use container hotplug profile for matching device objects
+> > [5/5] ACPI / ia64 / sba_iommu: Use ACPI scan handler for discovery
+> > 
+> > Patches [1-4/5] were run on my Toshiba test box and didn't break it, but it
+> > really doesn't do any ACPI hotplug notifications.
+> > 
+> > Patch [5/5] is kind of additional, but it wouldn't work correctly without the
+> > previous ones (to be honest, I haven't tried to compile it yet, but here it
+> > goes for completness).
 > 
-> I tried to create a refactoring patch for this but couldn't come
-> up with anything apropriate along the lines above. For example
-> this function:
-...
+> I think we only need patch [5/5] to address the problem.  We have
+> enhanced the match function of scan handlers to match a proper driver
+> with respect to their priority order, i.e. matching with _HID first and
+> then with _CIDs.  Patch [5/5] should assure that the HP SBA driver is
+> bound to an SBA object when this driver is configured to the kernel.
 
-Don't you just want something very roughly like:
+OK, but then I'd like to apply a modified version of [1/5] that won't
+check if the scan handler is the container handler, but will just return
+-EINVAL if any scan handler has been set already.  And the changelog of
+[5/5] needs to be modified slightly.
 
-int pinctrl_pm_select_xxx_state(struct device *dev,
-		unsigned long offset, char *name)
-{
-	struct dev_pin_info *pins = dev->pins;
-	struct pinctrl_state **s = (void *)(((char *)pins) + offset)
-	int ret;
+Tony promised me to test those patches on his box, so we'll know for sure
+in a while.
 
-	if (!pins)
-		return 0;
-	if (IS_ERR(*s))
-		return 0; /* No default state */
-	ret = pinctrl_select_state(pins->p, *s);
-	if (ret)
-		dev_err(dev, "failed to activate %s pinctrl state\n",
-			name);
-	return ret;
-}
+Thanks,
+Rafael
 
-int pinctrl_pm_select_default_state(struct device *dev)
-{
-    return pinctrl_pm_select_xxx_state(dev,
-		offsetof(struct dev_pin_info, default_state),
-		"default");
-}
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
