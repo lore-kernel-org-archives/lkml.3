@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522Ab3FMNKK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:10:10 -0400
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:34075 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756720Ab3FMNKE (ORCPT
+	id S1754832Ab3FMNLG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:11:06 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:60981 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139Ab3FMNLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:10:04 -0400
-From: Benjamin Poirier <bpoirier@suse.de>
-To: linux-s390@vger.kernel.org
-Cc: netdev@vger.kernel.org, Ursula Braun <ursula.braun@de.ibm.com>,
-        linux390@de.ibm.com, Frank Blaschka <blaschka@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] netiucv: Hold rtnl between name allocation and device registration.
-Date: Thu, 13 Jun 2013 09:09:47 -0400
-Message-Id: <1371128987-3723-1-git-send-email-bpoirier@suse.de>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 13 Jun 2013 09:11:04 -0400
+Date: Thu, 13 Jun 2013 15:10:59 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Anish Singh <anish198519851985@gmail.com>
+Subject: Re: [PATCH 4/6] watchdog: Boot-disable by default on full dynticks
+Message-ID: <20130613131057.GA15997@somewhere>
+References: <1371045758-5296-1-git-send-email-fweisbec@gmail.com>
+ <1371045758-5296-5-git-send-email-fweisbec@gmail.com>
+ <20130612170316.GO133453@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130612170316.GO133453@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixes a race condition between concurrent initializations of netiucv devices
-that try to use the same name.
+On Wed, Jun 12, 2013 at 01:03:16PM -0400, Don Zickus wrote:
+> On Wed, Jun 12, 2013 at 04:02:36PM +0200, Frederic Weisbecker wrote:
+> > When the watchdog runs, it prevents the full dynticks
+> > CPUs from stopping their tick because the hard lockup
+> > detector uses perf events internally, which in turn
+> > rely on the periodic tick.
+> > 
+> > Since this is a rather confusing behaviour that is not
+> > easy to track down and identify for those who want to
+> > test CONFIG_NO_HZ_FULL, let's default disable the
+> > watchdog on boot time when full dynticks is enabled.
+> > 
+> > The user can still enable it later on runtime using
+> > proc or sysctl.
+> 
+> I thought we had a conversation awhile ago, where we agreed this was going
+> to be fixed for 3.11?  Didn't Peter find the patch and apply it to his
+> tree?  I am confused why this is still needed?
 
-sysfs: cannot create duplicate filename '/devices/iucv/netiucv2'
-[...]
-Call Trace:
-([<00000000002edea4>] sysfs_add_one+0xb0/0xdc)
- [<00000000002eecd4>] create_dir+0x80/0xfc
- [<00000000002eee38>] sysfs_create_dir+0xe8/0x118
- [<00000000003835a8>] kobject_add_internal+0x120/0x2d0
- [<00000000003839d6>] kobject_add+0x62/0x9c
- [<00000000003d9564>] device_add+0xcc/0x510
- [<000003e00212c7b4>] netiucv_register_device+0xc0/0x1ec [netiucv]
+We agreed on the patch but it hasn't been applied yet. I'm trying to get
+a sane series of nohz patches before sending to Ingo.
 
-Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
-Tested-by: Ursula Braun <braunu@de.ibm.com>
----
- drivers/s390/net/netiucv.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/s390/net/netiucv.c b/drivers/s390/net/netiucv.c
-index 4ffa66c..9ca3996 100644
---- a/drivers/s390/net/netiucv.c
-+++ b/drivers/s390/net/netiucv.c
-@@ -2040,6 +2040,7 @@ static struct net_device *netiucv_init_netdevice(char *username, char *userdata)
- 			   netiucv_setup_netdevice);
- 	if (!dev)
- 		return NULL;
-+	rtnl_lock();
- 	if (dev_alloc_name(dev, dev->name) < 0)
- 		goto out_netdev;
- 
-@@ -2061,6 +2062,7 @@ static struct net_device *netiucv_init_netdevice(char *username, char *userdata)
- out_fsm:
- 	kfree_fsm(privptr->fsm);
- out_netdev:
-+	rtnl_unlock();
- 	free_netdev(dev);
- 	return NULL;
- }
-@@ -2100,6 +2102,7 @@ static ssize_t conn_write(struct device_driver *drv,
- 
- 	rc = netiucv_register_device(dev);
- 	if (rc) {
-+		rtnl_unlock();
- 		IUCV_DBF_TEXT_(setup, 2,
- 			"ret %d from netiucv_register_device\n", rc);
- 		goto out_free_ndev;
-@@ -2109,7 +2112,8 @@ static ssize_t conn_write(struct device_driver *drv,
- 	priv = netdev_priv(dev);
- 	SET_NETDEV_DEV(dev, priv->dev);
- 
--	rc = register_netdev(dev);
-+	rc = register_netdevice(dev);
-+	rtnl_unlock();
- 	if (rc)
- 		goto out_unreg;
- 
--- 
-1.7.10.4
-
+Thanks.
