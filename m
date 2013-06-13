@@ -1,128 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759462Ab3FMW0C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 18:26:02 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:60573 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757878Ab3FMWZ7 (ORCPT
+	id S1757652Ab3FMWag (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 18:30:36 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:64929 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753214Ab3FMWaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 18:25:59 -0400
-Date: Thu, 13 Jun 2013 15:25:56 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Hocko <mhocko@suse.cz>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch] mm, memcg: add oom killer delay
-In-Reply-To: <20130613151602.GG23070@dhcp22.suse.cz>
-Message-ID: <alpine.DEB.2.02.1306131508300.8686@chino.kir.corp.google.com>
-References: <20130603193147.GC23659@dhcp22.suse.cz> <alpine.DEB.2.02.1306031411380.22083@chino.kir.corp.google.com> <20130604095514.GC31242@dhcp22.suse.cz> <alpine.DEB.2.02.1306042329320.20610@chino.kir.corp.google.com> <20130605093937.GK15997@dhcp22.suse.cz>
- <alpine.DEB.2.02.1306051657001.29626@chino.kir.corp.google.com> <20130610142321.GE5138@dhcp22.suse.cz> <alpine.DEB.2.02.1306111321360.32688@chino.kir.corp.google.com> <20130612202348.GA17282@dhcp22.suse.cz> <alpine.DEB.2.02.1306121408490.24902@chino.kir.corp.google.com>
- <20130613151602.GG23070@dhcp22.suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 13 Jun 2013 18:30:35 -0400
+Date: Thu, 13 Jun 2013 15:30:28 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Jeff Layton <jlayton@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Subject: Re: [PATCH] Percpu tag allocator
+Message-ID: <20130613223028.GG13970@mtj.dyndns.org>
+References: <1371009804-11596-1-git-send-email-koverstreet@google.com>
+ <20130612163854.91da28042ab7a943b69a5970@linux-foundation.org>
+ <20130613020536.GA10979@localhost>
+ <20130612200311.7f9d938a.akpm@linux-foundation.org>
+ <20130613185318.GB12075@mtj.dyndns.org>
+ <20130613120439.fe56d178a1143089136fdacc@linux-foundation.org>
+ <20130613191507.GB13970@mtj.dyndns.org>
+ <20130613122339.239a721d097a64435817a780@linux-foundation.org>
+ <20130613193514.GD13970@mtj.dyndns.org>
+ <20130613151040.8e11da022519fff7d5e8ea77@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130613151040.8e11da022519fff7d5e8ea77@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jun 2013, Michal Hocko wrote:
+Hello, Andrew.
 
-> > That's not at all the objective, the changelog quite explicitly states 
-> > this is a deadlock as the result of userspace having disabled the oom 
-> > killer so that its userspace oom handler can resolve the condition and it 
-> > being unresponsive or unable to perform its job.
+On Thu, Jun 13, 2013 at 03:10:40PM -0700, Andrew Morton wrote:
+> Look, we're falling into the age-old trap of trying to justify existing
+> code just because it exists.
 > 
-> Ohh, so another round. Sigh. You insist on having user space handlers
-> running in the context of the limited group. OK, I can understand your
-> use case, although I think it is pushing the limits of the interface and
-> it is dangerous.
+> Stop.  Take a step back and pretend that the percpu tag allocator patch
+> never existed.  Now, define the problem and propose solutions.
+> 
+> The absolute dead last and worst solution is "implement something new
+> which largely duplicates existing code".  Such a step requires an
+> extraordinary amount of justification and that hasn't happened.
 
-Ok, this is where our misunderstanding is, and I can see why you have 
-reacted the way you have.  It's my fault for not describing where we're 
-going with this.
+I think you're looking at it from the complete opposite point from
+mine.  That problem has always existed and the solutions implemented
+many times over in the whole IO stack across aio, block layer proper,
+SCSI and individual drivers, and most, if not all, suck.  If we can
+consolidate those into a properly designed tag allocator, it's a win,
+whether it's integrated into idr or not.  It's a well-known problem
+with incomplete bad solutions implemented in multiple places.
 
-Userspace oom handling right now is very inadequate, not only for the 
-reasons that you and Johannes have described.  This requirement that 
-userspace oom handlers must run with more memory than the memcgs it is 
-monitoring is where the pain is.
+Again, I'm not saying integrating this into idr is a bad idea.  If
+that's reasonably doable, awesomer, but I think even just
+consolidating the existing bad ones into a common one is beneficial
+enough.
 
-We have to accept the fact that users can be given control of their own 
-memcg trees by chowning that "user root" directory to the user.  The only 
-real change you must enforce is that the limit cannot be increased unless 
-you have a special capability.  Otherwise, users can be given complete 
-control over their own tree and enforce their own memory limits (or just 
-accounting).
+Thanks.
 
-I haven't seen any objection to that usecase from anybody, so I'm assuming 
-that it's something that is understood and acknowledged.  Nothing in the 
-cgroups code prevents it and I believe it gives a much more powerful 
-interface to the user to control their own destiny much like setting up 
-root level memcgs for the admin.
-
-The problem is that we want to control global oom conditions as well.  
-oom_score_adj simply doesn't allow for user-specific implementations 
-either within user subcontainers or at the root.  Users may very well want 
-to kill the allocating task in their memcg to avoid expensive scans (SGI 
-required oom_kill_allocating_task at a global level), kill the largest 
-memory consumer, do a priority-based memcg scoring, kill the newest 
-process, etc.  That's the power of user oom notifications beyond just 
-statistics collection or creating a tombstone to examine later.
-
-We want to do that at the root level as well for global oom conditions.  
-We have a priority-based scoring method amongst top-level memcgs.  They 
-are jobs that are scheduled on machines and given a certain priority to 
-run at.  We also overcommit the machine so the sum of all top-level
-memory.limit_in_bytes exceeds the amount of physical RAM since jobs seldom 
-use their entire reservation.  When RAM is exhausted, we want to kill the 
-lowest priority process from the lowest priority memcg.
-
-That's not possible to do currently because we lack global oom 
-notification and userspace oom handling.  We want to change that by 
-notifying on the root memcg's memory.oom_control for global oom and wakeup 
-a process that will handle global oom conditions.  Memcg is the perfect 
-vehicle for this since it already does userspace oom notification and 
-because the oom condition in a "user root" can be handled the same as a 
-"global oom".
-
-Waking up userspace and asking it to do anything useful in a global oom 
-condition is problematic if it is unresponsive for whatever reason.  
-Especially with true kmem accounting of all slab, we cannot be guaranteed 
-that this global oom handler can actually do things like query the memory 
-usage of a process or read a memcg's tasks file.  For this reason, we want 
-a kernel failsafe to ensure that if it isn't able to respond in a 
-reasonable amount of time, the kernel frees memory itself.
-
-There's simply no other alternative to doing something like 
-memory.oom_delay_millisecs then at the root level.  For notification to 
-actually work, we need to preempt the kernel at least for a certain amount 
-of time from killing: the solution right now is to disable the oom killer 
-entirely with memory.oom_control == 1.  If the global oom handler fails 
-the respond, the machine is essentially dead unless something starts 
-freeing memory back for some strange reason.
-
-For our own priority-based memcg oom scoring implementation, this global 
-oom handler would then signal the memcg oom handler in the lowest priority 
-memcg, if it exists, to handle the situation or it would kill something 
-from that memcg itself.
-
-The key is that without some sort of kernel-imposed delay, there's no way 
-to sanely implement a global oom handler that doesn't risk killing the 
-entire machine because the kernel oom killer is deferred.  This patch 
-makes that delay configurable.
-
-I could certainly push the patch that does the global oom notification on 
-the root level memcg's memory.oom_control first if you'd like, but I 
-didn't think there would be so much opposition to running a memcg oom 
-handler in the memcg itself, which is what this essentially is.
-
-If that's done, then we can't simply rely on the global oom killer, which 
-your suggestion does when things go wrong or to act as a watchdog, to step 
-in in such a situation and kill something.  We always want to kill from 
-the lowest-priority memcg in global oom conditions and we don't expect to 
-implement a multitude of different oom selection algorithms in the kernel.  
-We want to punt to userspace and give it the functionality in the kernel 
-that it needs when things go wrong.
+-- 
+tejun
