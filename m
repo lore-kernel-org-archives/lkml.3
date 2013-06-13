@@ -1,157 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757883Ab3FMQ3j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 12:29:39 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:57433 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757257Ab3FMQ3h (ORCPT
+	id S1757335Ab3FMQdz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 12:33:55 -0400
+Received: from smtp-out-056.synserver.de ([212.40.185.56]:1058 "EHLO
+	smtp-out-053.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754643Ab3FMQdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 12:29:37 -0400
-Message-ID: <51B9F36B.6020802@hurleysoftware.com>
-Date: Thu, 13 Jun 2013 12:29:31 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-CC: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Mikael Pettersson <mikpe@it.uu.se>,
-        David Howells <dhowells@redhat.com>,
-        Orion Poplawski <orion@cora.nwra.com>
-Subject: Re: [PATCH] tty: Debug EIO from write()
-References: <20130613145133.GC519@x4> <1371137152-25916-1-git-send-email-peter@hurleysoftware.com> <20130613161606.GA516@x4>
-In-Reply-To: <20130613161606.GA516@x4>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+	Thu, 13 Jun 2013 12:33:54 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 1174
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Jassi Brar <jaswinder.singh@linaro.org>, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>, stable@vger.kernel.org
+Subject: [PATCH] dma: pl330: Fix cyclic transfers
+Date: Thu, 13 Jun 2013 18:34:02 +0200
+Message-Id: <1371141242-20091-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2013 12:16 PM, Markus Trippelsdorf wrote:
-> I've reproduced the Mozilla build failure, but there's nothing exiting
-> in the logs. The only strange thing is the single tty_write at
-> 1507.456817 (roughly at this point the Mozilla build failed):
->
-> ...
-> [ 1507.453547] tty_release: pts11 (tty count=4)...
-> [ 1507.455695] tty_open: opening pts11...
-> [ 1507.455699] tty_release: pts11 (tty count=4)...
-> [ 1507.455854] tty_open: opening pts11...
-> [ 1507.455858] tty_release: pts11 (tty count=4)...
-> [ 1507.456815] tty_open: opening pts11...
-> [ 1507.456817] tty_write: pts11: 0xa03
+Allocate a descriptor for each period of a cyclic transfer, not just the first.
+Also since the callback needs to be called for each finished period make sure to
+initialize the callback and callback_param fields of each descriptor in a cyclic
+transfer.
 
-Totally obvious now, thanks!
-Patch coming.
+Cc: stable@vger.kernel.org
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ drivers/dma/pl330.c | 87 ++++++++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 66 insertions(+), 21 deletions(-)
 
-> [ 1507.456819] tty_release: pts11 (tty count=4)...
-> [ 1507.457313] tty_open: opening pts11...
-> [ 1507.457317] tty_release: pts11 (tty count=4)...
-> [ 1507.458711] tty_open: opening pts11...
-> [ 1507.458715] tty_release: pts11 (tty count=4)...
-> [ 1507.458918] tty_open: opening pts11...
-> [ 1507.458922] tty_release: pts11 (tty count=4)...
-> [ 1507.459062] tty_open: opening pts11...
-> [ 1507.459066] tty_release: pts11 (tty count=4)...
-> ...
->
-> Looking through my logs I see a few ldisc errors, but please note that they are
-> all unrelated to the actual Mozilla failure.
->
-> Jun 13 17:31:07 x4 kernel: tty_open: opening pts11...
-> Jun 13 17:31:07 x4 kernel: tty_release: pts11 (tty count=4)...
-> Jun 13 17:31:08 x4 kernel: tty_release: ptm1 (tty count=1)...
-> Jun 13 17:31:08 x4 kernel: tty_read: pts1: ldisc error (0xa05)
-
-These "ldisc error"s are expected. In this case, the master end has closed while
-the slave end is reading....
-
-> Jun 13 17:31:08 x4 kernel: pts1 vhangup...
-> Jun 13 17:31:08 x4 kernel: hung_up_tty_write: pts1: 0x200a05
-
-and writing.
-The others in this snippet are similar.
-
-> Jun 13 17:31:08 x4 kernel: tty_release: pts1 (tty count=2)...
-> Jun 13 17:31:08 x4 kernel: tty_release: ptm1: final close
-> Jun 13 17:31:08 x4 kernel: tty_release: ptm1: freeing structure...
-> Jun 13 17:31:08 x4 kernel: tty_release: ptm0 (tty count=1)...
-> Jun 13 17:31:08 x4 kernel: pts0 vhangup...
-> Jun 13 17:31:08 x4 kernel: tty_release: pts0 (tty count=1)...
-> Jun 13 17:31:08 x4 kernel: tty_release: pts0: final close
-> Jun 13 17:31:08 x4 kernel: tty_release: pts0: freeing structure...
-> Jun 13 17:31:08 x4 kernel: tty_release: tty1 (tty count=8)...
-> Jun 13 17:31:08 x4 kernel: tty_release: tty3 (tty count=1)...
-> Jun 13 17:31:08 x4 kernel: tty_release: tty3: final close
-> Jun 13 17:31:08 x4 kernel: tty_release: tty3: freeing structure...
-> Jun 13 17:31:11 x4 kernel: tty_open: opening tty1...
-> Jun 13 17:31:11 x4 kernel: tty_open: opening tty1...
-> Jun 13 17:31:11 x4 kernel: tty_release: tty1 (tty count=9)...
-> Jun 13 17:31:13 x4 kernel: tty_release: tty1 (tty count=8)...
-> Jun 13 17:31:13 x4 kernel: tty_release: tty2 (tty count=1)...
-> Jun 13 17:31:13 x4 kernel: tty_release: tty2: final close
-> Jun 13 17:31:13 x4 kernel: tty_release: tty2: freeing structure...
-> Jun 13 17:31:13 x4 kernel: tty_release: pts6 (tty count=2)...
-> Jun 13 17:31:13 x4 kernel: tty1 vhangup session...
-> Jun 13 17:31:13 x4 kernel: tty_open: opening pts2...
-> Jun 13 17:31:13 x4 kernel: tty_release: ptm5 (tty count=1)...
-> Jun 13 17:31:13 x4 kernel: pts5 vhangup...
-> Jun 13 17:31:13 x4 kernel: tty_release: ptm6 (tty count=1)...
-> Jun 13 17:31:13 x4 kernel: pts6 vhangup...
-> Jun 13 17:31:13 x4 kernel: tty_release: ptm6: final close
-> Jun 13 17:31:13 x4 kernel: tty_release: ptm6: freeing structure...
-> Jun 13 17:31:13 x4 kernel: tty_release: ptm7 (tty count=1)...
-> Jun 13 17:31:13 x4 kernel: pts7 vhangup...
-> Jun 13 17:31:13 x4 kernel: tty_release: pts5 (tty count=1)...
-> Jun 13 17:31:13 x4 kernel: tty_release: pts5: final close
-> Jun 13 17:31:13 x4 kernel: tty_release: pts5: freeing structure...
-> Jun 13 17:31:13 x4 kernel: tty_read: pts7: ldisc error (0x200805)
-> Jun 13 17:31:13 x4 kernel: tty_release: ptm8 (tty count=1)...
-> Jun 13 17:31:13 x4 kernel: pts8 vhangup...
-> Jun 13 17:31:13 x4 kernel: tty_read: pts8: ldisc error (0x200805)
-> Jun 13 17:31:13 x4 kernel: tty_release: tty1 (tty count=7)...
-> Jun 13 17:31:13 x4 kernel: tty_release: tty1 (tty count=6)...
-> Jun 13 17:31:13 x4 kernel: tty_release: ptm9 (tty count=1)...
-> Jun 13 17:31:13 x4 kernel: pts9 vhangup...
-> Jun 13 17:31:13 x4 kernel: tty_release: ptm10 (tty count=1)...
-> Jun 13 17:31:13 x4 kernel: pts10 vhangup...
-> Jun 13 17:31:13 x4 kernel: hung_up_tty_write: pts10: 0x40a04
-> Jun 13 17:31:13 x4 kernel: hung_up_tty_write: pts10: 0x40a04
-> Jun 13 17:31:13 x4 kernel: tty_open: opening tty1...
-> Jun 13 17:31:13 x4 kernel: tty_release: ptm3 (tty count=1)...
-> Jun 13 17:31:13 x4 kernel: pts3 vhangup...
-> Jun 13 17:31:13 x4 kernel: tty_read: pts3: ldisc error (0x200805)
-> Jun 13 17:31:13 x4 kernel: tty_release: pts7 (tty count=2)...
-> Jun 13 17:31:13 x4 kernel: tty_release: pts7 (tty count=1)...
-> Jun 13 17:31:13 x4 kernel: tty_release: pts7: final close
-> Jun 13 17:31:13 x4 kernel: tty_release: pts7: freeing structure...
-> Jun 13 17:31:13 x4 kernel: tty_release: pts4 (tty count=2)...
-> Jun 13 17:31:13 x4 kernel: tty_open: opening tty2...
-> Jun 13 17:31:13 x4 kernel: tty_release: tty2 (tty count=1)...
-> Jun 13 17:31:13 x4 kernel: tty_release: tty2: final close
-> Jun 13 17:31:13 x4 kernel: tty_release: tty2: freeing structure...
-> Jun 13 17:31:13 x4 kernel: tty_open: opening tty2...
-> Jun 13 17:31:13 x4 kernel: tty_release: tty1 (tty count=6)...
-> Jun 13 17:31:13 x4 kernel: tty_release: ptm4 (tty count=1)...
-> Jun 13 17:31:13 x4 kernel: pts4 vhangup...
-> Jun 13 17:31:13 x4 kernel: tty_release: ptm4: final close
-> Jun 13 17:31:13 x4 kernel: tty_release: ptm4: freeing structure...
-> Jun 13 17:31:13 x4 kernel: tty_release: ptm11 (tty count=1)...
-> Jun 13 17:31:13 x4 kernel: pts11 vhangup...
-> Jun 13 17:31:13 x4 kernel: tty_read: pts11: ldisc error (0x200a05)
-> Jun 13 17:31:13 x4 kernel: tty_release: pts11 (tty count=3)...
-> Jun 13 17:31:13 x4 kernel: tty_release: pts11 (tty count=2)...
-> Jun 13 17:31:13 x4 kernel: tty_release: ptm11: final close
-> Jun 13 17:31:13 x4 kernel: tty_release: ptm11: freeing structure...
-> Jun 13 17:31:13 x4 kernel: tty_release: ptm2 (tty count=1)...
-> Jun 13 17:31:13 x4 kernel: pts2 vhangup...
-> Jun 13 17:31:13 x4 kernel: tty_read: pts2: ldisc error (0x200a05)
-> Jun 13 17:31:13 x4 kernel: tty_release: pts2 (tty count=3)...
-> Jun 13 17:31:13 x4 kernel: tty_release: pts3 (tty count=2)...
-> Jun 13 17:31:13 x4 kernel: hung_up_tty_write: pts3: 0x40a06
-> Jun 13 17:31:13 x4 kernel: hung_up_tty_write: pts3: 0x40a06
->
->
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index bd69cc4..d539e06 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -2505,6 +2505,10 @@ static dma_cookie_t pl330_tx_submit(struct dma_async_tx_descriptor *tx)
+ 	/* Assign cookies to all nodes */
+ 	while (!list_empty(&last->node)) {
+ 		desc = list_entry(last->node.next, struct dma_pl330_desc, node);
++		if (pch->cyclic) {
++			desc->txd.callback = last->txd.callback;
++			desc->txd.callback_param = last->txd.callback_param;
++		}
+ 
+ 		dma_cookie_assign(&desc->txd);
+ 
+@@ -2688,32 +2692,19 @@ static struct dma_async_tx_descriptor *pl330_prep_dma_cyclic(
+ 		size_t period_len, enum dma_transfer_direction direction,
+ 		unsigned long flags, void *context)
+ {
+-	struct dma_pl330_desc *desc;
++	struct dma_pl330_desc *desc = NULL, *first = NULL;
+ 	struct dma_pl330_chan *pch = to_pchan(chan);
++	struct dma_pl330_dmac *pdmac = pch->dmac;
++	unsigned int i;
+ 	dma_addr_t dst;
+ 	dma_addr_t src;
+ 
+-	desc = pl330_get_desc(pch);
+-	if (!desc) {
+-		dev_err(pch->dmac->pif.dev, "%s:%d Unable to fetch desc\n",
+-			__func__, __LINE__);
++	if (len % period_len != 0)
+ 		return NULL;
+-	}
+ 
+ 	switch (direction) {
+ 	case DMA_MEM_TO_DEV:
+-		desc->rqcfg.src_inc = 1;
+-		desc->rqcfg.dst_inc = 0;
+-		desc->req.rqtype = MEMTODEV;
+-		src = dma_addr;
+-		dst = pch->fifo_addr;
+-		break;
+ 	case DMA_DEV_TO_MEM:
+-		desc->rqcfg.src_inc = 0;
+-		desc->rqcfg.dst_inc = 1;
+-		desc->req.rqtype = DEVTOMEM;
+-		src = pch->fifo_addr;
+-		dst = dma_addr;
+ 		break;
+ 	default:
+ 		dev_err(pch->dmac->pif.dev, "%s:%d Invalid dma direction\n",
+@@ -2721,12 +2712,66 @@ static struct dma_async_tx_descriptor *pl330_prep_dma_cyclic(
+ 		return NULL;
+ 	}
+ 
+-	desc->rqcfg.brst_size = pch->burst_sz;
+-	desc->rqcfg.brst_len = 1;
++	for (i = 0; i < len / period_len; i++) {
++		desc = pl330_get_desc(pch);
++		if (!desc) {
++			dev_err(pch->dmac->pif.dev, "%s:%d Unable to fetch desc\n",
++				__func__, __LINE__);
+ 
+-	pch->cyclic = true;
++			if (!first)
++				return NULL;
+ 
+-	fill_px(&desc->px, dst, src, period_len);
++			spin_lock_irqsave(&pdmac->pool_lock, flags);
++
++			while (!list_empty(&first->node)) {
++				desc = list_entry(first->node.next,
++						struct dma_pl330_desc, node);
++				list_move_tail(&desc->node, &pdmac->desc_pool);
++			}
++
++			list_move_tail(&first->node, &pdmac->desc_pool);
++
++			spin_unlock_irqrestore(&pdmac->pool_lock, flags);
++
++			return NULL;
++		}
++
++		switch (direction) {
++		case DMA_MEM_TO_DEV:
++			desc->rqcfg.src_inc = 1;
++			desc->rqcfg.dst_inc = 0;
++			desc->req.rqtype = MEMTODEV;
++			src = dma_addr;
++			dst = pch->fifo_addr;
++			break;
++		case DMA_DEV_TO_MEM:
++			desc->rqcfg.src_inc = 0;
++			desc->rqcfg.dst_inc = 1;
++			desc->req.rqtype = DEVTOMEM;
++			src = pch->fifo_addr;
++			dst = dma_addr;
++			break;
++		default:
++			break;
++		}
++
++		desc->rqcfg.brst_size = pch->burst_sz;
++		desc->rqcfg.brst_len = 1;
++		fill_px(&desc->px, dst, src, period_len);
++
++		if (!first)
++			first = desc;
++		else
++			list_add_tail(&desc->node, &first->node);
++
++		dma_addr += period_len;
++	}
++
++	if (!desc)
++		return NULL;
++
++	pch->cyclic = true;
++	desc->txd.flags = flags;
+ 
+ 	return &desc->txd;
+ }
+-- 
+1.8.0
 
