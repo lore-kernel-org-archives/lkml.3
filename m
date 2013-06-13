@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758396Ab3FMJ06 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 05:26:58 -0400
-Received: from relay.parallels.com ([195.214.232.42]:45846 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756151Ab3FMJ04 (ORCPT
+	id S1758408Ab3FMJ2N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 05:28:13 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:60769 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756822Ab3FMJ2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 05:26:56 -0400
-Date: Thu, 13 Jun 2013 13:24:42 +0400
-From: Andrew Vagin <avagin@parallels.com>
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Andrey Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 1/1] move exit_task_namespaces() outside of exit_notify()
-Message-ID: <20130613092442.GA32730@paralelels.com>
-References: <1365794853-23912-1-git-send-email-avagin@openvz.org>
- <20130413142246.GA864@redhat.com>
- <20130413155457.GA6533@redhat.com>
- <20130413155521.GB6533@redhat.com>
+	Thu, 13 Jun 2013 05:28:10 -0400
+Message-ID: <51B98FDD.4010401@st.com>
+Date: Thu, 13 Jun 2013 10:24:45 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="koi8-r"
-Content-Disposition: inline
-In-Reply-To: <20130413155521.GB6533@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [10.30.16.48]
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stuart Menefy <stuart.menefy@st.com>, Mark Brown <broonie@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: [PATCH v2 09/11] ARM:stixxxx: Add stixxxx options to multi_v7_defconfig
+References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com> <1370856477-7237-1-git-send-email-srinivas.kandagatla@st.com> <20130610104032.GA2513@e106331-lin.cambridge.arm.com> <51B5B15E.50901@st.com> <20130610131513.GB2513@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20130610131513.GB2513@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 13, 2013 at 05:55:21PM +0200, Oleg Nesterov wrote:
-> exit_notify() does exit_task_namespaces() after
-> forget_original_parent(). This was needed to ensure that ->nsproxy
-> can't be cleared prematurely, an exiting child we are going to
-> reparent can do do_notify_parent() and use the parent's (ours) pid_ns.
+On 10/06/13 14:15, Mark Rutland wrote:
+> CONFIG_EXPERIMENTAL's gone as of 3d374d09f1: "final removal of
+> CONFIG_EXPERIMENTAL", so that's fine to go. CONFIG_GPIO_PL061 and
+> CONFIG_MMC_WMT get selected elsewhere, so that's fine.
 > 
-> However, after 32084504 "pidns: use task_active_pid_ns in
-> do_notify_parent" ->nsproxy != NULL is no longer needed, we rely
-> on task_active_pid_ns().
-> 
-> Move exit_task_namespaces() from exit_notify() to do_exit(), after
-> exit_fs() and before exit_task_work().
-> 
-> This solves the problem reported by Andrey, free_ipc_ns()->shm_destroy()
-> does fput() which needs task_work_add(). And this allows us do simplify
-> exit_notify(), we can avoid unlock/lock(tasklist) and we can change
-> ->exit_state instead of PF_EXITING in forget_original_parent().
->
 
-It looks good for me. kmemleak doesn't report any leaks. CRIU test
-cases, which use namespaces, work without any errors.
+Am planning to send a patch to clean this up, so that any new platform
+addition to the multi_v7_defconfig will not under go this discussion again..
 
-Thanks.
+> It looks like the architected timer deselection is fallout of my own making,
+> the multi_v7_defconfig should now contain HAVE_ARM_ARCH_TIMER rather than
+> ARM_ARCH_TIMER.
+Why should it even contain HAVE_ARM_ARCH_TIMER/ARM_ARCH_TIMER?
+The only reason I see for de-selection is because none of the platforms
+in the multi_v7 defconfig selects it.
 
-Acked-by: Andrey Vagin <avagin@openvz.org>
+Looks like there is no platform in mulit_v7 config which requires this
+support. If there is one I think it should select it.
 
-> Reported-by: Andrey Vagin <avagin@openvz.org>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> 
-> --- x/kernel/exit.c
-> +++ x/kernel/exit.c
-> @@ -649,7 +649,6 @@ static void exit_notify(struct task_stru
->  	 *	jobs, send them a SIGHUP and then a SIGCONT.  (POSIX 3.2.2.2)
->  	 */
->  	forget_original_parent(tsk);
-> -	exit_task_namespaces(tsk);
->  
->  	write_lock_irq(&tasklist_lock);
->  	if (group_dead)
-> @@ -795,6 +794,7 @@ void do_exit(long code)
->  	exit_shm(tsk);
->  	exit_files(tsk);
->  	exit_fs(tsk);
-> +	exit_task_namespaces(tsk);
->  	exit_task_work(tsk);
->  	check_stack_usage();
->  	exit_thread();
-> 
+Am I correct?
+
+Thanks,
+srini
+
