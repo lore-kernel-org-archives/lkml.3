@@ -1,39 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757777Ab3FMOBX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 10:01:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57662 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752531Ab3FMOBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 10:01:21 -0400
-Message-ID: <51B9D0AD.1060505@suse.cz>
-Date: Thu, 13 Jun 2013 16:01:17 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1756094Ab3FMOKM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 10:10:12 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:53479 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939Ab3FMOKK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 10:10:10 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18K/euZ41fq+UJmsqExCWgb
+Date: Thu, 13 Jun 2013 07:10:01 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, pali.rohar@gmail.com,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org
+Subject: Re: N900 device tree conversion: how to do first step
+Message-ID: <20130613141001.GF8164@atomide.com>
+References: <20130609015944.GA23559@amd.pavel.ucw.cz>
+ <20130609201119.GA3190@blackmetal.musicnaut.iki.fi>
+ <20130613132624.GA3464@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>, trivial@kernel.org
-Subject: Re: [PATCH RESEND] Makefile.lib: align DTB quiet_cmd
-References: <1371120789-18342-1-git-send-email-james.hogan@imgtec.com>
-In-Reply-To: <1371120789-18342-1-git-send-email-james.hogan@imgtec.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130613132624.GA3464@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.6.2013 12:53, James Hogan wrote:
-> The unaligned dtb.S filename in make output started to irritate me:
->   DTC     arch/metag/boot/dts/skeleton.dtb
->   DTB    arch/metag/boot/dts/skeleton.dtb.S
->   AS      arch/metag/boot/dts/skeleton.dtb.o
->   LD      arch/metag/boot/dts/built-in.o
+* Pavel Machek <pavel@ucw.cz> [130613 06:32]:
+> Hi!
 > 
-> Add an extra space to quiet_cmd_dt_S_dtb so the dtb.S filename aligns
-> with all the others.
+> > > I'd like to convert Nokia N900 to device tree.
+> > > 
+> > > Unfortunately, serial port is not easily available (very special cable
+> > > would be needed, does someone know where to get one?) and I don't have
+> > > BDI (and very special cable would be needed, too).
+> > > 
+> > > So I tried doing very small first step, hoping that I get booting
+> > > system... obviously I did not.
+> > 
+> > The following works for me, it's enough to boot and get the USB networking
+> > working. After that I can connect to the device with ssh. I don't use
+> > serial either, I just have initramfs with busybox+dropbear with hardcoded
+> > interface setup.
+> 
+> Nice.... thanks a lot.
+> 
+> Did you get video to work with the device tree? That's what I'd like
+> to accomplish now.
 
-Applied to kbuild.git#kbuild.
+The DSS code is still using pdata, see mach-omap2/dss-common.[ch].
+ 
+> If I init spi manually (and some more hacks), it works in the
+> qemu. But I have not tested on real hw for a while.
 
-Michal
+You should be able to initialize spi by adding the .dts entry,
+or is there something missing in drivers/spi/spi-omap2-mcspi.c?
+
+Regards,
+
+Tony
