@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758928Ab3FMVMS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 17:12:18 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:35692 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757669Ab3FMVMR (ORCPT
+	id S1758989Ab3FMVOP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 17:14:15 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:57719 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757810Ab3FMVOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 17:12:17 -0400
-X-Greylist: delayed 390 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Jun 2013 17:12:17 EDT
-From: Dominik Paulus <dominik.paulus@fau.de>
-To: devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-kernel@i4.cs.fau.de,
-        David Binderman <dcb314@hotmail.com>,
-        Devendra Naga <devendra.aaru@gmail.com>, Priit Laes <plaes@plaes.org>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Tobias Polzer <tobias.polzer@fau.de>,
-        Dominik Paulus <dominik.paulus@fau.de>
-Subject: [PATCH] Fix obvious logic error in staging/csr
-Date: Thu, 13 Jun 2013 23:00:35 +0200
-Message-Id: <1371157235-4697-1-git-send-email-dominik.paulus@fau.de>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 13 Jun 2013 17:14:14 -0400
+Date: Thu, 13 Jun 2013 14:14:25 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Subject: Re: [PATCH] Percpu tag allocator
+Message-ID: <20130613211425.GC8650@moria.home.lan>
+References: <1371009804-11596-1-git-send-email-koverstreet@google.com>
+ <20130612163854.91da28042ab7a943b69a5970@linux-foundation.org>
+ <20130613190610.GA13970@mtj.dyndns.org>
+ <20130613121324.2cab80256217df97254af16c@linux-foundation.org>
+ <20130613192152.GC13970@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130613192152.GC13970@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tobias Polzer <tobias.polzer@fau.de>
+On Thu, Jun 13, 2013 at 12:21:52PM -0700, Tejun Heo wrote:
+> Hello,
+> 
+> On Thu, Jun 13, 2013 at 12:13:24PM -0700, Andrew Morton wrote:
+> > As I understand it, if a task is stuck in this loop at freeze time, the
+> > whole freeze attempt will fail.  But it's been a long time since I
+> > thought about or worked on this stuff.
+> 
+> It depends on who's calling the allocator but if the device driver or
+> its midlayer is doing things properly, the ideal way would be the task
+> being marked unfreezable (I think freezable kthreads harms more than
+> help in general) and the driver suspend callback draining commands
+> while not issuing new ones.  What the tag allocator does doesn't
+> really matter as all resources necessary for command execution should
+> eventually be freed before entering suspend anyway.
+> 
+> If that's not the case, the freezing should still be controlled by the
+> caller and again the allocator should be able to return -EBUSY/INTR to
+> indicate and then the caller, after releasing all other resources,
+> shouldf to try_to_freeze().  There simply is no reliable way to tell
+> from as deep as tag allocator whether it'd be safe to freeze or not.
 
-In uf_process_ma_packet_req() (staging/csr/unifi_pdu_processing.c), the
-test for
-(staInfo->timSet != CSR_WIFI_TIM_RESET) || (staInfo->timSet !=
-CSR_WIFI_TIM_RESETTING)
-obviously makes no sense and causes GCC to emit a warning if
--Wlogical-op is enabled.
-As suggested in the referenced bug report, || was replaced by &&.
+Yeah, I think you're definitely right. (I only started reading up on the
+freezer stuff yesterday, though).
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=46571
-Reported-By: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Tobias Polzer <tobias.polzer@fau.de>
-Signed-off-by: Dominik Paulus <dominik.paulus@fau.de>
----
- drivers/staging/csr/unifi_pdu_processing.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/csr/unifi_pdu_processing.c b/drivers/staging/csr/unifi_pdu_processing.c
-index f9b421b..8634193 100644
---- a/drivers/staging/csr/unifi_pdu_processing.c
-+++ b/drivers/staging/csr/unifi_pdu_processing.c
-@@ -2704,7 +2704,7 @@ static void uf_handle_uspframes_delivery(unifi_priv_t * priv, CsrWifiRouterCtrlS
-      */
-     is_all_ac_deliver_enabled_and_moredata(staInfo, &allDeliveryEnabled, &dataAvailable);
-     if ((allDeliveryEnabled && !dataAvailable)) {
--        if ((staInfo->timSet != CSR_WIFI_TIM_RESET) || (staInfo->timSet != CSR_WIFI_TIM_RESETTING)) {
-+        if ((staInfo->timSet != CSR_WIFI_TIM_RESET) && (staInfo->timSet != CSR_WIFI_TIM_RESETTING)) {
-             staInfo->updateTimReqQueued = (u8) CSR_WIFI_TIM_RESET;
-             unifi_trace(priv, UDBG4, " --uf_handle_uspframes_delivery, UAPSD timset\n");
-             if (!staInfo->timRequestPendingFlag) {
--- 
-1.7.10.4
-
+Do you know offhand what existing (i.e. slab) allocators do? Whatever
+they do should make sense for us.
