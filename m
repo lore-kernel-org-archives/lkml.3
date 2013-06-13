@@ -1,81 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759060Ab3FMTqY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 15:46:24 -0400
-Received: from fieldses.org ([174.143.236.118]:52676 "EHLO fieldses.org"
+	id S1759026Ab3FMTue (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 15:50:34 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:36475 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757636Ab3FMTqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 15:46:21 -0400
-Date: Thu, 13 Jun 2013 15:45:46 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
-        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
-        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, cluster-devel@redhat.com,
-        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        piastryyy@gmail.com
-Subject: Re: [PATCH v2 06/14] locks: don't walk inode->i_flock list in
- locks_show
-Message-ID: <20130613194545.GC19218@fieldses.org>
-References: <1370948948-31784-1-git-send-email-jlayton@redhat.com>
- <1370948948-31784-7-git-send-email-jlayton@redhat.com>
+	id S1752081Ab3FMTuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 15:50:32 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiang Liu <jiang.liu@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        "Alexander E . Patrakov" <patrakov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        stable@vger.kernel.org
+Subject: Re: [BUGFIX 2/9] ACPIPHP: fix device destroying order issue when handling dock notification
+Date: Thu, 13 Jun 2013 21:59:44 +0200
+Message-ID: <2448481.HbOiE9Npmq@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1371141152-9468-3-git-send-email-jiang.liu@huawei.com>
+References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com> <1371141152-9468-3-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1370948948-31784-7-git-send-email-jlayton@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 07:09:00AM -0400, Jeff Layton wrote:
-> When we convert over to using the i_lock to protect the i_flock list,
-> that will introduce a potential lock inversion problem in locks_show.
-> When we want to walk the i_flock list, we'll need to take the i_lock.
+On Friday, June 14, 2013 12:32:25 AM Jiang Liu wrote:
+> Current ACPI glue logic expects that physical devices are destroyed
+> before destroying companion ACPI devices, otherwise it will break the
+> ACPI unbind logic and cause following warning messages:
+> [  185.026073] usb usb5: Oops, 'acpi_handle' corrupt
+> [  185.035150] pci 0000:1b:00.0: Oops, 'acpi_handle' corrupt
+> [  185.035515] pci 0000:18:02.0: Oops, 'acpi_handle' corrupt
+> [  180.013656]  port1: Oops, 'acpi_handle' corrupt
+> Please refer to https://bugzilla.kernel.org/attachment.cgi?id=104321
+> for full log message.
+
+So my question is, did we have this problem before commit 3b63aaa70e1?
+
+If we did, then when did it start?  Or was it present forever?
+
+> Above warning messages are caused by following scenario:
+> 1) acpi_dock_notifier_call() queues a task (T1) onto kacpi_hotplug_wq
+> 2) kacpi_hotplug_wq handles T1, which invokes acpi_dock_deferred_cb()
+>    ->dock_notify()-> handle_eject_request()->hotplug_dock_devices()
+> 3) hotplug_dock_devices() first invokes registered hotplug callbacks to
+>    destroy physical devices, then destroys all affected ACPI devices.
+>    Everything seems perfect until now. But the acpiphp dock notification
+>    handler will queue another task (T2) onto kacpi_hotplug_wq to really
+>    destroy affected physical devices.
+
+Would not the solution be to modify it so that it didn't spawn the other
+task (T2), but removed the affected physical devices synchronously?
+
+> 4) kacpi_hotplug_wq finishes T1, and all affected ACPI devices have
+>    been destroyed.
+> 5) kacpi_hotplug_wq handles T2, which destroys all affected physical
+>    devices.
 > 
-> Rather than do that, just walk the global blocked_locks list and print
-> out any that are blocked on the given lock.
-
-I'm OK with this as obviously /proc/locks shouldn't be the common case,
-but it still bugs me a bit that we're suddenly making it something like
-
-	O(number of held locks * number of waiters)
-
-where it used to be
-
-	O(number of held lock + number of waiters)
-
-I wonder if there's any solution that's just as easy and avoids scanning
-the blocked list each time.
-
---b.
-
+> So it breaks ACPI glue logic's expection because ACPI devices are destroyed
+> in step 3 and physical devices are destroyed in step 5.
 > 
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Reported-by: Alexander E. Patrakov <patrakov@gmail.com>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+> Cc: linux-pci@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: stable@vger.kernel.org
 > ---
->  fs/locks.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
+> Hi Bjorn and Rafael,
+>      The recursive lock changes haven't been tested yet, need help
+> from Alexander for testing.
+
+Well, let's just say I'm not a fan of recursive locks.  Is that unavoidable
+here?
+
+Rafael
+
+
+> ---
+>  drivers/acpi/dock.c                | 33 +++++++++++++++++++++++++++------
+>  drivers/pci/hotplug/acpiphp_glue.c | 32 ++++++++++++++++++--------------
+>  2 files changed, 45 insertions(+), 20 deletions(-)
 > 
-> diff --git a/fs/locks.c b/fs/locks.c
-> index e451d18..3fd27f0 100644
-> --- a/fs/locks.c
-> +++ b/fs/locks.c
-> @@ -2249,8 +2249,10 @@ static int locks_show(struct seq_file *f, void *v)
+> diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
+> index 02b0563..79c8d9e 100644
+> --- a/drivers/acpi/dock.c
+> +++ b/drivers/acpi/dock.c
+> @@ -65,6 +65,7 @@ struct dock_station {
+>  	u32 flags;
+>  	spinlock_t dd_lock;
+>  	struct mutex hp_lock;
+> +	struct task_struct *owner;
+>  	struct list_head dependent_devices;
+>  	struct list_head hotplug_devices;
 >  
->  	lock_get_status(f, fl, *((loff_t *)f->private), "");
->  
-> -	list_for_each_entry(bfl, &fl->fl_block, fl_block)
-> -		lock_get_status(f, bfl, *((loff_t *)f->private), " ->");
-> +	list_for_each_entry(bfl, &blocked_list, fl_link) {
-> +		if (bfl->fl_next == fl)
-> +			lock_get_status(f, bfl, *((loff_t *)f->private), " ->");
+> @@ -131,9 +132,13 @@ static void
+>  dock_add_hotplug_device(struct dock_station *ds,
+>  			struct dock_dependent_device *dd)
+>  {
+> -	mutex_lock(&ds->hp_lock);
+> -	list_add_tail(&dd->hotplug_list, &ds->hotplug_devices);
+> -	mutex_unlock(&ds->hp_lock);
+> +	if (mutex_is_locked(&ds->hp_lock) && ds->owner == current) {
+> +		list_add_tail(&dd->hotplug_list, &ds->hotplug_devices);
+> +	} else {
+> +		mutex_lock(&ds->hp_lock);
+> +		list_add_tail(&dd->hotplug_list, &ds->hotplug_devices);
+> +		mutex_unlock(&ds->hp_lock);
 > +	}
->  
->  	return 0;
 >  }
-> -- 
-> 1.7.1
+>  
+>  /**
+> @@ -147,9 +152,13 @@ static void
+>  dock_del_hotplug_device(struct dock_station *ds,
+>  			struct dock_dependent_device *dd)
+>  {
+> -	mutex_lock(&ds->hp_lock);
+> -	list_del(&dd->hotplug_list);
+> -	mutex_unlock(&ds->hp_lock);
+> +	if (mutex_is_locked(&ds->hp_lock) && ds->owner == current) {
+> +		list_del_init(&dd->hotplug_list);
+> +	} else {
+> +		mutex_lock(&ds->hp_lock);
+> +		list_del_init(&dd->hotplug_list);
+> +		mutex_unlock(&ds->hp_lock);
+> +	}
+>  }
+>  
+>  /**
+> @@ -355,7 +364,17 @@ static void hotplug_dock_devices(struct dock_station *ds, u32 event)
+>  {
+>  	struct dock_dependent_device *dd;
+>  
+> +	/*
+> +	 * There is a deadlock scenario as below:
+> +	 *	hotplug_dock_devices()
+> +	 *	    mutex_lock(&ds->hp_lock)
+> +	 *		dd->ops->handler()
+> +	 *		    register_hotplug_dock_device()
+> +	 *			mutex_lock(&ds->hp_lock)
+> +	 * So we need recursive lock scematics here, do it by ourselves.
+> +	 */
+>  	mutex_lock(&ds->hp_lock);
+> +	ds->owner = current;
+>  
+>  	/*
+>  	 * First call driver specific hotplug functions
+> @@ -376,6 +395,8 @@ static void hotplug_dock_devices(struct dock_station *ds, u32 event)
+>  		else
+>  			dock_create_acpi_device(dd->handle);
+>  	}
+> +
+> +	ds->owner = NULL;
+>  	mutex_unlock(&ds->hp_lock);
+>  }
+>  
+> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+> index 716aa93..699b8ca 100644
+> --- a/drivers/pci/hotplug/acpiphp_glue.c
+> +++ b/drivers/pci/hotplug/acpiphp_glue.c
+> @@ -61,6 +61,8 @@ static DEFINE_MUTEX(bridge_mutex);
+>  static void handle_hotplug_event_bridge (acpi_handle, u32, void *);
+>  static void acpiphp_sanitize_bus(struct pci_bus *bus);
+>  static void acpiphp_set_hpp_values(struct pci_bus *bus);
+> +static void _handle_hotplug_event_func(acpi_handle handle, u32 type,
+> +				       void *context);
+>  static void handle_hotplug_event_func(acpi_handle handle, u32 type, void *context);
+>  static void free_bridge(struct kref *kref);
+>  
+> @@ -147,7 +149,7 @@ static int post_dock_fixups(struct notifier_block *nb, unsigned long val,
+>  
+>  
+>  static const struct acpi_dock_ops acpiphp_dock_ops = {
+> -	.handler = handle_hotplug_event_func,
+> +	.handler = _handle_hotplug_event_func,
+>  };
+>  
+>  /* Check whether the PCI device is managed by native PCIe hotplug driver */
+> @@ -1065,22 +1067,13 @@ static void handle_hotplug_event_bridge(acpi_handle handle, u32 type,
+>  	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_bridge);
+>  }
+>  
+> -static void _handle_hotplug_event_func(struct work_struct *work)
+> +static void _handle_hotplug_event_func(acpi_handle handle, u32 type,
+> +				       void *context)
+>  {
+> -	struct acpiphp_func *func;
+> +	struct acpiphp_func *func = context;
+>  	char objname[64];
+>  	struct acpi_buffer buffer = { .length = sizeof(objname),
+>  				      .pointer = objname };
+> -	struct acpi_hp_work *hp_work;
+> -	acpi_handle handle;
+> -	u32 type;
+> -
+> -	hp_work = container_of(work, struct acpi_hp_work, work);
+> -	handle = hp_work->handle;
+> -	type = hp_work->type;
+> -	func = (struct acpiphp_func *)hp_work->context;
+> -
+> -	acpi_scan_lock_acquire();
+>  
+>  	acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+>  
+> @@ -1113,7 +1106,18 @@ static void _handle_hotplug_event_func(struct work_struct *work)
+>  		warn("notify_handler: unknown event type 0x%x for %s\n", type, objname);
+>  		break;
+>  	}
+> +}
+> +
+> +static void _handle_hotplug_event_cb(struct work_struct *work)
+> +{
+> +	struct acpiphp_func *func;
+> +	struct acpi_hp_work *hp_work;
+>  
+> +	hp_work = container_of(work, struct acpi_hp_work, work);
+> +	func = (struct acpiphp_func *)hp_work->context;
+> +	acpi_scan_lock_acquire();
+> +	_handle_hotplug_event_func(hp_work->handle, hp_work->type,
+> +				    hp_work->context);
+>  	acpi_scan_lock_release();
+>  	kfree(hp_work); /* allocated in handle_hotplug_event_func */
+>  	put_bridge(func->slot->bridge);
+> @@ -1141,7 +1145,7 @@ static void handle_hotplug_event_func(acpi_handle handle, u32 type,
+>  	 * don't deadlock on hotplug actions.
+>  	 */
+>  	get_bridge(func->slot->bridge);
+> -	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_func);
+> +	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_cb);
+>  }
+>  
+>  /*
 > 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
