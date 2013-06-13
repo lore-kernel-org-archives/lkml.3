@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab3FMEFR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 00:05:17 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:39315 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335Ab3FMEFM (ORCPT
+	id S932508Ab3FMEFX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 00:05:23 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:60298 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335Ab3FMEFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 00:05:12 -0400
+	Thu, 13 Jun 2013 00:05:18 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         koverstreet@google.com, linux-kernel@vger.kernel.org,
         cl@linux-foundation.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 05/11] cgroup: clean up css_[try]get() and css_put()
-Date: Wed, 12 Jun 2013 21:04:52 -0700
-Message-Id: <1371096298-24402-6-git-send-email-tj@kernel.org>
+Subject: [PATCH 08/11] cgroup: remove cgroup->count and use
+Date: Wed, 12 Jun 2013 21:04:55 -0700
+Message-Id: <1371096298-24402-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1371096298-24402-1-git-send-email-tj@kernel.org>
 References: <1371096298-24402-1-git-send-email-tj@kernel.org>
@@ -22,95 +22,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* __css_get() isn't used by anyone.  Fold it into css_get().
+cgroup->count tracks the number of css_sets associated with the cgroup
+and used only to verify that no css_set is associated when the cgroup
+is being destroyed.  It's superflous as the destruction path can
+simply check whether cgroup->cset_links is empty instead.
 
-* Add proper function comments to all css reference functions.
-
-This patch is purely cosmetic.
-
-v2: Typo fix as per Li.
+Drop cgroup->count and check ->cset_links directly from
+cgroup_destroy_locked().
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
 ---
- include/linux/cgroup.h | 48 ++++++++++++++++++++++++------------------------
- 1 file changed, 24 insertions(+), 24 deletions(-)
+ include/linux/cgroup.h |  6 ------
+ kernel/cgroup.c        | 21 +++++----------------
+ 2 files changed, 5 insertions(+), 22 deletions(-)
 
 diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 0e32855..a494636 100644
+index c86a93a..81bfd02 100644
 --- a/include/linux/cgroup.h
 +++ b/include/linux/cgroup.h
-@@ -94,33 +94,31 @@ enum {
- 	CSS_ONLINE	= (1 << 1), /* between ->css_online() and ->css_offline() */
- };
+@@ -169,12 +169,6 @@ struct cgroup_name {
+ struct cgroup {
+ 	unsigned long flags;		/* "unsigned long" so bitops work */
  
--/* Caller must verify that the css is not for root cgroup */
--static inline void __css_get(struct cgroup_subsys_state *css, int count)
+-	/*
+-	 * count users of this cgroup. >0 means busy, but doesn't
+-	 * necessarily indicate the number of tasks in the cgroup
+-	 */
+-	atomic_t count;
+-
+ 	int id;				/* ida allocated in-hierarchy ID */
+ 
+ 	/*
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 22f9729..062653f 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -408,8 +408,7 @@ static void __put_css_set(struct css_set *cset, int taskexit)
+ 		list_del(&link->cgrp_link);
+ 
+ 		/* @cgrp can't go away while we're holding css_set_lock */
+-		if (atomic_dec_and_test(&cgrp->count) &&
+-		    notify_on_release(cgrp)) {
++		if (list_empty(&cgrp->cset_links) && notify_on_release(cgrp)) {
+ 			if (taskexit)
+ 				set_bit(CGRP_RELEASABLE, &cgrp->flags);
+ 			check_for_release(cgrp);
+@@ -616,7 +615,6 @@ static void link_css_set(struct list_head *tmp_links, struct css_set *cset,
+ 	link = list_first_entry(tmp_links, struct cgrp_cset_link, cset_link);
+ 	link->cset = cset;
+ 	link->cgrp = cgrp;
+-	atomic_inc(&cgrp->count);
+ 	list_move(&link->cset_link, &cgrp->cset_links);
+ 	/*
+ 	 * Always add links to the tail of the list so that the list
+@@ -4373,11 +4371,11 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
+ 	lockdep_assert_held(&cgroup_mutex);
+ 
+ 	/*
+-	 * css_set_lock prevents @cgrp from being removed while
+-	 * __put_css_set() is in progress.
++	 * css_set_lock synchronizes access to ->cset_links and prevents
++	 * @cgrp from being removed while __put_css_set() is in progress.
+ 	 */
+ 	read_lock(&css_set_lock);
+-	empty = !atomic_read(&cgrp->count) && list_empty(&cgrp->children);
++	empty = list_empty(&cgrp->cset_links) && list_empty(&cgrp->children);
+ 	read_unlock(&css_set_lock);
+ 	if (!empty)
+ 		return -EBUSY;
+@@ -5057,7 +5055,7 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
+ static void check_for_release(struct cgroup *cgrp)
+ {
+ 	if (cgroup_is_releasable(cgrp) &&
+-	    !atomic_read(&cgrp->count) && list_empty(&cgrp->children)) {
++	    list_empty(&cgrp->cset_links) && list_empty(&cgrp->children)) {
+ 		/*
+ 		 * Control Group is currently removeable. If it's not
+ 		 * already queued for a userspace notification, queue
+@@ -5425,11 +5423,6 @@ static void debug_css_free(struct cgroup *cont)
+ 	kfree(cont->subsys[debug_subsys_id]);
+ }
+ 
+-static u64 cgroup_refcount_read(struct cgroup *cont, struct cftype *cft)
 -{
--	atomic_add(count, &css->refcnt);
+-	return atomic_read(&cont->count);
 -}
 -
--/*
-- * Call css_get() to hold a reference on the css; it can be used
-- * for a reference obtained via:
-- * - an existing ref-counted reference to the css
-- * - task->cgroups for a locked task
-+/**
-+ * css_get - obtain a reference on the specified css
-+ * @css: target css
-+ *
-+ * The caller must already have a reference.
-  */
--
- static inline void css_get(struct cgroup_subsys_state *css)
+ static u64 debug_taskcount_read(struct cgroup *cont, struct cftype *cft)
  {
- 	/* We don't need to reference count the root state */
- 	if (!(css->flags & CSS_ROOT))
--		__css_get(css, 1);
-+		atomic_inc(&css->refcnt);
- }
+ 	return cgroup_task_count(cont);
+@@ -5511,10 +5504,6 @@ static u64 releasable_read(struct cgroup *cgrp, struct cftype *cft)
  
--/*
-- * Call css_tryget() to take a reference on a css if your existing
-- * (known-valid) reference isn't already ref-counted. Returns false if
-- * the css has been destroyed.
-- */
--
- extern bool __css_tryget(struct cgroup_subsys_state *css);
-+
-+/**
-+ * css_tryget - try to obtain a reference on the specified css
-+ * @css: target css
-+ *
-+ * Obtain a reference on @css if it's alive.  The caller naturally needs to
-+ * ensure that @css is accessible but doesn't have to be holding a
-+ * reference on it - IOW, RCU protected access is good enough for this
-+ * function.  Returns %true if a reference count was successfully obtained;
-+ * %false otherwise.
-+ */
- static inline bool css_tryget(struct cgroup_subsys_state *css)
- {
- 	if (css->flags & CSS_ROOT)
-@@ -128,12 +126,14 @@ static inline bool css_tryget(struct cgroup_subsys_state *css)
- 	return __css_tryget(css);
- }
- 
--/*
-- * css_put() should be called to release a reference taken by
-- * css_get() or css_tryget()
-- */
--
- extern void __css_put(struct cgroup_subsys_state *css);
-+
-+/**
-+ * css_put - put a css reference
-+ * @css: target css
-+ *
-+ * Put a reference obtained via css_get() and css_tryget().
-+ */
- static inline void css_put(struct cgroup_subsys_state *css)
- {
- 	if (!(css->flags & CSS_ROOT))
+ static struct cftype debug_files[] =  {
+ 	{
+-		.name = "cgroup_refcount",
+-		.read_u64 = cgroup_refcount_read,
+-	},
+-	{
+ 		.name = "taskcount",
+ 		.read_u64 = debug_taskcount_read,
+ 	},
 -- 
 1.8.2.1
 
