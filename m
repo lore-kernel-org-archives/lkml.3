@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754966Ab3FMLzj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 07:55:39 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:35983 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751406Ab3FMLzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 07:55:37 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Roman Yepishev <roman.yepishev@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1755490Ab3FML56 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 07:57:58 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42601 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406Ab3FML55 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 07:57:57 -0400
+Date: Thu, 13 Jun 2013 12:56:40 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Cc: Michal Simek <monstr@monstr.eu>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] PCI: Remove not needed check in disable aspm link
-Date: Thu, 13 Jun 2013 14:04:46 +0200
-Message-ID: <5579473.Q0gAQnMCR1@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAE9FiQWDDqcUwNDfOgBKOLrm7K811P=foK3-ZavFEkdUj=bSDg@mail.gmail.com>
-References: <CAErSpo6v0mj9=Q13d=G4hho0mb9XTcsmefzke9fROYmZ7oBWxQ@mail.gmail.com> <CAErSpo7gL3Ds9oq8ZZ4zdt1uHy9xbkWJE+Ja=-0QXFQECjr40A@mail.gmail.com> <CAE9FiQWDDqcUwNDfOgBKOLrm7K811P=foK3-ZavFEkdUj=bSDg@mail.gmail.com>
+        Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-doc@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Olof Johansson <olof@lixom.net>, Rob Herring <rob.herring@calxeda.com>,
+        Rob Landley <rob@landley.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: Re: [PATCH v2 06/11] ARM:stixxxx: Add STiH415 SOC support
+Message-ID: <20130613115640.GC18614@n2100.arm.linux.org.uk>
+References: <1370855828-5318-1-git-send-email-srinivas.kandagatla@st.com> <1370856381-6644-1-git-send-email-srinivas.kandagatla@st.com> <CAHTX3d+dk3W_9b7SVUokWq4KYXnj=Z1=WPj5zJ-gUvJqqwE=+Q@mail.gmail.com> <51B5BCB3.3060405@st.com> <20130610231934.GG18614@n2100.arm.linux.org.uk> <51B6C8B7.50807@st.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51B6C8B7.50807@st.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 12, 2013 10:47:08 PM Yinghai Lu wrote:
-> On Wed, Jun 12, 2013 at 8:50 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> > On Wed, Jun 12, 2013 at 1:41 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> >
-> > I think you're saying that in systems that support both acpiphp and
-> > pciehp, we should be using pciehp, but we currently use acpiphp.  If
-> > so, that's certainly a bug.  How serious is it?  Is it a disaster if
-> > we use acpiphp until we can resolve this cleanly?  Are there a lot of
-> > systems that claim to support acpiphp but it doesn't actually work?
-> 
-> No sure. To make acpiphp would need more expertise in bios.
-> Normally BIOS vendor would have half done work there, and will need
-> OEM or system vendor have someone to make it work ....
-> You would not want to read asl code in DSDT to help them out.
-> That is not something that we can control.
+On Tue, Jun 11, 2013 at 07:50:31AM +0100, Srinivas KANDAGATLA wrote:
+> You are right, It does not make sense to use BIT() macro for field which
+> has more than 1 bit. I think using mix of both BIT() and the old style
+> will make code look bit confusing to reader, Also no other mach code in
+> the kernel use BIT while configuring L2 controller. So am going to drop
+> the idea of using BIT here and leave the code as it is.
 
-However, pciehp may simply not work by itself on those systems.
+I'd suggest putting a comment in the code to that effect.  With the way
+"cleanups" get done, I wouldn't be surprised if this attracts a lot of
+people wanting to do a trivial "1 << bit" -> "BIT(bit)" conversions.
 
-It's pretty much like saying "Oh, _CRS may be screwed up, so let's just ignore
-it", which isn't overly smart.
+One of the problems of open source is that you can say "no" to a patch
+like that until you're blue in the face, but it will eventually make
+its way in via some path.
 
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Just one of the reasons I consider BIT() to be evil and an inappropriate
+macro.
