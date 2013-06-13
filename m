@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758894Ab3FMSSg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 14:18:36 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:36334 "EHLO hydra.sisk.pl"
+	id S1758904Ab3FMST3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 14:19:29 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:36343 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756270Ab3FMSSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 14:18:35 -0400
+	id S1753717Ab3FMST0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 14:19:26 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Jiang Liu <jiang.liu@huawei.com>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
@@ -15,12 +15,12 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Shaohua Li <shaohua.li@intel.com>, Len Brown <lenb@kernel.org>,
         linux-acpi@vger.kernel.org
-Subject: Re: [BUGFIX 4/9] ACPI, DOCK: avoid initializing acpi_dock_notifier_list multiple times
-Date: Thu, 13 Jun 2013 20:27:48 +0200
-Message-ID: <5386268.Rav0V0b5qK@vostro.rjw.lan>
+Subject: Re: [BUGFIX 5/9] ACPI, DOCK: kill redundant spin lock in dock device object
+Date: Thu, 13 Jun 2013 20:28:40 +0200
+Message-ID: <1490442.eFer0nddaj@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1371141152-9468-5-git-send-email-jiang.liu@huawei.com>
-References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com> <1371141152-9468-5-git-send-email-jiang.liu@huawei.com>
+In-Reply-To: <1371141152-9468-6-git-send-email-jiang.liu@huawei.com>
+References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com> <1371141152-9468-6-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -28,13 +28,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 14, 2013 12:32:27 AM Jiang Liu wrote:
-> Initialize acpi_dock_notifier_list from function acpi_dock_init()
-> instead of dock_add() to avoid initializing it multiple times.
+On Friday, June 14, 2013 12:32:28 AM Jiang Liu wrote:
+> All dock device related data structures are created during driver
+> initialization, so kill the redundant spin lock in dock device object.
 
-Well, makes sense.
+As a cleanup, it definitely makes sense, but does it fix anything?
 
-Thanks,
 Rafael
 
 
@@ -45,29 +44,58 @@ Rafael
 > Cc: linux-acpi@vger.kernel.org
 > Cc: linux-kernel@vger.kernel.org
 > ---
->  drivers/acpi/dock.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  drivers/acpi/dock.c | 15 +++------------
+>  1 file changed, 3 insertions(+), 12 deletions(-)
 > 
 > diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
-> index 50e38b7..8e578aa 100644
+> index 8e578aa..cd2d5df 100644
 > --- a/drivers/acpi/dock.c
 > +++ b/drivers/acpi/dock.c
-> @@ -967,7 +967,6 @@ static int __init dock_add(acpi_handle handle)
->  	spin_lock_init(&dock_station->dd_lock);
+> @@ -57,7 +57,6 @@ struct dock_station {
+>  	acpi_handle handle;
+>  	unsigned long last_dock_time;
+>  	u32 flags;
+> -	spinlock_t dd_lock;
+>  	struct mutex hp_lock;
+>  	struct task_struct *owner;
+>  	struct list_head dependent_devices;
+> @@ -107,10 +106,7 @@ add_dock_dependent_device(struct dock_station *ds, acpi_handle handle)
+>  	dd->handle = handle;
+>  	INIT_LIST_HEAD(&dd->list);
+>  	INIT_LIST_HEAD(&dd->hotplug_list);
+> -
+> -	spin_lock(&ds->dd_lock);
+>  	list_add_tail(&dd->list, &ds->dependent_devices);
+> -	spin_unlock(&ds->dd_lock);
+>  
+>  	return 0;
+>  }
+> @@ -168,14 +164,10 @@ find_dock_dependent_device(struct dock_station *ds, acpi_handle handle)
+>  {
+>  	struct dock_dependent_device *dd;
+>  
+> -	spin_lock(&ds->dd_lock);
+> -	list_for_each_entry(dd, &ds->dependent_devices, list) {
+> -		if (handle == dd->handle) {
+> -			spin_unlock(&ds->dd_lock);
+> +	list_for_each_entry(dd, &ds->dependent_devices, list)
+> +		if (handle == dd->handle)
+>  			return dd;
+> -		}
+> -	}
+> -	spin_unlock(&ds->dd_lock);
+> +
+>  	return NULL;
+>  }
+>  
+> @@ -964,7 +956,6 @@ static int __init dock_add(acpi_handle handle)
+>  	dock_station->last_dock_time = jiffies - HZ;
+>  
+>  	mutex_init(&dock_station->hp_lock);
+> -	spin_lock_init(&dock_station->dd_lock);
 >  	INIT_LIST_HEAD(&dock_station->sibling);
 >  	INIT_LIST_HEAD(&dock_station->hotplug_devices);
-> -	ATOMIC_INIT_NOTIFIER_HEAD(&dock_notifier_list);
 >  	INIT_LIST_HEAD(&dock_station->dependent_devices);
->  
->  	/* we want the dock device to send uevents */
-> @@ -1038,6 +1037,7 @@ int __init acpi_dock_init(void)
->  		return 0;
->  	}
->  
-> +	ATOMIC_INIT_NOTIFIER_HEAD(&dock_notifier_list);
->  	register_acpi_bus_notifier(&dock_acpi_notifier);
->  	pr_info(PREFIX "%s: %d docks/bays found\n",
->  		ACPI_DOCK_DRIVER_DESCRIPTION, dock_station_count);
 > 
 -- 
 I speak only for myself.
