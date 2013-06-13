@@ -1,77 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129Ab3FMMBd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 08:01:33 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:57607 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755248Ab3FMMBb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 08:01:31 -0400
-X-AuditID: cbfee68f-b7f436d000000f81-8f-51b9b499c9b6
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Doug Anderson'" <dianders@chromium.org>,
-        "'Linus Walleij'" <linus.walleij@linaro.org>
-Cc: "'Tomasz Figa'" <tomasz.figa@gmail.com>,
-        "'Olof Johansson'" <olof@lixom.net>,
-        "'Simon Glass'" <sjg@chromium.org>,
-        "'Luigi Semenzato'" <semenzato@chromium.org>, ilho215.lee@samsung.com,
-        eunki_kim@samsung.com, linux-kernel@vger.kernel.org
-References: <1371058399-31933-1-git-send-email-dianders@chromium.org>
- <1371058399-31933-2-git-send-email-dianders@chromium.org>
-In-reply-to: <1371058399-31933-2-git-send-email-dianders@chromium.org>
-Subject: RE: [PATCH 2/3] pinctrl: exynos: reorder xyz_irq_unmask() so future
- patch can ack
-Date: Thu, 13 Jun 2013 21:01:29 +0900
-Message-id: <150801ce682d$bd25a120$3770e360$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac5nkvaSOmaIguh1T9ypxuWNP18oswAmqtHg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAIsWRmVeSWpSXmKPExsVy+t8zI92ZW3YGGpw/aW5xdtlBNotnd64w
-	Wxz9t5DRYsqf5UwWl3fNYbM4df0zm8Xnq19YLL5t2cZosWrXH0YHTo/ZDRdZPHbOusvucefa
-	HjaPKyeaWD36tqxi9Pi8SS6ALYrLJiU1J7MstUjfLoErY96SD4wFzUwVTy4/YGxgPM/YxcjJ
-	ISFgItG2cCuULSZx4d56ti5GLg4hgWWMEqdmPmCFKer40cICkZjOKDG7u4sZJCEk8JdRYt2M
-	RBCbTUBD4vD7Z+wgtohApMSEA+eYQRqYBd4wSix//o4VoruRUWLDoldgYzkF3CR2f5wFtI+D
-	Q1ggRmJurx+IySKgKnHxiydIBa+ArcSCi5uYIWxBiR+T77GA2MwCWhLrdx5ngrDlJTavecsM
-	0iohoC7x6K8uxAlGEl9WbGaGKBGR2PfiHSPIBRICvRwSuzb8BLuARUBA4tvkQywQvbISmw4w
-	Q/wrKXFwxQ2WCYwSs5BsnoVk8ywkm2chWbGAkWUVo2hqQXJBcVJ6kbFecWJucWleul5yfu4m
-	Rkhs9+9gvHvA+hBjMtD6icxSosn5wNSQVxJvaGxmZGFqYmpsZG5pRpqwkjivWot1oJBAemJJ
-	anZqakFqUXxRaU5q8SFGJg5OqQbGLbMUd9XonMkzmHtu28WTGf/k6hP9v2beVN54gZOxymaq
-	nLeN5mFb7ufCX/+easy5nFAUps7blPj4ud26C91nQ/6JbVjiHDN1ldfrdv4bO9e2TS+9cejw
-	+ZfrP56+WpvEJVl76vQSq6y+AMG3h09M1YnxsN3B288jonqaqSGw993tXfwevDeylFiKMxIN
-	tZiLihMBfJyxwQMDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLKsWRmVeSWpSXmKPExsVy+t9jQd2ZW3YGGhybbWxxdtlBNotnd64w
-	Wxz9t5DRYsqf5UwWl3fNYbM4df0zm8Xnq19YLL5t2cZosWrXH0YHTo/ZDRdZPHbOusvucefa
-	HjaPKyeaWD36tqxi9Pi8SS6ALaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJc
-	SSEvMTfVVsnFJ0DXLTMH6CwlhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEd
-	Y8a8JR8YC5qZKp5cfsDYwHiesYuRk0NCwESi40cLC4QtJnHh3nq2LkYuDiGB6YwSs7u7mEES
-	QgJ/GSXWzUgEsdkENCQOv3/GDmKLCERKTDhwjhmkgVngDaPE8ufvWCG6GxklNix6xQpSxSng
-	JrH74yygsRwcwgIxEnN7/UBMFgFViYtfPEEqeAVsJRZc3MQMYQtK/Jh8D+wgZgEtifU7jzNB
-	2PISm9e8ZQZplRBQl3j0VxfiBCOJLys2M0OUiEjse/GOcQKj0Cwkk2YhmTQLyaRZSFoWMLKs
-	YhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAhOHM+kdjCubLA4xCjAwajEw/uidUegEGtiWXFl
-	7iFGCQ5mJRHem1N3BgrxpiRWVqUW5ccXleakFh9iTAb6cyKzlGhyPjCp5ZXEGxqbmBlZGplZ
-	GJmYm5MmrCTOe6DVOlBIID2xJDU7NbUgtQhmCxMHp1QDo0n5xj8S36aIHOT1V+bcc0Km/N3B
-	GQ/+nVrPrep7Was7/vMDk88vuZ+WeLM3ff3k+GnbnbXzQkJX+i0x5L20M9Tr4qyuTp+Kmrvv
-	lzxkWBvnzig1RfvTo4eSx2byn1yvs3njhVdHL/Tr62s2uR0xftt0VnElt5WRdqjc3T2e6zsV
-	C77lPIs55qXEUpyRaKjFXFScCAABzoTOYAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1756328Ab3FMMCw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 08:02:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52747 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751406Ab3FMMCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 08:02:51 -0400
+Date: Thu, 13 Jun 2013 14:02:48 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
+        bsingharora@gmail.com, hannes@cmpxchg.org
+Subject: Re: mem_cgroup_page_lruvec: BUG: unable to handle kernel NULL
+ pointer dereference at 00000000000001a8
+Message-ID: <20130613120248.GB23070@dhcp22.suse.cz>
+References: <CAFLxGvzKes7mGknTJgqFamr_-ODPBArf6BajF+m5x-S4AEtdmQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFLxGvzKes7mGknTJgqFamr_-ODPBArf6BajF+m5x-S4AEtdmQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doug Anderson wrote:
+On Thu 13-06-13 13:48:27, richard -rw- weinberger wrote:
+> Hi!
 > 
-> This patch does nothing but reorder the functions to improve the
-> readability of a future patch.
+> While playing with user namespaces my kernel crashed under heavy load.
+> Kernel is 3.9.0 plus some trivial patches.
+
+Could you post disassembly for mem_cgroup_page_lruvec?
+
+> [35355.882105] BUG: unable to handle kernel NULL pointer dereference
+> at 00000000000001a8
+> [35355.883056] IP: [<ffffffff811297d9>] mem_cgroup_page_lruvec+0x79/0x90
+> [35355.883056] PGD 0
+> [35355.883056] Oops: 0000 [#1] SMP
+> [35355.883056] CPU 3
+> [35355.883056] Pid: 477, comm: kswapd0 Not tainted 3.9.0+ #12 Bochs Bochs
+> [35355.883056] RIP: 0010:[<ffffffff811297d9>]  [<ffffffff811297d9>]
+> mem_cgroup_page_lruvec+0x79/0x90
+> [35355.883056] RSP: 0000:ffff88003d523aa8  EFLAGS: 00010002
+> [35355.883056] RAX: 0000000000000138 RBX: ffff88003fffa600 RCX: ffff88003e04a800
+> [35355.883056] RDX: 0000000000000020 RSI: 0000000000000000 RDI: 0000000000028500
+> [35355.883056] RBP: ffff88003d523ab8 R08: 0000000000000000 R09: 0000000000000000
+> [35355.883056] R10: 0000000000000000 R11: dead000000100100 R12: ffffea0000a14000
+> [35355.883056] R13: ffff88003e04b138 R14: ffff88003d523bb8 R15: ffffea0000a14020
+> [35355.883056] FS:  0000000000000000(0000) GS:ffff88003fd80000(0000)
+> knlGS:0000000000000000
+> [35355.883056] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [35355.883056] CR2: 00000000000001a8 CR3: 0000000001a0b000 CR4: 00000000000006e0
+> [35355.883056] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [35355.883056] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [35355.883056] Process kswapd0 (pid: 477, threadinfo ffff88003d522000,
+> task ffff88003db6dc40)
+> [35355.883056] Stack:
+> [35355.883056]  0000000000000014 ffffea0000a14000 ffff88003d523b28
+> ffffffff810ea4c5
+> [35355.883056]  ffff88003d523b90 ffff88003fffa9c0 ffff88003d523b98
+> 0000000000000020
+> [35355.883056]  ffff88003fffa600 0000000200000003 ffff88003fffa600
+> ffff88003d523b98
+> [35355.883056] Call Trace:
+> [35355.883056]  [<ffffffff810ea4c5>] move_active_pages_to_lru+0x65/0x190
+> [35355.883056]  [<ffffffff810ec4e7>] shrink_active_list+0x297/0x380
+> [35355.883056]  [<ffffffff810ebff6>] ? shrink_inactive_list+0x1a6/0x400
+> [35355.883056]  [<ffffffff810ec815>] shrink_lruvec+0x245/0x4b0
+> [35355.883056]  [<ffffffff810ecae6>] shrink_zone+0x66/0x180
+> [35355.883056]  [<ffffffff810edcb4>] balance_pgdat+0x474/0x5b0
+> [35355.883056]  [<ffffffff810edf58>] kswapd+0x168/0x440
+> [35355.883056]  [<ffffffff8105d310>] ? abort_exclusive_wait+0xb0/0xb0
+> [35355.883056]  [<ffffffff810eddf0>] ? balance_pgdat+0x5b0/0x5b0
+> [35355.883056]  [<ffffffff8105c5fb>] kthread+0xbb/0xc0
+> [35355.883056]  [<ffffffff8105c540>] ? __kthread_unpark+0x50/0x50
+> [35355.883056]  [<ffffffff81748eac>] ret_from_fork+0x7c/0xb0
+> [35355.883056]  [<ffffffff8105c540>] ? __kthread_unpark+0x50/0x50
+> [35355.883056] Code: 89 50 08 48 89 d1 0f 1f 40 00 49 8b 04 24 48 89
+> c2 48 c1 e8 38 83 e0 03 48 c1 ea 3a 48 69 c0 38 01 00 00 48 03 84 d1
+> e0 02 00 00 <48> 3b 58 70 75 0a 48 8b 5d f0 4c 8b 65 f8 c9 c3 48 89 58
+> 70 eb
+> [35355.883056] RIP  [<ffffffff811297d9>] mem_cgroup_page_lruvec+0x79/0x90
+> [35355.883056]  RSP <ffff88003d523aa8>
+> [35355.883056] CR2: 00000000000001a8
+> [35355.883056] ---[ end trace 2c9b8eec517f960d ]---
 > 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> 
+> --
+> Thanks,
+> //richard
 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-
-Thanks,
-- Kukjin
-
+-- 
+Michal Hocko
+SUSE Labs
