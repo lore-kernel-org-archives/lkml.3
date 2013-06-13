@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758398Ab3FMNgf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:36:35 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:8481 "EHLO song.cn.fujitsu.com"
+	id S1758756Ab3FMNgu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:36:50 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:39335 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758217Ab3FMN2G convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758215Ab3FMN2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 13 Jun 2013 09:28:06 -0400
 X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
-   d="scan'208";a="7537694"
+   d="scan'208";a="7537693"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -19,142 +18,169 @@ To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: =?UTF-8?q?=5BPart2=20PATCH=20v4=2000/15=5D=20Arrange=20hotpluggable=20memory=20in=20SRAT=20as=20ZONE=5FMOVABLE=2E?=
-Date: Thu, 13 Jun 2013 21:03:24 +0800
-Message-Id: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [Part2 PATCH v4 04/15] x86, numa, acpi, memory-hotplug: Introduce hotplug info into struct numa_meminfo.
+Date: Thu, 13 Jun 2013 21:03:28 +0800
+Message-Id: <1371128619-8987-5-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
-MIME-Version: 1.0
+In-Reply-To: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/06/13 20:58:45,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:59:02
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+ 2013/06/13 20:59:02,
+	Serialize complete at 2013/06/13 20:59:02
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In memory hotplug situation, the hotpluggable memory should be
-arranged in ZONE_MOVABLE because memory in ZONE_NORMAL may be
-used by kernel, and Linux cannot migrate pages used by kernel.
+Since Yinghai has implement "Allocate pagetable pages in local node", for a
+node with hotpluggable memory, we have to allocate pagetable pages first, and
+then reserve the rest as hotpluggable memory in memblock.
 
-So we need a way to specify hotpluggable memory as movable. It
-should be as easy as possible.
+But the kernel parse SRAT first, and then initialize memory mapping. So we have
+to remember the which memory ranges are hotpluggable for future usage.
 
-According to ACPI spec 5.0, SRAT table has memory affinity
-structure and the structure has Hot Pluggable Filed. 
-See "5.2.16.2 Memory Affinity Structure".
+When parsing SRAT, we added each memory range to numa_meminfo. So we can store
+hotpluggable info in numa_meminfo.
 
-If we use the information, we might be able to specify hotpluggable
-memory by firmware. For example, if Hot Pluggable Filed is enabled,
-kernel sets the memory as movable memory.
+This patch introduces a "bool hotpluggable" member into struct
+numa_meminfo.
 
-To achieve this goal, we need to do the following:
-1. Prevent memblock from allocating hotpluggable memroy for kernel.
-   This is done by reserving hotpluggable memory in memblock as the
-   folowing steps:
-   1) Parse SRAT early enough so that memblock knows which memory
-      is hotpluggable.
-   2) Add a "flags" member to memblock so that it is able to tell
-      which memory is hotpluggable when freeing it to buddy.
+And modifies the following APIs' prototypes to support it:
+   - numa_add_memblk()
+   - numa_add_memblk_to()
 
-2. Free hotpluggable memory to buddy system when memory initialization
-   is done.
+And the following callers:
+   - numaq_register_node()
+   - dummy_numa_init()
+   - amd_numa_init()
+   - acpi_numa_memory_affinity_init() in x86
 
-3. Arrange hotpluggable memory in ZONE_MOVABLE.
-   (This will cause NUMA performance decreased)
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ arch/x86/include/asm/numa.h     |    3 ++-
+ arch/x86/kernel/apic/numaq_32.c |    2 +-
+ arch/x86/mm/amdtopology.c       |    3 ++-
+ arch/x86/mm/numa.c              |   10 +++++++---
+ arch/x86/mm/numa_internal.h     |    1 +
+ arch/x86/mm/srat.c              |    2 +-
+ 6 files changed, 14 insertions(+), 7 deletions(-)
 
-4. Provide a user interface to enable/disable this functionality.
-   (This is useful for those who don't use memory hotplug and who don't
-    want to lose their NUMA performance.)
-
-
-This patch-set does the following:
-patch1:        Fix a little problem.
-patch2:        Have Hot-Pluggable Field in SRAT printed when parsing SRAT.
-patch4,5:      Introduce hotpluggable field to numa_meminfo.
-patch6~9:      Introduce flags to memblock, and keep the public APIs prototype
-               unmodified.
-patch10,11:      Reserve node-life-cycle memory as MEMBLK_LOCAL_NODE with memblock.
-patch12,13:    Reserve hotpluggable memory as MEMBLK_HOTPLUGGABLE with memblock,
-               and free it to buddy when memory initialization is done.
-patch3,14,15:  Improve "movablecore" boot option to support "movablecore=acpi".
-
-
-Change log v3 -> v4:
-1. Define flags in memblock as macro directly instead of bit shift.
-2. Fix a bug found by Vasilis Liaskovitis, mark nodes which the 
-   kernel resides in correctly.
-
-Change log v2 -> v3:
-1. As Chen Gong <gong.chen@linux.intel.com> noticed that 
-   memblock_alloc_try_nid() will call panic() if it fails to
-   allocate memory, so remove the return value check in 
-   setup_node_data() in patch1.
-2. Did not movable find_usable_zone_for_movable() forward 
-   to initialize movable_zone. Fixed in patch12.
-3. Did not transform reserved->regions[i].base to its PFN 
-   in find_zone_movable_pfns_for_nodes(). Fixed in patch12.
-
-Change log v1 -> v2:
-1. Fix a bug in patch10: forgot to update start and end value.
-2. Add new patch8: make alloc_low_pages be able to call
-   memory_add_physaddr_to_nid().
-
-
-This patch-set is based on Yinghai's
-"x86, ACPI, numa: Parse numa info early" patch-set.
-Please refer to:
-v1: https://lkml.org/lkml/2013/3/7/642
-v2: https://lkml.org/lkml/2013/3/10/47
-v3: https://lkml.org/lkml/2013/4/4/639
-v4: https://lkml.org/lkml/2013/4/11/829
-
-And Yinghai's patch did the following things:
-1) Parse SRAT early enough.
-2）Allocate pagetable pages in local node.
-
-Tang Chen (14):
-  acpi: Print Hot-Pluggable Field in SRAT.
-  page_alloc, mem-hotplug: Improve movablecore to {en|dis}able using
-    SRAT.
-  x86, numa, acpi, memory-hotplug: Introduce hotplug info into struct
-    numa_meminfo.
-  x86, numa, acpi, memory-hotplug: Consider hotplug info when cleanup
-    numa_meminfo.
-  memblock, numa: Introduce flag into memblock.
-  x86, numa: Synchronize nid info in memblock.reserve with
-    numa_meminfo.
-  x86, numa: Save nid when reserve memory into memblock.reserved[].
-  x86, numa, mem-hotplug: Mark nodes which the kernel resides in.
-  x86, numa: Move memory_add_physaddr_to_nid() to CONFIG_NUMA.
-  x86, numa, memblock: Introduce MEMBLK_LOCAL_NODE to mark and reserve
-    node-life-cycle data.
-  x86, acpi, numa, mem-hotplug: Introduce MEMBLK_HOTPLUGGABLE to mark
-    and reserve hotpluggable memory.
-  x86, memblock, mem-hotplug: Free hotpluggable memory reserved by
-    memblock.
-  x86, numa, acpi, memory-hotplug: Make movablecore=acpi have higher
-    priority.
-  doc, page_alloc, acpi, mem-hotplug: Add doc for movablecore=acpi boot
-    option.
-
-Yasuaki Ishimatsu (1):
-  x86: get pg_data_t's memory from other node
-
- Documentation/kernel-parameters.txt |    8 ++
- arch/x86/include/asm/numa.h         |    3 +-
- arch/x86/kernel/apic/numaq_32.c     |    2 +-
- arch/x86/mm/amdtopology.c           |    3 +-
- arch/x86/mm/init.c                  |   16 +++-
- arch/x86/mm/numa.c                  |  118 +++++++++++++++++++++++++++++---
- arch/x86/mm/numa_internal.h         |    1 +
- arch/x86/mm/srat.c                  |   13 ++--
- include/linux/memblock.h            |   13 ++++
- include/linux/memory_hotplug.h      |    3 +
- include/linux/mm.h                  |    9 +++
- mm/memblock.c                       |  129 +++++++++++++++++++++++++++++++----
- mm/nobootmem.c                      |    3 +
- mm/page_alloc.c                     |   44 +++++++++++-
- 14 files changed, 325 insertions(+), 40 deletions(-)
+diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
+index 1b99ee5..73096b2 100644
+--- a/arch/x86/include/asm/numa.h
++++ b/arch/x86/include/asm/numa.h
+@@ -31,7 +31,8 @@ extern int numa_off;
+ extern s16 __apicid_to_node[MAX_LOCAL_APIC];
+ extern nodemask_t numa_nodes_parsed __initdata;
+ 
+-extern int __init numa_add_memblk(int nodeid, u64 start, u64 end);
++extern int __init numa_add_memblk(int nodeid, u64 start, u64 end,
++				  bool hotpluggable);
+ extern void __init numa_set_distance(int from, int to, int distance);
+ 
+ static inline void set_apicid_to_node(int apicid, s16 node)
+diff --git a/arch/x86/kernel/apic/numaq_32.c b/arch/x86/kernel/apic/numaq_32.c
+index d661ee9..7a9c542 100644
+--- a/arch/x86/kernel/apic/numaq_32.c
++++ b/arch/x86/kernel/apic/numaq_32.c
+@@ -82,7 +82,7 @@ static inline void numaq_register_node(int node, struct sys_cfg_data *scd)
+ 	int ret;
+ 
+ 	node_set(node, numa_nodes_parsed);
+-	ret = numa_add_memblk(node, start, end);
++	ret = numa_add_memblk(node, start, end, false);
+ 	BUG_ON(ret < 0);
+ }
+ 
+diff --git a/arch/x86/mm/amdtopology.c b/arch/x86/mm/amdtopology.c
+index 2ca15b5..64a94ad 100644
+--- a/arch/x86/mm/amdtopology.c
++++ b/arch/x86/mm/amdtopology.c
+@@ -166,7 +166,8 @@ int __init amd_numa_init(void)
+ 			nodeid, base, limit);
+ 
+ 		prevbase = base;
+-		numa_add_memblk(nodeid, base, limit);
++		/* Do not support memory hotplug for AMD cpu. */
++		numa_add_memblk(nodeid, base, limit, false);
+ 		node_set(nodeid, numa_nodes_parsed);
+ 	}
+ 
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index bea597a..bf610f8 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -131,6 +131,7 @@ void __init setup_node_to_cpumask_map(void)
+ }
+ 
+ static int __init numa_add_memblk_to(int nid, u64 start, u64 end,
++				     bool hotpluggable,
+ 				     struct numa_meminfo *mi)
+ {
+ 	/* ignore zero length blks */
+@@ -152,6 +153,7 @@ static int __init numa_add_memblk_to(int nid, u64 start, u64 end,
+ 	mi->blk[mi->nr_blks].start = start;
+ 	mi->blk[mi->nr_blks].end = end;
+ 	mi->blk[mi->nr_blks].nid = nid;
++	mi->blk[mi->nr_blks].hotpluggable = hotpluggable;
+ 	mi->nr_blks++;
+ 	return 0;
+ }
+@@ -176,15 +178,17 @@ void __init numa_remove_memblk_from(int idx, struct numa_meminfo *mi)
+  * @nid: NUMA node ID of the new memblk
+  * @start: Start address of the new memblk
+  * @end: End address of the new memblk
++ * @hotpluggable: True if memblk is hotpluggable
+  *
+  * Add a new memblk to the default numa_meminfo.
+  *
+  * RETURNS:
+  * 0 on success, -errno on failure.
+  */
+-int __init numa_add_memblk(int nid, u64 start, u64 end)
++int __init numa_add_memblk(int nid, u64 start, u64 end,
++			   bool hotpluggable)
+ {
+-	return numa_add_memblk_to(nid, start, end, &numa_meminfo);
++	return numa_add_memblk_to(nid, start, end, hotpluggable, &numa_meminfo);
+ }
+ 
+ /* Initialize NODE_DATA for a node on the local memory */
+@@ -628,7 +632,7 @@ static int __init dummy_numa_init(void)
+ 	       0LLU, PFN_PHYS(max_pfn) - 1);
+ 
+ 	node_set(0, numa_nodes_parsed);
+-	numa_add_memblk(0, 0, PFN_PHYS(max_pfn));
++	numa_add_memblk(0, 0, PFN_PHYS(max_pfn), false);
+ 
+ 	return 0;
+ }
+diff --git a/arch/x86/mm/numa_internal.h b/arch/x86/mm/numa_internal.h
+index bb2fbcc..1ce4e6b 100644
+--- a/arch/x86/mm/numa_internal.h
++++ b/arch/x86/mm/numa_internal.h
+@@ -8,6 +8,7 @@ struct numa_memblk {
+ 	u64			start;
+ 	u64			end;
+ 	int			nid;
++	bool			hotpluggable;
+ };
+ 
+ struct numa_meminfo {
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index 134a79d..90600ac 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -171,7 +171,7 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 		goto out_err_bad_srat;
+ 	}
+ 
+-	if (numa_add_memblk(node, start, end) < 0)
++	if (numa_add_memblk(node, start, end, hotpluggable) < 0)
+ 		goto out_err_bad_srat;
+ 
+ 	node_set(node, numa_nodes_parsed);
+-- 
+1.7.1
 
