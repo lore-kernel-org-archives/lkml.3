@@ -1,164 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932674Ab3FMI1R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 04:27:17 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:16537 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932617Ab3FMI1O convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 04:27:14 -0400
-Date: Thu, 13 Jun 2013 10:26:30 +0200
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>
-Subject: Re: [PATCH V3] irqchip: Add TB10x interrupt controller driver
-Message-ID: <20130613082629.GA17071@ab42.lan>
-References: <20130530211944.05F4D3E0A90@localhost>
- <1370014348-21121-1-git-send-email-christian.ruppert@abilis.com>
- <alpine.LFD.2.02.1305311835040.2905@ionos>
- <20130531221814.534DF3E08FE@localhost>
- <20130601110133.GA4051@ab42.lan>
+	id S932690Ab3FMI1r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 04:27:47 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:49950 "EHLO ja.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758321Ab3FMI1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 04:27:45 -0400
+Date: Thu, 13 Jun 2013 11:32:11 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+To: Alexander Frolkin <avf@eldamar.org.uk>
+cc: lvs-devel@vger.kernel.org, Wensong Zhang <wensong@linux-vs.org>,
+        Simon Horman <horms@verge.net.au>, netdev@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ipvs: sloppy TCP and SCTP
+In-Reply-To: <20130613075615.GA29773@eldamar.org.uk>
+Message-ID: <alpine.LFD.2.00.1306131121470.1680@ja.ssi.bg>
+References: <20130612104754.GA29327@eldamar.org.uk> <20130613075615.GA29773@eldamar.org.uk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20130601110133.GA4051@ab42.lan>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 01, 2013 at 01:01:33PM +0200, Christian Ruppert wrote:
-> On Fri, May 31, 2013 at 11:18:14PM +0100, Grant Likely wrote:
-> > On Fri, 31 May 2013 19:32:34 +0200 (CEST), Thomas Gleixner <tglx@linutronix.de> wrote:
-> > > On Fri, 31 May 2013, Christian Ruppert wrote:
-> > > 
-> > > > The SOC interrupt controller driver for the Abilis Systems TB10x series of
-> > > > SOCs based on ARC700 CPUs.
-> > > > 
-> > > > This patch depends on commits eb76bdd407d8a90e59a06cb0158886df390e5d1c and
-> > > > 712bc93df9e7f14b8a163148d2aa7c778e151627 from branch irq/for-arm of
-> > > > git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git.
-> > > 
-> > > That branch can be pulled into ARC as well. It only contains the
-> > > changes, which are necessary for the irq domain support of the generic
-> > > irq chip.
-> 
-> Vineet, what do you think about this? For the moment I have pulled the
-> patch set into our local branch and to me it doesn't matter, we just
-> have to make sure to respect this dependency when merging everything
-> together.
-> 
-> > > > +static void tb10x_irq_cascade(unsigned int irq, struct irq_desc *desc)
-> > > > +{
-> > > > +	struct irq_domain *domain = irq_desc_get_handler_data(desc);
-> > > > +
-> > > > +	generic_handle_irq(irq_find_mapping(domain, irq));
-> > > > +}
-> > > 
-> > > ...
-> > > 
-> > > > +	for (i = 0; i < nrirqs; i++) {
-> > > > +		unsigned int irq = irq_of_parse_and_map(ictl, i);
-> > > > +
-> > > > +		irq_set_handler_data(irq, domain);
-> > > > +		irq_set_chained_handler(irq, tb10x_irq_cascade);
-> > > > +	}
-> > > 
-> > > I might be completely confused, but this does not make any sense at
-> > > all.
-> > > 
-> > > You allocate a linear domain and then map the interrupts in the
-> > > domain. The mapping function retrieves the hardware interrupt number
-> > > and creates a virtual interrupt number, installs the chip and the
-> > > handler for the interrupt and finally returns the virtual interrupt
-> > > number.
-> > > 
-> > > Now you take that virtual interrupt number and install
-> > > tb10x_irq_cascade as the handler. irq_set_chained_handler() will
-> > > startup (unmask) the interrupt right away.
-> > > 
-> > > In the cascade handler you take the virtual interrupt number, which
-> > > you get as argument, and find the mapping, i.e. the matching VIRTUAL
-> > > interrupt number for the VIRTUAL interrupt number and then call the
-> > > handler.
-> > > 
-> > > How is this supposed to work?
-> > 
-> > I think what is going on here is that the tb10x interrupt controller
-> > appears to be more of a front-end to another interrupt controller with
-> > each input wired up 1:1 to the interrupt inputs of the other controller.
-> 
-> Exactly. The TB10x interrupt controller is a front-end for the ARC CPU
-> built-in interrupt controller.
-> 
-> > (I don't know why someone would design an interrupt controller that way,
-> > but that's another issue).
-> 
-> There are several technical reasons for this front-end. The one that
-> concerns us most in the kernel is that the TB10x front-end does the
-> translation from all kinds of interrupt trigger modes to the level
-> triggered interrupts natively understood by the ARC CPU built-in
-> controller.
-> 
-> > The loop above is mapping each of the
-> > interrupt inputs on the parent controller so that each child controller
-> > can be chained to it as an input. I can't think of how else it could be
-> > set up with the current code if the drivers were kept separate.
-> 
-> This is exactly the intention. I haven't found an easier way to do this
-> either but I'm open to suggestions. Btw, I have noticed that the parent
-> controller interrupts from this loop are not listed in /proc/interrupts.
-> I'm not sure if what is done in the loop is sufficient or if I should
-> add something else (the naive option of using request_irq doesn't work,
-> the kernel saying something in the lines of "irq XX triggered but noone
-> cares").
-> 
-> > Christian, what is the parent interrupt controller for this SoC? It
-> > really feels like the tb10x-ictl belongs as part of the parent
-> > controller. I went and looked at the parent node, and I saw this:
-> > 
-> > 		intc: interrupt-controller {
-> > 				compatible = "snps,arc700-intc";
-> > 				interrupt-controller;
-> > 				#interrupt-cells = <1>;
-> > 		};
-> > 
-> > I noticed the conspicuous absence of a reg property. Is this something
-> > architectural?
-> 
-> The parent controller is part of the CPU itself, see
-> arch/arc/kernel/irq.c. This controller is maintained by Vineet and IMHO
-> we should keep it separate from the TB10x one since it is implicitly
-> used in all ARC-based platforms whereas the TB10x controller is used in
-> Abilis chips only.
-> 
-> > If I were working on this system I'd drop the
-> > snps,arc700-intc node entirely and have a single abilis,tb10x-intc that
-> > encapsulated the properties of both (you would of course want to share
-> > handler functions for the 'normal' inputs without the custom features).
-> > That would eliminate the goofyness of listing 27 separate interrupts in
-> > the abilis,tb10x-ictl interrupts property.
-> 
-> To complicate things even further, some ARC CPU built-in peripherals
-> (e.g. timers) generate interrupts directly to the ARC built-in interrupt
-> controller (without going through the TB10x front-end), hence the
-> "goofy" list of interrupts in the TB10x DT node.
 
-Hello Thomas,
+	Hello,
 
-Any news about this one?
+On Thu, 13 Jun 2013, Alexander Frolkin wrote:
 
-Greetings,
-  Christian
+> This adds support for sloppy TCP and SCTP modes to IPVS.
+> 
+> When enabled (sysctls net.ipv4.vs.sloppy_tcp and
+> net.ipv4.vs.sloppy_sctp), allows IPVS to create connection state on any
+> packet, not just a TCP SYN (or SCTP INIT).
+> 
+> This allows connections to fail over from one IPVS director to another
+> mid-flight.
+> 
+> Signed-off-by: Alexander Frolkin <avf@eldamar.org.uk>
 
--- 
-  Christian Ruppert              ,          <christian.ruppert@abilis.com>
-                                /|
-  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
-                             _// | bilis Systems   CH-1228 Plan-les-Ouates
+	Thanks! Simon, please apply to ipvs-next tree!
+
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+
+> ---
+> The patch is against the ipvs-next tree.
+> 
+> diff --git a/include/net/ip_vs.h b/include/net/ip_vs.h
+> index 4405886..22bea5d 100644
+> --- a/include/net/ip_vs.h
+> +++ b/include/net/ip_vs.h
+> @@ -1002,6 +1002,8 @@ struct netns_ipvs {
+>  	int			sysctl_sync_sock_size;
+>  	int			sysctl_cache_bypass;
+>  	int			sysctl_expire_nodest_conn;
+> +	int			sysctl_sloppy_tcp;
+> +	int			sysctl_sloppy_sctp;
+>  	int			sysctl_expire_quiescent_template;
+>  	int			sysctl_sync_threshold[2];
+>  	unsigned int		sysctl_sync_refresh_period;
+> @@ -1044,6 +1046,8 @@ struct netns_ipvs {
+>  #define DEFAULT_SYNC_THRESHOLD	3
+>  #define DEFAULT_SYNC_PERIOD	50
+>  #define DEFAULT_SYNC_VER	1
+> +#define DEFAULT_SLOPPY_TCP	0
+> +#define DEFAULT_SLOPPY_SCTP	0
+>  #define DEFAULT_SYNC_REFRESH_PERIOD	(0U * HZ)
+>  #define DEFAULT_SYNC_RETRIES		0
+>  #define IPVS_SYNC_WAKEUP_RATE	8
+> @@ -1080,6 +1084,16 @@ static inline int sysctl_sync_ver(struct netns_ipvs *ipvs)
+>  	return ipvs->sysctl_sync_ver;
+>  }
+>  
+> +static inline int sysctl_sloppy_tcp(struct netns_ipvs *ipvs)
+> +{
+> +	return ipvs->sysctl_sloppy_tcp;
+> +}
+> +
+> +static inline int sysctl_sloppy_sctp(struct netns_ipvs *ipvs)
+> +{
+> +	return ipvs->sysctl_sloppy_sctp;
+> +}
+> +
+>  static inline int sysctl_sync_ports(struct netns_ipvs *ipvs)
+>  {
+>  	return ACCESS_ONCE(ipvs->sysctl_sync_ports);
+> @@ -1133,6 +1147,16 @@ static inline int sysctl_sync_ver(struct netns_ipvs *ipvs)
+>  	return DEFAULT_SYNC_VER;
+>  }
+>  
+> +static inline int sysctl_sloppy_tcp(struct netns_ipvs *ipvs)
+> +{
+> +	return DEFAULT_SLOPPY_TCP;
+> +}
+> +
+> +static inline int sysctl_sloppy_sctp(struct netns_ipvs *ipvs)
+> +{
+> +	return DEFAULT_SLOPPY_SCTP;
+> +}
+> +
+>  static inline int sysctl_sync_ports(struct netns_ipvs *ipvs)
+>  {
+>  	return 1;
+> diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
+> index 7014649..04f8cbc 100644
+> --- a/net/netfilter/ipvs/ip_vs_ctl.c
+> +++ b/net/netfilter/ipvs/ip_vs_ctl.c
+> @@ -1739,6 +1739,18 @@ static struct ctl_table vs_vars[] = {
+>  		.proc_handler	= proc_dointvec,
+>  	},
+>  	{
+> +		.procname	= "sloppy_tcp",
+> +		.maxlen		= sizeof(int),
+> +		.mode		= 0644,
+> +		.proc_handler	= proc_dointvec,
+> +	},
+> +	{
+> +		.procname	= "sloppy_sctp",
+> +		.maxlen		= sizeof(int),
+> +		.mode		= 0644,
+> +		.proc_handler	= proc_dointvec,
+> +	},
+> +	{
+>  		.procname	= "expire_quiescent_template",
+>  		.maxlen		= sizeof(int),
+>  		.mode		= 0644,
+> @@ -3722,6 +3734,8 @@ static int __net_init ip_vs_control_net_init_sysctl(struct net *net)
+>  	tbl[idx++].data = &ipvs->sysctl_sync_sock_size;
+>  	tbl[idx++].data = &ipvs->sysctl_cache_bypass;
+>  	tbl[idx++].data = &ipvs->sysctl_expire_nodest_conn;
+> +	tbl[idx++].data = &ipvs->sysctl_sloppy_tcp;
+> +	tbl[idx++].data = &ipvs->sysctl_sloppy_sctp;
+>  	tbl[idx++].data = &ipvs->sysctl_expire_quiescent_template;
+>  	ipvs->sysctl_sync_threshold[0] = DEFAULT_SYNC_THRESHOLD;
+>  	ipvs->sysctl_sync_threshold[1] = DEFAULT_SYNC_PERIOD;
+> diff --git a/net/netfilter/ipvs/ip_vs_proto_sctp.c b/net/netfilter/ipvs/ip_vs_proto_sctp.c
+> index 8646488..df29d64 100644
+> --- a/net/netfilter/ipvs/ip_vs_proto_sctp.c
+> +++ b/net/netfilter/ipvs/ip_vs_proto_sctp.c
+> @@ -15,6 +15,7 @@ sctp_conn_schedule(int af, struct sk_buff *skb, struct ip_vs_proto_data *pd,
+>  {
+>  	struct net *net;
+>  	struct ip_vs_service *svc;
+> +	struct netns_ipvs *ipvs;
+>  	sctp_chunkhdr_t _schunkh, *sch;
+>  	sctp_sctphdr_t *sh, _sctph;
+>  
+> @@ -27,13 +28,14 @@ sctp_conn_schedule(int af, struct sk_buff *skb, struct ip_vs_proto_data *pd,
+>  	if (sch == NULL)
+>  		return 0;
+>  	net = skb_net(skb);
+> +	ipvs = net_ipvs(net);
+>  	rcu_read_lock();
+> -	if ((sch->type == SCTP_CID_INIT) &&
+> +	if ((sch->type == SCTP_CID_INIT || sysctl_sloppy_sctp(ipvs)) &&
+>  	    (svc = ip_vs_service_find(net, af, skb->mark, iph->protocol,
+>  				      &iph->daddr, sh->dest))) {
+>  		int ignored;
+>  
+> -		if (ip_vs_todrop(net_ipvs(net))) {
+> +		if (ip_vs_todrop(ipvs)) {
+>  			/*
+>  			 * It seems that we are very loaded.
+>  			 * We have to drop this packet :(
+> @@ -232,21 +234,21 @@ static struct ipvs_sctp_nextstate
+>  	 * STATE : IP_VS_SCTP_S_NONE
+>  	 */
+>  	/*next state *//*event */
+> -	{{IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_DATA_CLI */ },
+> +	{{IP_VS_SCTP_S_ESTABLISHED /* IP_VS_SCTP_EVE_DATA_CLI */ },
+>  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_DATA_SER */ },
+>  	 {IP_VS_SCTP_S_INIT_CLI /* IP_VS_SCTP_EVE_INIT_CLI */ },
+>  	 {IP_VS_SCTP_S_INIT_SER /* IP_VS_SCTP_EVE_INIT_SER */ },
+> -	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_INIT_ACK_CLI */ },
+> +	 {IP_VS_SCTP_S_INIT_ACK_CLI /* IP_VS_SCTP_EVE_INIT_ACK_CLI */ },
+>  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_INIT_ACK_SER */ },
+> -	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_COOKIE_ECHO_CLI */ },
+> +	 {IP_VS_SCTP_S_ECHO_CLI /* IP_VS_SCTP_EVE_COOKIE_ECHO_CLI */ },
+>  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_COOKIE_ECHO_SER */ },
+> -	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_COOKIE_ACK_CLI */ },
+> +	 {IP_VS_SCTP_S_ESTABLISHED /* IP_VS_SCTP_EVE_COOKIE_ACK_CLI */ },
+>  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_COOKIE_ACK_SER */ },
+>  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_ABORT_CLI */ },
+>  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_ABORT_SER */ },
+> -	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_CLI */ },
+> +	 {IP_VS_SCTP_S_SHUT_CLI /* IP_VS_SCTP_EVE_SHUT_CLI */ },
+>  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_SER */ },
+> -	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_ACK_CLI */ },
+> +	 {IP_VS_SCTP_S_SHUT_ACK_CLI /* IP_VS_SCTP_EVE_SHUT_ACK_CLI */ },
+>  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_ACK_SER */ },
+>  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_COM_CLI */ },
+>  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_COM_SER */ },
+> diff --git a/net/netfilter/ipvs/ip_vs_proto_tcp.c b/net/netfilter/ipvs/ip_vs_proto_tcp.c
+> index 50a1594..e3a6972 100644
+> --- a/net/netfilter/ipvs/ip_vs_proto_tcp.c
+> +++ b/net/netfilter/ipvs/ip_vs_proto_tcp.c
+> @@ -39,6 +39,7 @@ tcp_conn_schedule(int af, struct sk_buff *skb, struct ip_vs_proto_data *pd,
+>  	struct net *net;
+>  	struct ip_vs_service *svc;
+>  	struct tcphdr _tcph, *th;
+> +	struct netns_ipvs *ipvs;
+>  
+>  	th = skb_header_pointer(skb, iph->len, sizeof(_tcph), &_tcph);
+>  	if (th == NULL) {
+> @@ -46,14 +47,15 @@ tcp_conn_schedule(int af, struct sk_buff *skb, struct ip_vs_proto_data *pd,
+>  		return 0;
+>  	}
+>  	net = skb_net(skb);
+> +	ipvs = net_ipvs(net);
+>  	/* No !th->ack check to allow scheduling on SYN+ACK for Active FTP */
+>  	rcu_read_lock();
+> -	if (th->syn &&
+> +	if ((th->syn || sysctl_sloppy_tcp(ipvs)) && !th->rst &&
+>  	    (svc = ip_vs_service_find(net, af, skb->mark, iph->protocol,
+>  				      &iph->daddr, th->dest))) {
+>  		int ignored;
+>  
+> -		if (ip_vs_todrop(net_ipvs(net))) {
+> +		if (ip_vs_todrop(ipvs)) {
+>  			/*
+>  			 * It seems that we are very loaded.
+>  			 * We have to drop this packet :(
+> @@ -401,7 +403,7 @@ static struct tcp_states_t tcp_states [] = {
+>  /*        sNO, sES, sSS, sSR, sFW, sTW, sCL, sCW, sLA, sLI, sSA	*/
+>  /*syn*/ {{sSR, sES, sES, sSR, sSR, sSR, sSR, sSR, sSR, sSR, sSR }},
+>  /*fin*/ {{sCL, sCW, sSS, sTW, sTW, sTW, sCL, sCW, sLA, sLI, sTW }},
+> -/*ack*/ {{sCL, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
+> +/*ack*/ {{sES, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
+>  /*rst*/ {{sCL, sCL, sCL, sSR, sCL, sCL, sCL, sCL, sLA, sLI, sSR }},
+>  
+>  /*	OUTPUT */
+> @@ -415,7 +417,7 @@ static struct tcp_states_t tcp_states [] = {
+>  /*        sNO, sES, sSS, sSR, sFW, sTW, sCL, sCW, sLA, sLI, sSA	*/
+>  /*syn*/ {{sSR, sES, sES, sSR, sSR, sSR, sSR, sSR, sSR, sSR, sSR }},
+>  /*fin*/ {{sCL, sFW, sSS, sTW, sFW, sTW, sCL, sCW, sLA, sLI, sTW }},
+> -/*ack*/ {{sCL, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
+> +/*ack*/ {{sES, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
+>  /*rst*/ {{sCL, sCL, sCL, sSR, sCL, sCL, sCL, sCL, sLA, sLI, sCL }},
+>  };
+>  
+> @@ -424,7 +426,7 @@ static struct tcp_states_t tcp_states_dos [] = {
+>  /*        sNO, sES, sSS, sSR, sFW, sTW, sCL, sCW, sLA, sLI, sSA	*/
+>  /*syn*/ {{sSR, sES, sES, sSR, sSR, sSR, sSR, sSR, sSR, sSR, sSA }},
+>  /*fin*/ {{sCL, sCW, sSS, sTW, sTW, sTW, sCL, sCW, sLA, sLI, sSA }},
+> -/*ack*/ {{sCL, sES, sSS, sSR, sFW, sTW, sCL, sCW, sCL, sLI, sSA }},
+> +/*ack*/ {{sES, sES, sSS, sSR, sFW, sTW, sCL, sCW, sCL, sLI, sSA }},
+>  /*rst*/ {{sCL, sCL, sCL, sSR, sCL, sCL, sCL, sCL, sLA, sLI, sCL }},
+>  
+>  /*	OUTPUT */
+> @@ -438,7 +440,7 @@ static struct tcp_states_t tcp_states_dos [] = {
+>  /*        sNO, sES, sSS, sSR, sFW, sTW, sCL, sCW, sLA, sLI, sSA	*/
+>  /*syn*/ {{sSA, sES, sES, sSR, sSA, sSA, sSA, sSA, sSA, sSA, sSA }},
+>  /*fin*/ {{sCL, sFW, sSS, sTW, sFW, sTW, sCL, sCW, sLA, sLI, sTW }},
+> -/*ack*/ {{sCL, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
+> +/*ack*/ {{sES, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
+>  /*rst*/ {{sCL, sCL, sCL, sSR, sCL, sCL, sCL, sCL, sLA, sLI, sCL }},
+>  };
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
