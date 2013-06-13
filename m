@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758746Ab3FMQii (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 12:38:38 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:53771 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758547Ab3FMQif convert rfc822-to-8bit (ORCPT
+	id S1757116Ab3FMQka (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 12:40:30 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:40592 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454Ab3FMQk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 12:38:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <150901ce682e$1c3fca50$54bf5ef0$%kim@samsung.com>
-References: <1371058399-31933-1-git-send-email-dianders@chromium.org>
-	<1371058399-31933-3-git-send-email-dianders@chromium.org>
-	<150901ce682e$1c3fca50$54bf5ef0$%kim@samsung.com>
-Date: Thu, 13 Jun 2013 09:38:33 -0700
-X-Google-Sender-Auth: e-N-qrkqKjliTmbzB26aKS4xzxs
-Message-ID: <CAD=FV=U9V-rgjcCusCvgw-SeUH-kDbozr_T-i1DcaXNXv48vxw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] pinctrl: exynos: ack level-triggered interrupts
- before unmasking
-From: Doug Anderson <dianders@chromium.org>
-To: Kukjin Kim <kgene.kim@samsung.com>
+	Thu, 13 Jun 2013 12:40:28 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Doug Anderson <dianders@chromium.org>
 Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
         Simon Glass <sjg@chromium.org>,
         Luigi Semenzato <semenzato@chromium.org>,
         Ilho Lee <ilho215.lee@samsung.com>,
-        =?UTF-8?B?6rmA7J2A6riw?= <eunki_kim@samsung.com>,
+        =?utf-8?B?6rmA7J2A6riw?= <eunki_kim@samsung.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH 3/3] pinctrl: exynos: ack level-triggered interrupts before unmasking
+Date: Thu, 13 Jun 2013 18:40:24 +0200
+Message-ID: <21437214.t3ykTcfRY8@flatron>
+User-Agent: KMail/4.10.4 (Linux/3.9.5-gentoo; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <CAD=FV=XzAGoVDic5L8Zub6MMBf_sb6-4aOuq5orT5ska84XiOA@mail.gmail.com>
+References: <1371058399-31933-1-git-send-email-dianders@chromium.org> <24084769.VqIFUPHnqh@flatron> <CAD=FV=XzAGoVDic5L8Zub6MMBf_sb6-4aOuq5orT5ska84XiOA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kukjin,
+On Thursday 13 of June 2013 09:34:43 Doug Anderson wrote:
+> Tomasz,
+> 
+> On Thu, Jun 13, 2013 at 3:54 AM, Tomasz Figa <tomasz.figa@gmail.com> 
+wrote:
+> > Hi Doug,
+> > 
+> > On Wednesday 12 of June 2013 10:33:19 Doug Anderson wrote:
+> >> A level-triggered interrupt should be acked after the interrupt line
+> >> becomes inactive and before it is unmasked, or else another interrupt
+> >> will be immediately triggered.  Acking before or after calling the
+> >> handler is not enough.
+> > 
+> > Nice catch.
+> > 
+> > I guess that pinctrl-s3c64xx will need similar fix as well, won't it?
+> 
+> It needs this whole series of 3, probably.  The mask and unmask need
+> the lock and as well as the acking for level interrupts.
+> 
+> I don't have any way to test that code but it's a pretty simple change
+> to make.  Do you want to do it or do you have an idea of someone who
+> should?
 
-On Thu, Jun 13, 2013 at 5:04 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> Doug Anderson wrote:
->>
->> A level-triggered interrupt should be acked after the interrupt line
->> becomes inactive and before it is unmasked, or else another interrupt
->> will be immediately triggered.  Acking before or after calling the
->> handler is not enough.
->>
->> Signed-off-by: Luigi Semenzato <semenzato@chromium.org>
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
->
-> BTW, probably we need a similar fixing in the mach-exynos/common.c file
-> before pinct기 for distro...
+I'll take care of s3c64xx, probably as a part of my patches finally adding 
+DT support for it, as without them the pinctrl-s3c64xx driver is just 
+sitting there unused.
 
-Is anyone using the functions in mach-exynos/common.c file anymore?  I
-thought that non-dt exynos support was going away and then we could
-just delete a whole lot of code from that file.
+> > I think you can eliminate most of the code by doing this following 
+way:
+> >         if (irqd_get_trigger_type(irqd) & IRQ_TYPE_LEVEL_MASK)
+> >         
+> >                 exynos_gpio_irq_ack(irqd);
+> 
+> Duh, right.  OK, v2 coming shortly.
 
--Doug
+Good!
+
+> Thank you for pointing out the
+> right way to do this!  :)
+
+You're welcome.
+
+Best regards,
+Tomasz
+
