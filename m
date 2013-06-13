@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758927Ab3FMSXg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 14:23:36 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:63278 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756774Ab3FMSXf (ORCPT
+	id S1758994Ab3FMSY5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 14:24:57 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:60644 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758970Ab3FMSYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 14:23:35 -0400
-Date: Thu, 13 Jun 2013 20:23:31 +0200
+	Thu, 13 Jun 2013 14:24:52 -0400
+Date: Thu, 13 Jun 2013 20:24:48 +0200
 From: Thierry Reding <thierry.reding@gmail.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Sachin Kamat <sachin.kamat@linaro.org>, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] pwm: Fill in missing .owner fields
-Message-ID: <20130613182330.GA32574@mithrandir>
-References: <1371036553-32263-1-git-send-email-thierry.reding@gmail.com>
- <CAK9yfHyUT7KUkY3g2WJ7XiisLL5mvJuenv=UEK_9OqwfF7s4Zg@mail.gmail.com>
- <20130612195917.GA31835@mithrandir>
- <51B8F729.7030907@metafoo.de>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de
+Subject: Re: [RFC: PATCH] err.h: silence warning when using IS_ERR on void
+ __iomem *
+Message-ID: <20130613182447.GB32574@mithrandir>
+References: <1371072668-19027-1-git-send-email-mkl@pengutronix.de>
+ <CAK9yfHywxyju2TbMWTfM7GBjjj8T5SdP8sc1j=VRRPxBesUtxQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6TrnltStXW4iwmi0"
+	protocol="application/pgp-signature"; boundary="wzJLGUyc3ArbnUjN"
 Content-Disposition: inline
-In-Reply-To: <51B8F729.7030907@metafoo.de>
+In-Reply-To: <CAK9yfHywxyju2TbMWTfM7GBjjj8T5SdP8sc1j=VRRPxBesUtxQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---6TrnltStXW4iwmi0
+--wzJLGUyc3ArbnUjN
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jun 13, 2013 at 12:33:13AM +0200, Lars-Peter Clausen wrote:
-> On 06/12/2013 09:59 PM, Thierry Reding wrote:
-> > On Wed, Jun 12, 2013 at 05:05:18PM +0530, Sachin Kamat wrote:
-> >> Hi Thierry,
-> >>
-> >> On 12 June 2013 16:59, Thierry Reding <thierry.reding@gmail.com> wrote:
-> >>> Some drivers don't set the .owner fields of the struct device_driver =
-or
-> >>> struct pwm_ops, which causes the module usage count to become wrong.
-> >>
-> >>
-> >> Recently a patch [1] was added to solve this issue of missing .owner
-> >> fileds in struct platform_driver.
-> >=20
-> > Yes I saw that, but thought it might be good to initialize them anyway.
-> > Especially since a couple of the drivers are I2C and I believe there's
-> > no similar patch for those. It shouldn't be difficult to come up with
-> > the corresponding patch, though.
+On Thu, Jun 13, 2013 at 10:55:17AM +0530, Sachin Kamat wrote:
+> On 13 June 2013 03:01, Marc Kleine-Budde <mkl@pengutronix.de> wrote:
+> > Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
+> > introduced devm_ioremap_resource() and encourage to check its return va=
+lue with
+> > IS_ERR(). This however leads to the following sparse warnings, as
+> > devm_ioremap_resource() returns a void __iomem pointer:
+> >
+> > drivers/net/can/c_can/c_can_platform.c:205:32: warning: incorrect type =
+in argument 1 (different address spaces)
+> > drivers/net/can/c_can/c_can_platform.c:205:32:    expected void const *=
+ptr
+> > drivers/net/can/c_can/c_can_platform.c:205:32:    got unsigned int [nod=
+eref] [usertype] <asn:2>*raminit_ctrlreg
 >=20
-> I2C had the same actually for quite some time now.
+> CC ing Thierry who has solved this issue some time back.
 
-I wasn't aware of that. Thanks for educating me. =3D)
+I had sent two patches, one against sparse, the other against the
+kernel, but none were picked up yet.
 
 Thierry
 
---6TrnltStXW4iwmi0
+--wzJLGUyc3ArbnUjN
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRug4iAAoJEN0jrNd/PrOhHQEP/AovgWaYRMuDq7ODJQJDtIhv
-HFUyMVKDTeiwka0WksEO9UytNhHlv2+tV1XlMmhAF+0mtzyeY7j7vo3Qh1FeN5Uk
-Fkyz3poLAMRLIQhnq/TjEJwjBadKhjsVsxbLOSA+S7EW9mzpsa6q9c3Xo9AOevbW
-T48OsWW3pPSwnVgKIqfOVhtK5G5/SNolj7wuYAvbTMxEcB4WggZu7VV4VDOb/b8N
-poUnecSF7hHHUsHwljL2jAn4oVaklzqMypORqeaNQKhA9LToq9yG4pPbPQuyN5zm
-jhYi5PJGHYHuhNsZLf3GHFz3GW0WYlDYL/i6s46UbzMlDN7iICryQrP1xoJi0S1W
-gm8jBNyDOcsPNV6xliRA7bd/mXCgbY9hq3DsMwC0X2gVucvhRh5oExXrQazEZQ9E
-KhCYKIexcIoRESlV+vB/SgH5+lRk+Por3vJ4BPppmZZlGVp8c7Zwv0hoU+ZenyWU
-FhAWE87nhxW6I/rECFF/00AanQLbD6DjiKisSRCyuj8pR012ouz175IzN+5ommCp
-VgAFcor339Ro/hEwi+Gy7UGwc21JPFv8YAKEKkl9dKNEHE4KBndTyRR6DpN3+VQF
-YvufhMG3bUKYPVLH/ibGRLw6ZTtgZ8pgBtfpvPKwcuwiwk4s44OlxtxxSb6iZo4D
-KJiJiZDjzZdDui0PG1Py
-=/18E
+iQIcBAEBAgAGBQJRug5vAAoJEN0jrNd/PrOhEukQAImslUECKlNnop/mkD4qFcT3
+S3VvHF8y1fnk/y+GWXlUu1P9uUEAKOZvv+biFeHTvxu6YMSz4G1asFp+9+kEaSHY
+tEYVlu7PJI7RZVzT84iMkjXRB+1U4nmki1Iaus6UFkgswKi/FHCWqVb8c93qfz53
+al8UQj6qwNGtIcVXAXdcPBfxX4Co/pGKpBXLpPgkX66QRALeuWcp7C0HxfZ/1Ijq
+u1a35XNrphwmN7HCdxXYNpVVdRenusQzOWRAjRnxdqqjpWna946gY0eHb3e4DQFk
+GUH2f7xaQv5GW8KQ5hvn1D7XqAHLZ821GWuXxPEdhUkZwYrwPpTMvxMqA7GVK8Sg
+znlql5Qg1NBlvI5Z00w68UK/AEU+MDLvhOBMMU4VegjBAjz9BECZKGMx921S34KA
+QvWxzYzhrt9F4ML4j1gd607UPPMjZt+dX3gHjRFKdd6T5BtitDwm4RKlgPyXUERn
+kLJR+450ORevIrMXB/R+47KHA5hCHZ8VJt9g/oSW/zo+a1bNbDhbv6App7T7cmaY
+YNW3WxFCKlUZX4gRRJEQDzcW3OSNrkIT1muG1KazSfa9JGhH27KezkZUjbOtVk+V
+08J6A1/NLdjuBlAYu/LJqCueccn5V/b3MyFoA2BCWxPqRl7XyZeUzS9UBBjfvJbn
+GI8VjqcPDEARZC+87DlL
+=UQqd
 -----END PGP SIGNATURE-----
 
---6TrnltStXW4iwmi0--
+--wzJLGUyc3ArbnUjN--
