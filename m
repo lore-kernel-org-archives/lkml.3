@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932417Ab3FMCeq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 22:34:46 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57673 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757040Ab3FMCep (ORCPT
+	id S932440Ab3FMCfT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 22:35:19 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:19453 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932071Ab3FMCfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 22:34:45 -0400
-Message-ID: <1371090883.1978.61.camel@dabdike>
-Subject: Re: [scsi] WARNING: at fs/sysfs/dir.c:530 sysfs_add_one()
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 12 Jun 2013 19:34:43 -0700
-In-Reply-To: <20130613013032.GA7558@localhost>
-References: <20130613013032.GA7558@localhost>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.2 
-Mime-Version: 1.0
+	Wed, 12 Jun 2013 22:35:17 -0400
+Message-ID: <51B92FD0.8020907@huawei.com>
+Date: Thu, 13 Jun 2013 10:34:56 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <koverstreet@google.com>, <linux-kernel@vger.kernel.org>,
+        <cl@linux-foundation.org>
+Subject: Re: [PATCH 03/11] cgroup: bring some sanity to naming around cg_cgroup_link
+References: <1371070996-20613-1-git-send-email-tj@kernel.org> <1371070996-20613-4-git-send-email-tj@kernel.org>
+In-Reply-To: <1371070996-20613-4-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-13 at 09:30 +0800, Fengguang Wu wrote:
-> Greetings,
+On 2013/6/13 5:03, Tejun Heo wrote:
+> cgroups and css_sets are mapped M:N and this M:N mapping is
+> represented by struct cg_cgroup_link which points to forms linked
+> lists on both sides.  The naming around this already confusing struct
+> is pretty bad.
 > 
-> I got the below dmesg and the first bad commit is
+>>From cgroup side, it starts off ->css_sets and runs through
+> ->cgrp_link_list.  From css_set side, it starts off ->cg_links and
+> runs through ->cg_link_list.  This is rather reversed as
+> cgrp_link_list is used to iterate css_sets and cg_link_list cgroups.
+> Also, this is the only place which is still using the confusing "cg"
+> for css_sets.  This patch cleans it up a bit.
 > 
-> commit a256ba092ec57213f96059d41ac5473ff92f5e7c
-> Author: Nicholas Bellinger <nab@linux-iscsi.org>
-> Date:   Sat May 18 02:40:43 2013 -0700
+> * s/cgroup->css_sets/cgroup->cset_links/
+>   s/css_set->cg_links/css_set->cgrp_links/
+>   s/cgroup_iter->cg_link/cgroup_iter->cset_link/
 > 
->     scsi: Split scsi_dispatch_cmd into __scsi_dispatch_cmd setup
->     
->     Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+> * s/cg_cgroup_link/cgrp_cset_link/
+> 
+> * s/cgrp_cset_link->cg/cgrp_cset_link->cset/
+>   s/cgrp_cset_link->cgrp_link_list/cgrp_cset_link->cset_link/
+>   s/cgrp_cset_link->cg_link_list/cgrp_cset_link->cgrp_link/
+> 
+> * s/init_css_set_link/init_cgrp_cset_link/
+>   s/free_cg_links/free_cgrp_cset_links/
+>   s/allocate_cg_links/allocate_cgrp_cset_links/
+> 
+> * s/cgl[12]/link[12]/ in compare_css_sets()
+> 
+> * s/saved_link/tmp_link/ s/tmp/tmp_links/ and a couple similar
+>   adustments.
+> 
+> * Comment and whiteline adjustments.
+> 
+> After the changes, we have
+> 
+> 	list_for_each_entry(link, &cont->cset_links, cset_link) {
+> 		struct css_set *cset = link->cset;
+> 
+> instead of
+> 
+> 	list_for_each_entry(link, &cont->css_sets, cgrp_link_list) {
+> 		struct css_set *cset = link->cg;
+> 
 
-You may be evaluating a bogus branch because no such commit has darkened
-the SCSI list, so it obviously can't be on upstream track.
-
-James
-
+Those renames really make the code more readable! I have to think for a while
+everytime I see those namings.
 
