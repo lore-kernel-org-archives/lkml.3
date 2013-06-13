@@ -1,65 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101Ab3FMSZP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 14:25:15 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:64197 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759002Ab3FMSZJ (ORCPT
+	id S1759047Ab3FMSZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 14:25:58 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:65170 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759029Ab3FMSZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 14:25:09 -0400
+	Thu, 13 Jun 2013 14:25:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAD=FV=Un+Ti8atZLUbK+5w=dB7vX7HoxVacEGkjvCboVo4mNpA@mail.gmail.com>
-References: <1371143144-31764-1-git-send-email-dianders@chromium.org>
-	<9948950.GZ51yJYkxQ@flatron>
-	<CAD=FV=Un+Ti8atZLUbK+5w=dB7vX7HoxVacEGkjvCboVo4mNpA@mail.gmail.com>
-Date: Thu, 13 Jun 2013 20:25:09 +0200
-Message-ID: <CACRpkdbmO2opXAzrVqmjFS3JpTb62qeaV1-24vovJGRxxgxU4Q@mail.gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: Add Samsung pinctrl entries
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
+In-Reply-To: <1371134239-4531-1-git-send-email-abrodkin@synopsys.com>
+References: <1371134239-4531-1-git-send-email-abrodkin@synopsys.com>
+Date: Thu, 13 Jun 2013 21:25:55 +0300
+Message-ID: <CAHp75Vf4zjtebbaQMp4L0EmUPDVyrNPfvLODo7gHBuBEsWmZeA@mail.gmail.com>
+Subject: Re: [PATCH v3] ethernet/arc/arc_emac - Add new driver
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Cc: netdev <netdev@vger.kernel.org>, Francois Romieu <romieu@fr.zoreil.com>,
+        Joe Perches <joe@perches.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
         "David S. Miller" <davem@davemloft.net>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 7:25 PM, Doug Anderson <dianders@chromium.org> wrote:
+On Thu, Jun 13, 2013 at 5:37 PM, Alexey Brodkin
+<Alexey.Brodkin@synopsys.com> wrote:
+> Driver for non-standard on-chip ethernet device ARC EMAC 10/100,
+> instantiated in some legacy ARC (Synopsys) FPGA Boards such as
+> ARCAngel4/ML50x.
 
->>> +PIN CONTROLLER - SAMSUNG
->>> +M:   Linus Walleij <linus.walleij@linaro.org>
->>> +M:   Kukjin Kim <kgene.kim@samsung.com>
->>
->> So actually this would be:
->> M:      Thomas Abraham <thomas.abraham@linaro.org>
->> M:      Tomasz Figa <t.figa@samsung.com>
->>
->> Thomas, do you agree on this?
->
-> Ah.  Wasn't sure where the official maintainership should lie.  ;)  If
-> Thomas is happy with this then I'll spin and re-send.  Shall I remove
-> Kukjin and Linus, then?  It's convenient to have Linus on the list
-> since he tends to be the one applying the patches...
+Much better. But still few comments below.
 
-Check what output you get from scripts/get-maintainer before
-and after this patch. I don't know how it works but I think I
-will end up on this list anyway due to the way the bigger
-regex for the subsystem works. I.e. this:
+> +++ b/drivers/net/ethernet/arc/arc_emac.h
 
-PIN CONTROL SUBSYSTEM
-M:      Linus Walleij <linus.walleij@linaro.org>
-S:      Maintained
-F:      drivers/pinctrl/
-F:      include/linux/pinctrl/
+What the point to keep arc_emac prefix for files? You have separate
+folder for them. This particular one can be main.h.
 
-Yours,
-Linus Walleij
+> +struct arc_emac_priv {
+> +       struct net_device_stats stats;
+> +       unsigned int clock_frequency;
+> +       unsigned int max_speed;
+> +
+> +       /* Pointers to BD rings - CPU side */
+> +       struct arc_emac_bd_t *rxbd;
+> +       struct arc_emac_bd_t *txbd;
+
+Usually "_t" means "type" that is used in definitions without 'struct' word.
+I don't think this is the case here.
+
+> +       /* Pointers to BD rings - Device side */
+> +       dma_addr_t rxbd_dma_hdl;
+> +       dma_addr_t txbd_dma_hdl;
+> +
+> +       /* The actual socket buffers */
+> +       struct buffer_state rx_buff[RX_BD_NUM];
+> +       struct buffer_state tx_buff[TX_BD_NUM];
+> +       unsigned int txbd_curr;
+> +       unsigned int txbd_dirty;
+> +
+> +       /* Remember where driver last saw a packet, so next iteration it
+> +        * starts from here and not 0
+> +        */
+> +       unsigned int last_rx_bd;
+> +
+> +       struct napi_struct napi;
+> +
+> +       /* Phy saved state */
+> +       int duplex;
+> +       int speed;
+> +
+> +       /* Devices */
+> +       struct device *dev;
+> +       struct device_node *phy_node;
+> +       struct phy_device *phy_dev;
+> +       struct net_device *ndev;
+> +       struct mii_bus *bus;
+> +
+> +       /* EMAC registers base address */
+> +       void __iomem *reg_base_addr;
+> +};
+
+It seems you missed my comments against the names of the members. Can
+you address them or comment why not?
+
+> +++ b/drivers/net/ethernet/arc/arc_emac_main.c
+
+> +static int arc_emac_get_settings(struct net_device *ndev,
+> +                                struct ethtool_cmd *cmd)
+> +{
+> +       struct arc_emac_priv *priv = netdev_priv(ndev);
+> +
+> +       if (priv->phy_dev)
+> +               return phy_ethtool_gset(priv->phy_dev, cmd);
+> +
+> +       return -EINVAL;
+
+May be
+if (!...)
+ return -EINVAL;
+return ...;
+
+> +static int arc_emac_set_settings(struct net_device *ndev,
+> +                                struct ethtool_cmd *cmd)
+> +{
+> +       struct arc_emac_priv *priv = netdev_priv(ndev);
+> +
+> +       if (!capable(CAP_NET_ADMIN))
+> +               return -EPERM;
+> +
+> +       if (priv->phy_dev)
+> +               return phy_ethtool_sset(priv->phy_dev, cmd);
+> +
+> +       return -EINVAL;
+
+Ditto.
+
+> +static int arc_emac_poll(struct napi_struct *napi, int budget)
+> +{
+> +       struct net_device *ndev = napi->dev;
+> +       struct arc_emac_priv *priv = netdev_priv(ndev);
+> +       unsigned int i, loop, work_done = 0;
+> +       struct sk_buff *skb;
+
+> +       for (loop = 0; loop < RX_BD_NUM; loop++) {
+> +               struct net_device_stats *stats = &priv->stats;
+> +               struct buffer_state *rx_buff;
+> +               struct arc_emac_bd_t *rxbd;
+> +               dma_addr_t addr;
+> +               unsigned int info, pktlen;
+> +               unsigned int buflen = ndev->mtu + EMAC_BUFFER_PAD;
+> +
+> +               i = (i + 1) % RX_BD_NUM;
+
+I just realize you are using circular buffer here. What about to use
+them with linux' native framework? Documentation/circular-buffers.txt
+
+> +               if (unlikely((info & OWN_MASK) == FOR_EMAC)) {
+> +                       /* BD is still owned by EMAC */
+> +                       continue;
+> +               }
+
+Redundant braces.
+
+> +               addr = dma_map_single(&ndev->dev, (void *)rx_buff->skb->data,
+> +                                     buflen, DMA_FROM_DEVICE);
+> +               if (dma_mapping_error(&ndev->dev, addr)) {
+> +                       if (net_ratelimit())
+> +                               if (net_ratelimit())
+
+Is it not a typo?
+
+> +                                       netdev_err(ndev, "cannot dma map\n");
+
+> +               work_done++;
+> +               if (work_done >= budget)
+> +                       break;
+
+Those three could easily go to the for () on the top of this function.
+
+> +static irqreturn_t arc_emac_intr(int irq, void *dev_instance)
+> +{
+
+> +       if (status & TXINT_MASK) {
+> +               unsigned int i;
+> +
+> +               for (i = 0; i < TX_BD_NUM; i++) {
+> +                       unsigned int *txbd_dirty = &priv->txbd_dirty;
+> +                       struct arc_emac_bd_t *txbd = &priv->txbd[*txbd_dirty];
+> +                       struct buffer_state *tx_buff = &priv->tx_buff[*txbd_dirty];
+> +                       struct sk_buff *skb = tx_buff->skb;
+> +                       unsigned int info = txbd->info;
+
+> +                       txbd->data = 0x0;
+> +                       txbd->info = 0x0;
+
+Plain 0?
+
+> +                       *txbd_dirty = (*txbd_dirty + 1) % TX_BD_NUM;
+
+Same idea about circular buffers.
+
+> +static int arc_emac_open(struct net_device *ndev)
+> +{
+
+> +       /* Set Poll rate so that it polls every 1 ms */
+> +       arc_reg_set(priv, R_POLLRATE,
+> +                    priv->clock_frequency / 1000000);
+
+I don't understand how you end up with 1ms here. 1000000 is just a
+magic number, clock_frequency generally is an arbitrary value.
+
+> +static struct net_device_stats *arc_emac_stats(struct net_device *ndev)
+> +{
+> +       unsigned long miss, rxerr, rxfram, rxcrc, rxoflow;
+> +       struct arc_emac_priv *priv = netdev_priv(ndev);
+> +       struct net_device_stats *stats = &priv->stats;
+> +
+> +       rxerr = arc_reg_get(priv, R_RXERR);
+> +       miss = arc_reg_get(priv, R_MISS);
+> +
+> +       rxcrc = rxerr & 0xff;
+> +       rxfram = rxerr >> 8 & 0xff;
+> +       rxoflow = rxerr >> 16 & 0xff;
+
+If you declare those three as u8, you can avoid those & 0xff.
+
+> +       ndev = alloc_etherdev(sizeof(struct arc_emac_priv));
+> +       if (!ndev) {
+> +               err = -ENOMEM;
+> +               goto out;
+> +       }
+
+Redundant goto. Just return here.
+
+> +       }
+> +
+> +
+
+Extra line.
+
+--
+With Best Regards,
+Andy Shevchenko
