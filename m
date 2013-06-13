@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759083Ab3FMScz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 14:32:55 -0400
-Received: from etezian.org ([198.101.225.253]:56458 "EHLO mail.etezian.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758945Ab3FMS3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 14:29:00 -0400
-From: Andi Shyti <andi@etezian.org>
-To: arnd@arndb.de, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, pc@asdf.org, oatilla@gmail.com,
-        andi@etezian.org
-Subject: [PATCH 09/19] bh1770glc: use min_t instead of min
-Date: Thu, 13 Jun 2013 20:20:43 +0200
-Message-Id: <a4596befbbb6230336affa57b7d22dbd7ea0ab7a.1371145891.git.andi@etezian.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1371145891.git.andi@etezian.org>
-References: <cover.1371145891.git.andi@etezian.org>
-In-Reply-To: <cover.1371145891.git.andi@etezian.org>
-References: <cover.1371145891.git.andi@etezian.org>
+	id S1759181Ab3FMSdZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 14:33:25 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:37604 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759131Ab3FMSdU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 14:33:20 -0400
+Date: Thu, 13 Jun 2013 11:33:15 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: Re: [PATCH] bio-integrity: Fix use of bs->bio_integrity_pool after
+ free
+Message-ID: <20130613183315.GH10979@localhost>
+References: <20130529222955.10627.50429.stgit@bhelgaas-glaptop>
+ <CAErSpo7s1m=6WvgeVOQ3Zj=mU8=+13pT4hJ8k5-KkrDDGOU+5w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo7s1m=6WvgeVOQ3Zj=mU8=+13pT4hJ8k5-KkrDDGOU+5w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andi Shyti <andi@etezian.org>
----
- drivers/misc/bh1770glc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Thu, Jun 13, 2013 at 12:14:54PM -0600, Bjorn Helgaas wrote:
+> On Wed, May 29, 2013 at 4:29 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> > This fixes a copy and paste error introduced by 9f060e2231
+> > ("block: Convert integrity to bvec_alloc_bs()").
+> >
+> > Found by Coverity (CID 1020654).
+> >
+> > Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> > ---
+> >  fs/bio-integrity.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
+> > index 8fb4291..45e944f 100644
+> > --- a/fs/bio-integrity.c
+> > +++ b/fs/bio-integrity.c
+> > @@ -734,7 +734,7 @@ void bioset_integrity_free(struct bio_set *bs)
+> >                 mempool_destroy(bs->bio_integrity_pool);
+> >
+> >         if (bs->bvec_integrity_pool)
+> > -               mempool_destroy(bs->bio_integrity_pool);
+> > +               mempool_destroy(bs->bvec_integrity_pool);
+> >  }
+> >  EXPORT_SYMBOL(bioset_integrity_free);
+> 
+> Kent, do you want to chime in on this?  Looks like an obvious error to
+> me, but maybe I'm missing something and we should teach Coverity to
+> shut up about it.
 
-diff --git a/drivers/misc/bh1770glc.c b/drivers/misc/bh1770glc.c
-index 031a9fa..bd90eaf 100644
---- a/drivers/misc/bh1770glc.c
-+++ b/drivers/misc/bh1770glc.c
-@@ -273,7 +273,7 @@ static inline u16 bh1770_lux_raw_to_adjusted(struct bh1770_chip *chip, u16 raw)
- {
- 	u32 lux;
- 	lux = ((u32)raw * chip->lux_corr) / BH1770_LUX_CORR_SCALE;
--	return min(lux, (u32)BH1770_LUX_RANGE);
-+	return min_t(u32, lux, BH1770_LUX_RANGE);
- }
- 
- static inline u16 bh1770_lux_adjusted_to_raw(struct bh1770_chip *chip,
--- 
-1.7.10.4
+Sorry - no, this is definitely a bug:
 
+Acked-by: Kent Overstreet <koverstreet@google.com>
