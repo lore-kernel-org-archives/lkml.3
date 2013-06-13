@@ -1,56 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758826Ab3FMSPR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 14:15:17 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:44547 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754414Ab3FMSPP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 14:15:15 -0400
+	id S1758859Ab3FMSQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 14:16:59 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:36331 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756078Ab3FMSQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 14:16:57 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiang Liu <jiang.liu@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        "Alexander E . Patrakov" <patrakov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shaohua Li <shaohua.li@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [BUGFIX 3/9] ACPI, DOCK: clean up unused module related code
+Date: Thu, 13 Jun 2013 20:26:10 +0200
+Message-ID: <1841512.D0ScSNfNgy@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1371141152-9468-4-git-send-email-jiang.liu@huawei.com>
+References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com> <1371141152-9468-4-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <20130529222955.10627.50429.stgit@bhelgaas-glaptop>
-References: <20130529222955.10627.50429.stgit@bhelgaas-glaptop>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 13 Jun 2013 12:14:54 -0600
-Message-ID: <CAErSpo7s1m=6WvgeVOQ3Zj=mU8=+13pT4hJ8k5-KkrDDGOU+5w@mail.gmail.com>
-Subject: Re: [PATCH] bio-integrity: Fix use of bs->bio_integrity_pool after free
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Kent Overstreet <koverstreet@google.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 4:29 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> This fixes a copy and paste error introduced by 9f060e2231
-> ("block: Convert integrity to bvec_alloc_bs()").
->
-> Found by Coverity (CID 1020654).
->
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+On Friday, June 14, 2013 12:32:26 AM Jiang Liu wrote:
+> ACPI dock driver can't be built as a module any more, so clean up
+> module related code.
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: Shaohua Li <shaohua.li@intel.com>
+> Cc: Len Brown <lenb@kernel.org>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: linux-acpi@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+
+How exactly does this depend on [2/9]?  If it doesn't at all, it should go
+after [1/9].
+
 > ---
->  fs/bio-integrity.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-> index 8fb4291..45e944f 100644
-> --- a/fs/bio-integrity.c
-> +++ b/fs/bio-integrity.c
-> @@ -734,7 +734,7 @@ void bioset_integrity_free(struct bio_set *bs)
->                 mempool_destroy(bs->bio_integrity_pool);
->
->         if (bs->bvec_integrity_pool)
-> -               mempool_destroy(bs->bio_integrity_pool);
-> +               mempool_destroy(bs->bvec_integrity_pool);
+>  drivers/acpi/dock.c | 41 -----------------------------------------
+>  1 file changed, 41 deletions(-)
+> 
+> diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
+> index 79c8d9e..50e38b7 100644
+> --- a/drivers/acpi/dock.c
+> +++ b/drivers/acpi/dock.c
+> @@ -53,12 +53,6 @@ MODULE_PARM_DESC(immediate_undock, "1 (default) will cause the driver to "
+>  
+>  static struct atomic_notifier_head dock_notifier_list;
+>  
+> -static const struct acpi_device_id dock_device_ids[] = {
+> -	{"LNXDOCK", 0},
+> -	{"", 0},
+> -};
+> -MODULE_DEVICE_TABLE(acpi, dock_device_ids);
+> -
+
+Don't we actually need the device IDs?
+
+>  struct dock_station {
+>  	acpi_handle handle;
+>  	unsigned long last_dock_time;
+> @@ -1013,30 +1007,6 @@ err_unregister:
 >  }
->  EXPORT_SYMBOL(bioset_integrity_free);
+>  
+>  /**
+> - * dock_remove - free up resources related to the dock station
+> - */
+> -static int dock_remove(struct dock_station *ds)
+> -{
+> -	struct dock_dependent_device *dd, *tmp;
+> -	struct platform_device *dock_device = ds->dock_device;
+> -
+> -	if (!dock_station_count)
+> -		return 0;
+> -
+> -	/* remove dependent devices */
+> -	list_for_each_entry_safe(dd, tmp, &ds->dependent_devices, list)
+> -		kfree(dd);
+> -
+> -	list_del(&ds->sibling);
+> -
+> -	/* cleanup sysfs */
+> -	sysfs_remove_group(&dock_device->dev.kobj, &dock_attribute_group);
+> -	platform_device_unregister(dock_device);
+> -
+> -	return 0;
+> -}
+> -
+> -/**
+>   * find_dock_and_bay - look for dock stations and bays
+>   * @handle: acpi handle of a device
+>   * @lvl: unused
+> @@ -1073,14 +1043,3 @@ int __init acpi_dock_init(void)
+>  		ACPI_DOCK_DRIVER_DESCRIPTION, dock_station_count);
+>  	return 0;
+>  }
+> -
+> -static void __exit dock_exit(void)
+> -{
+> -	struct dock_station *tmp, *dock_station;
+> -
+> -	unregister_acpi_bus_notifier(&dock_acpi_notifier);
+> -	list_for_each_entry_safe(dock_station, tmp, &dock_stations, sibling)
+> -		dock_remove(dock_station);
+> -}
+> -
+> -module_exit(dock_exit);
 
-Kent, do you want to chime in on this?  Looks like an obvious error to
-me, but maybe I'm missing something and we should teach Coverity to
-shut up about it.
+The other changes look OK to me.
 
-Bjorn
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
