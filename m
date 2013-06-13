@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758834Ab3FMTTf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 15:19:35 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33033 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758757Ab3FMTTd (ORCPT
+	id S1758789Ab3FMTUC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 15:20:02 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33623 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756352Ab3FMTUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 15:19:33 -0400
-Message-ID: <51BA1B41.6030002@wwwdotorg.org>
-Date: Thu, 13 Jun 2013 13:19:29 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 13 Jun 2013 15:20:00 -0400
+Message-ID: <51BA1B42.5090400@pengutronix.de>
+Date: Thu, 13 Jun 2013 21:19:30 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Joseph Lo <josephl@nvidia.com>, Karan Jhavar <kjhavar@nvidia.com>,
-        Varun Wadekar <vwadekar@nvidia.com>,
-        Chris Johnson <CJohnson@nvidia.com>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Dave Martin <Dave.Martin@arm.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>, gnurou@gmail.com,
-        devicetree-discuss@lists.ozlabs.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/3] ARM: tegra: basic support for Trusted Foundations
-References: <1371114745-24710-1-git-send-email-acourbot@nvidia.com> <1371114745-24710-2-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1371114745-24710-2-git-send-email-acourbot@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Sachin Kamat <sachin.kamat@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de
+Subject: Re: [RFC: PATCH] err.h: silence warning when using IS_ERR on void
+ __iomem *
+References: <1371072668-19027-1-git-send-email-mkl@pengutronix.de> <CAK9yfHywxyju2TbMWTfM7GBjjj8T5SdP8sc1j=VRRPxBesUtxQ@mail.gmail.com> <20130613182447.GB32574@mithrandir>
+In-Reply-To: <20130613182447.GB32574@mithrandir>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2KWKJFLFAUHARCWWMGJAJ"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2013 03:12 AM, Alexandre Courbot wrote:
-> Add basic support for booting secondary processors on Tegra devices
-> using the Trusted Foundations secure monitor.
-> 
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
->  Documentation/devicetree/bindings/arm/tegra.txt    | 11 +++++
->  .../devicetree/bindings/vendor-prefixes.txt        |  1 +
->  arch/arm/configs/tegra_defconfig                   |  1 +
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2KWKJFLFAUHARCWWMGJAJ
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-The defconfig change should be a separate patch, so that I can squash it
-into any other defconfig updates separately from all the code changes.
+On 06/13/2013 08:24 PM, Thierry Reding wrote:
+> On Thu, Jun 13, 2013 at 10:55:17AM +0530, Sachin Kamat wrote:
+>> On 13 June 2013 03:01, Marc Kleine-Budde <mkl@pengutronix.de> wrote:
+>>> Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()"=
+)
+>>> introduced devm_ioremap_resource() and encourage to check its return =
+value with
+>>> IS_ERR(). This however leads to the following sparse warnings, as
+>>> devm_ioremap_resource() returns a void __iomem pointer:
+>>>
+>>> drivers/net/can/c_can/c_can_platform.c:205:32: warning: incorrect typ=
+e in argument 1 (different address spaces)
+>>> drivers/net/can/c_can/c_can_platform.c:205:32:    expected void const=
+ *ptr
+>>> drivers/net/can/c_can/c_can_platform.c:205:32:    got unsigned int [n=
+oderef] [usertype] <asn:2>*raminit_ctrlreg
+>>
+>> CC ing Thierry who has solved this issue some time back.
+>=20
+> I had sent two patches, one against sparse, the other against the
+> kernel, but none were picked up yet.
 
-> diff --git a/arch/arm/mach-tegra/firmware.c b/arch/arm/mach-tegra/firmware.c
+Can you repost them? Hope someone will pick them up.
 
-> +void __init tegra_init_firmware(void)
-> +{
-> +	struct device_node *node;
-> +
-> +	if (!of_have_populated_dt())
-> +		return;
-> +
-> +	node = of_find_compatible_node(NULL, NULL, "tl,trusted-foundations");
-> +	if (node && !IS_ENABLED(CONFIG_TEGRA_TRUSTED_FOUNDATIONS))
-> +		pr_warn("Trusted Foundations detected but support missing!\n");
-> +#if IS_ENABLED(CONFIG_TEGRA_TRUSTED_FOUNDATIONS)
-> +	else if (node)
-> +		register_firmware_ops(&tegra_trusted_foundations_ops);
-> +#endif
-> +}
+Marc
 
-Is it worth continuing on in the node && !IS_ENABLED case here? After
-all, we can be pretty certain that the write to the CPU reset vector is
-immediately going to trap...
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-I suppose that perhaps without SMP, cpuidle, suspend, ... we could keep
-running, but that seems a little niche.
+
+------enig2KWKJFLFAUHARCWWMGJAJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlG6G0IACgkQjTAFq1RaXHODKwCgkknfx6oO5BJcaBvnpeB3MsDH
+z+EAnjP16n3y/6JpYH+sDP3Tmnenv5hd
+=eXJA
+-----END PGP SIGNATURE-----
+
+------enig2KWKJFLFAUHARCWWMGJAJ--
