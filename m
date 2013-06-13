@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757414Ab3FMNJJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:09:09 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:49705 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756480Ab3FMNJG (ORCPT
+	id S1757522Ab3FMNKK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:10:10 -0400
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:34075 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756720Ab3FMNKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:09:06 -0400
-Date: Thu, 13 Jun 2013 21:27:15 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Dave Hansen <dave.hansen@intel.com>,
-        linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Jan kara <jack@suse.cz>
-Subject: Re: ext4 extent status tree LRU locking
-Message-ID: <20130613132715.GA12622@gmail.com>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Dave Hansen <dave.hansen@intel.com>, linux-ext4@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>, Jan kara <jack@suse.cz>
-References: <51B7B128.60909@intel.com>
- <20130612071735.GB29898@gmail.com>
- <51B88F1A.5000909@intel.com>
- <20130612204854.GA12456@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130612204854.GA12456@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 13 Jun 2013 09:10:04 -0400
+From: Benjamin Poirier <bpoirier@suse.de>
+To: linux-s390@vger.kernel.org
+Cc: netdev@vger.kernel.org, Ursula Braun <ursula.braun@de.ibm.com>,
+        linux390@de.ibm.com, Frank Blaschka <blaschka@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] netiucv: Hold rtnl between name allocation and device registration.
+Date: Thu, 13 Jun 2013 09:09:47 -0400
+Message-Id: <1371128987-3723-1-git-send-email-bpoirier@suse.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ted,
+fixes a race condition between concurrent initializations of netiucv devices
+that try to use the same name.
 
-On Wed, Jun 12, 2013 at 04:48:54PM -0400, Theodore Ts'o wrote:
-> On Wed, Jun 12, 2013 at 08:09:14AM -0700, Dave Hansen wrote:
-> > You could make per-cpu LRUs, and batch movement on and off the global
-> > LRU once the local ones get to be a certain size.  Or, you could keep
-> > them cpu-local *until* the shrinker is called, when the shrinker could
-> > go drain all the percpu ones.
-> > 
-> > Or, you could tag each extent in memory with its last-used time.  You
-> > write an algorithm to go and walk the tree and attempt to _generally_
-> > free the oldest objects out of a limited window.
-> 
-> Another approach might be to tag each inode with the last time an
-> ext4_map_blocks() was called on the inode, and keep an unsorted list
-> of inodes which has one or more entries in the extent cache.
-> 
-> When we decide to discard entries from the extent cache, we should
-> drop all of the entries for the inode --- and then when we read in
-> part of the extent tree leaf block, we should create entries in the
-> extent cache for all of the extents found in the extent leaf block.
+sysfs: cannot create duplicate filename '/devices/iucv/netiucv2'
+[...]
+Call Trace:
+([<00000000002edea4>] sysfs_add_one+0xb0/0xdc)
+ [<00000000002eecd4>] create_dir+0x80/0xfc
+ [<00000000002eee38>] sysfs_create_dir+0xe8/0x118
+ [<00000000003835a8>] kobject_add_internal+0x120/0x2d0
+ [<00000000003839d6>] kobject_add+0x62/0x9c
+ [<00000000003d9564>] device_add+0xcc/0x510
+ [<000003e00212c7b4>] netiucv_register_device+0xc0/0x1ec [netiucv]
 
-Thanks for your suggestion.  But, sorry, I couldn't get your point here.
-As you suggested above, we can tag each inode with the last access time
-when ext4_map_blocks() is called.  Then we will get an unsorted list of
-inodes with some extent entries.  When we tries to reclaim some entries
-from extent cache, we can call list_sort() to get an sorted list of
-inodes and try to reclaim some entries according to the last access
-time.  My question is why do we need to drop all of the entries from all
-inodes.
+Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+Tested-by: Ursula Braun <braunu@de.ibm.com>
+---
+ drivers/s390/net/netiucv.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-Af far as I understand, we can do the following improvement.  We tag the
-last access time for each inode.  So that would avoid to move the inode
-in lru list frequently.  When we try to reclaim some entries, we call
-list_sort() to get a sorted lru list, and drop some entries from lru
-list.  Please correct me if I misunderstood.
+diff --git a/drivers/s390/net/netiucv.c b/drivers/s390/net/netiucv.c
+index 4ffa66c..9ca3996 100644
+--- a/drivers/s390/net/netiucv.c
++++ b/drivers/s390/net/netiucv.c
+@@ -2040,6 +2040,7 @@ static struct net_device *netiucv_init_netdevice(char *username, char *userdata)
+ 			   netiucv_setup_netdevice);
+ 	if (!dev)
+ 		return NULL;
++	rtnl_lock();
+ 	if (dev_alloc_name(dev, dev->name) < 0)
+ 		goto out_netdev;
+ 
+@@ -2061,6 +2062,7 @@ static struct net_device *netiucv_init_netdevice(char *username, char *userdata)
+ out_fsm:
+ 	kfree_fsm(privptr->fsm);
+ out_netdev:
++	rtnl_unlock();
+ 	free_netdev(dev);
+ 	return NULL;
+ }
+@@ -2100,6 +2102,7 @@ static ssize_t conn_write(struct device_driver *drv,
+ 
+ 	rc = netiucv_register_device(dev);
+ 	if (rc) {
++		rtnl_unlock();
+ 		IUCV_DBF_TEXT_(setup, 2,
+ 			"ret %d from netiucv_register_device\n", rc);
+ 		goto out_free_ndev;
+@@ -2109,7 +2112,8 @@ static ssize_t conn_write(struct device_driver *drv,
+ 	priv = netdev_priv(dev);
+ 	SET_NETDEV_DEV(dev, priv->dev);
+ 
+-	rc = register_netdev(dev);
++	rc = register_netdevice(dev);
++	rtnl_unlock();
+ 	if (rc)
+ 		goto out_unreg;
+ 
+-- 
+1.7.10.4
 
-For creating all extent leaf blocks, that is another improvement.  I
-will try to add it after I solve current problem that Dave reported.
-
-Thanks,
-                                                - Zheng
