@@ -1,88 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963Ab3FMEJt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 00:09:49 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56767 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752054Ab3FMEJr convert rfc822-to-8bit (ORCPT
+	id S1752488Ab3FMELw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 00:11:52 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:62321 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947Ab3FMELv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 00:09:47 -0400
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "Cousson, Benoit" <b-cousson@ti.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>
-Subject: RE: [PATCH v4] ARM: dts: OMAP5: Add palmas MFD node and regulator
- nodes
-Thread-Topic: [PATCH v4] ARM: dts: OMAP5: Add palmas MFD node and regulator
- nodes
-Thread-Index: AQHOZ0aOzpDdDqo2IEWs3NtTs2HlqpkxtMgAgAFTriA=
-Date: Thu, 13 Jun 2013 04:09:22 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229EB4B8@DBDE04.ent.ti.com>
-References: <1371025140-25376-1-git-send-email-j-keerthy@ti.com>
- <51B8990A.8030506@wwwdotorg.org>
-In-Reply-To: <51B8990A.8030506@wwwdotorg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 13 Jun 2013 00:11:51 -0400
+Message-ID: <51B9467B.7080902@huawei.com>
+Date: Thu, 13 Jun 2013 12:11:39 +0800
+From: "Jiang Liu (Gerry)" <jiang.liu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Roman Yepishev <roman.yepishev@gmail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] PCI: Remove not needed check in disable aspm link
+References: <CAErSpo6v0mj9=Q13d=G4hho0mb9XTcsmefzke9fROYmZ7oBWxQ@mail.gmail.com> <CAE9FiQVqKag2TGah7x_1MAJ+c0UWgywgM_jKUoOnh+rq3bwBhg@mail.gmail.com> <CAE9FiQVMgdj5edbR4qZny29fV9-bW_We_G4Wpn_yruDLQZiQiQ@mail.gmail.com> <20130329032200.GA11990@google.com> <CAE9FiQVu5QyxaKsYzzQoroQD=TvsziHzDOtoeg=FvhZ8HyN5yw@mail.gmail.com> <CAErSpo7ChfRiEn0eR1rf-mVheUS9Yf8f+j4n78PJcGYh+yMVgA@mail.gmail.com> <CAE9FiQXkDg7Y336S=DXoms44=5HLaiUx=sWviupz1fJmaDUEzQ@mail.gmail.com> <CAE9FiQU5c=ztzbskNnYFFKF9V5zO+jnRcMBCivLxA1F3fSfX5w@mail.gmail.com> <20130401235256.GA31966@google.com> <CAE9FiQV8cPh-s6=EQu_cZTtn86+NwZE5KuGMhf43aOhzkL=hwA@mail.gmail.com> <CAErSpo7Jni1ZSf_W=vB3kqsucPpoepa2Q5g=77a6D3FaPwe9LA@mail.gmail.com> <CAE9FiQWjQXwiTWju6cBc_o25jy_wmZ1u+Pifh1wdnxtV=i5ENw@mail.gmail.com> <CAErSpo7=a-wX6BLbm_O1nUMMrQHOgtSm3xZHKuRqaz8rnKSbRA@mail.gmail.com> <CAE9FiQUbw7OUhRB+gKMxkuE9+nm9097+mwZ2z4adO8Hv_NjF1Q@mail.gmail.com> <CAErSpo7gL3Ds9oq8ZZ4zdt1uHy9xbkWJE+Ja=-0QXFQECjr40A@mail.gmail.com>
+In-Reply-To: <CAErSpo7gL3Ds9oq8ZZ4zdt1uHy9xbkWJE+Ja=-0QXFQECjr40A@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.77.35]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Hi Bjorn,
+     I'm working on several acpiphp related bugfixes, and feel some
+are materials for 3.10 too. Actually we have identified four bugs
+related to dock station support on Sony VAIO VPCZ23A4R laptop.
+I will try to send out patchset to address these bugs tonight.
+Seems we really need to rethink about acpiphp and pciehp now.
+Regards!
+Gerry
+On 2013/6/13 11:50, Bjorn Helgaas wrote:
+> On Wed, Jun 12, 2013 at 1:41 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> On Wed, Jun 12, 2013 at 10:05 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>>> current code from acpi_pci_root_add we have
+>>>>    1. pci_acpi_scan_root
+>>>>           ==> pci devices enumeration and bus scanning.
+>>>>               ==> pci_alloc_child_bus
+>>>>                   ==> pcibios_add_bus
+>>>>                       ==> acpi_pci_add_bus
+>>>>                           ==> acpiphp_enumerate_slots
+>>>>                               ==> ...==> register_slot
+>>>>                                    ==> device_is_managed_by_native_pciehp
+>>>>                                          ==> check osc_set with
+>>>> OSC_PCI_EXPRESS_NATIVE_HP_CONTROL
+>>>>     2. _OSC set request
+>>>>
+>>>> so we always have acpiphp hotplug slot registered at first.
+>>>>
+>>>> so either we need to
+>>>> A. revert reverting about _OSC
+>>>> B. move pcibios_add_bus down to pci_bus_add_devices()
+>>>>      as acpiphp and apci pci slot driver are some kind of drivers for pci_bus
+>>>> C. A+B
+>>>
+>>> It doesn't surprise me at all that there are problems in the _OSC code
+>>> and the acpiphp/pciehp interaction.  That whole area is a complete
+>>> disaster.  It'd really be nice if somebody stepped up and reworked it
+>>> so it makes sense.
+>>>
+>>> But this report is useless to me.  I don't have time to work out what
+>>> the problem is and how it affects users and come up with a fix.
+>>
+>> effects: without fix the problem, user can not use pcie native hotplug
+>> if their system's firmware support acpihp and pciehp.
+>> And make it worse, that acpiphp have to be built-in, so they have no
+>> way to blacklist acpiphp in config.
+>>
+>>>
+>>> My advice is to simplify the path first, and worry about fixing the
+>>> bug afterwards.  We've already done several iterations of fiddling
+>>> with things, and I think all we're doing is playing "whack-a-mole" and
+>>> pushing the bugs around from one place to another.
+>>
+>> We need to address regression at first.
+>> my suggestion is : revert the reverting and apply my -v3 version that will fix
+>> regression that Roman Yepishev met.
+>>
+>> please check attached two patches, hope it could save your some time.
+>
+> OK, you're right.  It's not reasonable to do anything more than a
+> minimal fix when we're at -rc5.
+>
+> Sigh.  I'll spend tomorrow trying to understand your patches and write
+> changelogs for you.
+>
+> I think you're saying that in systems that support both acpiphp and
+> pciehp, we should be using pciehp, but we currently use acpiphp.  If
+> so, that's certainly a bug.  How serious is it?  Is it a disaster if
+> we use acpiphp until we can resolve this cleanly?  Are there a lot of
+> systems that claim to support acpiphp but it doesn't actually work?
+>
+> Bjorn
+>
+> .
+>
 
-> -----Original Message-----
-> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> Sent: Wednesday, June 12, 2013 9:22 PM
-> To: J, KEERTHY
-> Cc: Cousson, Benoit; devicetree-discuss@lists.ozlabs.org; linux-
-> omap@vger.kernel.org; linux-kernel@vger.kernel.org;
-> ldewangan@nvidia.com; grant.likely@secretlab.ca; swarren@nvidia.com;
-> sameo@linux.intel.com; gg@slimlogic.co.uk; lee.jones@linaro.org
-> Subject: Re: [PATCH v4] ARM: dts: OMAP5: Add palmas MFD node and
-> regulator nodes
-> 
-> On 06/12/2013 02:19 AM, J Keerthy wrote:
-> > This patch adds Palmas MFD node and the regulator nodes for OMAP5.
-> >
-> > The node definitions are based on: https://lkml.org/lkml/2013/6/6/25
-> >
-> > Boot tested on omap5-uevm board.
-> 
-> Reviewed-by: Stephen Warren <swarren@nvidia.com>
 
-Thanks..
-
-> 
-> > diff --git a/arch/arm/boot/dts/omap5-uevm.dts
-> > b/arch/arm/boot/dts/omap5-uevm.dts
-> 
-> > +	palmas: palmas@48 {
-> > +		reg = <0x48>;
-> > +		interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>; /* IRQ_SYS_1N
-> */
-> > +		interrupt-parent = <&gic>;
-> > +		compatible = "ti,palmas";
-> 
-> ... although personally I prefer the compatible property to be right at
-> the top of each node, since it's what implies the schema for the rest
-> of the node. That's a tiny nit though; feel free to ignore it if the
-> OMAP files don't follow that convention.
-
-Sure. I will send hopefully the last version incorporating this :-).
-
-Regards,
-Keerthy
