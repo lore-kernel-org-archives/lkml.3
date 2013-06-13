@@ -1,357 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758587Ab3FMOrT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 10:47:19 -0400
-Received: from mga14.intel.com ([143.182.124.37]:56019 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758386Ab3FMOrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 10:47:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,859,1363158000"; 
-   d="scan'208";a="316501064"
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: [PATCH v3 net-next 4/4] net: add socket option for low latency polling
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Eric Dumazet <erdnetdev@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
-        Alex Rosenbaum <alexr@mellanox.com>,
-        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
-        sockperf-dev@googlegroups.com, Eliezer Tamir <eliezer@tamir.org.il>
-Date: Thu, 13 Jun 2013 17:46:56 +0300
-Message-ID: <20130613144656.4875.57859.stgit@ladj378.jer.intel.com>
-In-Reply-To: <20130613144613.4875.46858.stgit@ladj378.jer.intel.com>
-References: <20130613144613.4875.46858.stgit@ladj378.jer.intel.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1758648Ab3FMOrr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 10:47:47 -0400
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:59584 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758030Ab3FMOrl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 10:47:41 -0400
+Date: Thu, 13 Jun 2013 16:47:30 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [GIT PULL] s390 patches for the 3.10-rc6
+Message-ID: <20130613164730.65273fbd@mschwide>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061314-5024-0000-0000-000006519A79
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-adds a socket option for low latency polling.
-This allows overriding the global sysctl value with a per-socket one.
-Unexport sysctl_net_ll_poll since for now it's not needed in modules.
+Hi Linus,
 
-Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
----
+please pull from the 'for-linus' branch of
 
- arch/alpha/include/uapi/asm/socket.h   |    2 ++
- arch/avr32/include/uapi/asm/socket.h   |    2 ++
- arch/cris/include/uapi/asm/socket.h    |    2 ++
- arch/frv/include/uapi/asm/socket.h     |    2 ++
- arch/h8300/include/uapi/asm/socket.h   |    2 ++
- arch/ia64/include/uapi/asm/socket.h    |    2 ++
- arch/m32r/include/uapi/asm/socket.h    |    2 ++
- arch/mips/include/uapi/asm/socket.h    |    2 ++
- arch/mn10300/include/uapi/asm/socket.h |    2 ++
- arch/parisc/include/uapi/asm/socket.h  |    2 ++
- arch/powerpc/include/uapi/asm/socket.h |    2 ++
- arch/s390/include/uapi/asm/socket.h    |    2 ++
- arch/sparc/include/uapi/asm/socket.h   |    2 ++
- arch/xtensa/include/uapi/asm/socket.h  |    2 ++
- include/net/ll_poll.h                  |   10 +++++-----
- include/net/sock.h                     |    2 ++
- include/uapi/asm-generic/socket.h      |    2 ++
- net/core/sock.c                        |   20 ++++++++++++++++++++
- net/socket.c                           |    1 -
- 19 files changed, 57 insertions(+), 6 deletions(-)
+	git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
 
-diff --git a/arch/alpha/include/uapi/asm/socket.h b/arch/alpha/include/uapi/asm/socket.h
-index eee6ea7..4885825 100644
---- a/arch/alpha/include/uapi/asm/socket.h
-+++ b/arch/alpha/include/uapi/asm/socket.h
-@@ -81,4 +81,6 @@
- 
- #define SO_SELECT_ERR_QUEUE	45
- 
-+#define SO_LL			46
-+
- #endif /* _UAPI_ASM_SOCKET_H */
-diff --git a/arch/avr32/include/uapi/asm/socket.h b/arch/avr32/include/uapi/asm/socket.h
-index 37401f5..79b6179 100644
---- a/arch/avr32/include/uapi/asm/socket.h
-+++ b/arch/avr32/include/uapi/asm/socket.h
-@@ -74,4 +74,6 @@
- 
- #define SO_SELECT_ERR_QUEUE	45
- 
-+#define SO_LL			46
-+
- #endif /* __ASM_AVR32_SOCKET_H */
-diff --git a/arch/cris/include/uapi/asm/socket.h b/arch/cris/include/uapi/asm/socket.h
-index ba409c9..47b1ec5 100644
---- a/arch/cris/include/uapi/asm/socket.h
-+++ b/arch/cris/include/uapi/asm/socket.h
-@@ -76,6 +76,8 @@
- 
- #define SO_SELECT_ERR_QUEUE	45
- 
-+#define SO_LL			46
-+
- #endif /* _ASM_SOCKET_H */
- 
- 
-diff --git a/arch/frv/include/uapi/asm/socket.h b/arch/frv/include/uapi/asm/socket.h
-index 31dbb5d..dbc0852 100644
---- a/arch/frv/include/uapi/asm/socket.h
-+++ b/arch/frv/include/uapi/asm/socket.h
-@@ -74,5 +74,7 @@
- 
- #define SO_SELECT_ERR_QUEUE	45
- 
-+#define SO_LL			46
-+
- #endif /* _ASM_SOCKET_H */
- 
-diff --git a/arch/h8300/include/uapi/asm/socket.h b/arch/h8300/include/uapi/asm/socket.h
-index 5d1c6d0..a38d38a 100644
---- a/arch/h8300/include/uapi/asm/socket.h
-+++ b/arch/h8300/include/uapi/asm/socket.h
-@@ -74,4 +74,6 @@
- 
- #define SO_SELECT_ERR_QUEUE	45
- 
-+#define SO_LL			46
-+
- #endif /* _ASM_SOCKET_H */
-diff --git a/arch/ia64/include/uapi/asm/socket.h b/arch/ia64/include/uapi/asm/socket.h
-index 6b4329f..d3358b7 100644
---- a/arch/ia64/include/uapi/asm/socket.h
-+++ b/arch/ia64/include/uapi/asm/socket.h
-@@ -83,4 +83,6 @@
- 
- #define SO_SELECT_ERR_QUEUE	45
- 
-+#define SO_LL			46
-+
- #endif /* _ASM_IA64_SOCKET_H */
-diff --git a/arch/m32r/include/uapi/asm/socket.h b/arch/m32r/include/uapi/asm/socket.h
-index 2a3b59e..44aaf46 100644
---- a/arch/m32r/include/uapi/asm/socket.h
-+++ b/arch/m32r/include/uapi/asm/socket.h
-@@ -74,4 +74,6 @@
- 
- #define SO_SELECT_ERR_QUEUE	45
- 
-+#define SO_LL			46
-+
- #endif /* _ASM_M32R_SOCKET_H */
-diff --git a/arch/mips/include/uapi/asm/socket.h b/arch/mips/include/uapi/asm/socket.h
-index 3b21150..6a07992 100644
---- a/arch/mips/include/uapi/asm/socket.h
-+++ b/arch/mips/include/uapi/asm/socket.h
-@@ -92,4 +92,6 @@
- 
- #define SO_SELECT_ERR_QUEUE	45
- 
-+#define SO_LL			46
-+
- #endif /* _UAPI_ASM_SOCKET_H */
-diff --git a/arch/mn10300/include/uapi/asm/socket.h b/arch/mn10300/include/uapi/asm/socket.h
-index b4ce844..db80fd3 100644
---- a/arch/mn10300/include/uapi/asm/socket.h
-+++ b/arch/mn10300/include/uapi/asm/socket.h
-@@ -74,4 +74,6 @@
- 
- #define SO_SELECT_ERR_QUEUE	45
- 
-+#define SO_LL			46
-+
- #endif /* _ASM_SOCKET_H */
-diff --git a/arch/parisc/include/uapi/asm/socket.h b/arch/parisc/include/uapi/asm/socket.h
-index 70c512a..f866fff 100644
---- a/arch/parisc/include/uapi/asm/socket.h
-+++ b/arch/parisc/include/uapi/asm/socket.h
-@@ -73,6 +73,8 @@
- 
- #define SO_SELECT_ERR_QUEUE	0x4026
- 
-+#define SO_LL			0x4027
-+
- /* O_NONBLOCK clashes with the bits used for socket types.  Therefore we
-  * have to define SOCK_NONBLOCK to a different value here.
-  */
-diff --git a/arch/powerpc/include/uapi/asm/socket.h b/arch/powerpc/include/uapi/asm/socket.h
-index a36daf3..405fb09 100644
---- a/arch/powerpc/include/uapi/asm/socket.h
-+++ b/arch/powerpc/include/uapi/asm/socket.h
-@@ -81,4 +81,6 @@
- 
- #define SO_SELECT_ERR_QUEUE	45
- 
-+#define SO_LL			46
-+
- #endif	/* _ASM_POWERPC_SOCKET_H */
-diff --git a/arch/s390/include/uapi/asm/socket.h b/arch/s390/include/uapi/asm/socket.h
-index 2dacb306..0c5105fb 100644
---- a/arch/s390/include/uapi/asm/socket.h
-+++ b/arch/s390/include/uapi/asm/socket.h
-@@ -80,4 +80,6 @@
- 
- #define SO_SELECT_ERR_QUEUE	45
- 
-+#define SO_LL			46
-+
- #endif /* _ASM_SOCKET_H */
-diff --git a/arch/sparc/include/uapi/asm/socket.h b/arch/sparc/include/uapi/asm/socket.h
-index 89f49b6..b46c3fa 100644
---- a/arch/sparc/include/uapi/asm/socket.h
-+++ b/arch/sparc/include/uapi/asm/socket.h
-@@ -70,6 +70,8 @@
- 
- #define SO_SELECT_ERR_QUEUE	0x0029
- 
-+#define SO_LL			0x0030
-+
- /* Security levels - as per NRL IPv6 - don't actually do anything */
- #define SO_SECURITY_AUTHENTICATION		0x5001
- #define SO_SECURITY_ENCRYPTION_TRANSPORT	0x5002
-diff --git a/arch/xtensa/include/uapi/asm/socket.h b/arch/xtensa/include/uapi/asm/socket.h
-index a8f44f5..b21ace4 100644
---- a/arch/xtensa/include/uapi/asm/socket.h
-+++ b/arch/xtensa/include/uapi/asm/socket.h
-@@ -85,4 +85,6 @@
- 
- #define SO_SELECT_ERR_QUEUE	45
- 
-+#define SO_LL			46
-+
- #endif	/* _XTENSA_SOCKET_H */
-diff --git a/include/net/ll_poll.h b/include/net/ll_poll.h
-index 9f7007f..db0a78a 100644
---- a/include/net/ll_poll.h
-+++ b/include/net/ll_poll.h
-@@ -42,14 +42,14 @@ extern unsigned int sysctl_net_ll_poll __read_mostly;
- /* we can use sched_clock() because we don't care much about precision
-  * we only care that the average is bounded
-  */
--static inline u64 ll_end_time(void)
-+static inline u64 ll_end_time(struct sock *sk)
- {
--	return sched_clock() + USECS_TO_NS(ACCESS_ONCE(sysctl_net_ll_poll));
-+	return sched_clock() + USECS_TO_NS(ACCESS_ONCE(sk->sk_ll_usec));
- }
- 
- static inline bool sk_valid_ll(struct sock *sk)
- {
--	return sysctl_net_ll_poll && sk->sk_napi_id &&
-+	return sk->sk_ll_usec && sk->sk_napi_id &&
- 	       !need_resched() && !signal_pending(current);
- }
- 
-@@ -62,7 +62,7 @@ static inline bool can_poll_ll(u64 end_time)
- static inline bool sk_poll_ll(struct sock *sk, int nonblock)
- {
- 	const struct net_device_ops *ops;
--	u64 end_time = ll_end_time();
-+	u64 end_time = ll_end_time(sk);
- 	struct napi_struct *napi;
- 	int rc = false;
- 
-@@ -115,7 +115,7 @@ static inline void sk_mark_ll(struct sock *sk, struct sk_buff *skb)
- 
- #else /* CONFIG_NET_LL_RX_POLL */
- 
--static inline u64 ll_end_time(void)
-+static inline u64 ll_end_time(struct sock *sk)
- {
- 	return 0;
- }
-diff --git a/include/net/sock.h b/include/net/sock.h
-index ac8e181..21db792 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -230,6 +230,7 @@ struct cg_proto;
-   *	@sk_wmem_queued: persistent queue size
-   *	@sk_forward_alloc: space allocated forward
-   *	@sk_napi_id: id of the last napi context to receive data for sk
-+  *	@sk_ll_usec: usecs to busypoll when there is no data
-   *	@sk_allocation: allocation mode
-   *	@sk_sndbuf: size of send buffer in bytes
-   *	@sk_flags: %SO_LINGER (l_onoff), %SO_BROADCAST, %SO_KEEPALIVE,
-@@ -328,6 +329,7 @@ struct sock {
+to receive the following updates:
+
+Three kvm related memory management fixes, a fix for show_trace,
+a fix for early console output and a patch from Ben to help prevent
+compile errors in regard to irq functions (or our lack thereof).
+
+Ben Hutchings (1):
+      s390/pci: Implement IRQ functions if !PCI
+
+Christian Borntraeger (3):
+      s390/pgtable: Fix guest overindication for change bit
+      s390/pgtable: Save pgste during modify_prot_start/commit
+      s390/pgtable: make pgste lock an explicit barrier
+
+Martin Schwidefsky (1):
+      s390/dumpstack: fix address ranges for asynchronous and panic stack
+
+Peter Oberparleiter (1):
+      s390/sclp: fix new line detection
+
+ arch/s390/include/asm/pgtable.h |   32 ++++++++++++++------
+ arch/s390/kernel/dumpstack.c    |   12 +++++---
+ arch/s390/kernel/irq.c          |   64 +++++++++++++++++++++++++++++++++++++++
+ arch/s390/kernel/sclp.S         |    2 +-
+ arch/s390/pci/pci.c             |   33 --------------------
+ 5 files changed, 95 insertions(+), 48 deletions(-)
+
+diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
+index ac01463..e8b6e5b 100644
+--- a/arch/s390/include/asm/pgtable.h
++++ b/arch/s390/include/asm/pgtable.h
+@@ -623,7 +623,7 @@ static inline pgste_t pgste_get_lock(pte_t *ptep)
+ 		"	csg	%0,%1,%2\n"
+ 		"	jl	0b\n"
+ 		: "=&d" (old), "=&d" (new), "=Q" (ptep[PTRS_PER_PTE])
+-		: "Q" (ptep[PTRS_PER_PTE]) : "cc");
++		: "Q" (ptep[PTRS_PER_PTE]) : "cc", "memory");
  #endif
- #ifdef CONFIG_NET_LL_RX_POLL
- 	unsigned int		sk_napi_id;
-+	unsigned int		sk_ll_usec;
+ 	return __pgste(new);
+ }
+@@ -635,11 +635,19 @@ static inline void pgste_set_unlock(pte_t *ptep, pgste_t pgste)
+ 		"	nihh	%1,0xff7f\n"	/* clear RCP_PCL_BIT */
+ 		"	stg	%1,%0\n"
+ 		: "=Q" (ptep[PTRS_PER_PTE])
+-		: "d" (pgste_val(pgste)), "Q" (ptep[PTRS_PER_PTE]) : "cc");
++		: "d" (pgste_val(pgste)), "Q" (ptep[PTRS_PER_PTE])
++		: "cc", "memory");
+ 	preempt_enable();
  #endif
- 	atomic_t		sk_drops;
- 	int			sk_rcvbuf;
-diff --git a/include/uapi/asm-generic/socket.h b/include/uapi/asm-generic/socket.h
-index c5d2e3a..ca3a20d 100644
---- a/include/uapi/asm-generic/socket.h
-+++ b/include/uapi/asm-generic/socket.h
-@@ -76,4 +76,6 @@
+ }
  
- #define SO_SELECT_ERR_QUEUE	45
- 
-+#define SO_LL			46
-+
- #endif /* __ASM_GENERIC_SOCKET_H */
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 788c0da..1e744b1 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -913,6 +913,19 @@ set_rcvbuf:
- 		sock_valbool_flag(sk, SOCK_SELECT_ERR_QUEUE, valbool);
- 		break;
- 
-+#ifdef CONFIG_NET_LL_RX_POLL
-+	case SO_LL:
-+		/* allow unprivileged users to decrease the value */
-+		if ((val > sk->sk_ll_usec) && !capable(CAP_NET_ADMIN))
-+			ret = -EPERM;
-+		else {
-+			if (val < 0)
-+				ret = -EINVAL;
-+			else
-+				sk->sk_ll_usec = val;
-+		}
-+		break;
++static inline void pgste_set(pte_t *ptep, pgste_t pgste)
++{
++#ifdef CONFIG_PGSTE
++	*(pgste_t *)(ptep + PTRS_PER_PTE) = pgste;
 +#endif
- 	default:
- 		ret = -ENOPROTOOPT;
- 		break;
-@@ -1170,6 +1183,12 @@ int sock_getsockopt(struct socket *sock, int level, int optname,
- 		v.val = sock_flag(sk, SOCK_SELECT_ERR_QUEUE);
- 		break;
- 
-+#ifdef CONFIG_NET_LL_RX_POLL
-+	case SO_LL:
-+		v.val = sk->sk_ll_usec;
-+		break;
-+#endif
++}
 +
- 	default:
- 		return -ENOPROTOOPT;
- 	}
-@@ -2288,6 +2307,7 @@ void sock_init_data(struct socket *sock, struct sock *sk)
+ static inline pgste_t pgste_update_all(pte_t *ptep, pgste_t pgste)
+ {
+ #ifdef CONFIG_PGSTE
+@@ -704,17 +712,19 @@ static inline void pgste_set_key(pte_t *ptep, pgste_t pgste, pte_t entry)
+ {
+ #ifdef CONFIG_PGSTE
+ 	unsigned long address;
+-	unsigned long okey, nkey;
++	unsigned long nkey;
  
- #ifdef CONFIG_NET_LL_RX_POLL
- 	sk->sk_napi_id		=	0;
-+	sk->sk_ll_usec		=	sysctl_net_ll_poll;
+ 	if (pte_val(entry) & _PAGE_INVALID)
+ 		return;
++	VM_BUG_ON(!(pte_val(*ptep) & _PAGE_INVALID));
+ 	address = pte_val(entry) & PAGE_MASK;
+-	okey = nkey = page_get_storage_key(address);
+-	nkey &= ~(_PAGE_ACC_BITS | _PAGE_FP_BIT);
+-	/* Set page access key and fetch protection bit from pgste */
+-	nkey |= (pgste_val(pgste) & (RCP_ACC_BITS | RCP_FP_BIT)) >> 56;
+-	if (okey != nkey)
+-		page_set_storage_key(address, nkey, 0);
++	/*
++	 * Set page access key and fetch protection bit from pgste.
++	 * The guest C/R information is still in the PGSTE, set real
++	 * key C/R to 0.
++	 */
++	nkey = (pgste_val(pgste) & (RCP_ACC_BITS | RCP_FP_BIT)) >> 56;
++	page_set_storage_key(address, nkey, 0);
  #endif
+ }
  
- 	/*
-diff --git a/net/socket.c b/net/socket.c
-index caaffa1..3eec3f7 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -108,7 +108,6 @@
+@@ -1099,8 +1109,10 @@ static inline pte_t ptep_modify_prot_start(struct mm_struct *mm,
+ 	if (!mm_exclusive(mm))
+ 		__ptep_ipte(address, ptep);
  
- #ifdef CONFIG_NET_LL_RX_POLL
- unsigned int sysctl_net_ll_poll __read_mostly;
--EXPORT_SYMBOL_GPL(sysctl_net_ll_poll);
+-	if (mm_has_pgste(mm))
++	if (mm_has_pgste(mm)) {
+ 		pgste = pgste_update_all(&pte, pgste);
++		pgste_set(ptep, pgste);
++	}
+ 	return pte;
+ }
+ 
+diff --git a/arch/s390/kernel/dumpstack.c b/arch/s390/kernel/dumpstack.c
+index 2982974..87acc38 100644
+--- a/arch/s390/kernel/dumpstack.c
++++ b/arch/s390/kernel/dumpstack.c
+@@ -74,6 +74,8 @@ __show_trace(unsigned long sp, unsigned long low, unsigned long high)
+ 
+ static void show_trace(struct task_struct *task, unsigned long *stack)
+ {
++	const unsigned long frame_size =
++		STACK_FRAME_OVERHEAD + sizeof(struct pt_regs);
+ 	register unsigned long __r15 asm ("15");
+ 	unsigned long sp;
+ 
+@@ -82,11 +84,13 @@ static void show_trace(struct task_struct *task, unsigned long *stack)
+ 		sp = task ? task->thread.ksp : __r15;
+ 	printk("Call Trace:\n");
+ #ifdef CONFIG_CHECK_STACK
+-	sp = __show_trace(sp, S390_lowcore.panic_stack - 4096,
+-			  S390_lowcore.panic_stack);
++	sp = __show_trace(sp,
++			  S390_lowcore.panic_stack + frame_size - 4096,
++			  S390_lowcore.panic_stack + frame_size);
  #endif
+-	sp = __show_trace(sp, S390_lowcore.async_stack - ASYNC_SIZE,
+-			  S390_lowcore.async_stack);
++	sp = __show_trace(sp,
++			  S390_lowcore.async_stack + frame_size - ASYNC_SIZE,
++			  S390_lowcore.async_stack + frame_size);
+ 	if (task)
+ 		__show_trace(sp, (unsigned long) task_stack_page(task),
+ 			     (unsigned long) task_stack_page(task) + THREAD_SIZE);
+diff --git a/arch/s390/kernel/irq.c b/arch/s390/kernel/irq.c
+index f7fb589..408e866 100644
+--- a/arch/s390/kernel/irq.c
++++ b/arch/s390/kernel/irq.c
+@@ -311,3 +311,67 @@ void measurement_alert_subclass_unregister(void)
+ 	spin_unlock(&ma_subclass_lock);
+ }
+ EXPORT_SYMBOL(measurement_alert_subclass_unregister);
++
++void synchronize_irq(unsigned int irq)
++{
++	/*
++	 * Not needed, the handler is protected by a lock and IRQs that occur
++	 * after the handler is deleted are just NOPs.
++	 */
++}
++EXPORT_SYMBOL_GPL(synchronize_irq);
++
++#ifndef CONFIG_PCI
++
++/* Only PCI devices have dynamically-defined IRQ handlers */
++
++int request_irq(unsigned int irq, irq_handler_t handler,
++		unsigned long irqflags, const char *devname, void *dev_id)
++{
++	return -EINVAL;
++}
++EXPORT_SYMBOL_GPL(request_irq);
++
++void free_irq(unsigned int irq, void *dev_id)
++{
++	WARN_ON(1);
++}
++EXPORT_SYMBOL_GPL(free_irq);
++
++void enable_irq(unsigned int irq)
++{
++	WARN_ON(1);
++}
++EXPORT_SYMBOL_GPL(enable_irq);
++
++void disable_irq(unsigned int irq)
++{
++	WARN_ON(1);
++}
++EXPORT_SYMBOL_GPL(disable_irq);
++
++#endif /* !CONFIG_PCI */
++
++void disable_irq_nosync(unsigned int irq)
++{
++	disable_irq(irq);
++}
++EXPORT_SYMBOL_GPL(disable_irq_nosync);
++
++unsigned long probe_irq_on(void)
++{
++	return 0;
++}
++EXPORT_SYMBOL_GPL(probe_irq_on);
++
++int probe_irq_off(unsigned long val)
++{
++	return 0;
++}
++EXPORT_SYMBOL_GPL(probe_irq_off);
++
++unsigned int probe_irq_mask(unsigned long val)
++{
++	return val;
++}
++EXPORT_SYMBOL_GPL(probe_irq_mask);
+diff --git a/arch/s390/kernel/sclp.S b/arch/s390/kernel/sclp.S
+index b6506ee..29bd7be 100644
+--- a/arch/s390/kernel/sclp.S
++++ b/arch/s390/kernel/sclp.S
+@@ -225,7 +225,7 @@ _sclp_print:
+ 	ahi	%r2,1
+ 	ltr	%r0,%r0				# end of string?
+ 	jz	.LfinalizemtoS4
+-	chi	%r0,0x15			# end of line (NL)?
++	chi	%r0,0x0a			# end of line (NL)?
+ 	jz	.LfinalizemtoS4
+ 	stc	%r0,0(%r6,%r7)			# copy to mto
+ 	la	%r11,0(%r6,%r7)
+diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
+index e6f15b5..f1e5be8 100644
+--- a/arch/s390/pci/pci.c
++++ b/arch/s390/pci/pci.c
+@@ -302,15 +302,6 @@ static int zpci_cfg_store(struct zpci_dev *zdev, int offset, u32 val, u8 len)
+ 	return rc;
+ }
  
- static int sock_no_open(struct inode *irrelevant, struct file *dontcare);
+-void synchronize_irq(unsigned int irq)
+-{
+-	/*
+-	 * Not needed, the handler is protected by a lock and IRQs that occur
+-	 * after the handler is deleted are just NOPs.
+-	 */
+-}
+-EXPORT_SYMBOL_GPL(synchronize_irq);
+-
+ void enable_irq(unsigned int irq)
+ {
+ 	struct msi_desc *msi = irq_get_msi_desc(irq);
+@@ -327,30 +318,6 @@ void disable_irq(unsigned int irq)
+ }
+ EXPORT_SYMBOL_GPL(disable_irq);
+ 
+-void disable_irq_nosync(unsigned int irq)
+-{
+-	disable_irq(irq);
+-}
+-EXPORT_SYMBOL_GPL(disable_irq_nosync);
+-
+-unsigned long probe_irq_on(void)
+-{
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(probe_irq_on);
+-
+-int probe_irq_off(unsigned long val)
+-{
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(probe_irq_off);
+-
+-unsigned int probe_irq_mask(unsigned long val)
+-{
+-	return val;
+-}
+-EXPORT_SYMBOL_GPL(probe_irq_mask);
+-
+ void pcibios_fixup_bus(struct pci_bus *bus)
+ {
+ }
 
