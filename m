@@ -1,105 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758313Ab3FMOrz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 10:47:55 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:36501 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758030Ab3FMOrw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 10:47:52 -0400
-Date: Thu, 13 Jun 2013 15:47:26 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: Paul Walmsley <paul@pwsan.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Tony Lindgren <tony@atomide.com>, devicetree-discuss@lists.ozlabs.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-doc@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Message-ID: <20130613144726.GY1403@sirena.org.uk>
-References: <1369246717-4167-1-git-send-email-nm@ti.com>
- <1369246717-4167-2-git-send-email-nm@ti.com>
- <20130610103131.GR31367@sirena.org.uk>
- <CAGo_u6qTiPpd0DDe3jnPh_UxTwox22azhcMGy=fftL8H+DGeyw@mail.gmail.com>
- <20130610164905.GJ1403@sirena.org.uk>
- <CAGo_u6ov=yaCwt8apbvW57ErAvhgUBHHw9gwADBC1fJUrfucUQ@mail.gmail.com>
- <20130610180150.GQ1403@sirena.org.uk>
- <20130613133950.GA32174@kahuna>
+	id S1757080Ab3FMOuI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 10:50:08 -0400
+Received: from mga03.intel.com ([143.182.124.21]:62325 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751515Ab3FMOuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 10:50:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,859,1363158000"; 
+   d="scan'208";a="254548252"
+Message-ID: <51B9DC16.9020102@linux.intel.com>
+Date: Thu, 13 Jun 2013 17:49:58 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5LZCLy8Sy7WgNZQM"
-Content-Disposition: inline
-In-Reply-To: <20130613133950.GA32174@kahuna>
-X-Cookie: Tomorrow, you can be anywhere.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC PATCH 1/4] regulator: Introduce OMAP regulator to control
- PMIC over VC/VP
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: David Miller <davem@davemloft.net>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <erdnetdev@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Alex Rosenbaum <alexr@mellanox.com>,
+        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
+        sockperf-dev@googlegroups.com, Eliezer Tamir <eliezer@tamir.org.il>
+Subject: [PATCH] sockperf: add SO_LL socketop support
+References: <20130613144613.4875.46858.stgit@ladj378.jer.intel.com>
+In-Reply-To: <20130613144613.4875.46858.stgit@ladj378.jer.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add lls socket option support to sockperf.
+Right now we always get the option before set to show the option is 
+working properly. We should probably remove that in an official release.
+use --lls (value in usecs) to override global setting.
+---
 
---5LZCLy8Sy7WgNZQM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+  src/Defs.h       |    3 +++
+  src/SockPerf.cpp |   54 
++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+  2 files changed, 56 insertions(+), 1 deletions(-)
 
-On Thu, Jun 13, 2013 at 08:39:50AM -0500, Nishanth Menon wrote:
+diff --git a/src/Defs.h b/src/Defs.h
+index e38e3a4..87b45a0 100644
+--- a/src/Defs.h
++++ b/src/Defs.h
+@@ -161,6 +161,7 @@ enum {
+      OPT_OUTPUT_PRECISION,           //35
+      OPT_CLIENTPORT,                 //36
+      OPT_CLIENTIP,                   //37
++    OPT_LLS,            //38
+  };
 
-> I am having a bit of a difficulty trying to understand your concern
-> here.
+  #define MODULE_NAME            "sockperf"
+@@ -527,6 +528,8 @@ struct user_params_t {
+  //    bool stream_mode; - use b_stream instead
+      int mthread_server;
+      struct timeval* select_timeout;
++    unsigned long lls_usecs;
++    bool lls_is_set;
+      int sock_buff_size;
+      int threads_num;
+      char threads_affinity[MAX_ARGV_SIZE];
+diff --git a/src/SockPerf.cpp b/src/SockPerf.cpp
+index 41daf95..d76320f 100644
+--- a/src/SockPerf.cpp
++++ b/src/SockPerf.cpp
+@@ -207,6 +207,10 @@ static const AOPT_DESC  common_opt_desc[] =
+          "Limit the lifetime of the message (default 2)."
+      },
+      {
++        OPT_LLS, AOPT_ARG, aopt_set_literal( 0 ), aopt_set_string( "lls" ),
++        "Turn on LLS via socket option (value = us to poll)."
++    },
++    {
+          OPT_BUFFER_SIZE, AOPT_ARG, aopt_set_literal( 0 ), 
+aopt_set_string( "buffer-size" ),
+          "Set total socket receive/send buffer <size> in bytes (system 
+defined by default)."
+      },
+@@ -292,7 +296,7 @@ static int proc_mode_help( int id, int argc, const 
+char **argv )
+      int   i = 0;
 
-Your device tree for this stuff appears to mostly consist of repeating
-the description of the PMIC that we already have - this really doesn't
-seem like a great result.
+      printf(MODULE_NAME " is a tool for testing network latency and 
+throughput.\n");
+-    printf("version %s\n", STR(VERSION));
++    printf("version %s-lls\n", STR(VERSION));
+      printf("\n");
+      printf("Usage: " MODULE_NAME " <subcommand> [options] [args]\n");
+      printf("Type: \'" MODULE_NAME " <subcommand> --help\' for help on 
+a specific subcommand.\n");
+@@ -1789,6 +1793,26 @@ static int parse_common_opt( const AOPT_OBJECT 
+*common_obj )
+              s_user_params.is_nonblocked_send = true;
+          }
 
-> Problem statement:
++        if ( !rc && aopt_check(common_obj, OPT_LLS) ) {
++            const char* optarg = aopt_value(common_obj, OPT_LLS);
++            if (optarg) {
++                errno = 0;
++                int value = strtoul(optarg, NULL, 0);
++                if (errno != 0 || value < 0) {
++                    log_msg("'-%d' Invalid LLS value: %s", OPT_LLS, 
+optarg);
++                    rc = SOCKPERF_ERR_BAD_ARGUMENT;
++                }
++                else {
++                    s_user_params.lls_usecs = value;
++                    s_user_params.lls_is_set = true;
++                }
++            }
++            else {
++                log_msg("'-%d' Invalid value", OPT_LLS);
++                rc = SOCKPERF_ERR_BAD_ARGUMENT;
++            }
++        }
++
+          if ( !rc && aopt_check(common_obj, OPT_RECV_LOOPING) ) {
 
-> OMAP has this weird custom h/w where one programs the voltage and that
-> voltage is send over i2c - this is not same as Tegra's lookup table
-> array which automatically sends out entries, in OMAP, software has to trigger
-> the voltage transition
+              const char* optarg = aopt_value(common_obj, OPT_RECV_LOOPING);
+@@ -2296,6 +2320,29 @@ int sock_set_reuseaddr(int fd)
+      return rc;
+  }
 
-The basic idea that's important here is that you need to figure out how
-to tell the hardware what to write - how those writes get triggered is a
-separate problem.
++#ifndef SO_LL
++#define SO_LL 46
++#endif
++int sock_set_lls(int fd)
++{
++    int rc = SOCKPERF_ERR_NONE;
++    unsigned long lls;
++    int size = sizeof(lls);
++
++    if(getsockopt(fd, SOL_SOCKET, SO_LL, &lls, (socklen_t *)&size) < 0){
++        log_err("getsockopt(SO_LL) failed");
++        return SOCKPERF_ERR_SOCKET;
++    } else
++        log_msg("socket option SO_LL default was %lu, changing to %lu", 
+lls, s_user_params.lls_usecs);
++
++    if (setsockopt(fd, SOL_SOCKET, SO_LL, &(s_user_params.lls_usecs), 
+sizeof(s_user_params.lls_usecs)) < 0) {
++        log_err("setsockopt(SO_LL) failed");
++        rc = SOCKPERF_ERR_SOCKET;
++    }
++    return rc;
++}
++
++
+  int sock_set_snd_rcv_bufs(int fd)
+  {
+      /*
+@@ -2460,6 +2507,11 @@ int prepare_socket(int fd, struct fds_data *p_data)
+      }
 
-> If your concern was describing PMIC parameters in dts, I can easily move
-> them inside the omap_pmic driver and provide required compatible flags.
-> If, on the other hand, the entire approach followed is flawed, I'd like to
-> understand the rationale for the same.
+      if (!rc &&
++            (s_user_params.lls_is_set == true))
++    {
++        rc = sock_set_lls(fd);
++    }
++    if (!rc &&
+              (s_user_params.sock_buff_size > 0))
+      {
+          rc = sock_set_snd_rcv_bufs(fd);
 
-That's the biggest problem I saw so far but to be honest I've not
-drilled down too much into the specifics.  From my point of view the
-main thing is how this fits into the frameworks and so on, having the
-register information in the DT was an alarm flag that suggested the
-overall approach was a concern.
 
---5LZCLy8Sy7WgNZQM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRudt7AAoJELSic+t+oim9cMgP/jISyaqjXOWlKr5a3glq/Z+n
-ryTsbnEsFKBqKwK2NyKkcypjbkWp5hzHwhZM+QHqpLyeunfRbJu+8Y7Zg+E99EAf
-jiIFhLJ8kZllQZJFlhHnvX54dS38p6/0O3vM4OcR4OsjmIHjPDYhgqFbmVTWogKP
-Am/JZOtYXg6yMtzZRW+TwV30FmlO6rm8YZ5aejtC6kH45EobKWeXI3wcRSvYeJYU
-lbSTid1x4gvNzHzTps6l/06lFl2RE3/w0abNCrF9YxvP99Mr7I5Q0X6ABFQHUj7G
-0St4X9QCmM9ySy26tLVh4lDqBwem/6P1m67xrg50+TVzxRn97ejEFnwXPPXwhoKT
-rHy/KfHYg+Cu/JPF2h+88yfSZoN722bP8e/2akGY/Kv4ZGAkUpbCX7Lj6bbMyu/R
-bFQW1d0bCn9WqbevBgG4VrDqzrCOx0gALgXSQnPIY9E7b79s+yZsTuS9rf4VS06U
-9ekPl8NXphKkF+vIiou60zifHB+5mfcMHxLgWGu6z4H0ssgTT2da5DL58NmP40gZ
-TN2HxNeBMaTDMLIlEOLgRV/WUUnT6GMXeDTY1LkeARs79+gMoHjF/do+4DuG1tDy
-hI33kNKyps0YK2hq/9Jfos3sX3kXYKMnGv5cbLUF0V+nTqQPdrcEEXEo5ie5sTYN
-4JoRvvUwmeORCCAqVkk8
-=L0BV
------END PGP SIGNATURE-----
 
---5LZCLy8Sy7WgNZQM--
+
