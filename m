@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758477Ab3FMPbV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 11:31:21 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:61034 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752814Ab3FMPbR (ORCPT
+	id S1758119Ab3FMPbr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 11:31:47 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:63116 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752196Ab3FMPbq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 11:31:17 -0400
-Message-ID: <1371137471.3252.110.camel@edumazet-glaptop>
-Subject: Re: [PATCH v3 net-next 3/4] net: change sysctl_net_ll_poll into an
- unsigned int
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
-        Alex Rosenbaum <alexr@mellanox.com>,
-        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
-        sockperf-dev@googlegroups.com, Eliezer Tamir <eliezer@tamir.org.il>
-Date: Thu, 13 Jun 2013 08:31:11 -0700
-In-Reply-To: <20130613144645.4875.47741.stgit@ladj378.jer.intel.com>
-References: <20130613144613.4875.46858.stgit@ladj378.jer.intel.com>
-	 <20130613144645.4875.47741.stgit@ladj378.jer.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 13 Jun 2013 11:31:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <201306131635.21446.heiko@sntech.de>
+References: <201306102139.32444.heiko@sntech.de>
+	<201306130022.29341.heiko@sntech.de>
+	<CACRpkdb-vbdQJOeZvCEsKLatK-0BhEfUTJqmGURJGf1NWx__Ew@mail.gmail.com>
+	<201306131635.21446.heiko@sntech.de>
+Date: Thu, 13 Jun 2013 17:31:45 +0200
+Message-ID: <CACRpkdZw+3BQdVm2w6wzqy5LFO0Yw8avQLiB0hxtspvShPbk0A@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pinctrl: add function to parse generic pinconfig
+ properties from a dt node
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: James Hogan <james.hogan@imgtec.com>,
+        Patrice Chotard <patrice.chotard.st@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-13 at 17:46 +0300, Eliezer Tamir wrote:
-> There is no reason for sysctl_net_ll_poll to be an unsigned long.
-> Change it into an unsigned int.
-> Fix the proc handler.
-> 
-> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-> ---
-> 
->  include/net/ll_poll.h      |    2 +-
->  net/core/sysctl_net_core.c |    4 ++--
->  net/socket.c               |    2 +-
->  3 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/include/net/ll_poll.h b/include/net/ll_poll.h
-> index c75a611..9f7007f 100644
-> --- a/include/net/ll_poll.h
-> +++ b/include/net/ll_poll.h
-> @@ -30,7 +30,7 @@
->  #ifdef CONFIG_NET_LL_RX_POLL
->  
->  struct napi_struct;
-> -extern unsigned long sysctl_net_ll_poll __read_mostly;
-> +extern unsigned int sysctl_net_ll_poll __read_mostly;
->  
+On Thu, Jun 13, 2013 at 4:35 PM, Heiko Stübner <heiko@sntech.de> wrote:
+> Am Donnerstag, 13. Juni 2013, 10:11:28 schrieb Linus Walleij:
+>> Tisdagen den 13:e Juni 2013 klock 12:22 AM, skrev Heiko Stübner
 
-Oh well, you re-introduce the overflow
+>> > The only other candidate I could find was low-power-mode which really
+>> > could use a "1" as default. All the other pinconf options either use
+>> > custom arguments or ignore teir argument.
+>>
+>> A "1" for what? Not quite following....
+>
+> According to the pinconf header docs, low-power-mode also expects an argument
+> of 1 or 0. So it's default value should change too ... or we could rename the
+> property, like "low-power-enable" and "low-power-disable", which might make
+> the dt more readable than an arbitary low-power-mode = <0>;
 
-hint : you defined 
+Oh yes, sorry, of course. Go ahead with this.
 
-#define USECS_TO_NS(us) (us << 10)
-
-
+Yours,
+Linus Walleij
