@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759391Ab3FMWLW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 18:11:22 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:61756 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759324Ab3FMWLU (ORCPT
+	id S1759401Ab3FMWMy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 18:12:54 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:47180 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757884Ab3FMWMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 18:11:20 -0400
+	Thu, 13 Jun 2013 18:12:53 -0400
+Message-ID: <51BA43DC.7050805@gmail.com>
+Date: Thu, 13 Jun 2013 23:12:44 +0100
+From: Dave Kilroy <kilroyd@googlemail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <51BA2FF4.6000604@zytor.com>
-References: <1371149617-17880-1-git-send-email-yinghai@kernel.org>
-	<51BA2FF4.6000604@zytor.com>
-Date: Thu, 13 Jun 2013 15:11:20 -0700
-X-Google-Sender-Auth: xC3WUrz6dQZMckAOq5eH0ETecWM
-Message-ID: <CAE9FiQUbQg6aFA3CQWaB8bqaY0jN6mEOQ9x-3vw1H9cV3wO75w@mail.gmail.com>
-Subject: Re: [PATCH] x86: Fix /proc/mtrr with base/size more than 44bits
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+CC: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: Re: [PATCH] orinoco_usb: fix memory leak in ezusb_access_ltv() when
+ device disconnected
+References: <1371155171-15398-1-git-send-email-khoroshilov@ispras.ru>
+In-Reply-To: <1371155171-15398-1-git-send-email-khoroshilov@ispras.ru>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 1:47 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 06/13/2013 11:53 AM, Yinghai Lu wrote:
->>
->> -     if (base & size_or_mask || size & size_or_mask) {
->> +     if (base >> (boot_cpu_data.x86_phys_bits - PAGE_SHIFT) ||
->> +         base > (base + size) ||
->> +         (base + size - 1) >> (boot_cpu_data.x86_phys_bits - PAGE_SHIFT)) {
->>               pr_warning("mtrr: base or size exceeds the MTRR width\n");
->>               return -EINVAL;
->>       }
+On 13/06/2013 21:26, Alexey Khoroshilov wrote:
+> If "device is disconnected" check occurs to be true in ezusb_access_ltv(),
+> it just return -ENODEV. But that means request_context is leaked since
+> there are no any references to it anymore.
+> The patch adds a call to ezusb_request_context_put() before return.
 >
-> Most of this patch looks good as far as being a minimal patch, but I'm
-> really confused about this bit.  Could you explain the reason for why
-> the original doesn't work?  (To be fair: I am not even sure the original
-> does anything useful so it could just be a "this is just too broken to
-> live" kind of thing.)
-
-all because I update size_of_mask for old cpus that does not have
-cpuid 80000008.
-by make high 32bits to be all 1s. otherwise size = -mask trick will not work.
-
-then check those range size_or_mask using, found that is not right.
-
-as base and size could be all small, but base + size -1 could be big enough.
-then the original will not detect that is out of boundary.
-
-also we could even use x86_phys_bits directly.
-
+> Found by Linux Driver Verification project (linuxtesting.org).
 >
-> The first and third clause of the test can be simplified, however:
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+> ---
+>   drivers/net/wireless/orinoco/orinoco_usb.c | 3 ++-
+>   1 file changed, 2 insertions(+), 1 deletion(-)
 >
->         (base | (base + size - 1)) >> (boot_cpu_data.x86_phys_bits - PAGE_SHIFT)
->
-> ... although it would be cleaner to put boot_cpu_data.x86_phys_bits -
-> PAGE_SHIFT into a variable.
+> diff --git a/drivers/net/wireless/orinoco/orinoco_usb.c b/drivers/net/wireless/orinoco/orinoco_usb.c
+> index 1f9cb55..bdfe637 100644
+> --- a/drivers/net/wireless/orinoco/orinoco_usb.c
+> +++ b/drivers/net/wireless/orinoco/orinoco_usb.c
+> @@ -881,7 +881,8 @@ static int ezusb_access_ltv(struct ezusb_priv *upriv,
+>   
+>   	if (!upriv->udev) {
+>   		dbg("Device disconnected");
+> -		return -ENODEV;
+> +		retval = -ENODEV;
+> +		goto exit;
+>   	}
+>   
+>   	if (upriv->read_urb->status != -EINPROGRESS)
+It looks like there is also loss of a request_context in
+ezusb_xmit after orinoco_process_xmit_skb fails. Something like
+the following should resolve it.
 
-Yes.
+The remaining request_context allocations look ok to me.
 
-also we can drop base > (base + size) checking, as
-base and size are already shifted with PAGE_SHIFT to pfn.
-so base+size can not be wrapped.
 
->
-> A lot of the mask_hi/mask_lo stuff should just get removed by using
-> rdmsrl/wrmsrl, but that is not stable material obviously.
+Dave.
+---
+Apologies, this is cut+paste from an old tree and mangled to be
+diff-like. Untested. Uncompiled.
 
-yes.
+diff a/drivers/net/wireless/orinoco/orinoco_usb.c 
+b/drivers/net/wireless/orinoco/orinoco_usb.c
+--- a/drivers/net/wireless/orinoco/orinoco_usb.c
++++ b/drivers/net/wireless/orinoco/orinoco_usb.c
+@@ -1194,8 +1194,10 @@ static netdev_tx_t ezusb_xmit(struct sk_buff 
+*skb, struct net_device *dev)
 
-will send updated version shortly.
+     err = orinoco_process_xmit_skb(skb, dev, priv, &tx_control,
+                        &mic[0]);
+-    if (err)
++    if (err) {
++        ezusb_request_context_put(ctx);
+         goto drop;
++    }
 
-Thanks
+     {
+         __le16 *tx_cntl = (__le16 *)buf;
 
-Yinghai
