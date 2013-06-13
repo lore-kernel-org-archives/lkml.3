@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759248Ab3FMSeH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 14:34:07 -0400
-Received: from etezian.org ([198.101.225.253]:56453 "EHLO mail.etezian.org"
+	id S1759235Ab3FMSeF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 14:34:05 -0400
+Received: from etezian.org ([198.101.225.253]:56454 "EHLO mail.etezian.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758902Ab3FMS27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758940Ab3FMS27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 13 Jun 2013 14:28:59 -0400
 From: Andi Shyti <andi@etezian.org>
 To: arnd@arndb.de, gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, pc@asdf.org, oatilla@gmail.com,
         andi@etezian.org
-Subject: [PATCH 06/19] bh1770glc: removed proximity adjustement
-Date: Thu, 13 Jun 2013 20:20:40 +0200
-Message-Id: <d25d18b95b7788712d2c7cd999a589c2b1e0c9d6.1371145891.git.andi@etezian.org>
+Subject: [PATCH 01/19] bh1770glc: added input device interface
+Date: Thu, 13 Jun 2013 20:20:35 +0200
+Message-Id: <90a9ed312d038eda11648a6ed49bb968824bf875.1371145891.git.andi@etezian.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1371145891.git.andi@etezian.org>
 References: <cover.1371145891.git.andi@etezian.org>
@@ -22,97 +22,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-proximity sensor doesn't need to be adjusted; removed all the
-overcode used for the proximity coefficients
+The driver generates an event in /dev/input/ under the name
+'bh1770'. It's a switch event where is reported '0' or '1'
+whenever the sensor detects something crossing the threshold.
 
+Signed-off-by: Onur Atilla <oatilla@gmail.com>
+Signed-off-by: Phil Carmody <pc@asdf.org>
 Signed-off-by: Andi Shyti <andi@etezian.org>
 ---
- drivers/misc/bh1770glc.c |   39 ++-------------------------------------
- 1 file changed, 2 insertions(+), 37 deletions(-)
+ drivers/misc/bh1770glc.c |   58 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 57 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/misc/bh1770glc.c b/drivers/misc/bh1770glc.c
-index 53f3c17..05769e3 100644
+index f4975f7..d60b317 100644
 --- a/drivers/misc/bh1770glc.c
 +++ b/drivers/misc/bh1770glc.c
-@@ -165,7 +165,6 @@ struct bh1770_chip {
- 	u8	prox_persistence_counter;
- 	u8	prox_data;
- 	u8	prox_threshold;
--	u8	prox_threshold_hw;
+@@ -34,6 +34,7 @@
+ #include <linux/delay.h>
+ #include <linux/wait.h>
+ #include <linux/slab.h>
++#include <linux/input.h>
+ 
+ #define BH1770_ALS_CONTROL	0x80 /* ALS operation mode control */
+ #define BH1770_PS_CONTROL	0x81 /* PS operation mode control */
+@@ -168,6 +169,8 @@ struct bh1770_chip {
  	bool	prox_force_update;
  	u8	prox_abs_thres;
  	u8	prox_led;
-@@ -254,33 +253,6 @@ static inline int bh1770_led_cfg(struct bh1770_chip *chip)
- 					chip->prox_led);
++
++	struct input_dev *input_dev;
+ };
+ 
+ static const char reg_vcc[] = "Vcc";
+@@ -461,6 +464,11 @@ static int bh1770_prox_mode_control(struct bh1770_chip *chip)
+ 	return 0;
  }
  
--/*
-- * Following two functions converts raw ps values from HW to normalized
-- * values. Purpose is to compensate differences between different sensor
-- * versions and variants so that result means about the same between
-- * versions.
-- */
--static inline u8 bh1770_psraw_to_adjusted(struct bh1770_chip *chip, u8 psraw)
--{
--	u16 adjusted;
--	adjusted = (u16)(((u32)(psraw + chip->prox_const) * chip->prox_coef) /
--		BH1770_COEF_SCALER);
--	if (adjusted > BH1770_PROX_RANGE)
--		adjusted = BH1770_PROX_RANGE;
--	return adjusted;
--}
--
--static inline u8 bh1770_psadjusted_to_raw(struct bh1770_chip *chip, u8 ps)
--{
--	u16 raw;
--
--	raw = (((u32)ps * BH1770_COEF_SCALER) / chip->prox_coef);
--	if (raw > chip->prox_const)
--		raw = raw - chip->prox_const;
--	else
--		raw = 0;
--	return raw;
--}
- 
- /*
-  * Following two functions converts raw lux values from HW to normalized
-@@ -290,17 +262,12 @@ static inline u8 bh1770_psadjusted_to_raw(struct bh1770_chip *chip, u8 ps)
-  */
- static int bh1770_prox_set_threshold(struct bh1770_chip *chip)
++static void bh1770_report_input_value(struct bh1770_chip *chip, int val)
++{
++	input_report_switch(chip->input_dev, SW_FRONT_PROXIMITY, val);
++}
++
+ /* chip->mutex is kept when this is called */
+ static int bh1770_prox_read_result(struct bh1770_chip *chip)
  {
--	u8 tmp = 0;
--
- 	/* sysfs may call this when the chip is powered off */
- 	if (pm_runtime_suspended(&chip->client->dev))
- 		return 0;
+@@ -506,13 +514,13 @@ static int bh1770_prox_read_result(struct bh1770_chip *chip)
+ 	} else {
+ 		chip->prox_persistence_counter = 0;
+ 		mode = PROX_BELOW_THRESHOLD;
+-		chip->prox_data = 0;
+ 		ret = 0;
+ 	}
  
--	tmp = bh1770_psadjusted_to_raw(chip, chip->prox_threshold);
--	chip->prox_threshold_hw = tmp;
--
- 	return	i2c_smbus_write_byte_data(chip->client, BH1770_PS_TH_LED1,
--					tmp);
-+					chip->prox_threshold);
+ 	/* Set proximity detection rate based on above or below value */
+ 	if (ret == 0) {
+ 		bh1770_prox_rate(chip, mode);
++		bh1770_report_input_value(chip, mode);
+ 		sysfs_notify(&chip->client->dev.kobj, NULL, "prox0_raw");
+ 	}
+ out:
+@@ -818,6 +826,42 @@ static int bh1770_prox_rate_validate(int rate)
+ 	return i;
  }
  
- static inline u16 bh1770_lux_raw_to_adjusted(struct bh1770_chip *chip, u16 raw)
-@@ -487,7 +454,7 @@ static int bh1770_prox_read_result(struct bh1770_chip *chip)
- 	if (ret < 0)
- 		goto out;
++static void bh1770_input_cleanup(struct bh1770_chip *chip)
++{
++	input_unregister_device(chip->input_dev);
++}
++
++static int bh1770_input_init(struct bh1770_chip *chip)
++{
++	int err;
++
++	chip->input_dev = input_allocate_device();
++	if (!chip->input_dev) {
++		err = -ENOMEM;
++		goto alloc_err;
++	}
++
++	chip->input_dev->id.bustype = BUS_I2C;
++	chip->input_dev->dev.parent = &chip->client->dev;
++	chip->input_dev->name = "bh1770glc";
++
++	input_set_drvdata(chip->input_dev, chip);
++
++	set_bit(EV_SW, chip->input_dev->evbit);
++	set_bit(SW_FRONT_PROXIMITY, chip->input_dev->swbit);
++
++	err = input_register_device(chip->input_dev);
++	if (err)
++		goto reg_err;
++
++	return 0;
++
++reg_err:
++	input_free_device(chip->input_dev);
++alloc_err:
++	return err;
++}
++
+ static ssize_t bh1770_set_prox_rate_above(struct device *dev,
+ 					struct device_attribute *attr,
+ 					const char *buf, size_t count)
+@@ -1246,6 +1290,13 @@ static int bh1770_probe(struct i2c_client *client,
+ 		}
+ 	}
  
--	if (ret > chip->prox_threshold_hw)
-+	if (ret > chip->prox_threshold)
- 		above = true;
- 	else
- 		above = false;
-@@ -500,8 +467,6 @@ static int bh1770_prox_read_result(struct bh1770_chip *chip)
- 	if (chip->lux_data_raw > PROX_IGNORE_LUX_LIMIT)
- 		ret = 0;
++	err = bh1770_input_init(chip);
++	if (err < 0) {
++		dev_err(&client->dev,
++				"impossible to allocate input event device\n");
++		goto no_input_dev;
++	}
++
+ 	err = sysfs_create_group(&chip->client->dev.kobj,
+ 				&bh1770_attribute_group);
+ 	if (err < 0) {
+@@ -1274,6 +1325,8 @@ fail5:
+ 	sysfs_remove_group(&chip->client->dev.kobj,
+ 			&bh1770_attribute_group);
+ fail4:
++	bh1770_input_cleanup(chip);
++no_input_dev:
+ 	if (chip->pdata->release_resources)
+ 		chip->pdata->release_resources();
+ fail3:
+@@ -1294,6 +1347,9 @@ static int bh1770_remove(struct i2c_client *client)
+ 	sysfs_remove_group(&chip->client->dev.kobj,
+ 			&bh1770_attribute_group);
  
--	chip->prox_data = bh1770_psraw_to_adjusted(chip, ret);
--
- 	/* Strong proximity level or force mode requires immediate response */
- 	if (chip->prox_data >= chip->prox_abs_thres ||
- 	    chip->prox_force_update)
++	/* input interface cleanup */
++	bh1770_input_cleanup(chip);
++
+ 	if (chip->pdata->release_resources)
+ 		chip->pdata->release_resources();
+ 
 -- 
 1.7.10.4
 
