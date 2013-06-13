@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759222Ab3FMU7p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 16:59:45 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:60261 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757738Ab3FMU7n (ORCPT
+	id S1757793Ab3FMVGg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 17:06:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37787 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999Ab3FMVGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 16:59:43 -0400
-Message-ID: <1371157181.2261.8.camel@dabdike>
-Subject: Re: [PATCH] dma-mapping: Add BUG_ON for uninitialized dma_ops
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Simek <monstr@monstr.eu>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Date: Thu, 13 Jun 2013 13:59:41 -0700
-In-Reply-To: <201306121706.39368.arnd@arndb.de>
-References: <f35c5051a207b0a117f2fff27365d0ea892d1610.1370263476.git.michal.simek@xilinx.com>
-	 <51B703D7.8050804@samsung.com> <1370958858.2286.5.camel@dabdike>
-	 <201306121706.39368.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.2 
+	Thu, 13 Jun 2013 17:06:35 -0400
+Date: Thu, 13 Jun 2013 14:06:32 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: torvalds@linux-foundation.org, roland@kernel.org, mingo@kernel.org,
+        tglx@linutronix.de, kosaki.motohiro@gmail.com, penberg@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-rdma@vger.kernel.org, Mike Marciniszyn <infinipath@intel.com>
+Subject: Re: [PATCH] mm: Revert pinned_vm braindamage
+Message-Id: <20130613140632.15982af2ebc443b24bfff86a@linux-foundation.org>
+In-Reply-To: <20130606124351.GZ27176@twins.programming.kicks-ass.net>
+References: <20130606124351.GZ27176@twins.programming.kicks-ass.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-06-12 at 17:06 +0200, Arnd Bergmann wrote:
-> On Tuesday 11 June 2013, James Bottomley wrote:
-> > Really, no, it's not a good idea at all.  It invites tons of patches
-> > littering the code with BUG_ONs where we might possibly get a NULL
-> > dereference.  All it does is add extra instructions to a code path for
-> > no actual benefit.
-> > 
-> > If you can answer the question: what more information does the BUG_ON
-> > give you than the NULL deref Oops would not? then it might be
-> > reasonable.
+Let's try to get this wrapped up?
+
+On Thu, 6 Jun 2013 14:43:51 +0200 Peter Zijlstra <peterz@infradead.org> wrote:
+
 > 
-> The question is if a user can trigger the NULL dereference intentionally,
-> in which case they might get the kernel to jump into a  user-provided
-> buffer.
+> Patch bc3e53f682 ("mm: distinguish between mlocked and pinned pages")
+> broke RLIMIT_MEMLOCK.
 
-Can you elaborate on how they could do this?  If you're thinking they
-could alter the pointer and trigger the jump, then yes, but a BUG_ON
-won't prevent that because the altered pointer won't be NULL.
+I rather like what bc3e53f682 did, actually.  RLIMIT_MEMLOCK limits the
+amount of memory you can mlock().  Nice and simple.
 
-James
+This pinning thing which infiniband/perf are doing is conceptually
+different and if we care at all, perhaps we should be looking at adding
+RLIMIT_PINNED.
+
+> Before that patch: mm_struct::locked_vm < RLIMIT_MEMLOCK; after that
+> patch we have: mm_struct::locked_vm < RLIMIT_MEMLOCK &&
+> mm_struct::pinned_vm < RLIMIT_MEMLOCK.
+
+But this is a policy decision which was implemented in perf_mmap() and
+perf can alter that decision.  How bad would it be if perf just ignored
+RLIMIT_MEMLOCK?
 
 
+drivers/infiniband/hw/qib/qib_user_pages.c has issues, btw.  It
+compares the amount-to-be-pinned with rlimit(RLIMIT_MEMLOCK), but
+forgets to also look at current->mm->pinned_vm.  Duh.
+
+It also does the pinned accounting in __qib_get_user_pages() but in
+__qib_release_user_pages(), the caller is supposed to do it, which is
+rather awkward.
+
+
+Longer-term I don't think that inifinband or perf should be dinking
+around with rlimit(RLIMIT_MEMLOCK) or ->pinned_vm.  Those policy
+decisions should be hoisted into a core mm helper where we can do it
+uniformly (and more correctly than infiniband's attempt!).
 
