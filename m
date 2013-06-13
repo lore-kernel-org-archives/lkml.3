@@ -1,263 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932690Ab3FMI1r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 04:27:47 -0400
-Received: from ja.ssi.bg ([178.16.129.10]:49950 "EHLO ja.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758321Ab3FMI1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 04:27:45 -0400
-Date: Thu, 13 Jun 2013 11:32:11 +0300 (EEST)
-From: Julian Anastasov <ja@ssi.bg>
-To: Alexander Frolkin <avf@eldamar.org.uk>
-cc: lvs-devel@vger.kernel.org, Wensong Zhang <wensong@linux-vs.org>,
-        Simon Horman <horms@verge.net.au>, netdev@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ipvs: sloppy TCP and SCTP
-In-Reply-To: <20130613075615.GA29773@eldamar.org.uk>
-Message-ID: <alpine.LFD.2.00.1306131121470.1680@ja.ssi.bg>
-References: <20130612104754.GA29327@eldamar.org.uk> <20130613075615.GA29773@eldamar.org.uk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S932695Ab3FMIan (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 04:30:43 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:53871 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932663Ab3FMIak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 04:30:40 -0400
+Message-ID: <51B98301.9090404@ti.com>
+Date: Thu, 13 Jun 2013 13:59:53 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Philip, Avinash" <avinashphilip@ti.com>
+CC: "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/11] gpio: davinci: Modify to platform driver
+References: <1369206634-6778-1-git-send-email-avinashphilip@ti.com> <1369206634-6778-4-git-send-email-avinashphilip@ti.com> <51B71056.9010103@ti.com> <518397C60809E147AF5323E0420B992E3EAD9D75@DBDE04.ent.ti.com> <51B826BF.7050009@ti.com> <518397C60809E147AF5323E0420B992E3EADA252@DBDE04.ent.ti.com> <51B96410.7000807@ti.com> <518397C60809E147AF5323E0420B992E3EADA883@DBDE04.ent.ti.com>
+In-Reply-To: <518397C60809E147AF5323E0420B992E3EADA883@DBDE04.ent.ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 6/13/2013 1:02 PM, Philip, Avinash wrote:
 
-	Hello,
-
-On Thu, 13 Jun 2013, Alexander Frolkin wrote:
-
-> This adds support for sloppy TCP and SCTP modes to IPVS.
+> With tnetv107x_defconfig build is failing
 > 
-> When enabled (sysctls net.ipv4.vs.sloppy_tcp and
-> net.ipv4.vs.sloppy_sctp), allows IPVS to create connection state on any
-> packet, not just a TCP SYN (or SCTP INIT).
+> arch/arm/mach-davinci/board-tnetv107x-evm.c:282:15: error:
+>  'davinci_timer_init' undeclared here (not in a function)
+> arch/arm/mach-davinci/board-tnetv107x-evm.c:284:15: error:
+>  'davinci_init_late' undeclared here (not in a function)
+> make[1]: *** [arch/arm/mach-davinci/board-tnetv107x-evm.o] Error 1
 > 
-> This allows connections to fail over from one IPVS director to another
-> mid-flight.
+> Following patch fixes the build above breakage
+
+The error you are seeing and the patch you provided below have no
+correlation.
+
 > 
-> Signed-off-by: Alexander Frolkin <avf@eldamar.org.uk>
-
-	Thanks! Simon, please apply to ipvs-next tree!
-
-Signed-off-by: Julian Anastasov <ja@ssi.bg>
-
-> ---
-> The patch is against the ipvs-next tree.
+> diff --git a/arch/arm/mach-davinci/board-tnetv107x-evm.c b/arch/arm/mach-davinci/board-tnetv107x-evm.c
+> index ba79837..4a9c320 100644
+> --- a/arch/arm/mach-davinci/board-tnetv107x-evm.c
+> +++ b/arch/arm/mach-davinci/board-tnetv107x-evm.c
+> @@ -30,6 +30,7 @@
+>  #include <asm/mach/arch.h>
+>  #include <asm/mach-types.h>
 > 
-> diff --git a/include/net/ip_vs.h b/include/net/ip_vs.h
-> index 4405886..22bea5d 100644
-> --- a/include/net/ip_vs.h
-> +++ b/include/net/ip_vs.h
-> @@ -1002,6 +1002,8 @@ struct netns_ipvs {
->  	int			sysctl_sync_sock_size;
->  	int			sysctl_cache_bypass;
->  	int			sysctl_expire_nodest_conn;
-> +	int			sysctl_sloppy_tcp;
-> +	int			sysctl_sloppy_sctp;
->  	int			sysctl_expire_quiescent_template;
->  	int			sysctl_sync_threshold[2];
->  	unsigned int		sysctl_sync_refresh_period;
-> @@ -1044,6 +1046,8 @@ struct netns_ipvs {
->  #define DEFAULT_SYNC_THRESHOLD	3
->  #define DEFAULT_SYNC_PERIOD	50
->  #define DEFAULT_SYNC_VER	1
-> +#define DEFAULT_SLOPPY_TCP	0
-> +#define DEFAULT_SLOPPY_SCTP	0
->  #define DEFAULT_SYNC_REFRESH_PERIOD	(0U * HZ)
->  #define DEFAULT_SYNC_RETRIES		0
->  #define IPVS_SYNC_WAKEUP_RATE	8
-> @@ -1080,6 +1084,16 @@ static inline int sysctl_sync_ver(struct netns_ipvs *ipvs)
->  	return ipvs->sysctl_sync_ver;
->  }
->  
-> +static inline int sysctl_sloppy_tcp(struct netns_ipvs *ipvs)
-> +{
-> +	return ipvs->sysctl_sloppy_tcp;
-> +}
-> +
-> +static inline int sysctl_sloppy_sctp(struct netns_ipvs *ipvs)
-> +{
-> +	return ipvs->sysctl_sloppy_sctp;
-> +}
-> +
->  static inline int sysctl_sync_ports(struct netns_ipvs *ipvs)
->  {
->  	return ACCESS_ONCE(ipvs->sysctl_sync_ports);
-> @@ -1133,6 +1147,16 @@ static inline int sysctl_sync_ver(struct netns_ipvs *ipvs)
->  	return DEFAULT_SYNC_VER;
->  }
->  
-> +static inline int sysctl_sloppy_tcp(struct netns_ipvs *ipvs)
-> +{
-> +	return DEFAULT_SLOPPY_TCP;
-> +}
-> +
-> +static inline int sysctl_sloppy_sctp(struct netns_ipvs *ipvs)
-> +{
-> +	return DEFAULT_SLOPPY_SCTP;
-> +}
-> +
->  static inline int sysctl_sync_ports(struct netns_ipvs *ipvs)
->  {
->  	return 1;
-> diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
-> index 7014649..04f8cbc 100644
-> --- a/net/netfilter/ipvs/ip_vs_ctl.c
-> +++ b/net/netfilter/ipvs/ip_vs_ctl.c
-> @@ -1739,6 +1739,18 @@ static struct ctl_table vs_vars[] = {
->  		.proc_handler	= proc_dointvec,
->  	},
->  	{
-> +		.procname	= "sloppy_tcp",
-> +		.maxlen		= sizeof(int),
-> +		.mode		= 0644,
-> +		.proc_handler	= proc_dointvec,
-> +	},
-> +	{
-> +		.procname	= "sloppy_sctp",
-> +		.maxlen		= sizeof(int),
-> +		.mode		= 0644,
-> +		.proc_handler	= proc_dointvec,
-> +	},
-> +	{
->  		.procname	= "expire_quiescent_template",
->  		.maxlen		= sizeof(int),
->  		.mode		= 0644,
-> @@ -3722,6 +3734,8 @@ static int __net_init ip_vs_control_net_init_sysctl(struct net *net)
->  	tbl[idx++].data = &ipvs->sysctl_sync_sock_size;
->  	tbl[idx++].data = &ipvs->sysctl_cache_bypass;
->  	tbl[idx++].data = &ipvs->sysctl_expire_nodest_conn;
-> +	tbl[idx++].data = &ipvs->sysctl_sloppy_tcp;
-> +	tbl[idx++].data = &ipvs->sysctl_sloppy_sctp;
->  	tbl[idx++].data = &ipvs->sysctl_expire_quiescent_template;
->  	ipvs->sysctl_sync_threshold[0] = DEFAULT_SYNC_THRESHOLD;
->  	ipvs->sysctl_sync_threshold[1] = DEFAULT_SYNC_PERIOD;
-> diff --git a/net/netfilter/ipvs/ip_vs_proto_sctp.c b/net/netfilter/ipvs/ip_vs_proto_sctp.c
-> index 8646488..df29d64 100644
-> --- a/net/netfilter/ipvs/ip_vs_proto_sctp.c
-> +++ b/net/netfilter/ipvs/ip_vs_proto_sctp.c
-> @@ -15,6 +15,7 @@ sctp_conn_schedule(int af, struct sk_buff *skb, struct ip_vs_proto_data *pd,
->  {
->  	struct net *net;
->  	struct ip_vs_service *svc;
-> +	struct netns_ipvs *ipvs;
->  	sctp_chunkhdr_t _schunkh, *sch;
->  	sctp_sctphdr_t *sh, _sctph;
->  
-> @@ -27,13 +28,14 @@ sctp_conn_schedule(int af, struct sk_buff *skb, struct ip_vs_proto_data *pd,
->  	if (sch == NULL)
->  		return 0;
->  	net = skb_net(skb);
-> +	ipvs = net_ipvs(net);
->  	rcu_read_lock();
-> -	if ((sch->type == SCTP_CID_INIT) &&
-> +	if ((sch->type == SCTP_CID_INIT || sysctl_sloppy_sctp(ipvs)) &&
->  	    (svc = ip_vs_service_find(net, af, skb->mark, iph->protocol,
->  				      &iph->daddr, sh->dest))) {
->  		int ignored;
->  
-> -		if (ip_vs_todrop(net_ipvs(net))) {
-> +		if (ip_vs_todrop(ipvs)) {
->  			/*
->  			 * It seems that we are very loaded.
->  			 * We have to drop this packet :(
-> @@ -232,21 +234,21 @@ static struct ipvs_sctp_nextstate
->  	 * STATE : IP_VS_SCTP_S_NONE
->  	 */
->  	/*next state *//*event */
-> -	{{IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_DATA_CLI */ },
-> +	{{IP_VS_SCTP_S_ESTABLISHED /* IP_VS_SCTP_EVE_DATA_CLI */ },
->  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_DATA_SER */ },
->  	 {IP_VS_SCTP_S_INIT_CLI /* IP_VS_SCTP_EVE_INIT_CLI */ },
->  	 {IP_VS_SCTP_S_INIT_SER /* IP_VS_SCTP_EVE_INIT_SER */ },
-> -	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_INIT_ACK_CLI */ },
-> +	 {IP_VS_SCTP_S_INIT_ACK_CLI /* IP_VS_SCTP_EVE_INIT_ACK_CLI */ },
->  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_INIT_ACK_SER */ },
-> -	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_COOKIE_ECHO_CLI */ },
-> +	 {IP_VS_SCTP_S_ECHO_CLI /* IP_VS_SCTP_EVE_COOKIE_ECHO_CLI */ },
->  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_COOKIE_ECHO_SER */ },
-> -	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_COOKIE_ACK_CLI */ },
-> +	 {IP_VS_SCTP_S_ESTABLISHED /* IP_VS_SCTP_EVE_COOKIE_ACK_CLI */ },
->  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_COOKIE_ACK_SER */ },
->  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_ABORT_CLI */ },
->  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_ABORT_SER */ },
-> -	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_CLI */ },
-> +	 {IP_VS_SCTP_S_SHUT_CLI /* IP_VS_SCTP_EVE_SHUT_CLI */ },
->  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_SER */ },
-> -	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_ACK_CLI */ },
-> +	 {IP_VS_SCTP_S_SHUT_ACK_CLI /* IP_VS_SCTP_EVE_SHUT_ACK_CLI */ },
->  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_ACK_SER */ },
->  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_COM_CLI */ },
->  	 {IP_VS_SCTP_S_CLOSED /* IP_VS_SCTP_EVE_SHUT_COM_SER */ },
-> diff --git a/net/netfilter/ipvs/ip_vs_proto_tcp.c b/net/netfilter/ipvs/ip_vs_proto_tcp.c
-> index 50a1594..e3a6972 100644
-> --- a/net/netfilter/ipvs/ip_vs_proto_tcp.c
-> +++ b/net/netfilter/ipvs/ip_vs_proto_tcp.c
-> @@ -39,6 +39,7 @@ tcp_conn_schedule(int af, struct sk_buff *skb, struct ip_vs_proto_data *pd,
->  	struct net *net;
->  	struct ip_vs_service *svc;
->  	struct tcphdr _tcph, *th;
-> +	struct netns_ipvs *ipvs;
->  
->  	th = skb_header_pointer(skb, iph->len, sizeof(_tcph), &_tcph);
->  	if (th == NULL) {
-> @@ -46,14 +47,15 @@ tcp_conn_schedule(int af, struct sk_buff *skb, struct ip_vs_proto_data *pd,
->  		return 0;
->  	}
->  	net = skb_net(skb);
-> +	ipvs = net_ipvs(net);
->  	/* No !th->ack check to allow scheduling on SYN+ACK for Active FTP */
->  	rcu_read_lock();
-> -	if (th->syn &&
-> +	if ((th->syn || sysctl_sloppy_tcp(ipvs)) && !th->rst &&
->  	    (svc = ip_vs_service_find(net, af, skb->mark, iph->protocol,
->  				      &iph->daddr, th->dest))) {
->  		int ignored;
->  
-> -		if (ip_vs_todrop(net_ipvs(net))) {
-> +		if (ip_vs_todrop(ipvs)) {
->  			/*
->  			 * It seems that we are very loaded.
->  			 * We have to drop this packet :(
-> @@ -401,7 +403,7 @@ static struct tcp_states_t tcp_states [] = {
->  /*        sNO, sES, sSS, sSR, sFW, sTW, sCL, sCW, sLA, sLI, sSA	*/
->  /*syn*/ {{sSR, sES, sES, sSR, sSR, sSR, sSR, sSR, sSR, sSR, sSR }},
->  /*fin*/ {{sCL, sCW, sSS, sTW, sTW, sTW, sCL, sCW, sLA, sLI, sTW }},
-> -/*ack*/ {{sCL, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
-> +/*ack*/ {{sES, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
->  /*rst*/ {{sCL, sCL, sCL, sSR, sCL, sCL, sCL, sCL, sLA, sLI, sSR }},
->  
->  /*	OUTPUT */
-> @@ -415,7 +417,7 @@ static struct tcp_states_t tcp_states [] = {
->  /*        sNO, sES, sSS, sSR, sFW, sTW, sCL, sCW, sLA, sLI, sSA	*/
->  /*syn*/ {{sSR, sES, sES, sSR, sSR, sSR, sSR, sSR, sSR, sSR, sSR }},
->  /*fin*/ {{sCL, sFW, sSS, sTW, sFW, sTW, sCL, sCW, sLA, sLI, sTW }},
-> -/*ack*/ {{sCL, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
-> +/*ack*/ {{sES, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
->  /*rst*/ {{sCL, sCL, sCL, sSR, sCL, sCL, sCL, sCL, sLA, sLI, sCL }},
+> +#include <mach/common.h>
+>  #include <mach/irqs.h>
+>  #include <mach/edma.h>
+>  #include <mach/mux.h>
+> @@ -147,7 +148,7 @@ static struct davinci_nand_pdata nand_config = {
+>         .ecc_bits       = 1,
 >  };
->  
-> @@ -424,7 +426,7 @@ static struct tcp_states_t tcp_states_dos [] = {
->  /*        sNO, sES, sSS, sSR, sFW, sTW, sCL, sCW, sLA, sLI, sSA	*/
->  /*syn*/ {{sSR, sES, sES, sSR, sSR, sSR, sSR, sSR, sSR, sSR, sSA }},
->  /*fin*/ {{sCL, sCW, sSS, sTW, sTW, sTW, sCL, sCW, sLA, sLI, sSA }},
-> -/*ack*/ {{sCL, sES, sSS, sSR, sFW, sTW, sCL, sCW, sCL, sLI, sSA }},
-> +/*ack*/ {{sES, sES, sSS, sSR, sFW, sTW, sCL, sCW, sCL, sLI, sSA }},
->  /*rst*/ {{sCL, sCL, sCL, sSR, sCL, sCL, sCL, sCL, sLA, sLI, sCL }},
->  
->  /*	OUTPUT */
-> @@ -438,7 +440,7 @@ static struct tcp_states_t tcp_states_dos [] = {
->  /*        sNO, sES, sSS, sSR, sFW, sTW, sCL, sCW, sLA, sLI, sSA	*/
->  /*syn*/ {{sSA, sES, sES, sSR, sSA, sSA, sSA, sSA, sSA, sSA, sSA }},
->  /*fin*/ {{sCL, sFW, sSS, sTW, sFW, sTW, sCL, sCW, sLA, sLI, sTW }},
-> -/*ack*/ {{sCL, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
-> +/*ack*/ {{sES, sES, sSS, sES, sFW, sTW, sCL, sCW, sCL, sLI, sES }},
->  /*rst*/ {{sCL, sCL, sCL, sSR, sCL, sCL, sCL, sCL, sLA, sLI, sCL }},
+> 
+> -static struct davinci_uart_config serial_config __initconst = {
+> +static struct davinci_uart_config serial_config = {
+>         .enabled_uarts  = BIT(1),
 >  };
 
-Regards
+You can make this __initdata instead - assuming its okay to have this
+memory discarded at init.
 
---
-Julian Anastasov <ja@ssi.bg>
+> 
+> @@ -245,7 +246,7 @@ static struct ti_ssp_data ssp_config = {
+>         },
+>  };
+> 
+> -static struct tnetv107x_device_info evm_device_info __initconst = {
+> +static struct tnetv107x_device_info evm_device_info = {
+
+Same here. You can make this __initdata.
+
+Please send a formal patch for the errors you have seen.
+
+>         .serial_config          = &serial_config,
+>         .mmc_config[1]          = &mmc_config,  /* controller 1 */
+>         .nand_config[0]         = &nand_config, /* chip select 0 */
+> 
+> 
+> 
+>>
+>>>
+>>> So I prefer to leave tnetv107x platform for now.
+>>
+>> I don't think that's acceptable. At least by me.
+> 
+> I think 2 options are available
+> 1. Convert gpio-tnetv107x.c to platform driver. This will help in
+> 	removing gpio references in davinci_soc_info structure.
+> 2. Remove inline gpio api support and start use gpiolib support.
+> 
+> I prefer first option. It will help in removing
+> <arch/arm/mach-davinci/include/mach/gpio-davinci.h>.
+
+Okay. Can you take this up in this series? I understand you may not have
+an tnetv107x board, but at least you can get to a series that builds.
+
+Even if you choose to do just option #2, I am OK. What I really want to
+see is inline API gone completely (not just remain largely unused). This
+will also help you avoid exposing internal data structures like
+davinci_gpio_controller exposed to the whole kernel. The worse part
+right now is you have two copies of the same structure exposed globally
+from two different include folders.
+
+Thanks,
+Sekhar
