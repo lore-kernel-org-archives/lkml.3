@@ -1,58 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758935Ab3FMTWC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 15:22:02 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:56798 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756856Ab3FMTWA (ORCPT
+	id S1757879Ab3FMTXn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 15:23:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37301 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754860Ab3FMTXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 15:22:00 -0400
-Date: Thu, 13 Jun 2013 12:21:52 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
+	Thu, 13 Jun 2013 15:23:41 -0400
+Date: Thu, 13 Jun 2013 12:23:39 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
 Cc: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
         Oleg Nesterov <oleg@redhat.com>,
         Christoph Lameter <cl@linux-foundation.org>,
         Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
         Jens Axboe <axboe@kernel.dk>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Jeff Layton <jlayton@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>
 Subject: Re: [PATCH] Percpu tag allocator
-Message-ID: <20130613192152.GC13970@mtj.dyndns.org>
+Message-Id: <20130613122339.239a721d097a64435817a780@linux-foundation.org>
+In-Reply-To: <20130613191507.GB13970@mtj.dyndns.org>
 References: <1371009804-11596-1-git-send-email-koverstreet@google.com>
- <20130612163854.91da28042ab7a943b69a5970@linux-foundation.org>
- <20130613190610.GA13970@mtj.dyndns.org>
- <20130613121324.2cab80256217df97254af16c@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130613121324.2cab80256217df97254af16c@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	<20130612163854.91da28042ab7a943b69a5970@linux-foundation.org>
+	<20130613020536.GA10979@localhost>
+	<20130612200311.7f9d938a.akpm@linux-foundation.org>
+	<20130613185318.GB12075@mtj.dyndns.org>
+	<20130613120439.fe56d178a1143089136fdacc@linux-foundation.org>
+	<20130613191507.GB13970@mtj.dyndns.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 13 Jun 2013 12:15:07 -0700 Tejun Heo <tj@kernel.org> wrote:
 
-On Thu, Jun 13, 2013 at 12:13:24PM -0700, Andrew Morton wrote:
-> As I understand it, if a task is stuck in this loop at freeze time, the
-> whole freeze attempt will fail.  But it's been a long time since I
-> thought about or worked on this stuff.
+> Hello, Andrew.
+> 
+> On Thu, Jun 13, 2013 at 12:04:39PM -0700, Andrew Morton wrote:
+> > > The thing is that id[r|a] guarantee that the lowest available slot is
+> > > allocated
+> > 
+> > That isn't the case for ida_get_new_above() - the caller gets to
+> > control the starting index.
+> 
+> Hmmm?  get_new_above() is the same, it must allocate the first
+> available ID above the given low bound - used to exclude unused or
+> reserved IDs.
 
-It depends on who's calling the allocator but if the device driver or
-its midlayer is doing things properly, the ideal way would be the task
-being marked unfreezable (I think freezable kthreads harms more than
-help in general) and the driver suspend callback draining commands
-while not issuing new ones.  What the tag allocator does doesn't
-really matter as all resources necessary for command execution should
-eventually be freed before entering suspend anyway.
+Right.  So using different starting IDs for different CPUs can be used
+to improve scalability.
 
-If that's not the case, the freezing should still be controlled by the
-caller and again the allocator should be able to return -EBUSY/INTR to
-indicate and then the caller, after releasing all other resources,
-shouldf to try_to_freeze().  There simply is no reliable way to tell
-from as deep as tag allocator whether it'd be safe to freeze or not.
+> > The worst outcome here is that idr.c remains unimproved and we merge a
+> > new allocator which does basically the same thing.
+> 
+> The lowest number guarantee makes them different.  Maybe tag
+> allocation can be layered on top as a caching layer, I don't know, but
+> at any rate we need at least two different operation modes.
 
-Thanks.
+Why?  Tag allocation doesn't care about the values - just that they be
+unique.
 
--- 
-tejun
+> > The best outcome is that idr.c gets improved and we don't have to merge
+> > duplicative code.
+> >
+> > So please, let's put aside the shiny new thing for now and work out how
+> > we can use the existing tag allocator for these applications.  If we
+> > make a genuine effort to do this and decide that it's fundamentally
+> > hopeless then this is the time to start looking at new implementations.
+> > 
+> > (I can think of at least two ways of making ida_get_new_above() an
+> > order of magnitude faster for this application and I'm sure you guys
+> > can as well.)
+> 
+> Oh, I'm sure the current id[r|a] can be improved upon a lot but I'm
+> very skeptical one can reach the level of scalability necessary for,
+> say, pci-e attached extremely high-iops devices while still keeping
+> the lowest number allocation, which can't be achieved without strong
+> synchronization on each alloc/free.
+> 
+> Maybe we can layer things so that we have percpu layer on top of
+> id[r|a] and, say, mapping id to point is still done by idr, or the
+> percpu tag allocator uses ida for tag chunk allocations, but it's
+> still gonna be something extra on top.
+
+It's not obvious that explicit per-cpu is needed.  Get an ID from
+ida_get_new_above(), multiply it by 16 and store that in device-local
+storage, along with a 16-bit bitmap.  Blam, 30 lines of code and the
+ida_get_new_above() cost is reduced 16x and it's off the map.
+
+Or perhaps you can think of something smarter, but first you have to
+start thinking of solutions rather than trying to find problems :(
