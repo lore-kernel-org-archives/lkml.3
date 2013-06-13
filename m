@@ -1,158 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758450Ab3FMIp3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 04:45:29 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:52107 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932720Ab3FMIpO (ORCPT
+	id S1758478Ab3FMIpx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 04:45:53 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57302 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758463Ab3FMIpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 04:45:14 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <grant.likely@linaro.org>, <tony@atomide.com>, <balbi@ti.com>,
-        <kishon@ti.com>, <arnd@arndb.de>, <swarren@nvidia.com>,
-        <sylvester.nawrocki@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <akpm@linux-foundation.org>
-CC: <rob.herring@calxeda.com>, <rob@landley.net>, <b-cousson@ti.com>,
-        <linux@arm.linux.org.uk>, <benoit.cousson@linaro.org>,
-        <mchehab@redhat.com>, <cesarb@cesarb.net>, <davem@davemloft.net>,
-        <rnayak@ti.com>, <shawn.guo@linaro.org>, <santosh.shilimkar@ti.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <nsekhar@ti.com>
-Subject: [PATCH v7 9/9] usb: phy: twl4030-usb: remove *set_suspend* and *phy_init* ops
-Date: Thu, 13 Jun 2013 14:13:59 +0530
-Message-ID: <1371113039-5784-10-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1371113039-5784-1-git-send-email-kishon@ti.com>
-References: <1371113039-5784-1-git-send-email-kishon@ti.com>
+	Thu, 13 Jun 2013 04:45:51 -0400
+Date: Thu, 13 Jun 2013 10:45:48 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        kernel list <linux-kernel@vger.kernel.org>, marcel@holtmann.org,
+        gustavo@padovan.org, linux-bluetooth@vger.kernel.org
+Subject: Re: 3.10-rc: bluetooth disappeared on thinkpad x60 (regression)
+Message-ID: <20130613084548.GB3651@amd.pavel.ucw.cz>
+References: <20130610110423.GA8834@amd.pavel.ucw.cz>
+ <20130610115938.GA12892@x220.ger.corp.intel.com>
+ <20130610133834.GA4058@amd.pavel.ucw.cz>
+ <20130610160723.GA18282@x220.P-661HNU-F1>
+ <20130610193746.GA30801@amd.pavel.ucw.cz>
+ <20130611072245.GA12463@x220>
+ <20130611102025.GA5580@x220>
+ <20130612112326.GA4237@amd.pavel.ucw.cz>
+ <20130613072327.GA12951@x220>
+ <20130613080442.GA14677@x220>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130613080442.GA14677@x220>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that twl4030-usb is adapted to the new generic PHY framework,
-*set_suspend* and *phy_init* ops can be removed from twl4030-usb driver.
+On Thu 2013-06-13 11:04:42, Johan Hedberg wrote:
+> Hi Pavel,
+> 
+> On Thu, Jun 13, 2013, Johan Hedberg wrote:
+> > On Wed, Jun 12, 2013, Pavel Machek wrote:
+> > > < HCI Command: Read Local Supported Commands (0x04|0x0002) plen 0
+> > > > HCI Event: Command Complete (0x0e) plen 68
+> > >     Read Local Supported Commands (0x04|0x0002) ncmd 1
+> > >     status 0x00
+> > >     Commands: ffffffffffff1ffffffffffff30fffff3f
+> > 
+> > As I suspected, even though the Delete Stored Link Key command is
+> > mandatory from Bluetooth version 1.1 onwards (this controller supports
+> > 2.0) this controller doesn't have it mentioned in its supported commands
+> > response (counting from 0 it should be bit 7 of octet 6). Therefore, it
+> > might be possible to just move sending of this problematic command to
+> > after receiving the supported commands response and making it
+> > conditional to having its respective bit set in the mask. I'll be
+> > sending another patch proposal soon.
+> 
+> I just sent a patch to linux-bluetooth for this. It would be nice if you
+> could revert the previous patch, apply this one instead (also attached
+> to this email) and let us know if it works fine.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/usb/phy/phy-twl4030-usb.c |   55 ++++++++-----------------------------
- 1 file changed, 12 insertions(+), 43 deletions(-)
+Patch works for me, thanks!
 
-diff --git a/drivers/usb/phy/phy-twl4030-usb.c b/drivers/usb/phy/phy-twl4030-usb.c
-index fba9697..5245b86 100644
---- a/drivers/usb/phy/phy-twl4030-usb.c
-+++ b/drivers/usb/phy/phy-twl4030-usb.c
-@@ -422,25 +422,20 @@ static void twl4030_phy_power(struct twl4030_usb *twl, int on)
- 	}
- }
- 
--static void twl4030_phy_suspend(struct twl4030_usb *twl, int controller_off)
-+static int twl4030_phy_power_off(struct phy *phy)
- {
-+	struct twl4030_usb *twl = dev_get_drvdata(&phy->dev);
-+
- 	if (twl->asleep)
--		return;
-+		return 0;
- 
- 	twl4030_phy_power(twl, 0);
- 	twl->asleep = 1;
- 	dev_dbg(twl->dev, "%s\n", __func__);
--}
--
--static int twl4030_phy_power_off(struct phy *phy)
--{
--	struct twl4030_usb *twl = dev_get_drvdata(&phy->dev);
--
--	twl4030_phy_suspend(twl, 0);
- 	return 0;
- }
- 
--static void __twl4030_phy_resume(struct twl4030_usb *twl)
-+static void __twl4030_phy_power_on(struct twl4030_usb *twl)
- {
- 	twl4030_phy_power(twl, 1);
- 	twl4030_i2c_access(twl, 1);
-@@ -449,11 +444,13 @@ static void __twl4030_phy_resume(struct twl4030_usb *twl)
- 		twl4030_i2c_access(twl, 0);
- }
- 
--static void twl4030_phy_resume(struct twl4030_usb *twl)
-+static int twl4030_phy_power_on(struct phy *phy)
- {
-+	struct twl4030_usb *twl = dev_get_drvdata(&phy->dev);
-+
- 	if (!twl->asleep)
--		return;
--	__twl4030_phy_resume(twl);
-+		return 0;
-+	__twl4030_phy_power_on(twl);
- 	twl->asleep = 0;
- 	dev_dbg(twl->dev, "%s\n", __func__);
- 
-@@ -466,13 +463,6 @@ static void twl4030_phy_resume(struct twl4030_usb *twl)
- 		cancel_delayed_work(&twl->id_workaround_work);
- 		schedule_delayed_work(&twl->id_workaround_work, HZ);
- 	}
--}
--
--static int twl4030_phy_power_on(struct phy *phy)
--{
--	struct twl4030_usb *twl = dev_get_drvdata(&phy->dev);
--
--	twl4030_phy_resume(twl);
- 	return 0;
- }
- 
-@@ -604,9 +594,9 @@ static void twl4030_id_workaround_work(struct work_struct *work)
- 	}
- }
- 
--static int twl4030_usb_phy_init(struct usb_phy *phy)
-+static int twl4030_phy_init(struct phy *phy)
- {
--	struct twl4030_usb *twl = phy_to_twl(phy);
-+	struct twl4030_usb *twl = dev_get_drvdata(&phy->dev);
- 	enum omap_musb_vbus_id_status status;
- 
- 	/*
-@@ -628,25 +618,6 @@ static int twl4030_usb_phy_init(struct usb_phy *phy)
- 	return 0;
- }
- 
--static int twl4030_phy_init(struct phy *phy)
--{
--	struct twl4030_usb *twl = dev_get_drvdata(&phy->dev);
--
--	return twl4030_usb_phy_init(&twl->phy);
--}
--
--static int twl4030_set_suspend(struct usb_phy *x, int suspend)
--{
--	struct twl4030_usb *twl = phy_to_twl(x);
--
--	if (suspend)
--		twl4030_phy_suspend(twl, 1);
--	else
--		twl4030_phy_resume(twl);
--
--	return 0;
--}
--
- static int twl4030_set_peripheral(struct usb_otg *otg,
- 					struct usb_gadget *gadget)
- {
-@@ -717,8 +688,6 @@ static int twl4030_usb_probe(struct platform_device *pdev)
- 	twl->phy.label		= "twl4030";
- 	twl->phy.otg		= otg;
- 	twl->phy.type		= USB_PHY_TYPE_USB2;
--	twl->phy.set_suspend	= twl4030_set_suspend;
--	twl->phy.init		= twl4030_usb_phy_init;
- 
- 	otg->phy		= &twl->phy;
- 	otg->set_host		= twl4030_set_host;
 -- 
-1.7.10.4
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
