@@ -1,134 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758985Ab3FMX0a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 19:26:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:17383 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758933Ab3FMX03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 19:26:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,862,1363158000"; 
-   d="scan'208";a="329160424"
-Subject: Performance regression from switching lock to rw-sem for anon-vma
- tree
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        "Shi, Alex" <alex.shi@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 Jun 2013 16:26:32 -0700
-Message-ID: <1371165992.27102.573.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1758949Ab3FMX2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 19:28:09 -0400
+Received: from mx1.corp.phx1.mozilla.com ([63.245.216.69]:41096 "EHLO
+	smtp.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752483Ab3FMX2H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 19:28:07 -0400
+X-Greylist: delayed 414 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Jun 2013 19:28:07 EDT
+Date: Thu, 13 Jun 2013 16:21:11 -0700
+From: Jed Davis <jld@mozilla.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] perf: ARM: Record the user-mode PC in the call chain.
+Message-ID: <20130613232111.GA12536@mozilla.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-User-Agent-Host: Linux nimbostratus 3.2.0-4-amd64 x86_64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+With this change, we no longer lose the innermost entry in the user-mode
+part of the call chain.  See also the x86 port, which includes the ip.
 
-At the time of switching the anon-vma tree's lock from mutex to 
-rw-sem (commit 5a505085), we encountered regressions for fork heavy workload. 
-A lot of optimizations to rw-sem (e.g. lock stealing) helped to 
-mitigate the problem.  I tried an experiment on the 3.10-rc4 kernel 
-to compare the performance of rw-sem to one that uses mutex. I saw 
-a 8% regression in throughput for rw-sem vs a mutex implementation in
-3.10-rc4.
+It's possible to partially work around this problem by post-processing
+the data to use the PERF_SAMPLE_IP value, but this works only if the CPU
+wasn't in the kernel when the sample was taken.
 
-For the experiments, I used the exim mail server workload in 
-the MOSBENCH test suite on 4 socket (westmere) and a 4 socket 
-(ivy bridge) with the number of clients sending mail equal 
-to number of cores.  The mail server will
-fork off a process to handle an incoming mail and put it into mail
-spool. The lock protecting the anon-vma tree is stressed due to
-heavy forking. On both machines, I saw that the mutex implementation 
-has 8% more throughput.  I've pinned the cpu frequency to maximum
-in the experiments.
+Signed-off-by: Jed Davis <jld@mozilla.com>
+---
+ arch/arm/kernel/perf_event.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-I've tried two separate tweaks to the rw-sem on 3.10-rc4.  I've tested 
-each tweak individually.
-
-1) Add an owner field when a writer holds the lock and introduce 
-optimistic spinning when an active writer is holding the semaphore.  
-It reduced the context switching by 30% to a level very close to the
-mutex implementation.  However, I did not see any throughput improvement
-of exim.
-
-2) When the sem->count's active field is non-zero (i.e. someone
-is holding the lock), we can skip directly to the down_write_failed
-path, without adding the RWSEM_DOWN_WRITE_BIAS and taking
-it off again from sem->count, saving us two atomic operations.
-Since we will try the lock stealing again later, this should be okay.
-Unfortunately it did not improve the exim workload either.  
-
-Any suggestions on the difference between rwsem and mutex performance
-and possible improvements to recover this regression?
-
-Thanks.
-
-Tim
-
-vmstat for mutex implementation: 
-procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
- r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-38  0      0 130957920  47860 199956    0    0     0    56 236342 476975 14 72 14  0  0
-41  0      0 130938560  47860 219900    0    0     0     0 236816 479676 14 72 14  0  0
-
-vmstat for rw-sem implementation (3.10-rc4)
-procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
- r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-40  0      0 130933984  43232 202584    0    0     0     0 321817 690741 13 71 16  0  0
-39  0      0 130913904  43232 224812    0    0     0     0 322193 692949 13 71 16  0  0
-
-
-Profile for mutex implementation:
-5.02%             exim  [kernel.kallsyms]     [k] page_fault
-3.67%             exim  [kernel.kallsyms]     [k] anon_vma_interval_tree_insert
-2.66%             exim  [kernel.kallsyms]     [k] unmap_single_vma
-2.15%             exim  [kernel.kallsyms]     [k] do_raw_spin_lock
-2.14%             exim  [kernel.kallsyms]     [k] page_cache_get_speculative
-2.04%             exim  [kernel.kallsyms]     [k] copy_page_rep
-1.58%             exim  [kernel.kallsyms]     [k] clear_page_c
-1.55%             exim  [kernel.kallsyms]     [k] cpu_relax
-1.55%             exim  [kernel.kallsyms]     [k] mutex_unlock
-1.42%             exim  [kernel.kallsyms]     [k] __slab_free
-1.16%             exim  [kernel.kallsyms]     [k] mutex_lock  
-1.12%             exim  libc-2.13.so          [.] vfprintf   
-0.99%             exim  [kernel.kallsyms]     [k] find_vma  
-0.95%             exim  [kernel.kallsyms]     [k] __list_del_entry    
-
-Profile for rw-sem implementation
-4.88%             exim  [kernel.kallsyms]     [k] page_fault
-3.43%             exim  [kernel.kallsyms]     [k] anon_vma_interval_tree_insert
-2.65%             exim  [kernel.kallsyms]     [k] unmap_single_vma
-2.46%             exim  [kernel.kallsyms]     [k] do_raw_spin_lock
-2.25%             exim  [kernel.kallsyms]     [k] copy_page_rep
-2.01%             exim  [kernel.kallsyms]     [k] page_cache_get_speculative
-1.81%             exim  [kernel.kallsyms]     [k] clear_page_c
-1.51%             exim  [kernel.kallsyms]     [k] __slab_free
-1.12%             exim  libc-2.13.so          [.] vfprintf
-1.06%             exim  [kernel.kallsyms]     [k] __list_del_entry
-1.02%          swapper  [kernel.kallsyms]     [k] _raw_spin_unlock_irqrestore
-1.00%             exim  [kernel.kallsyms]     [k] find_vma
-0.93%             exim  [kernel.kallsyms]     [k] mutex_unlock
-
-
-turbostat for mutex implementation:
-pk cor CPU    %c0  GHz  TSC    %c1    %c3    %c6 CTMP   %pc3   %pc6
-            82.91 2.39 2.39  11.65   2.76   2.68   51   0.00   0.00
-
-turbostat of rw-sem implementation (3.10-rc4):
-pk cor CPU    %c0  GHz  TSC    %c1    %c3    %c6 CTMP   %pc3   %pc6
-            80.10 2.39 2.39  14.96   2.80   2.13   52   0.00   0.00
-
-
-
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index 8c3094d..d9f5cd4 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -569,6 +569,7 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
+ 		return;
+ 	}
+ 
++	perf_callchain_store(entry, regs->ARM_pc);
+ 	tail = (struct frame_tail __user *)regs->ARM_fp - 1;
+ 
+ 	while ((entry->nr < PERF_MAX_STACK_DEPTH) &&
+-- 
+1.7.10.4
 
