@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758601Ab3FMNhV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:37:21 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63792 "EHLO song.cn.fujitsu.com"
+	id S1758718Ab3FMNhr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:37:47 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54674 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757305Ab3FMN2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:28:06 -0400
+	id S1758158Ab3FMN2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 09:28:03 -0400
 X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
-   d="scan'208";a="7537692"
+   d="scan'208";a="7537687"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -18,171 +18,136 @@ To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [Part1 PATCH v5 12/22] x86, mm, numa: Move node_map_pfn_alignment() to x86
-Date: Thu, 13 Jun 2013 21:02:59 +0800
-Message-Id: <1371128589-8953-13-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [Part3 PATCH v2 2/4] mem-hotplug: Skip LOCAL_NODE_DATA pages in memory offline procedure.
+Date: Thu, 13 Jun 2013 21:03:54 +0800
+Message-Id: <1371128636-9027-3-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1371128589-8953-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1371128636-9027-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1371128636-9027-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:58:17,
+ 2013/06/13 20:59:03,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:58:25,
-	Serialize complete at 2013/06/13 20:58:25
+ 2013/06/13 20:59:04,
+	Serialize complete at 2013/06/13 20:59:04
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yinghai Lu <yinghai@kernel.org>
+In memory offline procedure, skip pages marked as LOCAL_NODE_DATA.
+For now, this kind of pages are used to store local node pagetables.
 
-Move node_map_pfn_alignment() to arch/x86/mm as there is no
-other user for it.
+The minimum unit of memory online/offline is a memory block. In a
+block, the movable pages will be offlined as usual (unmapped and
+isolated), and the pagetable pages will be skipped. After the iteration
+of all page, the block will be set as offline, but the kernel can
+still access the pagetable pages. This is user transparent.
 
-Will update it to use numa_meminfo instead of memblock.
+v1 -> v2: As suggested by Wu Jianguo <wujianguo@huawei.com>, define a
+	  macro to check if a page contains local node data.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
-Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- arch/x86/mm/numa.c |   50 ++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/mm.h |    1 -
- mm/page_alloc.c    |   50 --------------------------------------------------
- 3 files changed, 50 insertions(+), 51 deletions(-)
+ include/linux/memory_hotplug.h |    7 ++++++-
+ mm/page_alloc.c                |   15 +++++++++++++--
+ mm/page_isolation.c            |    5 +++++
+ 3 files changed, 24 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 1bb565d..10c6240 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -474,6 +474,56 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
- 	return true;
- }
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index c0c4107..05de193 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -5,8 +5,8 @@
+ #include <linux/spinlock.h>
+ #include <linux/notifier.h>
+ #include <linux/bug.h>
++#include <linux/mm_types.h>
  
-+/**
-+ * node_map_pfn_alignment - determine the maximum internode alignment
-+ *
-+ * This function should be called after node map is populated and sorted.
-+ * It calculates the maximum power of two alignment which can distinguish
-+ * all the nodes.
-+ *
-+ * For example, if all nodes are 1GiB and aligned to 1GiB, the return value
-+ * would indicate 1GiB alignment with (1 << (30 - PAGE_SHIFT)).  If the
-+ * nodes are shifted by 256MiB, 256MiB.  Note that if only the last node is
-+ * shifted, 1GiB is enough and this function will indicate so.
-+ *
-+ * This is used to test whether pfn -> nid mapping of the chosen memory
-+ * model has fine enough granularity to avoid incorrect mapping for the
-+ * populated node map.
-+ *
-+ * Returns the determined alignment in pfn's.  0 if there is no alignment
-+ * requirement (single node).
-+ */
-+unsigned long __init node_map_pfn_alignment(void)
+-struct page;
+ struct zone;
+ struct pglist_data;
+ struct mem_section;
+@@ -31,6 +31,11 @@ enum {
+ 	MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE = LOCAL_NODE_DATA,
+ };
+ 
++static inline bool is_local_node_data(struct page *page)
 +{
-+	unsigned long accl_mask = 0, last_end = 0;
-+	unsigned long start, end, mask;
-+	int last_nid = -1;
-+	int i, nid;
++	return (unsigned long)page->lru.next == LOCAL_NODE_DATA;
++}
 +
-+	for_each_mem_pfn_range(i, MAX_NUMNODES, &start, &end, &nid) {
-+		if (!start || last_nid < 0 || last_nid == nid) {
-+			last_nid = nid;
-+			last_end = end;
+ /* Types for control the zone type of onlined memory */
+ enum {
+ 	ONLINE_KEEP,
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index a5325b2..7cd8f13 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5772,6 +5772,11 @@ bool has_unmovable_pages(struct zone *zone, struct page *page, int count,
+ 			continue;
+ 
+ 		page = pfn_to_page(check);
++
++		/* Skip pages storing local node kernel data. */
++		if (is_local_node_data(page))
++			continue;
++
+ 		/*
+ 		 * We can't use page_count without pin a page
+ 		 * because another CPU can free compound page.
+@@ -6095,8 +6100,7 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+ 	struct page *page;
+ 	struct zone *zone;
+ 	int order, i;
+-	unsigned long pfn;
+-	unsigned long flags;
++	unsigned long pfn, flags;
+ 	/* find the first valid pfn */
+ 	for (pfn = start_pfn; pfn < end_pfn; pfn++)
+ 		if (pfn_valid(pfn))
+@@ -6112,6 +6116,13 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+ 			continue;
+ 		}
+ 		page = pfn_to_page(pfn);
++
++		/* Skip pages storing local node kernel data. */
++		if (is_local_node_data(page)) {
++			pfn++;
 +			continue;
 +		}
 +
-+		/*
-+		 * Start with a mask granular enough to pin-point to the
-+		 * start pfn and tick off bits one-by-one until it becomes
-+		 * too coarse to separate the current node from the last.
-+		 */
-+		mask = ~((1 << __ffs(start)) - 1);
-+		while (mask && last_end <= (start & (mask << 1)))
-+			mask <<= 1;
-+
-+		/* accumulate all internode masks */
-+		accl_mask |= mask;
-+	}
-+
-+	/* convert mask to number of pages */
-+	return ~accl_mask + 1;
-+}
-+
- static int __init numa_register_memblks(struct numa_meminfo *mi)
- {
- 	unsigned long uninitialized_var(pfn_align);
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 28e9470..b827743 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1384,7 +1384,6 @@ static inline unsigned long free_initmem_default(int poison)
-  * CONFIG_HAVE_MEMBLOCK_NODE_MAP.
-  */
- extern void free_area_init_nodes(unsigned long *max_zone_pfn);
--unsigned long node_map_pfn_alignment(void);
- extern unsigned long absent_pages_in_range(unsigned long start_pfn,
- 						unsigned long end_pfn);
- extern void get_pfn_range_for_nid(unsigned int nid,
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 74e3428..7ba7703 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4762,56 +4762,6 @@ void __init setup_nr_node_ids(void)
- }
- #endif
+ 		/*
+ 		 * The HWPoisoned page may be not in buddy system, and
+ 		 * page_count() is not 0.
+diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+index 383bdbb..4cb0ccb 100644
+--- a/mm/page_isolation.c
++++ b/mm/page_isolation.c
+@@ -6,6 +6,7 @@
+ #include <linux/page-isolation.h>
+ #include <linux/pageblock-flags.h>
+ #include <linux/memory.h>
++#include <linux/memory_hotplug.h>
+ #include "internal.h"
  
--/**
-- * node_map_pfn_alignment - determine the maximum internode alignment
-- *
-- * This function should be called after node map is populated and sorted.
-- * It calculates the maximum power of two alignment which can distinguish
-- * all the nodes.
-- *
-- * For example, if all nodes are 1GiB and aligned to 1GiB, the return value
-- * would indicate 1GiB alignment with (1 << (30 - PAGE_SHIFT)).  If the
-- * nodes are shifted by 256MiB, 256MiB.  Note that if only the last node is
-- * shifted, 1GiB is enough and this function will indicate so.
-- *
-- * This is used to test whether pfn -> nid mapping of the chosen memory
-- * model has fine enough granularity to avoid incorrect mapping for the
-- * populated node map.
-- *
-- * Returns the determined alignment in pfn's.  0 if there is no alignment
-- * requirement (single node).
-- */
--unsigned long __init node_map_pfn_alignment(void)
--{
--	unsigned long accl_mask = 0, last_end = 0;
--	unsigned long start, end, mask;
--	int last_nid = -1;
--	int i, nid;
--
--	for_each_mem_pfn_range(i, MAX_NUMNODES, &start, &end, &nid) {
--		if (!start || last_nid < 0 || last_nid == nid) {
--			last_nid = nid;
--			last_end = end;
--			continue;
--		}
--
--		/*
--		 * Start with a mask granular enough to pin-point to the
--		 * start pfn and tick off bits one-by-one until it becomes
--		 * too coarse to separate the current node from the last.
--		 */
--		mask = ~((1 << __ffs(start)) - 1);
--		while (mask && last_end <= (start & (mask << 1)))
--			mask <<= 1;
--
--		/* accumulate all internode masks */
--		accl_mask |= mask;
--	}
--
--	/* convert mask to number of pages */
--	return ~accl_mask + 1;
--}
--
- /* Find the lowest pfn for a node */
- static unsigned long __init find_min_pfn_for_node(int nid)
- {
+ int set_migratetype_isolate(struct page *page, bool skip_hwpoisoned_pages)
+@@ -181,6 +182,7 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
+ 			continue;
+ 		}
+ 		page = pfn_to_page(pfn);
++
+ 		if (PageBuddy(page)) {
+ 			/*
+ 			 * If race between isolatation and allocation happens,
+@@ -208,6 +210,9 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
+ 			 */
+ 			pfn++;
+ 			continue;
++		} else if (is_local_node_data(page)) {
++			pfn++;
++			continue;
+ 		}
+ 		else
+ 			break;
 -- 
 1.7.1
 
