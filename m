@@ -1,103 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757721Ab3FMPsQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 11:48:16 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2157 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755152Ab3FMPsP (ORCPT
+	id S1756072Ab3FMPte (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 11:49:34 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54914 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751925Ab3FMPtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 11:48:15 -0400
-X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=tkaDFPjYVEIA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=apdwqXrHFoAA:10 a=_-W6ry4MO39G3158N6EA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1371138491.9844.288.camel@gandalf.local.home>
-Subject: Re: [PATCH 4/6] watchdog: Boot-disable by default on full dynticks
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Anish Singh <anish198519851985@gmail.com>
-Date: Thu, 13 Jun 2013 11:48:11 -0400
-In-Reply-To: <20130613152059.GA133453@redhat.com>
-References: <1371045758-5296-1-git-send-email-fweisbec@gmail.com>
-	 <1371045758-5296-5-git-send-email-fweisbec@gmail.com>
-	 <20130612170316.GO133453@redhat.com> <20130613131057.GA15997@somewhere>
-	 <20130613140207.GW133453@redhat.com> <20130613142210.GD16339@somewhere>
-	 <20130613144515.GX133453@redhat.com> <20130613145601.GE16339@somewhere>
-	 <20130613152059.GA133453@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Jun 2013 11:49:32 -0400
+Date: Thu, 13 Jun 2013 16:48:53 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Ben Greear <greearb@candelatech.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: kmemleak reports in kernel 3.9.5+
+Message-ID: <20130613154853.GD6530@darko.cambridge.arm.com>
+References: <51B61982.2050903@candelatech.com>
+ <CAHkRjk5SDCbqr0Br24YQuHr=j7DmnpYk9CShrz1qiuYff7+qAw@mail.gmail.com>
+ <51B78009.2060808@candelatech.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51B78009.2060808@candelatech.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-13 at 11:20 -0400, Don Zickus wrote:
-
-> I don't know enough about how full dynticks work to even present a
-> solution.  But currently I was working with the Red Hat performance team
-> to enhance perf to help our customers diagnose performance problems
-> easier.
+On Tue, Jun 11, 2013 at 08:52:41PM +0100, Ben Greear wrote:
+> On 06/10/2013 03:32 PM, Catalin Marinas wrote:
+> > On 10 June 2013 19:22, Ben Greear <greearb@candelatech.com> wrote:
+> >> We had a system go OOM while doing lots of wireless
+> >> stations.  (System had 8GB of RAM, so I suspect a leak).
+> >>
+> >> I enabled kmemleak in a 3.9.5 (plus some local patches) and
+> >> I see the entries below.  Any idea if these are real or not?
+> >>
+> >> unreferenced object 0xffff880212281c80 (size 128):
+> >>    comm "systemd", pid 1, jiffies 4294682684 (age 1159.517s)
+> >>    hex dump (first 32 bytes):
+> >>      60 39 27 12 02 88 ff ff 00 02 20 00 00 00 ad de  `9'....... .....
+> >>      10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> >>    backtrace:
+> >>      [<ffffffff815de7bf>] kmemleak_alloc+0x73/0x98
+> >>      [<ffffffff8118b4d4>] slab_post_alloc_hook+0x28/0x2a
+> >>      [<ffffffff8118d605>] __kmalloc+0xf9/0x122
+> >>      [<ffffffff8154946d>] kzalloc.clone.0+0xe/0x10
+> >>      [<ffffffff81549494>] fib_default_rule_add+0x25/0x7a
+> >>      [<ffffffffa014f5a9>] ip6mr_net_init+0x7e/0x118 [ipv6]
+> >>      [<ffffffff8152c992>] ops_init+0xd6/0xf7
+> >>      [<ffffffff8152cb51>] register_pernet_operations+0xc2/0x16b
+> >>      [<ffffffff8152cc87>] register_pernet_subsys+0x2e/0x47
+> >>      [<ffffffffa016db69>] 0xffffffffa016db69
+> >>      [<ffffffffa016d109>] 0xffffffffa016d109
+> >>      [<ffffffff8100207f>] do_one_initcall+0x7f/0x13e
+> >>      [<ffffffff810f3985>] do_init_module+0x44/0x18f
+> >>      [<ffffffff810f5da7>] load_module+0x14d1/0x168e
+> >>      [<ffffffff810f6114>] sys_init_module+0xfd/0x101
+> >>      [<ffffffff815f6599>] system_call_fastpath+0x16/0x1b
+> >
+> > No idea yet. You can try:
+> >
+> > echo clear > /sys/kernel/debug/kmemleak
+> >
+> > and see if there are more appearing after. All seem to have a common
+> > allocation path via debug_object_activate -> ... ->
+> > rcuhead_fixup_activate -> ... -> __debug_object_init.
 > 
-> My fear is anyone who uses full dynticks and has issues, can't use perf to
-> help diagnose their problems because it will change the dynamics of the
-> problem.  And with the current huge drop in performance in cpu_idle (as
-> compared to RHEL-6's 2.6.32 kernel) due to what seems to be miscalculated
-> c-states, one might have a hard time evaluating if full dynticks is doing
-> the right thing or not.
+> I tried the command below, and it printed out quite a few things.
 
-This needs to be fixed, but not for 3.11. Although, you can still use
-ftrace to diagnose it.
+Can you send me your .config file? I can't reproduce this.
 
+> Also, I read the kmemleak.txt documentation, but a question remains:
 > 
-> Then again perhaps full dynticks isn't useful for distros like RHEL.
+> If I enable kmemleak at compile time, but disable it at boot
+> time using kmemleak=off, is there any significant runtime overhead?
 
-It will be very useful for RHEL. But its still very new, and I wouldn't
-recommend using it in a production environment yet. There's still a few
-issues that need to be worked out, including this one. When the issues
-are fixed, then RHEL and other distributions will definitely want to
-enable this.
+You still get the callback into kmemleak for each allocation/freeing but
+it doesn't walk the stack for the backtrace and it doesn't scan the
+memory either. I would say the overhead is very small, probably
+unnoticeable if you already have other debug options enabled.
 
-> 
-> That's why I was hoping to solve the underlying problem as opposed to
-> accepting patches like this which work around the symptoms.
-
-For now it's just to get things working as people expect it to. First
-impressions are very important, and if someone enables it and sees it
-makes no difference, they may from then on never trust it. The way to
-handle that is to make sure it works when enabled, even if it disables
-some other cool features. But as I said, it shouldn't be used in
-production quite yet.
-
-> 
-> Again, my knowledge of full dynticks is poor, so I have almost no idea of
-> the complexities surrounding the problem and how hard it is to even solve
-> it.
-
-The concept behind full dynamic ticks is very easy. When you set a given
-CPU(s) to dynamic tick, when it only has a single task scheduled on that
-CPU, it disables the periodic tick. This removes essentially *all*
-latency from the kernel! That is, if the task is doing some complex
-calculations, it wont be interrupted for kernel maintenance. A lot of
-Red Hat customers would love to have this feature. It allows for
-extremely low latency actions even without a real-time kernel. Heck, it
-works without even kernel preemption.
-
-Now removing the periodic tick is not a trivial task, and this is where
-all our issues come from. In fact, we can not even completely remove the
-tick yet, we just move it to 1 HZ instead of whatever the CONFIG_HZ is
-set to. We have to handle everything that depends on that tick, which
-includes perf, among other things.
-
--- Steve
-
-
+-- 
+Catalin
