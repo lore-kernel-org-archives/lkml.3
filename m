@@ -1,61 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758989Ab3FMVOP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 17:14:15 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:57719 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757810Ab3FMVOO (ORCPT
+	id S1759162Ab3FMVW3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 17:22:29 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:42230 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757790Ab3FMVW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 17:14:14 -0400
-Date: Thu, 13 Jun 2013 14:14:25 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: Re: [PATCH] Percpu tag allocator
-Message-ID: <20130613211425.GC8650@moria.home.lan>
-References: <1371009804-11596-1-git-send-email-koverstreet@google.com>
- <20130612163854.91da28042ab7a943b69a5970@linux-foundation.org>
- <20130613190610.GA13970@mtj.dyndns.org>
- <20130613121324.2cab80256217df97254af16c@linux-foundation.org>
- <20130613192152.GC13970@mtj.dyndns.org>
+	Thu, 13 Jun 2013 17:22:27 -0400
+Message-ID: <51BA380A.1040009@semaphore.gr>
+Date: Fri, 14 Jun 2013 00:22:18 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130613192152.GC13970@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Borislav Petkov <bp@suse.de>, Viresh Kumar <viresh.kumar@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-pm@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] cpufreq: ondemand: Change the calculation of target
+ frequency
+References: <q46r5iepl3sunqe5eemv66hk.1370694869222@email.android.com> <7661669.NhG4BEI8zO@vostro.rjw.lan> <51B64BC6.6040400@semaphore.gr> <16929930.1G36b4NkSe@vostro.rjw.lan>
+In-Reply-To: <16929930.1G36b4NkSe@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 12:21:52PM -0700, Tejun Heo wrote:
-> Hello,
-> 
-> On Thu, Jun 13, 2013 at 12:13:24PM -0700, Andrew Morton wrote:
-> > As I understand it, if a task is stuck in this loop at freeze time, the
-> > whole freeze attempt will fail.  But it's been a long time since I
-> > thought about or worked on this stuff.
-> 
-> It depends on who's calling the allocator but if the device driver or
-> its midlayer is doing things properly, the ideal way would be the task
-> being marked unfreezable (I think freezable kthreads harms more than
-> help in general) and the driver suspend callback draining commands
-> while not issuing new ones.  What the tag allocator does doesn't
-> really matter as all resources necessary for command execution should
-> eventually be freed before entering suspend anyway.
-> 
-> If that's not the case, the freezing should still be controlled by the
-> caller and again the allocator should be able to return -EBUSY/INTR to
-> indicate and then the caller, after releasing all other resources,
-> shouldf to try_to_freeze().  There simply is no reliable way to tell
-> from as deep as tag allocator whether it'd be safe to freeze or not.
+Hi Rafael,
 
-Yeah, I think you're definitely right. (I only started reading up on the
-freezer stuff yesterday, though).
+On 06/11/2013 02:24 AM, Rafael J. Wysocki wrote:
+> On Tuesday, June 11, 2013 12:57:26 AM Stratos Karafotis wrote:
+>> On 06/09/2013 11:58 PM, Rafael J. Wysocki wrote:
+>>> Well, this means that your changes may hurt performance if the load comes and
+>>> goes in spikes, which is not so good.  The fact that they cause less energy to
+>>> be used at the same time kind of balance that, though.  [After all, we're
+>>> talking about the ondemand governor which should be used if the user wants to
+>>> sacrifice some performance for energy savings.]
+>>>
+>>> It would be interesting to see if the picture changes for different time
+>>> intervals in your test program (e.g. loop duration that is not a multiple of
+>>> sampling_rate and sleep times different from 5000 us) to rule out any random
+>>> coincidences.
+>>>
+>>> Can you possibly prepare a graph showing both the execution time and energy
+>>> consumption for several different loop durations in your program (let's keep
+>>> the 5000 us sleep for now), including multiples of sampling_rate as well as
+>>> some other durations?
+>>
+>> Hi,
+>>
+>> I tested different loop durations with my program from 1,000us to 1,000,000us.
+>> The logic is almost the same with the previous test:
+>>
+>> 1) Use a 'for' loop to a period T (~ 1000-1000000us)
+>> 2) sleep for 5000us
+>> 3) Repeat steps 1-2, 50 times.
+>> 4) sleep for 1s
+>> 5) Repeat 1-4, 5 times.
+>>
+>> The results:
+>> https://docs.google.com/spreadsheet/ccc?key=0AnMfNYUV1k0ddE13ZUtYdGs2dUVRdG00bVRVT3JScWc&usp=sharing
+>>
+>> Sheet1 (ProcessX1) includes the results from the test program running
+>> as single copy. The second one (ProcessX4) includes the results from the test
+>> program running it in 4 copies in parallel (using a bash script that waits
+>> the end of execution).
+>>
+>> Graphs show the difference(%) in total execution time and total energy without
+>> and with the patch.
+>> Negative values mean that the test *with* the patch had better performance or
+>> used less energy.
+>>
+>> Test shows that below sampling rate (10000us in my config), ondemand with this
+>> patch behaves better (both in performance and consumption).
+>> Though, in this test, for loads with 10000us < duration <= 200000us ondemand
+>> behaves better without the patch.
+> 
+> Thanks for these results!
+> 
+> Well, I'd say that this doesn't look rosy any more, so the jury is still out.
+> 
+> We need more testing with different workloads and on different hardware.  I'll
+> try to arrange something to that end.
 
-Do you know offhand what existing (i.e. slab) allocators do? Whatever
-they do should make sense for us.
+Please let me share some more test results using aim9 benchmark suite:
+https://docs.google.com/spreadsheet/ccc?key=0AnMfNYUV1k0ddDdGdlJyUHpqT2xGY1lBOEt2UEVnNlE&usp=sharing
+
+Each test was running for 10sec. 
+Total execution time with and without the patch was almost identical, which is
+expected since the tests in aim9 run for a specific period.
+The energy during the test run was increased by 0.43% with the patch.
+The performance was increased by 1.25% (average) with this patch.
+
+Thanks,
+Stratos
