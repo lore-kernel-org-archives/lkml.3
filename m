@@ -1,199 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758393Ab3FMQOc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 12:14:32 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:51893 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752994Ab3FMQO2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 12:14:28 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+mLMdLRTdSpg9DyLACaY7m
-Date: Thu, 13 Jun 2013 09:14:20 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, pali.rohar@gmail.com,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org
-Subject: Re: N900 device tree conversion: how to do first step
-Message-ID: <20130613161418.GJ8164@atomide.com>
-References: <20130609015944.GA23559@amd.pavel.ucw.cz>
- <20130609201119.GA3190@blackmetal.musicnaut.iki.fi>
- <20130613132624.GA3464@amd.pavel.ucw.cz>
- <20130613141001.GF8164@atomide.com>
- <20130613142809.GA3775@amd.pavel.ucw.cz>
- <20130613145724.GH8164@atomide.com>
- <20130613155240.GB3775@amd.pavel.ucw.cz>
+	id S1758462Ab3FMQOz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 12:14:55 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:5317 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752420Ab3FMQNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 12:13:07 -0400
+From: James Hogan <james.hogan@imgtec.com>
+To: Mike Turquette <mturquette@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>, <linux-kernel@vger.kernel.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Doug Anderson <dianders@chromium.org>,
+        James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH v5 2/5] clk: move some parent related functions upwards
+Date: Thu, 13 Jun 2013 17:05:59 +0100
+Message-ID: <1371139562-305-3-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1371139562-305-1-git-send-email-james.hogan@imgtec.com>
+References: <1371139562-305-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130613155240.GB3775@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01192__2013_06_13_17_13_05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pavel Machek <pavel@ucw.cz> [130613 08:58]:
-> Hi!
-> 
-> > * Pavel Machek <pavel@ucw.cz> [130613 07:34]:
-> > > On Thu 2013-06-13 07:10:01, Tony Lindgren wrote:
-> > > > * Pavel Machek <pavel@ucw.cz> [130613 06:32]:
-> > > >  
-> > > > > If I init spi manually (and some more hacks), it works in the
-> > > > > qemu. But I have not tested on real hw for a while.
-> > > > 
-> > > > You should be able to initialize spi by adding the .dts entry,
-> > > > or is there something missing in drivers/spi/spi-omap2-mcspi.c?
-> > > 
-> > > Not sure, I guess I'll find out soon. Do you have example dts that
-> > > uses drivers/spi/spi-omap2-mcspi.c? Grepping spi in dts/ was not too
-> > > successful.
-> > 
-> > Hmm I think all we have is what's written in
-> > Documentation/devicetree/bindings/spi/omap-spi.txt and
-> > omap4-sdp.dts.
-> 
-> Ok, this was easier than expected.
+Move some parent related functions up in clk.c so they can be used by
+the modifications in the following patch which enables clock reparenting
+during set_rate. No other changes are made so this patch makes no
+functional difference in isolation. This is separate from the following
+patch primarily to ease readability of that patch.
 
-Cool.
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org
+---
+Changes in v5:
+
+* Rebased on latest clk-next ("clk: tegra: Use common of_clk_init
+  function")
+
+Changes in v4:
+
+* new patch (patch 2) split out of patch 3 to avoid having to declare
+  static __clk_set_parent() at the top of clk.c, and to ease readability
+  of patch 3.
+
+ drivers/clk/clk.c | 208 +++++++++++++++++++++++++++---------------------------
+ 1 file changed, 104 insertions(+), 104 deletions(-)
+
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index ce74e91..06d2b5e 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1027,6 +1027,110 @@ unsigned long clk_get_rate(struct clk *clk)
+ }
+ EXPORT_SYMBOL_GPL(clk_get_rate);
  
-> Now, by chance, any idea what is DT equivalent of 
-> 
-> omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
-
-You can try the attached hack after calling the above to grep for
-pins in /sys/kernel/debug/omap_mux/board/core and you get the pins
-in DT suitable format. There's a bug where the the pins are not
-correctly split between core and wkup domains in the legacy mux fwk,
-but you probably won't need to mux many wkup domain pins.
-
-Then you just need to add the pinctr-single entries for each device,
-but AFAIK most of the pins are muxed correctly in the bootloader
-for the Nokia boards.
- 
-> (Plus I'll still have to figure out why it works on emulator but not
-> on hw).
-
-Might be the muxing..
-
-Regards,
-
-Tony
-
-
-From: Tony Lindgren <tony@atomide.com>
-Date: Fri, 7 Jun 2013 08:54:59 -0700
-Subject: [PATCH] Not for merging: Allows dumping out mux entries in .dts format using legacy mux
-
-For pinctrl-single.c we should eventually have a user space
-app to configure and display pin settings. Meanwhile, allow
-using the legacy mux interface to do that:
-
-# mount -t debugfs debugfs /sys/kernel/debug
-# cat /sys/kernel/debug/omap_mux/board/wkup | grep fref_clk0_out
-	0x14 0x2        /* fref_clk0_out.sys_drm_msecure gpio6 OUTPUT | MODE2 */
-
-diff --git a/arch/arm/mach-omap2/mux.c b/arch/arm/mach-omap2/mux.c
-index 48094b58..6f5224a 100644
---- a/arch/arm/mach-omap2/mux.c
-+++ b/arch/arm/mach-omap2/mux.c
-@@ -35,11 +35,10 @@
- #include <linux/irq.h>
- #include <linux/interrupt.h>
- 
--
- #include "omap_hwmod.h"
--
- #include "soc.h"
- #include "control.h"
-+#include "id.h"
- #include "mux.h"
- #include "prm.h"
- #include "common.h"
-@@ -505,17 +504,17 @@ void omap_hwmod_mux(struct omap_hwmod_mux_info *hmux, u8 state)
- #define OMAP_MUX_TEST_FLAG(val, mask)				\
- 	if (((val) & (mask)) == (mask)) {			\
- 		i++;						\
--		flags[i] =  #mask;				\
-+		flags[i] =  #mask + sizeof("OMAP_PIN_") - 1;	\
- 	}
- 
- /* REVISIT: Add checking for non-optimal mux settings */
- static inline void omap_mux_decode(struct seq_file *s, u16 val)
- {
- 	char *flags[OMAP_MUX_MAX_NR_FLAGS];
--	char mode[sizeof("OMAP_MUX_MODE") + 1];
-+	char mode[sizeof("MODE") + 1];
- 	int i = -1;
- 
--	sprintf(mode, "OMAP_MUX_MODE%d", val & 0x7);
-+	sprintf(mode, "MODE%d", val & 0x7);
- 	i++;
- 	flags[i] = mode;
- 
-@@ -553,7 +552,7 @@ static inline void omap_mux_decode(struct seq_file *s, u16 val)
- 		}
- 	} else {
- 		i++;
--		flags[i] = "OMAP_PIN_OUTPUT";
-+		flags[i] = "OUTPUT";
- 	}
- 
- 	do {
-@@ -568,15 +567,26 @@ static inline void omap_mux_decode(struct seq_file *s, u16 val)
- static int omap_mux_dbg_board_show(struct seq_file *s, void *unused)
- {
- 	struct omap_mux_partition *partition = s->private;
-+	int pbase = (int)partition->base;
- 	struct omap_mux_entry *e;
--	u8 omap_gen = omap_rev() >> 28;
++static u8 clk_fetch_parent_index(struct clk *clk, struct clk *parent)
++{
++	u8 i;
 +
-+	if (!(pbase & 0xfff))
-+		pbase = 0x40;
++	if (!clk->parents)
++		clk->parents = kzalloc((sizeof(struct clk*) * clk->num_parents),
++								GFP_KERNEL);
++
++	/*
++	 * find index of new parent clock using cached parent ptrs,
++	 * or if not yet cached, use string name comparison and cache
++	 * them now to avoid future calls to __clk_lookup.
++	 */
++	for (i = 0; i < clk->num_parents; i++) {
++		if (clk->parents && clk->parents[i] == parent)
++			break;
++		else if (!strcmp(clk->parent_names[i], parent->name)) {
++			if (clk->parents)
++				clk->parents[i] = __clk_lookup(parent->name);
++			break;
++		}
++	}
++
++	return i;
++}
++
++static void clk_reparent(struct clk *clk, struct clk *new_parent)
++{
++	hlist_del(&clk->child_node);
++
++	if (new_parent)
++		hlist_add_head(&clk->child_node, &new_parent->children);
 +	else
-+		pbase = 0;
++		hlist_add_head(&clk->child_node, &clk_orphan_list);
 +
-+	seq_printf(s, "\t\tpinctrl-single,pins = <\n");
- 
- 	list_for_each_entry(e, &partition->muxmodes, node) {
- 		struct omap_mux *m = &e->mux;
- 		char m0_def[OMAP_MUX_DEFNAME_LEN];
- 		char *m0_name = m->muxnames[0];
- 		u16 val;
--		int i, mode;
-+		int padconf_offset, i, mode;
++	clk->parent = new_parent;
++}
 +
-+		padconf_offset = m->reg_offset - pbase;
-+		if (cpu_is_omap3630() && padconf_offset > 0x5ca)
-+			continue;
- 
- 		if (!m0_name)
- 			continue;
-@@ -591,18 +601,14 @@ static int omap_mux_dbg_board_show(struct seq_file *s, void *unused)
- 		}
- 		val = omap_mux_read(partition, m->reg_offset);
- 		mode = val & OMAP_MUX_MODE7;
--		if (mode != 0)
--			seq_printf(s, "/* %s */\n", m->muxnames[mode]);
--
--		/*
--		 * XXX: Might be revisited to support differences across
--		 * same OMAP generation.
--		 */
--		seq_printf(s, "OMAP%d_MUX(%s, ", omap_gen, m0_def);
-+		seq_printf(s, "\t\t\t0x%x 0x%x\t/* %s.%s gpio%i ",
-+			   padconf_offset, val, m->muxnames[0], m->muxnames[mode], m->gpio);
- 		omap_mux_decode(s, val);
--		seq_printf(s, "),\n");
-+		seq_printf(s, " */\n");
- 	}
- 
-+	seq_printf(s, "\t\t>;\n");
++static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
++{
++	unsigned long flags;
++	int ret = 0;
++	struct clk *old_parent = clk->parent;
 +
- 	return 0;
++	/*
++	 * Migrate prepare state between parents and prevent race with
++	 * clk_enable().
++	 *
++	 * If the clock is not prepared, then a race with
++	 * clk_enable/disable() is impossible since we already have the
++	 * prepare lock (future calls to clk_enable() need to be preceded by
++	 * a clk_prepare()).
++	 *
++	 * If the clock is prepared, migrate the prepared state to the new
++	 * parent and also protect against a race with clk_enable() by
++	 * forcing the clock and the new parent on.  This ensures that all
++	 * future calls to clk_enable() are practically NOPs with respect to
++	 * hardware and software states.
++	 *
++	 * See also: Comment for clk_set_parent() below.
++	 */
++	if (clk->prepare_count) {
++		__clk_prepare(parent);
++		clk_enable(parent);
++		clk_enable(clk);
++	}
++
++	/* update the clk tree topology */
++	flags = clk_enable_lock();
++	clk_reparent(clk, parent);
++	clk_enable_unlock(flags);
++
++	/* change clock input source */
++	if (parent && clk->ops->set_parent)
++		ret = clk->ops->set_parent(clk->hw, p_index);
++
++	if (ret) {
++		flags = clk_enable_lock();
++		clk_reparent(clk, old_parent);
++		clk_enable_unlock(flags);
++
++		if (clk->prepare_count) {
++			clk_disable(clk);
++			clk_disable(parent);
++			__clk_unprepare(parent);
++		}
++		return ret;
++	}
++
++	/*
++	 * Finish the migration of prepare state and undo the changes done
++	 * for preventing a race with clk_enable().
++	 */
++	if (clk->prepare_count) {
++		clk_disable(clk);
++		clk_disable(old_parent);
++		__clk_unprepare(old_parent);
++	}
++
++	/* update debugfs with new clk tree topology */
++	clk_debug_reparent(clk, parent);
++	return 0;
++}
++
+ /**
+  * __clk_speculate_rates
+  * @clk: first clk in the subtree
+@@ -1334,18 +1438,6 @@ out:
+ 	return ret;
  }
  
+-static void clk_reparent(struct clk *clk, struct clk *new_parent)
+-{
+-	hlist_del(&clk->child_node);
+-
+-	if (new_parent)
+-		hlist_add_head(&clk->child_node, &new_parent->children);
+-	else
+-		hlist_add_head(&clk->child_node, &clk_orphan_list);
+-
+-	clk->parent = new_parent;
+-}
+-
+ void __clk_reparent(struct clk *clk, struct clk *new_parent)
+ {
+ 	clk_reparent(clk, new_parent);
+@@ -1353,98 +1445,6 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
+ 	__clk_recalc_rates(clk, POST_RATE_CHANGE);
+ }
+ 
+-static u8 clk_fetch_parent_index(struct clk *clk, struct clk *parent)
+-{
+-	u8 i;
+-
+-	if (!clk->parents)
+-		clk->parents = kzalloc((sizeof(struct clk*) * clk->num_parents),
+-								GFP_KERNEL);
+-
+-	/*
+-	 * find index of new parent clock using cached parent ptrs,
+-	 * or if not yet cached, use string name comparison and cache
+-	 * them now to avoid future calls to __clk_lookup.
+-	 */
+-	for (i = 0; i < clk->num_parents; i++) {
+-		if (clk->parents && clk->parents[i] == parent)
+-			break;
+-		else if (!strcmp(clk->parent_names[i], parent->name)) {
+-			if (clk->parents)
+-				clk->parents[i] = __clk_lookup(parent->name);
+-			break;
+-		}
+-	}
+-
+-	return i;
+-}
+-
+-static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
+-{
+-	unsigned long flags;
+-	int ret = 0;
+-	struct clk *old_parent = clk->parent;
+-
+-	/*
+-	 * Migrate prepare state between parents and prevent race with
+-	 * clk_enable().
+-	 *
+-	 * If the clock is not prepared, then a race with
+-	 * clk_enable/disable() is impossible since we already have the
+-	 * prepare lock (future calls to clk_enable() need to be preceded by
+-	 * a clk_prepare()).
+-	 *
+-	 * If the clock is prepared, migrate the prepared state to the new
+-	 * parent and also protect against a race with clk_enable() by
+-	 * forcing the clock and the new parent on.  This ensures that all
+-	 * future calls to clk_enable() are practically NOPs with respect to
+-	 * hardware and software states.
+-	 *
+-	 * See also: Comment for clk_set_parent() below.
+-	 */
+-	if (clk->prepare_count) {
+-		__clk_prepare(parent);
+-		clk_enable(parent);
+-		clk_enable(clk);
+-	}
+-
+-	/* update the clk tree topology */
+-	flags = clk_enable_lock();
+-	clk_reparent(clk, parent);
+-	clk_enable_unlock(flags);
+-
+-	/* change clock input source */
+-	if (parent && clk->ops->set_parent)
+-		ret = clk->ops->set_parent(clk->hw, p_index);
+-
+-	if (ret) {
+-		flags = clk_enable_lock();
+-		clk_reparent(clk, old_parent);
+-		clk_enable_unlock(flags);
+-
+-		if (clk->prepare_count) {
+-			clk_disable(clk);
+-			clk_disable(parent);
+-			__clk_unprepare(parent);
+-		}
+-		return ret;
+-	}
+-
+-	/*
+-	 * Finish the migration of prepare state and undo the changes done
+-	 * for preventing a race with clk_enable().
+-	 */
+-	if (clk->prepare_count) {
+-		clk_disable(clk);
+-		clk_disable(old_parent);
+-		__clk_unprepare(old_parent);
+-	}
+-
+-	/* update debugfs with new clk tree topology */
+-	clk_debug_reparent(clk, parent);
+-	return 0;
+-}
+-
+ /**
+  * clk_set_parent - switch the parent of a mux clk
+  * @clk: the mux clk whose input we are switching
+-- 
+1.8.1.2
+
+
