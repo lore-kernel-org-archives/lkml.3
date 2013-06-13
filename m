@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758967Ab3FMTjW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 15:39:22 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38852 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755464Ab3FMTjV (ORCPT
+	id S1758999Ab3FMTnA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 15:43:00 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:49035 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752081Ab3FMTm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 15:39:21 -0400
-Message-ID: <51BA1FE7.4000900@wwwdotorg.org>
-Date: Thu, 13 Jun 2013 13:39:19 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 13 Jun 2013 15:42:58 -0400
+Date: Thu, 13 Jun 2013 21:42:31 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        netdev <netdev@vger.kernel.org>, Joe Perches <joe@perches.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v3] ethernet/arc/arc_emac - Add new driver
+Message-ID: <20130613194231.GA11949@electric-eye.fr.zoreil.com>
+References: <1371134239-4531-1-git-send-email-abrodkin@synopsys.com>
+ <CAHp75Vf4zjtebbaQMp4L0EmUPDVyrNPfvLODo7gHBuBEsWmZeA@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
-        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH] pinctrl: document the pinctrl PM states
-References: <1370980749-15383-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1370980749-15383-1-git-send-email-linus.walleij@stericsson.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHp75Vf4zjtebbaQMp4L0EmUPDVyrNPfvLODo7gHBuBEsWmZeA@mail.gmail.com>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2013 01:59 PM, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> This document snippet tries to be helpful and define the pin
-> PM states and helpers, and how they should be used to create
-> some kind of common ontology around this.
+Andy Shevchenko <andy.shevchenko@gmail.com> :
+[...]
+> I just realize you are using circular buffer here. What about to use
+> them with linux' native framework? Documentation/circular-buffers.txt
 
-Oops. I haven't been keeping up well. I propose we hold off on this
-patch for a short while until the other thread on this topic is finalized.
+It's almost unused in drivers/net. I won't mind if it stays this way.
+
+-- 
+Ueimor
