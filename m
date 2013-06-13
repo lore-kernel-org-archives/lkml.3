@@ -1,104 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757950Ab3FMPcV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 11:32:21 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:50154 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756100Ab3FMPcT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 11:32:19 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-sh@vger.kernel.org, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH v2 04/11] pwm: Add Renesas TPU PWM driver
-Date: Thu, 13 Jun 2013 17:32:22 +0200
-Message-ID: <6125284.6vELCtAL9N@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <20130612100647.GA30841@mithrandir>
-References: <1366836616-21475-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <22098838.zqKo9eB0Jt@avalon> <20130612100647.GA30841@mithrandir>
+	id S1756431Ab3FMPfu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 11:35:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31263 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752081Ab3FMPfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 11:35:48 -0400
+Date: Thu, 13 Jun 2013 11:20:59 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Anish Singh <anish198519851985@gmail.com>
+Subject: Re: [PATCH 4/6] watchdog: Boot-disable by default on full dynticks
+Message-ID: <20130613152059.GA133453@redhat.com>
+References: <1371045758-5296-1-git-send-email-fweisbec@gmail.com>
+ <1371045758-5296-5-git-send-email-fweisbec@gmail.com>
+ <20130612170316.GO133453@redhat.com>
+ <20130613131057.GA15997@somewhere>
+ <20130613140207.GW133453@redhat.com>
+ <20130613142210.GD16339@somewhere>
+ <20130613144515.GX133453@redhat.com>
+ <20130613145601.GE16339@somewhere>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart1658100.GTP1WANa2e"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130613145601.GE16339@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---nextPart1658100.GTP1WANa2e
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-
-Hi Thierry,
-
-On Wednesday 12 June 2013 12:06:49 Thierry Reding wrote:
-> On Wed, May 29, 2013 at 05:48:50PM +0200, Laurent Pinchart wrote:
-> > On Thursday 23 May 2013 23:45:17 Thierry Reding wrote:
-> > > On Wed, Apr 24, 2013 at 10:50:09PM +0200, Laurent Pinchart wrote:
-> [...]
-> 
-> > > > +struct tpu_device {
-> > > > +	struct platform_device *pdev;
-> > > > +	struct pwm_chip chip;
-> > > > +	spinlock_t lock;
-> > > > +
-> > > > +	void __iomem *base;
-> > > > +	struct clk *clk;
-> > > > +
-> > > > +	struct tpu_pwm_device pwms[TPU_CHANNEL_MAX];
-> > > > +};
+On Thu, Jun 13, 2013 at 04:56:03PM +0200, Frederic Weisbecker wrote:
+> > > > Peter,
+> > > > 
+> > > > Where is this patch?
 > > > 
-> > > Can't you reuse the infrastructure built into the PWM subsystem? You can
-> > > associate chip-specific data with each PWM device. You can look at the
-> > > pwm-atmel-tcb and pwm-bfin drivers for usage examples. In a nutshell you
-> > > hook the .request() function and setup the driver-specific structure and
-> > > associate them with the PWM using pwm_set_chip_data().
-> > > 
-> > > This has the advantage that you don't need the pwms array in tpu_device
-> > > and you also don't need TPU_CHANNEL_MAX because only the pwm_chip.npwm
-> > > field needs to contain the number of channels.
+> > > Which patch? The old version of the current one? It was part of a previous series
+> > > that needed improvements so it hasn't been applied yet.
 > > 
-> > I've actually thought about that, but decided not to do so. It looked
-> > pretty weird to allocate PWM devices at .request() time, so I decided to
-> > allocate the devices once only at probe time. Is it considered better to
-> > allocate/free PWM devices every time they're requested/released ?
+> > I guess I am confused.  I thought Peter said in an email awhile ago, that
+> > he found Stephan's patch (that converted perf to use hrtimers) and applied
+> > it to his tree.  Are you saying it was unapplied because it needed
+> > improvements?
 > 
-> Well, I consider it better because it postpones memory allocation until
-> it is actually used. Typically requesting a PWM device happens at probe
-> time of other drivers so it isn't actually as bad as it may sound. Also
-> allocating at request time allows you to easily associate the data with
-> the PWM device using pwm_set_chip_data(), which was intended to be used
-> for exactly this purpose.
-> 
-> Doing so will keep the driver-specific data in a well-defined location
-> instead of putting it somewhere driver-specific.
+> I think it doesn't completely remove the perf tick. Besides it doesn't really
+> solve the problem since perf events will require periodic hrtimers to work,
+> which still defeats the purpose of full dynticks.
 
-OK, I'll try to fix that. For now I'll still need to expose TPU_CHANNEL_MAX to 
-boards for polarity configuration in platform data. That will go away when all 
-users will be converted to DT.
+I don't know enough about how full dynticks work to even present a
+solution.  But currently I was working with the Red Hat performance team
+to enhance perf to help our customers diagnose performance problems
+easier.
 
--- 
-Regards,
+My fear is anyone who uses full dynticks and has issues, can't use perf to
+help diagnose their problems because it will change the dynamics of the
+problem.  And with the current huge drop in performance in cpu_idle (as
+compared to RHEL-6's 2.6.32 kernel) due to what seems to be miscalculated
+c-states, one might have a hard time evaluating if full dynticks is doing
+the right thing or not.
 
-Laurent Pinchart
+Then again perhaps full dynticks isn't useful for distros like RHEL.
 
---nextPart1658100.GTP1WANa2e
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
+That's why I was hoping to solve the underlying problem as opposed to
+accepting patches like this which work around the symptoms.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Again, my knowledge of full dynticks is poor, so I have almost no idea of
+the complexities surrounding the problem and how hard it is to even solve
+it.
 
-iQEcBAABAgAGBQJRueYMAAoJEIkPb2GL7hl1htUH/A1y2i0dPDNtwvUe+W/bcWGz
-VhZKvt61tLcMcZzEpK/K0ovfGcoNVTihXgsboPMoCulhvaw8d1yUZKMrs45/gbQs
-JU/OmgUPfrm9IvbSkYjoWGJHpeqNbLWkzFG2CkLSwK7S8WelfKYQXTK1obcRPmoa
-aIrYPJ3j6qTsy6wN5Dbuq9ox+FHBpxRxWFuD2P1kCa7yqyBpn4Ui2kLcMVUVmZ/g
-aFvzCOCClqydQudNoBrmAWaWAv829fiOfkruMTF2+amiXRZWulmh2PGbCEanzx93
-/v8KdiK6dFYLc6Aadb74pTdjN8uTrNxSk6BUXRN0/pnS2fTE7dQMB0BvjXUSE84=
-=GYhm
------END PGP SIGNATURE-----
-
---nextPart1658100.GTP1WANa2e--
+Cheers,
+Don
 
