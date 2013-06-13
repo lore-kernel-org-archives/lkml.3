@@ -1,96 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759231Ab3FMUaL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 16:30:11 -0400
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:47704 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757728Ab3FMUaJ (ORCPT
+	id S1759245Ab3FMUeM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 16:34:12 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:36496 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757659Ab3FMUeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 16:30:09 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] pinctrl: move the pm state stubs
-Date: Thu, 13 Jun 2013 22:29:23 +0200
-Message-ID: <1371155363-28223-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Thu, 13 Jun 2013 16:34:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <51BA1FE7.4000900@wwwdotorg.org>
+References: <1370980749-15383-1-git-send-email-linus.walleij@stericsson.com>
+	<51BA1FE7.4000900@wwwdotorg.org>
+Date: Thu, 13 Jun 2013 22:34:10 +0200
+Message-ID: <CACRpkdZV7R3MgbuvEMhs24YYv2hK8Kt9Kjmv_cpRQQ1NYviDQg@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: document the pinctrl PM states
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Warren <swarren@nvidia.com>, Kevin Hilman <khilman@linaro.org>,
+        Tony Lindgren <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Thu, Jun 13, 2013 at 9:39 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 06/11/2013 01:59 PM, Linus Walleij wrote:
+>> From: Linus Walleij <linus.walleij@linaro.org>
+>>
+>> This document snippet tries to be helpful and define the pin
+>> PM states and helpers, and how they should be used to create
+>> some kind of common ontology around this.
+>
+> Oops. I haven't been keeping up well. I propose we hold off on this
+> patch for a short while until the other thread on this topic is finalized.
 
-The stubs for the !PINCTRL case were placed in the wrong
-part of the file, causing breakage in linux-next when compiling
-SH without pinctrl. Fix it up by moving the stubs to the right
-place.
+Isn't it better if I split it?
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- include/linux/pinctrl/consumer.h | 40 ++++++++++++++++++++--------------------
- 1 file changed, 20 insertions(+), 20 deletions(-)
+Most of this doc is about the default/sleep/idle states and
+how that relates to runtime PM, and that seems to be
+uncontroversial.
 
-diff --git a/include/linux/pinctrl/consumer.h b/include/linux/pinctrl/consumer.h
-index 18cdbb1..7f18e4d 100644
---- a/include/linux/pinctrl/consumer.h
-+++ b/include/linux/pinctrl/consumer.h
-@@ -116,6 +116,26 @@ static inline void devm_pinctrl_put(struct pinctrl *p)
- {
- }
- 
-+static inline int pinctrl_pm_select_default_state(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+static inline int pinctrl_pm_select_active_state(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+static inline int pinctrl_pm_select_sleep_state(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+static inline int pinctrl_pm_select_idle_state(struct device *dev)
-+{
-+	return 0;
-+}
-+
- #endif /* CONFIG_PINCTRL */
- 
- static inline struct pinctrl * __must_check pinctrl_get_select(
-@@ -223,26 +243,6 @@ static inline int pin_config_group_set(const char *dev_name,
- 	return 0;
- }
- 
--static inline int pinctrl_pm_select_default_state(struct device *dev)
--{
--	return 0;
--}
--
--static inline int pinctrl_pm_select_active_state(struct device *dev)
--{
--	return 0;
--}
--
--static inline int pinctrl_pm_select_sleep_state(struct device *dev)
--{
--	return 0;
--}
--
--static inline int pinctrl_pm_select_idle_state(struct device *dev)
--{
--	return 0;
--}
--
- #endif
- 
- #endif /* __LINUX_PINCTRL_CONSUMER_H */
--- 
-1.7.11.3
-
+Yours,
+Linus Walleij
