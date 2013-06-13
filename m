@@ -1,60 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932540Ab3FMG67 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 02:58:59 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35767 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755478Ab3FMG6y convert rfc822-to-8bit (ORCPT
+	id S1757391Ab3FMHD1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 03:03:27 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:38495 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752082Ab3FMHD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 02:58:54 -0400
-From: "Mohammed, Afzal" <afzal@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Benoit Cousson" <benoit.cousson@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
-Subject: RE: [PATCH v2 02/14] ARM: OMAP2+: AM43x: Kconfig
-Thread-Topic: [PATCH v2 02/14] ARM: OMAP2+: AM43x: Kconfig
-Thread-Index: AQHOWuhABF2KqV8mJ0y1adAsGP8LuZkx4/kAgAFoeoA=
-Date: Thu, 13 Jun 2013 06:58:10 +0000
-Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EB1DEB2@DBDE04.ent.ti.com>
-References: <cover.1369658705.git.afzal@ti.com>
- <7642e0c701680ea94a8cc84059ff19e500813bf1.1369658705.git.afzal@ti.com>
- <20130612171200.GL8164@atomide.com>
-In-Reply-To: <20130612171200.GL8164@atomide.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Thu, 13 Jun 2013 03:03:26 -0400
 MIME-Version: 1.0
+In-Reply-To: <20130611153454.6ab17ce44bc4a678b8bf72d4@linux-foundation.org>
+References: <1370891880-2644-1-git-send-email-sasha.levin@oracle.com>
+	<CAOJsxLGDH2iwznRkP-iwiMZw7Ee3mirhjLvhShrWLHR0qguRxA@mail.gmail.com>
+	<51B62F6B.8040308@oracle.com>
+	<0000013f3075f90d-735942a8-b4b8-413f-a09e-57d1de0c4974-000000@email.amazonses.com>
+	<51B67553.6020205@oracle.com>
+	<CAOJsxLH56xqCoDikYYaY_guqCX=S4rcVfDJQ4ki=r-PkNQW9ug@mail.gmail.com>
+	<51B72323.8040207@oracle.com>
+	<0000013f33cdc631-eadb07d1-ef08-4e2c-a218-1997eb86cde9-000000@email.amazonses.com>
+	<51B73F38.6040802@kernel.org>
+	<20130611153454.6ab17ce44bc4a678b8bf72d4@linux-foundation.org>
+Date: Thu, 13 Jun 2013 10:03:24 +0300
+X-Google-Sender-Auth: RdjU1p-_SOUAfuorbYHVg1ZbAb4
+Message-ID: <CAOJsxLE=cw8NqmQhbA0AP-c5ckejxuU-1pX4KyHY0J2HN0iTzA@mail.gmail.com>
+Subject: Re: [PATCH] slab: prevent warnings when allocating with __GFP_NOWARN
+From: Pekka Enberg <penberg@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Lameter <cl@gentwo.org>, Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+On Wed, Jun 12, 2013 at 1:34 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> __GFP_NOWARN is frequently used by kernel code to probe for "how big an
+> allocation can I get".  That's a bit lame, but it's used on slow paths
+> and is pretty simple.
 
-On Wed, Jun 12, 2013 at 22:42:00, Tony Lindgren wrote:
-
-> I've updated this patch to remove the "default y" and
-> "depends on ARCH_OMAP2PLUS" entries for the usual reasons
-> and applied the first ten patches into omap-for-v3.11/soc.
-
-Thanks.
-
-Patch 10 "ARM: OMAP2+: AM43x: basic dt support" is missing in
-omap-for-v3.11/soc branch and omap soc pull request, can you
-please help patch 10 also to go upstream.
-
-Regards
-Afzal
-
+Applied to slab/urgent, thanks guys!
