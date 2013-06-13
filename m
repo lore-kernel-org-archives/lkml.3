@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758805Ab3FMTVl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 15:21:41 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41070 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754694Ab3FMTVk (ORCPT
+	id S1758935Ab3FMTWC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 15:22:02 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:56798 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756856Ab3FMTWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 15:21:40 -0400
-Message-ID: <51BA1BBF.6050106@wwwdotorg.org>
-Date: Thu, 13 Jun 2013 13:21:35 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 13 Jun 2013 15:22:00 -0400
+Date: Thu, 13 Jun 2013 12:21:52 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Subject: Re: [PATCH] Percpu tag allocator
+Message-ID: <20130613192152.GC13970@mtj.dyndns.org>
+References: <1371009804-11596-1-git-send-email-koverstreet@google.com>
+ <20130612163854.91da28042ab7a943b69a5970@linux-foundation.org>
+ <20130613190610.GA13970@mtj.dyndns.org>
+ <20130613121324.2cab80256217df97254af16c@linux-foundation.org>
 MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Joseph Lo <josephl@nvidia.com>, Karan Jhavar <kjhavar@nvidia.com>,
-        Varun Wadekar <vwadekar@nvidia.com>,
-        Chris Johnson <CJohnson@nvidia.com>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Dave Martin <Dave.Martin@arm.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>, gnurou@gmail.com,
-        devicetree-discuss@lists.ozlabs.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 2/3] ARM: tegra: split setting of CPU reset handler
-References: <1371114745-24710-1-git-send-email-acourbot@nvidia.com> <1371114745-24710-3-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1371114745-24710-3-git-send-email-acourbot@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130613121324.2cab80256217df97254af16c@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2013 03:12 AM, Alexandre Courbot wrote:
-> Not all Tegra devices need to set the CPU reset handler in the same way.
+Hello,
 
-s/need/can/ ?
+On Thu, Jun 13, 2013 at 12:13:24PM -0700, Andrew Morton wrote:
+> As I understand it, if a task is stuck in this loop at freeze time, the
+> whole freeze attempt will fail.  But it's been a long time since I
+> thought about or worked on this stuff.
 
-> In particular, devices using a TrustZone secure monitor cannot set the
-> reset handler directly and need to do it through a firmware operation.
-> 
-> This patch separates the act of setting the reset handler from its
-> preparation, so the former can be implemented in a different way.
+It depends on who's calling the allocator but if the device driver or
+its midlayer is doing things properly, the ideal way would be the task
+being marked unfreezable (I think freezable kthreads harms more than
+help in general) and the driver suspend callback draining commands
+while not issuing new ones.  What the tag allocator does doesn't
+really matter as all resources necessary for command execution should
+eventually be freed before entering suspend anyway.
 
+If that's not the case, the freezing should still be controlled by the
+caller and again the allocator should be able to return -EBUSY/INTR to
+indicate and then the caller, after releasing all other resources,
+shouldf to try_to_freeze().  There simply is no reliable way to tell
+from as deep as tag allocator whether it'd be safe to freeze or not.
+
+Thanks.
+
+-- 
+tejun
