@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab3FMPte (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 11:49:34 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54914 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751925Ab3FMPtc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 11:49:32 -0400
-Date: Thu, 13 Jun 2013 16:48:53 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Ben Greear <greearb@candelatech.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: kmemleak reports in kernel 3.9.5+
-Message-ID: <20130613154853.GD6530@darko.cambridge.arm.com>
-References: <51B61982.2050903@candelatech.com>
- <CAHkRjk5SDCbqr0Br24YQuHr=j7DmnpYk9CShrz1qiuYff7+qAw@mail.gmail.com>
- <51B78009.2060808@candelatech.com>
+	id S1757946Ab3FMPu3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 11:50:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57530 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752899Ab3FMPu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 11:50:28 -0400
+Date: Thu, 13 Jun 2013 10:02:07 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Anish Singh <anish198519851985@gmail.com>
+Subject: Re: [PATCH 4/6] watchdog: Boot-disable by default on full dynticks
+Message-ID: <20130613140207.GW133453@redhat.com>
+References: <1371045758-5296-1-git-send-email-fweisbec@gmail.com>
+ <1371045758-5296-5-git-send-email-fweisbec@gmail.com>
+ <20130612170316.GO133453@redhat.com>
+ <20130613131057.GA15997@somewhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51B78009.2060808@candelatech.com>
+In-Reply-To: <20130613131057.GA15997@somewhere>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 08:52:41PM +0100, Ben Greear wrote:
-> On 06/10/2013 03:32 PM, Catalin Marinas wrote:
-> > On 10 June 2013 19:22, Ben Greear <greearb@candelatech.com> wrote:
-> >> We had a system go OOM while doing lots of wireless
-> >> stations.  (System had 8GB of RAM, so I suspect a leak).
-> >>
-> >> I enabled kmemleak in a 3.9.5 (plus some local patches) and
-> >> I see the entries below.  Any idea if these are real or not?
-> >>
-> >> unreferenced object 0xffff880212281c80 (size 128):
-> >>    comm "systemd", pid 1, jiffies 4294682684 (age 1159.517s)
-> >>    hex dump (first 32 bytes):
-> >>      60 39 27 12 02 88 ff ff 00 02 20 00 00 00 ad de  `9'....... .....
-> >>      10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-> >>    backtrace:
-> >>      [<ffffffff815de7bf>] kmemleak_alloc+0x73/0x98
-> >>      [<ffffffff8118b4d4>] slab_post_alloc_hook+0x28/0x2a
-> >>      [<ffffffff8118d605>] __kmalloc+0xf9/0x122
-> >>      [<ffffffff8154946d>] kzalloc.clone.0+0xe/0x10
-> >>      [<ffffffff81549494>] fib_default_rule_add+0x25/0x7a
-> >>      [<ffffffffa014f5a9>] ip6mr_net_init+0x7e/0x118 [ipv6]
-> >>      [<ffffffff8152c992>] ops_init+0xd6/0xf7
-> >>      [<ffffffff8152cb51>] register_pernet_operations+0xc2/0x16b
-> >>      [<ffffffff8152cc87>] register_pernet_subsys+0x2e/0x47
-> >>      [<ffffffffa016db69>] 0xffffffffa016db69
-> >>      [<ffffffffa016d109>] 0xffffffffa016d109
-> >>      [<ffffffff8100207f>] do_one_initcall+0x7f/0x13e
-> >>      [<ffffffff810f3985>] do_init_module+0x44/0x18f
-> >>      [<ffffffff810f5da7>] load_module+0x14d1/0x168e
-> >>      [<ffffffff810f6114>] sys_init_module+0xfd/0x101
-> >>      [<ffffffff815f6599>] system_call_fastpath+0x16/0x1b
-> >
-> > No idea yet. You can try:
-> >
-> > echo clear > /sys/kernel/debug/kmemleak
-> >
-> > and see if there are more appearing after. All seem to have a common
-> > allocation path via debug_object_activate -> ... ->
-> > rcuhead_fixup_activate -> ... -> __debug_object_init.
+On Thu, Jun 13, 2013 at 03:10:59PM +0200, Frederic Weisbecker wrote:
+> On Wed, Jun 12, 2013 at 01:03:16PM -0400, Don Zickus wrote:
+> > On Wed, Jun 12, 2013 at 04:02:36PM +0200, Frederic Weisbecker wrote:
+> > > When the watchdog runs, it prevents the full dynticks
+> > > CPUs from stopping their tick because the hard lockup
+> > > detector uses perf events internally, which in turn
+> > > rely on the periodic tick.
+> > > 
+> > > Since this is a rather confusing behaviour that is not
+> > > easy to track down and identify for those who want to
+> > > test CONFIG_NO_HZ_FULL, let's default disable the
+> > > watchdog on boot time when full dynticks is enabled.
+> > > 
+> > > The user can still enable it later on runtime using
+> > > proc or sysctl.
+> > 
+> > I thought we had a conversation awhile ago, where we agreed this was going
+> > to be fixed for 3.11?  Didn't Peter find the patch and apply it to his
+> > tree?  I am confused why this is still needed?
 > 
-> I tried the command below, and it printed out quite a few things.
+> We agreed on the patch but it hasn't been applied yet. I'm trying to get
+> a sane series of nohz patches before sending to Ingo.
 
-Can you send me your .config file? I can't reproduce this.
+Peter,
 
-> Also, I read the kmemleak.txt documentation, but a question remains:
-> 
-> If I enable kmemleak at compile time, but disable it at boot
-> time using kmemleak=off, is there any significant runtime overhead?
+Where is this patch?
 
-You still get the callback into kmemleak for each allocation/freeing but
-it doesn't walk the stack for the backtrace and it doesn't scan the
-memory either. I would say the overhead is very small, probably
-unnoticeable if you already have other debug options enabled.
-
--- 
-Catalin
+Cheers,
+Don
