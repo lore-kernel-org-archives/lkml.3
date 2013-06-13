@@ -1,62 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932728Ab3FMJAt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 05:00:49 -0400
-Received: from mga03.intel.com ([143.182.124.21]:44392 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932688Ab3FMJAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 05:00:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,857,1363158000"; 
-   d="scan'208";a="349193855"
-From: Haicheng Li <haicheng.li@linux.intel.com>
-To: linux-fsdevel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
-        Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Haicheng Li <haicheng.lee@gmail.com>,
-        Haicheng Li <haicheng.li@linux.intel.com>
-Subject: [PATCH 2/3] f2fs: make locate_dirty_segment() as static
-Date: Thu, 13 Jun 2013 16:59:28 +0800
-Message-Id: <1371113969-946-3-git-send-email-haicheng.li@linux.intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1371113969-946-1-git-send-email-haicheng.li@linux.intel.com>
-References: <1371113969-946-1-git-send-email-haicheng.li@linux.intel.com>
+	id S1758361Ab3FMJEf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 05:04:35 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:33156 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756168Ab3FMJEd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 05:04:33 -0400
+From: Xiaoguang Chen <chenxg@marvell.com>
+To: <viresh.kumar@linaro.org>, <rjw@sisk.pl>
+CC: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <njiang1@marvell.com>,
+        <zjwu@marvell.com>, <ylmao@marvell.com>, <chenxg.marvell@gmail.com>,
+        Xiaoguang Chen <chenxg@marvell.com>
+Subject: [PATCH v5] cpufreq: fix governor start/stop race condition
+Date: Thu, 13 Jun 2013 17:01:58 +0800
+Message-ID: <1371114118-19488-1-git-send-email-chenxg@marvell.com>
+X-Mailer: git-send-email 1.8.0
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's used only locally and could be static.
+cpufreq governor stop and start should be kept in sequence.
+If not, there will be unexpected behavior, for example:
 
-Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
+we have 4 cpus and policy->cpu=cpu0, cpu1/2/3 are linked to cpu0.
+the normal sequence is as below:
+
+1) Current governor is userspace, one application tries to set
+governor to ondemand. it will call __cpufreq_set_policy in which it
+will stop userspace governor and then start ondemand governor.
+
+2) Current governor is userspace, now cpu0 hotplugs in cpu3, it will
+call cpufreq_add_policy_cpu. on which it first stops userspace
+governor, and then starts userspace governor.
+
+Now if the sequence of above two cases interleaves, it becames
+below sequence:
+
+1) application stops userspace governor
+2)                                      hotplug stops userspace governor
+3) application starts ondemand governor
+4)                                      hotplug starts a governor
+
+in step 4, hotplug is supposed to start userspace governor, but now
+the governor has been changed by application to ondemand, so hotplug
+starts ondemand governor again !!!!
+
+The solution is: do not allow stop one policy's governor multi-times
+Governor stop should only do once for one policy, after it is stopped,
+no other governor stop should be executed. also add one mutext to
+protect __cpufreq_governor so governor operation can be kept in sequence.
+
+Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
 ---
- fs/f2fs/f2fs.h    |    1 -
- fs/f2fs/segment.c |    2 +-
- 2 files changed, 1 insertion(+), 2 deletions(-)
+ drivers/cpufreq/cpufreq.c | 24 ++++++++++++++++++++++++
+ include/linux/cpufreq.h   |  1 +
+ 2 files changed, 25 insertions(+)
 
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index a05aa65..3e7cb33 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -996,7 +996,6 @@ void destroy_node_manager_caches(void);
-  */
- void f2fs_balance_fs(struct f2fs_sb_info *);
- void invalidate_blocks(struct f2fs_sb_info *, block_t);
--void locate_dirty_segment(struct f2fs_sb_info *, unsigned int);
- void clear_prefree_segments(struct f2fs_sb_info *);
- int npages_for_summary_flush(struct f2fs_sb_info *);
- void allocate_new_segments(struct f2fs_sb_info *);
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index 77f31c0..b15debc 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -94,7 +94,7 @@ static void __remove_dirty_segment(struct f2fs_sb_info *sbi, unsigned int segno,
-  * Adding dirty entry into seglist is not critical operation.
-  * If a given segment is one of current working segments, it won't be added.
-  */
--void locate_dirty_segment(struct f2fs_sb_info *sbi, unsigned int segno)
-+static void locate_dirty_segment(struct f2fs_sb_info *sbi, unsigned int segno)
- {
- 	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
- 	unsigned short valid_blocks;
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 2d53f47..b51473e 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -46,6 +46,7 @@ static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data);
+ static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
+ #endif
+ static DEFINE_RWLOCK(cpufreq_driver_lock);
++static DEFINE_MUTEX(cpufreq_governor_lock);
+ 
+ /*
+  * cpu_policy_rwsem is a per CPU reader-writer semaphore designed to cure
+@@ -1562,6 +1563,21 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+ 
+ 	pr_debug("__cpufreq_governor for CPU %u, event %u\n",
+ 						policy->cpu, event);
++
++	mutex_lock(&cpufreq_governor_lock);
++	if ((!policy->governor_enabled && (event == CPUFREQ_GOV_STOP)) ||
++	    (policy->governor_enabled && (event == CPUFREQ_GOV_START))) {
++		mutex_unlock(&cpufreq_governor_lock);
++		return -EBUSY;
++	}
++
++	if (event == CPUFREQ_GOV_STOP)
++		policy->governor_enabled = 0;
++	else if (event == CPUFREQ_GOV_START)
++		policy->governor_enabled = 1;
++
++	mutex_unlock(&cpufreq_governor_lock);
++
+ 	ret = policy->governor->governor(policy, event);
+ 
+ 	if (!ret) {
+@@ -1569,6 +1585,14 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+ 			policy->governor->initialized++;
+ 		else if (event == CPUFREQ_GOV_POLICY_EXIT)
+ 			policy->governor->initialized--;
++	} else {
++		/* Restore original values */
++		mutex_lock(&cpufreq_governor_lock);
++		if (event == CPUFREQ_GOV_STOP)
++			policy->governor_enabled = 1;
++		else if (event == CPUFREQ_GOV_START)
++			policy->governor_enabled = 0;
++		mutex_unlock(&cpufreq_governor_lock);
+ 	}
+ 
+ 	/* we keep one module reference alive for
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 037d36a..c12db73 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -107,6 +107,7 @@ struct cpufreq_policy {
+ 	unsigned int		policy; /* see above */
+ 	struct cpufreq_governor	*governor; /* see below */
+ 	void			*governor_data;
++	int			governor_enabled; /* governor start/stop flag */
+ 
+ 	struct work_struct	update; /* if update_policy() needs to be
+ 					 * called, but you're in IRQ context */
 -- 
-1.7.9.5
+1.8.0
 
