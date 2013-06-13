@@ -1,179 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757080Ab3FMOuI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 10:50:08 -0400
-Received: from mga03.intel.com ([143.182.124.21]:62325 "EHLO mga03.intel.com"
+	id S1756999Ab3FMOuk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 10:50:40 -0400
+Received: from fieldses.org ([174.143.236.118]:52677 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751515Ab3FMOuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 10:50:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,859,1363158000"; 
-   d="scan'208";a="254548252"
-Message-ID: <51B9DC16.9020102@linux.intel.com>
-Date: Thu, 13 Jun 2013 17:49:58 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1756395Ab3FMOui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 10:50:38 -0400
+Date: Thu, 13 Jun 2013 10:50:09 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, dhowells@redhat.com,
+        sage@inktank.com, smfrench@gmail.com, swhiteho@redhat.com,
+        Trond.Myklebust@netapp.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, cluster-devel@redhat.com,
+        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        piastryyy@gmail.com
+Subject: Re: [PATCH v2 10/14] locks: turn the blocked_list into a hashtable
+Message-ID: <20130613145009.GB20235@fieldses.org>
+References: <1370948948-31784-1-git-send-email-jlayton@redhat.com>
+ <1370948948-31784-11-git-send-email-jlayton@redhat.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Eric Dumazet <erdnetdev@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>, Amir Vadai <amirv@mellanox.com>,
-        Alex Rosenbaum <alexr@mellanox.com>,
-        Avner Ben Hanoch <avnerb@mellanox.com>, Or Kehati <ork@mellanox.com>,
-        sockperf-dev@googlegroups.com, Eliezer Tamir <eliezer@tamir.org.il>
-Subject: [PATCH] sockperf: add SO_LL socketop support
-References: <20130613144613.4875.46858.stgit@ladj378.jer.intel.com>
-In-Reply-To: <20130613144613.4875.46858.stgit@ladj378.jer.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370948948-31784-11-git-send-email-jlayton@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add lls socket option support to sockperf.
-Right now we always get the option before set to show the option is 
-working properly. We should probably remove that in an official release.
-use --lls (value in usecs) to override global setting.
----
+On Tue, Jun 11, 2013 at 07:09:04AM -0400, Jeff Layton wrote:
+> Break up the blocked_list into a hashtable, using the fl_owner as a key.
+> This speeds up searching the hash chains, which is especially significant
+> for deadlock detection.
+> 
+> Note that the initial implementation assumes that hashing on fl_owner is
+> sufficient. In most cases it should be, with the notable exception being
+> server-side lockd, which compares ownership using a tuple of the
+> nlm_host and the pid sent in the lock request. So, this may degrade to a
+> single hash bucket when you only have a single NFS client. That will be
+> addressed in a later patch.
+> 
+> The careful observer may note that this patch leaves the file_lock_list
+> alone. There's much less of a case for turning the file_lock_list into a
+> hashtable. The only user of that list is the code that generates
+> /proc/locks, and it always walks the entire list.
 
-  src/Defs.h       |    3 +++
-  src/SockPerf.cpp |   54 
-+++++++++++++++++++++++++++++++++++++++++++++++++++++-
-  2 files changed, 56 insertions(+), 1 deletions(-)
+Makes sense to me, ACK to this and the previous patch.--b.
 
-diff --git a/src/Defs.h b/src/Defs.h
-index e38e3a4..87b45a0 100644
---- a/src/Defs.h
-+++ b/src/Defs.h
-@@ -161,6 +161,7 @@ enum {
-      OPT_OUTPUT_PRECISION,           //35
-      OPT_CLIENTPORT,                 //36
-      OPT_CLIENTIP,                   //37
-+    OPT_LLS,            //38
-  };
-
-  #define MODULE_NAME            "sockperf"
-@@ -527,6 +528,8 @@ struct user_params_t {
-  //    bool stream_mode; - use b_stream instead
-      int mthread_server;
-      struct timeval* select_timeout;
-+    unsigned long lls_usecs;
-+    bool lls_is_set;
-      int sock_buff_size;
-      int threads_num;
-      char threads_affinity[MAX_ARGV_SIZE];
-diff --git a/src/SockPerf.cpp b/src/SockPerf.cpp
-index 41daf95..d76320f 100644
---- a/src/SockPerf.cpp
-+++ b/src/SockPerf.cpp
-@@ -207,6 +207,10 @@ static const AOPT_DESC  common_opt_desc[] =
-          "Limit the lifetime of the message (default 2)."
-      },
-      {
-+        OPT_LLS, AOPT_ARG, aopt_set_literal( 0 ), aopt_set_string( "lls" ),
-+        "Turn on LLS via socket option (value = us to poll)."
-+    },
-+    {
-          OPT_BUFFER_SIZE, AOPT_ARG, aopt_set_literal( 0 ), 
-aopt_set_string( "buffer-size" ),
-          "Set total socket receive/send buffer <size> in bytes (system 
-defined by default)."
-      },
-@@ -292,7 +296,7 @@ static int proc_mode_help( int id, int argc, const 
-char **argv )
-      int   i = 0;
-
-      printf(MODULE_NAME " is a tool for testing network latency and 
-throughput.\n");
--    printf("version %s\n", STR(VERSION));
-+    printf("version %s-lls\n", STR(VERSION));
-      printf("\n");
-      printf("Usage: " MODULE_NAME " <subcommand> [options] [args]\n");
-      printf("Type: \'" MODULE_NAME " <subcommand> --help\' for help on 
-a specific subcommand.\n");
-@@ -1789,6 +1793,26 @@ static int parse_common_opt( const AOPT_OBJECT 
-*common_obj )
-              s_user_params.is_nonblocked_send = true;
-          }
-
-+        if ( !rc && aopt_check(common_obj, OPT_LLS) ) {
-+            const char* optarg = aopt_value(common_obj, OPT_LLS);
-+            if (optarg) {
-+                errno = 0;
-+                int value = strtoul(optarg, NULL, 0);
-+                if (errno != 0 || value < 0) {
-+                    log_msg("'-%d' Invalid LLS value: %s", OPT_LLS, 
-optarg);
-+                    rc = SOCKPERF_ERR_BAD_ARGUMENT;
-+                }
-+                else {
-+                    s_user_params.lls_usecs = value;
-+                    s_user_params.lls_is_set = true;
-+                }
-+            }
-+            else {
-+                log_msg("'-%d' Invalid value", OPT_LLS);
-+                rc = SOCKPERF_ERR_BAD_ARGUMENT;
-+            }
-+        }
-+
-          if ( !rc && aopt_check(common_obj, OPT_RECV_LOOPING) ) {
-
-              const char* optarg = aopt_value(common_obj, OPT_RECV_LOOPING);
-@@ -2296,6 +2320,29 @@ int sock_set_reuseaddr(int fd)
-      return rc;
-  }
-
-+#ifndef SO_LL
-+#define SO_LL 46
-+#endif
-+int sock_set_lls(int fd)
-+{
-+    int rc = SOCKPERF_ERR_NONE;
-+    unsigned long lls;
-+    int size = sizeof(lls);
-+
-+    if(getsockopt(fd, SOL_SOCKET, SO_LL, &lls, (socklen_t *)&size) < 0){
-+        log_err("getsockopt(SO_LL) failed");
-+        return SOCKPERF_ERR_SOCKET;
-+    } else
-+        log_msg("socket option SO_LL default was %lu, changing to %lu", 
-lls, s_user_params.lls_usecs);
-+
-+    if (setsockopt(fd, SOL_SOCKET, SO_LL, &(s_user_params.lls_usecs), 
-sizeof(s_user_params.lls_usecs)) < 0) {
-+        log_err("setsockopt(SO_LL) failed");
-+        rc = SOCKPERF_ERR_SOCKET;
-+    }
-+    return rc;
-+}
-+
-+
-  int sock_set_snd_rcv_bufs(int fd)
-  {
-      /*
-@@ -2460,6 +2507,11 @@ int prepare_socket(int fd, struct fds_data *p_data)
-      }
-
-      if (!rc &&
-+            (s_user_params.lls_is_set == true))
-+    {
-+        rc = sock_set_lls(fd);
-+    }
-+    if (!rc &&
-              (s_user_params.sock_buff_size > 0))
-      {
-          rc = sock_set_snd_rcv_bufs(fd);
-
-
-
-
-
-
+> 
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> ---
+>  fs/locks.c |   25 ++++++++++++++++++-------
+>  1 files changed, 18 insertions(+), 7 deletions(-)
+> 
+> diff --git a/fs/locks.c b/fs/locks.c
+> index 28959bc..76fb7af 100644
+> --- a/fs/locks.c
+> +++ b/fs/locks.c
+> @@ -126,6 +126,7 @@
+>  #include <linux/time.h>
+>  #include <linux/rcupdate.h>
+>  #include <linux/pid_namespace.h>
+> +#include <linux/hashtable.h>
+>  
+>  #include <asm/uaccess.h>
+>  
+> @@ -153,10 +154,19 @@ int lease_break_time = 45;
+>  #define for_each_lock(inode, lockp) \
+>  	for (lockp = &inode->i_flock; *lockp != NULL; lockp = &(*lockp)->fl_next)
+>  
+> +/*
+> + * By breaking up the blocked locks list into a hashtable, we speed up the
+> + * deadlock detection.
+> + *
+> + * FIXME: make this value scale via some heuristic?
+> + */
+> +#define BLOCKED_HASH_BITS	7
+> +
+> +static DEFINE_HASHTABLE(blocked_hash, BLOCKED_HASH_BITS);
+> +
+>  static HLIST_HEAD(file_lock_list);
+> -static HLIST_HEAD(blocked_list);
+>  
+> -/* Protects the two list heads above */
+> +/* Protects the file_lock_list and the blocked_hash */
+>  static DEFINE_SPINLOCK(file_lock_lock);
+>  
+>  static struct kmem_cache *filelock_cache __read_mostly;
+> @@ -475,13 +485,13 @@ static int posix_same_owner(struct file_lock *fl1, struct file_lock *fl2)
+>  static inline void
+>  locks_insert_global_blocked(struct file_lock *waiter)
+>  {
+> -	hlist_add_head(&waiter->fl_link, &blocked_list);
+> +	hash_add(blocked_hash, &waiter->fl_link, (unsigned long)waiter->fl_owner);
+>  }
+>  
+>  static inline void
+>  __locks_delete_global_blocked(struct file_lock *waiter)
+>  {
+> -	hlist_del_init(&waiter->fl_link);
+> +	hash_del(&waiter->fl_link);
+>  }
+>  
+>  static inline void
+> @@ -729,7 +739,7 @@ static struct file_lock *what_owner_is_waiting_for(struct file_lock *block_fl)
+>  {
+>  	struct file_lock *fl;
+>  
+> -	hlist_for_each_entry(fl, &blocked_list, fl_link) {
+> +	hash_for_each_possible(blocked_hash, fl, fl_link, (unsigned long)block_fl->fl_owner) {
+>  		if (posix_same_owner(fl, block_fl))
+>  			return fl->fl_next;
+>  	}
+> @@ -865,7 +875,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+>  	/*
+>  	 * New lock request. Walk all POSIX locks and look for conflicts. If
+>  	 * there are any, either return error or put the request on the
+> -	 * blocker's list of waiters and the global blocked_list.
+> +	 * blocker's list of waiters and the global blocked_hash.
+>  	 */
+>  	if (request->fl_type != F_UNLCK) {
+>  		for_each_lock(inode, before) {
+> @@ -2284,13 +2294,14 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
+>  
+>  static int locks_show(struct seq_file *f, void *v)
+>  {
+> +	int bkt;
+>  	struct file_lock *fl, *bfl;
+>  
+>  	fl = hlist_entry(v, struct file_lock, fl_link);
+>  
+>  	lock_get_status(f, fl, *((loff_t *)f->private), "");
+>  
+> -	hlist_for_each_entry(bfl, &blocked_list, fl_link) {
+> +	hash_for_each(blocked_hash, bkt, bfl, fl_link) {
+>  		if (bfl->fl_next == fl)
+>  			lock_get_status(f, bfl, *((loff_t *)f->private), " ->");
+>  	}
+> -- 
+> 1.7.1
+> 
