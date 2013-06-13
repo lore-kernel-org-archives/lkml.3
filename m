@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759145Ab3FMSaK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 14:30:10 -0400
-Received: from etezian.org ([198.101.225.253]:56459 "EHLO mail.etezian.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758954Ab3FMS3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 14:29:00 -0400
-From: Andi Shyti <andi@etezian.org>
-To: arnd@arndb.de, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, pc@asdf.org, oatilla@gmail.com,
-        andi@etezian.org
-Subject: [PATCH 02/19] bh1770glc: different glass attenuation parameters
-Date: Thu, 13 Jun 2013 20:20:36 +0200
-Message-Id: <bb0e82c085a5497a9567fd227f33544093db5b06.1371145891.git.andi@etezian.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1371145891.git.andi@etezian.org>
-References: <cover.1371145891.git.andi@etezian.org>
-In-Reply-To: <cover.1371145891.git.andi@etezian.org>
-References: <cover.1371145891.git.andi@etezian.org>
+	id S1759153Ab3FMSaR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 14:30:17 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:62821 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759098Ab3FMSaN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 14:30:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <1371128132-18266-1-git-send-email-christian.ruppert@abilis.com>
+References: <CACRpkdY9F0cUaRfGJnHJW=2dYf_yKkr3M8Kh+_e6XQhh1WBoUA@mail.gmail.com>
+	<1371128132-18266-1-git-send-email-christian.ruppert@abilis.com>
+Date: Thu, 13 Jun 2013 20:30:12 +0200
+Message-ID: <CACRpkdaYFqv-soonRC37O-xOtscw6DxWmSW+8qKTiPOxwjVTcg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Add pin list based GPIO ranges
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Christian Ruppert <christian.ruppert@abilis.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Onur Atilla <oatilla@gmail.com>
+On Thu, Jun 13, 2013 at 2:55 PM, Christian Ruppert
+<christian.ruppert@abilis.com> wrote:
 
-The Ambient Light Sensor (ALS) glass attenuation parameter should
-be configurable and two new parameters are introduced:
-als_scf_BH1770 and als_scf_SFH7770.
+> Traditionally, GPIO ranges are based on consecutive ranges of both GPIO
+> and pin numbers. This patch allows for GPIO ranges with arbitrary lists
+> of pin numbers.
+>
+> Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
 
-Signed-off-by: Onur Atilla <oatilla@gmail.com>
-Signed-off-by: Andi Shyti <andi@etezian.org>
----
- include/linux/i2c/bh1770glc.h |    2 ++
- 1 file changed, 2 insertions(+)
+I really like this patch and it seems to be useful for other purposes so I've
+applied it so we get some rotation on it.
 
-diff --git a/include/linux/i2c/bh1770glc.h b/include/linux/i2c/bh1770glc.h
-index 8b5e2df..a08060a 100644
---- a/include/linux/i2c/bh1770glc.h
-+++ b/include/linux/i2c/bh1770glc.h
-@@ -47,6 +47,8 @@ struct bh1770_platform_data {
- 	__u8 led_def_curr;
- #define BH1770_NEUTRAL_GA 16384 /* 16384 / 16384 = 1 */
- 	__u32 glass_attenuation;
-+	__u32 als_scf_BH1770;
-+	__u32 als_scf_SFH7770;
- 	int (*setup_resources)(void);
- 	int (*release_resources)(void);
- };
--- 
-1.7.10.4
-
+Yours,
+Linus Walleij
