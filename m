@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759198Ab3FMSfo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 14:35:44 -0400
-Received: from etezian.org ([198.101.225.253]:56450 "EHLO mail.etezian.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758886Ab3FMS26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 14:28:58 -0400
-From: Andi Shyti <andi@etezian.org>
-To: arnd@arndb.de, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, pc@asdf.org, oatilla@gmail.com,
-        andi@etezian.org
-Subject: [PATCH 15/19] bh1770glc: Modified scaler variable
-Date: Thu, 13 Jun 2013 20:20:49 +0200
-Message-Id: <b4178a04234f32dd4e0b37e86d812f0c5a051ee8.1371145891.git.andi@etezian.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1371145891.git.andi@etezian.org>
-References: <cover.1371145891.git.andi@etezian.org>
-In-Reply-To: <cover.1371145891.git.andi@etezian.org>
-References: <cover.1371145891.git.andi@etezian.org>
+	id S1758970Ab3FMSgY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 14:36:24 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:62085 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088Ab3FMSgX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 14:36:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <1371128132-18266-2-git-send-email-christian.ruppert@abilis.com>
+References: <CACRpkdY9F0cUaRfGJnHJW=2dYf_yKkr3M8Kh+_e6XQhh1WBoUA@mail.gmail.com>
+	<1371128132-18266-2-git-send-email-christian.ruppert@abilis.com>
+Date: Thu, 13 Jun 2013 20:36:22 +0200
+Message-ID: <CACRpkdbP6VUurFuWV_dzm=9pq+xEu9iDs0NZwinLJXZBNrVzFA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Make non-linear GPIO ranges accesible from gpiolib
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Christian Ruppert <christian.ruppert@abilis.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Onur Atilla <oatilla@gmail.com>
+On Thu, Jun 13, 2013 at 2:55 PM, Christian Ruppert
+<christian.ruppert@abilis.com> wrote:
 
-Changed all exposed scalers to 8192 (Q13) in order to
-achieve consistency in the sysfs interface.
+> This patch adds the infrastructure required to register non-linear gpio
+> ranges through gpiolib and the standard GPIO device tree bindings.
+>
+> Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
 
-Signed-off-by: Onur Atilla <oatilla@gmail.com>
-Signed-off-by: Andi Shyti <andi@etezian.org>
----
- drivers/misc/bh1770glc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Splendid. I'll just wait some more time before applying so that others
+get a chance to comment on this, but I'm happy!
 
-diff --git a/drivers/misc/bh1770glc.c b/drivers/misc/bh1770glc.c
-index 054d3f3..cb63c25 100644
---- a/drivers/misc/bh1770glc.c
-+++ b/drivers/misc/bh1770glc.c
-@@ -105,8 +105,6 @@
- #define BH1770_ENABLE		1
- #define BH1770_PROX_CHANNELS	1
- 
--#define BH1770_LUX_GA_SCALE	16384
--#define BH1770_LUX_CF_SCALE	2048 /* CF ChipFactor */
- #define BH1770_LUX_DEFAULT_RATE		1 /* Index to lux rate table */
- #define BH1770_PROX_DEFAULT_RATE	1 /* Direct HW value =~ 50Hz */
- #define BH1770_PROX_DEF_RATE_THRESH	6 /* Direct HW value =~ 5 Hz */
-@@ -122,6 +120,8 @@
- #define BH1770_PROX_DEF_THRES		100
- #define BH1770_DEFAULT_PERSISTENCE	10
- #define BH1770_PROX_MAX_PERSISTENCE	50
-+#define BH1770_LUX_GA_SCALE		8192
-+#define BH1770_LUX_CF_SCALE		8192 /* CF ChipFactor */
- #define BH1770_NEUTRAL_CF		BH1770_LUX_CF_SCALE
- #define BH1770_LUX_CORR_SCALE		4096
- 
--- 
-1.7.10.4
-
+Yours,
+Linus Walleij
