@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758302Ab3FMRRI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 13:17:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:48056 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752420Ab3FMRRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 13:17:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,860,1363158000"; 
-   d="scan'208";a="328984651"
-Message-ID: <51B9FE8E.9000109@intel.com>
-Date: Thu, 13 Jun 2013 10:17:02 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1758160Ab3FMRUb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 13:20:31 -0400
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:64780 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752653Ab3FMRU3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 13:20:29 -0400
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>
-CC: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, mgorman@suse.de,
-        minchan@kernel.org, mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [Part3 PATCH v2 2/4] mem-hotplug: Skip LOCAL_NODE_DATA pages
- in memory offline procedure.
-References: <1371128636-9027-1-git-send-email-tangchen@cn.fujitsu.com> <1371128636-9027-3-git-send-email-tangchen@cn.fujitsu.com>
-In-Reply-To: <1371128636-9027-3-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1371137986.3252.112.camel@edumazet-glaptop>
+References: <CA+ydwtrVHDE65dVTBijGguZDK0+=+tzi+nn1UywRqfn9Rx4ZuA@mail.gmail.com>
+	<1371137986.3252.112.camel@edumazet-glaptop>
+Date: Thu, 13 Jun 2013 20:20:28 +0300
+Message-ID: <CA+ydwtoF7SEf20h+qXxFi4hAH4J0Z+6O_Zx5XSQ4xthn7daJpw@mail.gmail.com>
+Subject: =?windows-1252?Q?Re=3A_include=2Fnet=2Fipv6=2Eh=3A408=3A38=3A_warning=3A_=91=2A=28=28void_=2A?=
+	=?windows-1252?Q?=29=26addr=2B8=29=92_may_be_used_uninitialized_in_this_function?=
+From: Tommi Rantala <tt.rantala@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2013 06:03 AM, Tang Chen wrote:
-> +static inline bool is_local_node_data(struct page *page)
-> +{
-> +	return (unsigned long)page->lru.next == LOCAL_NODE_DATA;
-> +}
+2013/6/13 Eric Dumazet <eric.dumazet@gmail.com>:
+> On Thu, 2013-06-13 at 18:16 +0300, Tommi Rantala wrote:
+>> Hello, I'm seeing the following compiler warnings. Do these make any
+>> sense? I'm doing a x86-64 build.
+>
+>> $ gcc --version
+>> gcc (Ubuntu/Linaro 4.7.3-1ubuntu1) 4.7.3
+>> Copyright (C) 2012 Free Software Foundation, Inc.
+>> This is free software; see the source for copying conditions.  There is NO
+>> warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+>>
+>> config:
+>> http://fpaste.org/18443/13711363/
+>
+> Well, what tree are you using ?
 
-page->lru is already in a union.  Could you please just add a new entry
-to the union with a nice associated comment instead of reusing it this way?
+mainline, the warnings are from v3.10-rc5-0-g317ddd2.
+
+They are not new, also visible e.g. in v3.9-0-gc1be5a5.
