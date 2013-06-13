@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754954Ab3FLNr1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 09:47:27 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:48481 "EHLO SMTP.CITRIX.COM"
+	id S1755375Ab3FLNuj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 09:50:39 -0400
+Received: from mga14.intel.com ([143.182.124.37]:38833 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752168Ab3FLNr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 09:47:26 -0400
-X-IronPort-AV: E=Sophos;i="4.87,852,1363132800"; 
-   d="scan'208";a="30684960"
-Message-ID: <51B87BDF.1080101@eu.citrix.com>
-Date: Wed, 12 Jun 2013 14:47:11 +0100
-From: George Dunlap <george.dunlap@eu.citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752316Ab3FLNui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jun 2013 09:50:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,852,1363158000"; 
+   d="scan'208";a="315872827"
+Date: Wed, 12 Jun 2013 21:36:09 -0400
+From: Youquan Song <youquan.song@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        Youquan Song <youquan.song@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Dave Hansen <dave@sr71.net>,
+        Toshi Kani <toshi.kani@hp.com>, Youquan Song <youquan.song@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: cpu hotplug: possible_cpus broken (again?) next-20130607
+Message-ID: <20130613013609.GA6348@linux-youquan.bj.intel.com>
+References: <51B79BE5.80804@sr71.net> <20130612123248.GA23978@linux-youquan.bj.intel.com> <CAE9FiQXWi7mn6AM=A2qrHO=3S_oLT7wBRLm19rP987hGzwdqKA@mail.gmail.com> <4005805.V3phb1agMs@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
-        <stable@vger.kernel.org>
-Subject: Re: [PATCH] xen/pci: Deal with toolstack missing an 'XenbusStateClosing'.
-References: <20130610202456.GA17822@phenom.dumpdata.com> <1370898399-20968-1-git-send-email-konrad.wilk@oracle.com> <1370898399-20968-2-git-send-email-konrad.wilk@oracle.com> <51B743EA.5020800@eu.citrix.com> <51B74B77.1000806@oracle.com> <51B74DA9.7060509@eu.citrix.com> <20130612134504.GG2918@phenom.dumpdata.com>
-In-Reply-To: <20130612134504.GG2918@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4005805.V3phb1agMs@vostro.rjw.lan>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/13 14:45, Konrad Rzeszutek Wilk wrote:
-> On Tue, Jun 11, 2013 at 05:17:45PM +0100, George Dunlap wrote:
->> On 06/11/2013 05:08 PM, konrad wilk wrote:
->>> On 6/11/2013 11:36 AM, George Dunlap wrote:
->>>> On 06/10/2013 10:06 PM, Konrad Rzeszutek Wilk wrote:
->>>>> There are two tool-stack that can instruct the Xen PCI frontend
->>>>> and backend to change states: 'xm' (Python code with a daemon),
->>>>> and 'xl' (C library - does not keep state changes).
->>>>>
->>>>> With the 'xm', the path to disconnect a PCI device (xm pci-detach
->>>>> <guest> <BDF>)is:
->>>>>
->>>>> 4(Connected)->7(Reconfiguring*)-> 8(Reconfigured)->
->>>>> 4(Connected)->5(Closing*).
->>>>>
->>>>> The * is for states that the tool-stack sets. For 'xl', it is similar:
->>>>>
->>>>> 4(Connected)->7(Reconfiguring*)-> 8(Reconfigured)-> 4(Connected)
->>>>>
->>>>> Both of them also tear down the XenBus structure, so the backend
->>>>> state ends up going in the 3(Initialised) and calls
->>>>> pcifront_xenbus_remove.
->>>> So I looked a little bit into this; there are actually two different
->>>> states that happen as part of this handshake.  In order to disonnect a
->>>> *device*, xl signals using the *bus* state, like this:
->>>> * Wait for the *bus* to be in state 4(Connected)
->>>> * Set the *device* state to 5(Closing)
->>>> * Set the *bus* state to 7(Reconfiguring)
->>>> * Wait for the *bus* state to return to 4(Connected)
->>>>
->>>> So are all of these states you see the *bus* state?  And why would you
->>>> disconnect the whole pci bus if you're only removing one device?
->>> Correct. The stats I enumerated are *bus* states. Not per-device states.
->>> I presume (and I hadn't checked xm) that Xend has some logic to only
->>> disconnect the bus if all of the PCI devices have been disconnected. In
->>> 'xl' it does not do that.
->>>
->>> The testing I did was just with one PCI device.
->> Ah, OK -- I see now.  The problem is that the code in the Linux side
->> didn't know about the whole "4->7->8->4" thing to unplug a device.
->> In all likelihood, if you had used xm with two devices (so that the
->> bus didn't get disconnected), then you would have run across the
->> same error.
->>
->> So at least part of the problem *is* a bug in Linux.
-> Good! Bjorn, would you be OK Ack-ing the patch I sent (attached here
-> for reference) or putting it in your queue for Linus?
->
-> My plan would be to send it to Linus in the 3.11 merge window.
+> > Interesting, you are changing long standing meaning of maxcpus=
+> > 
+> > We always use maxcpus=1 to have one cpu up, and later in user space
+> > to online other cpus like
+> > echo 1 > /sys/devices/system/cpuX/online.
+> > 
+> > aka maxcpus= is a soft limit or initial online nr.
+> > 
+> > we already have nr_cpus= for hard limit.
+> > 
+> > So need to drop
+> >  commit 3e275a5ba367ab74b3a4e49114307baed989fcac
+> >  Author: Youquan Song <youquan.song@intel.com>
+> >  Date:   Fri Jun 7 10:07:08 2013 +1000
+> > 
+> >      drivers/base/cpu.c: fix maxcpus boot option
+> 
+> Agreed.
 
-One nit -- "to work with the 'xl' toolstack" -- didn't we theorize this 
-would also be broken with xm if you had two devices passed through?
+Yes. I also agree to drop it and the fix need more consideration.
+I try use maxcpus to limit cpu number to debug a well known applition 
+because it fail to run when cpu number is larger to > 69. 
+When I use maxcpus at to limit the boot CPUs number, but udev will 
+enable all of the CPUs at 3.10 kernel automatically. 
+I also try maxcpus at 3.0 kernel, it does not show the maxcpus issue. 
+I have digged out recently, it is the commit at 3.2 kernel
+8a25a2fd126c621f44f3aeaef80d51f00fc11639 "cpu: convert 'cpu' and
+'machinecheck' sysdev_class to a regular subsystem" result in udev
+automatically enable all of CPUs though maxcpus has been provided.
 
-  -George
+So the next, I need look at udev try to enable all of CPUs though
+maxcpus provided.  Possibly, it can also fix it in udev daemon.
+
+Secondly, I think that the maxcpus= option description is too confused in
+Documentation/kernel-parameters.txt. The maxcpus and nr_cpus option need
+switch their name.
+Currently:
+
+	maxcpus=	[SMP] Maximum number of processors that	an SMP kernel
+			should make use of.  maxcpus=n : n >= 0 limits the
+			kernel to using 'n' processors.  n=0 is a special case,
+			it is equivalent to "nosmp", which also disables
+			the IO APIC.
+
+How about change to 
+
+	maxcpus=	[SMP] Maximum number of processors that	an SMP kernel
+			bring up during booting.  maxcpus=n : n >= 0 limits the
+			kernel to using 'n' processors.  n=0 is a special case,
+			it is equivalent to "nosmp", which also disables
+			the IO APIC.
+
+
+Thanks
+-Youquan
