@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758283Ab3FMPvT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 11:51:19 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54976 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752312Ab3FMPvS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 11:51:18 -0400
-Date: Thu, 13 Jun 2013 16:50:40 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Ben Greear <greearb@candelatech.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: kmemleak reports in kernel 3.9.5+
-Message-ID: <20130613155040.GE6530@darko.cambridge.arm.com>
-References: <51B61982.2050903@candelatech.com>
- <CAHkRjk5SDCbqr0Br24YQuHr=j7DmnpYk9CShrz1qiuYff7+qAw@mail.gmail.com>
- <51B78009.2060808@candelatech.com>
- <51B7C09D.9020402@candelatech.com>
+	id S1758386Ab3FMPvk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 11:51:40 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:48112 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757257Ab3FMPvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 11:51:39 -0400
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: Ralf Baechle <ralf@linux-mips.org>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] RAPIDIO: Fix idt_gen2.c build
+Thread-Topic: [PATCH] RAPIDIO: Fix idt_gen2.c build
+Thread-Index: AQHOaE0Shbtjgbiyn0epBaetwfLi2pkzyu8w
+Date: Thu, 13 Jun 2013 15:51:19 +0000
+Message-ID: <8D983423E7EDF846BB3056827B8CC5D14BC37BC9@corpmail1.na.ads.idt.com>
+References: <20130613154231.GA27745@linux-mips.org>
+In-Reply-To: <20130613154231.GA27745@linux-mips.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.165.140.29]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51B7C09D.9020402@candelatech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r5DFpkPH030593
 
-On Wed, Jun 12, 2013 at 01:28:13AM +0100, Ben Greear wrote:
-> On 06/11/2013 12:52 PM, Ben Greear wrote:
-> > On 06/10/2013 03:32 PM, Catalin Marinas wrote:
-> >> On 10 June 2013 19:22, Ben Greear <greearb@candelatech.com> wrote:
-> >>> We had a system go OOM while doing lots of wireless
-> >>> stations.  (System had 8GB of RAM, so I suspect a leak).
-> >>>
-> >>> I enabled kmemleak in a 3.9.5 (plus some local patches) and
-> >>> I see the entries below.  Any idea if these are real or not?
+Looks good to me.
+
+> -----Original Message-----
+> From: Ralf Baechle [mailto:ralf@linux-mips.org]
+> Sent: Thursday, June 13, 2013 11:43 AM
+> To: Matt Porter; Bounine, Alexandre; linux-kernel@vger.kernel.org
+> Subject: [PATCH] RAPIDIO: Fix idt_gen2.c build
 > 
-> Most of this went away when I disabled SLUB debugging and other
-> kernel hacking options.  The wifi cfg80211_inform_bss_frame
-> remains, however.  I'll go dig some more on that tomorrow...didn't
-> see anything obvious at first glance.
+> idt_gen2.c relies that one of the header files used will include
+> <asm/page.h> which will define the required symbol PAGE_SIZE.  On MIPS
+> for example <asm/page.h> will not be included implicitly which will
+> result in the following build error:
 > 
-> But, perhaps there could be some improvements to
-> kmemleak to make it deal better with the various kernel
-> debugging features?
-
-That's unrelated to the debugging features. Kmemleak cannot find
-pointers to the allocated objects. They could be real leaks or it simply
-doesn't scan the right memory where such pointers are stored. The debug
-objects are stored in a list with the head as static memory, so it
-should be scanned.
-
--- 
-Catalin
+>   CC      drivers/rapidio/switches/idt_gen2.o
+> drivers/rapidio/switches/idt_gen2.c: In function â€˜idtg2_show_errlogâ€™:
+> drivers/rapidio/switches/idt_gen2.c:379:30: error: â€˜PAGE_SIZEâ€™
+> undeclared (first use in this function)
+> drivers/rapidio/switches/idt_gen2.c:379:30: note: each undeclared
+> identifier is reported only once for each function it appears in
+> 
+> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+> ---
+> 
+> If you're ok with this patch I can put it into my next pull request for
+> Linux.  Thanks!
+> 
+> 
+>  drivers/rapidio/switches/idt_gen2.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/rapidio/switches/idt_gen2.c
+> b/drivers/rapidio/switches/idt_gen2.c
+> index 809b7a3..5d3b0f0 100644
+> --- a/drivers/rapidio/switches/idt_gen2.c
+> +++ b/drivers/rapidio/switches/idt_gen2.c
+> @@ -15,6 +15,8 @@
+>  #include <linux/rio_drv.h>
+>  #include <linux/rio_ids.h>
+>  #include <linux/delay.h>
+> +
+> +#include <asm/page.h>
+>  #include "../rio.h"
+> 
+>  #define LOCAL_RTE_CONF_DESTID_SEL	0x010070
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
