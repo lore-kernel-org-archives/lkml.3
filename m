@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759027Ab3FMSlK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 14:41:10 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:36393 "EHLO hydra.sisk.pl"
+	id S1759121Ab3FMSmC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 14:42:02 -0400
+Received: from 1wt.eu ([62.212.114.60]:36304 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758920Ab3FMSlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 14:41:09 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>, Tony Luck <tony.luck@gmail.com>
-Subject: [GIT PULL] ACPI fix for v3.10-rc6
-Date: Thu, 13 Jun 2013 20:50:21 +0200
-Message-ID: <2350270.gryTXaEjHZ@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1758944Ab3FMSmA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 14:42:00 -0400
+Date: Thu, 13 Jun 2013 20:41:56 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Sven-Haegar Koch <haegar@sdinet.de>
+Cc: Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: Linux 2.6.32.61 - x86/ptrace/gcc 4.7 build error
+Message-ID: <20130613184156.GE27760@1wt.eu>
+References: <20130610101557.GA3235@1wt.eu> <alpine.DEB.2.10.1306101708360.1713@aurora64.sdinet.de> <20130613175330.GC27760@1wt.eu> <alpine.DEB.2.10.1306132028230.24569@aurora.sdinet.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1306132028230.24569@aurora.sdinet.de>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Jun 13, 2013 at 08:31:08PM +0200, Sven-Haegar Koch wrote:
+> On Thu, 13 Jun 2013, Willy Tarreau wrote:
+> 
+> > Sven-Haegar, Christoph,
+> > 
+> > concerning the issue below, I could reproduce both Sven-Haegar's error (running
+> > make headers_check with the patch applied) and Christoph's build error with gcc
+> > 4.7 on i686 without the patch.
+> > 
+> > I noticed that neither syscall_trace_enter() nor syscall_trace_leave() were
+> > called from C code, all were from pure asm. So I simply reverted the first
+> > patch then removed the two function prototypes and everything is OK for me
+> > now using gcc 4.7, i686 and x86_64.
+> > 
+> > I'm attaching the two patches here to be appled on top of 2.6.32.61, I would
+> > like it if you could try in your environment to confirm that they correctly
+> > fix the issue.
+> 
+> hello Willy,
+> 
+> With your two new patches applied on top I was able to build my kernel 
+> package both using gcc 4.7 (Debian Wheezy) and gcc 4.4 (Debian Squeeze).
 
-Please pull from the git repository at
+Great, thanks for the report!
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git acpi-3.10-rc6
+> (But I did not try rebooting the server yet)
 
-to receive one ACPI fix for v3.10-rc6 which is
-commit 8c9b7a7b2fc2750af418ddc28e707c42e78aa0bf
+no pb, usually on that old kernels, we get build failure reports in the week of
+the release and boot issues during the next month because it seems that not that
+many people use them on machines where unplanned reboots are permitted :-)
 
-  ACPI / video: Do not bind to device objects with a scan handler
+Thanks !
+Willy
 
-on top of commit 317ddd256b9c24b0d78fa8018f80f1e495481a10
-
-  Linux 3.10-rc5
-
-This is an alternative fix for the regression introduced in 3.9 whose
-previous fix had to be reverted right before 3.10-rc5, because it broke
-one of the Tony's machines.  In this one the check is confined to the
-ACPI video driver (which is the only one causing the problem to happen
-in the first place) and the Tony's box shouldn't even notice it.
-
-Thanks!
-
-
----------------
-
-Rafael J. Wysocki (1):
-      ACPI / video: Do not bind to device objects with a scan handler
-
----------------
-
- drivers/acpi/scan.c  |    5 +----
- drivers/acpi/video.c |    3 +++
- 2 files changed, 4 insertions(+), 4 deletions(-)
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
