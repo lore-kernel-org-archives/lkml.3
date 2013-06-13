@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759293Ab3FMV5t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 17:57:49 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:50313 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755049Ab3FMV5s (ORCPT
+	id S1759304Ab3FMWBA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 18:01:00 -0400
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:57935 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755049Ab3FMWA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 17:57:48 -0400
-Date: Thu, 13 Jun 2013 14:58:00 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH] Percpu tag allocator
-Message-ID: <20130613215800.GB28664@moria.home.lan>
-References: <1371009804-11596-1-git-send-email-koverstreet@google.com>
- <20130612163854.91da28042ab7a943b69a5970@linux-foundation.org>
- <20130613190610.GA13970@mtj.dyndns.org>
- <20130613121324.2cab80256217df97254af16c@linux-foundation.org>
- <20130613192152.GC13970@mtj.dyndns.org>
- <20130613211425.GC8650@moria.home.lan>
- <20130613215009.GF13970@mtj.dyndns.org>
+	Thu, 13 Jun 2013 18:00:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130613215009.GF13970@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <cover.1369177867.git.luto@amacapital.net>
+References: <cover.1369177867.git.luto@amacapital.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 13 Jun 2013 15:00:37 -0700
+Message-ID: <CALCETrW5NVQYaU1Et=wkEeUx2HcQ5kDcgW2WDJ6TAk=LYNp2oQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5] x86: oops on uaccess faults outside of user addresses
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, trinity@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 02:50:09PM -0700, Tejun Heo wrote:
-> (cc'ing Rafael and Oleg)
-> 
-> On Thu, Jun 13, 2013 at 02:14:25PM -0700, Kent Overstreet wrote:
-> > Yeah, I think you're definitely right. (I only started reading up on the
-> > freezer stuff yesterday, though).
-> > 
-> > Do you know offhand what existing (i.e. slab) allocators do? Whatever
-> > they do should make sense for us.
-> 
-> I don't think the memory allocator does anything.  Memory allocations
-> are guaranteed to make forward progress and everything should still be
-> working while freezing, so it doesn't need to do anything special.  If
-> the tag allocator is to be used only by kernel proper - say drivers,
-> block layer, it shouldn't need to do anything special.  If it's
-> directly exposed to userland via something like aio and the userland
-> is involved in guaranteeing forward progress - ie. freeing of tags -
-> then the allocator would need to be able to fail, I think.
+On Wed, May 22, 2013 at 2:07 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> Currently, __get_user can't trigger an OOPS -- any exception will be
+> caught and return -EFAULT.  This means that, if an access_ok check is
+> missing somewhere, then an attacker can freely use it to probe for valid
+> kernel mappings.
+>
+> This series annotates all of the exception fixups as "catch anything" or
+> "catch valid uaccess faults", and skips the fixup (and hence oopses) if
+> an instruction of the latter type faults for any reason other than a
+> page fault to a user address.
+>
+> I know of only one bug of this type; it's fixed in patch 5.
+>
+> Perhaps surprisingly, this seems to survive Trinity fairly well.
+>
+> Andy Lutomirski (5):
+>   x86: Split "utter crap" pnpbios fixup out of fixup_exception
+>   x86: Clean up extable entry format (and free up a bit)
+>   x86: Annotate _ASM_EXTABLE users to distinguish uaccess from
+>     everything else
+>   x86: Don't fixup uaccess faults to kernel or non-canonical addresses
+>   net: Block MSG_CMSG_COMPAT in send(m)msg and recv(m)msg
 
-That's a good point - as long as whatever is allocated is guaranteed to
-be freed in bounded time, we should be fine.
+Patch 5 is (for better or for worse) in -linus now.  What's the status
+of the other four?  (They're certainly not 3.10 material.)
+
+--Andy
