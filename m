@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373Ab3FMTGS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 15:06:18 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:48746 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454Ab3FMTGR (ORCPT
+	id S1757629Ab3FMTHp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 15:07:45 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:37397 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755464Ab3FMTHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 15:06:17 -0400
-Date: Thu, 13 Jun 2013 12:06:10 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: Re: [PATCH] Percpu tag allocator
-Message-ID: <20130613190610.GA13970@mtj.dyndns.org>
-References: <1371009804-11596-1-git-send-email-koverstreet@google.com>
- <20130612163854.91da28042ab7a943b69a5970@linux-foundation.org>
+	Thu, 13 Jun 2013 15:07:44 -0400
+Date: Thu, 13 Jun 2013 14:06:17 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Bob Liu <bob.liu@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv13 0/4] zswap: compressed swap caching
+Message-ID: <20130613190617.GB2967@medulla>
+References: <1370291585-26102-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <51B9BC5E.6060407@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130612163854.91da28042ab7a943b69a5970@linux-foundation.org>
+In-Reply-To: <51B9BC5E.6060407@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13061319-3620-0000-0000-000003194958
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Andrew, Kent.
-
-On Wed, Jun 12, 2013 at 04:38:54PM -0700, Andrew Morton wrote:
-...
-> > +unsigned percpu_tag_alloc(struct percpu_tag_pool *pool, gfp_t gfp)
-> > +{
-> > +	DEFINE_WAIT(wait);
-> > +	struct percpu_tag_cpu_freelist *tags;
-> > +	unsigned long flags;
-> > +	unsigned tag, this_cpu;
-> > +
-> > +	while (1) {
-> > +		local_irq_save(flags);
-...
-> > +		schedule();
-> > +	}
+On Thu, Jun 13, 2013 at 08:34:38PM +0800, Bob Liu wrote:
+> Hi Seth,
 > 
-> Does this loop need a try_to_freeze()?
+> On 06/04/2013 04:33 AM, Seth Jennings wrote:
+> > This is the latest version of the zswap patchset for compressed swap caching.
+> > This is submitted for merging into linux-next and inclusion in v3.11.
+> > 
+> 
+> Have you noticed that pool_pages >> stored_pages, like this:
+> [root@ca-dev32 zswap]# cat *
+> 0
+> 424057
+> 99538
+> 0
+> 2749448
+> 0
+> 24
+> 60018
+> 16837
+> [root@ca-dev32 zswap]# cat pool_pages
+> 97372
+> [root@ca-dev32 zswap]# cat stored_pages
+> 53701
+> [root@ca-dev32 zswap]#
+> 
+> I think it's unreasonable to use more pool pages than stored pages!
 
-I don't think so.  Kernel tasks should never enter freezer without it
-explicitly knowing it.  It should be something evident in the
-top-level control flow.  Freezer acts as a giant lock and entering
-freezer deep underneath where the task could be holding random number
-of resources and locks can easily develop into a deadlock.
+Gah, in the moving of the zbud metadata for v13, I forgot to init the new
+under_reclaim field of the zbud header.  Patch going out now.
 
-If this allocation wait is gonna be visible to userland, what's
-necessary probably would be making the sleeping interruptible.  The
-freezer will then make the alloc fail and control should return to the
-signal delivery path where it'll be frozen without holding any
-resources.
+Thanks for reporting!
 
-Thanks.
+Seth
 
--- 
-tejun
