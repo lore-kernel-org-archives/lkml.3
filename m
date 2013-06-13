@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757085Ab3FMNHB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:07:01 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36359 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756323Ab3FMNG5 (ORCPT
+	id S1757414Ab3FMNJJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:09:09 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:49705 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756480Ab3FMNJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:06:57 -0400
-Message-ID: <51B9C3B6.1080707@ti.com>
-Date: Thu, 13 Jun 2013 16:05:58 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 13 Jun 2013 09:09:06 -0400
+Date: Thu, 13 Jun 2013 21:27:15 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Dave Hansen <dave.hansen@intel.com>,
+        linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jan kara <jack@suse.cz>
+Subject: Re: ext4 extent status tree LRU locking
+Message-ID: <20130613132715.GA12622@gmail.com>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Hansen <dave.hansen@intel.com>, linux-ext4@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>, Jan kara <jack@suse.cz>
+References: <51B7B128.60909@intel.com>
+ <20130612071735.GB29898@gmail.com>
+ <51B88F1A.5000909@intel.com>
+ <20130612204854.GA12456@thunk.org>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>, <tony@atomide.com>
-CC: <balbi@ti.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        <eballetbo@gmail.com>, <javier@dowhile0.org>,
-        <gregkh@linuxfoundation.org>
-Subject: Re: [RFC PATCH 1/4] arm: omap: Add phy binding info for musb in plat
- data
-References: <1368796954-3499-1-git-send-email-kishon@ti.com> <51A43E0A.8090201@ti.com>
-In-Reply-To: <51A43E0A.8090201@ti.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="----enig2OVELJTAMTAOLKXJQHTRA"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130612204854.GA12456@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2OVELJTAMTAOLKXJQHTRA
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi Ted,
 
-Hi,
+On Wed, Jun 12, 2013 at 04:48:54PM -0400, Theodore Ts'o wrote:
+> On Wed, Jun 12, 2013 at 08:09:14AM -0700, Dave Hansen wrote:
+> > You could make per-cpu LRUs, and batch movement on and off the global
+> > LRU once the local ones get to be a certain size.  Or, you could keep
+> > them cpu-local *until* the shrinker is called, when the shrinker could
+> > go drain all the percpu ones.
+> > 
+> > Or, you could tag each extent in memory with its last-used time.  You
+> > write an algorithm to go and walk the tree and attempt to _generally_
+> > free the oldest objects out of a limited window.
+> 
+> Another approach might be to tag each inode with the last time an
+> ext4_map_blocks() was called on the inode, and keep an unsorted list
+> of inodes which has one or more entries in the extent cache.
+> 
+> When we decide to discard entries from the extent cache, we should
+> drop all of the entries for the inode --- and then when we read in
+> part of the extent tree leaf block, we should create entries in the
+> extent cache for all of the extents found in the extent leaf block.
 
-On 28/05/13 08:18, Kishon Vijay Abraham I wrote:
-> Hi Tony,
->=20
-> On Friday 17 May 2013 06:52 PM, Kishon Vijay Abraham I wrote:
->> In order for controllers to get PHY in case of non dt boot, the phy
->> binding information (phy label) should be added in the platform
->> data of the controller.
->=20
-> This series would be needed to get MUSB working in OMAP3 boards for
-> non-dt boot case. Do you think this is good enough to go in this rc cyc=
-le?
+Thanks for your suggestion.  But, sorry, I couldn't get your point here.
+As you suggested above, we can tag each inode with the last access time
+when ext4_map_blocks() is called.  Then we will get an unsorted list of
+inodes with some extent entries.  When we tries to reclaim some entries
+from extent cache, we can call list_sort() to get an sorted list of
+inodes and try to reclaim some entries according to the last access
+time.  My question is why do we need to drop all of the entries from all
+inodes.
 
-Did this or some other solution go forward? I'm still unable to boot
-with usb-gadget-ethernet with v3.10-rc5.
+Af far as I understand, we can do the following improvement.  We tag the
+last access time for each inode.  So that would avoid to move the inode
+in lru list frequently.  When we try to reclaim some entries, we call
+list_sort() to get a sorted lru list, and drop some entries from lru
+list.  Please correct me if I misunderstood.
 
- Tomi
+For creating all extent leaf blocks, that is another improvement.  I
+will try to add it after I solve current problem that Dave reported.
 
-
-
-------enig2OVELJTAMTAOLKXJQHTRA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJRucO2AAoJEPo9qoy8lh71WVsP/jmjAagz6yP6Pcb/UJs6Zlf7
-EFSDgv3zc7YOPheEGruvwbiXO4EzkIFBmkOLXzPj3VNf0DtKEmyw5juInDzI2pYT
-slaeLMZsHTBgmfHvsHKJX3vlCMyhkEuD1QXeFUvebTKy/bzQpbQF7Hr+zdnZ3w4K
-UHKrNNJwynEhm95NuFfUB0HDNcaKV0X8oi3uMW5ilAzbrHxugsyBwg+HD9Y2m02W
-VeyCzM6c/xOGuevYMyCWIInxk2DvbXIiXG+OrD10LEPhwVVibfgWwHrpOwCysCJC
-00r5zL0FQliGuOPA08SlLYr46U+y1JvsoWy5/uVGJwMEstPSdbAs6A7mmhBbFekq
-BuMbA7SOvWSJxSk0XIUl+p5gzug1eX4yf+w1kkXO4J+nclM/sN4eDnPsCUKGLjlm
-ZhI+/8pIfJoNg+zz1s/jvLqzMOnLovitlfnm9zfMOf1OqrpwA6stMTH5wyJ7rltP
-mHcbxCWNDkHn2qU8BMaFV4gL+Op8V3bxVCfCxfB6JQf3HUhATIl4A5uPSnazA2PO
-1F6vI8bIFJJeyg5SP56thDIPffs6KKAWXQd9N5QhydnFkS9HEeVBuQ+u6t7UWeL+
-Fox19gOtPsBl5DWrLncvjNT0//ab7fxFFLpb//vogDRMfsUYZqtUjPo0xWXoJLeR
-ZY0/MWIVK4tXJ/ry7Mpt
-=NJQ9
------END PGP SIGNATURE-----
-
-------enig2OVELJTAMTAOLKXJQHTRA--
+Thanks,
+                                                - Zheng
