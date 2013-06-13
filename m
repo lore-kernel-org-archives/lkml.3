@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932430Ab3FMBtV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 21:49:21 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:41161 "EHLO
+	id S932413Ab3FMBtU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 21:49:20 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:41170 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932393Ab3FMBtR (ORCPT
+	with ESMTP id S932370Ab3FMBtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 21:49:17 -0400
+	Wed, 12 Jun 2013 21:49:15 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         Mike Turquette <mturquette@linaro.org>,
         Saravana Kannan <skannan@codeaurora.org>,
         devicetree-discuss@lists.ozlabs.org
-Subject: [RFC/PATCH 09/13] clk: msm: Add support for MSM8960's global clock controller (GCC)
-Date: Wed, 12 Jun 2013 18:49:05 -0700
-Message-Id: <1371088149-22562-10-git-send-email-sboyd@codeaurora.org>
+Subject: [RFC/PATCH 07/13] clk: msm: Add support for branches/gate clocks
+Date: Wed, 12 Jun 2013 18:49:03 -0700
+Message-Id: <1371088149-22562-8-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.3.1.378.g9926f66
 In-Reply-To: <1371088149-22562-1-git-send-email-sboyd@codeaurora.org>
 References: <1371088149-22562-1-git-send-email-sboyd@codeaurora.org>
@@ -23,132 +23,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fill in the data and wire up the global clock controller to the
-MSM clock driver. This should allow most non-multimedia device
-drivers to control their clocks on 8960 based platforms.
-
 Cc: devicetree-discuss@lists.ozlabs.org
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- .../devicetree/bindings/clock/qcom,gcc.txt         |  55 +++++++
- drivers/clk/msm/Kconfig                            |  10 ++
- drivers/clk/msm/Makefile                           |   2 +
- drivers/clk/msm/core.c                             |   3 +
- drivers/clk/msm/gcc-8960.c                         | 174 +++++++++++++++++++++
- drivers/clk/msm/internal.h                         |   2 +
- 6 files changed, 246 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/qcom,gcc.txt
- create mode 100644 drivers/clk/msm/gcc-8960.c
+ Documentation/devicetree/bindings/clock/msm.txt |  28 ++++
+ drivers/clk/msm/Makefile                        |   1 +
+ drivers/clk/msm/clk-branch.c                    | 190 ++++++++++++++++++++++++
+ drivers/clk/msm/clk-branch.h                    |  48 ++++++
+ 4 files changed, 267 insertions(+)
+ create mode 100644 drivers/clk/msm/clk-branch.c
+ create mode 100644 drivers/clk/msm/clk-branch.h
 
-diff --git a/Documentation/devicetree/bindings/clock/qcom,gcc.txt b/Documentation/devicetree/bindings/clock/qcom,gcc.txt
-new file mode 100644
-index 0000000..2311e1a
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/qcom,gcc.txt
-@@ -0,0 +1,55 @@
-+MSM Global Clock Controller Binding
-+-----------------------------------
+diff --git a/Documentation/devicetree/bindings/clock/msm.txt b/Documentation/devicetree/bindings/clock/msm.txt
+index f4595fa..6840398 100644
+--- a/Documentation/devicetree/bindings/clock/msm.txt
++++ b/Documentation/devicetree/bindings/clock/msm.txt
+@@ -69,3 +69,31 @@ Example:
+ 		clocks = <&pxo>, <&pll2>, <&pll8>;
+ 	};
+ 
++CXC Binding
++-----------
 +
-+Required properties :
-+- compatible : shall contain at least "qcom,gcc" and only one of the
-+	       following:
-+
-+			"qcom,gcc-8660"
-+			"qcom,gcc-8960"
-+
-+- reg : shall contain base register location and length
-+- clocks : shall contain clocks supplied by the clock controller
++Required properties:
++- compatible : shall be "qcom,cxc-clock".
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : from common clock binding; shall be set to the source being gated
 +
 +Example:
-+	clock-controller@900000 {
-+		compatible = "qcom,gcc-8960", "qcom,gcc";
-+		reg = <0x900000 0x4000>;
-+
-+		clocks {
-+			pxo: pxo {
-+				#clock-cells = <0>;
-+				compatible = "fixed-clock";
-+				clock-frequency = <27000000>;
-+			};
-+
-+			pll8: pll8 {
-+				#clock-cells = <0>;
-+				compatible = "qcom,pll";
-+				clocks = <&pxo>;
-+			};
-+
-+			vpll8: vpll8 {
-+				#clock-cells = <0>;
-+				compatible = "qcom,pll-vote";
-+				clocks = <&pll8>;
-+			};
-+
-+			gsbi5_uart_rcg: gsbi5_uart_rcg {
-+				#clock-cells = <0>;
-+				compatible = "qcom,p2-mn16-clock";
-+				clocks = <&pxo>, <&vpll8>;
-+			};
-+
-+			gsbi5_uart_clk: gsbi5_uart_cxc {
-+				#clock-cells = <0>;
-+				compatible = "qcom,cxc-clock";
-+				clocks = <&gsbi5_uart_rcg>;
-+			};
-+
-+			gsbi5_uart_ahb: gsbi5_uart_ahb {
-+				#clock-cells = <0>;
-+				compatible = "qcom,cxc-hg-clock";
-+			};
-+		};
++	gsbi5_uart_clk: gsbi5_uart_cxc {
++		#clock-cells = <0>;
++		compatible = "qcom,cxc-clock";
++		clocks = <&gsbi5_uart_rcg>;
 +	};
-diff --git a/drivers/clk/msm/Kconfig b/drivers/clk/msm/Kconfig
-index bf7e3d2..3eaffb6 100644
---- a/drivers/clk/msm/Kconfig
-+++ b/drivers/clk/msm/Kconfig
-@@ -2,3 +2,13 @@ menuconfig COMMON_CLK_MSM
- 	tristate "Support for Qualcomm's MSM designs"
- 	depends on OF
- 
-+if COMMON_CLK_MSM
 +
-+config MSM_GCC_8960
-+	bool "MSM8960 Global Clock Controller"
-+	help
-+	  Support for the global clock controller on msm8960 devices.
-+	  Say Y if you want to use peripheral devices such as UART, SPI,
-+	  i2c, USB, SD/eMMC, SATA, PCIe, etc.
++CXC With Hardware Gating Binding
++--------------------------------
 +
-+endif
++Required properties:
++- compatible : shall be "qcom,cxc-hg-clock".
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : from common clock binding; shall be set to the source being gated
++
++	gsbi5_uart_ahb: gsbi5_uart_ahb {
++		#clock-cells = <0>;
++		compatible = "qcom,cxc-hg-clock";
++		clocks = <&cfpb_clk>;
++	};
 diff --git a/drivers/clk/msm/Makefile b/drivers/clk/msm/Makefile
-index 9cfd0d7..c785943 100644
+index fb78ac9..e1cee29 100644
 --- a/drivers/clk/msm/Makefile
 +++ b/drivers/clk/msm/Makefile
-@@ -6,3 +6,5 @@ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-rcg2.o
- clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-branch.o
- 
- clk-msm-$(CONFIG_COMMON_CLK_MSM) += core.o
-+
-+clk-msm-$(CONFIG_MSM_GCC_8960) += gcc-8960.o
-diff --git a/drivers/clk/msm/core.c b/drivers/clk/msm/core.c
-index b1904c0..b1ac8c1 100644
---- a/drivers/clk/msm/core.c
-+++ b/drivers/clk/msm/core.c
-@@ -173,6 +173,9 @@ typedef struct clk *
- 		struct cc_data *cc);
- 
- static const struct of_device_id msm_cc_match_table[] = {
-+#ifdef CONFIG_MSM_GCC_8960
-+	{ .compatible = "qcom,gcc-8960", .data = &msm_gcc_clk_matches },
-+#endif
- 	{ }
- };
- MODULE_DEVICE_TABLE(of, msm_cc_match_table);
-diff --git a/drivers/clk/msm/gcc-8960.c b/drivers/clk/msm/gcc-8960.c
+@@ -3,3 +3,4 @@ obj-$(CONFIG_COMMON_CLK_MSM) += clk-msm.o
+ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-pll.o
+ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-rcg.o
+ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-rcg2.o
++clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-branch.o
+diff --git a/drivers/clk/msm/clk-branch.c b/drivers/clk/msm/clk-branch.c
 new file mode 100644
-index 0000000..11f47d8
+index 0000000..ff2e599
 --- /dev/null
-+++ b/drivers/clk/msm/gcc-8960.c
-@@ -0,0 +1,174 @@
++++ b/drivers/clk/msm/clk-branch.c
+@@ -0,0 +1,190 @@
 +/*
 + * Copyright (c) 2013, The Linux Foundation. All rights reserved.
 + *
@@ -162,178 +98,237 @@ index 0000000..11f47d8
 + * GNU General Public License for more details.
 + */
 +
++#include <linux/kernel.h>
++#include <linux/io.h>
++#include <linux/delay.h>
++#include <linux/module.h>
++#include <linux/spinlock.h>
 +#include <linux/clk-provider.h>
++#include <linux/slab.h>
++#include <linux/device.h>
 +
-+#include "internal.h"
-+#include "clk-pll.h"
-+#include "clk-rcg.h"
 +#include "clk-branch.h"
 +
-+static struct pll_desc pll8_desc = {
-+	.l_reg = 0x3144,
-+	.m_reg = 0x3148,
-+	.n_reg = 0x314c,
-+	.config_reg = 0x3154,
-+	.mode_reg = 0x3140,
-+	.status_reg = 0x3158,
-+	.status_bit = 16,
++/**
++ * struct clk_branch - gating clock with status bit and dynamic hardware gating
++ *
++ * @ctl_reg: clock control register
++ * @ctl_bit: ORed with @ctl_reg to enable the clock
++ * @hwcg_reg: dynamic hardware clock gating register
++ * @hwcg_bit: ORed with @hwcg_reg to enable dynamic hardware clock gating
++ * @halt_reg: halt register
++ * @halt_bit: ANDed with @halt_reg to test for clock halted
++ * @halt_check: type of halt checking to perform
++ * @hw: handle between common and hardware-specific interfaces
++ * @lock: register lock
++ *
++ * Clock which can gate its output.
++ */
++struct clk_branch {
++	void __iomem	*ctl_reg;
++	void __iomem	*hwcg_reg;
++	void __iomem	*halt_reg;
++
++	u8		ctl_bit;
++	u8		hwcg_bit;
++	u8		halt_bit;
++	u8		halt_check;
++
++	struct clk_hw	hw;
++	spinlock_t	*lock;
 +};
 +
-+static struct pll_vote_desc pll8_vote_desc = {
-+	.vote_reg = 0x34c0,
-+	.vote_bit = 8,
++#define to_clk_branch(_hw) container_of(_hw, struct clk_branch, hw)
++
++static bool clk_branch_is_halted(const struct clk_branch *br)
++{
++	bool invert = (br->halt_check == BRANCH_HALT_ENABLE);
++	u32 status_bit = readl_relaxed(br->halt_reg) & BIT(br->halt_bit);
++	return invert ? !status_bit : status_bit;
++}
++
++static bool clk_branch_in_hwcg_mode(const struct clk_branch *br)
++{
++	if (!br->hwcg_reg)
++		return 0;
++
++	return !!(readl_relaxed(br->hwcg_reg) & BIT(br->hwcg_bit));
++}
++
++static int clk_branch_wait(const struct clk_branch *br, bool enabling)
++{
++	bool voted = br->halt_check & BRANCH_VOTED;
++	const char *name = __clk_get_name(br->hw.clk);
++
++	/* Skip checking halt bit if the clock is in hardware gated mode */
++	if (clk_branch_in_hwcg_mode(br))
++		return 0;
++
++	if (br->halt_check == BRANCH_HALT_DELAY || (!enabling && voted)) {
++		udelay(10);
++	} else if (br->halt_check == BRANCH_HALT_ENABLE ||
++		   br->halt_check == BRANCH_HALT ||
++		   (enabling && voted)) {
++		int count = 200;
++
++		while (count-- > 0) {
++			if (clk_branch_is_halted(br) == !enabling)
++				return 0;
++			udelay(1);
++		}
++		WARN("%s status stuck at 'o%s'", name, enabling ? "ff" : "n");
++		return -EBUSY;
++	}
++	return 0;
++}
++
++static int clk_branch_toggle(const struct clk_hw *hw, bool en)
++{
++	struct clk_branch *br = to_clk_branch(hw);
++	unsigned long flags;
++	u32 val;
++
++	spin_lock_irqsave(br->lock, flags);
++
++	val = readl_relaxed(br->ctl_reg);
++	if (en)
++		val |= BIT(br->ctl_bit);
++	else
++		val &= ~BIT(br->ctl_bit);
++	writel(val, br->ctl_reg);
++
++	spin_unlock_irqrestore(br->lock, flags);
++
++	return clk_branch_wait(br, en);
++}
++
++static int clk_branch_enable(struct clk_hw *hw)
++{
++	return clk_branch_toggle(hw, true);
++}
++
++static void clk_branch_disable(struct clk_hw *hw)
++{
++	clk_branch_toggle(hw, false);
++}
++
++static int clk_branch_is_enabled(struct clk_hw *hw)
++{
++	struct clk_branch *br = to_clk_branch(hw);
++	u32 val;
++
++	val = readl_relaxed(br->ctl_reg);
++	val &= BIT(br->ctl_bit);
++
++	return val ? 1 : 0;
++}
++
++static const struct clk_ops clk_branch_ops = {
++	.enable = clk_branch_enable,
++	.is_enabled = clk_branch_is_enabled,
++	.disable = clk_branch_disable,
 +};
 +
-+#define PXO	0
-+#define PLL8	1
++struct clk *branch_clk_register(struct device *dev, struct branch_desc *desc,
++		spinlock_t *lock, struct clk_init_data *init)
++{
++	struct clk_branch *b;
 +
-+static u8 gcc_pxo_pll8_map[] = {
-+	[PXO]	= 0,
-+	[PLL8]	= 3,
++	b = devm_kzalloc(dev, sizeof(*b), GFP_KERNEL);
++	if (!b)
++		return ERR_PTR(-ENOMEM);
++
++	b->ctl_reg = desc->base + desc->ctl_reg;
++	b->halt_reg = desc->base + desc->halt_reg;
++	b->ctl_bit = desc->ctl_bit;
++	b->halt_bit = desc->halt_bit;
++	b->halt_check = desc->halt_check;
++	b->lock = lock;
++
++	init->ops = &clk_branch_ops;
++	init->flags |= CLK_SET_RATE_PARENT;
++	b->hw.init = init;
++
++	return devm_clk_register(dev, &b->hw);
++}
++
++struct clk *branch_hg_clk_register(struct device *dev, struct branch_desc *desc,
++		spinlock_t *lock, struct clk_init_data *init)
++{
++	struct clk_branch *b;
++
++	b = devm_kzalloc(dev, sizeof(*b), GFP_KERNEL);
++	if (!b)
++		return ERR_PTR(-ENOMEM);
++
++	b->ctl_reg = desc->base + desc->ctl_reg;
++	b->halt_reg = desc->base + desc->halt_reg;
++	b->hwcg_reg = desc->base + desc->hwcg_reg;
++	b->ctl_bit = desc->ctl_bit;
++	b->halt_bit = desc->halt_bit;
++	b->halt_check = desc->halt_check;
++	b->lock = lock;
++
++	init->ops = &clk_branch_ops;
++	init->flags |= CLK_SET_RATE_PARENT;
++	b->hw.init = init;
++
++	return devm_clk_register(dev, &b->hw);
++}
+diff --git a/drivers/clk/msm/clk-branch.h b/drivers/clk/msm/clk-branch.h
+new file mode 100644
+index 0000000..bcb7345
+--- /dev/null
++++ b/drivers/clk/msm/clk-branch.h
+@@ -0,0 +1,48 @@
++/*
++ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __MSM_CLK_BRANCH_H__
++#define __MSM_CLK_BRANCH_H__
++
++#include <linux/spinlock.h>
++
++struct device;
++struct clk;
++struct clk_init_data;
++
++struct branch_desc {
++	void __iomem *base;
++	u32 ctl_reg;
++	u32 hwcg_reg;
++	u32 halt_reg;
++
++	u8 ctl_bit;
++	u8 hwcg_bit;
++	u8 halt_bit;
++	u8 halt_check;
++#define BRANCH_VOTED			BIT(7) /* Delay on disable */
++#define BRANCH_HALT			0 /* pol: 1 = halt */
++#define BRANCH_HALT_VOTED		(BRANCH_HALT | BRANCH_VOTED)
++#define BRANCH_HALT_ENABLE		1 /* pol: 0 = halt */
++#define BRANCH_HALT_ENABLE_VOTED	(BRANCH_HALT_ENABLE | BRANCH_VOTED)
++#define BRANCH_HALT_DELAY		2 /* No bit to check; just delay */
 +};
 +
-+static struct freq_tbl clk_tbl_gsbi_uart[] = {
-+	{  1843200, PLL8, 2,  6, 625 },
-+	{  3686400, PLL8, 2, 12, 625 },
-+	{  7372800, PLL8, 2, 24, 625 },
-+	{ 14745600, PLL8, 2, 48, 625 },
-+	{ 16000000, PLL8, 4,  1,   6 },
-+	{ 24000000, PLL8, 4,  1,   4 },
-+	{ 32000000, PLL8, 4,  1,   3 },
-+	{ 40000000, PLL8, 1,  5,  48 },
-+	{ 46400000, PLL8, 1, 29, 240 },
-+	{ 48000000, PLL8, 4,  1,   2 },
-+	{ 51200000, PLL8, 1,  2,  15 },
-+	{ 56000000, PLL8, 1,  7,  48 },
-+	{ 58982400, PLL8, 1, 96, 625 },
-+	{ 64000000, PLL8, 2,  1,   3 },
-+	{ }
-+};
++extern struct clk *branch_clk_register(struct device *dev,
++		struct branch_desc *desc, spinlock_t *lock,
++		struct clk_init_data *init);
++extern struct clk *branch_hg_clk_register(struct device *dev,
++		struct branch_desc *desc, spinlock_t *lock,
++		struct clk_init_data *init);
 +
-+static struct rcg_desc gsbi5_uart_rcg = {
-+	.ctl_reg = 0x2a54,
-+	.ns_reg = 0x2a54,
-+	.md_reg = 0x2a50,
-+	.ctl_bit = 11,
-+	.mnctr_en_bit = 8,
-+	.mnctr_reset_bit = 7,
-+	.mnctr_mode_shift = 5,
-+	.pre_div_shift = 3,
-+	.src_sel_shift = 0,
-+	.n_val_shift = 16,
-+	.m_val_shift = 16,
-+	.parent_map = gcc_pxo_pll8_map,
-+	.freq_tbl = clk_tbl_gsbi_uart,
-+};
-+
-+static struct branch_desc gsbi5_uart_cxc = {
-+	.ctl_reg = 0x2a54,
-+	.halt_reg = 0x2fd0,
-+	.ctl_bit = 9,
-+	.halt_bit = 22,
-+	.halt_check = BRANCH_HALT,
-+};
-+
-+static struct rcg_desc gsbi6_uart_rcg = {
-+	.ctl_reg = 0x2a74,
-+	.ns_reg = 0x2a74,
-+	.md_reg = 0x2a70,
-+	.ctl_bit = 11,
-+	.mnctr_en_bit = 8,
-+	.mnctr_reset_bit = 7,
-+	.mnctr_mode_shift = 5,
-+	.pre_div_shift = 3,
-+	.src_sel_shift = 0,
-+	.n_val_shift = 16,
-+	.m_val_shift = 16,
-+	.parent_map = gcc_pxo_pll8_map,
-+	.freq_tbl = clk_tbl_gsbi_uart,
-+};
-+
-+static struct branch_desc gsbi6_uart_cxc = {
-+	.ctl_reg = 0x2a74,
-+	.halt_reg = 0x2fd0,
-+	.ctl_bit = 9,
-+	.halt_bit = 18,
-+	.halt_check = BRANCH_HALT,
-+};
-+
-+static struct branch_desc gsbi5_uart_ahb = {
-+	.ctl_reg = 0x2a40,
-+	.halt_reg = 0x2fd0,
-+	.hwcg_reg = 0x2a40,
-+	.ctl_bit = 4,
-+	.hwcg_bit = 6,
-+	.halt_bit = 23,
-+	.halt_check = BRANCH_HALT,
-+};
-+
-+static struct freq_tbl clk_tbl_gsbi_qup[] = {
-+	{  1100000, PXO,  1, 2, 49 },
-+	{  5400000, PXO,  1, 1,  5 },
-+	{ 10800000, PXO,  1, 2,  5 },
-+	{ 15060000, PLL8, 1, 2, 51 },
-+	{ 24000000, PLL8, 4, 1,  4 },
-+	{ 25600000, PLL8, 1, 1, 15 },
-+	{ 27000000, PXO,  1, 0,  0 },
-+	{ 48000000, PLL8, 4, 1,  2 },
-+	{ 51200000, PLL8, 1, 2, 15 },
-+	{ }
-+};
-+
-+static struct rcg_desc gsbi5_qup_rcg = {
-+	.ctl_reg = 0x2a4c,
-+	.ns_reg = 0x2a4c,
-+	.md_reg = 0x2a48,
-+	.ctl_bit = 11,
-+	.mnctr_en_bit = 8,
-+	.mnctr_reset_bit = 7,
-+	.mnctr_mode_shift = 5,
-+	.pre_div_shift = 3,
-+	.src_sel_shift = 0,
-+	.n_val_shift = 16,
-+	.m_val_shift = 16,
-+	.parent_map = gcc_pxo_pll8_map,
-+	.freq_tbl = clk_tbl_gsbi_qup,
-+};
-+
-+static struct branch_desc gsbi5_qup_cxc = {
-+	.ctl_reg = 0x2a4c,
-+	.halt_reg = 0x2fd0,
-+	.ctl_bit = 9,
-+	.halt_bit = 20,
-+	.halt_check = BRANCH_HALT,
-+};
-+
-+static struct of_clk_match msm_gcc_clk_match[] = {
-+	{ .name = "cxo" },
-+	{ .name = "pxo" },
-+	{ .name = "pll8", .driver_data = &pll8_desc },
-+	{ .name = "vpll8", .driver_data = &pll8_vote_desc },
-+	{ .name = "gsbi5_uart_rcg", .driver_data = &gsbi5_uart_rcg },
-+	{ .name = "gsbi5_uart_cxc", .driver_data = &gsbi5_uart_cxc },
-+	{ .name = "gsbi6_uart_rcg", .driver_data = &gsbi6_uart_rcg },
-+	{ .name = "gsbi6_uart_cxc", .driver_data = &gsbi6_uart_cxc },
-+	{ .name = "gsbi5_uart_ahb", .driver_data = &gsbi5_uart_ahb },
-+	{ .name = "gsbi5_qup_rcg", .driver_data = &gsbi5_qup_rcg },
-+	{ .name = "gsbi5_qup_cxc", .driver_data = &gsbi5_qup_cxc },
-+};
-+
-+const struct msm_clk_match msm_gcc_clk_matches = {
-+	.matches = msm_gcc_clk_match,
-+	.size = ARRAY_SIZE(msm_gcc_clk_match)
-+};
-diff --git a/drivers/clk/msm/internal.h b/drivers/clk/msm/internal.h
-index 177bd3b..0b6b9fe 100644
---- a/drivers/clk/msm/internal.h
-+++ b/drivers/clk/msm/internal.h
-@@ -21,4 +21,6 @@ struct msm_clk_match {
- 	size_t size;
- };
- 
-+extern const struct msm_clk_match msm_gcc_clk_matches;
-+
- #endif
++#endif
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
