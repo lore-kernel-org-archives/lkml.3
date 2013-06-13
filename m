@@ -1,88 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab3FMEgn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 00:36:43 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:47379 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab3FMEgl (ORCPT
+	id S1754855Ab3FMEyO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 00:54:14 -0400
+Received: from mga02.intel.com ([134.134.136.20]:5866 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750716Ab3FMEyM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 00:36:41 -0400
-Message-ID: <51B94C54.8070209@codeaurora.org>
-Date: Thu, 13 Jun 2013 10:06:36 +0530
-From: Sujit Reddy Thumma <sthumma@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Thu, 13 Jun 2013 00:54:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,856,1363158000"; 
+   d="scan'208";a="352659665"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+CC: Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/1] thermal: consider emul_temperature while computing
+ trend
+Thread-Topic: [PATCH 1/1] thermal: consider emul_temperature while computing
+ trend
+Thread-Index: AQHOXLS6rG3cYdy7SUGERNmcCGTdpJkzKlQg
+Date: Thu, 13 Jun 2013 04:54:01 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59CB35F7@BGSMSX101.gar.corp.intel.com>
+References: <1369863420-21913-1-git-send-email-eduardo.valentin@ti.com>
+In-Reply-To: <1369863420-21913-1-git-send-email-eduardo.valentin@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Santosh Y <santoshsy@gmail.com>
-CC: Dolev Raviv <draviv@codeaurora.org>, linux-scsi@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] scsi: ufs: Set fDeviceInit flag to initiate device
- initialization
-References: <1370873118-18468-1-git-send-email-draviv@codeaurora.org> <1370873118-18468-3-git-send-email-draviv@codeaurora.org> <CALMYJDvXi7M8AgdJNpoL4H2-b3WBNZ3LLc2d8wkUMRJi5OQJQQ@mail.gmail.com>
-In-Reply-To: <CALMYJDvXi7M8AgdJNpoL4H2-b3WBNZ3LLc2d8wkUMRJi5OQJQQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/12/2013 11:04 AM, Santosh Y wrote:
->>
->>   /**
->> + *  ufshcd_query_request() - API for issuing query request to the device.
->> + *  @hba: ufs driver context
->> + *  @query: params for query request
->> + *  @descriptor: buffer for sending/receiving descriptor
->> + *  @retries: number of times to try executing the command
->> + *
->> + *   All necessary fields for issuing a query and receiving its response
->> + *   are stored in the UFS hba struct. We can use this method since we know
->> + *   there is only one active query request or any internal command at all
->> + *   times.
->> + */
->> +static int ufshcd_send_query_request(struct ufs_hba *hba,
->> +                                       struct ufs_query_req *query,
->> +                                       u8 *descriptor,
->> +                                       struct ufs_query_res *response)
->> +{
->> +       int ret;
->> +
->> +       BUG_ON(!hba);
->> +       if (!query || !response) {
->> +               dev_err(hba->dev,
->> +                       "%s: NULL pointer query = %p, response = %p\n",
->> +                       __func__, query, response);
->> +               return -EINVAL;
->> +       }
->> +
->> +       mutex_lock(&hba->i_cmd.dev_cmd_lock);
->> +       hba->i_cmd.query.request = query;
->> +       hba->i_cmd.query.response = response;
->> +       hba->i_cmd.query.descriptor = descriptor;
->> +
->> +       ret = ufshcd_exec_internal_cmd(hba, DEV_CMD_TYPE_QUERY,
->> +                                       QUERY_REQ_TIMEOUT);
->
-> Can this be generic, as external query commands might also use it?
+> -----Original Message-----
+> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-
+> owner@vger.kernel.org] On Behalf Of Eduardo Valentin
+> Sent: Thursday, May 30, 2013 3:07 AM
+> To: Zhang, Rui
+> Cc: Eduardo Valentin; Amit Daniel Kachhap; R, Durgadoss; linux-
+> pm@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: [PATCH 1/1] thermal: consider emul_temperature while computing
+> trend
+> 
+> In case emulated temperature is in use, using the trend
+> provided by driver layer can lead to bogus situation.
+> In this case, debugger user would set a temperature value,
+> but the trend would be from driver computation.
+> 
+> To avoid this situation, this patch changes the get_tz_trend()
+> to consider the emulated temperature whenever that is in use.
 
-External query commands can call ufshcd_send_query_request() directly, 
-without going into hassle of taking mutex lock and filling internal cmd 
-structure.
+Nice catch.
+Sorry, I missed looking at it earlier. Just got woken up by Rui's reply
+on this. The patch looks fine to me.
 
->
->> +
->> +       hba->i_cmd.query.request = NULL;
->> +       hba->i_cmd.query.response = NULL;
->> +       hba->i_cmd.query.descriptor = NULL;
->> +       mutex_unlock(&hba->i_cmd.dev_cmd_lock);
->> +
->> +       return ret;
->> +}
->> +
->> +/**
->
->
-
--- 
-Regards,
-Sujit
+Thanks,
+Durga
+> 
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> Cc: Durgadoss R <durgadoss.r@intel.com>
+> Cc: linux-pm@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> ---
+>  drivers/thermal/thermal_core.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/thermal/thermal_core.c
+> b/drivers/thermal/thermal_core.c
+> index d755440..c00dc92 100644
+> --- a/drivers/thermal/thermal_core.c
+> +++ b/drivers/thermal/thermal_core.c
+> @@ -155,7 +155,8 @@ int get_tz_trend(struct thermal_zone_device *tz, int
+> trip)
+>  {
+>  	enum thermal_trend trend;
+> 
+> -	if (!tz->ops->get_trend || tz->ops->get_trend(tz, trip, &trend)) {
+> +	if (tz->emul_temperature || !tz->ops->get_trend ||
+> +	    tz->ops->get_trend(tz, trip, &trend)) {
+>  		if (tz->temperature > tz->last_temperature)
+>  			trend = THERMAL_TREND_RAISING;
+>  		else if (tz->temperature < tz->last_temperature)
+> --
+> 1.8.2.1.342.gfa7285d
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
