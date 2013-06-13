@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758137Ab3FMN2A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:28:00 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54674 "EHLO song.cn.fujitsu.com"
+	id S1758799Ab3FMNjc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:39:32 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:8481 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751139Ab3FMN16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 09:27:58 -0400
+	id S1757537Ab3FMN17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 09:27:59 -0400
 X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
-   d="scan'208";a="7537676"
+   d="scan'208";a="7537678"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -18,76 +18,66 @@ To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [Part2 PATCH v4 05/15] x86, numa, acpi, memory-hotplug: Consider hotplug info when cleanup numa_meminfo.
-Date: Thu, 13 Jun 2013 21:03:29 +0800
-Message-Id: <1371128619-8987-6-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [Part3 PATCH v2 0/4] Support hot-remove local pagetable pages.
+Date: Thu, 13 Jun 2013 21:03:52 +0800
+Message-Id: <1371128636-9027-1-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:58:45,
+ 2013/06/13 20:59:03,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:59:02,
-	Serialize complete at 2013/06/13 20:59:02
+ 2013/06/13 20:59:04,
+	Serialize complete at 2013/06/13 20:59:04
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we have introduced hotplug info into struct numa_meminfo, we need
-to consider it when cleanup numa_meminfo.
+The following patch-set from Yinghai allocates pagetables to local nodes.
+v1: https://lkml.org/lkml/2013/3/7/642
+v2: https://lkml.org/lkml/2013/3/10/47
+v3: https://lkml.org/lkml/2013/4/4/639
+v4: https://lkml.org/lkml/2013/4/11/829
 
-The original logic in numa_cleanup_meminfo() is:
-Merge blocks on the same node, holes between which don't overlap with
-memory on other nodes.
+Since pagetable pages are used by the kernel, they cannot be offlined.
+As a result, they cannot be hot-remove.
 
-This patch modifies numa_cleanup_meminfo() logic like this:
-Merge blocks with the same hotpluggable type on the same node, holes
-between which don't overlap with memory on other nodes.
+This patch fix this problem with the following solution:
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- arch/x86/mm/numa.c |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
+     1.   Introduce a new bootmem type LOCAL_NODE_DATAL, and register local
+          pagetable pages as LOCAL_NODE_DATAL by setting page->lru.next to
+          LOCAL_NODE_DATAL, just like we register SECTION_INFO pages.
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index bf610f8..05e4443 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -293,18 +293,22 @@ int __init numa_cleanup_meminfo(struct numa_meminfo *mi)
- 			}
- 
- 			/*
--			 * Join together blocks on the same node, holes
--			 * between which don't overlap with memory on other
--			 * nodes.
-+			 * Join together blocks on the same node, with the same
-+			 * hotpluggable flags, holes between which don't overlap
-+			 * with memory on other nodes.
- 			 */
- 			if (bi->nid != bj->nid)
- 				continue;
-+			if (bi->hotpluggable != bj->hotpluggable)
-+				continue;
-+
- 			start = min(bi->start, bj->start);
- 			end = max(bi->end, bj->end);
- 			for (k = 0; k < mi->nr_blks; k++) {
- 				struct numa_memblk *bk = &mi->blk[k];
- 
--				if (bi->nid == bk->nid)
-+				if (bi->nid == bk->nid &&
-+				    bi->hotpluggable == bk->hotpluggable)
- 					continue;
- 				if (start < bk->end && end > bk->start)
- 					break;
-@@ -324,6 +328,7 @@ int __init numa_cleanup_meminfo(struct numa_meminfo *mi)
- 	for (i = mi->nr_blks; i < ARRAY_SIZE(mi->blk); i++) {
- 		mi->blk[i].start = mi->blk[i].end = 0;
- 		mi->blk[i].nid = NUMA_NO_NODE;
-+		mi->blk[i].hotpluggable = false;
- 	}
- 
- 	return 0;
--- 
-1.7.1
+     2.   Skip LOCAL_NODE_DATAL pages in offline/online procedures. When the
+          whole memory block they reside in is offlined, the kernel can
+          still access the pagetables.
+          (This changes the semantics of offline/online a little bit.)
+
+     3.   Do not free LOCAL_NODE_DATAL pages to buddy system because they
+          were skipped when in offline/online procedures. The memory block
+          they reside in could have been offlined.
+
+Anyway, this problem should be fixed. Any better idea is welcome.
+
+Change log:
+v1 -> v2:
+        patch2: As suggested by Wu Jianguo, define a macro to check if a page
+                cantains local node data.
+        patch4: As suggested by Wu Jianguo, prevent freeing LOCAL_NODE_DATA
+                pages in free_pagetable() instead of in put_page_bootmem().
+
+Tang Chen (4):
+  bootmem, mem-hotplug: Register local pagetable pages with
+    LOCAL_NODE_DATA when freeing bootmem.
+  mem-hotplug: Skip LOCAL_NODE_DATA pages in memory offline procedure.
+  mem-hotplug: Skip LOCAL_NODE_DATA pages in memory online procedure.
+  mem-hotplug: Do not free LOCAL_NODE_DATA pages to buddy system in
+    hot-remove procedure.
+
+ arch/x86/mm/init_64.c          |   10 +++++++-
+ include/linux/memblock.h       |   22 +++++++++++++++++
+ include/linux/memory_hotplug.h |   20 +++++++++++++--
+ mm/memblock.c                  |   52 ++++++++++++++++++++++++++++++++++++++++
+ mm/memory_hotplug.c            |   31 +++++++++++++++++++++++
+ mm/page_alloc.c                |   15 ++++++++++-
+ mm/page_isolation.c            |    5 ++++
+ 7 files changed, 149 insertions(+), 6 deletions(-)
 
