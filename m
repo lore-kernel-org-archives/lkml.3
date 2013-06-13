@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932648Ab3FMEGf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 00:06:35 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:32958 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752702Ab3FMEFQ (ORCPT
+	id S1752602Ab3FMEFO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 00:05:14 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:60486 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752263Ab3FMEFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 00:05:16 -0400
+	Thu, 13 Jun 2013 00:05:10 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         koverstreet@google.com, linux-kernel@vger.kernel.org,
         cl@linux-foundation.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/11] cgroup: drop unnecessary RCU dancing from __put_css_set()
-Date: Wed, 12 Jun 2013 21:04:54 -0700
-Message-Id: <1371096298-24402-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 04/11] cgroup: use kzalloc() instead of kmalloc()
+Date: Wed, 12 Jun 2013 21:04:51 -0700
+Message-Id: <1371096298-24402-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1371096298-24402-1-git-send-email-tj@kernel.org>
 References: <1371096298-24402-1-git-send-email-tj@kernel.org>
@@ -22,77 +22,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__put_css_set() does RCU read access on @cgrp across dropping
-@cgrp->count so that it can continue accessing @cgrp even if the count
-reached zero and destruction of the cgroup commenced.  Given that both
-sides - __css_put() and cgroup_destroy_locked() - are cold paths, this
-is unnecessary.  Just making cgroup_destroy_locked() grab css_set_lock
-while checking @cgrp->count is enough.
+There's no point in using kmalloc() instead of the clearing variant
+for trivial stuff.  We can live dangerously elsewhere.  Use kzalloc()
+instead and drop 0 inits.
 
-Remove the RCU read locking from __put_css_set() and make
-cgroup_destroy_locked() read-lock css_set_lock when checking
-@cgrp->count.  This will also allow removing @cgrp->count.
+While at it, do trivial code reorganization in cgroup_file_open().
+
+This patch doesn't introduce any functional changes.
+
+v2: I was caught in the very distant past where list_del() didn't
+    poison and the initial version converted list_del()s to
+    list_del_init()s too.  Li and Kent took me out of the stasis
+    chamber.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: Kent Overstreet <koverstreet@google.com>
 ---
- kernel/cgroup.c | 20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+ kernel/cgroup.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 8f5fbcb..22f9729 100644
+index 0b5cd0e..e308ee7 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -407,19 +407,13 @@ static void __put_css_set(struct css_set *cset, int taskexit)
- 		list_del(&link->cset_link);
- 		list_del(&link->cgrp_link);
+@@ -597,7 +597,7 @@ static int allocate_cgrp_cset_links(int count, struct list_head *tmp_links)
+ 	INIT_LIST_HEAD(tmp_links);
  
--		/*
--		 * We may not be holding cgroup_mutex, and if cgrp->count is
--		 * dropped to 0 the cgroup can be destroyed at any time, hence
--		 * rcu_read_lock is used to keep it alive.
--		 */
--		rcu_read_lock();
-+		/* @cgrp can't go away while we're holding css_set_lock */
- 		if (atomic_dec_and_test(&cgrp->count) &&
- 		    notify_on_release(cgrp)) {
- 			if (taskexit)
- 				set_bit(CGRP_RELEASABLE, &cgrp->flags);
- 			check_for_release(cgrp);
+ 	for (i = 0; i < count; i++) {
+-		link = kmalloc(sizeof(*link), GFP_KERNEL);
++		link = kzalloc(sizeof(*link), GFP_KERNEL);
+ 		if (!link) {
+ 			free_cgrp_cset_links(tmp_links);
+ 			return -ENOMEM;
+@@ -658,7 +658,7 @@ static struct css_set *find_css_set(struct css_set *old_cset,
+ 	if (cset)
+ 		return cset;
+ 
+-	cset = kmalloc(sizeof(*cset), GFP_KERNEL);
++	cset = kzalloc(sizeof(*cset), GFP_KERNEL);
+ 	if (!cset)
+ 		return NULL;
+ 
+@@ -2478,10 +2478,12 @@ static int cgroup_file_open(struct inode *inode, struct file *file)
+ 	cft = __d_cft(file->f_dentry);
+ 
+ 	if (cft->read_map || cft->read_seq_string) {
+-		struct cgroup_seqfile_state *state =
+-			kzalloc(sizeof(*state), GFP_USER);
++		struct cgroup_seqfile_state *state;
++
++		state = kzalloc(sizeof(*state), GFP_USER);
+ 		if (!state)
+ 			return -ENOMEM;
++
+ 		state->cft = cft;
+ 		state->cgroup = __d_cgrp(file->f_dentry->d_parent);
+ 		file->f_op = &cgroup_seqfile_operations;
+@@ -3514,7 +3516,7 @@ static struct cgroup_pidlist *cgroup_pidlist_find(struct cgroup *cgrp,
  		}
--		rcu_read_unlock();
- 
- 		kfree(link);
  	}
-@@ -4373,11 +4367,19 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
- 	struct cgroup *parent = cgrp->parent;
- 	struct cgroup_event *event, *tmp;
- 	struct cgroup_subsys *ss;
-+	bool empty;
- 
- 	lockdep_assert_held(&d->d_inode->i_mutex);
- 	lockdep_assert_held(&cgroup_mutex);
- 
--	if (atomic_read(&cgrp->count) || !list_empty(&cgrp->children))
-+	/*
-+	 * css_set_lock prevents @cgrp from being removed while
-+	 * __put_css_set() is in progress.
-+	 */
-+	read_lock(&css_set_lock);
-+	empty = !atomic_read(&cgrp->count) && list_empty(&cgrp->children);
-+	read_unlock(&css_set_lock);
-+	if (!empty)
- 		return -EBUSY;
- 
- 	/*
-@@ -5054,8 +5056,6 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
- 
- static void check_for_release(struct cgroup *cgrp)
- {
--	/* All of these checks rely on RCU to keep the cgroup
--	 * structure alive */
- 	if (cgroup_is_releasable(cgrp) &&
- 	    !atomic_read(&cgrp->count) && list_empty(&cgrp->children)) {
- 		/*
+ 	/* entry not found; create a new one */
+-	l = kmalloc(sizeof(struct cgroup_pidlist), GFP_KERNEL);
++	l = kzalloc(sizeof(struct cgroup_pidlist), GFP_KERNEL);
+ 	if (!l) {
+ 		mutex_unlock(&cgrp->pidlist_mutex);
+ 		return l;
+@@ -3523,8 +3525,6 @@ static struct cgroup_pidlist *cgroup_pidlist_find(struct cgroup *cgrp,
+ 	down_write(&l->mutex);
+ 	l->key.type = type;
+ 	l->key.ns = get_pid_ns(ns);
+-	l->use_count = 0; /* don't increment here */
+-	l->list = NULL;
+ 	l->owner = cgrp;
+ 	list_add(&l->links, &cgrp->pidlists);
+ 	mutex_unlock(&cgrp->pidlist_mutex);
 -- 
 1.8.2.1
 
