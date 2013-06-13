@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758591Ab3FMKJp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 06:09:45 -0400
-Received: from mga09.intel.com ([134.134.136.24]:12265 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758491Ab3FMKJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 06:09:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,857,1363158000"; 
-   d="scan'208";a="352778122"
-Message-ID: <51B99A60.6010605@linux.intel.com>
-Date: Thu, 13 Jun 2013 13:09:36 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1758586Ab3FMKRX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 06:17:23 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:42484 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756119Ab3FMKRV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 06:17:21 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18Jh8B6/ahrUqMSkiHiZd3Y
+Date: Thu, 13 Jun 2013 03:17:17 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: "Mohammed, Afzal" <afzal@ti.com>
+Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v2 02/14] ARM: OMAP2+: AM43x: Kconfig
+Message-ID: <20130613101716.GA8164@atomide.com>
+References: <cover.1369658705.git.afzal@ti.com>
+ <7642e0c701680ea94a8cc84059ff19e500813bf1.1369658705.git.afzal@ti.com>
+ <20130612171200.GL8164@atomide.com>
+ <C8443D0743D26F4388EA172BF4E2A7A93EB1DEB2@DBDE04.ent.ti.com>
+ <20130613095454.GY8164@atomide.com>
+ <C8443D0743D26F4388EA172BF4E2A7A93EB1E196@DBDE04.ent.ti.com>
 MIME-Version: 1.0
-To: Daniel Borkmann <dborkman@redhat.com>
-CC: Stephen Hemminger <stephen@networkplumber.org>,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, jesse.brandeburg@intel.com,
-        donald.c.skidmore@intel.com, e1000-devel@lists.sourceforge.net,
-        willemb@google.com, erdnetdev@gmail.com, bhutchings@solarflare.com,
-        andi@firstfloor.org, hpa@zytor.com, eilong@broadcom.com,
-        or.gerlitz@gmail.com, amirv@mellanox.com, eliezer@tamir.org.il
-Subject: Re: [PATCH net-next 1/2] net: remove NET_LL_RX_POLL config menue
-References: <20130611142415.17879.75569.stgit@ladj378.jer.intel.com> <20130611142428.17879.33582.stgit@ladj378.jer.intel.com> <20130612.151205.1822920389019274346.davem@davemloft.net> <20130612190103.1545e310@nehalam.linuxnetplumber.net> <51B92ACE.7000307@linux.intel.com> <51B97C1A.8000302@redhat.com>
-In-Reply-To: <51B97C1A.8000302@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A93EB1E196@DBDE04.ent.ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/06/2013 11:00, Daniel Borkmann wrote:
-> On 06/13/2013 04:13 AM, Eliezer Tamir wrote:
->> On 13/06/2013 05:01, Stephen Hemminger wrote:
->>> On Wed, 12 Jun 2013 15:12:05 -0700 (PDT)
->>> David Miller <davem@davemloft.net> wrote:
->>>
->>>> From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
->>>> Date: Tue, 11 Jun 2013 17:24:28 +0300
->>>>
->>>>>       depends on X86_TSC
->>>>
->>>> Wait a second, I didn't notice this before.  There needs to be a better
->>>> way to test for the accuracy you need, or if the issue is lack of a
->>>> proper
->>>> API for cycle counter reading, fix that rather than add ugly arch
->>>> specific dependencies to generic networking code.
->>>
->>> This should be sched_clock(), rather than direct TSC access.
->>> Also any code using TSC or sched_clock has to be carefully audited to
->>> deal with
->>> clocks running at different rates on different CPU's. Basically value
->>> is only
->>> meaning full on same CPU.
->>
->> OK,
->>
->> If we covert to sched_clock(), would adding a define such as
->> HAVE_HIGH_PRECISION_CLOCK to architectures that have both a high
->> precision clock and a 64 bit cycles_t be a good solution?
->>
->> (if not any other suggestion?)
->
-> Hm, probably cpu_clock() and similar might be better, since they use
-> sched_clock() in the background when !CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
-> (meaning when sched_clock() provides synchronized highres time source from
-> the architecture), and, quoting ....
+* Mohammed, Afzal <afzal@ti.com> [130613 03:08]:
+> Hi Tony,
+> 
+> On Thu, Jun 13, 2013 at 15:24:54, Tony Lindgren wrote:
+> > * Mohammed, Afzal <afzal@ti.com> [130613 00:04]:
+> 
+> > > Patch 10 "ARM: OMAP2+: AM43x: basic dt support" is missing in
+> > > omap-for-v3.11/soc branch and omap soc pull request, can you
+> > > please help patch 10 also to go upstream.
+> > 
+> > Hmm if that's .dts changes, Benoit needs to queue that.
+> 
+> It is not dts change.
+> 
+> Patch 10 patches board-generic.c for DT boot (Benoit has already
+> picked up dts, that is patch 14).
 
-I don't think we want the overhead of disabling IRQs
-that cpu_clock() adds.
+Oops OK sorry I must have miscounted the patches that looked
+ready to apply. Will apply.
 
-We don't really care about precise measurement.
-All we need is a sane cut-off for busy polling.
-It's no big deal if on a rare occasion we poll less,
-or even poll twice the time.
-As long as it's rare it should not matter.
+Regards,
 
-Maybe the answer is not to use cycle counting at all?
-Maybe just wait the full sk_rcvtimo?
-(resched() when proper, bail out if signal pending, etc.)
-
-This could only be a safe/sane thing to do after we add
-a socket option, because this can't be a global setting.
-
-This would of course turn the option into a flag.
-If it's set (and !nonblock), busy wait up to sk_recvtimo.
-
-Opinions?
+Tony
