@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758994Ab3FMSY5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 14:24:57 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:60644 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758970Ab3FMSYw (ORCPT
+	id S932101Ab3FMSZP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 14:25:15 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:64197 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759002Ab3FMSZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 14:24:52 -0400
-Date: Thu, 13 Jun 2013 20:24:48 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: Re: [RFC: PATCH] err.h: silence warning when using IS_ERR on void
- __iomem *
-Message-ID: <20130613182447.GB32574@mithrandir>
-References: <1371072668-19027-1-git-send-email-mkl@pengutronix.de>
- <CAK9yfHywxyju2TbMWTfM7GBjjj8T5SdP8sc1j=VRRPxBesUtxQ@mail.gmail.com>
+	Thu, 13 Jun 2013 14:25:09 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wzJLGUyc3ArbnUjN"
-Content-Disposition: inline
-In-Reply-To: <CAK9yfHywxyju2TbMWTfM7GBjjj8T5SdP8sc1j=VRRPxBesUtxQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAD=FV=Un+Ti8atZLUbK+5w=dB7vX7HoxVacEGkjvCboVo4mNpA@mail.gmail.com>
+References: <1371143144-31764-1-git-send-email-dianders@chromium.org>
+	<9948950.GZ51yJYkxQ@flatron>
+	<CAD=FV=Un+Ti8atZLUbK+5w=dB7vX7HoxVacEGkjvCboVo4mNpA@mail.gmail.com>
+Date: Thu, 13 Jun 2013 20:25:09 +0200
+Message-ID: <CACRpkdbmO2opXAzrVqmjFS3JpTb62qeaV1-24vovJGRxxgxU4Q@mail.gmail.com>
+Subject: Re: [PATCH] MAINTAINERS: Add Samsung pinctrl entries
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 13, 2013 at 7:25 PM, Doug Anderson <dianders@chromium.org> wrote:
 
---wzJLGUyc3ArbnUjN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>>> +PIN CONTROLLER - SAMSUNG
+>>> +M:   Linus Walleij <linus.walleij@linaro.org>
+>>> +M:   Kukjin Kim <kgene.kim@samsung.com>
+>>
+>> So actually this would be:
+>> M:      Thomas Abraham <thomas.abraham@linaro.org>
+>> M:      Tomasz Figa <t.figa@samsung.com>
+>>
+>> Thomas, do you agree on this?
+>
+> Ah.  Wasn't sure where the official maintainership should lie.  ;)  If
+> Thomas is happy with this then I'll spin and re-send.  Shall I remove
+> Kukjin and Linus, then?  It's convenient to have Linus on the list
+> since he tends to be the one applying the patches...
 
-On Thu, Jun 13, 2013 at 10:55:17AM +0530, Sachin Kamat wrote:
-> On 13 June 2013 03:01, Marc Kleine-Budde <mkl@pengutronix.de> wrote:
-> > Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
-> > introduced devm_ioremap_resource() and encourage to check its return va=
-lue with
-> > IS_ERR(). This however leads to the following sparse warnings, as
-> > devm_ioremap_resource() returns a void __iomem pointer:
-> >
-> > drivers/net/can/c_can/c_can_platform.c:205:32: warning: incorrect type =
-in argument 1 (different address spaces)
-> > drivers/net/can/c_can/c_can_platform.c:205:32:    expected void const *=
-ptr
-> > drivers/net/can/c_can/c_can_platform.c:205:32:    got unsigned int [nod=
-eref] [usertype] <asn:2>*raminit_ctrlreg
->=20
-> CC ing Thierry who has solved this issue some time back.
+Check what output you get from scripts/get-maintainer before
+and after this patch. I don't know how it works but I think I
+will end up on this list anyway due to the way the bigger
+regex for the subsystem works. I.e. this:
 
-I had sent two patches, one against sparse, the other against the
-kernel, but none were picked up yet.
+PIN CONTROL SUBSYSTEM
+M:      Linus Walleij <linus.walleij@linaro.org>
+S:      Maintained
+F:      drivers/pinctrl/
+F:      include/linux/pinctrl/
 
-Thierry
-
---wzJLGUyc3ArbnUjN
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRug5vAAoJEN0jrNd/PrOhEukQAImslUECKlNnop/mkD4qFcT3
-S3VvHF8y1fnk/y+GWXlUu1P9uUEAKOZvv+biFeHTvxu6YMSz4G1asFp+9+kEaSHY
-tEYVlu7PJI7RZVzT84iMkjXRB+1U4nmki1Iaus6UFkgswKi/FHCWqVb8c93qfz53
-al8UQj6qwNGtIcVXAXdcPBfxX4Co/pGKpBXLpPgkX66QRALeuWcp7C0HxfZ/1Ijq
-u1a35XNrphwmN7HCdxXYNpVVdRenusQzOWRAjRnxdqqjpWna946gY0eHb3e4DQFk
-GUH2f7xaQv5GW8KQ5hvn1D7XqAHLZ821GWuXxPEdhUkZwYrwPpTMvxMqA7GVK8Sg
-znlql5Qg1NBlvI5Z00w68UK/AEU+MDLvhOBMMU4VegjBAjz9BECZKGMx921S34KA
-QvWxzYzhrt9F4ML4j1gd607UPPMjZt+dX3gHjRFKdd6T5BtitDwm4RKlgPyXUERn
-kLJR+450ORevIrMXB/R+47KHA5hCHZ8VJt9g/oSW/zo+a1bNbDhbv6App7T7cmaY
-YNW3WxFCKlUZX4gRRJEQDzcW3OSNrkIT1muG1KazSfa9JGhH27KezkZUjbOtVk+V
-08J6A1/NLdjuBlAYu/LJqCueccn5V/b3MyFoA2BCWxPqRl7XyZeUzS9UBBjfvJbn
-GI8VjqcPDEARZC+87DlL
-=UQqd
------END PGP SIGNATURE-----
-
---wzJLGUyc3ArbnUjN--
+Yours,
+Linus Walleij
