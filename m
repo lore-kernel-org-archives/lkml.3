@@ -1,151 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758630Ab3FMJyk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 05:54:40 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:7911 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758376Ab3FMJyg (ORCPT
+	id S1758598Ab3FMJ4o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 05:56:44 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:49222 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932617Ab3FMJ4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 05:54:36 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 13 Jun 2013 02:54:31 -0700
-From: Mayuresh Kulkarni <mkulkarni@nvidia.com>
-To: <tbergstrom@nvidia.com>, <amerilainen@nvidia.com>,
-        <thierry.reding@avionic-design.de>, <airlied@redhat.com>,
-        <dri-devel@lists.freedesktop.org>, <linux-tegra@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, Mayuresh Kulkarni <mkulkarni@nvidia.com>
-Subject: [PATCH v2 3/4] gpu: host1x: add runtime pm support for dc
-Date: Thu, 13 Jun 2013 15:23:37 +0530
-Message-ID: <1371117218-2326-4-git-send-email-mkulkarni@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1371117218-2326-1-git-send-email-mkulkarni@nvidia.com>
-References: <1371117218-2326-1-git-send-email-mkulkarni@nvidia.com>
-X-NVConfidentiality: public
+	Thu, 13 Jun 2013 05:56:42 -0400
+Date: Thu, 13 Jun 2013 17:56:47 +0800
+From: Adam Lee <adam.lee@canonical.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "open list:USB VIDEO CLASS" <linux-media@vger.kernel.org>
+Subject: Re: [PATCH] Revert "V4L/DVB: uvc: Enable USB autosuspend by default
+ on uvcvideo"
+Message-ID: <20130613095647.GC21583@adam-laptop>
+Mail-Followup-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+	linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+	Mauro Carvalho Chehab <mchehab@redhat.com>,
+	"open list:USB VIDEO CLASS" <linux-media@vger.kernel.org>
+References: <1366790239-838-1-git-send-email-adam.lee@canonical.com>
+ <6159110.qEtHHiJYtm@avalon>
+ <20130425063306.GA20928@adam-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130425063306.GA20928@adam-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As of now, the dc clock is enabled in its .probe via
-runtime pm and disabled in .remove
+On Thu, Apr 25, 2013 at 02:33:06PM +0800, Adam Lee wrote:
+> On Wed, Apr 24, 2013 at 11:17:52AM +0200, Laurent Pinchart wrote:
+> > Hi Adam,
+> > 
+> > Thanks for the patch.
+> > 
+> > On Wednesday 24 April 2013 15:57:19 adam.lee@canonical.com wrote:
+> > > From: Adam Lee <adam.lee@canonical.com>
+> > > 
+> > > This reverts commit 3dae8b41dc5651f8eb22cf310e8b116480ba25b7.
+> > > 
+> > > 1, I do have a Chicony webcam, implements autosuspend in a broken way,
+> > > make `poweroff` performs rebooting when its autosuspend enabled.
+> > > 
+> > > 2, There are other webcams which don't support autosuspend too, like
+> > > https://patchwork.kernel.org/patch/2356141/
+> > > 
+> > > 3, kernel removed USB_QUIRK_NO_AUTOSUSPEND in
+> > > a691efa9888e71232dfb4088fb8a8304ffc7b0f9, because autosuspend is
+> > > disabled by default.
+> > > 
+> > > So, we need to disable autosuspend in uvcvideo, maintaining a quirk list
+> > > only for uvcvideo is not a good idea.
+> > 
+> > I've received very few bug reports about broken auto-suspend support in UVC 
+> > devices. Most of them could be solved by setting the RESET_RESUME quirk in USB 
+> > core, only the Creative Live! Cam Optia AF required a quirk in the uvcvideo 
+> > driver. I would thus rather use the available quirks (USB_QUIRK_RESET_RESUME 
+> > if possible, UVC_QUIRK_DISABLE_AUTOSUSPEND otherwise) than killing power 
+> > management for the vast majority of webcams that behave correctly.
+> 
+> Here comes another one, integrated Chicony webcam 04f2:b39f, its
+> autosuspend makes `poweroff` performs rebooting at the laptop I'm
+> working on. I tried USB_QUIRK_RESET_RESUME, not helping.
+> 
+> The quirks list will go longer and longer absolutely, do uvcvideo wanna
+> maintain that? And why only uvcvideo do this in kernel space which
+> against general USB module?
+> 
+> I still suggest we disable it by default, people can enable it in udev
+> just like almost all distroes do for udisks. Please consider about it.
 
-Signed-off-by: Mayuresh Kulkarni <mkulkarni@nvidia.com>
----
- drivers/gpu/host1x/drm/dc.c | 60 +++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 55 insertions(+), 5 deletions(-)
+Hi, Laurent
 
-diff --git a/drivers/gpu/host1x/drm/dc.c b/drivers/gpu/host1x/drm/dc.c
-index 5360e5a..8e669a9 100644
---- a/drivers/gpu/host1x/drm/dc.c
-+++ b/drivers/gpu/host1x/drm/dc.c
-@@ -13,6 +13,7 @@
- #include <linux/of.h>
- #include <linux/platform_device.h>
- #include <linux/clk/tegra.h>
-+#include <linux/pm_runtime.h>
- 
- #include "host1x_client.h"
- #include "dc.h"
-@@ -1128,9 +1129,7 @@ static int tegra_dc_probe(struct platform_device *pdev)
- 		return PTR_ERR(dc->clk);
- 	}
- 
--	err = clk_prepare_enable(dc->clk);
--	if (err < 0)
--		return err;
-+	platform_set_drvdata(pdev, dc);
- 
- 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	dc->regs = devm_ioremap_resource(&pdev->dev, regs);
-@@ -1147,6 +1146,15 @@ static int tegra_dc_probe(struct platform_device *pdev)
- 	dc->client.ops = &dc_client_ops;
- 	dc->client.dev = &pdev->dev;
- 
-+#ifdef CONFIG_PM_RUNTIME
-+	pm_runtime_enable(&pdev->dev);
-+	pm_runtime_get_sync(&pdev->dev);
-+#else
-+	err = clk_prepare_enable(dc->clk);
-+	if (err < 0)
-+		return err;
-+#endif
-+
- 	err = tegra_dc_rgb_probe(dc);
- 	if (err < 0 && err != -ENODEV) {
- 		dev_err(&pdev->dev, "failed to probe RGB output: %d\n", err);
-@@ -1160,8 +1168,6 @@ static int tegra_dc_probe(struct platform_device *pdev)
- 		return err;
- 	}
- 
--	platform_set_drvdata(pdev, dc);
--
- 	return 0;
- }
- 
-@@ -1178,11 +1184,52 @@ static int tegra_dc_remove(struct platform_device *pdev)
- 		return err;
- 	}
- 
-+#ifdef CONFIG_PM_RUNTIME
-+	pm_runtime_put(&pdev->dev);
-+	pm_runtime_disable(&pdev->dev);
-+#endif
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM_RUNTIME
-+static int tegra_dc_runtime_suspend(struct device *dev)
-+{
-+	struct tegra_dc *dc;
-+
-+	dc = dev_get_drvdata(dev);
-+	if (!dc)
-+		return -EINVAL;
-+
- 	clk_disable_unprepare(dc->clk);
- 
- 	return 0;
- }
- 
-+static int tegra_dc_runtime_resume(struct device *dev)
-+{
-+	int err = 0;
-+	struct tegra_dc *dc;
-+
-+	dc = dev_get_drvdata(dev);
-+	if (!dc)
-+		return -EINVAL;
-+
-+	err = clk_prepare_enable(dc->clk);
-+	if (err < 0)
-+		dev_err(dev, "failed to enable clock\n");
-+
-+	return err;
-+}
-+#endif /* CONFIG_PM_RUNTIME */
-+
-+#ifdef CONFIG_PM
-+static const struct dev_pm_ops tegra_dc_pm_ops = {
-+	SET_RUNTIME_PM_OPS(tegra_dc_runtime_suspend,
-+		tegra_dc_runtime_resume, NULL)
-+};
-+#endif
-+
- static struct of_device_id tegra_dc_of_match[] = {
- 	{ .compatible = "nvidia,tegra30-dc", },
- 	{ .compatible = "nvidia,tegra20-dc", },
-@@ -1194,6 +1241,9 @@ struct platform_driver tegra_dc_driver = {
- 		.name = "tegra-dc",
- 		.owner = THIS_MODULE,
- 		.of_match_table = tegra_dc_of_match,
-+#ifdef CONFIG_PM
-+		.pm = &tegra_dc_pm_ops,
-+#endif
- 	},
- 	.probe = tegra_dc_probe,
- 	.remove = tegra_dc_remove,
+Any comment of this? I still think it's a risk to enable autosuspend in
+uvcvideo by default, there must be users meeting weird issues but didn't
+report to you becaue they didn't figured out the cause.
+
 -- 
-1.8.1.5
-
+Regards,
+Adam Lee
+Hardware Enablement
