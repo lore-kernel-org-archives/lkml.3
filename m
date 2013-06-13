@@ -1,103 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757717Ab3FMXNL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 19:13:11 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:44647 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab3FMXNI convert rfc822-to-8bit (ORCPT
+	id S1758829Ab3FMXNX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 19:13:23 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:34027 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758304Ab3FMXNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 19:13:08 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-42-51ba520220c6
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Doug Anderson'" <dianders@chromium.org>,
-        "'Tomasz Figa'" <tomasz.figa@gmail.com>
-Cc: "'Linus Walleij'" <linus.walleij@linaro.org>,
-        "'Olof Johansson'" <olof@lixom.net>,
-        "'Simon Glass'" <sjg@chromium.org>,
-        "'Luigi Semenzato'" <semenzato@chromium.org>,
-        "'Ilho Lee'" <ilho215.lee@samsung.com>,
-        =?UTF-8?B?J+q5gOydgOq4sCc=?= <eunki_kim@samsung.com>,
-        linux-kernel@vger.kernel.org,
-        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>
-References: <1371058399-31933-1-git-send-email-dianders@chromium.org>
- <150901ce682e$1c3fca50$54bf5ef0$%kim@samsung.com>
- <CAD=FV=U9V-rgjcCusCvgw-SeUH-kDbozr_T-i1DcaXNXv48vxw@mail.gmail.com>
- <4661065.SXhmWQNl5M@flatron>
- <CAD=FV=Ukdpt4vMCZNySvKpHz6yGCP5X-LLAc1XdOAEAM8rr1fw@mail.gmail.com>
-In-reply-to: <CAD=FV=Ukdpt4vMCZNySvKpHz6yGCP5X-LLAc1XdOAEAM8rr1fw@mail.gmail.com>
-Subject: RE: [PATCH 3/3] pinctrl: exynos: ack level-triggered interrupts before
- unmasking
-Date: Fri, 14 Jun 2013 08:13:05 +0900
-Message-id: <15e401ce688b$8fadadb0$af090910$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac5oVjQLFff1Wh06TX6MWdyaq53mnAANK+jQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGIsWRmVeSWpSXmKPExsVy+t8zI12moF2BBhcn61qcXXaQzeLZnSvM
-	Fkf/LWS0mPJnOZPF5V1z2CxmnN/HZHHq+mc2i89Xv7BYfNuyjdFi1a4/jA5cHrMbLrJ47Jx1
-	l93jzrU9bB5XTjSxevRtWcXo8XmTXABbFJdNSmpOZllqkb5dAldGf/9k5oLXnBUvFtxibWC8
-	xd7FyMkhIWAi8WPVO2YIW0ziwr31bCC2kMAyRomTO9hgaq7N+8naxcgFFJ8OFN90hxHC+cso
-	cf3FYyaQKjYBDYnD75+BTRURCJF41fucGaSIWeAek8SWsyeZITqWMUlsnPEGaC4HB6dAsMTS
-	PdwgDcIC0RI7pn8FG8QioCoxqfsv2CBeAVuJs/dfskLYghI/Jt9jAbGZBdQlJs1bxAxha0s8
-	eXeBFWSkBFD80V9diBuMJC7NOwxVLiKx78U7sKMlBHo5JI7vO8QMsUtA4tvkQywQvbISmw5A
-	Q0JS4uCKGywTGCVmIdk8C8nmWUg2z0KyYgEjyypG0dSC5ILipPQiE73ixNzi0rx0veT83E2M
-	kDifsIPx3gHrQ4zJQOsnMkuJJucD00ReSbyhsZmRhamJqbGRuaUZacJK4rzqLdaBQgLpiSWp
-	2ampBalF8UWlOanFhxiZODilGhizFzpe8Ij8+yBca3aZ9LSZx722nUo297E0cRWp2NzQyrdu
-	35zfW7R3+UTVsKoUffn5wMbyR01UR1iP181Vvgli7jsLhVLext+4YOJ/deHh772xWx8s5RYP
-	WfDwotr+2W+M9q95ZnVfMcvpa4fKh5YZLE1OHzOm5Ei4Pkhn36t8V6r5/Nqw3wpKLMUZiYZa
-	zEXFiQAAuU9fCQMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCKsWRmVeSWpSXmKPExsVy+t9jQV2moF2BBmdWa1icXXaQzeLZnSvM
-	Fkf/LWS0mPJnOZPF5V1z2CxmnN/HZHHq+mc2i89Xv7BYfNuyjdFi1a4/jA5cHrMbLrJ47Jx1
-	l93jzrU9bB5XTjSxevRtWcXo8XmTXABbVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGh
-	rqGlhbmSQl5ibqqtkotPgK5bZg7QbUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqM
-	DNBAwjrGjP7+ycwFrzkrXiy4xdrAeIu9i5GTQ0LAROLavJ+sELaYxIV769m6GLk4hASmM0qc
-	3HSHEcL5yyhx/cVjJpAqNgENicPvn4F1iwiESLzqfc4MUsQscI9JYsvZk8wQHcuYJDbOeAM0
-	i4ODUyBYYukebpAGYYFoiR3Tv4INYhFQlZjU/RdsEK+ArcTZ+y9ZIWxBiR+T77GA2MwC6hKT
-	5i1ihrC1JZ68u8AKMlICKP7ory7EDUYSl+YdhioXkdj34h3jBEahWUgmzUIyaRaSSbOQtCxg
-	ZFnFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJEZxGnknvYFzVYHGIUYCDUYmHN+HCzkAh1sSy
-	4srcQ4wSHMxKIrzhf4FCvCmJlVWpRfnxRaU5qcWHGJOBHp3ILCWanA9McXkl8YbGJmZGlkZm
-	FkYm5uakCSuJ8x5stQ4UEkhPLEnNTk0tSC2C2cLEwSnVwMjUJOv3ysJluVmYyv5X00uY/vXe
-	W/qnuHhhskeV+IdHN0pvXv89MSIl0Xr/tDPL5kuyS6QtCbiyMJFZg8V9BfOzwClnDui0bzmX
-	WpUpPOXDbYZDraxfOiZbXGx7E+ytwF7BwDH77J2vgX/siz1MFQ5M5sp8475qT3KEre8K5ZWO
-	T8K/cZ78sEaJpTgj0VCLuag4EQAdUnFJZwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 13 Jun 2013 19:13:20 -0400
+Date: Thu, 13 Jun 2013 16:13:32 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <theo@redhat.com>, f@moria.home.lan
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH 2/2] percpu-refcount: implement percpu_tryget() along
+ with percpu_ref_kill_and_confirm()
+Message-ID: <20130613231332.GC28664@moria.home.lan>
+References: <20130612204532.GB15092@htj.dyndns.org>
+ <20130612204627.GC15092@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130612204627.GC15092@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doug Anderson wrote:
+On Wed, Jun 12, 2013 at 01:46:27PM -0700, Tejun Heo wrote:
+> From de3c0749e2c1960afcc433fc5da136b85c8bd896 Mon Sep 17 00:00:00 2001
+> From: Tejun Heo <tj@kernel.org>
+> Date: Wed, 12 Jun 2013 13:37:42 -0700
 > 
-> Tomasz,
+> Implement percpu_tryget() which succeeds iff the refcount hasn't been
+> killed yet.  Because the refcnt is per-cpu, different CPUs may have
+> different perceptions on when the counter has been killed and tryget()
+> may continue to succeed for a while after percpu_ref_kill() returns.
 > 
-> On Thu, Jun 13, 2013 at 9:42 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> >> > BTW, probably we need a similar fixing in the mach-exynos/common.c
-> >> > file
-> >> > before pinct기 for distro...
-> >>
-> >> Is anyone using the functions in mach-exynos/common.c file anymore?  I
-> >> thought that non-dt exynos support was going away and then we could
-> >> just delete a whole lot of code from that file.
-> >
-> > I think Kukjin meant stable kernels that support Exynos boards using
-> board
-> > files and without pinctrl. Would make sense to have them fixed as well,
-> I
-> > guess.
->
-Yes, correct. Thanks, Tomasz.
-
-> Ah, makes sense.  Kukjin: do you know of someone who needs this
-> (someone who is picking up linux-stable updates for exynos)?  I don't
-> think it's important for ChromeOS for this particular patch.  If
-> there's someone who needs this to officially land on linux-stable I'd
-> be happy to review their backport of this patch.
+> For use cases where it's necessary to know when all CPUs start to see
+> the refcnt as dead, percpu_ref_kill_and_confirm() is added.  The new
+> function takes an extra argument @confirm_kill which is invoked when
+> the refcnt is guaranteed to be viewed as killed on all CPUs.
 > 
-As you know, developing something like Android, Tizen use the stable kernel (long-term? I'm not sure) and there was a problem about this issue. So I mean, would be fixed for the stable kernel.
+> While this isn't the prettiest interface, it doesn't force synchronous
+> wait and is much safer than requiring the caller to do its own
+> call_rcu().
 
-Thanks,
-- Kukjin
+Ok, slightly grumpily but now I at least understand how it's being used
 
+Acked-by: Kent Overstreet <koverstreet@google.com>
+
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> ---
+> I'll soon post a cgroup patchset which makes use of both functions.
+> 
+> Thanks.
+> 
+>  include/linux/percpu-refcount.h | 50 ++++++++++++++++++++++++++++++++++++++++-
+>  lib/percpu-refcount.c           | 23 ++++++++++++++-----
+>  2 files changed, 66 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
+> index b61bd6f..b2dfa0f 100644
+> --- a/include/linux/percpu-refcount.h
+> +++ b/include/linux/percpu-refcount.h
+> @@ -63,11 +63,28 @@ struct percpu_ref {
+>  	 */
+>  	unsigned __percpu	*pcpu_count;
+>  	percpu_ref_func_t	*release;
+> +	percpu_ref_func_t	*confirm_kill;
+>  	struct rcu_head		rcu;
+>  };
+>  
+>  int percpu_ref_init(struct percpu_ref *ref, percpu_ref_func_t *release);
+> -void percpu_ref_kill(struct percpu_ref *ref);
+> +void percpu_ref_kill_and_confirm(struct percpu_ref *ref,
+> +				 percpu_ref_func_t *confirm_kill);
+> +
+> +/**
+> + * percpu_ref_kill - drop the initial ref
+> + * @ref: percpu_ref to kill
+> + *
+> + * Must be used to drop the initial ref on a percpu refcount; must be called
+> + * precisely once before shutdown.
+> + *
+> + * Puts @ref in non percpu mode, then does a call_rcu() before gathering up the
+> + * percpu counters and dropping the initial ref.
+> + */
+> +static inline void percpu_ref_kill(struct percpu_ref *ref)
+> +{
+> +	return percpu_ref_kill_and_confirm(ref, NULL);
+> +}
+>  
+>  #define PCPU_STATUS_BITS	2
+>  #define PCPU_STATUS_MASK	((1 << PCPU_STATUS_BITS) - 1)
+> @@ -99,6 +116,37 @@ static inline void percpu_ref_get(struct percpu_ref *ref)
+>  }
+>  
+>  /**
+> + * percpu_ref_tryget - try to increment a percpu refcount
+> + * @ref: percpu_ref to try-get
+> + *
+> + * Increment a percpu refcount unless it has already been killed.  Returns
+> + * %true on success; %false on failure.
+> + *
+> + * Completion of percpu_ref_kill() in itself doesn't guarantee that tryget
+> + * will fail.  For such guarantee, percpu_ref_kill_and_confirm() should be
+> + * used.  After the confirm_kill callback is invoked, it's guaranteed that
+> + * no new reference will be given out by percpu_ref_tryget().
+> + */
+> +static inline bool percpu_ref_tryget(struct percpu_ref *ref)
+> +{
+> +	unsigned __percpu *pcpu_count;
+> +	int ret = false;
+> +
+> +	rcu_read_lock();
+> +
+> +	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
+> +
+> +	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR)) {
+> +		__this_cpu_inc(*pcpu_count);
+> +		ret = true;
+> +	}
+> +
+> +	rcu_read_unlock();
+> +
+> +	return ret;
+> +}
+> +
+> +/**
+>   * percpu_ref_put - decrement a percpu refcount
+>   * @ref: percpu_ref to put
+>   *
+> diff --git a/lib/percpu-refcount.c b/lib/percpu-refcount.c
+> index 9a78e55..4d9519a 100644
+> --- a/lib/percpu-refcount.c
+> +++ b/lib/percpu-refcount.c
+> @@ -89,6 +89,10 @@ static void percpu_ref_kill_rcu(struct rcu_head *rcu)
+>  
+>  	atomic_add((int) count - PCPU_COUNT_BIAS, &ref->count);
+>  
+> +	/* @ref is viewed as dead on all CPUs, send out kill confirmation */
+> +	if (ref->confirm_kill)
+> +		ref->confirm_kill(ref);
+> +
+>  	/*
+>  	 * Now we're in single atomic_t mode with a consistent refcount, so it's
+>  	 * safe to drop our initial ref:
+> @@ -97,22 +101,29 @@ static void percpu_ref_kill_rcu(struct rcu_head *rcu)
+>  }
+>  
+>  /**
+> - * percpu_ref_kill - safely drop initial ref
+> + * percpu_ref_kill_and_confirm - drop the initial ref and schedule confirmation
+>   * @ref: percpu_ref to kill
+> + * @confirm_kill: optional confirmation callback
+>   *
+> - * Must be used to drop the initial ref on a percpu refcount; must be called
+> - * precisely once before shutdown.
+> + * Equivalent to percpu_ref_kill() but also schedules kill confirmation if
+> + * @confirm_kill is not NULL.  @confirm_kill, which may not block, will be
+> + * called after @ref is seen as dead from all CPUs - all further
+> + * invocations of percpu_ref_tryget() will fail.  See percpu_ref_tryget()
+> + * for more details.
+>   *
+> - * Puts @ref in non percpu mode, then does a call_rcu() before gathering up the
+> - * percpu counters and dropping the initial ref.
+> + * It's guaranteed that there will be at least one full RCU grace period
+> + * between the invocation of this function and @confirm_kill and the caller
+> + * can piggy-back their RCU release on the callback.
+>   */
+> -void percpu_ref_kill(struct percpu_ref *ref)
+> +void percpu_ref_kill_and_confirm(struct percpu_ref *ref,
+> +				 percpu_ref_func_t *confirm_kill)
+>  {
+>  	WARN_ONCE(REF_STATUS(ref->pcpu_count) == PCPU_REF_DEAD,
+>  		  "percpu_ref_kill() called more than once!\n");
+>  
+>  	ref->pcpu_count = (unsigned __percpu *)
+>  		(((unsigned long) ref->pcpu_count)|PCPU_REF_DEAD);
+> +	ref->confirm_kill = confirm_kill;
+>  
+>  	call_rcu(&ref->rcu, percpu_ref_kill_rcu);
+>  }
+> -- 
+> 1.8.2.1
+> 
