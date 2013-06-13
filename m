@@ -1,71 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758139Ab3FMTIl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 15:08:41 -0400
-Received: from fieldses.org ([174.143.236.118]:49510 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755464Ab3FMTIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 15:08:40 -0400
-Date: Thu, 13 Jun 2013 15:08:31 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Jeff Layton <jlayton@redhat.com>
-Subject: Re: [PATCH] Percpu tag allocator
-Message-ID: <20130613190831.GB19218@fieldses.org>
-References: <1371009804-11596-1-git-send-email-koverstreet@google.com>
- <20130612163854.91da28042ab7a943b69a5970@linux-foundation.org>
- <20130613020536.GA10979@localhost>
- <20130612200311.7f9d938a.akpm@linux-foundation.org>
- <20130613185318.GB12075@mtj.dyndns.org>
+	id S1758383Ab3FMTIq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 15:08:46 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:46598 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758193Ab3FMTIm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 15:08:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130613185318.GB12075@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <9686208.vxkaqkMmr5@vostro.rjw.lan>
+References: <1371141152-9468-1-git-send-email-jiang.liu@huawei.com>
+	<CAE9FiQX1xVJA3MZc4LndWU7kx0mxC-YPE1R8JD4W2-Gg9zq3Zw@mail.gmail.com>
+	<9686208.vxkaqkMmr5@vostro.rjw.lan>
+Date: Thu, 13 Jun 2013 12:08:42 -0700
+X-Google-Sender-Auth: LO0iH6iUZdXMpbX5qlzhWGIa1cI
+Message-ID: <CAE9FiQVOvA8HB6QNBO5XxGGyO0bsfnHA6e-3yYFC0nXesKfkUg@mail.gmail.com>
+Subject: Re: [BUGFIX 0/9] Fix bug 59501 and code improvement for dock driver
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Alexander E . Patrakov" <patrakov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 11:53:18AM -0700, Tejun Heo wrote:
-> The thing is that id[r|a] guarantee that the lowest available slot is
-> allocated and this is important because it's used to name things which
-> are visible to userland - things like block device minor number,
-> device indicies and so on.  That alone pretty much ensures that
-> alloc/free paths can't be very scalable which usually is fine for most
-> id[r|a] use cases as long as lookup is fast.  I'm doubtful that it's a
-> good idea to push per-cpu tag allocation into id[r|a].  The use cases
-> are quite different.
-> 
-> In fact, maybe what we can do is adding some features on top of the
-> tag allocator and moving id[r|a] users which don't require strict
-> in-order allocation to it.  For example, NFS allocates an ID for each
-> transaction it performs and uses it to index the associate command
-> structure (Jeff, Bruce, please correct me if I'm getting it wrong).
+On Thu, Jun 13, 2013 at 12:02 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday, June 13, 2013 11:42:16 AM Yinghai Lu wrote:
+>> On Thu, Jun 13, 2013 at 9:32 AM, Jiang Liu <jiang.liu@huawei.com> wrote:
+>> > Alexander E. Patrakov <patrakov@gmail.com> reports two bugs related to
+>> > dock station support on Sony VAIO VPCZ23A4R. Actually there are at least
+>> > four bugs related to Sony VAIO VPCZ23A4R dock support.
+>> > 1) can't correctly detect hotplug slot for dock state
+>> > 2) resource leak on undocking
+>> > 3) resource allocation failure for dock devices
+>> > 4) one bug in intel_snd_hda driver
+>> >
+>> > The first patch fixes issue 1, and the second patch fixes issue 2.
+>> > These two patches, if accepted, should be material for stable branches
+>> > too.
+>> > Patch 3-9 are code improvement for ACPI and dock driver.
+>> >
+>> > I have found the root cause for issue three, but still working on
+>> > solutions, and seems can't be solve in short time. So please help
+>> > to review and test patches for issue 1) and 2) first.
+>>
+>> the 3) is about pci resource allocation?
+>> because pcibios_add_bus is called too early?
+>>
+>> If that is case, we should have something like attached patch for it.
+>
+> I'm including the patch below to make it easier to comment.
+>
+>> With that, we will not need to worry about _OSC set for 3.10 etc.
+>
+>> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+>> index b1ff02a..68ed5d8 100644
+>> --- a/drivers/pci/bus.c
+>> +++ b/drivers/pci/bus.c
+>> @@ -186,6 +186,14 @@ int pci_bus_add_device(struct pci_dev *dev)
+>>       return 0;
+>>  }
+>>
+>> +void __weak pcibios_add_bus(struct pci_bus *bus)
+>> +{
+>> +}
+>> +
+>> +void __weak pcibios_remove_bus(struct pci_bus *bus)
+>> +{
+>> +}
+>> +
+>>  /**
+>>   * pci_bus_add_devices - start driver for PCI devices
+>>   * @bus: bus to check for new devices
+>> @@ -198,6 +206,11 @@ void pci_bus_add_devices(const struct pci_bus *bus)
+>>       struct pci_bus *child;
+>>       int retval;
+>>
+>> +     if (bus->is_added == 1) {
+>> +             pcibios_add_bus(bus);
+>> +             bus->is_added++;
+>> +     }
+>
+> Do we need that in all of the places pci_bus_add_devices() is called?
 
-It's not really per-transaction: it's more like an identifier for a
-piece of lock state (an open, a lock, whatever), so a bit like a file
-descriptor, but there's no requirement they be "small".
+Yes.
 
-> The only requirement on IDs is that they shouldn't be recycled too
-> fast.
+>
+> It looks like pci_scan_child_bus() might be a better place for adding this,
+> or am I overlooking something?
 
-Yep.--b.
+acpiphp and acpi_pci_slot used to get attached when pci devices
+get enumerated and pci resources get assigned unallocated...
 
-> Currently, idr implements cyclic mode for it but it can easily
-> be replaced with per-cpu tag allocator like this one and it'd be a lot
-> more scalable.  There are a couple things to worry about tho - it
-> probably should use the highbits as generation number as a tag is
-> given out so that the actual ID doesn't get recycled quickly, and some
-> form dynamic tag sizing would be nice too.
-> 
-> Thanks.
-> 
-> -- 
-> tejun
+they some kind of pci drivers to pci bus  (comparing with real pci diver to
+pci devices).
+
+in dock case, could be, we just got bus, and do not scan pci devices under it.
+then we try to scan dock pci devices too early...
+
+>
+> [Hint: the bus->is_added++ hack is <explicit content> ugly.]
+
+Yeah,  if we could move pcibios_fixup_bus to right place, we can move
+bus->is_added setting to same place like we set pci_dev->is_added.
+
+Yinghai
