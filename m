@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932383Ab3FMCdq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jun 2013 22:33:46 -0400
-Received: from matrix.voodoobox.net ([75.127.97.206]:57298 "EHLO
-	matrix.voodoobox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757040Ab3FMCdp (ORCPT
+	id S932417Ab3FMCeq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jun 2013 22:34:46 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57673 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757040Ab3FMCep (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jun 2013 22:33:45 -0400
-Message-ID: <1371090818.28385.0.camel@obelisk.thedillows.org>
-Subject: Re: [PATCH] HID: fold ps3remote driver into generic Sony driver
-From: David Dillow <dave@thedillows.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 12 Jun 2013 22:33:38 -0400
-In-Reply-To: <1370062502.2606.5.camel@obelisk.thedillows.org>
-References: <alpine.LNX.2.00.1305281035370.3914@pobox.suse.cz>
-	 <1369747847.3675.3.camel@obelisk.thedillows.org>
-	 <alpine.LNX.2.00.1305281538360.3914@pobox.suse.cz>
-	 <1370062502.2606.5.camel@obelisk.thedillows.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Jun 2013 22:34:45 -0400
+Message-ID: <1371090883.1978.61.camel@dabdike>
+Subject: Re: [scsi] WARNING: at fs/sysfs/dir.c:530 sysfs_add_one()
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Nicholas Bellinger <nab@linux-iscsi.org>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 12 Jun 2013 19:34:43 -0700
+In-Reply-To: <20130613013032.GA7558@localhost>
+References: <20130613013032.GA7558@localhost>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.2 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-06-01 at 00:55 -0400, David Dillow wrote:
-> On Tue, 2013-05-28 at 15:45 +0200, Jiri Kosina wrote:
-> > I'd be glad if you could provide your Tested-by: for the patch below. 
-> > Thanks a lot.
+On Thu, 2013-06-13 at 09:30 +0800, Fengguang Wu wrote:
+> Greetings,
 > 
-> I tried to test this tonight, but was thwarted by Fedora 16 on the only
-> readily available test platform -- old bluetoothd w/ the internal
-> driver. I'll need to upgrade that box, recreate the updated bluetooth
-> environment I had from some time ago, or try it on my myth frontend
-> (Ubuntu 13.04). I'll get another chance on the 9th; I won't have access
-> to the HW again until then. :/
+> I got the below dmesg and the first bad commit is
+> 
+> commit a256ba092ec57213f96059d41ac5473ff92f5e7c
+> Author: Nicholas Bellinger <nab@linux-iscsi.org>
+> Date:   Sat May 18 02:40:43 2013 -0700
+> 
+>     scsi: Split scsi_dispatch_cmd into __scsi_dispatch_cmd setup
+>     
+>     Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Ok, finally wrestled Myth away from family long enough to test. All
-looks good, sorry about the delay.
+You may be evaluating a bogus branch because no such commit has darkened
+the SCSI list, so it obviously can't be on upstream track.
 
-Tested-by: David Dillow <dave@thedillows.org>
+James
 
 
