@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757946Ab3FMPu3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 11:50:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57530 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752899Ab3FMPu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 11:50:28 -0400
-Date: Thu, 13 Jun 2013 10:02:07 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Anish Singh <anish198519851985@gmail.com>
-Subject: Re: [PATCH 4/6] watchdog: Boot-disable by default on full dynticks
-Message-ID: <20130613140207.GW133453@redhat.com>
-References: <1371045758-5296-1-git-send-email-fweisbec@gmail.com>
- <1371045758-5296-5-git-send-email-fweisbec@gmail.com>
- <20130612170316.GO133453@redhat.com>
- <20130613131057.GA15997@somewhere>
+	id S1758283Ab3FMPvT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 11:51:19 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54976 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752312Ab3FMPvS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 11:51:18 -0400
+Date: Thu, 13 Jun 2013 16:50:40 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Ben Greear <greearb@candelatech.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: kmemleak reports in kernel 3.9.5+
+Message-ID: <20130613155040.GE6530@darko.cambridge.arm.com>
+References: <51B61982.2050903@candelatech.com>
+ <CAHkRjk5SDCbqr0Br24YQuHr=j7DmnpYk9CShrz1qiuYff7+qAw@mail.gmail.com>
+ <51B78009.2060808@candelatech.com>
+ <51B7C09D.9020402@candelatech.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130613131057.GA15997@somewhere>
+In-Reply-To: <51B7C09D.9020402@candelatech.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 13, 2013 at 03:10:59PM +0200, Frederic Weisbecker wrote:
-> On Wed, Jun 12, 2013 at 01:03:16PM -0400, Don Zickus wrote:
-> > On Wed, Jun 12, 2013 at 04:02:36PM +0200, Frederic Weisbecker wrote:
-> > > When the watchdog runs, it prevents the full dynticks
-> > > CPUs from stopping their tick because the hard lockup
-> > > detector uses perf events internally, which in turn
-> > > rely on the periodic tick.
-> > > 
-> > > Since this is a rather confusing behaviour that is not
-> > > easy to track down and identify for those who want to
-> > > test CONFIG_NO_HZ_FULL, let's default disable the
-> > > watchdog on boot time when full dynticks is enabled.
-> > > 
-> > > The user can still enable it later on runtime using
-> > > proc or sysctl.
-> > 
-> > I thought we had a conversation awhile ago, where we agreed this was going
-> > to be fixed for 3.11?  Didn't Peter find the patch and apply it to his
-> > tree?  I am confused why this is still needed?
+On Wed, Jun 12, 2013 at 01:28:13AM +0100, Ben Greear wrote:
+> On 06/11/2013 12:52 PM, Ben Greear wrote:
+> > On 06/10/2013 03:32 PM, Catalin Marinas wrote:
+> >> On 10 June 2013 19:22, Ben Greear <greearb@candelatech.com> wrote:
+> >>> We had a system go OOM while doing lots of wireless
+> >>> stations.  (System had 8GB of RAM, so I suspect a leak).
+> >>>
+> >>> I enabled kmemleak in a 3.9.5 (plus some local patches) and
+> >>> I see the entries below.  Any idea if these are real or not?
 > 
-> We agreed on the patch but it hasn't been applied yet. I'm trying to get
-> a sane series of nohz patches before sending to Ingo.
+> Most of this went away when I disabled SLUB debugging and other
+> kernel hacking options.  The wifi cfg80211_inform_bss_frame
+> remains, however.  I'll go dig some more on that tomorrow...didn't
+> see anything obvious at first glance.
+> 
+> But, perhaps there could be some improvements to
+> kmemleak to make it deal better with the various kernel
+> debugging features?
 
-Peter,
+That's unrelated to the debugging features. Kmemleak cannot find
+pointers to the allocated objects. They could be real leaks or it simply
+doesn't scan the right memory where such pointers are stored. The debug
+objects are stored in a list with the head as static memory, so it
+should be scanned.
 
-Where is this patch?
-
-Cheers,
-Don
+-- 
+Catalin
