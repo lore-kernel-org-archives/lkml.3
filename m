@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758729Ab3FMNld (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 09:41:33 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:39335 "EHLO song.cn.fujitsu.com"
+	id S1758791Ab3FMNls (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 09:41:48 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54674 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756561Ab3FMN14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756533Ab3FMN14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 13 Jun 2013 09:27:56 -0400
 X-IronPort-AV: E=Sophos;i="4.87,858,1363104000"; 
-   d="scan'208";a="7537674"
+   d="scan'208";a="7537673"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
@@ -18,67 +18,54 @@ To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         riel@redhat.com, jweiner@redhat.com, prarit@redhat.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [Part2 PATCH v4 02/15] acpi: Print Hot-Pluggable Field in SRAT.
-Date: Thu, 13 Jun 2013 21:03:26 +0800
-Message-Id: <1371128619-8987-3-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [Part3 PATCH v2 4/4] mem-hotplug: Do not free LOCAL_NODE_DATA pages to buddy system in hot-remove procedure.
+Date: Thu, 13 Jun 2013 21:03:56 +0800
+Message-Id: <1371128636-9027-5-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1371128619-8987-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1371128636-9027-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1371128636-9027-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:58:45,
+ 2013/06/13 20:59:03,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/06/13 20:59:02,
-	Serialize complete at 2013/06/13 20:59:02
+ 2013/06/13 20:59:04,
+	Serialize complete at 2013/06/13 20:59:04
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Hot-Pluggable field in SRAT suggests if the memory could be
-hotplugged while the system is running. Print it as well when
-parsing SRAT will help users to know which memory is hotpluggable.
+In memory hot-remove procedure, we free pagetable pages to buddy system.
+But for local pagetable pages, do not free them to buddy system because
+they were skipped in offline procedure. The memory block they reside in
+could have been offlined, and we won't offline it again.
 
+v1 -> v2: Prevent freeing LOCAL_NODE_DATA pages in free_pagetable() instead
+	  of in put_page_bootmem().
+
+Suggested-by: Wu Jianguo <wujianguo@huawei.com>
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- arch/x86/mm/srat.c |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
+ arch/x86/mm/init_64.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
-index 443f9ef..134a79d 100644
---- a/arch/x86/mm/srat.c
-+++ b/arch/x86/mm/srat.c
-@@ -146,6 +146,7 @@ int __init
- acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
- {
- 	u64 start, end;
-+	u32 hotpluggable;
- 	int node, pxm;
- 
- 	if (srat_disabled())
-@@ -154,7 +155,8 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
- 		goto out_err_bad_srat;
- 	if ((ma->flags & ACPI_SRAT_MEM_ENABLED) == 0)
- 		goto out_err;
--	if ((ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE) && !save_add_info())
-+	hotpluggable = ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE;
-+	if (hotpluggable && !save_add_info())
- 		goto out_err;
- 
- 	start = ma->base_address;
-@@ -174,9 +176,10 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
- 
- 	node_set(node, numa_nodes_parsed);
- 
--	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]\n",
--	       node, pxm,
--	       (unsigned long long) start, (unsigned long long) end - 1);
-+	pr_info("SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx] %s\n",
-+		node, pxm,
-+		(unsigned long long) start, (unsigned long long) end - 1,
-+		hotpluggable ? "Hot Pluggable" : "");
- 
- 	return 0;
- out_err_bad_srat:
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 25de304..ffaf24a 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -726,7 +726,13 @@ static void __meminit free_pagetable(struct page *page, int order)
+ 		if (magic == SECTION_INFO || magic == MIX_SECTION_INFO) {
+ 			while (nr_pages--)
+ 				put_page_bootmem(page++);
+-		} else
++		} else if (!is_local_node_data(page))
++			/*
++			 * Do not free pages with local node kernel data
++			 * (for now, just local pagetables) to the buddy
++			 * system because we skipped these pages when
++			 * offlining the corresponding block.
++			 */
+ 			__free_pages_bootmem(page, order);
+ 	} else
+ 		free_pages((unsigned long)page_address(page), order);
 -- 
 1.7.1
 
