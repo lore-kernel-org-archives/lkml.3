@@ -1,21 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757760Ab3FMWcL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 18:32:11 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:51287 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756489Ab3FMWcJ (ORCPT
+	id S1759220Ab3FMWc2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 18:32:28 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:60303 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758279Ab3FMWc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 18:32:09 -0400
-X-Sasl-enc: L/XARax3JMo2IdmsDPfg6rW55bpphhlfszCuOWCoA/cZ 1371162727
-From: Simon Brown <smb@700c.org>
-To: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: Accessing more than 2GB of memory with a 32 bit kernel
-Date: Thu, 13 Jun 2013 23:32:06 +0100
-Message-ID: <3704356.7sSoN0NIpj@phaedrus>
-User-Agent: KMail/4.10.4 (Linux/3.8.0-25-generic; KDE/4.10.4; x86_64; ; )
-In-Reply-To: <51B8D59B.1040801@redhat.com>
-References: <1371056055.24587.140661243104889.29DDEEB4@webmail.messagingengine.com> <51B8D59B.1040801@redhat.com>
+	Thu, 13 Jun 2013 18:32:26 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: "'Doug Anderson'" <dianders@chromium.org>,
+        "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
+        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
+        "'Linus Walleij'" <linus.walleij@linaro.org>,
+        "'Olof Johansson'" <olof@lixom.net>,
+        "'Mauro Carvalho Chehab'" <mchehab@redhat.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Cesar Eduardo Barros'" <cesarb@cesarb.net>,
+        "'David S. Miller'" <davem@davemloft.net>,
+        "'Hans Verkuil'" <hans.verkuil@cisco.com>,
+        linux-kernel@vger.kernel.org,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>
+Subject: Re: [PATCH] MAINTAINERS: Add Samsung pinctrl entries
+Date: Fri, 14 Jun 2013 00:32:23 +0200
+Message-ID: <26381641.c4KnMQ8aS6@flatron>
+User-Agent: KMail/4.10.4 (Linux/3.9.5-gentoo; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <15cf01ce6884$8c073f20$a415bd60$%kim@samsung.com>
+References: <1371143144-31764-1-git-send-email-dianders@chromium.org> <1552010.DOo3aEBKyJ@flatron> <15cf01ce6884$8c073f20$a415bd60$%kim@samsung.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -23,57 +34,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 12 Jun 2013 16:10:03 Rik van Riel wrote:
-> On 06/12/2013 12:54 PM, Simon Brown wrote:
-> > Hello,
+On Friday 14 of June 2013 07:22:53 Kukjin Kim wrote:
+> Tomasz Figa wrote:
+> > On Thursday 13 of June 2013 10:25:02 Doug Anderson wrote:
+> > > Tomasz,
+> > > 
+> > > On Thu, Jun 13, 2013 at 10:13 AM, Tomasz Figa
+> > > <tomasz.figa@gmail.com>
 > > 
-> > For the sake of an old prototype peripheral I'm using a non PAE 32 bit
-> > x86 kernel and I'm having trouble accessing memory above 2 GB. The
-> > system has 4GB installed and all is well with a PAE kernel.
+> > wrote:
+> > > > On Thursday 13 of June 2013 10:05:44 Doug Anderson wrote:
+> > > >> It's convenient if get_maintainer suggests sending samsung/exynos
+> > > >> pinctrl changes to linux-samsung-soc and to Kukjin.  Add an entry
+> > > >> for
+> > > >> that.
+> > > > 
+> > > > Well, if we are already at it, we could list the actual
+> > > > maintainers of
+> > > > the driver.
+> > > > 
+> > > > The original maintainer was Thomas Abraham
+> > > > <thomas.abraham@linaro.org>
+> > > > (added to CC) and after joining to development of this driver last
+> > > > year I have become a de facto maintainer as well, so...
+> > > > 
+> > > >> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> > > >> ---
+> > > >> 
+> > > >>  MAINTAINERS | 10 ++++++++++
+> > > >>  1 file changed, 10 insertions(+)
+> > > >> 
+> > > >> diff --git a/MAINTAINERS b/MAINTAINERS
+> > > >> index 8d97b3e..d026e38 100644
+> > > >> --- a/MAINTAINERS
+> > > >> +++ b/MAINTAINERS
+> > > >> @@ -6284,6 +6284,16 @@ L:    
+> > > >> linux-arm-kernel@lists.infradead.org
+> > > >> (moderated for non-subscribers) S:    Maintained
+> > > >> 
+> > > >>  F:   drivers/pinctrl/pinctrl-at91.c
+> > > >> 
+> > > >> +PIN CONTROLLER - SAMSUNG
+> > > >> +M:   Linus Walleij <linus.walleij@linaro.org>
+> > > >> +M:   Kukjin Kim <kgene.kim@samsung.com>
+> > > > 
+> > > > So actually this would be:
+> > > > M:      Thomas Abraham <thomas.abraham@linaro.org>
+> > > > M:      Tomasz Figa <t.figa@samsung.com>
+> > > > 
+> > > > Thomas, do you agree on this?
+> > > 
+> > > Ah.  Wasn't sure where the official maintainership should lie.  ;) 
+> > > If
+> > > Thomas is happy with this then I'll spin and re-send.  Shall I
+> > > remove
+> > > Kukjin and Linus, then?  It's convenient to have Linus on the list
+> > > since he tends to be the one applying the patches...
 > > 
-> > I'm obviously expecting to lose some memory due to memory mapped devices
-> > but I wasn't expecting to lose 2GB. Instead I'm suspecting a BIOS bug.
-> > The system reports:
-> > free -m
+> > From my understanding how it works, there is no need to list Linus in
+> > particular drivers, because he's already listed as a maintainer of the
+> > whole pinctrl subsystem and get-maintainer accounts for this.
 > > 
-> >               total       used       free     shared    buffers
-> >               cached
-> > 
-> > Mem:          2012        491       1521          0         40
-> > 277
-> > 
-> > The mtrr table looked odd so I enabled sanitisation:
-> > [    0.000000] original variable MTRRs
-> > [    0.000000] reg 0, base: 2GB, range: 2GB, type UC
-> > [    0.000000] reg 1, base: 0GB, range: 4GB, type WB
-> > [    0.000000] reg 2, base: 4GB, range: 2GB, type WB
-> > [    0.000000] total RAM covered: 4096M
-> > [    0.000000] Found optimal setting for mtrr clean up
-> > [    0.000000]  gran_size: 64K  chunk_size: 64K         num_reg: 2
-> > lose cover RAM: 0G
-> > [    0.000000] New variable MTRRs
-> > [    0.000000] reg 0, base: 0GB, range: 2GB, type WB
-> > [    0.000000] reg 1, base: 4GB, range: 2GB, type WB
-> > 
-> > I don't understand the gap in the new table.
+> > Similarly for Kukjin, he's listed as the main Samsung maintainer
+> > already,
+> If so, the directory like pinctrl should be added under Samsung ARM
+> Architectures like spi and sound for Samsung stuff...
+
+I don't think so, because it's a part of the pin control subsystem.
+
+> > but AFAIK in this case the script can't infer this based on directory
 > 
-> Check the e820 table. Chances are the BIOS is reserving 2GB to
-> map various devices (especially video cards) below the 4GB limit.
+> > structure. Let's see how it's done for other Samsung drivers:
+> Well, I don't think so, because pinctrl has the close relationship with
+> exynos arch part and it's little bit different with following. Just in
+> my understanding.
 
-The table looks like this:
-  [    0.000000] BIOS-provided physical RAM map:
-  [    0.000000]  BIOS-e820: 0000000000000000 - 000000000009fc00 (usable)
-  [    0.000000]  BIOS-e820: 000000000009fc00 - 00000000000a0000 (reserved)
-  [    0.000000]  BIOS-e820: 00000000000e4000 - 0000000000100000 (reserved)
-  [    0.000000]  BIOS-e820: 0000000000100000 - 000000007ff80000 (usable)
-  [    0.000000]  BIOS-e820: 000000007ff80000 - 000000007ff8e000 (ACPI data)
-  [    0.000000]  BIOS-e820: 000000007ff8e000 - 000000007ffe0000 (ACPI NVS)
-  [    0.000000]  BIOS-e820: 000000007ffe0000 - 0000000080000000 (reserved)
-  [    0.000000]  BIOS-e820: 00000000fee00000 - 00000000fee01000 (reserved)
-  [    0.000000]  BIOS-e820: 00000000fff00000 - 0000000100000000 (reserved)
-  [    0.000000]  BIOS-e820: 0000000100000000 - 0000000180000000 (usable)
+I'm not really sure what you mean. Pin control is a separate kernel 
+subsystem, which shouldn't have any dependencies on arch code.
 
-So the BIOS has reserved the entire upper half. Can I do anything about that?
+> > DRM DRIVERS FOR EXYNOS
+> > M:      Inki Dae <inki.dae@samsung.com>
+> > M:      Joonyoung Shim <jy0922.shim@samsung.com>
+> > M:      Seung-Woo Kim <sw0312.kim@samsung.com>
+> > M:      Kyungmin Park <kyungmin.park@samsung.com>
+> > L:      dri-devel@lists.freedesktop.org
+> > T:      git git://git.kernel.org/pub/scm/linux/kernel/git/daeinki/drm-
+> > exynos.git
+> > S:      Supported
+> > F:      drivers/gpu/drm/exynos
+> > F:      include/drm/exynos*
+> > F:      include/uapi/drm/exynos*
+> > 
+> > EXYNOS DP DRIVER
+> > M:      Jingoo Han <jg1.han@samsung.com>
+> > L:      linux-fbdev@vger.kernel.org
+> > S:      Maintained
+> > F:      drivers/video/exynos/exynos_dp*
+> > F:      include/video/exynos_dp*
+> > 
+> > EXYNOS MIPI DISPLAY DRIVERS
+> > M:      Inki Dae <inki.dae@samsung.com>
+> > M:      Donghwa Lee <dh09.lee@samsung.com>
+> > M:      Kyungmin Park <kyungmin.park@samsung.com>
+> > L:      linux-fbdev@vger.kernel.org
+> > S:      Maintained
+> > F:      drivers/video/exynos/exynos_mipi*
+> > F:      include/video/exynos_mipi*
+> > 
+> > ARM/SAMSUNG S5P SERIES 2D GRAPHICS ACCELERATION (G2D) SUPPORT
+> > M:      Kyungmin Park <kyungmin.park@samsung.com>
+> > M:      Kamil Debski <k.debski@samsung.com>
+> > L:      linux-arm-kernel@lists.infradead.org
+> > L:      linux-media@vger.kernel.org
+> > S:      Maintained
+> > F:      drivers/media/platform/s5p-g2d/
+> 
+> And I'm asking above all guys _really_ do review and maintaining the
+> file or directories? I don't think so.
 
-Simon
+I'm not really sure what makes you think they don't. I can see all of them 
+involved in works on mentioned drivers.
 
+Best regards,
+Tomasz
+
+> > and so on.
+> > 
+> > So I think, based on this precedent, we can do the same for pinctrl.
+> > Let's wait to see Thomas' view on this.
