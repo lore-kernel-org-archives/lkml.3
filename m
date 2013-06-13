@@ -1,101 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758665Ab3FMQtY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 12:49:24 -0400
-Received: from mail-db8lp0185.outbound.messaging.microsoft.com ([213.199.154.185]:53599
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756653Ab3FMQtX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 12:49:23 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
-Date: Thu, 13 Jun 2013 11:49:17 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [BUG] PCI related panic on powerpc based board with 3.10-rcX
-To: Rojhalat Ibrahim <imr@rtschenk.de>
-CC: Michael Guntsche <michael.guntsche@it-loops.com>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-References: <1370971739.18413.27@snotra> <34279395.MbRViMjbAR@pcimr>
-	<1371073826.18413.52@snotra> <7706620.VNI3PE9pqO@pcimr>
-In-Reply-To: <7706620.VNI3PE9pqO@pcimr> (from imr@rtschenk.de on Thu Jun 13
-	02:21:24 2013)
-X-Mailer: Balsa 2.4.12
-Message-ID: <1371142157.2028.9@snotra>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
-Content-Disposition: inline
+	id S1758719Ab3FMQtw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 12:49:52 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:36981 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756653Ab3FMQtv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jun 2013 12:49:51 -0400
+From: "J, KEERTHY" <j-keerthy@ti.com>
+To: "Cousson, Benoit" <b-cousson@ti.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: RE: [PATCH v6] ARM: dts: OMAP5: Add Palmas MFD node and regulator
+ nodes
+Thread-Topic: [PATCH v6] ARM: dts: OMAP5: Add Palmas MFD node and regulator
+ nodes
+Thread-Index: AQHOZ+7UhtfCJexSIkigCr6os/kkTpkz26Yw
+Date: Thu, 13 Jun 2013 16:49:21 +0000
+Message-ID: <DC88CAD03C0052499C1907B327FC63229EB829@DBDE04.ent.ti.com>
+References: <1371097811-4618-1-git-send-email-j-keerthy@ti.com>
+In-Reply-To: <1371097811-4618-1-git-send-email-j-keerthy@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2013 02:21:24 AM, Rojhalat Ibrahim wrote:
-> On Wednesday 12 June 2013 16:50:26 Scott Wood wrote:
-> > On 06/12/2013 03:19:30 AM, Rojhalat Ibrahim wrote:
-> > > On Tuesday 11 June 2013 12:28:59 Scott Wood wrote:
-> > > > Yes, I figured it was non-PCIe because the code change that you  
-> said
-> > > > helped was on the non-PCIe branch of the if/else.  Generally  
-> it's
-> > >
-> > > good
-> > >
-> > > > to explicitly mention the chip you're using, though.
-> > > >
-> > > > fsl_setup_indirect_pci should be renamed to  
-> fsl_setup_indirect_pcie.
-> > > > Your patch above should be applied, and fsl_setup_indirect_pcie
-> > >
-> > > should
-> > >
-> > > > be moved into the booke/86xx ifdef to avoid an unused function
-> > >
-> > > warning.
-> > >
-> > > > -Scott
-> > >
-> > > How about this patch? It uses setup_indirect_pci for the PCI case  
-> in
-> > > mpc83xx_add_bridge. Additionally it adds a check in
-> > > fsl_setup_indirect_pci
-> > > to only use the modified read function in case of PCIe.
-> >
-> > If we're adding the check to fsl_setup_indirect_pci, there's no  
-> need to
-> > change the 83xx call back to setup_indirect_pci.  I see that 85xx is
-> > also callirng fsl_setup_indirect_pci for both; it'd be good to be
-> > consistent.
-> >
-> > In any case, can you send a proper patch with a signoff and commit
-> > message?
-> >
-> > -Scott
+Hi Benoit,
+
+
+> -----Original Message-----
+> From: J, KEERTHY
+> Sent: Thursday, June 13, 2013 10:00 AM
+> To: Cousson, Benoit; devicetree-discuss@lists.ozlabs.org
+> Cc: linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org;
+> ldewangan@nvidia.com; grant.likely@secretlab.ca; swarren@wwwdotorg.org;
+> swarren@nvidia.com; sameo@linux.intel.com; gg@slimlogic.co.uk;
+> lee.jones@linaro.org; J, KEERTHY
+> Subject: [PATCH v6] ARM: dts: OMAP5: Add Palmas MFD node and regulator
+> nodes
 > 
-> Where is it called for 85xx? As far as I can tell  
-> fsl_setup_indirect_pci is
-> called exactly once in fsl_add_bridge and nowhere else (after  
-> applying the
-> proposed patch).
+> This patch adds Palmas MFD node and the regulator nodes for OMAP5.
+> 
+> The node definitions are based on: https://lkml.org/lkml/2013/6/6/25
+> 
+> Boot tested on omap5-uevm board.
 
-fsl_add_bridge() is where it's called for 85xx.
+Could you please pull this patch?
 
-> For 83xx the decision between PCI and PCIe has already been made at
-> the point where the setup function is called. So IMO it doesn't make  
-> sense
-> to call fsl_setup_indirect_pci and do the check again. Moreover PCIe  
-> on 83xx
-> uses a completely different set of functions.
+Regards,
+Keerthy
 
-My concern is consistency.  E.g. if 85xx is using  
-fsl_setup_indirect_pci for both, but 83xx isn't, then a developer using  
-83xx could end up breaking 85xx by introducing another PCIe dependency  
-in fsl_setup_indirect_pci.  Or an 85xx developer could put something  
-non-PCIe-related in fsl_setup_indirect_pci that 83xx would benefit from.
+> 
+> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+> Signed-off-by: J Keerthy <j-keerthy@ti.com>
+> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> V6:
+> Changed the order of properties.
+> 
+> V5:
+> Corrected the IRQ_TYPE flag for OMAP5 board.
+> 
+> V4:
+> Removed splitting Palmas node.
+> 
+> V3:
+> Moved the entire Palmas device tree node to board file.
+> 
+>  arch/arm/boot/dts/omap5-uevm.dts |  167
+> ++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 167 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/omap5-uevm.dts
+> b/arch/arm/boot/dts/omap5-uevm.dts
+> index 927db1e..3d0b7b6 100644
+> --- a/arch/arm/boot/dts/omap5-uevm.dts
+> +++ b/arch/arm/boot/dts/omap5-uevm.dts
+> @@ -8,6 +8,8 @@
+>  /dts-v1/;
+> 
+>  #include "omap5.dtsi"
+> +#include <dt-bindings/interrupt-controller/irq.h>
+> +#include <dt-bindings/interrupt-controller/arm-gic.h>
+> 
+>  / {
+>  	model = "TI OMAP5 uEVM board";
+> @@ -254,6 +256,171 @@
+>  	pinctrl-0 = <&i2c1_pins>;
+> 
+>  	clock-frequency = <400000>;
+> +
+> +	palmas: palmas@48 {
+> +		compatible = "ti,palmas";
+> +		interrupts = <GIC_SPI 7 IRQ_TYPE_NONE>; /* IRQ_SYS_1N */
+> +		interrupt-parent = <&gic>;
+> +		reg = <0x48>;
+> +		interrupt-controller;
+> +		#interrupt-cells = <2>;
+> +
+> +		palmas_pmic {
+> +			compatible = "ti,palmas-pmic";
+> +			interrupt-parent = <&palmas>;
+> +			interrupts = <14 IRQ_TYPE_NONE>;
+> +			interrupt-name = "short-irq";
+> +
+> +			ti,ldo6-vibrator;
+> +
+> +			regulators {
+> +				smps123_reg: smps123 {
+> +					regulator-name = "smps123";
+> +					regulator-min-microvolt = < 600000>;
+> +					regulator-max-microvolt = <1500000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +
+> +				smps45_reg: smps45 {
+> +					regulator-name = "smps45";
+> +					regulator-min-microvolt = < 600000>;
+> +					regulator-max-microvolt = <1310000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +
+> +				smps6_reg: smps6 {
+> +					regulator-name = "smps6";
+> +					regulator-min-microvolt = <1200000>;
+> +					regulator-max-microvolt = <1200000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +
+> +				smps7_reg: smps7 {
+> +					regulator-name = "smps7";
+> +					regulator-min-microvolt = <1800000>;
+> +					regulator-max-microvolt = <1800000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +
+> +				smps8_reg: smps8 {
+> +					regulator-name = "smps8";
+> +					regulator-min-microvolt = < 600000>;
+> +					regulator-max-microvolt = <1310000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +
+> +				smps9_reg: smps9 {
+> +					regulator-name = "smps9";
+> +					regulator-min-microvolt = <2100000>;
+> +					regulator-max-microvolt = <2100000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +					ti,smps-range = <0x80>;
+> +				};
+> +
+> +				smps10_reg: smps10 {
+> +					regulator-name = "smps10";
+> +					regulator-min-microvolt = <5000000>;
+> +					regulator-max-microvolt = <5000000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +
+> +				ldo1_reg: ldo1 {
+> +					regulator-name = "ldo1";
+> +					regulator-min-microvolt = <2800000>;
+> +					regulator-max-microvolt = <2800000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +
+> +				ldo2_reg: ldo2 {
+> +					regulator-name = "ldo2";
+> +					regulator-min-microvolt = <2900000>;
+> +					regulator-max-microvolt = <2900000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +
+> +				ldo3_reg: ldo3 {
+> +					regulator-name = "ldo3";
+> +					regulator-min-microvolt = <3000000>;
+> +					regulator-max-microvolt = <3000000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +
+> +				ldo4_reg: ldo4 {
+> +					regulator-name = "ldo4";
+> +					regulator-min-microvolt = <2200000>;
+> +					regulator-max-microvolt = <2200000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +
+> +				ldo5_reg: ldo5 {
+> +					regulator-name = "ldo5";
+> +					regulator-min-microvolt = <1800000>;
+> +					regulator-max-microvolt = <1800000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +
+> +				ldo6_reg: ldo6 {
+> +					regulator-name = "ldo6";
+> +					regulator-min-microvolt = <1500000>;
+> +					regulator-max-microvolt = <1500000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +
+> +				ldo7_reg: ldo7 {
+> +					regulator-name = "ldo7";
+> +					regulator-min-microvolt = <1500000>;
+> +					regulator-max-microvolt = <1500000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +
+> +				ldo8_reg: ldo8 {
+> +					regulator-name = "ldo8";
+> +					regulator-min-microvolt = <1500000>;
+> +					regulator-max-microvolt = <1500000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +
+> +				ldo9_reg: ldo9 {
+> +					regulator-name = "ldo9";
+> +					regulator-min-microvolt = <1800000>;
+> +					regulator-max-microvolt = <3300000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +
+> +				ldoln_reg: ldoln {
+> +					regulator-name = "ldoln";
+> +					regulator-min-microvolt = <1800000>;
+> +					regulator-max-microvolt = <1800000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +
+> +				ldousb_reg: ldousb {
+> +					regulator-name = "ldousb";
+> +					regulator-min-microvolt = <3250000>;
+> +					regulator-max-microvolt = <3250000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +			};
+> +		};
+> +	};
+>  };
+> 
+>  &i2c5 {
+> --
+> 1.7.5.4
 
-Alternatively, you could call it fsl_setup_indirect_pcie, and move the  
-PCIe check into fsl_add_bridge().
-
--Scott
