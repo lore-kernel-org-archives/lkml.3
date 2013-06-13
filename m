@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932639Ab3FMILc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jun 2013 04:11:32 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:64193 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757269Ab3FMIL3 convert rfc822-to-8bit (ORCPT
+	id S932634Ab3FMIR1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jun 2013 04:17:27 -0400
+Received: from relay.parallels.com ([195.214.232.42]:60275 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755531Ab3FMIRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jun 2013 04:11:29 -0400
+	Thu, 13 Jun 2013 04:17:25 -0400
+Subject: [PATCH] fuse: hold i_mutex in fuse_file_fallocate() - v2
+To: miklos@szeredi.hu
+From: Maxim Patlasov <MPatlasov@parallels.com>
+Cc: fuse-devel@lists.sourceforge.net, bfoster@redhat.com, avati@redhat.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Thu, 13 Jun 2013 12:16:39 +0400
+Message-ID: <20130613081551.11870.77028.stgit@maximpc.sw.ru>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <201306130022.29341.heiko@sntech.de>
-References: <201306102139.32444.heiko@sntech.de>
-	<201306102140.29918.heiko@sntech.de>
-	<51B88BD0.805@imgtec.com>
-	<201306130022.29341.heiko@sntech.de>
-Date: Thu, 13 Jun 2013 10:11:28 +0200
-Message-ID: <CACRpkdb-vbdQJOeZvCEsKLatK-0BhEfUTJqmGURJGf1NWx__Ew@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinctrl: add function to parse generic pinconfig
- properties from a dt node
-From: Linus Walleij <linus.walleij@linaro.org>
-To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-Cc: James Hogan <james.hogan@imgtec.com>,
-        Patrice Chotard <patrice.chotard.st@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tisdagen den 13:e Juni 2013 klock 12:22 AM, skrev Heiko Stübner
-<heiko@sntech.de>:
-> Am Mittwoch, 12. Juni 2013, 16:55:12 schrieb James Hogan:
+Changing size of a file on server and local update (fuse_write_update_size)
+should be always protected by inode->i_mutex. Otherwise a race like this is
+possible:
 
->> > +static struct pinconf_generic_dt_params dt_params[] = {
->> > +   { "bias-disable", PIN_CONFIG_BIAS_DISABLE, 0 },
->> > +   { "bias-high-impedance", PIN_CONFIG_BIAS_HIGH_IMPEDANCE, 0 },
->> > +   { "bias-bus-hold", PIN_CONFIG_BIAS_BUS_HOLD, 0 },
->> > +   { "bias-pull-up", PIN_CONFIG_BIAS_PULL_UP, 0 },
->> > +   { "bias-pull-down", PIN_CONFIG_BIAS_PULL_DOWN, 0 },
->> > +   { "bias-pull-pin-default", PIN_CONFIG_BIAS_PULL_PIN_DEFAULT, 0 },
->> > +   { "drive-push-pull", PIN_CONFIG_DRIVE_PUSH_PULL, 0 },
->> > +   { "drive-open-drain", PIN_CONFIG_DRIVE_OPEN_DRAIN, 0 },
->> > +   { "drive-open-source", PIN_CONFIG_DRIVE_OPEN_SOURCE, 0 },
->> > +   { "drive-strength", PIN_CONFIG_DRIVE_STRENGTH, 0 },
->> > +   { "input-schmitt-enable", PIN_CONFIG_INPUT_SCHMITT_ENABLE, 1 },
->> > +   { "input-schmitt-disable", PIN_CONFIG_INPUT_SCHMITT_ENABLE, 0 },
->> > +   { "input-schmitt", PIN_CONFIG_INPUT_SCHMITT, 0 },
->> > +   { "input-debounce", PIN_CONFIG_INPUT_DEBOUNCE, 0 },
->> > +   { "power-source", PIN_CONFIG_POWER_SOURCE, 0 },
->> > +   { "slew-rate", PIN_CONFIG_SLEW_RATE, 0 },
->> > +   { "low-power-mode", PIN_CONFIG_LOW_POWER_MODE, 0 },
->> > +   { "output-low", PIN_CONFIG_OUTPUT, 0, },
->> > +   { "output-high", PIN_CONFIG_OUTPUT, 1, },
->>
->> shouldn't half of these default to 1 instead of 0? i.e. it's much nicer
->> for the lone flag "bias-pull-up" to enable pull up rather than disable
->> it (you even do this in the DT example in the bindings doc).
->
-> on closer inspection it seems that you may be right.
+1. Process 'A' calls fallocate(2) to extend file (~FALLOC_FL_KEEP_SIZE).
+fuse_file_fallocate() sends FUSE_FALLOCATE request to the server.
+2. Process 'B' calls ftruncate(2) shrinking the file. fuse_do_setattr()
+sends shrinking FUSE_SETATTR request to the server and updates local i_size
+by i_size_write(inode, outarg.attr.size).
+3. Process 'A' resumes execution of fuse_file_fallocate() and calls
+fuse_write_update_size(inode, offset + length). But 'offset + length' was
+obsoleted by ftruncate from previous step.
 
-Heiko can you write a patch for this? You can hit both this code and
-the Rockchip driver at the same time for sure. Please check that
-the bindings are consistent.
+Changed in v2 (thanks Brian and Anand for suggestions):
+ - made relation between mutex_lock() and fuse_set_nowrite(inode) more
+   explicit and clear.
+ - updated patch description to use ftruncate(2) in example
 
-> The documentation to the
-> options in the pinconf-generic header even tells that for example the pull
-> options do have a 0 or 1 argument.
+Signed-off-by: Maxim V. Patlasov <MPatlasov@parallels.com>
+---
+ fs/fuse/file.c |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
 
-Yeah. Well.
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index e570081..35f2810 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -2470,13 +2470,16 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
+ 		.mode = mode
+ 	};
+ 	int err;
++	bool lock_inode = !(mode & FALLOC_FL_KEEP_SIZE) ||
++			   (mode & FALLOC_FL_PUNCH_HOLE);
+ 
+ 	if (fc->no_fallocate)
+ 		return -EOPNOTSUPP;
+ 
+-	if (mode & FALLOC_FL_PUNCH_HOLE) {
++	if (lock_inode) {
+ 		mutex_lock(&inode->i_mutex);
+-		fuse_set_nowrite(inode);
++		if (mode & FALLOC_FL_PUNCH_HOLE)
++			fuse_set_nowrite(inode);
+ 	}
+ 
+ 	req = fuse_get_req_nopages(fc);
+@@ -2511,8 +2514,9 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
+ 	fuse_invalidate_attr(inode);
+ 
+ out:
+-	if (mode & FALLOC_FL_PUNCH_HOLE) {
+-		fuse_release_nowrite(inode);
++	if (lock_inode) {
++		if (mode & FALLOC_FL_PUNCH_HOLE)
++			fuse_release_nowrite(inode);
+ 		mutex_unlock(&inode->i_mutex);
+ 	}
+ 
 
-Actually there has been plans to have the argument represent the
-number of Ohms on the pull-up, but we haven't seen any hardware
-that can actually select that.
-
-Maybe we should add that now? It will still be that != 0 implies
-enablement on platforms that does not support specifying the
-pull up/down resistance.
-
-> But I'm not sure if I understand everything correctly :-) ... isn't the bias-
-> disable the opposite of turning on a pull (like the sh-pfc/pinctrl does) and
-> same with switching from one pull type to another, i.e. activating a pull up
-> would turn off a pull down and on the whole making the argument redundant?
-
-This is true, and the plan is surely for the core to not allow or print
-a big fat warning if someone does something really stupid like
-activate pull up and pull down at the same time (unless s/he's
-constructing a heater radiator or something).
-
-Currently we don't make any sanity checks like that, BUT your
-generic parser could actually be extended to do that.
-
-Patches welcome ;-)
-
-> The only other candidate I could find was low-power-mode which really could
-> use a "1" as default. All the other pinconf options either use custom
-> arguments or ignore teir argument.
-
-A "1" for what? Not quite following....
-
-Yours,
-Linus Walleij
